@@ -1,14 +1,26 @@
 import Fastify from "fastify";
 import redis from "@autofun/redis";
-import logger from '@autofun/logger';
+import logger from "@autofun/logger";
+import helmet from "@fastify/helmet";
+import cors from "@fastify/cors";
+import tokenRoutes from "./routers/tokens";
 
 const fastify = Fastify({
-  logger
+  loggerInstance: logger,
+});
+
+fastify.register(helmet);
+
+fastify.register(cors, {
+  allowedHeaders: ["*"],
+  origin: "*",
 });
 
 fastify.get("/", function (request, reply) {
   reply.send({ hello: "world" });
 });
+
+fastify.register(tokenRoutes, { prefix: '/tokens' });
 
 const port = 3001;
 
