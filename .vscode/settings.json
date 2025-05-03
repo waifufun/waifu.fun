@@ -16,10 +16,6 @@
     "*.mjs": "javascript"
   },
 
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
-
   "editor.quickSuggestions": {
     "strings": "on"
   },

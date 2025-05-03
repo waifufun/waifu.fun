@@ -8,7 +8,6 @@
   "sideEffects": false,
   "scripts": {
     "check": "tsc --noEmit",
-    "lint": "eslint src --config ../../eslint.config.js",
     "test": "vitest"
   },
   "exports": {

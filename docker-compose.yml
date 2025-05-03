@@ -1,13 +1,12 @@
 services:
   dragonfly:
     image: docker.dragonflydb.io/dragonflydb/dragonfly
-    ports:
-      - "6379:6379"
+    network_mode: "host"
     restart: unless-stopped
+    ulimits:
+      memlock: -1
     volumes:
       - "dragonfly-data:/data"
-    command: ["--requirepass", "dragonfly", "--user", "root", "on", "allkeys", "allcommands", ">dragonfly"]
-
   mongo1:
     image: mongo:7.0
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
