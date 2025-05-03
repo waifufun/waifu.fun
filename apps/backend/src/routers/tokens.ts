@@ -1,4 +1,5 @@
 import { type FastifyInstance, type FastifyPluginOptions } from "fastify";
+import { type IToken } from '@autofun/types';
 
 export default async function tokenRoutes(
   fastify: FastifyInstance,
