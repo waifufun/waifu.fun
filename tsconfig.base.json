@@ -84,8 +84,6 @@
     // early returns are often used in dev and debug workflows so you may want to choose `true` or `false` accordingly
     // "allowUnreachableCode": false,
 
-    // "types": ["node", "vitest/globals"]
-
     // nx left overbits
     // "emitDecoratorMetadata": true,
     // "experimentalDecorators": true,

@@ -11,8 +11,7 @@
     "configs/**/*",
     "reset.d.ts",
     "*.config.ts",
-    "*.config.js",
-    "vitest.workspace.ts"
+    "*.config.js"
   ]
   // "exclude": ["templates/**/*"]
 }

@@ -12,8 +12,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "check": "tsc --noEmit",
-    "build": "pnpm check && rimraf dist && tsx build.ts",
-    "test": "vitest"
+    "build": "pnpm check && rimraf dist && tsx build.ts"
   },
   "dependencies": {
     "@autofun/logger": "workspace:*",

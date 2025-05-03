@@ -29,7 +29,6 @@
     // linting
     "strictFunctionTypes": true
 
-    // "types": ["node", "vitest/globals"]
   },
   "include": ["../../reset.d.ts", "src/**/*.d.ts", "src/**/*.ts"],
   "exclude": [
@@ -38,7 +37,6 @@
     "test",
     "src/**/*.spec.ts",
     "src/**/*.test.ts",
-    "src/**/test/**",
-    "vitest.config.ts"
+    "src/**/test/**"
   ]
 }
