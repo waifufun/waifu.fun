@@ -1,0 +1,100 @@
+node_modules
+**/node_modules
+/.pnp
+.pnp.js
+packages/**/node_modules
+
+# environment
+**/.env
+.env
+.env.*
+!.env.sample
+
+# secrets
+*.pem
+*.key
+*.csr
+
+# nx cloud credentials
+/nx-cloud.env
+
+# framework
+.astro
+.next
+/.next/
+/out/
+
+# compiled output
+bin
+dist
+tmp
+/out-tsc
+/build
+
+# coverage and related tools such as instanbul
+/coverage
+.nyc_output
+lib-cov
+*.lcov
+
+# dev workflow such as output of rollup-plugin-visualizer
+stats.html
+
+# workflow
+wip
+notes
+
+# diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# aws-cdk output
+.cdk.staging
+cdk.out
+
+# aws-cdk app
+apps/**/infra/**/*.{js,mjs,cjs}
+!apps/**/infra/jest.*.js
+apps/**/infra/**/*.d.ts
+node_modules
+
+# ide's + editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# deploy + database
+.serverless/
+.fusebox/
+.dynamodb/
+.elasticbeanstalk
+.ebextensions
+
+# misc
+.npm
+/.sass-cache
+.eslintcache
+/connect.lock
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+.yarn-integrity
+*.tsbuildinfo

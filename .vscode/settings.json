@@ -1,0 +1,53 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // editor customization
+  "editor.guides.bracketPairs": true,
+  "editor.guides.highlightActiveIndentation": true,
+  "editor.guides.indentation": true,
+  "editor.guides.bracketPairsHorizontal": "active",
+
+  "files.associations": {
+    // "*.mdx": "mdx",
+    ".env*": "plaintext",
+    "*.css": "tailwindcss",
+    "*.cjs": "javascript",
+    "*.mjs": "javascript"
+  },
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+
+  "tailwindCSS.rootFontSize": 16,
+
+  "tailwindCSS.codeActions": true,
+
+  "search.exclude": {
+    "pnpm-lock.yaml": true,
+    "**/node_modules/*": true,
+    "tmp/*": true
+  },
+}
