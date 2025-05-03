@@ -1,3 +1,50 @@
-export interface IToken {
-  mint: string;
+import type { Address as SolanaAddressLike } from "@solana/kit";
+import type { Address as EvmAddressLike, Hash } from "viem";
+
+export interface IUser {
+  address: SolanaAddressLike | EvmAddressLike;
+  points: number;
+}
+
+export type TChain = "solana" | "evm";
+
+export type AddressLike = SolanaAddressLike | EvmAddressLike;
+
+export enum SolanaNetworkIds {
+  Mainnet = 101,
+  Devnet = 103,
+  Testnet = 102,
+}
+
+export enum EvmChainIds {
+  BaseMainnet = 8453,
+  EthereumMainnet = 1,
+  EthereumSepolia = 11155111,
+  BNBSmartChainMainnet = 56,
+  BNBSmartChainTestnet = 97,
+}
+
+export type TURLLike = `https://${string}` | `http://${string}`;
+
+export interface IToken<T extends TChain = TChain> {
+  contractAddress: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
+  chain: T;
+  chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
+  name: string;
+  ticker: string;
+  image: TURLLike;
+  price: number;
+  totalSupply: number;
+  socials: ITokenSocials;
+  transactionHash: T extends "solana" ? string : Hash;
+  creator: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITokenSocials {
+  twitter?: TURLLike;
+  website?: TURLLike;
+  discord?: TURLLike;
+  telegram?: TURLLike;
 }
