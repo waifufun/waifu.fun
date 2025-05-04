@@ -15,11 +15,11 @@ fastify.register(cors, {
   origin: "*",
 });
 
-fastify.get("/", function (request, reply) {
+fastify.get("/", function (_, reply) {
   reply.send({ hello: "world" });
 });
 
-fastify.register(tokenRoutes, { prefix: '/tokens' });
+fastify.register(tokenRoutes, { prefix: "/tokens" });
 
 const port = 3001;
 

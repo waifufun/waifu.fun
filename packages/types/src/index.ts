@@ -38,6 +38,8 @@ export interface IToken<T extends TChain = TChain> {
   socials: ITokenSocials;
   transactionHash: T extends "solana" ? string : Hash;
   creator: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
+  hidden?: boolean;
+  featured?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
