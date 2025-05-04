@@ -1,5 +1,6 @@
 import { type FastifyInstance, type FastifyPluginOptions } from "fastify";
 import redis from "@autofun/redis";
+import DB from "@autofun/database";
 
 import { type IToken } from "@autofun/types";
 
@@ -13,7 +14,8 @@ export default async function tokenRoutes(
     QueryParams: {};
     Reply: { tokens: IToken[] };
   }>("/", async (request, reply) => {
-    return { tokens: [] };
+    const tokens = await DB.Token.find().limit(10).lean();
+    return { tokens };
   });
 
   /** Retrieve a single token */
@@ -24,6 +26,11 @@ export default async function tokenRoutes(
     Reply: IToken | null;
   }>("/:contractAddress", async (request) => {
     const { contractAddress } = request.params;
-    return null;
+
+    const token = await DB.Token.findOne({
+      contractAddress,
+    }).lean();
+
+    return token;
   });
 }
