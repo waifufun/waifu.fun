@@ -3,10 +3,7 @@ import redis from "@autofun/redis";
 import DB from "@autofun/database";
 import { type AddressLike, type IToken } from "@autofun/types";
 
-export default async function tokenRoutes(
-  fastify: FastifyInstance,
-  options: FastifyPluginOptions
-) {
+export default async function tokenRoutes(fastify: FastifyInstance) {
   /** Retrieve multiple tokens */
   fastify.get<{
     Params: {};
@@ -40,8 +37,18 @@ export default async function tokenRoutes(
 
   /** Upload the metadata of a token */
   fastify.post<{
-    Params: {};
+    Body: {};
   }>("/create", async (request) => {
+    return true;
+  });
+
+  /** Import an existing token */
+  fastify.post<{
+    Body: {
+      contractAddress: AddressLike;
+    };
+  }>("/import", async (request) => {
+    const body = request.body;
     return true;
   });
 }

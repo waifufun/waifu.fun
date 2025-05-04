@@ -10,6 +10,9 @@ const schema = new Schema<IToken, Mongoose.Model<IToken>>(
     ticker: { type: String, required: true },
     image: { type: String, required: true },
     price: { type: Number, default: 0 },
+    imported: { type: Boolean, default: false},
+    marketcap: { type: Number, default: 0 },
+    volume24h: { type: Number, default: 0 },
     totalSupply: { type: Number, required: true, default: 0 },
     socials: {
       twitter: { type: String },
