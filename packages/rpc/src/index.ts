@@ -23,7 +23,7 @@ export class EVMRpcProvider {
 		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
 			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
 		}
-		
+
 		this.client = createPublicClient({
 			batch: {
 				multicall: true,

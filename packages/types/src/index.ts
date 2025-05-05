@@ -55,3 +55,8 @@ export interface ITokenSocials {
 	discord?: TURLLike;
 	telegram?: TURLLike;
 }
+
+export interface IFile {
+	data: string | Buffer;
+	mimetype: string;
+}
