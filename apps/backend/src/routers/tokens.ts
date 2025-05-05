@@ -19,14 +19,18 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve a single token */
 	fastify.get<{
 		Params: {
+			chain: TChain;
+			chainId: Omit<IToken, "chainId">;
 			contractAddress: AddressLike;
 		};
 		Reply: IToken | null;
-	}>("/:contractAddress", async (request) => {
-		const { contractAddress } = request.params;
+	}>("/:chain/:chainId/:contractAddress", async (request) => {
+		const { contractAddress, chain, chainId } = request.params;
 
 		const token = await DB.Token.findOne({
 			contractAddress,
+			chainId,
+			chain,
 			hidden: { $ne: true },
 		}).lean();
 
