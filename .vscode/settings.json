@@ -1,42 +1,58 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnSave": true,
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.enablePromptUseWorkspaceTsdk": true,
 
-  "files.associations": {
-    ".env*": "plaintext",
-    "*.css": "tailwindcss",
-    "*.cjs": "javascript",
-    "*.mjs": "javascript"
-  },
+	"files.associations": {
+		".env*": "plaintext",
+		"*.css": "tailwindcss",
+		"*.cjs": "javascript",
+		"*.mjs": "javascript"
+	},
 
-  "editor.quickSuggestions": {
-    "strings": "on"
-  },
+	"editor.quickSuggestions": {
+		"strings": "on"
+	},
 
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
-  "[scss]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
-  "[css]": {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true
-  },
+	"[javascript]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
 
-  "tailwindCSS.rootFontSize": 16,
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
 
-  "tailwindCSS.codeActions": true,
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+	"[scss]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
+	"[css]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.formatOnSave": true
+	},
 
-  "search.exclude": {
-    "pnpm-lock.yaml": true,
-    "**/node_modules/*": true,
-    "tmp/*": true
-  },
+	"tailwindCSS.rootFontSize": 16,
+
+	"tailwindCSS.codeActions": true,
+
+	"search.exclude": {
+		"pnpm-lock.yaml": true,
+		"**/node_modules/*": true,
+		"tmp/*": true
+	}
 }

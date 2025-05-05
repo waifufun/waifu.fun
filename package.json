@@ -8,7 +8,6 @@
     "dev": "NODE_ENV=development pnpm --recursive --stream run dev",
     "docker:up": "docker compose up -d && exit 0",
     "docker:down": "docker compose down",
-    "prettier": "prettier --write .",
     "lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm -r lint"
   },
   "devDependencies": {

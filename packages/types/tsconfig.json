@@ -30,12 +30,5 @@
 		"strictFunctionTypes": true
 	},
 	"include": ["../../reset.d.ts", "src/**/*.d.ts", "src/**/*.ts"],
-	"exclude": [
-		"dist",
-		"node_modules",
-		"test",
-		"src/**/*.spec.ts",
-		"src/**/*.test.ts",
-		"src/**/test/**"
-	]
+	"exclude": ["dist", "node_modules", "test", "src/**/*.spec.ts", "src/**/*.test.ts", "src/**/test/**"]
 }
