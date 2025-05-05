@@ -75,6 +75,9 @@ importers:
       '@solana/kit':
         specifier: ^2.1.0
         version: 2.1.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.1)
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.5.0
       viem:
         specifier: ^2.28.3
         version: 2.28.3(typescript@5.8.3)

@@ -1,5 +1,5 @@
 import type { Address as SolanaAddressLikeImport } from "@solana/kit";
-import type { Address as EvmAddressLikeImport, Hash } from "viem";
+import type { Address as EvmAddressLikeImport } from "viem";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;

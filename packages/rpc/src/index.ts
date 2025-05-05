@@ -1,9 +1,8 @@
-import type { EvmAddressLike, EvmChainIds } from "@autofun/types";
+import type { EvmAddressLike, EvmChainIds, SolanaAddressLike } from "@autofun/types";
 import { createPublicClient, erc20Abi, getAddress, http, type PublicClient, type ReadContractParameters } from "viem";
-import { CHAINID_TO_VIEM_CHAIN } from "@autofun/constants";
+import { CHAINID_TO_VIEM_CHAIN, SOLANA_RPC_URLS } from "@autofun/constants";
 import type { SolanaNetworkIds } from "@autofun/types";
-import { NETWORKID_TO_SOLANA_CLUSTER } from "@autofun/constants";
-import { createSolanaRpc, createSolanaRpcApi } from "@solana/kit";
+import { createSolanaRpc, getPublicKeyFromAddress } from "@solana/kit";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -60,7 +59,14 @@ export class SolanaRpcProvider {
 	client;
 
 	constructor(networkId: SolanaNetworkIds) {
-		if (!NETWORKID_TO_SOLANA_CLUSTER[networkId]) throw new Error("NetworkId does not exist in NETWORKID_TO_CLUSTER");
-		this.client = createSolanaRpc("https://api.mainnet-beta.solana.com");
+		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
+		if (!rpc) throw new Error(`No RPC provider configured for Solana: ${networkId}`);
+		this.client = createSolanaRpc(rpc);
+	}
+
+	async getTokenMetadata(contractAddress: SolanaAddressLike) {
+		const mintAddress = getPublicKeyFromAddress(contractAddress);
+
+		return true;
 	}
 }

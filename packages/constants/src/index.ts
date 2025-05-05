@@ -2,7 +2,9 @@ import { EvmChainIds, type EvmAddressLike } from "@autofun/types";
 import { getAddress, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@autofun/types";
-import type { Cluster } from "@solana/kit";
+import dotenv from "dotenv";
+import type { ClusterUrl } from "@solana/kit";
+dotenv.config();
 
 export const UNISWAP_V4_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 	[EvmChainIds.EthereumMainnet]: getAddress("0x66a9893cc07d91d95644aedd05d03f95e1dba8af"),
@@ -25,7 +27,17 @@ export const CHAINID_TO_VIEM_CHAIN: Record<EvmChainIds, Chain> = {
 	[EvmChainIds.BaseSepolia]: baseSepolia,
 };
 
-export const NETWORKID_TO_SOLANA_CLUSTER: Record<SolanaNetworkIds, Cluster> = {
-	[SolanaNetworkIds.Mainnet]: "mainnet-beta",
-	[SolanaNetworkIds.Devnet]: "devnet",
+const alchemyApiKey = process.env.ALCHEMY_API_KEY;
+const heliusApiKey = process.env.HELIUS_API_KEY;
+
+export const EVM_RPC_URLS: Record<EvmChainIds, string[]> = {
+	[EvmChainIds.EthereumMainnet]: [...(alchemyApiKey ? [`https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
+	[EvmChainIds.EthereumSepolia]: [...(alchemyApiKey ? [`https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
+	[EvmChainIds.BaseMainnet]: [...(alchemyApiKey ? [`https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
+	[EvmChainIds.BaseSepolia]: [...(alchemyApiKey ? [`https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
+};
+
+export const SOLANA_RPC_URLS: Record<SolanaNetworkIds, ClusterUrl[]> = {
+	[SolanaNetworkIds.Mainnet]: [...(heliusApiKey ? [`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
+	[SolanaNetworkIds.Devnet]: [...(heliusApiKey ? [`https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
 };
