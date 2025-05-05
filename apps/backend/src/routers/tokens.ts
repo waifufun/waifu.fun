@@ -71,23 +71,22 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (chain === "evm") {
 			const rpc = new EVMRpcProvider(chainId);
 
-			/** TODO - Use multicall */
-			const name = await rpc.readErc20Contract(getAddress(contractAddress), "name", []);
-			const ticker = await rpc.readErc20Contract(getAddress(contractAddress), "symbol", []);
-			const decimals = await rpc.readErc20Contract(getAddress(contractAddress), "decimals", []);
-			const totalSupply = await rpc.readErc20Contract(getAddress(contractAddress), "totalSupply", []);
+			const [name, ticker, decimals, totalSupply] = await rpc.readErc20Multicall(
+				getAddress(contractAddress),
+				["name", "symbol", "decimals", "totalSupply"],
+				[],
+			);
 
-			if (BigInt(totalSupply) <= 0n) throw new Error("Total supply of token is 0");
+			if (!totalSupply || BigInt(totalSupply) <= 0n) throw new Error("Total supply of token is 0");
 			if (!name) throw new Error("Token has no name");
 			if (!ticker) throw new Error("Token has no ticker");
 			if (!decimals) throw new Error("Token has no decimals");
 
+			/** Let's try to fetch some additional information from Dexscreener */
 			const dexScreenerCall = (await fetch(`https://api.dexscreener.com/tokens/v1/base/${contractAddress}`).then(
 				async (resp) => await resp.json(),
 			)) as { marketCap: number; pairCreatedAt: Date; priceUsd: number; volume: { h24: number } }[];
-
 			const dexscreenerData = dexScreenerCall?.[0];
-
 			if (!dexscreenerData) throw new Error("Token information could not be determined");
 
 			const image =

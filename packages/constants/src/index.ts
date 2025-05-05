@@ -1,6 +1,8 @@
 import { EvmChainIds, type EvmAddressLike } from "@autofun/types";
 import { getAddress, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
+import { SolanaNetworkIds } from "@autofun/types";
+import type { Cluster } from "@solana/kit";
 
 export const UNISWAP_V4_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 	[EvmChainIds.EthereumMainnet]: getAddress("0x66a9893cc07d91d95644aedd05d03f95e1dba8af"),
@@ -21,4 +23,9 @@ export const CHAINID_TO_VIEM_CHAIN: Record<EvmChainIds, Chain> = {
 	[EvmChainIds.EthereumSepolia]: sepolia,
 	[EvmChainIds.BaseMainnet]: base,
 	[EvmChainIds.BaseSepolia]: baseSepolia,
+};
+
+export const NETWORKID_TO_SOLANA_CLUSTER: Record<SolanaNetworkIds, Cluster> = {
+	[SolanaNetworkIds.Mainnet]: "mainnet-beta",
+	[SolanaNetworkIds.Devnet]: "devnet",
 };

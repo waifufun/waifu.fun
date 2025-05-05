@@ -1,6 +1,9 @@
 import type { EvmAddressLike, EvmChainIds } from "@autofun/types";
 import { createPublicClient, erc20Abi, getAddress, http, type PublicClient, type ReadContractParameters } from "viem";
 import { CHAINID_TO_VIEM_CHAIN } from "@autofun/constants";
+import type { SolanaNetworkIds } from "@autofun/types";
+import { NETWORKID_TO_SOLANA_CLUSTER } from "@autofun/constants";
+import { createSolanaRpc, createSolanaRpcApi } from "@solana/kit";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -48,6 +51,16 @@ export class EVMRpcProvider {
 
 		return await this.client.multicall({
 			contracts: calls,
+			allowFailure: false,
 		});
+	}
+}
+
+export class SolanaRpcProvider {
+	client;
+
+	constructor(networkId: SolanaNetworkIds) {
+		if (!NETWORKID_TO_SOLANA_CLUSTER[networkId]) throw new Error("NetworkId does not exist in NETWORKID_TO_CLUSTER");
+		this.client = createSolanaRpc("https://api.mainnet-beta.solana.com");
 	}
 }
