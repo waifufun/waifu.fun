@@ -1,6 +1,8 @@
-import type { Address as SolanaAddressLike } from "@solana/kit";
-import type { Address as EvmAddressLike, Hash } from "viem";
+import type { Address as SolanaAddressLikeImport } from "@solana/kit";
+import type { Address as EvmAddressLikeImport, Hash } from "viem";
 
+export type EvmAddressLike = EvmAddressLikeImport;
+export type SolanaAddressLike = SolanaAddressLikeImport;
 export interface IUser {
 	address: SolanaAddressLike | EvmAddressLike;
 	points: number;
@@ -13,15 +15,13 @@ export type AddressLike = SolanaAddressLike | EvmAddressLike;
 export enum SolanaNetworkIds {
 	Mainnet = 101,
 	Devnet = 103,
-	Testnet = 102,
 }
 
 export enum EvmChainIds {
 	BaseMainnet = 8453,
+	BaseSepolia = 84532,
 	EthereumMainnet = 1,
 	EthereumSepolia = 11155111,
-	BNBSmartChainMainnet = 56,
-	BNBSmartChainTestnet = 97,
 }
 
 export type TURLLike = `https://${string}` | `http://${string}`;
