@@ -11,6 +11,7 @@ const schema = new Schema<IToken, Mongoose.Model<IToken>>(
 		image: { type: String, required: true },
 		price: { type: Number, default: 0 },
 		imported: { type: Boolean, default: false },
+		decimals: { type: Number, required: true },
 		marketcap: { type: Number, default: 0 },
 		volume24h: { type: Number, default: 0 },
 		totalSupply: { type: Number, required: true, default: 0 },
@@ -20,15 +21,14 @@ const schema = new Schema<IToken, Mongoose.Model<IToken>>(
 			discord: { type: String },
 			telegram: { type: String },
 		},
-		transactionHash: { type: String, required: true },
 		hidden: { type: Boolean, default: false },
 		featured: { type: Boolean, default: false },
-		creator: { type: String, required: true },
+		creator: { type: String },
 	},
-	{ timestamps: true },
+	{ timestamps: true, versionKey: false },
 );
 
-schema.index({ contractAddress: 1 }, { unique: true });
+schema.index({ contractAddress: 1, chain: 1, chainId: 1 }, { unique: true });
 
 const Model = Mongoose.model<IToken, Mongoose.Model<IToken>>("Token", schema);
 

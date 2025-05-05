@@ -39,14 +39,14 @@ export interface IToken<T extends TChain = TChain> {
 	totalSupply: number;
 	marketcap: number;
 	volume24h: number;
+	decimals: number;
 	socials: ITokenSocials;
-	transactionHash: T extends "solana" ? string : Hash;
-	creator: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
+	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;
 	featured?: boolean;
 	imported?: boolean;
-	createdAt: Date;
-	updatedAt: Date;
+	createdAt?: Date;
+	updatedAt?: Date;
 }
 
 export interface ITokenSocials {

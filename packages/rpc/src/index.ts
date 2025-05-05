@@ -27,4 +27,27 @@ export class EVMRpcProvider {
 			args,
 		});
 	}
+
+	async readErc20Multicall(contractAddress: EvmAddressLike, functionNames: Erc20FunctionName[], args: Erc20Args[]) {
+		const contract = {
+			address: getAddress(contractAddress),
+			abi: erc20Abi,
+		} as const;
+		const calls = [];
+
+		for (let i = 0; i < functionNames?.length; i++) {
+			const functionName = functionNames[i];
+			if (functionName !== undefined) {
+				calls.push({
+					...contract,
+					functionName,
+					args: args?.[i] ? args?.[i] : undefined,
+				});
+			}
+		}
+
+		return await this.client.multicall({
+			contracts: calls,
+		});
+	}
 }

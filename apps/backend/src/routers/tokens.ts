@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, IToken, TChain, TChainId } from "@autofun/types";
+import type { AddressLike, IToken, TChain, TChainId, TURLLike } from "@autofun/types";
 import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
 import { EVMRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
@@ -70,9 +70,53 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		if (chain === "evm") {
 			const rpc = new EVMRpcProvider(chainId);
+
+			/** TODO - Use multicall */
 			const name = await rpc.readErc20Contract(getAddress(contractAddress), "name", []);
-			const symbol = await rpc.readErc20Contract(getAddress(contractAddress), "symbol", []);
+			const ticker = await rpc.readErc20Contract(getAddress(contractAddress), "symbol", []);
+			const decimals = await rpc.readErc20Contract(getAddress(contractAddress), "decimals", []);
 			const totalSupply = await rpc.readErc20Contract(getAddress(contractAddress), "totalSupply", []);
+
+			if (BigInt(totalSupply) <= 0n) throw new Error("Total supply of token is 0");
+			if (!name) throw new Error("Token has no name");
+			if (!ticker) throw new Error("Token has no ticker");
+			if (!decimals) throw new Error("Token has no decimals");
+
+			const dexScreenerCall = (await fetch(`https://api.dexscreener.com/tokens/v1/base/${contractAddress}`).then(
+				async (resp) => await resp.json(),
+			)) as { marketCap: number; pairCreatedAt: Date; priceUsd: number; volume: { h24: number } }[];
+
+			const dexscreenerData = dexScreenerCall?.[0];
+
+			if (!dexscreenerData) throw new Error("Token information could not be determined");
+
+			const image =
+				`https://dd.dexscreener.com/ds-data/tokens/base/${contractAddress.toLowerCase()}.png?size=xl` as TURLLike;
+
+			const marketcap = dexscreenerData?.marketCap || 0;
+			const createdAt = dexscreenerData?.pairCreatedAt || new Date();
+			const price = dexscreenerData?.priceUsd || 0;
+			const volume24h = dexscreenerData?.volume?.h24 || 0;
+
+			const tokenData: IToken<"evm"> = {
+				chain: "evm",
+				chainId,
+				contractAddress: getAddress(contractAddress),
+				ticker: String(name),
+				name: String(name),
+				imported: true,
+				image,
+				price,
+				marketcap,
+				volume24h,
+				socials: {},
+				hidden: false,
+				decimals: Number(decimals),
+				totalSupply: Number(totalSupply),
+				createdAt,
+			};
+
+			await DB.Token.create([tokenData]);
 		} else if (chain === "solana") {
 		}
 
