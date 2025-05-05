@@ -1,25 +1,26 @@
 {
-  "name": "@autofun/database",
-  "type": "module",
-  "version": "0.0.0",
-  "license": "MIT",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "sideEffects": false,
-  "scripts": {
-    "check": "tsc --noEmit"
-  },
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "dependencies": {
-    "dotenv": "^16.5.0",
-    "mongoose": "^8.14.1",
-    "@autofun/logger": "workspace:*"
-  },
-  "devDependencies": {
-    "@autofun/types": "workspace:*",
-    "@types/node": "^22.15.3",
-    "typescript": "^5.4.5"
-  }
+	"name": "@autofun/database",
+	"type": "module",
+	"version": "0.0.0",
+	"license": "MIT",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"sideEffects": false,
+	"scripts": {
+		"check": "tsc --noEmit",
+		"lint": "biome format . --write"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"dotenv": "^16.5.0",
+		"mongoose": "^8.14.1",
+		"@autofun/logger": "workspace:*"
+	},
+	"devDependencies": {
+		"@autofun/types": "workspace:*",
+		"@types/node": "^22.15.3",
+		"typescript": "^5.4.5"
+	}
 }

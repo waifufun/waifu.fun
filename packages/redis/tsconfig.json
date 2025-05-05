@@ -1,41 +1,41 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    // explicit strict mode
-    "strict": true,
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		// explicit strict mode
+		"strict": true,
 
-    // output directory
-    "outDir": "dist",
-    "rootDir": "src",
+		// output directory
+		"outDir": "dist",
+		"rootDir": "src",
 
-    // path aliases
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
+		// path aliases
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"]
+		},
 
-    // build configuration
-    "target": "ESNext",
-    "module": "ESNext",
-    "lib": ["ES2022"], // ["DOM", "DOM.Iterable"],
+		// build configuration
+		"target": "ESNext",
+		"module": "ESNext",
+		"lib": ["ES2022"], // ["DOM", "DOM.Iterable"],
 
-    // preserve jsdoc comments for intellisense
-    "removeComments": false,
+		// preserve jsdoc comments for intellisense
+		"removeComments": false,
 
-    // generate types and their sourcemaps
-    "declaration": true,
-    "declarationMap": true,
+		// generate types and their sourcemaps
+		"declaration": true,
+		"declarationMap": true,
 
-    // linting
-    "strictFunctionTypes": true
-  },
-  "include": ["src/**/*.d.ts", "src/**/*.ts"],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "test",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/**/test/**"
-  ]
+		// linting
+		"strictFunctionTypes": true
+	},
+	"include": ["src/**/*.d.ts", "src/**/*.ts"],
+	"exclude": [
+		"dist",
+		"node_modules",
+		"test",
+		"src/**/*.spec.ts",
+		"src/**/*.test.ts",
+		"src/**/test/**"
+	]
 }

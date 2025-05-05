@@ -9,9 +9,10 @@
     "docker:up": "docker compose up -d && exit 0",
     "docker:down": "docker compose down",
     "prettier": "prettier --write .",
-    "lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm run /^lint:.+/"
+    "lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm -r lint"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "esbuild": "^0.21.5",
     "tsx": "^4.15.1",
     "typescript": "^5.4.5"

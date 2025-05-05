@@ -1,24 +1,25 @@
 {
-  "name": "@autofun/types",
-  "type": "module",
-  "version": "0.0.0",
-  "license": "MIT",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "sideEffects": false,
-  "scripts": {
-    "check": "tsc --noEmit"
-  },
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "devDependencies": {
-    "@types/bs58": "^5.0.0",
-    "bs58": "^6.0.0",
-    "typescript": "^5.4.5"
-  },
-  "dependencies": {
-    "@solana/kit": "^2.1.0",
-    "viem": "^2.28.3"
-  }
+	"name": "@autofun/types",
+	"type": "module",
+	"version": "0.0.0",
+	"license": "MIT",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"sideEffects": false,
+	"scripts": {
+		"check": "tsc --noEmit",
+		"lint": "biome format . --write"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"devDependencies": {
+		"@types/bs58": "^5.0.0",
+		"bs58": "^6.0.0",
+		"typescript": "^5.4.5"
+	},
+	"dependencies": {
+		"@solana/kit": "^2.1.0",
+		"viem": "^2.28.3"
+	}
 }
