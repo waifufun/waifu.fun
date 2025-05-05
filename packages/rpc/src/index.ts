@@ -9,6 +9,7 @@ export class EVMRpcProvider {
 	client: PublicClient;
 
 	constructor(chainId: EvmChainIds) {
+		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
 		this.client = createPublicClient({
 			batch: {
 				multicall: true,

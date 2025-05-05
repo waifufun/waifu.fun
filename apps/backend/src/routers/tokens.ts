@@ -1,7 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, IToken, TChain } from "@autofun/types";
+import type { AddressLike, IToken, TChain, TChainId } from "@autofun/types";
 import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
+import { EVMRpcProvider, } from "@autofun/rpc";
+import { getAddress } from "viem";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -20,7 +22,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	fastify.get<{
 		Params: {
 			chain: TChain;
-			chainId: Omit<IToken, "chainId">;
+			chainId: TChainId;
 			contractAddress: AddressLike;
 		};
 		Reply: IToken | null;
@@ -47,7 +49,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		Body: {
 			contractAddress: AddressLike;
 			chain: TChain;
-			chainId: Omit<IToken, "chainId">;
+			chainId: TChainId;
 		};
 	}>("/import", async (request) => {
 		const { contractAddress, chain, chainId } = request.body;
@@ -65,6 +67,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			.lean();
 
 		if (exists) throw new Error("Token already exists");
+
+		if (chain === "evm") {
+			const rpc = new EVMRpcProvider(chainId);
+			const name = await rpc.readErc20Contract(getAddress(contractAddress), "name", []);
+			const symbol = await rpc.readErc20Contract(getAddress(contractAddress), "symbol", []);
+			const totalSupply = await rpc.readErc20Contract(getAddress(contractAddress), "totalSupply", []);
+		} else if (chain === "solana") {
+		}
 
 		return true;
 	});

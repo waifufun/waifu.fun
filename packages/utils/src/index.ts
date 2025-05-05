@@ -1,4 +1,10 @@
-import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@autofun/types";
+import {
+	EvmChainIds,
+	SolanaNetworkIds,
+	type AddressLike,
+	type TChain,
+	type TChainId,
+} from "@autofun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { isAddress as isEvmAddress } from "viem";
 
@@ -39,7 +45,7 @@ export const isSupportedAddress = (address: AddressLike): boolean => {
  * @param chainId - The chain ID to validate
  * @returns True if the chain ID is valid for the specified blockchain type, false otherwise
  */
-export const isChainIdAllowedForChain = (chain: TChain, chainId: Omit<IToken, "chainId">) => {
+export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
 	if (!chain || !chainId) return false;
 	if (chain === "solana") {
 		const solanaChainIds = Object.values(SolanaNetworkIds);

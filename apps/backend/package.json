@@ -19,6 +19,7 @@
 		"@autofun/types": "workspace:*"
 	},
 	"dependencies": {
+		"@autofun/rpc": "workspace:*",
 		"@autofun/utils": "workspace:*",
 		"@autofun/database": "workspace:*",
 		"@autofun/logger": "workspace:*",
