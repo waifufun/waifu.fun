@@ -12,18 +12,20 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"lint": "biome format . --write && biome lint . --fix",
-		"check": "tsc --noEmit",
-		"build": "pnpm check && rimraf dist && tsx build.ts"
+		"build": "rimraf dist && tsx build.ts",
+		"build:sourcemap": "rimraf dist && tsx build.ts --sourcemap"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*"
+		"@autofun/types": "workspace:*",
+		"@types/node": "^22.15.3",
+		"rimraf": "^6.0.1"
 	},
 	"dependencies": {
-		"@autofun/rpc": "workspace:*",
-		"@autofun/utils": "workspace:*",
 		"@autofun/database": "workspace:*",
 		"@autofun/logger": "workspace:*",
 		"@autofun/redis": "workspace:*",
+		"@autofun/rpc": "workspace:*",
+		"@autofun/utils": "workspace:*",
 		"@fastify/cors": "^11.0.1",
 		"@fastify/helmet": "^13.0.1",
 		"@solana/kit": "^2.1.0",

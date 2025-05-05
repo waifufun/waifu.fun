@@ -3,9 +3,7 @@ import logger from "@autofun/logger";
 import dotenv from "dotenv";
 import Mongoose from "mongoose";
 
-dotenv.config({
-	path: "../../.env",
-});
+dotenv.config();
 
 Mongoose.set("strictQuery", false);
 

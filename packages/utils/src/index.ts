@@ -1,10 +1,4 @@
-import {
-	EvmChainIds,
-	SolanaNetworkIds,
-	type AddressLike,
-	type TChain,
-	type TChainId,
-} from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type AddressLike, type TChain, type TChainId } from "@autofun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { isAddress as isEvmAddress } from "viem";
 

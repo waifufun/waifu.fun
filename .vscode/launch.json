@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Backend",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/apps/backend/dist/index.js",
+      "outFiles": ["${workspaceFolder}/apps/backend/dist/**/*.js"],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/apps/backend/dist/**/*.js",
+        "${workspaceFolder}/packages/*/dist/**/*.js"
+      ],
+      "preLaunchTask": "build:sourcemaps",
+      "envFile": "${workspaceFolder}/apps/backend/.env"
+    }
+  ]
+}

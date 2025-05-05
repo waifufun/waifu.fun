@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build:sourcemaps",
+        "type": "shell",
+        "command": "pnpm",
+        "args": ["--filter", "backend", "build:sourcemap"],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        },
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared"
+        },
+        "problemMatcher": "$tsc"
+      }
+    ]
+  }
+  

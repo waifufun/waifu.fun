@@ -2,9 +2,7 @@ import dotenv from "dotenv";
 import logger from "@autofun/logger";
 import IORedis from "ioredis";
 
-dotenv.config({
-	path: "../../.env",
-});
+dotenv.config();
 
 const port = process.env.REDIS_PORT;
 const host = process.env.REDIS_HOST;

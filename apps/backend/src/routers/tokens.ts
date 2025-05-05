@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
 import type { AddressLike, IToken, TChain, TChainId } from "@autofun/types";
 import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
-import { EVMRpcProvider, } from "@autofun/rpc";
+import { EVMRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
