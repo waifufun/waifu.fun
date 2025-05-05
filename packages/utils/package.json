@@ -13,8 +13,12 @@
 	"exports": {
 		".": "./src/index.ts"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"@solana/kit": "^2.1.0",
+		"viem": "^2.28.3"
+	},
 	"devDependencies": {
+		"@autofun/types": "workspace:*",
 		"typescript": "^5.4.5"
 	}
 }

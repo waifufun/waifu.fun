@@ -44,6 +44,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		};
 	}>("/import", async (request) => {
 		const body = request.body;
+		const contractAddress = body.contractAddress;
 		return true;
 	});
 }
