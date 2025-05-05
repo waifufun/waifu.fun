@@ -1,5 +1,6 @@
 import { EvmChainIds, type EvmAddressLike } from "@autofun/types";
-import { getAddress } from "viem";
+import { getAddress, type Chain } from "viem";
+import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 
 export const UNISWAP_V4_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 	[EvmChainIds.EthereumMainnet]: getAddress("0x66a9893cc07d91d95644aedd05d03f95e1dba8af"),
@@ -15,9 +16,9 @@ export const WETH_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 	[EvmChainIds.BaseSepolia]: getAddress("0x4200000000000000000000000000000000000006"),
 };
 
-export const MULTICALL_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
-	[EvmChainIds.EthereumMainnet]: getAddress("0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"),
-	[EvmChainIds.EthereumSepolia]: getAddress("0xD7F33bCdb21b359c8ee6F0251d30E94832baAd07"),
-	[EvmChainIds.BaseMainnet]: getAddress("0x091e99cb1C49331a94dD62755D168E941AbD0693"),
-	[EvmChainIds.BaseSepolia]: getAddress("0xd867e273eAbD6c853fCd0Ca0bFB6a3aE6491d2C1"),
+export const CHAINID_TO_VIEM_CHAIN: Record<EvmChainIds, Chain> = {
+	[EvmChainIds.EthereumMainnet]: mainnet,
+	[EvmChainIds.EthereumSepolia]: sepolia,
+	[EvmChainIds.BaseMainnet]: base,
+	[EvmChainIds.BaseSepolia]: baseSepolia,
 };
