@@ -1,6 +1,14 @@
 import type { EvmAddressLike, EvmChainIds, SolanaAddressLike } from "@autofun/types";
-import { createPublicClient, erc20Abi, getAddress, http, type PublicClient, type ReadContractParameters } from "viem";
-import { CHAINID_TO_VIEM_CHAIN, SOLANA_RPC_URLS } from "@autofun/constants";
+import {
+	createPublicClient,
+	erc20Abi,
+	fallback,
+	getAddress,
+	http,
+	type PublicClient,
+	type ReadContractParameters,
+} from "viem";
+import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc, getPublicKeyFromAddress } from "@solana/kit";
 
@@ -12,12 +20,16 @@ export class EVMRpcProvider {
 
 	constructor(chainId: EvmChainIds) {
 		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
+		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
+			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
+		}
+		
 		this.client = createPublicClient({
 			batch: {
 				multicall: true,
 			},
 			chain: CHAINID_TO_VIEM_CHAIN[chainId],
-			transport: http(),
+			transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
 		});
 	}
 
