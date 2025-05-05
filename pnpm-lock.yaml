@@ -32,6 +32,9 @@ importers:
       '@autofun/redis':
         specifier: workspace:*
         version: link:../../packages/redis
+      '@autofun/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@fastify/cors':
         specifier: ^11.0.1
         version: 11.0.1
