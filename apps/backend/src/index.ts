@@ -15,7 +15,7 @@ fastify.register(cors, {
 	origin: "*",
 });
 
-fastify.get("/", function (_, reply) {
+fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
 });
 

@@ -11,7 +11,7 @@
 	},
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
-		"lint": "biome format . --write",
+		"lint": "biome format . --write && biome lint . --fix",
 		"check": "tsc --noEmit",
 		"build": "pnpm check && rimraf dist && tsx build.ts"
 	},

@@ -8,7 +8,7 @@
 	"sideEffects": false,
 	"scripts": {
 		"check": "tsc --noEmit",
-		"lint": "biome format . --write"
+		"lint": "biome format . --write && biome lint . --fix"
 	},
 	"exports": {
 		".": "./src/index.ts"
