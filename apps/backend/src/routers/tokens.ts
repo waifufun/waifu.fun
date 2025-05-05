@@ -87,6 +87,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				async (resp) => await resp.json(),
 			)) as { marketCap: number; pairCreatedAt: Date; priceUsd: number; volume: { h24: number } }[];
 			const dexscreenerData = dexScreenerCall?.[0];
+			
 			if (!dexscreenerData) throw new Error("Token information could not be determined");
 
 			const image =

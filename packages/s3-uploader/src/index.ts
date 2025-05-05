@@ -27,6 +27,13 @@ const s3Credentials: aws.S3ClientConfig = {
 
 export const s3 = new aws.S3(s3Credentials);
 
+/**
+ * Uploads a file to S3
+ * @param bucket The S3 bucket folder to upload to
+ * @param file The file object containing data and mimetype
+ * @param fileName The name to give the file in S3 (without extension)
+ * @returns Promise<void>
+ */
 export const upload = async (bucket: string, file: IFile, fileName: string) => {
 	const command = new aws.PutObjectCommand({
 		Bucket: BUCKET_NAME,
@@ -38,6 +45,11 @@ export const upload = async (bucket: string, file: IFile, fileName: string) => {
 	await s3.send(command);
 };
 
+/**
+ * Converts a base64 encoded image string to a Buffer
+ * @param image The base64 encoded image string
+ * @returns Buffer | null - Returns null if the input is falsy
+ */
 export const getBase64Buffer = (image: string | undefined | null) => {
 	if (!image) return null;
 	const imageSplit = String(image).split(";base64,").pop();
@@ -45,6 +57,12 @@ export const getBase64Buffer = (image: string | undefined | null) => {
 	return imgBuffer;
 };
 
+/**
+ * Deletes a file from S3
+ * @param bucket The S3 bucket folder where the file is stored
+ * @param fileName The name of the file to delete (including extension)
+ * @returns Promise<void>
+ */
 export const deleteFile = async (bucket: string, fileName: string) => {
 	const data = new aws.DeleteObjectCommand({
 		Bucket: BUCKET_NAME,
@@ -54,6 +72,15 @@ export const deleteFile = async (bucket: string, fileName: string) => {
 	await s3.send(data);
 };
 
+/**
+ * Uploads a base64 encoded image to S3
+ * @param image The base64 encoded image string
+ * @param fileName The name to give the file in S3 (without extension)
+ * @param bucket The S3 bucket folder to upload to
+ * @param width Optional width to resize the image to (default: 750)
+ * @param height Optional height to resize the image to (default: 750)
+ * @returns Promise<boolean> indicating success or failure
+ */
 export const uploadBase64Image = async (
 	image: string | undefined | null,
 	fileName: string,
@@ -72,5 +99,40 @@ export const uploadBase64Image = async (
 	} else {
 		return false;
 	}
+	return true;
+};
+
+/**
+ * Uploads an image from a direct URL to S3
+ * @param imageUrl The URL of the image to upload
+ * @param fileName The name to give the file in S3 (without extension)
+ * @param bucket The S3 bucket folder to upload to
+ * @param width Optional width to resize the image to
+ * @param height Optional height to resize the image to
+ * @returns Promise<boolean> indicating success or failure
+ */
+export const uploadImageFromUrl = async (
+	imageUrl: string,
+	fileName: string,
+	bucket: string,
+	width?: number,
+	height?: number,
+): Promise<boolean> => {
+	const response = await fetch(imageUrl);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch image from URL: ${imageUrl}, status: ${response.status}`);
+	}
+
+	const imageArrayBuffer = await response.arrayBuffer();
+	const imageBuffer = Buffer.from(imageArrayBuffer);
+
+	const compressed = await sharp(imageBuffer)
+		.resize({ height: height || 750, width: width || 750 })
+		.webp({ lossless: true })
+		.toBuffer();
+
+	await upload(bucket, { data: compressed, mimetype: "image/webp" }, fileName);
+
 	return true;
 };
