@@ -9,8 +9,8 @@ export default defineConfig({
 	outDir: "dist",
 	clean: true,
 	sourcemap: true,
+	external: ["sharp"],
 	minify: process.env.NODE_ENV !== "development",
-	external: [],
 	esbuildOptions(options) {
 		// ensure esbuild used internally by tsup is configured for tree-shaking
 		options.treeShaking = true;

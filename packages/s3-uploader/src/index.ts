@@ -1,6 +1,6 @@
 import * as aws from "@aws-sdk/client-s3";
 import logger from "@autofun/logger";
-import type { IFile } from "@autofun/types";
+import type { IFile, TURLLike } from "@autofun/types";
 // @ts-ignore
 import mime from "mime-types";
 import sharp from "sharp";
@@ -10,7 +10,7 @@ dotenv.config();
 
 const BUCKET_NAME = "autofun";
 
-if (!process.env.AWS_ACCESS_KEY || !process.env.AWS_SECRET_KEY || !process.env.S3_STORAGE_ENDPOINT) {
+if (!process.env.S3_ACCESS_KEY || !process.env.S3_SECRET_KEY || !process.env.S3_STORAGE_ENDPOINT) {
 	logger.error("AWS_ACCESS_KEY or AWS_SECRET_KEY missing from ENV");
 	process.exit(1);
 }
@@ -19,13 +19,17 @@ const s3Credentials: aws.S3ClientConfig = {
 	region: process.env.S3_REGION || "us-east-1",
 	endpoint: process.env.S3_STORAGE_ENDPOINT,
 	credentials: {
-		accessKeyId: process.env.AWS_ACCESS_KEY,
-		secretAccessKey: process.env.AWS_SECRET_KEY,
+		accessKeyId: process.env.S3_ACCESS_KEY,
+		secretAccessKey: process.env.S3_SECRET_KEY,
 	},
 	forcePathStyle: false,
 };
 
 export const s3 = new aws.S3(s3Credentials);
+
+export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
+	return `${process.env.S3_STORAGE_ENDPOINT}/${bucket}/${fileName}` as TURLLike;
+};
 
 /**
  * Uploads a file to S3
@@ -117,7 +121,7 @@ export const uploadImageFromUrl = async (
 	bucket: string,
 	width?: number,
 	height?: number,
-): Promise<boolean> => {
+): Promise<TURLLike> => {
 	const response = await fetch(imageUrl);
 
 	if (!response.ok) {
@@ -134,5 +138,5 @@ export const uploadImageFromUrl = async (
 
 	await upload(bucket, { data: compressed, mimetype: "image/webp" }, fileName);
 
-	return true;
+	return getFileUrl(`${fileName}.webp`, bucket);
 };

@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, IToken, TChain, TChainId, TURLLike } from "@autofun/types";
+import type { AddressLike, IToken, TChain, TChainId } from "@autofun/types";
 import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
 import { EVMRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
+import { uploadImageFromUrl } from "@autofun/s3-uploader";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -87,11 +88,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				async (resp) => await resp.json(),
 			)) as { marketCap: number; pairCreatedAt: Date; priceUsd: number; volume: { h24: number } }[];
 			const dexscreenerData = dexScreenerCall?.[0];
-			
+
 			if (!dexscreenerData) throw new Error("Token information could not be determined");
 
-			const image =
-				`https://dd.dexscreener.com/ds-data/tokens/base/${contractAddress.toLowerCase()}.png?size=xl` as TURLLike;
+			const image = await uploadImageFromUrl(
+				`https://dd.dexscreener.com/ds-data/tokens/base/${contractAddress.toLowerCase()}.png?size=xl`,
+				`${chain}:${chainId}:${contractAddress}`,
+				"token-images",
+			);
 
 			const marketcap = dexscreenerData?.marketCap || 0;
 			const createdAt = dexscreenerData?.pairCreatedAt || new Date();
