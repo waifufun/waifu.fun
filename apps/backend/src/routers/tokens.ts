@@ -14,17 +14,25 @@ import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
 import { CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
+import redis from "@autofun/redis";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
 	fastify.get<{
 		Reply: { tokens: IToken[] };
 	}>("/", async (request, reply) => {
+		const cacheKey = "tokens";
+		const cache = await redis.get(cacheKey);
+		if (cache) {
+			return JSON.parse(cache);
+		}
 		const tokens = await DB.Token.find({
 			hidden: { $ne: true },
 		})
 			.limit(10)
 			.lean();
+
+		await redis.setex(cacheKey, 5, JSON.stringify({ tokens }));
 		return { tokens };
 	});
 
@@ -39,12 +47,20 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	}>("/:chain/:chainId/:contractAddress", async (request) => {
 		const { contractAddress, chain, chainId } = request.params;
 
+		const cacheKey = `${chain}:${chainId}:${contractAddress}`;
+		const cache = await redis.get(cacheKey);
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
 		const token = await DB.Token.findOne({
 			contractAddress,
 			chainId,
 			chain,
 			hidden: { $ne: true },
 		}).lean();
+
+		await redis.setex(cacheKey, 5, JSON.stringify(token));
 
 		return token;
 	});
