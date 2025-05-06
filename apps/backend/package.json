@@ -24,6 +24,7 @@
 		"@autofun/database": "workspace:*",
 		"@autofun/logger": "workspace:*",
 		"@autofun/redis": "workspace:*",
+		"@autofun/constants": "workspace:*",
 		"@autofun/rpc": "workspace:*",
 		"@autofun/s3-uploader": "workspace:*",
 		"@autofun/utils": "workspace:*",

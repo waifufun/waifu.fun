@@ -1,4 +1,4 @@
-import type { EvmAddressLike, EvmChainIds, SolanaAddressLike } from "@autofun/types";
+import type { EvmAddressLike, EvmChainIds, TURLLike } from "@autofun/types";
 import {
 	createPublicClient,
 	erc20Abi,
@@ -10,13 +10,15 @@ import {
 } from "viem";
 import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
 import type { SolanaNetworkIds } from "@autofun/types";
-import { createSolanaRpc, getPublicKeyFromAddress } from "@solana/kit";
+import { createSolanaRpc } from "@solana/kit";
+import { Metaplex } from "@metaplex-foundation/js";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
 
 export class EVMRpcProvider {
-	client: PublicClient;
+	public client: PublicClient;
 
 	constructor(chainId: EvmChainIds) {
 		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
@@ -68,17 +70,42 @@ export class EVMRpcProvider {
 }
 
 export class SolanaRpcProvider {
-	client;
+	public connection;
+	public client;
 
 	constructor(networkId: SolanaNetworkIds) {
 		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
 		if (!rpc) throw new Error(`No RPC provider configured for Solana: ${networkId}`);
+		this.connection = new Connection(rpc);
 		this.client = createSolanaRpc(rpc);
 	}
 
-	async getTokenMetadata(contractAddress: SolanaAddressLike) {
-		const mintAddress = getPublicKeyFromAddress(contractAddress);
+	getTokenMetadata = async (contractAddress: string) => {
+		const metaplex = new Metaplex(this.connection);
+		const mint = new PublicKey(contractAddress);
+		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
+		const uri = metadata?.uri || undefined;
 
-		return true;
-	}
+		if (!uri) throw new Error("No URI could be determined for token.");
+
+		const uriData = (await fetch(uri).then(async (resp) => await resp.json())) as {
+			name: string;
+			symbol: string;
+			description: string;
+			image: TURLLike;
+			showName: boolean;
+			createdOn: string;
+			twitter: string;
+			website: string;
+			discord: string;
+		};
+
+		return {
+			...metadata?.json,
+			totalSupply: metadata?.mint?.supply?.basisPoints?.toNumber() || 0,
+			creator: metadata?.creators?.[0]?.address?.toBase58(),
+			decimals: metadata?.mint?.decimals || 6,
+			...uriData,
+		};
+	};
 }

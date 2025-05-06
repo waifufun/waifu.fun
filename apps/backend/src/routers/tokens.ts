@@ -1,8 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, IToken, TChain, TChainId, TURLLike } from "@autofun/types";
+import type {
+	AddressLike,
+	IToken,
+	SolanaAddressLike,
+	SolanaNetworkIds,
+	TChain,
+	TChainId,
+	TURLLike,
+} from "@autofun/types";
 import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
-import { EVMRpcProvider } from "@autofun/rpc";
+import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
 import { CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
@@ -88,9 +96,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			if (!decimals) throw new Error("Token has no decimals");
 
 			/** Let's try to fetch some additional information from Dexscreener */
-			const dexScreenerCall = (await fetch(`https://api.dexscreener.com/tokens/v1/${dexscreenerChainName}/${contractAddress}`).then(
-				async (resp) => await resp.json(),
-			)) as {
+			const dexScreenerCall = (await fetch(
+				`https://api.dexscreener.com/tokens/v1/${dexscreenerChainName}/${contractAddress}`,
+			).then(async (resp) => await resp.json())) as {
 				marketCap: number;
 				pairCreatedAt: Date;
 				priceUsd: number;
@@ -140,6 +148,37 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			await DB.Token.create([tokenData]);
 		} else if (chain === "solana") {
+			const solanaChainId = chainId as unknown as SolanaNetworkIds;
+			const rpc = new SolanaRpcProvider(solanaChainId);
+
+			const metadata = await rpc.getTokenMetadata(contractAddress);
+			if (!metadata?.image) throw new Error("Token has no image");
+			const image = await uploadImageFromUrl(metadata?.image, `${chain}:${chainId}:${contractAddress}`, "token-images");
+
+			const tokenData: IToken<"solana"> = {
+				chain: "solana",
+				chainId: solanaChainId,
+				contractAddress: contractAddress as SolanaAddressLike,
+				ticker: String(metadata?.symbol),
+				name: String(metadata?.name),
+				imported: true,
+				image,
+				price: 0,
+				marketcap: 0,
+				volume24h: 0,
+				socials: {
+					twitter: (metadata?.twitter as TURLLike) || undefined,
+					website: (metadata?.website as TURLLike) || undefined,
+					discord: (metadata?.discord as TURLLike) || undefined,
+				},
+				hidden: false,
+				creator: (metadata?.creator as SolanaAddressLike) || undefined,
+				decimals: Number(metadata?.decimals),
+				totalSupply: Number(metadata?.totalSupply),
+				createdAt: new Date(),
+			};
+
+			await DB.Token.create([tokenData]);
 		}
 
 		return true;
