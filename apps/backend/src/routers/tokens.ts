@@ -1,10 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, IToken, TChain, TChainId } from "@autofun/types";
+import type { AddressLike, IToken, TChain, TChainId, TURLLike } from "@autofun/types";
 import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
 import { EVMRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
+import { CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -70,6 +71,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (exists) throw new Error("Token already exists");
 
 		if (chain === "evm") {
+			const dexscreenerChainName = CHAINID_TO_DEXSCREENER_NAME[chain][chainId];
+			if (!dexscreenerChainName) throw new Error("This token cannot be imported at this time");
+
 			const rpc = new EVMRpcProvider(chainId);
 
 			const [name, ticker, decimals, totalSupply] = await rpc.readErc20Multicall(
@@ -84,24 +88,33 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			if (!decimals) throw new Error("Token has no decimals");
 
 			/** Let's try to fetch some additional information from Dexscreener */
-			const dexScreenerCall = (await fetch(`https://api.dexscreener.com/tokens/v1/base/${contractAddress}`).then(
+			const dexScreenerCall = (await fetch(`https://api.dexscreener.com/tokens/v1/${dexscreenerChainName}/${contractAddress}`).then(
 				async (resp) => await resp.json(),
-			)) as { marketCap: number; pairCreatedAt: Date; priceUsd: number; volume: { h24: number } }[];
+			)) as {
+				marketCap: number;
+				pairCreatedAt: Date;
+				priceUsd: number;
+				volume: { h24: number };
+				info: { socials: { type: string; url: string }[]; websites: { label: string; url: string }[] };
+			}[];
+
 			const dexscreenerData = dexScreenerCall?.[0];
 
 			if (!dexscreenerData) throw new Error("Token information could not be determined");
 
 			const image = await uploadImageFromUrl(
-				`https://dd.dexscreener.com/ds-data/tokens/base/${contractAddress.toLowerCase()}.png?size=xl`,
+				`https://dd.dexscreener.com/ds-data/tokens/${dexscreenerChainName}/${contractAddress.toLowerCase()}.png?size=xl`,
 				`${chain}:${chainId}:${contractAddress}`,
 				"token-images",
 			);
 
-			const marketcap = dexscreenerData?.marketCap || 0;
-			const createdAt = dexscreenerData?.pairCreatedAt || new Date();
-			const price = dexscreenerData?.priceUsd || 0;
-			const volume24h = dexscreenerData?.volume?.h24 || 0;
+			const marketcap = dexscreenerData?.marketCap ? Number(dexscreenerData?.marketCap) : 0;
+			const createdAt = dexscreenerData?.pairCreatedAt ? new Date(dexscreenerData?.pairCreatedAt) : new Date();
+			const price = dexscreenerData?.priceUsd ? Number(dexscreenerData?.priceUsd) : 0;
+			const volume24h = dexscreenerData?.volume?.h24 ? Number(dexscreenerData?.volume?.h24) : 0;
 
+			const dexscreenerSocials = dexscreenerData?.info?.socials || [];
+			const dexscreenerWebsites = dexscreenerData?.info?.websites || [];
 			const tokenData: IToken<"evm"> = {
 				chain: "evm",
 				chainId,
@@ -113,7 +126,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				price,
 				marketcap,
 				volume24h,
-				socials: {},
+				socials: {
+					discord: (dexscreenerSocials?.find((social) => social.type === "discord")?.url as TURLLike) || undefined,
+					telegram: (dexscreenerSocials?.find((social) => social.type === "telegram")?.url as TURLLike) || undefined,
+					twitter: (dexscreenerSocials?.find((social) => social.type === "twitter")?.url as TURLLike) || undefined,
+					website: (dexscreenerWebsites?.find((website) => website?.label === "Website")?.url as TURLLike) || undefined,
+				},
 				hidden: false,
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),

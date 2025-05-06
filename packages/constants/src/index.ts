@@ -1,4 +1,4 @@
-import { EvmChainIds, type EvmAddressLike } from "@autofun/types";
+import { EvmChainIds, type EvmAddressLike, type TChain } from "@autofun/types";
 import { getAddress, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@autofun/types";
@@ -40,4 +40,19 @@ export const EVM_RPC_URLS: Record<EvmChainIds, string[]> = {
 export const SOLANA_RPC_URLS: Record<SolanaNetworkIds, ClusterUrl[]> = {
 	[SolanaNetworkIds.Mainnet]: [...(heliusApiKey ? [`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
 	[SolanaNetworkIds.Devnet]: [...(heliusApiKey ? [`https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
+};
+
+export const CHAINID_TO_DEXSCREENER_NAME: {
+	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
+} = {
+	evm: {
+		[EvmChainIds.EthereumMainnet]: "ethereum",
+		[EvmChainIds.EthereumSepolia]: undefined,
+		[EvmChainIds.BaseMainnet]: "base",
+		[EvmChainIds.BaseSepolia]: undefined,
+	},
+	solana: {
+		[SolanaNetworkIds.Mainnet]: "solana",
+		[SolanaNetworkIds.Devnet]: undefined,
+	},
 };
