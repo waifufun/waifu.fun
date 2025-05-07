@@ -81,20 +81,20 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
 
 /**
  * Enriches token objects with live market data from the Codex API.
- * 
+ *
  * This function takes an array of token objects and fetches current market data
  * including price, market capitalization, and 24-hour volume. It maintains the original
  * token properties while adding or updating these market-related fields.
- * 
+ *
  * @param tokensToPopulate - Array of token objects to be enriched with live market data
  * @returns Promise resolving to an array of token objects enhanced with market data
  *   (price, marketcap, volume24h)
- * 
+ *
  * @remarks
  * The function creates a query for each token using its contract address and network ID,
  * then makes a batch request to the Codex API. For tokens where data is available,
  * the function updates the original token objects with the retrieved market data.
- * 
+ *
  * If the Codex API doesn't return data for a particular token, the original token
  * object is returned with market values set to 0.
  */
