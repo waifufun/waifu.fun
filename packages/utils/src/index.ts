@@ -147,7 +147,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			/** If the record was already updated very recently, there is no need to do it again.
 			 * This can occur when the user first navigates to /token, and very shortly after to
 			 * a single token page */
-
 			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
 
 			if (secondsPassedSinceUpdate <= 10) {
@@ -177,6 +176,11 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
+
+			/* Remove the _id field so we dont return it anywhere **/
+			if (tokenRecord?._id) {
+				delete tokenRecord._id;
+			}
 		}
 	}
 

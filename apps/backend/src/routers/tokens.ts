@@ -15,6 +15,7 @@ import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
 import { CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
 import redis from "@autofun/redis";
+import type { PaginateOptions } from "mongoose";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -32,10 +33,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			hidden: { $ne: true },
 		};
 
-		const paginationOptions = {
+		const paginationOptions: PaginateOptions = {
 			page: 1,
 			lean: true,
 			limit: 50,
+			select: "-__v",
+			leanWithId: false,
 		};
 
 		const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
@@ -190,7 +193,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const rpc = new SolanaRpcProvider(solanaChainId);
 
 			const metadata = await rpc.getTokenMetadata(contractAddress);
+
 			if (!metadata?.image) throw new Error("Token has no image");
+
 			const image = await uploadImageFromUrl(metadata?.image, `${chain}:${chainId}:${contractAddress}`, "token-images");
 
 			const tokenData: IToken<"solana"> = {
