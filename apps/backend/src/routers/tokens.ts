@@ -64,6 +64,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const { contractAddress, chain, chainId } = request.params;
 
 		const cacheKey = `${chain}:${chainId}:${contractAddress}`;
+
 		const cache = await redis.get(cacheKey);
 		if (cache) {
 			return JSON.parse(cache);
@@ -76,7 +77,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			hidden: { $ne: true },
 		}).lean();
 
-		await redis.setex(cacheKey, 5, JSON.stringify(token));
+		if (!token) throw new Error("Token was not found");
+
+		const populatedToken = await populateTokensWithLiveData([token]);
+
+		await redis.setex(cacheKey, 8, JSON.stringify(populatedToken));
 
 		return token;
 	});
