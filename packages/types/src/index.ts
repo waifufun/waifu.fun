@@ -40,6 +40,7 @@ export interface IToken<T extends TChain = TChain> {
 	marketcap: number;
 	volume24h: number;
 	decimals: number;
+	holders: number;
 	socials: ITokenSocials;
 	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;

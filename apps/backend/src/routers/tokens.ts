@@ -23,7 +23,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	}>("/", async (request, reply) => {
 		const cacheKey = "tokens";
 		const cache = await redis.get(cacheKey);
-		
+
 		if (cache) {
 			return JSON.parse(cache);
 		}
@@ -163,6 +163,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				name: String(name),
 				imported: true,
 				image,
+				holders: 0,
 				price,
 				marketcap,
 				volume24h,
@@ -196,6 +197,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				imported: true,
 				image,
 				price: 0,
+				holders: 0,
 				marketcap: 0,
 				volume24h: 0,
 				socials: {

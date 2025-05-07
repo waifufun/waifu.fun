@@ -160,6 +160,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			tokenRecord.price = price;
 			const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
 			tokenRecord.volume24h = volume24h;
+			const holders = token?.holders ? Number(token?.holders) : 0;
 
 			ops.push({
 				updateOne: {
@@ -171,6 +172,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 							marketcap,
 							price,
 							volume24h,
+							holders,
 						},
 					},
 				},
