@@ -1,4 +1,4 @@
-import { IToken, ITokenLookUp } from "@autofun/types";
+import type { IToken, ITokenLookUp } from "@autofun/types";
 
 const BASE_URL = "http://localhost:3001";
 
@@ -32,8 +32,8 @@ export const fetcher = async (endpoint: string, method: "GET" | "POST" | "PUT" |
 	}
 };
 
-export const getTokens = async () => {
-	return await fetcher("/tokens", "GET");
+export const getTokens = async ({ searchParams }) => {
+	return await fetcher("/tokens", "POST", searchParams);
 };
 
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {

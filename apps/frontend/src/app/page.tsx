@@ -4,8 +4,8 @@ import type { IToken } from "@autofun/types";
 import Image from "next/image";
 import Link from "next/link";
 
-export default async function Home() {
-	const data = await getTokens();
+export default async function Home({ searchParams }) {
+	const data = await getTokens({ searchParams });
 
 	const tokens = data?.docs;
 

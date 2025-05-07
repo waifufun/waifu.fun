@@ -15,23 +15,41 @@ import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
 import { CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
 import redis from "@autofun/redis";
-import type { PaginateOptions } from "mongoose";
+import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
-	fastify.get<{
+	fastify.post<{
 		Reply: { tokens: IToken[] };
-	}>("/", async (request, reply) => {
-		const cacheKey = "tokens";
+	}>("/", async (request) => {
+		const queryParams = request.body as { chain: TChain; chainId: TChainId; page: number };
+		const page = queryParams?.page || 1;
+
+		let chain = null;
+		let chainId = null;
+		if (queryParams?.chain && queryParams?.chainId) {
+			chain = queryParams?.chain;
+			chainId = queryParams?.chainId;
+			const allowedChain = isChainIdAllowedForChain(chain, chainId);
+			if (!allowedChain) throw new Error("Unsupported chain pair");
+		}
+
+		const cacheKey = `${chain}:${chainId}:${page}:tokens`;
+
 		const cache = await redis.get(cacheKey);
 
 		if (cache) {
 			return JSON.parse(cache);
 		}
 
-		const query = {
+		const query: MongooseBaseQueryOptions = {
 			hidden: { $ne: true },
 		};
+
+		if (chain && chainId) {
+			query.chain = chain;
+			query.chainId = chainId;
+		}
 
 		const paginationOptions: PaginateOptions = {
 			page: 1,

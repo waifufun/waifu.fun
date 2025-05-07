@@ -31,9 +31,8 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
 				<div className="w-full lg:w-1/4 flex flex-col gap-3 order-1 lg:order-1">
 					<div className="flex flex-col gap-3">
-						<div>
-							<Image src={token.image} width={500} height={500} unoptimized alt={token.name} />
-						</div>
+						<Image src={token.image} width={500} height={500} unoptimized alt={token.name} />
+
 						{/* Description */}
 						{/* <div>{token?.description}</div> */}
 						{/* Contractaddress */}
@@ -46,17 +45,41 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							{token?.socials?.discord}
 						</div>
 					</div>
-					{JSON.stringify(token)}
 				</div>
 				<div className="w-full lg:w-1/2 flex flex-col gap-3 order-3 lg:order-2">
-					<iframe
-						height="100%"
-						width="100%"
-						src="https://dexcheck.ai/app/solana/chart/FCe2fD8WW65oFaL9yvogJtekCfPcDJFsKg31egNZPa79&embed=true"
-						title="chart"
-					/>
+					<div className="w-full min-h-[500px] relative">
+						<iframe
+							height="100%"
+							width="100%"
+							className="min-h-[500px] mt-2"
+							id="geckoterminal-embed"
+							title="GeckoTerminal Embed"
+							src={`https://www.geckoterminal.com/base/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
+							allow="clipboard-write"
+							allowFullScreen
+						/>
+					</div>
 				</div>
-				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">hi</div>
+				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
+					<div className="flex justify-between flex-col">
+						<div className="flex flex-col gap-1 items-center py-4">
+							<span className="font-dm-mono text-autofun-text-secondary">Total Supply</span>
+							<span className="text-xl font-dm-mono text-autofun-text-primary">{token.totalSupply}</span>
+						</div>
+						<div className="flex flex-col gap-1 items-center py-4">
+							<span className="font-dm-mono text-autofun-text-secondary">Price USD</span>
+							<span className="text-xl font-dm-mono text-autofun-text-primary">{token.price}</span>
+						</div>
+						<div className="flex flex-col gap-1 items-center py-4">
+							<span className="font-dm-mono text-autofun-text-secondary">Price SOL</span>
+							<span className="text-xl font-dm-mono text-autofun-text-primary">0000</span>
+						</div>
+						<div className="flex flex-col gap-1 items-center py-4">
+							<span className="font-dm-mono text-autofun-text-secondary">Holders</span>
+							<span className="text-xl font-dm-mono text-autofun-text-primary">{token?.holders}</span>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	);

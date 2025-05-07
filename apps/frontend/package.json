@@ -6,7 +6,7 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "biome format . --write && biome lint . --fix"
 	},
 	"dependencies": {
 		"@radix-ui/react-slot": "^1.2.2",
