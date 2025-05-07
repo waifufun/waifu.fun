@@ -26,16 +26,28 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (cache) {
 			return JSON.parse(cache);
 		}
-		const tokens = (await DB.Token.find({
+		const query = {
 			hidden: { $ne: true },
-		})
-			.limit(10)
-			.lean()) as IToken<TChain>[];
+		};
 
-		const populatedTokens = await populateTokensWithLiveData(tokens);
+		const paginationOptions = {
+			page: 1,
+			lean: true,
+			limit: 50,
+		};
 
-		await redis.setex(cacheKey, 5, JSON.stringify({ tokens: populatedTokens }));
-		return { tokens: populatedTokens };
+		const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
+
+		const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
+
+		const returnData = {
+			...tokensPaginated,
+			docs: populatedTokens,
+		};
+
+		await redis.setex(cacheKey, 5, JSON.stringify(returnData));
+
+		return returnData;
 	});
 
 	/** Retrieve a single token */

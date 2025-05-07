@@ -99,7 +99,10 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
  * object is returned with market values set to 0.
  */
 export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Promise<IToken<TChain>[]> => {
+	if (!tokensToPopulate || tokensToPopulate?.length === 0) return [];
+
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
+	
 	const tokensToQuery = tokensToPopulate.map(
 		({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
 			const networkId =

@@ -1,7 +1,8 @@
 import type { IToken } from "@autofun/types";
-import Mongoose, { Schema } from "mongoose";
+import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
+import paginate from "mongoose-paginate-v2";
 
-const schema = new Schema<IToken, Mongoose.Model<IToken>>(
+const schema = new Schema<IToken, ModelType<IToken>>(
 	{
 		contractAddress: { type: String, required: true },
 		chain: { type: String, required: true },
@@ -28,8 +29,12 @@ const schema = new Schema<IToken, Mongoose.Model<IToken>>(
 	{ timestamps: true, versionKey: false },
 );
 
+schema.plugin(paginate);
+
 schema.index({ contractAddress: 1, chain: 1, chainId: 1 }, { unique: true });
 
-const Model = Mongoose.model<IToken, Mongoose.Model<IToken>>("Token", schema);
+const Model = Mongoose.model<IToken, PaginateModel<IToken>>("Token", schema);
+
+Model.createIndexes();
 
 export default Model;
