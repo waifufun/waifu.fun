@@ -13,6 +13,8 @@ import { Codex } from "@codex-data/sdk";
 import { CHAINID_TO_CODEX_NETWORK_ID } from "@autofun/constants";
 import dotenv from "dotenv";
 import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import DB from "@autofun/database";
+import moment from "moment";
 
 dotenv.config();
 
@@ -102,7 +104,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	if (!tokensToPopulate || tokensToPopulate?.length === 0) return [];
 
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
-	
+
 	const tokensToQuery = tokensToPopulate.map(
 		({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
 			const networkId =
@@ -124,17 +126,60 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 	const results = tokenData?.filterTokens?.results;
 
+	const ops = [];
+
 	if (results) {
 		for (const token of results) {
 			const address = token?.token?.address as AddressLike;
-			if (!tokenIndex[address]) {
+			if (!tokenIndex) {
 				continue;
 			}
 
-			tokenIndex[address].marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
-			tokenIndex[address].price = token?.priceUSD ? Number(token?.priceUSD) : 0;
-			tokenIndex[address].volume24h = token?.volume24 ? Number(token?.volume24) : 0;
+			const key = Object.keys(tokenIndex).find((a) => address.toLowerCase() === a.toLowerCase());
+			const tokenRecord = key
+				? (tokenIndex[key as AddressLike] as IToken<TChain> & { _id?: string; updatedAt?: Date })
+				: undefined;
+
+			if (!tokenRecord) {
+				continue;
+			}
+
+			/** If the record was already updated very recently, there is no need to do it again.
+			 * This can occur when the user first navigates to /token, and very shortly after to
+			 * a single token page */
+
+			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
+
+			if (secondsPassedSinceUpdate <= 10) {
+				continue;
+			}
+
+			const marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
+			tokenRecord.marketcap = marketcap;
+			const price = token?.priceUSD ? Number(token?.priceUSD) : 0;
+			tokenRecord.price = price;
+			const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
+			tokenRecord.volume24h = volume24h;
+
+			ops.push({
+				updateOne: {
+					filter: {
+						_id: String(tokenRecord._id),
+					},
+					update: {
+						$set: {
+							marketcap,
+							price,
+							volume24h,
+						},
+					},
+				},
+			});
 		}
+	}
+
+	if (ops?.length > 0) {
+		await DB.Token.bulkWrite(ops);
 	}
 
 	return Object.values(tokenIndex);

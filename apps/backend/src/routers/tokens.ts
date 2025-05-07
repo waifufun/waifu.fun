@@ -23,9 +23,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	}>("/", async (request, reply) => {
 		const cacheKey = "tokens";
 		const cache = await redis.get(cacheKey);
+		
 		if (cache) {
 			return JSON.parse(cache);
 		}
+
 		const query = {
 			hidden: { $ne: true },
 		};
