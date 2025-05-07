@@ -50,7 +50,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			docs: populatedTokens,
 		};
 
-		await redis.setex(cacheKey, 5, JSON.stringify(returnData));
+		await redis.setex(cacheKey, 10, JSON.stringify(returnData));
 
 		return returnData;
 	});
