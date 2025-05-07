@@ -56,3 +56,18 @@ export const CHAINID_TO_DEXSCREENER_NAME: {
 		[SolanaNetworkIds.Devnet]: undefined,
 	},
 };
+
+export const CHAINID_TO_CODEX_NETWORK_ID: {
+	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, number | undefined>;
+} = {
+	evm: {
+		[EvmChainIds.EthereumMainnet]: 1,
+		[EvmChainIds.EthereumSepolia]: 11155111,
+		[EvmChainIds.BaseMainnet]: 8453,
+		[EvmChainIds.BaseSepolia]: 84532,
+	},
+	solana: {
+		[SolanaNetworkIds.Mainnet]: 1399811149,
+		[SolanaNetworkIds.Devnet]: undefined,
+	},
+};

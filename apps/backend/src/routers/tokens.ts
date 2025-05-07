@@ -9,7 +9,7 @@ import type {
 	TChainId,
 	TURLLike,
 } from "@autofun/types";
-import { isChainIdAllowedForChain, isSupportedAddress } from "@autofun/utils";
+import { isChainIdAllowedForChain, isSupportedAddress, populateTokensWithLiveData } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
@@ -26,14 +26,16 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (cache) {
 			return JSON.parse(cache);
 		}
-		const tokens = await DB.Token.find({
+		const tokens = (await DB.Token.find({
 			hidden: { $ne: true },
 		})
 			.limit(10)
-			.lean();
+			.lean()) as IToken<TChain>[];
 
-		await redis.setex(cacheKey, 5, JSON.stringify({ tokens }));
-		return { tokens };
+		const populatedTokens = await populateTokensWithLiveData(tokens);
+
+		await redis.setex(cacheKey, 5, JSON.stringify({ tokens: populatedTokens }));
+		return { tokens: populatedTokens };
 	});
 
 	/** Retrieve a single token */

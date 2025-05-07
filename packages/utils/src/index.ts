@@ -1,6 +1,29 @@
-import { EvmChainIds, SolanaNetworkIds, type AddressLike, type TChain, type TChainId } from "@autofun/types";
+import {
+	EvmChainIds,
+	SolanaNetworkIds,
+	type AddressLike,
+	type IToken,
+	type TChain,
+	type TChainId,
+} from "@autofun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { isAddress as isEvmAddress } from "viem";
+import logger from "@autofun/logger";
+import { Codex } from "@codex-data/sdk";
+import { CHAINID_TO_CODEX_NETWORK_ID } from "@autofun/constants";
+import dotenv from "dotenv";
+import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
+
+dotenv.config();
+
+const CODEX_API_KEY = process.env.CODEX_API_KEY;
+
+if (!CODEX_API_KEY) {
+	logger.error("Missing CODEX_API_KEY in enviroment variables");
+	process.exit(1);
+}
+
+const codex = new Codex(CODEX_API_KEY);
 
 /**
  * Determines the blockchain type (flavor) of a given address.
@@ -54,4 +77,62 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
 		}
 	}
 	return false;
+};
+
+/**
+ * Enriches token objects with live market data from the Codex API.
+ * 
+ * This function takes an array of token objects and fetches current market data
+ * including price, market capitalization, and 24-hour volume. It maintains the original
+ * token properties while adding or updating these market-related fields.
+ * 
+ * @param tokensToPopulate - Array of token objects to be enriched with live market data
+ * @returns Promise resolving to an array of token objects enhanced with market data
+ *   (price, marketcap, volume24h)
+ * 
+ * @remarks
+ * The function creates a query for each token using its contract address and network ID,
+ * then makes a batch request to the Codex API. For tokens where data is available,
+ * the function updates the original token objects with the retrieved market data.
+ * 
+ * If the Codex API doesn't return data for a particular token, the original token
+ * object is returned with market values set to 0.
+ */
+export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Promise<IToken<TChain>[]> => {
+	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
+	const tokensToQuery = tokensToPopulate.map(
+		({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
+			const networkId =
+				chain === "evm"
+					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
+					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
+
+			if (tokensToPopulate[idx]) {
+				tokenIndex[contractAddress] = tokensToPopulate[idx];
+			}
+			return `${contractAddress}:${networkId}`;
+		},
+	);
+
+	const tokenData = await codex.queries.filterTokens({
+		statsType: TokenPairStatisticsType.Unfiltered,
+		tokens: tokensToQuery,
+	});
+
+	const results = tokenData?.filterTokens?.results;
+
+	if (results) {
+		for (const token of results) {
+			const address = token?.token?.address as AddressLike;
+			if (!tokenIndex[address]) {
+				continue;
+			}
+
+			tokenIndex[address].marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
+			tokenIndex[address].price = token?.priceUSD ? Number(token?.priceUSD) : 0;
+			tokenIndex[address].volume24h = token?.volume24 ? Number(token?.volume24) : 0;
+		}
+	}
+
+	return Object.values(tokenIndex);
 };
