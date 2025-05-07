@@ -28,6 +28,12 @@ export type TURLLike = `https://${string}` | `http://${string}`;
 
 export type TChainId = TChain extends "solana" ? SolanaNetworkIds : EvmChainIds;
 
+export interface ITokenLookUp {
+	chain: TChain;
+	chainId: TChainId;
+	contractAddress: AddressLike;
+}
+
 export interface IToken<T extends TChain = TChain> {
 	contractAddress: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	chain: T;

@@ -5,13 +5,18 @@
 	"private": true,
 	"pnpm": {
 		"supportedArchitectures": {
-			"os": ["current"],
-			"cpu": ["x64", "arm64"]
+			"os": [
+				"current"
+			],
+			"cpu": [
+				"x64",
+				"arm64"
+			]
 		}
 	},
 	"scripts": {
 		"build": "NODE_ENV=production pnpm -r --stream build",
-		"dev": "NODE_ENV=development pnpm --recursive --stream run dev",
+		"dev": "NODE_ENV=development pnpm -r run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm -r --stream --parallel lint"
@@ -21,5 +26,8 @@
 		"esbuild": "^0.21.5",
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5"
+	},
+	"dependencies": {
+		"dotenv-cli": "^8.0.0"
 	}
 }
