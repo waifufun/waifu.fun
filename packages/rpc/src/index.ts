@@ -97,6 +97,7 @@ export class SolanaRpcProvider {
 			createdOn: string;
 			twitter: string;
 			website: string;
+			telegram: string;
 			discord: string;
 		};
 

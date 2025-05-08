@@ -206,6 +206,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			};
 
 			await DB.Token.create([tokenData]);
+			await populateTokensWithLiveData([tokenData]);
 		} else if (chain === "solana") {
 			const solanaChainId = chainId as unknown as SolanaNetworkIds;
 			const rpc = new SolanaRpcProvider(solanaChainId);
@@ -232,6 +233,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					twitter: (metadata?.twitter as TURLLike) || undefined,
 					website: (metadata?.website as TURLLike) || undefined,
 					discord: (metadata?.discord as TURLLike) || undefined,
+					telegram: (metadata?.telegram as TURLLike) || undefined
 				},
 				hidden: false,
 				creator: (metadata?.creator as SolanaAddressLike) || undefined,
@@ -241,6 +243,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			};
 
 			await DB.Token.create([tokenData]);
+			await populateTokensWithLiveData([tokenData]);
 		}
 
 		return true;
