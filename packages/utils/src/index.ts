@@ -10,11 +10,12 @@ import { isAddress as isSolanaAddress } from "@solana/kit";
 import { isAddress as isEvmAddress } from "viem";
 import logger from "@autofun/logger";
 import { Codex } from "@codex-data/sdk";
-import { CHAINID_TO_CODEX_NETWORK_ID } from "@autofun/constants";
+import { CHAINID_TO_CODEX_NETWORK_ID, WETH_ADDRESSES } from "@autofun/constants";
 import dotenv from "dotenv";
 import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import DB from "@autofun/database";
 import moment from "moment";
+import redis from "@autofun/redis";
 
 dotenv.config();
 
@@ -188,4 +189,35 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	return Object.values(tokenIndex);
+};
+
+export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: string }) => {
+	const wrappedSol = "So11111111111111111111111111111111111111112";
+
+	const prices = await codex.queries.getTokenPrices({
+		inputs: [
+			/** Ethereum */
+			{
+				address: WETH_ADDRESSES[EvmChainIds.EthereumMainnet],
+				networkId: CHAINID_TO_CODEX_NETWORK_ID.evm[EvmChainIds.EthereumMainnet] as number,
+			},
+			/** Solana */
+			{
+				address: wrappedSol,
+				networkId: CHAINID_TO_CODEX_NETWORK_ID.solana[SolanaNetworkIds.Mainnet] as number,
+			},
+		],
+	});
+
+	const results = prices?.getTokenPrices;
+	const solana = results?.find((token) => token?.address.toLowerCase() === wrappedSol.toLowerCase())?.priceUsd;
+	const ethereum = results?.find(
+		(token) => token?.address.toLowerCase() === WETH_ADDRESSES[EvmChainIds.EthereumMainnet].toLowerCase(),
+	)?.priceUsd;
+
+	const resolvedPrices = { solana, ethereum };
+
+	await redis.setex(cacheKey, 45, JSON.stringify(resolvedPrices));
+
+	return resolvedPrices;
 };

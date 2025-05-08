@@ -12,7 +12,10 @@ import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/c
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
+import { Program, AnchorProvider, type Idl } from "@coral-xyz/anchor";
+import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { updateCryptoPrices } from "@autofun/utils";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -72,12 +75,22 @@ export class EVMRpcProvider {
 export class SolanaRpcProvider {
 	public connection;
 	public client;
+	private program;
 
 	constructor(networkId: SolanaNetworkIds) {
 		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
 		if (!rpc) throw new Error(`No RPC provider configured for Solana: ${networkId}`);
 		this.connection = new Connection(rpc);
 		this.client = createSolanaRpc(rpc);
+
+		const dummyWallet = {
+			publicKey: new PublicKey("11111111111111111111111111111111"),
+			signTransaction: async (tx: any) => tx,
+			signAllTransactions: async (txs: any[]) => txs,
+		};
+
+		const provider = new AnchorProvider(this.connection, dummyWallet as any, {});
+		this.program = new Program(idl as Idl, provider);
 	}
 
 	getTokenMetadata = async (contractAddress: string) => {
@@ -108,5 +121,94 @@ export class SolanaRpcProvider {
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,
 		};
+	};
+
+	private getTokenSupplies = async (mintAddresses: PublicKey[]) => {
+		const tokenAccounts = await this.connection.getMultipleAccountsInfo(mintAddresses);
+		return tokenAccounts.map((acc, i) => {
+			if (!acc) return { mint: mintAddresses[i], supply: 0, decimals: 0 };
+			const data = acc.data;
+			const supply = Number(data.readBigUInt64LE(36));
+			const decimals = data.readUInt8(44);
+			return { mint: mintAddresses[i], supply, decimals };
+		});
+	};
+
+	getBondingCurveInfo = async (contractAddresses: string[]) => {
+		if (!contractAddresses || contractAddresses?.length === 0) return [];
+		const tokenMints: PublicKey[] = contractAddresses.map((addr) => new PublicKey(addr));
+		if (!tokenMints || tokenMints?.length === 0) return [];
+		const PROGRAM_ID = this.program.programId;
+
+		const bondingCurvePDAs = await Promise.all(
+			tokenMints.map((mint) =>
+				PublicKey.findProgramAddress([Buffer.from("bonding_curve"), mint.toBuffer()], PROGRAM_ID).then(([pda]) => pda),
+			),
+		);
+
+		const cryptoPrices = await updateCryptoPrices({});
+		const solanaUsdPrice = cryptoPrices.solana;
+
+		if (!solanaUsdPrice) throw new Error("Unable to determine Solana USD price");
+
+		const accountInfos = await this.connection.getMultipleAccountsInfo(bondingCurvePDAs);
+		const supplies = await this.getTokenSupplies(tokenMints);
+
+		const bondingCurves = accountInfos.map((info, i) => {
+			if (!info) return null;
+
+			try {
+				return this.program.coder.accounts.decode("bondingCurve", info.data);
+			} catch (err) {
+				console.error("Failed to decode bonding curve for", tokenMints?.[i].toBase58(), err);
+				return null;
+			}
+		});
+
+		return bondingCurves.map((curve, i) => {
+			const mint = tokenMints?.[i].toBase58();
+			const supplyInfo = supplies[i];
+
+			if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
+
+			if (!curve || !curve.reserveToken || curve.reserveToken.toNumber() === 0) {
+				return {
+					tokenMint: mint,
+					curveCompleted: null,
+					priceLamports: null,
+					priceSOL: null,
+					marketCapSOL: null,
+					marketCapUSD: null,
+					exists: false,
+				};
+			}
+
+			const reserveLamport = Number(curve.reserveLamport);
+			const reserveToken = Number(curve.reserveToken);
+			const tokenDecimals = supplyInfo.decimals || 6;
+
+			const priceSOL = reserveLamport / 1e9 / (reserveToken / 10 ** tokenDecimals);
+			const totalSupply = supplyInfo.supply;
+			const marketCapSOL = (totalSupply / 10 ** tokenDecimals) * priceSOL;
+			const marketCapUSD = marketCapSOL * solanaUsdPrice;
+
+			const virtualReserves = Number(curve.initLamport);
+			const curveLimit = Number(curve.curveLimit);
+			const curveProgress =
+				curveLimit > virtualReserves ? ((reserveLamport - virtualReserves) / (curveLimit - virtualReserves)) * 100 : 0;
+
+			return {
+				tokenMint: mint,
+				curveCompleted: curve.isCompleted,
+				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
+				priceLamports: reserveLamport / reserveToken,
+				decimals: tokenDecimals,
+				priceSOL,
+				totalSupply,
+				marketCapSOL,
+				marketCapUSD,
+				exists: true,
+			};
+		});
 	};
 }
