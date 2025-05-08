@@ -53,6 +53,7 @@ export interface IToken<T extends TChain = TChain> {
 	featured?: boolean;
 	imported?: boolean;
 	createdAt?: Date;
+	verified?: boolean;
 	updatedAt?: Date;
 }
 

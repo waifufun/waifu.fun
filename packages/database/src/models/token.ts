@@ -16,6 +16,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		marketcap: { type: Number, default: 0 },
 		volume24h: { type: Number, default: 0 },
 		holders: { type: Number, default: 0 },
+		verified: { type: Boolean, default: false },
 		totalSupply: { type: Number, required: true, default: 0 },
 		socials: {
 			twitter: { type: String },

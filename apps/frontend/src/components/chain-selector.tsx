@@ -37,16 +37,16 @@ export default function ChainSelector() {
 	);
 
 	const chains: IChainSelector[] = [
-		{ name: "All", chain: null, chainId: null },
+		{ name: "All", chain: null, chainId: null, icon: "/chain-icons/blockchains.png" },
 		{ name: "Solana", chain: "solana", chainId: SolanaNetworkIds.Mainnet, icon: "/chain-icons/solana.svg" },
 		{ name: "Ethereum", chain: "evm", chainId: EvmChainIds.EthereumMainnet, icon: "/chain-icons/ethereum.svg" },
 		{ name: "Base", chain: "evm", chainId: EvmChainIds.BaseMainnet, icon: "/chain-icons/base.svg" },
 	];
- 
+
 	const activeKey = `${searchParams.get("chain")}:${searchParams.get("chainId")}`;
 
 	return (
-		<div className="flex items-center gap-4">
+		<div className="flex items-center gap-2">
 			{chains.map((chain) => {
 				const isActive = `${chain.chain}:${chain.chainId}` === activeKey;
 				return (
@@ -57,7 +57,7 @@ export default function ChainSelector() {
 							chainId: chain.chainId,
 						})}`}
 					>
-						<Button variant={isActive ? "default" : "secondary"}>
+						<Button variant={isActive ? "outline" : "secondary"} size="icon">
 							{chain?.icon ? (
 								<Image
 									src={chain.icon}
@@ -67,7 +67,6 @@ export default function ChainSelector() {
 									className={cn([isActive ? "grayscale-0" : "grayscale", "size-5"])}
 								/>
 							) : null}
-							{chain.name}
 						</Button>
 					</Link>
 				);

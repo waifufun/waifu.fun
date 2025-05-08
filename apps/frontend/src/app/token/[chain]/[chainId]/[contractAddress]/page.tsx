@@ -1,4 +1,5 @@
 import { getToken } from "@/lib/api";
+import { abbreviateNumber, fromNow } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 
@@ -11,19 +12,19 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 			<div className="w-full py-10 flex flex-wrap justify-between">
 				<div className="flex-1 flex flex-col items-center">
 					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold font-dm-mono text-autofun-text-highlight">
-						{token?.marketcap}
+						{token?.marketcap ? abbreviateNumber(token?.marketcap) : "-"}
 					</span>
 					<span className="text-base md:text-lg font-dm-mono text-autofun-text-secondary mt-3">Market Cap</span>
 				</div>
 				<div className="flex-1 flex flex-col items-center">
 					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold font-dm-mono text-autofun-text-highlight">
-						{token?.volume24h}
+						{token?.volume24h ? abbreviateNumber(token?.volume24h) : "-"}
 					</span>
 					<span className="text-base md:text-lg font-dm-mono text-autofun-text-secondary mt-3">24hr Volume</span>
 				</div>
 				<div className="flex-1 flex flex-col items-center">
 					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold font-dm-mono text-autofun-text-highlight">
-						{String(token?.createdAt)}
+						{token?.createdAt ? fromNow(token?.createdAt, true) : "-"}
 					</span>
 					<span className="text-base md:text-lg font-dm-mono text-autofun-text-secondary mt-3">Age</span>
 				</div>
