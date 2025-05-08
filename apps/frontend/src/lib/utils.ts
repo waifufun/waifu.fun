@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-export const abbreviateNumber = (num: number, withoutCurrency: boolean = false): string => {
+export const abbreviateNumber = (num: number, withoutCurrency = false): string => {
 	const absNum = Math.abs(Number(num));
 	if (absNum < 1000) return formatNumber(num, false, withoutCurrency);
 

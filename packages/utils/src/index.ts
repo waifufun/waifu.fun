@@ -25,7 +25,7 @@ if (!CODEX_API_KEY) {
 	process.exit(1);
 }
 
-const codex = new Codex(CODEX_API_KEY);
+export const codex = new Codex(CODEX_API_KEY);
 
 /**
  * Determines the blockchain type (flavor) of a given address.
@@ -102,6 +102,7 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
  */
 export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Promise<IToken<TChain>[]> => {
 	if (!tokensToPopulate || tokensToPopulate?.length === 0) return [];
+	const ops = [];
 
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
 
@@ -125,8 +126,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	});
 
 	const results = tokenData?.filterTokens?.results;
-
-	const ops = [];
 
 	if (results) {
 		for (const token of results) {
