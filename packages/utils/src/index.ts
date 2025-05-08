@@ -110,7 +110,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
 
 	const tokensToQuery = tokensToPopulate
-		.filter((t) => !t?.imported)
+		.filter((t) => t?.imported)
 		.map(({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
 			const networkId =
 				chain === "evm"
@@ -190,7 +190,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	const nonImportedTokens = tokensToPopulate.filter(
 		(t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
 	);
-	
+
 	if (nonImportedTokens?.length > 0) {
 		const rpc = new SolanaRpcProvider(SolanaNetworkIds.Mainnet);
 		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
@@ -199,6 +199,10 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			const nonImportedToken = nonImportedTokens.find(
 				(a) => a.contractAddress === tokenRecord.contractAddress,
 			) as IToken<TChain> & { _id?: string; updatedAt?: Date };
+
+			tokenIndex[nonImportedToken.contractAddress] = {
+				...nonImportedToken,
+			};
 
 			/** If the record was already updated very recently, there is no need to do it again.
 			 * This can occur when the user first navigates to /token, and very shortly after to
