@@ -16,6 +16,7 @@ import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/grap
 import DB from "@autofun/database";
 import moment from "moment";
 import redis from "@autofun/redis";
+import { SolanaRpcProvider } from "@autofun/rpc";
 
 dotenv.config();
 
@@ -105,10 +106,12 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	if (!tokensToPopulate || tokensToPopulate?.length === 0) return [];
 	const ops = [];
 
+	/** All imports tokens can be fetched using Codex */
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
 
-	const tokensToQuery = tokensToPopulate.map(
-		({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
+	const tokensToQuery = tokensToPopulate
+		.filter((t) => !t?.imported)
+		.map(({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
 			const networkId =
 				chain === "evm"
 					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
@@ -118,8 +121,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 				tokenIndex[contractAddress] = tokensToPopulate[idx];
 			}
 			return `${contractAddress}:${networkId}`;
-		},
-	);
+		});
 
 	const tokenData = await codex.queries.filterTokens({
 		statsType: TokenPairStatisticsType.Unfiltered,
@@ -181,6 +183,55 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			if (tokenRecord?._id) {
 				delete tokenRecord._id;
 			}
+		}
+	}
+
+	/** All non imported tokens should be determined using RPC */
+	const nonImportedTokens = tokensToPopulate.filter(
+		(t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
+	);
+	
+	if (nonImportedTokens?.length > 0) {
+		const rpc = new SolanaRpcProvider(SolanaNetworkIds.Mainnet);
+		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
+
+		for (const tokenRecord of bondingCurveInfo) {
+			const nonImportedToken = nonImportedTokens.find(
+				(a) => a.contractAddress === tokenRecord.contractAddress,
+			) as IToken<TChain> & { _id?: string; updatedAt?: Date };
+
+			/** If the record was already updated very recently, there is no need to do it again.
+			 * This can occur when the user first navigates to /token, and very shortly after to
+			 * a single token page */
+			const secondsPassedSinceUpdate = moment().diff(moment(nonImportedToken.updatedAt), "seconds");
+
+			if (secondsPassedSinceUpdate <= 7) {
+				continue;
+			}
+			if (!nonImportedToken?._id) continue;
+
+			const setValues = {
+				marketcap: Number(tokenRecord.marketCapUSD),
+				price: Number(tokenRecord.marketCapUSD),
+				curveCompleted: Boolean(tokenRecord.curveCompleted),
+				curveProgress: Number(tokenRecord.curveProgress),
+			};
+
+			ops.push({
+				updateOne: {
+					filter: {
+						_id: String(nonImportedToken?._id),
+					},
+					update: {
+						$set: setValues,
+					},
+				},
+			});
+
+			tokenIndex[nonImportedToken.contractAddress] = {
+				...nonImportedToken,
+				...setValues,
+			};
 		}
 	}
 

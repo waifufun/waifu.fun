@@ -198,7 +198,7 @@ export class SolanaRpcProvider {
 				curveLimit > virtualReserves ? ((reserveLamport - virtualReserves) / (curveLimit - virtualReserves)) * 100 : 0;
 
 			return {
-				tokenMint: mint,
+				contractAddress: mint,
 				curveCompleted: curve.isCompleted,
 				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
 				priceLamports: reserveLamport / reserveToken,

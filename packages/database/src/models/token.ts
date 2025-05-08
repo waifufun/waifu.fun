@@ -15,6 +15,8 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		decimals: { type: Number, required: true },
 		marketcap: { type: Number, default: 0 },
 		volume24h: { type: Number, default: 0 },
+		curveCompleted: { type: Boolean },
+		curveProgress: { type: Number },
 		holders: { type: Number, default: 0 },
 		verified: { type: Boolean, default: false },
 		totalSupply: { type: Number, required: true, default: 0 },

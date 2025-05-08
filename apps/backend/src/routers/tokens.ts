@@ -84,9 +84,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	}>("/:chain/:chainId/:contractAddress", async (request) => {
 		const { contractAddress, chain, chainId } = request.params;
 
-		const rpc = new SolanaRpcProvider(chainId);
-		await rpc.getBondingCurveInfo([contractAddress])
-
 		const cacheKey = `${chain}:${chainId}:${contractAddress}`;
 
 		const cache = await redis.get(cacheKey);
@@ -236,7 +233,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					twitter: (metadata?.twitter as TURLLike) || undefined,
 					website: (metadata?.website as TURLLike) || undefined,
 					discord: (metadata?.discord as TURLLike) || undefined,
-					telegram: (metadata?.telegram as TURLLike) || undefined
+					telegram: (metadata?.telegram as TURLLike) || undefined,
 				},
 				hidden: false,
 				creator: (metadata?.creator as SolanaAddressLike) || undefined,

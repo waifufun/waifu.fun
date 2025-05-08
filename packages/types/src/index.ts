@@ -47,6 +47,8 @@ export interface IToken<T extends TChain = TChain> {
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	curveCompleted?: boolean;
+	curveProgress?: number;
 	socials: ITokenSocials;
 	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;
