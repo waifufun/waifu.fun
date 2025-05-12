@@ -6,11 +6,11 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Transaction, VersionedTransaction } from '@solana/web3.js';
 
 type EVMWallets = {
-    [key in EvmChainIds]: EVMWallet;
+    [key in keyof typeof EvmChainIds]: EVMWallet;
 }
 
 type SolanaWallets = {
-    [key in SolanaNetworkIds]: SolanaWallet;
+    [key in keyof typeof SolanaNetworkIds]: SolanaWallet;
 }
 
 export type TWalletContext = {
@@ -24,7 +24,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const [evmWallets, setEvmWallets] = useState<EVMWallets | null>(null);
     const [solanaWallets, setSolanaWallets] = useState<SolanaWallets | null>(null);
     const { publicKey, disconnecting, connected, signMessage, signTransaction } = useWallet();
-
 
     useEffect(() => {
         if (publicKey && connected && !disconnecting && signMessage && signTransaction) {
@@ -51,8 +50,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             );
 
             setSolanaWallets({
-                [SolanaNetworkIds.Mainnet]: mainnetSolanaWallet,
-                [SolanaNetworkIds.Devnet]: devnetSolanaWallet,
+                Mainnet: mainnetSolanaWallet,
+                Devnet: devnetSolanaWallet,
             });
         } else {
             setSolanaWallets(null);
