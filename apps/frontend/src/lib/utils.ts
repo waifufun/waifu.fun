@@ -14,7 +14,7 @@ export const abbreviateNumber = (num: number, withoutCurrency = false): string =
 	let exponent = Math.floor(Math.log10(absNum) / 3);
 	if (exponent > units.length) exponent = units.length;
 	const unit = units[exponent - 1];
-	const scaled = absNum / Math.pow(1000, exponent);
+	const scaled = absNum / 1000 ** exponent;
 	const formatted = scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(1);
 
 	return `${withoutCurrency ? "" : "$"}${(num < 0 ? "-" : "") + formatted + unit}`;

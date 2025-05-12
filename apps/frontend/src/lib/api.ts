@@ -39,3 +39,11 @@ export const getTokens = async ({ searchParams }) => {
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
 	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
 };
+
+export const importToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
+	return await fetcher("/tokens/import", "POST", {
+		contractAddress,
+		chain,
+		chainId,
+	});
+};

@@ -85,10 +85,13 @@ export class SolanaRpcProvider {
 
 		const dummyWallet = {
 			publicKey: new PublicKey("11111111111111111111111111111111"),
+			// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
 			signTransaction: async (tx: any) => tx,
+			// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
 			signAllTransactions: async (txs: any[]) => txs,
 		};
 
+		// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
 		const provider = new AnchorProvider(this.connection, dummyWallet as any, {});
 		this.program = new Program(idl as Idl, provider);
 	}
