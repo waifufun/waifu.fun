@@ -11,7 +11,7 @@
 	},
 	"scripts": {
 		"build": "NODE_ENV=production pnpm -r --stream build",
-		"dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
+		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm -r --stream --parallel lint"

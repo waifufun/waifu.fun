@@ -1,5 +1,6 @@
 services:
   dragonfly:
+    container_name: dragonfly
     image: docker.dragonflydb.io/dragonflydb/dragonfly
     network_mode: "host"
     restart: unless-stopped
