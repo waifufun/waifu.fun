@@ -3,7 +3,7 @@ import { AddressLike, SolanaAddressLike, SolanaNetworkIds } from "@autofun/types
 import { Transaction, VersionedTransaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 
-interface ISolanaFunctions {
+export interface ISolanaFunctions {
     signMessage: (message: Uint8Array) => Promise<Uint8Array>;
     signTransaction: (transaction: Transaction | VersionedTransaction) => Promise<Transaction | VersionedTransaction>;
 }
