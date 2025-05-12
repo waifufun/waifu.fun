@@ -1,9 +1,11 @@
 import { WalletClass } from "./WalletClass";
 import { AddressLike, EvmAddressLike, EvmChainIds } from "@autofun/types";
 
-interface IEVMFunctions {
+export interface IEVMFunctions {
     signMessage: (message: string) => Promise<string>;
-    signTransaction: (transaction: any) => Promise<any>;
+    sendTransaction: (transaction: any) => Promise<any>;
+    switchNetwork?: (networkId: EvmChainIds) => Promise<void>;
+    chainId: EvmChainIds;
 }
 
 export class EVMWallet extends WalletClass {
@@ -23,10 +25,24 @@ export class EVMWallet extends WalletClass {
         console.log(`EVMWallet instance created for address: ${address}, chain: ${chain}`);
     }
 
-    async signTransaction(transaction: any): Promise<any> {
+    private async switchNetwork(): Promise<void> {
+        try {
+            if (!(this._evmFunctions.chainId === this.chain)) {
+                console.log(`EVMWallet: Switching network from ${this._evmFunctions.chainId} to ${this.chain}`);
+                await this._evmFunctions.switchNetwork?.(this.chain);
+                console.log("EVMWallet: Network switched successfully.");
+            }
+        } catch (error) {
+            console.error("EVMWallet: Error switching network:", error);
+            throw error;
+        }
+    }
+
+    async sendTransaction(transaction: any): Promise<any> {
+        this.switchNetwork();
         console.log("EVMWallet: Signing transaction...");
         try {
-            const signedTx = await this._evmFunctions.signTransaction(transaction);
+            const signedTx = await this._evmFunctions.sendTransaction(transaction);
             console.log("EVMWallet: Transaction signed successfully.");
             return signedTx;
         } catch (error) {
@@ -36,6 +52,7 @@ export class EVMWallet extends WalletClass {
     }
 
     async signMessage(message: string): Promise<string> { 
+        this.switchNetwork();
         console.log("EVMWallet: Signing message...");
         try {
             const signature = await this._evmFunctions.signMessage(message);

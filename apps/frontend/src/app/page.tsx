@@ -6,6 +6,7 @@ import type { IToken } from "@autofun/types";
 import { Grid, List } from "lucide-react";
 import Image from "next/image";
 
+
 export default async function Home({ searchParams }) {
 	const data = await getTokens({ searchParams: await searchParams });
 	const tokens = data?.docs;

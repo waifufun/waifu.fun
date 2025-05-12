@@ -26,7 +26,7 @@ export class SolanaWallet extends WalletClass {
         console.log(`SolanaWallet instance created for address: ${address}, chain: ${chain}`);
     }
 
-    async signTransaction(transaction: Transaction | VersionedTransaction): Promise<Transaction | VersionedTransaction> {
+    async sendTransaction(transaction: Transaction | VersionedTransaction): Promise<Transaction | VersionedTransaction> {
         console.log("SolanaWallet: Signing transaction...");
         try {
             const signedTx = await this._solanaFunctions.signTransaction(transaction);

@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { EVMWallet } from '@/components/wallet/EVMWallet';
+import { EVMWallet, IEVMFunctions } from '@/components/wallet/EVMWallet';
 import { ISolanaFunctions, SolanaWallet } from '@/components/wallet/SolanaWallet';
-import { EvmChainIds, SolanaAddressLike, SolanaNetworkIds } from '@autofun/types';
+import { EvmAddressLike, EvmChainIds, SolanaAddressLike, SolanaNetworkIds } from '@autofun/types';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Transaction, VersionedTransaction } from '@solana/web3.js';
+import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
+import { useSignMessage, useSendTransaction, useSwitchChain } from 'wagmi';
 
 type EVMWallets = {
     [key in keyof typeof EvmChainIds]: EVMWallet;
@@ -24,6 +26,12 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const [evmWallets, setEvmWallets] = useState<EVMWallets | null>(null);
     const [solanaWallets, setSolanaWallets] = useState<SolanaWallets | null>(null);
     const { publicKey, disconnecting, connected, signMessage, signTransaction } = useWallet();
+    const {address, isConnected} = useAppKitAccount();
+    const { switchChainAsync } = useSwitchChain();
+    const { signMessageAsync: evmSignMessage } = useSignMessage();
+    const { sendTransaction } = useSendTransaction();
+    const { chainId } = useAppKitNetwork();
+
 
     useEffect(() => {
         if (publicKey && connected && !disconnecting && signMessage && signTransaction) {
@@ -57,6 +65,35 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             setSolanaWallets(null);
         }
     }, [publicKey, connected, disconnecting, signMessage, signTransaction]);
+
+    useEffect(() => {
+
+        if (address && isConnected) {
+            const functions: IEVMFunctions = {
+                signMessage: async (message: string) => {
+                    const signature = await evmSignMessage({ message });
+                    return signature;
+                },
+                sendTransaction: async (transaction: any) => {
+                    const signedTx = await sendTransaction(transaction);
+                    return signedTx;
+                },
+                chainId: chainId as EvmChainIds,
+                switchNetwork: async (networkId: EvmChainIds) => {
+                        await switchChainAsync({chainId: networkId});
+                },
+            }
+            
+            setEvmWallets({
+                BaseMainnet: new EVMWallet(address as EvmAddressLike, EvmChainIds.BaseMainnet, functions),
+                EthereumMainnet: new EVMWallet(address as EvmAddressLike, EvmChainIds.EthereumMainnet, functions),
+                EthereumSepolia: new EVMWallet(address as EvmAddressLike, EvmChainIds.EthereumSepolia, functions),
+                BaseSepolia: new EVMWallet(address as EvmAddressLike, EvmChainIds.BaseSepolia, functions),
+            });
+        } else {
+            setEvmWallets(null);
+        }
+    }, [address, isConnected]);
 
 
     return (
