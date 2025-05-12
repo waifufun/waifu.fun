@@ -7,7 +7,8 @@ packages/**/node_modules
 # environment
 **/.env
 .env
-.env.*
+.env.production
+.env.development
 !.env.sample
 
 # secrets

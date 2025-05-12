@@ -212,6 +212,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			if (secondsPassedSinceUpdate <= 7) {
 				continue;
 			}
+			
 			if (!nonImportedToken?._id) continue;
 
 			const setValues = {
