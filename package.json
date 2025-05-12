@@ -5,8 +5,13 @@
 	"private": true,
 	"pnpm": {
 		"supportedArchitectures": {
-			"os": ["current"],
-			"cpu": ["x64", "arm64"]
+			"os": [
+				"current"
+			],
+			"cpu": [
+				"x64",
+				"arm64"
+			]
 		}
 	},
 	"scripts": {
@@ -24,6 +29,9 @@
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {
+		"@solana/wallet-adapter-base": "^0.9.26",
+		"@solana/web3.js": "^1.98.2",
+		"bs58": "^6.0.0",
 		"dotenv-cli": "^8.0.0"
 	}
 }

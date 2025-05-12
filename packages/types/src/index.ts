@@ -18,7 +18,7 @@ export enum SolanaNetworkIds {
 }
 
 export enum EvmChainIds {
-	BaseMainnet = 8453,
+	BaseMainnet = 8453, 
 	BaseSepolia = 84532,
 	EthereumMainnet = 1,
 	EthereumSepolia = 11155111,
