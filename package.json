@@ -14,7 +14,7 @@
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm -r --stream --parallel lint"
+		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

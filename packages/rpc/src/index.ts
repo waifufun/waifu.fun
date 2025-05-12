@@ -140,7 +140,9 @@ export class SolanaRpcProvider {
 	getBondingCurveInfo = async (contractAddresses: string[]) => {
 		if (!contractAddresses || contractAddresses?.length === 0) return [];
 		const tokenMints: PublicKey[] = contractAddresses.map((addr) => new PublicKey(addr));
+
 		if (!tokenMints || tokenMints?.length === 0) return [];
+
 		const PROGRAM_ID = this.program.programId;
 
 		const bondingCurvePDAs = await Promise.all(
