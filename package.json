@@ -14,12 +14,13 @@
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
+		"docker:kill": "docker compose down -v",
 		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"cross-env": "^7.0.3",
-		"esbuild": "^0.21.5",
+		"esbuild": "^0.25.4",
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5"
 	},
