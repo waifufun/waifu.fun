@@ -2,6 +2,7 @@ import {
 	EvmChainIds,
 	SolanaNetworkIds,
 	type AddressLike,
+	type EvmAddressLike,
 	type IToken,
 	type TChain,
 	type TChainId,
@@ -17,6 +18,9 @@ import DB from "@autofun/database";
 import moment from "moment";
 import redis from "@autofun/redis";
 import { SolanaRpcProvider } from "@autofun/rpc";
+import { EVMRpcProvider } from "@autofun/rpc";
+import { PublicKey } from "@solana/web3.js";
+import { getAddress } from "viem";
 
 dotenv.config();
 
@@ -277,3 +281,51 @@ export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: s
 
 	return resolvedPrices;
 };
+
+export async function userHasEnoughTokenBalance({
+	chain,
+	address,
+	contractAddress,
+	chainId,
+	minAmount,
+}: {
+	chain: "solana" | "evm";
+	address: AddressLike;
+	contractAddress: AddressLike;
+	chainId: SolanaNetworkIds | EvmChainIds;
+	minAmount: number | bigint;
+}) {
+	const balance = await getTokenBalance({
+		chain,
+		address,
+		contractAddress,
+		chainId,
+	});
+
+	return Number(balance) >= Number(minAmount);
+}
+
+export async function getTokenBalance({
+	chain,
+	address,
+	contractAddress,
+	chainId,
+}: {
+	chain: "solana" | "evm";
+	address: AddressLike;
+	contractAddress: AddressLike;
+	chainId: SolanaNetworkIds | EvmChainIds;
+}): Promise<number> {
+	if (chain === "evm") {
+		return await new EVMRpcProvider(chainId as EvmChainIds).getTokenBalance(
+			contractAddress as EvmAddressLike,
+			address as EvmAddressLike,
+		);
+	}
+
+	if (chain === "solana") {
+		return await new SolanaRpcProvider(chainId as SolanaNetworkIds).getTokenBalance(contractAddress, address);
+	}
+
+	throw new Error("Unsupported chain");
+}
