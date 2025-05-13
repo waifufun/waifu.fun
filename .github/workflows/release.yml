@@ -5,31 +5,31 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   release:
+    permissions:
+      contents: write # to publish a GitHub release
+      issues: write # to comment on released issues
+      pull-requests: write # to comment on released pull requests
+
+    name: release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
+          node-version: lts/*
+          cache: 'pnpm'
+          
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: latest
 
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Release
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm dlx semantic-release@21.0.2
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          DEBUG: semantic-release:*
-        run: pnpm dlx semantic-release
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
