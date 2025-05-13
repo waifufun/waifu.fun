@@ -2,8 +2,11 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import Image from "next/image";
+import { useModal } from "./hooks/providers/UseModalContext";
 
 export default function Header() {
+	const {openModal} = useModal();
+
 	return (
 		<div className="px-4 flex items-center gap-4 justify-between h-[84px]">
 			<Link href="/">

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { EVMWallet, IEVMFunctions } from '@/components/wallet/EVMWallet';
 import { ISolanaFunctions, SolanaWallet } from '@/components/wallet/SolanaWallet';
 import { EvmAddressLike, EvmChainIds, SolanaAddressLike, SolanaNetworkIds } from '@autofun/types';
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Transaction, VersionedTransaction } from '@solana/web3.js';
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { useSignMessage, useSendTransaction, useSwitchChain } from 'wagmi';
@@ -25,23 +25,24 @@ const WalletContext = createContext<TWalletContext | undefined>(undefined);
 export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [evmWallets, setEvmWallets] = useState<EVMWallets | null>(null);
     const [solanaWallets, setSolanaWallets] = useState<SolanaWallets | null>(null);
-    const { publicKey, disconnecting, connected, signMessage, signTransaction } = useWallet();
+    const { publicKey, disconnecting, connected, signMessage, sendTransaction: sendTransactionSolana } = useWallet();
     const {address, isConnected} = useAppKitAccount();
     const { switchChainAsync } = useSwitchChain();
     const { signMessageAsync: evmSignMessage } = useSignMessage();
     const { sendTransaction } = useSendTransaction();
     const { chainId } = useAppKitNetwork();
-
+    const {connection} = useConnection();
 
     useEffect(() => {
-        if (publicKey && connected && !disconnecting && signMessage && signTransaction) {
+        if (publicKey && connected && !disconnecting && signMessage && sendTransactionSolana) {
             const solanaAddress = publicKey.toBase58() as SolanaAddressLike;
             const walletAdapterFunctions: ISolanaFunctions = {
                 signMessage: async (message: Uint8Array) => {
                     return signMessage(message);
                 },
-                signTransaction: async (transaction: Transaction | VersionedTransaction) => {
-                    return signTransaction(transaction);
+                sendTransaction: async (transaction: Transaction | VersionedTransaction) => {
+                    const signature = await sendTransactionSolana(transaction, connection);
+                    return signature;
                 },
             };
 
@@ -64,7 +65,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         } else {
             setSolanaWallets(null);
         }
-    }, [publicKey, connected, disconnecting, signMessage, signTransaction]);
+    }, [publicKey, connected, disconnecting, signMessage, sendTransactionSolana, connection]);
 
     useEffect(() => {
 
@@ -94,6 +95,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             setEvmWallets(null);
         }
     }, [address, isConnected]);
+
 
 
     return (

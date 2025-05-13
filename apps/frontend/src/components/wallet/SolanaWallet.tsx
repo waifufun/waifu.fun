@@ -1,11 +1,12 @@
 import { WalletClass } from "./WalletClass";
 import { AddressLike, SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import { ConnectionContextState } from "@solana/wallet-adapter-react";
 import { Transaction, VersionedTransaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 
 export interface ISolanaFunctions {
     signMessage: (message: Uint8Array) => Promise<Uint8Array>;
-    signTransaction: (transaction: Transaction | VersionedTransaction) => Promise<Transaction | VersionedTransaction>;
+    sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>
 }
 
 
@@ -26,14 +27,14 @@ export class SolanaWallet extends WalletClass {
         console.log(`SolanaWallet instance created for address: ${address}, chain: ${chain}`);
     }
 
-    async sendTransaction(transaction: Transaction | VersionedTransaction): Promise<Transaction | VersionedTransaction> {
+    async sendTransaction(transaction: Transaction | VersionedTransaction): Promise<string> {
         console.log("SolanaWallet: Signing transaction...");
         try {
-            const signedTx = await this._solanaFunctions.signTransaction(transaction);
-            console.log("SolanaWallet: Transaction signed successfully.");
-            return signedTx;
+            const sig = await this._solanaFunctions.sendTransaction(transaction);
+            console.log("SolanaWallet: Transaction signed successfully. Signature:", sig);
+            return sig;
         } catch (error) {
-            console.error("SolanaWallet: Error signing transaction:", error);
+            console.error("SolanaWallet: Error sending transaction:", error);
             throw error;
         }
     }
