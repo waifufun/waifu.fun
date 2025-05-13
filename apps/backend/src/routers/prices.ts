@@ -12,7 +12,6 @@ export default async function pricesRoutes(fastify: FastifyInstance) {
 			return JSON.parse(cache);
 		}
 
-		
 		const prices = await updateCryptoPrices({ cacheKey });
 
 		return prices;
