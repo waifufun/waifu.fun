@@ -1,3 +1,11 @@
+# [0.2.0-staging.1](https://github.com/elizaos/autofun-monorepo/compare/v0.1.1...v0.2.0-staging.1) (2025-05-13)
+
+
+### Features
+
+* added staging to branches ([b30737d](https://github.com/elizaos/autofun-monorepo/commit/b30737dced06ae7bad834e8d3f4be5aa535e95ea))
+* added staging to release GHA ([bfee61e](https://github.com/elizaos/autofun-monorepo/commit/bfee61e9905d01bac5ba6513929c8a02ff644333))
+
 ## [0.1.1](https://github.com/elizaos/autofun-monorepo/compare/v0.1.0...v0.1.1) (2025-05-13)
 
 
