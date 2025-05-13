@@ -1,6 +1,9 @@
 {
 	"name": "@autofun/monorepo",
-	"version": "0.0.0",
+	"repository": {
+		"url": "https://github.com/elizaos/autofun-monorepo",
+		"type": "github"
+	},
 	"type": "module",
 	"private": true,
 	"pnpm": {
