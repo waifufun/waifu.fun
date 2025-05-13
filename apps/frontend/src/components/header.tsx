@@ -10,7 +10,7 @@ export default function Header() {
 			<Link href="/">
 				<Image src="/logo_wide.svg" height={60} width={120} className="h-[60px] w-auto" unoptimized alt="logo" />
 			</Link>
-			<Image src="/header-logo.svg" width={530} height={60} className="h-[60px] w-auto" alt="logo" />
+			<Image src="/header-logo.svg" width={530} height={60} className="h-[60px] w-auto select-none" alt="logo" />
 			<div className="flex items-center gap-4">
 				<Input placeholder="Search..." className="w-[430px]" />
 				<Settings />

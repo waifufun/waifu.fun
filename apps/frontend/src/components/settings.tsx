@@ -16,13 +16,11 @@ export default function Settings() {
 			<PopoverContent className="max-w-max w-full" align="end">
 				<div className="flex flex-col gap-4">
 					<h4 className="font-medium leading-none">Settings</h4>
-
 					<div className="flex flex-col gap-4">
 						<Label htmlFor="width">Slippage tolerance</Label>
 						<Input id="width" defaultValue="5%" className="col-span-2 h-8" />
 					</div>
 					<Divider />
-
 					<div className="flex flex-col gap-4">
 						<Label htmlFor="width">Default Explorer</Label>
 						<div className="flex gap-2">
