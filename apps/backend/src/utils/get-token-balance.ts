@@ -2,6 +2,7 @@ import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { PublicKey } from "@solana/web3.js";
 import { getAddress } from "viem";
 import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
+import type { ParsedAccountData } from "@solana/web3.js";
 
 export async function getTokenBalance({
 	chain,
@@ -39,7 +40,7 @@ export async function getTokenBalance({
 		const amount = Number(accountData?.readBigUInt64LE(64));
 
 		const decimals = await provider.connection.getParsedAccountInfo(mint).then((info) => {
-			const data = (info.value?.data as any)?.parsed?.info;
+			const data = (info.value?.data as ParsedAccountData)?.parsed?.info;
 			return data?.decimals ?? 6;
 		});
 
