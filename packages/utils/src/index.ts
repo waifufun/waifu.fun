@@ -2,6 +2,7 @@ import {
 	EvmChainIds,
 	SolanaNetworkIds,
 	type AddressLike,
+	type EvmAddressLike,
 	type IToken,
 	type TChain,
 	type TChainId,
@@ -281,6 +282,29 @@ export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: s
 	return resolvedPrices;
 };
 
+export async function userHasEnoughTokenBalance({
+	chain,
+	address,
+	contractAddress,
+	chainId,
+	minAmount,
+}: {
+	chain: "solana" | "evm";
+	address: AddressLike;
+	contractAddress: AddressLike;
+	chainId: SolanaNetworkIds | EvmChainIds;
+	minAmount: number | bigint;
+}) {
+	const balance = await getTokenBalance({
+		chain,
+		address,
+		contractAddress,
+		chainId,
+	});
+
+	return Number(balance) >= Number(minAmount);
+}
+
 export async function getTokenBalance({
 	chain,
 	address,
@@ -293,13 +317,10 @@ export async function getTokenBalance({
 	chainId: SolanaNetworkIds | EvmChainIds;
 }): Promise<number> {
 	if (chain === "evm") {
-		const provider = new EVMRpcProvider(chainId as EvmChainIds);
-		const checksummedAddress = getAddress(contractAddress);
-		const [balanceRaw, decimals] = await Promise.all([
-			provider.readErc20Contract(checksummedAddress, "balanceOf", [getAddress(address)]),
-			provider.readErc20Contract(checksummedAddress, "decimals", []),
-		]);
-		return Number(balanceRaw) / 10 ** Number(decimals);
+		return await new EVMRpcProvider(chainId as EvmChainIds).getTokenBalance(
+			contractAddress as EvmAddressLike,
+			address as EvmAddressLike,
+		);
 	}
 
 	if (chain === "solana") {
