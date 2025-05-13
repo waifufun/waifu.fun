@@ -5,9 +5,35 @@
 	"private": true,
 	"pnpm": {
 		"supportedArchitectures": {
-			"os": ["current"],
-			"cpu": ["x64", "arm64"]
+			"os": [
+				"current"
+			],
+			"cpu": [
+				"x64",
+				"arm64"
+			]
 		}
+	},
+	"release": {
+		"branches": [
+			"main"
+		],
+		"plugins": [
+			"@semantic-release/commit-analyzer",
+			"@semantic-release/release-notes-generator",
+			"@semantic-release/changelog",
+			"@semantic-release/github",
+			[
+				"@semantic-release/git",
+				{
+					"assets": [
+						"CHANGELOG.md",
+						"package.json"
+					],
+					"message": "chore(release): ${nextRelease.version} [skip ci]"
+				}
+			]
+		]
 	},
 	"scripts": {
 		"build": "NODE_ENV=production pnpm -r --stream build",
@@ -19,8 +45,12 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/git": "^10.0.1",
+		"@semantic-release/github": "^11.0.2",
 		"cross-env": "^7.0.3",
 		"esbuild": "^0.25.4",
+		"semantic-release": "^24.2.3",
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5"
 	},
