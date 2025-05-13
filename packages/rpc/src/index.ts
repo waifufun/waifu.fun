@@ -1,4 +1,4 @@
-import type { EvmAddressLike, EvmChainIds, TURLLike } from "@autofun/types";
+import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@autofun/types";
 import {
 	createPublicClient,
 	erc20Abi,
@@ -76,12 +76,14 @@ export class SolanaRpcProvider {
 	public connection;
 	public client;
 	private program;
+	public networkId: SolanaNetworkIds;
 
 	constructor(networkId: SolanaNetworkIds) {
 		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
 		if (!rpc) throw new Error(`No RPC provider configured for Solana: ${networkId}`);
 		this.connection = new Connection(rpc);
 		this.client = createSolanaRpc(rpc);
+		this.networkId = networkId;
 
 		const dummyWallet = {
 			publicKey: new PublicKey("11111111111111111111111111111111"),
@@ -215,5 +217,29 @@ export class SolanaRpcProvider {
 				exists: true,
 			};
 		});
+	};
+
+	getTokenBalance = async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
+		const mint = new PublicKey(contractAddress);
+		const ownerAddress = new PublicKey(owner);
+
+		const tokenAccounts = await this.connection.getTokenAccountsByOwner(ownerAddress, {
+			mint,
+		});
+
+		if (!tokenAccounts.value.length) return 0;
+
+		const accountData = tokenAccounts.value[0]?.account.data;
+		const amount = Number(accountData?.readBigUInt64LE(64));
+
+		const accountInfo = await this.connection.getParsedAccountInfo(mint);
+		const decimals =
+			accountInfo.value?.data && "parsed" in accountInfo.value.data ? accountInfo.value.data.parsed.info.decimals : 6;
+
+		if (raw) {
+			return amount;
+		}
+
+		return amount / 10 ** decimals;
 	};
 }
