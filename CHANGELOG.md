@@ -1,3 +1,10 @@
+# [0.2.0-staging.2](https://github.com/elizaos/autofun-monorepo/compare/v0.2.0-staging.1...v0.2.0-staging.2) (2025-05-13)
+
+
+### Features
+
+* created github action that validates the PR source ([68e573d](https://github.com/elizaos/autofun-monorepo/commit/68e573da30fdbc5b570e5163baebc98ada4f0010))
+
 # [0.2.0-staging.1](https://github.com/elizaos/autofun-monorepo/compare/v0.1.1...v0.2.0-staging.1) (2025-05-13)
 
 
