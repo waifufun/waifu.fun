@@ -1,13 +1,12 @@
 name: Release
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
   release:
-    if: github.event.before != '0000000000000000000000000000000000000000'
     runs-on: ubuntu-latest
 
     steps:
@@ -32,4 +31,5 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: semantic-release:*
         run: pnpm dlx semantic-release
