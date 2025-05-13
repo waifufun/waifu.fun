@@ -4,7 +4,6 @@ import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
-import checkWalletBalance from "./utils/checkBalance";
 
 const fastify = Fastify({
 	loggerInstance: logger,
