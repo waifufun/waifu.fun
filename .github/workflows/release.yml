@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: read # for checkout
 
 jobs:
   release:
@@ -20,16 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'pnpm'
-          
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: latest
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - run: pnpm dlx semantic-release@21.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
