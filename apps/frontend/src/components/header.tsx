@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import Image from "next/image";
+import Settings from "./settings";
 
 export default function Header() {
 	return (
@@ -9,9 +10,10 @@ export default function Header() {
 			<Link href="/">
 				<Image src="/logo_wide.svg" height={60} width={120} className="h-[60px] w-auto" unoptimized alt="logo" />
 			</Link>
-			<Image src="/header-logo.svg" width={530} height={60} className="h-[60px] w-auto" alt="logo" />
+			<Image src="/header-logo.svg" width={530} height={60} className="h-[60px] w-auto select-none" alt="logo" />
 			<div className="flex items-center gap-4">
 				<Input placeholder="Search..." className="w-[430px]" />
+				<Settings />
 				<Link href="/create/import">
 					<Button variant="outline">Create Token</Button>
 				</Link>
