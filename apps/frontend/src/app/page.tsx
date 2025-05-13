@@ -19,7 +19,7 @@ export default async function Home({ searchParams }) {
 				unoptimized
 				priority
 				alt="hero"
-				className="mx-auto w-full"
+				className="mx-auto w-full select-none"
 			/>
 			<ChainSelector />
 			<div className="ml-auto flex items-center gap-2">

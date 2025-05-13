@@ -14,16 +14,43 @@
 			]
 		}
 	},
+	"release": {
+		"branches": [
+			"main"
+		],
+		"plugins": [
+			"@semantic-release/commit-analyzer",
+			"@semantic-release/release-notes-generator",
+			"@semantic-release/changelog",
+			"@semantic-release/github",
+			[
+				"@semantic-release/git",
+				{
+					"assets": [
+						"CHANGELOG.md",
+						"package.json"
+					],
+					"message": "chore(release): ${nextRelease.version} [skip ci]"
+				}
+			]
+		]
+	},
 	"scripts": {
 		"build": "NODE_ENV=production pnpm -r --stream build",
-		"dev": "NODE_ENV=development pnpm -r run dev",
+		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=2048\" pnpm -r --stream --parallel lint"
+		"docker:kill": "docker compose down -v",
+		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"esbuild": "^0.21.5",
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/git": "^10.0.1",
+		"@semantic-release/github": "^11.0.2",
+		"cross-env": "^7.0.3",
+		"esbuild": "^0.25.4",
+		"semantic-release": "^24.2.3",
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5"
 	},

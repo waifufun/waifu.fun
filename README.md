@@ -3,10 +3,7 @@
 
 `pnpm i`
 
-`docker compose up -d`
-
-Make sure you sign in to the Minio dashboard using the credentials from your .env and create a bucket named `autofun`
-
+`pnpm run dev`
 
 Optional: Using sharp on Linux x64 flavors:
 ```
