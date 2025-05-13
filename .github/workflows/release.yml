@@ -3,10 +3,13 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - master
+      - next
+      - beta
+      - "*.x"
 
 permissions:
-  contents: read
+  contents: read # for checkout
 
 jobs:
   release:
@@ -23,7 +26,7 @@ jobs:
         with:
           node-version: lts/*
           cache: 'pnpm'
-          
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
