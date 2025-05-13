@@ -283,45 +283,27 @@ export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: s
 
 export async function getTokenBalance({
 	chain,
-	wallet,
-	mintAddress,
+	address,
+	contractAddress,
 	chainId,
 }: {
 	chain: "solana" | "evm";
-	wallet: string;
-	mintAddress: string;
+	address: AddressLike;
+	contractAddress: AddressLike;
 	chainId: SolanaNetworkIds | EvmChainIds;
 }): Promise<number> {
 	if (chain === "evm") {
 		const provider = new EVMRpcProvider(chainId as EvmChainIds);
-		const checksummedAddress = getAddress(mintAddress);
+		const checksummedAddress = getAddress(contractAddress);
 		const [balanceRaw, decimals] = await Promise.all([
-			provider.readErc20Contract(checksummedAddress, "balanceOf", [getAddress(wallet)]),
+			provider.readErc20Contract(checksummedAddress, "balanceOf", [getAddress(address)]),
 			provider.readErc20Contract(checksummedAddress, "decimals", []),
 		]);
 		return Number(balanceRaw) / 10 ** Number(decimals);
 	}
 
 	if (chain === "solana") {
-		const provider = new SolanaRpcProvider(chainId as SolanaNetworkIds);
-		const mint = new PublicKey(mintAddress);
-		const owner = new PublicKey(wallet);
-
-		const tokenAccounts = await provider.connection.getTokenAccountsByOwner(owner, {
-			mint,
-		});
-
-		if (!tokenAccounts.value.length) return 0;
-
-		const accountData = tokenAccounts.value[0]?.account.data;
-		const amount = Number(accountData?.readBigUInt64LE(64));
-
-		const decimals = await provider.connection.getParsedAccountInfo(mint).then((info) => {
-			const data = (info.value?.data as any)?.parsed?.info;
-			return data?.decimals ?? 6;
-		});
-
-		return amount / 10 ** decimals;
+		return await new SolanaRpcProvider(chainId as SolanaNetworkIds).getTokenBalance(contractAddress, address);
 	}
 
 	throw new Error("Unsupported chain");

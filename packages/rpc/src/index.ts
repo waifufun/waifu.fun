@@ -70,6 +70,20 @@ export class EVMRpcProvider {
 			allowFailure: false,
 		});
 	}
+
+	getTokenBalance = async (contractAddress: EvmAddressLike, owner: EvmAddressLike, raw?: boolean) => {
+		const [balanceRaw, decimals] = await this.readErc20Multicall(
+			getAddress(contractAddress),
+			["balanceOf", "decimals"],
+			[[getAddress(owner)], undefined],
+		);
+
+		if (raw) {
+			return Number(balanceRaw);
+		}
+
+		return Number(balanceRaw) / 10 ** Number(decimals);
+	};
 }
 
 export class SolanaRpcProvider {
