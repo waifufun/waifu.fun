@@ -2,13 +2,12 @@ import { createPublicClient, http, isAddress, formatEther } from "viem";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
 
-
 export default async function checkWalletBalance(
 	walletAddress: string,
 ): Promise<{ blockchain: string; balance: string } | { error: string }> {
 	const isEvmAddress = isAddress(walletAddress);
 	if (isEvmAddress) {
-		const blockchain = "ethereum";
+		const blockchain = "evm";
 		const alchemyRpcUrl = [EVM_RPC_URLS[1]];
 		if (!alchemyRpcUrl) throw new Error("No Alchemy RPC set");
 		const ethClient = createPublicClient({
@@ -18,8 +17,8 @@ export default async function checkWalletBalance(
 			const balanceWei = await ethClient.getBalance({ address: walletAddress as `0x${string}` });
 			const balance = formatEther(balanceWei);
 			return { blockchain, balance };
-		} catch (error: any) {
-			return { error: `Error fetching Ethereum balance via Alchemy: ${error.message}` };
+		} catch (error) {
+			return { error: `Error fetching Ethereum balance via Alchemy: ${error}` };
 		}
 	} else if (!isEvmAddress) {
 		const blockchain = "solana";
@@ -31,8 +30,8 @@ export default async function checkWalletBalance(
 			const balanceLamports = await solanaConnection.getBalance(publicKey);
 			const balance = balanceLamports / 1_000_000_000;
 			return { blockchain, balance: balance.toString() };
-		} catch (error: any) {
-			return { error: `Error fetching Solana balance via Helius: ${error.message}` };
+		} catch (error) {
+			return { error: `Error fetching Solana balance via Helius: ${error}` };
 		}
 	} else {
 		return { error: "Could not identify wallet as ETH or Solana." };
