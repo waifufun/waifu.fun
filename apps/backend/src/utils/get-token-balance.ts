@@ -7,26 +7,25 @@ export async function getTokenBalance({
 	chain,
 	wallet,
 	mintAddress,
-	network,
+	chainId,
 }: {
 	chain: "solana" | "evm";
 	wallet: string;
 	mintAddress: string;
-	network: SolanaNetworkIds | EvmChainIds;
+	chainId: SolanaNetworkIds | EvmChainIds;
 }): Promise<number> {
 	if (chain === "evm") {
-		const provider = new EVMRpcProvider(network);
-
+		const provider = new EVMRpcProvider(chainId as EvmChainIds);
+		const checksummedAddress = getAddress(mintAddress);
 		const [balanceRaw, decimals] = await Promise.all([
-			provider.readErc20Contract(`0x${mintAddress}`, "balanceOf", [getAddress(wallet)]),
-			provider.readErc20Contract(`0x${mintAddress}`, "decimals", []),
+			provider.readErc20Contract(checksummedAddress, "balanceOf", [getAddress(wallet)]),
+			provider.readErc20Contract(checksummedAddress, "decimals", []),
 		]);
-
 		return Number(balanceRaw) / 10 ** Number(decimals);
 	}
 
 	if (chain === "solana") {
-		const provider = new SolanaRpcProvider(network);
+		const provider = new SolanaRpcProvider(chainId as SolanaNetworkIds);
 		const mint = new PublicKey(mintAddress);
 		const owner = new PublicKey(wallet);
 
