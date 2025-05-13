@@ -19,8 +19,6 @@ import moment from "moment";
 import redis from "@autofun/redis";
 import { SolanaRpcProvider } from "@autofun/rpc";
 import { EVMRpcProvider } from "@autofun/rpc";
-import { PublicKey } from "@solana/web3.js";
-import { getAddress } from "viem";
 
 dotenv.config();
 
