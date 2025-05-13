@@ -30,6 +30,6 @@ jobs:
 
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           DEBUG: semantic-release:*
         run: pnpm dlx semantic-release
