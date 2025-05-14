@@ -5,6 +5,7 @@ import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
 import { Grid, List } from "lucide-react";
 import Image from "next/image";
+import TransactionList from "@/components/transaction-list";
 
 export default async function Home({ searchParams }) {
 	const data = await getTokens({ searchParams: await searchParams });
@@ -35,6 +36,7 @@ export default async function Home({ searchParams }) {
 					<GridItem token={token} key={token.contractAddress} />
 				))}
 			</div>
+			<TransactionList />
 		</div>
 	);
 }

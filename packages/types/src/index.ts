@@ -94,3 +94,14 @@ export interface IFile {
 	data: string | Buffer;
 	mimetype: string;
 }
+
+export type ITransaction = {
+	id: string;
+	chain: TChain;
+    status: "pending" | "success" | "failed"
+	swapDetails: {
+		swapIn: string;
+		swapOut: string;
+	};
+	date: string;
+};
