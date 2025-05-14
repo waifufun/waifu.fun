@@ -1,11 +1,11 @@
 "use client";
 
-import useTransactions from "@/hooks/use-transaction";
+import useRecentTransactions from "@/hooks/use-transaction";
 import { Button } from "./ui/button";
 import { useState } from "react";
 
-export default function TransactionList() {
-	const { transactions, addTransaction } = useTransactions();
+export default function RecentTransactionList() {
+	const { transactions, addTransaction } = useRecentTransactions();
 	const [showList, setShowList] = useState(false);
 
 	// for testing purposes, untill we have the backend setup for transactions

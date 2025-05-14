@@ -1,11 +1,13 @@
 "use client";
 import type { ITransaction, TChain } from "@autofun/types";
-import { useState } from "react";
 import { toast } from "sonner";
+import { useLocalStorage } from "usehooks-ts"
 
-export default function useTransactions() {
-	const [transactions, setTransactions] = useState<ITransaction[]>([]);
-
+export default function useRecentTransactions() {
+    const [transactions, setTransactions] = useLocalStorage<ITransaction[]>(
+		"recent-transactions",
+		[]
+	);
 	function addTransaction(
 		chain: TChain,
 		status: "pending" | "success" | "failed",
