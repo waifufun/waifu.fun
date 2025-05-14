@@ -55,19 +55,19 @@ export default async function Holders({ token }: { token: IToken }) {
 			<TableHeader>
 				<TableRow>
 					<TableHead className="w-[100px]">Account</TableHead>
-					<TableHead>Amount</TableHead>
-					<TableHead>Percentage</TableHead>
-					<TableHead />
+					<TableHead className="w-[75px] text-right">Amount</TableHead>
+					<TableHead className="w-[75px] text-right">Percentage</TableHead>
+					<TableHead className="w-[25px]" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
 				{data.map((holder: IHolder) => (
 					<TableRow key={holder.address}>
 						<TableCell className="font-medium">{holder.address}</TableCell>
-						<TableCell>{holder.balanceFormatted}</TableCell>
-						<TableCell>{holder.percentage}</TableCell>
+						<TableCell className="text-right">{holder.balanceFormatted}</TableCell>
+						<TableCell className="text-right">{holder.percentage}</TableCell>
 						<TableCell className="text-right">
-							<ExternalLink />
+							<ExternalLink className="size-4 text-autofun-icon-secondary" />
 						</TableCell>
 					</TableRow>
 				))}
