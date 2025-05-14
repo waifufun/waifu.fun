@@ -58,7 +58,7 @@ export default async function Holders({ token }: { token: IToken }) {
 					<TableHead className="w-[100px]">Account</TableHead>
 					<TableHead className="w-[75px] text-right">Amount</TableHead>
 					<TableHead className="w-[75px] text-right">Percentage</TableHead>
-					<TableHead className="w-[25px]" />
+					<TableHead className="w-5 text-right" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -69,8 +69,8 @@ export default async function Holders({ token }: { token: IToken }) {
 						</TableCell>
 						<TableCell className="text-right">{holder.balanceFormatted}</TableCell>
 						<TableCell className="text-right">{holder.percentage}%</TableCell>
-						<TableCell className="text-right">
-							<ExternalLink className="size-4 text-autofun-icon-secondary" />
+						<TableCell>
+							<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
 						</TableCell>
 					</TableRow>
 				))}
