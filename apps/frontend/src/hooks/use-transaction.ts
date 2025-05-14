@@ -1,13 +1,10 @@
 "use client";
 import type { ITransaction, TChain } from "@autofun/types";
 import { toast } from "sonner";
-import { useLocalStorage } from "usehooks-ts"
+import { useLocalStorage } from "usehooks-ts";
 
 export default function useRecentTransactions() {
-    const [transactions, setTransactions] = useLocalStorage<ITransaction[]>(
-		"recent-transactions",
-		[]
-	);
+	const [transactions, setTransactions] = useLocalStorage<ITransaction[]>("recent-transactions", []);
 	function addTransaction(
 		chain: TChain,
 		status: "pending" | "success" | "failed",
