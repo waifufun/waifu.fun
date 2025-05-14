@@ -117,16 +117,22 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	fastify.post("/holders", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
 			contractAddress: Pick<IToken, "contractAddress">;
-			chain: TChain;
+			chain: 'solana' | 'evm';
 			chainId: TChainId;
 		};
+		const cacheKey = `${chain}:${chainId}:${contractAddress}:holders`;
 
 		const allowedChain = isChainIdAllowedForChain(chain, chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 
+		const cache = await redis.get(cacheKey);
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
 		const holders = await codex.queries.holders({
 			input: {
-				// TODO - Fix type error
+				// @ts-ignore - TODO Fix type error
 				tokenId: `${contractAddress}:${CHAINID_TO_CODEX_NETWORK_ID[chain][chainId]}`,
 				sort: {
 					attribute: HoldersSortAttribute.Balance,
@@ -136,6 +142,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		});
 
 		const items = holders?.holders?.items?.splice(0, 50);
+
+		await redis.setex(cacheKey, 10, JSON.stringify(items));
 
 		return items;
 	});
