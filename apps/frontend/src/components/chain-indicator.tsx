@@ -1,5 +1,9 @@
+"use client";
+
 import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
 import Image from "next/image";
+import { Fragment } from "react";
+import { Tooltip } from "react-tooltip";
 
 export default function ChainIndicator({
 	chain,
@@ -9,10 +13,10 @@ export default function ChainIndicator({
 	chainId: SolanaNetworkIds | EvmChainIds | null;
 }) {
 	const key = `${chain}_${chainId}`;
-	const chainIcons: Record<string, string> = {
-		[`solana_${SolanaNetworkIds.Mainnet}`]: "/chain-icons/solana.svg",
-		[`evm_${EvmChainIds.BaseMainnet}`]: "/chain-icons/base.svg",
-		[`evm_${EvmChainIds.EthereumMainnet}`]: "/chain-icons/ethereum.svg",
+	const chainIcons: Record<string, { name: string; icon: string }> = {
+		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
+		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
+		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
 	};
 
 	if (!chainIcons[key]) {
@@ -20,13 +24,19 @@ export default function ChainIndicator({
 	}
 
 	return (
-		<Image
-			src={chainIcons[key]}
-			width={128}
-			height={128}
-			unoptimized
-			alt={key}
-			className="bg-autofun-background-card/90 p-0.5 size-7 rounded-full"
-		/>
+		<Fragment>
+			<Tooltip anchorSelect={`#${key}`}>
+				<span>{chainIcons[key].name}</span>
+			</Tooltip>
+			<Image
+				id={key}
+				src={chainIcons[key].icon}
+				width={128}
+				height={128}
+				unoptimized
+				alt={key}
+				className="bg-autofun-background-card/90 p-0.5 size-6 rounded-full"
+			/>
+		</Fragment>
 	);
 }
