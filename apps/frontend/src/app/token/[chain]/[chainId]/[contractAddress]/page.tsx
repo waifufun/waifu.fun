@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { getToken } from "@/lib/api";
 import { abbreviateNumber, fromNow } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
@@ -48,6 +49,11 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 					</div>
 				</div>
 				<div className="w-full lg:w-1/2 flex flex-col gap-3 order-3 lg:order-2">
+					<div className="flex items-center gap-2">
+						{["Chart", "AI Create", "Chat", "Agents"].map((tab) => (
+							<Button key={tab}>{tab}</Button>
+						))}
+					</div>
 					<div className="w-full min-h-[500px] relative">
 						<iframe
 							height="100%"
@@ -71,14 +77,13 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							<span className="font-dm-mono text-autofun-text-secondary">Price USD</span>
 							<span className="text-xl font-dm-mono text-autofun-text-primary">{token.price}</span>
 						</div>
-						<div className="flex flex-col gap-1 items-center py-4">
-							<span className="font-dm-mono text-autofun-text-secondary">Price SOL</span>
-							<span className="text-xl font-dm-mono text-autofun-text-primary">0000</span>
-						</div>
-						<div className="flex flex-col gap-1 items-center py-4">
-							<span className="font-dm-mono text-autofun-text-secondary">Holders</span>
-							<span className="text-xl font-dm-mono text-autofun-text-primary">{token?.holders}</span>
-						</div>
+
+						{token?.holders ? (
+							<div className="flex flex-col gap-1 items-center py-4">
+								<span className="font-dm-mono text-autofun-text-secondary">Holders</span>
+								<span className="text-xl font-dm-mono text-autofun-text-primary">{token?.holders}</span>
+							</div>
+						) : null}
 					</div>
 				</div>
 			</div>
