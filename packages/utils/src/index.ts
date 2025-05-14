@@ -113,15 +113,15 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 	const tokensToQuery = tokensToPopulate
 		.filter((t) => t?.imported)
-		.map(({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
+		.map((token: IToken) => {
+			const { chain, chainId, contractAddress } = token;
 			const networkId =
 				chain === "evm"
 					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
 					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
 
-			if (tokensToPopulate[idx]) {
-				tokenIndex[contractAddress] = tokensToPopulate[idx];
-			}
+			tokenIndex[contractAddress] = token;
+
 			return `${contractAddress}:${networkId}`;
 		});
 
