@@ -66,7 +66,6 @@ export async function txLookUp({
 		try {
 			const tx = await client.getTransaction({ hash: txid as `0x${string}` });
 			const receipt = await client.getTransactionReceipt({ hash: txid as `0x${string}` });
-			// I need the ERC-20 ABI
 			const fromAmount = Number(formatEther(tx.value));
 			const block = await client.getBlock({ blockNumber: receipt.blockNumber });
 			const timestamp = Number(block.timestamp) * 1000;

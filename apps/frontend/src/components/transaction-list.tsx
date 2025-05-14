@@ -10,7 +10,7 @@ export default function RecentTransactionList() {
 
 	// for testing purposes, untill we have the backend setup for transactions
 	const handleAdd = () => {
-		addTransaction("0x0a2800c8965beb4a3660f5f7a74592749a320cc2a28b1bc4e6445bf18122dd96", "evm");
+		addTransaction("9c5tfhP323JJ867afwRQPMw9Dgq3tzuviqXVTHqfxXs6taShMC7RyRG424TAmtpejyQPxSVHwYvjfo3bDjicKdJ", "solana");
 	};
 
 	return (
@@ -30,7 +30,7 @@ export default function RecentTransactionList() {
 								<span className="font-semibold">Swap:</span> {tx.swapDetails.swapIn} → {tx.swapDetails.swapOut}
 							</p>
 							<p>
-								<span className="font-semibold uppercase">Chain:</span> {tx.chain}
+								<span className="font-semibold">Chain:</span> {tx.chain}
 							</p>
 							<p>
 								<span className="font-semibold">Status:</span> {tx.status}
