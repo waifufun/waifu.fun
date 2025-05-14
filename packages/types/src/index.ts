@@ -74,10 +74,20 @@ export interface IUser {
 	address: AddressLike;
 	suspended?: boolean;
 	displayName?: string;
-	avatar?: string;
+	avatar?: TURLLike;
 	verified?: boolean;
 	twitter?: string;
 	points?: number;
+}
+
+export type TChatRooms = 1000 | 100_000 | 1_000_000;
+
+export interface IChatMessage {
+	contractAddress: Pick<IToken, "contractAddress">;
+	sender: AddressLike;
+	room: TChatRooms;
+	image?: TURLLike;
+	message: string;
 }
 
 export interface IFile {
