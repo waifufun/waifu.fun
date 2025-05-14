@@ -14,7 +14,7 @@ export default function useTransactions() {
 		date: string,
 	) {
 		const newTransaction: ITransaction = {
-			id: crypto.randomUUID(),
+			txId: crypto.randomUUID(),
 			chain,
 			address: "0ximplememntedsoon",
 			status,
@@ -24,7 +24,7 @@ export default function useTransactions() {
 
 		setTransactions((prev) => [...prev, newTransaction]);
 
-		toast.success("Transaction added!", {
+		toast.success("Transaction created!", {
 			description: `${swapIn} → ${swapOut} on ${chain} (${status})`,
 		});
 	}

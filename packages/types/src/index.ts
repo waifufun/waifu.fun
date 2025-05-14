@@ -96,7 +96,7 @@ export interface IFile {
 }
 
 export type ITransaction = {
-	id: string;
+	txId: string;
 	address: AddressLike
 	chain: TChain;
     status: "pending" | "success" | "failed"
