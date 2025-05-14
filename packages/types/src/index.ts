@@ -97,9 +97,9 @@ export interface IFile {
 
 export type ITransaction = {
 	txId: string;
-	address: AddressLike
+	address: AddressLike;
 	chain: TChain;
-    status: "pending" | "success" | "failed"
+	status: "pending" | "success" | "failed";
 	swapDetails: {
 		swapIn: string;
 		swapOut: string;

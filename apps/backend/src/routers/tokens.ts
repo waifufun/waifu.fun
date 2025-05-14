@@ -117,7 +117,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	fastify.post("/holders", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
 			contractAddress: Pick<IToken, "contractAddress">;
-			chain: 'solana' | 'evm';
+			chain: "solana" | "evm";
 			chainId: TChainId;
 		};
 		const cacheKey = `${chain}:${chainId}:${contractAddress}:holders`;
