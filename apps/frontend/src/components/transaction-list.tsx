@@ -10,9 +10,8 @@ export default function RecentTransactionList() {
 
 	// for testing purposes, untill we have the backend setup for transactions
 	const handleAdd = () => {
-		addTransaction("0x2f30fb1ae3ced144a985bd111001be3fda2bfa0cd7a9111dd1d1a48f42894677");
+		addTransaction("0x2f8b11478e58be277fbbd424ec2f3739ec06b60a16c8a8d8d920d3647e97d485", "evm");
 	};
-	console.log(transactions)
 
 	return (
 		<div>
