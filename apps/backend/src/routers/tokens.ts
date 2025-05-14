@@ -13,9 +13,11 @@ import { isChainIdAllowedForChain, isSupportedAddress, populateTokensWithLiveDat
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
-import { CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
+import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
 import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
+import { codex } from "@autofun/utils";
+import { HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/resources/graphql";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -110,6 +112,32 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Upload the metadata of a token */
 	fastify.post("/create", async (request) => {
 		return true;
+	});
+
+	fastify.post("/holders", async (request) => {
+		const { contractAddress, chain, chainId } = request.body as {
+			contractAddress: Pick<IToken, "contractAddress">;
+			chain: TChain;
+			chainId: TChainId;
+		};
+
+		const allowedChain = isChainIdAllowedForChain(chain, chainId);
+		if (!allowedChain) throw new Error("Unsupported chain pair");
+
+		const holders = await codex.queries.holders({
+			input: {
+				// TODO - Fix type error
+				tokenId: `${contractAddress}:${CHAINID_TO_CODEX_NETWORK_ID[chain][chainId]}`,
+				sort: {
+					attribute: HoldersSortAttribute.Balance,
+					direction: RankingDirection.Desc,
+				},
+			},
+		});
+
+		const items = holders?.holders?.items?.splice(0, 50);
+
+		return items;
 	});
 
 	/** Import an existing token */

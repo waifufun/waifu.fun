@@ -1,4 +1,4 @@
-import type { IChatMessage, } from "@autofun/types";
+import type { IChatMessage } from "@autofun/types";
 import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
