@@ -1,4 +1,6 @@
+import Swap from "@/components/swap";
 import { Button } from "@/components/ui/button";
+import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
 import { abbreviateNumber, fromNow } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
@@ -20,6 +22,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 						<div className="flex flex-col">
 							{/* Name */}
 							<div className="flex items-center gap-3">
+								<Verified isVerified={token?.verified} />
 								<span className="text-white text-2xl font-medium font-satoshi uppercase">{token.name}</span>
 								<div className="h-5 w-[1px] bg-autofun-background-disabled" />
 								<span className="text-xl font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
@@ -71,7 +74,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							className="min-h-[500px] h-full"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
-							src={`https://www.geckoterminal.com/base/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
+							src={`https://www.geckoterminal.com/${token.chain}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
 							allow="clipboard-write"
 							allowFullScreen
 						/>
@@ -83,6 +86,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 					</div>
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
+					<Swap />
 					<div className="flex justify-between flex-col">
 						<div className="flex flex-col gap-1 items-center py-4">
 							<span className=" text-autofun-text-secondary">Total Supply</span>
