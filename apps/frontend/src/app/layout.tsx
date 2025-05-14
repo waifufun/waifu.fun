@@ -10,6 +10,7 @@ import { WagmiProvider } from 'wagmi'
 import { arbitrum, base, baseSepolia, mainnet } from '@reown/appkit/networks'
 import type { AppKitNetwork } from "@reown/appkit/networks";
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { ParentProvider } from "@/components/hooks/providers/ParentProvider";
 
 
 const queryClient = new QueryClient()
@@ -57,13 +58,15 @@ export default function RootLayout({
 		>
 			<body className={"font-satoshi bg-autofun-background-primary text-autofun-text-primary antialiased"}>
 				<WagmiProvider config={wagmiAdapter.wagmiConfig}>
-					<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
-						<QueryClientProvider client={queryClient}>
-							<Header />
-							<div className="xl:px-4">{children}</div>
-							<Toaster />
-						</QueryClientProvider>
-					</ProgressProvider>
+						<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
+							<QueryClientProvider client={queryClient}>
+								<ParentProvider>
+									<Header />
+									<div className="xl:px-4">{children}</div>
+									<Toaster />
+								</ParentProvider>
+							</QueryClientProvider>
+						</ProgressProvider>
 				</WagmiProvider>
 			</body>
 		</html>
