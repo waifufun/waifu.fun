@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  release:
+    permissions:
+      contents: write # to publish a GitHub release
+      issues: write # to comment on released issues
+      pull-requests: write # to comment on released pull requests
+
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - run: pnpm install
+      - run: pnpm dlx semantic-release@21.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

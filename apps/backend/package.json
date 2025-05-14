@@ -21,13 +21,14 @@
 		"rimraf": "^6.0.1"
 	},
 	"dependencies": {
+		"@autofun/constants": "workspace:*",
 		"@autofun/database": "workspace:*",
 		"@autofun/logger": "workspace:*",
 		"@autofun/redis": "workspace:*",
-		"@autofun/constants": "workspace:*",
 		"@autofun/rpc": "workspace:*",
 		"@autofun/s3-uploader": "workspace:*",
 		"@autofun/utils": "workspace:*",
+		"@codex-data/sdk": "^1.0.6",
 		"@fastify/cors": "^11.0.1",
 		"@fastify/helmet": "^13.0.1",
 		"@solana/kit": "^2.1.0",

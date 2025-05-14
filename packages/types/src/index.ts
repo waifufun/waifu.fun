@@ -3,10 +3,6 @@ import type { Address as EvmAddressLikeImport } from "viem";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
-export interface IUser {
-	address: SolanaAddressLike | EvmAddressLike;
-	points: number;
-}
 
 export type TChain = "solana" | "evm";
 
@@ -72,6 +68,35 @@ export interface ITokenSocials {
 	website?: TURLLike;
 	discord?: TURLLike;
 	telegram?: TURLLike;
+}
+
+export interface IUser {
+	address: AddressLike;
+	suspended?: boolean;
+	displayName?: string;
+	avatar?: TURLLike;
+	verified?: boolean;
+	twitter?: string;
+	points?: number;
+}
+
+export type TChatRooms = 1000 | 100_000 | 1_000_000;
+
+export interface IHolder {
+	address: AddressLike;
+	balance: number | string;
+	balanceFormatted: number | string;
+	percentage: number;
+	isBondingCurve?: boolean;
+	isCreator?: boolean;
+}
+
+export interface IChatMessage {
+	contractAddress: Pick<IToken, "contractAddress">;
+	sender: AddressLike;
+	room: TChatRooms;
+	image?: TURLLike;
+	message: string;
 }
 
 export interface IFile {

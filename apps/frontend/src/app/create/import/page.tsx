@@ -77,7 +77,7 @@ export default function Page() {
 						contractAddress,
 					});
 				}}
-				disabled={!contractAddress}
+				disabled={!contractAddress || mutation?.isPending}
 			>
 				Import
 			</Button>

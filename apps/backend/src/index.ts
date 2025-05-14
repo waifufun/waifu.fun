@@ -4,6 +4,7 @@ import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
+import chatRoutes from "./routers/chat";
 
 const fastify = Fastify({
 	loggerInstance: logger,
@@ -22,6 +23,7 @@ fastify.get("/", (_, reply) => {
 
 fastify.register(tokenRoutes, { prefix: "/tokens" });
 fastify.register(pricesRoutes, { prefix: "/prices" });
+fastify.register(chatRoutes, { prefix: "/chat" });
 
 const port = 3001;
 
