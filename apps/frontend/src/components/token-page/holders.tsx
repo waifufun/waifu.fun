@@ -2,6 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getHolders } from "@/lib/api";
 import type { IHolder, IToken } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
+import HolderLabels from "./holder-labels";
 
 const invoices = [
 	{
@@ -63,9 +64,11 @@ export default async function Holders({ token }: { token: IToken }) {
 			<TableBody>
 				{data.map((holder: IHolder) => (
 					<TableRow key={holder.address}>
-						<TableCell className="font-medium">{holder.address}</TableCell>
+						<TableCell className="font-medium flex items-center gap-2">
+							{holder.address} <HolderLabels address={holder.address} />
+						</TableCell>
 						<TableCell className="text-right">{holder.balanceFormatted}</TableCell>
-						<TableCell className="text-right">{holder.percentage}</TableCell>
+						<TableCell className="text-right">{holder.percentage}%</TableCell>
 						<TableCell className="text-right">
 							<ExternalLink className="size-4 text-autofun-icon-secondary" />
 						</TableCell>
