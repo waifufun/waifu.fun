@@ -4,8 +4,9 @@ import Holders from "./holders";
 import AICreate from "./ai-create";
 import Chat from "./chat";
 import Agents from "./agents";
+import type { IToken } from "@autofun/types";
 
-export default function TokenTabs() {
+export default function TokenTabs({ token }: { token: IToken }) {
 	return (
 		<Tabs defaultValue="trades">
 			<TabsList className="grid w-full grid-cols-5">
@@ -19,7 +20,7 @@ export default function TokenTabs() {
 				<Trades />
 			</TabsContent>
 			<TabsContent value="holders">
-				<Holders />
+				<Holders token={token} />
 			</TabsContent>
 			<TabsContent value="ai-create">
 				<AICreate />

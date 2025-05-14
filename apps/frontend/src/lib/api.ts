@@ -47,3 +47,7 @@ export const importToken = async ({ chain, chainId, contractAddress }: ITokenLoo
 		chainId,
 	});
 };
+
+export const getHolders = async ({ chain, chainId, contractAddress }) => {
+	return await fetcher("/tokens/holders", "POST", { chain, chainId, contractAddress });
+};
