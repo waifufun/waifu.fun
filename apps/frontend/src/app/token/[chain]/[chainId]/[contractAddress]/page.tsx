@@ -13,22 +13,22 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 		<div className="flex flex-col gap-3">
 			<div className="w-full py-10 flex flex-wrap justify-between">
 				<div className="flex-1 flex flex-col items-center">
-					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold font-dm-mono text-autofun-text-highlight">
+					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold  text-autofun-text-highlight">
 						{token?.marketcap ? abbreviateNumber(token?.marketcap) : "-"}
 					</span>
-					<span className="text-base md:text-lg font-dm-mono text-autofun-text-secondary mt-3">Market Cap</span>
+					<span className="text-base md:text-lg  text-autofun-text-secondary mt-3">Market Cap</span>
 				</div>
 				<div className="flex-1 flex flex-col items-center">
-					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold font-dm-mono text-autofun-text-highlight">
+					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold  text-autofun-text-highlight">
 						{token?.volume24h ? abbreviateNumber(token?.volume24h) : "-"}
 					</span>
-					<span className="text-base md:text-lg font-dm-mono text-autofun-text-secondary mt-3">24hr Volume</span>
+					<span className="text-base md:text-lg  text-autofun-text-secondary mt-3">24hr Volume</span>
 				</div>
 				<div className="flex-1 flex flex-col items-center">
-					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold font-dm-mono text-autofun-text-highlight">
+					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold  text-autofun-text-highlight">
 						{token?.createdAt ? fromNow(token?.createdAt, true) : "-"}
 					</span>
-					<span className="text-base md:text-lg font-dm-mono text-autofun-text-secondary mt-3">Age</span>
+					<span className="text-base md:text-lg  text-autofun-text-secondary mt-3">Age</span>
 				</div>
 			</div>
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
@@ -76,22 +76,22 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
 					<div className="flex justify-between flex-col">
 						<div className="flex flex-col gap-1 items-center py-4">
-							<span className="font-dm-mono text-autofun-text-secondary">Total Supply</span>
-							<span className="text-xl font-dm-mono text-autofun-text-primary">
+							<span className=" text-autofun-text-secondary">Total Supply</span>
+							<span className="text-xl  text-autofun-text-primary">
 								{token?.totalSupply && token?.decimals
 									? abbreviateNumber(Number(formatUnits(BigInt(token.totalSupply), token.decimals)), true)
 									: "-"}
 							</span>
 						</div>
 						<div className="flex flex-col gap-1 items-center py-4">
-							<span className="font-dm-mono text-autofun-text-secondary">Price USD</span>
-							<span className="text-xl font-dm-mono text-autofun-text-primary">{token.price}</span>
+							<span className=" text-autofun-text-secondary">Price USD</span>
+							<span className="text-xl  text-autofun-text-primary">{token.price}</span>
 						</div>
 
 						{token?.holders ? (
 							<div className="flex flex-col gap-1 items-center py-4">
-								<span className="font-dm-mono text-autofun-text-secondary">Holders</span>
-								<span className="text-xl font-dm-mono text-autofun-text-primary">{token?.holders}</span>
+								<span className=" text-autofun-text-secondary">Holders</span>
+								<span className="text-xl  text-autofun-text-primary">{token?.holders}</span>
 							</div>
 						) : null}
 					</div>

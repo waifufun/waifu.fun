@@ -17,13 +17,13 @@ export const GridItem = ({ token }: { token: IToken }) => {
 				<div className="absolute left-0 bottom-0 p-2 px-3 w-full z-10">
 					<div className="flex items-center gap-4 justify-between">
 						<div className="flex items-center gap-2 w-full min-w-0">
-							<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-primary text-lg font-bold font-dm-mono uppercase leading-normal tracking-widest truncate min-w-0 drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
+							<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-primary text-lg font-bold  uppercase leading-normal tracking-widest truncate min-w-0 drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
 								${token.ticker}
 							</div>
 							<Verified isVerified={token?.verified} />
 						</div>
 						{token?.createdAt ? (
-							<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-primary text-lg shrink-0 font-medium font-dm-mono drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
+							<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-primary text-lg shrink-0 font-medium  drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
 								{fromNow(token?.createdAt, true)}
 							</div>
 						) : null}
@@ -31,10 +31,10 @@ export const GridItem = ({ token }: { token: IToken }) => {
 				</div>
 				<div className="flex flex-col w-full min-w-0 z-10">
 					<div className="absolute flex flex-col top-0 right-0 p-2 px-3 items-end min-w-0 gap-2">
-						<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-highlight text-xl font-medium font-dm-mono leading-7 truncate drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
+						<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-highlight text-xl font-medium  leading-7 truncate drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
 							MC {abbreviateNumber(token.marketcap)}
 						</div>
-						<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-primary text-xl font-medium font-dm-mono leading-7 truncate drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
+						<div className="bg-autofun-background-muted/65 px-1 text-autofun-text-primary text-xl font-medium  leading-7 truncate drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
 							Vol {abbreviateNumber(token.volume24h)}
 						</div>
 					</div>
