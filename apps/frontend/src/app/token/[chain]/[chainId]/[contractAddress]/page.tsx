@@ -11,48 +11,39 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 
 	return (
 		<div className="flex flex-col gap-3">
-			<div className="w-full py-10 flex flex-wrap justify-between">
-				<div className="flex-1 flex flex-col items-center">
-					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold  text-autofun-text-highlight">
-						{token?.marketcap ? abbreviateNumber(token?.marketcap) : "-"}
-					</span>
-					<span className="text-base md:text-lg  text-autofun-text-secondary mt-3">Market Cap</span>
-				</div>
-				<div className="flex-1 flex flex-col items-center">
-					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold  text-autofun-text-highlight">
-						{token?.volume24h ? abbreviateNumber(token?.volume24h) : "-"}
-					</span>
-					<span className="text-base md:text-lg  text-autofun-text-secondary mt-3">24hr Volume</span>
-				</div>
-				<div className="flex-1 flex flex-col items-center">
-					<span className="text-2xl md:text-4xl xl:text-6xl font-extrabold  text-autofun-text-highlight">
-						{token?.createdAt ? fromNow(token?.createdAt, true) : "-"}
-					</span>
-					<span className="text-base md:text-lg  text-autofun-text-secondary mt-3">Age</span>
-				</div>
-			</div>
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
-				<div className="w-full lg:w-1/4 flex flex-col gap-3 order-1 lg:order-1">
-					<div className="flex flex-col gap-3">
-						<Image src={token.image} width={500} height={500} unoptimized alt={token.name} />
-
-						{/* Description */}
-						{/* <div>{token?.description}</div> */}
-						{/* Contractaddress */}
-						<div>{token?.contractAddress}</div>
-						{/* Socials */}
-						<div className="flex flex-col gap-4">
-							{token?.socials?.twitter}
-							{token?.socials?.website}
-							{token?.socials?.telegram}
-							{token?.socials?.discord}
-						</div>
-					</div>
-				</div>
-				<div className="w-full lg:w-1/2 flex flex-col gap-4 order-3 lg:order-2">
-					<div className="flex items-center gap-2">
-						{["Chart", "AI Create", "Chat", "Agents"].map((tab) => (
-							<Button key={tab}>{tab}</Button>
+				<div className="w-full lg:w-3/4 flex flex-col gap-4 order-3 lg:order-2">
+					<div className="w-full flex flex-wrap justify-between">
+						{[
+							{
+								title: "Market Cap",
+								value: token?.marketcap ? abbreviateNumber(token?.marketcap) : "-",
+							},
+							{
+								title: "24hr Volume",
+								value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
+							},
+							{
+								title: "Holders",
+								value: token?.holders,
+							},
+							{
+								title: "Price",
+								value: token?.price,
+							},
+							{
+								title: "Age",
+								value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
+							},
+						].map((item, _) => (
+							<div className="px-3 py-4 inline-flex justify-center items-center gap-3" key={_}>
+								<div className="justify-start text-autofun-text-secondary  text-xl font-medium font-satoshi leading-tight">
+									{item.title}
+								</div>
+								<div className="justify-start text-autofun-text-highlight text-2xl font-medium font-satoshi leading-normal">
+									{item.value}
+								</div>
+							</div>
 						))}
 					</div>
 					<div className="w-full min-h-[500px] relative">
@@ -68,7 +59,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 						/>
 					</div>
 					<div className="flex items-center gap-2">
-						{["Trades", "Holders"].map((tab) => (
+						{["Trades", "Holders", "AI Create", "Chat", "Agents"].map((tab) => (
 							<Button key={tab}>{tab}</Button>
 						))}
 					</div>
