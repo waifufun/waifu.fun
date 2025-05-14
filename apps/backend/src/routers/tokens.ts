@@ -205,8 +205,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				createdAt,
 			};
 
-			await DB.Token.create([tokenData]);
-			await populateTokensWithLiveData([tokenData]);
+			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
 		} else if (chain === "solana") {
 			const solanaChainId = chainId as unknown as SolanaNetworkIds;
 			const rpc = new SolanaRpcProvider(solanaChainId);
@@ -242,8 +241,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				createdAt: new Date(),
 			};
 
-			await DB.Token.create([tokenData]);
-			await populateTokensWithLiveData([tokenData]);
+			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
 		}
 
 		return true;
