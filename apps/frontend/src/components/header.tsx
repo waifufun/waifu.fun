@@ -3,6 +3,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import Image from "next/image";
 import Settings from "./settings";
+// for testing purposes, will be changed as soon we have the wallet/user components
+import TransactionList from "./transaction-list";
 
 export default function Header() {
 	return (
@@ -18,6 +20,7 @@ export default function Header() {
 					<Button variant="outline">Create Token</Button>
 				</Link>
 				<Button>Connect Wallet</Button>
+				<TransactionList />
 			</div>
 		</div>
 	);

@@ -16,6 +16,7 @@ export default function useTransactions() {
 		const newTransaction: ITransaction = {
 			id: crypto.randomUUID(),
 			chain,
+			address: "0ximplememntedsoon",
 			status,
 			swapDetails: { swapIn, swapOut },
 			date,
