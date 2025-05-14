@@ -48,7 +48,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 						</div>
 					</div>
 				</div>
-				<div className="w-full lg:w-1/2 flex flex-col gap-3 order-3 lg:order-2">
+				<div className="w-full lg:w-1/2 flex flex-col gap-4 order-3 lg:order-2">
 					<div className="flex items-center gap-2">
 						{["Chart", "AI Create", "Chat", "Agents"].map((tab) => (
 							<Button key={tab}>{tab}</Button>
@@ -58,13 +58,18 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 						<iframe
 							height="100%"
 							width="100%"
-							className="min-h-[500px] mt-2"
+							className="min-h-[500px] h-full"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
 							src={`https://www.geckoterminal.com/base/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
 							allow="clipboard-write"
 							allowFullScreen
 						/>
+					</div>
+					<div className="flex items-center gap-2">
+						{["Trades", "Holders"].map((tab) => (
+							<Button key={tab}>{tab}</Button>
+						))}
 					</div>
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
