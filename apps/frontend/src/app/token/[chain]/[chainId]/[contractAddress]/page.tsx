@@ -3,6 +3,7 @@ import { getToken } from "@/lib/api";
 import { abbreviateNumber, fromNow } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
+import { formatUnits } from "viem";
 
 export default async function Page({ params }: { params: ITokenLookUp }) {
 	const tokenParams = await params;
@@ -76,7 +77,11 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 					<div className="flex justify-between flex-col">
 						<div className="flex flex-col gap-1 items-center py-4">
 							<span className="font-dm-mono text-autofun-text-secondary">Total Supply</span>
-							<span className="text-xl font-dm-mono text-autofun-text-primary">{token.totalSupply}</span>
+							<span className="text-xl font-dm-mono text-autofun-text-primary">
+								{token?.totalSupply && token?.decimals
+									? abbreviateNumber(Number(formatUnits(BigInt(token.totalSupply), token.decimals)), true)
+									: "-"}
+							</span>
 						</div>
 						<div className="flex flex-col gap-1 items-center py-4">
 							<span className="font-dm-mono text-autofun-text-secondary">Price USD</span>
