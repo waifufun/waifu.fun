@@ -1,5 +1,5 @@
-import Swap from "@/components/swap";
-import { Button } from "@/components/ui/button";
+import Swap from "@/components/token-page/swap";
+import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
 import { abbreviateNumber, fromNow } from "@/lib/utils";
@@ -56,8 +56,8 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 								title: "Age",
 								value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
 							},
-						].map((item, _) => (
-							<div className="inline-flex justify-center items-center gap-3" key={_}>
+						].map((item) => (
+							<div className="inline-flex justify-center items-center gap-3" key={item.title}>
 								<div className="justify-start text-autofun-text-secondary  text-xl font-medium font-satoshi leading-tight">
 									{item.title}
 								</div>
@@ -79,11 +79,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							allowFullScreen
 						/>
 					</div>
-					<div className="flex items-center gap-2">
-						{["Trades", "Holders", "AI Create", "Chat", "Agents"].map((tab) => (
-							<Button key={tab}>{tab}</Button>
-						))}
-					</div>
+					<TokenTabs />
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
 					<Swap />
