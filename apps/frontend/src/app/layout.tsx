@@ -22,7 +22,14 @@ export default function RootLayout({
 			}}
 		>
 			<body className={"font-satoshi bg-autofun-background-primary text-autofun-text-primary antialiased"}>
-				<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
+				<ProgressProvider
+					height="4px"
+					color="#03FF24"
+					options={{
+						showSpinner: false,
+					}}
+					disableSameURL={false}
+				>
 					<QueryClientProvider client={queryClient}>
 						<Header />
 						<div className="xl:px-4">{children}</div>

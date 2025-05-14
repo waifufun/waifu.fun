@@ -219,6 +219,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 			const setValues = {
 				marketcap: Number(tokenRecord.marketCapUSD),
+				// TODO - Add proper USD price
 				price: Number(tokenRecord.marketCapUSD),
 				curveCompleted: Boolean(tokenRecord.curveCompleted),
 				curveProgress: Number(tokenRecord.curveProgress),
