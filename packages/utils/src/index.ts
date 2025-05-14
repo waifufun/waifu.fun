@@ -328,3 +328,12 @@ export async function getTokenBalance({
 
 	throw new Error("Unsupported chain");
 }
+
+export const getPercentageOfTotal = (value: number, total: number): string | number => {
+	if (total === 0) {
+		return 0;
+	}
+
+	const percentage = (value / total) * 100;
+	return percentage?.toFixed(2);
+};
