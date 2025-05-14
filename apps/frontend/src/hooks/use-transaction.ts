@@ -5,6 +5,7 @@ import { useLocalStorage } from "usehooks-ts";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 import { formatEther } from "viem";
+import { Connection } from "@solana/web3.js";
 
 export default function useRecentTransactions() {
 	const [transactions, setTransactions] = useLocalStorage<ITransaction[]>("recent-transactions", []);
@@ -32,7 +33,7 @@ export default function useRecentTransactions() {
 
 			setTransactions((prev) => [...prev, newTransaction]);
 			toast.success("Transaction added!", {
-				description: `${txDetails.fromAmount} → ${txDetails.toAmount} on EVM (${txDetails.status})`,
+				description: `${txDetails.fromAmount} → ${txDetails.toAmount} on ${chain} (${txDetails.status})`,
 			});
 		} catch (err) {
 			toast.error("Failed to add transaction");
@@ -65,6 +66,7 @@ export async function txLookUp({
 		try {
 			const tx = await client.getTransaction({ hash: txid as `0x${string}` });
 			const receipt = await client.getTransactionReceipt({ hash: txid as `0x${string}` });
+			// I need the ERC-20 ABI
 			const fromAmount = Number(formatEther(tx.value));
 			const block = await client.getBlock({ blockNumber: receipt.blockNumber });
 			const timestamp = Number(block.timestamp) * 1000;
@@ -84,15 +86,43 @@ export async function txLookUp({
 			};
 		} catch (err) {
 			console.error("EVM tx lookup failed:", err);
-			return {
-				status: "failed",
-				fromToken: "",
-				toToken: "",
-				fromAmount: 0,
-				toAmount: 0,
-				date: "",
-			};
+			return { status: "failed", fromToken: "", toToken: "", fromAmount: 0, toAmount: 0, date: "" };
 		}
+	} else if (chain === "solana") {
+		// use the constants for rpc url!
+		const heliusApiKey = process.env.HELIUS_API_KEY;
+		const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+		const signature = txid;
+		const tx = await connection.getParsedTransaction(signature, {
+			maxSupportedTransactionVersion: 0,
+		});
+		const logs = tx?.meta?.logMessages || [];
+
+		let amount_in: string | null = null;
+		let minimum_amount_out: string | null = null;
+
+		for (const log of logs) {
+			const match = log.match(/amount_in:\s*(\d+),\s*minimum_amount_out:\s*(\d+)/);
+			if (match) {
+				amount_in = match[1];
+				minimum_amount_out = match[2];
+				break;
+			}
+		}
+		const fromAmount = amount_in ? Number.parseInt(amount_in, 10) : 0;
+		const toAmount = minimum_amount_out ? Number.parseInt(minimum_amount_out, 10) : 0;
+		const date = new Date(tx?.blockTime * 1000).toISOString();
+
+		if (!tx) throw new Error("Transaction not found");
+
+		return {
+			status: "success",
+			fromToken: "Sol",
+			toToken: "Sol",
+			fromAmount,
+			toAmount,
+			date,
+		};
 	}
 
 	throw new Error("Unsupported chain");

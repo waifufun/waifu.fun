@@ -10,7 +10,7 @@ export default function RecentTransactionList() {
 
 	// for testing purposes, untill we have the backend setup for transactions
 	const handleAdd = () => {
-		addTransaction("0x2f8b11478e58be277fbbd424ec2f3739ec06b60a16c8a8d8d920d3647e97d485", "evm");
+		addTransaction("0x0a2800c8965beb4a3660f5f7a74592749a320cc2a28b1bc4e6445bf18122dd96", "evm");
 	};
 
 	return (
@@ -36,7 +36,8 @@ export default function RecentTransactionList() {
 								<span className="font-semibold">Status:</span> {tx.status}
 							</p>
 							<p>
-								<span className="font-semibold">Date:</span> {tx.date}
+								<span className="font-semibold">Date: </span>
+								{new Date(tx.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
 							</p>
 						</div>
 					))}
