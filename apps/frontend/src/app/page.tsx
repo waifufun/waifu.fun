@@ -1,5 +1,6 @@
 import ChainSelector from "@/components/chain-selector";
 import { GridItem } from "@/components/grid-item";
+import RecentTransactionList from "@/components/transaction-list";
 import { Button } from "@/components/ui/button";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
@@ -35,6 +36,7 @@ export default async function Home({ searchParams }) {
 					<GridItem token={token} key={token.contractAddress} />
 				))}
 			</div>
+			<RecentTransactionList />
 		</div>
 	);
 }

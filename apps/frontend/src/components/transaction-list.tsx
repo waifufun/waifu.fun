@@ -10,8 +10,9 @@ export default function RecentTransactionList() {
 
 	// for testing purposes, untill we have the backend setup for transactions
 	const handleAdd = () => {
-		addTransaction("evm", "pending", "1 ETH", "2000 USDC", new Date().toLocaleString());
+		addTransaction("0x2f30fb1ae3ced144a985bd111001be3fda2bfa0cd7a9111dd1d1a48f42894677");
 	};
+	console.log(transactions)
 
 	return (
 		<div>
@@ -24,8 +25,8 @@ export default function RecentTransactionList() {
 
 			{showList && (
 				<div className="space-y-4 bg-white/10 w-fit min-w-[400px] rounded-xl p-4 shadow-lg backdrop-blur-md">
-					{transactions.map((tx) => (
-						<div key={tx.txId} className="bg-white/20 p-4 rounded-lg border border-white/30 shadow-sm space-y-1">
+					{transactions.map((tx, _) => (
+						<div key={_} className="bg-white/20 p-4 rounded-lg border border-white/30 shadow-sm space-y-1">
 							<p>
 								<span className="font-semibold">Swap:</span> {tx.swapDetails.swapIn} → {tx.swapDetails.swapOut}
 							</p>
