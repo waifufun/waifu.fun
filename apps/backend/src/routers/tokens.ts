@@ -166,8 +166,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				address: item.address,
 				balance: item.balance,
 				balanceFormatted: item.shiftedBalance,
+				// TODO - Add bonding curve
 				isBondingCurve: false,
-				isCreator: false,
+				isCreator: token?.creator === item.address,
 				percentage,
 			} as IHolder;
 		});
