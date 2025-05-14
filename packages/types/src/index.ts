@@ -3,10 +3,6 @@ import type { Address as EvmAddressLikeImport } from "viem";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
-export interface IUser {
-	address: SolanaAddressLike | EvmAddressLike;
-	points: number;
-}
 
 export type TChain = "solana" | "evm";
 
@@ -72,6 +68,16 @@ export interface ITokenSocials {
 	website?: TURLLike;
 	discord?: TURLLike;
 	telegram?: TURLLike;
+}
+
+export interface IUser {
+	address: AddressLike;
+	suspended?: boolean;
+	displayName?: string;
+	avatar?: string;
+	verified?: boolean;
+	twitter?: string;
+	points?: number;
 }
 
 export interface IFile {
