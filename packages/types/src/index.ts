@@ -1,5 +1,5 @@
 import type { Address as SolanaAddressLikeImport } from "@solana/kit";
-import type { Address as EvmAddressLikeImport } from "viem";
+import type { Address as EvmAddressLikeImport, Hash } from "viem";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
@@ -104,14 +104,15 @@ export interface IFile {
 	mimetype: string;
 }
 
-export type ITransaction = {
-	txId: string;
-	address: AddressLike;
+export type IRecentTransaction = {
+	txId: Hash | string;
+	from: AddressLike;
 	chain: TChain;
-	status: "pending" | "success" | "failed" | "reverted";
-	swapDetails: {
+	chainId: TChainId;
+	status: "pending" | "success" | "reverted";
+	swapDetails?: {
 		swapIn: string;
 		swapOut: string;
 	};
-	date: string;
+	timestamp?: Date;
 };

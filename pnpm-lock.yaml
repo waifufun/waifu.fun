@@ -96,6 +96,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@autofun/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@bprogress/next':
         specifier: ^3.2.12
         version: 3.2.12(next@15.3.2(@babel/core@7.27.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
