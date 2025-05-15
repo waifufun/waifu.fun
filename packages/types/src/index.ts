@@ -103,3 +103,15 @@ export interface IFile {
 	data: string | Buffer;
 	mimetype: string;
 }
+
+export type ITransaction = {
+	txId: string;
+	address: AddressLike;
+	chain: TChain;
+	status: "pending" | "success" | "failed" | "reverted";
+	swapDetails: {
+		swapIn: string;
+		swapOut: string;
+	};
+	date: string;
+};

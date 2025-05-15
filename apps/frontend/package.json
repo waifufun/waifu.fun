@@ -38,6 +38,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"tailwindcss-animated": "^2.0.0",
 		"wagmi": "^2.15.3",
+		"usehooks-ts": "^3.1.1",
 		"viem": "^2.28.3"
 	},
 	"devDependencies": {
