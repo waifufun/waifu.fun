@@ -71,18 +71,17 @@ export async function txLookUp({
 			const date = new Date(timestamp).toISOString();
 			let fromAmount = 0;
 			let toAmount = 0;
-			
+
 			for (const log of receipt.logs) {
 				if (log.topics[0]) {
 					try {
 						const parsed = decodeEventLog({
-                            // for now the default is UniswapV2PairABI until we know more
-                            abi: UniswapV2PairABI,
-                            data: log.data,
-                            topics: log.topics,
-                            eventName: "Swap",
-                        });
-                        
+							// for now the default is UniswapV2PairABI until we know more
+							abi: UniswapV2PairABI,
+							data: log.data,
+							topics: log.topics,
+							eventName: "Swap",
+						});
 
 						if (parsed.eventName === "Swap") {
 							const { amount0In, amount1In, amount0Out, amount1Out } = parsed.args;
@@ -95,13 +94,11 @@ export async function txLookUp({
 					}
 				}
 			}
-			return { status: receipt.status, fromToken: "ETH", toToken: "ETH", fromAmount, toAmount, date, };
+			return { status: receipt.status, fromToken: "ETH", toToken: "ETH", fromAmount, toAmount, date };
 		} catch (err) {
 			console.error("EVM tx lookup failed:", err);
 			return { status: "failed", fromToken: "", toToken: "", fromAmount: 0, toAmount: 0, date: "" };
 		}
-
-
 	} else if (chain === "solana") {
 		// use the constants for rpc url!
 		const connection = new Connection("");
@@ -127,7 +124,7 @@ export async function txLookUp({
 		const date = new Date(tx?.blockTime * 1000).toISOString();
 
 		if (!tx) throw new Error("Transaction not found");
-		return { status: "success", fromToken: "Sol", toToken: "Sol", fromAmount, toAmount, date, };
+		return { status: "success", fromToken: "Sol", toToken: "Sol", fromAmount, toAmount, date };
 	}
 	throw new Error("Unsupported chain");
 }
