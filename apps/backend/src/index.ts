@@ -35,6 +35,15 @@ fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
 });
 
+fastify.addHook('onRequest', async (request, reply) => {
+  dogLogger.info(`Request from IP: ${request.ip}`, 
+    {
+      ip: request.ip,
+      url: request.url,
+      method: request.method
+    });
+});
+
 fastify.register(tokenRoutes, { prefix: "/tokens" });
 fastify.register(pricesRoutes, { prefix: "/prices" });
 fastify.register(chatRoutes, { prefix: "/chat" });

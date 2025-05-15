@@ -102,3 +102,49 @@
 {"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:28:09.407Z"}
 {"level":"info","message":"Database connected","timestamp":"2025-05-15T19:28:09.413Z"}
 {"level":"info","message":"Database open","timestamp":"2025-05-15T19:28:09.413Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T20:33:59.437Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T20:34:00.363Z"}
+{"level":"info","message":"Server listening at http://[::1]:3001","timestamp":"2025-05-15T20:34:00.372Z"}
+{"level":"info","message":"Server listening at http://127.0.0.1:3001","timestamp":"2025-05-15T20:34:00.374Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T20:34:00.378Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T20:34:00.381Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T20:34:00.382Z"}
+{"level":"info","message":"incoming request","timestamp":"2025-05-15T20:34:11.511Z"}
+{"ip":"::1","level":"info","message":"Request from IP: ::1","method":"POST","timestamp":"2025-05-15T20:34:11.512Z","url":"/tokens"}
+{"level":"info","message":"request completed","timestamp":"2025-05-15T20:34:11.523Z"}
+{"level":"info","message":"incoming request","timestamp":"2025-05-15T20:34:13.129Z"}
+{"ip":"::1","level":"info","message":"Request from IP: ::1","method":"POST","timestamp":"2025-05-15T20:34:13.129Z","url":"/tokens"}
+{"level":"info","message":"request completed","timestamp":"2025-05-15T20:34:13.131Z"}
+{"level":"info","message":"incoming request","timestamp":"2025-05-15T20:34:13.426Z"}
+{"ip":"::1","level":"info","message":"Request from IP: ::1","method":"POST","timestamp":"2025-05-15T20:34:13.426Z","url":"/tokens"}
+{"level":"info","message":"request completed","timestamp":"2025-05-15T20:34:13.428Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T20:34:55.285Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T20:34:56.156Z"}
+{"level":"info","message":"Server listening at http://[::1]:3001","timestamp":"2025-05-15T20:34:56.166Z"}
+{"level":"info","message":"Server listening at http://127.0.0.1:3001","timestamp":"2025-05-15T20:34:56.168Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T20:34:56.172Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T20:34:56.175Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T20:34:56.175Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T20:35:19.413Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T20:35:20.081Z"}
+{"level":"info","message":"Server listening at http://[::1]:3001","timestamp":"2025-05-15T20:35:20.090Z"}
+{"level":"info","message":"Server listening at http://127.0.0.1:3001","timestamp":"2025-05-15T20:35:20.092Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T20:35:20.095Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T20:35:20.098Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T20:35:20.098Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T20:35:22.854Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T20:35:23.500Z"}
+{"level":"info","message":"Server listening at http://[::1]:3001","timestamp":"2025-05-15T20:35:23.508Z"}
+{"level":"info","message":"Server listening at http://127.0.0.1:3001","timestamp":"2025-05-15T20:35:23.510Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T20:35:23.514Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T20:35:23.519Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T20:35:23.519Z"}
+{"level":"info","message":"incoming request","timestamp":"2025-05-15T20:35:27.078Z"}
+{"ip":"::1","level":"info","message":"Request from IP: ::1","method":"POST","timestamp":"2025-05-15T20:35:27.080Z","url":"/tokens"}
+{"level":"info","message":"request completed","timestamp":"2025-05-15T20:35:27.094Z"}
+{"level":"info","message":"incoming request","timestamp":"2025-05-15T20:35:27.888Z"}
+{"ip":"::1","level":"info","message":"Request from IP: ::1","method":"POST","timestamp":"2025-05-15T20:35:27.888Z","url":"/tokens"}
+{"level":"info","message":"request completed","timestamp":"2025-05-15T20:35:27.891Z"}
+{"level":"info","message":"incoming request","timestamp":"2025-05-15T20:35:27.939Z"}
+{"ip":"::1","level":"info","message":"Request from IP: ::1","method":"POST","timestamp":"2025-05-15T20:35:27.940Z","url":"/tokens"}
+{"level":"info","message":"request completed","timestamp":"2025-05-15T20:35:27.942Z"}
