@@ -1,4 +1,4 @@
-import { EvmChainIds, SolanaNetworkIds, TChain, TChainId } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
