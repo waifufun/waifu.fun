@@ -3,7 +3,7 @@ import Swap from "@/components/token-page/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import { abbreviateNumber, fromNow } from "@/lib/utils";
+import { abbreviateNumber, fromNow, getCoinGeckoChainName } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import { formatUnits } from "viem";
@@ -76,7 +76,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							className="min-h-[500px] h-full"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
-							src={`https://www.geckoterminal.com/${token.chain}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
+							src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
 							allow="clipboard-write"
 							allowFullScreen
 						/>

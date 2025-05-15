@@ -1,3 +1,4 @@
+import { EvmChainIds, SolanaNetworkIds, TChain, TChainId } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
@@ -68,3 +69,23 @@ export const formatAddress = (str: string, length: number): string => {
 	const end = str.slice(str.length - length / 2);
 	return `${start}...${end}`;
 };
+
+export function getCoinGeckoChainName<T extends TChain>(
+	chain: T,
+	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds,
+): string | undefined {
+	if (chain === "evm") {
+		if (chainId === EvmChainIds.EthereumMainnet) {
+			return "eth";
+		}
+		if (chainId === EvmChainIds.BaseMainnet) {
+			return "base";
+		}
+	}
+	if (chain === "solana") {
+		if (chainId === SolanaNetworkIds.Mainnet) {
+			return "solana";
+		}
+	}
+	return undefined;
+}
