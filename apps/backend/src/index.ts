@@ -5,7 +5,7 @@ import cors from "@fastify/cors";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
-import dogLogger from "@autofun/dog-logger";
+import dogLogger from "@autofun/logger";
 
 const fastify = Fastify({
   logger: {

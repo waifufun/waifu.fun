@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import logger from "@autofun/dog-logger";
+import logger from "@autofun/logger";
 import IORedis from "ioredis";
 
 dotenv.config();

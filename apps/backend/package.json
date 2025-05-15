@@ -27,7 +27,6 @@
 		"@autofun/redis": "workspace:*",
 		"@autofun/rpc": "workspace:*",
 		"@autofun/s3-uploader": "workspace:*",
-		"@autofun/dog-logger": "workspace:*",
 		"@autofun/utils": "workspace:*",
 		"@codex-data/sdk": "^1.0.6",
 		"@fastify/cors": "^11.0.1",
