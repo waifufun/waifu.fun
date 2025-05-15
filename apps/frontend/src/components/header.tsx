@@ -2,9 +2,14 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import Image from "next/image";
+import { useModal } from "./hooks/providers/UseModalContext";
+import { useWallets } from "./hooks/providers/UseWalletContext";
 import Settings from "./settings";
 
 export default function Header() {
+	const {openModal} = useModal();
+	const {solanaWallets, evmWallets} = useWallets();
+
 	return (
 		<div className="px-4 flex items-center gap-4 justify-between h-[84px]">
 			<Link href="/">
@@ -17,7 +22,7 @@ export default function Header() {
 				<Link href="/create/import">
 					<Button variant="outline">Create Token</Button>
 				</Link>
-				<Button>Connect Wallet</Button>
+				<Button onClick={() => openModal("WALLET_CONNECT")}>{solanaWallets || evmWallets ? "My Wallets" : "Connect Wallet"}</Button>
 			</div>
 		</div>
 	);

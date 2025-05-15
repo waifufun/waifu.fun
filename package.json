@@ -8,8 +8,13 @@
 	"private": true,
 	"pnpm": {
 		"supportedArchitectures": {
-			"os": ["current"],
-			"cpu": ["x64", "arm64"]
+			"os": [
+				"current"
+			],
+			"cpu": [
+				"x64",
+				"arm64"
+			]
 		}
 	},
 	"release": {
@@ -55,6 +60,17 @@
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {
-		"dotenv-cli": "^8.0.0"
+		"@reown/appkit": "^1.7.4",
+		"@reown/appkit-adapter-wagmi": "^1.7.4",
+		"@solana/wallet-adapter-base": "^0.9.26",
+		"@solana/wallet-adapter-react": "^0.15.38",
+		"@solana/wallet-adapter-react-ui": "^0.9.38",
+		"@solana/wallet-adapter-wallets": "^0.19.36",
+		"@solana/web3.js": "^1.98.2",
+		"@tanstack/react-query": "^5.76.0",
+		"bs58": "^6.0.0",
+		"dotenv-cli": "^8.0.0",
+		"viem": "^2.28.3",
+		"wagmi": "^2.15.2"
 	}
 }

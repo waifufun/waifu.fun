@@ -5,8 +5,43 @@ import Header from "@/components/header";
 import { ProgressProvider } from "@bprogress/next/app";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createAppKit } from '@reown/appkit/react'
+import { WagmiProvider } from 'wagmi'
+import { arbitrum, base, baseSepolia, mainnet } from '@reown/appkit/networks'
+import type { AppKitNetwork } from "@reown/appkit/networks";
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { ParentProvider } from "@/components/hooks/providers/ParentProvider";
 
-const queryClient = new QueryClient();
+
+const queryClient = new QueryClient()
+
+const projectId = 'YOUR_PROJECT_ID'
+
+const metadata = {
+  name: 'Auto.Fun',
+  description: 'Press the fun button.',
+  url: 'https://auto.fun',
+  icons: ['./logo_wide.svg']
+}
+const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, baseSepolia]
+
+const wagmiAdapter = new WagmiAdapter({
+  networks,
+  projectId,
+  ssr: true
+})
+
+export const config = wagmiAdapter.wagmiConfig
+
+createAppKit({
+  adapters: [wagmiAdapter],
+  networks,
+  projectId,
+  metadata,
+  features: {
+	analytics: true
+  }
+})
 
 export default function RootLayout({
 	children,
@@ -22,20 +57,17 @@ export default function RootLayout({
 			}}
 		>
 			<body className={"font-satoshi bg-autofun-background-primary text-autofun-text-primary antialiased"}>
-				<ProgressProvider
-					height="4px"
-					color="#03FF24"
-					options={{
-						showSpinner: false,
-					}}
-					disableSameURL={false}
-				>
-					<QueryClientProvider client={queryClient}>
-						<Header />
-						<div className="xl:px-4">{children}</div>
-						<Toaster />
-					</QueryClientProvider>
-				</ProgressProvider>
+				<WagmiProvider config={wagmiAdapter.wagmiConfig}>
+						<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
+							<QueryClientProvider client={queryClient}>
+								<ParentProvider>
+									<Header />
+									<div className="xl:px-4">{children}</div>
+									<Toaster />
+								</ParentProvider>
+							</QueryClientProvider>
+						</ProgressProvider>
+				</WagmiProvider>
 			</body>
 		</html>
 	);
