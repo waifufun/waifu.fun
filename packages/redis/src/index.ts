@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import logger from "@autofun/logger";
+import logger from "@autofun/dog-logger";
 import IORedis from "ioredis";
 
 dotenv.config();
@@ -38,7 +38,7 @@ redis.on("ready", () => {
 });
 
 redis.on("error", (e: Error) => {
-	logger.info(`Error from Redis: ${e.message}`);
+	logger.error(`Error from Redis: ${e.message}`);
 });
 
 redis.on("reconnecting", () => {

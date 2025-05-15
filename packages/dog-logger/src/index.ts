@@ -12,7 +12,13 @@ const DogLogger = winston.createLogger({
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.simple()
+        winston.format.printf(({ timestamp, level, message, ...meta }) => {
+          let logMessage = `${timestamp} [${level}] ${message}`;
+          if (Object.keys(meta).length) {
+            logMessage += ` ${JSON.stringify(meta, null, 2)}`;
+          }
+          return logMessage;
+        })
       )
     })
   ],

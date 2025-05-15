@@ -1,5 +1,5 @@
 import * as DB from "./models";
-import logger from "@autofun/logger";
+import logger from "@autofun/dog-logger";
 import dotenv from "dotenv";
 import Mongoose from "mongoose";
 

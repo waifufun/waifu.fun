@@ -32,3 +32,73 @@
 {"level":"info","message":"{\"level\":30,\"time\":1747336447864,\"pid\":60991,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:14:07.864Z"}
 {"level":"info","message":"{\"level\":30,\"time\":1747336600215,\"pid\":61223,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:16:40.215Z"}
 {"level":"info","message":"{\"level\":30,\"time\":1747336600219,\"pid\":61223,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:16:40.219Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336695182,\"pid\":61848,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:18:15.183Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336695186,\"pid\":61848,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:18:15.186Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336881490,\"pid\":61943,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:21:21.490Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336881493,\"pid\":61943,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:21:21.493Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336941363,\"pid\":61985,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:22:21.363Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336941367,\"pid\":61985,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:22:21.367Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:23:17.846Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336997857,\"pid\":62358,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:23:17.857Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336997859,\"pid\":62358,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:23:17.859Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:23:17.863Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:24:12.725Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337052735,\"pid\":62703,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:24:12.735Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337052738,\"pid\":62703,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:24:12.738Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:24:12.742Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:24:18.818Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:24:19.475Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337059483,\"pid\":62714,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:24:19.484Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337059485,\"pid\":62714,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:24:19.485Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:24:19.490Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:24:19.494Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:24:19.495Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:25:19.482Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:25:20.340Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337120349,\"pid\":62750,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:25:20.349Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337120351,\"pid\":62750,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:25:20.351Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:25:20.355Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:25:20.358Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:25:20.358Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:25:46.642Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:25:47.310Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337147318,\"pid\":62770,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}\n","timestamp":"2025-05-15T19:25:47.318Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337147320,\"pid\":62770,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}\n","timestamp":"2025-05-15T19:25:47.320Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:25:47.325Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:25:47.328Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:25:47.329Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:26:17.937Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:26:18.589Z"}
+{"level":"info","timestamp":"2025-05-15T19:26:18.600Z"}
+{"level":"info","timestamp":"2025-05-15T19:26:18.604Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:26:18.609Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:26:18.613Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:26:18.613Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:26:33.883Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:26:34.544Z"}
+{"level":"info","timestamp":"2025-05-15T19:26:34.556Z"}
+{"level":"info","timestamp":"2025-05-15T19:26:34.559Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:26:34.563Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:26:34.568Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:26:34.568Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:26:46.125Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:26:46.767Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337206776,\"pid\":62836,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}\n","timestamp":"2025-05-15T19:26:46.776Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747337206778,\"pid\":62836,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}\n","timestamp":"2025-05-15T19:26:46.778Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:26:46.783Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:26:46.786Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:26:46.787Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:27:58.170Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:27:58.804Z"}
+{"level":"info","message":"Server listening at http://[::1]:3001","timestamp":"2025-05-15T19:27:58.814Z"}
+{"level":"info","message":"Server listening at http://127.0.0.1:3001","timestamp":"2025-05-15T19:27:58.816Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:27:58.821Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:27:58.824Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:27:58.824Z"}
+{"level":"info","message":"Attempting to connect to database..","timestamp":"2025-05-15T19:28:08.578Z"}
+{"level":"info","message":"Connecting to Redis","timestamp":"2025-05-15T19:28:09.389Z"}
+{"level":"info","message":"Server listening at http://[::1]:3001","timestamp":"2025-05-15T19:28:09.400Z"}
+{"level":"info","message":"Server listening at http://127.0.0.1:3001","timestamp":"2025-05-15T19:28:09.403Z"}
+{"level":"info","message":"Connected to Redis","timestamp":"2025-05-15T19:28:09.407Z"}
+{"level":"info","message":"Database connected","timestamp":"2025-05-15T19:28:09.413Z"}
+{"level":"info","message":"Database open","timestamp":"2025-05-15T19:28:09.413Z"}

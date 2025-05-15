@@ -8,12 +8,20 @@ import chatRoutes from "./routers/chat";
 import dogLogger from "@autofun/dog-logger";
 
 const fastify = Fastify({
-    logger: {
-        stream: {
-            write: (msg: string) => dogLogger.info(msg.trim()),
-        },
-        level: 'info'
+  logger: {
+    stream: {
+      write: (msg: string) => {
+        try {
+          const logData = JSON.parse(msg);
+          dogLogger.info(logData.msg);
+        } catch (error) {
+          dogLogger.error(`Error parsing Fastify log: ${error}, original message: ${msg}`);
+          dogLogger.info(msg);
+        }
+      },
     },
+    level: 'info'
+  },
 });
 
 fastify.register(helmet);
