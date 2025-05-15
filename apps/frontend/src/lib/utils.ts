@@ -67,4 +67,4 @@ export const formatAddress = (str: string, length: number): string => {
 	const start = str.slice(0, length / 2);
 	const end = str.slice(str.length - length / 2);
 	return `${start}...${end}`;
-}
+};

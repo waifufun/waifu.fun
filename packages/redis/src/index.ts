@@ -18,7 +18,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const redis = new IORedis(
-
 	process.env.NODE_ENV === "production"
 		? {
 				port: Number(port),
