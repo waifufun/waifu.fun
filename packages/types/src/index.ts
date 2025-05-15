@@ -1,5 +1,5 @@
 import type { Address as SolanaAddressLikeImport } from "@solana/kit";
-import type { Address as EvmAddressLikeImport } from "viem";
+import type { Address as EvmAddressLikeImport, Hash } from "viem";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
@@ -12,6 +12,8 @@ export enum SolanaNetworkIds {
 	Mainnet = 101,
 	Devnet = 103,
 }
+
+export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";
 
 export enum EvmChainIds {
 	BaseMainnet = 8453,
@@ -104,14 +106,21 @@ export interface IFile {
 	mimetype: string;
 }
 
-export type ITransaction = {
-	txId: string;
-	address: AddressLike;
+export interface ISwapToken {
+	tokenAddress: AddressLike;
+	amount: string | number | bigint;
+	symbol: string;
+	decimals: number;
+	amountFormatted: string | number | bigint;
+}
+
+export interface IRecentTransaction {
+	from: AddressLike;
+	status: "success" | "reverted" | "pending";
+	txId: Hash | string;
 	chain: TChain;
-	status: "pending" | "success" | "failed" | "reverted";
-	swapDetails: {
-		swapIn: string;
-		swapOut: string;
-	};
-	date: string;
-};
+	chainId: TChainId;
+	protocol?: TSupportProtocol;
+	input?: ISwapToken;
+	output?: ISwapToken;
+}
