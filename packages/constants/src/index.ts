@@ -1,4 +1,4 @@
-import { EvmChainIds, type EvmAddressLike, type TChain } from "@autofun/types";
+import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol } from "@autofun/types";
 import { getAddress, type Abi, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@autofun/types";
@@ -10,7 +10,7 @@ import uniswapv4 from "./abis/uniswap-v4.json";
 
 dotenv.config();
 
-export const ABIS: Record<string, Abi> = {
+export const ABIS: Record<TSupportProtocol, Abi> = {
 	uniswapv2: uniswapv2 as Abi,
 	uniswapv3: uniswapv3 as Abi,
 	uniswapv4: uniswapv4 as Abi,
