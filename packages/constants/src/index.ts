@@ -53,6 +53,21 @@ export const SOLANA_RPC_URLS: Record<SolanaNetworkIds, ClusterUrl[]> = {
 	[SolanaNetworkIds.Devnet]: [...(heliusApiKey ? [`https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
 };
 
+export const CHAINID_TO_SYMBOL: {
+	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
+} = {
+	evm: {
+		[EvmChainIds.EthereumMainnet]: "ETH",
+		[EvmChainIds.EthereumSepolia]: "ETH",
+		[EvmChainIds.BaseMainnet]: "ETH",
+		[EvmChainIds.BaseSepolia]: "ETH",
+	},
+	solana: {
+		[SolanaNetworkIds.Mainnet]: "SOL",
+		[SolanaNetworkIds.Devnet]: "SOL",
+	},
+};
+
 export const CHAINID_TO_DEXSCREENER_NAME: {
 	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
 } = {

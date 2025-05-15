@@ -20,7 +20,7 @@ import {
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
-import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME } from "@autofun/constants";
+import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
 import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
@@ -124,7 +124,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	fastify.post("/trades", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
 			contractAddress: Pick<IToken, "contractAddress">;
-			chain: "solana" | "evm";
+			chain: TChain;
 			chainId: TChainId;
 		};
 		const cacheKey = `${chain}:${chainId}:${contractAddress}:trades`;
@@ -161,7 +161,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			limit: 50,
 		});
 
-		const items = trades?.getTokenEvents?.items?.map((event) => {
+		const items = Array.from(
+			new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
+		).map((event) => {
 			const trade = event as {
 				maker: string;
 				transactionHash: string;
@@ -177,7 +179,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			return {
 				address: trade?.maker || "N/A",
 				fromAmount: trade?.data?.priceBaseTokenTotal,
-				fromToken: "ETH",
+				// @ts-ignore
+				fromToken: CHAINID_TO_SYMBOL[chain][chainId],
 				toAmount: trade?.data?.amountNonLiquidityToken || "0",
 				txId: trade?.transactionHash,
 				timestamp: trade?.timestamp ? trade?.timestamp * 1000 : new Date(),
