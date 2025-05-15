@@ -82,6 +82,15 @@ export interface IUser {
 
 export type TChatRooms = 1000 | 100_000 | 1_000_000;
 
+export interface IHolder {
+	address: AddressLike;
+	balance: number | string;
+	balanceFormatted: number | string;
+	percentage: number;
+	isBondingCurve?: boolean;
+	isCreator?: boolean;
+}
+
 export interface IChatMessage {
 	contractAddress: Pick<IToken, "contractAddress">;
 	sender: AddressLike;

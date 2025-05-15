@@ -8,8 +8,13 @@
 	"private": true,
 	"pnpm": {
 		"supportedArchitectures": {
-			"os": ["current"],
-			"cpu": ["x64", "arm64"]
+			"os": [
+				"current"
+			],
+			"cpu": [
+				"x64",
+				"arm64"
+			]
 		}
 	},
 	"release": {
@@ -52,9 +57,7 @@
 		"esbuild": "^0.25.4",
 		"semantic-release": "^24.2.3",
 		"tsx": "^4.15.1",
-		"typescript": "^5.4.5"
-	},
-	"dependencies": {
+		"typescript": "^5.4.5",
 		"dotenv-cli": "^8.0.0"
 	}
 }

@@ -113,15 +113,15 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 	const tokensToQuery = tokensToPopulate
 		.filter((t) => t?.imported)
-		.map(({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
+		.map((token: IToken) => {
+			const { chain, chainId, contractAddress } = token;
 			const networkId =
 				chain === "evm"
 					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
 					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
 
-			if (tokensToPopulate[idx]) {
-				tokenIndex[contractAddress] = tokensToPopulate[idx];
-			}
+			tokenIndex[contractAddress] = token;
+
 			return `${contractAddress}:${networkId}`;
 		});
 
@@ -236,6 +236,11 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 				},
 			});
 
+			/* Remove the _id field so we dont return it anywhere **/
+			if (nonImportedToken?._id) {
+				delete nonImportedToken._id;
+			}
+
 			tokenIndex[nonImportedToken.contractAddress] = {
 				...nonImportedToken,
 				...setValues,
@@ -328,3 +333,12 @@ export async function getTokenBalance({
 
 	throw new Error("Unsupported chain");
 }
+
+export const getPercentageOfTotal = (value: number, total: number): string | number => {
+	if (total === 0) {
+		return 0;
+	}
+
+	const percentage = (value / total) * 100;
+	return percentage?.toFixed(2);
+};

@@ -1,3 +1,4 @@
+import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
@@ -61,6 +62,33 @@ export const fromNow = (date: string | Date | number, hideAgo?: boolean): string
 	return result;
 };
 
+export const formatAddress = (str: string, length: number): string => {
+	if (str.length <= length) return str;
+	// ellipse in the middle of the string
+	const start = str.slice(0, length / 2);
+	const end = str.slice(str.length - length / 2);
+	return `${start}...${end}`;
+};
+
+export function getCoinGeckoChainName<T extends TChain>(
+	chain: T,
+	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds,
+): string | undefined {
+	if (chain === "evm") {
+		if (chainId === EvmChainIds.EthereumMainnet) {
+			return "eth";
+		}
+		if (chainId === EvmChainIds.BaseMainnet) {
+			return "base";
+		}
+	}
+	if (chain === "solana") {
+		if (chainId === SolanaNetworkIds.Mainnet) {
+			return "solana";
+		}
+	}
+	return undefined;
+}
 
 export const UniswapV2PairABI = [{
 	type: "event",
@@ -91,4 +119,3 @@ export const UniswapV2PairABI = [{
 	  anonymous: false,
 	},
   ];
-  

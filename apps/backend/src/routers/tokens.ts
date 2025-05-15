@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
 import type {
+	IHolder,
 	AddressLike,
 	IToken,
 	SolanaAddressLike,
@@ -9,7 +10,12 @@ import type {
 	TChainId,
 	TURLLike,
 } from "@autofun/types";
-import { isChainIdAllowedForChain, isSupportedAddress, populateTokensWithLiveData } from "@autofun/utils";
+import {
+	getPercentageOfTotal,
+	isChainIdAllowedForChain,
+	isSupportedAddress,
+	populateTokensWithLiveData,
+} from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
@@ -17,7 +23,7 @@ import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME } from "@autof
 import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
-import { HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/resources/graphql";
+import { HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/sdk/generated/graphql";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -126,8 +132,21 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 
 		const cache = await redis.get(cacheKey);
+
 		if (cache) {
 			return JSON.parse(cache);
+		}
+
+		const token = await DB.Token.findOne({
+			chain,
+			chainId,
+			contractAddress,
+		})
+			.select("decimals creator totalSupply")
+			.lean();
+
+		if (!token) {
+			throw new Error(`Token: ${contractAddress} could not be found`);
 		}
 
 		const holders = await codex.queries.holders({
@@ -141,9 +160,20 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			},
 		});
 
-		const items = holders?.holders?.items?.splice(0, 50);
+		const items: IHolder[] = holders?.holders?.items?.splice(0, 50)?.map((item) => {
+			const percentage = getPercentageOfTotal(Number(item.balance), Number(token.totalSupply));
+			return {
+				address: item.address,
+				balance: item.balance,
+				balanceFormatted: item.shiftedBalance,
+				// TODO - Add bonding curve
+				isBondingCurve: false,
+				isCreator: token?.creator === item.address,
+				percentage,
+			} as IHolder;
+		});
 
-		await redis.setex(cacheKey, 10, JSON.stringify(items));
+		await redis.setex(cacheKey, 15, JSON.stringify(items));
 
 		return items;
 	});
