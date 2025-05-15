@@ -115,7 +115,7 @@ export interface ISwapToken {
 }
 
 export interface IRecentTransaction {
-	from: AddressLike;
+	from?: AddressLike;
 	status: "success" | "reverted" | "pending";
 	txId: Hash | string;
 	chain: TChain;
@@ -123,4 +123,5 @@ export interface IRecentTransaction {
 	protocol?: TSupportProtocol;
 	input?: ISwapToken;
 	output?: ISwapToken;
+	timestamp?: Date
 }
