@@ -1,6 +1,6 @@
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallets } from "../providers/UseWalletContext";
-import { formatAddress } from "@/lib/utils";
+import { shortenAddress } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAppKit, useDisconnect } from "@reown/appkit/react";
 
@@ -34,7 +34,7 @@ export default function WalletConnectModal({
 					}}
 					className="bg-blue-500 text-white py-2 px-4 rounded hover:cursor-pointer"
 				>
-					{evmWallets?.BaseMainnet?.address ? formatAddress(evmWallets.BaseMainnet.address, 10) : "Connect EVM Wallet"}
+					{evmWallets?.BaseMainnet?.address ? shortenAddress(evmWallets.BaseMainnet.address, 10) : "Connect EVM Wallet"}
 				</button>
 				<button
 					onClick={() => {
@@ -46,7 +46,9 @@ export default function WalletConnectModal({
 					}}
 					className="bg-blue-500 text-white py-2 px-4 rounded hover:cursor-pointer"
 				>
-					{solanaWallets?.Mainnet?.address ? formatAddress(solanaWallets.Mainnet.address, 10) : "Connect Solana Wallet"}
+					{solanaWallets?.Mainnet?.address
+						? shortenAddress(solanaWallets.Mainnet.address, 10)
+						: "Connect Solana Wallet"}
 				</button>
 			</div>
 		</div>

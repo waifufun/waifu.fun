@@ -62,7 +62,7 @@ export const fromNow = (date: string | Date | number, hideAgo?: boolean): string
 	return result;
 };
 
-export const formatAddress = (str: string, length: number): string => {
+export const shortenAddress = (str: string, length: number): string => {
 	if (str.length <= length) return str;
 	// ellipse in the middle of the string
 	const start = str.slice(0, length / 2);
@@ -121,3 +121,10 @@ export const UniswapV3PoolABI = [
 		anonymous: false,
 	},
 ];
+
+export const formatUsd = (value: number) => {
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+	}).format(value);
+};

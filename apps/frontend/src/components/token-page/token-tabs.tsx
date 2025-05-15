@@ -17,7 +17,7 @@ export default function TokenTabs({ token }: { token: IToken }) {
 				<TabsTrigger value="agents">Agents</TabsTrigger>
 			</TabsList>
 			<TabsContent value="trades">
-				<Trades />
+				<Trades token={token} />
 			</TabsContent>
 			<TabsContent value="holders">
 				<Holders token={token} />

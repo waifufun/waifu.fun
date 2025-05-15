@@ -1,11 +1,11 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getHolders } from "@/lib/api";
-import type { IHolder, IToken } from "@autofun/types";
+import { getTrades } from "@/lib/api";
+import type { IToken, ITrade } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
-import HolderLabels from "./holder-labels";
+import { formatUsd, fromNow, shortenAddress } from "@/lib/utils";
 
 export default async function Trades({ token }: { token: IToken }) {
-	const data = await getHolders({
+	const data = await getTrades({
 		chain: token.chain,
 		chainId: token.chainId,
 		contractAddress: token.contractAddress,
@@ -16,21 +16,27 @@ export default async function Trades({ token }: { token: IToken }) {
 			<TableHeader>
 				<TableRow>
 					<TableHead className="w-[100px]">Account</TableHead>
-					<TableHead className="w-[75px] text-right">Type</TableHead>
-					<TableHead className="w-[75px] text-right">USD</TableHead>
-					<TableHead className="text-right">Tokens</TableHead>
-					<TableHead className="text-right">Date</TableHead>
+					<TableHead>Type</TableHead>
+					<TableHead>SOL</TableHead>
+					<TableHead>USD</TableHead>
+					<TableHead>Tokens</TableHead>
+					<TableHead className="w-12 text-right">Date</TableHead>
 					<TableHead className="w-5 text-right" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{data.map((holder: IHolder) => (
-					<TableRow key={holder.address}>
+				{data.map((trade: ITrade) => (
+					<TableRow key={trade.txId}>
 						<TableCell className="font-medium flex items-center gap-2">
-							{holder.address} <HolderLabels address={holder.address} />
+							{trade.address ? shortenAddress(trade?.address, 5) : "-"}
 						</TableCell>
-						<TableCell className="text-right">{holder.balanceFormatted}</TableCell>
-						<TableCell className="text-right">{holder.percentage}%</TableCell>
+						<TableCell>{trade.type}</TableCell>
+						<TableCell>
+							{trade.fromAmount} {trade.fromToken}
+						</TableCell>
+						<TableCell>{trade?.usdValue ? formatUsd(Number(trade?.usdValue)) : "-"}</TableCell>
+						<TableCell>{trade.toAmount}</TableCell>
+						<TableCell className="text-right">{trade?.timestamp ? fromNow(trade?.timestamp, true) : "-"}</TableCell>
 						<TableCell>
 							<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
 						</TableCell>

@@ -101,7 +101,7 @@ export interface ITrade {
 	fromAmount: string | bigint | number;
 	toAmount: string | bigint | number;
 	usdValue?: string | bigint | number;
-	timestamp: Date;
+	timestamp: number;
 }
 
 export interface IChatMessage {
