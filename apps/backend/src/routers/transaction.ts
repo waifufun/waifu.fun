@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ABIS } from "@autofun/constants";
 import { EVMRpcProvider } from "@autofun/rpc";
-import { EvmChainIds, type TSupportProtocol } from "@autofun/types";
+import { EvmChainIds, type IRecentTransaction, type TSupportProtocol } from "@autofun/types";
 import { isChainIdAllowedForChain } from "@autofun/utils";
 import { parseEventLogs, erc20Abi, getAddress, type Address, formatUnits } from "viem";
 
@@ -27,7 +27,8 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 			const receipt = await rpc.getTransactionReceipt({ hash: txId });
 			const status = receipt?.status;
 
-			let returnData = {
+			let returnData: IRecentTransaction = {
+				from: getAddress(receipt.from),
 				status,
 				txId,
 				chain,
@@ -47,7 +48,7 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 				});
 
 				if (parsedLogs?.length > 0) {
-					swapLog = { ...parsedLogs[0], abi: abiKey };
+					swapLog = { ...parsedLogs[0], abi: abiKey as TSupportProtocol };
 					break;
 				}
 			}
@@ -108,17 +109,17 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 				const result = {
 					protocol: swapLog.abi,
 					input: {
-						tokenAddress: inputTransfer.address,
+						tokenAddress: getAddress(inputTransfer.address),
 						amount: inputTransfer.args.value.toString(),
-						symbol: inputTransferSymbol,
-						decimals: inputTransferDecimals,
+						symbol: String(inputTransferSymbol),
+						decimals: Number(inputTransferDecimals),
 						amountFormatted: String(formatUnits(inputTransfer.args.value.toString(), Number(inputTransferDecimals))),
 					},
 					output: {
-						tokenAddress: outputTransfer.address,
+						tokenAddress: getAddress(outputTransfer.address),
 						amount: outputTransfer.args.value.toString(),
-						symbol: outputTransferSymbol,
-						decimals: outputTransferDecimals,
+						symbol: String(outputTransferSymbol),
+						decimals: Number(outputTransferDecimals),
 						amountFormatted: String(formatUnits(outputTransfer.args.value.toString(), Number(outputTransferDecimals))),
 					},
 				};

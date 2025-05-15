@@ -106,15 +106,21 @@ export interface IFile {
 	mimetype: string;
 }
 
-export type IRecentTransaction = {
-	txId: Hash | string;
+export interface ISwapToken {
+	tokenAddress: AddressLike;
+	amount: string | number | bigint;
+	symbol: string;
+	decimals: number;
+	amountFormatted: string | number | bigint;
+}
+
+export interface IRecentTransaction {
 	from: AddressLike;
+	status: "success" | "reverted" | "pending";
+	txId: Hash | string;
 	chain: TChain;
 	chainId: TChainId;
-	status: "pending" | "success" | "reverted";
-	swapDetails?: {
-		swapIn: string;
-		swapOut: string;
-	};
-	timestamp?: Date;
-};
+	protocol?: TSupportProtocol;
+	input?: ISwapToken;
+	output?: ISwapToken;
+}
