@@ -93,6 +93,17 @@ export interface IHolder {
 	isCreator?: boolean;
 }
 
+export interface ITrade {
+	address: AddressLike;
+	type: "buy" | "sell";
+	txId: string;
+	fromToken: string;
+	fromAmount: string | bigint | number;
+	toAmount: string | bigint | number;
+	usdValue?: string | bigint | number;
+	timestamp: Date;
+}
+
 export interface IChatMessage {
 	contractAddress: Pick<IToken, "contractAddress">;
 	sender: AddressLike;
@@ -123,5 +134,5 @@ export interface IRecentTransaction {
 	protocol?: TSupportProtocol;
 	input?: ISwapToken;
 	output?: ISwapToken;
-	timestamp?: Date
+	timestamp?: Date;
 }

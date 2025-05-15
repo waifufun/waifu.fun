@@ -9,6 +9,7 @@ import type {
 	TChain,
 	TChainId,
 	TURLLike,
+	ITrade,
 } from "@autofun/types";
 import {
 	getPercentageOfTotal,
@@ -24,6 +25,7 @@ import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
 import { HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import { EventType } from "@codex-data/sdk/dist/resources/graphql";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -120,6 +122,75 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		return true;
 	});
 
+	fastify.post("/trades", async (request) => {
+		const { contractAddress, chain, chainId } = request.body as {
+			contractAddress: Pick<IToken, "contractAddress">;
+			chain: "solana" | "evm";
+			chainId: TChainId;
+		};
+		const cacheKey = `${chain}:${chainId}:${contractAddress}:trades`;
+
+		const allowedChain = isChainIdAllowedForChain(chain, chainId);
+		if (!allowedChain) throw new Error("Unsupported chain pair");
+
+		const cache = await redis.get(cacheKey);
+
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
+		const token = await DB.Token.findOne({
+			chain,
+			chainId,
+			contractAddress,
+		})
+			.select("decimals creator totalSupply")
+			.lean();
+
+		if (!token) {
+			throw new Error(`Token: ${contractAddress} could not be found`);
+		}
+
+		const trades = await codex.queries.getTokenEvents({
+			query: {
+				address: contractAddress as unknown as string,
+				// @ts-ignore
+				networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
+				eventType: EventType.Swap,
+			},
+			direction: RankingDirection.Desc,
+			limit: 50,
+		});
+
+		const items = trades?.getTokenEvents?.items?.map((event) => {
+			const trade = event as {
+				maker: string;
+				transactionHash: string;
+				timestamp: number;
+				eventDisplayType: string;
+				data: {
+					priceUsdTotal: string;
+					priceBaseTokenTotal: string;
+					amountNonLiquidityToken: string;
+				};
+			};
+
+			return {
+				address: trade?.maker || "N/A",
+				fromAmount: trade?.data?.priceBaseTokenTotal,
+				fromToken: "ETH",
+				toAmount: trade?.data?.amountNonLiquidityToken || "0",
+				txId: trade?.transactionHash,
+				timestamp: trade?.timestamp ? trade?.timestamp * 1000 : new Date(),
+				usdValue: trade?.data?.priceUsdTotal || null,
+				type: trade?.eventDisplayType?.toLowerCase() || "buy",
+			} as ITrade;
+		});
+
+		await redis.setex(cacheKey, 7, JSON.stringify(items));
+
+		return items;
+	});
 	fastify.post("/holders", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
 			contractAddress: Pick<IToken, "contractAddress">;

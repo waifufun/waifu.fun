@@ -47,7 +47,7 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 					status,
 					txId,
 					chain,
-					chainId
+					chainId,
 				};
 
 				let swapLog = undefined;
