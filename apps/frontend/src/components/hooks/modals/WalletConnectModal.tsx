@@ -34,7 +34,7 @@ export default function WalletConnectModal({
 					}}
 					className="bg-blue-500 text-white py-2 px-4 rounded hover:cursor-pointer"
 				>
-					{evmWallets?.BaseMainnet?.address ? shortenAddress(evmWallets.BaseMainnet.address, 10) : "Connect EVM Wallet"}
+					{evmWallets?.BaseMainnet?.address ? shortenAddress(evmWallets.BaseMainnet.address) : "Connect EVM Wallet"}
 				</button>
 				<button
 					onClick={() => {
@@ -46,9 +46,7 @@ export default function WalletConnectModal({
 					}}
 					className="bg-blue-500 text-white py-2 px-4 rounded hover:cursor-pointer"
 				>
-					{solanaWallets?.Mainnet?.address
-						? shortenAddress(solanaWallets.Mainnet.address, 10)
-						: "Connect Solana Wallet"}
+					{solanaWallets?.Mainnet?.address ? shortenAddress(solanaWallets.Mainnet.address) : "Connect Solana Wallet"}
 				</button>
 			</div>
 		</div>

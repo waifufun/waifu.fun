@@ -62,12 +62,9 @@ export const fromNow = (date: string | Date | number, hideAgo?: boolean): string
 	return result;
 };
 
-export const shortenAddress = (str: string, length: number): string => {
-	if (str.length <= length) return str;
-	// ellipse in the middle of the string
-	const start = str.slice(0, length / 2);
-	const end = str.slice(str.length - length / 2);
-	return `${start}...${end}`;
+export const shortenAddress = (str: string): string => {
+	const length = 5;
+	return `${str.substring(0, length)}...${str.substring(str.length - length, str.length)}`;
 };
 
 export function getCoinGeckoChainName<T extends TChain>(
@@ -127,4 +124,12 @@ export const formatUsd = (value: number) => {
 		style: "currency",
 		currency: "USD",
 	}).format(value);
+};
+
+export const getPercentageOfTotal = (value: number, max: number): number => {
+	if (max === 0) {
+		return 1;
+	}
+	const percentage = (value / max) * 100;
+	return Math.max(1, Math.min(100, percentage));
 };
