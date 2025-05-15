@@ -2,7 +2,7 @@
 
 import useRecentTransactions from "@/hooks/use-transaction";
 import { Button } from "./ui/button";
-import { EvmChainIds, IRecentTransaction } from "@autofun/types";
+import { EvmChainIds, type IRecentTransaction } from "@autofun/types";
 import RecentTransactionItem from "./recent-transaction-item";
 
 export default function RecentTransactions() {

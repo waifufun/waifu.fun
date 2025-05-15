@@ -1,11 +1,22 @@
 import { EvmChainIds, type EvmAddressLike, type TChain } from "@autofun/types";
-import { getAddress, type Chain } from "viem";
+import { getAddress, type Abi, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@autofun/types";
 import dotenv from "dotenv";
 import type { ClusterUrl } from "@solana/kit";
+import uniswapv2 from "./abis/uniswap-v2.json";
+import uniswapv3 from "./abis/uniswap-v3.json";
+import uniswapv4 from "./abis/uniswap-v4.json";
+
 dotenv.config();
 
+export const ABIS: Record<string, Abi> = {
+	uniswapv2: uniswapv2 as Abi,
+	uniswapv3: uniswapv3 as Abi,
+	uniswapv4: uniswapv4 as Abi,
+};
+
+/** Universal Router */
 export const UNISWAP_V4_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 	[EvmChainIds.EthereumMainnet]: getAddress("0x66a9893cc07d91d95644aedd05d03f95e1dba8af"),
 	[EvmChainIds.EthereumSepolia]: getAddress("0x3a9d48ab9751398bbfa63ad67599bb04e4bdf98b"),
@@ -27,8 +38,8 @@ export const CHAINID_TO_VIEM_CHAIN: Record<EvmChainIds, Chain> = {
 	[EvmChainIds.BaseSepolia]: baseSepolia,
 };
 
-const alchemyApiKey = process.env.ALCHEMY_API_KEY;
-const heliusApiKey = process.env.HELIUS_API_KEY;
+export const alchemyApiKey = process.env.ALCHEMY_API_KEY;
+export const heliusApiKey = process.env.HELIUS_API_KEY;
 
 export const EVM_RPC_URLS: Record<EvmChainIds, string[]> = {
 	[EvmChainIds.EthereumMainnet]: [...(alchemyApiKey ? [`https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
