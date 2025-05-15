@@ -3,6 +3,7 @@ import { getTrades } from "@/lib/api";
 import type { IToken, ITrade } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
 import { formatUsd, fromNow, shortenAddress } from "@/lib/utils";
+import Triangle from "../triangle";
 
 export default async function Trades({ token }: { token: IToken }) {
 	const data = await getTrades({
@@ -16,8 +17,8 @@ export default async function Trades({ token }: { token: IToken }) {
 			<TableHeader>
 				<TableRow>
 					<TableHead className="w-[100px]">Account</TableHead>
-					<TableHead>Type</TableHead>
-					<TableHead>SOL</TableHead>
+					<TableHead className="text-center">Type</TableHead>
+					<TableHead>Native</TableHead>
 					<TableHead>USD</TableHead>
 					<TableHead>Tokens</TableHead>
 					<TableHead className="w-12 text-right">Date</TableHead>
@@ -30,13 +31,15 @@ export default async function Trades({ token }: { token: IToken }) {
 						<TableCell className="font-medium flex items-center gap-2">
 							{trade.address ? shortenAddress(trade?.address, 5) : "-"}
 						</TableCell>
-						<TableCell>{trade.type}</TableCell>
+						<TableCell>
+							<Triangle color={trade?.type === "buy" ? "bg-[#03FF24] m-auto" : "bg-[#EF5350] rotate-180 m-auto"} />
+						</TableCell>
 						<TableCell>
 							{trade.fromAmount} {trade.fromToken}
 						</TableCell>
 						<TableCell>{trade?.usdValue ? formatUsd(Number(trade?.usdValue)) : "-"}</TableCell>
 						<TableCell>{trade.toAmount}</TableCell>
-						<TableCell className="text-right">{trade?.timestamp ? fromNow(trade?.timestamp, true) : "-"}</TableCell>
+						<TableCell className="text-right">{trade?.timestamp ? fromNow(trade?.timestamp) : "-"}</TableCell>
 						<TableCell>
 							<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
 						</TableCell>

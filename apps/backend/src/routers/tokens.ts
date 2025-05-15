@@ -24,8 +24,7 @@ import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME } from "@autof
 import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
-import { HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/sdk/generated/graphql";
-import { EventType } from "@codex-data/sdk/dist/resources/graphql";
+import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
