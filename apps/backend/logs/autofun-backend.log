@@ -1,0 +1,34 @@
+{"level":"info","message":"Starting server...","timestamp":"2025-05-15T19:02:29.659Z"}
+{"level":"info","message":"ewaaaaa","timestamp":"2025-05-15T19:02:29.660Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335749670,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:02:29.670Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335749672,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:02:29.672Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335839841,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"reqId\":\"req-1\",\"req\":{\"method\":\"POST\",\"url\":\"/tokens\",\"host\":\"localhost:3001\",\"remoteAddress\":\"::1\",\"remotePort\":55202},\"msg\":\"incoming request\"}","timestamp":"2025-05-15T19:03:59.841Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335839856,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"reqId\":\"req-1\",\"res\":{\"statusCode\":200},\"responseTime\":14.470249980688095,\"msg\":\"request completed\"}","timestamp":"2025-05-15T19:03:59.856Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335841959,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"reqId\":\"req-2\",\"req\":{\"method\":\"POST\",\"url\":\"/tokens\",\"host\":\"localhost:3001\",\"remoteAddress\":\"::1\",\"remotePort\":55202},\"msg\":\"incoming request\"}","timestamp":"2025-05-15T19:04:01.959Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335841960,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"reqId\":\"req-2\",\"res\":{\"statusCode\":200},\"responseTime\":1.1767500042915344,\"msg\":\"request completed\"}","timestamp":"2025-05-15T19:04:01.960Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335842250,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"reqId\":\"req-3\",\"req\":{\"method\":\"POST\",\"url\":\"/tokens\",\"host\":\"localhost:3001\",\"remoteAddress\":\"::1\",\"remotePort\":55211},\"msg\":\"incoming request\"}","timestamp":"2025-05-15T19:04:02.250Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747335842252,\"pid\":60358,\"hostname\":\"Moess-MacBook-Pro.local\",\"reqId\":\"req-3\",\"res\":{\"statusCode\":200},\"responseTime\":1.2157500088214874,\"msg\":\"request completed\"}","timestamp":"2025-05-15T19:04:02.252Z"}
+{"level":"info","message":"Starting server...","timestamp":"2025-05-15T19:06:59.096Z"}
+{"level":"info","message":"ewaaaaa","timestamp":"2025-05-15T19:06:59.097Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336019110,\"pid\":60540,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:06:59.110Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336019114,\"pid\":60540,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:06:59.114Z"}
+{"level":"info","message":"Starting server...","timestamp":"2025-05-15T19:07:59.959Z"}
+{"level":"info","message":"ewaaaaa","timestamp":"2025-05-15T19:07:59.960Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336079971,\"pid\":60612,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:07:59.971Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336079973,\"pid\":60612,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:07:59.973Z"}
+{"level":"info","message":"Starting server...","timestamp":"2025-05-15T19:08:19.629Z"}
+{"level":"info","message":"ewaaaaa","timestamp":"2025-05-15T19:08:19.630Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336099640,\"pid\":60629,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:08:19.640Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336099642,\"pid\":60629,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:08:19.642Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336209239,\"pid\":60684,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:10:09.239Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336209242,\"pid\":60684,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:10:09.242Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336371123,\"pid\":60767,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:12:51.124Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336371127,\"pid\":60767,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:12:51.127Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336410845,\"pid\":60787,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:13:30.845Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336410849,\"pid\":60787,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:13:30.849Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336422560,\"pid\":60807,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:13:42.561Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336422565,\"pid\":60807,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:13:42.565Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336447861,\"pid\":60991,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:14:07.861Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336447864,\"pid\":60991,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:14:07.864Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336600215,\"pid\":61223,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://[::1]:3001\"}","timestamp":"2025-05-15T19:16:40.215Z"}
+{"level":"info","message":"{\"level\":30,\"time\":1747336600219,\"pid\":61223,\"hostname\":\"Moess-MacBook-Pro.local\",\"msg\":\"Server listening at http://127.0.0.1:3001\"}","timestamp":"2025-05-15T19:16:40.219Z"}

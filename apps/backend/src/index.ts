@@ -5,9 +5,15 @@ import cors from "@fastify/cors";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
+import dogLogger from "@autofun/dog-logger";
 
 const fastify = Fastify({
-	loggerInstance: logger,
+    logger: {
+        stream: {
+            write: (msg: string) => dogLogger.info(msg.trim()),
+        },
+        level: 'info'
+    },
 });
 
 fastify.register(helmet);
@@ -28,6 +34,7 @@ fastify.register(chatRoutes, { prefix: "/chat" });
 const port = 3001;
 
 const start = async () => {
+
 	try {
 		await fastify.listen({ port });
 	} catch (err) {

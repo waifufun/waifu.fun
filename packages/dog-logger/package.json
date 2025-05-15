@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/blank",
+	"name": "@autofun/dog-logger",
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
@@ -14,9 +14,12 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
+		"datadog-winston": "^1.6.0",
+		"pino": "^9.6.0",
 		"winston": "^3.17.0"
 	},
 	"devDependencies": {
+		"@types/datadog-winston": "^1.0.7",
 		"typescript": "^5.4.5"
 	}
 }

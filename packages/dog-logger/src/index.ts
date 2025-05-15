@@ -1,10 +1,21 @@
-import { createLogger, format, transports } from 'winston'
+import winston from 'winston';
+const LOG_FILE_PATH = './logs/autofun-backend.log';
 
-export const DogLogger = createLogger({
+const DogLogger = winston.createLogger({
   level: 'info',
-  exitOnError: false,
-  format: format.json(),
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
   transports: [
-    new transports.File({ filename: `/logs/logs.log` }),
+    new winston.transports.File({ filename: LOG_FILE_PATH }),
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
   ],
 });
+
+export default DogLogger;
