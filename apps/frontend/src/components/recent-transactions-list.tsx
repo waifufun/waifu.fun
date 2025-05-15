@@ -10,8 +10,7 @@ export default function RecentTransactions() {
 
 	const handleAdd = () => {
 		addRecentTransaction(
-			"0x370372B10E81d255a4fEDd941412831Ab3a97f6F",
-			"0xfe3aba28efdc37f351cbd2b87a67388d729a593135781e92a14a69c8ca54e7ee",
+			"0x5cf0ed2939968755a5126d8530a8bb817788d5fa96481de27ea0475bebd5b411",
 			"evm",
 			EvmChainIds.EthereumMainnet,
 		);
@@ -20,7 +19,7 @@ export default function RecentTransactions() {
 	return (
 		<div className="flex flex-col gap-4">
 			{(recentTransactions || []).map((transaction: IRecentTransaction) => (
-				<RecentTransactionItem transaction={transaction} key={transaction.txId} />
+				<RecentTransactionItem transaction={transaction} key={`${transaction.txId}_${transaction.status}`} />
 			))}
 			<Button onClick={handleAdd}>Add Transaction</Button>
 		</div>
