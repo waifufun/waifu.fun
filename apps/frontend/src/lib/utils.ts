@@ -60,3 +60,35 @@ export const fromNow = (date: string | Date | number, hideAgo?: boolean): string
 
 	return result;
 };
+
+
+export const UniswapV2PairABI = [{
+	type: "event",
+	name: "Swap",
+	inputs: [
+		{ name: "sender", type: "address", indexed: true },
+		{ name: "amount0In", type: "uint256", indexed: false },
+		{ name: "amount1In", type: "uint256", indexed: false },
+		{ name: "amount0Out", type: "uint256", indexed: false },
+		{ name: "amount1Out", type: "uint256", indexed: false },
+		{ name: "to", type: "address", indexed: true },
+	],
+}]
+  
+  export const UniswapV3PoolABI = [
+	{
+	  type: "event",
+	  name: "Swap",
+	  inputs: [
+		{ type: "address", name: "sender", indexed: true },
+		{ type: "address", name: "recipient", indexed: true },
+		{ type: "int256", name: "amount0", indexed: false },
+		{ type: "int256", name: "amount1", indexed: false },
+		{ type: "uint160", name: "sqrtPriceX96", indexed: false },
+		{ type: "uint128", name: "liquidity", indexed: false },
+		{ type: "int24", name: "tick", indexed: false },
+	  ],
+	  anonymous: false,
+	},
+  ];
+  

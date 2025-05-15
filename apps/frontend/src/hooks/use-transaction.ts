@@ -4,8 +4,9 @@ import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
-import { formatEther } from "viem";
+import { decodeEventLog } from "viem";
 import { Connection } from "@solana/web3.js";
+import { UniswapV2PairABI } from "@/lib/utils";
 
 export default function useRecentTransactions() {
 	const [transactions, setTransactions] = useLocalStorage<ITransaction[]>("recent-transactions", []);
@@ -64,33 +65,46 @@ export async function txLookUp({
 		});
 
 		try {
-			const tx = await client.getTransaction({ hash: txid as `0x${string}` });
 			const receipt = await client.getTransactionReceipt({ hash: txid as `0x${string}` });
-			const fromAmount = Number(formatEther(tx.value));
 			const block = await client.getBlock({ blockNumber: receipt.blockNumber });
 			const timestamp = Number(block.timestamp) * 1000;
 			const date = new Date(timestamp).toISOString();
+			let fromAmount = 0;
+			let toAmount = 0;
+			
+			for (const log of receipt.logs) {
+				if (log.topics[0]) {
+					try {
+						const parsed = decodeEventLog({
+                            // for now the default is UniswapV2PairABI until we know more
+                            abi: UniswapV2PairABI,
+                            data: log.data,
+                            topics: log.topics,
+                            eventName: "Swap",
+                        });
+                        
 
-			// for now these values are mirrored
-			// until I know more about the swap events
-			const toAmount = fromAmount;
-
-			return {
-				status: receipt.status,
-				fromToken: "ETH",
-				toToken: "ETH",
-				fromAmount,
-				toAmount,
-				date,
-			};
+						if (parsed.eventName === "Swap") {
+							const { amount0In, amount1In, amount0Out, amount1Out } = parsed.args;
+							fromAmount = Number(amount0In) > 0 ? Number(amount0In) : Number(amount1In);
+							toAmount = Number(amount0Out) > 0 ? Number(amount0Out) : Number(amount1Out);
+							break;
+						}
+					} catch (err) {
+						console.warn("failed to decode:", err);
+					}
+				}
+			}
+			return { status: receipt.status, fromToken: "ETH", toToken: "ETH", fromAmount, toAmount, date, };
 		} catch (err) {
 			console.error("EVM tx lookup failed:", err);
 			return { status: "failed", fromToken: "", toToken: "", fromAmount: 0, toAmount: 0, date: "" };
 		}
+
+
 	} else if (chain === "solana") {
 		// use the constants for rpc url!
-		const heliusApiKey = process.env.HELIUS_API_KEY;
-		const connection = new Connection(`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`);
+		const connection = new Connection("");
 		const signature = txid;
 		const tx = await connection.getParsedTransaction(signature, {
 			maxSupportedTransactionVersion: 0,
@@ -113,16 +127,7 @@ export async function txLookUp({
 		const date = new Date(tx?.blockTime * 1000).toISOString();
 
 		if (!tx) throw new Error("Transaction not found");
-
-		return {
-			status: "success",
-			fromToken: "Sol",
-			toToken: "Sol",
-			fromAmount,
-			toAmount,
-			date,
-		};
+		return { status: "success", fromToken: "Sol", toToken: "Sol", fromAmount, toAmount, date, };
 	}
-
 	throw new Error("Unsupported chain");
 }
