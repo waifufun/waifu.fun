@@ -205,6 +205,9 @@ importers:
       '@storybook/addon-essentials':
         specifier: ^8.6.13
         version: 8.6.13(@types/react@19.1.4)(storybook@8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@storybook/addon-links':
+        specifier: ^8.6.13
+        version: 8.6.13(react@19.1.0)(storybook@8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@storybook/addon-onboarding':
         specifier: ^8.6.13
         version: 8.6.13(storybook@8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -4131,6 +4134,15 @@ packages:
     resolution: {integrity: sha512-XDf3l/1Cg53UkbOpWTtWm1LIim2lFpwmz7WDHsTkdckWGh8Z7wLNXZAhe2C0a5YekVlKIKFiuZpWasfsMVcikQ==}
     peerDependencies:
       storybook: ^8.6.13
+
+  '@storybook/addon-links@8.6.13':
+    resolution: {integrity: sha512-jiU+CpGPxbpBA0+/WqHIdsDUnfpffoMHqp3KgZ6A/mn9v5CVN0cNFATCg7X5IX8YqPLRiu95dX05K823cxiz1Q==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
+      storybook: ^8.6.13
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@storybook/addon-measure@8.6.13':
     resolution: {integrity: sha512-Io8DwW633CBPNxarSb2JYhu5XFovPl0uPtjbffC7QM2zDzbzHJqejK9wKZsXKHfBUw/3wS9Kg3QP6q6hF9dbVw==}
@@ -16284,6 +16296,14 @@ snapshots:
     dependencies:
       '@storybook/global': 5.0.0
       storybook: 8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+
+  '@storybook/addon-links@8.6.13(react@19.1.0)(storybook@8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
+    dependencies:
+      '@storybook/global': 5.0.0
+      storybook: 8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ts-dedent: 2.2.0
+    optionalDependencies:
+      react: 19.1.0
 
   '@storybook/addon-measure@8.6.13(storybook@8.6.13(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
