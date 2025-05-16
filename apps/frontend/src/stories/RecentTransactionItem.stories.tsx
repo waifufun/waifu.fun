@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import RecentTransactionItem from "../components/recent-transaction-item";
+import RecentTransactionItem from "@/components/recent-transaction-item";
 import type { IRecentTransaction } from "@autofun/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
