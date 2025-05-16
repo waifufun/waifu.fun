@@ -48,6 +48,7 @@
 		"@autofun/types": "workspace:*",
 		"@chromatic-com/storybook": "^3",
 		"@storybook/addon-essentials": "^8.6.13",
+		"@storybook/addon-links": "^8.6.13",
 		"@storybook/addon-onboarding": "^8.6.13",
 		"@storybook/blocks": "^8.6.13",
 		"@storybook/experimental-addon-test": "^8.6.13",

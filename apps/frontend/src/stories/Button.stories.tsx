@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 const meta: Meta<typeof Button> = {
 	title: "Components/Button",
 	component: Button,
-	tags: ["autodocs"], // optional: enables auto-generated docs
 	args: {
 		children: "Click me",
 	},
