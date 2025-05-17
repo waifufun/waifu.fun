@@ -71,6 +71,36 @@ export class EVMRpcProvider {
 		});
 	}
 
+	async readMultipleErc20Multicall(
+		contractAddresses: EvmAddressLike[],
+		functionNames: Erc20FunctionName[],
+		args: Erc20Args[],
+	) {
+		const calls = [];
+
+		for (let i = 0; i < functionNames?.length; i++) {
+			const contract = {
+				address: getAddress(String(contractAddresses[i])),
+				abi: erc20Abi,
+			} as const;
+
+			const functionName = functionNames[i];
+
+			if (functionName !== undefined) {
+				calls.push({
+					...contract,
+					functionName,
+					args: args?.[i] ? args?.[i] : undefined,
+				});
+			}
+		}
+
+		return await this.client.multicall({
+			contracts: calls,
+			allowFailure: false,
+		});
+	}
+
 	getTokenBalance = async (contractAddress: EvmAddressLike, owner: EvmAddressLike, raw?: boolean) => {
 		const [balanceRaw, decimals] = await this.readErc20Multicall(
 			getAddress(contractAddress),

@@ -62,12 +62,9 @@ export const fromNow = (date: string | Date | number, hideAgo?: boolean): string
 	return result;
 };
 
-export const formatAddress = (str: string, length: number): string => {
-	if (str.length <= length) return str;
-	// ellipse in the middle of the string
-	const start = str.slice(0, length / 2);
-	const end = str.slice(str.length - length / 2);
-	return `${start}...${end}`;
+export const shortenAddress = (str: string): string => {
+	const length = 5;
+	return `${str.substring(0, length)}...${str.substring(str.length - length, str.length)}`;
 };
 
 export function getCoinGeckoChainName<T extends TChain>(
@@ -90,32 +87,49 @@ export function getCoinGeckoChainName<T extends TChain>(
 	return undefined;
 }
 
-export const UniswapV2PairABI = [{
-	type: "event",
-	name: "Swap",
-	inputs: [
-		{ name: "sender", type: "address", indexed: true },
-		{ name: "amount0In", type: "uint256", indexed: false },
-		{ name: "amount1In", type: "uint256", indexed: false },
-		{ name: "amount0Out", type: "uint256", indexed: false },
-		{ name: "amount1Out", type: "uint256", indexed: false },
-		{ name: "to", type: "address", indexed: true },
-	],
-}]
-  
-  export const UniswapV3PoolABI = [
+export const UniswapV2PairABI = [
 	{
-	  type: "event",
-	  name: "Swap",
-	  inputs: [
-		{ type: "address", name: "sender", indexed: true },
-		{ type: "address", name: "recipient", indexed: true },
-		{ type: "int256", name: "amount0", indexed: false },
-		{ type: "int256", name: "amount1", indexed: false },
-		{ type: "uint160", name: "sqrtPriceX96", indexed: false },
-		{ type: "uint128", name: "liquidity", indexed: false },
-		{ type: "int24", name: "tick", indexed: false },
-	  ],
-	  anonymous: false,
+		type: "event",
+		name: "Swap",
+		inputs: [
+			{ name: "sender", type: "address", indexed: true },
+			{ name: "amount0In", type: "uint256", indexed: false },
+			{ name: "amount1In", type: "uint256", indexed: false },
+			{ name: "amount0Out", type: "uint256", indexed: false },
+			{ name: "amount1Out", type: "uint256", indexed: false },
+			{ name: "to", type: "address", indexed: true },
+		],
 	},
-  ];
+];
+
+export const UniswapV3PoolABI = [
+	{
+		type: "event",
+		name: "Swap",
+		inputs: [
+			{ type: "address", name: "sender", indexed: true },
+			{ type: "address", name: "recipient", indexed: true },
+			{ type: "int256", name: "amount0", indexed: false },
+			{ type: "int256", name: "amount1", indexed: false },
+			{ type: "uint160", name: "sqrtPriceX96", indexed: false },
+			{ type: "uint128", name: "liquidity", indexed: false },
+			{ type: "int24", name: "tick", indexed: false },
+		],
+		anonymous: false,
+	},
+];
+
+export const formatUsd = (value: number) => {
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+	}).format(value);
+};
+
+export const getPercentageOfTotal = (value: number, max: number): number => {
+	if (max === 0) {
+		return 1;
+	}
+	const percentage = (value / max) * 100;
+	return Math.max(1, Math.min(100, percentage));
+};
