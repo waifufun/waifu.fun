@@ -24,12 +24,12 @@ fastify.register(fastifyResponses);
 
 fastify.get("/", (_, reply) => {
 	// using the package like this
-	reply.sendJSONResponse(ResponseCodeEnums.ACCEPTED, {
+	reply.sendJSONResponse(ResponseCodeEnums.SUCCESS, {
 		message: "Welcome to the Autofun API",
 	});
 
 	// or
-	// reply.sendMessage(ResponseCodeEnums.ACCEPTED, "Welcome to the Autofun API");
+	// reply.sendMessage(ResponseCodeEnums.SUCCESS, "Welcome to the Autofun API");
 
 	// instead of this
 	// reply.send({ hello: "world" });

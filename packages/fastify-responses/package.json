@@ -14,8 +14,9 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
+		"@autofun/types": "workspace:*",
 		"fastify": "^5.3.3",
-		"@autofun/types": "workspace:*"
+		"fastify-plugin": "^5.0.1"
 	},
 	"devDependencies": {
 		"typescript": "^5.4.5"
