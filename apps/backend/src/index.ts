@@ -6,6 +6,8 @@ import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
 import transactionsRoutes from "./routers/transaction";
+import { fastifyResponses } from "@autofun/fastify-responses";
+import { ResponseCodeEnums } from "@autofun/types";
 
 const fastify = Fastify({
 	loggerInstance: logger,
@@ -18,8 +20,19 @@ fastify.register(cors, {
 	origin: "*",
 });
 
+fastify.register(fastifyResponses);
+
 fastify.get("/", (_, reply) => {
-	reply.send({ hello: "world" });
+	// using the package like this
+	reply.sendJSONResponse(ResponseCodeEnums.ACCEPTED, {
+		message: "Welcome to the Autofun API",
+	});
+
+	// or
+	// reply.sendMessage(ResponseCodeEnums.ACCEPTED, "Welcome to the Autofun API");
+
+	// instead of this
+	// reply.send({ hello: "world" });
 });
 
 fastify.register(tokenRoutes, { prefix: "/tokens" });

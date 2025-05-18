@@ -47,6 +47,9 @@ importers:
       '@autofun/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@autofun/fastify-responses':
+        specifier: workspace:*
+        version: link:../../packages/fastify-responses
       '@autofun/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -125,7 +128,7 @@ importers:
         version: 1.7.5(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.1)(@types/react@19.1.4)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@types/react@19.1.4)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@reown/appkit-adapter-wagmi':
         specifier: ^1.7.4
-        version: 1.7.5(sbofoipikanf37kzcl6y7gd4ru)
+        version: 1.7.5(fc59a5341113a43744ada9107c0e922b)
       '@solana/wallet-adapter-base':
         specifier: ^0.9.26
         version: 0.9.26(@solana/web3.js@1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))
@@ -267,6 +270,19 @@ importers:
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.18
+      typescript:
+        specifier: ^5.4.5
+        version: 5.8.3
+
+  packages/fastify-responses:
+    dependencies:
+      '@autofun/types':
+        specifier: workspace:*
+        version: link:../types
+      fastify:
+        specifier: ^5.3.3
+        version: 5.3.3
+    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.8.3
@@ -10765,7 +10781,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.4
 
-  '@reown/appkit-adapter-wagmi@1.7.5(sbofoipikanf37kzcl6y7gd4ru)':
+  '@reown/appkit-adapter-wagmi@1.7.5(fc59a5341113a43744ada9107c0e922b)':
     dependencies:
       '@reown/appkit': 1.7.5(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.1)(@types/react@19.1.4)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@types/react@19.1.4)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@reown/appkit-common': 1.7.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)

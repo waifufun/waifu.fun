@@ -1,0 +1,23 @@
+{
+	"name": "@autofun/fastify-responses",
+	"type": "module",
+	"version": "0.0.0",
+	"license": "MIT",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"sideEffects": false,
+	"scripts": {
+		"check": "tsc --noEmit",
+		"lint": "biome format . --write && biome lint . --fix"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"fastify": "^5.3.3",
+		"@autofun/types": "workspace:*"
+	},
+	"devDependencies": {
+		"typescript": "^5.4.5"
+	}
+}
