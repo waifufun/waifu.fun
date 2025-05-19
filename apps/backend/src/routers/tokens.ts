@@ -218,9 +218,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chain,
 			chainId,
 			contractAddress,
-		})
-			.select("decimals creator totalSupply")
-			.lean();
+		}).select("decimals creator totalSupply holders");
 
 		if (!token) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
@@ -236,6 +234,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				},
 			},
 		});
+
+		/** If the holder count differs, we should update it */
+		if (Number(token?.holders || 0) !== Number(holders?.holders?.count)) {
+			token.holders = Number(holders?.holders?.count);
+			await token.save();
+		}
 
 		const items: IHolder[] = holders?.holders?.items
 			?.splice(0, 50)
