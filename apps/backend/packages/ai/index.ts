@@ -7,15 +7,10 @@ fal.config({
 });
 
 export class AI {
-	//   private textGenerator: TextGenerator;
-
-	//   createText(prompt: string): Promise<string> {
-	//     return this.textGenerator.generate(prompt);
-	//   }
 
 	async createImage(prompt: string): Promise<Buffer> {
 
-        // for now using the free fast model, until we know more
+        // for now using the free fast model, until we know more about which model we are going to use!
 		const model = FAL_MODELS.fast
 
 		const generation = await fal.subscribe(model, {
@@ -30,8 +25,6 @@ export class AI {
 				}
 			},
 		});
-
-		console.log("Generation full response:", JSON.stringify(generation, null, 2));
 
 		const imageUrl = generation?.data?.images?.[0]?.url;
 		if (!imageUrl) throw new Error("Failed to generate image");
