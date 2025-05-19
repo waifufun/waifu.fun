@@ -5,7 +5,8 @@ import cors from "@fastify/cors";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
-import dogLogger from "@autofun/logger";
+import logger from "@autofun/logger";
+import transactionsRoutes from "./routers/transaction";
 
 const fastify = Fastify({
   logger: {
@@ -36,7 +37,7 @@ fastify.get("/", (_, reply) => {
 });
 
 fastify.addHook('onRequest', async (request, reply) => {
-  dogLogger.info(`Request from IP: ${request.ip}`, 
+  logger.info(`Request from IP: ${request.ip}`, 
     {
       ip: request.ip,
       url: request.url,
@@ -47,6 +48,7 @@ fastify.addHook('onRequest', async (request, reply) => {
 fastify.register(tokenRoutes, { prefix: "/tokens" });
 fastify.register(pricesRoutes, { prefix: "/prices" });
 fastify.register(chatRoutes, { prefix: "/chat" });
+fastify.register(transactionsRoutes, { prefix: "/transactions" });
 
 const port = 3001;
 
