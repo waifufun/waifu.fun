@@ -1,16 +1,17 @@
 import { fal } from "@fal-ai/client";
-import { FAL_MODELS, falApiKey } from "@autofun/constants";
+import { falApiKey } from "@autofun/constants";
 
 fal.config({
 	credentials: falApiKey,
 });
 
 export class AI {
+	private model: string;
+	constructor(model: string) {
+		this.model = model;
+	}
 	async createImage(prompt: string): Promise<Buffer> {
-		// for now using the free fast model, until we know more about which model we are going to use!
-		const model = FAL_MODELS.fast;
-
-		const generation = await fal.subscribe(model, {
+		const generation = await fal.subscribe(this.model, {
 			input: {
 				prompt,
 				num_inference_steps: 4,
@@ -25,4 +26,6 @@ export class AI {
 		const arrayBuffer = await res.arrayBuffer();
 		return Buffer.from(arrayBuffer);
 	}
+
+	async createText() {}
 }
