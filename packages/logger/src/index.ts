@@ -3,7 +3,7 @@ const LOG_FILE_PATH = "./logs/autofun-backend.log";
 
 const dogEnabled = process.env.DOG_LOGGER_ENABLED === "true";
 
-const DogLogger = winston.createLogger({
+const logger = winston.createLogger({
 	level: "info",
 	format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
 	transports: [
@@ -24,10 +24,10 @@ const DogLogger = winston.createLogger({
 });
 
 if (!dogEnabled) {
-	const transportToRemove = DogLogger?.transports?.[0];
+	const transportToRemove = logger?.transports?.[0];
 	if (transportToRemove) {
-		DogLogger.remove(transportToRemove);
+		logger.remove(transportToRemove);
 	}
 }
 
-export default DogLogger;
+export default logger;

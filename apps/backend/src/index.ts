@@ -13,10 +13,10 @@ const fastify = Fastify({
 			write: (msg: string) => {
 				try {
 					const logData = JSON.parse(msg);
-					dogLogger.info(logData.msg);
+					logger.info(logData.msg);
 				} catch (error) {
-					dogLogger.error(`Error parsing Fastify log: ${error}, original message: ${msg}`);
-					dogLogger.info(msg);
+					logger.error(`Error parsing Fastify log: ${error}, original message: ${msg}`);
+					logger.info(msg);
 				}
 			},
 		},
