@@ -1,5 +1,4 @@
 import Fastify from "fastify";
-import logger from "@autofun/logger";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import tokenRoutes from "./routers/tokens";
@@ -9,20 +8,20 @@ import logger from "@autofun/logger";
 import transactionsRoutes from "./routers/transaction";
 
 const fastify = Fastify({
-  logger: {
-    stream: {
-      write: (msg: string) => {
-        try {
-          const logData = JSON.parse(msg);
-          dogLogger.info(logData.msg);
-        } catch (error) {
-          dogLogger.error(`Error parsing Fastify log: ${error}, original message: ${msg}`);
-          dogLogger.info(msg);
-        }
-      },
-    },
-    level: 'info'
-  },
+	logger: {
+		stream: {
+			write: (msg: string) => {
+				try {
+					const logData = JSON.parse(msg);
+					dogLogger.info(logData.msg);
+				} catch (error) {
+					dogLogger.error(`Error parsing Fastify log: ${error}, original message: ${msg}`);
+					dogLogger.info(msg);
+				}
+			},
+		},
+		level: "info",
+	},
 });
 
 fastify.register(helmet);
@@ -36,13 +35,12 @@ fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
 });
 
-fastify.addHook('onRequest', async (request, reply) => {
-  logger.info(`Request from IP: ${request.ip}`, 
-    {
-      ip: request.ip,
-      url: request.url,
-      method: request.method
-    });
+fastify.addHook("onRequest", async (request, reply) => {
+	logger.info(`Request from IP: ${request.ip}`, {
+		ip: request.ip,
+		url: request.url,
+		method: request.method,
+	});
 });
 
 fastify.register(tokenRoutes, { prefix: "/tokens" });
@@ -53,7 +51,6 @@ fastify.register(transactionsRoutes, { prefix: "/transactions" });
 const port = 3001;
 
 const start = async () => {
-
 	try {
 		await fastify.listen({ port });
 	} catch (err) {

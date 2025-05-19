@@ -11,7 +11,7 @@ import { base, baseSepolia } from "@reown/appkit/networks";
 import type { AppKitNetwork } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { ParentProvider } from "@/components/hooks/providers/ParentProvider";
-import { GoogleAnalytics } from '@next/third-parties/google'
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +66,7 @@ export default function RootLayout({
 								<Header />
 								<div className="xl:px-4">{children}</div>
 								<Toaster />
-								<GoogleAnalytics gaId={googleTagID}/>
+								<GoogleAnalytics gaId={googleTagID} />
 							</ParentProvider>
 						</QueryClientProvider>
 					</ProgressProvider>
