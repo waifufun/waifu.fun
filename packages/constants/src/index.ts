@@ -3,7 +3,7 @@ import {
 	type EvmAddressLike,
 	type TChain,
 	type TSupportProtocol,
-	type FalModelMode,
+	type FALModels,
 } from "@autofun/types";
 import { getAddress, type Abi, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
@@ -106,7 +106,12 @@ export const CHAINID_TO_CODEX_NETWORK_ID: {
 
 export const falApiKey = process.env.FAL_API_KEY;
 
-export const FAL_MODELS: Record<FalModelMode, string> = {
-	fast: "fal-ai/flux/schnell",
-	pro: "fal-ai/flux-pro/v1.1-ultra",
+export const FAL_MODELS: FALModels = {
+    image: {
+        fast: "fal-ai/flux/schnell",
+        ultra: "fal-ai/flux-pro/v1.1-ultra",
+    },
+    llm: {
+        gemini: "google/gemini-flash-1.5",
+    },
 };

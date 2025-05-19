@@ -6,12 +6,15 @@ fal.config({
 });
 
 export class AI {
-	private model: string;
-	constructor(model: string) {
-		this.model = model;
+	private imageModel: string;
+	private textModel: string;
+
+	constructor({ textModel, imageModel }: { textModel: string; imageModel: string }) {
+		this.textModel = textModel;
+		this.imageModel = imageModel;
 	}
 	async createImage(prompt: string): Promise<Buffer> {
-		const generation = await fal.subscribe(this.model, {
+		const generation = await fal.subscribe(this.imageModel, {
 			input: {
 				prompt,
 				num_inference_steps: 4,
@@ -27,5 +30,16 @@ export class AI {
 		return Buffer.from(arrayBuffer);
 	}
 
-	async createText() {}
+	async createText(prompt?: string): Promise<string> {
+		const generation = await fal.subscribe("fal-ai/any-llm", {
+			input: {
+				model: this.textModel,
+				prompt: prompt ? prompt : "Generate a creative, detailed prompt for an AI image generation model",
+			},
+			logs: true,
+		});
+		const text = generation?.data;
+		if (!text) throw new Error("Failed to generate text");
+		return text?.output;
+	}
 }
