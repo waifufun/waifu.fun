@@ -1,10 +1,4 @@
-import {
-	EvmChainIds,
-	type EvmAddressLike,
-	type TChain,
-	type TSupportProtocol,
-	type FALModels,
-} from "@autofun/types";
+import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol, type FALModels } from "@autofun/types";
 import { getAddress, type Abi, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@autofun/types";
@@ -107,11 +101,11 @@ export const CHAINID_TO_CODEX_NETWORK_ID: {
 export const falApiKey = process.env.FAL_API_KEY;
 
 export const FAL_MODELS: FALModels = {
-    image: {
-        fast: "fal-ai/flux/schnell",
-        ultra: "fal-ai/flux-pro/v1.1-ultra",
-    },
-    llm: {
-        gemini: "google/gemini-flash-1.5",
-    },
+	image: {
+		fast: "fal-ai/flux/schnell",
+		ultra: "fal-ai/flux-pro/v1.1-ultra",
+	},
+	llm: {
+		gemini: "google/gemini-flash-1.5",
+	},
 };
