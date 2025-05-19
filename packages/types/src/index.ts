@@ -13,6 +13,8 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
+export type FalModelMode = "fast" | "pro";
+
 export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";
 
 export enum EvmChainIds {

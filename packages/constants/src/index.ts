@@ -1,4 +1,4 @@
-import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol } from "@autofun/types";
+import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol, type FalModelMode } from "@autofun/types";
 import { getAddress, type Abi, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@autofun/types";
@@ -97,3 +97,10 @@ export const CHAINID_TO_CODEX_NETWORK_ID: {
 		[SolanaNetworkIds.Devnet]: undefined,
 	},
 };
+
+export const falApiKey = process.env.FAL_API_KEY;
+
+export const FAL_MODELS: Record<FalModelMode, string> = {
+	fast: "fal-ai/flux/schnell",
+	pro: "fal-ai/flux-pro/v1.1-ultra",
+  };  

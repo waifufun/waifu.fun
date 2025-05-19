@@ -1,8 +1,9 @@
 import { fal } from "@fal-ai/client";
+import {FAL_MODELS, falApiKey} from "@autofun/constants"
+import type {QueueStatus} from "@fal-ai/client";
 
 fal.config({
-
-	credentials: "",
+	credentials: falApiKey,
 });
 
 export class AI {
@@ -13,7 +14,9 @@ export class AI {
 	//   }
 
 	async createImage(prompt: string): Promise<Buffer> {
-		const model = "fal-ai/flux/schnell";
+
+        // for now using the free fast model, until we know more
+		const model = FAL_MODELS.fast
 
 		const generation = await fal.subscribe(model, {
 			input: {
@@ -21,7 +24,7 @@ export class AI {
 				num_inference_steps: 4,
 			},
 			logs: true,
-			onQueueUpdate: (update: any) => {
+			onQueueUpdate: (update: QueueStatus) => {
 				if (update.status === "IN_PROGRESS") {
 					console.log("Image generation progress:", update.logs);
 				}
