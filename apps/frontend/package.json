@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@autofun/constants": "workspace:*",
 		"@bprogress/next": "^3.2.12",
+		"@next/third-parties": "^15.3.2",
 		"@radix-ui/react-label": "^2.1.6",
 		"@radix-ui/react-popover": "^1.1.13",
 		"@radix-ui/react-select": "^2.2.4",

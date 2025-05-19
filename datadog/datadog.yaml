@@ -1,0 +1,4 @@
+api_key: ${DD_API_KEY}
+site: ${DD_SITE}
+hostname: ${DD_HOSTNAME}
+logs_enabled: true
