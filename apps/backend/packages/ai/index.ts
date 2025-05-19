@@ -1,6 +1,5 @@
 import { fal } from "@fal-ai/client";
 import { FAL_MODELS, falApiKey } from "@autofun/constants";
-import type { QueueStatus } from "@fal-ai/client";
 
 fal.config({
 	credentials: falApiKey,
@@ -17,17 +16,12 @@ export class AI {
 				num_inference_steps: 4,
 			},
 			logs: true,
-			onQueueUpdate: (update: QueueStatus) => {
-				if (update.status === "IN_PROGRESS") {
-					console.log("Image generation progress:", update.logs);
-				}
-			},
 		});
-
 		const imageUrl = generation?.data?.images?.[0]?.url;
 		if (!imageUrl) throw new Error("Failed to generate image");
 
 		const res = await fetch(imageUrl);
+		if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
 		const arrayBuffer = await res.arrayBuffer();
 		return Buffer.from(arrayBuffer);
 	}
