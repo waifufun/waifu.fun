@@ -3,6 +3,7 @@ import type { EvmAddressLike, EvmChainIds } from "@autofun/types";
 
 export interface IEVMFunctions {
 	signMessage: (message: string) => Promise<string>;
+	// biome-ignore lint/suspicious/noExplicitAny: implementation comes later
 	sendTransaction: (transaction: any) => Promise<any>;
 	switchNetwork?: (networkId: EvmChainIds) => Promise<void>;
 	chainId: EvmChainIds;
@@ -34,6 +35,7 @@ export class EVMWallet extends WalletClass {
 		}
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: implementation comes later
 	async sendTransaction(transaction: any): Promise<any> {
 		this.switchNetwork();
 		console.log("EVMWallet: Signing transaction...");
