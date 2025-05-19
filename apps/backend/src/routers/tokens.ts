@@ -237,18 +237,21 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			},
 		});
 
-		const items: IHolder[] = holders?.holders?.items?.splice(0, 50)?.map((item) => {
-			const percentage = getPercentageOfTotal(Number(item.balance), Number(token.totalSupply));
-			return {
-				address: item.address,
-				balance: item.balance,
-				balanceFormatted: item.shiftedBalance,
-				// TODO - Add bonding curve
-				isBondingCurve: false,
-				isCreator: token?.creator === item.address,
-				percentage,
-			} as IHolder;
-		});
+		const items: IHolder[] = holders?.holders?.items
+			?.splice(0, 50)
+			?.filter((item) => Number(item.balance) > 1)
+			?.map((item) => {
+				const percentage = getPercentageOfTotal(Number(item?.balance ? item?.balance : "0"), Number(token.totalSupply));
+				return {
+					address: item.address,
+					balance: item.balance,
+					balanceFormatted: item.shiftedBalance,
+					// TODO - Add bonding curve
+					isBondingCurve: false,
+					isCreator: token?.creator === item.address,
+					percentage,
+				} as IHolder;
+			});
 
 		await redis.setex(cacheKey, 15, JSON.stringify(items));
 
