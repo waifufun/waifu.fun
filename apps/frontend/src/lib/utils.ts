@@ -2,6 +2,7 @@ import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
+import bs58 from "bs58";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -132,4 +133,17 @@ export const getPercentageOfTotal = (value: number, max: number): number => {
 	}
 	const percentage = (value / max) * 100;
 	return Math.max(1, Math.min(100, percentage));
+};
+
+export const signSolanaMessage = async (message: string, signMessage: (message: Uint8Array) => Promise<Uint8Array>) => {
+	const encoder = new TextEncoder();
+	const encodedMessage = encoder.encode(message);
+	const signature = await signMessage(encodedMessage);
+	const base58Signature = bs58.encode(signature);
+	return base58Signature;
+};
+
+export const signEVMMessage = async (message: string, signMessage: (message: string) => Promise<string>) => {
+	const signature = await signMessage(message);
+	return signature;
 };

@@ -71,3 +71,21 @@ export const getTransaction = async ({ chain, chainId, txId }) => {
 		txId,
 	});
 };
+
+export const generateNonce = async (address: string) => {
+	return await fetcher("/auth/generateNonce", "POST", {
+		address,
+	});
+};
+
+export const authenticate = async (address: string, signature: string, chain: "solana" | "evm") => {
+	return await fetcher("/auth/authenticate", "POST", {
+		address,
+		signature,
+		chain,
+	});
+};
+
+export const getWallets = async () => {
+	return await fetcher("/auth/getWallets", "GET");
+};
