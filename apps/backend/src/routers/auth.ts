@@ -1,12 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { updateCryptoPrices } from "@autofun/utils";
+import fastifyCookie from "@fastify/cookie";
 import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
-
+import { time } from "console";
 export default async function authRoutes(fastify: FastifyInstance) {
-    /** Retrieve crypto token prices */
+    fastify.register(fastifyCookie);
     fastify.post("/generateNonce", async (request) => {
         const { address } = request.body as { address: AddressLike };
         if (!address) {
@@ -18,7 +19,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         return { nonce };
     });
 
-    fastify.post("/authenticate", async (request) => {
+    fastify.post("/authenticate", async (request, reply) => {
         const { address, signature, chain } = request.body as { address: AddressLike; signature: string, chain: TChain };
 
         if (!address || !signature || !chain) {
@@ -41,7 +42,14 @@ export default async function authRoutes(fastify: FastifyInstance) {
                 if (!isValidSol) {
                     return { error: "Invalid signature" };
                 }
-                break;
+
+                const solanaAddress = address as `0x${string}`;
+                    
+                reply.setCookie("solana", solanaAddress, {
+                    maxAge: 60 * 60 * 24 * 7,
+                })
+
+                return { success: true, address: solanaAddress };
             case "evm":
                 const isValidEVM = await verifyMessage({
                     address: address as `0x${string}`,
@@ -51,7 +59,13 @@ export default async function authRoutes(fastify: FastifyInstance) {
                 if (!isValidEVM) {
                     return { error: "Invalid signature" };
                 }
-                break;
+
+                const evmAddress = address as `0x${string}`;
+                reply.setCookie("evm", evmAddress, {
+                    maxAge: 60 * 60 * 24 * 7,
+                })
+
+                return { success: true, address: evmAddress };
             default:
                 return { error: "Unsupported chain" };
         }

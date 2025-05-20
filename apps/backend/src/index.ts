@@ -6,6 +6,7 @@ import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
 import transactionsRoutes from "./routers/transaction";
+import authRoutes from "./routers/auth";
 
 const fastify = Fastify({
 	loggerInstance: logger,
@@ -26,6 +27,7 @@ fastify.register(tokenRoutes, { prefix: "/tokens" });
 fastify.register(pricesRoutes, { prefix: "/prices" });
 fastify.register(chatRoutes, { prefix: "/chat" });
 fastify.register(transactionsRoutes, { prefix: "/transactions" });
+fastify.register(authRoutes, { prefix: "/auth" });
 
 const port = 3001;
 
