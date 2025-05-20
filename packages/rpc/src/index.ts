@@ -218,6 +218,7 @@ export class SolanaRpcProvider {
 
 		return bondingCurves.map((curve, i) => {
 			const mint = tokenMints?.[i].toBase58();
+			const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
 			const supplyInfo = supplies[i];
 
 			if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
@@ -239,6 +240,7 @@ export class SolanaRpcProvider {
 			const tokenDecimals = supplyInfo.decimals || 6;
 
 			const priceSOL = reserveLamport / 1e9 / (reserveToken / 10 ** tokenDecimals);
+			const priceUsd = solanaUsdPrice * priceSOL;
 			const totalSupply = supplyInfo.supply;
 			const marketCapSOL = (totalSupply / 10 ** tokenDecimals) * priceSOL;
 			const marketCapUSD = marketCapSOL * solanaUsdPrice;
@@ -248,13 +250,18 @@ export class SolanaRpcProvider {
 			const curveProgress =
 				curveLimit > virtualReserves ? ((reserveLamport - virtualReserves) / (curveLimit - virtualReserves)) * 100 : 0;
 
+			const creator = curve.creator.toBase58();
+
 			return {
 				contractAddress: mint,
+				bondingCurveAddress,
+				creator: creator ? creator : undefined,
 				curveCompleted: curve.isCompleted,
 				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
 				priceLamports: reserveLamport / reserveToken,
 				decimals: tokenDecimals,
 				priceSOL,
+				priceUsd,
 				totalSupply,
 				marketCapSOL,
 				marketCapUSD,

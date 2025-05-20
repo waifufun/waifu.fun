@@ -183,6 +183,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 					const signature = await evmSignMessage({ message });
 					return signature;
 				},
+				// biome-ignore lint/suspicious/noExplicitAny: implementation comes later
 				sendTransaction: async (transaction: any) => {
 					const signedTx = await sendTransaction(transaction);
 					return signedTx;
@@ -206,7 +207,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			logOutMutation.mutate("evm");
 			refetchRemoteWallets();
 		}
-	}, [address, isConnected]);
+	}, [address, isConnected, chainId, sendTransaction, evmSignMessage, switchChainAsync]);
 
 	return <WalletContext.Provider value={{ evmWallets, solanaWallets }}>{children}</WalletContext.Provider>;
 };

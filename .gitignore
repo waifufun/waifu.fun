@@ -3,6 +3,10 @@ node_modules
 /.pnp
 .pnp.js
 packages/**/node_modules
+logs
+
+# datadog files
+apps/backend/logs
 
 # environment
 **/.env

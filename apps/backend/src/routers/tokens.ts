@@ -150,49 +150,53 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
 		}
 
-		const trades = await codex.queries.getTokenEvents({
-			query: {
-				address: contractAddress as unknown as string,
-				// @ts-ignore
-				networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
-				eventType: EventType.Swap,
-			},
-			direction: RankingDirection.Desc,
-			limit: 50,
-		});
+		if (token?.imported || (!token.imported && token.curveCompleted)) {
+			const trades = await codex.queries.getTokenEvents({
+				query: {
+					address: contractAddress as unknown as string,
+					// @ts-ignore
+					networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
+					eventType: EventType.Swap,
+				},
+				direction: RankingDirection.Desc,
+				limit: 50,
+			});
 
-		const items = Array.from(
-			new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
-		).map((event) => {
-			const trade = event as {
-				maker: string;
-				transactionHash: string;
-				timestamp: number;
-				eventDisplayType: string;
-				data: {
-					priceUsdTotal: string;
-					priceBaseTokenTotal: string;
-					amountNonLiquidityToken: string;
+			const items = Array.from(
+				new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
+			).map((event) => {
+				const trade = event as {
+					maker: string;
+					transactionHash: string;
+					timestamp: number;
+					eventDisplayType: string;
+					data: {
+						priceUsdTotal: string;
+						priceBaseTokenTotal: string;
+						amountNonLiquidityToken: string;
+					};
 				};
-			};
 
-			return {
-				address: trade?.maker || "N/A",
-				fromAmount: trade?.data?.priceBaseTokenTotal,
-				// @ts-ignore
-				fromToken: CHAINID_TO_SYMBOL[chain][chainId],
-				toAmount: trade?.data?.amountNonLiquidityToken || "0",
-				txId: trade?.transactionHash,
-				timestamp: trade?.timestamp ? trade?.timestamp * 1000 : new Date(),
-				usdValue: trade?.data?.priceUsdTotal || null,
-				type: trade?.eventDisplayType?.toLowerCase() || "buy",
-			} as ITrade;
-		});
+				return {
+					address: trade?.maker || "N/A",
+					fromAmount: trade?.data?.priceBaseTokenTotal,
+					// @ts-ignore
+					fromToken: CHAINID_TO_SYMBOL[chain][chainId],
+					toAmount: trade?.data?.amountNonLiquidityToken || "0",
+					txId: trade?.transactionHash,
+					timestamp: trade?.timestamp ? trade?.timestamp * 1000 : new Date(),
+					usdValue: trade?.data?.priceUsdTotal || null,
+					type: trade?.eventDisplayType?.toLowerCase() || "buy",
+				} as ITrade;
+			});
 
-		await redis.setex(cacheKey, 7, JSON.stringify(items));
+			await redis.setex(cacheKey, 7, JSON.stringify(items));
+			return items;
+		}
 
-		return items;
+		return [];
 	});
+
 	fastify.post("/holders", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
 			contractAddress: Pick<IToken, "contractAddress">;
@@ -214,9 +218,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chain,
 			chainId,
 			contractAddress,
-		})
-			.select("decimals creator totalSupply")
-			.lean();
+		}).select("decimals creator totalSupply holders");
 
 		if (!token) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
@@ -233,18 +235,27 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			},
 		});
 
-		const items: IHolder[] = holders?.holders?.items?.splice(0, 50)?.map((item) => {
-			const percentage = getPercentageOfTotal(Number(item.balance), Number(token.totalSupply));
-			return {
-				address: item.address,
-				balance: item.balance,
-				balanceFormatted: item.shiftedBalance,
-				// TODO - Add bonding curve
-				isBondingCurve: false,
-				isCreator: token?.creator === item.address,
-				percentage,
-			} as IHolder;
-		});
+		/** If the holder count differs, we should update it */
+		if (Number(token?.holders || 0) !== Number(holders?.holders?.count)) {
+			token.holders = Number(holders?.holders?.count);
+			await token.save();
+		}
+
+		const items: IHolder[] = holders?.holders?.items
+			?.splice(0, 50)
+			?.filter((item) => Number(item.balance) > 1)
+			?.map((item) => {
+				const percentage = getPercentageOfTotal(Number(item?.balance ? item?.balance : "0"), Number(token.totalSupply));
+				return {
+					address: item.address,
+					balance: item.balance,
+					balanceFormatted: item.shiftedBalance,
+					// TODO - Add bonding curve
+					isBondingCurve: false,
+					isCreator: token?.creator === item.address,
+					percentage,
+				} as IHolder;
+			});
 
 		await redis.setex(cacheKey, 15, JSON.stringify(items));
 

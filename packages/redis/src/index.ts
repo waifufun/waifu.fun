@@ -38,7 +38,7 @@ redis.on("ready", () => {
 });
 
 redis.on("error", (e: Error) => {
-	logger.info(`Error from Redis: ${e.message}`);
+	logger.error(`Error from Redis: ${e.message}`);
 });
 
 redis.on("reconnecting", () => {
