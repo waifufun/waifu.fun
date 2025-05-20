@@ -19,4 +19,3 @@ export const VerifySolanaSignature = (nonce: string, signature: string, publicKe
 		return false;
 	}
 };
-

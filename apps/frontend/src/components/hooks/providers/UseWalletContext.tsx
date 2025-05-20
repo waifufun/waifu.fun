@@ -2,7 +2,13 @@ import type React from "react";
 import { createContext, useContext, useState, type ReactNode, useEffect } from "react";
 import { EVMWallet, type IEVMFunctions } from "@/components/wallet/EVMWallet";
 import { type ISolanaFunctions, SolanaWallet } from "@/components/wallet/SolanaWallet";
-import { AddressLike, type EvmAddressLike, EvmChainIds, type SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import {
+	type AddressLike,
+	type EvmAddressLike,
+	EvmChainIds,
+	type SolanaAddressLike,
+	SolanaNetworkIds,
+} from "@autofun/types";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import type { Transaction, VersionedTransaction } from "@solana/web3.js";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
@@ -82,7 +88,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		},
 	});
 
-
 	const {
 		data: remoteWallets,
 		isLoading: remoteWalletsLoading,
@@ -95,8 +100,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 				const wallets = await getWallets();
 				console.log("remoteWallets", wallets);
 				return wallets;
-			} catch (e: any) {
-				toast.error(`Error fetching remote wallets: ${e.message}`);
+			} catch (e: unknown) {
+				toast.error(`Error fetching remote wallets: ${e?.message}`);
 				throw e;
 			}
 		},
@@ -168,7 +173,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			setSolanaWallets(null);
 			logOutMutation.mutate("solana");
 			refetchRemoteWallets();
-
 		}
 	}, [publicKey, connected, disconnecting, signMessage, sendTransactionSolana]);
 

@@ -30,7 +30,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 		}
 
 		switch (chain) {
-			case "solana":
+			case "solana": {
 				const isValidSol = await VerifySolanaSignature(nonce, signature, address);
 
 				if (!isValidSol) {
@@ -41,20 +41,23 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				const solPayload = {
 					address: solanaAddress,
 					nonce,
-				}
+				};
 
 				const solanaToken = fastify.jwt.sign(solPayload, {
 					expiresIn: "7d",
 				});
 
-				reply.setCookie("solana", solanaToken, {
-					maxAge: 60 * 60 * 24 * 7,
-					path: '/',
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-				}).send({ success: true, message: "Authenticated successfully" });
+				reply
+					.setCookie("solana", solanaToken, {
+						maxAge: 60 * 60 * 24 * 7,
+						path: "/",
+						httpOnly: true,
+						secure: process.env.NODE_ENV === "production",
+					})
+					.send({ success: true, message: "Authenticated successfully" });
 				break;
-			case "evm":
+			}
+			case "evm": {
 				const isValidEVM = await verifyMessage({
 					address: address as `0x${string}`,
 					message: nonce,
@@ -69,19 +72,22 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				const evmPayload = {
 					address: evmAddress,
 					nonce,
-				}
+				};
 
-				let evmToken = fastify.jwt.sign(evmPayload, {
+				const evmToken = fastify.jwt.sign(evmPayload, {
 					expiresIn: "7d",
 				});
 
-				reply.setCookie("evm", evmToken, {
-					maxAge: 60 * 60 * 24 * 7,
-					path: '/',
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-				}).send({ success: true, message: "Authenticated successfully" });
+				reply
+					.setCookie("evm", evmToken, {
+						maxAge: 60 * 60 * 24 * 7,
+						path: "/",
+						httpOnly: true,
+						secure: process.env.NODE_ENV === "production",
+					})
+					.send({ success: true, message: "Authenticated successfully" });
 				break;
+			}
 			default:
 				return { error: "Unsupported chain" };
 		}
@@ -100,8 +106,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
-			const solanaToken = solana ? fastify.jwt.decode(solana) as { address: AddressLike } | null : null;
-			const evmToken = evm ? fastify.jwt.decode(evm) as { address: AddressLike } | null : null;
+			const solanaToken = solana ? (fastify.jwt.decode(solana) as { address: AddressLike } | null) : null;
+			const evmToken = evm ? (fastify.jwt.decode(evm) as { address: AddressLike } | null) : null;
 
 			if (solanaToken) {
 				wallets.solana = {
@@ -118,11 +124,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
 			return { wallets };
 		} catch (error) {
 			// remove invalid cookies
-			reply.clearCookie("solana", {
-			});
-			
-			reply.clearCookie("evm", {
-			});
+			reply.clearCookie("solana", {});
+
+			reply.clearCookie("evm", {});
 
 			return { wallets };
 		}
@@ -135,9 +139,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
 		}
 
 		reply.clearCookie(chain, {
-			path: '/',
+			path: "/",
 		});
-		
+
 		return { success: true, message: "Logged out successfully" };
 	});
 }

@@ -11,7 +11,7 @@ export const fetcher = async (endpoint: string, method: "GET" | "POST" | "PUT" |
 				Accept: "application/json",
 			},
 			body: body ? JSON.stringify(body) : undefined,
-			credentials: "include"
+			credentials: "include",
 		});
 
 		if (!response.ok) {
@@ -95,4 +95,4 @@ export const logOut = async (chain: TChain) => {
 	return await fetcher("/auth/logout", "POST", {
 		chain,
 	});
-}
+};

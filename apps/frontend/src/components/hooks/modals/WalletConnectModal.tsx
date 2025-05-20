@@ -1,11 +1,8 @@
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallets } from "../providers/UseWalletContext";
-import { shortenAddress, } from "@/lib/utils";
+import { shortenAddress } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAppKit, useDisconnect } from "@reown/appkit/react";
-import { useMutation } from "@tanstack/react-query";
-import { logOut } from "@/lib/api";
-import { toast } from "sonner";
 
 export default function WalletConnectModal({
 	onClose,

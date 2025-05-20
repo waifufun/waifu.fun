@@ -13,7 +13,6 @@ const fastify = Fastify({
 	loggerInstance: logger,
 });
 
-
 if (!process.env.JWT_SECRET) {
 	throw new Error("JWT_SECRET is not set in process.env");
 }
@@ -27,8 +26,8 @@ fastify.register(cors, {
 });
 
 fastify.register(fastifyJWT, {
-  secret: process.env.JWT_SECRET
-})
+	secret: process.env.JWT_SECRET,
+});
 
 fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
