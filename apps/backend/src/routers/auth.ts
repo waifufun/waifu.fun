@@ -41,9 +41,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 				reply.setCookie("solana", solanaAddress, {
 					maxAge: 60 * 60 * 24 * 7,
-				});
-
-				return { success: true, address: solanaAddress };
+					path: '/',
+					httpOnly: true,
+					secure: process.env.NODE_ENV === 'production',
+				}).send({ success: true, message: "Authenticated successfully" });
+				break;
 			case "evm":
 				const isValidEVM = await verifyMessage({
 					address: address as `0x${string}`,
@@ -57,9 +59,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				const evmAddress = address as `0x${string}`;
 				reply.setCookie("evm", evmAddress, {
 					maxAge: 60 * 60 * 24 * 7,
-				});
-
-				return { success: true, address: evmAddress };
+					path: '/',
+					httpOnly: true,
+					secure: process.env.NODE_ENV === 'production',
+				}).send({ success: true, message: "Authenticated successfully" });
+				break;
 			default:
 				return { error: "Unsupported chain" };
 		}

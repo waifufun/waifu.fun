@@ -15,8 +15,9 @@ const fastify = Fastify({
 fastify.register(helmet);
 
 fastify.register(cors, {
-	allowedHeaders: ["*"],
-	origin: "*",
+	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+	origin: "http://localhost:3000",
+	credentials: true,
 });
 
 fastify.get("/", (_, reply) => {
