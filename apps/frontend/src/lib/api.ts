@@ -1,4 +1,4 @@
-import type { IToken, ITokenLookUp } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 
 const BASE_URL = "http://localhost:3001";
 
@@ -73,13 +73,13 @@ export const getTransaction = async ({ chain, chainId, txId }) => {
 	});
 };
 
-export const generateNonce = async (address: string) => {
+export const generateNonce = async (address: AddressLike) => {
 	return await fetcher("/auth/generateNonce", "POST", {
 		address,
 	});
 };
 
-export const authenticate = async (address: string, signature: string, chain: "solana" | "evm") => {
+export const authenticate = async (address: AddressLike, signature: string, chain: TChain) => {
 	return await fetcher("/auth/authenticate", "POST", {
 		address,
 		signature,
@@ -90,3 +90,9 @@ export const authenticate = async (address: string, signature: string, chain: "s
 export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };
+
+export const logOut = async (chain: TChain) => {
+	return await fetcher("/auth/logout", "POST", {
+		chain,
+	});
+}

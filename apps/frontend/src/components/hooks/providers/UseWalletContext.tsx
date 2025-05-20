@@ -2,13 +2,13 @@ import type React from "react";
 import { createContext, useContext, useState, type ReactNode, useEffect } from "react";
 import { EVMWallet, type IEVMFunctions } from "@/components/wallet/EVMWallet";
 import { type ISolanaFunctions, SolanaWallet } from "@/components/wallet/SolanaWallet";
-import { type EvmAddressLike, EvmChainIds, type SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import { AddressLike, type EvmAddressLike, EvmChainIds, type SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import type { Transaction, VersionedTransaction } from "@solana/web3.js";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { useSignMessage, useSendTransaction, useSwitchChain, useDisconnect } from "wagmi";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { authenticate, generateNonce, getWallets } from "@/lib/api";
+import { authenticate, generateNonce, getWallets, logOut } from "@/lib/api";
 import { toast } from "sonner";
 import { signSolanaMessage } from "@/lib/utils";
 
@@ -57,7 +57,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
 	const authMutation = useMutation({
 		mutationKey: ["authenticate"],
-		mutationFn: ({ address, signature, chain }: { address: string; signature: string; chain: "solana" | "evm" }) =>
+		mutationFn: ({ address, signature, chain }: { address: AddressLike; signature: string; chain: "solana" | "evm" }) =>
 			authenticate(address, signature, chain),
 		onSuccess: async (result: any) => {
 			if (result.success) {
@@ -70,6 +70,18 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			toast.error(`Error: ${e.message}`);
 		},
 	});
+
+	const logOutMutation = useMutation({
+		mutationKey: ["logOut"],
+		mutationFn: logOut,
+		onSuccess: () => {
+			toast.success("Disconnected successfully");
+		},
+		onError: (e) => {
+			toast.error(`Error logging out: ${e.message}`);
+		},
+	});
+
 
 	const {
 		data: remoteWallets,
@@ -98,9 +110,11 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		console.log("remoteWallets", remoteWallets);
 		if (remoteWallets.wallets.evm == null) {
 			if (address && isConnected) {
-				const data = await nonceMutation.mutateAsync(evmWallets?.BaseMainnet.address as string);
+				const data = await nonceMutation.mutateAsync(address as AddressLike);
+				console.log("data.nonce", data);
 				const signature = await evmSignMessage({ message: data.nonce });
-				await authMutation.mutateAsync({ address, signature, chain: "evm" });
+				const addressConverted = address as EvmAddressLike;
+				await authMutation.mutateAsync({ address: addressConverted, signature, chain: "evm" });
 				if (authMutation.isError) {
 					disconnectEVM();
 					toast.error("Error: EVM Authentication failed");
@@ -112,10 +126,10 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
 		if (remoteWallets.wallets.solana == null) {
 			if (publicKey && connected && !disconnecting && signMessage) {
-				const data = await nonceMutation.mutateAsync(publicKey.toBase58());
+				const data = await nonceMutation.mutateAsync(publicKey.toBase58() as AddressLike);
 				const signature = await signSolanaMessage(data.nonce, signMessage);
 				await authMutation.mutateAsync({
-					address: publicKey.toBase58(),
+					address: publicKey.toBase58() as AddressLike,
 					signature: signature.toString(),
 					chain: "solana",
 				});
@@ -152,6 +166,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			handleRemoteConnect();
 		} else if (!connected) {
 			setSolanaWallets(null);
+			logOutMutation.mutate("solana");
+			refetchRemoteWallets();
+
 		}
 	}, [publicKey, connected, disconnecting, signMessage, sendTransactionSolana]);
 
@@ -182,6 +199,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			handleRemoteConnect();
 		} else {
 			setEvmWallets(null);
+			logOutMutation.mutate("evm");
+			refetchRemoteWallets();
 		}
 	}, [address, isConnected]);
 

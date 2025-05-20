@@ -7,10 +7,16 @@ import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
 import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
+import fastifyJWT from "@fastify/jwt";
 
 const fastify = Fastify({
 	loggerInstance: logger,
 });
+
+
+if (!process.env.JWT_SECRET) {
+	throw new Error("JWT_SECRET is not set in process.env");
+}
 
 fastify.register(helmet);
 
@@ -19,6 +25,10 @@ fastify.register(cors, {
 	origin: "http://localhost:3000",
 	credentials: true,
 });
+
+fastify.register(fastifyJWT, {
+  secret: process.env.JWT_SECRET
+})
 
 fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });

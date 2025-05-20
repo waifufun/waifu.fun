@@ -38,8 +38,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				}
 
 				const solanaAddress = address as `0x${string}`;
+				const solPayload = {
+					address: solanaAddress,
+					nonce,
+				}
 
-				reply.setCookie("solana", solanaAddress, {
+				const solanaToken = fastify.jwt.sign(solPayload, {
+					expiresIn: "7d",
+				});
+
+				reply.setCookie("solana", solanaToken, {
 					maxAge: 60 * 60 * 24 * 7,
 					path: '/',
 					httpOnly: true,
@@ -57,7 +65,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				}
 
 				const evmAddress = address as `0x${string}`;
-				reply.setCookie("evm", evmAddress, {
+
+				const evmPayload = {
+					address: evmAddress,
+					nonce,
+				}
+
+				let evmToken = fastify.jwt.sign(evmPayload, {
+					expiresIn: "7d",
+				});
+
+				reply.setCookie("evm", evmToken, {
 					maxAge: 60 * 60 * 24 * 7,
 					path: '/',
 					httpOnly: true,
@@ -71,10 +89,55 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 	fastify.get("/getWallets", async (request, reply) => {
 		const { solana, evm } = request.cookies;
+
 		const wallets = {
-			solana: solana || null,
-			evm: evm || null,
+			solana: null as { address: AddressLike } | null,
+			evm: null as { address: AddressLike } | null,
 		};
-		return { wallets };
+
+		if (!solana && !evm) {
+			return { wallets };
+		}
+
+		try {
+			const solanaToken = solana ? fastify.jwt.decode(solana) as { address: AddressLike } | null : null;
+			const evmToken = evm ? fastify.jwt.decode(evm) as { address: AddressLike } | null : null;
+
+			if (solanaToken) {
+				wallets.solana = {
+					address: solanaToken.address,
+				};
+			}
+
+			if (evmToken) {
+				wallets.evm = {
+					address: evmToken.address,
+				};
+			}
+
+			return { wallets };
+		} catch (error) {
+			// remove invalid cookies
+			reply.clearCookie("solana", {
+			});
+			
+			reply.clearCookie("evm", {
+			});
+
+			return { wallets };
+		}
+	});
+
+	fastify.post("/logout", async (request, reply) => {
+		const { chain } = request.body as { chain: TChain };
+		if (!chain) {
+			return { error: "Chain is required" };
+		}
+
+		reply.clearCookie(chain, {
+			path: '/',
+		});
+		
+		return { success: true, message: "Logged out successfully" };
 	});
 }
