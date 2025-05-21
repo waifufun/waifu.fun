@@ -21,7 +21,7 @@ const PromptComponent = () => {
             <textarea
                 ref={textareaRef}
                 className="w-full rounded-lg py-3 resize-none overflow-aut focus:outline-none"
-                placeholder="Enter your prompt here..."
+                placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={rows}
@@ -55,6 +55,14 @@ const GeneratedImages = () => {
                     {previousImages.map((image, index) => (
                         <img key={index} src={image} alt={`Generated Image ${index + 1}`} className="w-full h-auto rounded-lg"/>
                     ))}
+                </div>
+                <div>
+                    {/* grid 3 items, placeholder images or actual images */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                    </div>
                 </div>
             </div>
         </div>
@@ -133,8 +141,8 @@ const GenerateAddress = () => {
                         <p>GENERATE</p>
                     </button>
                 </div>
-            </div>
-            <p className="text-[#03FF24] text-xl py-3">{address}</p>
+            </div> 
+            <p className="text-[#03FF24] text-xl py-3 break-all">{address}</p>
             <div className="flex items-center gap-2">
                 <Info size={14} color="#8C8C8C"/>
                 <p className="text-[#8C8C8C] text-sm font-[500]">Longer suffixes are slower to generate</p>
