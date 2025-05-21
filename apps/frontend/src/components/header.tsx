@@ -19,7 +19,7 @@ export default function Header() {
 			<div className="flex items-center gap-2.5">
 				<Input placeholder="Search..." className="w-[430px] h-11" />
 				<Settings />
-				<Link href="/create/import">
+				<Link href="/create">
 					<Button variant="outline">Create Token</Button>
 				</Link>
 				<Button onClick={() => openModal("WALLET_CONNECT")}>
