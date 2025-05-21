@@ -7,6 +7,25 @@ import { abbreviateNumber, fromNow, getCoinGeckoChainName } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import { formatUnits } from "viem";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: ITokenLookUp }): Promise<Metadata> {
+	const token = await getToken(params);
+
+	return {
+		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
+		description: `${token.name} token information, price, and market data on autofun`,
+		openGraph: {
+			title: `${token.name} (${token.ticker})`,
+			description: `${token.name} token information, price, and market data on autofun`,
+		},
+		twitter: {
+			card: "summary_large_image",
+			title: `${token.name} (${token.ticker})`,
+			description: `${token.name} token information, price, and market data on autofun`,
+		},
+	};
+}
 
 export default async function Page({ params }: { params: ITokenLookUp }) {
 	const tokenParams = await params;
