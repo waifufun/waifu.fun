@@ -143,7 +143,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chainId,
 			contractAddress,
 		})
-			.select("decimals creator totalSupply")
+			.select("decimals creator totalSupply imported curveCompleted")
 			.lean();
 
 		if (!token) {
@@ -157,6 +157,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					// @ts-ignore
 					networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
 					eventType: EventType.Swap,
+					priceUsdTotal: {
+						gte: 5,
+					},
 				},
 				direction: RankingDirection.Desc,
 				limit: 50,

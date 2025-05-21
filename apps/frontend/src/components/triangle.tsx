@@ -1,17 +1,15 @@
 import clsx from "clsx";
+import Image from "next/image";
 
-const directionMap = {
-	up: "clip-path-triangle-up",
-	down: "clip-path-triangle-down",
-	left: "clip-path-triangle-left",
-	right: "clip-path-triangle-right",
-};
-
-const Triangle = ({ size = "size-4", color = "bg-black", direction = "up" }) => {
+const Triangle = ({ size = "size-4", direction = "up" }) => {
 	return (
-		<div
+		<Image
+			src={direction === "up" ? "/triangle-buy.svg" : "/triangle-sell.svg"}
 			// @ts-ignore
-			className={clsx(size, color, "triangle", directionMap[direction])}
+			height={18}
+			width={20}
+			alt="icon"
+			className={clsx(size, "m-auto select-none")}
 		/>
 	);
 };
