@@ -3,6 +3,7 @@ import TokenTypeSelector from "@/components/create-token-page/token-type-selecto
 import { PromptProvider } from "@/components/hooks/providers/usePromptContext"
 import { usePrompt } from "@/components/hooks/providers/usePromptContext"
 import { useEffect, useRef, useState } from "react";
+import { Info, Wallet } from "lucide-react";
 
 
 
@@ -65,7 +66,7 @@ const TokenInfoInput = ({title, label, value, setValue } : {title: string, label
     return (
         <div className="flex flex-col gap-2 w-full">
             <p className="text-xl font-[500]">{title}</p>
-            <div className="flex items-center w-full px-4 gap-4"
+            <div className="flex items-center w-full px-4 gap-4 rounded-lg"
             style={{
                 background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
             }}>
@@ -99,6 +100,7 @@ const TokenInfo = () => {
                 <TokenInfoInput title="Description" value={description} setValue={setDescription}/>
             </div>
             <GenerateAddress/>
+            <BuyCoin/>
 
         </div>
     )
@@ -129,10 +131,49 @@ const GenerateAddress = () => {
                     </button>
                 </div>
             </div>
-            <p className="text-[#03FF24] text-xl py-4">12FmM4TY8S9Qk3wCY1Ri5g1dUaGrAC5vfAVmiwdQmFUN</p>
+            <p className="text-[#03FF24] text-xl py-3">12FmM4TY8S9Qk3wCY1Ri5g1dUaGrAC5vfAVmiwdQmFUN</p>
+            <div className="flex items-center gap-2">
+                <Info size={14} color="#8C8C8C"/>
+                <p className="text-[#8C8C8C] text-sm font-[500]">Longer suffixes are slower to generate</p>
+            </div>
         </div>
     );
 };
+
+const BuyCoin = () => {
+    return (
+        <div className="inline-block py-4">
+            <p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
+                BUY COIN
+            </p>
+
+            <div className="flex gap-8 mt-4 items-center">
+                <div className="relative flex gap-2">
+                    <p className="text-xl font-[500]">Buy</p>
+                    <Info size={14} color="#8C8C8C"/>
+                </div>
+                <div className="flex gap-3 items-center py-3 px-4"
+                style={{
+                    background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
+                }}>
+                    <input
+                        className="rounded-lg focus:outline-none text-lg w-10"
+                        type="text"
+                        placeholder="0.00"
+                    />
+                    <p className="text-xl text-[#03FF24] font-[500]">SOL</p>
+                </div>
+            </div>
+            <div className="flex gap-2 items-center py-2">
+                <Wallet size={14} color="#8C8C8C"/>
+                <p className="text-[#8C8C8C] text-sm font-[500]">Balance: 5.65 SOL</p>
+            </div>
+            <button className="py-2 hover:cursor-pointer">
+                <p className="text-[#E3AA00] text-sm font-[500]">Maximum amount based on your balance</p>
+            </button>
+        </div>
+    )
+}
 
 
 export default function CreateTokenPage() {
@@ -153,6 +194,7 @@ export default function CreateTokenPage() {
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </PromptProvider>
