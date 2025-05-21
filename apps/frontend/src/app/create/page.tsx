@@ -129,7 +129,7 @@ const GenerateAddress = () => {
                              background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)"
                         }}
                     />
-                    <button className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 w-full"> {/* Use flex-1 to share width */}
+                    <button onClick={() => generateAddress(suffix)} className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 w-full"> {/* Use flex-1 to share width */}
                         <p>GENERATE</p>
                     </button>
                 </div>

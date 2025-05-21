@@ -1,39 +1,69 @@
-import { Keypair } from '@solana/web3.js';
+import * as ed from "@noble/ed25519";
+import { sha512 } from "@noble/hashes/sha512";
+import * as bs58 from "bs58";
 
-self.onmessage = async (event: MessageEvent) => {
-    const { suffix } = event.data;
-    if (!suffix) {
-        console.error("Worker received no suffix.");
-        self.postMessage({ success: false, error: "No suffix provided." });
-        return;
-    }
+ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 
-    const targetSuffix = suffix.toLowerCase();
+const REPORT_INTERVAL = 500;
 
-    let isRunning = true;
-    const stopWorker = () => {
-        isRunning = false;
-    };
+function validateKeypair(
+  privateKey: Uint8Array,
+  publicKey: Uint8Array,
+  secretKey: Uint8Array,
+): boolean {
+  try {
+    const derivedPublicKey = ed.getPublicKey(privateKey);
+    const publicKeyMatches = derivedPublicKey.every((val, index) => val === publicKey[index]);
+    const secretKeyStructureValid = secretKey.length === 64 &&
+                                  privateKey.every((val, index) => val === secretKey[index]) &&
+                                  publicKey.every((val, index) => val === secretKey[index + 32]);
+    return publicKeyMatches && secretKeyStructureValid;
+  } catch (e) {
+    console.error("[Worker] Validation error:", e);
+    return false;
+  }
+}
 
-    self.addEventListener('message', (e) => {
-        if (e.data && e.data.type === 'stop') {
-            stopWorker();
+self.onmessage = async (event: MessageEvent<{ suffix: string }>) => {
+  const { suffix } = event.data;
+
+  if (!suffix || typeof suffix !== 'string' || suffix.trim() === "") {
+    self.postMessage({ type: "error", success: false, error: "Invalid or missing suffix" });
+    return;
+  }
+
+  let attempts = 0;
+  const targetSuffix = suffix;
+
+  try {
+    while (true) {
+      const privateKey = ed.utils.randomPrivateKey();
+      const publicKey = await ed.getPublicKey(privateKey);
+      const publicKeyBs58 = bs58.default.encode(publicKey);
+
+      attempts++;
+
+      if (publicKeyBs58.endsWith(targetSuffix)) {
+        const secretKey = new Uint8Array(64);
+        secretKey.set(privateKey, 0);
+        secretKey.set(publicKey, 32);
+
+        if (validateKeypair(privateKey, publicKey, secretKey)) {
+          self.postMessage({ type: "done", success: true, address: publicKeyBs58, secretKey: Array.from(secretKey), attempts });
+          return;
+        } else {
+          console.warn(`[Worker] Key ${publicKeyBs58} matched suffix but failed validation. Continuing...`);
         }
-    });
+      }
 
-    while (isRunning) {
-        try {
-            const keypair = Keypair.generate();
-            const address = keypair.publicKey.toBase58();
-
-            if (address.toLowerCase().endsWith(targetSuffix)) {
-                self.postMessage({ success: true, address: address, secretKey: Array.from(keypair.secretKey) });
-                isRunning = false;
-            }
-        } catch (error) {
-            console.error("Error generating Solana address in worker:", error);
-            await new Promise(resolve => setTimeout(resolve, 10));
-        }
-        await new Promise(resolve => setTimeout(resolve, 0));
+      if (attempts % REPORT_INTERVAL === 0) {
+        self.postMessage({ type: "progress", address: publicKeyBs58, attempts });
+      }
     }
+  } catch (error: any) {
+    console.error("[Worker] Error during address generation:", error);
+    self.postMessage({ type: "error", success: false, error: error.message || "Unknown worker error" });
+  }
 };
+
+console.log("[Worker] Initialized and ready for messages.");
