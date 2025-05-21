@@ -19,13 +19,14 @@ export default function WalletConnectModal({
 		<div className="bg-gray-900 rounded-lg shadow-lg p-6 w-[400px]">
 			<div className="flex items-center justify-between mb-4">
 				<h2 className="text-xl font-bold ">Connect Wallet</h2>
-				<button onClick={onClose} className="text-gray-500 hover:text-gray-300 hover:cursor-pointer">
+				<button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-300 hover:cursor-pointer">
 					<img src="/util-icons/close.svg" alt="Close" className="w-6 h-6" />
 				</button>
 			</div>
 			<p className="mb-4">Please select a chain to connect:</p>
 			<div className="flex flex-col gap-4">
 				<button
+					type="button"
 					onClick={() => {
 						if (!evmWallets?.BaseMainnet.address) {
 							open();
@@ -38,6 +39,7 @@ export default function WalletConnectModal({
 					{evmWallets?.BaseMainnet?.address ? shortenAddress(evmWallets.BaseMainnet.address) : "Connect EVM Wallet"}
 				</button>
 				<button
+					type="button"
 					onClick={() => {
 						if (!solanaWallets?.Mainnet.address) {
 							setVisible(true);
