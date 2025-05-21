@@ -143,7 +143,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chainId,
 			contractAddress,
 		})
-			.select("decimals creator totalSupply")
+			.select("decimals creator totalSupply imported curveCompleted")
 			.lean();
 
 		if (!token) {
