@@ -17,43 +17,43 @@ const projectId = "YOUR_PROJECT_ID";
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, baseSepolia];
 
 const wagmiAdapter = new WagmiAdapter({
-  networks,
-  projectId,
-  ssr: true,
+	networks,
+	projectId,
+	ssr: true,
 });
 
 export const config = wagmiAdapter.wagmiConfig;
 
 createAppKit({
-  adapters: [wagmiAdapter],
-  networks,
-  projectId,
-  metadata: {
-    name: "Auto.Fun",
-    description: "Press the fun button.",
-    url: "https://auto.fun",
-    icons: ["./logo_wide.svg"],
-  },
-  features: {
-    analytics: true,
-  },
+	adapters: [wagmiAdapter],
+	networks,
+	projectId,
+	metadata: {
+		name: "Auto.Fun",
+		description: "Press the fun button.",
+		url: "https://auto.fun",
+		icons: ["./logo_wide.svg"],
+	},
+	features: {
+		analytics: true,
+	},
 });
 
 const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
-      <ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
-        <QueryClientProvider client={queryClient}>
-          <ParentProvider>
-            <Header />
-            <div className="xl:px-4">{children}</div>
-            <Toaster />
-            <GoogleAnalytics gaId={googleTagID} />
-          </ParentProvider>
-        </QueryClientProvider>
-      </ProgressProvider>
-    </WagmiProvider>
-  );
-} 
+	return (
+		<WagmiProvider config={wagmiAdapter.wagmiConfig}>
+			<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
+				<QueryClientProvider client={queryClient}>
+					<ParentProvider>
+						<Header />
+						<div className="xl:px-4">{children}</div>
+						<Toaster />
+						<GoogleAnalytics gaId={googleTagID} />
+					</ParentProvider>
+				</QueryClientProvider>
+			</ProgressProvider>
+		</WagmiProvider>
+	);
+}

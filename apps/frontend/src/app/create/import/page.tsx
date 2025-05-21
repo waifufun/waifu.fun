@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import ImportForm from "./import-form";
 
 export const metadata: Metadata = {
