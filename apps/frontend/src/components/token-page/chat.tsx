@@ -86,11 +86,11 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 				))}
 			</div>
 			<form className="flex items-center gap-2" onSubmit={handleSubmit(onSubmit)}>
-				<Button size="icon">
+				<Button size="icon" type="button">
 					<ImageIcon />
 				</Button>
-				<Input {...register("message")} />
-				<Button size="icon">
+				<Input placeholder="Send a message" aria-autocomplete="none" {...register("message")} />
+				<Button size="icon" type="submit">
 					<Send onClick={() => scrollToBottom()} />
 				</Button>
 			</form>
