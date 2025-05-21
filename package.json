@@ -8,22 +8,17 @@
 	"private": true,
 	"pnpm": {
 		"supportedArchitectures": {
-			"os": [
-				"current"
-			],
-			"cpu": [
-				"x64",
-				"arm64"
-			]
+			"os": ["current"],
+			"cpu": ["x64", "arm64"]
 		}
 	},
 	"release": {
 		"branches": [
 			"main",
 			{
-			"name": "staging",
-			"channel": "staging",
-			"prerelease": true
+				"name": "staging",
+				"channel": "staging",
+				"prerelease": true
 			}
 		],
 		"plugins": [
@@ -43,6 +38,7 @@
 	"scripts": {
 		"build": "NODE_ENV=production pnpm -r --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
+		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
