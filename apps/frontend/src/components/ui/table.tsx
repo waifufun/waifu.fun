@@ -34,7 +34,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	return (
 		<tr
 			data-slot="table-row"
-			className={cn("even:bg-[#0f0f0f] h-14 transition-colors", className)}
+			className={cn("even:bg-[#0F0F0F] h-14 transition-colors", className)}
 			{...props}
 		/>
 	);

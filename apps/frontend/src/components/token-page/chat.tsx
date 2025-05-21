@@ -34,7 +34,7 @@ const ChatWindow = ({ room }: { room: number }) => {
 
 	return (
 		<div className="flex flex-col gap-2 w-full">
-			<div className="h-[50vh] w-full border p-4 overflow-y-scroll flex flex-col-reverse gap-2" ref={ref}>
+			<div className="h-[50vh] w-full border p-4 overflow-y-scroll flex flex-col-reverse gap-4" ref={ref}>
 				{Array.from({ length: 200 }, (_, i) => ({ id: `mock-message-${i}` })).map((message) => (
 					<ChatItem key={message.id} />
 				))}
@@ -63,7 +63,7 @@ const ChatItem = () => {
 				alt="avatar"
 				className="rounded-full size-10 bg-autofun-background-action-primary"
 			/>
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-col gap-2.5 bg-[#171717] rounded-xl p-3">
 				<div className="inline-flex items-center gap-3">
 					<div className="justify-start text-autofun-background-action-highlight text-base font-medium">Testuser2</div>
 					<div className="justify-start text-autofun-text-secondary text-sm font-medium">07:09 AM</div>
