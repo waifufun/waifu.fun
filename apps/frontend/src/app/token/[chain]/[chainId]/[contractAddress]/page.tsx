@@ -88,11 +88,11 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							</div>
 						))}
 					</div>
-					<div className="w-full min-h-[500px] relative rounded-lg overflow-hidden">
+					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
 						<iframe
 							height="100%"
 							width="100%"
-							className="min-h-[500px] h-full"
+							className="min-h-[581px] h-full mb-[-41px]"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
 							src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
@@ -100,6 +100,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							allowFullScreen
 						/>
 					</div>
+
 					<TokenTabs token={token} />
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
