@@ -11,6 +11,7 @@ import type { AppKitNetwork } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { ParentProvider } from "@/components/hooks/providers/ParentProvider";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import Footer from "@/components/footer";
 
 const queryClient = new QueryClient();
 const projectId = "YOUR_PROJECT_ID";
@@ -50,6 +51,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 						<Header />
 						{children}
 						<Toaster />
+						<Footer />
 						<GoogleAnalytics gaId={googleTagID} />
 					</ParentProvider>
 				</QueryClientProvider>
