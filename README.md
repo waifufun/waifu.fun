@@ -32,3 +32,4 @@ If you're on MacOS and get a ECONNREFUSED error when connecting to MongoDB (via 
 3: Add the following line ```127.0.0.1 host.docker.internal```
 4: Exit, and reboot
 
+-add NEXT_PUBLIC_HOST

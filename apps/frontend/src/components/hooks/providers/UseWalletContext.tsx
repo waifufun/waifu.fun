@@ -171,7 +171,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			handleRemoteConnect();
 		} else if (!connected) {
 			setSolanaWallets(null);
-			logOutMutation.mutate("solana");
+			if (remoteWallets?.wallets.solana) {
+				logOutMutation.mutate("solana");
+			}
 			refetchRemoteWallets();
 		}
 	}, [publicKey, connected, disconnecting, signMessage, sendTransactionSolana]);
@@ -204,7 +206,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 			handleRemoteConnect();
 		} else {
 			setEvmWallets(null);
-			logOutMutation.mutate("evm");
+			if (remoteWallets?.wallets.evm) {
+				logOutMutation.mutate("evm");
+			}
 			refetchRemoteWallets();
 		}
 	}, [address, isConnected, chainId, sendTransaction, evmSignMessage, switchChainAsync]);
