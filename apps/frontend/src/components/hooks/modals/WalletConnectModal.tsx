@@ -10,10 +10,11 @@ export default function WalletConnectModal({
 	onClose: () => void;
 }) {
 	const { setVisible } = useWalletModal();
-	const { disconnect: disconnectSol } = useWallet();
+	const { disconnect: disconnectSol, signMessage: signMessageSolana } = useWallet();
 	const { evmWallets, solanaWallets } = useWallets();
 	const { open, close } = useAppKit();
 	const { disconnect: disconnectEVM } = useDisconnect();
+
 	return (
 		<div className="bg-gray-900 rounded-lg shadow-lg p-6 w-[400px]">
 			<div className="flex items-center justify-between mb-4">
