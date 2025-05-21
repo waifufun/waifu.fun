@@ -88,7 +88,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							</div>
 						))}
 					</div>
-					<div className="w-full min-h-[500px] relative">
+					<div className="w-full min-h-[500px] relative rounded-lg overflow-hidden">
 						<iframe
 							height="100%"
 							width="100%"

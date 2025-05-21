@@ -48,7 +48,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				<QueryClientProvider client={queryClient}>
 					<ParentProvider>
 						<Header />
-						<div className="xl:px-4">{children}</div>
+						{children}
 						<Toaster />
 						<GoogleAnalytics gaId={googleTagID} />
 					</ParentProvider>
