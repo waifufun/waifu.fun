@@ -39,7 +39,7 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
 	return (
 		<TabsPrimitive.Content
 			data-slot="tabs-content"
-			className={cn("flex-1 outline-none bg-[#0c0c0c]", className)}
+			className={cn("flex-1 outline-none rounded-b-xl bg-[#0c0c0c]", className)}
 			{...props}
 		/>
 	);
