@@ -13,7 +13,7 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
-export type FalModelMode = "image" | "llm";
+export type FalModelMode = "image" | "llm" | "audio";
 export type FALModels = {
 	image: {
 		fast: string;
@@ -22,6 +22,9 @@ export type FALModels = {
 	llm: {
 		gemini: string;
 	};
+	audio: {
+		mmaudiov2: string
+	}
 };
 
 export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";

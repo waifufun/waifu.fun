@@ -8,10 +8,12 @@ fal.config({
 export class AI {
 	private imageModel: string;
 	private textModel: string;
+	private audioModel: string;
 
-	constructor({ textModel, imageModel }: { textModel: string; imageModel: string }) {
+	constructor({ textModel, imageModel, audioModel }: { textModel: string; imageModel: string; audioModel: string }) {
 		this.textModel = textModel;
 		this.imageModel = imageModel;
+		this.audioModel = audioModel;
 	}
 	async createImage(prompt: string): Promise<Buffer> {
 		const generation = await fal.subscribe(this.imageModel, {
@@ -41,5 +43,16 @@ export class AI {
 		const text = generation?.data;
 		if (!text) throw new Error("Failed to generate text");
 		return text?.output;
+	}
+
+	async createAudio(prompt: string): Promise<string> {
+		const generation = await fal.subscribe(this.audioModel, {
+			input: {
+				prompt: prompt,
+			},
+			logs: true,
+		});
+		const audio = generation.data.audio.url;
+		return audio;
 	}
 }
