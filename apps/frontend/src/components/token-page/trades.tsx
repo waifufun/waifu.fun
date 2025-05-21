@@ -30,7 +30,7 @@ export default async function Trades({ token }: { token: IToken }) {
 					<TableRow key={trade.txId}>
 						<TableCell className="font-medium">{trade.address ? shortenAddress(trade?.address) : "-"}</TableCell>
 						<TableCell>
-							<Triangle color={trade?.type === "buy" ? "bg-[#03FF24] m-auto" : "bg-[#EF5350] rotate-180 m-auto"} />
+							<Triangle direction={trade?.type === "buy" ? "up" : "down"} />
 						</TableCell>
 						<TableCell>
 							{trade.fromAmount} {trade.fromToken}
