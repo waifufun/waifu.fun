@@ -10,7 +10,7 @@ import { formatUnits } from "viem";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: { params: ITokenLookUp }): Promise<Metadata> {
-	const token = await getToken(params);
+	const token = await getToken(await params);
 
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
