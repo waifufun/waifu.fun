@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Image as ImageIcon, Send } from "lucide-react";
@@ -23,14 +23,21 @@ export default function Chat() {
 }
 
 const ChatWindow = ({ room }: { room: number }) => {
+	const ref = useRef<HTMLDivElement | null>(null);
+
+	const scrollToBottom = () => {
+		if (ref?.current) {
+			const scrollHeight = ref.current.scrollHeight;
+			ref.current.scrollTop = 0;
+		}
+	};
+
 	return (
 		<div className="flex flex-col gap-2 w-full">
-			<div className="h-[30vh] w-full border p-4 overflow-y-scroll flex flex-col gap-2">
-				{Array(200)
-					.fill("a")
-					.map((message, idx) => (
-						<ChatItem key={idx} />
-					))}
+			<div className="h-[50vh] w-full border p-4 overflow-y-scroll flex flex-col-reverse gap-2" ref={ref}>
+				{Array.from({ length: 200 }, (_, i) => ({ id: `mock-message-${i}` })).map((message) => (
+					<ChatItem key={message.id} />
+				))}
 			</div>
 			<div className="flex items-center gap-2">
 				<Button size="icon">
@@ -38,7 +45,7 @@ const ChatWindow = ({ room }: { room: number }) => {
 				</Button>
 				<Input />
 				<Button size="icon">
-					<Send />
+					<Send onClick={() => scrollToBottom()} />
 				</Button>
 			</div>
 		</div>
@@ -52,6 +59,7 @@ const ChatItem = () => {
 				src="/chain-icons/solana.svg"
 				width={40}
 				height={40}
+				unoptimized
 				alt="avatar"
 				className="rounded-full size-10 bg-autofun-background-action-primary"
 			/>
