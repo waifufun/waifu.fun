@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useRef, useEffect } from "react";
 
 type PromptContextType = {
   prompt: string;
@@ -15,6 +15,7 @@ type PromptContextType = {
   address: string;
   buyAmount: number;
   setBuyAmount: (amount: number) => void;
+  generateAddress: (suffix: string) => void;
 };
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
@@ -28,19 +29,73 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const [ticker, _setTicker] = useState<string>("");
   const [address, setAddress] = useState<string>("");
   const [buyAmount, setBuyAmount] = useState<number>(0);
+  const [isGeneratingAddress, setIsGeneratingAddress] = useState<boolean>(false);
 
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (typeof Worker !== 'undefined') {
+      workerRef.current = new Worker('/workers/generateVanity.js', { type: 'module' });
+
+      workerRef.current.onmessage = (event) => {
+        const { success, address: generatedAddress } = event.data;
+        if (success) {
+          setAddress(generatedAddress);
+          setIsGeneratingAddress(false);
+        } else {
+          console.error("Error from address generation worker:", event.data);
+          setIsGeneratingAddress(false);
+        }
+      };
+
+      generateAddress("ewa");
+
+      workerRef.current.onerror = (error) => {
+        console.error("Web Worker error:", error);
+        setIsGeneratingAddress(false);
+      };
+    } else {
+      console.warn("Web Workers are not supported in this environment.");
+    }
+
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, []);
 
   const setTicker = (ticker: string) => {
     if (ticker.length > 5) {
       return;
     }
-    // Allow empty string or a string that matches the regex
     if (ticker !== "" && !/^[a-zA-Z0-9]+$/.test(ticker)) {
       return;
     }
 
     _setTicker(ticker);
   }
+
+  const generateAddress = (suffix: string) => {
+    if (isGeneratingAddress) {
+      console.log("Already generating an address. Please wait.");
+      return;
+    }
+    if (!suffix) {
+      console.warn("Suffix is required to generate an address.");
+      return;
+    }
+    if (!workerRef.current) {
+      console.error("Web Worker not initialized.");
+      return;
+    }
+
+    setIsGeneratingAddress(true);
+    setAddress("");
+
+    workerRef.current.postMessage({ suffix });
+  };
 
   const props = {
     prompt,
@@ -59,6 +114,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     setAddress,
     buyAmount,
     setBuyAmount,
+    generateAddress,
   } as PromptContextType;
 
 

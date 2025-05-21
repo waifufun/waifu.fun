@@ -110,6 +110,8 @@ const TokenInfo = () => {
 const GenerateAddress = () => {
     const [suffix, setSuffix] = useState<string>("FUN");
 
+    const { generateAddress, address } = usePrompt();
+
     return (
         <div className="mt-4">
             <div className="inline-block">
@@ -132,7 +134,7 @@ const GenerateAddress = () => {
                     </button>
                 </div>
             </div>
-            <p className="text-[#03FF24] text-xl py-3">12FmM4TY8S9Qk3wCY1Ri5g1dUaGrAC5vfAVmiwdQmFUN</p>
+            <p className="text-[#03FF24] text-xl py-3">{address}</p>
             <div className="flex items-center gap-2">
                 <Info size={14} color="#8C8C8C"/>
                 <p className="text-[#8C8C8C] text-sm font-[500]">Longer suffixes are slower to generate</p>
