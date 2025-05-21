@@ -33,7 +33,7 @@ const PromptComponent = () => {
             style={{
                 background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)"
             }}
-            className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2"
+            className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
             >
                 <p>Create</p>
             </button>
@@ -101,6 +101,7 @@ const TokenInfo = () => {
             </div>
             <GenerateAddress/>
             <BuyCoin/>
+            <ChoosePool/>
 
         </div>
     )
@@ -175,6 +176,54 @@ const BuyCoin = () => {
     )
 }
 
+const ChoosePool = () => {
+
+    const poolData = [
+        {
+            name: "Meteora",
+            value: "meteora",
+            image: "/pools/meteora.svg",
+        },
+        {
+            name: "Raydium",
+            value: "raydium",
+            image: "/pools/raydium.svg",
+        }
+    ]
+
+    const [pool, setPool] = useState("meteora");
+
+    return (
+        <div className="flex justify-between w-full items-center">
+            <div className="flex gap-2 items-center">
+                <p className="text-xl font-[500]">Choose Pool</p>
+                <div className="flex px-2 py-1 rounded-lg gap-2"
+                style={{
+                    background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
+                }}>
+                    {poolData.map((poolIt) => (
+                        <button key={poolIt.value} className="flex items-center gap-2 p-2 rounded-lg hover:cursor-pointer"
+                        onClick={() => setPool(poolIt.value)}
+                        style={{
+                            border: poolIt.value === pool ? "1px solid #03FF24" : "1px solid #141414",
+                        }}>
+                            <img src={poolIt.image} alt={poolIt.name} className="w-5 h-5"/>
+                            <p className="text-[#8C8C8C] text-base font-[500]">{poolIt.name}</p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <button 
+            className="px-4 py-2 rounded-lg hover:cursor-pointer"
+            style={{
+                background: "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)"
+            }}>
+                <p className="text-[#0A0A0A] text-base font-[700]">LAUNCH</p>
+            </button>
+        </div>
+    )
+}
+
 
 export default function CreateTokenPage() {
     return (
@@ -194,7 +243,6 @@ export default function CreateTokenPage() {
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </PromptProvider>
