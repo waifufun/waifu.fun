@@ -5,6 +5,11 @@ import { Input } from "../ui/input";
 import { Image as ImageIcon, Send } from "lucide-react";
 import { abbreviateNumber } from "@/lib/utils";
 import Image from "next/image";
+import { useForm, type SubmitHandler } from "react-hook-form";
+
+type Inputs = {
+	message: string;
+};
 
 export default function Chat() {
 	const [room, setRoom] = useState<number>(1000);
@@ -24,6 +29,14 @@ export default function Chat() {
 
 const ChatWindow = ({ room }: { room: number }) => {
 	const ref = useRef<HTMLDivElement | null>(null);
+	const {
+		register,
+		handleSubmit,
+		watch,
+		formState: { errors },
+	} = useForm<Inputs>();
+
+	const onSubmit: SubmitHandler<Inputs> = (data) => console.log(data);
 
 	const scrollToBottom = () => {
 		if (ref?.current) {
@@ -39,15 +52,15 @@ const ChatWindow = ({ room }: { room: number }) => {
 					<ChatItem key={message.id} />
 				))}
 			</div>
-			<div className="flex items-center gap-2">
+			<form className="flex items-center gap-2" onSubmit={handleSubmit(onSubmit)}>
 				<Button size="icon">
 					<ImageIcon />
 				</Button>
-				<Input />
+				<Input {...register("message")} />
 				<Button size="icon">
 					<Send onClick={() => scrollToBottom()} />
 				</Button>
-			</div>
+			</form>
 		</div>
 	);
 };
