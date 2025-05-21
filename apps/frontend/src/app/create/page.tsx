@@ -3,6 +3,7 @@ import TokenTypeSelector from "@/components/create-token-page/token-type-selecto
 import { PromptProvider } from "@/components/hooks/providers/usePromptContext"
 import { usePrompt } from "@/components/hooks/providers/usePromptContext"
 import { useEffect, useRef, useState } from "react";
+import { Info, Wallet } from "lucide-react";
 
 
 
@@ -20,7 +21,7 @@ const PromptComponent = () => {
             <textarea
                 ref={textareaRef}
                 className="w-full rounded-lg py-3 resize-none overflow-aut focus:outline-none"
-                placeholder="Enter your prompt here..."
+                placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={rows}
@@ -32,7 +33,7 @@ const PromptComponent = () => {
             style={{
                 background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)"
             }}
-            className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2"
+            className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
             >
                 <p>Create</p>
             </button>
@@ -55,6 +56,14 @@ const GeneratedImages = () => {
                         <img key={index} src={image} alt={`Generated Image ${index + 1}`} className="w-full h-auto rounded-lg"/>
                     ))}
                 </div>
+                <div>
+                    {/* grid 3 items, placeholder images or actual images */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                    </div>
+                </div>
             </div>
         </div>
     )
@@ -65,7 +74,7 @@ const TokenInfoInput = ({title, label, value, setValue } : {title: string, label
     return (
         <div className="flex flex-col gap-2 w-full">
             <p className="text-xl font-[500]">{title}</p>
-            <div className="flex items-center w-full px-4 gap-4"
+            <div className="flex items-center w-full px-4 gap-4 rounded-lg"
             style={{
                 background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
             }}>
@@ -99,6 +108,8 @@ const TokenInfo = () => {
                 <TokenInfoInput title="Description" value={description} setValue={setDescription}/>
             </div>
             <GenerateAddress/>
+            <BuyCoin/>
+            <ChoosePool/>
 
         </div>
     )
@@ -106,6 +117,8 @@ const TokenInfo = () => {
 
 const GenerateAddress = () => {
     const [suffix, setSuffix] = useState<string>("FUN");
+
+    const { generateAddress, address } = usePrompt();
 
     return (
         <div className="mt-4">
@@ -124,15 +137,102 @@ const GenerateAddress = () => {
                              background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)"
                         }}
                     />
-                    <button className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 w-full"> {/* Use flex-1 to share width */}
+                    <button onClick={() => generateAddress(suffix)} className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 w-full"> {/* Use flex-1 to share width */}
                         <p>GENERATE</p>
                     </button>
                 </div>
+            </div> 
+            <p className="text-[#03FF24] text-xl py-3 break-all">{address}</p>
+            <div className="flex items-center gap-2">
+                <Info size={14} color="#8C8C8C"/>
+                <p className="text-[#8C8C8C] text-sm font-[500]">Longer suffixes are slower to generate</p>
             </div>
-            <p className="text-[#03FF24] text-xl py-4">12FmM4TY8S9Qk3wCY1Ri5g1dUaGrAC5vfAVmiwdQmFUN</p>
         </div>
     );
 };
+
+const BuyCoin = () => {
+    return (
+        <div className="inline-block py-4">
+            <p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
+                BUY COIN
+            </p>
+
+            <div className="flex gap-8 mt-4 items-center">
+                <div className="relative flex gap-2">
+                    <p className="text-xl font-[500]">Buy</p>
+                    <Info size={14} color="#8C8C8C"/>
+                </div>
+                <div className="flex gap-3 items-center py-3 px-4"
+                style={{
+                    background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
+                }}>
+                    <input
+                        className="rounded-lg focus:outline-none text-lg w-10"
+                        type="text"
+                        placeholder="0.00"
+                    />
+                    <p className="text-xl text-[#03FF24] font-[500]">SOL</p>
+                </div>
+            </div>
+            <div className="flex gap-2 items-center py-2">
+                <Wallet size={14} color="#8C8C8C"/>
+                <p className="text-[#8C8C8C] text-sm font-[500]">Balance: 5.65 SOL</p>
+            </div>
+            <button className="py-2 hover:cursor-pointer">
+                <p className="text-[#E3AA00] text-sm font-[500]">Maximum amount based on your balance</p>
+            </button>
+        </div>
+    )
+}
+
+const ChoosePool = () => {
+
+    const poolData = [
+        {
+            name: "Meteora",
+            value: "meteora",
+            image: "/pools/meteora.svg",
+        },
+        {
+            name: "Raydium",
+            value: "raydium",
+            image: "/pools/raydium.svg",
+        }
+    ]
+
+    const [pool, setPool] = useState("meteora");
+
+    return (
+        <div className="flex justify-between w-full items-center">
+            <div className="flex gap-2 items-center">
+                <p className="text-xl font-[500]">Choose Pool</p>
+                <div className="flex px-2 py-1 rounded-lg gap-2"
+                style={{
+                    background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
+                }}>
+                    {poolData.map((poolIt) => (
+                        <button key={poolIt.value} className="flex items-center gap-2 p-2 rounded-lg hover:cursor-pointer"
+                        onClick={() => setPool(poolIt.value)}
+                        style={{
+                            border: poolIt.value === pool ? "1px solid #03FF24" : "1px solid #141414",
+                        }}>
+                            <img src={poolIt.image} alt={poolIt.name} className="w-5 h-5"/>
+                            <p className="text-[#8C8C8C] text-base font-[500]">{poolIt.name}</p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <button 
+            className="px-4 py-2 rounded-lg hover:cursor-pointer"
+            style={{
+                background: "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)"
+            }}>
+                <p className="text-[#0A0A0A] text-base font-[700]">LAUNCH</p>
+            </button>
+        </div>
+    )
+}
 
 
 export default function CreateTokenPage() {
