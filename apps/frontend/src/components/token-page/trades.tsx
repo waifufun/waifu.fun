@@ -28,9 +28,7 @@ export default async function Trades({ token }: { token: IToken }) {
 			<TableBody>
 				{data.map((trade: ITrade) => (
 					<TableRow key={trade.txId}>
-						<TableCell className="font-medium flex items-center gap-2">
-							{trade.address ? shortenAddress(trade?.address) : "-"}
-						</TableCell>
+						<TableCell className="font-medium">{trade.address ? shortenAddress(trade?.address) : "-"}</TableCell>
 						<TableCell>
 							<Triangle color={trade?.type === "buy" ? "bg-[#03FF24] m-auto" : "bg-[#EF5350] rotate-180 m-auto"} />
 						</TableCell>
