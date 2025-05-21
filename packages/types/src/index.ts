@@ -23,11 +23,11 @@ export type FALModels = {
 		gemini: string;
 	};
 	audio: {
-		mmaudiov2: string
-	}
+		mmaudiov2: string;
+	};
 	video: {
-		klingVideo: string
-	}
+		klingVideo: string;
+	};
 };
 
 export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";

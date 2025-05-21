@@ -11,7 +11,12 @@ export class AI {
 	private audioModel: string;
 	private videoModel: string;
 
-	constructor({ textModel, imageModel, audioModel, videoModel }: { textModel: string; imageModel: string; audioModel: string, videoModel: string }) {
+	constructor({
+		textModel,
+		imageModel,
+		audioModel,
+		videoModel,
+	}: { textModel: string; imageModel: string; audioModel: string; videoModel: string }) {
 		this.textModel = textModel;
 		this.imageModel = imageModel;
 		this.audioModel = audioModel;
@@ -61,16 +66,16 @@ export class AI {
 	async createVideo(prompt: string): Promise<string> {
 		const result = await fal.subscribe(this.videoModel, {
 			input: {
-			  prompt: prompt
+				prompt: prompt,
 			},
 			logs: true,
 			onQueueUpdate: (update) => {
-			  if (update.status === "IN_PROGRESS") {
-				update.logs.map((log) => log.message).forEach(console.log);
-			  }
+				if (update.status === "IN_PROGRESS") {
+					update.logs.map((log) => log.message).forEach(console.log);
+				}
 			},
-		  });
-		  const videoUrl = result.data.video
-		  return videoUrl
+		});
+		const videoUrl = result.data.video;
+		return videoUrl;
 	}
 }
