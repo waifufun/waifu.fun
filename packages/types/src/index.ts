@@ -1,5 +1,6 @@
 import type { Address as SolanaAddressLikeImport } from "@solana/kit";
 import type { Address as EvmAddressLikeImport, Hash } from "viem";
+import type { Types } from "mongoose";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
@@ -122,7 +123,13 @@ export interface ITrade {
 	timestamp: number;
 }
 
-export interface IChatMessage {
+interface MongooseDocument {
+	_id?: Types.ObjectId;
+	createdAt?: Date | string;
+	updatedAt?: Date | string;
+}
+
+export interface IChatMessage extends MongooseDocument {
 	contractAddress: Pick<IToken, "contractAddress">;
 	sender: AddressLike;
 	room: TChatRooms;

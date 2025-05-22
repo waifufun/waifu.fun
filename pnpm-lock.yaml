@@ -64,7 +64,7 @@ importers:
         version: link:../../packages/utils
       '@codex-data/sdk':
         specifier: ^1.0.6
-        version: 1.0.7(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        version: 1.0.7(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@fal-ai/client':
         specifier: ^1.4.0
         version: 1.4.0
@@ -82,7 +82,7 @@ importers:
         version: 9.1.0
       '@solana/kit':
         specifier: ^2.1.0
-        version: 2.1.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        version: 2.1.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       alchemy-sdk:
         specifier: ^3.5.8
         version: 3.5.8(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -468,7 +468,10 @@ importers:
     dependencies:
       '@solana/kit':
         specifier: ^2.1.0
-        version: 2.1.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        version: 2.1.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      mongoose:
+        specifier: ^8.14.1
+        version: 8.14.3(socks@2.8.4)
       viem:
         specifier: ^2.28.3
         version: 2.29.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
@@ -12097,26 +12100,6 @@ snapshots:
       - '@chromatic-com/playwright'
       - react
 
-  '@codex-data/sdk@1.0.7(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
-    dependencies:
-      '@graphql-tools/wrap': 10.0.35(graphql@16.11.0)
-      '@types/jest': 29.5.14
-      '@types/lodash': 4.17.16
-      '@types/node': 20.17.47
-      gql-query-builder: 3.8.0
-      graphql: 16.11.0
-      graphql-ast-types: 1.0.2(graphql@16.11.0)
-      graphql-request: 6.1.0(graphql@16.11.0)
-      graphql-ws: 5.16.2(graphql@16.11.0)
-      isomorphic-ws: 5.0.0(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
-      lodash: 4.17.21
-      mkdirp: 3.0.1
-      tsx: 4.19.4
-      typescript: 5.8.3
-    transitivePeerDependencies:
-      - encoding
-      - ws
-
   '@codex-data/sdk@1.0.7(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       '@graphql-tools/wrap': 10.0.35(graphql@16.11.0)
@@ -21641,10 +21624,6 @@ snapshots:
   isomorphic-ws@4.0.1(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
     dependencies:
       ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-
-  isomorphic-ws@5.0.0(ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
-    dependencies:
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   isomorphic-ws@5.0.0(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
     dependencies:
