@@ -38,7 +38,7 @@ export default function ChainIndicator({
 				height={128}
 				unoptimized
 				alt={key}
-				className={cn(["bg-autofun-background-card/90 p-0.5 size-6 rounded-full", className ? className : ""])}
+				className={cn(["p-0.5 size-6 rounded-full", className ? className : ""])}
 			/>
 		</Fragment>
 	);

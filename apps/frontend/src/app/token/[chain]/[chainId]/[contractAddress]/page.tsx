@@ -35,59 +35,69 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 		<div className="flex flex-col gap-3">
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
 				<div className="w-full lg:w-3/4 flex flex-col gap-4 order-3 lg:order-2">
-					<div className="flex items-center gap-6">
-						{/* Image */}
-						<Image src={token.image} width={60} height={60} unoptimized alt="token_image" className="size-[60px]" />
-						{/* Token Name */}
-						<div className="flex flex-col">
-							{/* Name */}
-							<div className="flex items-center gap-3">
-								<ChainIndicator chain={token.chain} chainId={token.chainId} />
-								<Verified isVerified={token?.verified} />
-								<span className="text-white text-2xl font-medium font-satoshi uppercase">{token.name}</span>
-								<div className="h-5 w-[1px] bg-autofun-background-disabled" />
-								<span className="text-xl font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
-							</div>
-							{/* Creator */}
-							<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
-								<div className="capitalize">Created by:</div>
-								<div className="hover:underline">{token?.creator ? token?.creator : "-"}</div>
+					<div className="px-6 py-3 bg-[#333333]/10 rounded-lg flex items-center justify-between">
+						<div className="flex items-center gap-6">
+							{/* Image */}
+							<Image
+								src={token.image}
+								width={60}
+								height={60}
+								unoptimized
+								alt="token_image"
+								className="size-[60px] rounded-lg"
+							/>
+							{/* Token Name */}
+							<div className="flex flex-col">
+								{/* Name */}
+								<div className="flex items-center gap-3">
+									<ChainIndicator chain={token.chain} chainId={token.chainId} />
+									<Verified isVerified={token?.verified} />
+									<span className="text-white text-2xl font-medium font-satoshi uppercase">{token.name}</span>
+									<div className="h-5 w-[1px] bg-autofun-background-disabled" />
+									<span className="text-xl font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
+								</div>
+								{/* Creator */}
+								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
+									<div className="capitalize">Created by:</div>
+									<div className="hover:underline">{token?.creator ? token?.creator : "-"}</div>
+								</div>
 							</div>
 						</div>
-					</div>
-					<div className="w-full flex flex-wrap justify-between">
-						{[
-							{
-								title: "Market Cap",
-								value: token?.marketcap ? abbreviateNumber(token?.marketcap) : "-",
-							},
-							{
-								title: "24hr Volume",
-								value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
-							},
-							{
-								title: "Holders",
-								value: token?.holders ? abbreviateNumber(token?.holders, true) : "-",
-							},
-							{
-								title: "Price",
-								value: token?.price,
-							},
-							{
-								title: "Age",
-								value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
-							},
-						].map((item) => (
-							<div className="inline-flex justify-center items-center gap-3" key={item.title}>
-								<div className="justify-start text-autofun-text-secondary  text-xl font-medium font-satoshi leading-tight">
-									{item.title}
+						<div className="gap-9 flex flex-wrap justify-between">
+							{[
+								{
+									title: "Market Cap",
+									value: token?.marketcap ? abbreviateNumber(token?.marketcap) : "-",
+								},
+								{
+									title: "24hr Volume",
+									value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
+								},
+								{
+									title: "Holders",
+									value: token?.holders ? abbreviateNumber(token?.holders, true) : "-",
+								},
+								{
+									title: "Price",
+									value: token?.price,
+								},
+								{
+									title: "Age",
+									value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
+								},
+							].map((item) => (
+								<div className="flex flex-col items-center" key={item.title}>
+									<div className="justify-start text-autofun-text-secondary  text-base font-medium font-satoshi leading-tight">
+										{item.title}
+									</div>
+									<div className="justify-start text-autofun-text-highlight text-lg font-medium font-satoshi leading-normal">
+										{item.value}
+									</div>
 								</div>
-								<div className="justify-start text-autofun-text-highlight text-2xl font-medium font-satoshi leading-normal">
-									{item.value}
-								</div>
-							</div>
-						))}
+							))}
+						</div>
 					</div>
+
 					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
 						<iframe
 							height="100%"
