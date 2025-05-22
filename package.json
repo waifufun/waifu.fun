@@ -21,9 +21,9 @@
 		"branches": [
 			"main",
 			{
-			"name": "staging",
-			"channel": "staging",
-			"prerelease": true
+				"name": "staging",
+				"channel": "staging",
+				"prerelease": true
 			}
 		],
 		"plugins": [
@@ -34,7 +34,10 @@
 			[
 				"@semantic-release/git",
 				{
-					"assets": ["CHANGELOG.md", "package.json"],
+					"assets": [
+						"CHANGELOG.md",
+						"package.json"
+					],
 					"message": "chore(release): ${nextRelease.version}"
 				}
 			]
@@ -43,6 +46,7 @@
 	"scripts": {
 		"build": "NODE_ENV=production pnpm -r --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
+		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
@@ -59,5 +63,6 @@
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5",
 		"dotenv-cli": "^8.0.0"
-	}
+	},
+	"packageManager": "pnpm@8.8.0+sha512.798e6b322669ce63c8da856bd62ad1f7b6f36f4dfaa0ac025af2bdd700d09dd5dca943e5cad3edac5d1b3baebc4b2c3fb80fbb8537f936733c32be2ec7805144"
 }

@@ -13,6 +13,17 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
+export type FalModelMode = "image" | "llm";
+export type FALModels = {
+	image: {
+		fast: string;
+		ultra: string;
+	};
+	llm: {
+		gemini: string;
+	};
+};
+
 export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";
 
 export enum EvmChainIds {
@@ -53,8 +64,13 @@ export interface IToken<T extends TChain = TChain> {
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
+	curveLimit?: number;
+	reserveAmount?: number;
+	reserveLamport?: number;
+	virtualReserves?: number;
 	socials: ITokenSocials;
 	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;
@@ -63,6 +79,7 @@ export interface IToken<T extends TChain = TChain> {
 	createdAt?: Date;
 	verified?: boolean;
 	updatedAt?: Date;
+	pool?: string;
 }
 
 export interface ITokenSocials {
@@ -135,4 +152,32 @@ export interface IRecentTransaction {
 	input?: ISwapToken;
 	output?: ISwapToken;
 	timestamp?: Date;
+}
+
+export enum MediaType {
+	IMAGE = "image",
+	VIDEO = "video",
+	AUDIO = "audio",
+}
+
+export interface IMigration {
+	withdrawnAt?: Date;
+	migratedAt?: Date;
+	marketId?: string;
+	baseVault?: string;
+	quoteVault?: string;
+	withdrawnAmount?: number;
+	migration?: string;
+	withdrawnAmounts?: string;
+	poolInfo?: string;
+	lockLpTxId?: string;
+	status: string;
+	positionIds?: string[];
+	positionNftsSecrets?: string[];
+	contractAddress: AddressLike;
+	chain: TChain;
+	chainId: TChainId;
+	creator: string;
+	createdAt?: Date;
+	updatedAt?: Date;
 }

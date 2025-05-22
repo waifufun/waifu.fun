@@ -3,6 +3,10 @@ node_modules
 /.pnp
 .pnp.js
 packages/**/node_modules
+logs
+
+# datadog files
+apps/backend/logs
 
 # environment
 **/.env
@@ -98,3 +102,4 @@ testem.log
 /typings
 .yarn-integrity
 *.tsbuildinfo
+pnpm-lock.yaml

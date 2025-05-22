@@ -16,7 +16,7 @@ export const ParentProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	const network = WalletAdapterNetwork.Devnet;
 	const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
-	const wallets = useMemo(() => [new PhantomWalletAdapter()], [network]);
+	const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 	return (
 		<ConnectionProvider endpoint={endpoint}>
 			<WalletProvider wallets={wallets} autoConnect>

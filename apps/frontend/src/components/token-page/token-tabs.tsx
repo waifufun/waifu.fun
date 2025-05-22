@@ -26,7 +26,7 @@ export default function TokenTabs({ token }: { token: IToken }) {
 				<AICreate />
 			</TabsContent>
 			<TabsContent value="chat">
-				<Chat />
+				<Chat token={token} />
 			</TabsContent>
 			<TabsContent value="agents">
 				<Agents />
