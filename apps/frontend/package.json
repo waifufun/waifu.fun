@@ -8,7 +8,7 @@
 		"start": "next start",
 		"lint": "biome format . --write && biome lint . --fix",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
 		"build:workers": "tsc -p tsconfig.worker.json",
 		"watch:workers": "tsc -p tsconfig.worker.json --watch"
 	},
@@ -80,7 +80,7 @@
 		"tailwindcss": "^4",
 		"tw-animate-css": "^1.2.9",
 		"typescript": "^5",
-		"vitest": "^3.1.3"
+		"vitest": "^3.1.3",
 		"worker-loader": "^3.0.8"
 	}
 }
