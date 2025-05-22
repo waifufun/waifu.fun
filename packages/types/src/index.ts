@@ -79,6 +79,7 @@ export interface IToken<T extends TChain = TChain> {
 	createdAt?: Date;
 	verified?: boolean;
 	updatedAt?: Date;
+	pool?: string;
 }
 
 export interface ITokenSocials {
