@@ -49,20 +49,19 @@ const PromptComponent = () => {
 const AIImageWithPlaceHolder = ({href}: {href: string | undefined}) => {
     if (!href) {
         return (
-            <div className="w-full aspect-square bg-[#3333331A] rounded-lg flex items-center justify-center">
+            <div className="w-full h-full bg-[#3333331A] rounded-lg flex items-center justify-center">
                 <p>No Image</p>
             </div>
         )
     } else {
         return (
-            <div className="w-full aspect-square bg-[#3333331A] rounded-lg">
-                <Image 
-                    alt="Generated Image" 
+            <div className="w-full h-full relative rounded-lg overflow-hidden">
+                <Image
+                    alt="Generated Image"
                     src={href}
-                    layout="responsive"
-                    width={500}
-                    height={500}
-                    className="rounded-lg object-cover"
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-lg"
                 />
             </div>
         )
@@ -71,7 +70,7 @@ const AIImageWithPlaceHolder = ({href}: {href: string | undefined}) => {
 
 const AiImageLoading = () => {
     return (
-        <div className="w-full aspect-square bg-[#3333331A] rounded-lg flex items-center justify-center">
+        <div className="w-full h-full bg-[#3333331A] rounded-lg flex items-center justify-center">
             <p>Loading...</p>
         </div>
     )
@@ -84,7 +83,7 @@ const GeneratedImages = () => {
     const startingIndex = isGeneratingImage ? 0 : 1;
 
     const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3)
-    // check if it is smaller than 3, otherwise add undefined values
+
     if (nextImages.length < 3) {
         const diff = 3 - nextImages.length;
         for (let i = 0; i < diff; i++) {
@@ -93,20 +92,22 @@ const GeneratedImages = () => {
     }
     return (
         <div className="w-full">
-            <div>
-                {isGeneratingImage && <AiImageLoading/>}
-                {!isGeneratingImage && <AIImageWithPlaceHolder href={previousImages[0]}/>}
-            </div>
-            <div>
+            <div className="w-[500px]">
+                <div className="w-full h-[400px] rounded-lg overflow-hidden relative">
+                    {isGeneratingImage && <AiImageLoading/>}
+                    {!isGeneratingImage && <AIImageWithPlaceHolder href={previousImages[0]}/>}
+                </div>
                 <div>
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                        {nextImages.map((image, index) => (
-                            <button onClick={() => {
-                                changeMainImage(index + 1);
-                            }} key={index} className="w-full aspect-square hover:cursor-pointer">
-                                <AIImageWithPlaceHolder href={image}/>
-                            </button>
-                        ))}
+                    <div>
+                        <div className="grid grid-cols-3 gap-4 mt-4">
+                            {nextImages.map((image, index) => (
+                                <button onClick={() => {
+                                    changeMainImage(index + 1);
+                                }} key={index} className="w-full aspect-square hover:cursor-pointer rounded-lg overflow-hidden relative"> {/* Ensure button can host relative child properly */}
+                                    <AIImageWithPlaceHolder href={image}/>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

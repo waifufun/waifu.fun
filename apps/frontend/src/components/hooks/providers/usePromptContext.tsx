@@ -65,7 +65,9 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
       setDescriptionState(data?.metadata?.description);
       setIsGeneratingImage(true);
       generateImageMutation.mutate({
-        prompt: data?.metadata?.prompt
+        prompt: data?.metadata?.prompt,
+        width: 512,
+        height: 512,
       });
     },
     onError: (error) => {
