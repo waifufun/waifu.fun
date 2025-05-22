@@ -9,9 +9,9 @@ import { formatUnits } from "viem";
 const Progressbar = ({ value, max }: { value: number; max: number }) => {
 	const width = getPercentageOfTotal(value, max);
 	return (
-		<div className="h-3 w-full max-w-md bg-autofun-background-action-disabled relative">
+		<div className="h-3 rounded-xl w-full max-w-md bg-autofun-background-action-disabled relative">
 			<div
-				className="h-3 bg-autofun-background-action-highlight"
+				className="h-3 rounded-xl bg-autofun-background-action-highlight"
 				style={{
 					width: `${width}%`,
 				}}
@@ -41,8 +41,10 @@ export default async function Holders({ token }: { token: IToken }) {
 				{data.map((holder: IHolder, rank: number) => (
 					<TableRow key={holder.address}>
 						<TableCell className="text-autofun-text-secondary font-medium">#{rank + 1}</TableCell>
-						<TableCell className="font-medium flex items-center gap-2">
-							{shortenAddress(holder.address)} <HolderLabels address={holder.address} />
+						<TableCell>
+							<div className="flex items-center gap-2 font-medium">
+								{shortenAddress(holder.address)} <HolderLabels address={holder.address} />
+							</div>
 						</TableCell>
 						<TableCell className="text-center">
 							<div className="flex items-center justify-center gap-2 w-full mx-auto">
