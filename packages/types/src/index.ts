@@ -101,7 +101,7 @@ export interface IUser {
 	points?: number;
 }
 
-export type TChatRooms = 1000 | 100_000 | 1_000_000;
+export type TChatRooms = "1000" | "100000" | "1000000";
 
 export interface IHolder {
 	address: AddressLike;
@@ -124,9 +124,9 @@ export interface ITrade {
 }
 
 interface MongooseDocument {
-	_id?: Types.ObjectId;
-	createdAt?: Date | string;
-	updatedAt?: Date | string;
+	_id?: Types.ObjectId | string;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export interface IChatMessage extends MongooseDocument {

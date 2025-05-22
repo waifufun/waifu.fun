@@ -13,7 +13,7 @@ export default function BondingCurveProgress({ token }: { token: IToken }) {
 					Bonding curve progress:{" "}
 					<span className="text-autofun-background-action-highlight">{curveProgress.toFixed(2)}%</span>
 				</div>
-				<Progressbar max={100} value={Number(curveProgress).toFixed(2)} />
+				<Progressbar max={100} value={Number(curveProgress.toFixed(2))} />
 				{/* Bar */}
 				<div className="text-base text-autofun-text-primary">There is 4.95 SOL in the bonding curve.</div>
 			</div>
