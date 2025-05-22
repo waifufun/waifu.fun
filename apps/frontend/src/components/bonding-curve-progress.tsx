@@ -1,4 +1,3 @@
-
 import type { IToken } from "@autofun/types";
 import Progressbar from "./progressbar";
 

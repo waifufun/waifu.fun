@@ -12,7 +12,7 @@ export const abbreviateNumber = (num: number, withoutCurrency = false): string =
 	const absNum = Math.abs(Number(num));
 	if (absNum < 1000) return formatNumber(num, false, withoutCurrency);
 
-	const units = ["K", "M", "B", "T"];
+	const units = ["k", "m", "b", "t"];
 	let exponent = Math.floor(Math.log10(absNum) / 3);
 	if (exponent > units.length) exponent = units.length;
 	const unit = units[exponent - 1];

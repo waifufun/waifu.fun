@@ -82,7 +82,8 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 	};
 
 	return (
-		<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D]">
+		<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] relative">
+			<div className="h-14 w-full absolute top-0 left-0 bg-gradient-to-b from-[#111111] via-[#111111]/80 to-[#111111]/10" />
 			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D]">
 				<div className="h-[50vh] w-full p-4 overflow-y-scroll flex flex-col-reverse gap-4" ref={ref}>
 					{query?.data?.map((message: IChatMessage) => (
