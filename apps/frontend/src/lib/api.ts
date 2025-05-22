@@ -1,4 +1,4 @@
-import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, TChain, TChatRooms } from "@autofun/types";
 
 const BASE_URL = "http://localhost:3001";
 
@@ -65,6 +65,25 @@ export const getHolders = async ({ chain, chainId, contractAddress }) => {
 	});
 };
 
+export const getChatHistory = async ({ room, contractAddress }) => {
+	return await fetcher("/chat/history", "POST", {
+		room,
+		contractAddress,
+	});
+};
+
+export const sendChatMessage = async ({
+	message,
+	room,
+	contractAddress,
+}: { message: string; room: TChatRooms; contractAddress: AddressLike }) => {
+	return await fetcher("/chat/message", "POST", {
+		message,
+		room,
+		contractAddress,
+	});
+};
+
 export const getTransaction = async ({ chain, chainId, txId }) => {
 	return await fetcher("/transactions/get-transaction", "POST", {
 		chain,
@@ -96,3 +115,13 @@ export const logOut = async (chain: TChain) => {
 		chain,
 	});
 };
+
+export const generateMetadata = async (prompt?: string) => {
+	return await fetcher("/generation/generate-metadata", "POST", {
+		prompt
+	});
+}
+
+export const generateImage = async (body: object) => {
+	return await fetcher("/generation/generate", "POST", body);
+}

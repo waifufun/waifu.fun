@@ -2,6 +2,9 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import UseTokenImages from "../hook/UseTokenImages";
+import { useMutation } from "@tanstack/react-query";
+import { generateImage, generateMetadata } from "@/lib/api";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -14,7 +17,6 @@ type PromptContextType = {
   prompt: string;
   setPrompt: (prompt: string) => void;
   previousImages: string[];
-  mainImage: string;
   name: string;
   setName: (name: string) => void;
   description: string;
@@ -26,24 +28,70 @@ type PromptContextType = {
   setBuyAmount: (amount: number) => void;
   generateAddress: (suffix: string) => void;
   isGeneratingAddress: boolean;
+  isGeneratingImage: boolean;
+  generateToken: (prompt?: string) => void;
+  changeMainImage: (index: number) => void;
 };
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
 
 export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const [prompt, setPrompt] = useState<string>("");
-  const [previousImages, setPreviousImages] = useState<string[]>([]);
-  const [mainImage, setMainImage] = useState<string>(DEFAULT_MAIN_IMAGE);
   const [name, setNameState] = useState<string>("");
   const [description, setDescriptionState] = useState<string>("");
   const [ticker, _setTicker] = useState<string>("");
   const [address, setAddress] = useState<string>("");
   const [buyAmount, setBuyAmount] = useState<number>(0);
   const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
+  const {previousImages, changeMainImage, addImage} = UseTokenImages();
+  const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(true);
 
   const workerRefs = useRef<Worker[]>([]);
   const activeSuffixRef = useRef<string>("");
   const isGeneratingAddressRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    generateToken();
+  }, [])
+
+
+  const metadataMutation = useMutation({
+    mutationKey: ["generateMetadata"],
+    mutationFn: generateMetadata,
+    onSuccess: (data) => {
+      setPrompt(data?.metadata?.prompt);
+      _setTicker(data?.metadata?.symbol);
+      setNameState(data?.metadata?.name);
+      setDescriptionState(data?.metadata?.description);
+      setIsGeneratingImage(true);
+      generateImageMutation.mutate({
+        prompt: data?.metadata?.prompt,
+        width: 512,
+        height: 512,
+      });
+    },
+    onError: (error) => {
+      console.error("Error generating metadata:", error);
+      toast.error("Error generating metadata");
+    }
+  });
+
+  const generateImageMutation = useMutation({
+    mutationKey: ["generateImage"],
+    mutationFn: generateImage,
+    onSuccess: (data) => {
+      if (data?.mediaUrl) {
+        addImage(data?.mediaUrl);
+        setIsGeneratingImage(false);
+      } else {
+        toast.error("Error generating image: No media URL returned");
+      }
+    },
+    onError: (error) => {
+      console.error("Error generating image:", error);
+      toast.error("Error generating image");
+    }
+  });
 
   const setIsGeneratingAddress = (value: boolean) => {
     isGeneratingAddressRef.current = value;
@@ -169,10 +217,15 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 
   }, [initializeAndStartWorkers, terminateWorkers]);
 
+  const generateToken = (prompt?: string) => {
+    metadataMutation.mutate(prompt);
+  }
+
   useEffect(() => {
     if (!isGeneratingAddressRef.current && workerRefs.current.length === 0 && typeof Worker !== 'undefined') {
         generateAddress(INITIAL_GENERATION_SUFFIX);
     }
+
   }, [generateAddress]);
 
   useEffect(() => {
@@ -200,11 +253,11 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const setName = (nameValue: string) => setNameState(nameValue);
   const setDescription = (descriptionValue: string) => setDescriptionState(descriptionValue);
 
+
   const contextValue: PromptContextType = {
     prompt,
     setPrompt,
     previousImages,
-    mainImage,
     name,
     setName,
     description,
@@ -216,6 +269,9 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     setBuyAmount,
     generateAddress,
     isGeneratingAddress: isGeneratingAddressState,
+    isGeneratingImage,
+    generateToken,
+    changeMainImage
   };
 
   return (
@@ -226,9 +282,9 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const usePrompt = (): PromptContextType => {
-  const context = useContext(PromptContext);
-  if (!context) {
-    throw new Error("usePrompt must be used within a PromptProvider");
-  }
-  return context;
+	const context = useContext(PromptContext);
+	if (!context) {
+		throw new Error("usePrompt must be used within a PromptProvider");
+	}
+	return context;
 };

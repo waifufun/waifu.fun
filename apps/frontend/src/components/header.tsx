@@ -5,26 +5,33 @@ import Image from "next/image";
 import { useModal } from "./hooks/providers/UseModalContext";
 import { useWallets } from "./hooks/providers/UseWalletContext";
 import Settings from "./settings";
+import { Menu } from "lucide-react";
 
 export default function Header() {
 	const { openModal } = useModal();
 	const { solanaWallets, evmWallets } = useWallets();
 
 	return (
-		<div className="px-4 flex items-center gap-4 justify-between h-[84px]">
+		<div className="flex items-center gap-4 justify-between h-[68px]">
 			<Link href="/">
-				<Image src="/logo_wide.svg" height={60} width={120} className="h-11 w-auto" unoptimized alt="logo" />
+				<Image src="/logo_wide.png" height={44} width={88} className="h-11 w-auto rounded-lg" unoptimized alt="logo" />
 			</Link>
-			<Image src="/header-logo.svg" width={530} height={60} className="h-11 w-auto select-none" alt="logo" />
+			<Input placeholder="Search..." className="w-[430px] h-11 hidden md:inline-block" />
 			<div className="flex items-center gap-2.5">
-				<Input placeholder="Search..." className="w-[430px] h-11" />
-				<Settings />
-				<Link href="/create">
-					<Button variant="outline">Create Token</Button>
-				</Link>
+				<div className="hidden md:flex gap-2.5">
+					<Settings />
+					<Link href="/create/import">
+						<Button variant="outline">Create Token</Button>
+					</Link>
+				</div>
 				<Button onClick={() => openModal("WALLET_CONNECT")}>
 					{solanaWallets || evmWallets ? "My Wallets" : "Connect Wallet"}
 				</Button>
+				<div className="flex items-center">
+					<button className="md:hidden items-center">
+						<Menu size={32} />
+					</button>
+				</div>
 			</div>
 		</div>
 	);

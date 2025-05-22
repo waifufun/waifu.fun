@@ -7,6 +7,25 @@ import { abbreviateNumber, fromNow, getCoinGeckoChainName } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import { formatUnits } from "viem";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: ITokenLookUp }): Promise<Metadata> {
+	const token = await getToken(await params);
+
+	return {
+		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
+		description: `${token.name} token information, price, and market data on autofun`,
+		openGraph: {
+			title: `${token.name} (${token.ticker})`,
+			description: `${token.name} token information, price, and market data on autofun`,
+		},
+		twitter: {
+			card: "summary_large_image",
+			title: `${token.name} (${token.ticker})`,
+			description: `${token.name} token information, price, and market data on autofun`,
+		},
+	};
+}
 
 export default async function Page({ params }: { params: ITokenLookUp }) {
 	const tokenParams = await params;
@@ -69,11 +88,11 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							</div>
 						))}
 					</div>
-					<div className="w-full min-h-[500px] relative">
+					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
 						<iframe
 							height="100%"
 							width="100%"
-							className="min-h-[500px] h-full"
+							className="min-h-[581px] h-full mb-[-41px]"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
 							src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
@@ -81,6 +100,7 @@ export default async function Page({ params }: { params: ITokenLookUp }) {
 							allowFullScreen
 						/>
 					</div>
+
 					<TokenTabs token={token} />
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">

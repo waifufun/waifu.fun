@@ -64,6 +64,7 @@ export interface IToken<T extends TChain = TChain> {
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
 	curveLimit?: number;

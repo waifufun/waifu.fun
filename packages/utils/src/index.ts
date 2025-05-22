@@ -217,13 +217,27 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 			if (!nonImportedToken?._id) continue;
 
-			const setValues = {
+			const setValues: {
+				marketcap: number;
+				price: number;
+				curveCompleted?: boolean;
+				curveProgress?: number;
+				creator?: AddressLike;
+				bondingCurveAddress?: AddressLike;
+			} = {
 				marketcap: Number(tokenRecord.marketCapUSD),
-				// TODO - Add proper USD price
-				price: Number(tokenRecord.marketCapUSD),
+				price: Number(tokenRecord.priceUsd),
 				curveCompleted: Boolean(tokenRecord.curveCompleted),
 				curveProgress: Number(tokenRecord.curveProgress),
 			};
+
+			if (tokenRecord?.bondingCurveAddress) {
+				setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
+			}
+
+			if (tokenRecord?.creator) {
+				setValues.creator = String(tokenRecord?.creator) as AddressLike;
+			}
 
 			ops.push({
 				updateOne: {
