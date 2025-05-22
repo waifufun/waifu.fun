@@ -4,6 +4,7 @@ import type { IToken, ITrade } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
 import { formatUsd, fromNow, shortenAddress } from "@/lib/utils";
 import Triangle from "../triangle";
+import ChainIndicator from "../chain-indicator";
 
 export default async function Trades({ token }: { token: IToken }) {
 	const data = await getTrades({
@@ -33,10 +34,20 @@ export default async function Trades({ token }: { token: IToken }) {
 							<Triangle direction={trade?.type === "buy" ? "up" : "down"} />
 						</TableCell>
 						<TableCell>
-							{trade.fromAmount} {trade.fromToken}
+							<div className="flex items-center gap-2">
+								<ChainIndicator chain={token.chain} chainId={token.chainId} className="size-5" />
+								{new Intl.NumberFormat("en-US", {
+									maximumFractionDigits: 3,
+								}).format(Number(trade.fromAmount))}{" "}
+								{trade.fromToken}
+							</div>
 						</TableCell>
 						<TableCell>{trade?.usdValue ? formatUsd(Number(trade?.usdValue)) : "-"}</TableCell>
-						<TableCell>{trade.toAmount}</TableCell>
+						<TableCell>
+							{new Intl.NumberFormat("en-US", {
+								maximumFractionDigits: 3,
+							}).format(Number(trade.toAmount))}
+						</TableCell>
 						<TableCell className="text-right">{trade?.timestamp ? fromNow(trade?.timestamp) : "-"}</TableCell>
 						<TableCell>
 							<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />

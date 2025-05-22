@@ -24,7 +24,7 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={"font-satoshi bg-autofun-background-primary text-autofun-text-primary antialiased container"}>
+			<body className={"font-satoshi bg-[#080808] text-autofun-text-primary antialiased container"}>
 				<Providers>{children}</Providers>
 			</body>
 		</html>

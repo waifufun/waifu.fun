@@ -188,3 +188,12 @@
 	scrollbar-width: auto;
 	scrollbar-color: #03ff24 #212121;
 }
+
+.react-tooltip {
+	background-color: #1c1c1c !important;
+	border-radius: 12px !important;
+}
+
+.react-tooltip span {
+	color: #8c8c8c;
+}
