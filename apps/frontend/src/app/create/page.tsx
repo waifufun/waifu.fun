@@ -4,11 +4,13 @@ import { PromptProvider } from "@/components/hooks/providers/usePromptContext"
 import { usePrompt } from "@/components/hooks/providers/usePromptContext"
 import { useEffect, useRef, useState } from "react";
 import { Info, Wallet } from "lucide-react";
+import next from "next";
+import Image from "next/image";
 
 
 
 const PromptComponent = () => {
-    const { prompt, setPrompt } = usePrompt();
+    const { prompt, setPrompt, generateToken } = usePrompt();
     const textareaRef = useRef(null as any);
     const [rows, setRows] = useState(3);
     const MAX_ROWS = 5;
@@ -34,6 +36,9 @@ const PromptComponent = () => {
                 background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)"
             }}
             className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
+            onClick={() => {
+                generateToken(prompt.length > 0 && prompt || undefined)
+            }}
             >
                 <p>Create</p>
             </button>
@@ -41,27 +46,67 @@ const PromptComponent = () => {
     );
 };
 
+const AIImageWithPlaceHolder = ({href}: {href: string | undefined}) => {
+    if (!href) {
+        return (
+            <div className="w-full aspect-square bg-[#3333331A] rounded-lg flex items-center justify-center">
+                <p>No Image</p>
+            </div>
+        )
+    } else {
+        return (
+            <div className="w-full aspect-square bg-[#3333331A] rounded-lg">
+                <Image 
+                    alt="Generated Image" 
+                    src={href}
+                    layout="responsive"
+                    width={500}
+                    height={500}
+                    className="rounded-lg object-cover"
+                />
+            </div>
+        )
+    }
+}
+
+const AiImageLoading = () => {
+    return (
+        <div className="w-full aspect-square bg-[#3333331A] rounded-lg flex items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    )
+}
+
 const GeneratedImages = () => {
-    const {previousImages, mainImage} = usePrompt();
+    const {previousImages} = usePrompt();
+    const {isGeneratingImage, changeMainImage} = usePrompt();
 
+    const startingIndex = isGeneratingImage ? 0 : 1;
 
+    const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3)
+    // check if it is smaller than 3, otherwise add undefined values
+    if (nextImages.length < 3) {
+        const diff = 3 - nextImages.length;
+        for (let i = 0; i < diff; i++) {
+            nextImages.push(undefined);
+        }
+    }
     return (
         <div className="w-full">
             <div>
-                <img src={mainImage} alt="Main Image" className="w-full h-auto rounded-lg"/>
+                {isGeneratingImage && <AiImageLoading/>}
+                {!isGeneratingImage && <AIImageWithPlaceHolder href={previousImages[0]}/>}
             </div>
             <div>
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                    {previousImages.map((image, index) => (
-                        <img key={index} src={image} alt={`Generated Image ${index + 1}`} className="w-full h-auto rounded-lg"/>
-                    ))}
-                </div>
                 <div>
-                    {/* grid 3 items, placeholder images or actual images */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
-                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
-                        <img src="/create/test-img.png" alt="Placeholder" className="w-full h-auto rounded-lg"/>
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                        {nextImages.map((image, index) => (
+                            <button onClick={() => {
+                                changeMainImage(index + 1);
+                            }} key={index} className="w-full aspect-square hover:cursor-pointer">
+                                <AIImageWithPlaceHolder href={image}/>
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -236,6 +281,7 @@ const ChoosePool = () => {
 
 
 export default function CreateTokenPage() {
+
     return (
         <PromptProvider>
             <div className="flex justify-center px-40">

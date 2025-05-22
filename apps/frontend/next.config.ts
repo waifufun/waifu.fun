@@ -15,6 +15,10 @@ const nextConfig = {
 
     return config;
   },
+  images: {
+    domains: ['v3.fal.media']
+  },
+  reactStrictMode: false
 };
 
 export default nextConfig;
