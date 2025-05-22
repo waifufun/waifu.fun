@@ -17,17 +17,16 @@ async function fetchTrendingTopics(): Promise<string[]> {
 	if (!newsApiKey) return [];
 
 	try {
-		const response = await fetch(
-			`https://newsapi.org/v2/top-headlines?country=us&apiKey=${newsApiKey}`,
-			{ headers: { Accept: "application/json" } }
-		);
+		const response = await fetch(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${newsApiKey}`, {
+			headers: { Accept: "application/json" },
+		});
 
 		if (!response.ok) return [];
 
 		const data = (await response.json()) as NewsResponse;
 		return data.articles
-			.filter(article => article.title)
-			.map(article => article.title.replace(/\s-\s.*$/, "").trim())
+			.filter((article) => article.title)
+			.map((article) => article.title.replace(/\s-\s.*$/, "").trim())
 			.slice(0, 5);
 	} catch (error) {
 		console.error("Error fetching trending topics:", error);
@@ -37,10 +36,10 @@ async function fetchTrendingTopics(): Promise<string[]> {
 
 function generateRandomConcept(): string {
 	const getRandomItem = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-	
+
 	const concept1 = `${getRandomItem(adjectives)} ${getRandomItem(ideas)} ${getRandomItem(nouns)}`;
 	const concept2 = `${getRandomItem(adjectives)} ${getRandomItem(ideas)} ${getRandomItem(nouns)}`;
-	
+
 	return `The token should be based on this concept: "${concept1}".
 Alternatively, you can use the following concept: "${concept2}".
 Make it edgy, funny, and internet culture related. The name should be catchy and memorable.
@@ -56,9 +55,10 @@ Be creative but stay faithful to the concept.`
 		: generateRandomConcept();
 
 	const trendingTopics = await fetchTrendingTopics();
-	const trendingTopicsPrompt = trendingTopics.length > 0
-		? `\nHere are some current trending topics for inspiration (optional):\n- ${trendingTopics.join("\n- ")}`
-		: "";
+	const trendingTopicsPrompt =
+		trendingTopics.length > 0
+			? `\nHere are some current trending topics for inspiration (optional):\n- ${trendingTopics.join("\n- ")}`
+			: "";
 
 	return `Generate prompt and engaging token metadata for a Solana token. The token should be fun, memorable, and captivating to crypto enthusiasts. ${userInstructions}${trendingTopicsPrompt}
 

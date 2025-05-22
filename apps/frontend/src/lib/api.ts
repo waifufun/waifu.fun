@@ -118,10 +118,10 @@ export const logOut = async (chain: TChain) => {
 
 export const generateMetadata = async (prompt?: string) => {
 	return await fetcher("/generation/generate-metadata", "POST", {
-		prompt
+		prompt,
 	});
-}
+};
 
 export const generateImage = async (body: object) => {
 	return await fetcher("/generation/generate", "POST", body);
-}
+};

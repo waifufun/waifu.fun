@@ -149,10 +149,8 @@ export interface IRecentTransaction {
 	timestamp?: Date;
 }
 
-
 export enum MediaType {
 	IMAGE = "image",
 	VIDEO = "video",
 	AUDIO = "audio",
-  }
-  
+}
