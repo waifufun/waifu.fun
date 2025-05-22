@@ -3,7 +3,6 @@ import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
-import { Keypair } from "@solana/web3.js";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
