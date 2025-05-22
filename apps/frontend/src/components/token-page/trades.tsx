@@ -35,7 +35,7 @@ export default async function Trades({ token }: { token: IToken }) {
 						</TableCell>
 						<TableCell>
 							<div className="flex items-center gap-2">
-								<ChainIndicator chain={token.chain} chainId={token.chainId} />
+								<ChainIndicator chain={token.chain} chainId={token.chainId} className="size-5" />
 								{new Intl.NumberFormat("en-US", {
 									maximumFractionDigits: 3,
 								}).format(Number(trade.fromAmount))}{" "}
