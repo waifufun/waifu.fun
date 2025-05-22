@@ -81,7 +81,7 @@ const TokenInfo = () => {
 			<p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">COIN INFO</p>
 
 			<div className="flex flex-col gap-4 mt-2">
-				<div className="flex gap-8">
+				<div className="flex flex-col md:flex-row md:gap-8 gap-4">
 					<TokenInfoInput title="Name" value={name} setValue={setName} />
 					<TokenInfoInput title="Ticker" label="$" value={ticker} setValue={setTicker} />
 				</div>
@@ -110,9 +110,9 @@ const GeneratedImages = () => {
         }
     }
     return (
-        <div className="w-full">
-            <div className="w-[500px]">
-                <div className="w-full h-[400px] rounded-lg overflow-hidden relative">
+        <div className="w-full flex justify-center">
+            <div className="w-[300px] sm:w-[500px]">
+                <div className="w-full h-[300px] sm:h-[500px] rounded-lg overflow-hidden relative">
                     {isGeneratingImage && <AiImageLoading/>}
                     {!isGeneratingImage && <AIImageWithPlaceHolder href={previousImages[0]}/>}
                 </div>
@@ -182,7 +182,7 @@ const GenerateAddress = () => {
                     </button>
                 </div>
             </div> 
-            <p className="text-[#03FF24] text-xl py-3 break-all">{address}</p>
+            <p className="text-[#03FF24] text-sm md:text-md  xl:text-lg py-3 break-all">{address}</p>
             <div className="flex items-center gap-2">
                 <Info size={14} color="#8C8C8C"/>
                 <p className="text-[#8C8C8C] text-sm font-[500]">Longer suffixes are slower to generate</p>
