@@ -1,5 +1,6 @@
-import { getPercentageOfTotal } from "@/lib/utils";
+
 import type { IToken } from "@autofun/types";
+import Progressbar from "./progressbar";
 
 export default function BondingCurveProgress({ token }: { token: IToken }) {
 	const curveProgress = token?.curveProgress;
@@ -20,17 +21,3 @@ export default function BondingCurveProgress({ token }: { token: IToken }) {
 		</div>
 	);
 }
-
-const Progressbar = ({ value, max }: { value: number; max: number }) => {
-	const width = getPercentageOfTotal(value, max);
-	return (
-		<div className="h-3 rounded-xl w-full max-w-md bg-autofun-background-action-disabled relative">
-			<div
-				className="h-3 rounded-xl bg-autofun-background-action-highlight"
-				style={{
-					width: `${width}%`,
-				}}
-			/>
-		</div>
-	);
-};

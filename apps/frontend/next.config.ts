@@ -1,5 +1,3 @@
-
-
 const nextConfig = {
 	webpack: (config, { isServer }) => {
 		if (!isServer) {
