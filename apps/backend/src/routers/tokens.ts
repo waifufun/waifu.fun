@@ -361,7 +361,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
 		} else if (chain === "solana") {
 			const solanaChainId = chainId as unknown as SolanaNetworkIds;
-			const rpc = new SolanaRpcProvider(solanaChainId);
+			// const rpc = new SolanaRpcProvider(solanaChainId);
+			const rpc = await SolanaRpcProvider.connect(solanaChainId)
+
 
 			const metadata = await rpc.getTokenMetadata(contractAddress);
 

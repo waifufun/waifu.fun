@@ -194,7 +194,8 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	);
 
 	if (nonImportedTokens?.length > 0) {
-		const rpc = new SolanaRpcProvider(SolanaNetworkIds.Mainnet);
+		// const rpc = new SolanaRpcProvider(SolanaNetworkIds.Mainnet);
+		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet)
 		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
 
 		for (const tokenRecord of bondingCurveInfo) {

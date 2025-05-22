@@ -122,10 +122,8 @@ export class SolanaRpcProvider {
 	private program;
 	public networkId: SolanaNetworkIds;
 
-	constructor(networkId: SolanaNetworkIds) {
-		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
-		if (!rpc) throw new Error(`No RPC provider configured for Solana: ${networkId}`);
-		this.connection = new Connection(rpc);
+	private constructor(connection: Connection, rpc: string, networkId: SolanaNetworkIds) {
+		this.connection = connection;
 		this.client = createSolanaRpc(rpc);
 		this.networkId = networkId;
 
@@ -137,9 +135,27 @@ export class SolanaRpcProvider {
 			signAllTransactions: async (txs: any[]) => txs,
 		};
 
-		// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
 		const provider = new AnchorProvider(this.connection, dummyWallet as any, {});
 		this.program = new Program(idl as Idl, provider);
+	}
+
+	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
+		const rpcList = SOLANA_RPC_URLS?.[networkId];
+		if (!rpcList) {
+			throw new Error(`No RPC Urls configured for Solana: ${networkId}`);
+		}
+
+		for (const rpc of rpcList) {
+			try {
+				const connection = new Connection(rpc, "confirmed");
+				await connection.getVersion(); // test if the connection works
+				return new SolanaRpcProvider(connection, rpc, networkId);
+			} catch (error) {
+				console.warn(`Failed to connect to RPC: ${rpc}`, error);
+			}
+		}
+
+		throw new Error(`All RPC endpoints failed for network: ${networkId}`);
 	}
 
 	getTokenMetadata = async (contractAddress: string) => {
