@@ -123,6 +123,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chain: TChain;
 			chainId: TChainId;
 			pool: string;
+			signature: string;
 			twitter?: string;
 			telegram?: string;
 			website?: string;
@@ -137,7 +138,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				return reply.code(401).send({ success: false, error: "Authentication required" });
 			}
 
-			const { contractAddress, chain, chainId, twitter, telegram, website, discord, imported, pool } = request.body;
+			const { contractAddress, chain, chainId, twitter, telegram, website, discord, imported, pool, signature } =
+				request.body;
 
 			// Only support Solana for now
 			if (chain !== "solana") {
