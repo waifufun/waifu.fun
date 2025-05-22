@@ -18,17 +18,12 @@ export default function Header() {
 			</Link>
 			<Input placeholder="Search..." className="w-[430px] h-11 hidden md:inline-block" />
 			<div className="flex items-center gap-2.5">
-				<div className="hidden md:flex">
+				<div className="hidden md:flex gap-2.5">
 					<Settings />
 					<Link href="/create/import">
 						<Button variant="outline">Create Token</Button>
 					</Link>
 				</div>
-				<Input placeholder="Search..." className="w-[430px] h-11" />
-				<Settings />
-				<Link href="/create">
-					<Button variant="outline">Create Token</Button>
-				</Link>
 				<Button onClick={() => openModal("WALLET_CONNECT")}>
 					{solanaWallets || evmWallets ? "My Wallets" : "Connect Wallet"}
 				</Button>
