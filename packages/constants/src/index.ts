@@ -108,4 +108,10 @@ export const FAL_MODELS: FALModels = {
 	llm: {
 		gemini: "google/gemini-flash-1.5",
 	},
+	audio: {
+		mmaudiov2: "fal-ai/mmaudio-v2/text-to-audio",
+	},
+	video: {
+		klingVideo: "fal-ai/kling-video/v2/master/text-to-video",
+	},
 };

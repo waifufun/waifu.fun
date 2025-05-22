@@ -8,10 +8,19 @@ fal.config({
 export class AI {
 	private imageModel: string;
 	private textModel: string;
+	private audioModel: string;
+	private videoModel: string;
 
-	constructor({ textModel, imageModel }: { textModel: string; imageModel: string }) {
+	constructor({
+		textModel,
+		imageModel,
+		audioModel,
+		videoModel,
+	}: { textModel: string; imageModel: string; audioModel: string; videoModel: string }) {
 		this.textModel = textModel;
 		this.imageModel = imageModel;
+		this.audioModel = audioModel;
+		this.videoModel = videoModel;
 	}
 	async createImage(prompt: string): Promise<Buffer> {
 		const generation = await fal.subscribe(this.imageModel, {
@@ -41,5 +50,32 @@ export class AI {
 		const text = generation?.data;
 		if (!text) throw new Error("Failed to generate text");
 		return text?.output;
+	}
+
+	async createAudio(prompt: string): Promise<string> {
+		const generation = await fal.subscribe(this.audioModel, {
+			input: {
+				prompt: prompt,
+			},
+			logs: true,
+		});
+		const audio = generation.data.audio.url;
+		return audio;
+	}
+
+	async createVideo(prompt: string): Promise<string> {
+		const result = await fal.subscribe(this.videoModel, {
+			input: {
+				prompt: prompt,
+			},
+			logs: true,
+			onQueueUpdate: (update) => {
+				if (update.status === "IN_PROGRESS") {
+					update.logs.map((log) => log.message).forEach(console.log);
+				}
+			},
+		});
+		const videoUrl = result.data.video;
+		return videoUrl;
 	}
 }
