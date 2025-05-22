@@ -211,14 +211,18 @@ export class SolanaRpcProvider {
 			try {
 				return this.program.coder.accounts.decode("bondingCurve", info.data);
 			} catch (err) {
-				console.error("Failed to decode bonding curve for", tokenMints?.[i].toBase58(), err);
+				console.error(
+					"Failed to decode bonding curve for",
+					tokenMints?.[i] ? tokenMints[i].toBase58() : undefined,
+					err,
+				);
 				return null;
 			}
 		});
 
 		return bondingCurves.map((curve, i) => {
-			const mint = tokenMints?.[i].toBase58();
 			const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
+			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
 			const supplyInfo = supplies[i];
 
 			if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
@@ -232,6 +236,14 @@ export class SolanaRpcProvider {
 					marketCapSOL: null,
 					marketCapUSD: null,
 					exists: false,
+					reserveLamport: 0,
+					reserveToken: 0,
+					virtualReserves: 0,
+					curveLimit: 0,
+					curveProgress: 0,
+					priceUSD: 0,
+					decimals: supplyInfo.decimals || 6,
+					totalSupply: supplyInfo.supply || 0,
 				};
 			}
 
@@ -260,6 +272,9 @@ export class SolanaRpcProvider {
 				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
 				priceLamports: reserveLamport / reserveToken,
 				decimals: tokenDecimals,
+				virtualReserves,
+				reserveLamport,
+				curveLimit,
 				priceSOL,
 				priceUsd,
 				totalSupply,

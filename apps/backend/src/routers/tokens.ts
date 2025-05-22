@@ -19,12 +19,13 @@ import {
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
-import { uploadImageFromUrl } from "@autofun/s3-uploader";
+import { uploadImageFromUrl, upload } from "@autofun/s3-uploader";
 import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
 import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
 import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import { getBondingCurveData } from "../utils/bonding-curve";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -116,9 +117,128 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		return token;
 	});
 
-	/** Upload the metadata of a token */
-	fastify.post("/create", async (request) => {
-		return true;
+	fastify.post<{
+		Body: {
+			contractAddress: AddressLike;
+			chain: TChain;
+			chainId: TChainId;
+			twitter?: string;
+			telegram?: string;
+			website?: string;
+			discord?: string;
+			imported?: boolean;
+		};
+		Reply: { success: boolean; token?: IToken; error?: string };
+	}>("/create", async (request, reply) => {
+		try {
+			const user = request.authUser;
+			if (!user?.solana && process.env.NODE_ENV !== "development") {
+				return reply.code(401).send({ success: false, error: "Authentication required" });
+			}
+
+			const { contractAddress, chain, chainId, twitter, telegram, website, discord, imported } = request.body;
+
+			// Only support Solana for now
+			if (chain !== "solana") {
+				return reply.code(400).send({ success: false, error: "Only Solana tokens are supported" });
+			}
+
+			const userDoc = await DB.User.findOne({ address: user?.solana });
+			if (userDoc?.suspended) {
+				return reply.code(403).send({ success: false, error: "This account is suspended" });
+			}
+			const existingToken = await DB.Token.findOne({
+				contractAddress,
+				chain,
+				chainId,
+			});
+
+			if (existingToken) {
+				return reply.code(409).send({
+					success: false,
+					error: "Token already exists",
+					token: existingToken,
+				});
+			}
+
+			const rpc = new SolanaRpcProvider(chainId as unknown as SolanaNetworkIds);
+			const metadata = await rpc.getTokenMetadata(contractAddress);
+			if (!metadata) {
+				return reply.code(404).send({ success: false, error: "Token not found on chain" });
+			}
+
+			// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+			let bondingCurveData;
+			try {
+				bondingCurveData = await getBondingCurveData(
+					contractAddress,
+					chainId as unknown as SolanaNetworkIds,
+					metadata.totalSupply || 0,
+					metadata.decimals || 9,
+				);
+			} catch (error) {
+				console.error("Error getting bonding curve data:", error);
+				// Continue without bonding curve data
+				// should we just return an error? {/* Malibu */}
+				bondingCurveData = {
+					reserveAmount: 0,
+					reserveLamport: 0,
+					virtualReserves: 0,
+					liquidity: 0,
+					currentPrice: 0,
+					marketCapUSD: 0,
+					tokenPriceUSD: 0,
+					curveProgress: 0,
+					curveLimit: 0,
+				};
+			}
+
+			// Create new token
+			const newToken = await DB.Token.create({
+				contractAddress,
+				chain,
+				chainId,
+				name: metadata.name || `Token ${contractAddress.slice(0, 8)}`,
+				ticker: metadata.symbol || "TOKEN",
+				image: metadata.image || "",
+				description: metadata.description || "",
+				decimals: metadata.decimals || 9,
+				totalSupply: metadata.totalSupply || 0,
+				tokenDecimals: metadata.decimals || 9,
+				socials: {
+					twitter,
+					telegram,
+					website,
+					discord,
+				},
+				creator: user?.solana || "unknown",
+				hidden: false,
+				featured: false,
+				imported: imported || false,
+				verified: false,
+				price: bondingCurveData.tokenPriceUSD,
+				marketcap: bondingCurveData.marketCapUSD,
+				volume24h: 0,
+				holders: 0,
+				reserveAmount: bondingCurveData.reserveAmount,
+				reserveLamport: bondingCurveData.reserveLamport,
+				virtualReserves: bondingCurveData.virtualReserves,
+				liquidity: bondingCurveData.liquidity,
+				curveProgress: bondingCurveData.curveProgress,
+				curveLimit: bondingCurveData.curveLimit,
+			});
+
+			return {
+				success: true,
+				token: newToken,
+			};
+		} catch (error) {
+			console.error("Error in create token endpoint:", error);
+			return reply.code(500).send({
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error creating token",
+			});
+		}
 	});
 
 	fastify.post("/trades", async (request) => {
@@ -398,5 +518,75 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}
 
 		return true;
+	});
+
+	fastify.post<{
+		Body: {
+			imageUrl: string;
+			metadata: {
+				name: string;
+				symbol: string;
+				description?: string;
+				twitter?: string;
+				telegram?: string;
+				website?: string;
+				discord?: string;
+			};
+		};
+		Reply: { success: boolean; imageUrl?: string; metadataUrl?: string; error?: string };
+	}>("/create-metadata", async (request, reply) => {
+		try {
+			const { imageUrl, metadata } = request.body;
+
+			if (!imageUrl) {
+				return reply.code(400).send({ success: false, error: "Image URL is required" });
+			}
+			if (!metadata?.name || !metadata?.symbol) {
+				return reply.code(400).send({ success: false, error: "Metadata (name, symbol) is required" });
+			}
+
+			const sanitizedSymbol = metadata.symbol.toLowerCase().replace(/[^a-z0-9]/g, "_");
+			const timestamp = Date.now();
+			const imageFilename = `${sanitizedSymbol}_${timestamp}`;
+			const metadataFilename = `${sanitizedSymbol}_${timestamp}_metadata`;
+
+			const uploadedImageUrl = await uploadImageFromUrl(imageUrl, imageFilename, "token-images");
+
+			const finalMetadata = {
+				name: metadata.name,
+				symbol: metadata.symbol,
+				description: metadata.description || "",
+				image: uploadedImageUrl,
+				twitter: metadata.twitter || "",
+				telegram: metadata.telegram || "",
+				website: metadata.website || "",
+				discord: metadata.discord || "",
+				createdOn: "https://auto.fun/",
+			};
+
+			const metadataBuffer = Buffer.from(JSON.stringify(finalMetadata, null, 2));
+			await upload(
+				"token-metadata",
+				{
+					data: metadataBuffer,
+					mimetype: "application/json",
+				},
+				metadataFilename,
+			);
+
+			const metadataUrl = `${process.env.API_URL}/api/metadata/${metadataFilename}.json`;
+
+			return {
+				success: true,
+				imageUrl: uploadedImageUrl,
+				metadataUrl,
+			};
+		} catch (error) {
+			console.error("Error in create-metadata endpoint:", error);
+			return reply.code(500).send({
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error creating metadata",
+			});
+		}
 	});
 }

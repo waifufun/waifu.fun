@@ -51,19 +51,16 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 
 	fastify.post<{ Body: GenerateMediaRequest }>("/generate", async (request, reply) => {
 		try {
-			const user = request.user;
-			const userPublicKey =
-				typeof user === "object" && user !== null && "publicKey" in user
-					? (user as { publicKey?: string }).publicKey
-					: undefined;
-			if (!userPublicKey && process.env.NODE_ENV !== "development") {
+			const user = request.authUser;
+			if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
 				return reply.code(401).send({
 					success: false,
 					error: "User authentication required",
 				});
 			}
 
-			const rateLimit = await checkRateLimit(userPublicKey || "dev");
+			const userPublicKey = user?.evm || user?.solana || "dev";
+			const rateLimit = await checkRateLimit(userPublicKey);
 			if (!rateLimit.allowed) {
 				return reply.code(429).send({
 					success: false,
@@ -144,7 +141,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			await incrementRateLimit(userPublicKey || "dev");
+			await incrementRateLimit(userPublicKey);
 
 			return {
 				success: true,
@@ -161,19 +158,20 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 
 	fastify.post<{ Body: GenerateBothRequest }>("/generate-both", async (request, reply) => {
 		try {
-			const user = request.user;
-			const userPublicKey =
-				typeof user === "object" && user !== null && "publicKey" in user
-					? (user as { publicKey?: string }).publicKey
-					: undefined;
-			if (!userPublicKey && process.env.NODE_ENV !== "development") {
+			const user = request.authUser;
+
+			if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
+				console.log("Authentication failed: No valid wallet address found");
 				return reply.code(401).send({
 					success: false,
 					error: "User authentication required",
 				});
 			}
 
-			const rateLimit = await checkRateLimit(userPublicKey || "dev");
+			const userPublicKey = user?.evm || user?.solana || "dev";
+			console.log("Using public key for rate limit:", userPublicKey);
+
+			const rateLimit = await checkRateLimit(userPublicKey);
 			if (!rateLimit.allowed) {
 				return reply.code(429).send({
 					success: false,
@@ -259,7 +257,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			await incrementRateLimit(userPublicKey || "dev");
+			await incrementRateLimit(userPublicKey);
 
 			return {
 				success: true,

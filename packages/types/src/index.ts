@@ -67,6 +67,10 @@ export interface IToken<T extends TChain = TChain> {
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
+	curveLimit?: number;
+	reserveAmount?: number;
+	reserveLamport?: number;
+	virtualReserves?: number;
 	socials: ITokenSocials;
 	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;
@@ -149,10 +153,30 @@ export interface IRecentTransaction {
 	timestamp?: Date;
 }
 
-
 export enum MediaType {
 	IMAGE = "image",
 	VIDEO = "video",
 	AUDIO = "audio",
-  }
-  
+}
+
+export interface IMigration {
+	withdrawnAt?: Date;
+	migratedAt?: Date;
+	marketId?: string;
+	baseVault?: string;
+	quoteVault?: string;
+	withdrawnAmount?: number;
+	migration?: string;
+	withdrawnAmounts?: string;
+	poolInfo?: string;
+	lockLpTxId?: string;
+	status: string;
+	positionIds?: string[];
+	positionNftsSecrets?: string[];
+	contractAddress: AddressLike;
+	chain: TChain;
+	chainId: TChainId;
+	creator: string;
+	createdAt?: Date;
+	updatedAt?: Date;
+}

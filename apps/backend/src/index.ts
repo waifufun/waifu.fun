@@ -9,7 +9,7 @@ import logger from "@autofun/logger";
 import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
-
+import { registerProtectedRoutes, registerPublicRoutes } from "./middlewares/protected-routes";
 const fastify = Fastify({
 	logger: {
 		stream: {
@@ -54,6 +54,9 @@ fastify.addHook("onRequest", async (request, reply) => {
 		method: request.method,
 	});
 });
+
+registerPublicRoutes(fastify);
+registerProtectedRoutes(fastify);
 
 fastify.register(tokenRoutes, { prefix: "/tokens" });
 fastify.register(pricesRoutes, { prefix: "/prices" });

@@ -67,6 +67,7 @@ export async function generateMedia(data: {
 					num_inference_steps?: number;
 					negative_prompt?: string;
 					guidance_scale?: number;
+					image_size?: string;
 				} = {
 					prompt: data.prompt,
 					negative_prompt: data.negative_prompt,
@@ -76,8 +77,12 @@ export async function generateMedia(data: {
 				if (isProMode) {
 					if (data.width) input.width = data.width;
 					if (data.height) input.height = data.height;
+					input.image_size = "square_hd";
 				} else {
 					input.num_inference_steps = 4;
+					input.width  = data.width  ?? 1024;
+					input.height = data.height ?? 1024;
+					input.image_size = "square_hd";
 				}
 
 				generationPromise = fal.subscribe(model, {
