@@ -24,6 +24,11 @@ export default function Header() {
 						<Button variant="outline">Create Token</Button>
 					</Link>
 				</div>
+				<Input placeholder="Search..." className="w-[430px] h-11" />
+				<Settings />
+				<Link href="/create">
+					<Button variant="outline">Create Token</Button>
+				</Link>
 				<Button onClick={() => openModal("WALLET_CONNECT")}>
 					{solanaWallets || evmWallets ? "My Wallets" : "Connect Wallet"}
 				</Button>

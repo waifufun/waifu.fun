@@ -148,3 +148,11 @@ export interface IRecentTransaction {
 	output?: ISwapToken;
 	timestamp?: Date;
 }
+
+
+export enum MediaType {
+	IMAGE = "image",
+	VIDEO = "video",
+	AUDIO = "audio",
+  }
+  
