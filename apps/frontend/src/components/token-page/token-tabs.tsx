@@ -2,7 +2,8 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { IToken } from "@autofun/types";
 import { ChartCandlestick, MessagesSquare, Stars, User, Users } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "@bprogress/next/app";
 
 export default function TokenTabs({ token }: { token: IToken }) {
 	const pathname = usePathname();

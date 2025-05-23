@@ -47,7 +47,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 	return (
 		<TooltipProvider>
 			<WagmiProvider config={wagmiAdapter.wagmiConfig}>
-				<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
+				<ProgressProvider
+					height="4px"
+					color="#03FF24"
+					options={{
+						showSpinner: false,
+					}}
+					disableSameURL={false}
+					shallowRouting={true}
+					shouldCompareComplexProps
+				>
 					<QueryClientProvider client={queryClient}>
 						<ParentProvider>
 							<Header />
