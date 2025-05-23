@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Tooltip } from "react-tooltip";
-import { TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export default function Verified({ isVerified }: { isVerified?: boolean | null | undefined }) {
 	if (!isVerified) return null;
