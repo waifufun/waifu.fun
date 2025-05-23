@@ -1,0 +1,12 @@
+FROM node:18-alpine
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+COPY apps/backend/package.json ./apps/backend/
+
+RUN npm install -g pnpm tsx && pnpm install --frozen-lockfile
+
+COPY apps/backend ./apps/backend
+
+CMD ["pnpm", "backend", "dev"]
+EXPOSE 3001

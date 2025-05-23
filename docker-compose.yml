@@ -1,4 +1,28 @@
 services:
+  frontend:
+      build:
+       context: .
+       dockerfile: apps/frontend/Dockerfile.frontend
+      ports:
+        - "3000:3000"
+      volumes:
+        - .:/app
+        - /app/node_modules
+      environment:
+        - NODE_ENV=development
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+
   dragonfly:
     container_name: autofun-dragonfly
     image: docker.dragonflydb.io/dragonflydb/dragonfly
