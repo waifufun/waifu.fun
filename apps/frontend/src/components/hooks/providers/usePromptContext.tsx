@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import UseTokenImages from "../hook/UseTokenImages";
 import { useMutation } from "@tanstack/react-query";
 import { generateImage, generateMetadata } from "@/lib/api";
+import { useForm, type UseFormHandleSubmit, type UseFormRegister, type FormState, type RegisterOptions } from "react-hook-form";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -14,18 +15,10 @@ const MAX_SUFFIX_LENGTH_FOR_HOURS_WARNING = 4;
 const INITIAL_GENERATION_SUFFIX = "FUN";
 
 type PromptContextType = {
-  prompt: string;
-  setPrompt: (prompt: string) => void;
-  previousImages: string[];
-  name: string;
-  setName: (name: string) => void;
-  description: string;
-  setDescription: (description: string) => void;
-  ticker: string;
-  setTicker: (ticker: string) => void;
+  registerForm: UseFormRegister<TokenFormData>
+  handleSubmit: UseFormHandleSubmit<TokenFormData>
+  formState: FormState<TokenFormData>;
   address: string;
-  buyAmount: number;
-  setBuyAmount: (amount: number) => void;
   generateAddress: (suffix: string) => void;
   isGeneratingAddress: boolean;
   isGeneratingImage: boolean;
@@ -33,15 +26,32 @@ type PromptContextType = {
   changeMainImage: (index: number) => void;
 };
 
+export type TokenFormData = {
+  prompt: string;
+  name: string;
+  ticker: string;
+  description: string;
+  symbol: string;
+  buyAmount: number;
+}
+
+export type TokenFormOptions = keyof TokenFormData;
+
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
 
 export const PromptProvider = ({ children }: { children: ReactNode }) => {
-  const [prompt, setPrompt] = useState<string>("");
-  const [name, setNameState] = useState<string>("");
-  const [description, setDescriptionState] = useState<string>("");
-  const [ticker, _setTicker] = useState<string>("");
+  const {register, handleSubmit, formState, setValue} = useForm<TokenFormData>({
+    defaultValues: {
+      prompt: "",
+      name: "",
+      ticker: "",
+      description: "",
+      symbol: "",
+      buyAmount: 0
+    },
+    mode: "onChange"
+  });
   const [address, setAddress] = useState<string>("");
-  const [buyAmount, setBuyAmount] = useState<number>(0);
   const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
   const {previousImages, changeMainImage, addImage} = UseTokenImages();
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(true);
@@ -55,10 +65,12 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     mutationKey: ["generateMetadata"],
     mutationFn: generateMetadata,
     onSuccess: (data) => {
-      setPrompt(data?.metadata?.prompt);
-      _setTicker(data?.metadata?.symbol);
-      setNameState(data?.metadata?.name);
-      setDescriptionState(data?.metadata?.description);
+      setValue("prompt", data?.metadata?.prompt || "", { shouldValidate: true, shouldDirty: true });
+      setValue("name", data?.metadata?.name || "", { shouldValidate: true, shouldDirty: true });
+      setValue("ticker", data?.metadata?.ticker || "", { shouldValidate: true, shouldDirty: true });
+      setValue("description", data?.metadata?.description || "", { shouldValidate: true, shouldDirty: true });
+      setValue("symbol", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
+
       setIsGeneratingImage(true);
       generateImageMutation.mutate({
         prompt: data?.metadata?.prompt,
@@ -81,11 +93,13 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
         setIsGeneratingImage(false);
       } else {
         toast.error("Error generating image: No media URL returned");
+        setIsGeneratingImage(false);
       }
     },
     onError: (error) => {
       console.error("Error generating image:", error);
       toast.error("Error generating image");
+      setIsGeneratingImage(false);
     }
   });
 
@@ -218,11 +232,8 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
-    if (!isGeneratingAddressRef.current && workerRefs.current.length === 0 && typeof Worker !== 'undefined') {
-        generateAddress(INITIAL_GENERATION_SUFFIX);
-    }
-
-  }, [generateAddress]);
+    generateAddress(INITIAL_GENERATION_SUFFIX);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -232,37 +243,14 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
         setAddress("");
       }
     };
-  }, [terminateWorkers]); 
-
-  const setTickerValidated = (tickerValue: string) => {
-    if (tickerValue.length > MAX_TICKER_LENGTH) {
-      toast.info(`Ticker cannot exceed ${MAX_TICKER_LENGTH} characters.`);
-      return;
-    }
-    if (tickerValue !== "" && !/^[a-zA-Z0-9]+$/.test(tickerValue)) {
-      toast.error("Ticker can only contain alphanumeric characters.");
-      return;
-    }
-    _setTicker(tickerValue.toUpperCase());
-  };
-
-  const setName = (nameValue: string) => setNameState(nameValue);
-  const setDescription = (descriptionValue: string) => setDescriptionState(descriptionValue);
+  }, [terminateWorkers]);
 
 
   const contextValue: PromptContextType = {
-    prompt,
-    setPrompt,
-    previousImages,
-    name,
-    setName,
-    description,
-    setDescription,
-    ticker,
-    setTicker: setTickerValidated,
+    registerForm: register,
+    handleSubmit,
+    formState,
     address,
-    buyAmount,
-    setBuyAmount,
     generateAddress,
     isGeneratingAddress: isGeneratingAddressState,
     isGeneratingImage,
@@ -278,9 +266,30 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const usePrompt = (): PromptContextType => {
-	const context = useContext(PromptContext);
-	if (!context) {
-		throw new Error("usePrompt must be used within a PromptProvider");
-	}
-	return context;
+  const context = useContext(PromptContext);
+  if (!context) {
+    throw new Error("usePrompt must be used within a PromptProvider");
+  }
+  return context;
+};
+
+export const nameValidation: RegisterOptions<TokenFormData, "name"> = {
+    required: "Name is required",
+    minLength: { value: 3, message: "Name must be at least 3 characters long" },
+    maxLength: { value: 20, message: "Name must be at most 20 characters long" },
+    pattern: { value: /^[a-zA-Z0-9 ]*$/, message: "Name can only contain letters, numbers, and spaces" },
+};
+
+export const tickerValidation: RegisterOptions<TokenFormData, "ticker"> = {
+    required: "Ticker is required",
+    minLength: { value: 3, message: "Ticker must be at least 3 characters long" },
+    maxLength: { value: MAX_TICKER_LENGTH, message: `Ticker must be at most ${MAX_TICKER_LENGTH} characters long` },
+    pattern: { value: /^[a-zA-Z0-9]*$/, message: "Ticker can only contain letters and numbers" },
+};
+
+export const descriptionValidation: RegisterOptions<TokenFormData, "description"> = {
+    required: "Description is required",
+    minLength: { value: 10, message: "Description must be at least 10 characters long" },
+    maxLength: { value: 200, message: "Description must be at most 200 characters long" },
+    pattern: { value: /^[a-zA-Z0-9.,'!?" ]*$/, message: "Description can only contain letters, numbers, and basic punctuation" },
 };

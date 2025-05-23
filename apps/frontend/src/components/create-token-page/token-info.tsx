@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { usePrompt } from "../hooks/providers/usePromptContext";
+import { usePrompt, type TokenFormOptions } from "../hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
 
-const TokenInfoInput = ({title, label, value, setValue } : {title: string, label?: string, value: string, setValue: (value: string) => void}) => {
+const TokenInfoInput = ({title, label, target } : {title: string, label?: string, target: TokenFormOptions}) => {
+
+    const {registerForm} = usePrompt();
 
     return (
         <div className="flex flex-col gap-2 w-full">
@@ -15,8 +17,8 @@ const TokenInfoInput = ({title, label, value, setValue } : {title: string, label
                 <input
                     className="w-full rounded-lg py-3 focus:outline-none"
                     type="text"
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
+                    {...registerForm(target)}
+
                 />
             </div>
         </div>
@@ -143,7 +145,6 @@ const ChoosePool = () => {
 }
 
 const TokenInfo = () => {
-    const { name, setName, description, setDescription, ticker, setTicker } = usePrompt();
 
     return (
         <div className="w-full">
@@ -151,11 +152,11 @@ const TokenInfo = () => {
 
             <div className="flex flex-col gap-4 mt-2">
                 <div className="flex flex-col md:flex-row md:gap-8 gap-4">
-                    <TokenInfoInput title="Name" value={name} setValue={setName} />
-                    <TokenInfoInput title="Ticker" label="$" value={ticker} setValue={setTicker} />
+                    <TokenInfoInput title="Name" target="name" />
+                    <TokenInfoInput title="Ticker" label="$" target="ticker" />
                 </div>
 
-                <TokenInfoInput title="Description" value={description} setValue={setDescription} />
+                <TokenInfoInput title="Description" target="description" />
             </div>
             <GenerateAddress />
             <BuyCoin/>
