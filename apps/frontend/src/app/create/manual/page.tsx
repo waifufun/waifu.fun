@@ -1,7 +1,7 @@
 "use client";
 import TokenInfo from "@/components/create-token-page/token-info";
 import TokenTypeSelector from "@/components/create-token-page/token-type-selector";
-import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
+import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 const UploadPlaceholder = ({ onClick }: { onClick: () => void }) => {
     return (
-        <button 
+        <button
             onClick={onClick}
             className="w-full h-full bg-[#171717] rounded-lg flex items-center justify-center border border-[#262626] hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#03FF24]"
             aria-label="Upload image"
@@ -44,7 +44,7 @@ const UploadImage = () => {
                 return;
             }
 
-            if (imageURL) {
+            if (imageURL && imageURL.startsWith("blob:")) {
                 URL.revokeObjectURL(imageURL);
             }
 
@@ -62,10 +62,19 @@ const UploadImage = () => {
         fileInputRef.current?.click();
     };
 
+    const handleDeleteImage = () => {
+        setImageURL(undefined);
+        setImageFile(undefined);
+    };
+
     useEffect(() => {
+        const currentImageUrl = imageURL;
+
+        // memory clean go brrrr
+
         return () => {
-            if (imageURL && imageURL.startsWith("blob:")) {
-                URL.revokeObjectURL(imageURL);
+            if (currentImageUrl && currentImageUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(currentImageUrl);
             }
         };
     }, [imageURL]);
@@ -76,13 +85,16 @@ const UploadImage = () => {
                 <div className="w-full h-[300px] sm:h-[500px] rounded-lg overflow-hidden relative bg-[#171717] border border-[#262626]">
                     {!imageURL && <UploadPlaceholder onClick={handlePlaceholderClick} />}
                     {imageURL && (
-                        <Image
-                            src={imageURL}
-                            alt="Uploaded preview"
-                            layout="fill"
-                            objectFit="contain"
-                            className="rounded-lg"
-                        />
+                        <>
+                            <Image
+                                src={imageURL}
+                                alt="Uploaded preview"
+                                layout="fill"
+                                objectFit="contain"
+                                className="rounded-lg cursor-pointer"
+                                onClick={handleDeleteImage}
+                            />
+                        </>
                     )}
                     <input
                         type="file"
@@ -103,7 +115,7 @@ export default function CreateTokenPageManual() {
             <div className="flex justify-center">
                 <div className="flex flex-col items-center mt-5 w-full max-w-[1100px]">
                     <div>
-                        <Image src="/create/coin-machine.png" alt="Coin Machine" width={150} height={150} /> 
+                        <Image src="/create/coin-machine.png" alt="Coin Machine" width={150} height={150} />
                     </div>
                     <div className="rounded-lg bg-[#3333331A] w-full overflow-hidden mt-4">
                         <TokenTypeSelector selected="manual"/>
