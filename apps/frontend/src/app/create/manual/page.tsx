@@ -70,7 +70,7 @@ const UploadImage = () => {
     useEffect(() => {
         const currentImageUrl = imageURL;
 
-        // memory clean go brrrr
+        // memory clean go
 
         return () => {
             if (currentImageUrl && currentImageUrl.startsWith("blob:")) {
@@ -91,9 +91,19 @@ const UploadImage = () => {
                                 alt="Uploaded preview"
                                 layout="fill"
                                 objectFit="contain"
-                                className="rounded-lg cursor-pointer"
-                                onClick={handleDeleteImage}
+                                className="rounded-lg cursor-pointer" // Added cursor-pointer
+                                onClick={handleDeleteImage}          // Added onClick handler
                             />
+                            {/* Optional: Add a more explicit delete button overlay */}
+                            {/*
+                            <button
+                                onClick={handleDeleteImage}
+                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-700 text-white p-1 rounded-full z-10"
+                                aria-label="Delete image"
+                            >
+                                <XCircle size={24} />
+                            </button>
+                            */}
                         </>
                     )}
                     <input
