@@ -50,10 +50,6 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const activeSuffixRef = useRef<string>("");
   const isGeneratingAddressRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    generateToken();
-  }, [])
-
 
   const metadataMutation = useMutation({
     mutationKey: ["generateMetadata"],

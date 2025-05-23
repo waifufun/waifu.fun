@@ -2,7 +2,7 @@
 import TokenTypeSelector from "@/components/create-token-page/token-type-selector";
 import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
 import { usePrompt } from "@/components/hooks/providers/usePromptContext";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Info, Wallet } from "lucide-react";
 import TokenInfo from "@/components/create-token-page/token-info";
@@ -75,8 +75,12 @@ const AiImageLoading = () => {
 }
 
 const GeneratedImages = () => {
-    const {previousImages} = usePrompt();
+    const {previousImages, generateToken} = usePrompt();
     const {isGeneratingImage, changeMainImage} = usePrompt();
+
+    useEffect(() => {
+        generateToken();
+    }, [])
 
     const startingIndex = isGeneratingImage ? 0 : 1;
 
