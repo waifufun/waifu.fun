@@ -1,13 +1,13 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Trades from "./trades";
-import Holders from "./holders";
-import AICreate from "./ai-create";
-import Chat from "./chat";
-import Agents from "./agents";
+'use client';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { IToken } from "@autofun/types";
 import { ChartCandlestick, MessagesSquare, Stars, User, Users } from "lucide-react";
+import { useParams, usePathname } from "next/navigation";
 
 export default function TokenTabs({ token }: { token: IToken }) {
+	const params = useParams();
+	const pathname = usePathname();
+	console.log(pathname);
 	return (
 		<Tabs defaultValue="trades">
 			<TabsList className="grid w-full grid-cols-5">
@@ -27,21 +27,6 @@ export default function TokenTabs({ token }: { token: IToken }) {
 					Agents <User size={24} />
 				</TabsTrigger>
 			</TabsList>
-			<TabsContent value="trades">
-				<Trades token={token} />
-			</TabsContent>
-			<TabsContent value="holders">
-				<Holders token={token} />
-			</TabsContent>
-			<TabsContent value="ai-create">
-				<AICreate />
-			</TabsContent>
-			<TabsContent value="chat">
-				<Chat token={token} />
-			</TabsContent>
-			<TabsContent value="agents">
-				<Agents />
-			</TabsContent>
 		</Tabs>
 	);
 }
