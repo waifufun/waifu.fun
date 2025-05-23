@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { IToken } from "@autofun/types";
 import { ChartCandlestick, MessagesSquare, Stars, User, Users } from "lucide-react";

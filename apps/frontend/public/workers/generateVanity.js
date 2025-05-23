@@ -34,7 +34,7 @@ console.log("Worker: Setting up message handler...");
 self.onmessage = (event) => {
 	// Handle potential 'stop' string message
 	if (event.data === "stop") {
-		console.log(`Worker: Received stop command.`);
+		console.log("Worker: Received stop command.");
 		running = false;
 		return;
 	}

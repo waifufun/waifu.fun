@@ -20,4 +20,5 @@ export default {
 	},
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: need for flexibility in props
 export const Default = (args: any) => <Triangle {...args} />;

@@ -54,18 +54,19 @@ self.onmessage = async (event: MessageEvent<{ suffix: string }>) => {
 						attempts,
 					});
 					return;
-				} else {
-					console.warn(`[Worker] Key ${publicKeyBs58} matched suffix but failed validation. Continuing...`);
 				}
+
+				console.warn(`[Worker] Key ${publicKeyBs58} matched suffix but failed validation. Continuing...`);
 			}
 
 			if (attempts % REPORT_INTERVAL === 0) {
 				self.postMessage({ type: "progress", address: publicKeyBs58, attempts });
 			}
 		}
+		// biome-ignore lint/suspicious/noExplicitAny: need for flexibility in props
 	} catch (error: any) {
 		console.error("[Worker] Error during address generation:", error);
-		self.postMessage({ type: "error", success: false, error: error.message || "Unknown worker error" });
+		self.postMessage({ type: "error", success: false, error: error?.message || "Unknown worker error" });
 	}
 };
 

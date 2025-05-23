@@ -1,4 +1,3 @@
-
 import Holders from "@/components/token-page/holders";
 import { getToken } from "@/lib/api";
 import type { ITokenLookUp } from "@autofun/types";

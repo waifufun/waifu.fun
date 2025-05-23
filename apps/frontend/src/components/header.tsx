@@ -28,7 +28,7 @@ export default function Header() {
 					{solanaWallets || evmWallets ? "My Wallets" : "Connect Wallet"}
 				</Button>
 				<div className="flex items-center">
-					<button className="md:hidden items-center">
+					<button className="md:hidden items-center" type="button">
 						<Menu size={32} />
 					</button>
 				</div>
