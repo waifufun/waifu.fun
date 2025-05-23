@@ -31,7 +31,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 
 export default async function Home({
 	searchParams,
-}: { searchParams: { [key: string]: string | string[] | undefined } }) {
+}: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
 	const data = await getTokens({ searchParams: await searchParams });
 	const tokens = data?.docs;
 
