@@ -1,7 +1,7 @@
 "use client";
 import TokenInfo from "@/components/create-token-page/token-info";
 import TokenTypeSelector from "@/components/create-token-page/token-type-selector";
-import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
+import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
@@ -24,8 +24,7 @@ const UploadPlaceholder = ({ onClick }: { onClick: () => void }) => {
 }
 
 const UploadImage = () => {
-    const [imageURL, setImageURL] = useState<string | undefined>(undefined);
-    const [imageFile, setImageFile] = useState<File | undefined>(undefined);
+    const { uploadedImage, setUploadedImage } = usePrompt();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -44,15 +43,14 @@ const UploadImage = () => {
                 return;
             }
 
-            if (imageURL && imageURL.startsWith("blob:")) {
-                URL.revokeObjectURL(imageURL);
-            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setUploadedImage(base64String);
+            };
+            reader.readAsDataURL(file);
 
-            const newImageURL = URL.createObjectURL(file);
-            setImageURL(newImageURL);
-            setImageFile(file);
-
-            if(event.target) {
+            if (event.target) {
                 event.target.value = "";
             }
         }
@@ -63,47 +61,24 @@ const UploadImage = () => {
     };
 
     const handleDeleteImage = () => {
-        setImageURL(undefined);
-        setImageFile(undefined);
+        setUploadedImage(undefined);
     };
-
-    useEffect(() => {
-        const currentImageUrl = imageURL;
-
-        // memory clean go
-
-        return () => {
-            if (currentImageUrl && currentImageUrl.startsWith("blob:")) {
-                URL.revokeObjectURL(currentImageUrl);
-            }
-        };
-    }, [imageURL]);
 
     return (
         <div className="w-full flex justify-center">
             <div className="w-[300px] sm:w-[500px]">
                 <div className="w-full h-[300px] sm:h-[500px] rounded-lg overflow-hidden relative bg-[#171717] border border-[#262626]">
-                    {!imageURL && <UploadPlaceholder onClick={handlePlaceholderClick} />}
-                    {imageURL && (
+                    {!uploadedImage && <UploadPlaceholder onClick={handlePlaceholderClick} />}
+                    {uploadedImage && (
                         <>
                             <Image
-                                src={imageURL}
+                                src={uploadedImage}
                                 alt="Uploaded preview"
                                 layout="fill"
                                 objectFit="contain"
-                                className="rounded-lg cursor-pointer" // Added cursor-pointer
-                                onClick={handleDeleteImage}          // Added onClick handler
-                            />
-                            {/* Optional: Add a more explicit delete button overlay */}
-                            {/*
-                            <button
+                                className="rounded-lg cursor-pointer"
                                 onClick={handleDeleteImage}
-                                className="absolute top-2 right-2 bg-red-500 hover:bg-red-700 text-white p-1 rounded-full z-10"
-                                aria-label="Delete image"
-                            >
-                                <XCircle size={24} />
-                            </button>
-                            */}
+                            />
                         </>
                     )}
                     <input
@@ -117,7 +92,7 @@ const UploadImage = () => {
             </div>
         </div>
     );
-}
+};
 
 export default function CreateTokenPageManual() {
     return (
@@ -132,7 +107,7 @@ export default function CreateTokenPageManual() {
                         <div className="p-4">
                             <div className="flex flex-col lg:flex-row w-full gap-10 py-8">
                                 <UploadImage/>
-                                <TokenInfo/>
+                                <TokenInfo type="manual"/>
                             </div>
                         </div>
                     </div>

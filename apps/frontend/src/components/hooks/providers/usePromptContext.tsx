@@ -24,6 +24,9 @@ type PromptContextType = {
   isGeneratingImage: boolean;
   generateToken: (prompt?: string) => void;
   changeMainImage: (index: number) => void;
+  previousImages: string[];
+  uploadedImage: string | undefined;
+  setUploadedImage: (image: string | undefined) => void;
 };
 
 export type TokenFormData = {
@@ -55,6 +58,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
   const {previousImages, changeMainImage, addImage} = UseTokenImages();
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(true);
+  const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
 
   const workerRefs = useRef<Worker[]>([]);
   const activeSuffixRef = useRef<string>("");
@@ -255,7 +259,10 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     isGeneratingAddress: isGeneratingAddressState,
     isGeneratingImage,
     generateToken,
-    changeMainImage
+    changeMainImage,
+    previousImages,
+    uploadedImage,
+    setUploadedImage,
   };
 
   return (

@@ -9,6 +9,8 @@ import {
     descriptionValidation
 } from "../hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
+import { form } from "viem/chains";
+import { toast } from "sonner";
 
 const TokenInfoInput = <K extends TokenFormOptions>({
     title,
@@ -91,7 +93,7 @@ const BuyCoin = () => {
     return (
         <div className="inline-block py-4">
             <p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
-                BUY COIN (Optional)
+                BUY COIN
             </p>
 
             <div className="flex gap-8 mt-4 items-center">
@@ -106,7 +108,6 @@ const BuyCoin = () => {
                     <input
                         className="rounded-lg focus:outline-none text-lg w-20 bg-transparent text-white placeholder:text-gray-500"
                         type="number"
-                        placeholder="0.00"
                         step="any"
                         {...registerForm("buyAmount", {
                             valueAsNumber: true,
@@ -135,6 +136,7 @@ const ChoosePool = () => {
         { name: "Raydium", value: "raydium", image: "/pools/raydium.svg" }
     ];
     const [pool, setPool] = useState("meteora");
+    const {formState} = usePrompt();
 
     return (
         <div className="flex flex-col gap-4 xl:flex-row xl:justify-between w-full xl:items-center mt-6">
@@ -160,10 +162,13 @@ const ChoosePool = () => {
             </div>
             <button
                 type="submit"
-                className="px-6 py-3 rounded-lg hover:cursor-pointer min-w-[120px]"
+                disabled={!formState.isValid}
                 style={{
-                    background: "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)"
+                    cursor: formState.isValid ? "pointer" : "not-allowed",    
+                    background: formState.isValid ? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)" : "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)"
+
                 }}
+                className="px-6 py-3 rounded-lg min-w-[120px]"
             >
                 <p className="text-[#0A0A0A] text-base font-[700]">LAUNCH</p>
             </button>
@@ -171,9 +176,38 @@ const ChoosePool = () => {
     );
 };
 
-const TokenInfo = () => {
+const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
+
+    const {handleSubmit, formState, uploadedImage } = usePrompt();
+
+    const handleSubmitManual = () => {
+        if (!uploadedImage) {
+            toast.error("Please upload an image.");
+            return;
+        }
+    }
+    
+
+    
+
+    const onSubmit = (data: TokenFormData) => {
+        if (!formState.isValid) {
+            toast.error("Please fill in all required fields.");
+            return;
+        }
+
+        switch (type) {
+            case "auto":
+                throw new Error("Auto generation is not implemented yet.");
+                break;
+            case "manual":
+                handleSubmitManual();
+                break;
+        }
+    };
+
     return (
-        <div className="w-full">
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full">
             <p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">COIN INFO</p>
             <div className="flex flex-col gap-4 mt-4">
                 <div className="flex flex-col md:flex-row md:gap-8 gap-4">
@@ -185,7 +219,7 @@ const TokenInfo = () => {
             <GenerateAddress />
             <BuyCoin />
             <ChoosePool />
-        </div>
+        </form>
     );
 };
 

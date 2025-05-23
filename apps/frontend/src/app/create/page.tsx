@@ -105,7 +105,7 @@ const GeneratedImages = () => {
                             {nextImages.map((image, index) => (
                                 <button onClick={() => {
                                     changeMainImage(index + 1);
-                                }} key={index} className="w-full aspect-square hover:cursor-pointer rounded-lg overflow-hidden relative"> {/* Ensure button can host relative child properly */}
+                                }} key={index} className="w-full aspect-square hover:cursor-pointer rounded-lg overflow-hidden relative">
                                     <AIImageWithPlaceHolder href={image}/>
                                 </button>
                             ))}
