@@ -4,6 +4,8 @@ node_modules
 .pnp.js
 packages/**/node_modules
 logs
+.DS_Store
+**/.DS_Store
 
 # datadog files
 apps/backend/logs
