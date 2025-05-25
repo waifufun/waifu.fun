@@ -16,6 +16,7 @@ import { Program, AnchorProvider, type Idl } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
+import withFallback from "../utils/solana-fallback"
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -142,9 +143,9 @@ export class SolanaRpcProvider {
 	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
 		const rpcList = SOLANA_RPC_URLS?.[networkId];
 		if (!rpcList) {
-			throw new Error(`No RPC Urls configured for Solana: ${networkId}`);
+			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
-
+	
 		for (const rpc of rpcList) {
 			try {
 				const connection = new Connection(rpc, "confirmed");
@@ -153,12 +154,11 @@ export class SolanaRpcProvider {
 			} catch (error) {
 				console.warn(`Failed to connect to RPC: ${rpc}`, error);
 			}
-		}
-
+		}	
 		throw new Error(`All RPC endpoints failed for network: ${networkId}`);
 	}
 
-	getTokenMetadata = async (contractAddress: string) => {
+	getTokenMetadata = withFallback(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
 		const mint = new PublicKey(contractAddress);
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
@@ -186,9 +186,9 @@ export class SolanaRpcProvider {
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,
 		};
-	};
+	}, this);
 
-	private getTokenSupplies = async (mintAddresses: PublicKey[]) => {
+	private getTokenSupplies = withFallback(async (mintAddresses: PublicKey[]) => {
 		const tokenAccounts = await this.connection.getMultipleAccountsInfo(mintAddresses);
 		return tokenAccounts.map((acc, i) => {
 			if (!acc) return { mint: mintAddresses[i], supply: 0, decimals: 0 };
@@ -197,9 +197,9 @@ export class SolanaRpcProvider {
 			const decimals = data.readUInt8(44);
 			return { mint: mintAddresses[i], supply, decimals };
 		});
-	};
+	}, this);
 
-	getBondingCurveInfo = async (contractAddresses: string[]) => {
+	getBondingCurveInfo = withFallback(async (contractAddresses: string[]) => {
 		if (!contractAddresses || contractAddresses?.length === 0) return [];
 		const tokenMints: PublicKey[] = contractAddresses.map((addr) => new PublicKey(addr));
 
@@ -284,9 +284,9 @@ export class SolanaRpcProvider {
 				exists: true,
 			};
 		});
-	};
+	}, this);
 
-	getTokenBalance = async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
+	getTokenBalance = withFallback(async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
 		const mint = new PublicKey(contractAddress);
 		const ownerAddress = new PublicKey(owner);
 
@@ -308,5 +308,5 @@ export class SolanaRpcProvider {
 		}
 
 		return amount / 10 ** decimals;
-	};
+	}, this);
 }
