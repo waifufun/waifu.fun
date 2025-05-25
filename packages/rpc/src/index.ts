@@ -152,7 +152,7 @@ export class SolanaRpcProvider {
 				await connection.getVersion(); // test if the connection works
 				return new SolanaRpcProvider(connection, rpc, networkId);
 			} catch (error) {
-				console.warn(`Failed to connect to RPC: ${rpc}`, error);
+				console.warn(`Failed to connect to RPC: ${rpc}, switching to fallback RPC`, error);
 			}
 		}	
 		throw new Error(`All RPC endpoints failed for network: ${networkId}`);
