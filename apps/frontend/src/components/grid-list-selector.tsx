@@ -26,7 +26,8 @@ export default function GridListSelector() {
 		[searchParams],
 	);
 
-	const activeKey = `${searchParams.get("view")}` || "grid";
+	const currentKey = searchParams.get("view");
+	const activeKey = currentKey ? currentKey : "grid";
 
 	return (
 		<div className="flex items-center gap-2">
