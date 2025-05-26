@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getChatHistory, sendChatMessage } from "@/lib/api";
-import type { AddressLike, IChatMessage, IToken, TChatRooms } from "@autofun/types";
+import type { IChatMessage, IToken, TChatRooms } from "@autofun/types";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 
@@ -30,13 +30,13 @@ export default function Chat({ token }: { token: IToken }) {
 						))}
 					</TabsList>
 				</Tabs>
-				<ChatWindow room={room} contractAddress={token.contractAddress} />
+				<ChatWindow room={room} token={token} />
 			</div>
 		</div>
 	);
 }
 
-const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddress: AddressLike }) => {
+const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 	const ref = useRef<HTMLDivElement | null>(null);
 	const {
 		register,
@@ -50,11 +50,17 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 		mutation.mutate({ message: data.message });
 	};
 
+	const contractAddress = token.contractAddress;
+	const chain = token.chain;
+	const chainId = token.chainId;
+
 	const query = useQuery({
-		queryKey: ["chat", contractAddress, room],
+		queryKey: ["chat", contractAddress, room, chain],
 		queryFn: async () => {
 			return await getChatHistory({
 				contractAddress,
+				chain,
+				chainId,
 				room,
 			});
 		},
@@ -67,6 +73,8 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 			await sendChatMessage({
 				room,
 				contractAddress,
+				chain,
+				chainId,
 				message,
 			});
 		},
