@@ -12,7 +12,7 @@ import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/c
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
-import { Program, AnchorProvider, type Idl } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
@@ -187,7 +187,7 @@ export class SolanaRpcProvider {
 			signAllTransactions: async (txs: any[]) => txs,
 		};
 
-		const provider = new AnchorProvider(this.connection, dummyWallet as any, {});
+		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
 		this.program = new Program(idl as Idl, provider);
 	}
 
