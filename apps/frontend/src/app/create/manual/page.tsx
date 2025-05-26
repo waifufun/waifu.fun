@@ -5,7 +5,7 @@ export default function CreateTokenPage() {
 		<div className="flex justify-center px-40">
 			<div className="flex flex-col items-center mt-5 w-full">
 				<div>
-					<img src="/create/coin-machine.png" alt="coin-machine"/>
+					<img src="/create/coin-machine.png" alt="coin-machine" />
 				</div>
 				<TokenTypeSelector selected="manual" />
 			</div>

@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getChatHistory, sendChatMessage } from "@/lib/api";
-import type { AddressLike, IChatMessage, IToken, TChatRooms } from "@autofun/types";
+import type { IChatMessage, IToken, TChatRooms } from "@autofun/types";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 
@@ -17,29 +17,32 @@ type Inputs = {
 };
 
 export default function Chat({ token }: { token: IToken }) {
-	const [room, setRoom] = useState<string>("1000");
+	const [room, setRoom] = useState<TChatRooms>("1000");
 	return (
-		<div className="flex flex-col items-center w-full my-3 px-4">
-			<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value)}>
-				<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">
-					{[1000, 100_000, 1_000_000].map((r) => (
-						<TabsTrigger value={String(r)} className="text-base mt-[1px]" key={r}>
-							{abbreviateNumber(r, true)}+
-						</TabsTrigger>
-					))}
-				</TabsList>
-			</Tabs>
-			<ChatWindow room={room} contractAddress={token.contractAddress} />
+		<div className="bg-[#0c0c0c] rounded-b-xl">
+			<div className="flex flex-col items-center w-full my-3 px-4">
+				<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value as TChatRooms)}>
+					<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">
+						{["1000", "100000", "1000000"].map((r) => (
+							<TabsTrigger value={String(r)} className="text-base mt-[1px]" key={r}>
+								{abbreviateNumber(Number(r), true)}+
+							</TabsTrigger>
+						))}
+					</TabsList>
+				</Tabs>
+				<ChatWindow room={room} token={token} />
+			</div>
 		</div>
 	);
 }
 
-const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddress: AddressLike }) => {
+const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 	const ref = useRef<HTMLDivElement | null>(null);
 	const {
 		register,
 		handleSubmit,
 		watch,
+		setValue,
 		formState: { errors },
 	} = useForm<Inputs>();
 
@@ -47,11 +50,17 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 		mutation.mutate({ message: data.message });
 	};
 
+	const contractAddress = token.contractAddress;
+	const chain = token.chain;
+	const chainId = token.chainId;
+
 	const query = useQuery({
-		queryKey: ["chat", contractAddress, room],
+		queryKey: ["chat", contractAddress, room, chain],
 		queryFn: async () => {
 			return await getChatHistory({
 				contractAddress,
+				chain,
+				chainId,
 				room,
 			});
 		},
@@ -60,14 +69,20 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 	const mutation = useMutation({
 		mutationKey: ["chat", "message"],
 		mutationFn: async ({ message }: { message: string }) => {
+			if (!message || message?.length === 0) return;
 			await sendChatMessage({
 				room,
 				contractAddress,
+				chain,
+				chainId,
 				message,
 			});
 		},
 		onSuccess: () => {
-			query?.refetch();
+			setValue("message", "");
+			query?.refetch().then(() => {
+				setTimeout(scrollToBottom, 50);
+			});
 		},
 		onError: (e) => {
 			toast.error(e.message);
@@ -76,17 +91,17 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 
 	const scrollToBottom = () => {
 		if (ref?.current) {
-			const scrollHeight = ref.current.scrollHeight;
-			ref.current.scrollTop = 0;
+			ref.current.scrollTo({ top: 0, behavior: "smooth" });
 		}
 	};
 
 	return (
-		<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D]">
-			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D]">
+		<div className="flex flex-col gap-2 w-full relative">
+			<div className="h-14 w-full absolute top-0 left-0 bg-gradient-to-b from-[#111111] via-[#111111]/80 to-[#111111]/10" />
+			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] rounded-b-xl">
 				<div className="h-[50vh] w-full p-4 overflow-y-scroll flex flex-col-reverse gap-4" ref={ref}>
 					{query?.data?.map((message: IChatMessage) => (
-						<ChatItem key={message._id} message={message} />
+						<ChatItem key={String(message._id)} message={message} />
 					))}
 				</div>
 			</div>
@@ -94,7 +109,7 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 				<Button size="icon" type="button">
 					<ImageIcon />
 				</Button>
-				<Input placeholder="Send a message" aria-autocomplete="none" {...register("message")} />
+				<Input placeholder="Send a message" aria-autocomplete="none" autoComplete="off" {...register("message")} />
 				<Button size="icon" type="submit">
 					<Send onClick={() => scrollToBottom()} />
 				</Button>

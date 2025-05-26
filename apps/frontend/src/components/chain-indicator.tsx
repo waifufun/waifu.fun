@@ -3,8 +3,7 @@
 import { cn } from "@/lib/utils";
 import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
 import Image from "next/image";
-import { Fragment } from "react";
-import { Tooltip } from "react-tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export default function ChainIndicator({
 	chain,
@@ -27,19 +26,21 @@ export default function ChainIndicator({
 	}
 
 	return (
-		<Fragment>
-			<Tooltip anchorSelect={`#${key}`}>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Image
+					id={key}
+					src={chainIcons[key].icon}
+					width={128}
+					height={128}
+					unoptimized
+					alt={key}
+					className={cn(["p-0.5 size-6 rounded-full", className ? className : ""])}
+				/>
+			</TooltipTrigger>
+			<TooltipContent>
 				<span>{chainIcons[key].name}</span>
-			</Tooltip>
-			<Image
-				id={key}
-				src={chainIcons[key].icon}
-				width={128}
-				height={128}
-				unoptimized
-				alt={key}
-				className={cn(["p-0.5 size-6 rounded-full", className ? className : ""])}
-			/>
-		</Fragment>
+			</TooltipContent>
+		</Tooltip>
 	);
 }

@@ -55,7 +55,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 	const nonceMutation = useMutation({
 		mutationKey: ["generateNonce"],
 		mutationFn: generateNonce,
-		onSuccess: async () => {},
 		onError: (e) => {
 			toast.error(`Error: ${e.message}`);
 		},
@@ -65,6 +64,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		mutationKey: ["authenticate"],
 		mutationFn: ({ address, signature, chain }: { address: AddressLike; signature: string; chain: "solana" | "evm" }) =>
 			authenticate(address, signature, chain),
+		// biome-ignore lint/suspicious/noExplicitAny: Jitters will resolve
 		onSuccess: async (result: any) => {
 			if (result.success) {
 				toast.success("Authenticated successfully");
@@ -96,14 +96,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 	} = useQuery({
 		queryKey: ["getWallets"],
 		queryFn: async () => {
-			try {
-				const wallets = await getWallets();
-				console.log("remoteWallets", wallets);
-				return wallets;
-			} catch (e: unknown) {
-				toast.error(`Error fetching remote wallets: ${e?.message}`);
-				throw e;
-			}
+			const wallets = await getWallets();
+			console.log("remoteWallets", wallets);
+			return wallets;
 		},
 		refetchOnMount: false,
 		refetchOnWindowFocus: false,

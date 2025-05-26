@@ -1,4 +1,4 @@
-import type { AddressLike, IToken, ITokenLookUp, TChain, TChatRooms } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 
 const BASE_URL = "http://localhost:3001";
 
@@ -65,20 +65,20 @@ export const getHolders = async ({ chain, chainId, contractAddress }) => {
 	});
 };
 
-export const getChatHistory = async ({ room, contractAddress }) => {
+export const getChatHistory = async ({ room, contractAddress, chain, chainId }) => {
 	return await fetcher("/chat/history", "POST", {
 		room,
 		contractAddress,
+		chain,
+		chainId,
 	});
 };
 
-export const sendChatMessage = async ({
-	message,
-	room,
-	contractAddress,
-}: { message: string; room: TChatRooms; contractAddress: AddressLike }) => {
+export const sendChatMessage = async ({ message, chain, chainId, room, contractAddress }) => {
 	return await fetcher("/chat/message", "POST", {
 		message,
+		chain,
+		chainId,
 		room,
 		contractAddress,
 	});

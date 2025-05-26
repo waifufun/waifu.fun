@@ -12,13 +12,13 @@ import type {
 	ITrade,
 } from "@autofun/types";
 import {
+	getChecksummedAddress,
 	getPercentageOfTotal,
 	isChainIdAllowedForChain,
 	isSupportedAddress,
 	populateTokensWithLiveData,
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
-import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
 import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
 import redis from "@autofun/redis";
@@ -31,8 +31,32 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Reply: { tokens: IToken[] };
 	}>("/", async (request) => {
-		const queryParams = request.body as { chain: TChain; chainId: TChainId; page: number };
+		const queryParams = request.body as {
+			chain: TChain;
+			chainId: TChainId;
+			page: number;
+			category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
+		};
+
 		const page = queryParams?.page || 1;
+
+		const category = queryParams.category || "new";
+		let sortQuery = undefined;
+
+		switch (category) {
+			case "new":
+				sortQuery = "-createdAt";
+				break;
+			case "trending":
+				sortQuery = "-volume24h -marketcap";
+				break;
+			case "featured":
+				sortQuery = "-featured";
+				break;
+			case "marketcap":
+				sortQuery = "-marketcap";
+				break;
+		}
 
 		let chain = null;
 		let chainId = null;
@@ -43,7 +67,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			if (!allowedChain) throw new Error("Unsupported chain pair");
 		}
 
-		const cacheKey = `${chain}:${chainId}:${page}:tokens`;
+		const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
 
 		const cache = await redis.get(cacheKey);
 
@@ -66,6 +90,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			limit: 50,
 			select: "-__v",
 			leanWithId: false,
+			sort: sortQuery,
 		};
 
 		const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
@@ -93,15 +118,24 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	}>("/:chain/:chainId/:contractAddress", async (request) => {
 		const { contractAddress, chain, chainId } = request.params;
 
-		const cacheKey = `${chain}:${chainId}:${contractAddress}`;
+		const isAllowed = isSupportedAddress(contractAddress);
+		if (!isAllowed) throw new Error("Unsupported address");
+		const isAllowedChainPair = isChainIdAllowedForChain(chain, chainId);
+		if (!isAllowedChainPair) throw new Error("Unsupported chain/chainId value");
+
+		const checksummedQueryAddress =
+			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+
+		const cacheKey = `${chain}:${chainId}:${checksummedQueryAddress}`;
 
 		const cache = await redis.get(cacheKey);
+
 		if (cache) {
 			return JSON.parse(cache);
 		}
 
 		const token = await DB.Token.findOne({
-			contractAddress,
+			contractAddress: checksummedQueryAddress,
 			chainId,
 			chain,
 			hidden: { $ne: true },
@@ -123,14 +157,20 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 	fastify.post("/trades", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
-			contractAddress: Pick<IToken, "contractAddress">;
+			contractAddress: AddressLike;
 			chain: TChain;
 			chainId: TChainId;
 		};
-		const cacheKey = `${chain}:${chainId}:${contractAddress}:trades`;
 
 		const allowedChain = isChainIdAllowedForChain(chain, chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
+		const isAllowedChainPair = isChainIdAllowedForChain(chain, chainId);
+		if (!isAllowedChainPair) throw new Error("Unsupported chain/chainId value");
+
+		const checksummedQueryAddress =
+			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+
+		const cacheKey = `${chain}:${chainId}:${checksummedQueryAddress}:trades`;
 
 		const cache = await redis.get(cacheKey);
 
@@ -141,7 +181,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const token = await DB.Token.findOne({
 			chain,
 			chainId,
-			contractAddress,
+			contractAddress: checksummedQueryAddress,
 		})
 			.select("decimals creator totalSupply imported curveCompleted")
 			.lean();
@@ -202,14 +242,20 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 	fastify.post("/holders", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
-			contractAddress: Pick<IToken, "contractAddress">;
+			contractAddress: AddressLike;
 			chain: "solana" | "evm";
 			chainId: TChainId;
 		};
-		const cacheKey = `${chain}:${chainId}:${contractAddress}:holders`;
 
 		const allowedChain = isChainIdAllowedForChain(chain, chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
+		const isAllowedChainPair = isChainIdAllowedForChain(chain, chainId);
+		if (!isAllowedChainPair) throw new Error("Unsupported chain/chainId value");
+
+		const checksummedQueryAddress =
+			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+
+		const cacheKey = `${chain}:${chainId}:${checksummedQueryAddress}:holders`;
 
 		const cache = await redis.get(cacheKey);
 
@@ -220,7 +266,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const token = await DB.Token.findOne({
 			chain,
 			chainId,
-			contractAddress,
+			contractAddress: checksummedQueryAddress,
 		}).select("decimals creator totalSupply holders");
 
 		if (!token) {
@@ -279,8 +325,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const isAllowedChainPair = isChainIdAllowedForChain(chain, chainId);
 		if (!isAllowedChainPair) throw new Error("Unsupported chain/chainId value");
 
+		const checksummedQueryAddress =
+			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+
 		const exists = await DB.Token.findOne({
-			contractAddress,
+			contractAddress: checksummedQueryAddress,
 			chain,
 			chainId,
 		})
@@ -296,7 +345,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const rpc = new EVMRpcProvider(chainId);
 
 			const [name, ticker, decimals, totalSupply] = await rpc.readErc20Multicall(
-				getAddress(contractAddress),
+				getChecksummedAddress(contractAddress, "evm"),
 				["name", "symbol", "decimals", "totalSupply"],
 				[],
 			);
@@ -337,7 +386,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const tokenData: IToken<"evm"> = {
 				chain: "evm",
 				chainId,
-				contractAddress: getAddress(contractAddress),
+				contractAddress: getChecksummedAddress(contractAddress, "evm"),
 				ticker: String(name),
 				name: String(name),
 				imported: true,
@@ -373,7 +422,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const tokenData: IToken<"solana"> = {
 				chain: "solana",
 				chainId: solanaChainId,
-				contractAddress: contractAddress as SolanaAddressLike,
+				contractAddress: getChecksummedAddress(contractAddress, "solana"),
 				ticker: String(metadata?.symbol),
 				name: String(metadata?.name),
 				imported: true,

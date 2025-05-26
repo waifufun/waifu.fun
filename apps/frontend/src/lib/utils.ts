@@ -3,7 +3,6 @@ import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
-import { Keypair } from "@solana/web3.js";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -13,7 +12,7 @@ export const abbreviateNumber = (num: number, withoutCurrency = false): string =
 	const absNum = Math.abs(Number(num));
 	if (absNum < 1000) return formatNumber(num, false, withoutCurrency);
 
-	const units = ["K", "M", "B", "T"];
+	const units = ["k", "m", "b", "t"];
 	let exponent = Math.floor(Math.log10(absNum) / 3);
 	if (exponent > units.length) exponent = units.length;
 	const unit = units[exponent - 1];
@@ -35,6 +34,59 @@ export const formatNumber = (num: number, showDecimals?: boolean, hideDollarSign
 	}
 
 	return formatted;
+};
+
+const toSubscript = (num: number): string => {
+	const subDigits: { [key: string]: string } = {
+		"0": "\u2080",
+		"1": "\u2081",
+		"2": "\u2082",
+		"3": "\u2083",
+		"4": "\u2084",
+		"5": "\u2085",
+		"6": "\u2086",
+		"7": "\u2087",
+		"8": "\u2088",
+		"9": "\u2089",
+		"-": "\u207B",
+	};
+	return num
+		.toString()
+		.split("")
+		.map((digit) => subDigits[digit] || digit)
+		.join("");
+};
+
+export const formatNumberSubscript = (inputNum: number, decimals = 1): string => {
+	let num = inputNum;
+	if (num === 0) return "0";
+	let sign = "";
+	if (num < 0) {
+		sign = "-";
+		num = Math.abs(num);
+	}
+
+	num = Number(num.toFixed(11));
+
+	if (num >= 1) {
+		return sign + num.toString();
+	}
+
+	const expStr = num.toExponential();
+	const [mantissa, exponentStr] = expStr.split("e");
+	if (!exponentStr || !mantissa) return "-";
+	const exponent = Number.parseInt(exponentStr, 10);
+	let totalZeros = -exponent - 1;
+	const mantissaDigits = mantissa.replace(".", "").slice(0, 9);
+
+	if (totalZeros < 0) {
+		totalZeros = 0;
+	}
+
+	if (totalZeros > decimals) {
+		return `${sign}0.0${toSubscript(totalZeros)}${mantissaDigits}`;
+	}
+	return `${sign}0.${"0".repeat(totalZeros)}${mantissaDigits}`;
 };
 
 export const fromNow = (date: string | Date | number, hideAgo?: boolean): string => {

@@ -1,0 +1,45 @@
+{
+	"_format": "hh-sol-artifact-1",
+	"contractName": "IAutoFunTokenFactory",
+	"sourceName": "contracts/interfaces/IAutoFunTokenFactory.sol",
+	"abi": [
+		{
+			"inputs": [
+				{
+					"internalType": "string",
+					"name": "name_",
+					"type": "string"
+				},
+				{
+					"internalType": "string",
+					"name": "symbol_",
+					"type": "string"
+				},
+				{
+					"internalType": "uint256",
+					"name": "totalSupply_",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint8",
+					"name": "decimal_",
+					"type": "uint8"
+				}
+			],
+			"name": "deployToken",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		}
+	],
+	"bytecode": "0x",
+	"deployedBytecode": "0x",
+	"linkReferences": {},
+	"deployedLinkReferences": {}
+}
