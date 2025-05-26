@@ -16,7 +16,7 @@ import { Program, AnchorProvider, type Idl } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
-import withFallback from "../utils/solana-fallback"
+import withFallBack from "../utils/solana-fallback"
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -122,6 +122,7 @@ export class SolanaRpcProvider {
 	public client;
 	private program;
 	public networkId: SolanaNetworkIds;
+	private static currentRpc: SolanaRpcProvider | null = null;
 
 	private constructor(connection: Connection, rpc: string, networkId: SolanaNetworkIds) {
 		this.connection = connection;
@@ -141,24 +142,29 @@ export class SolanaRpcProvider {
 	}
 
 	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
+		if (SolanaRpcProvider.currentRpc && SolanaRpcProvider.currentRpc.networkId === networkId) {
+			return SolanaRpcProvider.currentRpc;
+		}
+
 		const rpcList = SOLANA_RPC_URLS?.[networkId];
 		if (!rpcList) {
 			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
-	
+
 		for (const rpc of rpcList) {
 			try {
 				const connection = new Connection(rpc, "confirmed");
 				await connection.getVersion(); // test if the connection works
-				return new SolanaRpcProvider(connection, rpc, networkId);
+				SolanaRpcProvider.currentRpc = new SolanaRpcProvider(connection, rpc, networkId);
+				return SolanaRpcProvider.currentRpc;
 			} catch (error) {
 				console.warn(`Failed to connect to RPC: ${rpc}, switching to fallback RPC`, error);
 			}
-		}	
+		}
 		throw new Error(`All RPC endpoints failed for network: ${networkId}`);
 	}
 
-	getTokenMetadata = withFallback(async (contractAddress: string) => {
+	getTokenMetadata = withFallBack(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
 		const mint = new PublicKey(contractAddress);
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
@@ -188,7 +194,7 @@ export class SolanaRpcProvider {
 		};
 	}, this);
 
-	private getTokenSupplies = withFallback(async (mintAddresses: PublicKey[]) => {
+	private getTokenSupplies = withFallBack(async (mintAddresses: PublicKey[]) => {
 		const tokenAccounts = await this.connection.getMultipleAccountsInfo(mintAddresses);
 		return tokenAccounts.map((acc, i) => {
 			if (!acc) return { mint: mintAddresses[i], supply: 0, decimals: 0 };
@@ -199,7 +205,7 @@ export class SolanaRpcProvider {
 		});
 	}, this);
 
-	getBondingCurveInfo = withFallback(async (contractAddresses: string[]) => {
+	getBondingCurveInfo = withFallBack(async (contractAddresses: string[]) => {
 		if (!contractAddresses || contractAddresses?.length === 0) return [];
 		const tokenMints: PublicKey[] = contractAddresses.map((addr) => new PublicKey(addr));
 
@@ -286,7 +292,7 @@ export class SolanaRpcProvider {
 		});
 	}, this);
 
-	getTokenBalance = withFallback(async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
+	getTokenBalance = withFallBack(async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
 		const mint = new PublicKey(contractAddress);
 		const ownerAddress = new PublicKey(owner);
 
