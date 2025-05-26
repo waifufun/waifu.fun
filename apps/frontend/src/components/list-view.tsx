@@ -1,3 +1,5 @@
+"use client";
+
 import type { IToken } from "@autofun/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { abbreviateNumber, fromNow, shortenAddress } from "@/lib/utils";
@@ -8,8 +10,15 @@ import Image from "next/image";
 import ChainIndicator from "./chain-indicator";
 import Verified from "./verified";
 import { CopyButton } from "./copy-button";
+import { useRouter } from "@bprogress/next/app";
 
 export default function ListView({ tokens }: { tokens: IToken[] }) {
+	const router = useRouter();
+
+	const navigateClick = (token: IToken) => {
+		router.push(`/token/${token.chain}/${token.chainId}/${token.contractAddress}`);
+	};
+
 	return (
 		<Table>
 			<TableHeader>
@@ -25,7 +34,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 			</TableHeader>
 			<TableBody>
 				{tokens.map((token: IToken) => (
-					<TableRow key={token.contractAddress} className="group">
+					<TableRow className="group cursor-pointer" key={token.contractAddress} onClick={() => navigateClick(token)}>
 						<TableCell className="text-autofun-text-secondary font-medium">
 							<div className="flex items-center gap-3">
 								{/* Image */}
