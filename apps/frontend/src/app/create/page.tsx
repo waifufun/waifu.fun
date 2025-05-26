@@ -139,7 +139,6 @@ export default function CreateTokenPage() {
                         </div>
                     </div>
                 </div>
-                
             </div>
         </PromptProvider>
     )

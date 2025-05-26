@@ -18,7 +18,7 @@ import type { AddressLike } from "@autofun/types";
 
 
 
-const TokenInfoInput = <K extends TokenFormOptions>({
+export const TokenInfoInput = <K extends TokenFormOptions>({
     title,
     label,
     target,
