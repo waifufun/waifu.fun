@@ -119,7 +119,7 @@ export class EVMRpcProvider {
 
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
 
-function shouldFallback(error: any): boolean {
+function shouldFallback(error): boolean {
 	const status = error?.response?.status || error?.statusCode || error?.code;
 
 	if (typeof status === "number" && RETRYABLE_HTTP_CODES.has(status)) {
@@ -130,13 +130,13 @@ function shouldFallback(error: any): boolean {
 	return msg.includes("timeout") || msg.includes("network");
 }
 
-function withFallBack<TArgs extends any[], TResult>(
+function withFallBack<TArgs extends unknown[], TResult>(
 	fn: (...args: TArgs) => Promise<TResult>,
 	ctx: SolanaRpcProvider,
-	timeoutMs = 15000, // default 15s
+	timeoutMs = 15000, // 15 seconds
 ): (...args: TArgs) => Promise<TResult> {
 	return async (...args: TArgs) => {
-		let timeoutId;
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
 		const timeoutPromise = new Promise<never>((_, reject) => {
 			timeoutId = setTimeout(() => {
@@ -150,10 +150,16 @@ function withFallBack<TArgs extends any[], TResult>(
 			clearTimeout(timeoutId);
 			return result;
 		} catch (error) {
+			clearTimeout(timeoutId);
 			if (!shouldFallback(error)) {
 				throw error;
 			}
 			console.warn(`Falling back to next RPC due to: ${error}`);
+			const rpcList = SOLANA_RPC_URLS?.[ctx.networkId];
+			if (rpcList && rpcList.length > 1) {
+				SolanaRpcProvider.currentRpcIndex =
+					(SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+			}
 			const fallback = await SolanaRpcProvider.connect(ctx.networkId);
 			return await fn.apply(fallback, args);
 		}
@@ -166,7 +172,7 @@ export class SolanaRpcProvider {
 	private program;
 	public networkId: SolanaNetworkIds;
 	private static currentRpc: SolanaRpcProvider | null = null;
-	private static currentRpcIndex = 0;
+	public static currentRpcIndex = 0;
 
 	private constructor(connection: Connection, rpc: string, networkId: SolanaNetworkIds) {
 		this.connection = connection;
