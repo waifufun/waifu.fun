@@ -1,12 +1,12 @@
 import ChainSelector from "@/components/chain-selector";
 import { GridItem } from "@/components/grid-item";
-import { Button } from "@/components/ui/button";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
-import { Grid, List } from "lucide-react";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GridListSelector from "@/components/grid-list-selector";
+import ListView from "@/components/list-view";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -32,8 +32,10 @@ export const generateMetadata = async (): Promise<Metadata> => {
 export default async function Home({
 	searchParams,
 }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-	const data = await getTokens({ searchParams: await searchParams });
+	const currentSearchParams = await searchParams;
+	const data = await getTokens({ searchParams: currentSearchParams });
 	const tokens = data?.docs;
+	const view = currentSearchParams?.view || "grid";
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -57,20 +59,17 @@ export default async function Home({
 						<TabsTrigger value="about-to-bond">About to Bond</TabsTrigger>
 					</TabsList>
 				</Tabs>
-				<div className="ml-auto flex items-center gap-2">
-					<Button variant="secondary" size="icon">
-						<List />
-					</Button>
-					<Button variant="outline" size="icon">
-						<Grid />
-					</Button>
+				<GridListSelector />
+			</div>
+			{view === "grid" ? (
+				<div className="grid grid-cols-6 gap-4">
+					{tokens?.map((token: IToken) => (
+						<GridItem token={token} key={token.contractAddress} />
+					))}
 				</div>
-			</div>
-			<div className="grid grid-cols-6 gap-4">
-				{tokens?.map((token: IToken) => (
-					<GridItem token={token} key={token.contractAddress} />
-				))}
-			</div>
+			) : (
+				<ListView tokens={tokens} />
+			)}
 			{/* <RecentTransactions /> */}
 		</div>
 	);

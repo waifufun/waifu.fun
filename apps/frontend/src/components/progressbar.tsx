@@ -1,8 +1,8 @@
 "use client";
-import { getPercentageOfTotal } from "@/lib/utils";
+import { cn, getPercentageOfTotal } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
-export default function Progressbar({ value, max }: { value: number; max: number }) {
+export default function Progressbar({ value, max, height }: { value: number; max: number; height?: string }) {
 	const [width, setWidth] = useState<number>(0);
 
 	useEffect(() => {
@@ -12,9 +12,17 @@ export default function Progressbar({ value, max }: { value: number; max: number
 	}, [max, value]);
 
 	return (
-		<div className="h-3 rounded-xl w-full max-w-md bg-autofun-background-action-disabled relative">
+		<div
+			className={cn([
+				height ? height : "h-3",
+				"rounded-xl w-full max-w-md bg-autofun-background-action-disabled relative overflow-hidden",
+			])}
+		>
 			<div
-				className="h-3 rounded-xl bg-autofun-background-action-highlight transition-all duration-300"
+				className={cn([
+					height ? height : "h-3",
+					"rounded-xl bg-autofun-background-action-highlight transition-all duration-300",
+				])}
 				style={{
 					width: `${width}%`,
 				}}
