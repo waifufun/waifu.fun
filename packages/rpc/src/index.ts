@@ -117,38 +117,48 @@ export class EVMRpcProvider {
 	};
 }
 
-
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
 
 function shouldFallback(error: any): boolean {
-  const status = error?.response?.status || error?.statusCode || error?.code;
+	const status = error?.response?.status || error?.statusCode || error?.code;
 
-  if (typeof status === "number" && RETRYABLE_HTTP_CODES.has(status)) {
-    return true;
-  }
+	if (typeof status === "number" && RETRYABLE_HTTP_CODES.has(status)) {
+		return true;
+	}
 
-  const msg = error?.message?.toLowerCase() || "";
-  return msg.includes("timeout") || msg.includes("network");
+	const msg = error?.message?.toLowerCase() || "";
+	return msg.includes("timeout") || msg.includes("network");
 }
 
-
- function withFallBack<TArgs extends any[], TResult>(
-  fn: (...args: TArgs) => Promise<TResult>,
-  ctx: SolanaRpcProvider
+function withFallBack<TArgs extends any[], TResult>(
+	fn: (...args: TArgs) => Promise<TResult>,
+	ctx: SolanaRpcProvider,
+	timeoutMs = 15000, // default 15s
 ): (...args: TArgs) => Promise<TResult> {
-  return async (...args: TArgs) => {
-    try {
-      return await fn.apply(ctx, args);
-    } catch (error) {
-      if (!shouldFallback(error)) {
-        throw error;
-      }
-      const fallback = await SolanaRpcProvider.connect(ctx.networkId);
-      return await fn.apply(fallback, args);
-    }
-  };
-}
+	return async (...args: TArgs) => {
+		let timeoutId;
 
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			timeoutId = setTimeout(() => {
+				console.warn(`RPC call timed out after ${timeoutMs}ms`);
+				reject(new Error("Timeout exceeded"));
+			}, timeoutMs);
+		});
+
+		try {
+			const result = await Promise.race([fn.apply(ctx, args), timeoutPromise]);
+			clearTimeout(timeoutId);
+			return result;
+		} catch (error) {
+			if (!shouldFallback(error)) {
+				throw error;
+			}
+			console.warn(`Falling back to next RPC due to: ${error}`);
+			const fallback = await SolanaRpcProvider.connect(ctx.networkId);
+			return await fn.apply(fallback, args);
+		}
+	};
+}
 
 export class SolanaRpcProvider {
 	public connection;
@@ -177,28 +187,23 @@ export class SolanaRpcProvider {
 
 	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
 		if (SolanaRpcProvider.currentRpc && SolanaRpcProvider.currentRpc.networkId === networkId) {
-		  return SolanaRpcProvider.currentRpc;
+			return SolanaRpcProvider.currentRpc;
 		}
-	  
 		const rpcList = SOLANA_RPC_URLS?.[networkId];
 		if (!rpcList) {
-		  throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
+			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
-	  
 		const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
-	  
 		try {
-		  const connection = new Connection(rpc, "confirmed");
-		  await connection.getVersion(); // test if connection works
-		  SolanaRpcProvider.currentRpc = new SolanaRpcProvider(connection, rpc, networkId);
-		  return SolanaRpcProvider.currentRpc;
+			const connection = new Connection(rpc, "confirmed");
+			await connection.getVersion(); // test if connection works
+			SolanaRpcProvider.currentRpc = new SolanaRpcProvider(connection, rpc, networkId);
+			return SolanaRpcProvider.currentRpc;
 		} catch (error) {
-		  SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
-		  throw new Error(`Failed to connect to current RPC: ${rpc}`);
+			SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+			throw new Error(`Failed to connect to current RPC: ${rpc}`);
 		}
-	  }
-	  
-	
+	}
 
 	getTokenMetadata = withFallBack(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
