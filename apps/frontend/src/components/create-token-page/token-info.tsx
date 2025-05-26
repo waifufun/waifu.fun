@@ -266,11 +266,10 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
 
         switch (type) {
             case "auto":
-                // throw new Error("Auto generation is not implemented yet.");
                 await handleAutoSubmit();
                 break;
             case "manual":
-                handleSubmitManual();
+                await handleSubmitManual();
                 break;
         }
     };
