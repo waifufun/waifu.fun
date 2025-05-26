@@ -4,11 +4,12 @@ import {
 	type AddressLike,
 	type EvmAddressLike,
 	type IToken,
+	type SolanaAddressLike,
 	type TChain,
 	type TChainId,
 } from "@autofun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
-import { isAddress as isEvmAddress } from "viem";
+import { getAddress, isAddress as isEvmAddress, type Address } from "viem";
 import logger from "@autofun/logger";
 import { Codex } from "@codex-data/sdk";
 import { CHAINID_TO_CODEX_NETWORK_ID, WETH_ADDRESSES } from "@autofun/constants";
@@ -19,6 +20,7 @@ import moment from "moment";
 import redis from "@autofun/redis";
 import { SolanaRpcProvider } from "@autofun/rpc";
 import { EVMRpcProvider } from "@autofun/rpc";
+import { PublicKey } from "@solana/web3.js";
 
 dotenv.config();
 
@@ -84,6 +86,19 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
 	}
 	return false;
 };
+
+export function getChecksummedAddress(address: AddressLike, chain: "evm"): Address;
+export function getChecksummedAddress(address: AddressLike, chain: "solana"): SolanaAddressLike;
+export function getChecksummedAddress(address: AddressLike, chain: TChain): Address | string {
+    if (chain === "evm") {
+        return getAddress(address);
+    }
+    if (chain === "solana") {
+        return new PublicKey(address).toBase58();
+    }
+
+    throw new Error("Invalid chain or address passed");
+}
 
 /**
  * Enriches token objects with live market data from the Codex API.
