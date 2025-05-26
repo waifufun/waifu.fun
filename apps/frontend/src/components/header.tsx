@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useModal } from "./hooks/providers/UseModalContext";
 import { useWallets } from "./hooks/providers/UseWalletContext";
 import { Menu, Trophy } from "lucide-react";
+import BalanceMenu from "./balance-menu";
 
 export default function Header() {
 	const { openModal } = useModal();
@@ -34,19 +35,7 @@ export default function Header() {
 					</div>
 				</div>
 				{/* Balance */}
-				<div className="hidden lg:inline-flex  h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
-					<Image
-						src="/chain-icons/solana.svg"
-						width={60}
-						height={60}
-						className="size-[20px]"
-						unoptimized
-						alt="balance"
-					/>
-					<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
-						1.83
-					</div>
-				</div>
+				<BalanceMenu />
 				<div className="hidden md:flex gap-2.5">
 					<Link href="/create/import">
 						<Button variant="outline">Create Token</Button>
