@@ -1,24 +1,72 @@
+import type { Autofun } from "@/lib/autofun";
 import { WalletClass } from "./WalletClass";
 import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
-import type { Transaction, VersionedTransaction } from "@solana/web3.js";
+import { BN, Program } from "@coral-xyz/anchor";
+import { Connection, PublicKey, type Transaction, type VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
+import { AnchorProvider } from "@coral-xyz/anchor";
+import IDL from "@/lib/autofun.json";
+import type { TokenMetadata } from "../hooks/providers/usePromptContext";
+import { SEED_CONFIG } from "../hooks/hook/UseProgram";
+import {
+	ComputeBudgetProgram,
+	Keypair,
+	LAMPORTS_PER_SOL,
+  } from "@solana/web3.js";
 
 export interface ISolanaFunctions {
 	signMessage: (message: Uint8Array) => Promise<Uint8Array>;
 	sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>;
+	signTransaction: <T extends Transaction | VersionedTransaction>(transaction: T) => Promise<T>;
+	signAllTransactions: <T extends Transaction | VersionedTransaction>(transactions: T[]) => Promise<T[]>;
+	connection: Connection;
 }
+
+
+if (!process.env.NEXT_PUBLIC_DECIMALS || !process.env.NEXT_PUBLIC_TOKEN_SUPPLY || !process.env.NEXT_PUBLIC_VIRTUAL_RESERVES) {
+	throw new Error("Environment variables NEXT_PUBLIC_DECIMALS, NEXT_PUBLIC_TOKEN_SUPPLY, and NEXT_PUBLIC_VIRTUAL_RESERVES must be set.");
+}
+
+export type CreateTokenResponse = {
+	mintPublicKey: PublicKey;
+	userPublicKey: PublicKey;
+	signature: string;
+};
 
 export class SolanaWallet extends WalletClass {
 	private _solanaFunctions: ISolanaFunctions;
 	public readonly address: SolanaAddressLike;
 	public readonly chain: SolanaNetworkIds;
+	private program: Program<Autofun>;
 
 	constructor(address: SolanaAddressLike, chain: SolanaNetworkIds, functions: ISolanaFunctions) {
 		super();
 		this.address = address;
 		this.chain = chain;
 		this._solanaFunctions = functions;
+		this._createProgram();
 		console.log(`SolanaWallet instance created for address: ${address}, chain: ${chain}`);
+	}
+
+	async _createProgram(): Promise<void> {
+		if (!this.program) {
+			try {
+				const provider = new AnchorProvider(
+					this._solanaFunctions.connection,
+					{
+						publicKey: new PublicKey(this.address),
+						signTransaction: this._solanaFunctions.signTransaction,
+						signAllTransactions: this._solanaFunctions.signAllTransactions,
+					},
+					AnchorProvider.defaultOptions(),
+				);
+				this.program = new Program<Autofun>(IDL, provider);
+				console.log("SolanaWallet: Program created successfully.");
+			} catch (error) {
+				console.error("SolanaWallet: Error creating program:", error);
+				throw error;
+			}
+		}
 	}
 
 	async sendTransaction(transaction: Transaction | VersionedTransaction): Promise<string> {
@@ -48,6 +96,166 @@ export class SolanaWallet extends WalletClass {
 	}
 
 	async getNativeBalance(): Promise<number> {
-		throw new Error("Method not implemented.");
+		try {
+			const balance = await this._solanaFunctions.connection.getBalance(new PublicKey(this.address));
+			console.log(`SolanaWallet: Native balance for ${this.address} is ${balance} lamports.`);
+			return balance / 1e9;
+		} catch (error) {
+			console.error("SolanaWallet: Error getting native balance:", error);
+			throw error;
+		}
+	}
+	
+	private launchAndSwapTx = async (
+		creator: PublicKey,
+		decimals: number,
+		tokenSupply: number,
+		virtualLamportReserves: number,
+		name: string,
+		symbol: string,
+		uri: string,
+		swapAmount: number,
+		slippageBps: number = 100,
+		connection: Connection,
+		program: Program<Autofun>,
+		mintKeypair: Keypair,
+		configAccount: {
+		  teamWallet: PublicKey;
+		  initBondingCurve: number;
+		},
+	  ) => {
+		// Calculate deadline
+		const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
+	  
+		// Calculate minimum receive amount based on bonding curve formula
+		// This is an estimate and should be calculated more precisely based on the bonding curve
+		const initBondingCurvePercentage = configAccount.initBondingCurve;
+		const initBondingCurveAmount =
+		  (tokenSupply * initBondingCurvePercentage) / 100;
+	  
+		// Calculate expected output using constant product formula: dy = (y * dx) / (x + dx)
+		// where x = reserveToken, y = reserveLamport, dx = swapAmount
+		const numerator = virtualLamportReserves * swapAmount;
+		const denominator = initBondingCurveAmount + swapAmount;
+		const expectedOutput = Math.floor(numerator / denominator);
+	  
+		// Apply slippage to expected output
+		const minOutput = Math.floor(
+		  (expectedOutput * (10000 - slippageBps)) / 10000,
+		);
+	  
+		const tx = await program.methods
+		  .launchAndSwap(
+			decimals,
+			new BN(tokenSupply),
+			new BN(virtualLamportReserves),
+			name,
+			symbol,
+			uri,
+			new BN(swapAmount),
+			new BN(minOutput),
+			new BN(deadline),
+		  )
+		  .accounts({
+			teamWallet: configAccount.teamWallet,
+			creator: creator,
+			token: mintKeypair.publicKey,
+		  })
+		  .transaction();
+	  
+		tx.feePayer = creator;
+		tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+	  
+		return tx;
+	  };
+
+	public override async createToken(tokenData: TokenMetadata): Promise<CreateTokenResponse> {
+		console.log("SolanaWallet: Creating token with data:", tokenData);
+		console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+		console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
+		console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
+		const [configPda] = PublicKey.findProgramAddressSync(
+			[Buffer.from(SEED_CONFIG)],
+			this.program.programId,
+		  );
+	
+		  const configAccount = await this.program.account.config.fetch(configPda);
+	
+		  const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+			units: 300000,
+		  });
+	
+		  const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+			microLamports: 50000,
+		  });
+	
+		  const tx =
+			tokenData.buyAmount > 0
+			  ? await this.launchAndSwapTx(
+				  new PublicKey(this.address),
+				  Number(process.env.NEXT_PUBLIC_DECIMALS),
+				  Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
+				  Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES),
+				  tokenData.name,
+				  tokenData.symbol,
+				  "https://google.com",
+				  tokenData.buyAmount * LAMPORTS_PER_SOL,
+				  100,
+				  this._solanaFunctions.connection,
+				  this.program,
+				  tokenData.mintKeyPair,
+				  configAccount,
+				)
+			  : await this.program.methods
+				  .launch(
+					Number(process.env.NEXT_PUBLIC_DECIMALS),
+					new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
+					new BN(Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES)),
+					tokenData.name,
+					tokenData.symbol,
+					"https://google.com",
+				  )
+				  .accounts({
+					creator: new PublicKey(this.address),
+					token: tokenData.mintKeyPair.publicKey,
+					teamWallet: configAccount.teamWallet,
+				  })
+				  .transaction();
+	
+		  tx.instructions = [
+			modifyComputeUnits,
+			addPriorityFee,
+			...tx.instructions,
+		  ];
+	
+		  tx.feePayer = new PublicKey(this.address);
+		  const { blockhash, lastValidBlockHeight } =
+			await this._solanaFunctions.connection.getLatestBlockhash();
+		  tx.recentBlockhash = blockhash;
+	
+		  // Sign the transaction with the mint keypair
+		  tx.sign(tokenData.mintKeyPair);
+	
+		  // Request the user's signature via Phantom
+		  const signedTx = await this._solanaFunctions.signTransaction(tx);
+		  const txId = await this._solanaFunctions.connection.sendRawTransaction(signedTx.serialize(), {
+			preflightCommitment: "confirmed",
+			maxRetries: 5,
+		  });
+	
+		  await this._solanaFunctions.connection.confirmTransaction(
+			{
+			  signature: txId,
+			  blockhash,
+			  lastValidBlockHeight,
+			},
+			"confirmed",
+		  );
+	
+		  return {
+			mintPublicKey: tokenData.mintKeyPair.publicKey,
+			userPublicKey: new PublicKey(this.address),
+			signature: txId,
+		  };
 	}
 }

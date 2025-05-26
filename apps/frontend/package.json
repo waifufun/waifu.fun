@@ -15,6 +15,7 @@
 	"dependencies": {
 		"@autofun/constants": "workspace:*",
 		"@bprogress/next": "^3.2.12",
+		"@coral-xyz/anchor": "^0.31.1",
 		"@next/third-parties": "^15.3.2",
 		"@noble/ed25519": "^2.2.3",
 		"@noble/hashes": "^1.8.0",

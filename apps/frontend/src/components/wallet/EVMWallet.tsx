@@ -65,4 +65,8 @@ export class EVMWallet extends WalletClass {
 	async getNativeBalance(): Promise<number> {
 		throw new Error("Method not implemented.");
 	}
+
+	async createToken(): Promise<void> {
+		throw new Error("Method not implemented.");
+	}
 }

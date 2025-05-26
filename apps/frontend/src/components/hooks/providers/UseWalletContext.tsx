@@ -10,7 +10,7 @@ import {
 	SolanaNetworkIds,
 } from "@autofun/types";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import type { Transaction, VersionedTransaction } from "@solana/web3.js";
+import { Transaction, type VersionedTransaction } from "@solana/web3.js";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { useSignMessage, useSendTransaction, useSwitchChain, useDisconnect } from "wagmi";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -41,6 +41,9 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		disconnecting,
 		connected,
 		signMessage,
+		signTransaction: signSolanaTransaction,
+		signAllTransactions: signSolanaAllTransactions,
+
 		sendTransaction: sendTransactionSolana,
 		disconnect: disconnectSol,
 	} = useWallet();
@@ -100,7 +103,8 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 				const wallets = await getWallets();
 				console.log("remoteWallets", wallets);
 				return wallets;
-			} catch (e: unknown) {
+			// biome-ignore lint/suspicious/noExplicitAny: need for flexibility of errors
+			} catch (e: any) {
 				toast.error(`Error fetching remote wallets: ${e?.message}`);
 				throw e;
 			}
@@ -149,7 +153,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 	};
 
 	useEffect(() => {
-		if (publicKey && connected && !disconnecting && signMessage && sendTransactionSolana) {
+		if (publicKey && connected && !disconnecting && signMessage && sendTransactionSolana && signSolanaTransaction && signSolanaAllTransactions) {
 			const solanaAddress = publicKey.toBase58() as SolanaAddressLike;
 			const walletAdapterFunctions: ISolanaFunctions = {
 				signMessage: async (message: Uint8Array) => {
@@ -158,6 +162,15 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 				sendTransaction: async (transaction: Transaction | VersionedTransaction) => {
 					const signature = await sendTransactionSolana(transaction, connection);
 					return signature;
+				},
+				connection: connection,
+				signTransaction: async <T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> => {
+					const signedTransaction = await signSolanaTransaction(transaction);
+					return signedTransaction as T;
+				},
+				signAllTransactions: async <T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> => {
+					const signedTransactions = await signSolanaAllTransactions(transactions);
+					return signedTransactions as T[];
 				},
 			};
 
