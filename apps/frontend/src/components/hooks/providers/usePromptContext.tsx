@@ -6,6 +6,7 @@ import UseTokenImages from "../hook/UseTokenImages";
 import { useMutation } from "@tanstack/react-query";
 import { generateImage, generateMetadata } from "@/lib/api";
 import { useForm, type UseFormHandleSubmit, type UseFormRegister, type FormState, type RegisterOptions } from "react-hook-form";
+import { Keypair } from "@solana/web3.js";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -18,7 +19,7 @@ type PromptContextType = {
   registerForm: UseFormRegister<TokenFormData>
   handleSubmit: UseFormHandleSubmit<TokenFormData>
   formState: FormState<TokenFormData>;
-  address: string;
+  mintKeyPair: Keypair | null;
   generateAddress: (suffix: string) => void;
   isGeneratingAddress: boolean;
   isGeneratingImage: boolean;
@@ -27,6 +28,8 @@ type PromptContextType = {
   previousImages: string[];
   uploadedImage: string | undefined;
   setUploadedImage: (image: string | undefined) => void;
+  watchValue: (name: string) => string | number | undefined;
+  getTokenData: () => TokenMetadata;
 };
 
 export type TokenFormData = {
@@ -38,12 +41,21 @@ export type TokenFormData = {
   buyAmount: number;
 }
 
+export type TokenMetadata = {
+  name: string;
+  symbol: string;
+  description: string;
+  image: string;
+  mintKeyPair: Keypair;
+  buyAmount: number;
+}
+
 export type TokenFormOptions = keyof TokenFormData;
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
 
 export const PromptProvider = ({ children }: { children: ReactNode }) => {
-  const {register, handleSubmit, formState, setValue} = useForm<TokenFormData>({
+  const {register, handleSubmit, formState, setValue, watch} = useForm<TokenFormData>({
     defaultValues: {
       prompt: "",
       name: "",
@@ -54,10 +66,10 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     },
     mode: "onChange"
   });
-  const [address, setAddress] = useState<string>("");
+  const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
   const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
   const {previousImages, changeMainImage, addImage} = UseTokenImages();
-  const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(true);
+  const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
 
   const workerRefs = useRef<Worker[]>([]);
@@ -71,11 +83,10 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     onSuccess: (data) => {
       setValue("prompt", data?.metadata?.prompt || "", { shouldValidate: true, shouldDirty: true });
       setValue("name", data?.metadata?.name || "", { shouldValidate: true, shouldDirty: true });
-      setValue("ticker", data?.metadata?.ticker || "", { shouldValidate: true, shouldDirty: true });
+      setValue("ticker", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
       setValue("description", data?.metadata?.description || "", { shouldValidate: true, shouldDirty: true });
       setValue("symbol", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
 
-      setIsGeneratingImage(true);
       generateImageMutation.mutate({
         prompt: data?.metadata?.prompt,
         width: 512,
@@ -119,7 +130,6 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 
   const initializeAndStartWorkers = useCallback((suffix: string) => {
     if (typeof Worker === 'undefined') {
-        setAddress("Worker feature not supported.");
         setIsGeneratingAddress(false);
         return;
     }
@@ -138,14 +148,14 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        const { type, address: generatedAddress, error, success } = event.data;
+        const { type, keypair, error, success } = event.data;
 
         switch (type) {
           case "progress":
-            setAddress(generatedAddress);
+            setMintKeyPair(Keypair.fromSeed(new Uint8Array(keypair.privateKey)));
             break;
           case "done":
-            setAddress(generatedAddress);
+            setMintKeyPair(Keypair.fromSeed(new Uint8Array(keypair.privateKey)));
             setIsGeneratingAddress(false);
             activeSuffixRef.current = "";
             workerRefs.current.forEach(w => {
@@ -158,7 +168,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
           case "error":
             if (workerRefs.current.includes(worker)) {
                 setIsGeneratingAddress(false);
-                setAddress("Error generating address");
+                setMintKeyPair(null);
                 activeSuffixRef.current = "";
                 terminateWorkers();
             }
@@ -167,7 +177,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
             if (success === false) {
                  if (workerRefs.current.includes(worker)) {
                     setIsGeneratingAddress(false);
-                    setAddress("Error generating address (fallback)");
+                    setMintKeyPair(null);
                     activeSuffixRef.current = "";
                     terminateWorkers();
                  }
@@ -179,7 +189,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
       worker.onerror = (errorEvent) => {
         if (isGeneratingAddressRef.current && activeSuffixRef.current === suffix && workerRefs.current.includes(worker)) {
           setIsGeneratingAddress(false);
-          setAddress("Worker script error");
+          setMintKeyPair(null);
           activeSuffixRef.current = "";
           terminateWorkers();
         }
@@ -199,7 +209,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const generateAddress = useCallback((newSuffix: string) => {
     if (!newSuffix || newSuffix.trim() === "") {
       toast.error("Please enter a suffix to generate an address.");
-      setAddress("");
+      setMintKeyPair(null);
       if (isGeneratingAddressRef.current) {
         setIsGeneratingAddress(false);
       }
@@ -225,16 +235,33 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setIsGeneratingAddress(true);
-    setAddress("Initializing workers and generating...");
+    setMintKeyPair(null);
 
     initializeAndStartWorkers(newSuffix);
 
   }, [initializeAndStartWorkers, terminateWorkers]);
 
   const generateToken = (prompt?: string) => {
+    setIsGeneratingImage(true);
     metadataMutation.mutate(prompt);
   }
 
+  const getTokenData = (): TokenMetadata => {
+    const name = watch("name") || "Untitled Token";
+    const symbol = watch("symbol") || "";
+    const description = watch("description") || "No description provided.";
+    const image = uploadedImage || DEFAULT_MAIN_IMAGE;
+    const mintKeyPairr = mintKeyPair || Keypair.generate();
+    const buyAmount = watch("buyAmount") || 0;
+    return {
+      name,
+      symbol,
+      description,
+      image,
+      mintKeyPair: mintKeyPairr,
+      buyAmount,
+    };
+  }
   useEffect(() => {
     generateAddress(INITIAL_GENERATION_SUFFIX);
   }, []);
@@ -244,7 +271,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
       terminateWorkers();
       if (isGeneratingAddressRef.current) {
         setIsGeneratingAddress(false);
-        setAddress("");
+        setMintKeyPair(null);
       }
     };
   }, [terminateWorkers]);
@@ -254,7 +281,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     registerForm: register,
     handleSubmit,
     formState,
-    address,
+    mintKeyPair,
     generateAddress,
     isGeneratingAddress: isGeneratingAddressState,
     isGeneratingImage,
@@ -262,7 +289,9 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     changeMainImage,
     previousImages,
     uploadedImage,
+    watchValue: watch,
     setUploadedImage,
+    getTokenData,
   };
 
   return (
@@ -297,6 +326,5 @@ export const tickerValidation: RegisterOptions<TokenFormData, "ticker"> = {
 export const descriptionValidation: RegisterOptions<TokenFormData, "description"> = {
     required: "Description is required",
     minLength: { value: 10, message: "Description must be at least 10 characters long" },
-    maxLength: { value: 200, message: "Description must be at most 200 characters long" },
-    pattern: { value: /^[a-zA-Z0-9.,'!?" ]*$/, message: "Description can only contain letters, numbers, and basic punctuation" },
+    maxLength: { value: 200, message: "Description must be at most 1000 characters long" },
 };

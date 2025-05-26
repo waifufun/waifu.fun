@@ -8,10 +8,10 @@ import { Info, Wallet } from "lucide-react";
 import TokenInfo from "@/components/create-token-page/token-info";
 
 const PromptComponent = () => {
-    const { prompt, setPrompt, generateToken } = usePrompt();
-    const textareaRef = useRef(null as any);
+    const { registerForm, generateToken, watchValue } = usePrompt();
     const [rows, setRows] = useState(3);
     const MAX_ROWS = 5;
+
 
     return (
         <div className="flex gap-4 bg-[#3333331A] px-4 items-center rounded-lg"
@@ -19,11 +19,9 @@ const PromptComponent = () => {
             background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
         }}>
             <textarea
-                ref={textareaRef}
                 className="w-full rounded-lg py-3 resize-none overflow-aut focus:outline-none"
                 placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                {...registerForm("prompt")}
                 rows={rows}
                 style={{
                     minHeight: '4.5rem',
@@ -35,7 +33,11 @@ const PromptComponent = () => {
             }}
             className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
             onClick={() => {
-                generateToken(prompt.length > 0 && prompt || undefined)
+                if (!prompt) {
+                    generateToken();
+                } else {
+                    generateToken(prompt.toString().length > 0 ? prompt.toString() : "")
+                }
             }}
             >
                 <p>Create</p>
@@ -132,7 +134,7 @@ export default function CreateTokenPage() {
                             <PromptComponent/>
                             <div className="flex flex-col lg:flex-row w-full gap-10 py-8">
                                 <GeneratedImages/>
-                                <TokenInfo/>
+                                <TokenInfo type="auto"/>
                             </div>
                         </div>
                     </div>

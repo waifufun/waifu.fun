@@ -11,6 +11,7 @@ import {
 import { Info, Wallet } from "lucide-react";
 import { form } from "viem/chains";
 import { toast } from "sonner";
+import { useWallets } from "../hooks/providers/UseWalletContext";
 
 const TokenInfoInput = <K extends TokenFormOptions>({
     title,
@@ -47,7 +48,7 @@ const TokenInfoInput = <K extends TokenFormOptions>({
 
 const GenerateAddress = () => {
     const [suffix, setSuffix] = useState<string>("FUN");
-    const { generateAddress, address, isGeneratingAddress } = usePrompt();
+    const { generateAddress, mintKeyPair, isGeneratingAddress } = usePrompt();
 
     return (
         <div className="mt-4">
@@ -65,19 +66,21 @@ const GenerateAddress = () => {
                         style={{
                              background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)"
                         }}
-                        disabled={isGeneratingAddress}
                     />
                     <button
-                        onClick={() => generateAddress(suffix)}
+                        onClick={(e) => {
+                            generateAddress(suffix)
+                            e.preventDefault();
+                        }}
+                        
                         className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isGeneratingAddress}
                     >
                         <p>{isGeneratingAddress ? "GENERATING..." : "GENERATE"}</p>
                     </button>
                 </div>
             </div>
             <p className="text-[#03FF24] text-sm md:text-md xl:text-lg py-3 break-all min-h-[1em]">
-                {address}
+                {mintKeyPair ? mintKeyPair.publicKey.toString() : "GENERATING..."}
             </p>
             <div className="flex items-center gap-2">
                 <Info size={14} color="#8C8C8C"/>
@@ -136,7 +139,9 @@ const ChoosePool = () => {
         { name: "Raydium", value: "raydium", image: "/pools/raydium.svg" }
     ];
     const [pool, setPool] = useState("meteora");
-    const {formState} = usePrompt();
+    const {formState, isGeneratingAddress, isGeneratingImage} = usePrompt();
+
+    const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage;
 
     return (
         <div className="flex flex-col gap-4 xl:flex-row xl:justify-between w-full xl:items-center mt-6">
@@ -162,10 +167,10 @@ const ChoosePool = () => {
             </div>
             <button
                 type="submit"
-                disabled={!formState.isValid}
+                disabled={shouldDisable}
                 style={{
-                    cursor: formState.isValid ? "pointer" : "not-allowed",    
-                    background: formState.isValid ? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)" : "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)"
+                    cursor: !shouldDisable ? "pointer" : "not-allowed",    
+                    background: !shouldDisable ? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)" : "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)"
 
                 }}
                 className="px-6 py-3 rounded-lg min-w-[120px]"
@@ -178,7 +183,8 @@ const ChoosePool = () => {
 
 const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
 
-    const {handleSubmit, formState, uploadedImage } = usePrompt();
+    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData } = usePrompt();
+    const {solanaWallets} = useWallets();
 
     const handleSubmitManual = () => {
         if (!uploadedImage) {
@@ -186,19 +192,42 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
             return;
         }
     }
+
+    const handleAutoSubmit = async () => {
+        const tokenData = getTokenData();
+        const tx = await solanaWallets?.Devnet.createToken(tokenData);
+        
+    }
     
 
     
 
-    const onSubmit = (data: TokenFormData) => {
+    const onSubmit = async (data: TokenFormData) => {
+
+        if (!solanaWallets?.Devnet) {
+            toast.error("Please connect your Solana wallet.");
+            return;
+        }
+
         if (!formState.isValid) {
             toast.error("Please fill in all required fields.");
             return;
         }
 
+        if (isGeneratingAddress) {
+            toast.error("Please wait for the address to be generated.");
+            return;
+        }
+
+        if (isGeneratingImage) {
+            toast.error("Please wait for the image to be generated.");
+            return;
+        }
+
         switch (type) {
             case "auto":
-                throw new Error("Auto generation is not implemented yet.");
+                // throw new Error("Auto generation is not implemented yet.");
+                await handleAutoSubmit();
                 break;
             case "manual":
                 handleSubmitManual();
