@@ -1,4 +1,4 @@
-import type { AddressLike, IToken, ITokenLookUp, TChain, } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 
 const BASE_URL = "http://localhost:3001";
 

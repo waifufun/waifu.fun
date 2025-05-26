@@ -31,8 +31,31 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Reply: { tokens: IToken[] };
 	}>("/", async (request) => {
-		const queryParams = request.body as { chain: TChain; chainId: TChainId; page: number };
+		const queryParams = request.body as {
+			chain: TChain;
+			chainId: TChainId;
+			page: number;
+			sort: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
+		};
+
 		const page = queryParams?.page || 1;
+
+		let sortQuery = undefined;
+
+		switch (queryParams.sort) {
+			case "new":
+				sortQuery = "-createdAt";
+				break;
+			case "trending":
+				sortQuery = "-volume24h";
+				break;
+			case "featured":
+				sortQuery = "-featured";
+				break;
+			case "marketcap":
+				sortQuery = "-marketcap";
+				break;
+		}
 
 		let chain = null;
 		let chainId = null;
@@ -66,6 +89,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			limit: 50,
 			select: "-__v",
 			leanWithId: false,
+			sort: sortQuery,
 		};
 
 		const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
