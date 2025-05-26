@@ -55,7 +55,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 	const nonceMutation = useMutation({
 		mutationKey: ["generateNonce"],
 		mutationFn: generateNonce,
-		onSuccess: async (result: any) => {},
+		onSuccess: async () => {},
 		onError: (e) => {
 			toast.error(`Error: ${e.message}`);
 		},
@@ -148,6 +148,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		}
 	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Jitters will resolve
 	useEffect(() => {
 		if (publicKey && connected && !disconnecting && signMessage && sendTransactionSolana) {
 			const solanaAddress = publicKey.toBase58() as SolanaAddressLike;
@@ -178,6 +179,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		}
 	}, [publicKey, connected, disconnecting, signMessage, sendTransactionSolana]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Jitters will resolve
 	useEffect(() => {
 		if (address && isConnected) {
 			const functions: IEVMFunctions = {
