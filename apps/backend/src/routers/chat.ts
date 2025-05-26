@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
 import type { AddressLike, TChain, TChainId, TChatRooms } from "@autofun/types";
 import { isChainIdAllowedForChain } from "@autofun/utils";
+import { uploadBase64Image } from "@autofun/s3-uploader";
+import { randomUUID } from "node:crypto";
 
 export default async function chatRoutes(fastify: FastifyInstance) {
 	fastify.post("/history", async (request) => {
@@ -35,6 +37,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 			contractAddress: AddressLike;
 			chain: TChain;
 			chainId: TChainId;
+			attachment: Base64URLString;
 		};
 
 		if (!body?.message || !body?.room || !body?.contractAddress) {
@@ -44,11 +47,18 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 		const allowedChain = isChainIdAllowedForChain(body.chain, body.chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 
+		let image = undefined;
+
+		if (body.attachment) {
+			image = await uploadBase64Image(body.attachment, randomUUID(), "chat", 500, 500);
+		}
+
 		await DB.ChatMessage.create([
 			{
 				contractAddress: body.contractAddress,
 				message: body.message,
 				room: body?.room,
+				image,
 			},
 		]);
 

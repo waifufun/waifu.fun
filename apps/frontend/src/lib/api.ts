@@ -2,7 +2,11 @@ import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 
 const BASE_URL = "http://localhost:3001";
 
-export const fetcher = async (endpoint: string, method: "GET" | "POST" | "PUT" | "DELETE", body?: object) => {
+export const fetcher = async (
+	endpoint: string,
+	method: "GET" | "POST" | "PUT" | "DELETE",
+	body?: object | undefined,
+) => {
 	try {
 		const response = await fetch(`${BASE_URL}${endpoint}`, {
 			method,
@@ -10,7 +14,7 @@ export const fetcher = async (endpoint: string, method: "GET" | "POST" | "PUT" |
 				"Content-Type": "application/json",
 				Accept: "application/json",
 			},
-			body: body ? JSON.stringify(body) : undefined,
+			body: body ? JSON.stringify(body) : null,
 			credentials: "include",
 		});
 
@@ -20,9 +24,8 @@ export const fetcher = async (endpoint: string, method: "GET" | "POST" | "PUT" |
 				throw new Error("Authentication required. Please sign in to access this data.");
 			}
 
-			const errorText = await response.text();
-			console.error(`API Error (${response.status}): ${errorText}`);
-			throw new Error(`${response.statusText}: ${errorText}`);
+			const errorText = (await response.json()) as { message?: string };
+			throw new Error(errorText?.message);
 		}
 
 		const result = await response.json();
@@ -74,9 +77,10 @@ export const getChatHistory = async ({ room, contractAddress, chain, chainId }) 
 	});
 };
 
-export const sendChatMessage = async ({ message, chain, chainId, room, contractAddress }) => {
+export const sendChatMessage = async ({ message, chain, chainId, room, contractAddress, attachment }) => {
 	return await fetcher("/chat/message", "POST", {
 		message,
+		attachment,
 		chain,
 		chainId,
 		room,
