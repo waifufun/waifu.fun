@@ -13,10 +13,19 @@ export default function Header() {
 
 	return (
 		<div className="flex items-center gap-4 justify-between h-[68px]">
-			<Link href="/">
-				<Image src="/logo_wide.png" height={44} width={88} className="h-11 w-auto rounded-lg" unoptimized alt="logo" />
-			</Link>
-			<Input placeholder="Search..." className="w-[430px] h-11 hidden md:inline-block" />
+			<div className="flex items-center gap-4">
+				<Link href="/">
+					<Image
+						src="/logo_wide.png"
+						height={44}
+						width={88}
+						className="h-11 w-auto rounded-lg"
+						unoptimized
+						alt="logo"
+					/>
+				</Link>
+				<Input placeholder="Search..." className="w-[430px] h-11 hidden md:inline-block" />
+			</div>
 			<div className="flex items-center gap-2.5">
 				<div className="hidden md:flex gap-2.5">
 					<Settings />
