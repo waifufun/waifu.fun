@@ -189,21 +189,34 @@ export class SolanaRpcProvider {
 		if (SolanaRpcProvider.currentRpc && SolanaRpcProvider.currentRpc.networkId === networkId) {
 			return SolanaRpcProvider.currentRpc;
 		}
+	
 		const rpcList = SOLANA_RPC_URLS?.[networkId];
-		if (!rpcList) {
+		if (!rpcList || rpcList.length === 0) {
 			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
-		const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
-		try {
-			const connection = new Connection(rpc, "confirmed");
-			await connection.getVersion(); // test if connection works
-			SolanaRpcProvider.currentRpc = new SolanaRpcProvider(connection, rpc, networkId);
-			return SolanaRpcProvider.currentRpc;
-		} catch (error) {
-			SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
-			throw new Error(`Failed to connect to current RPC: ${rpc}`);
+	
+		let attempts = 0;
+		const maxAttempts = rpcList.length;
+	
+		while (attempts < maxAttempts) {
+			const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
+			try {
+				const connection = new Connection(rpc, "confirmed");
+				await connection.getVersion(); // test connection
+				const provider = new SolanaRpcProvider(connection, rpc, networkId);
+				SolanaRpcProvider.currentRpc = provider;
+				return provider;
+			} catch (error) {
+				console.warn(`Failed RPC: ${rpc}. Trying next...`);
+				SolanaRpcProvider.currentRpcIndex =
+					(SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+				attempts++;
+			}
 		}
+	
+		throw new Error("All RPC endpoints failed. Cannot connect to Solana.");
 	}
+	
 
 	getTokenMetadata = withFallBack(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
