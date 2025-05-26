@@ -19,7 +19,6 @@ import {
 	populateTokensWithLiveData,
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
-import { getAddress } from "viem";
 import { uploadImageFromUrl } from "@autofun/s3-uploader";
 import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
 import redis from "@autofun/redis";

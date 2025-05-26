@@ -112,8 +112,10 @@ export default async function Page({ params, children }: { params: ITokenLookUp;
 						/>
 					</div>
 
-					<TokenTabs token={token} />
-					{children}
+					<div className="flex flex-col">
+						<TokenTabs token={token} />
+						{children}
+					</div>
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
 					<Swap />

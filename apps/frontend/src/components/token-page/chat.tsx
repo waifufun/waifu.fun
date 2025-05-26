@@ -19,17 +19,19 @@ type Inputs = {
 export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
 	return (
-		<div className="flex flex-col items-center w-full my-3 px-4">
-			<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value as TChatRooms)}>
-				<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">
-					{["1000", "100000", "1000000"].map((r) => (
-						<TabsTrigger value={String(r)} className="text-base mt-[1px]" key={r}>
-							{abbreviateNumber(Number(r), true)}+
-						</TabsTrigger>
-					))}
-				</TabsList>
-			</Tabs>
-			<ChatWindow room={room} contractAddress={token.contractAddress} />
+		<div className="bg-[#0c0c0c] rounded-b-xl">
+			<div className="flex flex-col items-center w-full my-3 px-4">
+				<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value as TChatRooms)}>
+					<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">
+						{["1000", "100000", "1000000"].map((r) => (
+							<TabsTrigger value={String(r)} className="text-base mt-[1px]" key={r}>
+								{abbreviateNumber(Number(r), true)}+
+							</TabsTrigger>
+						))}
+					</TabsList>
+				</Tabs>
+				<ChatWindow room={room} contractAddress={token.contractAddress} />
+			</div>
 		</div>
 	);
 }
@@ -86,9 +88,9 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 	};
 
 	return (
-		<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] relative">
+		<div className="flex flex-col gap-2 w-full relative">
 			<div className="h-14 w-full absolute top-0 left-0 bg-gradient-to-b from-[#111111] via-[#111111]/80 to-[#111111]/10" />
-			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D]">
+			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] rounded-b-xl">
 				<div className="h-[50vh] w-full p-4 overflow-y-scroll flex flex-col-reverse gap-4" ref={ref}>
 					{query?.data?.map((message: IChatMessage) => (
 						<ChatItem key={String(message._id)} message={message} />

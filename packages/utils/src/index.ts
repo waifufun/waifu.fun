@@ -90,14 +90,14 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
 export function getChecksummedAddress(address: AddressLike, chain: "evm"): Address;
 export function getChecksummedAddress(address: AddressLike, chain: "solana"): SolanaAddressLike;
 export function getChecksummedAddress(address: AddressLike, chain: TChain): Address | string {
-    if (chain === "evm") {
-        return getAddress(address);
-    }
-    if (chain === "solana") {
-        return new PublicKey(address).toBase58();
-    }
+	if (chain === "evm") {
+		return getAddress(address);
+	}
+	if (chain === "solana") {
+		return new PublicKey(address).toBase58();
+	}
 
-    throw new Error("Invalid chain or address passed");
+	throw new Error("Invalid chain or address passed");
 }
 
 /**
