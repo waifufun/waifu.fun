@@ -198,7 +198,7 @@ export class SolanaWallet extends WalletClass {
 				  Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES),
 				  tokenData.name,
 				  tokenData.symbol,
-				  "https://google.com",
+				  tokenData.metadataUrl,
 				  tokenData.buyAmount * LAMPORTS_PER_SOL,
 				  100,
 				  this._solanaFunctions.connection,
@@ -213,7 +213,7 @@ export class SolanaWallet extends WalletClass {
 					new BN(Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES)),
 					tokenData.name,
 					tokenData.symbol,
-					"https://google.com",
+					tokenData.metadataUrl,
 				  )
 				  .accounts({
 					creator: new PublicKey(this.address),

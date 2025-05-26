@@ -12,6 +12,11 @@ import { Info, Wallet } from "lucide-react";
 import { form } from "viem/chains";
 import { toast } from "sonner";
 import { useWallets } from "../hooks/providers/UseWalletContext";
+import { useMutation } from "@tanstack/react-query";
+import { createToken } from "@/lib/api";
+import type { AddressLike } from "@autofun/types";
+
+
 
 const TokenInfoInput = <K extends TokenFormOptions>({
     title,
@@ -138,8 +143,7 @@ const ChoosePool = () => {
         { name: "Meteora", value: "meteora", image: "/pools/meteora.svg" },
         { name: "Raydium", value: "raydium", image: "/pools/raydium.svg" }
     ];
-    const [pool, setPool] = useState("meteora");
-    const {formState, isGeneratingAddress, isGeneratingImage} = usePrompt();
+    const {formState, isGeneratingAddress, isGeneratingImage, pool, setPool} = usePrompt();
 
     const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage;
 
@@ -183,20 +187,56 @@ const ChoosePool = () => {
 
 const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
 
-    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData } = usePrompt();
+    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData, pool, mintKeyPair } = usePrompt();
     const {solanaWallets} = useWallets();
 
-    const handleSubmitManual = () => {
+
+    const createTokenMutation = useMutation({
+        mutationFn: createToken,
+        mutationKey: ["createToken"],
+        onSuccess: (tx) => {
+            console.log("Transaction successful:", tx);
+            toast.success("Token created successfully!");
+        },
+        onError: (error) => {
+            console.error("Error creating token:", error);
+            toast.error(`Error creating token: ${error.message}`);
+        }
+    });
+
+    const handleSubmitManual = async () => {
         if (!uploadedImage) {
             toast.error("Please upload an image.");
             return;
         }
+
+        const tokenData = getTokenData(true);
+
+        console.log("Token Data (manual):", tokenData);
+
+        const tx = await solanaWallets?.Devnet.createToken(tokenData);
+        console.log("Transaction:", tx);
+        createTokenMutation.mutate({
+            contractAddress: mintKeyPair?.publicKey.toString() || "",
+            chain: "solana",
+            chainId: 103,
+            pool: pool,
+            signature: tx?.signature.toString() || ""
+        });
     }
 
     const handleAutoSubmit = async () => {
         const tokenData = getTokenData();
+        console.log("Token Data:", tokenData);
         const tx = await solanaWallets?.Devnet.createToken(tokenData);
-        
+        console.log("Transaction:", tx);
+        createTokenMutation.mutate({
+            contractAddress: mintKeyPair?.publicKey.toString() || "",
+            chain: "solana",
+            chainId: 103,
+            pool: pool,
+            signature: tx?.signature.toString() || ""
+        });
     }
     
 

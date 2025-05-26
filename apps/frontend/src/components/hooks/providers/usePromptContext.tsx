@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import UseTokenImages from "../hook/UseTokenImages";
 import { useMutation } from "@tanstack/react-query";
-import { generateImage, generateMetadata } from "@/lib/api";
+import { generateImage, generateMetadata, generateRemoteMetadata } from "@/lib/api";
 import { useForm, type UseFormHandleSubmit, type UseFormRegister, type FormState, type RegisterOptions } from "react-hook-form";
 import { Keypair } from "@solana/web3.js";
 
@@ -29,7 +29,9 @@ type PromptContextType = {
   uploadedImage: string | undefined;
   setUploadedImage: (image: string | undefined) => void;
   watchValue: (name: string) => string | number | undefined;
-  getTokenData: () => TokenMetadata;
+  getTokenData: (manual?: boolean) => TokenMetadata;
+  setPool: (pool: string) => void;
+  pool: string;
 };
 
 export type TokenFormData = {
@@ -48,6 +50,7 @@ export type TokenMetadata = {
   image: string;
   mintKeyPair: Keypair;
   buyAmount: number;
+  metadataUrl: string;
 }
 
 export type TokenFormOptions = keyof TokenFormData;
@@ -71,6 +74,8 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const {previousImages, changeMainImage, addImage} = UseTokenImages();
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
+  const [pool, setPool] = useState<string>("");
+  
 
   const workerRefs = useRef<Worker[]>([]);
   const activeSuffixRef = useRef<string>("");
@@ -115,6 +120,15 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error generating image:", error);
       toast.error("Error generating image");
       setIsGeneratingImage(false);
+    }
+  });
+
+  const remoteMetadataMutation = useMutation({
+    mutationKey: ["remoteGenerateMetadata"],
+    mutationFn: generateRemoteMetadata,
+    onError: (error) => {
+      console.error("Error generating remote metadata:", error);
+      toast.error("Error generating remote metadata");
     }
   });
 
@@ -246,22 +260,44 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     metadataMutation.mutate(prompt);
   }
 
-  const getTokenData = (): TokenMetadata => {
+  const getTokenData = (manual: boolean = false): TokenMetadata => {
     const name = watch("name") || "Untitled Token";
     const symbol = watch("symbol") || "";
     const description = watch("description") || "No description provided.";
-    const image = uploadedImage || DEFAULT_MAIN_IMAGE;
     const mintKeyPairr = mintKeyPair || Keypair.generate();
     const buyAmount = watch("buyAmount") || 0;
+
+    remoteMetadataMutation.mutate({
+      imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
+      image: manual ? uploadedImage : previousImages[0],
+      metadata: {
+        name,
+        description,
+        symbol,
+      },
+      manual
+    });
+
+    const metadataUrl = remoteMetadataMutation.data?.metadataUrl || "";
+
+    if (!metadataUrl) {
+      toast.error("Failed to generate metadata URL.");
+      throw new Error("Metadata URL generation failed");
+    }
+
+
+
     return {
       name,
       symbol,
       description,
-      image,
+      image: remoteMetadataMutation.data?.imageUrl,
       mintKeyPair: mintKeyPairr,
       buyAmount,
+      metadataUrl,
     };
   }
+
   useEffect(() => {
     generateAddress(INITIAL_GENERATION_SUFFIX);
   }, []);
@@ -292,6 +328,8 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     watchValue: watch,
     setUploadedImage,
     getTokenData,
+    setPool,
+    pool
   };
 
   return (
