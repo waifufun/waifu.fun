@@ -13,11 +13,11 @@ export default function Header() {
 	return (
 		<div className="flex items-center gap-4 justify-between h-[68px]">
 			<div className="flex items-center gap-4">
-				<Link href="/">
+				<Link href="/" className="shrink-0 grow">
 					<Image
-						src="/logo_wide.png"
-						height={44}
-						width={88}
+						src="/logo_wide.svg"
+						height={43.98}
+						width={87.97}
 						className="h-11 w-auto rounded-lg"
 						unoptimized
 						alt="logo"
@@ -26,13 +26,15 @@ export default function Header() {
 				<Input placeholder="Search..." className="w-[430px] h-11 hidden md:inline-block" />
 			</div>
 			<div className="flex items-center gap-2.5">
-				<div className="h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg inline-flex justify-center items-center gap-2">
+				{/* Points */}
+				<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
 					<Trophy size={20} className="text-autofun-background-action-highlight" />
 					<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
 						250
 					</div>
 				</div>
-				<div className="h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg inline-flex justify-center items-center gap-2">
+				{/* Balance */}
+				<div className="hidden lg:inline-flex  h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
 					<Image
 						src="/chain-icons/solana.svg"
 						width={60}
