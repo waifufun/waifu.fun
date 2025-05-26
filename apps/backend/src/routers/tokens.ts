@@ -19,7 +19,7 @@ import {
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { getAddress } from "viem";
-import { uploadImageFromUrl, upload } from "@autofun/s3-uploader";
+import { uploadImageFromUrl, upload, uploadBase64Image } from "@autofun/s3-uploader";
 import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
 import redis from "@autofun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
@@ -122,6 +122,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			contractAddress: AddressLike;
 			chain: TChain;
 			chainId: TChainId;
+			pool: string;
+			signature: string;
 			twitter?: string;
 			telegram?: string;
 			website?: string;
@@ -136,7 +138,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				return reply.code(401).send({ success: false, error: "Authentication required" });
 			}
 
-			const { contractAddress, chain, chainId, twitter, telegram, website, discord, imported } = request.body;
+			const { contractAddress, chain, chainId, twitter, telegram, website, discord, imported, pool, signature } =
+				request.body;
 
 			// Only support Solana for now
 			if (chain !== "solana") {
@@ -226,6 +229,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				liquidity: bondingCurveData.liquidity,
 				curveProgress: bondingCurveData.curveProgress,
 				curveLimit: bondingCurveData.curveLimit,
+				pool,
 			});
 
 			return {
@@ -522,7 +526,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 	fastify.post<{
 		Body: {
-			imageUrl: string;
+			imageUrl?: string;
+			image?: string;
 			metadata: {
 				name: string;
 				symbol: string;
@@ -532,14 +537,16 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				website?: string;
 				discord?: string;
 			};
+			manual?: boolean;
 		};
 		Reply: { success: boolean; imageUrl?: string; metadataUrl?: string; error?: string };
 	}>("/create-metadata", async (request, reply) => {
 		try {
-			const { imageUrl, metadata } = request.body;
+			const { imageUrl, metadata, image, manual } = request.body;
+			const isManual = manual === true;
 
-			if (!imageUrl) {
-				return reply.code(400).send({ success: false, error: "Image URL is required" });
+			if (!imageUrl && !image) {
+				return reply.code(400).send({ success: false, error: "Image URL or image is required" });
 			}
 			if (!metadata?.name || !metadata?.symbol) {
 				return reply.code(400).send({ success: false, error: "Metadata (name, symbol) is required" });
@@ -549,8 +556,30 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const timestamp = Date.now();
 			const imageFilename = `${sanitizedSymbol}_${timestamp}`;
 			const metadataFilename = `${sanitizedSymbol}_${timestamp}_metadata`;
+			let uploadedImageUrl: string | undefined;
 
-			const uploadedImageUrl = await uploadImageFromUrl(imageUrl, imageFilename, "token-images");
+			if (isManual) {
+				if (image) {
+					const base64Result = await uploadBase64Image(image, imageFilename, "token-images");
+					uploadedImageUrl = typeof base64Result === "string" ? base64Result : undefined;
+				} else {
+					return reply.code(400).send({ success: false, error: "Image is required for manual mode" });
+				}
+			} else {
+				if (imageUrl) {
+					const isValidUrl = imageUrl.startsWith("http://") || imageUrl.startsWith("https://");
+					if (!isValidUrl) {
+						return reply.code(400).send({ success: false, error: "Invalid image URL" });
+					}
+					uploadedImageUrl = await uploadImageFromUrl(imageUrl, imageFilename, "token-images");
+				} else {
+					return reply.code(400).send({ success: false, error: "Image URL is required for auto mode" });
+				}
+			}
+
+			if (!uploadedImageUrl) {
+				return reply.code(400).send({ success: false, error: "Failed to upload image" });
+			}
 
 			const finalMetadata = {
 				name: metadata.name,
@@ -576,11 +605,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			const metadataUrl = `${process.env.API_URL}/api/metadata/${metadataFilename}.json`;
 
-			return {
+			return reply.send({
 				success: true,
 				imageUrl: uploadedImageUrl,
 				metadataUrl,
-			};
+			});
 		} catch (error) {
 			console.error("Error in create-metadata endpoint:", error);
 			return reply.code(500).send({
