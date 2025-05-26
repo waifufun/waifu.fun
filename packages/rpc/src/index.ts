@@ -16,7 +16,7 @@ import { Program, AnchorProvider, type Idl } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
-import withFallBack from "../utils/solana-fallback"
+
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -117,12 +117,46 @@ export class EVMRpcProvider {
 	};
 }
 
+
+const RETRYABLE_HTTP_CODES = new Set([429, 503]);
+
+function shouldFallback(error: any): boolean {
+  const status = error?.response?.status || error?.statusCode || error?.code;
+
+  if (typeof status === "number" && RETRYABLE_HTTP_CODES.has(status)) {
+    return true;
+  }
+
+  const msg = error?.message?.toLowerCase() || "";
+  return msg.includes("timeout") || msg.includes("network");
+}
+
+
+ function withFallBack<TArgs extends any[], TResult>(
+  fn: (...args: TArgs) => Promise<TResult>,
+  ctx: SolanaRpcProvider
+): (...args: TArgs) => Promise<TResult> {
+  return async (...args: TArgs) => {
+    try {
+      return await fn.apply(ctx, args);
+    } catch (error) {
+      if (!shouldFallback(error)) {
+        throw error;
+      }
+      const fallback = await SolanaRpcProvider.connect(ctx.networkId);
+      return await fn.apply(fallback, args);
+    }
+  };
+}
+
+
 export class SolanaRpcProvider {
 	public connection;
 	public client;
 	private program;
 	public networkId: SolanaNetworkIds;
 	private static currentRpc: SolanaRpcProvider | null = null;
+	private static currentRpcIndex = 0;
 
 	private constructor(connection: Connection, rpc: string, networkId: SolanaNetworkIds) {
 		this.connection = connection;
@@ -143,26 +177,28 @@ export class SolanaRpcProvider {
 
 	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
 		if (SolanaRpcProvider.currentRpc && SolanaRpcProvider.currentRpc.networkId === networkId) {
-			return SolanaRpcProvider.currentRpc;
+		  return SolanaRpcProvider.currentRpc;
 		}
-
+	  
 		const rpcList = SOLANA_RPC_URLS?.[networkId];
 		if (!rpcList) {
-			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
+		  throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
-
-		for (const rpc of rpcList) {
-			try {
-				const connection = new Connection(rpc, "confirmed");
-				await connection.getVersion(); // test if the connection works
-				SolanaRpcProvider.currentRpc = new SolanaRpcProvider(connection, rpc, networkId);
-				return SolanaRpcProvider.currentRpc;
-			} catch (error) {
-				console.warn(`Failed to connect to RPC: ${rpc}, switching to fallback RPC`, error);
-			}
+	  
+		const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
+	  
+		try {
+		  const connection = new Connection(rpc, "confirmed");
+		  await connection.getVersion(); // test if connection works
+		  SolanaRpcProvider.currentRpc = new SolanaRpcProvider(connection, rpc, networkId);
+		  return SolanaRpcProvider.currentRpc;
+		} catch (error) {
+		  SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+		  throw new Error(`Failed to connect to current RPC: ${rpc}`);
 		}
-		throw new Error(`All RPC endpoints failed for network: ${networkId}`);
-	}
+	  }
+	  
+	
 
 	getTokenMetadata = withFallBack(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
