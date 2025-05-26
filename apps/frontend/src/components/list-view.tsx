@@ -1,17 +1,19 @@
 import type { IToken } from "@autofun/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { abbreviateNumber, fromNow } from "@/lib/utils";
+import { abbreviateNumber, fromNow, shortenAddress } from "@/lib/utils";
 import { formatUnits } from "viem";
 import Progressbar from "./progressbar";
 import { Fragment } from "react";
-import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
+import ChainIndicator from "./chain-indicator";
+import Verified from "./verified";
 
 export default function ListView({ tokens }: { tokens: IToken[] }) {
 	return (
 		<Table>
 			<TableHeader>
 				<TableRow>
-					<TableHead>Coin</TableHead>
+					<TableHead className="w-0">Coin</TableHead>
 					<TableHead className="text-center">Mcap</TableHead>
 					<TableHead className="text-center">24h Volume</TableHead>
 					<TableHead className="text-center">Holders</TableHead>
@@ -23,7 +25,34 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 			<TableBody>
 				{tokens.map((token: IToken) => (
 					<TableRow key={token.contractAddress} className="group">
-						<TableCell className="text-autofun-text-secondary font-medium">{token.name}</TableCell>
+						<TableCell className="text-autofun-text-secondary font-medium">
+							<div className="flex items-center gap-3">
+								{/* Image */}
+								<Image
+									src={token.image}
+									width={60}
+									height={60}
+									unoptimized
+									alt="token_image"
+									className="size-[60px] rounded-lg"
+								/>
+								{/* Token Name */}
+								<div className="flex flex-col gap-2.5">
+									{/* Name */}
+									<div className="flex items-center gap-1.5">
+										<ChainIndicator chain={token.chain} chainId={token.chainId} />
+										<span className="text-white text-xl font-medium font-satoshi uppercase">{token.name}</span>
+										<span className="text-lg font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
+										<Verified isVerified={token?.verified} />
+									</div>
+									<div className="flex items-center gap-1.5">
+										<span className="text-autofun-text-secondary text-base font-medium font-['Satoshi'] leading-snug">
+											{shortenAddress(token.contractAddress)}
+										</span>
+									</div>
+								</div>
+							</div>
+						</TableCell>
 						<TableCell className="text-center">
 							<span className=" text-autofun-background-action-highlight text-base font-medium font-satoshi leading-none">
 								{abbreviateNumber(token.marketcap)}
@@ -55,17 +84,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 								</Fragment>
 							)}
 						</TableCell>
-						<TableCell className="text-right">
-							<div className="flex items-center gap-6">
-								{token?.createdAt ? fromNow(token?.createdAt, true) : "-"}
-								<div className="items-center gap-6 hidden group-hover:flex">
-									<div className="h-12 w-[1px] bg-[#1e1e1e]" />
-									<div className="">
-										<ArrowUpRight />
-									</div>
-								</div>
-							</div>
-						</TableCell>
+						<TableCell className="text-right">{token?.createdAt ? fromNow(token?.createdAt, true) : "-"}</TableCell>
 					</TableRow>
 				))}
 			</TableBody>

@@ -49,27 +49,29 @@ export default async function Home({
 				className="mx-auto w-full select-none"
 			/>
 			<ChainSelector />
-			<div className="flex items-center w-full gap-4">
-				<Tabs defaultValue="new" className="w-full">
-					<TabsList className="grid w-full grid-cols-5">
-						<TabsTrigger value="new">New</TabsTrigger>
-						<TabsTrigger value="trending">Trending</TabsTrigger>
-						<TabsTrigger value="featured">Featured</TabsTrigger>
-						<TabsTrigger value="marketcap">Marketcap</TabsTrigger>
-						<TabsTrigger value="about-to-bond">About to Bond</TabsTrigger>
-					</TabsList>
-				</Tabs>
-				<GridListSelector />
-			</div>
-			{view === "grid" ? (
-				<div className="grid grid-cols-6 gap-4">
-					{tokens?.map((token: IToken) => (
-						<GridItem token={token} key={token.contractAddress} />
-					))}
+			<div className="flex flex-col items-center">
+				<div className="flex items-center w-full gap-4">
+					<Tabs defaultValue="new" className="w-full">
+						<TabsList className="grid w-full grid-cols-5">
+							<TabsTrigger value="new">New</TabsTrigger>
+							<TabsTrigger value="trending">Trending</TabsTrigger>
+							<TabsTrigger value="featured">Featured</TabsTrigger>
+							<TabsTrigger value="marketcap">Marketcap</TabsTrigger>
+							<TabsTrigger value="about-to-bond">About to Bond</TabsTrigger>
+						</TabsList>
+					</Tabs>
+					<GridListSelector />
 				</div>
-			) : (
-				<ListView tokens={tokens} />
-			)}
+				{view === "grid" ? (
+					<div className="grid grid-cols-6 gap-4 mt-4">
+						{tokens?.map((token: IToken) => (
+							<GridItem token={token} key={token.contractAddress} />
+						))}
+					</div>
+				) : (
+					<ListView tokens={tokens} />
+				)}
+			</div>
 			{/* <RecentTransactions /> */}
 		</div>
 	);
