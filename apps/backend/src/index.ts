@@ -9,6 +9,7 @@ import logger from "@autofun/logger";
 import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
+import { request } from "http";
 
 const fastify = Fastify({
 	logger: {

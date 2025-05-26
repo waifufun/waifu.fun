@@ -40,6 +40,7 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 		register,
 		handleSubmit,
 		watch,
+		setValue,
 		formState: { errors },
 	} = useForm<Inputs>();
 
@@ -60,6 +61,7 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 	const mutation = useMutation({
 		mutationKey: ["chat", "message"],
 		mutationFn: async ({ message }: { message: string }) => {
+			if (!message || message?.length === 0) return;
 			await sendChatMessage({
 				room,
 				contractAddress,
@@ -68,6 +70,7 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 		},
 		onSuccess: () => {
 			query?.refetch();
+			setValue("message", "");
 		},
 		onError: (e) => {
 			toast.error(e.message);
@@ -95,7 +98,7 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 				<Button size="icon" type="button">
 					<ImageIcon />
 				</Button>
-				<Input placeholder="Send a message" aria-autocomplete="none" {...register("message")} />
+				<Input placeholder="Send a message" aria-autocomplete="none" autoComplete="off" {...register("message")} />
 				<Button size="icon" type="submit">
 					<Send onClick={() => scrollToBottom()} />
 				</Button>
