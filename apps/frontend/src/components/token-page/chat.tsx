@@ -69,8 +69,10 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 			});
 		},
 		onSuccess: () => {
-			query?.refetch();
 			setValue("message", "");
+			query?.refetch().then(() => {
+				setTimeout(scrollToBottom, 50);
+			});
 		},
 		onError: (e) => {
 			toast.error(e.message);
@@ -79,8 +81,7 @@ const ChatWindow = ({ room, contractAddress }: { room: TChatRooms; contractAddre
 
 	const scrollToBottom = () => {
 		if (ref?.current) {
-			const scrollHeight = ref.current.scrollHeight;
-			ref.current.scrollTop = 0;
+			ref.current.scrollTo({ top: 0, behavior: "smooth" });
 		}
 	};
 
