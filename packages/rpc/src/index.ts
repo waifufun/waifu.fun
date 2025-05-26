@@ -17,7 +17,6 @@ import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
 
-
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
 
@@ -157,8 +156,7 @@ function withFallBack<TArgs extends unknown[], TResult>(
 			console.warn(`Falling back to next RPC due to: ${error}`);
 			const rpcList = SOLANA_RPC_URLS?.[ctx.networkId];
 			if (rpcList && rpcList.length > 1) {
-				SolanaRpcProvider.currentRpcIndex =
-					(SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
 			}
 			const fallback = await SolanaRpcProvider.connect(ctx.networkId);
 			return await fn.apply(fallback, args);
@@ -195,15 +193,15 @@ export class SolanaRpcProvider {
 		if (SolanaRpcProvider.currentRpc && SolanaRpcProvider.currentRpc.networkId === networkId) {
 			return SolanaRpcProvider.currentRpc;
 		}
-	
+
 		const rpcList = SOLANA_RPC_URLS?.[networkId];
 		if (!rpcList || rpcList.length === 0) {
 			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
-	
+
 		let attempts = 0;
 		const maxAttempts = rpcList.length;
-	
+
 		while (attempts < maxAttempts) {
 			const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
 			try {
@@ -214,15 +212,13 @@ export class SolanaRpcProvider {
 				return provider;
 			} catch (error) {
 				console.warn(`Failed RPC: ${rpc}. Trying next...`);
-				SolanaRpcProvider.currentRpcIndex =
-					(SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
 				attempts++;
 			}
 		}
-	
+
 		throw new Error("All RPC endpoints failed. Cannot connect to Solana.");
 	}
-	
 
 	getTokenMetadata = withFallBack(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
