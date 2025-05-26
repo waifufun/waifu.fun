@@ -4,9 +4,9 @@ import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
+import FilterSelector from "@/components/filter-selector";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -51,15 +51,7 @@ export default async function Home({
 			<ChainSelector />
 			<div className="flex flex-col items-center">
 				<div className="flex items-center w-full gap-4">
-					<Tabs defaultValue="new" className="w-full">
-						<TabsList className="grid w-full grid-cols-5">
-							<TabsTrigger value="new">New</TabsTrigger>
-							<TabsTrigger value="trending">Trending</TabsTrigger>
-							<TabsTrigger value="featured">Featured</TabsTrigger>
-							<TabsTrigger value="marketcap">Marketcap</TabsTrigger>
-							<TabsTrigger value="about-to-bond">About to Bond</TabsTrigger>
-						</TabsList>
-					</Tabs>
+					<FilterSelector />
 					<GridListSelector />
 				</div>
 				{view === "grid" ? (

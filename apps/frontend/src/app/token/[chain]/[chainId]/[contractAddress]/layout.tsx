@@ -3,7 +3,7 @@ import Swap from "@/components/token-page/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import { abbreviateNumber, fromNow, getCoinGeckoChainName } from "@/lib/utils";
+import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -80,7 +80,7 @@ export default async function Page({ params, children }: { params: ITokenLookUp;
 								},
 								{
 									title: "Price",
-									value: token?.price,
+									value: formatNumberSubscript(token?.price),
 								},
 								{
 									title: "Age",

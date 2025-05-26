@@ -35,14 +35,15 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chain: TChain;
 			chainId: TChainId;
 			page: number;
-			sort: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
+			category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
 		};
 
 		const page = queryParams?.page || 1;
 
+		const category = queryParams.category || "new";
 		let sortQuery = undefined;
 
-		switch (queryParams.sort) {
+		switch (category) {
 			case "new":
 				sortQuery = "-createdAt";
 				break;
@@ -66,7 +67,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			if (!allowedChain) throw new Error("Unsupported chain pair");
 		}
 
-		const cacheKey = `${chain}:${chainId}:${page}:tokens`;
+		const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
 
 		const cache = await redis.get(cacheKey);
 
