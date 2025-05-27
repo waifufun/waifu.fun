@@ -46,7 +46,7 @@ export default function ProfileFilters() {
 								onClick={() => router.push(`${pathname}?${createQueryString({ category: btn.value })}`)}
 								className={`flex-1 h-full text-base rounded-md transition-all ${
 									isActive
-										? "text-white border border-autofun-background-action-highlight font-semibold"
+										? "text-white border border-autofun-background-action-highlight font-normal"
 										: " text-autofun-icon-secondary"
 								} hover:outline-1 hover:outline-autofun-background-action-highlight`}
 							>
