@@ -12,6 +12,8 @@ const PromptComponent = () => {
     const [rows, setRows] = useState(3);
     const MAX_ROWS = 5;
 
+    const prompt = watchValue("prompt");
+
 
     return (
         <div className="flex gap-4 bg-[#3333331A] px-4 items-center rounded-lg"
@@ -139,7 +141,6 @@ export default function CreateTokenPage() {
                         </div>
                     </div>
                 </div>
-                
             </div>
         </PromptProvider>
     )

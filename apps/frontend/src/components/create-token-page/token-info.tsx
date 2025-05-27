@@ -12,8 +12,13 @@ import { Info, Wallet } from "lucide-react";
 import { form } from "viem/chains";
 import { toast } from "sonner";
 import { useWallets } from "../hooks/providers/UseWalletContext";
+import { useMutation } from "@tanstack/react-query";
+import { createToken } from "@/lib/api";
+import type { AddressLike } from "@autofun/types";
 
-const TokenInfoInput = <K extends TokenFormOptions>({
+
+
+export const TokenInfoInput = <K extends TokenFormOptions>({
     title,
     label,
     target,
@@ -138,8 +143,7 @@ const ChoosePool = () => {
         { name: "Meteora", value: "meteora", image: "/pools/meteora.svg" },
         { name: "Raydium", value: "raydium", image: "/pools/raydium.svg" }
     ];
-    const [pool, setPool] = useState("meteora");
-    const {formState, isGeneratingAddress, isGeneratingImage} = usePrompt();
+    const {formState, isGeneratingAddress, isGeneratingImage, pool, setPool} = usePrompt();
 
     const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage;
 
@@ -183,20 +187,56 @@ const ChoosePool = () => {
 
 const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
 
-    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData } = usePrompt();
+    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData, pool, mintKeyPair } = usePrompt();
     const {solanaWallets} = useWallets();
 
-    const handleSubmitManual = () => {
+
+    const createTokenMutation = useMutation({
+        mutationFn: createToken,
+        mutationKey: ["createToken"],
+        onSuccess: (tx) => {
+            console.log("Transaction successful:", tx);
+            toast.success("Token created successfully!");
+        },
+        onError: (error) => {
+            console.error("Error creating token:", error);
+            toast.error(`Error creating token: ${error.message}`);
+        }
+    });
+
+    const handleSubmitManual = async () => {
         if (!uploadedImage) {
             toast.error("Please upload an image.");
             return;
         }
+
+        const tokenData = await getTokenData(true);
+
+        console.log("Token Data (manual):", tokenData);
+
+        const tx = await solanaWallets?.Devnet.createToken(tokenData);
+        console.log("Transaction:", tx);
+        createTokenMutation.mutate({
+            contractAddress: mintKeyPair?.publicKey.toString() || "",
+            chain: "solana",
+            chainId: 103,
+            pool: pool,
+            signature: tx?.signature.toString() || ""
+        });
     }
 
     const handleAutoSubmit = async () => {
-        const tokenData = getTokenData();
+        const tokenData = await getTokenData();
+        console.log("Token Data:", tokenData);
         const tx = await solanaWallets?.Devnet.createToken(tokenData);
-        
+        console.log("Transaction:", tx);
+        createTokenMutation.mutate({
+            contractAddress: mintKeyPair?.publicKey.toString() || "",
+            chain: "solana",
+            chainId: 103,
+            pool: pool,
+            signature: tx?.signature.toString() || ""
+        });
     }
     
 
@@ -226,11 +266,10 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
 
         switch (type) {
             case "auto":
-                // throw new Error("Auto generation is not implemented yet.");
                 await handleAutoSubmit();
                 break;
             case "manual":
-                handleSubmitManual();
+                await handleSubmitManual();
                 break;
         }
     };
@@ -241,7 +280,7 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
             <div className="flex flex-col gap-4 mt-4">
                 <div className="flex flex-col md:flex-row md:gap-8 gap-4">
                     <TokenInfoInput title="Name" target="name" validation={nameValidation} />
-                    <TokenInfoInput title="Ticker" label="$" target="ticker" validation={tickerValidation} />
+                    <TokenInfoInput title="Ticker" label="$" target="symbol" validation={tickerValidation} />
                 </div>
                 <TokenInfoInput title="Description" target="description" validation={descriptionValidation} />
             </div>

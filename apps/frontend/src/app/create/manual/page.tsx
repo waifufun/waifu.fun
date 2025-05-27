@@ -100,9 +100,9 @@ export default function CreateTokenPageManual() {
             <div className="flex justify-center">
                 <div className="flex flex-col items-center mt-5 w-full max-w-[1100px]">
                     <div>
-                        <Image src="/create/coin-machine.png" alt="Coin Machine" width={150} height={150} />
+                        <img src="/create/coin-machine.png"/>
                     </div>
-                    <div className="rounded-lg bg-[#3333331A] w-full overflow-hidden mt-4">
+                    <div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
                         <TokenTypeSelector selected="manual"/>
                         <div className="p-4">
                             <div className="flex flex-col lg:flex-row w-full gap-10 py-8">
