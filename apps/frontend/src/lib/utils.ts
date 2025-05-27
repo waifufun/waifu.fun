@@ -209,3 +209,10 @@ export const signEVMMessage = async (message: string, signMessage: (message: str
 	const signature = await signMessage(message);
 	return signature;
 };
+
+export const roundDownToNearest = (value: number, step: number): number => {
+	if (step <= 0) {
+		throw new Error("Step must be greater than zero");
+	}
+	return Math.floor(value / step) * step;
+}

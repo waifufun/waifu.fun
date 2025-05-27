@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { RegisterOptions } from "react-hook-form";
 import {
     usePrompt,
@@ -15,6 +15,8 @@ import { useWallets } from "../hooks/providers/UseWalletContext";
 import { useMutation } from "@tanstack/react-query";
 import { createToken } from "@/lib/api";
 import type { AddressLike } from "@autofun/types";
+import { set } from "mongoose";
+import { roundDownToNearest } from "@/lib/utils";
 
 
 
@@ -96,7 +98,26 @@ const GenerateAddress = () => {
 };
 
 const BuyCoin = () => {
-    const { registerForm, formState: { errors } } = usePrompt();
+    const { registerForm, formState: { errors }, setValue } = usePrompt();
+    const {solanaWallets} = useWallets();
+    const [balance, setBalance] = useState<number>(0);
+
+    useEffect(() => {
+        const getBalance = async () => {
+            const balance = await solanaWallets?.Devnet?.getNativeBalance();
+            if (balance !== undefined) {
+                setBalance(balance);
+            }
+        }
+
+        if (solanaWallets?.Devnet) {
+            getBalance();
+        }
+    }, [solanaWallets]);
+
+    const setMaxAmount = () => {
+        setValue("buyAmount", balance, {shouldValidate: true, shouldDirty: true});
+    }
 
     return (
         <div className="inline-block py-4">
@@ -120,7 +141,7 @@ const BuyCoin = () => {
                         {...registerForm("buyAmount", {
                             valueAsNumber: true,
                             min: { value: 0, message: "Amount cannot be negative" },
-                            max: {value: 28, message: "Amount cannot be greater than 28"}
+                            max: {value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28"},
                         })}
                     />
                     <p className="text-xl text-[#03FF24] font-[500]">SOL</p>
@@ -129,9 +150,12 @@ const BuyCoin = () => {
             {errors.buyAmount && <p className="text-red-500 text-sm mt-1">{errors.buyAmount.message}</p>}
             <div className="flex gap-2 items-center py-2">
                 <Wallet size={14} color="#8C8C8C"/>
-                <p className="text-[#8C8C8C] text-sm font-[500]">Balance: 5.65 SOL</p>
+                <p className="text-[#8C8C8C] text-sm font-[500]">Balance: {balance} SOL</p>
             </div>
-            <button type="button" className="py-2 hover:cursor-pointer">
+            <button onClick={(e) => {
+                e.preventDefault();
+                setMaxAmount();
+            }} type="button" className="py-2 hover:cursor-pointer">
                 <p className="text-[#E3AA00] text-sm font-[500]">Maximum amount based on your balance</p>
             </button>
         </div>
@@ -143,9 +167,9 @@ const ChoosePool = () => {
         { name: "Meteora", value: "meteora", image: "/pools/meteora.svg" },
         { name: "Raydium", value: "raydium", image: "/pools/raydium.svg" }
     ];
-    const {formState, isGeneratingAddress, isGeneratingImage, pool, setPool} = usePrompt();
+    const {formState, isGeneratingAddress, isGeneratingImage, pool, setPool, isLaunching} = usePrompt();
 
-    const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage;
+    const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage || isLaunching;
 
     return (
         <div className="flex flex-col gap-4 xl:flex-row xl:justify-between w-full xl:items-center mt-6">
@@ -179,7 +203,7 @@ const ChoosePool = () => {
                 }}
                 className="px-6 py-3 rounded-lg min-w-[120px]"
             >
-                <p className="text-[#0A0A0A] text-base font-[700]">LAUNCH</p>
+                <p className="text-[#0A0A0A] text-base font-[700]">{isLaunching ? "LAUNCHING..." : "LAUNCH"}</p>
             </button>
         </div>
     );
@@ -187,7 +211,7 @@ const ChoosePool = () => {
 
 const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
 
-    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData, pool, mintKeyPair } = usePrompt();
+    const {handleSubmit, formState, uploadedImage, isGeneratingAddress, isGeneratingImage, getTokenData, pool, mintKeyPair, setLaunching } = usePrompt();
     const {solanaWallets} = useWallets();
 
 
@@ -210,35 +234,51 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
             return;
         }
 
-        const tokenData = await getTokenData(true);
+        setLaunching(true);
 
-        console.log("Token Data (manual):", tokenData);
-
-        const tx = await solanaWallets?.Devnet.createToken(tokenData);
-        // wait for couple of seconds to ensure the transaction is processed
-        console.log("Transaction:", tx);
-        createTokenMutation.mutate({
-            contractAddress: mintKeyPair?.publicKey.toString() || "",
-            chain: "solana",
-            chainId: 103,
-            pool: pool,
-            signature: tx?.signature.toString() || ""
-        });
+        try {
+            const tokenData = await getTokenData(true);
+            console.log("Token Data (manual):", tokenData);
+            const tx = await solanaWallets?.Devnet.createToken(tokenData);
+            console.log("Transaction:", tx);
+            createTokenMutation.mutate({
+                contractAddress: mintKeyPair?.publicKey.toString() || "",
+                chain: "solana",
+                chainId: 103,
+                pool: pool,
+                signature: tx?.signature.toString() || ""
+            });
+	        // biome-ignore lint/suspicious/noExplicitAny: error handling
+        } catch (error: any) {
+            console.error("Error creating token:", error);
+            toast.error(`Error creating token: ${error.message}`);
+            
+        } finally {
+            setLaunching(false);
+        }
     }
 
     const handleAutoSubmit = async () => {
-        const tokenData = await getTokenData();
-        console.log("Token Data:", tokenData);
-        const tx = await solanaWallets?.Devnet.createToken(tokenData);
-        console.log("Transaction:", tx);
-        // wait for couple of seconds to ensure the transaction is processed
-        createTokenMutation.mutate({
-            contractAddress: mintKeyPair?.publicKey.toString() || "",
-            chain: "solana",
-            chainId: 103,
-            pool: pool,
-            signature: tx?.signature.toString() || ""
-        });
+        setLaunching(true);
+        try {
+            const tokenData = await getTokenData();
+            console.log("Token Data:", tokenData);
+            const tx = await solanaWallets?.Devnet.createToken(tokenData);
+            console.log("Transaction:", tx);
+            createTokenMutation.mutate({
+                contractAddress: mintKeyPair?.publicKey.toString() || "",
+                chain: "solana",
+                chainId: 103,
+                pool: pool,
+                signature: tx?.signature.toString() || ""
+            });
+        // biome-ignore lint/suspicious/noExplicitAny: error handling
+        } catch (error: any) {
+            console.error("Error creating token:", error);
+            toast.error(`Error creating token: ${error.message}`);
+        } finally {
+            setLaunching(false);
+        }
     }
     
 
