@@ -5,8 +5,9 @@ import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromp
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { importToken } from "@/lib/api";
-import { EvmChainIds, type ITokenLookUp, SolanaNetworkIds, type TChain } from "@autofun/types";
+import { type AddressLike, EvmChainIds, type ITokenLookUp, SolanaNetworkIds, type TChain } from "@autofun/types";
 import { useMutation } from "@tanstack/react-query";
+import { watch } from "fs";
 import { useState } from "react";
 import { useForm, type FormState, type RegisterOptions } from "react-hook-form";
 import { toast } from "sonner";
@@ -135,10 +136,12 @@ const TokenImportInput = <K extends TokenFormOptions>({
 
 const ImportButton = ({
 	formState,
-	onSubmit
+	onSubmit,
+	disabled
 }: {
 	formState: FormState<TokenForm>;
 	onSubmit: () => void;
+	disabled?: boolean;
 }) => {
 
 	const shouldDisable = formState.isSubmitting || !formState.isValid || Object.keys(formState.errors).length > 0;
@@ -146,7 +149,7 @@ const ImportButton = ({
 	return (
 		<button
 		type="submit"
-		disabled={shouldDisable}
+		disabled={shouldDisable || disabled}
 		style={{
 			cursor: !shouldDisable ? "pointer" : "not-allowed",    
 			background: !shouldDisable ? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)" : "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)"
@@ -180,7 +183,7 @@ const validationRules: Record<keyof TokenForm, RegisterOptions<TokenForm>> = {
 	chainId: {
 		required: "Chain ID is required",
 		validate: (value) => {
-			if (value === SolanaNetworkIds.Devnet || value === SolanaNetworkIds.Mainnet || value === EvmChainIds.BaseMainnet || value === EvmChainIds.EthereumMainnet) {
+			if (value === SolanaNetworkIds.Mainnet || value === EvmChainIds.BaseMainnet || value === EvmChainIds.EthereumMainnet) {
 				return true;
 			}
 			return "Invalid chain ID selected";
@@ -199,79 +202,128 @@ const ChainSelector = ({
 	setChain: (chain: { chain: TChain; chainId: SolanaNetworkIds | EvmChainIds}) => void;
 }) => {
 	return (
-		<div className="flex items-center gap-2">
-			<Button
-				variant={chain.chainId === SolanaNetworkIds.Mainnet ? "default" : "secondary"}
-				onClick={() => setChain({ chain: "solana", chainId: SolanaNetworkIds.Mainnet })}
+		<div className="flex items-center gap-2 rounded-lg"
+		style={{background: "linear-gradient(180deg, #171717 0%, #121212 100%)"}}>
+			<button
+				className="hover:cursor-pointer p-2 rounded-lg"
+				style={{
+					border: chain.chainId === SolanaNetworkIds.Mainnet ? "2px solid #03FF24" : "2px solid transparent",
+				}}
+				onClick={(e) => {
+					setChain({ chain: "solana", chainId: SolanaNetworkIds.Mainnet });
+					e.preventDefault();
+				}}
 			>
-				Solana
-			</Button>
-			<Button
-				variant={chain.chainId === EvmChainIds.BaseMainnet ? "default" : "secondary"}
-				onClick={() => setChain({ chain: "evm", chainId: EvmChainIds.BaseMainnet })}
+				<img src="/chain-icons/solana.svg" alt="Solana" className="w-6 h-6" />
+			</button>
+			<button
+				className="hover:cursor-pointer p-2 rounded-lg"
+				style={{
+					border: chain.chainId === EvmChainIds.BaseMainnet ? "2px solid #03FF24" : "2px solid transparent",
+				}}
+				onClick={(e) => {
+					setChain({ chain: "evm", chainId: EvmChainIds.BaseMainnet });
+					e.preventDefault();
+				}}
 			>
-				Base
-			</Button>
-			<Button
-				variant={chain.chainId === EvmChainIds.EthereumMainnet ? "default" : "secondary"}
-				onClick={() => setChain({ chain: "evm", chainId: EvmChainIds.EthereumMainnet })}
+				<img src="/chain-icons/base.svg" alt="Base" className="w-6 h-6" />
+			</button>
+			<button
+				className="hover:cursor-pointer p-2 rounded-lg"
+				style={{
+					border: chain.chainId === EvmChainIds.EthereumMainnet ? "2px solid #03FF24" : "2px solid transparent",
+				}}
+				onClick={(e) => {
+					setChain({ chain: "evm", chainId: EvmChainIds.EthereumMainnet });
+					e.preventDefault();
+				}}
 			>
-				Ethereum
-			</Button>
+				<img src="/chain-icons/ethereum.svg" alt="Ethereum" className="w-7 h-7" />
+			</button>
 		</div>
 	);
 }
 
 export default function ImportFormV2() {	
 
-	const {register, handleSubmit, formState, getValues} = useForm<TokenForm>({
+	const {register, handleSubmit, formState, setValue, watch} = useForm<TokenForm>({
 		defaultValues: {
 			contractAddress: "",
 			chain: "solana",
-			chainId: SolanaNetworkIds.Devnet,
+			chainId: SolanaNetworkIds.Mainnet,
 		},
 		mode: "onChange",
 	});
 
 	const setChain = (chain: { chain: TChain; chainId: SolanaNetworkIds | EvmChainIds }) => {
 		console.log("Setting chain:", chain);
-		register("chain").onChange({ target: { value: chain.chain } });
-		register("chainId").onChange({ target: { value: chain.chainId } });
+		setValue("chain", chain.chain);
+		setValue("chainId", chain.chainId);
 	}
 
 	const currentChain = {
-		chain: getValues("chain") as TChain,
-		chainId: getValues("chainId") as SolanaNetworkIds | EvmChainIds
+		chain: watch("chain") as TChain,
+		chainId: watch("chainId") as SolanaNetworkIds | EvmChainIds,
 	}
+
+		const mutation = useMutation({
+		mutationKey: ["import"],
+		mutationFn: importToken,
+		onSuccess: () => {
+			toast.success(`Imported: ${watch("contractAddress")}`);
+		},
+		onError: (e) => {
+			toast.error(`Error: ${e.message}`);
+		},
+	});
+
+	const onSubmit = (data: TokenForm) => {
+		console.log("Submitting data:", data);
+		if (data.chain === "evm") {
+			mutation.mutate({
+				chain: data.chain,
+				chainId: data.chainId,
+				contractAddress: data.contractAddress as AddressLike,
+			} as ITokenLookUp);
+		} else if (data.chain === "solana") {
+			mutation.mutate({
+				chain: data.chain,
+				chainId: data.chainId,
+				contractAddress: data.contractAddress as AddressLike,
+			} as ITokenLookUp);
+		}
+	};
 
 	return (
 		<div className="flex justify-center">
-			<div className="flex flex-col items-center mt-5 w-full max-w-[1100px]">
-				<div>
-					<img src="/create/coin-machine.png"/>
-				</div>
-				<div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
-					<TokenTypeSelector selected="import"/>
-					<div className="p-4 flex items-center min-h-[400px]">
-						<div className="mx-auto max-w-[400px] bg-[#0F0F0F] flex flex-col gap-4 w-full">
-								<div>
-									<p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
-										IMPORT TOKEN
-									</p>
-									<ChainSelector chain={currentChain} setChain={setChain}/>
-								</div>
-                                <TokenImportInput
-                                    title="Contract Address"
-                                    target="contractAddress"
-                                    registerForm={register}
-                                    formState={formState}
-                                    validation={validationRules.contractAddress}
-                                />
-                                <ImportButton formState={formState} onSubmit={() => console.log("ewa")} />
+			<form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1100px]">
+				<div className="flex flex-col items-center mt-5 w-full">
+					<div>
+						<img src="/create/coin-machine.png"/>
+					</div>
+					<div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
+						<TokenTypeSelector selected="import"/>
+						<div className="p-4 flex items-center min-h-[400px]">
+							<div className="mx-auto max-w-[400px] bg-[#0F0F0F] flex flex-col gap-4 w-full">
+									<div className="flex justify-between items-center">
+										<p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
+											IMPORT TOKEN
+										</p>
+										<ChainSelector chain={currentChain} setChain={setChain}/>
+									</div>
+									<TokenImportInput
+										title="Contract Address"
+										target="contractAddress"
+										registerForm={register}
+										formState={formState}
+										validation={validationRules.contractAddress}
+									/>
+									<ImportButton disabled={mutation.isPending} formState={formState} onSubmit={() => console.log("ewa")} />
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			</form>
 		</div>
 	)
 }

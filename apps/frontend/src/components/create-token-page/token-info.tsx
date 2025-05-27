@@ -210,7 +210,7 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
             return;
         }
 
-        const tokenData = getTokenData(true);
+        const tokenData = await getTokenData(true);
 
         console.log("Token Data (manual):", tokenData);
 
@@ -226,7 +226,7 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
     }
 
     const handleAutoSubmit = async () => {
-        const tokenData = getTokenData();
+        const tokenData = await getTokenData();
         console.log("Token Data:", tokenData);
         const tx = await solanaWallets?.Devnet.createToken(tokenData);
         console.log("Transaction:", tx);
@@ -280,7 +280,7 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
             <div className="flex flex-col gap-4 mt-4">
                 <div className="flex flex-col md:flex-row md:gap-8 gap-4">
                     <TokenInfoInput title="Name" target="name" validation={nameValidation} />
-                    <TokenInfoInput title="Ticker" label="$" target="ticker" validation={tickerValidation} />
+                    <TokenInfoInput title="Ticker" label="$" target="symbol" validation={tickerValidation} />
                 </div>
                 <TokenInfoInput title="Description" target="description" validation={descriptionValidation} />
             </div>

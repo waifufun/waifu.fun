@@ -29,7 +29,7 @@ type PromptContextType = {
   uploadedImage: string | undefined;
   setUploadedImage: (image: string | undefined) => void;
   watchValue: (name: string) => string | number | undefined;
-  getTokenData: (manual?: boolean) => TokenMetadata;
+  getTokenData: (manual?: boolean) => Promise<TokenMetadata>;
   setPool: (pool: string) => void;
   pool: string;
 };
@@ -74,7 +74,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const {previousImages, changeMainImage, addImage} = UseTokenImages();
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
-  const [pool, setPool] = useState<string>("");
+  const [pool, setPool] = useState<string>("meteora");
   
 
   const workerRefs = useRef<Worker[]>([]);
@@ -260,14 +260,14 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     metadataMutation.mutate(prompt);
   }
 
-  const getTokenData = (manual: boolean = false): TokenMetadata => {
+  const getTokenData = async (manual: boolean = false): Promise<TokenMetadata> => {
     const name = watch("name") || "Untitled Token";
     const symbol = watch("symbol") || "";
     const description = watch("description") || "No description provided.";
     const mintKeyPairr = mintKeyPair || Keypair.generate();
     const buyAmount = watch("buyAmount") || 0;
 
-    remoteMetadataMutation.mutate({
+    const remoteMetadata = await remoteMetadataMutation.mutateAsync({
       imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
       image: manual ? uploadedImage : previousImages[0],
       metadata: {
@@ -276,12 +276,13 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
         symbol,
       },
       manual
-    });
+    })
 
-    const metadataUrl = remoteMetadataMutation.data?.metadataUrl || "";
+    const metadataUrl = remoteMetadata?.metadataUrl || remoteMetadataMutation.data?.metadataUrl;
 
     if (!metadataUrl) {
       toast.error("Failed to generate metadata URL.");
+      console.log("metadata: ", remoteMetadata.data);
       throw new Error("Metadata URL generation failed");
     }
 
