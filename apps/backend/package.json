@@ -28,6 +28,7 @@
 		"@autofun/rpc": "workspace:*",
 		"@autofun/s3-uploader": "workspace:*",
 		"@autofun/utils": "workspace:*",
+		"@autofun/ai": "workspace:*",
 		"@codex-data/sdk": "^1.0.6",
 		"@fal-ai/client": "^1.4.0",
 		"@fastify/cookie": "^11.0.2",

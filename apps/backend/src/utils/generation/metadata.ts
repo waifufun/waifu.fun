@@ -1,6 +1,5 @@
-import { fal } from "@fal-ai/client";
 import { createTokenPrompt } from "../../prompts/create-token";
-import { falApiKey } from "@autofun/constants";
+import { AI } from "@autofun/ai";
 
 const MAX_RETRIES = 10;
 const RETRY_DELAY = 500;
@@ -60,10 +59,13 @@ function extractMetadataFromString(text: string): TokenMetadata | null {
 
 export async function generateMetadata(data: GenerateMetadataParams): Promise<TokenMetadata | null> {
 	console.log("[generateMetadata] Starting metadata generation with prompt:", data.prompt);
-	if (!falApiKey) {
-		throw new Error("FAL_API_KEY environment variable not set for metadata generation.");
-	}
-	fal.config({ credentials: falApiKey });
+	
+	const ai = new AI({
+		textModel: "google/gemini-flash-1.5",
+		imageModel: "fal-ai/flux/schnell",
+		audioModel: "fal-ai/mmaudio-v2/text-to-audio",
+		videoModel: "fal-ai/kling-video/v2/master/text-to-video"
+	});
 
 	let retryCount = 0;
 
@@ -73,18 +75,9 @@ export async function generateMetadata(data: GenerateMetadataParams): Promise<To
 			const systemPromptContent = await createTokenPrompt({ prompt: data.prompt });
 			console.log("[generateMetadata] Generated system prompt:", systemPromptContent);
 
-			const response = await fal.subscribe("fal-ai/any-llm", {
-				input: {
-					prompt: "Generate the token metadata based on the system prompt.",
-					system_prompt: systemPromptContent,
-					model: "google/gemini-flash-1.5",
-				},
-				logs: true,
-			});
-
-			const rawOutput = response?.data?.output || "";
+			const response = await ai.createText(systemPromptContent);
 			const jsonRegex = /{[\s\S]*}/;
-			const jsonString = typeof rawOutput === "string" ? rawOutput.match(jsonRegex)?.[0] : null;
+			const jsonString = typeof response === "string" ? response.match(jsonRegex)?.[0] : null;
 
 			if (!jsonString) {
 				retryCount++;

@@ -1,0 +1,26 @@
+{
+	"name": "@autofun/ai",
+	"version": "0.0.0",
+	"private": true,
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"sideEffects": false,
+	"license": "MIT",
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"lint": "eslint \"src/**/*.ts*\"",
+		"clean": "rm -rf .turbo node_modules dist"
+	},
+	"devDependencies": {
+		"@types/node": "^20.11.24",
+		"eslint": "^8.57.0",
+		"tsup": "^8.0.2",
+		"typescript": "^5.4.5"
+	},
+	"dependencies": {
+		"@autofun/constants": "workspace:*",
+		"@fal-ai/client": "^1.4.0"
+	}
+} 
