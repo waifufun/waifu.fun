@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { ExternalLink } from "lucide-react";
 import { CopyButton } from "../copy-button";
+import Link from "next/link";
 
 export default function TokenRow({
 	data,
@@ -16,7 +16,7 @@ export default function TokenRow({
 	};
 }) {
 	return (
-		<div className="group rounded-lg bg-black hover:bg-[#0C0C0C] relative flex justify-between items-center w-full max-w-[750px] h-[94px] px-4 py-2 transition-all duration-300 hover:translate-x-[-30px]">
+		<div className="group rounded-lg bg-transparent hover:bg-[#0F0F0F] relative flex justify-between items-center w-full h-[94px] px-4 py-2">
 			<div className="flex items-center">
 				<div className="w-[60px] h-[60px] mr-4">
 					<Image src={data.tokenImageUrl} alt="Token Image" width={60} height={60} className="object-contain" />
@@ -42,24 +42,31 @@ export default function TokenRow({
 			</div>
 
 			{/* Right section: Market Cap, Divider, Held, External Link */}
-			<div className="flex items-center">
-				<div className="flex flex-col justify-center mr-8 min-w-[120px]">
-					<p className="text-xs text-[#8C8C8C] uppercase">Mcap</p>
-					<p className="text-white font-semibold">${data.marketCap.toLocaleString()}</p>
+			<div className="flex items-center gap-x-8 place-items-end transition-all duration-300 ease-in-out group-hover:gap-x-10">
+				<div className="flex flex-col h-full w-full space-y-1 justify-end transition-all duration-300">
+					<p className="text-base font-medium text-white">Mcap</p>
+					<p className="text-lg font-semibold text-autofun-background-action-highlight">
+						${data.marketCap.toLocaleString()}
+					</p>
 				</div>
 
-				<div className="h-[60%] w-[1px] bg-red-500 mx-4" />
+				<div className="self-stretch w-px bg-[#1E1E1E]" />
 
-				<div className="flex flex-col justify-center mr-8 min-w-[120px]">
-					<p className="text-xs text-[#8C8C8C] uppercase">Held</p>
-					<p className="text-white font-semibold">{data.amountHeld}</p>
-					<p className="text-[#8C8C8C] text-sm">${data.dollarWorth.toLocaleString()}</p>
+				<div className="flex flex-col w-full space-y-1 justify-center transition-all duration-300">
+					<p className="text-white font-medium text-base">{data.amountHeld}</p>
+					<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
 				</div>
-
-				<div className="bg-red-500 relative">
-					<div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-						<ExternalLink size={20} className="text-white" />
-					</div>
+				{/* This block takes up 0 space until hovered */}
+				<div className="w-0 overflow-hidden group-hover:w-12 transition-all duration-300 ease-in-out flex-shrink-0">
+					<Link href={`/token/${data.contractAddress}`}>
+						<Image
+							src={"/profile/link.svg"}
+							alt="link icon"
+							width={24}
+							height={24}
+							className="object-contain w-6 h-6"
+						/>
+					</Link>
 				</div>
 			</div>
 		</div>
