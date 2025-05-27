@@ -1,34 +1,41 @@
 import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@autofun/types";
 import {
 	createPublicClient,
+	createWalletClient,
 	erc20Abi,
 	fallback,
 	getAddress,
 	http,
 	type PublicClient,
 	type ReadContractParameters,
+	type WalletClient,
 } from "viem";
 import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
-import { Program, AnchorProvider, type Idl } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
+import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
+import autoFunAbi from "./evm/abis/AutoFun.json";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
 
 export class EVMRpcProvider {
 	public client: PublicClient;
+	private walletClient?: WalletClient;
+	private chainId: EvmChainIds;
 
-	constructor(chainId: EvmChainIds) {
+	constructor(chainId: EvmChainIds, privateKey?: string) {
 		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
 		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
 			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
 		}
 
+		this.chainId = chainId;
 		this.client = createPublicClient({
 			batch: {
 				multicall: true,
@@ -36,6 +43,13 @@ export class EVMRpcProvider {
 			chain: CHAINID_TO_VIEM_CHAIN[chainId],
 			transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
 		});
+
+		if (privateKey) {
+			this.walletClient = createWalletClient({
+				chain: CHAINID_TO_VIEM_CHAIN[chainId],
+				transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
+			});
+		}
 	}
 
 	async readErc20Contract(contractAddress: EvmAddressLike, functionName: Erc20FunctionName, args: Erc20Args) {
@@ -114,6 +128,102 @@ export class EVMRpcProvider {
 
 		return Number(balanceRaw) / 10 ** Number(decimals);
 	};
+
+	async readAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+		return await this.client.readContract({
+			address: getAddress(contractAddress),
+			abi: autoFunAbi.abi,
+			functionName,
+			args,
+		});
+	}
+
+	async writeAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+		if (!this.walletClient) {
+			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
+		}
+
+		return await this.walletClient.writeContract({
+			address: getAddress(contractAddress),
+			abi: autoFunAbi.abi,
+			functionName,
+			args,
+			chain: CHAINID_TO_VIEM_CHAIN[this.chainId],
+			account: this.walletClient.account ?? null,
+		});
+	}
+
+	async launch(contractAddress: EvmAddressLike, config: AutoFunConfig) {
+		return await this.writeAutoFunContract(contractAddress, "launch", [config]);
+	}
+
+	async launchAndSwap(contractAddress: EvmAddressLike, launchConfig: AutoFunConfig, swapConfig: BondingCurveConfig) {
+		return await this.writeAutoFunContract(contractAddress, "launchAndSwap", [launchConfig, swapConfig]);
+	}
+
+	async swap(contractAddress: EvmAddressLike, config: BondingCurveConfig) {
+		return await this.writeAutoFunContract(contractAddress, "swap", [config]);
+	}
+
+	async withdraw(contractAddress: EvmAddressLike, token: EvmAddressLike, amount: bigint) {
+		return await this.writeAutoFunContract(contractAddress, "withdraw", [token, amount]);
+	}
+
+	async getLaunchedTokensByOwner(contractAddress: EvmAddressLike, owner: EvmAddressLike) {
+		return await this.readAutoFunContract(contractAddress, "getLaunchedTokensByOwner", [owner]);
+	}
+
+	async getAllLaunchedTokens(contractAddress: EvmAddressLike) {
+		return await this.readAutoFunContract(contractAddress, "getAllLaunchedTokens", []);
+	}
+}
+
+const RETRYABLE_HTTP_CODES = new Set([429, 503]);
+
+function shouldFallback(error): boolean {
+	const status = error?.response?.status || error?.statusCode || error?.code;
+
+	if (typeof status === "number" && RETRYABLE_HTTP_CODES.has(status)) {
+		return true;
+	}
+
+	const msg = error?.message?.toLowerCase() || "";
+	return msg.includes("timeout") || msg.includes("network");
+}
+
+function withFallBack<TArgs extends unknown[], TResult>(
+	fn: (...args: TArgs) => Promise<TResult>,
+	ctx: SolanaRpcProvider,
+	timeoutMs = 15000, // 15 seconds
+): (...args: TArgs) => Promise<TResult> {
+	return async (...args: TArgs) => {
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+		const timeoutPromise = new Promise<never>((_, reject) => {
+			timeoutId = setTimeout(() => {
+				console.warn(`RPC call timed out after ${timeoutMs}ms`);
+				reject(new Error("Timeout exceeded"));
+			}, timeoutMs);
+		});
+
+		try {
+			const result = await Promise.race([fn.apply(ctx, args), timeoutPromise]);
+			clearTimeout(timeoutId);
+			return result;
+		} catch (error) {
+			clearTimeout(timeoutId);
+			if (!shouldFallback(error)) {
+				throw error;
+			}
+			console.warn(`Falling back to next RPC due to: ${error}`);
+			const rpcList = SOLANA_RPC_URLS?.[ctx.networkId];
+			if (rpcList && rpcList.length > 1) {
+				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+			}
+			const fallback = await SolanaRpcProvider.connect(ctx.networkId);
+			return await fn.apply(fallback, args);
+		}
+	};
 }
 
 export class SolanaRpcProvider {
@@ -121,11 +231,11 @@ export class SolanaRpcProvider {
 	public client;
 	private program;
 	public networkId: SolanaNetworkIds;
+	private static currentRpc: SolanaRpcProvider | null = null;
+	public static currentRpcIndex = 0;
 
-	constructor(networkId: SolanaNetworkIds) {
-		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
-		if (!rpc) throw new Error(`No RPC provider configured for Solana: ${networkId}`);
-		this.connection = new Connection(rpc);
+	private constructor(connection: Connection, rpc: string, networkId: SolanaNetworkIds) {
+		this.connection = connection;
 		this.client = createSolanaRpc(rpc);
 		this.networkId = networkId;
 
@@ -137,12 +247,42 @@ export class SolanaRpcProvider {
 			signAllTransactions: async (txs: any[]) => txs,
 		};
 
-		// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
-		const provider = new AnchorProvider(this.connection, dummyWallet as any, {});
+		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
 		this.program = new Program(idl as Idl, provider);
 	}
 
-	getTokenMetadata = async (contractAddress: string) => {
+	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
+		if (SolanaRpcProvider.currentRpc && SolanaRpcProvider.currentRpc.networkId === networkId) {
+			return SolanaRpcProvider.currentRpc;
+		}
+
+		const rpcList = SOLANA_RPC_URLS?.[networkId];
+		if (!rpcList || rpcList.length === 0) {
+			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
+		}
+
+		let attempts = 0;
+		const maxAttempts = rpcList.length;
+
+		while (attempts < maxAttempts) {
+			const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
+			try {
+				const connection = new Connection(rpc, "confirmed");
+				await connection.getVersion(); // test connection
+				const provider = new SolanaRpcProvider(connection, rpc, networkId);
+				SolanaRpcProvider.currentRpc = provider;
+				return provider;
+			} catch (error) {
+				console.warn(`Failed RPC: ${rpc}. Trying next...`);
+				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
+				attempts++;
+			}
+		}
+
+		throw new Error("All RPC endpoints failed. Cannot connect to Solana.");
+	}
+
+	getTokenMetadata = withFallBack(async (contractAddress: string) => {
 		const metaplex = new Metaplex(this.connection);
 		const mint = new PublicKey(contractAddress);
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
@@ -170,9 +310,9 @@ export class SolanaRpcProvider {
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,
 		};
-	};
+	}, this);
 
-	private getTokenSupplies = async (mintAddresses: PublicKey[]) => {
+	private getTokenSupplies = withFallBack(async (mintAddresses: PublicKey[]) => {
 		const tokenAccounts = await this.connection.getMultipleAccountsInfo(mintAddresses);
 		return tokenAccounts.map((acc, i) => {
 			if (!acc) return { mint: mintAddresses[i], supply: 0, decimals: 0 };
@@ -181,9 +321,9 @@ export class SolanaRpcProvider {
 			const decimals = data.readUInt8(44);
 			return { mint: mintAddresses[i], supply, decimals };
 		});
-	};
+	}, this);
 
-	getBondingCurveInfo = async (contractAddresses: string[]) => {
+	getBondingCurveInfo = withFallBack(async (contractAddresses: string[]) => {
 		if (!contractAddresses || contractAddresses?.length === 0) return [];
 		const tokenMints: PublicKey[] = contractAddresses.map((addr) => new PublicKey(addr));
 
@@ -221,6 +361,7 @@ export class SolanaRpcProvider {
 		});
 
 		return bondingCurves.map((curve, i) => {
+			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
 			const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
 			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
 			const supplyInfo = supplies[i];
@@ -283,9 +424,9 @@ export class SolanaRpcProvider {
 				exists: true,
 			};
 		});
-	};
+	}, this);
 
-	getTokenBalance = async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
+	getTokenBalance = withFallBack(async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {
 		const mint = new PublicKey(contractAddress);
 		const ownerAddress = new PublicKey(owner);
 
@@ -307,5 +448,5 @@ export class SolanaRpcProvider {
 		}
 
 		return amount / 10 ** decimals;
-	};
+	}, this);
 }
