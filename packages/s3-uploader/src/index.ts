@@ -103,7 +103,7 @@ export const uploadBase64Image = async (
 	} else {
 		return false;
 	}
-	return true;
+	return getFileUrl(`${fileName}.webp`, bucket);
 };
 
 /**

@@ -1,0 +1,9 @@
+import Chat from "@/components/token-page/chat";
+import { getToken } from "@/lib/api";
+import type { ITokenLookUp } from "@autofun/types";
+
+export default async function Page({ params }: { params: ITokenLookUp }) {
+	const tokenParams = await params;
+	const token = await getToken(tokenParams);
+	return <Chat token={token} />;
+}

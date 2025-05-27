@@ -12,6 +12,7 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { ParentProvider } from "@/components/hooks/providers/ParentProvider";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import Footer from "@/components/footer";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
 const projectId = "YOUR_PROJECT_ID";
@@ -44,18 +45,29 @@ const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
 	return (
-		<WagmiProvider config={wagmiAdapter.wagmiConfig}>
-			<ProgressProvider height="4px" color="#03FF24" disableSameURL={false}>
-				<QueryClientProvider client={queryClient}>
-					<ParentProvider>
-						<Header />
-						{children}
-						<Toaster />
-						<Footer />
-						<GoogleAnalytics gaId={googleTagID} />
-					</ParentProvider>
-				</QueryClientProvider>
-			</ProgressProvider>
-		</WagmiProvider>
+		<TooltipProvider>
+			<WagmiProvider config={wagmiAdapter.wagmiConfig}>
+				<ProgressProvider
+					height="4px"
+					color="#03FF24"
+					options={{
+						showSpinner: false,
+					}}
+					disableSameURL={false}
+					shallowRouting={true}
+					shouldCompareComplexProps
+				>
+					<QueryClientProvider client={queryClient}>
+						<ParentProvider>
+							<Header />
+							{children}
+							<Toaster />
+							<Footer />
+							<GoogleAnalytics gaId={googleTagID} />
+						</ParentProvider>
+					</QueryClientProvider>
+				</ProgressProvider>
+			</WagmiProvider>
+		</TooltipProvider>
 	);
 }

@@ -1,11 +1,9 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./public/workers",
-    "module": "ES6",
-    "noEmit": false
-  },
-  "include": [
-    "workers/**/*.ts"
-  ]
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"outDir": "./public/workers",
+		"module": "ES6",
+		"noEmit": false
+	},
+	"include": ["workers/**/*.ts"]
 }

@@ -3,22 +3,9 @@ import { getHolders } from "@/lib/api";
 import type { IHolder, IToken } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
 import HolderLabels from "./holder-labels";
-import { abbreviateNumber, getPercentageOfTotal, shortenAddress } from "@/lib/utils";
+import { abbreviateNumber, shortenAddress } from "@/lib/utils";
 import { formatUnits } from "viem";
-
-const Progressbar = ({ value, max }: { value: number; max: number }) => {
-	const width = getPercentageOfTotal(value, max);
-	return (
-		<div className="h-3 rounded-xl w-full max-w-md bg-autofun-background-action-disabled relative">
-			<div
-				className="h-3 rounded-xl bg-autofun-background-action-highlight"
-				style={{
-					width: `${width}%`,
-				}}
-			/>
-		</div>
-	);
-};
+import Progressbar from "../progressbar";
 
 export default async function Holders({ token }: { token: IToken }) {
 	const data = await getHolders({
