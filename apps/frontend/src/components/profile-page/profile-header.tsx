@@ -11,14 +11,17 @@ export default function ProfileHeader({
 		address: string;
 		tokensBought: number;
 		tokensCreated: number;
+		chains: {
+			chain: "solana" | "ethereum" | "base";
+			amount: number;
+		}[];
 	};
 }) {
 	return (
-		<div className="bg-[#0C0C0C] text-white flex items-center justify-between p-4 rounded-xl w-full max-w-4xl mx-auto">
-			{/* Left: Profile Image with overlay buttons */}
+		<div className="bg-[#0C0C0C] md:max-h-[182px] md:max-w-[800px] space-y-4 text-white flex flex-col md:flex-row items-center justify-between p-4 rounded-xl w-full mx-auto gap-0">
 			<div className="relative w-[150px] h-[150px]">
 				<Image src="/create/test-img.png" alt="Profile" width={150} height={150} className="object-cover" />
-				<div className="absolute px-2 w-full justify-between top-2  flex gap-2">
+				<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
 					<button
 						type="button"
 						onClick={() => console.log("upload button")}
@@ -36,34 +39,34 @@ export default function ProfileHeader({
 				</div>
 			</div>
 
-			{/* Middle: Username, Wallet Address, Icon Buttons */}
-			<div className="ml-6 flex flex-col h-full">
-				<h1 className="text-[18px] font-semibold uppercase">{data.username}</h1>
-				<p className="text-[14px] text-gray-400 items-center flex">
+			<div className="ml-6 space-y-1 mb-2 flex flex-col h-full">
+				<h1 className="text-lg font-semibold uppercase">{data.username}</h1>
+				<p className="text-sm text-gray-400 items-center flex">
 					{" "}
 					<CopyButton className="mr-2" textToCopy={data.address} />
 					{data.address}
 				</p>
 				<div className="flex gap-2 mt-2">
-					{["/solana.svg", "/ethereum-bold.svg", "/base.svg"].map((icon, index) => (
-						<div key={index} className="bg-[#171717] bg-opacity-10 p-2 rounded-md flex items-center justify-center">
-							{/* Dont forget to make this part dynamic */}
-							<Image src={`/chain-icons/${icon}`} alt={`icon-${index}`} width={24} height={24} />
-							<p className="px-2 text-[16px] font-bold">1.88</p>
+					{data.chains.map(({ chain, amount }, index) => (
+						<div
+							key={index}
+							className="bg-[#171717] bg-opacity-10 px-2 py-1 rounded-md flex items-center justify-center"
+						>
+							<Image src={`/chain-icons/${chain}.svg`} alt={`${chain}-icon`} width={24} height={24} />
+							<p className="px-2 text-base font-bold">{amount}</p>
 						</div>
 					))}
 				</div>
 			</div>
 
-			{/* Right: Token Stats */}
-			<div className="flex flex-col items-end gap-2 ml-auto">
+			<div className="flex flex-row md:flex-col w-full md:w-fit place-content-center md:place-content-end gap-2 ml-auto">
 				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-lg">
-					<p className="text-white font-bold">Tokens Bought</p>
-					<p className="text-lg text-autofun-background-action-highlight font-semibold">{data.tokensBought}</p>
+					<p className="text-white font-bold text-base">Tokens Bought</p>
+					<p className="text-lg  text-autofun-background-action-highlight font-semibold">{data.tokensBought}</p>
 				</div>
 				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-lg">
-					<p className="text-white font-bold">Tokens Created</p>
-					<p className="text-lg text-autofun-background-action-highlight font-semibold">{data.tokensCreated}</p>
+					<p className="text-white font-bold text-base">Tokens Created</p>
+					<p className="text-base text-autofun-background-action-highlight font-semibold">{data.tokensCreated}</p>
 				</div>
 			</div>
 		</div>
