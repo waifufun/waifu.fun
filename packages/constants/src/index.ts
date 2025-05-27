@@ -50,7 +50,7 @@ export const EVM_RPC_URLS: Record<EvmChainIds, string[]> = {
 
 export const SOLANA_RPC_URLS: Record<SolanaNetworkIds, ClusterUrl[]> = {
 	[SolanaNetworkIds.Mainnet]: [...(heliusApiKey ? [`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
-	[SolanaNetworkIds.Devnet]: [...(heliusApiKey ? [`https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`] : [])],
+	[SolanaNetworkIds.Devnet]: [...(heliusApiKey ? [`https://api.devnet.solana.com`] : [])],
 };
 
 export const CHAINID_TO_SYMBOL: {
