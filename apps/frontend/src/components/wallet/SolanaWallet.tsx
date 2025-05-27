@@ -99,7 +99,14 @@ export class SolanaWallet extends WalletClass {
 		try {
 			const balance = await this._solanaFunctions.connection.getBalance(new PublicKey(this.address));
 			console.log(`SolanaWallet: Native balance for ${this.address} is ${balance} lamports.`);
-			return balance / 1e9;
+
+			// Convert lamports to SOL (1 SOL = 1e9 lamports)
+			// and round down to 4 decimal places
+			const roundedBalance = Math.floor((balance / 1e9) * 10000) / 10000;
+
+
+		
+			return roundedBalance;
 		} catch (error) {
 			console.error("SolanaWallet: Error getting native balance:", error);
 			throw error;
@@ -249,7 +256,7 @@ export class SolanaWallet extends WalletClass {
 			  blockhash,
 			  lastValidBlockHeight,
 			},
-			"confirmed",
+			"finalized",
 		  );
 	
 		  return {

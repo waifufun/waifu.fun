@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import UseTokenImages from "../hook/UseTokenImages";
 import { useMutation } from "@tanstack/react-query";
 import { generateImage, generateMetadata, generateRemoteMetadata } from "@/lib/api";
-import { useForm, type UseFormHandleSubmit, type UseFormRegister, type FormState, type RegisterOptions } from "react-hook-form";
+import { useForm, type UseFormHandleSubmit, type UseFormRegister, type FormState, type RegisterOptions, type UseFormSetValue } from "react-hook-form";
 import { Keypair } from "@solana/web3.js";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
@@ -32,6 +32,9 @@ type PromptContextType = {
   getTokenData: (manual?: boolean) => Promise<TokenMetadata>;
   setPool: (pool: string) => void;
   pool: string;
+  setLaunching: (isLaunching: boolean) => void;
+  isLaunching: boolean;
+  setValue: UseFormSetValue<TokenFormData>
 };
 
 export type TokenFormData = {
@@ -75,6 +78,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
   const [pool, setPool] = useState<string>("meteora");
+  const [isLaunching, setIsLaunching] = useState<boolean>(false);
   
 
   const workerRefs = useRef<Worker[]>([]);
@@ -330,7 +334,10 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
     setUploadedImage,
     getTokenData,
     setPool,
-    pool
+    pool,
+    setLaunching: setIsLaunching,
+    isLaunching,
+    setValue
   };
 
   return (
