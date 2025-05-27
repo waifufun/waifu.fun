@@ -22,7 +22,7 @@ export default function ProfileHeader({
 					<button
 						type="button"
 						onClick={() => console.log("upload button")}
-						className="cursor-pointerbg-[#0C0C0C]/90 rounded-md p-1 w-6 h-6"
+						className="cursor-pointer bg-[#0C0C0C]/90 rounded-md p-1 w-6 h-6"
 					>
 						<Image src="/profile/upload.svg" alt="Profile" width={14} height={14} className="object-cover" />
 					</button>
@@ -47,8 +47,9 @@ export default function ProfileHeader({
 				<div className="flex gap-2 mt-2">
 					{["/solana.svg", "/ethereum-bold.svg", "/base.svg"].map((icon, index) => (
 						<div key={index} className="bg-[#171717] bg-opacity-10 p-2 rounded-md flex items-center justify-center">
+							{/* Dont forget to make this part dynamic */}
 							<Image src={`/chain-icons/${icon}`} alt={`icon-${index}`} width={24} height={24} />
-							<p className="px-2">1.88</p>
+							<p className="px-2 text-[16px] font-bold">1.88</p>
 						</div>
 					))}
 				</div>
@@ -56,13 +57,13 @@ export default function ProfileHeader({
 
 			{/* Right: Token Stats */}
 			<div className="flex flex-col items-end gap-2 ml-auto">
-				<div className="bg-[#0C0C0C] flex flex-row items-center space-x-2 p-3 rounded-lg">
+				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-lg">
 					<p className="text-white font-bold">Tokens Bought</p>
-					<p className="text-lg font-semibold">{data.tokensBought}</p>
+					<p className="text-lg text-autofun-background-action-highlight font-semibold">{data.tokensBought}</p>
 				</div>
-				<div className="bg-[#0C0C0C] text-[16px] p-3 rounded-lg">
-					<p className="text-white">Tokens Created</p>
-					<p className="font-semibold">{data.tokensCreated}</p>
+				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-lg">
+					<p className="text-white font-bold">Tokens Created</p>
+					<p className="text-lg text-autofun-background-action-highlight font-semibold">{data.tokensCreated}</p>
 				</div>
 			</div>
 		</div>
