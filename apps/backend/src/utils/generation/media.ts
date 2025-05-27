@@ -31,15 +31,15 @@ export async function generateMedia(data: {
 	const defaultMode = "fast";
 	const mode = data.mode || defaultMode;
 
-	console.log("Starting media generation with params:", {
-		type: data.type,
-		mode,
-		prompt: data.prompt,
-		width: data.width,
-		height: data.height,
-		guidance_scale: data.guidance_scale,
-		negative_prompt: data.negative_prompt,
-	});
+	// console.log("Starting media generation with params:", {
+	// 	type: data.type,
+	// 	mode,
+	// 	prompt: data.prompt,
+	// 	width: data.width,
+	// 	height: data.height,
+	// 	guidance_scale: data.guidance_scale,
+	// 	negative_prompt: data.negative_prompt,
+	// });
 
 	const ai = new AI({
 		textModel: "google/gemini-flash-1.5",
