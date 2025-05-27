@@ -28,7 +28,7 @@ const s3Credentials: aws.S3ClientConfig = {
 export const s3 = new aws.S3(s3Credentials);
 
 export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
-	return `${process.env.S3_STORAGE_ENDPOINT}/${BUCKET_NAME}/${fileName}` as TURLLike;
+	return `${process.env.S3_STORAGE_ENDPOINT}/${bucket}/${fileName}` as TURLLike;
 };
 
 /**
@@ -40,7 +40,7 @@ export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
  */
 export const upload = async (bucket: string, file: IFile, fileName: string) => {
 	const command = new aws.PutObjectCommand({
-		Bucket: BUCKET_NAME,
+		Bucket: bucket,
 		Key: `${String(fileName)}.${mime.extension(file?.mimetype)}`,
 		ContentType: file.mimetype,
 		Body: file.data,

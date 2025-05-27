@@ -603,7 +603,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				metadataFilename,
 			);
 
-			const metadataUrl = `${process.env.API_URL}/api/metadata/${metadataFilename}.json`;
+			const metadataUrl = `${process.env.API_URL}/autofun/token-metadata/${metadataFilename}.json`;
 
 			return reply.send({
 				success: true,
