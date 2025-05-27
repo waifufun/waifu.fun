@@ -354,7 +354,7 @@ export class SolanaRpcProvider {
 				console.error(
 					"Failed to decode bonding curve for",
 					tokenMints?.[i] ? tokenMints[i].toBase58() : undefined,
-					err
+					err,
 				);
 				return null;
 			}
