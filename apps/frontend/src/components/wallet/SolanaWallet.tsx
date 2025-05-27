@@ -249,7 +249,7 @@ export class SolanaWallet extends WalletClass {
 			  blockhash,
 			  lastValidBlockHeight,
 			},
-			"confirmed",
+			"finalized",
 		  );
 	
 		  return {

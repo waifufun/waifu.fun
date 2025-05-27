@@ -215,6 +215,7 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
         console.log("Token Data (manual):", tokenData);
 
         const tx = await solanaWallets?.Devnet.createToken(tokenData);
+        // wait for couple of seconds to ensure the transaction is processed
         console.log("Transaction:", tx);
         createTokenMutation.mutate({
             contractAddress: mintKeyPair?.publicKey.toString() || "",
@@ -230,6 +231,7 @@ const TokenInfo = ({type}: {type: "auto" | "manual"}) => {
         console.log("Token Data:", tokenData);
         const tx = await solanaWallets?.Devnet.createToken(tokenData);
         console.log("Transaction:", tx);
+        // wait for couple of seconds to ensure the transaction is processed
         createTokenMutation.mutate({
             contractAddress: mintKeyPair?.publicKey.toString() || "",
             chain: "solana",
