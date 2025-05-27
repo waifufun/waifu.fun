@@ -41,7 +41,7 @@ export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
 export const upload = async (bucket: string, file: IFile, fileName: string) => {
 	const command = new aws.PutObjectCommand({
 		Bucket: bucket,
-		Key: `${String(fileName)}.${mime.extension(file?.mimetype)}`,
+		Key: `${bucket}/${String(fileName)}.${mime.extension(file?.mimetype)}`,
 		ContentType: file.mimetype,
 		Body: file.data,
 		ACL: "public-read",
