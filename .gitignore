@@ -9,6 +9,7 @@ logs
 **/.DS_Store
 **/terraform.tfstate
 **/*.tfstate.backup
+**/.terraform
 
 # datadog files
 apps/backend/logs
