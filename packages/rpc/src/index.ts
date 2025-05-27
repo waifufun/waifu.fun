@@ -1,12 +1,14 @@
 import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@autofun/types";
 import {
 	createPublicClient,
+	createWalletClient,
 	erc20Abi,
 	fallback,
 	getAddress,
 	http,
 	type PublicClient,
 	type ReadContractParameters,
+	type WalletClient,
 } from "viem";
 import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
 import type { SolanaNetworkIds } from "@autofun/types";
@@ -16,19 +18,24 @@ import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/ancho
 import idl from "./idls/autofun.json";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
+import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
+import autoFunAbi from "./evm/abis/AutoFun.json";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
 
 export class EVMRpcProvider {
 	public client: PublicClient;
+	private walletClient?: WalletClient;
+	private chainId: EvmChainIds;
 
-	constructor(chainId: EvmChainIds) {
+	constructor(chainId: EvmChainIds, privateKey?: string) {
 		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
 		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
 			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
 		}
 
+		this.chainId = chainId;
 		this.client = createPublicClient({
 			batch: {
 				multicall: true,
@@ -36,6 +43,13 @@ export class EVMRpcProvider {
 			chain: CHAINID_TO_VIEM_CHAIN[chainId],
 			transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
 		});
+
+		if (privateKey) {
+			this.walletClient = createWalletClient({
+				chain: CHAINID_TO_VIEM_CHAIN[chainId],
+				transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
+			});
+		}
 	}
 
 	async readErc20Contract(contractAddress: EvmAddressLike, functionName: Erc20FunctionName, args: Erc20Args) {
@@ -114,6 +128,54 @@ export class EVMRpcProvider {
 
 		return Number(balanceRaw) / 10 ** Number(decimals);
 	};
+
+	async readAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+		return await this.client.readContract({
+			address: getAddress(contractAddress),
+			abi: autoFunAbi.abi,
+			functionName,
+			args,
+		});
+	}
+
+	async writeAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+		if (!this.walletClient) {
+			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
+		}
+
+		return await this.walletClient.writeContract({
+			address: getAddress(contractAddress),
+			abi: autoFunAbi.abi,
+			functionName,
+			args,
+			chain: CHAINID_TO_VIEM_CHAIN[this.chainId],
+			account: this.walletClient.account ?? null,
+		});
+	}
+
+	async launch(contractAddress: EvmAddressLike, config: AutoFunConfig) {
+		return await this.writeAutoFunContract(contractAddress, "launch", [config]);
+	}
+
+	async launchAndSwap(contractAddress: EvmAddressLike, launchConfig: AutoFunConfig, swapConfig: BondingCurveConfig) {
+		return await this.writeAutoFunContract(contractAddress, "launchAndSwap", [launchConfig, swapConfig]);
+	}
+
+	async swap(contractAddress: EvmAddressLike, config: BondingCurveConfig) {
+		return await this.writeAutoFunContract(contractAddress, "swap", [config]);
+	}
+
+	async withdraw(contractAddress: EvmAddressLike, token: EvmAddressLike, amount: bigint) {
+		return await this.writeAutoFunContract(contractAddress, "withdraw", [token, amount]);
+	}
+
+	async getLaunchedTokensByOwner(contractAddress: EvmAddressLike, owner: EvmAddressLike) {
+		return await this.readAutoFunContract(contractAddress, "getLaunchedTokensByOwner", [owner]);
+	}
+
+	async getAllLaunchedTokens(contractAddress: EvmAddressLike) {
+		return await this.readAutoFunContract(contractAddress, "getAllLaunchedTokens", []);
+	}
 }
 
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
@@ -289,13 +351,17 @@ export class SolanaRpcProvider {
 			try {
 				return this.program.coder.accounts.decode("bondingCurve", info.data);
 			} catch (err) {
-				console.error("Failed to decode bonding curve for", tokenMints?.[i].toBase58(), err);
+				console.error(
+					"Failed to decode bonding curve for",
+					tokenMints?.[i] ? tokenMints[i].toBase58() : undefined,
+					err
+				);
 				return null;
 			}
 		});
 
 		return bondingCurves.map((curve, i) => {
-			const mint = tokenMints?.[i].toBase58();
+			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
 			const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
 			const supplyInfo = supplies[i];
 
