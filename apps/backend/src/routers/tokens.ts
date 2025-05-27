@@ -331,7 +331,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 
 			const items = Array.from(
-				new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
+				new Map((trades?.getTokenEvents?.items || []).map((item: any) => [item?.transactionHash, item])).values(),
 			).map((event) => {
 				const trade = event as {
 					maker: string;
@@ -417,8 +417,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		const items: IHolder[] = holders?.holders?.items
 			?.splice(0, 50)
-			?.filter((item) => Number(item.balance) > 1)
-			?.map((item) => {
+			?.filter((item: any) => Number(item.balance) > 1)
+			?.map((item: any) => {
 				const percentage = getPercentageOfTotal(Number(item?.balance ? item?.balance : "0"), Number(token.totalSupply));
 				return {
 					address: item.address,
@@ -529,7 +529,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				hidden: false,
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),
-				createdAt,
+				createdAt: createdAt.toISOString(),
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -565,7 +565,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				creator: (metadata?.creator as SolanaAddressLike) || undefined,
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
-				createdAt: new Date(),
+				createdAt: new Date().toISOString(),
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
