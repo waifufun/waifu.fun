@@ -6,6 +6,8 @@ packages/**/node_modules
 logs
 .DS_Store
 **/.DS_Store
+**/terraform.tfstate
+**/*.tfstate.backup
 
 # datadog files
 apps/backend/logs

@@ -1,0 +1,1 @@
+export TF_VAR_hcloud_token="your-api-token"

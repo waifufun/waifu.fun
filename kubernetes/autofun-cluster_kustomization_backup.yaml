@@ -1,0 +1,39 @@
+"apiVersion": "kustomize.config.k8s.io/v1beta1"
+"kind": "Kustomization"
+"patches":
+- "patch": |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: system-upgrade-controller
+      namespace: system-upgrade
+    spec:
+      template:
+        spec:
+          containers:
+            - name: system-upgrade-controller
+              volumeMounts:
+                - name: ca-certificates
+                  mountPath: /var/lib/ca-certificates
+          volumes:
+            - name: ca-certificates
+              hostPath:
+                path: /var/lib/ca-certificates
+                type: Directory
+  "target":
+    "group": "apps"
+    "kind": "Deployment"
+    "name": "system-upgrade-controller"
+    "namespace": "system-upgrade"
+    "version": "v1"
+- "path": "kured.yaml"
+- "path": "ccm.yaml"
+"resources":
+- "https://github.com/kubereboot/kured/releases/download/1.17.1/kured-1.17.1-dockerhub.yaml"
+- "https://github.com/rancher/system-upgrade-controller/releases/download/v0.14.2/system-upgrade-controller.yaml"
+- "https://github.com/rancher/system-upgrade-controller/releases/download/v0.14.2/crd.yaml"
+- "https://github.com/hetznercloud/hcloud-cloud-controller-manager/releases/download/v1.25.1/ccm-networks.yaml"
+- "hcloud-csi.yaml"
+- "nginx_ingress.yaml"
+- "longhorn.yaml"
+- "cert_manager.yaml"
