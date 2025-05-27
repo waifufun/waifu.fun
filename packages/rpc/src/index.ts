@@ -363,7 +363,6 @@ export class SolanaRpcProvider {
 		return bondingCurves.map((curve, i) => {
 			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
 			const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
-			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
 			const supplyInfo = supplies[i];
 
 			if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
