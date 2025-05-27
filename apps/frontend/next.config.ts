@@ -1,24 +1,23 @@
-import type { NextConfig } from "next";
-
 const nextConfig = {
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        crypto: require.resolve('crypto-browserify'),
-        stream: require.resolve('stream-browserify'),
-        buffer: require.resolve('buffer'),
-      };
+	output: "standalone",
+	webpack: (config, { isServer }) => {
+		if (!isServer) {
+			config.resolve.fallback = {
+				...config.resolve.fallback,
+				crypto: require.resolve("crypto-browserify"),
+				stream: require.resolve("stream-browserify"),
+				buffer: require.resolve("buffer"),
+			};
 
-      config.resolve.fallback.fs = false;
-    }
+			config.resolve.fallback.fs = false;
+		}
 
-    return config;
-  },
-  images: {
-    domains: ['v3.fal.media']
-  },
-  reactStrictMode: false
+		return config;
+	},
+	images: {
+		domains: ["v3.fal.media"],
+	},
+	reactStrictMode: false,
 };
 
 export default nextConfig;

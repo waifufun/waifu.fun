@@ -52,4 +52,4 @@ export async function incrementRateLimit(userPublicKey: string): Promise<void> {
 	if (ttl === -1) {
 		await redis.expire(key, RATE_LIMIT_WINDOW);
 	}
-} 
+}

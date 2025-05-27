@@ -58,7 +58,6 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 	const nonceMutation = useMutation({
 		mutationKey: ["generateNonce"],
 		mutationFn: generateNonce,
-		onSuccess: async (result: any) => {},
 		onError: (e) => {
 			toast.error(`Error: ${e.message}`);
 		},
@@ -68,6 +67,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		mutationKey: ["authenticate"],
 		mutationFn: ({ address, signature, chain }: { address: AddressLike; signature: string; chain: "solana" | "evm" }) =>
 			authenticate(address, signature, chain),
+		// biome-ignore lint/suspicious/noExplicitAny: Jitters will resolve
 		onSuccess: async (result: any) => {
 			if (result.success) {
 				toast.success("Authenticated successfully");
@@ -152,6 +152,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		}
 	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Jitters will resolve
 	useEffect(() => {
 		if (publicKey && connected && !disconnecting && signMessage && sendTransactionSolana && signSolanaTransaction && signSolanaAllTransactions) {
 			const solanaAddress = publicKey.toBase58() as SolanaAddressLike;
@@ -191,6 +192,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 		}
 	}, [publicKey, connected, disconnecting, signMessage, sendTransactionSolana]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Jitters will resolve
 	useEffect(() => {
 		if (address && isConnected) {
 			const functions: IEVMFunctions = {

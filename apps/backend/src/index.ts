@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
+import fastifyCookie from "@fastify/cookie";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
@@ -32,6 +33,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 fastify.register(helmet);
+fastify.register(fastifyCookie);
 
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

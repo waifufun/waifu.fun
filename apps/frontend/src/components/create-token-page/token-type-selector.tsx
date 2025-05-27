@@ -5,6 +5,7 @@ export default function TokenTypeSelector({ selected }: { selected: "auto" | "ma
 		return (
 			<Link className="w-full" href={href}>
 				<button
+					type="button"
 					className="w-full uppercase hover:cursor-pointer py-4"
 					style={{
 						background: (selected === name && "linear-gradient(180deg, #171717 0%, #121212 100%)") || "#3333331A",

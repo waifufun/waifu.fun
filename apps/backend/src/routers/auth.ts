@@ -1,12 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import fastifyCookie from "@fastify/cookie";
 import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
 
 export default async function authRoutes(fastify: FastifyInstance) {
-	fastify.register(fastifyCookie);
 	fastify.post("/generateNonce", async (request) => {
 		const { address } = request.body as { address: AddressLike };
 		if (!address) {
@@ -152,23 +150,32 @@ export default async function authRoutes(fastify: FastifyInstance) {
     // this is for develepoment to get a cookie for postman {/* Malibu */}
 	if (process.env.NODE_ENV === "development") {
 		fastify.get("/dev-setup", async (request, reply) => {
-			const devPayload = {
+			const evmPayload = {
 				address: "0x0000000000000000000000000000000000000000",
 				nonce: "dev",
 			};
 
-			const token = fastify.jwt.sign(devPayload, {
+			const solanaPayload = {
+				address: "11111111111111111111111111111111",
+				nonce: "dev",
+			};
+
+			const evmToken = fastify.jwt.sign(evmPayload, {
+				expiresIn: "7d",
+			});
+
+			const solanaToken = fastify.jwt.sign(solanaPayload, {
 				expiresIn: "7d",
 			});
 
 			reply
-				.setCookie("evm", token, {
+				.setCookie("evm", evmToken, {
 					maxAge: 60 * 60 * 24 * 7,
 					path: "/",
 					httpOnly: true,
 					secure: false, 
 				})
-				.setCookie("solana", token, {
+				.setCookie("solana", solanaToken, {
 					maxAge: 60 * 60 * 24 * 7,
 					path: "/",
 					httpOnly: true,
@@ -178,8 +185,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					success: true, 
 					message: "Development cookies set",
 					cookies: {
-						evm: token,
-						solana: token
+						evm: evmToken,
+						solana: solanaToken
 					}
 				});
 		});

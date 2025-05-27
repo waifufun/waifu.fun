@@ -1,18 +1,18 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "jsx": "preserve",
-    "plugins": [{ "name": "next" }],
-    "paths": { 
-      "@/*": ["./src/*"]
-    },
-    "incremental": true,
-    "module": "esnext",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true
-  },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src"],
-  "exclude": ["node_modules"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
+		"jsx": "preserve",
+		"plugins": [{ "name": "next" }],
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"incremental": true,
+		"module": "esnext",
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noEmit": true
+	},
+	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src"],
+	"exclude": ["node_modules"]
 }

@@ -1,5 +1,6 @@
 import type { Address as SolanaAddressLikeImport } from "@solana/kit";
 import type { Address as EvmAddressLikeImport, Hash } from "viem";
+import type { Types } from "mongoose";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
@@ -13,7 +14,7 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
-export type FalModelMode = "image" | "llm";
+export type FalModelMode = "image" | "llm" | "audio" | "video";
 export type FALModels = {
 	image: {
 		fast: string;
@@ -21,6 +22,12 @@ export type FALModels = {
 	};
 	llm: {
 		gemini: string;
+	};
+	audio: {
+		mmaudiov2: string;
+	};
+	video: {
+		klingVideo: string;
 	};
 };
 
@@ -51,7 +58,7 @@ export interface EvmTokenLookup {
 
 export type ITokenLookUp = SolanaTokenLookup | EvmTokenLookup;
 
-export interface IToken<T extends TChain = TChain> {
+export interface IToken<T extends TChain = TChain> extends MongooseDocument {
 	contractAddress: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	chain: T;
 	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
@@ -76,7 +83,6 @@ export interface IToken<T extends TChain = TChain> {
 	hidden?: boolean;
 	featured?: boolean;
 	imported?: boolean;
-	createdAt?: Date;
 	verified?: boolean;
 	updatedAt?: Date;
 	pool?: string;
@@ -99,7 +105,7 @@ export interface IUser {
 	points?: number;
 }
 
-export type TChatRooms = 1000 | 100_000 | 1_000_000;
+export type TChatRooms = "1000" | "100000" | "1000000";
 
 export interface IHolder {
 	address: AddressLike;
@@ -121,7 +127,13 @@ export interface ITrade {
 	timestamp: number;
 }
 
-export interface IChatMessage {
+interface MongooseDocument {
+	_id?: Types.ObjectId | string;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
+export interface IChatMessage extends MongooseDocument {
 	contractAddress: Pick<IToken, "contractAddress">;
 	sender: AddressLike;
 	room: TChatRooms;

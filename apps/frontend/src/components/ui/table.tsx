@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
 	return (
-		<div data-slot="table-container" className="relative w-full overflow-x-auto">
+		<div data-slot="table-container" className="relative w-full overflow-x-auto bg-[#0C0C0C]">
 			<table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
 		</div>
 	);
@@ -31,7 +31,13 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
 }
 
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
-	return <tr data-slot="table-row" className={cn("even:bg-[#0F0F0F] h-14 transition-colors", className)} {...props} />;
+	return (
+		<tr
+			data-slot="table-row"
+			className={cn("bg-[#0C0C0C] even:bg-[#0F0F0F] h-14 transition-colors", className)}
+			{...props}
+		/>
+	);
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {

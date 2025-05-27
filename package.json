@@ -15,7 +15,24 @@
 				"x64",
 				"arm64"
 			]
-		}
+		},
+		"ignoredBuiltDependencies": [
+			"@biomejs/biome",
+			"@tailwindcss/oxide",
+			"bigint-buffer",
+			"blake-hash",
+			"bufferutil",
+			"core-js-pure",
+			"es5-ext",
+			"esbuild",
+			"keccak",
+			"protobufjs",
+			"secp256k1",
+			"sharp",
+			"tiny-secp256k1",
+			"usb",
+			"utf-8-validate"
+		]
 	},
 	"release": {
 		"branches": [
@@ -58,11 +75,11 @@
 		"@semantic-release/git": "^10.0.1",
 		"@semantic-release/github": "^11.0.2",
 		"cross-env": "^7.0.3",
+		"dotenv-cli": "^8.0.0",
 		"esbuild": "^0.25.4",
 		"semantic-release": "^24.2.3",
 		"tsx": "^4.15.1",
-		"typescript": "^5.4.5",
-		"dotenv-cli": "^8.0.0"
+		"typescript": "^5.4.5"
 	},
-	"packageManager": "pnpm@8.8.0+sha512.798e6b322669ce63c8da856bd62ad1f7b6f36f4dfaa0ac025af2bdd700d09dd5dca943e5cad3edac5d1b3baebc4b2c3fb80fbb8537f936733c32be2ec7805144"
+	"packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977"
 }
