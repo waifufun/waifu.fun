@@ -209,7 +209,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	);
 
 	if (nonImportedTokens?.length > 0) {
-		const rpc = new SolanaRpcProvider(SolanaNetworkIds.Mainnet);
+		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
 		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
 
 		for (const tokenRecord of bondingCurveInfo) {
@@ -357,7 +357,8 @@ export async function getTokenBalance({
 	}
 
 	if (chain === "solana") {
-		return await new SolanaRpcProvider(chainId as SolanaNetworkIds).getTokenBalance(contractAddress, address);
+		const rpc = await SolanaRpcProvider.connect(chainId as SolanaNetworkIds);
+		return rpc.getTokenBalance(contractAddress, address);
 	}
 
 	throw new Error("Unsupported chain");

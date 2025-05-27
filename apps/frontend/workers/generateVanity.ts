@@ -55,7 +55,6 @@ self.onmessage = async (event: MessageEvent<{ suffix: string }>) => {
 					});
 					return;
 				}
-
 				console.warn(`[Worker] Key ${publicKeyBs58} matched suffix but failed validation. Continuing...`);
 			}
 
