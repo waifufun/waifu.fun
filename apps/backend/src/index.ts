@@ -37,7 +37,7 @@ fastify.register(fastifyCookie);
 
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	origin: "http://localhost:3000",
+	origin: "*",
 	credentials: true,
 });
 
