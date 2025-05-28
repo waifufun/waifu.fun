@@ -31,6 +31,8 @@ COPY . .
 
 COPY --from=deps /app/node_modules ./node_modules
 
+RUN pnpm install --frozen-lockfile --prefer-offline
+
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN pnpm --filter frontend run build
