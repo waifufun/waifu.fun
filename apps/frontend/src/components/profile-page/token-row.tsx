@@ -69,7 +69,7 @@ export default function TokenRow({
 							<>
 								<p className="text-base font-medium text-white">Mcap</p>
 								<p className="text-lg font-semibold text-autofun-background-action-highlight">
-								{formatNumber(data.marketCap, false, true)}
+									{formatNumber(data.marketCap, false, true)}
 								</p>
 							</>
 						) : null}
