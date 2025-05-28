@@ -1,14 +1,13 @@
 "use client";
+import PointCounter from "@/components/profile-page/point-counter";
 import ProfileFilters from "@/components/profile-page/profile-filters";
 import ProfileHeader from "@/components/profile-page/profile-header";
 import TokenRow from "@/components/profile-page/token-row";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
-// import { useQuery } from "@tanstack/react-query";
-// import { useParams } from "next/navigation";
 
 export default function Page() {
-	const [tab, setTab] = useState("Activity");
+	const [tab, setTab] = useState("activity");
 
 	return (
 		<div className="mt-10 flex place-self-center w-full flex-col">
@@ -27,10 +26,10 @@ export default function Page() {
 					}}
 				/>
 				{/* tabs section */}
-				<div className="w-[800px] bg-[#0a0a0a] h-full flex place-self-center">
+				<div className="w-[800px] bg-[#0F0F0F] h-full flex place-self-center">
 					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">
 						<TabsList className="grid w-full grid-cols-3">
-							<TabsTrigger value="Activity" className="w-full">
+							<TabsTrigger value="activity" className="w-full">
 								Activity
 							</TabsTrigger>
 							<TabsTrigger value="Wallet" className="w-full">
@@ -41,8 +40,8 @@ export default function Page() {
 							</TabsTrigger>
 						</TabsList>
 
-						<ProfileFilters />
-						<TabsContent value="Activity">
+						<ProfileFilters mode={tab === "activity" ? "activity" : "wallet"} />
+						<TabsContent value="activity" className="bg-transparent">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
 								{Array(8)
@@ -63,9 +62,31 @@ export default function Page() {
 									))}
 							</div>
 						</TabsContent>
-						<TabsContent value="Wallet">Wallet content</TabsContent>
-						<TabsContent value="Points">
-							<p className="text-white p-4">Points content goes here</p>
+						<TabsContent value="Wallet" className="bg-transparent">
+							<div className="p-4 w-full max-h-full overflow-y-auto">
+								{/* Example content */}
+								{Array(8)
+									.fill(null)
+									.map((_, i) => (
+										<TokenRow
+											key={i}
+											data={{
+												tokenImageUrl: "/create/test-img.png",
+												tokenTitle: `AlienToken ${i + 1}`,
+												tokenTicker: "ALIEN",
+												marketCap: 1240000,
+												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
+												amountHeld: 124_543_343,
+												dollarWorth: 1337.42,
+											}}
+										/>
+									))}
+							</div>
+						</TabsContent>
+						<TabsContent value="Points" className="bg-transparent">
+							<div className="flex justify-center">
+								<PointCounter points={0} />
+							</div>
 						</TabsContent>
 					</Tabs>
 				</div>
