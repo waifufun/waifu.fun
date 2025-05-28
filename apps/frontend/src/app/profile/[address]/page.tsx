@@ -32,15 +32,14 @@ export default function Page() {
 							<TabsTrigger value="activity" className="w-full">
 								Activity
 							</TabsTrigger>
-							<TabsTrigger value="Wallet" className="w-full">
+							<TabsTrigger value="wallet" className="w-full">
 								Wallet
 							</TabsTrigger>
 							<TabsTrigger value="Points" className="w-full">
 								Points
 							</TabsTrigger>
 						</TabsList>
-
-						<ProfileFilters mode={tab === "activity" ? "activity" : "wallet"} />
+						{(tab === "activity" || tab === "wallet") && <ProfileFilters mode={tab} />}{" "}
 						<TabsContent value="activity" className="bg-transparent">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
@@ -62,7 +61,7 @@ export default function Page() {
 									))}
 							</div>
 						</TabsContent>
-						<TabsContent value="Wallet" className="bg-transparent">
+						<TabsContent value="wallet" className="bg-transparent">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
 								{Array(8)
@@ -72,7 +71,7 @@ export default function Page() {
 											key={i}
 											data={{
 												tokenImageUrl: "/create/test-img.png",
-												tokenTitle: `AlienToken ${i + 1}`,
+												tokenTitle: "AlienToken",
 												tokenTicker: "ALIEN",
 												marketCap: 1240000,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
@@ -87,6 +86,19 @@ export default function Page() {
 							<div className="flex justify-center">
 								<PointCounter points={0} />
 							</div>
+							<TokenRow
+								mode="points"
+								data={{
+									tokenImageUrl: "/create/test-img.png",
+									tokenTitle: "alientoken",
+									tokenTicker: "ALIEN",
+									marketCap: 1240000,
+									contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
+									amountHeld: 124_543_343,
+									dollarWorth: 1337.42,
+									points: 12,
+								}}
+							/>
 						</TabsContent>
 					</Tabs>
 				</div>

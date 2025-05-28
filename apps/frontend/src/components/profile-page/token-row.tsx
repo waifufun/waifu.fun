@@ -4,6 +4,7 @@ import Link from "next/link";
 
 export default function TokenRow({
 	data,
+	mode = "activity",
 }: {
 	data: {
 		tokenImageUrl: string;
@@ -13,7 +14,10 @@ export default function TokenRow({
 		contractAddress: string;
 		amountHeld: number;
 		dollarWorth: number;
+		points?: number;
+		funPoints?: number;
 	};
+	mode?: "activity" | "points";
 }) {
 	return (
 		<div className="group rounded-lg bg-transparent hover:bg-[#0F0F0F] relative flex justify-between items-center w-full h-[94px] px-4 py-2">
@@ -41,34 +45,41 @@ export default function TokenRow({
 				</div>
 			</div>
 
-			{/* Right section: Market Cap, Divider, Held, External Link */}
-			<div className="flex items-center gap-x-8 place-items-end transition-all duration-300 ease-in-out group-hover:gap-x-10">
-				<div className="flex flex-col h-full w-full space-y-1 justify-end transition-all duration-300">
-					<p className="text-base font-medium text-white">Mcap</p>
-					<p className="text-lg font-semibold text-autofun-background-action-highlight">
-						${data.marketCap.toLocaleString()}
-					</p>
-				</div>
+			{mode === "activity" ? (
+				<div className="flex items-center gap-x-8 place-items-end transition-all duration-300 ease-in-out group-hover:gap-x-10">
+					<div className="flex flex-col h-full w-full space-y-1 justify-end transition-all duration-300">
+						<p className="text-base font-medium text-white">Mcap</p>
+						<p className="text-lg font-semibold text-autofun-background-action-highlight">
+							${data.marketCap.toLocaleString()}
+						</p>
+					</div>
 
-				<div className="self-stretch w-px bg-[#1E1E1E]" />
+					<div className="self-stretch w-px bg-[#1E1E1E]" />
 
-				<div className="flex flex-col w-full space-y-1 justify-center transition-all duration-300">
-					<p className="text-white font-medium text-base">{data.amountHeld}</p>
-					<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
+					<div className="flex flex-col w-full space-y-1 justify-center transition-all duration-300">
+						<p className="text-white font-medium text-base">{data.amountHeld}</p>
+						<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
+					</div>
+					<div className="w-0 overflow-hidden group-hover:w-12 transition-all duration-300 ease-in-out flex-shrink-0">
+						<Link href={`/token/${data.contractAddress}`}>
+							<Image
+								src={"/profile/link.svg"}
+								alt="link icon"
+								width={24}
+								height={24}
+								className="object-contain w-6 h-6"
+							/>
+						</Link>
+					</div>
 				</div>
-				{/* This block takes up 0 space until hovered */}
-				<div className="w-0 overflow-hidden group-hover:w-12 transition-all duration-300 ease-in-out flex-shrink-0">
-					<Link href={`/token/${data.contractAddress}`}>
-						<Image
-							src={"/profile/link.svg"}
-							alt="link icon"
-							width={24}
-							height={24}
-							className="object-contain w-6 h-6"
-						/>
-					</Link>
+			) : (
+				<div className="flex flex-col justify-end h-full px-2">
+					<div className="space-y-1">
+						<p className="text-base text-white">Points</p>
+						<p className="text-lg text-autofun-background-action-highlight">{data.points} FUN</p>
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }
