@@ -48,6 +48,7 @@ export default function Page() {
 									.fill(null)
 									.map((_, i) => (
 										<TokenRow
+											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 											key={i}
 											data={{
 												image: "/create/test-img.png",
@@ -70,6 +71,7 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="wallet"
+											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 											key={i}
 											data={{
 												image: "/create/test-img.png",
@@ -97,6 +99,7 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="points"
+											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 											key={i}
 											data={{
 												chain: "solana",

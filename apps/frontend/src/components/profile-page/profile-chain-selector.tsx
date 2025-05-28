@@ -60,9 +60,7 @@ export default function ProfileChainSelector() {
 							type="button"
 							className={cn(
 								"flex items-center justify-center h-full w-[40px] rounded-md transition-all",
-								isActive
-									? "border border-autofun-background-action-highlight grayscale-0"
-									: " text-white",
+								isActive ? "border border-autofun-background-action-highlight grayscale-0" : " text-white",
 								"hover:outline-1 hover:outline-autofun-background-action-highlight",
 							)}
 						>

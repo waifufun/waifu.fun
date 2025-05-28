@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import Link from "next/link";
-import { EvmChainIds, SolanaNetworkIds} from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
 
 export default function TokenRow({
