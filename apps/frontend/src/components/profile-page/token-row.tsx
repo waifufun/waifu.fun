@@ -94,7 +94,7 @@ export default function TokenRow({
 				</div>
 			) : (
 				<div className="flex flex-col justify-end h-full px-2">
-					<div className="space-y-1">
+					<div className="space-y-1 h-full">
 						<p className="text-base text-white">Points</p>
 						<p className="text-lg text-autofun-background-action-highlight">{data.points} FUN</p>
 					</div>
