@@ -11,7 +11,7 @@ FROM base AS builder
 
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 RUN pnpm --filter backend run build
 
