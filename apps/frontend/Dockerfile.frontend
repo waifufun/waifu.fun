@@ -35,7 +35,8 @@ RUN pnpm install --frozen-lockfile --prefer-offline
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN pnpm --filter frontend run build
+RUN --mount=type=cache,id=nextjs-cache,target=/app/apps/frontend/.next/cache \
+    pnpm --filter frontend run build
 
 FROM base AS runner
 WORKDIR /app
