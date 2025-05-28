@@ -1,6 +1,5 @@
 import type { MediaType } from "@autofun/types";
-import { fal } from "@fal-ai/client";
-import { falApiKey } from "@autofun/constants";
+import { AI } from "@autofun/ai";
 import { generateLyrics, formatLyricsForDiffrhythm } from "./lyrics";
 import { generateStylePrompt } from "../../prompts/style-prompt";
 
@@ -32,116 +31,70 @@ export async function generateMedia(data: {
 	const defaultMode = "fast";
 	const mode = data.mode || defaultMode;
 
-	console.log("Starting media generation with params:", {
-		type: data.type,
-		mode,
-		prompt: data.prompt,
-		width: data.width,
-		height: data.height,
-		guidance_scale: data.guidance_scale,
-		negative_prompt: data.negative_prompt,
-	});
+	// console.log("Starting media generation with params:", {
+	// 	type: data.type,
+	// 	mode,
+	// 	prompt: data.prompt,
+	// 	width: data.width,
+	// 	height: data.height,
+	// 	guidance_scale: data.guidance_scale,
+	// 	negative_prompt: data.negative_prompt,
+	// });
 
-	if (!falApiKey) {
-		throw new Error("FAL_API_KEY environment variable not set.");
-	}
-	fal.config({ credentials: falApiKey });
+	const ai = new AI({
+		textModel: "google/gemini-flash-1.5",
+		imageModel: mode === "pro" ? "fal-ai/flux-pro/v1.1-ultra" : "fal-ai/flux/schnell",
+		audioModel: "fal-ai/mmaudio-v2/text-to-audio",
+		videoModel: mode === "pro" ? "fal-ai/pixverse/v4/text-to-video" : "fal-ai/pixverse/v4/text-to-video/fast"
+	});
 
 	const timeoutPromise = new Promise((_, reject) =>
 		setTimeout(() => reject(new Error(`Media generation timed out after ${timeout}ms`)), timeout),
 	);
 
-	let generationPromise: Promise<unknown>;
-
 	try {
 		const mediaType = data.type.toLowerCase();
 		switch (mediaType) {
 			case "image": {
-				const isProMode = mode === "pro";
-				const model = isProMode ? "fal-ai/flux-pro/v1.1-ultra" : "fal-ai/flux/schnell";
-
-				const input: {
-					prompt: string;
-					width?: number;
-					height?: number;
-					num_inference_steps?: number;
-					negative_prompt?: string;
-					guidance_scale?: number;
-					image_size?: string;
-				} = {
-					prompt: data.prompt,
-					negative_prompt: data.negative_prompt,
-					guidance_scale: data.guidance_scale,
+				const imageUrl = await Promise.race([
+					ai.createImageUrl({
+						prompt: data.prompt,
+						negative_prompt: data.negative_prompt,
+						num_inference_steps: data.num_inference_steps,
+						guidance_scale: data.guidance_scale,
+						width: data.width,
+						height: data.height,
+						image_size: "square_hd"
+					}),
+					timeoutPromise
+				]);
+				return {
+					data: {
+						images: [{ url: imageUrl }]
+					}
 				};
-
-				if (isProMode) {
-					if (data.width) input.width = data.width;
-					if (data.height) input.height = data.height;
-					input.image_size = "square_hd";
-				} else {
-					input.num_inference_steps = 4;
-					input.width  = data.width  ?? 1024;
-					input.height = data.height ?? 1024;
-					input.image_size = "square_hd";
-				}
-
-				generationPromise = fal.subscribe(model, {
-					input,
-					logs: true,
-					onQueueUpdate: (status: { status: string; logs?: unknown }) => {
-						if (status.status === "IN_PROGRESS") {
-							console.log("Image generation progress:", status.logs);
-						}
-					},
-				});
-				break;
 			}
 			case "video": {
-				if (data.image_url) {
-					const isProMode = mode === "pro";
-					const model = isProMode ? "fal-ai/pixverse/v4/image-to-video" : "fal-ai/pixverse/v4/image-to-video/fast";
-
-					generationPromise = fal.subscribe(model, {
-						input: {
-							prompt: data.prompt,
-							image_url: data.image_url,
-							negative_prompt: data.negative_prompt,
-							guidance_scale: data.guidance_scale,
-						},
-						logs: true,
-						onQueueUpdate: (status: { status: string; logs?: unknown }) => {
-							if (status.status === "IN_PROGRESS") {
-								console.log("Image-to-video generation progress:", status.logs);
-							}
-						},
-					});
-				} else {
-					const isProMode = mode === "pro";
-					const model = isProMode ? "fal-ai/pixverse/v4/text-to-video" : "fal-ai/pixverse/v4/text-to-video/fast";
-
-					generationPromise = fal.subscribe(model, {
-						input: {
-							prompt: data.prompt,
-							negative_prompt: data.negative_prompt,
-							guidance_scale: data.guidance_scale,
-							...(data.width ? { width: data.width } : {}),
-							...(data.height ? { height: data.height } : {}),
-						},
-						logs: true,
-						onQueueUpdate: (status: { status: string; logs?: unknown }) => {
-							if (status.status === "IN_PROGRESS") {
-								console.log("Video generation progress:", status.logs);
-							}
-						},
-					});
-				}
-				break;
+				const videoUrl = await Promise.race([
+					ai.createVideo({
+						prompt: data.prompt,
+						negative_prompt: data.negative_prompt,
+						guidance_scale: data.guidance_scale,
+						width: data.width,
+						height: data.height,
+						image_url: data.image_url
+					}),
+					timeoutPromise
+				]);
+				return {
+					data: {
+						video: { url: videoUrl }
+					}
+				};
 			}
 			case "audio": {
-				const isProMode = mode === "pro";
-				let lyricsToUsePromise: Promise<string> | undefined;
-
 				const stylePrompt = await generateStylePrompt(data.prompt);
+				let lyricsToUsePromise: Promise<string> | undefined;
 
 				if (!data.lyrics) {
 					lyricsToUsePromise = generateLyrics(
@@ -161,42 +114,18 @@ export async function generateMedia(data: {
 				}
 
 				const formattedLyrics = formatLyricsForDiffrhythm(lyricsToUse);
-
-				const input = {
-					lyrics: formattedLyrics,
-					reference_audio_url:
-						data.reference_audio_url ||
-						"https://storage.googleapis.com/falserverless/model_tests/diffrythm/rock_en.wav",
-					style_prompt: data.style_prompt || stylePrompt,
-					music_duration: data.music_duration || "95s",
-					cfg_strength: data.cfg_strength || 4,
-					scheduler: data.scheduler || "euler",
-					num_inference_steps: data.num_inference_steps || 32,
-				};
-
-				generationPromise = fal.subscribe("fal-ai/diffrhythm", {
-					input,
-					logs: true,
-					onQueueUpdate: (status: { status: string; logs?: unknown }) => {
-						if (status.status === "IN_PROGRESS") {
-							console.log("Music generation progress:", status.logs);
-						}
-					},
-				});
-
-				interface FalAudioResult {
-					data?: {
-						audio?: {
-							url?: string;
-						};
-					};
-				}
-
-				const result = (await Promise.race([generationPromise, timeoutPromise])) as FalAudioResult;
-				const audioUrl = result.data?.audio?.url;
-				if (!audioUrl) {
-					throw new Error("No audio URL in response");
-				}
+				const audioUrl = await Promise.race([
+					ai.createAudio({
+						lyrics: formattedLyrics,
+						reference_audio_url: data.reference_audio_url,
+						style_prompt: data.style_prompt || stylePrompt,
+						music_duration: data.music_duration,
+						cfg_strength: data.cfg_strength,
+						scheduler: data.scheduler,
+						num_inference_steps: data.num_inference_steps
+					}),
+					timeoutPromise
+				]);
 
 				return {
 					data: {
@@ -210,11 +139,8 @@ export async function generateMedia(data: {
 			default:
 				throw new Error(`Unsupported media type: ${data.type}`);
 		}
-
-		const result = await Promise.race([generationPromise, timeoutPromise]);
-		return result;
 	} catch (error) {
-		console.error("Error in media generation:", error);
+		console.error("Error generating media:", error);
 		throw error;
 	}
 }
