@@ -161,7 +161,7 @@ importers:
         version: 1.7.7(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@types/react@19.1.6)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@reown/appkit-adapter-wagmi':
         specifier: ^1.7.7
-        version: 1.7.7(ug357k7ctvpeuwa26rrpewjoku)
+        version: 1.7.7(e3fe830e280700168e3f3c67712f1315)
       '@solana/wallet-adapter-base':
         specifier: ^0.9.26
         version: 0.9.26(@solana/web3.js@1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))
@@ -14192,7 +14192,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.6
 
-  '@reown/appkit-adapter-wagmi@1.7.7(ug357k7ctvpeuwa26rrpewjoku)':
+  '@reown/appkit-adapter-wagmi@1.7.7(e3fe830e280700168e3f3c67712f1315)':
     dependencies:
       '@reown/appkit': 1.7.7(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@types/react@19.1.6)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@reown/appkit-common': 1.7.7(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)

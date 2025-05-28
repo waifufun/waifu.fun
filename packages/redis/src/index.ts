@@ -22,8 +22,8 @@ const redis = new IORedis(
 		? {
 				port: Number(port),
 				host: String(host),
-				username: String(username),
-				password: String(password),
+				// username: String(username),
+				// password: String(password),
 				db: db ? Number(db) : 0,
 			}
 		: {},
