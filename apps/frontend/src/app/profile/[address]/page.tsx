@@ -50,9 +50,9 @@ export default function Page() {
 										<TokenRow
 											key={i}
 											data={{
-												tokenImageUrl: "/create/test-img.png",
-												tokenTitle: `AlienToken ${i + 1}`,
-												tokenTicker: "ALIEN",
+												image: "/create/test-img.png",
+												title: `AlienToken ${i + 1}`,
+												ticker: "ALIEN",
 												marketCap: 1240000,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 												amountHeld: 124_543_343,
@@ -69,11 +69,12 @@ export default function Page() {
 									.fill(null)
 									.map((_, i) => (
 										<TokenRow
+											mode="wallet"
 											key={i}
 											data={{
-												tokenImageUrl: "/create/test-img.png",
-												tokenTitle: "AlienToken",
-												tokenTicker: "ALIEN",
+												image: "/create/test-img.png",
+												title: "AlienToken",
+												ticker: "ALIEN",
 												marketCap: 1240000,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 												amountHeld: 124_543_343,
@@ -83,24 +84,24 @@ export default function Page() {
 									))}
 							</div>
 						</TabsContent>
-						<TabsContent value="Points" className="bg-transparent max-h-[800px] overflow-y-auto pr-1">
+						<TabsContent value="Points" className="bg-transparent">
 							<div className="flex justify-center mt-2">
 								<PointCounter points={12} />
 							</div>
 							<div className="mt-4">
 								<PointsFilter />
 							</div>
-							<div className="mt-6 flex flex-col place-self-center">
-								{Array(8)
+							<div className="mt-6 flex gap-y-4 flex-col place-self-center max-h-[650px] overflow-y-auto pr-1">
+								{Array(24)
 									.fill(null)
 									.map((_, i) => (
 										<TokenRow
 											mode="points"
 											key={i}
 											data={{
-												tokenImageUrl: "/create/test-img.png",
-												tokenTitle: `AlienToken ${i + 1}`,
-												tokenTicker: "ALIEN",
+												image: "/create/test-img.png",
+												title: `AlienToken ${i + 1}`,
+												ticker: "ALIEN",
 												marketCap: 1240000,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 												amountHeld: 124_543_343,

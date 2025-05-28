@@ -7,9 +7,9 @@ export default function TokenRow({
 	mode = "activity",
 }: {
 	data: {
-		tokenImageUrl: string;
-		tokenTitle: string;
-		tokenTicker: string;
+		image: string;
+		title: string;
+		ticker: string;
 		marketCap: number;
 		contractAddress: string;
 		amountHeld: number;
@@ -17,19 +17,13 @@ export default function TokenRow({
 		points?: number;
 		funPoints?: number;
 	};
-	mode?: "activity" | "points";
+	mode?: "activity" | "wallet" | "points";
 }) {
 	return (
 		<div className="group rounded-lg bg-transparent place-self-center hover:bg-[#0C0C0C] relative flex justify-between items-center w-[750px] h-[94px] px-4 py-2">
 			<div className="flex items-center">
 				<div className="w-[60px] h-[60px] mr-4">
-					<Image
-						src={data.tokenImageUrl}
-						alt="Token Image"
-						width={60}
-						height={60}
-						className="rounded-md object-contain"
-					/>
+					<Image src={data.image} alt="Token Image" width={60} height={60} className="rounded-md object-contain" />
 				</div>
 
 				<div className="flex flex-col justify-center min-w-[140px]">
@@ -41,8 +35,8 @@ export default function TokenRow({
 							height={24}
 							className="object-contain"
 						/>
-						<p className="text-xl text-white uppercase mr-1 leading-none">{data.tokenTitle}</p>
-						<p className="text-base text-[#8C8C8C] leading-none">${data.tokenTicker}</p>
+						<p className="text-xl text-white uppercase mr-1 leading-none">{data.title}</p>
+						<p className="text-base text-[#8C8C8C] leading-none">${data.ticker}</p>
 					</div>
 					<p className="text-base mt-3 ml-1.5 text-[#8C8C8C] leading-none">
 						<CopyButton textToCopy={data.contractAddress} />{" "}
@@ -51,13 +45,17 @@ export default function TokenRow({
 				</div>
 			</div>
 
-			{mode === "activity" ? (
+			{mode === "activity" || mode === "wallet" ? (
 				<div className="flex items-center gap-x-8 place-items-end transition-all duration-300 ease-in-out group-hover:gap-x-10">
 					<div className="flex flex-col h-full w-full space-y-1 justify-end transition-all duration-300">
-						<p className="text-base font-medium text-white">Mcap</p>
-						<p className="text-lg font-semibold text-autofun-background-action-highlight">
-							${data.marketCap.toLocaleString()}
-						</p>
+						{mode === "activity" ? (
+							<>
+								<p className="text-base font-medium text-white">Mcap</p>
+								<p className="text-lg font-semibold text-autofun-background-action-highlight">
+									${data.marketCap.toLocaleString()}
+								</p>
+							</>
+						) : null}
 					</div>
 
 					<div className="self-stretch w-px bg-[#1E1E1E]" />
