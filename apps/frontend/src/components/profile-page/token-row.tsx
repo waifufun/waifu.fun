@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import Link from "next/link";
+import { EvmChainIds, SolanaNetworkIds} from "@autofun/types";
+import type { TChain } from "@autofun/types";
 
 export default function TokenRow({
 	data,
@@ -15,10 +17,19 @@ export default function TokenRow({
 		amountHeld: number;
 		dollarWorth: number;
 		points?: number;
-		funPoints?: number;
+		chain: TChain | null;
+		chainId: SolanaNetworkIds | EvmChainIds | null;
 	};
 	mode?: "activity" | "wallet" | "points";
 }) {
+	const key = `${data.chain}_${data.chainId}`;
+	const chainIcons: Record<string, { name: string; icon: string }> = {
+		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
+		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
+		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum-bold.svg" },
+	};
+	const chainIcon = chainIcons[key];
+
 	return (
 		<div className="group rounded-lg bg-transparent place-self-center hover:bg-[#0C0C0C] relative flex justify-between items-center w-[750px] h-[94px] px-4 py-2">
 			<div className="flex items-center">
@@ -28,13 +39,18 @@ export default function TokenRow({
 
 				<div className="flex flex-col justify-center min-w-[140px]">
 					<div className="flex items-center gap-1">
-						<Image
-							src={"/chain-icons/ethereum.svg"}
-							alt="chain icon"
-							width={24}
-							height={24}
-							className="object-contain"
-						/>
+						{chainIcon ? (
+							<Image
+								src={chainIcon.icon}
+								alt={`${chainIcon.name} chain icon`}
+								width={24}
+								height={24}
+								className="object-contain"
+							/>
+						) : (
+							<div className="w-6 h-6 bg-gray-500 rounded" />
+						)}
+
 						<p className="text-xl text-white uppercase mr-1 leading-none">{data.title}</p>
 						<p className="text-base text-[#8C8C8C] leading-none">${data.ticker}</p>
 					</div>

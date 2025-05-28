@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { CopyButton } from "../copy-button";
+import type { TChain } from "@autofun/types";
+import { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
 
 export default function ProfileHeader({
 	data,
@@ -12,11 +14,18 @@ export default function ProfileHeader({
 		tokensBought: number;
 		tokensCreated: number;
 		chains: {
-			chain: "solana" | "ethereum" | "base";
+			chain: TChain | null;
+			chainId: SolanaNetworkIds | EvmChainIds | null;
 			amount: number;
 		}[];
 	};
 }) {
+	const chainIcons: Record<string, { name: string; icon: string }> = {
+		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
+		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
+		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum-bold.svg" },
+	};
+
 	return (
 		<div className="bg-[#0C0C0C] md:max-h-[182px] md:max-w-[800px] space-y-4 text-white flex flex-col md:flex-row items-center justify-between p-4 rounded-xl w-full mx-auto gap-0">
 			<div className="relative w-[150px] h-[150px]">
@@ -47,15 +56,25 @@ export default function ProfileHeader({
 					{data.address}
 				</p>
 				<div className="flex gap-2 mt-2">
-					{data.chains.map(({ chain, amount }, index) => (
-						<div
-							key={index}
-							className="bg-[#171717] bg-opacity-10 px-2 py-1 rounded-md flex items-center justify-center"
-						>
-							<Image src={`/chain-icons/${chain}.svg`} alt={`${chain}-icon`} width={24} height={24} />
-							<p className="px-2 text-base font-bold">{amount}</p>
-						</div>
-					))}
+					{data.chains.map(({ chain, chainId, amount }) => {
+						// for lint
+						const key = `${chain}_${chainId}`;
+						const chainIcon = chainIcons[key];
+
+						return (
+							<div
+								key={key}
+								className="bg-[#171717] bg-opacity-10 px-2 py-1 rounded-md flex items-center justify-center"
+							>
+								{chainIcon ? (
+									<Image src={chainIcon.icon} alt={`${chainIcon.name} icon`} width={24} height={24} />
+								) : (
+									<div className="w-6 h-6 bg-gray-500 rounded" />
+								)}
+								<p className="px-2 text-base font-bold">{amount}</p>
+							</div>
+						);
+					})}
 				</div>
 			</div>
 

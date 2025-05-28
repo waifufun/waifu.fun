@@ -20,9 +20,9 @@ export default function Page() {
 						tokensBought: 128,
 						tokensCreated: 42,
 						chains: [
-							{ chain: "solana", amount: 1.88 },
-							{ chain: "ethereum", amount: 0.88 },
-							{ chain: "base", amount: 12.37 },
+							{ chain: "solana", chainId: 101, amount: 120 },
+							{ chain: "evm", chainId: 1, amount: 120 },
+							{ chain: "evm", chainId: 8453, amount: 240 },
 						],
 					}}
 				/>
@@ -99,6 +99,8 @@ export default function Page() {
 											mode="points"
 											key={i}
 											data={{
+												chain: "solana",
+												chainId: 101,
 												image: "/create/test-img.png",
 												title: `AlienToken ${i + 1}`,
 												ticker: "ALIEN",
