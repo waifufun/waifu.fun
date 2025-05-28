@@ -49,7 +49,7 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="activity"
-											key={i}
+											key={`alien-${i + 1}`}
 											data={{
 												chain: "solana",
 												chainId: 101,
@@ -74,7 +74,7 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="wallet"
-											key={i}
+											key={`alien-${i + 1}`}
 											data={{
 												chain: "solana",
 												chainId: 101,
@@ -104,7 +104,7 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="points"
-											key={i}
+											key={`alien-${i + 1}`}
 											data={{
 												chain: "solana",
 												chainId: 101,
