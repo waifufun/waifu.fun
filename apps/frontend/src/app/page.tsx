@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
 import FilterSelector from "@/components/filter-selector";
+import SwapComponent from "@/components/swap/swap";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -50,6 +51,7 @@ export default async function Home({
 			/>
 			<ChainSelector />
 			<div className="flex flex-col items-center">
+				<SwapComponent />
 				<div className="flex items-center w-full gap-4">
 					<FilterSelector />
 					<GridListSelector />

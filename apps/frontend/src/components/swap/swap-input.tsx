@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import { isInputGreaterThanDecimals } from "../lib/utils";
+import { isInputGreaterThanDecimals } from "@/lib/utils";
 
 type InputProps = {
 	value: string | number;
