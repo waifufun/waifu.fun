@@ -41,7 +41,7 @@ export default function Page() {
 							</TabsTrigger>
 						</TabsList>
 						{(tab === "activity" || tab === "wallet") && <ProfileFilters mode={tab} />}{" "}
-						<TabsContent value="activity" className="bg-transparent">
+						<TabsContent value="activity" className="bg-transparent max-h-[800px] overflow-y-auto pr-1">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
 								{Array(8)
@@ -62,7 +62,7 @@ export default function Page() {
 									))}
 							</div>
 						</TabsContent>
-						<TabsContent value="wallet" className="bg-transparent">
+						<TabsContent value="wallet" className="bg-transparent max-h-[800px] overflow-y-auto pr-1">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
 								{Array(8)
@@ -83,26 +83,33 @@ export default function Page() {
 									))}
 							</div>
 						</TabsContent>
-						<TabsContent value="Points" className="bg-transparent">
-							<div className="flex justify-center">
+						<TabsContent value="Points" className="bg-transparent max-h-[800px] overflow-y-auto pr-1">
+							<div className="flex justify-center mt-2">
 								<PointCounter points={12} />
 							</div>
 							<div className="mt-4">
 								<PointsFilter />
 							</div>
-							<TokenRow
-								mode="points"
-								data={{
-									tokenImageUrl: "/create/test-img.png",
-									tokenTitle: "alientoken",
-									tokenTicker: "ALIEN",
-									marketCap: 1240000,
-									contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
-									amountHeld: 124_543_343,
-									dollarWorth: 1337.42,
-									points: 12,
-								}}
-							/>
+							<div className="mt-6 flex flex-col place-self-center">
+								{Array(8)
+									.fill(null)
+									.map((_, i) => (
+										<TokenRow
+											mode="points"
+											key={i}
+											data={{
+												tokenImageUrl: "/create/test-img.png",
+												tokenTitle: `AlienToken ${i + 1}`,
+												tokenTicker: "ALIEN",
+												marketCap: 1240000,
+												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
+												amountHeld: 124_543_343,
+												dollarWorth: 1337.42,
+												points: 12,
+											}}
+										/>
+									))}
+							</div>
 						</TabsContent>
 					</Tabs>
 				</div>
