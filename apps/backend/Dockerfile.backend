@@ -19,10 +19,14 @@ RUN pnpm install
 
 RUN pnpm --filter backend run build
 
+RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app/apps/backend
 RUN pnpm install --prod
 
 FROM base AS runner
+
+RUN apt-get update && apt-get install -y --no-install-recommends libvips-tools && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
