@@ -35,10 +35,10 @@ export default function ProfileFilters({ mode }: { mode: "activity" | "wallet" }
 
 	return (
 		<div className="px-7 py-2">
-			<div className="flex w-full items-center">
-				<div className="w-[303px] h-[40px] flex items-center rounded-md bg-gradient-to-t from-[#121212] to-[#171717] p-[2px]">
-					{mode === "activity" ? (
-						buttons.map((btn) => {
+			<div className="flex w-full items-center gap-2">
+				{mode === "activity" ? (
+					<div className="w-[303px] h-[40px] flex items-center rounded-md bg-gradient-to-t from-[#121212] to-[#171717] p-[2px]">
+						{buttons.map((btn) => {
 							const isActive = btn.value === activeCategory;
 							return (
 								<button
@@ -48,18 +48,22 @@ export default function ProfileFilters({ mode }: { mode: "activity" | "wallet" }
 									className={`flex-1 h-full text-base rounded-md transition-all ${
 										isActive
 											? "text-white border border-autofun-background-action-highlight font-normal"
-											: " text-autofun-icon-secondary"
+											: "text-autofun-icon-secondary"
 									} hover:outline-1 hover:outline-autofun-background-action-highlight`}
 								>
 									{btn.label}
 								</button>
 							);
-						})
-					) : (
-						// finish this
-						<div className="text-base font-bold text-white">Total value</div>
-					)}
-				</div>
+						})}
+					</div>
+				) : (
+					<div className="w-[180px] h-[44px] flex items-center justify-center rounded-md bg-gradient-to-t from-[#121212] to-[#171717]">
+						<p className="text-base font-bold text-white">
+							Total Value <span className="ml-1 text-autofun-background-action-highlight">$912.36</span>{" "}
+						</p>
+					</div>
+				)}
+
 				<div className="ml-auto">
 					<ProfileChainSelector />
 				</div>
