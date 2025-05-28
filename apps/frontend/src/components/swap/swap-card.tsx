@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"; // adjust path if needed
 import Image from "next/image";
 import type { IToken } from "@autofun/types";
 import { useWallets } from "../hooks/providers/UseWalletContext";
