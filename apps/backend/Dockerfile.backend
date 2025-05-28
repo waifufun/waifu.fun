@@ -13,28 +13,27 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN corepack prepare $(node -p "require('./package.json').packageManager") --activate
 
+RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
 RUN pnpm install
 
 RUN pnpm --filter backend run build
 
-RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app/apps/backend
-RUN pnpm install --prod
+RUN mkdir /deploy
+RUN pnpm deploy --legacy --filter backend /deploy/backend --prod
 
 FROM base AS runner
 
+# Install runtime system dependencies for sharp
 RUN apt-get update && apt-get install -y --no-install-recommends libvips-tools && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=builder /app/apps/backend/dist ./dist
-COPY --from=builder /app/apps/backend/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/package.json ./package.json
+COPY --from=builder /deploy/backend ./
 
 EXPOSE 3001
 
