@@ -9,14 +9,18 @@ WORKDIR /app
 
 FROM base AS builder
 
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+RUN corepack prepare $(node -p "require('./package.json').packageManager") --activate
+
 COPY . .
 
 RUN pnpm install
 
 RUN pnpm --filter backend run build
 
-RUN mkdir /deploy
-RUN pnpm --filter backend deploy /deploy/backend --prod
+WORKDIR /app/apps/backend
+RUN pnpm install --prod
 
 FROM base AS runner
 
@@ -24,7 +28,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=builder /deploy/backend ./
+COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/package.json ./package.json
 
 EXPOSE 3001
 
