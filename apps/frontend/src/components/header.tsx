@@ -37,7 +37,7 @@ export default function Header() {
 				{/* Balance */}
 				<BalanceMenu />
 				<div className="hidden md:flex gap-2.5">
-					<Link href="/create/import">
+					<Link href="/create">
 						<Button variant="outline">Create Token</Button>
 					</Link>
 				</div>

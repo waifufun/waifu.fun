@@ -180,7 +180,7 @@ export class EVMRpcProvider {
 
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
 
-function shouldFallback(error): boolean {
+function shouldFallback(error: any): boolean {
 	const status = error?.response?.status || error?.statusCode || error?.code;
 
 	if (typeof status === "number" && RETRYABLE_HTTP_CODES.has(status)) {
@@ -234,8 +234,12 @@ export class SolanaRpcProvider {
 	private static currentRpc: SolanaRpcProvider | null = null;
 	public static currentRpcIndex = 0;
 
-	private constructor(connection: Connection, rpc: string, networkId: SolanaNetworkIds) {
-		this.connection = connection;
+	constructor(networkId: SolanaNetworkIds) {
+		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
+		if (!rpc) {
+			throw new Error(`No RPC URL configured for Solana network: ${networkId}`);
+		}
+		this.connection = new Connection(rpc, "confirmed");
 		this.client = createSolanaRpc(rpc);
 		this.networkId = networkId;
 
@@ -266,10 +270,13 @@ export class SolanaRpcProvider {
 
 		while (attempts < maxAttempts) {
 			const rpc = rpcList[SolanaRpcProvider.currentRpcIndex];
+			if (!rpc) {
+				throw new Error(`No RPC URL found at index ${SolanaRpcProvider.currentRpcIndex} for Solana: ${networkId}`);
+			}
 			try {
-				const connection = new Connection(rpc, "confirmed");
+				const connection = new Connection(rpc as string, "confirmed");
 				await connection.getVersion(); // test connection
-				const provider = new SolanaRpcProvider(connection, rpc, networkId);
+				const provider = new SolanaRpcProvider(networkId);
 				SolanaRpcProvider.currentRpc = provider;
 				return provider;
 			} catch (error) {
@@ -376,6 +383,14 @@ export class SolanaRpcProvider {
 					marketCapSOL: null,
 					marketCapUSD: null,
 					exists: false,
+					reserveLamport: 0,
+					reserveToken: 0,
+					virtualReserves: 0,
+					curveLimit: 0,
+					curveProgress: 0,
+					priceUSD: 0,
+					decimals: supplyInfo.decimals || 6,
+					totalSupply: supplyInfo.supply || 0,
 				};
 			}
 
@@ -404,6 +419,9 @@ export class SolanaRpcProvider {
 				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
 				priceLamports: reserveLamport / reserveToken,
 				decimals: tokenDecimals,
+				virtualReserves,
+				reserveLamport,
+				curveLimit,
 				priceSOL,
 				priceUsd,
 				totalSupply,

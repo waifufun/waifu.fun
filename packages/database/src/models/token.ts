@@ -18,9 +18,13 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		curveCompleted: { type: Boolean },
 		curveProgress: { type: Number },
 		bondingCurveAddress: { type: String },
+		curveLimit: { type: Number },
 		holders: { type: Number, default: 0 },
 		verified: { type: Boolean, default: false },
 		totalSupply: { type: Number, required: true, default: 0 },
+		reserveAmount: { type: Number },
+		reserveLamport: { type: Number },
+		virtualReserves: { type: Number },
 		socials: {
 			twitter: { type: String },
 			website: { type: String },
@@ -30,6 +34,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		hidden: { type: Boolean, default: false },
 		featured: { type: Boolean, default: false },
 		creator: { type: String },
+		pool: { type: String },
 	},
 	{ timestamps: true, versionKey: false },
 );

@@ -1,11 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import fastifyCookie from "@fastify/cookie";
 import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
+
 export default async function authRoutes(fastify: FastifyInstance) {
-	fastify.register(fastifyCookie);
 	fastify.post("/generateNonce", async (request) => {
 		const { address } = request.body as { address: AddressLike };
 		if (!address) {
@@ -21,20 +20,22 @@ export default async function authRoutes(fastify: FastifyInstance) {
 		const { address, signature, chain } = request.body as { address: AddressLike; signature: string; chain: TChain };
 
 		if (!address || !signature || !chain) {
-			return { error: "Address, signature, and chain are required" };
+			return reply.code(400).send({ error: "Address, signature, and chain are required" });
 		}
 
 		const nonce = await redis.get(`nonce:${address}`);
 		if (!nonce) {
-			return { error: "Nonce not found or expired" };
+			return reply.code(400).send({ error: "Nonce not found or expired" });
 		}
+
+		let isValid = false;
+		let token: string;
 
 		switch (chain) {
 			case "solana": {
-				const isValidSol = await VerifySolanaSignature(nonce, signature, address);
-
-				if (!isValidSol) {
-					return { error: "Invalid signature" };
+				isValid = await VerifySolanaSignature(nonce, signature, address);
+				if (!isValid) {
+					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
 				const solanaAddress = address as `0x${string}`;
@@ -43,12 +44,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					nonce,
 				};
 
-				const solanaToken = fastify.jwt.sign(solPayload, {
+				token = fastify.jwt.sign(solPayload, {
 					expiresIn: "7d",
 				});
 
 				reply
-					.setCookie("solana", solanaToken, {
+					.setCookie("solana", token, {
 						maxAge: 60 * 60 * 24 * 7,
 						path: "/",
 						httpOnly: true,
@@ -58,28 +59,27 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				break;
 			}
 			case "evm": {
-				const isValidEVM = await verifyMessage({
+				isValid = await verifyMessage({
 					address: address as `0x${string}`,
 					message: nonce,
 					signature: signature as `0x${string}`,
 				});
-				if (!isValidEVM) {
-					return { error: "Invalid signature" };
+				if (!isValid) {
+					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
 				const evmAddress = address as `0x${string}`;
-
 				const evmPayload = {
 					address: evmAddress,
 					nonce,
 				};
 
-				const evmToken = fastify.jwt.sign(evmPayload, {
+				token = fastify.jwt.sign(evmPayload, {
 					expiresIn: "7d",
 				});
 
 				reply
-					.setCookie("evm", evmToken, {
+					.setCookie("evm", token, {
 						maxAge: 60 * 60 * 24 * 7,
 						path: "/",
 						httpOnly: true,
@@ -89,8 +89,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				break;
 			}
 			default:
-				return { error: "Unsupported chain" };
+				return reply.code(400).send({ error: "Unsupported chain" });
 		}
+
+		// Clean up the used nonce
+		await redis.del(`nonce:${address}`);
 	});
 
 	fastify.get("/getWallets", async (request, reply) => {
@@ -144,4 +147,48 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 		return { success: true, message: "Logged out successfully" };
 	});
+    // this is for develepoment to get a cookie for postman {/* Malibu */}
+	if (process.env.NODE_ENV === "development") {
+		fastify.get("/dev-setup", async (request, reply) => {
+			const evmPayload = {
+				address: "0x0000000000000000000000000000000000000000",
+				nonce: "dev",
+			};
+
+			const solanaPayload = {
+				address: "11111111111111111111111111111111",
+				nonce: "dev",
+			};
+
+			const evmToken = fastify.jwt.sign(evmPayload, {
+				expiresIn: "7d",
+			});
+
+			const solanaToken = fastify.jwt.sign(solanaPayload, {
+				expiresIn: "7d",
+			});
+
+			reply
+				.setCookie("evm", evmToken, {
+					maxAge: 60 * 60 * 24 * 7,
+					path: "/",
+					httpOnly: true,
+					secure: false, 
+				})
+				.setCookie("solana", solanaToken, {
+					maxAge: 60 * 60 * 24 * 7,
+					path: "/",
+					httpOnly: true,
+					secure: false,
+				})
+				.send({ 
+					success: true, 
+					message: "Development cookies set",
+					cookies: {
+						evm: evmToken,
+						solana: solanaToken
+					}
+				});
+		});
+	}
 }

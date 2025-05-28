@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
+import fastifyCookie from "@fastify/cookie";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
@@ -9,7 +10,7 @@ import logger from "@autofun/logger";
 import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
-
+import { registerProtectedRoutes, registerPublicRoutes } from "./middlewares/protected-routes";
 const fastify = Fastify({
 	logger: {
 		stream: {
@@ -32,6 +33,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 fastify.register(helmet);
+fastify.register(fastifyCookie);
 
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -54,6 +56,9 @@ fastify.addHook("onRequest", async (request, reply) => {
 		method: request.method,
 	});
 });
+
+registerPublicRoutes(fastify);
+registerProtectedRoutes(fastify);
 
 fastify.register(tokenRoutes, { prefix: "/tokens" });
 fastify.register(pricesRoutes, { prefix: "/prices" });
