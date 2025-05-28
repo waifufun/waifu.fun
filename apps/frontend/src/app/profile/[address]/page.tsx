@@ -56,7 +56,7 @@ export default function Page() {
 												image: "/create/test-img.png",
 												title: `AlienToken ${i + 1}`,
 												ticker: "ALIEN",
-												marketCap: 1240000,
+												marketCap: 240567,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 												amountHeld: 124_543_343,
 												dollarWorth: 1337.42,

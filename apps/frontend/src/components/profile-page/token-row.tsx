@@ -3,6 +3,7 @@ import { CopyButton } from "../copy-button";
 import Link from "next/link";
 import { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
+import { formatNumber } from "@/lib/utils";
 
 export default function TokenRow({
 	data,
@@ -68,7 +69,7 @@ export default function TokenRow({
 							<>
 								<p className="text-base font-medium text-white">Mcap</p>
 								<p className="text-lg font-semibold text-autofun-background-action-highlight">
-									${data.marketCap.toLocaleString()}
+								{formatNumber(data.marketCap, false, true)}
 								</p>
 							</>
 						) : null}
