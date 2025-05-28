@@ -51,7 +51,7 @@ export default async function Home({
 			/>
 			<ChainSelector />
 			<div className="flex flex-col items-center">
-				<SwapComponent />
+				{/* <SwapComponent /> */}
 				<div className="flex items-center w-full gap-4">
 					<FilterSelector />
 					<GridListSelector />
