@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import Link from "next/link";
-import { EvmChainIds, SolanaNetworkIds} from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
 
 export default function TokenRow({
@@ -93,12 +93,13 @@ export default function TokenRow({
 					</div>
 				</div>
 			) : (
-				<div className="flex flex-col justify-end h-full px-2">
-					<div className="space-y-1 h-full">
-						<p className="text-base text-white">Points</p>
-						<p className="text-lg text-autofun-background-action-highlight">{data.points} FUN</p>
-					</div>
+				<div className="flex flex-col justify-center h-full">
+				<div className="space-y-0">
+				  <p className="text-base text-white">Points</p>
+				  <p className="text-base text-autofun-background-action-highlight">{data.points} FUN</p>
 				</div>
+			  </div>
+			  
 			)}
 		</div>
 	);
