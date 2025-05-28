@@ -11,6 +11,7 @@ import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
 import { registerProtectedRoutes, registerPublicRoutes } from "./middlewares/protected-routes";
+
 const fastify = Fastify({
 	logger: {
 		stream: {
