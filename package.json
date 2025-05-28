@@ -67,7 +67,9 @@
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint"
+		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
+		"run:indexer": "docker-compose -f docker-compose.indexer.yml up -d && sleep 3 && cd apps/indexer && pnpm install && pnpm run build && pnpm run db:migrate && pnpm run start",
+		"kill:indexer": "pkill -f 'sqd' || true && docker-compose -f docker-compose.indexer.yml down"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

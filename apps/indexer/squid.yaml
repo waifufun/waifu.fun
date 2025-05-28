@@ -1,0 +1,15 @@
+manifestVersion: subsquid.io/v0.1
+name: solana-example
+description: 'An example Solana squid'
+build: 
+deploy:
+  addons:
+    postgres: 
+    rpc:
+      - solana.http
+  processor:
+    env:
+      SOLANA_NODE: ${{ addons.rpc.solana.http }}
+    cmd:
+      - node
+      - lib/main.js
