@@ -100,7 +100,7 @@ export default function Page() {
 							<div className="mt-4">
 								<PointsFilter />
 							</div>
-							<div className="mt-6 flex gap-y-4 flex-col place-self-center h-[650px] overflow-y-auto pr-1">
+							<div className="mt-6 flex flex-col place-self-center h-[650px] overflow-y-auto pr-1">
 								{Array(3)
 									.fill(null)
 									.map((_, i) => (
