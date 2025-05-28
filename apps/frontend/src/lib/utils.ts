@@ -216,3 +216,21 @@ export const roundDownToNearest = (value: number, step: number): number => {
 	}
 	return Math.floor(value / step) * step;
 };
+
+
+export function localeUsesComma(locale: string): boolean {
+	const decimalSeparator = new Intl.NumberFormat(locale).format(1.1)[1]
+	return decimalSeparator === ','
+  }
+  
+  export function isInputGreaterThanDecimals(value: string, maxDecimals?: number): boolean {
+	const decimalGroups = value.split('.')
+	return !!maxDecimals && decimalGroups.length > 1 && decimalGroups[1].length > maxDecimals
+  }
+  
+  export function formatValueWithLocale(value: string | number, locale: string): string {
+	const [searchValue, replaceValue] = localeUsesComma(locale) ? [/\./g, ','] : [/,/g, '.']
+	return value.toString().replace(searchValue, replaceValue)
+  }
+  
+  
