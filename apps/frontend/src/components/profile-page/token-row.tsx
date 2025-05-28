@@ -3,6 +3,7 @@ import { CopyButton } from "../copy-button";
 import Link from "next/link";
 import { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
+import { formatNumber } from "@/lib/utils";
 
 export default function TokenRow({
 	data,
@@ -26,7 +27,7 @@ export default function TokenRow({
 	const chainIcons: Record<string, { name: string; icon: string }> = {
 		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
 		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
-		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum-bold.svg" },
+		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
 	};
 	const chainIcon = chainIcons[key];
 
@@ -68,18 +69,17 @@ export default function TokenRow({
 							<>
 								<p className="text-base font-medium text-white">Mcap</p>
 								<p className="text-lg font-semibold text-autofun-background-action-highlight">
-									${data.marketCap.toLocaleString()}
+									{formatNumber(data.marketCap, false, true)}
 								</p>
 							</>
 						) : null}
 					</div>
-
 					<div className="self-stretch w-px bg-[#1E1E1E]" />
-
 					<div className="flex flex-col w-full space-y-1 justify-center transition-all duration-300">
 						<p className="text-white font-medium text-base">{data.amountHeld}</p>
 						<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
 					</div>
+					<div className="w-0 overflow-hidden group-hover:w-px transition-all duration-300 ease-in-out self-stretch bg-[#1E1E1E]" />
 					<div className="w-0 overflow-hidden group-hover:w-12 transition-all duration-300 ease-in-out flex-shrink-0">
 						<Link href={`/token/${data.contractAddress}`}>
 							<Image
@@ -93,10 +93,10 @@ export default function TokenRow({
 					</div>
 				</div>
 			) : (
-				<div className="flex flex-col justify-end h-full px-2">
-					<div className="space-y-1">
+				<div className="flex flex-col justify-center h-full">
+					<div className="space-y-0">
 						<p className="text-base text-white">Points</p>
-						<p className="text-lg text-autofun-background-action-highlight">{data.points} FUN</p>
+						<p className="text-base text-autofun-background-action-highlight">{data.points} FUN</p>
 					</div>
 				</div>
 			)}

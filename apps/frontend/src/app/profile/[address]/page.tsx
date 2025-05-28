@@ -41,29 +41,33 @@ export default function Page() {
 							</TabsTrigger>
 						</TabsList>
 						{(tab === "activity" || tab === "wallet") && <ProfileFilters mode={tab} />}{" "}
-						<TabsContent value="activity" className="bg-transparent max-h-[800px] overflow-y-auto pr-1">
+						<TabsContent value="activity" className="bg-transparent h-[800px] overflow-y-auto pr-1">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
 								{Array(8)
 									.fill(null)
 									.map((_, i) => (
 										<TokenRow
+											mode="activity"
 											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 											key={i}
 											data={{
+												chain: "solana",
+												chainId: 101,
 												image: "/create/test-img.png",
 												title: `AlienToken ${i + 1}`,
 												ticker: "ALIEN",
-												marketCap: 1240000,
+												marketCap: 240567,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 												amountHeld: 124_543_343,
 												dollarWorth: 1337.42,
+												points: 12,
 											}}
 										/>
 									))}
 							</div>
 						</TabsContent>
-						<TabsContent value="wallet" className="bg-transparent max-h-[800px] overflow-y-auto pr-1">
+						<TabsContent value="wallet" className="bg-transparent h-[800px] overflow-y-auto pr-1">
 							<div className="p-4 w-full max-h-full overflow-y-auto">
 								{/* Example content */}
 								{Array(8)
@@ -74,13 +78,16 @@ export default function Page() {
 											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 											key={i}
 											data={{
+												chain: "solana",
+												chainId: 101,
 												image: "/create/test-img.png",
-												title: "AlienToken",
+												title: `AlienToken ${i + 1}`,
 												ticker: "ALIEN",
 												marketCap: 1240000,
 												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 												amountHeld: 124_543_343,
 												dollarWorth: 1337.42,
+												points: 12,
 											}}
 										/>
 									))}
@@ -93,8 +100,8 @@ export default function Page() {
 							<div className="mt-4">
 								<PointsFilter />
 							</div>
-							<div className="mt-6 flex gap-y-4 flex-col place-self-center max-h-[650px] overflow-y-auto pr-1">
-								{Array(24)
+							<div className="mt-6 flex flex-col place-self-center h-[650px] overflow-y-auto pr-1">
+								{Array(3)
 									.fill(null)
 									.map((_, i) => (
 										<TokenRow
