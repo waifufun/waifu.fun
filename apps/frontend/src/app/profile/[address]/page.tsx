@@ -2,6 +2,7 @@
 import PointCounter from "@/components/profile-page/point-counter";
 import ProfileFilters from "@/components/profile-page/profile-filters";
 import ProfileHeader from "@/components/profile-page/profile-header";
+import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -26,7 +27,7 @@ export default function Page() {
 					}}
 				/>
 				{/* tabs section */}
-				<div className="w-[800px] bg-[#0F0F0F] h-full flex place-self-center">
+				<div className="w-[800px] rounded-md bg-[#0F0F0F] h-full flex place-self-center">
 					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">
 						<TabsList className="grid w-full grid-cols-3">
 							<TabsTrigger value="activity" className="w-full">
@@ -84,7 +85,10 @@ export default function Page() {
 						</TabsContent>
 						<TabsContent value="Points" className="bg-transparent">
 							<div className="flex justify-center">
-								<PointCounter points={0} />
+								<PointCounter points={12} />
+							</div>
+							<div className="mt-4">
+								<PointsFilter />
 							</div>
 							<TokenRow
 								mode="points"

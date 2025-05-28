@@ -23,7 +23,7 @@ export default function TokenRow({
 		<div className="group rounded-lg bg-transparent hover:bg-[#0F0F0F] relative flex justify-between items-center w-full h-[94px] px-4 py-2">
 			<div className="flex items-center">
 				<div className="w-[60px] h-[60px] mr-4">
-					<Image src={data.tokenImageUrl} alt="Token Image" width={60} height={60} className="object-contain" />
+					<Image src={data.tokenImageUrl} alt="Token Image" width={60} height={60} className="rounded-md object-contain" />
 				</div>
 
 				<div className="flex flex-col justify-center min-w-[140px]">
