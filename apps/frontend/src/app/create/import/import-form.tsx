@@ -133,11 +133,10 @@ const TokenImportInput = <K extends TokenFormOptions>({
 
 const ImportButton = ({
 	formState,
-	onSubmit,
 	disabled,
 }: {
 	formState: FormState<TokenForm>;
-	onSubmit: () => void;
+	// onSubmit: () => void;
 	disabled?: boolean;
 }) => {
 	const shouldDisable = formState.isSubmitting || !formState.isValid || Object.keys(formState.errors).length > 0;
@@ -323,7 +322,7 @@ export default function ImportFormV2() {
 									formState={formState}
 									validation={validationRules.contractAddress}
 								/>
-								<ImportButton disabled={mutation.isPending} formState={formState} onSubmit={() => console.log("ewa")} />
+								<ImportButton disabled={mutation.isPending} formState={formState} />
 							</div>
 						</div>
 					</div>
