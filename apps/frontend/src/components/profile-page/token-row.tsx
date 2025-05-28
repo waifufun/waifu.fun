@@ -73,13 +73,12 @@ export default function TokenRow({
 							</>
 						) : null}
 					</div>
-
 					<div className="self-stretch w-px bg-[#1E1E1E]" />
-
 					<div className="flex flex-col w-full space-y-1 justify-center transition-all duration-300">
 						<p className="text-white font-medium text-base">{data.amountHeld}</p>
 						<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
 					</div>
+					<div className="w-0 overflow-hidden group-hover:w-px transition-all duration-300 ease-in-out self-stretch bg-[#1E1E1E]" />
 					<div className="w-0 overflow-hidden group-hover:w-12 transition-all duration-300 ease-in-out flex-shrink-0">
 						<Link href={`/token/${data.contractAddress}`}>
 							<Image
@@ -94,12 +93,11 @@ export default function TokenRow({
 				</div>
 			) : (
 				<div className="flex flex-col justify-center h-full">
-				<div className="space-y-0">
-				  <p className="text-base text-white">Points</p>
-				  <p className="text-base text-autofun-background-action-highlight">{data.points} FUN</p>
+					<div className="space-y-0">
+						<p className="text-base text-white">Points</p>
+						<p className="text-base text-autofun-background-action-highlight">{data.points} FUN</p>
+					</div>
 				</div>
-			  </div>
-			  
 			)}
 		</div>
 	);
