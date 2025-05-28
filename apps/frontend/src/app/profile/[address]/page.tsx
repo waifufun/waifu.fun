@@ -49,7 +49,8 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="activity"
-											key={`alien-${i + 1}`}
+											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
+											key={i}
 											data={{
 												chain: "solana",
 												chainId: 101,
@@ -74,7 +75,8 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="wallet"
-											key={`alien-${i + 1}`}
+											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
+											key={i}
 											data={{
 												chain: "solana",
 												chainId: 101,
@@ -104,7 +106,8 @@ export default function Page() {
 									.map((_, i) => (
 										<TokenRow
 											mode="points"
-											key={`alien-${i + 1}`}
+											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
+											key={i}
 											data={{
 												chain: "solana",
 												chainId: 101,
