@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import type { ReactNode } from "react";
 
-export async function generateMetadata({ params }: { params: ITokenLookUp }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = await getToken(await params);
 
 	return {
@@ -28,9 +28,7 @@ export async function generateMetadata({ params }: { params: ITokenLookUp }): Pr
 	};
 }
 
-type Params = Promise<ITokenLookUp>;
-
-export default async function Page({ params, children }: { params: Params; children: ReactNode }) {
+export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
 	const tokenParams = await params;
 	const token = await getToken(tokenParams);
 
