@@ -7,9 +7,22 @@ RUN corepack enable
 FROM base AS deps
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml* .npmrc* ./
+COPY package.json pnpm-lock.yaml* .npmrc* pnpm-workspace.yaml ./
 
-RUN pnpm install
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY apps/frontend/package.json ./apps/frontend/package.json
+COPY packages/ai/package.json ./packages/ai/package.json
+COPY packages/blank/package.json ./packages/blank/package.json
+COPY packages/constants/package.json ./packages/constants/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
+COPY packages/redis/package.json ./packages/redis/package.json
+COPY packages/rpc/package.json ./packages/rpc/package.json
+COPY packages/s3-uploader/package.json ./packages/s3-uploader/package.json
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/utils/package.json ./packages/utils/package.json
+
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
