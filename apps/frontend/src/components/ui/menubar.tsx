@@ -91,7 +91,9 @@ function MenubarCheckboxItem({
 	children,
 	checked,
 	...props
-}: React.ComponentProps<typeof MenubarPrimitive.CheckboxItem>) {
+}: React.ComponentProps<typeof MenubarPrimitive.CheckboxItem> & {
+	checked: boolean;
+}) {
 	return (
 		<MenubarPrimitive.CheckboxItem
 			data-slot="menubar-checkbox-item"

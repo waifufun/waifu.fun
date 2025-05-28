@@ -1,41 +1,63 @@
 # syntax=docker.io/docker/dockerfile:1
-FROM node:22 AS base
+FROM node:20-alpine AS builder
 
-FROM base AS deps
-#RUN apk add --no-cache libc6-compat
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Set working directory
 WORKDIR /app
 
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
-RUN corepack enable pnpm && pnpm i --frozen-lockfile;
+# Copy root package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-FROM base AS builder
+# Copy all package.json files from workspaces
+COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/ai/package.json ./packages/ai/
+COPY packages/types/package.json ./packages/types/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code (excluding node_modules)
+COPY tsconfig.base.json ./
+COPY apps/frontend/src ./apps/frontend/src
+COPY apps/frontend/public ./apps/frontend/public
+COPY apps/frontend/next.config.ts ./apps/frontend/
+COPY apps/frontend/tsconfig.json ./apps/frontend/
+COPY apps/frontend/workers ./apps/frontend/workers
+COPY packages/ai/src ./packages/ai/src
+COPY packages/types/src ./packages/types/src
+
+# Set environment variables for build
+ENV NEXT_PUBLIC_DECIMALS=9
+ENV NEXT_PUBLIC_TOKEN_SUPPLY=1000000000
+ENV NEXT_PUBLIC_VIRTUAL_RESERVES=1000000
+ENV NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_HOST=localhost
+
+# Build the application
+RUN cd apps/frontend && pnpm build
+
+# Production image
+FROM node:20-alpine AS runner
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy built application
+COPY --from=builder /app/apps/frontend/.next/standalone ./
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
+COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
-RUN corepack enable pnpm && pnpm run build;
-
-FROM base AS runner
-WORKDIR /app
-
+# Set environment variables
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV NEXT_PUBLIC_DECIMALS=9
+ENV NEXT_PUBLIC_TOKEN_SUPPLY=1000000000
+ENV NEXT_PUBLIC_VIRTUAL_RESERVES=1000000
+ENV NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_HOST=localhost
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/apps/frontend/public ./public
-
-COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./.next/static
-
-USER nextjs
-
+# Expose port
 EXPOSE 3000
 
-ENV PORT=3000
-
-ENV HOSTNAME="0.0.0.0"
-CMD ["node", "server.js"]
+# Start the application
+CMD ["node", "apps/frontend/server.js"]

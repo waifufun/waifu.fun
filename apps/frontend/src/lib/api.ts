@@ -36,12 +36,74 @@ export const fetcher = async (
 	}
 };
 
-export const getTokens = async ({ searchParams }) => {
+export const getTokens = async ({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) => {
 	return await fetcher("/tokens", "POST", searchParams);
 };
 
-export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
-	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
+export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
+	return await fetcher("/tokens/lookup", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+};
+
+export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
+	return await fetcher("/tokens/trades", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+};
+
+export const getChatHistory = async ({ room, contractAddress, chain, chainId }: { room: string; contractAddress: string; chain: TChain; chainId: string | number }) => {
+	return await fetcher("/chat/history", "POST", {
+		room,
+		contractAddress,
+		chain,
+		chainId,
+	});
+};
+
+export const generateImage = async ({ prompt, width, height }: { prompt: string; width: number; height: number }) => {
+	return await fetcher("/generation/image", "POST", {
+		prompt,
+		width,
+		height,
+	});
+};
+
+export const generateMetadata = async (prompt?: string) => {
+	return await fetcher("/generation/metadata", "POST", {
+		prompt,
+	});
+};
+
+export const generateRemoteMetadata = async ({
+	imageUrl,
+	image,
+	metadata: { name, description, symbol },
+	manual,
+}: {
+	imageUrl?: string | undefined;
+	image?: string | undefined;
+	metadata: {
+		name: string;
+		description: string;
+		symbol: string;
+	};
+	manual?: boolean | undefined;
+}) => {
+	return await fetcher("/tokens/create-metadata", "POST", {
+		imageUrl,
+		image,
+		metadata: {
+			name,
+			description,
+			symbol,
+		},
+		manual,
+	});
 };
 
 export const importToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
@@ -52,15 +114,11 @@ export const importToken = async ({ chain, chainId, contractAddress }: ITokenLoo
 	});
 };
 
-export const getTrades = async ({ chain, chainId, contractAddress }) => {
-	return await fetcher("/tokens/trades", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
-};
-
-export const getHolders = async ({ chain, chainId, contractAddress }) => {
+export const getHolders = async ({ chain, chainId, contractAddress }: { 
+	chain: TChain; 
+	chainId: string | number; 
+	contractAddress: string; 
+}) => {
 	return await fetcher("/tokens/holders", "POST", {
 		chain,
 		chainId,
@@ -68,28 +126,33 @@ export const getHolders = async ({ chain, chainId, contractAddress }) => {
 	});
 };
 
-export const getChatHistory = async ({ room, contractAddress, chain, chainId }) => {
-	return await fetcher("/chat/history", "POST", {
-		room,
-		contractAddress,
-		chain,
-		chainId,
-	});
-};
-
-export const sendChatMessage = async ({ message, chain, chainId, room, contractAddress, attachment }) => {
+export const sendChatMessage = async ({ 
+	message, 
+	chain, 
+	chainId, 
+	room, 
+	contractAddress, 
+	attachment 
+}: { 
+	message: string; 
+	chain: TChain; 
+	chainId: string | number; 
+	room: string; 
+	contractAddress: string; 
+	attachment?: string | undefined; 
+}) => {
 	return await fetcher("/chat/message", "POST", {
 		message,
-		attachment,
 		chain,
 		chainId,
 		room,
 		contractAddress,
+		attachment,
 	});
 };
 
-export const getTransaction = async ({ chain, chainId, txId }) => {
-	return await fetcher("/transactions/get-transaction", "POST", {
+export const getTransaction = async ({ chain, chainId, txId }: { chain: TChain; chainId: string | number; txId: string }) => {
+	return await fetcher("/transaction", "POST", {
 		chain,
 		chainId,
 		txId,
@@ -120,43 +183,6 @@ export const logOut = async (chain: TChain) => {
 	});
 };
 
-export const generateMetadata = async (prompt?: string) => {
-	return await fetcher("/generation/generate-metadata", "POST", {
-		prompt,
-	});
-};
-
-export const generateImage = async (body: object) => {
-	return await fetcher("/generation/generate", "POST", body);
-};
-
-export const generateRemoteMetadata = async ({
-	imageUrl,
-	image,
-	metadata: { name, description, symbol },
-	manual,
-}: {
-	imageUrl?: string | undefined; // Allow undefined
-	image?: string | undefined; // Allow undefined
-	metadata: {
-		name: string;
-		description: string;
-		symbol: string;
-	};
-	manual?: boolean | undefined; // Allow undefined
-}) => {
-	return await fetcher("/tokens/create-metadata", "POST", {
-		imageUrl,
-		image,
-		metadata: {
-			name,
-			description,
-			symbol,
-		},
-		manual,
-	});
-};
-
 export const createToken = async ({
 	contractAddress,
 	chain,
@@ -176,5 +202,17 @@ export const createToken = async ({
 		chainId,
 		pool,
 		signature,
+	});
+};
+
+export const getTrades = async ({ chain, chainId, contractAddress }: { 
+	chain: TChain; 
+	chainId: string | number; 
+	contractAddress: string; 
+}) => {
+	return await fetcher("/tokens/trades", "POST", {
+		chain,
+		chainId,
+		contractAddress,
 	});
 };
