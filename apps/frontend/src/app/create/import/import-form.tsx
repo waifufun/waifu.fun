@@ -1,14 +1,9 @@
 "use client";
 
 import TokenTypeSelector from "@/components/create-token-page/token-type-selector";
-import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { importToken } from "@/lib/api";
 import { type AddressLike, EvmChainIds, type ITokenLookUp, SolanaNetworkIds, type TChain } from "@autofun/types";
 import { useMutation } from "@tanstack/react-query";
-import { watch } from "fs";
-import { useState } from "react";
 import { useForm, type FormState, type RegisterOptions } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -93,7 +88,7 @@ type TokenForm = {
 	contractAddress: string;
 	chain: TChain;
 	chainId: SolanaNetworkIds | EvmChainIds;
-}
+};
 
 type TokenFormOptions = keyof TokenForm;
 
@@ -103,25 +98,27 @@ const TokenImportInput = <K extends TokenFormOptions>({
 	target,
 	validation,
 	formState,
-	registerForm
+	registerForm,
 }: {
 	title: string;
 	label?: string;
 	target: K;
 	validation?: RegisterOptions<TokenForm, K>;
 	formState: FormState<TokenForm>;
+	// biome-ignore lint/suspicious/noExplicitAny: use any here
 	registerForm: (target: K, validation?: RegisterOptions<TokenForm, K>) => any;
 }) => {
-
 	const error = formState.errors[target];
 
 	return (
 		<div className="flex flex-col gap-1 w-full">
 			<p className="text-xl font-[500]">{title}</p>
-			<div className={`flex items-center w-full px-4 gap-4 rounded-lg ${error ? 'border border-red-500' : 'border border-transparent'}`}
-			style={{
-				background: "linear-gradient(180deg, #171717 0%, #141414 100%)"
-			}}>
+			<div
+				className={`flex items-center w-full px-4 gap-4 rounded-lg ${error ? "border border-red-500" : "border border-transparent"}`}
+				style={{
+					background: "linear-gradient(180deg, #171717 0%, #141414 100%)",
+				}}
+			>
 				{label && <p className="text-[#8C8C8C] text-xl font-[500]">{label}</p>}
 				<input
 					className="w-full rounded-lg py-3 focus:outline-none bg-transparent text-white"
@@ -137,30 +134,30 @@ const TokenImportInput = <K extends TokenFormOptions>({
 const ImportButton = ({
 	formState,
 	onSubmit,
-	disabled
+	disabled,
 }: {
 	formState: FormState<TokenForm>;
 	onSubmit: () => void;
 	disabled?: boolean;
 }) => {
-
 	const shouldDisable = formState.isSubmitting || !formState.isValid || Object.keys(formState.errors).length > 0;
-	
+
 	return (
 		<button
-		type="submit"
-		disabled={shouldDisable || disabled}
-		style={{
-			cursor: !shouldDisable ? "pointer" : "not-allowed",    
-			background: !shouldDisable ? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)" : "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)"
-
-		}}
-		className="px-6 py-3 rounded-lg min-w-[120px]"
+			type="submit"
+			disabled={shouldDisable || disabled}
+			style={{
+				cursor: !shouldDisable ? "pointer" : "not-allowed",
+				background: !shouldDisable
+					? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)"
+					: "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)",
+			}}
+			className="px-6 py-3 rounded-lg min-w-[120px]"
 		>
 			<p className="text-[#0A0A0A] text-base font-[700]">LAUNCH</p>
 		</button>
-	)
-}
+	);
+};
 
 const validationRules: Record<keyof TokenForm, RegisterOptions<TokenForm>> = {
 	contractAddress: {
@@ -168,8 +165,8 @@ const validationRules: Record<keyof TokenForm, RegisterOptions<TokenForm>> = {
 		pattern: {
 			// can be solana or evm address
 			value: /^(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})$/,
-			message: "Invalid contract address format"
-		}
+			message: "Invalid contract address format",
+		},
 	},
 	chain: {
 		required: "Chain is required",
@@ -178,33 +175,40 @@ const validationRules: Record<keyof TokenForm, RegisterOptions<TokenForm>> = {
 				return true;
 			}
 			return "Invalid chain selected";
-		}
+		},
 	},
 	chainId: {
 		required: "Chain ID is required",
 		validate: (value) => {
-			if (value === SolanaNetworkIds.Mainnet || value === EvmChainIds.BaseMainnet || value === EvmChainIds.EthereumMainnet) {
+			if (
+				value === SolanaNetworkIds.Mainnet ||
+				value === EvmChainIds.BaseMainnet ||
+				value === EvmChainIds.EthereumMainnet
+			) {
 				return true;
 			}
 			return "Invalid chain ID selected";
-		}
-	}
+		},
+	},
 };
 
 const ChainSelector = ({
 	chain,
-	setChain
+	setChain,
 }: {
 	chain: {
 		chain: TChain;
 		chainId: SolanaNetworkIds | EvmChainIds;
-	}
-	setChain: (chain: { chain: TChain; chainId: SolanaNetworkIds | EvmChainIds}) => void;
+	};
+	setChain: (chain: { chain: TChain; chainId: SolanaNetworkIds | EvmChainIds }) => void;
 }) => {
 	return (
-		<div className="flex items-center gap-2 rounded-lg"
-		style={{background: "linear-gradient(180deg, #171717 0%, #121212 100%)"}}>
+		<div
+			className="flex items-center gap-2 rounded-lg"
+			style={{ background: "linear-gradient(180deg, #171717 0%, #121212 100%)" }}
+		>
 			<button
+				type="button"
 				className="hover:cursor-pointer p-2 rounded-lg"
 				style={{
 					border: chain.chainId === SolanaNetworkIds.Mainnet ? "2px solid #03FF24" : "2px solid transparent",
@@ -217,6 +221,7 @@ const ChainSelector = ({
 				<img src="/chain-icons/solana.svg" alt="Solana" className="w-6 h-6" />
 			</button>
 			<button
+				type="button"
 				className="hover:cursor-pointer p-2 rounded-lg"
 				style={{
 					border: chain.chainId === EvmChainIds.BaseMainnet ? "2px solid #03FF24" : "2px solid transparent",
@@ -229,6 +234,7 @@ const ChainSelector = ({
 				<img src="/chain-icons/base.svg" alt="Base" className="w-6 h-6" />
 			</button>
 			<button
+				type="button"
 				className="hover:cursor-pointer p-2 rounded-lg"
 				style={{
 					border: chain.chainId === EvmChainIds.EthereumMainnet ? "2px solid #03FF24" : "2px solid transparent",
@@ -242,11 +248,10 @@ const ChainSelector = ({
 			</button>
 		</div>
 	);
-}
+};
 
-export default function ImportFormV2() {	
-
-	const {register, handleSubmit, formState, setValue, watch} = useForm<TokenForm>({
+export default function ImportFormV2() {
+	const { register, handleSubmit, formState, setValue, watch } = useForm<TokenForm>({
 		defaultValues: {
 			contractAddress: "",
 			chain: "solana",
@@ -259,14 +264,14 @@ export default function ImportFormV2() {
 		console.log("Setting chain:", chain);
 		setValue("chain", chain.chain);
 		setValue("chainId", chain.chainId);
-	}
+	};
 
 	const currentChain = {
 		chain: watch("chain") as TChain,
 		chainId: watch("chainId") as SolanaNetworkIds | EvmChainIds,
-	}
+	};
 
-		const mutation = useMutation({
+	const mutation = useMutation({
 		mutationKey: ["import"],
 		mutationFn: importToken,
 		onSuccess: () => {
@@ -299,31 +304,31 @@ export default function ImportFormV2() {
 			<form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-[1100px]">
 				<div className="flex flex-col items-center mt-5 w-full">
 					<div>
-						<img src="/create/coin-machine.png"/>
+						<img src="/create/coin-machine.png" alt="coin-machine" />
 					</div>
 					<div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
-						<TokenTypeSelector selected="import"/>
+						<TokenTypeSelector selected="import" />
 						<div className="p-4 flex items-center min-h-[400px]">
 							<div className="mx-auto max-w-[400px] bg-[#0F0F0F] flex flex-col gap-4 w-full">
-									<div className="flex justify-between items-center">
-										<p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
-											IMPORT TOKEN
-										</p>
-										<ChainSelector chain={currentChain} setChain={setChain}/>
-									</div>
-									<TokenImportInput
-										title="Contract Address"
-										target="contractAddress"
-										registerForm={register}
-										formState={formState}
-										validation={validationRules.contractAddress}
-									/>
-									<ImportButton disabled={mutation.isPending} formState={formState} onSubmit={() => console.log("ewa")} />
+								<div className="flex justify-between items-center">
+									<p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24] inline-block">
+										IMPORT TOKEN
+									</p>
+									<ChainSelector chain={currentChain} setChain={setChain} />
+								</div>
+								<TokenImportInput
+									title="Contract Address"
+									target="contractAddress"
+									registerForm={register}
+									formState={formState}
+									validation={validationRules.contractAddress}
+								/>
+								<ImportButton disabled={mutation.isPending} formState={formState} onSubmit={() => console.log("ewa")} />
 							</div>
 						</div>
 					</div>
 				</div>
 			</form>
 		</div>
-	)
+	);
 }

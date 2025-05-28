@@ -45,7 +45,7 @@ export async function generateMedia(data: {
 		textModel: "google/gemini-flash-1.5",
 		imageModel: mode === "pro" ? "fal-ai/flux-pro/v1.1-ultra" : "fal-ai/flux/schnell",
 		audioModel: "fal-ai/mmaudio-v2/text-to-audio",
-		videoModel: mode === "pro" ? "fal-ai/pixverse/v4/text-to-video" : "fal-ai/pixverse/v4/text-to-video/fast"
+		videoModel: mode === "pro" ? "fal-ai/pixverse/v4/text-to-video" : "fal-ai/pixverse/v4/text-to-video/fast",
 	});
 
 	const timeoutPromise = new Promise((_, reject) =>
@@ -64,14 +64,14 @@ export async function generateMedia(data: {
 						guidance_scale: data.guidance_scale,
 						width: data.width,
 						height: data.height,
-						image_size: "square_hd"
+						image_size: "square_hd",
 					}),
-					timeoutPromise
+					timeoutPromise,
 				]);
 				return {
 					data: {
-						images: [{ url: imageUrl }]
-					}
+						images: [{ url: imageUrl }],
+					},
 				};
 			}
 			case "video": {
@@ -82,14 +82,14 @@ export async function generateMedia(data: {
 						guidance_scale: data.guidance_scale,
 						width: data.width,
 						height: data.height,
-						image_url: data.image_url
+						image_url: data.image_url,
 					}),
-					timeoutPromise
+					timeoutPromise,
 				]);
 				return {
 					data: {
-						video: { url: videoUrl }
-					}
+						video: { url: videoUrl },
+					},
 				};
 			}
 			case "audio": {
@@ -122,9 +122,9 @@ export async function generateMedia(data: {
 						music_duration: data.music_duration,
 						cfg_strength: data.cfg_strength,
 						scheduler: data.scheduler,
-						num_inference_steps: data.num_inference_steps
+						num_inference_steps: data.num_inference_steps,
 					}),
-					timeoutPromise
+					timeoutPromise,
 				]);
 
 				return {

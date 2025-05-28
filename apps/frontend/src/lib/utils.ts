@@ -215,4 +215,4 @@ export const roundDownToNearest = (value: number, step: number): number => {
 		throw new Error("Step must be greater than zero");
 	}
 	return Math.floor(value / step) * step;
-}
+};

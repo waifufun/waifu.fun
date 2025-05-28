@@ -147,7 +147,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 		return { success: true, message: "Logged out successfully" };
 	});
-    // this is for develepoment to get a cookie for postman {/* Malibu */}
+	// this is for develepoment to get a cookie for postman {/* Malibu */}
 	if (process.env.NODE_ENV === "development") {
 		fastify.get("/dev-setup", async (request, reply) => {
 			const evmPayload = {
@@ -173,7 +173,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					maxAge: 60 * 60 * 24 * 7,
 					path: "/",
 					httpOnly: true,
-					secure: false, 
+					secure: false,
 				})
 				.setCookie("solana", solanaToken, {
 					maxAge: 60 * 60 * 24 * 7,
@@ -181,13 +181,13 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					httpOnly: true,
 					secure: false,
 				})
-				.send({ 
-					success: true, 
+				.send({
+					success: true,
 					message: "Development cookies set",
 					cookies: {
 						evm: evmToken,
-						solana: solanaToken
-					}
+						solana: solanaToken,
+					},
 				});
 		});
 	}

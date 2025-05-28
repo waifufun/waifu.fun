@@ -10,7 +10,7 @@ import {
 	SolanaNetworkIds,
 } from "@autofun/types";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Transaction, type VersionedTransaction } from "@solana/web3.js";
+import type { Transaction, VersionedTransaction } from "@solana/web3.js";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { useSignMessage, useSendTransaction, useSwitchChain, useDisconnect } from "wagmi";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -103,7 +103,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 				const wallets = await getWallets();
 				console.log("remoteWallets", wallets);
 				return wallets;
-			// biome-ignore lint/suspicious/noExplicitAny: need for flexibility of errors
+				// biome-ignore lint/suspicious/noExplicitAny: need for flexibility of errors
 			} catch (e: any) {
 				toast.error(`Error fetching remote wallets: ${e?.message}`);
 				throw e;
@@ -154,7 +154,15 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Jitters will resolve
 	useEffect(() => {
-		if (publicKey && connected && !disconnecting && signMessage && sendTransactionSolana && signSolanaTransaction && signSolanaAllTransactions) {
+		if (
+			publicKey &&
+			connected &&
+			!disconnecting &&
+			signMessage &&
+			sendTransactionSolana &&
+			signSolanaTransaction &&
+			signSolanaAllTransactions
+		) {
 			const solanaAddress = publicKey.toBase58() as SolanaAddressLike;
 			const walletAdapterFunctions: ISolanaFunctions = {
 				signMessage: async (message: Uint8Array) => {

@@ -5,7 +5,20 @@ fal.config({
 	credentials: falApiKey,
 });
 
-type LlmModel = "anthropic/claude-3.5-sonnet" | "anthropic/claude-3-5-haiku" | "anthropic/claude-3-haiku" | "google/gemini-pro-1.5" | "google/gemini-flash-1.5" | "google/gemini-flash-1.5-8b" | "meta-llama/llama-3.2-1b-instruct" | "meta-llama/llama-3.2-3b-instruct" | "meta-llama/llama-3.1-8b-instruct" | "meta-llama/llama-3.1-70b-instruct" | "openai/gpt-4o-mini" | "openai/gpt-4o" | "deepseek/deepseek-r1";
+type LlmModel =
+	| "anthropic/claude-3.5-sonnet"
+	| "anthropic/claude-3-5-haiku"
+	| "anthropic/claude-3-haiku"
+	| "google/gemini-pro-1.5"
+	| "google/gemini-flash-1.5"
+	| "google/gemini-flash-1.5-8b"
+	| "meta-llama/llama-3.2-1b-instruct"
+	| "meta-llama/llama-3.2-3b-instruct"
+	| "meta-llama/llama-3.1-8b-instruct"
+	| "meta-llama/llama-3.1-70b-instruct"
+	| "openai/gpt-4o-mini"
+	| "openai/gpt-4o"
+	| "deepseek/deepseek-r1";
 
 interface ImageGenerationParams {
 	prompt: string;
@@ -126,7 +139,8 @@ export class AI {
 	async createAudio(params: AudioGenerationParams): Promise<string> {
 		const input = {
 			lyrics: params.lyrics,
-			reference_audio_url: params.reference_audio_url || "https://storage.googleapis.com/falserverless/model_tests/diffrythm/rock_en.wav",
+			reference_audio_url:
+				params.reference_audio_url || "https://storage.googleapis.com/falserverless/model_tests/diffrythm/rock_en.wav",
 			style_prompt: params.style_prompt,
 			music_duration: params.music_duration || "95s",
 			cfg_strength: params.cfg_strength || 4,
@@ -150,8 +164,10 @@ export class AI {
 	}
 
 	async createVideo(params: VideoGenerationParams): Promise<string> {
-		const model = params.image_url 
-			? (this.videoModel.includes("fast") ? "fal-ai/pixverse/v4/image-to-video/fast" : "fal-ai/pixverse/v4/image-to-video")
+		const model = params.image_url
+			? this.videoModel.includes("fast")
+				? "fal-ai/pixverse/v4/image-to-video/fast"
+				: "fal-ai/pixverse/v4/image-to-video"
 			: this.videoModel;
 
 		const input = {
