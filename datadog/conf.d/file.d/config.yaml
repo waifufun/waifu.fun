@@ -1,6 +1,0 @@
-logs:
-  - type: file
-    path: /var/log/fastify/autofun-backend.log
-    service: autofun-backend
-    source: nodejs
-    sourcecategory: autofun

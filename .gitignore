@@ -7,9 +7,6 @@ logs
 .DS_Store
 **/.DS_Store
 
-# datadog files
-apps/backend/logs
-
 # environment
 **/.env
 .env

@@ -77,29 +77,7 @@ services:
     volumes:
       - "mongo3_data:/data/db"
       - "mongo3_config:/data/configdb"
-      
-  datadog-agent:
-    image: datadog/agent:latest
-    container_name: datadog-agent
-    restart: unless-stopped
-    network_mode: "host"
-    environment:
-      - DD_API_KEY=${DD_API_KEY}
-      - DD_SITE=datadoghq.eu
-      - DD_LOGS_ENABLED=true
-      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=false
-      - DD_LOGS_CONFIG_USE_HTTP=false
-      - DD_HOSTNAME=autofun-host
-      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
-      - ./apps/backend/logs:/var/log/fastify:rw
-      - ./datadog/conf.d:/etc/datadog-agent/conf.d:ro
-      - ./datadog/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
-    entrypoint: ["/opt/datadog-agent/bin/agent/agent", "run"]
-      
+
 networks:
   app-network:
     driver: bridge
