@@ -329,7 +329,6 @@ function convertEventDataToEntity(eventData: EventData): Event {
 run(dataSource, database, async (ctx) => {
   const blocks = ctx.blocks.map(augmentBlock);
   const events: EventData[] = [];
-  console.log("ewa");
 
   for (const block of blocks) {
     for (const tx of block.transactions) {
