@@ -28,7 +28,9 @@ export async function generateMetadata({ params }: { params: ITokenLookUp }): Pr
 	};
 }
 
-export default async function Page({ params, children }: { params: ITokenLookUp; children: ReactNode }) {
+type Params = Promise<ITokenLookUp>;
+
+export default async function Page({ params, children }: { params: Params; children: ReactNode }) {
 	const tokenParams = await params;
 	const token = await getToken(tokenParams);
 
