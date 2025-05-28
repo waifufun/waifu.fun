@@ -128,60 +128,53 @@ export const generateMetadata = async (prompt?: string) => {
 
 export const generateImage = async (body: object) => {
 	return await fetcher("/generation/generate", "POST", body);
-}
+};
 
-export const generateRemoteMetadata = async (
-    {
-        imageUrl,
-        image,
-        metadata: {
-            name,
-            description,
-            symbol,
-        },
-        manual
-    }: {
-        imageUrl?: string | undefined; // Allow undefined
-        image?: string | undefined;   // Allow undefined
-        metadata: {
-            name: string;
-            description: string;
-            symbol: string;
-        };
-        manual?: boolean | undefined; // Allow undefined
-    }
-) => {
-    return await fetcher("/tokens/create-metadata", "POST", {
-        imageUrl,
-        image,
-        metadata: {
-            name,
-            description,
-            symbol,
-        },
-        manual
-    });
-}
+export const generateRemoteMetadata = async ({
+	imageUrl,
+	image,
+	metadata: { name, description, symbol },
+	manual,
+}: {
+	imageUrl?: string | undefined; // Allow undefined
+	image?: string | undefined; // Allow undefined
+	metadata: {
+		name: string;
+		description: string;
+		symbol: string;
+	};
+	manual?: boolean | undefined; // Allow undefined
+}) => {
+	return await fetcher("/tokens/create-metadata", "POST", {
+		imageUrl,
+		image,
+		metadata: {
+			name,
+			description,
+			symbol,
+		},
+		manual,
+	});
+};
 
-export const createToken = async(
-	{
-		contractAddress,
-		chain,
-		chainId,
-		pool,
-		signature
-	}: {
-		contractAddress: string;
-		chain: TChain;
-		chainId: number;
-		pool?: string;
-		signature?: string;
-	}) => {
+export const createToken = async ({
+	contractAddress,
+	chain,
+	chainId,
+	pool,
+	signature,
+}: {
+	contractAddress: string;
+	chain: TChain;
+	chainId: number;
+	pool?: string;
+	signature?: string;
+}) => {
 	return await fetcher("/tokens/create", "POST", {
 		contractAddress,
 		chain,
 		chainId,
 		pool,
-		signature
-	})
-}
+		signature,
+	});
+};

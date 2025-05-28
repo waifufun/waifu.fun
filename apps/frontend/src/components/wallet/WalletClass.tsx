@@ -8,5 +8,6 @@ export abstract class WalletClass {
 
 	abstract getNativeBalance(): Promise<number>;
 
+	// biome-ignore lint/suspicious/noExplicitAny: use any
 	abstract createToken(tokenMetadata: TokenMetadata): Promise<any>;
 }

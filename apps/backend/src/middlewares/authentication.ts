@@ -19,7 +19,7 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 		if (process.env.NODE_ENV === "development" && !cookies.evm && !cookies.solana) {
 			request.authUser = {
 				evm: "0x0000000000000000000000000000000000000000",
-				solana: '11111111111111111111111111111111',
+				solana: "11111111111111111111111111111111" as AddressLike,
 			};
 			console.log("[Auth] Development mode - using default addresses");
 			return;

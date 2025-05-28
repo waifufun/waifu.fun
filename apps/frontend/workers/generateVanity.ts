@@ -45,34 +45,39 @@ self.onmessage = async (event: MessageEvent<{ suffix: string }>) => {
 				secretKey.set(privateKey, 0);
 				secretKey.set(publicKey, 32);
 
-        if (validateKeypair(privateKey, publicKey, secretKey)) {
-          self.postMessage({
-            type: "done",
-            success: true,
-            address: publicKeyBs58,
-            keypair: {
-              publicKey: Array.from(publicKey),
-              privateKey: Array.from(privateKey),
-            },
-            attempts
-          });
-          return;
-        } else {
-          console.warn(`[Worker] Key ${publicKeyBs58} matched suffix but failed validation. Continuing...`);
-        }
-      }
+				if (validateKeypair(privateKey, publicKey, secretKey)) {
+					self.postMessage({
+						type: "done",
+						success: true,
+						address: publicKeyBs58,
+						keypair: {
+							publicKey: Array.from(publicKey),
+							privateKey: Array.from(privateKey),
+						},
+						attempts,
+					});
+					return;
+				}
 
-      if (attempts % REPORT_INTERVAL === 0) {
-        self.postMessage({ type: "progress", keypair: {
-          publicKey: Array.from(publicKey),
-          privateKey: Array.from(privateKey),
-        }, attempts });
-      }
-    }
-  } catch (error: any) {
-    console.error("[Worker] Error during address generation:", error);
-    self.postMessage({ type: "error", success: false, error: error.message || "Unknown worker error" });
-  }
+				console.warn(`[Worker] Key ${publicKeyBs58} matched suffix but failed validation. Continuing...`);
+			}
+
+			if (attempts % REPORT_INTERVAL === 0) {
+				self.postMessage({
+					type: "progress",
+					keypair: {
+						publicKey: Array.from(publicKey),
+						privateKey: Array.from(privateKey),
+					},
+					attempts,
+				});
+			}
+		}
+	} catch (error) {
+		const err = error as { message?: string };
+		console.error("[Worker] Error during address generation:", error);
+		self.postMessage({ type: "error", success: false, error: err.message || "Unknown worker error" });
+	}
 };
 
 console.log("[Worker] Initialized and ready for messages.");

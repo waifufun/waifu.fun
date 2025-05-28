@@ -19,7 +19,6 @@ import {
 	populateTokensWithLiveData,
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
-import { getAddress } from "viem";
 import { uploadImageFromUrl, upload, uploadBase64Image } from "@autofun/s3-uploader";
 import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
 import redis from "@autofun/redis";
@@ -331,7 +330,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 
 			const items = Array.from(
-				new Map((trades?.getTokenEvents?.items || []).map((item: any) => [item?.transactionHash, item])).values(),
+				new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
 			).map((event) => {
 				const trade = event as {
 					maker: string;
@@ -417,8 +416,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		const items: IHolder[] = holders?.holders?.items
 			?.splice(0, 50)
-			?.filter((item: any) => Number(item.balance) > 1)
-			?.map((item: any) => {
+			?.filter((item) => Number(item.balance) > 1)
+			?.map((item) => {
 				const percentage = getPercentageOfTotal(Number(item?.balance ? item?.balance : "0"), Number(token.totalSupply));
 				return {
 					address: item.address,

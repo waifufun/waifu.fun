@@ -59,12 +59,12 @@ function extractMetadataFromString(text: string): TokenMetadata | null {
 
 export async function generateMetadata(data: GenerateMetadataParams): Promise<TokenMetadata | null> {
 	console.log("[generateMetadata] Starting metadata generation with prompt:", data.prompt);
-	
+
 	const ai = new AI({
 		textModel: "google/gemini-flash-1.5",
 		imageModel: "fal-ai/flux/schnell",
 		audioModel: "fal-ai/mmaudio-v2/text-to-audio",
-		videoModel: "fal-ai/kling-video/v2/master/text-to-video"
+		videoModel: "fal-ai/kling-video/v2/master/text-to-video",
 	});
 
 	let retryCount = 0;
