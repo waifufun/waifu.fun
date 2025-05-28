@@ -33,3 +33,5 @@ If you're on MacOS and get a ECONNREFUSED error when connecting to MongoDB (via 
 4: Exit, and reboot
 
 -add NEXT_PUBLIC_HOST
+
+docker build -t autofun-frontend -f apps/frontend/Dockerfile.frontend .

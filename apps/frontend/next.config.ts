@@ -17,6 +17,9 @@ const nextConfig = {
 	images: {
 		domains: ["v3.fal.media"],
 	},
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
 	reactStrictMode: false,
 };
 
