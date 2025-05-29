@@ -25,7 +25,7 @@ jobs:
            with:
               username: ${{ secrets.DOCKERHUB_USERNAME }}
               password: ${{ secrets.DOCKERHUB_TOKEN }}
-              
+
 
          # Step 3 - Extract metadata (tags, labels) for Docker.
          # This will tag the image as <dockerhub_username>/<repository_name>:<branch_name>.
