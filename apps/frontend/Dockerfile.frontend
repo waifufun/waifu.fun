@@ -1,45 +1,73 @@
-# syntax=docker.io/docker/dockerfile:1
-FROM node:22 AS base
+FROM node:20 AS base
 
+# Install dependencies only when needed
 FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 #RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Install dependencies based on the preferred package manager
+# Copy monorepo root configuration files necessary for pnpm workspaces
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
 
+# Copy application's package.json and all package.json files from the 'packages' directory
+# This allows pnpm to resolve the workspace structure for the filtered install
+COPY apps/frontend/package.json ./apps/frontend/package.json
+COPY packages/*/package.json ./packages/
+# The destination './packages/' will create subdirectories matching the source,
+# e.g., packages/constants/package.json -> ./packages/constants/package.json
+
+RUN corepack enable pnpm && pnpm i --filter @autofun/frontend --frozen-lockfile
+
+# Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy monorepo root configuration files necessary for pnpm to identify the workspace and run build scripts
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+COPY tsconfig.base.json ./tsconfig.base.json
+# If your build process for the frontend requires other root files (e.g., biome.json for a lint step in build), copy them here.
 
-RUN \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Copy the entire state from 'deps' stage.
+# This includes all node_modules (root and within packages like apps/frontend/node_modules which contain .bin executables),
+# and the source code as it existed when 'deps' was built.
+COPY --from=deps /app /app
 
+# Overwrite with the latest application source code and local workspace dependencies from the current build context.
+# This ensures that if only source code changed (and not package.json files),
+# we use the latest source but can reuse the 'deps' layer.
+COPY apps/frontend ./apps/frontend
+COPY packages ./packages
+# This copies all subdirectories from the 'packages' directory in the build context
+# to the '/app/packages' directory in the image.
+# If your build process for the frontend requires other root files (e.g., biome.json for a lint step in build), copy them here.
+
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
+# ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN corepack enable pnpm && pnpm --filter @autofun/frontend run build
+
+# Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Uncomment the following line in case you want to disable telemetry during runtime.
+# ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+# Copy public assets from the frontend app's build output
+COPY --from=builder /app/apps/frontend/public ./public
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+# The .next/standalone and .next/static paths are relative to the app's location in the builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./.next/static
 
 USER nextjs
 
@@ -47,5 +75,9 @@ EXPOSE 3000
 
 ENV PORT=3000
 
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
 ENV HOSTNAME="0.0.0.0"
-CMD ["node", "server.js"]
+# The server.js path is relative to the WORKDIR /app
+# and reflects the nested structure within the standalone output for monorepos.
+CMD ["node", "apps/frontend/server.js"]

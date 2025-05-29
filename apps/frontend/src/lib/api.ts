@@ -1,6 +1,6 @@
 import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 
-const BASE_URL = "http://localhost:3001";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export const fetcher = async (
 	endpoint: string,
