@@ -1,26 +1,30 @@
-type SwapStatsProps = {
-    minReceived: string;
-    priceImpact: string;
-    advancedSettings: boolean;
+import { useState } from "react";
+import AdvancedSettings from "./advanced-settings";
+
+const initialSettings = {
+  speed: "Normal",
+  slippage: "0.5%",
+  deadline: "5",
 };
 
-export default function SwapStats({ minReceived, priceImpact, advancedSettings }: SwapStatsProps) {
-    return (
-        <>
-            <div className="flex justify-between text-sm text-white/70">
-                <p>Min received</p>
-                <p>{minReceived}</p>
-            </div>
+export default function SwapStats({ minReceived, priceImpact }: SwapStatsProps) {
+  const [settings, setSettings] = useState(initialSettings);
 
-            <div className="flex justify-between text-sm text-white/70">
-                <p>Price impact</p>
-                <p>{priceImpact}%</p>
-            </div>
+  return (
+    <>
+      <div className="flex font-medium justify-between text-base text-white">
+        <p>Min received</p>
+        <p>{minReceived}</p>
+      </div>
 
-            <div className="flex justify-between text-sm text-white/70 items-center">
-                <p>Advanced settings</p>
-                <input type="checkbox" checked={advancedSettings} readOnly />
-            </div>
-        </>
-    );
+      <div className="flex font-medium justify-between text-base text-white">
+        <p>Price impact</p>
+        <p>{priceImpact}</p>
+      </div>
+
+      <div className="flex justify-between text-base text-white items-center">
+        <AdvancedSettings settings={settings} onChange={setSettings} />
+      </div>
+    </>
+  );
 }

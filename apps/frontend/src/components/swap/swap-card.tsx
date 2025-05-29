@@ -33,34 +33,36 @@ export default function SwapCard({ token }: { token: IToken }) {
 	}, [solanaWallets]);
 
 	return (
-		<div className="w-[460px] h-[355px]  rounded-xl overflow-hidden">
-			<div className="p-4 flex flex-col gap-4">
-				<div className="flex items-center gap-2">
-					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" />
+		<div className="w-full h-full rounded-xl overflow-hidden">
+			<div className="flex flex-col gap-2">
+				<div className="flex items-stretch gap-2 w-full">
+					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="flex-grow" />
 
-					<div className="flex flex-col items-start gap-[2px]">
-						<div className="flex items-center gap-1">
-							<Image
-								src={
-									token?.image || (token?.chain === "solana" ? "/chain-icons/solana.svg" : "/chain-icons/ethereum.svg")
-								}
-								alt={token?.ticker || "token"}
-								width={24}
-								height={24}
-							/>
-							<span className="text-white text-base font-normal">{token?.ticker}</span>
-						</div>
-
-						<div className="flex flex-row items-center gap-1 leading-none">
-							<Wallet size={14} color="#8C8C8C" />
-							<p className="text-[#8C8C8C] text-sm font-medium">{balance} SOL</p>
-						</div>
+					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-full">
+						<Image
+							src={
+								token?.image || (token?.chain === "solana" ? "/chain-icons/solana.svg" : "/chain-icons/ethereum.svg")
+							}
+							alt={token?.ticker || "token"}
+							width={24}
+							height={24}
+							className="mb-1"
+						/>
+						ETH
 					</div>
+				</div>
+				<div className="flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium">
+					<Wallet size={14} color="#8C8C8C" />
+					<span>{balance} SOL</span>
 				</div>
 
 				<QuickSetButtons buttons={quickSetButtons} onClick={handleQuickSet} />
-				<SwapStats minReceived="25" priceImpact="0.3%" advancedSettings={true} />
-				<Button className="w-full mt-2 text-base font-medium">Swap</Button>
+				<div className="mt-2 space-y-2">
+					<SwapStats minReceived="25" priceImpact="0.3%" advancedSettings={true} />
+					<Button className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase">
+						Swap
+					</Button>
+				</div>
 			</div>
 		</div>
 	);
