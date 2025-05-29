@@ -1,0 +1,22 @@
+{
+  "apiVersion": "v1.2",
+  "spec": {
+    "kind": "Workflow",
+    "spec": {
+      "type": "sequential",
+      "steps": []
+    }
+  },
+  "gitops": {
+    "repoUrl": "https://github.com/elizaOS/autofun-monorepo",
+    "vcsService": "github",
+    "accountLogin": "elizaOS",
+    "branch": "develop",
+    "filePath": "/northflank.json"
+  },
+  "triggers": [],
+  "options": {
+    "concurrencyPolicy": "allow"
+  },
+  "$schema": "https://api.northflank.com/v1/schemas/release-flow"
+}
