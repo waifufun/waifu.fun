@@ -1,0 +1,142 @@
+{
+	"_format": "hh-sol-artifact-1",
+	"contractName": "IAutoFun",
+	"sourceName": "contracts/interfaces/IAutoFun.sol",
+	"abi": [
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "factory",
+					"type": "address"
+				}
+			],
+			"name": "AutoFunTokenFactoryUpdated",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "token",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "lastTrader",
+					"type": "address"
+				}
+			],
+			"name": "BondingCurveCompleted",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "trader",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "token",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "amountIn",
+					"type": "uint256"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "minAmountOut",
+					"type": "uint256"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint8",
+					"name": "direction",
+					"type": "uint8"
+				}
+			],
+			"name": "SwapExecuted",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "totalSupply",
+					"type": "uint256"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "virtualReserveETHAmount",
+					"type": "uint256"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint8",
+					"name": "decimals",
+					"type": "uint8"
+				},
+				{
+					"indexed": false,
+					"internalType": "string",
+					"name": "name",
+					"type": "string"
+				},
+				{
+					"indexed": false,
+					"internalType": "string",
+					"name": "symbol",
+					"type": "string"
+				}
+			],
+			"name": "TokenLaunched",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "token",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "ethAmount",
+					"type": "uint256"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "tokenAmount",
+					"type": "uint256"
+				}
+			],
+			"name": "Withdrawn",
+			"type": "event"
+		}
+	],
+	"bytecode": "0x",
+	"deployedBytecode": "0x",
+	"linkReferences": {},
+	"deployedLinkReferences": {}
+}

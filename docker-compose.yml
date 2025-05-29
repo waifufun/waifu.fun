@@ -77,7 +77,7 @@ services:
     volumes:
       - "mongo3_data:/data/db"
       - "mongo3_config:/data/configdb"
-      
+
 networks:
   app-network:
     driver: bridge

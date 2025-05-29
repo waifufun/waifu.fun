@@ -4,11 +4,12 @@ import {
 	type AddressLike,
 	type EvmAddressLike,
 	type IToken,
+	type SolanaAddressLike,
 	type TChain,
 	type TChainId,
 } from "@autofun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
-import { isAddress as isEvmAddress } from "viem";
+import { getAddress, isAddress as isEvmAddress, type Address } from "viem";
 import logger from "@autofun/logger";
 import { Codex } from "@codex-data/sdk";
 import { CHAINID_TO_CODEX_NETWORK_ID, WETH_ADDRESSES } from "@autofun/constants";
@@ -19,6 +20,7 @@ import moment from "moment";
 import redis from "@autofun/redis";
 import { SolanaRpcProvider } from "@autofun/rpc";
 import { EVMRpcProvider } from "@autofun/rpc";
+import { PublicKey } from "@solana/web3.js";
 
 dotenv.config();
 
@@ -85,6 +87,19 @@ export const isChainIdAllowedForChain = (chain: TChain, chainId: TChainId) => {
 	return false;
 };
 
+export function getChecksummedAddress(address: AddressLike, chain: "evm"): Address;
+export function getChecksummedAddress(address: AddressLike, chain: "solana"): SolanaAddressLike;
+export function getChecksummedAddress(address: AddressLike, chain: TChain): Address | string {
+	if (chain === "evm") {
+		return getAddress(address);
+	}
+	if (chain === "solana") {
+		return new PublicKey(address).toBase58();
+	}
+
+	throw new Error("Invalid chain or address passed");
+}
+
 /**
  * Enriches token objects with live market data from the Codex API.
  *
@@ -113,15 +128,15 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 	const tokensToQuery = tokensToPopulate
 		.filter((t) => t?.imported)
-		.map(({ chain, chainId, contractAddress }: Pick<IToken, "chain" | "chainId" | "contractAddress">, idx: number) => {
+		.map((token: IToken) => {
+			const { chain, chainId, contractAddress } = token;
 			const networkId =
 				chain === "evm"
 					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
 					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
 
-			if (tokensToPopulate[idx]) {
-				tokenIndex[contractAddress] = tokensToPopulate[idx];
-			}
+			tokenIndex[contractAddress] = token;
+
 			return `${contractAddress}:${networkId}`;
 		});
 
@@ -194,7 +209,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	);
 
 	if (nonImportedTokens?.length > 0) {
-		const rpc = new SolanaRpcProvider(SolanaNetworkIds.Mainnet);
+		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
 		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
 
 		for (const tokenRecord of bondingCurveInfo) {
@@ -217,12 +232,27 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 			if (!nonImportedToken?._id) continue;
 
-			const setValues = {
+			const setValues: {
+				marketcap: number;
+				price: number;
+				curveCompleted?: boolean;
+				curveProgress?: number;
+				creator?: AddressLike;
+				bondingCurveAddress?: AddressLike;
+			} = {
 				marketcap: Number(tokenRecord.marketCapUSD),
-				price: Number(tokenRecord.marketCapUSD),
+				price: Number(tokenRecord.priceUsd),
 				curveCompleted: Boolean(tokenRecord.curveCompleted),
 				curveProgress: Number(tokenRecord.curveProgress),
 			};
+
+			if (tokenRecord?.bondingCurveAddress) {
+				setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
+			}
+
+			if (tokenRecord?.creator) {
+				setValues.creator = String(tokenRecord?.creator) as AddressLike;
+			}
 
 			ops.push({
 				updateOne: {
@@ -234,6 +264,11 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
+
+			/* Remove the _id field so we dont return it anywhere **/
+			if (nonImportedToken?._id) {
+				delete nonImportedToken._id;
+			}
 
 			tokenIndex[nonImportedToken.contractAddress] = {
 				...nonImportedToken,
@@ -322,8 +357,18 @@ export async function getTokenBalance({
 	}
 
 	if (chain === "solana") {
-		return await new SolanaRpcProvider(chainId as SolanaNetworkIds).getTokenBalance(contractAddress, address);
+		const rpc = await SolanaRpcProvider.connect(chainId as SolanaNetworkIds);
+		return rpc.getTokenBalance(contractAddress, address);
 	}
 
 	throw new Error("Unsupported chain");
 }
+
+export const getPercentageOfTotal = (value: number, total: number): string | number => {
+	if (total === 0) {
+		return 0;
+	}
+
+	const percentage = (value / total) * 100;
+	return percentage?.toFixed(2);
+};

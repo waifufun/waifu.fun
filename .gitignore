@@ -3,6 +3,9 @@ node_modules
 /.pnp
 .pnp.js
 packages/**/node_modules
+logs
+.DS_Store
+**/.DS_Store
 
 # environment
 **/.env
@@ -98,3 +101,4 @@ testem.log
 /typings
 .yarn-integrity
 *.tsbuildinfo
+pnpm-lock.yaml

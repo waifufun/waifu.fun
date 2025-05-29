@@ -10,15 +10,32 @@
 		"supportedArchitectures": {
 			"os": ["current"],
 			"cpu": ["x64", "arm64"]
-		}
+		},
+		"ignoredBuiltDependencies": [
+			"@biomejs/biome",
+			"@tailwindcss/oxide",
+			"bigint-buffer",
+			"blake-hash",
+			"bufferutil",
+			"core-js-pure",
+			"es5-ext",
+			"esbuild",
+			"keccak",
+			"protobufjs",
+			"secp256k1",
+			"sharp",
+			"tiny-secp256k1",
+			"usb",
+			"utf-8-validate"
+		]
 	},
 	"release": {
 		"branches": [
 			"main",
 			{
-			"name": "staging",
-			"channel": "staging",
-			"prerelease": true
+				"name": "staging",
+				"channel": "staging",
+				"prerelease": true
 			}
 		],
 		"plugins": [
@@ -36,8 +53,9 @@
 		]
 	},
 	"scripts": {
-		"build": "NODE_ENV=production pnpm -r --stream build",
+		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
+		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
@@ -49,12 +67,11 @@
 		"@semantic-release/git": "^10.0.1",
 		"@semantic-release/github": "^11.0.2",
 		"cross-env": "^7.0.3",
+		"dotenv-cli": "^8.0.0",
 		"esbuild": "^0.25.4",
 		"semantic-release": "^24.2.3",
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5"
 	},
-	"dependencies": {
-		"dotenv-cli": "^8.0.0"
-	}
+	"packageManager": "pnpm@10.11.0"
 }

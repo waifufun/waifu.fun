@@ -2,9 +2,22 @@ module.exports = {
 	content: ["./src/**/*.{html,js,jsx,ts,tsx}", "./*.{html}"],
 	theme: {
 		extend: {
+			container: {
+				center: true,
+				padding: {
+					DEFAULT: "1rem",
+					xl: "8.75rem",
+				},
+				screens: {
+					sm: "640px",
+					md: "1024px",
+					lg: "1280px",
+					xl: "1536px",
+					"2xl": "1920px",
+				},
+			},
 			fontFamily: {
 				satoshi: ["Satoshi", "sans-serif"],
-				"dm-mono": ["DMMono", "monospace"],
 			},
 			colors: {
 				autofun: {

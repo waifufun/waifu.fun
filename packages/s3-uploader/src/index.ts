@@ -39,9 +39,13 @@ export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
  * @returns Promise<void>
  */
 export const upload = async (bucket: string, file: IFile, fileName: string) => {
+	const isMacOs = process.platform === "darwin";
+
 	const command = new aws.PutObjectCommand({
-		Bucket: BUCKET_NAME,
-		Key: `${bucket}/${String(fileName)}.${mime.extension(file?.mimetype)}`,
+		Bucket: bucket,
+		Key: isMacOs
+			? `${bucket}/${String(fileName)}.${mime.extension(file?.mimetype)}`
+			: `${String(fileName)}.${mime.extension(file?.mimetype)}`,
 		ContentType: file.mimetype,
 		Body: file.data,
 		ACL: "public-read",
@@ -103,7 +107,7 @@ export const uploadBase64Image = async (
 	} else {
 		return false;
 	}
-	return true;
+	return getFileUrl(`${fileName}.webp`, bucket);
 };
 
 /**
