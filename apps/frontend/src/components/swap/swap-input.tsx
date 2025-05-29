@@ -41,9 +41,7 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 
 		const displayValue = prependSymbol && value ? prependSymbol + value.toString() : value.toString();
 		return (
-			<div
-				className={cn("rounded-lg w-full transition-colors duration-300", error ? "border border-red-500" : "")}
-			>
+			<div className={cn("rounded-lg w-full transition-colors duration-300", error ? "border border-red-500" : "")}>
 				<input
 					ref={ref}
 					{...rest}
