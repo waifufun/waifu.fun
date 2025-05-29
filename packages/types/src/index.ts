@@ -193,3 +193,14 @@ export interface IMigration {
 	createdAt?: Date;
 	updatedAt?: Date;
 }
+
+export type IAdvancedSettingsProps = {
+	settings: ISwapSettings;
+	onChange?: (settings: ISwapSettings) => void;
+};
+
+export type ISwapSettings = {
+	speed: "normal" | "turbo" | "ultra";
+	slippage: string;
+	deadline: string;
+};
