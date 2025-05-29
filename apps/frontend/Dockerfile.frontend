@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 # Copy monorepo root configuration files necessary for pnpm workspaces
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Copy other root configuration files that might be needed by workspace packages during install
 COPY tsconfig.base.json ./
@@ -30,7 +30,7 @@ FROM base AS builder
 WORKDIR /app
 
 # Copy monorepo root configuration files necessary for pnpm to identify the workspace and run build scripts
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY tsconfig.base.json ./ # Ensure tsconfig.base.json is available in the builder stage root
 # If biome.json is at root and needed by build scripts (e.g. lint step in build), copy it too:
 # COPY biome.json ./
