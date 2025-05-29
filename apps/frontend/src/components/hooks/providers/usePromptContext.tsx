@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback } f
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import UseTokenImages from "../hook/UseTokenImages";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { generateImage, generateMetadata, generateRemoteMetadata } from "@/lib/api";
 import {
 	useForm,
@@ -67,7 +67,17 @@ export type TokenFormOptions = keyof TokenFormData;
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
 
+const queryClient = new QueryClient();
+
 export const PromptProvider = ({ children }: { children: ReactNode }) => {
+	return (
+		<QueryClientProvider client={queryClient}>
+			<PromptProviderContent>{children}</PromptProviderContent>
+		</QueryClientProvider>
+	);
+};
+
+const PromptProviderContent = ({ children }: { children: ReactNode }) => {
 	const { register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
 		defaultValues: {
 			prompt: "",
@@ -219,7 +229,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 					}
 				};
 
-				worker.onerror = (errorEvent) => {
+				worker.onerror = () => {
 					if (
 						isGeneratingAddressRef.current &&
 						activeSuffixRef.current === suffix &&

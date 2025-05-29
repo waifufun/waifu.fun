@@ -294,7 +294,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 		}
 	};
 
-	const onSubmit = async (data: TokenFormData) => {
+	const onSubmit = async (_data: TokenFormData) => {
 		if (!solanaWallets?.Devnet) {
 			toast.error("Please connect your Solana wallet.");
 			return;

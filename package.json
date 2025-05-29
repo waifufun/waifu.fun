@@ -59,7 +59,9 @@
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint"
+		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
+		"build:docker": "docker build -t autofun-frontend -f apps/frontend/Dockerfile.frontend .",
+		"start:docker": "docker run -p 3000:3000 autofun-frontend"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

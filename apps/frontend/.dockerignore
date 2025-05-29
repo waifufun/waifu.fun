@@ -1,0 +1,46 @@
+# Dependencies
+**/node_modules
+**/node_modules/**
+apps/*/node_modules
+apps/*/node_modules/**
+packages/*/node_modules
+packages/*/node_modules/**
+
+# Build outputs
+**/.next
+**/.next/**
+**/dist
+**/dist/**
+
+# Development files
+.git
+.git/**
+.github
+.github/**
+.vscode
+.vscode/**
+*.log
+.env*
+!.env.production
+
+# Cache
+**/.cache
+**/.cache/**
+**/.npm
+**/.npm/**
+**/.pnpm-store
+**/.pnpm-store/**
+
+# Test files
+**/coverage
+**/coverage/**
+**/__tests__
+**/__tests__/**
+**/*.test.*
+**/*.spec.*
+
+# Other
+.DS_Store
+**/.DS_Store
+*.swp
+**/*.swp 
