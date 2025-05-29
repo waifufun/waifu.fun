@@ -8,16 +8,23 @@ import type { IToken } from "@autofun/types";
 import { useWallets } from "../hooks/providers/UseWalletContext";
 import { Wallet } from "lucide-react";
 import SwapStats from "./swap-stats";
+import AdvancedSettings from "./advanced-settings";
 
 export default function SwapCard({ token }: { token: IToken }) {
 	const [value, setValue] = useState("");
 	const [balance, setBalance] = useState<number>(0);
+
+    
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
+    const initialSettings = { speed: "Normal", slippage: "0.5", deadline: "5", };
+    const [settings, setSettings] = useState(initialSettings);
+
 
 	const handleQuickSet = (val: string) => {
 		setValue(val === "Reset" ? "" : val);
 	};
 	const { solanaWallets } = useWallets();
+
 
 	useEffect(() => {
 		const getBalance = async () => {
@@ -58,7 +65,8 @@ export default function SwapCard({ token }: { token: IToken }) {
 
 				<QuickSetButtons buttons={quickSetButtons} onClick={handleQuickSet} />
 				<div className="mt-2 space-y-2">
-					<SwapStats minReceived="25" priceImpact="0.3%" advancedSettings={true} />
+					<SwapStats minReceived="25" priceImpact="0.3%" />
+                    <AdvancedSettings settings={settings} onChange={setSettings} />
 					<Button className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase">
 						Swap
 					</Button>

@@ -193,3 +193,14 @@ export interface IMigration {
 	createdAt?: Date;
 	updatedAt?: Date;
 }
+
+export type IAdvancedSettingsProps = {
+	settings: ISettings;
+	onChange?: (settings: ISettings) => void;
+};
+
+export type ISettings = {
+	speed: "Normal" | "Turbo" | "Ultra";
+	slippage: string;
+	deadline: string;
+};

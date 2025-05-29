@@ -5,22 +5,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Switch } from "../switch-button";
+import type { IAdvancedSettingsProps, ISettings } from "@autofun/types";
 
-type AdvancedSettingsProps = {
-	settings: Settings;
-	onChange?: (settings: Settings) => void;
-};
-
-type Settings = {
-	speed: "Normal" | "Turbo" | "Ultra";
-	slippage: string;
-	deadline: string;
-};
-
-export default function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) {
+export default function AdvancedSettings({ settings, onChange }: IAdvancedSettingsProps) {
 	const [open, setOpen] = useState(false);
 
-	const updateSetting = (key: keyof Settings, value: string) => {
+	const updateSetting = (key: keyof ISettings, value: string) => {
 		if (onChange) {
 			onChange({ ...settings, [key]: value });
 		}
@@ -88,7 +78,7 @@ export default function AdvancedSettings({ settings, onChange }: AdvancedSetting
 							</TooltipProvider>
 						</div>
 
-						<div className="relative max-w-[80px] h-[32px]">
+						<div className="relative max-w-[85px] h-[32px]">
 							<Input
 								className="w-full h-full pr-6 text-sm text-right bg-gradient-to-b from-[#171717] to-[#141414]"
 								value={settings.slippage}
@@ -116,14 +106,13 @@ export default function AdvancedSettings({ settings, onChange }: AdvancedSetting
 							</TooltipProvider>
 						</div>
 
-						<div className="relative w-[80px]">
+						<div className="relative w-[85px]">
 							<Input
-								className="w-full h-[32px] pr-10 text-sm text-right bg-gradient-to-b from-[#171717] to-[#141414]"
-								type="number"
+								className="w-full h-[32px] text-sm text-left bg-gradient-to-b from-[#171717] to-[#141414]"
 								value={settings.deadline}
 								onChange={(e) => updateSetting("deadline", e.target.value)}
 							/>
-							<span className="absolute right-3 top-1/2 -translate-y-1/2 text-autofun-background-action-highlight text-base font-normal pointer-events-none">
+							<span className="absolute right-2 top-1/2 -translate-y-1/2 text-autofun-background-action-highlight text-sm pointer-events-none">
 								mins
 							</span>
 						</div>
