@@ -31,6 +31,9 @@ WORKDIR /app
 
 # Copy monorepo root configuration files necessary for pnpm to identify the workspace and run build scripts
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+COPY tsconfig.base.json ./ # Ensure tsconfig.base.json is available in the builder stage root
+# If biome.json is at root and needed by build scripts (e.g. lint step in build), copy it too:
+# COPY biome.json ./
 
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -39,9 +42,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/frontend ./apps/frontend
 COPY --from=deps /app/packages ./packages
 
-# tsconfig.base.json and other root configs like biome.json are already copied if they were part of the root COPY in this stage.
-# If biome.json is at root and needed by build scripts (e.g. lint step in build), ensure it's copied:
-# COPY biome.json ./
+# Root configuration files like tsconfig.base.json (and biome.json if used for build) are copied above.
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
