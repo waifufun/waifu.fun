@@ -8,30 +8,26 @@ on:
          - main
 
 env:
-   # Define Northflank Project ID and Docker Hub Credentials ID
    NORTHFLANK_PROJECT_ID: autofun
-   NORTHFLANK_CREDENTIALS_ID: "docker-hub" # Enclosed in quotes if it contains spaces
+   NORTHFLANK_CREDENTIALS_ID: "docker-hub"
 
 jobs:
-   build-and-deploy: # Renamed job for clarity
-      runs-on: ubuntu-latest # Switched to GitHub-hosted runner
+   build-and-deploy:
+      runs-on: ubuntu-latest
       permissions:
          contents: read
          packages: write
 
       steps:
-         # Step 1 - Checkout the repository
          - name: Checkout repository
            uses: actions/checkout@v3
 
-         # Step 2 - Log in to Docker Hub
          - name: Log in to Docker Hub
            uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
            with:
               username: ${{ secrets.DOCKERHUB_USERNAME }}
               password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-         # Step 3 - Extract metadata for Docker
          - name: Extract metadata (tags, labels) for Docker
            id: meta
            uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
@@ -40,7 +36,6 @@ jobs:
               tags: |
                 type=raw,value=${{ github.ref_name }}
 
-         # Step 4 - Build and push Docker image
          - name: Build and push Docker image
            uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
            with:
@@ -50,7 +45,6 @@ jobs:
               tags: ${{ steps.meta.outputs.tags }}
               labels: ${{ steps.meta.outputs.labels }}
 
-         # Step 5 - Set Northflank Service ID based on branch
          - name: Set Northflank Service ID
            id: northflank_service
            run: |
@@ -66,12 +60,11 @@ jobs:
                exit 1
              fi
 
-         # Step 6 - Deploy to Northflank
          - name: Deploy to Northflank
            uses: northflank/deploy-to-northflank@v1
            with:
               northflank-api-key: ${{ secrets.NORTHFLANK_API_KEY }}
               project-id: ${{ env.NORTHFLANK_PROJECT_ID }}
-              service-id: ${{ env.SERVICE_ID }} # SERVICE_ID is now in GITHUB_ENV
-              image-path: ${{ steps.meta.outputs.tags }} # This will be autofun/autofun-backend:<branch_name>
+              service-id: ${{ env.SERVICE_ID }}
+              image-path: ${{ steps.meta.outputs.tags }}
               credentials-id: ${{ env.NORTHFLANK_CREDENTIALS_ID }}
