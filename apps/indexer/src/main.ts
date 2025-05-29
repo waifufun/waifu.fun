@@ -293,10 +293,10 @@ function processInstruction(
   return events;
 }
 
-function convertEventDataToEntity(eventData: EventData): Event {
+function convertEventDataToEntity(eventData: EventData, index: number = 0): Event {
   const now = new Date();
   const event = new Event({
-    id: `${eventData.signature}-${eventData.event}`,
+    id: `${eventData.signature}-${eventData.event}-${index}`, // Add index for uniqueness
     eventType: eventData.event,
     signature: eventData.signature,
     blockHeight: eventData.blockHeight,
@@ -345,7 +345,9 @@ run(dataSource, database, async (ctx) => {
   console.log(`Processed ${events.length} events in this batch`);
 
   // For debugging
-  const eventEntities = events.map(convertEventDataToEntity);
+  const eventEntities = events.map((eventData, index) => 
+    convertEventDataToEntity(eventData, index)
+  );
   await ctx.store.save(eventEntities);
   console.log(`Saved ${eventEntities.length} events to database`);
 });
