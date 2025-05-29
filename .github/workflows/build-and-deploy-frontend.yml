@@ -7,12 +7,6 @@ on:
          - staging
          - production
 
-env:
-   # DOCKERHUB_USERNAME will be used from secrets directly in the steps.
-   # IMAGE_NAME will be constructed using DOCKERHUB_USERNAME and the repository name.
-   # REGISTRY (docker.io) is the default for Docker Hub and is implicit after login.
-   # Northflank related variables (PROJECT_ID, SERVICE_ID, CREDENTIALS_ID) are no longer needed.
-
 jobs:
    build-and-deploy:
       runs-on: ubuntu-latest
