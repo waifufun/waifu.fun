@@ -58,7 +58,7 @@ export interface EvmTokenLookup {
 
 export type ITokenLookUp = SolanaTokenLookup | EvmTokenLookup;
 
-export interface IToken<T extends TChain = TChain> extends MongooseDocument {
+export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument, "updatedAt"> {
 	contractAddress: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	chain: T;
 	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
@@ -84,7 +84,7 @@ export interface IToken<T extends TChain = TChain> extends MongooseDocument {
 	featured?: boolean;
 	imported?: boolean;
 	verified?: boolean;
-	updatedAt?: Date;
+	updatedAt: Date;
 	pool?: string;
 }
 
