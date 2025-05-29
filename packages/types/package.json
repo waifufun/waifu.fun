@@ -21,6 +21,6 @@
 	"dependencies": {
 		"@solana/kit": "^2.1.0",
 		"mongoose": "^8.14.1",
-		"viem": "^2.28.3"
+		"viem": "2.30.5"
 	}
 }
