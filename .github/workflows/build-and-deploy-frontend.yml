@@ -9,7 +9,7 @@ on:
 
 env:
    NORTHFLANK_PROJECT_ID: autofun
-   NORTHFLANK_CREDENTIALS_ID: "docker-hub"
+   NORTHFLANK_CREDENTIALS_ID: "dockerhub"
 
 jobs:
    build-and-deploy:
