@@ -10,7 +10,7 @@ on:
 env:
    # Define Northflank Project ID and Docker Hub Credentials ID
    NORTHFLANK_PROJECT_ID: autofun
-   NORTHFLANK_CREDENTIALS_ID: "Docker Hub" # Enclosed in quotes if it contains spaces
+   NORTHFLANK_CREDENTIALS_ID: "docker-hub" # Enclosed in quotes if it contains spaces
 
 jobs:
    build-and-deploy: # Renamed job for clarity
