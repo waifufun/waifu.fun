@@ -1,0 +1,60 @@
+name: Frontend - Build & Deploy
+
+on:
+   push:
+      branches: ['*']
+
+env:
+   REGISTRY: ghcr.io
+   IMAGE_NAME: ${{ github.repository }}
+
+   PROJECT_ID: default-project
+   SERVICE_ID: example-service
+   CREDENTIALS_ID: github
+
+jobs:
+   build-and-deploy:
+      runs-on: ubuntu-latest
+      permissions:
+         contents: read
+         packages: write
+
+      steps:
+         # Step 1 - Checkout the repository containing our application's source code.
+         - name: Checkout repository
+           uses: actions/checkout@v3
+
+         # Step 2 - Authenticate us with the container registry we intend to push a image to.
+         - name: Log in to the Container registry
+           uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+           with:
+              registry: ${{ env.REGISTRY }}
+              username: ${{ github.actor }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+
+         # Step 3 - Extract metadata we can feed into the following step.
+         - name: Extract metadata (tags, labels) for Docker
+           id: meta
+           uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+           with:
+              images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+         # Step 4 - Build the Docker image and push it to the container registry we previously authenticated with.
+         - name: Build and push Docker image
+           uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+           with:
+              context: .
+              file: ./apps/frontend/Dockerfile.frontend
+              push: true
+              tags: ${{ steps.meta.outputs.tags }}
+              labels: ${{ steps.meta.outputs.labels }}
+
+         # Step 5 - Deploy the image to an existing Northflank service or job. 
+         - name: Deploy to Northflank
+           uses: northflank/deploy-to-northflank@v1
+           with:
+              northflank-api-key: ${{ secrets.NORTHFLANK_API_KEY }}
+              project-id: ${{ env.PROJECT_ID }}
+              service-id: ${{ env.SERVICE_ID }}
+              image-path: ${{ steps.meta.outputs.tags }}
+              credentials-id: ${{ env.CREDENTIALS_ID }}
