@@ -72,7 +72,7 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 										<HelpCircle size={14} className="text-gray-400" />
 									</TooltipTrigger>
 									<TooltipContent className="bg-black text-white text-xs">
-										Choose how fast your transaction executes
+										this is the maximum amount of slippage you are willing to accept when placing the trade
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
