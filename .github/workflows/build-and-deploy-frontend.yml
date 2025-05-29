@@ -8,7 +8,7 @@ on:
          - production
 
 jobs:
-   build-and-deploy:
+   build:
       runs-on: ubuntu-latest
       permissions:
          contents: read
