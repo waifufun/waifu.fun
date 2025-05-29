@@ -14,7 +14,7 @@ env:
 
 jobs:
    build-and-deploy: # Renamed job for clarity
-      runs-on: self-hosted # Assuming you still want to use self-hosted runners
+      runs-on: ubuntu-latest # Switched to GitHub-hosted runner
       permissions:
          contents: read
          packages: write
