@@ -22,8 +22,8 @@ const redis = new IORedis(
 		? {
 				port: Number(port),
 				host: String(host),
-				username: String(username),
-				password: String(password),
+				// username: String(username),
+				// password: String(password),
 				db: db ? Number(db) : 0,
 			}
 		: {},
@@ -38,7 +38,7 @@ redis.on("ready", () => {
 });
 
 redis.on("error", (e: Error) => {
-	logger.info(`Error from Redis: ${e.message}`);
+	logger.error(`Error from Redis: ${e.message}`);
 });
 
 redis.on("reconnecting", () => {

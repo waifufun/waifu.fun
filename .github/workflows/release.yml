@@ -11,13 +11,13 @@ permissions:
 
 jobs:
   release:
+    runs-on: self-hosted
     permissions:
       contents: write # to publish a GitHub release
       issues: write # to comment on released issues
       pull-requests: write # to comment on released pull requests
 
     name: release
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

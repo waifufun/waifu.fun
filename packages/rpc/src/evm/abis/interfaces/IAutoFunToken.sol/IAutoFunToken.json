@@ -1,0 +1,29 @@
+{
+	"_format": "hh-sol-artifact-1",
+	"contractName": "IAutoFunToken",
+	"sourceName": "contracts/interfaces/IAutoFunToken.sol",
+	"abi": [
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "_recipient",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "_amount",
+					"type": "uint256"
+				}
+			],
+			"name": "mintToken",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		}
+	],
+	"bytecode": "0x",
+	"deployedBytecode": "0x",
+	"linkReferences": {},
+	"deployedLinkReferences": {}
+}
