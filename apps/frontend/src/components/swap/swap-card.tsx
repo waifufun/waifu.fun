@@ -44,9 +44,9 @@ export default function SwapCard({ token }: { token: IToken }) {
 		<div className="w-full h-full rounded-xl overflow-hidden">
 			<div className="flex flex-col gap-2">
 				<div className="flex items-stretch gap-2 w-full">
-					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="flex-grow" />
+					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="w-3/4" />
 
-					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-full">
+					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
 							src={
 								token?.image || (token?.chain === "solana" ? "/chain-icons/solana.svg" : "/chain-icons/ethereum.svg")
