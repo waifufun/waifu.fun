@@ -200,7 +200,7 @@ export type IAdvancedSettingsProps = {
 };
 
 export type ISwapSettings = {
-	speed: "Normal" | "Turbo" | "Ultra";
+	speed: "normal" | "turbo" | "ultra";
 	slippage: string;
 	deadline: string;
 };

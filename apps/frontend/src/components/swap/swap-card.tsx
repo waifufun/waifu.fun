@@ -16,7 +16,7 @@ export default function SwapCard({ token }: { token: IToken }) {
 
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
 	const initialSettings: ISwapSettings = {
-		speed: "Normal",
+		speed: "normal",
 		slippage: "0.5",
 		deadline: "5",
 	};

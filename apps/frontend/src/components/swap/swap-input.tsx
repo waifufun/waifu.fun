@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import { isInputGreaterThanDecimals } from "@/lib/utils";
+import { cn, isInputGreaterThanDecimals } from "@/lib/utils";
 
 type InputProps = {
 	value: string | number;
@@ -13,9 +13,6 @@ type InputProps = {
 	locale?: string;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "ref">;
 
-function classNames(...classes: string[]) {
-	return classes.filter(Boolean).join(" ");
-}
 const inputRegex = /^\d*(?:[.])?\d*$/;
 
 const SwapInput = forwardRef<HTMLInputElement, InputProps>(
@@ -45,7 +42,7 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 		const displayValue = prependSymbol && value ? prependSymbol + value.toString() : value.toString();
 		return (
 			<div
-				className={classNames("rounded-lg w-full transition-colors duration-300", error ? "border border-red-500" : "")}
+				className={cn("rounded-lg w-full transition-colors duration-300", error ? "border border-red-500" : "")}
 			>
 				<input
 					ref={ref}
@@ -67,11 +64,11 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 					minLength={1}
 					maxLength={79}
 					spellCheck={false}
-					className={classNames(
+					className={cn(
 						"outline-none border-none w-full text-4xl text-white truncate rounded-md text-ellipsis",
 						"placeholder:text-gray-400",
 						align === "right" ? "text-right" : "text-left",
-						className || "",
+						className,
 					)}
 				/>
 			</div>

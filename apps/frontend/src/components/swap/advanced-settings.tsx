@@ -46,13 +46,13 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 						</div>
 
 						<div className="w-[255px] h-[36px] bg-[#101010] rounded-md flex overflow-hidden">
-							{["Normal", "Turbo", "Ultra"].map((label) => (
+							{["normal", "turbo", "ultra"].map((label) => (
 								<Button
 									key={label}
 									onClick={() => updateSetting("speed", label)}
 									className={cn(
 										"flex-1 h-full text-base bg-transparent font-medium text-white hover:bg-[#1a1a1a] transition-colors",
-										"border border-transparent", // default border
+										"border border-transparent",
 										settings.speed === label && "border border-[#03FF24] rounded-md",
 									)}
 								>
