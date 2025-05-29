@@ -26,10 +26,10 @@ const nextConfig = {
 		NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
 	},
 	outputFileTracingExcludes: {
-		'*': [
-			'node_modules/@swc/core-linux-x64-gnu',
-			'node_modules/@swc/core-linux-x64-musl',
-			'node_modules/@esbuild/linux-x64',
+		"*": [
+			"node_modules/@swc/core-linux-x64-gnu",
+			"node_modules/@swc/core-linux-x64-musl",
+			"node_modules/@esbuild/linux-x64",
 		],
 	},
 	experimental: {

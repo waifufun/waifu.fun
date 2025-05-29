@@ -1,12 +1,12 @@
 import { WalletClass } from "./WalletClass";
 import type { EvmAddressLike } from "@autofun/types";
 import { EvmChainIds } from "@autofun/types";
-import { getPublicClient, getWalletClient } from 'wagmi/actions';
-import { http } from 'viem';
-import { base, baseSepolia } from '@reown/appkit/networks';
-import { config } from '@/app/providers';
-import { formatEther } from 'viem';
-import { EVMRpcProvider } from '@autofun/rpc';
+import { getPublicClient, getWalletClient } from "wagmi/actions";
+import { http } from "viem";
+import { base, baseSepolia } from "@reown/appkit/networks";
+import { config } from "@/app/providers";
+import { formatEther } from "viem";
+import { EVMRpcProvider } from "@autofun/rpc";
 
 export interface IEVMFunctions {
 	signMessage: (message: string) => Promise<string>;
@@ -56,10 +56,8 @@ export class EVMWallet extends WalletClass {
 				return;
 			}
 
-			const rpcUrl = this.chain === base.id 
-				? 'https://mainnet.base.org'
-				: 'https://sepolia.base.org';
-			
+			const rpcUrl = this.chain === base.id ? "https://mainnet.base.org" : "https://sepolia.base.org";
+
 			this._rpcClient = http(rpcUrl);
 			console.log("Using direct RPC connection");
 		} catch (error) {
@@ -137,7 +135,7 @@ export class EVMWallet extends WalletClass {
 				const balance = await this._rpcClient.getBalance({
 					address: this.address as `0x${string}`,
 				});
-				
+
 				const balanceInEther = Number(formatEther(balance));
 				console.log(`EVMWallet: Native balance: ${balanceInEther} ETH`);
 				return balanceInEther;
@@ -171,7 +169,7 @@ export class EVMWallet extends WalletClass {
 				maxSupply: tokenSupply,
 				owner: this.address as `0x${string}`,
 				decimals: decimals,
-				metadataUrl: tokenData.metadataUrl
+				metadataUrl: tokenData.metadataUrl,
 			};
 
 			if (tokenData.buyAmount && tokenData.buyAmount > 0) {
