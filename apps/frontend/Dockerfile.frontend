@@ -27,16 +27,21 @@ WORKDIR /app
 
 # Copy monorepo root configuration files necessary for pnpm to identify the workspace and run build scripts
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+COPY tsconfig.base.json ./tsconfig.base.json
+# If your build process for the frontend requires other root files (e.g., biome.json for a lint step in build), copy them here.
 
-COPY --from=deps /app/node_modules ./node_modules
+# Copy the entire state from 'deps' stage.
+# This includes all node_modules (root and within packages like apps/frontend/node_modules which contain .bin executables),
+# and the source code as it existed when 'deps' was built.
+COPY --from=deps /app /app
 
-# Copy application source code, all workspace dependencies from 'packages', and necessary root configuration files for the build
+# Overwrite with the latest application source code and local workspace dependencies from the current build context.
+# This ensures that if only source code changed (and not package.json files),
+# we use the latest source but can reuse the 'deps' layer.
 COPY apps/frontend ./apps/frontend
 COPY packages ./packages
 # This copies all subdirectories from the 'packages' directory in the build context
 # to the '/app/packages' directory in the image.
-
-COPY tsconfig.base.json ./tsconfig.base.json
 # If your build process for the frontend requires other root files (e.g., biome.json for a lint step in build), copy them here.
 
 # Next.js collects completely anonymous telemetry data about general usage.

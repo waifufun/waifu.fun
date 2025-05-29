@@ -8,8 +8,8 @@ env:
    REGISTRY: ghcr.io
    IMAGE_NAME: ${{ github.repository }}
 
-   PROJECT_ID: default-project
-   SERVICE_ID: example-service
+   PROJECT_ID: autofun
+   SERVICE_ID: prod-frontend
    CREDENTIALS_ID: github
 
 jobs:
