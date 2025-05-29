@@ -1,4 +1,4 @@
-name: Frontend - Build Image
+name: Backend - Build Image
 
 on:
    push:
@@ -33,7 +33,7 @@ jobs:
            id: meta
            uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
            with:
-              images: ${{ secrets.DOCKERHUB_USERNAME }}/autofun-frontend
+              images: ${{ secrets.DOCKERHUB_USERNAME }}/autofun-backend
               tags: |
                 type=raw,value=${{ github.ref_name }}
 
@@ -42,7 +42,7 @@ jobs:
            uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
            with:
               context: .
-              file: ./apps/frontend/Dockerfile.frontend
+              file: ./apps/backend/Dockerfile.backend
               push: true
               tags: ${{ steps.meta.outputs.tags }}
               labels: ${{ steps.meta.outputs.labels }}
