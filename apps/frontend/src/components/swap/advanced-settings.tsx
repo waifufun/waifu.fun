@@ -5,12 +5,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Switch } from "../switch-button";
-import type { IAdvancedSettingsProps, ISettings } from "@autofun/types";
+import type { IAdvancedSettingsProps, ISwapSettings } from "@autofun/types";
 
 export default function AdvancedSettings({ settings, onChange }: IAdvancedSettingsProps) {
 	const [open, setOpen] = useState(false);
 
-	const updateSetting = (key: keyof ISettings, value: string) => {
+	const updateSetting = (key: keyof ISwapSettings, value: string) => {
 		if (onChange) {
 			onChange({ ...settings, [key]: value });
 		}

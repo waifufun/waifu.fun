@@ -195,11 +195,11 @@ export interface IMigration {
 }
 
 export type IAdvancedSettingsProps = {
-	settings: ISettings;
-	onChange?: (settings: ISettings) => void;
+	settings: ISwapSettings;
+	onChange?: (settings: ISwapSettings) => void;
 };
 
-export type ISettings = {
+export type ISwapSettings = {
 	speed: "Normal" | "Turbo" | "Ultra";
 	slippage: string;
 	deadline: string;

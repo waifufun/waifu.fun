@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
-import type { IToken } from "@autofun/types";
+import type { ISwapSettings, IToken } from "@autofun/types";
 import { useWallets } from "../hooks/providers/UseWalletContext";
 import { Wallet } from "lucide-react";
 import SwapStats from "./swap-stats";
@@ -16,8 +16,12 @@ export default function SwapCard({ token }: { token: IToken }) {
 
     
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
-    const initialSettings = { speed: "Normal", slippage: "0.5", deadline: "5", };
-    const [settings, setSettings] = useState(initialSettings);
+    const initialSettings: ISwapSettings = {
+        speed: "Normal",
+        slippage: "0.5",
+        deadline: "5",
+      };
+          const [settings, setSettings] = useState(initialSettings);
 
 
 	const handleQuickSet = (val: string) => {

@@ -1,13 +1,4 @@
-import { useState } from "react";
-
-const initialSettings = {
-  speed: "Normal",
-  slippage: "0.5%",
-  deadline: "5",
-};
-
-export default function SwapStats({ minReceived, priceImpact }: SwapStatsProps) {
-  const [settings, setSettings] = useState(initialSettings);
+export default function SwapStats({ minReceived, priceImpact }: {minReceived: string, priceImpact: string}) {
 
   return (
     <>
