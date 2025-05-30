@@ -1,5 +1,5 @@
 import ChainIndicator from "@/components/chain-indicator";
-import Swap from "@/components/token-page/swap";
+import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
@@ -118,7 +118,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 					</div>
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
-					<Swap />
+					<Swap/>
 					<BondingCurveProgress token={token} />
 				</div>
 			</div>
