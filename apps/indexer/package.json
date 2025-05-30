@@ -1,31 +1,24 @@
 {
-  "name": "solana-example",
-  "version": "0.0.0",
-  "private": true,
+  "name": "indexerv2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "build": "rm -rf lib && tsc",
-    "dev": "pnpm run build && node lib/main.js",
-    "db:migrate": "npx squid-typeorm-migration apply",
-    "typegen": "npx squid-solana-typegen src/abi ./idl/*",
-    "generate:db": "npx squid-typeorm-migration generate",
-    "start": "pnpm run typegen && pnpm run db:migrate && pnpm run dev"
-  },
-  "dependencies": {
-    "@subsquid/batch-processor": "^0.0.0",
-    "@subsquid/borsh": "^0.2.0",
-    "@subsquid/solana-objects": "^0.0.2",
-    "@subsquid/solana-stream": "^0.1.4",
-    "@subsquid/typeorm-migration": "^1.3.0",
-    "@subsquid/typeorm-store": "^1.5.1",
-    "dotenv": "^16.5.0",
-    "mongodb": "^6.16.0",
-    "pg": "^8.13.1",
-    "typeorm": "^0.3.20"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts"
   },
   "devDependencies": {
-    "@subsquid/solana-typegen": "^0.4.0",
-    "@types/node": "^22.13.1",
-    "ts-node": "^10.9.2",
-    "typescript": "~5.7.3"
+    "@autofun/types": "workspace:*"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.2",
+    "dotenv": "^16.5.0",
+    "@autofun/rpc": "workspace:*",
+    "@autofun/logger": "workspace:*",
+    "@autofun/database": "workspace:*"
   }
 }
