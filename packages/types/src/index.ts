@@ -173,23 +173,24 @@ export enum MediaType {
 }
 
 export interface IMigration {
-	withdrawnAt?: Date;
-	migratedAt?: Date;
-	marketId?: string;
-	baseVault?: string;
-	quoteVault?: string;
-	withdrawnAmount?: number;
-	migration?: string;
-	withdrawnAmounts?: string;
-	poolInfo?: string;
-	lockLpTxId?: string;
+	withdrawnAt?: Date | undefined;
+	migratedAt?: Date | undefined;
+	marketId?: string | undefined;
+	baseVault?: string | undefined;
+	quoteVault?: string | undefined;
+	withdrawnAmount?: number | undefined;
+	migration?: string | undefined;
+	withdrawnAmounts?: string | undefined;
+	poolInfo?: string | undefined;
+	lockLpTxId?: string | undefined;
 	status: string;
-	positionIds?: string[];
-	positionNftsSecrets?: string[];
+	positionIds?: string[] | undefined;
+	positionNftsSecrets?: string[] | undefined;
+	nftMinted?: string[] | undefined;
 	contractAddress: AddressLike;
 	chain: TChain;
 	chainId: TChainId;
 	creator: string;
-	createdAt?: Date;
-	updatedAt?: Date;
+	createdAt?: Date | undefined;
+	updatedAt?: Date | undefined;
 }

@@ -120,13 +120,50 @@ export function getChecksummedAddress(address: AddressLike, chain: TChain): Addr
  * object is returned with market values set to 0.
  */
 export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Promise<IToken<TChain>[]> => {
-	if (!tokensToPopulate || tokensToPopulate?.length === 0) return [];
+	if (!tokensToPopulate || tokensToPopulate?.length === 0) {
+		logger.warn("No tokens provided to populate");
+		return [];
+	}
+
+	logger.info(`Received ${tokensToPopulate.length} tokens to populate`);
+
+	// Clean up invalid tokens from database
+	const invalidTokens = tokensToPopulate.filter(token => !token?.contractAddress);
+	if (invalidTokens.length > 0) {
+		logger.warn(`Found ${invalidTokens.length} tokens without contract addresses, removing them from database`);
+		const invalidTokenIds = invalidTokens.map(token => token._id).filter(Boolean);
+		if (invalidTokenIds.length > 0) {
+			await DB.Token.deleteMany({ _id: { $in: invalidTokenIds } });
+			logger.info(`Removed ${invalidTokenIds.length} invalid tokens from database`);
+		}
+	}
+
+	// Validate tokens have required fields
+	const validTokens = tokensToPopulate.filter(token => {
+		if (!token) {
+			logger.warn("Found null/undefined token");
+			return false;
+		}
+		if (!token?.contractAddress || !token?.chain || !token?.chainId) {
+			logger.warn(`Skipping invalid token: ${JSON.stringify(token)}`);
+			return false;
+		}
+		return true;
+	});
+
+	if (validTokens.length === 0) {
+		logger.warn("No valid tokens to populate after validation");
+		return [];
+	}
+
+	logger.info(`Found ${validTokens.length} valid tokens after validation`);
+
 	const ops = [];
 
 	/** All imports tokens can be fetched using Codex */
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
 
-	const tokensToQuery = tokensToPopulate
+	const tokensToQuery = validTokens
 		.filter((t) => t?.imported)
 		.map((token: IToken) => {
 			const { chain, chainId, contractAddress } = token;
@@ -140,6 +177,8 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			return `${contractAddress}:${networkId}`;
 		});
 
+	logger.info(`Found ${tokensToQuery.length} imported tokens to query from Codex`);
+
 	const tokenData = await codex.queries.filterTokens({
 		statsType: TokenPairStatisticsType.Unfiltered,
 		tokens: tokensToQuery,
@@ -148,9 +187,11 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	const results = tokenData?.filterTokens?.results;
 
 	if (results) {
+		logger.info(`Received ${results.length} results from Codex`);
 		for (const token of results) {
 			const address = token?.token?.address as AddressLike;
 			if (!tokenIndex) {
+				logger.warn("tokenIndex is undefined");
 				continue;
 			}
 
@@ -160,6 +201,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 				: undefined;
 
 			if (!tokenRecord) {
+				logger.warn(`No matching token record found for address ${address}`);
 				continue;
 			}
 
@@ -169,6 +211,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
 
 			if (secondsPassedSinceUpdate <= 10) {
+				logger.info(`Skipping token ${address} - updated recently`);
 				continue;
 			}
 
@@ -204,18 +247,32 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	/** All non imported tokens should be determined using RPC */
-	const nonImportedTokens = tokensToPopulate.filter(
+	const nonImportedTokens = validTokens.filter(
 		(t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
 	);
+
+	logger.info(`Found ${nonImportedTokens.length} non-imported Solana tokens`);
 
 	if (nonImportedTokens?.length > 0) {
 		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
 		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
 
+		logger.info(`Received ${bondingCurveInfo.length} bonding curve info results`);
+
 		for (const tokenRecord of bondingCurveInfo) {
+			if (!tokenRecord?.contractAddress) {
+				logger.warn("Bonding curve info missing contractAddress");
+				continue;
+			}
+
 			const nonImportedToken = nonImportedTokens.find(
 				(a) => a.contractAddress === tokenRecord.contractAddress,
 			) as IToken<TChain> & { _id?: string; updatedAt?: Date };
+
+			if (!nonImportedToken) {
+				logger.warn(`No matching non-imported token found for ${tokenRecord.contractAddress}`);
+				continue;
+			}
 
 			tokenIndex[nonImportedToken.contractAddress] = {
 				...nonImportedToken,
@@ -227,10 +284,14 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			const secondsPassedSinceUpdate = moment().diff(moment(nonImportedToken.updatedAt), "seconds");
 
 			if (secondsPassedSinceUpdate <= 7) {
+				logger.info(`Skipping token ${tokenRecord.contractAddress} - updated recently`);
 				continue;
 			}
 
-			if (!nonImportedToken?._id) continue;
+			if (!nonImportedToken?._id) {
+				logger.warn(`Token ${tokenRecord.contractAddress} missing _id`);
+				continue;
+			}
 
 			const setValues: {
 				marketcap: number;
@@ -278,10 +339,13 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	if (ops?.length > 0) {
+		logger.info(`Performing ${ops.length} database updates`);
 		await DB.Token.bulkWrite(ops);
 	}
 
-	return Object.values(tokenIndex);
+	const finalTokens = Object.values(tokenIndex);
+	logger.info(`Returning ${finalTokens.length} populated tokens`);
+	return finalTokens;
 };
 
 export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: string }) => {

@@ -37,7 +37,20 @@ export const fetcher = async (
 };
 
 export const getTokens = async ({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) => {
-	return await fetcher("/tokens", "POST", searchParams);
+	try {
+		const body = {
+			chain: searchParams.chain as TChain || undefined,
+			chainId: searchParams.chainId ? Number(searchParams.chainId) : undefined,
+			page: searchParams.page ? Number(searchParams.page) : 1,
+			category: (searchParams.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new"
+		};
+
+		const response = await fetcher("/tokens", "POST", body);
+		return response.docs || [];
+	} catch (error) {
+		console.error("Error fetching tokens:", error);
+		return [];
+	}
 };
 
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {

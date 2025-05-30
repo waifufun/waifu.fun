@@ -6,7 +6,7 @@ const schema = new Schema<IChatMessage, ModelType<IChatMessage>>(
 	{
 		contractAddress: { type: String },
 		sender: { type: String },
-		room: { type: Number, enum: [1000, 100_000, 1_000_000] },
+		room: { type: String, enum: ["1000", "100000", "1000000"] },
 		image: { type: String },
 		message: { type: String },
 	},
