@@ -587,7 +587,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
 				createdAt: new Date().toISOString(),
-				updatedAt: new Date()
+				updatedAt: new Date(),
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);

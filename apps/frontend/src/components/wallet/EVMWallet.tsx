@@ -1,11 +1,11 @@
 import { WalletClass } from "./WalletClass";
 import type { EvmAddressLike } from "@autofun/types";
-import { EvmChainIds } from "@autofun/types";
-import { getPublicClient, getWalletClient } from 'wagmi/actions';
-import { http } from 'viem';
-import { base, baseSepolia } from '@reown/appkit/networks';
-import { config } from '@/app/providers';
-import { formatEther } from 'viem';
+import type { EvmChainIds } from "@autofun/types";
+import { getPublicClient, getWalletClient } from "wagmi/actions";
+import { http } from "viem";
+import { base } from "@reown/appkit/networks";
+import { config } from "@/app/providers";
+import { formatEther } from "viem";
 // import { EVMRpcProvider } from '@autofun/rpc';
 
 export interface IEVMFunctions {
@@ -56,10 +56,8 @@ export class EVMWallet extends WalletClass {
 				return;
 			}
 
-			const rpcUrl = this.chain === base.id 
-				? 'https://mainnet.base.org'
-				: 'https://sepolia.base.org';
-			
+			const rpcUrl = this.chain === base.id ? "https://mainnet.base.org" : "https://sepolia.base.org";
+
 			this._rpcClient = http(rpcUrl);
 			console.log("Using direct RPC connection");
 		} catch (error) {
@@ -137,7 +135,7 @@ export class EVMWallet extends WalletClass {
 				const balance = await this._rpcClient.getBalance({
 					address: this.address as `0x${string}`,
 				});
-				
+
 				const balanceInEther = Number(formatEther(balance));
 				console.log(`EVMWallet: Native balance: ${balanceInEther} ETH`);
 				return balanceInEther;
@@ -210,7 +208,7 @@ export class EVMWallet extends WalletClass {
 		tokenSupply: number,
 		virtualReserves: number,
 		swapAmount: number,
-		slippageBps: number = 100
+		slippageBps = 100,
 	) {
 		await this.switchNetwork();
 		console.log("EVMWallet: Creating launch and swap transaction...");
@@ -244,9 +242,9 @@ export class EVMWallet extends WalletClass {
 					tokenData.metadataUrl,
 					swapAmount,
 					minOutput,
-					deadline
+					deadline,
 				]),
-				value: swapAmount
+				value: swapAmount,
 			};
 
 			return tx;
@@ -270,13 +268,7 @@ export class EVMWallet extends WalletClass {
 			const virtualReserves = Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
 
 			if (tokenData.buyAmount && tokenData.buyAmount > 0) {
-				const tx = await this.launchAndSwapTx(
-					tokenData,
-					decimals,
-					tokenSupply,
-					virtualReserves,
-					tokenData.buyAmount
-				);
+				const tx = await this.launchAndSwapTx(tokenData, decimals, tokenSupply, virtualReserves, tokenData.buyAmount);
 				return await this.sendTransaction(tx);
 			} else {
 				const tx = {
@@ -287,8 +279,8 @@ export class EVMWallet extends WalletClass {
 						virtualReserves,
 						tokenData.name,
 						tokenData.symbol,
-						tokenData.metadataUrl
-					])
+						tokenData.metadataUrl,
+					]),
 				};
 				return await this.sendTransaction(tx);
 			}
