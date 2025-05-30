@@ -3,7 +3,7 @@ import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName } from "@/lib/utils";
+import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName, shortenAddress } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -60,7 +60,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								{/* Creator */}
 								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
 									<div className="capitalize">Created by:</div>
-									<div className="hover:underline">{token?.creator ? token?.creator : "-"}</div>
+									<div className="hover:underline">{token?.creator ? shortenAddress(token?.creator) : "-"}</div>
 								</div>
 							</div>
 						</div>
