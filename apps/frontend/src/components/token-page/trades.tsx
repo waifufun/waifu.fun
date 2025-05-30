@@ -17,7 +17,7 @@ export default async function Trades({ token }: { token: IToken }) {
 
 	return (
 		<Fragment>
-			<AutoRefresher />
+			<AutoRefresher interval={10_000} />
 			<Table>
 				<TableHeader>
 					<TableRow>
@@ -32,7 +32,7 @@ export default async function Trades({ token }: { token: IToken }) {
 				</TableHeader>
 				<TableBody>
 					{data.map((trade: ITrade) => (
-						<TableRow key={trade.txId}>
+						<TableRow key={trade.txId} className="animate-shake animate-once animate-duration-200 animate-ease-linear">
 							<TableCell className="font-medium">{trade.address ? shortenAddress(trade?.address) : "-"}</TableCell>
 							<TableCell>
 								<Triangle direction={trade?.type === "buy" ? "up" : "down"} />
