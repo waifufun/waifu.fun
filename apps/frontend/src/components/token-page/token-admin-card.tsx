@@ -12,6 +12,9 @@ const socials: (keyof ITokenSocials)[] = ["website", "telegram", "twitter", "dis
 export default function TokenAdminCard({ token }: { token: IToken }) {
 	const [open, setOpen] = useState(false);
 
+	const isVerified = token.verified;
+	const isFeatured = token.featured;
+
 	return (
 		<div className="w-[460px] p-4 rounded-md overflow-hidden bg-[#0C0C0C]">
 			<div className="flex justify-between items-center h-[44px] w-[428px]">
@@ -60,14 +63,25 @@ export default function TokenAdminCard({ token }: { token: IToken }) {
 					<div>
 						<h3 className="text-white font-medium text-lg mb-2">Remove Tags</h3>
 						<div className="flex justify-between">
-							{["Remove Featured", "Remove Verified"].map((label) => (
-								<Button
-									key={label}
-									className="w-[208px] h-[44px] text-base font-bold rounded-md text-white border border-[#262626] bg-gradient-to-t to-[#171717] from-[#121212]"
-								>
-									{label}
+							{isFeatured ? (
+								<Button className="w-[208px] h-[44px] text-base font-bold rounded-md text-white border border-[#262626] bg-gradient-to-t to-[#171717] from-[#121212]">
+									Remove Featured
 								</Button>
-							))}
+							) : (
+								<Button className="w-[208px] h-[44px] text-base font-bold rounded-md text-white border border-[#262626] bg-gradient-to-t to-[#171717] from-[#121212]">
+									Mark as Featured
+								</Button>
+							)}
+
+							{isVerified ? (
+								<Button className="w-[208px] h-[44px] text-base font-bold rounded-md text-white border border-[#262626] bg-gradient-to-t to-[#171717] from-[#121212]">
+									Remove Verified
+								</Button>
+							) : (
+								<Button className="w-[208px] h-[44px] text-base font-bold rounded-md text-white border border-[#262626] bg-gradient-to-t to-[#171717] from-[#121212]">
+									Mark as Verified
+								</Button>
+							)}
 						</div>
 					</div>
 					<div className="w-full h-px mt-4 bg-[#262626]" />
