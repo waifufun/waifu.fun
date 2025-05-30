@@ -45,216 +45,161 @@ type Erc20FunctionName = ReadContractParameters<
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
 
 export class EVMRpcProvider {
-  public client: PublicClient;
-  private walletClient?: WalletClient;
-  private chainId: EvmChainIds;
+	public client: PublicClient;
+	private walletClient?: WalletClient;
+	private chainId: EvmChainIds;
 
-  constructor(chainId: EvmChainIds, privateKey?: string) {
-    if (!CHAINID_TO_VIEM_CHAIN[chainId])
-      throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
-    if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
-      throw new Error(`No RPC provider configured for EVM: ${chainId}`);
-    }
+	constructor(chainId: EvmChainIds, privateKey?: string) {
+		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
+		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
+			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
+		}
 
-    this.chainId = chainId;
-    this.client = createPublicClient({
-      batch: {
-        multicall: true,
-      },
-      chain: CHAINID_TO_VIEM_CHAIN[chainId],
-      transport: fallback([
-        ...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl)),
-      ]),
-    });
+		this.chainId = chainId;
+		this.client = createPublicClient({
+			batch: {
+				multicall: true,
+			},
+			chain: CHAINID_TO_VIEM_CHAIN[chainId],
+			transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
+		});
 
-    if (privateKey) {
-      this.walletClient = createWalletClient({
-        chain: CHAINID_TO_VIEM_CHAIN[chainId],
-        transport: fallback([
-          ...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl)),
-        ]),
-      });
-    }
-  }
+		if (privateKey) {
+			this.walletClient = createWalletClient({
+				chain: CHAINID_TO_VIEM_CHAIN[chainId],
+				transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
+			});
+		}
+	}
 
-  async readErc20Contract(
-    contractAddress: EvmAddressLike,
-    functionName: Erc20FunctionName,
-    args: Erc20Args
-  ) {
-    return await this.client.readContract({
-      address: getAddress(contractAddress),
-      abi: erc20Abi,
-      functionName,
-      args,
-    });
-  }
+	async readErc20Contract(contractAddress: EvmAddressLike, functionName: Erc20FunctionName, args: Erc20Args) {
+		return await this.client.readContract({
+			address: getAddress(contractAddress),
+			abi: erc20Abi,
+			functionName,
+			args,
+		});
+	}
 
-  async readErc20Multicall(
-    contractAddress: EvmAddressLike,
-    functionNames: Erc20FunctionName[],
-    args: Erc20Args[]
-  ) {
-    const contract = {
-      address: getAddress(contractAddress),
-      abi: erc20Abi,
-    } as const;
-    const calls = [];
+	async readErc20Multicall(contractAddress: EvmAddressLike, functionNames: Erc20FunctionName[], args: Erc20Args[]) {
+		const contract = {
+			address: getAddress(contractAddress),
+			abi: erc20Abi,
+		} as const;
+		const calls = [];
 
-    for (let i = 0; i < functionNames?.length; i++) {
-      const functionName = functionNames[i];
-      if (functionName !== undefined) {
-        calls.push({
-          ...contract,
-          functionName,
-          args: args?.[i] ? args?.[i] : undefined,
-        });
-      }
-    }
+		for (let i = 0; i < functionNames?.length; i++) {
+			const functionName = functionNames[i];
+			if (functionName !== undefined) {
+				calls.push({
+					...contract,
+					functionName,
+					args: args?.[i] ? args?.[i] : undefined,
+				});
+			}
+		}
 
-    return await this.client.multicall({
-      contracts: calls,
-      allowFailure: false,
-    });
-  }
+		return await this.client.multicall({
+			contracts: calls,
+			allowFailure: false,
+		});
+	}
 
-  async readMultipleErc20Multicall(
-    contractAddresses: EvmAddressLike[],
-    functionNames: Erc20FunctionName[],
-    args: Erc20Args[]
-  ) {
-    const calls = [];
+	async readMultipleErc20Multicall(
+		contractAddresses: EvmAddressLike[],
+		functionNames: Erc20FunctionName[],
+		args: Erc20Args[],
+	) {
+		const calls = [];
 
-    for (let i = 0; i < functionNames?.length; i++) {
-      const contract = {
-        address: getAddress(String(contractAddresses[i])),
-        abi: erc20Abi,
-      } as const;
+		for (let i = 0; i < functionNames?.length; i++) {
+			const contract = {
+				address: getAddress(String(contractAddresses[i])),
+				abi: erc20Abi,
+			} as const;
 
-      const functionName = functionNames[i];
+			const functionName = functionNames[i];
 
-      if (functionName !== undefined) {
-        calls.push({
-          ...contract,
-          functionName,
-          args: args?.[i] ? args?.[i] : undefined,
-        });
-      }
-    }
+			if (functionName !== undefined) {
+				calls.push({
+					...contract,
+					functionName,
+					args: args?.[i] ? args?.[i] : undefined,
+				});
+			}
+		}
 
-    return await this.client.multicall({
-      contracts: calls,
-      allowFailure: false,
-    });
-  }
+		return await this.client.multicall({
+			contracts: calls,
+			allowFailure: false,
+		});
+	}
 
-  getTokenBalance = async (
-    contractAddress: EvmAddressLike,
-    owner: EvmAddressLike,
-    raw?: boolean
-  ) => {
-    const [balanceRaw, decimals] = await this.readErc20Multicall(
-      getAddress(contractAddress),
-      ["balanceOf", "decimals"],
-      [[getAddress(owner)], undefined]
-    );
+	getTokenBalance = async (contractAddress: EvmAddressLike, owner: EvmAddressLike, raw?: boolean) => {
+		const [balanceRaw, decimals] = await this.readErc20Multicall(
+			getAddress(contractAddress),
+			["balanceOf", "decimals"],
+			[[getAddress(owner)], undefined],
+		);
 
-    if (raw) {
-      return Number(balanceRaw);
-    }
+		if (raw) {
+			return Number(balanceRaw);
+		}
 
-    return Number(balanceRaw) / 10 ** Number(decimals);
-  };
+		return Number(balanceRaw) / 10 ** Number(decimals);
+	};
 
-  // biome-ignore lint/suspicious/noExplicitAny: use any
-  async readAutoFunContract(
-    contractAddress: EvmAddressLike,
-    functionName: string,
-    args: any[]
-  ) {
-    return await this.client.readContract({
-      address: getAddress(contractAddress),
-      abi: autoFunAbi.abi,
-      functionName,
-      args,
-    });
-  }
+	async readAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+		return await this.client.readContract({
+			address: getAddress(contractAddress),
+			abi: autoFunAbi.abi,
+			functionName,
+			args,
+		});
+	}
 
-  // biome-ignore lint/suspicious/noExplicitAny: use any
-  async writeAutoFunContract(
-    contractAddress: EvmAddressLike,
-    functionName: string,
-    args: any[]
-  ) {
-    if (!this.walletClient) {
-      throw new Error(
-        "Wallet client not initialized. Please provide a private key in the constructor."
-      );
-    }
+	async writeAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+		if (!this.walletClient) {
+			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
+		}
 
-    return await this.walletClient.writeContract({
-      address: getAddress(contractAddress),
-      abi: autoFunAbi.abi,
-      functionName,
-      args,
-      chain: CHAINID_TO_VIEM_CHAIN[this.chainId],
-      account: this.walletClient.account ?? null,
-    });
-  }
+		return await this.walletClient.writeContract({
+			address: getAddress(contractAddress),
+			abi: autoFunAbi.abi,
+			functionName,
+			args,
+			chain: CHAINID_TO_VIEM_CHAIN[this.chainId],
+			account: this.walletClient.account ?? null,
+		});
+	}
 
-  async launch(contractAddress: EvmAddressLike, config: AutoFunConfig) {
-    return await this.writeAutoFunContract(contractAddress, "launch", [config]);
-  }
+	async launch(contractAddress: EvmAddressLike, config: AutoFunConfig) {
+		return await this.writeAutoFunContract(contractAddress, "launch", [config]);
+	}
 
-  async launchAndSwap(
-    contractAddress: EvmAddressLike,
-    launchConfig: AutoFunConfig,
-    swapConfig: BondingCurveConfig
-  ) {
-    return await this.writeAutoFunContract(contractAddress, "launchAndSwap", [
-      launchConfig,
-      swapConfig,
-    ]);
-  }
+	async launchAndSwap(contractAddress: EvmAddressLike, launchConfig: AutoFunConfig, swapConfig: BondingCurveConfig) {
+		return await this.writeAutoFunContract(contractAddress, "launchAndSwap", [launchConfig, swapConfig]);
+	}
 
-  async swap(contractAddress: EvmAddressLike, config: BondingCurveConfig) {
-    return await this.writeAutoFunContract(contractAddress, "swap", [config]);
-  }
+	async swap(contractAddress: EvmAddressLike, config: BondingCurveConfig) {
+		return await this.writeAutoFunContract(contractAddress, "swap", [config]);
+	}
 
-  async withdraw(
-    contractAddress: EvmAddressLike,
-    token: EvmAddressLike,
-    amount: bigint
-  ) {
-    return await this.writeAutoFunContract(contractAddress, "withdraw", [
-      token,
-      amount,
-    ]);
-  }
+	async withdraw(contractAddress: EvmAddressLike, token: EvmAddressLike, amount: bigint) {
+		return await this.writeAutoFunContract(contractAddress, "withdraw", [token, amount]);
+	}
 
-  async getLaunchedTokensByOwner(
-    contractAddress: EvmAddressLike,
-    owner: EvmAddressLike
-  ) {
-    return await this.readAutoFunContract(
-      contractAddress,
-      "getLaunchedTokensByOwner",
-      [owner]
-    );
-  }
+	async getLaunchedTokensByOwner(contractAddress: EvmAddressLike, owner: EvmAddressLike) {
+		return await this.readAutoFunContract(contractAddress, "getLaunchedTokensByOwner", [owner]);
+	}
 
-  async getAllLaunchedTokens(contractAddress: EvmAddressLike) {
-    return await this.readAutoFunContract(
-      contractAddress,
-      "getAllLaunchedTokens",
-      []
-    );
-  }
+	async getAllLaunchedTokens(contractAddress: EvmAddressLike) {
+		return await this.readAutoFunContract(contractAddress, "getAllLaunchedTokens", []);
+	}
 }
 
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
 
-// biome-ignore lint/suspicious/noExplicitAny: use any
 function shouldFallback(error: any): boolean {
   const status = error?.response?.status || error?.statusCode || error?.code;
 

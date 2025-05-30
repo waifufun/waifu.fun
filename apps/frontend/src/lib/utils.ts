@@ -216,3 +216,9 @@ export const roundDownToNearest = (value: number, step: number): number => {
 	}
 	return Math.floor(value / step) * step;
 };
+
+export function isInputGreaterThanDecimals(value: string, maxDecimals?: number): boolean {
+	const decimalGroups = value.split(".");
+	const decimalPart = decimalGroups[1] ?? "";
+	return !!maxDecimals && decimalPart.length > maxDecimals;
+}

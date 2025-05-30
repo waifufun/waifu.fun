@@ -18,16 +18,6 @@ export interface ISolanaFunctions {
 	connection: Connection;
 }
 
-if (
-	!process.env.NEXT_PUBLIC_DECIMALS ||
-	!process.env.NEXT_PUBLIC_TOKEN_SUPPLY ||
-	!process.env.NEXT_PUBLIC_VIRTUAL_RESERVES
-) {
-	throw new Error(
-		"Environment variables NEXT_PUBLIC_DECIMALS, NEXT_PUBLIC_TOKEN_SUPPLY, and NEXT_PUBLIC_VIRTUAL_RESERVES must be set.",
-	);
-}
-
 export type CreateTokenResponse = {
 	mintPublicKey: PublicKey;
 	userPublicKey: PublicKey;

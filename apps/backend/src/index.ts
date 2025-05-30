@@ -11,6 +11,7 @@ import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
 import { registerProtectedRoutes, registerPublicRoutes } from "./middlewares/protected-routes";
+
 const fastify = Fastify({
 	logger: {
 		stream: {
@@ -37,7 +38,7 @@ fastify.register(fastifyCookie);
 
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	origin: "http://localhost:3000",
+	origin: ["http://localhost:3000"],
 	credentials: true,
 });
 
@@ -47,14 +48,6 @@ fastify.register(fastifyJWT, {
 
 fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
-});
-
-fastify.addHook("onRequest", async (request, reply) => {
-	logger.info(`Request from IP: ${request.ip}`, {
-		ip: request.ip,
-		url: request.url,
-		method: request.method,
-	});
 });
 
 registerPublicRoutes(fastify);
@@ -71,7 +64,7 @@ const port = 3001;
 
 const start = async () => {
 	try {
-		await fastify.listen({ port });
+		await fastify.listen({ port, host: "0.0.0.0" });
 	} catch (err) {
 		fastify.log.error(err);
 		process.exit(1);

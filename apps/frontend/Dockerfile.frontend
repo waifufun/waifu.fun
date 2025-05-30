@@ -1,51 +1,77 @@
-# syntax=docker.io/docker/dockerfile:1
-FROM node:22 AS base
+# syntax=docker/dockerfile:1.4
 
-FROM base AS deps
-#RUN apk add --no-cache libc6-compat
+# ---- Builder Stage ----
+FROM node:22 AS builder
+
+# Set environment variables
+ENV PNPM_HOME="/pnpm"
+# Ensures pnpm binary is in PATH
+ENV PATH="$PNPM_HOME:$PATH"
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install pnpm using corepack, matching package.json version
+RUN corepack enable && corepack prepare pnpm@10.11.0 --activate
+
+# Set working directory
 WORKDIR /app
 
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# 1. Copy package manager configuration files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# 2. Copy package.json files for all workspaces
+# This helps Docker cache the dependency layer effectively.
+COPY apps/*/package.json ./apps/
+COPY packages/*/package.json ./packages/
+
+# 3. Copy the entire application source code.
+# .dockerignore should prevent node_modules, .next, .env, etc., from being copied.
 COPY . .
 
-ENV NEXT_TELEMETRY_DISABLED=1
+# 4. Install dependencies using pnpm.
+# This installs dependencies based on the full source code,
+# which is important for monorepos with local workspace dependencies.
+RUN pnpm install --frozen-lockfile
 
-RUN \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Set build-time environment variables for Next.js
+# Default values are provided if not passed during build.
+ENV NEXT_PUBLIC_DECIMALS=${NEXT_PUBLIC_DECIMALS:-9}
+ENV NEXT_PUBLIC_TOKEN_SUPPLY=${NEXT_PUBLIC_TOKEN_SUPPLY:-1000000000}
+ENV NEXT_PUBLIC_VIRTUAL_RESERVES=${NEXT_PUBLIC_VIRTUAL_RESERVES:-1000000}
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+ENV NEXT_PUBLIC_HOST=${NEXT_PUBLIC_HOST:-localhost}
 
-FROM base AS runner
+# 5. Build the Next.js application.
+# Using --mount for Next.js build cache (requires BuildKit).
+# This speeds up subsequent builds by caching Next.js's internal build artifacts.
+RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
+    pnpm --filter @autofun/frontend build
+
+# ---- Runner Stage ----
+FROM node:22 AS runner
+
 WORKDIR /app
 
+# Set environment variables for production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=${PORT:-3000}
+# Example for runtime NEXT_PUBLIC_ variable, if needed:
+# ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Copy the standalone server and its specific node_modules
+COPY --from=builder /app/apps/frontend/.next/standalone ./
 
-COPY --from=builder /app/public ./public
+# Copy the static assets (JS, CSS chunks) from the original .next directory
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy the public assets
+COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
-USER nextjs
+# Expose the port the app runs on
+EXPOSE ${PORT:-3000}
 
-EXPOSE 3000
-
-ENV PORT=3000
-
-ENV HOSTNAME="0.0.0.0"
-CMD ["node", "server.js"]
+# Define the command to run the application.
+# The server.js path is relative to WORKDIR /app.
+# For a project in apps/frontend, Next.js standalone output typically places server.js
+# at apps/frontend/server.js within the copied standalone bundle.
+CMD ["node", "apps/frontend/server.js"]

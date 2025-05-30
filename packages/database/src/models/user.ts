@@ -4,7 +4,7 @@ import paginate from "mongoose-paginate-v2";
 
 const schema = new Schema<IUser, ModelType<IUser>>(
 	{
-		address: { type: String },
+		address: { type: String, required: true },
 		suspended: { type: Boolean, default: false },
 		displayName: { type: String },
 		avatar: { type: String },

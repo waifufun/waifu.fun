@@ -1,16 +1,17 @@
 import ChainIndicator from "@/components/chain-indicator";
-import Swap from "@/components/token-page/swap";
+import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName } from "@/lib/utils";
+import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName, shortenAddress } from "@/lib/utils";
 import type { ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
-export async function generateMetadata({ params }: { params: ITokenLookUp }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = await getToken(await params);
 
 	return {
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: ITokenLookUp }): Pr
 	};
 }
 
-export default async function Page({ params, children }: { params: ITokenLookUp; children: ReactNode }) {
+export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
 	const tokenParams = await params;
 	const token = await getToken(tokenParams);
 
@@ -60,7 +61,11 @@ export default async function Page({ params, children }: { params: ITokenLookUp;
 								{/* Creator */}
 								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
 									<div className="capitalize">Created by:</div>
-									<div className="hover:underline">{token?.creator ? token?.creator : "-"}</div>
+									<div className="hover:underline">
+										<Link href={`/profile/${token.creator}`}>
+											{token?.creator ? shortenAddress(token?.creator) : "-"}
+										</Link>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -118,7 +123,7 @@ export default async function Page({ params, children }: { params: ITokenLookUp;
 					</div>
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
-					<Swap />
+					<Swap token={token} />
 					<BondingCurveProgress token={token} />
 				</div>
 			</div>

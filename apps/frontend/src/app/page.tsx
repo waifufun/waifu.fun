@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
 import FilterSelector from "@/components/filter-selector";
+import AutoRefresher from "@/components/auto-refresher";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -33,12 +34,12 @@ export default async function Home({
 	searchParams,
 }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
 	const currentSearchParams = await searchParams;
-	const data = await getTokens({ searchParams: currentSearchParams });
-	const tokens = data?.docs;
+	const tokens = await getTokens({ searchParams: currentSearchParams });
 	const view = currentSearchParams?.view || "grid";
 
 	return (
 		<div className="flex flex-col gap-4">
+			<AutoRefresher interval={15_000} />
 			<Image
 				src="/homepage-hero.svg"
 				width={1816}
@@ -55,7 +56,7 @@ export default async function Home({
 					<GridListSelector />
 				</div>
 				{view === "grid" ? (
-					<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4">
+					<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4 w-full">
 						{tokens?.map((token: IToken) => (
 							<GridItem token={token} key={token.contractAddress} />
 						))}

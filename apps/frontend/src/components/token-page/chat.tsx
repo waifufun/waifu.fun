@@ -239,7 +239,7 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 						width={500}
 						height={500}
 						unoptimized
-						className="aspect-square size-80"
+						className="aspect-square size-80 object-contain"
 						alt="image"
 					/>
 				) : null}

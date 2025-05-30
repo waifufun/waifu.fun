@@ -10,8 +10,8 @@ export const size = {
 };
 export const contentType = "image/png";
 
-export default async function Image({ params }: { params: ITokenLookUp }) {
-	const token = await getToken(params);
+export default async function Image({ params }: { params: Promise<ITokenLookUp> }) {
+	const token = await getToken(await params);
 
 	const imageResponse = await fetch(token.image);
 	if (!imageResponse.ok) {
