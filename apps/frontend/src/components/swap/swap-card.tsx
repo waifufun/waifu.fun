@@ -10,7 +10,7 @@ import { Wallet } from "lucide-react";
 import SwapStats from "./swap-stats";
 import AdvancedSettings from "./advanced-settings";
 
-export default function SwapCard({ token }: { token: IToken }) {
+export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState("");
 	const [balance, setBalance] = useState<number>(0);
 
@@ -51,18 +51,24 @@ export default function SwapCard({ token }: { token: IToken }) {
 							priority
 							className="rounded-md"
 							src={
-								token?.image || (token?.chain === "solana" ? "/chain-icons/solana.svg" : "/chain-icons/ethereum.svg")
+								mode === "buy"
+									? token?.chain === "solana"
+										? "/chain-icons/solana.svg"
+										: "/chain-icons/ethereum.svg"
+									: token.image
 							}
 							alt={token?.ticker || "token"}
 							width={24}
 							height={24}
 						/>
-						<span>{token?.ticker}</span>
+						<span className="uppercase">{mode === "buy" ? "SOL" : token.ticker}</span>
 					</div>
 				</div>
 				<div className="flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium">
 					<Wallet size={14} color="#8C8C8C" />
-					<span>{balance} SOL</span>
+					<span className="uppercase">
+						{balance} {mode === "buy" ? "SOL" : token.ticker}
+					</span>
 				</div>
 
 				<div className="flex items-center gap-2 justify-between">
@@ -79,7 +85,15 @@ export default function SwapCard({ token }: { token: IToken }) {
 				</div>
 
 				<div className="mt-2 space-y-2">
-					<SwapStats minReceived="25" priceImpact="0.3%" />
+					<div className="flex font-medium justify-between text-base text-white">
+						<p>Min Received</p>
+						<p>25 {mode === "buy" ? token.ticker : "SOL"}</p>
+					</div>
+
+					<div className="flex font-medium justify-between text-base text-white">
+						<p>Price Impact</p>
+						<p>25</p>
+					</div>
 					<AdvancedSettings settings={settings} onChange={setSettings} />
 					<Button className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase">
 						Swap

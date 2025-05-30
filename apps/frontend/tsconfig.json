@@ -8,6 +8,7 @@
 		"paths": {
 			"@/*": ["./src/*"]
 		},
+		"noImplicitAny": false,
 		"incremental": true,
 		"module": "esnext",
 		"resolveJsonModule": true,
