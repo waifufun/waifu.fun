@@ -1,5 +1,4 @@
 import { PublicKey } from "@solana/web3.js";
-import { BorshCoder } from "@coral-xyz/anchor";
 
 export const programId = new PublicKey(
   "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5"
