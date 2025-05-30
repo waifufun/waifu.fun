@@ -47,15 +47,17 @@ export default function SwapCard({ token }: { token: IToken }) {
 					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
+							unoptimized
+							priority
+							className="rounded-md"
 							src={
 								token?.image || (token?.chain === "solana" ? "/chain-icons/solana.svg" : "/chain-icons/ethereum.svg")
 							}
 							alt={token?.ticker || "token"}
 							width={24}
 							height={24}
-							className="mb-1"
 						/>
-						{token?.ticker}
+						<span>{token?.ticker}</span>
 					</div>
 				</div>
 				<div className="flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium">

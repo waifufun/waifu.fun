@@ -9,6 +9,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = await getToken(await params);
@@ -60,7 +61,9 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								{/* Creator */}
 								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
 									<div className="capitalize">Created by:</div>
-									<div className="hover:underline">{token?.creator ? shortenAddress(token?.creator) : "-"}</div>
+									<div className="hover:underline">
+										<Link href={`/profile/${token.creator}`}>{token?.creator ? shortenAddress(token?.creator) : "-"}</Link>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -118,7 +121,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 					</div>
 				</div>
 				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
-					<Swap/>
+					<Swap token={token} />
 					<BondingCurveProgress token={token} />
 				</div>
 			</div>
