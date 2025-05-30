@@ -50,14 +50,6 @@ fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
 });
 
-fastify.addHook("onRequest", async (request, reply) => {
-	logger.info(`Request from IP: ${request.ip}`, {
-		ip: request.ip,
-		url: request.url,
-		method: request.method,
-	});
-});
-
 registerPublicRoutes(fastify);
 registerProtectedRoutes(fastify);
 

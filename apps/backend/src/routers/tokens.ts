@@ -42,10 +42,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
 			};
 
-			logger.info("Parsed query params:", JSON.stringify(queryParams));
-
 			const page = queryParams?.page || 1;
-			logger.info(`Processing tokens request - page: ${page}`);
 
 			const category = queryParams.category || "new";
 			let sortQuery = undefined;
@@ -93,8 +90,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				query.chainId = chainId;
 			}
 
-			logger.info("MongoDB query:", JSON.stringify(query));
-
 			const paginationOptions: PaginateOptions = {
 				page: 1,
 				lean: true,
@@ -104,15 +99,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				sort: sortQuery,
 			};
 
-			logger.info("Fetching tokens from MongoDB...");
 			const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
-			logger.info(`Found ${tokensPaginated.docs.length} tokens`);
-			logger.info("First token sample:", JSON.stringify(tokensPaginated.docs[0]));
-
-			logger.info("Populating tokens with live data...");
 			const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
-			logger.info(`Populated ${populatedTokens.length} tokens`);
-			logger.info("First populated token sample:", JSON.stringify(populatedTokens[0]));
 
 			const returnData = {
 				...tokensPaginated,
@@ -120,7 +108,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			};
 
 			await redis.setex(cacheKey, 10, JSON.stringify(returnData));
-			logger.info("Successfully cached tokens data");
 
 			return returnData;
 		} catch (error) {
