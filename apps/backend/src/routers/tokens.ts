@@ -26,86 +26,107 @@ import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
 import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import { getBondingCurveData } from "../utils/bonding-curve";
+import logger from "@autofun/logger";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
 	fastify.post<{
 		Reply: { tokens: IToken[] };
 	}>("/", async (request) => {
-		const queryParams = request.body as {
-			chain: TChain;
-			chainId: TChainId;
-			page: number;
-			category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
-		};
+		try {
+			logger.info("Received tokens request with body:", JSON.stringify(request.body));
+			const queryParams = request.body as {
+				chain: TChain;
+				chainId: TChainId;
+				page: number;
+				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
+			};
 
-		const page = queryParams?.page || 1;
+			logger.info("Parsed query params:", JSON.stringify(queryParams));
 
-		const category = queryParams.category || "new";
-		let sortQuery = undefined;
+			const page = queryParams?.page || 1;
+			logger.info(`Processing tokens request - page: ${page}`);
 
-		switch (category) {
-			case "new":
-				sortQuery = "-createdAt";
-				break;
-			case "trending":
-				sortQuery = "-volume24h -marketcap";
-				break;
-			case "featured":
-				sortQuery = "-featured";
-				break;
-			case "marketcap":
-				sortQuery = "-marketcap";
-				break;
+			const category = queryParams.category || "new";
+			let sortQuery = undefined;
+
+			switch (category) {
+				case "new":
+					sortQuery = "-createdAt";
+					break;
+				case "trending":
+					sortQuery = "-volume24h -marketcap";
+					break;
+				case "featured":
+					sortQuery = "-featured";
+					break;
+				case "marketcap":
+					sortQuery = "-marketcap";
+					break;
+			}
+
+			let chain = null;
+			let chainId = null;
+			if (queryParams?.chain && queryParams?.chainId) {
+				chain = queryParams?.chain;
+				chainId = queryParams?.chainId;
+				const allowedChain = isChainIdAllowedForChain(chain, chainId);
+				if (!allowedChain) throw new Error("Unsupported chain pair");
+			}
+
+			const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
+			logger.info(`Cache key: ${cacheKey}`);
+
+			const cache = await redis.get(cacheKey);
+
+			if (cache) {
+				logger.info("Returning cached tokens data");
+				return JSON.parse(cache);
+			}
+
+			const query: MongooseBaseQueryOptions = {
+				hidden: { $ne: true },
+			};
+
+			if (chain && chainId) {
+				query.chain = chain;
+				query.chainId = chainId;
+			}
+
+			logger.info("MongoDB query:", JSON.stringify(query));
+
+			const paginationOptions: PaginateOptions = {
+				page: 1,
+				lean: true,
+				limit: 50,
+				select: "-__v",
+				leanWithId: false,
+				sort: sortQuery,
+			};
+
+			logger.info("Fetching tokens from MongoDB...");
+			const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
+			logger.info(`Found ${tokensPaginated.docs.length} tokens`);
+			logger.info("First token sample:", JSON.stringify(tokensPaginated.docs[0]));
+
+			logger.info("Populating tokens with live data...");
+			const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
+			logger.info(`Populated ${populatedTokens.length} tokens`);
+			logger.info("First populated token sample:", JSON.stringify(populatedTokens[0]));
+
+			const returnData = {
+				...tokensPaginated,
+				docs: populatedTokens,
+			};
+
+			await redis.setex(cacheKey, 10, JSON.stringify(returnData));
+			logger.info("Successfully cached tokens data");
+
+			return returnData;
+		} catch (error) {
+			logger.error({ err: error }, "Error in tokens route");
+			throw error;
 		}
-
-		let chain = null;
-		let chainId = null;
-		if (queryParams?.chain && queryParams?.chainId) {
-			chain = queryParams?.chain;
-			chainId = queryParams?.chainId;
-			const allowedChain = isChainIdAllowedForChain(chain, chainId);
-			if (!allowedChain) throw new Error("Unsupported chain pair");
-		}
-
-		const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
-
-		const cache = await redis.get(cacheKey);
-
-		if (cache) {
-			return JSON.parse(cache);
-		}
-
-		const query: MongooseBaseQueryOptions = {
-			hidden: { $ne: true },
-		};
-
-		if (chain && chainId) {
-			query.chain = chain;
-			query.chainId = chainId;
-		}
-
-		const paginationOptions: PaginateOptions = {
-			page: 1,
-			lean: true,
-			limit: 50,
-			select: "-__v",
-			leanWithId: false,
-			sort: sortQuery,
-		};
-
-		const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
-
-		const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
-
-		const returnData = {
-			...tokensPaginated,
-			docs: populatedTokens,
-		};
-
-		await redis.setex(cacheKey, 10, JSON.stringify(returnData));
-
-		return returnData;
 	});
 
 	/** Retrieve a single token */
@@ -529,6 +550,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),
 				createdAt: createdAt.toISOString(),
+				updatedAt: createdAt,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -565,6 +587,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
 				createdAt: new Date().toISOString(),
+				updatedAt: new Date()
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
