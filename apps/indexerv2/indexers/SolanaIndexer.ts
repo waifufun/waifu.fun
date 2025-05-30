@@ -238,7 +238,7 @@ export class SolanaIndexer {
         Another reason is to have data integrity, as we want to ensure that all events in a batch are saved together.
         If it fails, we can handle the error and retry the batch, preventing partial saves.
       */
-      const savedEvents = await DB.Event.insertMany(events, { ordered: false });
+      const savedEvents = await DB.Event.insertManyOrUpdate(events);
       logger.info(`Batch saved ${savedEvents.length} events to database`);
     } catch (error) {
       throw new Error(
