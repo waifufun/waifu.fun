@@ -7,6 +7,7 @@ import TokenRow from "@/components/profile-page/token-row";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 
+// biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 
