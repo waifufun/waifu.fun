@@ -18,14 +18,10 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 
 	return (
 		<div className="w-full">
-			<button
-				className="w-full flex items-center justify-between text-sm font-medium text-white"
-				onClick={() => setOpen(!open)}
-				type="button"
-			>
-				<span>Advanced Settings</span>
+			<div className="w-full flex items-center justify-between text-sm font-medium text-white">
+				<span className="text-base">Advanced Settings</span>
 				<Switch checked={open} onCheckedChange={setOpen} />
-			</button>
+			</div>
 
 			{open && (
 				<div className="mt-2 py-3 rounded-lg flex flex-col gap-4 w-full">
@@ -35,7 +31,7 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 							<span className="text-base text-white font-medium">Speed</span>
 							<TooltipProvider>
 								<Tooltip>
-									<TooltipTrigger>
+									<TooltipTrigger asChild>
 										<HelpCircle size={14} className="text-gray-400" />
 									</TooltipTrigger>
 									<TooltipContent className="bg-black text-white text-xs">
@@ -51,9 +47,9 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 									key={label}
 									onClick={() => updateSetting("speed", label)}
 									className={cn(
-										"flex-1 h-full text-base bg-transparent font-medium text-white hover:bg-[#1a1a1a] transition-colors",
+										"flex-1 h-full rounded-md text-base capitalize bg-transparent font-medium text-white hover:bg-[#1a1a1a] transition-colors",
 										"border border-transparent",
-										settings.speed === label && "border border-[#03FF24] rounded-md",
+										settings.speed === label && "border border-[#03FF24]",
 									)}
 								>
 									{label}
@@ -68,7 +64,7 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 							<span className="text-base text-white font-medium">Slippage</span>
 							<TooltipProvider>
 								<Tooltip>
-									<TooltipTrigger>
+									<TooltipTrigger asChild>
 										<HelpCircle size={14} className="text-gray-400" />
 									</TooltipTrigger>
 									<TooltipContent className="bg-black text-white text-xs">
@@ -96,7 +92,7 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 							<span className="text-base text-white font-medium">Tx Deadline</span>
 							<TooltipProvider>
 								<Tooltip>
-									<TooltipTrigger>
+									<TooltipTrigger asChild>
 										<HelpCircle size={14} className="text-gray-400" />
 									</TooltipTrigger>
 									<TooltipContent className="bg-black text-white text-xs">

@@ -6,7 +6,7 @@ import type { IToken } from "@autofun/types";
 
 export default function Swap({ token }: { token: IToken }) {
 	return (
-		<div className="min-w-[460px] w-fit min-h-[355px] bg-[#262626] rounded-xl flex flex-col overflow-hidden">
+		<div className="bg-[#262626] rounded-xl flex flex-col overflow-hidden">
 			<Tabs defaultValue="buy" className="flex flex-col h-full">
 				<TabsList className="w-full">
 					<TabsTrigger value="buy">Buy</TabsTrigger>

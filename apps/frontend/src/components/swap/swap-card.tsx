@@ -44,8 +44,7 @@ export default function SwapCard({ token }: { token: IToken }) {
 		<div className="w-full h-full rounded-xl overflow-hidden">
 			<div className="flex flex-col gap-2">
 				<div className="flex items-stretch gap-2 w-full">
-					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="w-3/4" />
-
+					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
 							src={
@@ -64,7 +63,19 @@ export default function SwapCard({ token }: { token: IToken }) {
 					<span>{balance} SOL</span>
 				</div>
 
-				<QuickSetButtons buttons={quickSetButtons} onClick={handleQuickSet} />
+				<div className="flex items-center gap-2 justify-between">
+					{quickSetButtons.map((btn) => (
+						<Button
+							key={btn}
+							variant="secondary"
+							className="bg-gradient-to-t from-[#121212] to-[#171717] text-sm"
+							onClick={() => handleQuickSet(btn)}
+						>
+							{btn}
+						</Button>
+					))}
+				</div>
+
 				<div className="mt-2 space-y-2">
 					<SwapStats minReceived="25" priceImpact="0.3%" />
 					<AdvancedSettings settings={settings} onChange={setSettings} />
@@ -73,23 +84,6 @@ export default function SwapCard({ token }: { token: IToken }) {
 					</Button>
 				</div>
 			</div>
-		</div>
-	);
-}
-
-function QuickSetButtons({ buttons, onClick }: { buttons: string[]; onClick: (val: string) => void }) {
-	return (
-		<div className="flex gap-2">
-			{buttons.map((btn) => (
-				<Button
-					key={btn}
-					variant="secondary"
-					className="bg-gradient-to-t from-[#121212] to-[#171717] w-[102px] h-[36px] text-sm"
-					onClick={() => onClick(btn)}
-				>
-					{btn}
-				</Button>
-			))}
 		</div>
 	);
 }
