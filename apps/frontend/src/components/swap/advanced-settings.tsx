@@ -29,16 +29,15 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-1">
 							<span className="text-base text-white font-medium">Speed</span>
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<HelpCircle size={14} className="text-gray-400" />
-									</TooltipTrigger>
-									<TooltipContent className="bg-black text-white text-xs">
-										Choose how fast your transaction executes
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<HelpCircle size={14} className="text-gray-400" />
+								</TooltipTrigger>
+								<TooltipContent className="bg-black text-white text-xs">
+									Choose how fast your transaction executes
+								</TooltipContent>
+							</Tooltip>
 						</div>
 
 						<div className="w-[255px] h-[36px] bg-[#101010] rounded-md flex overflow-hidden">
@@ -62,16 +61,15 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 					<div className="flex items-center justify-between w-full">
 						<div className="flex items-center gap-1">
 							<span className="text-base text-white font-medium">Slippage</span>
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<HelpCircle size={14} className="text-gray-400" />
-									</TooltipTrigger>
-									<TooltipContent className="bg-black text-white text-xs">
-										this is the maximum amount of slippage you are willing to accept when placing the trade
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<HelpCircle size={14} className="text-gray-400" />
+								</TooltipTrigger>
+								<TooltipContent className="bg-black text-white text-xs">
+									this is the maximum amount of slippage you are willing to accept when placing the trade
+								</TooltipContent>
+							</Tooltip>
 						</div>
 
 						<div className="relative max-w-[85px] h-[32px]">
@@ -90,16 +88,14 @@ export default function AdvancedSettings({ settings, onChange }: IAdvancedSettin
 					<div className="flex items-center justify-between w-full">
 						<div className="flex items-center gap-1">
 							<span className="text-base text-white font-medium">Tx Deadline</span>
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<HelpCircle size={14} className="text-gray-400" />
-									</TooltipTrigger>
-									<TooltipContent className="bg-black text-white text-xs">
-										Set the maximum time (in minutes) your transaction can take
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger>
+									<HelpCircle size={14} className="text-gray-400" />
+								</TooltipTrigger>
+								<TooltipContent className="bg-black text-white text-xs">
+									Set the maximum time (in minutes) your transaction can take
+								</TooltipContent>
+							</Tooltip>
 						</div>
 
 						<div className="relative w-[85px]">

@@ -7,12 +7,12 @@ import Image from "next/image";
 import type { ISwapSettings, IToken } from "@autofun/types";
 import { useWallets } from "../hooks/providers/UseWalletContext";
 import { Wallet } from "lucide-react";
-import SwapStats from "./swap-stats";
 import AdvancedSettings from "./advanced-settings";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState("");
 	const [balance, setBalance] = useState<number>(0);
+	const { solanaWallets } = useWallets();
 
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
 	const initialSettings: ISwapSettings = {
@@ -25,11 +25,11 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const handleQuickSet = (val: string) => {
 		setValue(val === "Reset" ? "" : val);
 	};
-	const { solanaWallets } = useWallets();
 
 	useEffect(() => {
 		const getBalance = async () => {
-			const balance = await solanaWallets?.Devnet?.getNativeBalance();
+			const balance = await solanaWallets?.Mainnet?.getNativeBalance();
+			console.log({ balance })
 			if (balance !== undefined) {
 				setBalance(balance);
 			}
@@ -44,7 +44,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		<div className="w-full h-full rounded-xl overflow-hidden">
 			<div className="flex flex-col gap-2">
 				<div className="flex items-stretch gap-2 w-full">
-					<SwapInput align="left" value={value} onUserInput={setValue} mode="buy" className="w-full" />
+					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
 							unoptimized
@@ -76,7 +76,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<Button
 							key={btn}
 							variant="secondary"
-							className="bg-gradient-to-t from-[#121212] to-[#171717] text-sm"
+							className="bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow"
 							onClick={() => handleQuickSet(btn)}
 						>
 							{btn}

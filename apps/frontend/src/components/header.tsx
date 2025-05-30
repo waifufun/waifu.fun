@@ -31,7 +31,7 @@ export default function Header() {
 				<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
 					<Trophy size={20} className="text-autofun-background-action-highlight" />
 					<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
-						250
+						0
 					</div>
 				</div>
 				{/* Balance */}

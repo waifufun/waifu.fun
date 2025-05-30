@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SwapCard from "./swap-card";
 import type { IToken } from "@autofun/types";
 import { useState } from "react";
@@ -8,7 +8,7 @@ import { useState } from "react";
 export default function Swap({ token }: { token: IToken }) {
 	const [mode, setMode] = useState<"buy" | "sell">("buy");
 	return (
-		<div className="bg-[#262626] rounded-xl flex flex-col overflow-hidden">
+		<div className="flex flex-col overflow-hidden">
 			<Tabs defaultValue={mode} value={mode} className="flex flex-col h-full">
 				<TabsList className="w-full">
 					<TabsTrigger value="buy" onClick={() => setMode("buy")}>
@@ -19,7 +19,7 @@ export default function Swap({ token }: { token: IToken }) {
 					</TabsTrigger>
 				</TabsList>
 
-				<div className="p-4">
+				<div className="p-4 bg-[#0C0C0C] rounded-b-xl">
 					<SwapCard token={token} mode={mode} />
 				</div>
 			</Tabs>

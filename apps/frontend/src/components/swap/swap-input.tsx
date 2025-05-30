@@ -3,7 +3,6 @@ import { cn, isInputGreaterThanDecimals } from "@/lib/utils";
 
 type InputProps = {
 	value: string | number;
-	mode: "buy" | "sell";
 	onUserInput: (input: string) => void;
 	error?: boolean;
 	fontSize?: string;
@@ -20,7 +19,6 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 		{
 			value,
 			onUserInput,
-			mode,
 			placeholder,
 			prependSymbol,
 			maxDecimals,
@@ -41,7 +39,7 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 
 		const displayValue = prependSymbol && value ? prependSymbol + value.toString() : value.toString();
 		return (
-			<div className={cn("rounded-lg w-full transition-colors duration-300", error ? "border border-red-500" : "")}>
+			<div className="rounded-lg w-full">
 				<input
 					ref={ref}
 					{...rest}
@@ -63,9 +61,10 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 					maxLength={79}
 					spellCheck={false}
 					className={cn(
-						"outline-none border-none w-full text-4xl text-white truncate rounded-md text-ellipsis",
+						"outline-none border-none w-full text-4xl text-white truncate rounded-md text-ellipsis transition-colors duration-300",
 						"placeholder:text-gray-400",
 						align === "right" ? "text-right" : "text-left",
+						error ? "text-red-400" : "",
 						className,
 					)}
 				/>
