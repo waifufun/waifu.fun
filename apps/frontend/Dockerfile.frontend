@@ -46,6 +46,9 @@ ENV NEXT_PUBLIC_HOST=${NEXT_PUBLIC_HOST:-localhost}
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
     pnpm --filter @autofun/frontend build
 
+# Debug: List the recursive contents of the standalone directory to verify assets
+RUN ls -R /app/apps/frontend/.next/standalone
+
 # ---- Runner Stage ----
 FROM node:22 AS runner
 
