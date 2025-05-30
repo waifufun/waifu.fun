@@ -5,7 +5,7 @@ import paginate from "mongoose-paginate-v2";
 const schema = new Schema<IChatMessage, ModelType<IChatMessage>>(
 	{
 		contractAddress: { type: String },
-		sender: { type: String },
+		sender: { type: String, required: true },
 		room: { type: String, enum: ["1000", "100000", "1000000"] },
 		image: { type: String },
 		message: { type: String },
