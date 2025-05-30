@@ -7,13 +7,13 @@ import logger from "@autofun/logger";
 export interface SolanaIndexerConfig {
   networkId: SolanaNetworkIds;
   autoFunAddress: SolanaAddressLike;
-  batchSize?: number;
   concurrencyLimit?: number;
   maxSignatures?: number;
   beforeSignature?: string;
+  debugStatements?: boolean;
 }
 
-export interface DecodedInstruction {
+interface DecodedInstruction {
   type: "launch" | "swap" | "launchAndSwap" | "unknown";
   data?: any;
   mintAddress?: string;
@@ -27,25 +27,21 @@ export interface DecodedInstruction {
 export class SolanaIndexer {
   private rpc: SolanaRpcProvider;
   private config: SolanaIndexerConfig;
+  private debugStatements = false; // Set to true for detailed debug output
+  private readonly STOP_AT_SLOT = 322725834;
 
   constructor(config: SolanaIndexerConfig) {
     this.config = {
-      concurrencyLimit: 30,
-      beforeSignature: "336725834",
+      concurrencyLimit: 1,
+      maxSignatures: 500,
       ...config,
     };
     this.rpc = new SolanaRpcProvider(this.config.networkId);
+    this.debugStatements = config.debugStatements || false;
   }
 
   private arraysEqual(a: number[], b: number[]): boolean {
     return a.length === b.length && a.every((val, i) => val === b[i]);
-  }
-
-  private replacer(key: string, value: any): any {
-    if (typeof value === "bigint") {
-      return value.toString();
-    }
-    return value;
   }
 
   private decodeAutofunInstruction(
@@ -55,50 +51,42 @@ export class SolanaIndexer {
     const discriminator = Array.from(instructionData.slice(0, 8));
 
     if (this.arraysEqual(discriminator, IDLInstructions.launch.d8)) {
-      const decoded = IDLInstructions.launch.decode(instructionData);
-      const mintAddress = accounts[3];
-      const creator = accounts[2];
-
       return {
         type: "launch",
-        data: decoded,
-        mintAddress,
-        creator,
-        accounts,
-      };
-    } else if (this.arraysEqual(discriminator, IDLInstructions.swap.d8)) {
-      const decoded = IDLInstructions.swap.decode(instructionData);
-      const tokenMint = accounts[4];
-      const user = accounts[7];
-
-      return {
-        type: "swap",
-        data: decoded,
-        tokenMint,
-        user,
-        accounts,
-      };
-    } else if (
-      this.arraysEqual(discriminator, IDLInstructions.launchAndSwap.d8)
-    ) {
-      const decoded = IDLInstructions.launchAndSwap.decode(instructionData);
-      const mintAddress = accounts[3];
-      const creator = accounts[2];
-
-      return {
-        type: "launchAndSwap",
-        data: decoded,
-        mintAddress,
-        creator,
+        data: IDLInstructions.launch.decode(instructionData),
+        mintAddress: accounts[3],
+        creator: accounts[2],
         accounts,
       };
     }
 
-    return {
-      type: "unknown",
-      discriminator: discriminator,
-      accounts,
-    };
+    if (this.arraysEqual(discriminator, IDLInstructions.swap.d8)) {
+      return {
+        type: "swap",
+        data: IDLInstructions.swap.decode(instructionData),
+        tokenMint: accounts[4],
+        user: accounts[7],
+        accounts,
+      };
+    }
+
+    if (this.arraysEqual(discriminator, IDLInstructions.launchAndSwap.d8)) {
+      return {
+        type: "launchAndSwap",
+        data: IDLInstructions.launchAndSwap.decode(instructionData),
+        mintAddress: accounts[3],
+        creator: accounts[2],
+        accounts,
+      };
+    }
+
+    return { type: "unknown", discriminator, accounts };
+  }
+
+  private hasAutoFunProgram(accounts: any[]): boolean {
+    return accounts.some(
+      (account) => account.toBase58() === this.config.autoFunAddress
+    );
   }
 
   private processTransaction(
@@ -107,51 +95,42 @@ export class SolanaIndexer {
     slot: number
   ): any[] {
     const events: any[] = [];
-
-    // Quick pre-check without converting all accounts to strings
     const accounts = transaction.transaction.message.staticAccountKeys;
-    let hasOurProgram = false;
 
-    for (const account of accounts) {
-      if (account.toBase58() === this.config.autoFunAddress) {
-        hasOurProgram = true;
-        break;
-      }
-    }
-
-    if (!hasOurProgram) {
+    if (!this.hasAutoFunProgram(accounts)) {
       return events;
     }
 
-    // Convert to strings only if needed
     const accountStrings = accounts.map((key: any) => key.toBase58());
+    const compiledInstructions =
+      transaction.transaction.message.compiledInstructions;
 
     for (const [
       instructionIndex,
       instruction,
-    ] of transaction.transaction.message.compiledInstructions.entries()) {
+    ] of compiledInstructions.entries()) {
       const programId = accountStrings[instruction.programIdIndex];
 
-      if (programId === this.config.autoFunAddress) {
-        const instructionAccounts = instruction.accountKeyIndexes.map(
-          (index: number) => accountStrings[index]
-        );
+      if (programId !== this.config.autoFunAddress) continue;
 
-        const decodedInstruction = this.decodeAutofunInstruction(
-          Buffer.from(instruction.data),
-          instructionAccounts
-        );
+      const instructionAccounts = instruction.accountKeyIndexes.map(
+        (index: number) => accountStrings[index]
+      );
 
-        if (decodedInstruction.type !== "unknown") {
-          const eventData = this.createEventData(
-            transaction.transaction.signatures[0],
-            slot,
-            blockTime,
-            instructionIndex,
-            decodedInstruction
-          );
-          events.push(eventData);
-        }
+      const decodedInstruction = this.decodeAutofunInstruction(
+        Buffer.from(instruction.data),
+        instructionAccounts
+      );
+
+      if (decodedInstruction.type !== "unknown") {
+        const eventData = this.createEventData(
+          transaction.transaction.signatures[0],
+          slot,
+          blockTime,
+          instructionIndex,
+          decodedInstruction
+        );
+        events.push(eventData);
       }
     }
 
@@ -165,7 +144,7 @@ export class SolanaIndexer {
     instructionIndex: number,
     decodedInstruction: DecodedInstruction
   ): any {
-    const eventData: any = {
+    const baseEventData = {
       signature,
       slot,
       blockTime,
@@ -180,84 +159,85 @@ export class SolanaIndexer {
       processed: true,
     };
 
-    if (decodedInstruction.type === "launch" && decodedInstruction.data?.data) {
-      Object.assign(eventData, {
-        tokenName: decodedInstruction.data.data.name,
-        tokenSymbol: decodedInstruction.data.data.symbol,
-        tokenUri: decodedInstruction.data.data.uri,
-        decimals: decodedInstruction.data.data.decimals,
-        tokenSupply: decodedInstruction.data.data.tokenSupply?.toString(),
-        virtualLamportReserves:
-          decodedInstruction.data.data.virtualLamportReserves?.toString(),
-      });
-    } else if (
-      decodedInstruction.type === "swap" &&
-      decodedInstruction.data?.data
-    ) {
-      Object.assign(eventData, {
-        swapAmount: decodedInstruction.data.data.amount?.toString(),
-        direction: decodedInstruction.data.data.direction,
-        minimumReceiveAmount:
-          decodedInstruction.data.data.minimumReceiveAmount?.toString(),
-        deadline: decodedInstruction.data.data.deadline?.toString(),
-      });
-    } else if (
-      decodedInstruction.type === "launchAndSwap" &&
-      decodedInstruction.data?.data
-    ) {
-      Object.assign(eventData, {
-        tokenName: decodedInstruction.data.data.name,
-        tokenSymbol: decodedInstruction.data.data.symbol,
-        tokenUri: decodedInstruction.data.data.uri,
-        decimals: decodedInstruction.data.data.decimals,
-        tokenSupply: decodedInstruction.data.data.tokenSupply?.toString(),
-        virtualLamportReserves:
-          decodedInstruction.data.data.virtualLamportReserves?.toString(),
-        swapAmount: decodedInstruction.data.data.swapAmount?.toString(),
-        minimumReceiveAmount:
-          decodedInstruction.data.data.minimumReceiveAmount?.toString(),
-        deadline: decodedInstruction.data.data.deadline?.toString(),
-      });
-    }
+    const instructionData = decodedInstruction.data?.data;
+    if (!instructionData) return baseEventData;
 
-    return eventData;
+    switch (decodedInstruction.type) {
+      case "launch":
+        return {
+          ...baseEventData,
+          tokenName: instructionData.name,
+          tokenSymbol: instructionData.symbol,
+          tokenUri: instructionData.uri,
+          decimals: instructionData.decimals,
+          tokenSupply: instructionData.tokenSupply?.toString(),
+          virtualLamportReserves:
+            instructionData.virtualLamportReserves?.toString(),
+        };
+
+      case "swap":
+        return {
+          ...baseEventData,
+          swapAmount: instructionData.amount?.toString(),
+          direction: instructionData.direction,
+          minimumReceiveAmount:
+            instructionData.minimumReceiveAmount?.toString(),
+          deadline: instructionData.deadline?.toString(),
+        };
+
+      case "launchAndSwap":
+        return {
+          ...baseEventData,
+          tokenName: instructionData.name,
+          tokenSymbol: instructionData.symbol,
+          tokenUri: instructionData.uri,
+          decimals: instructionData.decimals,
+          tokenSupply: instructionData.tokenSupply?.toString(),
+          virtualLamportReserves:
+            instructionData.virtualLamportReserves?.toString(),
+          swapAmount: instructionData.swapAmount?.toString(),
+          minimumReceiveAmount:
+            instructionData.minimumReceiveAmount?.toString(),
+          deadline: instructionData.deadline?.toString(),
+        };
+
+      default:
+        return baseEventData;
+    }
   }
 
   private async saveBatchEvents(events: any[]): Promise<void> {
     if (events.length === 0) return;
 
     try {
-      // For large event batches, process in chunks to avoid memory issues
       const chunkSize = 50;
       let totalSaved = 0;
 
       for (let i = 0; i < events.length; i += chunkSize) {
         const chunk = events.slice(i, i + chunkSize);
-        // await DB.Event.insertManyOrUpdate(chunk);
+        await DB.Event.insertManyOrUpdate(chunk);
         totalSaved += chunk.length;
       }
 
-      logger.info(`Batch saved ${totalSaved} events to database`);
+      if (this.debugStatements) {
+        logger.info(`Batch saved ${totalSaved} events to database`);
+      }
     } catch (error: any) {
-      throw new Error(
-        `Error saving batch events to database: ${error.message}`
-      );
+      throw new Error(`Error saving batch events: ${error.message}`);
     }
   }
 
   private async getSignatures(beforeSignature?: string): Promise<any[]> {
     try {
-      const signatures = await this.rpc.getSignaturesForAddress(
+      return await this.rpc.getSignaturesForAddress(
         this.config.autoFunAddress,
         {
-          limit: this.config.maxSignatures || 1000,
+          limit: this.config.maxSignatures || 500,
           before: beforeSignature,
         }
       );
-
-      return signatures;
     } catch (error) {
-      logger.error(`Error fetching signatures:`, error);
+      logger.error("Error fetching signatures:", error);
       return [];
     }
   }
@@ -270,7 +250,7 @@ export class SolanaIndexer {
         signatureInfo.signature
       );
 
-      if (!transaction || !transaction.meta || transaction.meta.err) {
+      if (!transaction?.meta || transaction.meta.err) {
         return [];
       }
 
@@ -285,9 +265,10 @@ export class SolanaIndexer {
 
       const processTime = Date.now() - processStart;
 
-      if (events.length > 0) {
+      if (events.length > 0 && this.debugStatements) {
         logger.info(
-          `Signature ${signatureInfo.signature}: ${events.length} events (slot: ${transaction.slot}, ${downloadTime}ms download, ${processTime}ms process)`
+          `Signature ${signatureInfo.signature}: ${events.length} events ` +
+            `(slot: ${transaction.slot}, ${downloadTime}ms download, ${processTime}ms process)`
         );
       }
 
@@ -303,24 +284,21 @@ export class SolanaIndexer {
   }
 
   private async processSignaturesBatch(signatures: any[]): Promise<any[]> {
-    const concurrencyLimit = this.config.concurrencyLimit!;
+    const { concurrencyLimit } = this.config;
     const allEvents: any[] = [];
 
-    // Process in smaller concurrent chunks
-    for (let i = 0; i < signatures.length; i += concurrencyLimit) {
-      const chunk = signatures.slice(i, i + concurrencyLimit);
+    for (let i = 0; i < signatures.length; i += concurrencyLimit!) {
+      const chunk = signatures.slice(i, i + concurrencyLimit!);
 
-      const chunkPromises = chunk.map(async (signatureInfo) => {
-        try {
-          return await this.processSignature(signatureInfo);
-        } catch (error) {
+      const chunkPromises = chunk.map((signatureInfo) =>
+        this.processSignature(signatureInfo).catch((error) => {
           logger.error(
             `Failed to process signature ${signatureInfo.signature}:`,
             error
           );
           return [];
-        }
-      });
+        })
+      );
 
       const chunkResults = await Promise.allSettled(chunkPromises);
 
@@ -330,8 +308,7 @@ export class SolanaIndexer {
         }
       }
 
-      // Delay between chunks to avoid overwhelming RPC
-      if (i + concurrencyLimit < signatures.length) {
+      if (i + concurrencyLimit! < signatures.length) {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
     }
@@ -339,22 +316,102 @@ export class SolanaIndexer {
     return allEvents;
   }
 
+  private shouldStopAtSlot(signatures: any[]): boolean {
+    return signatures.some((sig) => sig.slot && sig.slot <= this.STOP_AT_SLOT);
+  }
+
+  private logBatchProgress(
+    batchNumber: number,
+    signatures: any[],
+    batchDuration: number,
+    batchEventCount: number,
+    totalStats: {
+      processedSignatures: number;
+      events: number;
+      startTime: number;
+    }
+  ): void {
+    if (this.debugStatements) {
+      const batchSignaturesPerSecond = (
+        (signatures.length / batchDuration) *
+        1000
+      ).toFixed(2);
+      const overallDuration = Date.now() - totalStats.startTime;
+      const overallSignaturesPerSecond = (
+        (totalStats.processedSignatures / overallDuration) *
+        1000
+      ).toFixed(2);
+
+      const memUsage = process.memoryUsage();
+      const memInfo =
+        `RSS ${(memUsage.rss / 1024 / 1024).toFixed(2)}MB, ` +
+        `Heap ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`;
+
+      logger.info(
+        `Completed batch ${batchNumber} in ${batchDuration}ms with ${batchEventCount} events`
+      );
+      logger.info(
+        `Batch: ${batchSignaturesPerSecond} sigs/sec | ` +
+          `Overall: ${overallSignaturesPerSecond} sigs/sec | ` +
+          `Total events: ${totalStats.events}`
+      );
+      logger.info(`Memory: ${memInfo}`);
+    } else {
+      const firstSlot = signatures[0]?.slot;
+      const lastSlot = signatures[signatures.length - 1]?.slot;
+      logger.info(`Batch ${batchNumber} (${firstSlot}-${lastSlot}) done`);
+    }
+  }
+
+  private logFinalSummary(totalStats: {
+    processedSignatures: number;
+    events: number;
+    startTime: number;
+  }): void {
+    const totalDuration = Date.now() - totalStats.startTime;
+    const finalSignaturesPerSecond = (
+      (totalStats.processedSignatures / totalDuration) *
+      1000
+    ).toFixed(2);
+    const averageTimePerSignature = (
+      totalDuration / totalStats.processedSignatures
+    ).toFixed(2);
+    const eventsPerSignature = (
+      totalStats.events / totalStats.processedSignatures
+    ).toFixed(4);
+
+    logger.info(`
+=== SIGNATURE-BASED INDEXING COMPLETE ===
+Total signatures processed: ${totalStats.processedSignatures}
+Total events found: ${totalStats.events}
+Total time: ${totalDuration}ms (${(totalDuration / 1000 / 60).toFixed(
+      2
+    )} minutes)
+Average signatures per second: ${finalSignaturesPerSecond}
+Average time per signature: ${averageTimePerSignature}ms
+Events per signature: ${eventsPerSignature}
+    `);
+  }
+
   public async runWithSignatures(): Promise<void> {
     try {
-      const maxSignatures = this.config.maxSignatures || 1000;
-      const batchSize = this.config.concurrencyLimit!;
+      const maxSignatures = this.config.maxSignatures || 500;
+      const totalStats = {
+        processedSignatures: 0,
+        events: 0,
+        startTime: Date.now(),
+      };
 
-      const overallStartTime = Date.now();
-      let totalProcessedSignatures = 0;
-      let totalEvents = 0;
       let beforeSignature = this.config.beforeSignature;
+      let batchNumber = 1;
+      let hasMoreSignatures = true;
 
       logger.info(
         `Starting signature-based indexer for address: ${this.config.autoFunAddress}`
       );
-
-      let batchNumber = 1;
-      let hasMoreSignatures = true;
+      logger.info(
+        `Will stop when reaching slot ${this.STOP_AT_SLOT} or earlier`
+      );
 
       while (hasMoreSignatures) {
         logger.info(`Fetching batch ${batchNumber} of signatures...`);
@@ -366,8 +423,21 @@ export class SolanaIndexer {
           break;
         }
 
+        if (this.shouldStopAtSlot(signatures)) {
+          const stoppedAtSlot = signatures.find(
+            (sig) => sig.slot <= this.STOP_AT_SLOT
+          )?.slot;
+          logger.info(
+            `Reached target slot ${stoppedAtSlot} (target: ${this.STOP_AT_SLOT}), stopping indexer`
+          );
+          break;
+        }
+
         logger.info(
-          `Processing batch ${batchNumber}: ${signatures.length} signatures`
+          `Processing batch ${batchNumber}: ${signatures.length} signatures ` +
+            `(slots: ${signatures[0]?.slot} to ${
+              signatures[signatures.length - 1]?.slot
+            })`
         );
 
         const batchStartTime = Date.now();
@@ -375,41 +445,34 @@ export class SolanaIndexer {
         try {
           const allBatchEvents = await this.processSignaturesBatch(signatures);
 
-          // Save all events from the batch at once
           if (allBatchEvents.length > 0) {
             await this.saveBatchEvents(allBatchEvents);
           }
 
           const batchDuration = Date.now() - batchStartTime;
-          const batchSignaturesPerSecond = (
-            (signatures.length / batchDuration) *
-            1000
-          ).toFixed(2);
+          totalStats.processedSignatures += signatures.length;
+          totalStats.events += allBatchEvents.length;
 
-          totalProcessedSignatures += signatures.length;
-          totalEvents += allBatchEvents.length;
-
-          const overallDuration = Date.now() - overallStartTime;
-          const overallSignaturesPerSecond = (
-            (totalProcessedSignatures / overallDuration) *
-            1000
-          ).toFixed(2);
-
-          logger.info(
-            `Completed batch ${batchNumber} in ${batchDuration}ms with ${allBatchEvents.length} events`
-          );
-          logger.info(
-            `Batch: ${batchSignaturesPerSecond} sigs/sec | Overall: ${overallSignaturesPerSecond} sigs/sec | Total events: ${totalEvents}`
+          this.logBatchProgress(
+            batchNumber,
+            signatures,
+            batchDuration,
+            allBatchEvents.length,
+            totalStats
           );
 
-          // Set up for next batch
-          if (signatures.length < maxSignatures) {
-            hasMoreSignatures = false;
-          } else {
+          if (batchNumber % 10 === 0 && global.gc) {
+            global.gc();
+            logger.info(`Forced garbage collection after batch ${batchNumber}`);
+          }
+
+          hasMoreSignatures = signatures.length >= maxSignatures;
+          if (hasMoreSignatures) {
             beforeSignature = signatures[signatures.length - 1].signature;
           }
 
           batchNumber++;
+          await new Promise((resolve) => setTimeout(resolve, 100));
         } catch (error: any) {
           logger.error(
             `Error processing batch ${batchNumber}: ${error.message}`
@@ -418,27 +481,7 @@ export class SolanaIndexer {
         }
       }
 
-      // Final performance summary
-      const totalDuration = Date.now() - overallStartTime;
-      const finalSignaturesPerSecond = (
-        (totalProcessedSignatures / totalDuration) *
-        1000
-      ).toFixed(2);
-      const averageTimePerSignature = (
-        totalDuration / totalProcessedSignatures
-      ).toFixed(2);
-
-      logger.info(`
-=== SIGNATURE-BASED INDEXING COMPLETE ===
-Total signatures processed: ${totalProcessedSignatures}
-Total events found: ${totalEvents}
-Total time: ${totalDuration}ms (${(totalDuration / 1000 / 60).toFixed(
-        2
-      )} minutes)
-Average signatures per second: ${finalSignaturesPerSecond}
-Average time per signature: ${averageTimePerSignature}ms
-Events per signature: ${(totalEvents / totalProcessedSignatures).toFixed(4)}
-      `);
+      this.logFinalSummary(totalStats);
     } catch (error) {
       logger.error("Error running signature-based indexer:", error);
     }
