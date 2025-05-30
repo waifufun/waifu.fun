@@ -7,10 +7,10 @@ import logger from "@autofun/logger";
 export interface SolanaIndexerConfig {
   networkId: SolanaNetworkIds;
   autoFunAddress: SolanaAddressLike;
-  startSlot?: number;
-  endSlot?: number;
   batchSize?: number;
   concurrencyLimit?: number;
+  maxSignatures?: number;
+  beforeSignature?: string;
 }
 
 export interface DecodedInstruction {
@@ -30,8 +30,8 @@ export class SolanaIndexer {
 
   constructor(config: SolanaIndexerConfig) {
     this.config = {
-      batchSize: 30, // Smaller batches for large blocks
-      concurrencyLimit: 30, // Reduced concurrency for memory management
+      concurrencyLimit: 30,
+      beforeSignature: "336725834",
       ...config,
     };
     this.rpc = new SolanaRpcProvider(this.config.networkId);
@@ -233,7 +233,7 @@ export class SolanaIndexer {
 
       for (let i = 0; i < events.length; i += chunkSize) {
         const chunk = events.slice(i, i + chunkSize);
-        await DB.Event.insertManyOrUpdate(chunk);
+        // await DB.Event.insertManyOrUpdate(chunk);
         totalSaved += chunk.length;
       }
 
@@ -245,85 +245,79 @@ export class SolanaIndexer {
     }
   }
 
-  private async getSignatures(slot: number): Promise<string[]> {
+  private async getSignatures(beforeSignature?: string): Promise<any[]> {
     try {
       const signatures = await this.rpc.getSignaturesForAddress(
         this.config.autoFunAddress,
         {
-          limit: 1000,
+          limit: this.config.maxSignatures || 1000,
+          before: beforeSignature,
         }
       );
 
       return signatures;
     } catch (error) {
-      logger.error(`Error fetching signatures for slot ${slot}:`, error);
+      logger.error(`Error fetching signatures:`, error);
       return [];
     }
   }
 
-  public async processFromBlock(slot: number): Promise<any[]> {
+  private async processSignature(signatureInfo: any): Promise<any[]> {
     const startTime = Date.now();
 
     try {
-      const block = await this.rpc.getBlock(slot);
+      const transaction = await this.rpc.getTransaction(
+        signatureInfo.signature
+      );
 
-      if (!block) {
+      if (!transaction || !transaction.meta || transaction.meta.err) {
         return [];
       }
 
       const downloadTime = Date.now() - startTime;
-      const blockSizeMB = (JSON.stringify(block).length / 1024 / 1024).toFixed(
-        2
+      const processStart = Date.now();
+
+      const events = this.processTransaction(
+        transaction,
+        transaction.blockTime || 0,
+        transaction.slot
       );
 
-      const processStart = Date.now();
-      const blockEvents: any[] = [];
-      let relevantTransactions = 0;
-
-      // Process transactions efficiently
-      for (const transaction of block.transactions) {
-        const events = this.processTransaction(
-          transaction,
-          block.blockTime || 0,
-          slot
-        );
-
-        if (events.length > 0) {
-          blockEvents.push(...events);
-          relevantTransactions++;
-        }
-      }
-
       const processTime = Date.now() - processStart;
-      const totalTime = Date.now() - startTime;
 
-      if (blockEvents.length > 0) {
+      if (events.length > 0) {
         logger.info(
-          `Block ${slot}: ${blockEvents.length} events from ${relevantTransactions}/${block.transactions.length} txs (${blockSizeMB}MB, ${downloadTime}ms download, ${processTime}ms process)`
+          `Signature ${signatureInfo.signature}: ${events.length} events (slot: ${transaction.slot}, ${downloadTime}ms download, ${processTime}ms process)`
         );
       }
 
-      return blockEvents;
+      return events;
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      logger.error(`Error processing block ${slot} (${totalTime}ms):`, error);
+      logger.error(
+        `Error processing signature ${signatureInfo.signature} (${totalTime}ms):`,
+        error
+      );
       return [];
     }
   }
 
-  private async processBlocksBatch(slots: number[]): Promise<any[]> {
+  private async processSignaturesBatch(signatures: any[]): Promise<any[]> {
     const concurrencyLimit = this.config.concurrencyLimit!;
     const allEvents: any[] = [];
 
-    // Process in smaller concurrent chunks to manage memory and RPC load
-    for (let i = 0; i < slots.length; i += concurrencyLimit) {
-      const chunk = slots.slice(i, i + concurrencyLimit);
+    // Process in smaller concurrent chunks
+    for (let i = 0; i < signatures.length; i += concurrencyLimit) {
+      const chunk = signatures.slice(i, i + concurrencyLimit);
 
-      const chunkPromises = chunk.map(async (slot) => {
+      const chunkPromises = chunk.map(async (signatureInfo) => {
         try {
-          return await this.processBlock(slot);
+          return await this.processSignature(signatureInfo);
         } catch (error) {
-          logger.error(`Failed to process slot ${slot}:`, error);
+          logger.error(
+            `Failed to process signature ${signatureInfo.signature}:`,
+            error
+          );
           return [];
         }
       });
@@ -336,8 +330,8 @@ export class SolanaIndexer {
         }
       }
 
-      // Delay between chunks to avoid overwhelming RPC for large blocks
-      if (i + concurrencyLimit < slots.length) {
+      // Delay between chunks to avoid overwhelming RPC
+      if (i + concurrencyLimit < signatures.length) {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
     }
@@ -345,104 +339,108 @@ export class SolanaIndexer {
     return allEvents;
   }
 
-  public async run(): Promise<void> {
+  public async runWithSignatures(): Promise<void> {
     try {
-      if (this.config.startSlot !== undefined) {
-        const endSlot = this.config.endSlot || this.config.startSlot;
-        const slots: number[] = [];
+      const maxSignatures = this.config.maxSignatures || 1000;
+      const batchSize = this.config.concurrencyLimit!;
 
-        for (let slot = this.config.startSlot; slot <= endSlot; slot++) {
-          slots.push(slot);
+      const overallStartTime = Date.now();
+      let totalProcessedSignatures = 0;
+      let totalEvents = 0;
+      let beforeSignature = this.config.beforeSignature;
+
+      logger.info(
+        `Starting signature-based indexer for address: ${this.config.autoFunAddress}`
+      );
+
+      let batchNumber = 1;
+      let hasMoreSignatures = true;
+
+      while (hasMoreSignatures) {
+        logger.info(`Fetching batch ${batchNumber} of signatures...`);
+
+        const signatures = await this.getSignatures(beforeSignature);
+
+        if (signatures.length === 0) {
+          logger.info("No more signatures found");
+          break;
         }
-
-        const batchSize = this.config.batchSize!;
-        const totalBatches = Math.ceil(slots.length / batchSize);
-
-        const overallStartTime = Date.now();
-        let totalProcessedSlots = 0;
-        let totalEvents = 0;
 
         logger.info(
-          `Starting indexer: ${slots.length} slots in ${totalBatches} batches of ${batchSize} (concurrency: ${this.config.concurrencyLimit})`
+          `Processing batch ${batchNumber}: ${signatures.length} signatures`
         );
 
-        for (let i = 0; i < slots.length; i += batchSize) {
-          const batch = slots.slice(i, i + batchSize);
-          const batchNumber = Math.floor(i / batchSize) + 1;
+        const batchStartTime = Date.now();
+
+        try {
+          const allBatchEvents = await this.processSignaturesBatch(signatures);
+
+          // Save all events from the batch at once
+          if (allBatchEvents.length > 0) {
+            await this.saveBatchEvents(allBatchEvents);
+          }
+
+          const batchDuration = Date.now() - batchStartTime;
+          const batchSignaturesPerSecond = (
+            (signatures.length / batchDuration) *
+            1000
+          ).toFixed(2);
+
+          totalProcessedSignatures += signatures.length;
+          totalEvents += allBatchEvents.length;
+
+          const overallDuration = Date.now() - overallStartTime;
+          const overallSignaturesPerSecond = (
+            (totalProcessedSignatures / overallDuration) *
+            1000
+          ).toFixed(2);
 
           logger.info(
-            `Processing batch ${batchNumber}/${totalBatches}: slots ${
-              batch[0]
-            } - ${batch[batch.length - 1]}`
+            `Completed batch ${batchNumber} in ${batchDuration}ms with ${allBatchEvents.length} events`
+          );
+          logger.info(
+            `Batch: ${batchSignaturesPerSecond} sigs/sec | Overall: ${overallSignaturesPerSecond} sigs/sec | Total events: ${totalEvents}`
           );
 
-          const batchStartTime = Date.now();
-
-          try {
-            // Use optimized batch processing for large blocks
-            const allBatchEvents = await this.processBlocksBatch(batch);
-
-            // Save all events from the batch at once
-            if (allBatchEvents.length > 0) {
-              await this.saveBatchEvents(allBatchEvents);
-            }
-
-            const batchDuration = Date.now() - batchStartTime;
-            const batchBlocksPerSecond = (
-              (batch.length / batchDuration) *
-              1000
-            ).toFixed(2);
-
-            totalProcessedSlots += batch.length;
-            totalEvents += allBatchEvents.length;
-
-            const overallDuration = Date.now() - overallStartTime;
-            const overallBlocksPerSecond = (
-              (totalProcessedSlots / overallDuration) *
-              1000
-            ).toFixed(2);
-
-            logger.info(
-              `Completed batch ${batchNumber}/${totalBatches} in ${batchDuration}ms with ${allBatchEvents.length} events`
-            );
-            logger.info(
-              `Batch: ${batchBlocksPerSecond} blocks/sec | Overall: ${overallBlocksPerSecond} blocks/sec | Total events: ${totalEvents}`
-            );
-          } catch (error: any) {
-            logger.error(
-              `Error processing batch ${batchNumber}: ${error.message}`
-            );
+          // Set up for next batch
+          if (signatures.length < maxSignatures) {
+            hasMoreSignatures = false;
+          } else {
+            beforeSignature = signatures[signatures.length - 1].signature;
           }
+
+          batchNumber++;
+        } catch (error: any) {
+          logger.error(
+            `Error processing batch ${batchNumber}: ${error.message}`
+          );
+          break;
         }
+      }
 
-        // Final performance summary
-        const totalDuration = Date.now() - overallStartTime;
-        const finalBlocksPerSecond = (
-          (totalProcessedSlots / totalDuration) *
-          1000
-        ).toFixed(2);
-        const averageTimePerBlock = (
-          totalDuration / totalProcessedSlots
-        ).toFixed(2);
+      // Final performance summary
+      const totalDuration = Date.now() - overallStartTime;
+      const finalSignaturesPerSecond = (
+        (totalProcessedSignatures / totalDuration) *
+        1000
+      ).toFixed(2);
+      const averageTimePerSignature = (
+        totalDuration / totalProcessedSignatures
+      ).toFixed(2);
 
-        logger.info(`
-=== INDEXING COMPLETE ===
-Total slots processed: ${totalProcessedSlots}
+      logger.info(`
+=== SIGNATURE-BASED INDEXING COMPLETE ===
+Total signatures processed: ${totalProcessedSignatures}
 Total events found: ${totalEvents}
 Total time: ${totalDuration}ms (${(totalDuration / 1000 / 60).toFixed(
-          2
-        )} minutes)
-Average blocks per second: ${finalBlocksPerSecond}
-Average time per block: ${averageTimePerBlock}ms
-Events per slot: ${(totalEvents / totalProcessedSlots).toFixed(4)}
-        `);
-      } else {
-        logger.error(
-          "No startSlot provided. Please specify a startSlot to begin indexing."
-        );
-      }
+        2
+      )} minutes)
+Average signatures per second: ${finalSignaturesPerSecond}
+Average time per signature: ${averageTimePerSignature}ms
+Events per signature: ${(totalEvents / totalProcessedSignatures).toFixed(4)}
+      `);
     } catch (error) {
-      logger.error("Error running indexer:", error);
+      logger.error("Error running signature-based indexer:", error);
     }
   }
 }
