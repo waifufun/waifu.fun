@@ -10,7 +10,7 @@ export default function Swap({ token }: { token: IToken }) {
 	return (
 		<div className="flex flex-col overflow-hidden">
 			<Tabs defaultValue={mode} value={mode} className="flex flex-col h-full">
-				<TabsList className="w-full">
+				<TabsList className="w-full h-[51px]">
 					<TabsTrigger value="buy" onClick={() => setMode("buy")}>
 						Buy
 					</TabsTrigger>

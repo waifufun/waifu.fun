@@ -7,7 +7,7 @@ import TokenRow from "@/components/profile-page/token-row";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 
-export default function Page({ balances }: { balances: any[]}) {
+export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 
 	return (

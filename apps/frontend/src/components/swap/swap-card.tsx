@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
 import type { ISwapSettings, IToken } from "@autofun/types";
-import { useWallets } from "../hooks/providers/UseWalletContext";
 import { Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState("");
 	const [balance, setBalance] = useState<number>(0);
-	const { solanaWallets } = useWallets();
 
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
 	const initialSettings: ISwapSettings = {
@@ -26,19 +26,20 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		setValue(val === "Reset" ? "" : val);
 	};
 
-	useEffect(() => {
-		const getBalance = async () => {
-			const balance = await solanaWallets?.Mainnet?.getNativeBalance();
-			console.log({ balance })
-			if (balance !== undefined) {
-				setBalance(balance);
-			}
-		};
+	const minReceivedQuery = useQuery({
+		queryKey: [token.contractAddress, "mode", value],
+		queryFn: async () => {
+			await new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(true);
+				}, 1000);
+			});
 
-		if (solanaWallets?.Devnet) {
-			getBalance();
-		}
-	}, [solanaWallets]);
+			return {
+				minReceived: 230139,
+			};
+		},
+	});
 
 	return (
 		<div className="w-full h-full rounded-xl overflow-hidden">
@@ -76,7 +77,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<Button
 							key={btn}
 							variant="secondary"
-							className="bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow"
+							className={cn([
+								"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+								btn === "Reset" ? "text-autofun-text-secondary" : "",
+							])}
 							onClick={() => handleQuickSet(btn)}
 						>
 							{btn}
@@ -90,10 +94,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<p>25 {mode === "buy" ? token.ticker : "SOL"}</p>
 					</div>
 
-					<div className="flex font-medium justify-between text-base text-white">
+					{/* <div className="flex font-medium justify-between text-base text-white">
 						<p>Price Impact</p>
 						<p>25</p>
-					</div>
+					</div> */}
 					<AdvancedSettings settings={settings} onChange={setSettings} />
 					<Button className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase">
 						Swap

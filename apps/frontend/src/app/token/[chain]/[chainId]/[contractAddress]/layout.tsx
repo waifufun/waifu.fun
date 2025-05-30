@@ -157,7 +157,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 							<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
 								<span className="text-base font-medium uppercase">{token.name}</span>
 								<div className="gap-2 flex items-center">
-									<CopyButton textToCopy={token.contractAddress}/>
+									<CopyButton textToCopy={token.contractAddress} />
 									<span className="text-sm font-medium">{shortenAddress(token?.contractAddress)}</span>
 								</div>
 							</div>
