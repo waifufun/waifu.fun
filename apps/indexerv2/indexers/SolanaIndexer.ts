@@ -109,7 +109,8 @@ export class SolanaIndexer {
     transaction: any,
     blockTime: number,
     slot: number
-  ): Promise<void> {
+  ): Promise<any[]> {
+    const events: any[] = [];
     const accounts = transaction.transaction.message.staticAccountKeys.map(
       (key: any) => key.toBase58()
     );
@@ -144,173 +145,129 @@ export class SolanaIndexer {
           logger.info("Decoded instruction type:", decodedInstruction.type);
 
           if (decodedInstruction.type !== "unknown") {
-            await this.saveEvent(
+            const eventData = this.createEventData(
               transaction.transaction.signatures[0],
               slot,
               blockTime,
               instructionIndex,
               decodedInstruction
             );
+            events.push(eventData);
 
             this.logInstructionDetails(decodedInstruction);
           }
         }
       }
     }
+
+    return events;
   }
 
-  private async saveEvent(
+  private createEventData(
     signature: string,
     slot: number,
     blockTime: number,
     instructionIndex: number,
     decodedInstruction: DecodedInstruction
-  ): Promise<void> {
+  ): any {
+    const eventData: any = {
+      signature,
+      slot,
+      blockTime,
+      eventType: decodedInstruction.type,
+      contractAddress:
+        decodedInstruction.mintAddress || decodedInstruction.tokenMint,
+      creator: decodedInstruction.creator,
+      user: decodedInstruction.user,
+      instructionIndex,
+      programId: this.config.autoFunAddress,
+      accounts: decodedInstruction.accounts,
+      processed: true,
+    };
+
+    if (decodedInstruction.type === "launch" && decodedInstruction.data?.data) {
+      Object.assign(eventData, {
+        tokenName: decodedInstruction.data.data.name,
+        tokenSymbol: decodedInstruction.data.data.symbol,
+        tokenUri: decodedInstruction.data.data.uri,
+        decimals: decodedInstruction.data.data.decimals,
+        tokenSupply: decodedInstruction.data.data.tokenSupply?.toString(),
+        virtualLamportReserves:
+          decodedInstruction.data.data.virtualLamportReserves?.toString(),
+      });
+    } else if (
+      decodedInstruction.type === "swap" &&
+      decodedInstruction.data?.data
+    ) {
+      Object.assign(eventData, {
+        swapAmount: decodedInstruction.data.data.amount?.toString(),
+        direction: decodedInstruction.data.data.direction,
+        minimumReceiveAmount:
+          decodedInstruction.data.data.minimumReceiveAmount?.toString(),
+        deadline: decodedInstruction.data.data.deadline?.toString(),
+      });
+    } else if (
+      decodedInstruction.type === "launchAndSwap" &&
+      decodedInstruction.data?.data
+    ) {
+      Object.assign(eventData, {
+        tokenName: decodedInstruction.data.data.name,
+        tokenSymbol: decodedInstruction.data.data.symbol,
+        tokenUri: decodedInstruction.data.data.uri,
+        decimals: decodedInstruction.data.data.decimals,
+        tokenSupply: decodedInstruction.data.data.tokenSupply?.toString(),
+        virtualLamportReserves:
+          decodedInstruction.data.data.virtualLamportReserves?.toString(),
+        swapAmount: decodedInstruction.data.data.swapAmount?.toString(),
+        minimumReceiveAmount:
+          decodedInstruction.data.data.minimumReceiveAmount?.toString(),
+        deadline: decodedInstruction.data.data.deadline?.toString(),
+      });
+    }
+
+    return eventData;
+  }
+
+  private async saveBatchEvents(events: any[]): Promise<void> {
+    if (events.length === 0) return;
+
     try {
-      const eventData: any = {
-        signature,
-        slot,
-        blockTime,
-        eventType: decodedInstruction.type,
-        contractAddress:
-          decodedInstruction.mintAddress || decodedInstruction.tokenMint,
-        creator: decodedInstruction.creator,
-        user: decodedInstruction.user,
-        instructionIndex,
-        programId: this.config.autoFunAddress,
-        accounts: decodedInstruction.accounts,
-        processed: true,
-      };
-
-      // Add type-specific data
-      if (
-        decodedInstruction.type === "launch" &&
-        decodedInstruction.data?.data
-      ) {
-        Object.assign(eventData, {
-          tokenName: decodedInstruction.data.data.name,
-          tokenSymbol: decodedInstruction.data.data.symbol,
-          tokenUri: decodedInstruction.data.data.uri,
-          decimals: decodedInstruction.data.data.decimals,
-          tokenSupply: decodedInstruction.data.data.tokenSupply?.toString(),
-          virtualLamportReserves:
-            decodedInstruction.data.data.virtualLamportReserves?.toString(),
-        });
-      } else if (
-        decodedInstruction.type === "swap" &&
-        decodedInstruction.data?.data
-      ) {
-        Object.assign(eventData, {
-          swapAmount: decodedInstruction.data.data.amount?.toString(),
-          direction: decodedInstruction.data.data.direction,
-          minimumReceiveAmount:
-            decodedInstruction.data.data.minimumReceiveAmount?.toString(),
-          deadline: decodedInstruction.data.data.deadline?.toString(),
-        });
-      } else if (
-        decodedInstruction.type === "launchAndSwap" &&
-        decodedInstruction.data?.data
-      ) {
-        Object.assign(eventData, {
-          tokenName: decodedInstruction.data.data.name,
-          tokenSymbol: decodedInstruction.data.data.symbol,
-          tokenUri: decodedInstruction.data.data.uri,
-          decimals: decodedInstruction.data.data.decimals,
-          tokenSupply: decodedInstruction.data.data.tokenSupply?.toString(),
-          virtualLamportReserves:
-            decodedInstruction.data.data.virtualLamportReserves?.toString(),
-          swapAmount: decodedInstruction.data.data.swapAmount?.toString(),
-          minimumReceiveAmount:
-            decodedInstruction.data.data.minimumReceiveAmount?.toString(),
-          deadline: decodedInstruction.data.data.deadline?.toString(),
-        });
-      }
-
-      const event = await DB.Event.createOrUpdate(eventData);
-      logger.info(`Event saved: ${event._id}`);
+      /* 
+        Here we save the events to the database in a single batch operation.
+        This is important for performance, especially when processing large numbers of events.
+        Another reason is to have data integrity, as we want to ensure that all events in a batch are saved together.
+        If it fails, we can handle the error and retry the batch, preventing partial saves.
+      */
+      const savedEvents = await DB.Event.insertMany(events, { ordered: false });
+      logger.info(`Batch saved ${savedEvents.length} events to database`);
     } catch (error) {
-      logger.error("Error saving event:", error);
+      throw new Error(
+        `Error saving batch events to database: ${error.message}`
+      );
     }
   }
 
   private logInstructionDetails(decodedInstruction: DecodedInstruction): void {
     if (decodedInstruction.type === "launch") {
       logger.info("=== TOKEN LAUNCH ===");
-      logger.info("Mint Address:", decodedInstruction.mintAddress);
-      logger.info("Creator:", decodedInstruction.creator);
-      logger.info("Token Details:");
-      logger.info("  Name:", decodedInstruction.data?.data?.name);
-      logger.info("  Symbol:", decodedInstruction.data?.data?.symbol);
-      logger.info("  URI:", decodedInstruction.data?.data?.uri);
-      logger.info("  Decimals:", decodedInstruction.data?.data?.decimals);
-      logger.info(
-        "  Token Supply:",
-        decodedInstruction.data?.data?.tokenSupply?.toString()
-      );
-      logger.info(
-        "  Virtual Lamport Reserves:",
-        decodedInstruction.data?.data?.virtualLamportReserves?.toString()
-      );
+      console.log("decoded data: ", decodedInstruction.data?.data);
     } else if (decodedInstruction.type === "swap") {
       logger.info("=== TOKEN SWAP ===");
-      logger.info("Token Mint:", decodedInstruction.tokenMint);
-      logger.info("User:", decodedInstruction.user);
-      logger.info("Swap Details:");
-      logger.info(
-        "  Amount:",
-        decodedInstruction.data?.data?.amount?.toString()
-      );
-      logger.info(
-        "  Direction:",
-        decodedInstruction.data?.data?.direction === 0 ? "Buy" : "Sell"
-      );
-      logger.info(
-        "  Minimum Receive:",
-        decodedInstruction.data?.data?.minimumReceiveAmount?.toString()
-      );
-      logger.info(
-        "  Deadline:",
-        decodedInstruction.data?.data?.deadline?.toString()
-      );
+      console.info("decoded data: ", decodedInstruction.data?.data);
     } else if (decodedInstruction.type === "launchAndSwap") {
       logger.info("=== LAUNCH AND SWAP ===");
-      logger.info("Mint Address:", decodedInstruction.mintAddress);
-      logger.info("Creator:", decodedInstruction.creator);
-      logger.info("Token Details:");
-      logger.info("  Name:", decodedInstruction.data?.data?.name);
-      logger.info("  Symbol:", decodedInstruction.data?.data?.symbol);
-      logger.info("  URI:", decodedInstruction.data?.data?.uri);
-      logger.info("  Decimals:", decodedInstruction.data?.data?.decimals);
-      logger.info(
-        "  Token Supply:",
-        decodedInstruction.data?.data?.tokenSupply?.toString()
-      );
-      logger.info(
-        "  Virtual Lamport Reserves:",
-        decodedInstruction.data?.data?.virtualLamportReserves?.toString()
-      );
-      logger.info("Swap Details:");
-      logger.info(
-        "  Swap Amount:",
-        decodedInstruction.data?.data?.swapAmount?.toString()
-      );
-      logger.info(
-        "  Minimum Receive:",
-        decodedInstruction.data?.data?.minimumReceiveAmount?.toString()
-      );
-      logger.info(
-        "  Deadline:",
-        decodedInstruction.data?.data?.deadline?.toString()
-      );
+      console.info("decoded data: ", decodedInstruction.data?.data);
     }
   }
 
-  public async processBlock(slot: number): Promise<void> {
+  public async processBlock(slot: number): Promise<any[]> {
+    const blockEvents: any[] = [];
+
     try {
       const block = await this.rpc.getBlock(slot);
       if (!block) {
         logger.error(`No block found for slot ${slot}`);
-        return;
+        return blockEvents;
       }
 
       logger.info(
@@ -318,11 +275,18 @@ export class SolanaIndexer {
       );
 
       for (const transaction of block.transactions) {
-        await this.processTransaction(transaction, block.blockTime || 0, slot);
+        const transactionEvents = await this.processTransaction(
+          transaction,
+          block.blockTime || 0,
+          slot
+        );
+        blockEvents.push(...transactionEvents);
       }
     } catch (error) {
       logger.error(`Error processing block ${slot}:`, error);
     }
+
+    return blockEvents;
   }
 
   public async run(): Promise<void> {
@@ -330,9 +294,40 @@ export class SolanaIndexer {
       // If specific slots are provided, process them
       if (this.config.startSlot !== undefined) {
         const endSlot = this.config.endSlot || this.config.startSlot;
+        const slots: number[] = [];
 
         for (let slot = this.config.startSlot; slot <= endSlot; slot++) {
-          await this.processBlock(slot);
+          slots.push(slot);
+        }
+
+        // Process slots in batches
+        for (let i = 0; i < slots.length; i += this.config.batchSize!) {
+          const batch = slots.slice(i, i + this.config.batchSize!);
+
+          logger.info(
+            `Processing batch of ${batch.length} slots: ${batch[0]} - ${
+              batch[batch.length - 1]
+            }`
+          );
+
+          const blockPromises = batch.map((slot) => this.processBlock(slot));
+          const batchResults = await Promise.all(blockPromises);
+
+          const allBatchEvents = batchResults.flat();
+
+          // Save all events from the batch at once
+          try {
+            await this.saveBatchEvents(allBatchEvents);
+          } catch (error) {
+            logger.error(
+              `Error saving batch events, retrying batch: ${error.message}`
+            );
+            i -= this.config.batchSize!; // rewind the iterator
+          }
+
+          logger.info(
+            `Completed batch of ${batch.length} slots with ${allBatchEvents.length} events`
+          );
         }
       } else {
         logger.error(
