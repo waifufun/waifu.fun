@@ -45,7 +45,7 @@ const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
 	return (
-		<TooltipProvider>
+		<TooltipProvider delayDuration={0}>
 			<WagmiProvider config={config}>
 				<ProgressProvider
 					height="4px"
