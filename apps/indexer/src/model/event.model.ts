@@ -18,7 +18,7 @@ export class Event {
   id!: string;
 
   @StringColumn({ nullable: false })
-  eventType!: string; // "launch" or "swap"
+  eventType!: string; // "launch", "swap", or "curveComplete"
 
   @StringColumn({ nullable: false })
   signature!: string;
@@ -66,6 +66,10 @@ export class Event {
 
   @StringColumn({ nullable: true })
   tokenMint?: string;
+
+  // Curve complete specific fields
+  @StringColumn({ nullable: true })
+  bondingCurve?: string;
 
   @DateTimeColumn({ nullable: false })
   createdAt!: Date;

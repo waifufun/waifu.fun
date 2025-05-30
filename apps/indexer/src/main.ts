@@ -18,9 +18,13 @@ if (!process.env.SOLANA_RPC) {
   process.exit(1);
 }
 
+console.log("Starting Autofun Indexer...");
+
 const CONFIG = {
   GATEWAY_URL: "https://v2.archive.subsquid.io/network/solana-mainnet",
-  START_BLOCK: 314138003,
+  // start right before SQUID for testing purposes
+  START_BLOCK: 336000000,
+  // START_BLOCK: 300000000,
   RPC_STRIDE_CONCURRENCY: 100,
 } as const;
 
@@ -41,15 +45,20 @@ interface SwapData {
   tokenMint: string;
 }
 
+interface CurveCompleteData {
+  user: string;
+  mint: string;
+  bondingCurve: string;
+}
+
 interface EventData {
-  event: "launch" | "swap";
+  event: "launch" | "swap" | "curveComplete";
   signature: string;
-  data: LaunchData | SwapData;
+  data: LaunchData | SwapData | CurveCompleteData;
   blockHeight: number;
   from: string;
   timestamp: number;
 }
-
 const dataSource = new DataSourceBuilder()
   .setGateway(CONFIG.GATEWAY_URL)
   .setRpc(
@@ -119,6 +128,16 @@ const dataSource = new DataSourceBuilder()
       transactionTokenBalances: true,
     },
   })
+  .addLog({
+    where: {
+      programId: [autofun.programId],
+      kind: ["log"],
+    },
+    include: {
+      transaction: true,
+      instruction: true,
+    },
+  })
   .build();
 
 const database = new TypeormDatabase();
@@ -176,6 +195,25 @@ function createSwapEvent(
     blockHeight: block.header.height,
     timestamp: block.header.timestamp,
     from: swapData.accounts.user,
+  };
+}
+
+function createCurveCompleteEvent(log: any, tx: any, block: any): EventData {
+  const eventData = autofun.events.CompleteEvent.decode(log);
+  
+  const curveCompleteData: CurveCompleteData = {
+    user: eventData.user,
+    mint: eventData.mint,
+    bondingCurve: eventData.bondingCurve,
+  };
+
+  return {
+    event: "curveComplete",
+    signature: tx.signatures[0],
+    data: curveCompleteData,
+    blockHeight: block.header.height,
+    timestamp: block.header.timestamp,
+    from: eventData.user,
   };
 }
 
@@ -296,7 +334,7 @@ function processInstruction(
 function convertEventDataToEntity(eventData: EventData, index: number = 0): Event {
   const now = new Date();
   const event = new Event({
-    id: `${eventData.signature}-${eventData.event}-${index}`, // Add index for uniqueness
+    id: `${eventData.signature}-${eventData.event}-${index}`,
     eventType: eventData.event,
     signature: eventData.signature,
     blockHeight: eventData.blockHeight,
@@ -312,7 +350,7 @@ function convertEventDataToEntity(eventData: EventData, index: number = 0): Even
     event.uri = data.uri;
     event.decimals = data.decimals;
     event.mintAddress = data.mintAddress;
-  } else {
+  } else if (eventData.event === "swap") {
     const data = eventData.data as SwapData;
     event.amount = BigInt(data.amount);
     event.direction = data.direction;
@@ -320,6 +358,10 @@ function convertEventDataToEntity(eventData: EventData, index: number = 0): Even
     event.wantedAmount = BigInt(data.wantedAmount);
     event.receivedAmount = BigInt(data.receivedAmount);
     event.tokenMint = data.tokenMint;
+  } else if (eventData.event === "curveComplete") {
+    const data = eventData.data as CurveCompleteData;
+    event.mintAddress = data.mint;
+    event.bondingCurve = data.bondingCurve;
   }
 
   return event;
@@ -327,16 +369,32 @@ function convertEventDataToEntity(eventData: EventData, index: number = 0): Even
 
 // Main process
 run(dataSource, database, async (ctx) => {
+  console.log(`Processing batch from block ${ctx.blocks[0].header.height}...`);
   const blocks = ctx.blocks.map(augmentBlock);
   const events: EventData[] = [];
 
   for (const block of blocks) {
+    // Process instructions (existing code)
     for (const tx of block.transactions) {
       for (const instruction of tx.instructions) {
         if (instruction.programId === autofun.programId) {
           const instructionEvents = processInstruction(instruction, tx, block);
-          // get the from from the transaction
           events.push(...instructionEvents);
+        }
+      }
+
+      console.log("ewa");
+      
+      for (const log of block.logs || []) {
+        if (log.programId === autofun.programId && log.kind === 'log') {
+          try {
+            const completeEvent = createCurveCompleteEvent(log, tx, block);
+            events.push(completeEvent);
+          } catch (error) {
+            console.log(
+              `Error processing CompleteEvent log in tx ${tx.signatures[0]}:`,)
+            // Skip logs that don't match the CompleteEvent format
+          }
         }
       }
     }
