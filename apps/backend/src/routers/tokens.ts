@@ -443,6 +443,47 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		return items;
 	});
 
+	fastify.post("/balances", async (request) => {
+		const { address } = request.body as {
+			address: AddressLike;
+		};
+
+		const cacheKey = `${address}:balance`;
+
+		const balancesLookup = await codex.queries.balances({
+			input: {
+				walletAddress: address,
+			},
+		});
+
+		const balances = balancesLookup?.balances?.items;
+
+		const tokensLookUp = await codex.queries.tokens({
+			ids: balances?.map((token) => {
+				return {
+					address: token.tokenAddress,
+					networkId: token.networkId,
+				};
+			}),
+		});
+
+		const tokens = tokensLookUp?.tokens;
+
+		const returnData = [];
+
+		for (const balance of balances) {
+			const token = tokens?.find((a) => a?.address === balance.tokenAddress);
+			returnData.push({
+				...balance,
+				...token,
+			});
+		}
+
+		await redis.setex(cacheKey, 60, JSON.stringify(returnData));
+
+		return balances;
+	});
+
 	/** Import an existing token */
 	fastify.post<{
 		Body: {
