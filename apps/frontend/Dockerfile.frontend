@@ -46,9 +46,6 @@ ENV NEXT_PUBLIC_HOST=${NEXT_PUBLIC_HOST:-localhost}
 RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
     pnpm --filter @autofun/frontend build
 
-# Debug: List the recursive contents of the standalone directory to verify assets
-RUN ls -R /app/apps/frontend/.next/standalone
-
 # ---- Runner Stage ----
 FROM node:22 AS runner
 
@@ -61,10 +58,14 @@ ENV PORT=${PORT:-3000}
 # Example for runtime NEXT_PUBLIC_ variable, if needed:
 # ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-# Copy the standalone output from the builder stage.
-# This includes the Next.js server, minimal node_modules, .next/static, and public assets.
-# It assumes the build in the builder stage correctly creates output at /app/apps/frontend/.next/standalone
+# Copy the standalone server and its specific node_modules
 COPY --from=builder /app/apps/frontend/.next/standalone ./
+
+# Copy the static assets (JS, CSS chunks) from the original .next directory
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
+
+# Copy the public assets
+COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
 # Expose the port the app runs on
 EXPOSE ${PORT:-3000}
