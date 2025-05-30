@@ -1,62 +1,73 @@
-# syntax=docker.io/docker/dockerfile:1
-FROM node:22-alpine AS builder
+# syntax=docker/dockerfile:1.4
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# ---- Builder Stage ----
+FROM node:22 AS builder
+
+# Set environment variables
+ENV PNPM_HOME="/pnpm"
+# Ensures pnpm binary is in PATH
+ENV PATH="$PNPM_HOME:$PATH"
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install pnpm using corepack, matching package.json version
+RUN corepack enable && corepack prepare pnpm@10.11.0 --activate
 
 # Set working directory
 WORKDIR /app
 
-# Copy root package files
+# 1. Copy package manager configuration files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy all package.json files from workspaces
+# 2. Copy package.json files for all workspaces
+# This helps Docker cache the dependency layer effectively.
 COPY apps/*/package.json ./apps/
 COPY packages/*/package.json ./packages/
 
-# Install dependencies
+# 3. Copy the entire application source code.
+# .dockerignore should prevent node_modules, .next, .env, etc., from being copied.
+COPY . .
+
+# 4. Install dependencies using pnpm.
+# This installs dependencies based on the full source code,
+# which is important for monorepos with local workspace dependencies.
 RUN pnpm install --frozen-lockfile
 
-# Copy source code (excluding node_modules)
-COPY tsconfig.base.json ./
-COPY apps/frontend/src ./apps/frontend/src
-COPY apps/frontend/public ./apps/frontend/public
-COPY apps/frontend/next.config.ts ./apps/frontend/
-COPY apps/frontend/tsconfig.json ./apps/frontend/
-COPY apps/frontend/workers ./apps/frontend/workers
-COPY packages/ai/src ./packages/ai/src
-COPY packages/types/src ./packages/types/src
+# Set build-time environment variables for Next.js
+# Default values are provided if not passed during build.
+ENV NEXT_PUBLIC_DECIMALS=${NEXT_PUBLIC_DECIMALS:-9}
+ENV NEXT_PUBLIC_TOKEN_SUPPLY=${NEXT_PUBLIC_TOKEN_SUPPLY:-1000000000}
+ENV NEXT_PUBLIC_VIRTUAL_RESERVES=${NEXT_PUBLIC_VIRTUAL_RESERVES:-1000000}
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+ENV NEXT_PUBLIC_HOST=${NEXT_PUBLIC_HOST:-localhost}
 
-# Set environment variables for build
-ENV NEXT_PUBLIC_DECIMALS=9
-ENV NEXT_PUBLIC_TOKEN_SUPPLY=1000000000
-ENV NEXT_PUBLIC_VIRTUAL_RESERVES=1000000
-ENV NEXT_PUBLIC_API_URL=http://localhost:3001
-ENV NEXT_PUBLIC_HOST=localhost
+# 5. Build the Next.js application.
+# Using --mount for Next.js build cache (requires BuildKit).
+# This speeds up subsequent builds by caching Next.js's internal build artifacts.
+RUN --mount=type=cache,target=/app/apps/frontend/.next/cache \
+    pnpm --filter @autofun/frontend build
 
-# Build the application
-RUN cd apps/frontend && pnpm build
+# ---- Runner Stage ----
+FROM node:22 AS runner
 
-# Production image
-FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Copy built application
-COPY --from=builder /app/apps/frontend/.next/standalone ./
-COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
-COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
-
-# Set environment variables
+# Set environment variables for production
 ENV NODE_ENV=production
-ENV PORT=3000
-ENV NEXT_PUBLIC_DECIMALS=9
-ENV NEXT_PUBLIC_TOKEN_SUPPLY=1000000000
-ENV NEXT_PUBLIC_VIRTUAL_RESERVES=1000000
-ENV NEXT_PUBLIC_API_URL=http://localhost:3001
-ENV NEXT_PUBLIC_HOST=localhost
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=${PORT:-3000}
+# Example for runtime NEXT_PUBLIC_ variable, if needed:
+# ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-# Expose port
-EXPOSE 3000
+# Copy the standalone output from the builder stage.
+# This includes the Next.js server, minimal node_modules, .next/static, and public assets.
+# It assumes the build in the builder stage correctly creates output at /app/apps/frontend/.next/standalone
+COPY --from=builder /app/apps/frontend/.next/standalone ./
 
-# Start the application
+# Expose the port the app runs on
+EXPOSE ${PORT:-3000}
+
+# Define the command to run the application.
+# The server.js path is relative to WORKDIR /app.
+# For a project in apps/frontend, Next.js standalone output typically places server.js
+# at apps/frontend/server.js within the copied standalone bundle.
 CMD ["node", "apps/frontend/server.js"]
