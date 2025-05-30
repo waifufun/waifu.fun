@@ -11,6 +11,7 @@ export interface SolanaIndexerConfig {
   maxSignatures?: number;
   beforeSignature?: string;
   debugStatements?: boolean;
+  minBlock?: number; // Minimum block to sync from (genesis point)
 }
 
 interface DecodedInstruction {
@@ -27,18 +28,22 @@ interface DecodedInstruction {
 export class SolanaIndexer {
   private rpc: SolanaRpcProvider;
   private config: SolanaIndexerConfig;
-  private debugStatements = false; // Set to true for detailed debug output
-  private readonly STOP_AT_SLOT = 322725834;
+  private debugStatements = false;
+  private readonly STOP_AT_SLOT: number;
 
   constructor(config: SolanaIndexerConfig) {
     this.config = {
       concurrencyLimit: 1,
       maxSignatures: 500,
+      minBlock: 322725834, // Default minimum block
       ...config,
     };
     this.rpc = new SolanaRpcProvider(this.config.networkId);
     this.debugStatements = config.debugStatements || false;
+    this.STOP_AT_SLOT = this.config.minBlock!;
   }
+
+  // ... existing helper methods remain the same ...
 
   private arraysEqual(a: number[], b: number[]): boolean {
     return a.length === b.length && a.every((val, i) => val === b[i]);
@@ -393,25 +398,68 @@ Events per signature: ${eventsPerSignature}
     `);
   }
 
+  private async updateSyncProgress(
+    currentSlot: number,
+    highestSlot?: number
+  ): Promise<void> {
+    try {
+      await DB.EventsMeta.updateSyncProgress(
+        this.config.autoFunAddress,
+        this.config.networkId.toString(),
+        currentSlot,
+        highestSlot
+      );
+    } catch (error) {
+      logger.error("Error updating sync progress:", error);
+    }
+  }
+
   public async runWithSignatures(): Promise<void> {
     try {
       const maxSignatures = this.config.maxSignatures || 500;
+
+      const syncMeta = await DB.EventsMeta.getOrCreate(
+        this.config.autoFunAddress,
+        this.config.networkId.toString()
+      );
+
+      // Determine starting point and sync strategy
+      let beforeSignature = this.config.beforeSignature;
+      let isGenesisSync = false;
+      let targetMinSlot = this.STOP_AT_SLOT;
+
+      if (!syncMeta.doneGenesisSync) {
+        // Genesis sync: from current to minBlock
+        logger.info("Starting genesis sync (current → minBlock)");
+        isGenesisSync = true;
+      } else if (syncMeta.currentBlock < syncMeta.highestSyncedBlock) {
+        // Fill gap: from currentBlock to highestSyncedBlock
+        logger.info(
+          `Filling gap sync (${syncMeta.currentBlock} → ${syncMeta.highestSyncedBlock})`
+        );
+        targetMinSlot = syncMeta.currentBlock;
+      } else {
+        // Normal sync: from highestSyncedBlock to latest
+        logger.info(
+          `Normal sync from block ${syncMeta.highestSyncedBlock} to latest`
+        );
+        targetMinSlot = 0;
+      }
+
       const totalStats = {
         processedSignatures: 0,
         events: 0,
         startTime: Date.now(),
       };
 
-      let beforeSignature = this.config.beforeSignature;
       let batchNumber = 1;
       let hasMoreSignatures = true;
 
       logger.info(
-        `Starting signature-based indexer for address: ${this.config.autoFunAddress}`
+        `Starting indexer for address: ${this.config.autoFunAddress}`
       );
-      logger.info(
-        `Will stop when reaching slot ${this.STOP_AT_SLOT} or earlier`
-      );
+      logger.info(`Network: ${this.config.networkId}`);
+      logger.info(`Target min slot: ${targetMinSlot}`);
 
       while (hasMoreSignatures) {
         logger.info(`Fetching batch ${batchNumber} of signatures...`);
@@ -423,12 +471,13 @@ Events per signature: ${eventsPerSignature}
           break;
         }
 
-        if (this.shouldStopAtSlot(signatures)) {
+        // Check if we should stop based on target slot
+        if (targetMinSlot > 0 && this.shouldStopAtSlot(signatures)) {
           const stoppedAtSlot = signatures.find(
-            (sig) => sig.slot <= this.STOP_AT_SLOT
+            (sig) => sig.slot <= targetMinSlot
           )?.slot;
           logger.info(
-            `Reached target slot ${stoppedAtSlot} (target: ${this.STOP_AT_SLOT}), stopping indexer`
+            `Reached target slot ${stoppedAtSlot} (target: ${targetMinSlot}), stopping indexer`
           );
           break;
         }
@@ -448,6 +497,12 @@ Events per signature: ${eventsPerSignature}
           if (allBatchEvents.length > 0) {
             await this.saveBatchEvents(allBatchEvents);
           }
+
+          // Update sync progress
+          const currentSlot = signatures[signatures.length - 1]?.slot;
+          const highestSlot = signatures[0]?.slot;
+
+          await this.updateSyncProgress(currentSlot, highestSlot);
 
           const batchDuration = Date.now() - batchStartTime;
           totalStats.processedSignatures += signatures.length;
@@ -479,6 +534,15 @@ Events per signature: ${eventsPerSignature}
           );
           break;
         }
+      }
+
+      // Mark genesis sync as complete if this was a genesis sync
+      if (isGenesisSync) {
+        await DB.EventsMeta.markGenesisComplete(
+          this.config.autoFunAddress,
+          this.config.networkId.toString()
+        );
+        logger.info("Genesis sync marked as complete");
       }
 
       this.logFinalSummary(totalStats);
