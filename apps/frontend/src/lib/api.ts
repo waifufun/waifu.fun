@@ -1,7 +1,7 @@
 import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
+console.log({ BASE_URL });
 export const fetcher = async (
 	endpoint: string,
 	method: "GET" | "POST" | "PUT" | "DELETE",
@@ -56,11 +56,7 @@ export const getTokens = async ({
 };
 
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
-	return await fetcher("/tokens/lookup", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
+	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
 };
 
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
