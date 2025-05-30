@@ -481,7 +481,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		await redis.setex(cacheKey, 60, JSON.stringify(returnData));
 
-		return balances;
+		return returnData;
 	});
 
 	/** Import an existing token */

@@ -62,7 +62,9 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
 									<div className="capitalize">Created by:</div>
 									<div className="hover:underline">
-										<Link href={`/profile/${token.creator}`}>{token?.creator ? shortenAddress(token?.creator) : "-"}</Link>
+										<Link href={`/profile/${token.creator}`}>
+											{token?.creator ? shortenAddress(token?.creator) : "-"}
+										</Link>
 									</div>
 								</div>
 							</div>

@@ -146,20 +146,20 @@ const PrivacyPolicy = () => {
 						<div className="text-xl font-medium">Last Modified April 1st, 2025</div>
 					</div>
 					{PRIVACY_POLICY.map((item, _) => (
-                       	// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
+						// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
 						<div key={_} className="flex flex-col gap-4">
 							<div className="text-3xl font-bold">{item.header}</div>
 							<div className="text-xl font-medium">{item.subheader}</div>
 							<div>
 								{typeof item.content === "string"
 									? item.content
-                                    // biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
-									: item.content.map((line, idx) => <li key={idx}>{line}</li>)}
+									: // biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
+										item.content.map((line, idx) => <li key={idx}>{line}</li>)}
 							</div>
 							{item.subcontent ? (
 								<div>
 									{item.subcontent.map((line, idx) => (
-                                        // biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
+										// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
 										<li key={idx}>{line}</li>
 									))}
 								</div>

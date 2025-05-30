@@ -16,7 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ChainAdapter } from "@reown/appkit";
 
 const queryClient = new QueryClient();
-const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string; 
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string;
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, baseSepolia];
 
 const wagmiAdapterInstance = new WagmiAdapter({
