@@ -18,6 +18,7 @@
 		},
 		"ignoredBuiltDependencies": [
 			"@biomejs/biome",
+			"@bufbuild/buf",
 			"@tailwindcss/oxide",
 			"bigint-buffer",
 			"blake-hash",
@@ -71,7 +72,7 @@
 		"run:indexer": "docker-compose -f docker-compose.indexer.yml up -d && sleep 3 && cd apps/indexer && pnpm install && pnpm run build && pnpm run db:migrate && pnpm run start",
 		"kill:indexer": "pkill -f 'sqd' || true && docker-compose -f docker-compose.indexer.yml down",
 		"kill:indexer:hard": "pkill -f 'sqd' || true && docker-compose -f docker-compose.indexer.yml down -v",
-    	"reset:indexer": "pnpm kill:indexer:hard && pnpm run:indexer"
+		"reset:indexer": "pnpm kill:indexer:hard && pnpm run:indexer"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

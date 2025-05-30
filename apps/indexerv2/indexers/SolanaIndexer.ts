@@ -1,15 +1,16 @@
 import { SolanaRpcProvider } from "@autofun/rpc";
-import { SolanaNetworkIds } from "@autofun/types";
+import { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
 import { instructions as IDLInstructions } from "../abi/autofun";
 import DB from "@autofun/database";
 import logger from "@autofun/logger";
 
 export interface SolanaIndexerConfig {
   networkId: SolanaNetworkIds;
-  autoFunAddress: string;
+  autoFunAddress: SolanaAddressLike;
   startSlot?: number;
   endSlot?: number;
   batchSize?: number;
+  concurrencyLimit?: number;
 }
 
 export interface DecodedInstruction {
@@ -29,7 +30,8 @@ export class SolanaIndexer {
 
   constructor(config: SolanaIndexerConfig) {
     this.config = {
-      batchSize: 10,
+      batchSize: 30, // Smaller batches for large blocks
+      concurrencyLimit: 30, // Reduced concurrency for memory management
       ...config,
     };
     this.rpc = new SolanaRpcProvider(this.config.networkId);
@@ -53,9 +55,7 @@ export class SolanaIndexer {
     const discriminator = Array.from(instructionData.slice(0, 8));
 
     if (this.arraysEqual(discriminator, IDLInstructions.launch.d8)) {
-      logger.info("Matched launch instruction");
       const decoded = IDLInstructions.launch.decode(instructionData);
-
       const mintAddress = accounts[3];
       const creator = accounts[2];
 
@@ -67,9 +67,7 @@ export class SolanaIndexer {
         accounts,
       };
     } else if (this.arraysEqual(discriminator, IDLInstructions.swap.d8)) {
-      logger.info("Matched swap instruction");
       const decoded = IDLInstructions.swap.decode(instructionData);
-
       const tokenMint = accounts[4];
       const user = accounts[7];
 
@@ -83,9 +81,7 @@ export class SolanaIndexer {
     } else if (
       this.arraysEqual(discriminator, IDLInstructions.launchAndSwap.d8)
     ) {
-      logger.info("Matched launchAndSwap instruction");
       const decoded = IDLInstructions.launchAndSwap.decode(instructionData);
-
       const mintAddress = accounts[3];
       const creator = accounts[2];
 
@@ -105,57 +101,56 @@ export class SolanaIndexer {
     };
   }
 
-  private async processTransaction(
+  private processTransaction(
     transaction: any,
     blockTime: number,
     slot: number
-  ): Promise<any[]> {
+  ): any[] {
     const events: any[] = [];
-    const accounts = transaction.transaction.message.staticAccountKeys.map(
-      (key: any) => key.toBase58()
-    );
 
-    if (accounts.includes(this.config.autoFunAddress)) {
-      logger.info(
-        `\n=== Transaction ${transaction.transaction.signatures[0]} ===`
-      );
-      logger.info("Fee payer:", accounts[0]);
+    // Quick pre-check without converting all accounts to strings
+    const accounts = transaction.transaction.message.staticAccountKeys;
+    let hasOurProgram = false;
 
-      for (const [
-        instructionIndex,
-        instruction,
-      ] of transaction.transaction.message.compiledInstructions.entries()) {
-        const programId =
-          transaction.transaction.message.staticAccountKeys[
-            instruction.programIdIndex
-          ].toBase58();
+    for (const account of accounts) {
+      if (account.toBase58() === this.config.autoFunAddress) {
+        hasOurProgram = true;
+        break;
+      }
+    }
 
-        if (programId === this.config.autoFunAddress) {
-          logger.info("\n--- AutoFun Instruction ---");
+    if (!hasOurProgram) {
+      return events;
+    }
 
-          const instructionAccounts = instruction.accountKeyIndexes.map(
-            (index: number) => accounts[index]
+    // Convert to strings only if needed
+    const accountStrings = accounts.map((key: any) => key.toBase58());
+
+    for (const [
+      instructionIndex,
+      instruction,
+    ] of transaction.transaction.message.compiledInstructions.entries()) {
+      const programId = accountStrings[instruction.programIdIndex];
+
+      if (programId === this.config.autoFunAddress) {
+        const instructionAccounts = instruction.accountKeyIndexes.map(
+          (index: number) => accountStrings[index]
+        );
+
+        const decodedInstruction = this.decodeAutofunInstruction(
+          Buffer.from(instruction.data),
+          instructionAccounts
+        );
+
+        if (decodedInstruction.type !== "unknown") {
+          const eventData = this.createEventData(
+            transaction.transaction.signatures[0],
+            slot,
+            blockTime,
+            instructionIndex,
+            decodedInstruction
           );
-
-          const decodedInstruction = this.decodeAutofunInstruction(
-            Buffer.from(instruction.data),
-            instructionAccounts
-          );
-
-          logger.info("Decoded instruction type:", decodedInstruction.type);
-
-          if (decodedInstruction.type !== "unknown") {
-            const eventData = this.createEventData(
-              transaction.transaction.signatures[0],
-              slot,
-              blockTime,
-              instructionIndex,
-              decodedInstruction
-            );
-            events.push(eventData);
-
-            this.logInstructionDetails(decodedInstruction);
-          }
+          events.push(eventData);
         }
       }
     }
@@ -232,66 +227,126 @@ export class SolanaIndexer {
     if (events.length === 0) return;
 
     try {
-      /* 
-        Here we save the events to the database in a single batch operation.
-        This is important for performance, especially when processing large numbers of events.
-        Another reason is to have data integrity, as we want to ensure that all events in a batch are saved together.
-        If it fails, we can handle the error and retry the batch, preventing partial saves.
-      */
-      const savedEvents = await DB.Event.insertManyOrUpdate(events);
-      logger.info(`Batch saved ${savedEvents.length} events to database`);
-    } catch (error) {
+      // For large event batches, process in chunks to avoid memory issues
+      const chunkSize = 50;
+      let totalSaved = 0;
+
+      for (let i = 0; i < events.length; i += chunkSize) {
+        const chunk = events.slice(i, i + chunkSize);
+        await DB.Event.insertManyOrUpdate(chunk);
+        totalSaved += chunk.length;
+      }
+
+      logger.info(`Batch saved ${totalSaved} events to database`);
+    } catch (error: any) {
       throw new Error(
         `Error saving batch events to database: ${error.message}`
       );
     }
   }
 
-  private logInstructionDetails(decodedInstruction: DecodedInstruction): void {
-    if (decodedInstruction.type === "launch") {
-      logger.info("=== TOKEN LAUNCH ===");
-      console.log("decoded data: ", decodedInstruction.data?.data);
-    } else if (decodedInstruction.type === "swap") {
-      logger.info("=== TOKEN SWAP ===");
-      console.info("decoded data: ", decodedInstruction.data?.data);
-    } else if (decodedInstruction.type === "launchAndSwap") {
-      logger.info("=== LAUNCH AND SWAP ===");
-      console.info("decoded data: ", decodedInstruction.data?.data);
+  private async getSignatures(slot: number): Promise<string[]> {
+    try {
+      const signatures = await this.rpc.getSignaturesForAddress(
+        this.config.autoFunAddress,
+        {
+          limit: 1000,
+        }
+      );
+
+      return signatures;
+    } catch (error) {
+      logger.error(`Error fetching signatures for slot ${slot}:`, error);
+      return [];
     }
   }
 
-  public async processBlock(slot: number): Promise<any[]> {
-    const blockEvents: any[] = [];
+  public async processFromBlock(slot: number): Promise<any[]> {
+    const startTime = Date.now();
 
     try {
       const block = await this.rpc.getBlock(slot);
+
       if (!block) {
-        logger.error(`No block found for slot ${slot}`);
-        return blockEvents;
+        return [];
       }
 
-      logger.info(
-        `Processing block ${slot} with ${block.transactions.length} transactions`
+      const downloadTime = Date.now() - startTime;
+      const blockSizeMB = (JSON.stringify(block).length / 1024 / 1024).toFixed(
+        2
       );
 
+      const processStart = Date.now();
+      const blockEvents: any[] = [];
+      let relevantTransactions = 0;
+
+      // Process transactions efficiently
       for (const transaction of block.transactions) {
-        const transactionEvents = await this.processTransaction(
+        const events = this.processTransaction(
           transaction,
           block.blockTime || 0,
           slot
         );
-        blockEvents.push(...transactionEvents);
+
+        if (events.length > 0) {
+          blockEvents.push(...events);
+          relevantTransactions++;
+        }
       }
+
+      const processTime = Date.now() - processStart;
+      const totalTime = Date.now() - startTime;
+
+      if (blockEvents.length > 0) {
+        logger.info(
+          `Block ${slot}: ${blockEvents.length} events from ${relevantTransactions}/${block.transactions.length} txs (${blockSizeMB}MB, ${downloadTime}ms download, ${processTime}ms process)`
+        );
+      }
+
+      return blockEvents;
     } catch (error) {
-      logger.error(`Error processing block ${slot}:`, error);
+      const totalTime = Date.now() - startTime;
+      logger.error(`Error processing block ${slot} (${totalTime}ms):`, error);
+      return [];
+    }
+  }
+
+  private async processBlocksBatch(slots: number[]): Promise<any[]> {
+    const concurrencyLimit = this.config.concurrencyLimit!;
+    const allEvents: any[] = [];
+
+    // Process in smaller concurrent chunks to manage memory and RPC load
+    for (let i = 0; i < slots.length; i += concurrencyLimit) {
+      const chunk = slots.slice(i, i + concurrencyLimit);
+
+      const chunkPromises = chunk.map(async (slot) => {
+        try {
+          return await this.processBlock(slot);
+        } catch (error) {
+          logger.error(`Failed to process slot ${slot}:`, error);
+          return [];
+        }
+      });
+
+      const chunkResults = await Promise.allSettled(chunkPromises);
+
+      for (const result of chunkResults) {
+        if (result.status === "fulfilled") {
+          allEvents.push(...result.value);
+        }
+      }
+
+      // Delay between chunks to avoid overwhelming RPC for large blocks
+      if (i + concurrencyLimit < slots.length) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
     }
 
-    return blockEvents;
+    return allEvents;
   }
 
   public async run(): Promise<void> {
     try {
-      // If specific slots are provided, process them
       if (this.config.startSlot !== undefined) {
         const endSlot = this.config.endSlot || this.config.startSlot;
         const slots: number[] = [];
@@ -300,35 +355,87 @@ export class SolanaIndexer {
           slots.push(slot);
         }
 
-        // Process slots in batches
-        for (let i = 0; i < slots.length; i += this.config.batchSize!) {
-          const batch = slots.slice(i, i + this.config.batchSize!);
+        const batchSize = this.config.batchSize!;
+        const totalBatches = Math.ceil(slots.length / batchSize);
+
+        const overallStartTime = Date.now();
+        let totalProcessedSlots = 0;
+        let totalEvents = 0;
+
+        logger.info(
+          `Starting indexer: ${slots.length} slots in ${totalBatches} batches of ${batchSize} (concurrency: ${this.config.concurrencyLimit})`
+        );
+
+        for (let i = 0; i < slots.length; i += batchSize) {
+          const batch = slots.slice(i, i + batchSize);
+          const batchNumber = Math.floor(i / batchSize) + 1;
 
           logger.info(
-            `Processing batch of ${batch.length} slots: ${batch[0]} - ${
-              batch[batch.length - 1]
-            }`
+            `Processing batch ${batchNumber}/${totalBatches}: slots ${
+              batch[0]
+            } - ${batch[batch.length - 1]}`
           );
 
-          const blockPromises = batch.map((slot) => this.processBlock(slot));
-          const batchResults = await Promise.all(blockPromises);
+          const batchStartTime = Date.now();
 
-          const allBatchEvents = batchResults.flat();
-
-          // Save all events from the batch at once
           try {
-            await this.saveBatchEvents(allBatchEvents);
-          } catch (error) {
-            logger.error(
-              `Error saving batch events, retrying batch: ${error.message}`
-            );
-            i -= this.config.batchSize!; // rewind the iterator
-          }
+            // Use optimized batch processing for large blocks
+            const allBatchEvents = await this.processBlocksBatch(batch);
 
-          logger.info(
-            `Completed batch of ${batch.length} slots with ${allBatchEvents.length} events`
-          );
+            // Save all events from the batch at once
+            if (allBatchEvents.length > 0) {
+              await this.saveBatchEvents(allBatchEvents);
+            }
+
+            const batchDuration = Date.now() - batchStartTime;
+            const batchBlocksPerSecond = (
+              (batch.length / batchDuration) *
+              1000
+            ).toFixed(2);
+
+            totalProcessedSlots += batch.length;
+            totalEvents += allBatchEvents.length;
+
+            const overallDuration = Date.now() - overallStartTime;
+            const overallBlocksPerSecond = (
+              (totalProcessedSlots / overallDuration) *
+              1000
+            ).toFixed(2);
+
+            logger.info(
+              `Completed batch ${batchNumber}/${totalBatches} in ${batchDuration}ms with ${allBatchEvents.length} events`
+            );
+            logger.info(
+              `Batch: ${batchBlocksPerSecond} blocks/sec | Overall: ${overallBlocksPerSecond} blocks/sec | Total events: ${totalEvents}`
+            );
+          } catch (error: any) {
+            logger.error(
+              `Error processing batch ${batchNumber}: ${error.message}`
+            );
+          }
         }
+
+        // Final performance summary
+        const totalDuration = Date.now() - overallStartTime;
+        const finalBlocksPerSecond = (
+          (totalProcessedSlots / totalDuration) *
+          1000
+        ).toFixed(2);
+        const averageTimePerBlock = (
+          totalDuration / totalProcessedSlots
+        ).toFixed(2);
+
+        logger.info(`
+=== INDEXING COMPLETE ===
+Total slots processed: ${totalProcessedSlots}
+Total events found: ${totalEvents}
+Total time: ${totalDuration}ms (${(totalDuration / 1000 / 60).toFixed(
+          2
+        )} minutes)
+Average blocks per second: ${finalBlocksPerSecond}
+Average time per block: ${averageTimePerBlock}ms
+Events per slot: ${(totalEvents / totalProcessedSlots).toFixed(4)}
+        `);
       } else {
         logger.error(
           "No startSlot provided. Please specify a startSlot to begin indexing."
