@@ -68,6 +68,21 @@ export const CHAINID_TO_SYMBOL: {
 	},
 };
 
+export const CHAIN_TO_BLOCK_EXPLORER_URL: {
+	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
+} = {
+	evm: {
+		[EvmChainIds.EthereumMainnet]: "https://etherscan.io",
+		[EvmChainIds.EthereumSepolia]: "https://sepolia.etherscan.io",
+		[EvmChainIds.BaseMainnet]: "https://basescan.org",
+		[EvmChainIds.BaseSepolia]: "https://sepolia.basescan.org",
+	},
+	solana: {
+		[SolanaNetworkIds.Mainnet]: "https://solscan.io",
+		[SolanaNetworkIds.Devnet]: "https://solscan.io/?cluster=devnet",
+	},
+};
+
 export const CHAINID_TO_DEXSCREENER_NAME: {
 	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
 } = {

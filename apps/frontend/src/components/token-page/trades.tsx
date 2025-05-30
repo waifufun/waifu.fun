@@ -7,6 +7,8 @@ import Triangle from "../triangle";
 import ChainIndicator from "../chain-indicator";
 import { Fragment } from "react";
 import AutoRefresher from "../auto-refresher";
+import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@autofun/constants";
+import Link from "next/link";
 
 export default async function Trades({ token }: { token: IToken }) {
 	const data = await getTrades({
@@ -54,7 +56,12 @@ export default async function Trades({ token }: { token: IToken }) {
 							</TableCell>
 							<TableCell className="text-right">{trade?.timestamp ? fromNow(trade?.timestamp) : "-"}</TableCell>
 							<TableCell>
-								<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
+								<Link
+									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/tx/${trade.txId}`}
+									target="_blank"
+								>
+									<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
+								</Link>
 							</TableCell>
 						</TableRow>
 					))}
