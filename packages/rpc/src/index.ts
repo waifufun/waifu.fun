@@ -597,4 +597,10 @@ export class SolanaRpcProvider {
     },
     this
   );
+
+  getTransaction = withFallBack(async (signature: string) => {
+    return await this.connection.getTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+    });
+  }, this);
 }
