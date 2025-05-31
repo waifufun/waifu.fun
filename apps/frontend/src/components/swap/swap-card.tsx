@@ -7,8 +7,9 @@ import Image from "next/image";
 import type { ISwapSettings, IToken } from "@autofun/types";
 import { Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
-import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { cn, executeSwap } from "@/lib/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState("");
@@ -38,6 +39,23 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 			return {
 				minReceived: 230139,
 			};
+		},
+	});
+
+	const swapMutation = useMutation({
+		mutationKey: [token.contractAddress, value],
+		mutationFn: async () => {
+			await new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(true);
+				}, 2000);
+			});
+
+			await executeSwap(token, value, mode);
+		},
+		onSuccess: () => {},
+		onError: (e) => {
+			toast.error(e.message);
 		},
 	});
 
@@ -91,7 +109,15 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				<div className="mt-2 space-y-2">
 					<div className="flex font-medium justify-between text-base text-white">
 						<p>Min Received</p>
-						<p>25 {mode === "buy" ? token.ticker : "SOL"}</p>
+						<div className="flex items-center gap-2">
+							{minReceivedQuery?.isPending ? (
+								<div className="h-5 rounded-xl animate-accumulate w-12 bg-gradient-to-t from-[#121212] to-[#171717]" />
+							) : (
+								<span>{minReceivedQuery?.data?.minReceived}</span>
+							)}
+
+							{mode === "buy" ? token.ticker : "SOL"}
+						</div>
 					</div>
 
 					{/* <div className="flex font-medium justify-between text-base text-white">
@@ -99,8 +125,14 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<p>25</p>
 					</div> */}
 					<AdvancedSettings settings={settings} onChange={setSettings} />
-					<Button className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase">
-						Swap
+					<Button
+						disabled={swapMutation?.isPending}
+						onClick={() => {
+							swapMutation?.mutate();
+						}}
+						className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+					>
+						{swapMutation?.isPending ? "Loading..." : "Swap"}
 					</Button>
 				</div>
 			</div>

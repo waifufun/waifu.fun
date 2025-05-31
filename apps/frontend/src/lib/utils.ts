@@ -1,4 +1,4 @@
-import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type IToken, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
@@ -222,3 +222,14 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 	const decimalPart = decimalGroups[1] ?? "";
 	return !!maxDecimals && decimalPart.length > maxDecimals;
 }
+
+export const executeSwap = async (token: IToken, inputAmount: bigint | string | number, mode: "buy" | "sell") => {
+	/** If the token was imported or has already migrated we can just use Jupiter */
+	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
+	}
+	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
+	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
+	}
+
+	throw new Error("No route found for token to swap against. Contact autofun.");
+};
