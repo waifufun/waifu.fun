@@ -13,6 +13,15 @@ export default async function Holders({ token }: { token: IToken }) {
 		chainId: token.chainId,
 		contractAddress: token.contractAddress,
 	});
+
+	if (!data || data?.length === 0) {
+		return (
+			<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+				There are currently no holders.
+			</div>
+		);
+	}
+
 	return (
 		<Table>
 			<TableHeader>

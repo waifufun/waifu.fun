@@ -17,6 +17,14 @@ export default async function Trades({ token }: { token: IToken }) {
 		contractAddress: token.contractAddress,
 	});
 
+	if (!data || data?.length === 0) {
+		return (
+			<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+				There are currently no trades.
+			</div>
+		);
+	}
+
 	return (
 		<Fragment>
 			<AutoRefresher interval={10_000} />
