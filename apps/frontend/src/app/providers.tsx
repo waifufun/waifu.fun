@@ -17,6 +17,7 @@ import type { ChainAdapter } from "@reown/appkit";
 
 const queryClient = new QueryClient();
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string;
+console.log({ projectId });
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, baseSepolia];
 
 const wagmiAdapterInstance = new WagmiAdapter({
