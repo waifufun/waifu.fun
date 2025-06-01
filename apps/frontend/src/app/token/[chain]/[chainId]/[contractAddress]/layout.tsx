@@ -15,7 +15,7 @@ import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 
@@ -116,7 +116,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 						<iframe
 							height="100%"
 							width="100%"
-							className="min-h-[581px] h-full mb-[-41px]"
+							className="min-h-[580px] h-full mb-[-41px]"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
 							src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
@@ -161,21 +161,36 @@ export default async function Page({ params, children }: { params: Promise<IToke
 										href: token?.socials?.discord,
 										icon: "/socials/discord.svg",
 									},
-								].map((social) => (
-									<Link href={social?.href || "#"} target="_blank" key={social.title}>
-										<Image
-											src={social.icon}
-											className={cn([
-												"size-6",
-												!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
-											])}
-											unoptimized
-											width={24}
-											height={24}
-											alt={social.title}
-										/>
-									</Link>
-								))}
+								].map((social) => {
+									const hasLink = !!social?.href;
+									const Comp = hasLink ? Link : Fragment;
+
+									const compProps: { key: string; href?: string; target?: string } = {
+										key: social.title,
+									};
+
+									if (hasLink && social.href) {
+										compProps.href = social.href;
+										compProps.target = "_blank";
+									}
+
+									return (
+										// @ts-ignore
+										<Comp {...compProps} key={social.title}>
+											<Image
+												src={social.icon}
+												className={cn([
+													"size-6",
+													!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
+												])}
+												unoptimized
+												width={24}
+												height={24}
+												alt={social.title}
+											/>
+										</Comp>
+									);
+								})}
 							</div>
 						</div>
 						<div>
