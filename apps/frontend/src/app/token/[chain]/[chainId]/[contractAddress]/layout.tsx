@@ -163,24 +163,19 @@ export default async function Page({ params, children }: { params: Promise<IToke
 									},
 								].map((social) => (
 									<Link href={social?.href || "#"} target="_blank" key={social.title}>
-										<div
+										<Image
+											src={social.icon}
 											className={cn([
-												"inline-flex m-auto",
+												"size-6",
 												!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
 											])}
-										>
-											<Image
-												src={social.icon}
-												className="size-6"
-												unoptimized
-												width={24}
-												height={24}
-												alt={social.title}
-											/>
-										</div>
+											unoptimized
+											width={24}
+											height={24}
+											alt={social.title}
+										/>
 									</Link>
 								))}
-								{token.socials.website}
 							</div>
 						</div>
 						<div>
