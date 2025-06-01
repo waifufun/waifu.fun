@@ -16,7 +16,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ChainAdapter } from "@reown/appkit";
 
 const queryClient = new QueryClient();
-const projectId = "YOUR_PROJECT_ID";
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string;
+console.log({ projectId });
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [base, baseSepolia];
 
 const wagmiAdapterInstance = new WagmiAdapter({
@@ -45,7 +46,7 @@ const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
 	return (
-		<TooltipProvider>
+		<TooltipProvider delayDuration={0}>
 			<WagmiProvider config={config}>
 				<ProgressProvider
 					height="4px"

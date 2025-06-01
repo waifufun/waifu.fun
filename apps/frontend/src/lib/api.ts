@@ -36,16 +36,27 @@ export const fetcher = async (
 	}
 };
 
-export const getTokens = async ({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) => {
-	return await fetcher("/tokens", "POST", searchParams);
+export const getTokens = async ({
+	searchParams,
+}: { searchParams: { [key: string]: string | string[] | undefined } }) => {
+	try {
+		const body = {
+			chain: (searchParams.chain as TChain) || undefined,
+			chainId: searchParams.chainId ? Number(searchParams.chainId) : undefined,
+			page: searchParams.page ? Number(searchParams.page) : 1,
+			category: (searchParams.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+		};
+
+		const response = await fetcher("/tokens", "POST", body);
+		return response.docs || [];
+	} catch (error) {
+		console.error("Error fetching tokens:", error);
+		return [];
+	}
 };
 
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
-	return await fetcher("/tokens/lookup", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
+	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
 };
 
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
@@ -56,7 +67,18 @@ export const getTokenTrades = async ({ chain, chainId, contractAddress }: IToken
 	});
 };
 
-export const getChatHistory = async ({ room, contractAddress, chain, chainId }: { room: string; contractAddress: string; chain: TChain; chainId: string | number }) => {
+export const getAddressBalances = async ({ address }: { address: AddressLike }) => {
+	return await fetcher("/tokens/balances", "POST", {
+		address,
+	});
+};
+
+export const getChatHistory = async ({
+	room,
+	contractAddress,
+	chain,
+	chainId,
+}: { room: string; contractAddress: string; chain: TChain; chainId: string | number }) => {
 	return await fetcher("/chat/history", "POST", {
 		room,
 		contractAddress,
@@ -114,10 +136,14 @@ export const importToken = async ({ chain, chainId, contractAddress }: ITokenLoo
 	});
 };
 
-export const getHolders = async ({ chain, chainId, contractAddress }: { 
-	chain: TChain; 
-	chainId: string | number; 
-	contractAddress: string; 
+export const getHolders = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
 }) => {
 	return await fetcher("/tokens/holders", "POST", {
 		chain,
@@ -126,20 +152,20 @@ export const getHolders = async ({ chain, chainId, contractAddress }: {
 	});
 };
 
-export const sendChatMessage = async ({ 
-	message, 
-	chain, 
-	chainId, 
-	room, 
-	contractAddress, 
-	attachment 
-}: { 
-	message: string; 
-	chain: TChain; 
-	chainId: string | number; 
-	room: string; 
-	contractAddress: string; 
-	attachment?: string | undefined; 
+export const sendChatMessage = async ({
+	message,
+	chain,
+	chainId,
+	room,
+	contractAddress,
+	attachment,
+}: {
+	message: string;
+	chain: TChain;
+	chainId: string | number;
+	room: string;
+	contractAddress: string;
+	attachment?: string | undefined;
 }) => {
 	return await fetcher("/chat/message", "POST", {
 		message,
@@ -151,7 +177,11 @@ export const sendChatMessage = async ({
 	});
 };
 
-export const getTransaction = async ({ chain, chainId, txId }: { chain: TChain; chainId: string | number; txId: string }) => {
+export const getTransaction = async ({
+	chain,
+	chainId,
+	txId,
+}: { chain: TChain; chainId: string | number; txId: string }) => {
 	return await fetcher("/transaction", "POST", {
 		chain,
 		chainId,
@@ -205,10 +235,14 @@ export const createToken = async ({
 	});
 };
 
-export const getTrades = async ({ chain, chainId, contractAddress }: { 
-	chain: TChain; 
-	chainId: string | number; 
-	contractAddress: string; 
+export const getTrades = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
 }) => {
 	return await fetcher("/tokens/trades", "POST", {
 		chain,

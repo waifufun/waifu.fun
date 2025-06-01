@@ -26,86 +26,94 @@ import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@autofun/utils";
 import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import { getBondingCurveData } from "../utils/bonding-curve";
+import logger from "@autofun/logger";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
 	fastify.post<{
 		Reply: { tokens: IToken[] };
 	}>("/", async (request) => {
-		const queryParams = request.body as {
-			chain: TChain;
-			chainId: TChainId;
-			page: number;
-			category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
-		};
+		try {
+			logger.info("Received tokens request with body:", JSON.stringify(request.body));
+			const queryParams = request.body as {
+				chain: TChain;
+				chainId: TChainId;
+				page: number;
+				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
+			};
 
-		const page = queryParams?.page || 1;
+			const page = queryParams?.page || 1;
 
-		const category = queryParams.category || "new";
-		let sortQuery = undefined;
+			const category = queryParams.category || "new";
+			let sortQuery = undefined;
 
-		switch (category) {
-			case "new":
-				sortQuery = "-createdAt";
-				break;
-			case "trending":
-				sortQuery = "-volume24h -marketcap";
-				break;
-			case "featured":
-				sortQuery = "-featured";
-				break;
-			case "marketcap":
-				sortQuery = "-marketcap";
-				break;
+			switch (category) {
+				case "new":
+					sortQuery = "-createdAt";
+					break;
+				case "trending":
+					sortQuery = "-volume24h -marketcap";
+					break;
+				case "featured":
+					sortQuery = "-featured";
+					break;
+				case "marketcap":
+					sortQuery = "-marketcap";
+					break;
+			}
+
+			let chain = null;
+			let chainId = null;
+			if (queryParams?.chain && queryParams?.chainId) {
+				chain = queryParams?.chain;
+				chainId = queryParams?.chainId;
+				const allowedChain = isChainIdAllowedForChain(chain, chainId);
+				if (!allowedChain) throw new Error("Unsupported chain pair");
+			}
+
+			const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
+			logger.info(`Cache key: ${cacheKey}`);
+
+			const cache = await redis.get(cacheKey);
+
+			if (cache) {
+				logger.info("Returning cached tokens data");
+				return JSON.parse(cache);
+			}
+
+			const query: MongooseBaseQueryOptions = {
+				hidden: { $ne: true },
+			};
+
+			if (chain && chainId) {
+				query.chain = chain;
+				query.chainId = chainId;
+			}
+
+			const paginationOptions: PaginateOptions = {
+				page: 1,
+				lean: true,
+				limit: 50,
+				select: "-__v",
+				leanWithId: false,
+				sort: sortQuery,
+			};
+
+			const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
+			const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
+
+			const returnData = {
+				...tokensPaginated,
+				docs: populatedTokens,
+			};
+
+			await redis.setex(cacheKey, 10, JSON.stringify(returnData));
+
+			return returnData;
+		} catch (error) {
+			logger.error({ err: error }, "Error in tokens route");
+			throw error;
 		}
-
-		let chain = null;
-		let chainId = null;
-		if (queryParams?.chain && queryParams?.chainId) {
-			chain = queryParams?.chain;
-			chainId = queryParams?.chainId;
-			const allowedChain = isChainIdAllowedForChain(chain, chainId);
-			if (!allowedChain) throw new Error("Unsupported chain pair");
-		}
-
-		const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
-
-		const cache = await redis.get(cacheKey);
-
-		if (cache) {
-			return JSON.parse(cache);
-		}
-
-		const query: MongooseBaseQueryOptions = {
-			hidden: { $ne: true },
-		};
-
-		if (chain && chainId) {
-			query.chain = chain;
-			query.chainId = chainId;
-		}
-
-		const paginationOptions: PaginateOptions = {
-			page: 1,
-			lean: true,
-			limit: 50,
-			select: "-__v",
-			leanWithId: false,
-			sort: sortQuery,
-		};
-
-		const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
-
-		const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
-
-		const returnData = {
-			...tokensPaginated,
-			docs: populatedTokens,
-		};
-
-		await redis.setex(cacheKey, 10, JSON.stringify(returnData));
-
-		return returnData;
 	});
 
 	/** Retrieve a single token */
@@ -435,6 +443,47 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		return items;
 	});
 
+	fastify.post("/balances", async (request) => {
+		const { address } = request.body as {
+			address: AddressLike;
+		};
+
+		const cacheKey = `${address}:balance`;
+
+		const balancesLookup = await codex.queries.balances({
+			input: {
+				walletAddress: address,
+			},
+		});
+
+		const balances = balancesLookup?.balances?.items;
+
+		const tokensLookUp = await codex.queries.tokens({
+			ids: balances?.map((token) => {
+				return {
+					address: token.tokenAddress,
+					networkId: token.networkId,
+				};
+			}),
+		});
+
+		const tokens = tokensLookUp?.tokens;
+
+		const returnData = [];
+
+		for (const balance of balances) {
+			const token = tokens?.find((a) => a?.address === balance.tokenAddress);
+			returnData.push({
+				...balance,
+				...token,
+			});
+		}
+
+		await redis.setex(cacheKey, 60, JSON.stringify(returnData));
+
+		return returnData;
+	});
+
 	/** Import an existing token */
 	fastify.post<{
 		Body: {
@@ -529,6 +578,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),
 				createdAt: createdAt.toISOString(),
+				updatedAt: createdAt,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -565,6 +615,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
 				createdAt: new Date().toISOString(),
+				updatedAt: new Date(),
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);

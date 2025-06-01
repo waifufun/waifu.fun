@@ -16,7 +16,7 @@ export default function TokenRow({
 		marketCap: number;
 		contractAddress: string;
 		amountHeld: number;
-		dollarWorth: number;
+		dollarWorth?: number;
 		points?: number;
 		chain: TChain | null;
 		chainId: SolanaNetworkIds | EvmChainIds | null;
@@ -35,7 +35,15 @@ export default function TokenRow({
 		<div className="group rounded-lg bg-transparent place-self-center hover:bg-[#0C0C0C] relative flex justify-between items-center w-[750px] h-[94px] px-4 py-2">
 			<div className="flex items-center">
 				<div className="w-[60px] h-[60px] mr-4">
-					<Image src={data.image} alt="Token Image" width={60} height={60} className="rounded-md object-contain" />
+					<Image
+						src={data.image}
+						unoptimized
+						priority
+						alt="Token Image"
+						width={60}
+						height={60}
+						className="rounded-md object-contain"
+					/>
 				</div>
 
 				<div className="flex flex-col justify-center min-w-[140px]">
@@ -77,7 +85,9 @@ export default function TokenRow({
 					<div className="self-stretch w-px bg-[#1E1E1E]" />
 					<div className="flex flex-col w-full space-y-1 justify-center transition-all duration-300">
 						<p className="text-white font-medium text-base">{data.amountHeld}</p>
-						<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
+						{data?.dollarWorth ? (
+							<p className="text-[#8C8C8C] text-base">${data.dollarWorth.toLocaleString()}</p>
+						) : null}
 					</div>
 					<div className="w-0 overflow-hidden group-hover:w-px transition-all duration-300 ease-in-out self-stretch bg-[#1E1E1E]" />
 					<div className="w-0 overflow-hidden group-hover:w-12 transition-all duration-300 ease-in-out flex-shrink-0">
