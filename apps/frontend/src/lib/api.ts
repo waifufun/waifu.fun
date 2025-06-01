@@ -38,13 +38,15 @@ export const fetcher = async (
 
 export const getTokens = async ({
 	searchParams,
-}: { searchParams: { [key: string]: string | string[] | undefined } }) => {
+}: { searchParams: { [key: string]: string | string[] | number | number[] | undefined } }) => {
 	try {
 		const body = {
-			chain: (searchParams.chain as TChain) || undefined,
-			chainId: searchParams.chainId ? Number(searchParams.chainId) : undefined,
-			page: searchParams.page ? Number(searchParams.page) : 1,
-			category: (searchParams.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+			chain: (searchParams?.chain as TChain) || undefined,
+			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
+			page: searchParams?.page ? Number(searchParams.page) : 1,
+			category: (searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+			search: searchParams?.search || "",
+			limit: searchParams?.limit || 50,
 		};
 
 		const response = await fetcher("/tokens", "POST", body);

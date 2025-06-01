@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import Image from "next/image";
 import { useModal } from "./hooks/providers/UseModalContext";
 import { useWallets } from "./hooks/providers/UseWalletContext";
 import { Menu, Trophy } from "lucide-react";
 import BalanceMenu from "./balance-menu";
+import SearchMenu from "./search-menu";
 
 export default function Header() {
 	const { openModal } = useModal();
@@ -24,7 +24,7 @@ export default function Header() {
 						alt="logo"
 					/>
 				</Link>
-				<Input placeholder="Search..." className="w-[430px] h-11 hidden md:inline-block" />
+				<SearchMenu />
 			</div>
 			<div className="flex items-center gap-2.5">
 				{/* Points */}

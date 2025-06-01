@@ -50,7 +50,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
 			type="button"
 			onClick={handleCopy}
 			className={cn(
-				"inline-flex items-center justify-center hover:text-white transition-colors duration-200 cursor-pointer",
+				"inline-flex items-center text-autofun-text-secondary justify-center hover:text-white transition-colors duration-200 cursor-pointer",
 				className,
 			)}
 			aria-label={isCopied ? "Copied" : "Copy to clipboard"}
