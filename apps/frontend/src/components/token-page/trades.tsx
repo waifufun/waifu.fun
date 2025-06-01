@@ -6,7 +6,6 @@ import { formatUsd, shortenAddress } from "@/lib/utils";
 import Triangle from "../triangle";
 import ChainIndicator from "../chain-indicator";
 import { Fragment } from "react";
-import AutoRefresher from "../auto-refresher";
 import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@autofun/constants";
 import Link from "next/link";
 import TimeAgo from "../time-ago";
@@ -28,7 +27,6 @@ export default async function Trades({ token }: { token: IToken }) {
 
 	return (
 		<Fragment>
-			<AutoRefresher interval={10_000} />
 			<Table>
 				<TableHeader>
 					<TableRow>
