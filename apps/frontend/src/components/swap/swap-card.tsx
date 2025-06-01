@@ -10,6 +10,7 @@ import AdvancedSettings from "./advanced-settings";
 import { cn, executeSwap } from "@/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import Skeleton from "../skeleton-loading";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
@@ -35,6 +36,8 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				minReceived: 230139,
 			};
 		},
+		enabled: !!value,
+		refetchInterval: 10_000,
 	});
 
 	const swapMutation = useMutation({
@@ -105,11 +108,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<div className="flex font-medium justify-between text-base text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
-							{minReceivedQuery?.isPending ? (
-								<div className="h-5 rounded-xl animate-accumulate w-12 bg-gradient-to-t from-[#121212] to-[#171717]" />
-							) : (
-								<span>{minReceivedQuery?.data?.minReceived}</span>
-							)}
+							{minReceivedQuery?.isPending ? <Skeleton /> : <span>{minReceivedQuery?.data?.minReceived}</span>}
 
 							{mode === "buy" ? token.ticker : "SOL"}
 						</div>
