@@ -63,6 +63,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	chain: T;
 	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
 	name: string;
+	description?: string;
 	ticker: string;
 	image: TURLLike;
 	price: number;

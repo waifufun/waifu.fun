@@ -3,8 +3,15 @@ import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName, shortenAddress } from "@/lib/utils";
-import type { ITokenLookUp } from "@autofun/types";
+import {
+	abbreviateNumber,
+	cn,
+	formatNumberSubscript,
+	fromNow,
+	getCoinGeckoChainName,
+	shortenAddress,
+} from "@/lib/utils";
+import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
@@ -13,7 +20,7 @@ import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
-	const token = await getToken(await params);
+	const token = (await getToken(await params)) as IToken;
 
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
@@ -32,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<ITokenLookU
 
 export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
 	const tokenParams = await params;
-	const token = await getToken(tokenParams);
+	const token = (await getToken(tokenParams)) as IToken;
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -131,6 +138,50 @@ export default async function Page({ params, children }: { params: Promise<IToke
 							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
 								TOKEN INFO
 							</span>
+
+							<div className="flex items-center gap-6">
+								{[
+									{
+										title: "website",
+										href: token?.socials?.website,
+										icon: "/socials/website.svg",
+									},
+									{
+										title: "twitter",
+										href: token?.socials?.twitter,
+										icon: "/socials/twitter.svg",
+									},
+									{
+										title: "telegram",
+										href: token?.socials?.telegram,
+										icon: "/socials/telegram.svg",
+									},
+									{
+										title: "discord",
+										href: token?.socials?.discord,
+										icon: "/socials/discord.svg",
+									},
+								].map((social) => (
+									<Link href={social?.href || "#"} target="_blank" key={social.title}>
+										<div
+											className={cn([
+												"inline-flex m-auto",
+												!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
+											])}
+										>
+											<Image
+												src={social.icon}
+												className="size-6"
+												unoptimized
+												width={24}
+												height={24}
+												alt={social.title}
+											/>
+										</div>
+									</Link>
+								))}
+								{token.socials.website}
+							</div>
 						</div>
 						<div>
 							<Image

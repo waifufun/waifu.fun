@@ -11,6 +11,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		ticker: { type: String, required: true },
 		image: { type: String, required: true },
 		price: { type: Number, default: 0 },
+		description: { type: String },
 		imported: { type: Boolean, default: false },
 		decimals: { type: Number, required: true },
 		marketcap: { type: Number, default: 0 },
