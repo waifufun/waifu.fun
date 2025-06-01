@@ -23,10 +23,28 @@ export default function BalanceMenu() {
 					</div>
 				</MenubarTrigger>
 				<MenubarContent>
-					<MenubarItem>New Tab</MenubarItem>
-					<MenubarItem>New Window</MenubarItem>
+					<MenubarItem>
+						<BalanceMenuItem icon="/chain-icons/solana.svg" balance={5} />
+					</MenubarItem>
+					<MenubarItem>
+						<BalanceMenuItem icon="/chain-icons/ethereum.svg" balance={5} />
+					</MenubarItem>
+					<MenubarItem>
+						<BalanceMenuItem icon="/chain-icons/base.svg" balance={5} />
+					</MenubarItem>
 				</MenubarContent>
 			</MenubarMenu>
 		</Menubar>
 	);
 }
+
+const BalanceMenuItem = ({ icon, balance }: { icon: string; balance: number | string }) => {
+	return (
+		<div className="flex items-center gap-2">
+			<Image src={icon} width={20} height={20} className="size-[24px] object-scale-down" unoptimized alt="balance" />
+			<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-satoshi leading-tight">
+				{balance}
+			</div>
+		</div>
+	);
+};
