@@ -18,6 +18,7 @@ import BondingCurveProgress from "@/components/bonding-curve-progress";
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
+import ScamWarning from "@/components/scam-notice";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = (await getToken(await params)) as IToken;
@@ -43,6 +44,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 
 	return (
 		<div className="flex flex-col gap-3">
+			<ScamWarning isHidden={!!token?.hidden} />
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
 					<div className="px-6 py-3 bg-[#333333]/10 rounded-lg flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
