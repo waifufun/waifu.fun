@@ -1,17 +1,6 @@
 import Mongoose, { Schema, type Model as ModelType } from "mongoose";
 import logger from "@autofun/logger";
-
-export interface IEventsMeta {
-  _id?: string;
-  programId: string;
-  networkId: string;
-  currentBlock: number;
-  highestSyncedBlock: number;
-  minBlock: number;
-  doneGenesisSync: boolean;
-  lastSyncTimestamp: Date;
-  isActive: boolean;
-}
+import type { IEventsMeta } from "@autofun/types";
 
 export interface IEventsMetaModel extends ModelType<IEventsMeta> {
   getOrCreate(programId: string, networkId: string): Promise<IEventsMeta>;

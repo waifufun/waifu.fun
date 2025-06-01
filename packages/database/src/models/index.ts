@@ -6,4 +6,3 @@ import EventsMeta from "./events-meta";
 
 export { Token, User, ChatMessage, Event, EventsMeta };
 export type { IEvent } from "./events";
-export type { IEventsMeta } from "./events-meta";
