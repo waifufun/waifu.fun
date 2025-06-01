@@ -12,7 +12,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
-	const [value, setValue] = useState("");
+	const [value, setValue] = useState<string>("");
 	const [balance, setBalance] = useState<number>(0);
 
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
@@ -24,7 +24,8 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const [settings, setSettings] = useState(initialSettings);
 
 	const handleQuickSet = (val: string) => {
-		setValue(val === "Reset" ? "" : val);
+		const set = val === "Reset" ? "" : String(val);
+		setValue(set);
 	};
 
 	const minReceivedQuery = useQuery({
@@ -124,7 +125,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<p>Price Impact</p>
 						<p>25</p>
 					</div> */}
-					<AdvancedSettings settings={settings} onChange={setSettings} />
+					<AdvancedSettings />
 					<Button
 						disabled={swapMutation?.isPending}
 						onClick={() => {
