@@ -43,8 +43,6 @@ export class SolanaIndexer {
     this.STOP_AT_SLOT = this.config.minBlock!;
   }
 
-  // ... existing helper methods remain the same ...
-
   private arraysEqual(a: number[], b: number[]): boolean {
     return a.length === b.length && a.every((val, i) => val === b[i]);
   }
@@ -100,15 +98,31 @@ export class SolanaIndexer {
     slot: number
   ): any[] {
     const events: any[] = [];
-    const accounts = transaction.transaction.message.staticAccountKeys;
+    
+    const transactionData = transaction.transaction || transaction;
+    const accounts = transactionData?.message?.staticAccountKeys;
+    const signatures = transactionData?.signatures || transaction.signatures;
+
+    if (!accounts || !signatures) {
+      if (this.debugStatements) {
+        logger.warn("Transaction missing required data structure");
+      }
+      return events;
+    }
 
     if (!this.hasAutoFunProgram(accounts)) {
       return events;
     }
 
     const accountStrings = accounts.map((key: any) => key.toBase58());
-    const compiledInstructions =
-      transaction.transaction.message.compiledInstructions;
+    const compiledInstructions = transactionData?.message?.compiledInstructions;
+
+    if (!compiledInstructions) {
+      if (this.debugStatements) {
+        logger.warn("Transaction missing compiled instructions");
+      }
+      return events;
+    }
 
     for (const [
       instructionIndex,
@@ -129,11 +143,12 @@ export class SolanaIndexer {
 
       if (decodedInstruction.type !== "unknown") {
         const eventData = this.createEventData(
-          transaction.transaction.signatures[0],
+          signatures[0],
           slot,
           blockTime,
           instructionIndex,
-          decodedInstruction
+          decodedInstruction,
+          transaction
         );
         events.push(eventData);
       }
@@ -142,12 +157,70 @@ export class SolanaIndexer {
     return events;
   }
 
+  private extractAmountGotten(
+    transaction: any, 
+    tokenMint: string, 
+    userAddress: string, 
+    direction: number
+  ): { amountGotten?: string } {
+    try {
+      const preTokenBalances = transaction.meta?.preTokenBalances || [];
+      const postTokenBalances = transaction.meta?.postTokenBalances || [];
+      const preBalances = transaction.meta?.preBalances || [];
+      const postBalances = transaction.meta?.postBalances || [];
+      const accountKeys = transaction.transaction.message.staticAccountKeys || [];
+
+      if (direction === 0) {
+        // Direction 0: User is buying tokens (NATIVE TOKEN -> Token)
+        const preTokenBalance = preTokenBalances.find((balance: any) => 
+          balance.mint === tokenMint && balance.owner === userAddress
+        );
+        const postTokenBalance = postTokenBalances.find((balance: any) => 
+          balance.mint === tokenMint && balance.owner === userAddress
+        );
+
+        if (preTokenBalance && postTokenBalance) {
+          const preAmount = BigInt(preTokenBalance.uiTokenAmount?.amount || '0');
+          const postAmount = BigInt(postTokenBalance.uiTokenAmount?.amount || '0');
+          const tokensReceived = postAmount - preAmount;
+          
+          if (tokensReceived > 0n) {
+            return { amountGotten: tokensReceived.toString() };
+          }
+        }
+      } else {
+        // Direction 1: User is selling tokens (Token -> NATIVE TOKEN)
+        const userIndex = accountKeys.findIndex((key: any) => 
+          key.toBase58() === userAddress
+        );
+
+        if (userIndex !== -1 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
+          const preBalance = BigInt(preBalances[userIndex]);
+          const postBalance = BigInt(postBalances[userIndex]);
+          const solReceived = postBalance - preBalance;
+          
+          if (solReceived > 0n) {
+            return { amountGotten: solReceived.toString() };
+          }
+        }
+      }
+
+      return {};
+    } catch (error) {
+      if (this.debugStatements) {
+        logger.error("Error extracting amount gotten:", error);
+      }
+      return {};
+    }
+  }
+
   private createEventData(
     signature: string,
     slot: number,
     blockTime: number,
     instructionIndex: number,
-    decodedInstruction: DecodedInstruction
+    decodedInstruction: DecodedInstruction,
+    transaction?: any
   ): any {
     const baseEventData = {
       signature,
@@ -180,17 +253,45 @@ export class SolanaIndexer {
             instructionData.virtualLamportReserves?.toString(),
         };
 
-      case "swap":
+      case "swap": {
+        const tokenMint = decodedInstruction.tokenMint!;
+        const userAddress = decodedInstruction.user!;
+        const direction = instructionData.direction;
+        
+        let amountGotten = {};
+        if (transaction) {
+          amountGotten = this.extractAmountGotten(
+            transaction, 
+            tokenMint, 
+            userAddress, 
+            direction
+          );
+        }
+
         return {
           ...baseEventData,
           swapAmount: instructionData.amount?.toString(),
-          direction: instructionData.direction,
-          minimumReceiveAmount:
-            instructionData.minimumReceiveAmount?.toString(),
+          direction: direction,
+          minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
           deadline: instructionData.deadline?.toString(),
+          ...amountGotten,
         };
+      }
 
-      case "launchAndSwap":
+      case "launchAndSwap": {
+        const tokenMint = decodedInstruction.mintAddress!;
+        const userAddress = decodedInstruction.creator!;
+        
+        let amountGotten = {};
+        if (transaction) {
+          amountGotten = this.extractAmountGotten(
+            transaction, 
+            tokenMint, 
+            userAddress, 
+            0
+          );
+        }
+
         return {
           ...baseEventData,
           tokenName: instructionData.name,
@@ -204,7 +305,9 @@ export class SolanaIndexer {
           minimumReceiveAmount:
             instructionData.minimumReceiveAmount?.toString(),
           deadline: instructionData.deadline?.toString(),
+          ...amountGotten,
         };
+      }
 
       default:
         return baseEventData;
@@ -284,6 +387,7 @@ export class SolanaIndexer {
         `Error processing signature ${signatureInfo.signature} (${totalTime}ms):`,
         error
       );
+      console.error(error);
       return [];
     }
   }
@@ -453,7 +557,7 @@ Events per signature: ${eventsPerSignature}
 
       if (!syncMeta.doneGenesisSync) {
         // Genesis sync: from current to minBlock
-        logger.info("Starting genesis sync (current → minBlock)");
+        logger.info("Starting genesis sync (current -> minBlock)");
         logger.info(`Resuming from slot: ${syncMeta.currentBlock || "latest"}`);
         isGenesisSync = true;
 
