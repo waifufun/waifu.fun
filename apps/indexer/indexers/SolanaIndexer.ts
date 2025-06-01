@@ -69,8 +69,8 @@ export class SolanaIndexer {
       return {
         type: "swap",
         data: IDLInstructions.swap.decode(instructionData),
-        tokenMint: accounts[4],
-        user: accounts[7],
+        tokenMint: accounts[5],
+        user: accounts[8],
         accounts,
       };
     }
