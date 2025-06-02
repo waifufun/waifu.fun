@@ -18,7 +18,13 @@ export default function BalanceMenu() {
 		<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
 			<Image src="/chain-icons/solana.svg" width={60} height={60} className="size-[20px]" unoptimized alt="balance" />
 			<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
-				{balance?.isPending ? <Skeleton /> : balance?.data}
+				{balance?.isPending ? (
+					<Skeleton />
+				) : (
+					new Intl.NumberFormat("en-US", {
+						maximumFractionDigits: 3,
+					}).format(Number(balance?.data))
+				)}
 			</div>
 		</div>
 		// <Menubar>
