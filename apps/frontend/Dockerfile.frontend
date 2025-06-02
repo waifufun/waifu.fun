@@ -16,7 +16,7 @@ RUN corepack enable && corepack prepare pnpm@10.11.0 --activate
 WORKDIR /app
 
 # 1. Copy package manager configuration files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml ./
 
 # 2. Copy package.json files for all workspaces
 # This helps Docker cache the dependency layer effectively.
