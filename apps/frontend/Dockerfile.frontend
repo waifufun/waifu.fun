@@ -30,7 +30,7 @@ COPY . .
 # 4. Install dependencies using pnpm.
 # This installs dependencies based on the full source code,
 # which is important for monorepos with local workspace dependencies.
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Set build-time environment variables for Next.js
 # Default values are provided if not passed during build.
