@@ -177,6 +177,7 @@ export interface IMigration {
 	withdrawnAt?: Date | undefined;
 	migratedAt?: Date | undefined;
 	marketId?: string | undefined;
+	description?: string | undefined;
 	baseVault?: string | undefined;
 	quoteVault?: string | undefined;
 	withdrawnAmount?: number | undefined;

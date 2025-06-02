@@ -9,5 +9,6 @@ export default function TimeAgo({ date }: { date: number | Date | string }) {
 	if (typeof window === "undefined") {
 		return <Skeleton className="w-16" />;
 	}
+
 	return <>{time}</>;
 }

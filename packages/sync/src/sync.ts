@@ -45,6 +45,7 @@ export class DataSync {
       chain: "solana",
       chainId: SolanaNetworkIds.Mainnet,
       name: pgToken.name,
+      description: pgToken?.description || "",
       ticker: pgToken.ticker,
       image: pgToken.image || defaultImage,
       price: pgToken.tokenPriceUSD || 0,
@@ -72,6 +73,7 @@ export class DataSync {
       featured: Boolean(pgToken.featured),
       creator: pgToken.creator || "system",
       pool: pgToken.poolInfo || "",
+      createdAt: pgToken.createdAt ? new Date(pgToken?.createdAt).toISOString() : new Date().toISOString(),
       updatedAt: pgToken.updatedAt ? new Date(pgToken.updatedAt) : new Date(),
     };
   }
@@ -141,6 +143,7 @@ export class DataSync {
                     chain: "solana",
                     chainId: SolanaNetworkIds.Mainnet as number,
                     creator: pgToken.creator || 'system',
+                    description: pgToken?.description || "",
                     marketId: pgToken.marketId,
                     positionIds: [],
                     nftMinted: Array.isArray(pgToken.nftMinted)
@@ -190,6 +193,7 @@ export class DataSync {
                 chain: "solana",
                 chainId: SolanaNetworkIds.Mainnet as number,
                 creator: pgToken.creator || 'system',
+                description: pgToken?.description || "",
                 marketId: pgToken.marketId,
                 positionIds: [],
                 nftMinted: Array.isArray(pgToken.nftMinted)
