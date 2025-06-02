@@ -35,7 +35,7 @@ export default function ChainIndicator({
 					height={128}
 					unoptimized
 					alt={key}
-					className={cn(["p-0.5 size-6 rounded-full", className ? className : ""])}
+					className={cn(["p-0.5 size-6 rounded-full select-none", className ? className : ""])}
 				/>
 			</TooltipTrigger>
 			<TooltipContent>

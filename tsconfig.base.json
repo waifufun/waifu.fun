@@ -79,24 +79,15 @@
     "noUncheckedIndexedAccess": true,
 
     // report an error for unused labels instead of just a warning
-    "allowUnusedLabels": false
+    "allowUnusedLabels": false,
 
-    // early returns are often used in dev and debug workflows so you may want to choose `true` or `false` accordingly
-    // "allowUnreachableCode": false,
-
-    // nx left overbits
-    // "emitDecoratorMetadata": true,
-    // "experimentalDecorators": true,
-    // "importHelpers": true, // if enabled then tslib module must be present and able to import at runtime
-    // "skipDefaultLibCheck": true
-
-    // nx leftovers
-    //     "rootDir": ".",
-    //     "moduleResolution": "node",
-    // "baseUrl": ".",
-    // "paths": {
-    //   "@rfx/common-contracts": ["packages/common/contracts/src/index.ts"]
-    // }
+    // Path mappings
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./apps/frontend/src/*"],
+      "@autofun/*": ["./packages/*/src"]
+    }
   },
-  "exclude": ["node_modules", "tmp"]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "exclude": ["node_modules", "dist", "build", ".next", "packages/sync", "tmp"]
 }

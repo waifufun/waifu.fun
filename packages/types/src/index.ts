@@ -14,6 +14,12 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
+export interface SlotInfo {
+	slot: number;
+	parent: number;
+	root: number;
+}
+
 export type FalModelMode = "image" | "llm" | "audio" | "video";
 export type FALModels = {
 	image: {
@@ -58,13 +64,14 @@ export interface EvmTokenLookup {
 
 export type ITokenLookUp = SolanaTokenLookup | EvmTokenLookup;
 
-export interface IToken<T extends TChain = TChain> extends MongooseDocument {
+export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument, "updatedAt"> {
 	contractAddress: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	chain: T;
 	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
 	name: string;
 	ticker: string;
 	image: TURLLike;
+	description?: string;
 	price: number;
 	totalSupply: number;
 	marketcap: number;
@@ -84,7 +91,7 @@ export interface IToken<T extends TChain = TChain> extends MongooseDocument {
 	featured?: boolean;
 	imported?: boolean;
 	verified?: boolean;
-	updatedAt?: Date;
+	updatedAt: Date;
 	pool?: string;
 }
 
@@ -173,23 +180,48 @@ export enum MediaType {
 }
 
 export interface IMigration {
-	withdrawnAt?: Date;
-	migratedAt?: Date;
-	marketId?: string;
-	baseVault?: string;
-	quoteVault?: string;
-	withdrawnAmount?: number;
-	migration?: string;
-	withdrawnAmounts?: string;
-	poolInfo?: string;
-	lockLpTxId?: string;
+	withdrawnAt?: Date | undefined;
+	migratedAt?: Date | undefined;
+	marketId?: string | undefined;
+	description?: string | undefined;
+	baseVault?: string | undefined;
+	quoteVault?: string | undefined;
+	withdrawnAmount?: number | undefined;
+	migration?: string | undefined;
+	withdrawnAmounts?: string | undefined;
+	poolInfo?: string | undefined;
+	lockLpTxId?: string | undefined;
 	status: string;
-	positionIds?: string[];
-	positionNftsSecrets?: string[];
+	positionIds?: string[] | undefined;
+	positionNftsSecrets?: string[] | undefined;
+	nftMinted?: string[] | undefined;
 	contractAddress: AddressLike;
 	chain: TChain;
 	chainId: TChainId;
 	creator: string;
-	createdAt?: Date;
-	updatedAt?: Date;
+	createdAt?: Date | undefined;
+	updatedAt?: Date | undefined;
+}
+
+export type IAdvancedSettingsProps = {
+	settings: ISwapSettings;
+	onChange?: (settings: ISwapSettings) => void;
+};
+
+export type ISwapSettings = {
+	speed: "normal" | "turbo" | "ultra";
+	slippage: string;
+	deadline: string;
+};
+
+export interface IEventsMeta {
+	_id?: string;
+	programId: string;
+	networkId: string;
+	currentBlock: number;
+	highestSyncedBlock: number;
+	minBlock: number;
+	doneGenesisSync: boolean;
+	lastSyncTimestamp: Date;
+	isActive: boolean;
 }

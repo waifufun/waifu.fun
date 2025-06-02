@@ -1,8 +1,9 @@
-import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type IToken, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
+import type { TSpeed } from "@/hooks/use-speed";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -215,4 +216,28 @@ export const roundDownToNearest = (value: number, step: number): number => {
 		throw new Error("Step must be greater than zero");
 	}
 	return Math.floor(value / step) * step;
+};
+
+export function isInputGreaterThanDecimals(value: string, maxDecimals?: number): boolean {
+	const decimalGroups = value.split(".");
+	const decimalPart = decimalGroups[1] ?? "";
+	return !!maxDecimals && decimalPart.length > maxDecimals;
+}
+
+export const executeSwap = async (
+	token: IToken,
+	inputAmount: bigint | string | number,
+	mode: "buy" | "sell",
+	slippage: number,
+	speed: TSpeed,
+) => {
+	console.log({ inputAmount, mode, slippage, speed });
+	/** If the token was imported or has already migrated we can just use Jupiter */
+	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
+	}
+	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
+	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
+	}
+
+	throw new Error("No route found for token to swap against. Contact autofun.");
 };

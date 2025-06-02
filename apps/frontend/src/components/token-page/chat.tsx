@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Image as ImageIcon, Send, XIcon } from "lucide-react";
-import { abbreviateNumber, fileToBase64, fromNow } from "@/lib/utils";
+import { abbreviateNumber, fileToBase64, fromNow, shortenAddress } from "@/lib/utils";
 import Image from "next/image";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -202,7 +202,7 @@ const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 						<ImageIcon size={18} className="text-autofun-icon-secondary size-[18px]" />
 					</Button>
 				</div>
-				<Button size="icon" type="submit" className="self-end">
+				<Button size="icon" type="submit" className="self-end" disabled={mutation?.isPending}>
 					<Send onClick={() => scrollToBottom()} />
 				</Button>
 			</form>
@@ -224,7 +224,7 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 			<div className="flex flex-col gap-2.5 bg-[#171717] rounded-xl p-3">
 				<div className="inline-flex items-center justify-between gap-3">
 					<div className="justify-start text-autofun-background-action-highlight text-base font-medium">
-						{message?.sender || "Unnamed"}
+						{message?.sender ? shortenAddress(message?.sender) : "-"}
 					</div>
 					<div className="justify-start text-autofun-text-secondary text-sm font-medium">
 						{message?.createdAt ? fromNow(message?.createdAt) : "-"}
@@ -239,7 +239,7 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 						width={500}
 						height={500}
 						unoptimized
-						className="aspect-square size-80"
+						className="aspect-square size-80 object-contain"
 						alt="image"
 					/>
 				) : null}

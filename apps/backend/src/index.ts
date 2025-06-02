@@ -38,7 +38,7 @@ fastify.register(fastifyCookie);
 
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	origin: "*",
+	origin: ["http://localhost:3000"],
 	credentials: true,
 });
 
@@ -48,14 +48,6 @@ fastify.register(fastifyJWT, {
 
 fastify.get("/", (_, reply) => {
 	reply.send({ hello: "world" });
-});
-
-fastify.addHook("onRequest", async (request, reply) => {
-	logger.info(`Request from IP: ${request.ip}`, {
-		ip: request.ip,
-		url: request.url,
-		method: request.method,
-	});
 });
 
 registerPublicRoutes(fastify);

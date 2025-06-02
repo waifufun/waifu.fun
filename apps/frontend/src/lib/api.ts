@@ -1,4 +1,5 @@
 import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
+import { Connection } from "@solana/web3.js";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -36,12 +37,98 @@ export const fetcher = async (
 	}
 };
 
-export const getTokens = async ({ searchParams }) => {
-	return await fetcher("/tokens", "POST", searchParams);
+export const getTokens = async ({
+	searchParams,
+}: { searchParams: { [key: string]: string | string[] | number | number[] | undefined } }) => {
+	try {
+		const body = {
+			chain: (searchParams?.chain as TChain) || undefined,
+			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
+			page: searchParams?.page ? Number(searchParams.page) : 1,
+			category: (searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+			search: searchParams?.search || "",
+			limit: searchParams?.limit || 50,
+		};
+
+		const response = await fetcher("/tokens", "POST", body);
+		return response.docs || [];
+	} catch (error) {
+		console.error("Error fetching tokens:", error);
+		return [];
+	}
 };
 
-export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
+export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
 	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
+};
+
+export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
+	return await fetcher("/tokens/trades", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+};
+
+export const getAddressBalances = async ({ address }: { address: AddressLike }) => {
+	return await fetcher("/tokens/balances", "POST", {
+		address,
+	});
+};
+
+export const getChatHistory = async ({
+	room,
+	contractAddress,
+	chain,
+	chainId,
+}: { room: string; contractAddress: string; chain: TChain; chainId: string | number }) => {
+	return await fetcher("/chat/history", "POST", {
+		room,
+		contractAddress,
+		chain,
+		chainId,
+	});
+};
+
+export const generateImage = async ({ prompt, width, height }: { prompt: string; width: number; height: number }) => {
+	return await fetcher("/generation/image", "POST", {
+		prompt,
+		width,
+		height,
+	});
+};
+
+export const generateMetadata = async (prompt?: string) => {
+	return await fetcher("/generation/generate-metadata", "POST", {
+		prompt,
+	});
+};
+
+export const generateRemoteMetadata = async ({
+	imageUrl,
+	image,
+	metadata: { name, description, symbol },
+	manual,
+}: {
+	imageUrl?: string | undefined;
+	image?: string | undefined;
+	metadata: {
+		name: string;
+		description: string;
+		symbol: string;
+	};
+	manual?: boolean | undefined;
+}) => {
+	return await fetcher("/tokens/create-metadata", "POST", {
+		imageUrl,
+		image,
+		metadata: {
+			name,
+			description,
+			symbol,
+		},
+		manual,
+	});
 };
 
 export const importToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
@@ -52,15 +139,15 @@ export const importToken = async ({ chain, chainId, contractAddress }: ITokenLoo
 	});
 };
 
-export const getTrades = async ({ chain, chainId, contractAddress }) => {
-	return await fetcher("/tokens/trades", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
-};
-
-export const getHolders = async ({ chain, chainId, contractAddress }) => {
+export const getHolders = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
 	return await fetcher("/tokens/holders", "POST", {
 		chain,
 		chainId,
@@ -68,28 +155,37 @@ export const getHolders = async ({ chain, chainId, contractAddress }) => {
 	});
 };
 
-export const getChatHistory = async ({ room, contractAddress, chain, chainId }) => {
-	return await fetcher("/chat/history", "POST", {
-		room,
-		contractAddress,
-		chain,
-		chainId,
-	});
-};
-
-export const sendChatMessage = async ({ message, chain, chainId, room, contractAddress, attachment }) => {
+export const sendChatMessage = async ({
+	message,
+	chain,
+	chainId,
+	room,
+	contractAddress,
+	attachment,
+}: {
+	message: string;
+	chain: TChain;
+	chainId: string | number;
+	room: string;
+	contractAddress: string;
+	attachment?: string | undefined;
+}) => {
 	return await fetcher("/chat/message", "POST", {
 		message,
-		attachment,
 		chain,
 		chainId,
 		room,
 		contractAddress,
+		attachment,
 	});
 };
 
-export const getTransaction = async ({ chain, chainId, txId }) => {
-	return await fetcher("/transactions/get-transaction", "POST", {
+export const getTransaction = async ({
+	chain,
+	chainId,
+	txId,
+}: { chain: TChain; chainId: string | number; txId: string }) => {
+	return await fetcher("/transaction", "POST", {
 		chain,
 		chainId,
 		txId,
@@ -114,46 +210,13 @@ export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };
 
+export const getPrices = async () => {
+	return await fetcher("/prices", "POST");
+};
+
 export const logOut = async (chain: TChain) => {
 	return await fetcher("/auth/logout", "POST", {
 		chain,
-	});
-};
-
-export const generateMetadata = async (prompt?: string) => {
-	return await fetcher("/generation/generate-metadata", "POST", {
-		prompt,
-	});
-};
-
-export const generateImage = async (body: object) => {
-	return await fetcher("/generation/generate", "POST", body);
-};
-
-export const generateRemoteMetadata = async ({
-	imageUrl,
-	image,
-	metadata: { name, description, symbol },
-	manual,
-}: {
-	imageUrl?: string | undefined; // Allow undefined
-	image?: string | undefined; // Allow undefined
-	metadata: {
-		name: string;
-		description: string;
-		symbol: string;
-	};
-	manual?: boolean | undefined; // Allow undefined
-}) => {
-	return await fetcher("/tokens/create-metadata", "POST", {
-		imageUrl,
-		image,
-		metadata: {
-			name,
-			description,
-			symbol,
-		},
-		manual,
 	});
 };
 
@@ -178,3 +241,23 @@ export const createToken = async ({
 		signature,
 	});
 };
+
+export const getTrades = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
+	return await fetcher("/tokens/trades", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+};
+
+export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+export const connection = new Connection(HELIUS_RPC_URL, "confirmed");

@@ -17,6 +17,7 @@ const schema = new Schema<IMigration, ModelType<IMigration>>(
 		status: { type: String, default: "active" },
 		positionIds: [{ type: String }],
 		positionNftsSecrets: [{ type: String }],
+		nftMinted: [{ type: String }],
 		contractAddress: { type: String, required: true },
 		chain: { type: String, enum: ["solana", "evm"], required: true },
 		chainId: { type: Number, required: true },

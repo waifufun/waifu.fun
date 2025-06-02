@@ -16,6 +16,7 @@
 	"dependencies": {
 		"@autofun/utils": "workspace:*",
 		"@autofun/constants": "workspace:*",
+		"@autofun/logger": "workspace:*",
 		"@coral-xyz/anchor": "^0.31.1",
 		"@metaplex-foundation/js": "^0.20.1",
 		"@metaplex-foundation/mpl-token-metadata": "^3.4.0",
@@ -23,7 +24,7 @@
 		"@metaplex-foundation/umi-program-repository": "^1.2.0",
 		"@solana/kit": "^2.1.0",
 		"@solana/web3.js": "^1.98.2",
-		"viem": "^2.28.3"
+		"viem": "2.30.5"
 	},
 	"devDependencies": {
 		"@autofun/types": "workspace:*",

@@ -34,9 +34,9 @@ export default function ProfileHeader({
 					<button
 						type="button"
 						onClick={() => console.log("upload button")}
-						className="cursor-pointer bg-[#0C0C0C]/90 rounded-md p-1 w-6 h-6"
+						className="cursor-pointer bg-[#0C0C0C]/90 rounded-md p-1 size-6"
 					>
-						<Image src="/profile/upload.svg" alt="Profile" width={14} height={14} className="object-cover" />
+						<Image src="/profile/upload.svg" alt="Profile" width={24} height={24} className="object-cover" />
 					</button>
 					<button
 						type="button"
@@ -51,7 +51,6 @@ export default function ProfileHeader({
 			<div className="ml-6 space-y-1 mb-2 flex flex-col h-full">
 				<h1 className="text-lg font-semibold uppercase">{data.username}</h1>
 				<p className="text-sm text-gray-400 items-center flex">
-					{" "}
 					<CopyButton className="mr-2" textToCopy={data.address} />
 					{data.address}
 				</p>
