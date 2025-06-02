@@ -66,6 +66,7 @@ export interface IToken<T extends TChain = TChain>
   name: string;
   ticker: string;
   image: TURLLike;
+  description?: string;
   price: number;
   totalSupply: number;
   marketcap: number;
@@ -87,7 +88,7 @@ export interface IToken<T extends TChain = TChain>
   verified?: boolean;
   updatedAt: Date;
   pool?: string;
-}
+ }
 
 export interface ITokenSocials {
   twitter?: TURLLike;

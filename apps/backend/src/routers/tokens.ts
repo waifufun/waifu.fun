@@ -39,10 +39,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				chain: TChain;
 				chainId: TChainId;
 				page: number;
+				limit?: number;
+				search?: string;
 				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
 			};
 
+			const limit = queryParams?.limit;
 			const page = queryParams?.page || 1;
+			const isSearch = !!queryParams?.search;
 
 			const category = queryParams.category || "new";
 			let sortQuery = undefined;
@@ -71,7 +75,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				if (!allowedChain) throw new Error("Unsupported chain pair");
 			}
 
-			const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
+			const cacheKey = `${chain}:${chainId}:${page}:${category}:${sortQuery}:${limit}:tokens:${isSearch ? queryParams?.search : "non-search"}`;
 			logger.info(`Cache key: ${cacheKey}`);
 
 			const cache = await redis.get(cacheKey);
@@ -85,15 +89,19 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				hidden: { $ne: true },
 			};
 
+			if (queryParams?.search) {
+				query.$text = { $search: queryParams.search };
+			}
+
 			if (chain && chainId) {
 				query.chain = chain;
 				query.chainId = chainId;
 			}
 
 			const paginationOptions: PaginateOptions = {
-				page: 1,
+				page,
 				lean: true,
-				limit: 50,
+				limit: limit ? (limit > 50 ? 50 : limit) : 50,
 				select: "-__v",
 				leanWithId: false,
 				sort: sortQuery,

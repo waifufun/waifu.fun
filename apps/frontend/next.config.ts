@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	output: "standalone",
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	webpack: (config: { resolve: { fallback: { [key: string]: any } } }, { isServer }: any) => {
 		if (!isServer) {
 			config.resolve.fallback = {

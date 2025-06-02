@@ -6,6 +6,8 @@ import HolderLabels from "./holder-labels";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
 import { formatUnits } from "viem";
 import Progressbar from "../progressbar";
+import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@autofun/constants";
+import Link from "next/link";
 
 export default async function Holders({ token }: { token: IToken }) {
 	const data = await getHolders({
@@ -13,6 +15,15 @@ export default async function Holders({ token }: { token: IToken }) {
 		chainId: token.chainId,
 		contractAddress: token.contractAddress,
 	});
+
+	if (!data || data?.length === 0) {
+		return (
+			<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+				There are currently no holders.
+			</div>
+		);
+	}
+
 	return (
 		<Table>
 			<TableHeader>
@@ -47,7 +58,12 @@ export default async function Holders({ token }: { token: IToken }) {
 						</TableCell>
 						<TableCell className="text-right">{holder.percentage}%</TableCell>
 						<TableCell>
-							<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
+							<Link
+								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/${token?.chain === "solana" ? "account" : "address"}account/${holder.address}`}
+								target="blank"
+							>
+								<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
+							</Link>
 						</TableCell>
 					</TableRow>
 				))}

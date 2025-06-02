@@ -149,6 +149,7 @@ export class EVMRpcProvider {
 		return Number(balanceRaw) / 10 ** Number(decimals);
 	};
 
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	async readAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
 		return await this.client.readContract({
 			address: getAddress(contractAddress),
@@ -157,7 +158,7 @@ export class EVMRpcProvider {
 			args,
 		});
 	}
-
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	async writeAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
 		if (!this.walletClient) {
 			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
@@ -200,6 +201,7 @@ export class EVMRpcProvider {
 
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function shouldFallback(error: any): boolean {
   const status = error?.response?.status || error?.statusCode || error?.code;
 

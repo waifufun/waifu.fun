@@ -10,6 +10,7 @@ const protectedPaths = [
 	"/generation/generate-metadata",
 	"/tokens/create-metadata",
 	"/tokens/create",
+	"/chat/message",
 ];
 
 export function registerProtectedRoutes(app: FastifyInstance) {

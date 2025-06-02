@@ -9,7 +9,6 @@
     "build": "tsc",
     "dev": "tsc -w",
     "sync": "tsx src/cli.ts",
-    "lint": "eslint src --ext .ts",
     "clean": "rimraf dist"
   },
   "dependencies": {
