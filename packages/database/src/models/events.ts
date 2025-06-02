@@ -21,6 +21,7 @@ export interface IEvent {
 	direction?: number;
 	minimumReceiveAmount?: string;
 	deadline?: string;
+	amountGotten?: string;
 	bondingCurve?: string;
 	bondingCurveAddress?: string;
 	teamWallet?: string;
@@ -44,7 +45,7 @@ const schema = new Schema<IEvent, IEventModel>(
 		blockTime: { type: Number, required: true },
 		eventType: {
 			type: String,
-			enum: ["launch", "swap", "launchAndSwap", "complete"],
+			enum: ["launch", "swap", "launchAndSwap", "curveCompleted"],
 			required: true,
 		},
 		contractAddress: { type: String, required: true },
@@ -60,6 +61,7 @@ const schema = new Schema<IEvent, IEventModel>(
 		direction: { type: Number },
 		minimumReceiveAmount: { type: String },
 		deadline: { type: String },
+		amountGotten: { type: String },
 		bondingCurve: { type: String },
 		bondingCurveAddress: { type: String },
 		teamWallet: { type: String },
