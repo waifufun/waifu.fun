@@ -377,7 +377,7 @@ export class SolanaRpcProvider {
 			if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
 
 			// TODO - Ensure non valid values are just skipped entirely if we see such token
-			if (!curve || !curve.reserveToken || curve.reserveToken.toNumber() === 0) {
+			if (!curve || !curve.reserveToken || String(curve.reserveToken) === "0") {
 				return {
 					tokenMint: mint,
 					curveCompleted: null,
