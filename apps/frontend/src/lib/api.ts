@@ -209,6 +209,10 @@ export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };
 
+export const getPrices = async () => {
+	return await fetcher("/prices", "POST");
+};
+
 export const logOut = async (chain: TChain) => {
 	return await fetcher("/auth/logout", "POST", {
 		chain,
