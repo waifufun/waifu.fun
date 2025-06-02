@@ -4,7 +4,10 @@ import { instructions as IDLInstructions } from "../abi/autofun";
 import DB from "@autofun/database";
 import logger from "@autofun/logger";
 import { PublicKey } from "@solana/web3.js";
+import dotenv from "dotenv";
 
+
+dotenv.config();
 
 export interface SolanaIndexerConfig {
 	networkId: SolanaNetworkIds;
@@ -88,18 +91,82 @@ export class SolanaIndexer {
 
     return { type: "unknown", discriminator, accounts };
   }
+  
+  private startListening = async () => {
+    logger.info("Starting real-time listening for new transactions...");
+    
+    let isProcessing = false;
+    let lastCheckTime = 0;
+    const MIN_CHECK_INTERVAL = 2000;
+    
+    try {
+      const subscriptionId = await this.rpc.subscribeSlot(async (slotInfo) => {
+        if (this.debugStatements) {
+          logger.info(`New slot: ${slotInfo.slot}, Parent: ${slotInfo.parent}, Root: ${slotInfo.root}`);
+        }
+        
+        const now = Date.now();
+        if (isProcessing || (now - lastCheckTime) < MIN_CHECK_INTERVAL) {
+          return;
+        }
+        
+        isProcessing = true;
+        lastCheckTime = now;
+        
+        try {
+          await this.runWithSignatures();
+        } catch (error) {
+          logger.error("Error processing new slot:", error);
+        } finally {
+          isProcessing = false;
+        }
+      });
+  
+      this.rpc.on('slot:change', (slotInfo) => {
+        if (this.debugStatements) {
+          logger.debug('Slot change event:', slotInfo);
+        }
+      });
+  
+      this.rpc.on('websocket:reconnected', () => {
+        logger.info('WebSocket reconnected, resuming listening...');
+      });
+  
+      this.rpc.on('websocket:error', (error) => {
+        logger.error('WebSocket error:', error);
+      });
+  
+      logger.info(`Real-time listening started with subscription ID: ${subscriptionId}`);
+      logger.info(`Active subscriptions: ${this.rpc.getActiveSubscriptionCount()}`);
+  
+      process.on('SIGINT', () => {
+        logger.info('Shutting down real-time listener...');
+        this.rpc.destroy();
+        process.exit(0);
+      });
+  
+      process.on('SIGTERM', () => {
+        logger.info('Shutting down real-time listener...');
+        this.rpc.destroy();
+        process.exit(0);
+      });
+  
+    } catch (error) {
+      logger.error("Error setting up real-time listener:", error);
+      throw error;
+    }
+  }
 
   private decodeCompleteEvent(eventData: Buffer): any {
     try {
       const discriminator = Array.from(eventData.slice(0, 8));
-      // the complete event discriminator
       const expectedDiscriminator = [95, 114, 97, 156, 212, 46, 152, 8];
       
       if (!this.arraysEqual(discriminator, expectedDiscriminator)) {
         return null;
       }
   
-      // After discriminator (8 bytes), we have:
+      // After discriminator (first 8 bytes), we have:
       // user: 32 bytes (pubkey)
       // mint: 32 bytes (pubkey) 
       // bonding_curve: 32 bytes (pubkey)
@@ -107,7 +174,6 @@ export class SolanaIndexer {
       const mintBytes = eventData.slice(40, 72);
       const bondingCurveBytes = eventData.slice(72, 104);
   
-      // Convert to base58 (standard Solana address format)
       const user = new PublicKey(userBytes).toBase58();
       const mint = new PublicKey(mintBytes).toBase58();
       const bondingCurve = new PublicKey(bondingCurveBytes).toBase58();
@@ -450,6 +516,20 @@ export class SolanaIndexer {
     const startTime = Date.now();
 
     try {
+      const signatureExists = await DB.Event.exists({
+        signature: signatureInfo.signature,
+        programId: this.config.autoFunAddress,
+      });
+      if (signatureExists) {
+        if (this.debugStatements) {
+          logger.info(
+            `Signature ${signatureInfo.signature} already processed, skipping`
+          );
+        }
+        return [];
+      }
+
+
       const transaction = await this.rpc.getTransaction(
         signatureInfo.signature
       );
@@ -572,7 +652,7 @@ export class SolanaIndexer {
     processedSignatures: number;
     events: number;
     startTime: number;
-  }): void {
+  }, showLogs: boolean = false): void {
     const totalDuration = Date.now() - totalStats.startTime;
     const finalSignaturesPerSecond = (
       (totalStats.processedSignatures / totalDuration) *
@@ -585,15 +665,17 @@ export class SolanaIndexer {
       totalStats.events / totalStats.processedSignatures
     ).toFixed(4);
 
-    logger.info(`
-=== SIGNATURE-BASED INDEXING COMPLETE ===
-Total signatures processed: ${totalStats.processedSignatures}
-Total events found: ${totalStats.events}
-Total time: ${totalDuration}ms (${(totalDuration / 1000 / 60).toFixed(2)} minutes)
-Average signatures per second: ${finalSignaturesPerSecond}
-Average time per signature: ${averageTimePerSignature}ms
-Events per signature: ${eventsPerSignature}
-    `);
+    if (showLogs) {
+      logger.info(`
+        === SIGNATURE-BASED INDEXING COMPLETE ===
+        Total signatures processed: ${totalStats.processedSignatures}
+        Total events found: ${totalStats.events}
+        Total time: ${totalDuration}ms (${(totalDuration / 1000 / 60).toFixed(2)} minutes)
+        Average signatures per second: ${finalSignaturesPerSecond}
+        Average time per signature: ${isFinite(Number(averageTimePerSignature)) ? averageTimePerSignature : "N/A"}
+        Events per signature: ${isNaN(Number(eventsPerSignature)) ? "N/A" : eventsPerSignature}
+            `);
+    }
 	}
 
 	private async updateSyncProgress(currentSlot: number, highestSlot?: number): Promise<void> {
@@ -632,132 +714,195 @@ Events per signature: ${eventsPerSignature}
 		}
 	}
 
-	public async runWithSignatures(): Promise<void> {
-		try {
-			const maxSignatures = this.config.maxSignatures || 500;
+  public async runWithRealTimeSync(): Promise<void> {
+    try {
+      logger.info("=== STEP 1: ENSURING FULL SYNC ===");
+      await this.runWithSignatures(true); // This handles genesis sync and gap filling
 
-			const syncMeta = await DB.EventsMeta.getOrCreate(this.config.autoFunAddress, this.config.networkId.toString());
+      logger.info("=== STEP 2: FINAL GAP CHECK ===");
+      await this.runWithSignatures(true); // Final check to ensure no gaps
 
-			// Determine starting point and sync strategy
-			let beforeSignature = this.config.beforeSignature;
-			let isGenesisSync = false;
-			let targetMinSlot = this.STOP_AT_SLOT;
+      // Start real-time listening
+      logger.info("=== STEP 3: STARTING REAL-TIME LISTENING ===");
+      await this.startListening();
+      
+      // Keep the process alive
+      logger.info("Real-time indexer is now running. Press Ctrl+C to stop.");
+      
+    } catch (error) {
+      logger.error("Error in real-time sync:", error);
+      throw error;
+    }
+  }
 
-			if (!syncMeta.doneGenesisSync) {
-				// Genesis sync: from current to minBlock
-				logger.info("Starting genesis sync (current -> minBlock)");
-				logger.info(`Resuming from slot: ${syncMeta.currentBlock || "latest"}`);
-				isGenesisSync = true;
+  private async runWithSignatures(showLogs: boolean = false): Promise<void> {
+    try {
+      const maxSignatures = this.config.maxSignatures || 500;
+  
+      const syncMeta = await DB.EventsMeta.getOrCreate(this.config.autoFunAddress, this.config.networkId.toString());
+  
+      let beforeSignature = this.config.beforeSignature;
+      let stopAtSignature: string | undefined;
+      let isGenesisSync = false;
+      let targetMinSlot = this.STOP_AT_SLOT;
+  
+      if (!syncMeta.doneGenesisSync) {
+        // Genesis sync: from current to minBlock
+        if (showLogs) {
+          logger.info(`Genesis sync from current block to minBlock: ${this.STOP_AT_SLOT}`);
+        }
+        isGenesisSync = true;
+  
+        if (syncMeta.currentBlock > 0) {
+          beforeSignature = await this.getLastProcessedSignature();
+        }
+      } else {
+        // Normal sync: from latest until newest DB event
+        if (showLogs) {
+          logger.info(`Normal sync from latest to newest DB event`);
+        }
+        beforeSignature = undefined;
+        
+        const newestEvent = await DB.Event.findOne(
+          { programId: this.config.autoFunAddress },
+          {},
+          { sort: { slot: -1 } },
+        );
+        
+        if (newestEvent) {
+          stopAtSignature = newestEvent.signature;
+          targetMinSlot = newestEvent.slot;
+          if (showLogs) {
+            logger.info(`Will stop when reaching DB signature: ${stopAtSignature}`);
+          }
+        } else {
+          if (showLogs) {
+            logger.info("No existing events in DB, will process recent signatures");
+          }
+        }
+      }
+  
+      const totalStats = {
+        processedSignatures: 0,
+        events: 0,
+        startTime: Date.now(),
+      };
+  
+      let batchNumber = 1;
+      let hasMoreSignatures = true;
 
-				// If we have processed events, start from the oldest one we've processed
-				if (syncMeta.currentBlock > 0) {
-					beforeSignature = await this.getLastProcessedSignature();
-				}
-			} else if (syncMeta.currentBlock < syncMeta.highestSyncedBlock) {
-				// Fill gap: from currentBlock to highestSyncedBlock
-				logger.info(`Filling gap sync (${syncMeta.currentBlock} → ${syncMeta.highestSyncedBlock})`);
-				targetMinSlot = syncMeta.currentBlock;
-				beforeSignature = await this.getLastProcessedSignature();
-			} else {
-				// Normal sync: from highestSyncedBlock to latest
-				logger.info(`Normal sync from block ${syncMeta.highestSyncedBlock} to latest`);
-				targetMinSlot = 0;
-				// For normal sync, we want the newest processed event
-				const newestEvent = await DB.Event.findOne(
-					{ programId: this.config.autoFunAddress },
-					{},
-					{ sort: { slot: -1 } }, // Sort descending to get highest/newest
-				);
-				if (newestEvent) {
-					beforeSignature = newestEvent.signature;
-				}
-			}
+      if (showLogs) {
+        logger.info(`Starting indexer for address: ${this.config.autoFunAddress}`);
+        logger.info(`Network: ${this.config.networkId}`);
+        logger.info(`Genesis sync: ${isGenesisSync}`);
+        logger.info(`Target min slot: ${targetMinSlot}`);
+        logger.info(`Starting from signature: ${beforeSignature || "latest"}`);
+        logger.info(`Stop at signature: ${stopAtSignature || "none"}`);  
+      }
+      while (hasMoreSignatures) {
+        if (showLogs) {
+          logger.info(`Fetching batch ${batchNumber} of signatures...`);
+        }
+  
+        const signatures = await this.getSignatures(beforeSignature);
+  
+        if (signatures.length === 0) {
+          if (showLogs) {
+            logger.info("No more signatures found");
+          }
+          break;
+        }
+  
+        // For genesis sync: Check if we should stop based on target slot
+        if (isGenesisSync && targetMinSlot > 0 && this.shouldStopAtSlot(signatures)) {
+          const stoppedAtSlot = signatures.find((sig) => sig.slot <= targetMinSlot)?.slot;
+          if (showLogs) {
+            logger.info(`Reached target slot ${stoppedAtSlot} (target: ${targetMinSlot}), stopping indexer`);
+          }
+          break;
+        }
+  
+        // For normal sync: Check if we've reached our stop signature
+        if (!isGenesisSync && stopAtSignature) {
+          const stopIndex = signatures.findIndex(sig => sig.signature === stopAtSignature);
+          if (stopIndex !== -1) {
+            if (stopIndex === 0) {
+              if (showLogs) {
+                logger.info("Already up to date - newest signature found at start of batch");
+              }
+              break;
+            }
+            signatures.splice(stopIndex); // Remove signatures from stopIndex onwards
+            hasMoreSignatures = false; // Last batch
+            if (showLogs) {
+              logger.info(`Found stop signature at index ${stopIndex}, processing ${signatures.length} new signatures`);
+            }
+          }
+        }
 
-			const totalStats = {
-				processedSignatures: 0,
-				events: 0,
-				startTime: Date.now(),
-			};
-
-			let batchNumber = 1;
-			let hasMoreSignatures = true;
-
-			logger.info(`Starting indexer for address: ${this.config.autoFunAddress}`);
-			logger.info(`Network: ${this.config.networkId}`);
-			logger.info(`Target min slot: ${targetMinSlot}`);
-			logger.info(`Starting from signature: ${beforeSignature || "latest"}`);
-
-			while (hasMoreSignatures) {
-				logger.info(`Fetching batch ${batchNumber} of signatures...`);
-
-				const signatures = await this.getSignatures(beforeSignature);
-
-				if (signatures.length === 0) {
-					logger.info("No more signatures found");
-					break;
-				}
-
-				// Check if we should stop based on target slot
-				if (targetMinSlot > 0 && this.shouldStopAtSlot(signatures)) {
-					const stoppedAtSlot = signatures.find((sig) => sig.slot <= targetMinSlot)?.slot;
-					logger.info(`Reached target slot ${stoppedAtSlot} (target: ${targetMinSlot}), stopping indexer`);
-					break;
-				}
-
-				logger.info(
-					`Processing batch ${batchNumber}: ${signatures.length} signatures ` +
-						`(slots: ${signatures[0]?.slot} to ${signatures[signatures.length - 1]?.slot})`,
-				);
-
-				const batchStartTime = Date.now();
-
-				try {
-					const allBatchEvents = await this.processSignaturesBatch(signatures);
-
-					if (allBatchEvents.length > 0) {
-						await this.saveBatchEvents(allBatchEvents);
-					}
-
-					// Update sync progress
-					const currentSlot = signatures[signatures.length - 1]?.slot;
-					const highestSlot = signatures[0]?.slot;
-
-					await this.updateSyncProgress(currentSlot, highestSlot);
-
-					const batchDuration = Date.now() - batchStartTime;
-					totalStats.processedSignatures += signatures.length;
-					totalStats.events += allBatchEvents.length;
-
-					this.logBatchProgress(batchNumber, signatures, batchDuration, allBatchEvents.length, totalStats);
-
-					if (batchNumber % 10 === 0 && global.gc) {
-						global.gc();
-						logger.info(`Forced garbage collection after batch ${batchNumber}`);
-					}
-
-					hasMoreSignatures = signatures.length >= maxSignatures;
-					if (hasMoreSignatures) {
-						beforeSignature = signatures[signatures.length - 1].signature;
-					}
-
-					batchNumber++;
-					await new Promise((resolve) => setTimeout(resolve, 100));
-					// biome-ignore lint/suspicious/noExplicitAny: allow
-				} catch (error: any) {
-					logger.error(`Error processing batch ${batchNumber}: ${error.message}`);
-					break;
-				}
-			}
-
-			// Mark genesis sync as complete if this was a genesis sync
-			if (isGenesisSync) {
-				await DB.EventsMeta.markGenesisComplete(this.config.autoFunAddress, this.config.networkId.toString());
-				logger.info("Genesis sync marked as complete");
-			}
-
-			this.logFinalSummary(totalStats);
-		} catch (error) {
-			logger.error("Error running signature-based indexer:", error);
-		}
-	}
+        if (showLogs) {
+          logger.info(
+            `Processing batch ${batchNumber}: ${signatures.length} signatures ` +
+              `(slots: ${signatures[0]?.slot} to ${signatures[signatures.length - 1]?.slot})`,
+          );
+        }
+  
+        const batchStartTime = Date.now();
+  
+        try {
+          const allBatchEvents = await this.processSignaturesBatch(signatures);
+  
+          if (allBatchEvents.length > 0) {
+            await this.saveBatchEvents(allBatchEvents);
+          }
+  
+          const currentSlot = signatures[signatures.length - 1]?.slot;
+          const highestSlot = signatures[0]?.slot;
+  
+          await this.updateSyncProgress(currentSlot, highestSlot);
+  
+          const batchDuration = Date.now() - batchStartTime;
+          totalStats.processedSignatures += signatures.length;
+          totalStats.events += allBatchEvents.length;
+  
+          this.logBatchProgress(batchNumber, signatures, batchDuration, allBatchEvents.length, totalStats);
+  
+          if (batchNumber % 10 === 0 && global.gc) {
+            global.gc();
+            logger.info(`Forced garbage collection after batch ${batchNumber}`);
+          }
+  
+          // For genesis sync: continue if we got a full batch
+          // For normal sync: hasMoreSignatures was already set above when we found stopSignature
+          if (isGenesisSync) {
+            hasMoreSignatures = signatures.length >= maxSignatures;
+            if (hasMoreSignatures) {
+              beforeSignature = signatures[signatures.length - 1].signature;
+            }
+          } else {
+            if (hasMoreSignatures && signatures.length >= maxSignatures) {
+              beforeSignature = signatures[signatures.length - 1].signature;
+            } else if (!stopAtSignature) {
+              hasMoreSignatures = false;
+            }
+          }
+  
+          batchNumber++;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        } catch (error: any) {
+          logger.error(`Error processing batch ${batchNumber}: ${error.message}`);
+          break;
+        }
+      }
+  
+      if (isGenesisSync) {
+        await DB.EventsMeta.markGenesisComplete(this.config.autoFunAddress, this.config.networkId.toString());
+        logger.info("Genesis sync marked as complete");
+      }
+  
+      this.logFinalSummary(totalStats, showLogs);
+    } catch (error) {
+      logger.error("Error running signature-based indexer:", error);
+    }
+  }
 }

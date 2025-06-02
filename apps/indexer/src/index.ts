@@ -6,11 +6,11 @@ const config: SolanaIndexerConfig = {
   autoFunAddress:
     "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
   maxSignatures: 70,
-  debugStatements: true,
+  debugStatements: false,
 };
 
 const indexer = new SolanaIndexer(config);
 
 (async () => {
-	await indexer.runWithSignatures();
+	await indexer.runWithRealTimeSync();
 })();
