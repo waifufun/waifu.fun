@@ -17,6 +17,7 @@ import {
 	isChainIdAllowedForChain,
 	isSupportedAddress,
 	populateTokensWithLiveData,
+	updateCryptoPrices,
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { uploadImageFromUrl, upload, uploadBase64Image } from "@autofun/s3-uploader";
@@ -27,6 +28,7 @@ import { codex } from "@autofun/utils";
 import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import { getBondingCurveData } from "../utils/bonding-curve";
 import logger from "@autofun/logger";
+import { address } from "@solana/kit";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -297,88 +299,158 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 	fastify.post("/trades", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {
-			contractAddress: AddressLike;
-			chain: TChain;
-			chainId: TChainId;
+		  contractAddress: AddressLike;
+		  chain: TChain;
+		  chainId: TChainId;
 		};
-
+	  
 		const allowedChain = isChainIdAllowedForChain(chain, chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 		const isAllowedChainPair = isChainIdAllowedForChain(chain, chainId);
 		if (!isAllowedChainPair) throw new Error("Unsupported chain/chainId value");
-
+	  
 		const checksummedQueryAddress =
-			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
-
+		  chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+	  
 		const cacheKey = `${chain}:${chainId}:${checksummedQueryAddress}:trades`;
-
+	  
 		const cache = await redis.get(cacheKey);
-
+	  
 		if (cache) {
-			return JSON.parse(cache);
+		  return JSON.parse(cache);
 		}
-
+	  
 		const token = await DB.Token.findOne({
-			chain,
-			chainId,
-			contractAddress: checksummedQueryAddress,
+		  chain,
+		  chainId,
+		  contractAddress: checksummedQueryAddress,
 		})
-			.select("decimals creator totalSupply imported curveCompleted")
-			.lean();
-
+		  .select("decimals creator totalSupply imported curveCompleted")
+		  .lean();
+	  
 		if (!token) {
-			throw new Error(`Token: ${contractAddress} could not be found`);
+		  throw new Error(`Token: ${contractAddress} could not be found`);
 		}
+	  
+		// Check if the token exists in the event collection
+		const eventsExist = await DB.Event.findOne({
+		  contractAddress: checksummedQueryAddress,
+		  eventType: { $in: ["swap", "launchAndSwap"] }
+		}).lean();
+	  
+		// If token exists in events but curve is not completed, get swaps from our DB
+		if (eventsExist && !token.curveCompleted) {
+		  const swapEvents = await DB.Event.find({
+			contractAddress: checksummedQueryAddress,
+			eventType: { $in: ["swap", "launchAndSwap"] },
+			processed: true
+		  })
+		  .sort({ slot: -1 })
+		  .limit(50)
+		  .lean();
 
+		  const nativePricesResult = await redis.get("prices");
+		  let nativePrices: Record<string, number> | null = nativePricesResult ? JSON.parse(nativePricesResult) : null;
+		  if (!nativePrices) {
+			const cryptoPrices = await updateCryptoPrices({ cacheKey: "prices" });
+			nativePrices = {
+			  solana: cryptoPrices.solana ?? 0,
+			  ethereum: cryptoPrices.ethereum ?? 0,
+			};
+		  }
+
+			// @ts-ignore
+
+		  const priceKey = chain === "solana" ? "solana" : "ethereum";
+		  const nativePrice = nativePrices?.[priceKey] || 0;
+
+		  const items: ITrade[] = swapEvents.map((event) => {
+			const isBuy = event.direction === 0 || event.eventType === "launchAndSwap";
+			
+			let solAmount: string;
+			let tokenAmount: string;
+			let usdValue: number = 0;
+
+			if (isBuy) {
+			  // Buy: NATIVE -> Tokens
+			  solAmount = event.swapAmount ? (Number(event.swapAmount) / (10 ** 9)).toString() : "0"; // SOL spent
+			  tokenAmount = event.amountGotten ? (Number(event.amountGotten) / (10 ** (token.decimals || 9))).toString() : "0"; // Tokens received
+			  usdValue = (Number(solAmount) * nativePrice) || 0;
+			} else {
+			  // Sell: Tokens -> NATIVE
+			  solAmount = event.amountGotten ? (Number(event.amountGotten) / (10 ** 9)).toString() : "0"; // SOL received
+			  tokenAmount = event.swapAmount ? (Number(event.swapAmount) / (10 ** (token.decimals || 9))).toString() : "0"; // Tokens sold
+			  usdValue = (Number(solAmount) * nativePrice) || 0;
+			}
+			
+			return {
+			  address: event.user || event.creator || "N/A",
+			  fromAmount: solAmount,
+			  // @ts-ignore
+			  fromToken: CHAINID_TO_SYMBOL[chain][chainId],
+			  toAmount: tokenAmount,
+			  toToken: token.ticker || "TOKEN",
+			  txId: event.signature,
+			  timestamp: event.blockTime ? event.blockTime * 1000 : new Date(),
+			  usdValue: usdValue,
+			  type: isBuy ? "buy" : "sell",
+			} as ITrade;
+		  });
+
+		  await redis.setex(cacheKey, 7, JSON.stringify(items));
+		  return items;
+		}
+	  
+		// For imported tokens or completed curves, use external Codex API
 		if (token?.imported || (!token.imported && token.curveCompleted)) {
-			const trades = await codex.queries.getTokenEvents({
-				query: {
-					address: contractAddress as unknown as string,
-					// @ts-ignore
-					networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
-					eventType: EventType.Swap,
-					priceUsdTotal: {
-						gte: 5,
-					},
-				},
-				direction: RankingDirection.Desc,
-				limit: 50,
-			});
-
-			const items = Array.from(
-				new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
-			).map((event) => {
-				const trade = event as {
-					maker: string;
-					transactionHash: string;
-					timestamp: number;
-					eventDisplayType: string;
-					data: {
-						priceUsdTotal: string;
-						priceBaseTokenTotal: string;
-						amountNonLiquidityToken: string;
-					};
-				};
-
-				return {
-					address: trade?.maker || "N/A",
-					fromAmount: trade?.data?.priceBaseTokenTotal,
-					// @ts-ignore
-					fromToken: CHAINID_TO_SYMBOL[chain][chainId],
-					toAmount: trade?.data?.amountNonLiquidityToken || "0",
-					txId: trade?.transactionHash,
-					timestamp: trade?.timestamp ? trade?.timestamp * 1000 : new Date(),
-					usdValue: trade?.data?.priceUsdTotal || null,
-					type: trade?.eventDisplayType?.toLowerCase() || "buy",
-				} as ITrade;
-			});
-
-			await redis.setex(cacheKey, 7, JSON.stringify(items));
-			return items;
+		  const trades = await codex.queries.getTokenEvents({
+			query: {
+			  address: contractAddress as unknown as string,
+			  // @ts-ignore
+			  networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
+			  eventType: EventType.Swap,
+			  priceUsdTotal: {
+				gte: 5,
+			  },
+			},
+			direction: RankingDirection.Desc,
+			limit: 50,
+		  });
+	  
+		  const items = Array.from(
+			new Map((trades?.getTokenEvents?.items || []).map((item) => [item?.transactionHash, item])).values(),
+		  ).map((event) => {
+			const trade = event as {
+			  maker: string;
+			  transactionHash: string;
+			  timestamp: number;
+			  eventDisplayType: string;
+			  data: {
+				priceUsdTotal: string;
+				priceBaseTokenTotal: string;
+				amountNonLiquidityToken: string;
+			  };
+			};
+	  
+			return {
+			  address: trade?.maker || "N/A",
+			  fromAmount: trade?.data?.priceBaseTokenTotal,
+			  // @ts-ignore
+			  fromToken: CHAINID_TO_SYMBOL[chain][chainId],
+			  toAmount: trade?.data?.amountNonLiquidityToken || "0",
+			  txId: trade?.transactionHash,
+			  timestamp: trade?.timestamp ? trade?.timestamp * 1000 : new Date(),
+			  usdValue: trade?.data?.priceUsdTotal || null,
+			  type: trade?.eventDisplayType?.toLowerCase() || "buy",
+			} as ITrade;
+		  });
+	  
+		  await redis.setex(cacheKey, 7, JSON.stringify(items));
+		  return items;
 		}
-
+	  
 		return [];
-	});
+	  });
 
 	fastify.post("/holders", async (request) => {
 		const { contractAddress, chain, chainId } = request.body as {

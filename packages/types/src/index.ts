@@ -14,6 +14,12 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
+export interface SlotInfo {
+	slot: number;
+	parent: number;
+	root: number;
+}
+
 export type FalModelMode = "image" | "llm" | "audio" | "video";
 export type FALModels = {
 	image: {
@@ -63,9 +69,9 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	chain: T;
 	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
 	name: string;
-	description?: string;
 	ticker: string;
 	image: TURLLike;
+	description?: string;
 	price: number;
 	totalSupply: number;
 	marketcap: number;
@@ -207,3 +213,15 @@ export type ISwapSettings = {
 	slippage: string;
 	deadline: string;
 };
+
+export interface IEventsMeta {
+	_id?: string;
+	programId: string;
+	networkId: string;
+	currentBlock: number;
+	highestSyncedBlock: number;
+	minBlock: number;
+	doneGenesisSync: boolean;
+	lastSyncTimestamp: Date;
+	isActive: boolean;
+}

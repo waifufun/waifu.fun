@@ -1,0 +1,26 @@
+{
+	"name": "indexerv2",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "tsx watch src/index.ts",
+		"lint": "biome format . --write && biome lint . --fix"
+	},
+	"devDependencies": {
+		"@autofun/types": "workspace:*"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.11.0",
+	"dependencies": {
+		"@autofun/database": "workspace:*",
+		"@autofun/logger": "workspace:*",
+		"@autofun/rpc": "workspace:*",
+		"@solana/web3.js": "^1.98.2",
+		"dotenv": "^16.5.0",
+		"helius-sdk": "^1.5.1"
+	}
+}

@@ -13,6 +13,7 @@
 		},
 		"ignoredBuiltDependencies": [
 			"@biomejs/biome",
+			"@bufbuild/buf",
 			"@tailwindcss/oxide",
 			"bigint-buffer",
 			"blake-hash",
