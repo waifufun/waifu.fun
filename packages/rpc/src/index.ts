@@ -20,6 +20,9 @@ import { Connection, PublicKey, type VersionedBlockResponse } from "@solana/web3
 import { updateCryptoPrices } from "@autofun/utils";
 import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
 import autoFunAbi from "./evm/abis/AutoFun.json";
+import { EventEmitter } from 'events';
+import type {SlotInfo} from "@autofun/types";
+import logger from "@autofun/logger";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -203,7 +206,7 @@ function withFallBack<TArgs extends unknown[], TResult>(
 
 		const timeoutPromise = new Promise<never>((_, reject) => {
 			timeoutId = setTimeout(() => {
-				console.warn(`RPC call timed out after ${timeoutMs}ms`);
+				logger.warn(`RPC call timed out after ${timeoutMs}ms`);
 				reject(new Error("Timeout exceeded"));
 			}, timeoutMs);
 		});
@@ -217,7 +220,7 @@ function withFallBack<TArgs extends unknown[], TResult>(
 			if (!shouldFallback(error)) {
 				throw error;
 			}
-			console.warn(`Falling back to next RPC due to: ${error}`);
+			logger.warn(`Falling back to next RPC due to: ${error}`);
 			const rpcList = SOLANA_RPC_URLS?.[ctx.networkId];
 			if (rpcList && rpcList.length > 1) {
 				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
@@ -228,15 +231,17 @@ function withFallBack<TArgs extends unknown[], TResult>(
 	};
 }
 
-export class SolanaRpcProvider {
+export class SolanaRpcProvider extends EventEmitter {
 	public connection;
 	public client;
 	private program;
 	public networkId: SolanaNetworkIds;
 	private static currentRpc: SolanaRpcProvider | null = null;
 	public static currentRpcIndex = 0;
+	private subscriptions: Map<number, { type: string; cleanup?: () => void }> = new Map();
 
 	constructor(networkId: SolanaNetworkIds) {
+		super();
 		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
 		if (!rpc) {
 			throw new Error(`No RPC URL configured for Solana network: ${networkId}`);
@@ -255,6 +260,87 @@ export class SolanaRpcProvider {
 
 		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
 		this.program = new Program(idl as Idl, provider);
+	}
+
+	public subscribeSlot = withFallBack(async (
+		callback: (slotInfo: SlotInfo) => void
+	): Promise<number> => {
+		const subscriptionId = this.connection.onSlotChange((slotInfo) => {
+		  const slotData: SlotInfo = {
+			slot: slotInfo.slot,
+			parent: slotInfo.parent,
+			root: slotInfo.root,
+		  };
+		  
+		  callback(slotData);
+		  this.emit('slot:change', slotData);
+		});
+	
+		// Track the subscription
+		this.subscriptions.set(subscriptionId, {
+		  type: 'slot',
+		  cleanup: () => this.connection.removeSlotChangeListener(subscriptionId),
+		});
+	
+		logger.info(`Subscribed to slot changes with subscription ID: ${subscriptionId}`);
+		return subscriptionId;
+	}, this);
+
+	public unsubscribe(subscriptionId: number): boolean {
+		const subscription = this.subscriptions.get(subscriptionId);
+		
+		if (!subscription) {
+		  logger.warn(`Subscription ${subscriptionId} not found`);
+		  return false;
+		}
+	
+		try {
+		  if (subscription.cleanup) {
+			subscription.cleanup();
+		  }
+		  
+		  this.subscriptions.delete(subscriptionId);
+		  logger.info(`Unsubscribed from subscription ${subscriptionId}`);
+		  this.emit('subscription:removed', subscriptionId);
+		  return true;
+		} catch (error) {
+		  logger.error(`Error unsubscribing from ${subscriptionId}:`, error);
+		  return false;
+		}
+	}
+
+	public unsubscribeAll(): void {
+		logger.info(`Unsubscribing from ${this.subscriptions.size} active subscriptions`);
+		
+		for (const [subscriptionId, subscription] of this.subscriptions) {
+		  try {
+			if (subscription.cleanup) {
+			  subscription.cleanup();
+			}
+		  } catch (error) {
+			logger.error(`Error cleaning up subscription ${subscriptionId}:`, error);
+		  }
+		}
+		
+		this.subscriptions.clear();
+		this.emit('subscriptions:cleared');
+		logger.info('All subscriptions cleared');
+	}
+
+	public getActiveSubscriptionCount(): number {
+		return this.subscriptions.size;
+	}
+
+	public getActiveSubscriptions(): Array<{ id: number; type: string }> {
+		return Array.from(this.subscriptions.entries()).map(([id, sub]) => ({
+		  id,
+		  type: sub.type,
+		}));
+	}
+
+	public destroy(): void {
+		this.unsubscribeAll();
+		this.removeAllListeners();
 	}
 
 	static async connect(networkId: SolanaNetworkIds): Promise<SolanaRpcProvider> {
@@ -282,7 +368,7 @@ export class SolanaRpcProvider {
 				SolanaRpcProvider.currentRpc = provider;
 				return provider;
 			} catch (error) {
-				console.warn(`Failed RPC: ${rpc}. Trying next...`);
+				logger.warn(`Failed RPC: ${rpc}. Trying next...`);
 				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
 				attempts++;
 			}
@@ -360,7 +446,7 @@ export class SolanaRpcProvider {
 			try {
 				return this.program.coder.accounts.decode("bondingCurve", info.data);
 			} catch (err) {
-				console.error(
+				logger.error(
 					"Failed to decode bonding curve for",
 					tokenMints?.[i] ? tokenMints[i].toBase58() : undefined,
 					err,

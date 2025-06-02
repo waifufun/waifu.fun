@@ -14,6 +14,12 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
+export interface SlotInfo {
+	slot: number;
+	parent: number;
+	root: number;
+}
+
 export type FalModelMode = "image" | "llm" | "audio" | "video";
 export type FALModels = {
 	image: {
