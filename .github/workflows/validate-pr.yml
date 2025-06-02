@@ -8,7 +8,7 @@ on:
 
 jobs:
   restrict-pr-source:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Check source branch
         run: |
