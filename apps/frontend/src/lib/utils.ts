@@ -224,6 +224,7 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 }
 
 export const executeSwap = async (token: IToken, inputAmount: bigint | string | number, mode: "buy" | "sell") => {
+	console.log({ inputAmount, mode })
 	/** If the token was imported or has already migrated we can just use Jupiter */
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 	}
