@@ -43,9 +43,9 @@ export default async function Page({ params, children }: { params: Promise<IToke
 	const token = (await getToken(tokenParams)) as IToken;
 
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex flex-col gap-6 mt-3">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
+			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
 					<div className="px-6 py-3 bg-[#333333]/10 rounded-lg flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
 						<div className="flex items-center gap-6">
@@ -56,7 +56,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								height={60}
 								unoptimized
 								alt="token_image"
-								className="size-[60px] rounded-lg"
+								className="size-[60px] rounded-lg select-none"
 							/>
 							{/* Token Name */}
 							<div className="flex flex-col">
