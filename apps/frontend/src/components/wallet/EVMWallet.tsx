@@ -27,6 +27,7 @@ export class EVMWallet extends WalletClass {
 	public readonly address: EvmAddressLike;
 	public readonly chain: EvmChainIds;
 	private _evmFunctions: IEVMFunctions;
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private _rpcClient: any;
 	// private _rpcProvider: EVMRpcProvider;
 
@@ -254,6 +255,7 @@ export class EVMWallet extends WalletClass {
 		}
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	async createToken(tokenData: TokenMetadata): Promise<any> {
 		console.log("EVMWallet: Creating token with data:", tokenData);
 		console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
@@ -270,20 +272,19 @@ export class EVMWallet extends WalletClass {
 			if (tokenData.buyAmount && tokenData.buyAmount > 0) {
 				const tx = await this.launchAndSwapTx(tokenData, decimals, tokenSupply, virtualReserves, tokenData.buyAmount);
 				return await this.sendTransaction(tx);
-			} else {
-				const tx = {
-					to: this._rpcClient.address,
-					data: this._rpcClient.interface.encodeFunctionData("launch", [
-						decimals,
-						tokenSupply,
-						virtualReserves,
-						tokenData.name,
-						tokenData.symbol,
-						tokenData.metadataUrl,
-					]),
-				};
-				return await this.sendTransaction(tx);
 			}
+			const tx = {
+				to: this._rpcClient.address,
+				data: this._rpcClient.interface.encodeFunctionData("launch", [
+					decimals,
+					tokenSupply,
+					virtualReserves,
+					tokenData.name,
+					tokenData.symbol,
+					tokenData.metadataUrl,
+				]),
+			};
+			return await this.sendTransaction(tx);
 		} catch (error) {
 			console.error("EVMWallet: Error creating token:", error);
 			throw error;

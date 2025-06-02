@@ -3,16 +3,25 @@ import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import { abbreviateNumber, formatNumberSubscript, fromNow, getCoinGeckoChainName, shortenAddress } from "@/lib/utils";
-import type { ITokenLookUp } from "@autofun/types";
+import {
+	abbreviateNumber,
+	cn,
+	formatNumberSubscript,
+	fromNow,
+	getCoinGeckoChainName,
+	shortenAddress,
+} from "@/lib/utils";
+import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import type { Metadata } from "next";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
+import { CopyButton } from "@/components/copy-button";
+import ScamWarning from "@/components/scam-notice";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
-	const token = await getToken(await params);
+	const token = (await getToken(await params)) as IToken;
 
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
@@ -31,13 +40,14 @@ export async function generateMetadata({ params }: { params: Promise<ITokenLookU
 
 export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
 	const tokenParams = await params;
-	const token = await getToken(tokenParams);
+	const token = (await getToken(tokenParams)) as IToken;
 
 	return (
-		<div className="flex flex-col gap-3">
-			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
-				<div className="w-full lg:w-3/4 flex flex-col gap-4 order-3 lg:order-2">
-					<div className="px-6 py-3 bg-[#333333]/10 rounded-lg flex items-center justify-between">
+		<div className="flex flex-col gap-6 mt-3">
+			<ScamWarning isHidden={!!token?.hidden} />
+			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
+				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
+					<div className="px-6 py-3 bg-[#333333]/10 rounded-lg flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
 						<div className="flex items-center gap-6">
 							{/* Image */}
 							<Image
@@ -46,7 +56,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								height={60}
 								unoptimized
 								alt="token_image"
-								className="size-[60px] rounded-lg"
+								className="size-[60px] rounded-lg select-none"
 							/>
 							{/* Token Name */}
 							<div className="flex flex-col">
@@ -108,7 +118,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 						<iframe
 							height="100%"
 							width="100%"
-							className="min-h-[581px] h-full mb-[-41px]"
+							className="min-h-[580px] h-full mb-[-41px]"
 							id="geckoterminal-embed"
 							title="GeckoTerminal Embed"
 							src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
@@ -122,9 +132,100 @@ export default async function Page({ params, children }: { params: Promise<IToke
 						{children}
 					</div>
 				</div>
-				<div className="w-full lg:w-1/4 flex flex-col md:flex-row lg:flex-col gap-3 order-2 lg:order-3">
+				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
 					<BondingCurveProgress token={token} />
+					<div className="flex flex-col gap-4 rounded-xl bg-[#0c0c0c] p-4">
+						<div className="flex items-center gap-4 justify-between">
+							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
+								TOKEN INFO
+							</span>
+
+							<div className="flex items-center gap-6">
+								{[
+									{
+										title: "website",
+										href: token?.socials?.website,
+										icon: "/socials/website.svg",
+									},
+									{
+										title: "twitter",
+										href: token?.socials?.twitter,
+										icon: "/socials/twitter.svg",
+									},
+									{
+										title: "telegram",
+										href: token?.socials?.telegram,
+										icon: "/socials/telegram.svg",
+									},
+									{
+										title: "discord",
+										href: token?.socials?.discord,
+										icon: "/socials/discord.svg",
+									},
+								].map((social) => {
+									const hasLink = !!social?.href;
+									const Comp = hasLink ? Link : Fragment;
+
+									const compProps: { key: string; href?: string; target?: string } = {
+										key: social.title,
+									};
+
+									if (hasLink && social.href) {
+										compProps.href = social.href;
+										compProps.target = "_blank";
+									}
+
+									return (
+										// @ts-ignore
+										<Comp {...compProps} key={social.title}>
+											<Image
+												src={social.icon}
+												className={cn([
+													"size-6",
+													!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
+												])}
+												unoptimized
+												width={24}
+												height={24}
+												alt={social.title}
+											/>
+										</Comp>
+									);
+								})}
+							</div>
+						</div>
+						<div>
+							<Image
+								src={token?.image}
+								className="float-right w-52 h-52 ml-4 mb-2 rounded-xl object-cover"
+								unoptimized
+								priority
+								width={208}
+								height={208}
+								alt="token"
+							/>
+							<div>
+								<span className="font-medium text-xl text-autofun-background-action-highlight uppercase block">
+									{token?.name}
+								</span>
+								<span className="font-medium text-xl uppercase block">{token?.ticker}</span>
+
+								<p className="text-base text-autofun-text-secondary">
+									{token?.description
+										? token?.description
+										: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"}
+								</p>
+							</div>
+							<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
+								<span className="text-base font-medium uppercase">{token.name}</span>
+								<div className="gap-2 flex items-center">
+									<CopyButton textToCopy={token.contractAddress} />
+									<span className="text-sm font-medium">{shortenAddress(token?.contractAddress)}</span>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

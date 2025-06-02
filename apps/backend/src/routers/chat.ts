@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, TChain, TChainId, TChatRooms } from "@autofun/types";
-import { isChainIdAllowedForChain } from "@autofun/utils";
+import type { AddressLike, SolanaAddressLike, TChain, TChainId, TChatRooms } from "@autofun/types";
+import { getChecksummedAddress, isChainIdAllowedForChain } from "@autofun/utils";
 import { uploadBase64Image } from "@autofun/s3-uploader";
 import { randomUUID } from "node:crypto";
+import redis from "@autofun/redis";
 
 export default async function chatRoutes(fastify: FastifyInstance) {
 	fastify.post("/history", async (request) => {
@@ -47,6 +48,14 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 		const allowedChain = isChainIdAllowedForChain(body.chain, body.chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 
+		const floodKey = `${JSON.stringify(request.authUser)}:chat`;
+
+		const isFlooding = await redis.get(floodKey);
+
+		if (isFlooding) {
+			throw new Error("You sent a message too recently");
+		}
+
 		let image = undefined;
 
 		if (body.attachment) {
@@ -58,9 +67,12 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 				contractAddress: body.contractAddress,
 				message: body.message,
 				room: body?.room,
+				sender: getChecksummedAddress(request?.authUser?.solana as SolanaAddressLike, "solana"),
 				image,
 			},
 		]);
+
+		await redis.setex(floodKey, 10, JSON.stringify({ status: true }));
 
 		return { status: "OK" };
 	});

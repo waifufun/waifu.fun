@@ -128,10 +128,10 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	logger.info(`Received ${tokensToPopulate.length} tokens to populate`);
 
 	// Clean up invalid tokens from database
-	const invalidTokens = tokensToPopulate.filter(token => !token?.contractAddress);
+	const invalidTokens = tokensToPopulate.filter((token) => !token?.contractAddress);
 	if (invalidTokens.length > 0) {
 		logger.warn(`Found ${invalidTokens.length} tokens without contract addresses, removing them from database`);
-		const invalidTokenIds = invalidTokens.map(token => token._id).filter(Boolean);
+		const invalidTokenIds = invalidTokens.map((token) => token._id).filter(Boolean);
 		if (invalidTokenIds.length > 0) {
 			await DB.Token.deleteMany({ _id: { $in: invalidTokenIds } });
 			logger.info(`Removed ${invalidTokenIds.length} invalid tokens from database`);
@@ -139,7 +139,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	// Validate tokens have required fields
-	const validTokens = tokensToPopulate.filter(token => {
+	const validTokens = tokensToPopulate.filter((token) => {
 		if (!token) {
 			logger.warn("Found null/undefined token");
 			return false;

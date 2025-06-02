@@ -1,8 +1,5 @@
-import {
-  SolanaIndexer,
-  type SolanaIndexerConfig,
-} from "../indexers/SolanaIndexer";
-import { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import { SolanaIndexer, type SolanaIndexerConfig } from "../indexers/SolanaIndexer";
+import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 
 const config: SolanaIndexerConfig = {
   networkId: SolanaNetworkIds.Mainnet,
@@ -15,5 +12,5 @@ const config: SolanaIndexerConfig = {
 const indexer = new SolanaIndexer(config);
 
 (async () => {
-  await indexer.runWithSignatures();
+	await indexer.runWithSignatures();
 })();
