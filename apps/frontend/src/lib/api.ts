@@ -258,6 +258,19 @@ export const getTrades = async ({
 	});
 };
 
+export const connectAgent = async ({
+	agentId,
+	contractAddress,
+  }: {
+	agentId: string;
+	contractAddress: string;
+  }) => {
+	return await fetcher(`/agent/connect-agent/${agentId}`, "POST", {
+	  contractAddress,
+	});
+  };
+  
+
 export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
 export const connection = new Connection(HELIUS_RPC_URL, "confirmed");

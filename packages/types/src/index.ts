@@ -206,3 +206,11 @@ export type ISwapSettings = {
 	slippage: string;
 	deadline: string;
 };
+
+export type IAgent = {
+	name: string;
+	bio: string;
+	createdBy: string;
+	imageUrl: string
+	relatedTokenAddress?: string
+};
