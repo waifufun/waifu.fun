@@ -3,6 +3,8 @@ import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
 import { instructions as IDLInstructions } from "../abi/autofun";
 import DB from "@autofun/database";
 import logger from "@autofun/logger";
+import { PublicKey } from "@solana/web3.js";
+
 
 export interface SolanaIndexerConfig {
 	networkId: SolanaNetworkIds;
@@ -27,431 +29,563 @@ interface DecodedInstruction {
 }
 
 export class SolanaIndexer {
-	private rpc: SolanaRpcProvider;
-	private config: SolanaIndexerConfig;
-	private debugStatements = false;
-	private readonly STOP_AT_SLOT: number;
+  private rpc: SolanaRpcProvider;
+  private config: SolanaIndexerConfig;
+  private debugStatements = false;
+  private readonly STOP_AT_SLOT: number;
 
-	constructor(config: SolanaIndexerConfig) {
-		this.config = {
-			concurrencyLimit: 1,
-			maxSignatures: 500,
-			minBlock: 322725834, // Default minimum block
-			...config,
-		};
-		this.rpc = new SolanaRpcProvider(this.config.networkId);
-		this.debugStatements = config.debugStatements || false;
-		// biome-ignore lint/style/noNonNullAssertion: allow
-		this.STOP_AT_SLOT = this.config.minBlock!;
-	}
+  constructor(config: SolanaIndexerConfig) {
+    this.config = {
+      concurrencyLimit: 2,
+      maxSignatures: 500,
+      minBlock: 322725834, // Default minimum block
+      ...config,
+    };
+    this.rpc = new SolanaRpcProvider(this.config.networkId);
+    this.debugStatements = config.debugStatements || false;
+    this.STOP_AT_SLOT = this.config.minBlock!;
+  }
 
-	private arraysEqual(a: number[], b: number[]): boolean {
-		return a.length === b.length && a.every((val, i) => val === b[i]);
-	}
+  private arraysEqual(a: number[], b: number[]): boolean {
+    return a.length === b.length && a.every((val, i) => val === b[i]);
+  }
 
-	private decodeAutofunInstruction(instructionData: Buffer, accounts: string[]): DecodedInstruction {
-		const discriminator = Array.from(instructionData.slice(0, 8));
+  private decodeAutofunInstruction(
+    instructionData: Buffer,
+    accounts: string[]
+  ): DecodedInstruction {
+    const discriminator = Array.from(instructionData.slice(0, 8));
 
-		if (this.arraysEqual(discriminator, IDLInstructions.launch.d8)) {
-			return {
-				type: "launch",
-				data: IDLInstructions.launch.decode(instructionData),
-				mintAddress: accounts[3],
-				creator: accounts[2],
-				accounts,
-			};
-		}
+    if (this.arraysEqual(discriminator, IDLInstructions.launch.d8)) {
+      return {
+        type: "launch",
+        data: IDLInstructions.launch.decode(instructionData),
+        mintAddress: accounts[3],
+        creator: accounts[2],
+        accounts,
+      };
+    }
 
-		if (this.arraysEqual(discriminator, IDLInstructions.swap.d8)) {
-			return {
-				type: "swap",
-				data: IDLInstructions.swap.decode(instructionData),
-				tokenMint: accounts[5],
-				user: accounts[8],
-				accounts,
-			};
-		}
+    if (this.arraysEqual(discriminator, IDLInstructions.swap.d8)) {
+      return {
+        type: "swap",
+        data: IDLInstructions.swap.decode(instructionData),
+        tokenMint: accounts[5],
+        user: accounts[8],
+        accounts,
+      };
+    }
 
-		if (this.arraysEqual(discriminator, IDLInstructions.launchAndSwap.d8)) {
-			return {
-				type: "launchAndSwap",
-				data: IDLInstructions.launchAndSwap.decode(instructionData),
-				mintAddress: accounts[3],
-				creator: accounts[2],
-				accounts,
-			};
-		}
+    if (this.arraysEqual(discriminator, IDLInstructions.launchAndSwap.d8)) {
+      return {
+        type: "launchAndSwap",
+        data: IDLInstructions.launchAndSwap.decode(instructionData),
+        mintAddress: accounts[3],
+        creator: accounts[2],
+        accounts,
+      };
+    }
 
-		return { type: "unknown", discriminator, accounts };
-	}
+    return { type: "unknown", discriminator, accounts };
+  }
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private hasAutoFunProgram(accounts: any[]): boolean {
-		return accounts.some((account) => account.toBase58() === this.config.autoFunAddress);
-	}
+  private decodeCompleteEvent(eventData: Buffer): any {
+    try {
+      const discriminator = Array.from(eventData.slice(0, 8));
+      // the complete event discriminator
+      const expectedDiscriminator = [95, 114, 97, 156, 212, 46, 152, 8];
+      
+      if (!this.arraysEqual(discriminator, expectedDiscriminator)) {
+        return null;
+      }
+  
+      // After discriminator (8 bytes), we have:
+      // user: 32 bytes (pubkey)
+      // mint: 32 bytes (pubkey) 
+      // bonding_curve: 32 bytes (pubkey)
+      const userBytes = eventData.slice(8, 40);
+      const mintBytes = eventData.slice(40, 72);
+      const bondingCurveBytes = eventData.slice(72, 104);
+  
+      // Convert to base58 (standard Solana address format)
+      const user = new PublicKey(userBytes).toBase58();
+      const mint = new PublicKey(mintBytes).toBase58();
+      const bondingCurve = new PublicKey(bondingCurveBytes).toBase58();
+  
+      return {
+        user,
+        mint,
+        bondingCurve,
+      };
+    } catch (error) {
+      if (this.debugStatements) {
+        logger.error("Error decoding complete event:", error);
+      }
+      return null;
+    }
+  }
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private processTransaction(transaction: any, blockTime: number, slot: number): any[] {
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-		const events: any[] = [];
+  private hasAutoFunProgram(accounts: any[]): boolean {
+    return accounts.some(
+      (account) => account.toBase58() === this.config.autoFunAddress
+    );
+  }
 
-		const transactionData = transaction.transaction || transaction;
-		const accounts = transactionData?.message?.staticAccountKeys;
-		const signatures = transactionData?.signatures || transaction.signatures;
+  private processTransaction(
+    transaction: any,
+    blockTime: number,
+    slot: number
+  ): any[] {
+    const events: any[] = [];
+    
+    const transactionData = transaction.transaction || transaction;
+    const accounts = transactionData?.message?.staticAccountKeys;
+    const signatures = transactionData?.signatures || transaction.signatures;
 
-		if (!accounts || !signatures) {
-			if (this.debugStatements) {
-				logger.warn("Transaction missing required data structure");
-			}
-			return events;
-		}
+    if (!accounts || !signatures) {
+      if (this.debugStatements) {
+        logger.warn("Transaction missing required data structure");
+      }
+      return events;
+    }
 
-		if (!this.hasAutoFunProgram(accounts)) {
-			return events;
-		}
+    if (!this.hasAutoFunProgram(accounts)) {
+      return events;
+    }
 
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-		const accountStrings = accounts.map((key: any) => key.toBase58());
-		const compiledInstructions = transactionData?.message?.compiledInstructions;
+    const accountStrings = accounts.map((key: any) => key.toBase58());
+    const compiledInstructions = transactionData?.message?.compiledInstructions;
 
-		if (!compiledInstructions) {
-			if (this.debugStatements) {
-				logger.warn("Transaction missing compiled instructions");
-			}
-			return events;
-		}
+    if (!compiledInstructions) {
+      if (this.debugStatements) {
+        logger.warn("Transaction missing compiled instructions");
+      }
+      return events;
+    }
 
-		for (const [instructionIndex, instruction] of compiledInstructions.entries()) {
-			const programId = accountStrings[instruction.programIdIndex];
+    // Process instructions
+    for (const [
+      instructionIndex,
+      instruction,
+    ] of compiledInstructions.entries()) {
+      const programId = accountStrings[instruction.programIdIndex];
 
-			if (programId !== this.config.autoFunAddress) continue;
+      if (programId !== this.config.autoFunAddress) continue;
 
-			const instructionAccounts = instruction.accountKeyIndexes.map((index: number) => accountStrings[index]);
+      const instructionAccounts = instruction.accountKeyIndexes.map(
+        (index: number) => accountStrings[index]
+      );
 
-			const decodedInstruction = this.decodeAutofunInstruction(Buffer.from(instruction.data), instructionAccounts);
+      const decodedInstruction = this.decodeAutofunInstruction(
+        Buffer.from(instruction.data),
+        instructionAccounts
+      );
 
-			if (decodedInstruction.type !== "unknown") {
-				const eventData = this.createEventData(
-					signatures[0],
-					slot,
-					blockTime,
-					instructionIndex,
-					decodedInstruction,
-					transaction,
-				);
-				events.push(eventData);
-			}
-		}
+      if (decodedInstruction.type !== "unknown") {
+        const eventData = this.createEventData(
+          signatures[0],
+          slot,
+          blockTime,
+          instructionIndex,
+          decodedInstruction,
+          transaction
+        );
+        events.push(eventData);
+      }
+    }
 
-		return events;
-	}
+    // Complete event processing
+    const logs = transaction.meta?.logMessages || [];
+    for (const [logIndex, log] of logs.entries()) {
+      if (log.startsWith('Program data: ')) {
+        try {
+          const dataString = log.replace('Program data: ', '');
+          const eventData = Buffer.from(dataString, 'base64');
+          
+          const completeEvent = this.decodeCompleteEvent(eventData);
+          if (completeEvent) {
+            const eventObj = {
+              signature: signatures[0],
+              slot,
+              blockTime,
+              eventType: "curveCompleted",
+              contractAddress: completeEvent.mint,
+              user: completeEvent.user,
+              bondingCurve: completeEvent.bondingCurve,
+              logIndex,
+              programId: this.config.autoFunAddress,
+              processed: true,
+            };
+            events.push(eventObj);
+            
+            if (this.debugStatements) {
+              logger.info(`Found curve completion event for mint: ${completeEvent.mint}`);
+            }
+          }
+        } catch (error) {
+          // Ignore because not all program data logs are events
+        }
+      }
+    }
 
-	private extractAmountGotten(
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-		transaction: any,
-		tokenMint: string,
-		userAddress: string,
-		direction: number,
-	): { amountGotten?: string } {
-		try {
-			const preTokenBalances = transaction.meta?.preTokenBalances || [];
-			const postTokenBalances = transaction.meta?.postTokenBalances || [];
-			const preBalances = transaction.meta?.preBalances || [];
-			const postBalances = transaction.meta?.postBalances || [];
-			const accountKeys = transaction.transaction.message.staticAccountKeys || [];
+    return events;
+  }
 
-			if (direction === 0) {
-				// Direction 0: User is buying tokens (NATIVE TOKEN -> Token)
-				const preTokenBalance = preTokenBalances.find(
-					// biome-ignore lint/suspicious/noExplicitAny: allow
-					(balance: any) => balance.mint === tokenMint && balance.owner === userAddress,
-				);
-				const postTokenBalance = postTokenBalances.find(
-					// biome-ignore lint/suspicious/noExplicitAny: allow
-					(balance: any) => balance.mint === tokenMint && balance.owner === userAddress,
-				);
+  private extractAmountGotten(
+    transaction: any, 
+    tokenMint: string, 
+    userAddress: string, 
+    direction: number
+  ): { amountGotten?: string } {
+    try {
+      const preTokenBalances = transaction.meta?.preTokenBalances || [];
+      const postTokenBalances = transaction.meta?.postTokenBalances || [];
+      const preBalances = transaction.meta?.preBalances || [];
+      const postBalances = transaction.meta?.postBalances || [];
+      const fee = transaction.meta?.fee || 0;
+      const accountKeys = transaction.transaction?.message?.staticAccountKeys || 
+                          transaction.message?.staticAccountKeys || [];
 
-				if (preTokenBalance && postTokenBalance) {
-					const preAmount = BigInt(preTokenBalance.uiTokenAmount?.amount || "0");
-					const postAmount = BigInt(postTokenBalance.uiTokenAmount?.amount || "0");
-					const tokensReceived = postAmount - preAmount;
+      if (direction === 0) {
+        // Direction 0: User is buying tokens (NATIVE TOKEN -> Token)
+        const preTokenBalance = preTokenBalances.find((balance: any) => {
+          const isCorrectMint = balance.mint === tokenMint;
+          const isCorrectOwner = balance.owner === userAddress;
+          return isCorrectMint && isCorrectOwner;
+        });
+        
+        const postTokenBalance = postTokenBalances.find((balance: any) => {
+          const isCorrectMint = balance.mint === tokenMint;
+          const isCorrectOwner = balance.owner === userAddress;
+          return isCorrectMint && isCorrectOwner;
+        });
 
-					if (tokensReceived > 0n) {
-						return { amountGotten: tokensReceived.toString() };
-					}
-				}
-			} else {
-				// Direction 1: User is selling tokens (Token -> NATIVE TOKEN)
-				// biome-ignore lint/suspicious/noExplicitAny: allow
-				const userIndex = accountKeys.findIndex((key: any) => key.toBase58() === userAddress);
+        // Handle case where user didn't have the token before (new token account)
+        const preAmount = BigInt(preTokenBalance?.uiTokenAmount?.amount || '0');
+        const postAmount = BigInt(postTokenBalance?.uiTokenAmount?.amount || '0');
+        const tokensReceived = postAmount - preAmount;
+        
+        if (tokensReceived > 0n) {
+          return { amountGotten: tokensReceived.toString() };
+        }
 
-				if (userIndex !== -1 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
-					const preBalance = BigInt(preBalances[userIndex]);
-					const postBalance = BigInt(postBalances[userIndex]);
-					const solReceived = postBalance - preBalance;
+        // Look for any post-balance for user if no pre-balance exists
+        if (!preTokenBalance && postTokenBalance) {
+          const tokens = BigInt(postTokenBalance.uiTokenAmount?.amount || '0');
+          if (tokens > 0n) {
+            return { amountGotten: tokens.toString() };
+          }
+        }
 
-					if (solReceived > 0n) {
-						return { amountGotten: solReceived.toString() };
-					}
-				}
-			}
+      } else {
+        // Direction 1: User is selling tokens (Token -> NATIVE TOKEN)
+        const userIndex = accountKeys.findIndex((key: any) => 
+          key.toBase58() === userAddress
+        );
 
-			return {};
-		} catch (error) {
-			if (this.debugStatements) {
-				logger.error("Error extracting amount gotten:", error);
-			}
-			return {};
-		}
-	}
+        if (userIndex !== -1 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
+          const preBalance = BigInt(preBalances[userIndex]);
+          const postBalance = BigInt(postBalances[userIndex]);
+          
+          const solChange = postBalance - preBalance;
+          
+          let solReceived = solChange;
+          
+          // If the user paid the transaction fee, add it back to get the actual amount received
+          if (userIndex === 0) {
+            solReceived = solChange + BigInt(fee);
+          }
+          
+          if (solReceived > 0n) {
+            return { amountGotten: solReceived.toString() };
+          }
+        }
+      }
+      return {};
+    } catch (error) {
+      if (this.debugStatements) {
+        logger.error("Error extracting amount gotten:", error);
+      }
+      return {};
+    }
+  }
 
-	private createEventData(
-		signature: string,
-		slot: number,
-		blockTime: number,
-		instructionIndex: number,
-		decodedInstruction: DecodedInstruction,
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-		transaction?: any,
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-	): any {
-		const baseEventData = {
-			signature,
-			slot,
-			blockTime,
-			eventType: decodedInstruction.type,
-			contractAddress: decodedInstruction.mintAddress || decodedInstruction.tokenMint,
-			creator: decodedInstruction.creator,
-			user: decodedInstruction.user,
-			instructionIndex,
-			programId: this.config.autoFunAddress,
-			accounts: decodedInstruction.accounts,
-			processed: true,
-		};
+  private createEventData(
+    signature: string,
+    slot: number,
+    blockTime: number,
+    instructionIndex: number,
+    decodedInstruction: DecodedInstruction,
+    transaction?: any
+  ): any {
+    const baseEventData = {
+      signature,
+      slot,
+      blockTime,
+      eventType: decodedInstruction.type,
+      contractAddress:
+        decodedInstruction.mintAddress || decodedInstruction.tokenMint,
+      creator: decodedInstruction.creator,
+      user: decodedInstruction.user,
+      instructionIndex,
+      programId: this.config.autoFunAddress,
+      accounts: decodedInstruction.accounts,
+      processed: true,
+    };
 
-		const instructionData = decodedInstruction.data?.data;
-		if (!instructionData) return baseEventData;
+    const instructionData = decodedInstruction.data?.data;
+    if (!instructionData) return baseEventData;
 
-		switch (decodedInstruction.type) {
-			case "launch":
-				return {
-					...baseEventData,
-					tokenName: instructionData.name,
-					tokenSymbol: instructionData.symbol,
-					tokenUri: instructionData.uri,
-					decimals: instructionData.decimals,
-					tokenSupply: instructionData.tokenSupply?.toString(),
-					virtualLamportReserves: instructionData.virtualLamportReserves?.toString(),
-				};
+    switch (decodedInstruction.type) {
+      case "launch":
+        return {
+          ...baseEventData,
+          tokenName: instructionData.name,
+          tokenSymbol: instructionData.symbol,
+          tokenUri: instructionData.uri,
+          decimals: instructionData.decimals,
+          tokenSupply: instructionData.tokenSupply?.toString(),
+          virtualLamportReserves:
+            instructionData.virtualLamportReserves?.toString(),
+        };
 
-			case "swap": {
-				// biome-ignore lint/style/noNonNullAssertion: allow
-				const tokenMint = decodedInstruction.tokenMint!;
-				// biome-ignore lint/style/noNonNullAssertion: allow
-				const userAddress = decodedInstruction.user!;
-				const direction = instructionData.direction;
+      case "swap": {
+        const tokenMint = decodedInstruction.tokenMint!;
+        const userAddress = decodedInstruction.user!;
+        const direction = instructionData.direction;
+        
+        let amountGotten = {};
+        if (transaction) {
+          amountGotten = this.extractAmountGotten(
+            transaction, 
+            tokenMint, 
+            userAddress, 
+            direction
+          );
+        }
 
-				let amountGotten = {};
-				if (transaction) {
-					amountGotten = this.extractAmountGotten(transaction, tokenMint, userAddress, direction);
-				}
+        return {
+          ...baseEventData,
+          swapAmount: instructionData.amount?.toString(),
+          direction: direction,
+          minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
+          deadline: instructionData.deadline?.toString(),
+          ...amountGotten,
+        };
+      }
 
-				return {
-					...baseEventData,
-					swapAmount: instructionData.amount?.toString(),
-					direction: direction,
-					minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
-					deadline: instructionData.deadline?.toString(),
-					...amountGotten,
-				};
-			}
+      case "launchAndSwap": {
+        const tokenMint = decodedInstruction.mintAddress!;
+        const userAddress = decodedInstruction.creator!;
+        
+        let amountGotten = {};
+        if (transaction) {
+          amountGotten = this.extractAmountGotten(
+            transaction, 
+            tokenMint, 
+            userAddress, 
+            0
+          );
+        }
 
-			case "launchAndSwap": {
-				// biome-ignore lint/style/noNonNullAssertion: allow
-				const tokenMint = decodedInstruction.mintAddress!;
-				// biome-ignore lint/style/noNonNullAssertion: allow
-				const userAddress = decodedInstruction.creator!;
+        return {
+          ...baseEventData,
+          tokenName: instructionData.name,
+          tokenSymbol: instructionData.symbol,
+          tokenUri: instructionData.uri,
+          decimals: instructionData.decimals,
+          tokenSupply: instructionData.tokenSupply?.toString(),
+          virtualLamportReserves:
+            instructionData.virtualLamportReserves?.toString(),
+          swapAmount: instructionData.swapAmount?.toString(),
+          minimumReceiveAmount:
+            instructionData.minimumReceiveAmount?.toString(),
+          deadline: instructionData.deadline?.toString(),
+          ...amountGotten,
+        };
+      }
 
-				let amountGotten = {};
-				if (transaction) {
-					amountGotten = this.extractAmountGotten(transaction, tokenMint, userAddress, 0);
-				}
+      default:
+        return baseEventData;
+    }
+  }
 
-				return {
-					...baseEventData,
-					tokenName: instructionData.name,
-					tokenSymbol: instructionData.symbol,
-					tokenUri: instructionData.uri,
-					decimals: instructionData.decimals,
-					tokenSupply: instructionData.tokenSupply?.toString(),
-					virtualLamportReserves: instructionData.virtualLamportReserves?.toString(),
-					swapAmount: instructionData.swapAmount?.toString(),
-					minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
-					deadline: instructionData.deadline?.toString(),
-					...amountGotten,
-				};
-			}
+  private async saveBatchEvents(events: any[]): Promise<void> {
+    if (events.length === 0) return;
 
-			default:
-				return baseEventData;
-		}
-	}
+    try {
+      const chunkSize = 50;
+      let totalSaved = 0;
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private async saveBatchEvents(events: any[]): Promise<void> {
-		if (events.length === 0) return;
+      for (let i = 0; i < events.length; i += chunkSize) {
+        const chunk = events.slice(i, i + chunkSize);
+        await DB.Event.insertManyOrUpdate(chunk);
+        totalSaved += chunk.length;
+      }
 
-		try {
-			const chunkSize = 50;
-			let totalSaved = 0;
+      if (this.debugStatements) {
+        logger.info(`Batch saved ${totalSaved} events to database`);
+      }
+    } catch (error: any) {
+      throw new Error(`Error saving batch events: ${error.message}`);
+    }
+  }
 
-			for (let i = 0; i < events.length; i += chunkSize) {
-				const chunk = events.slice(i, i + chunkSize);
-				await DB.Event.insertManyOrUpdate(chunk);
-				totalSaved += chunk.length;
-			}
+  private async getSignatures(beforeSignature?: string): Promise<any[]> {
+    try {
+      return await this.rpc.getSignaturesForAddress(
+        this.config.autoFunAddress,
+        {
+          limit: this.config.maxSignatures || 500,
+          before: beforeSignature,
+        }
+      );
+    } catch (error) {
+      logger.error("Error fetching signatures:", error);
+      return [];
+    }
+  }
 
-			if (this.debugStatements) {
-				logger.info(`Batch saved ${totalSaved} events to database`);
-			}
-			// biome-ignore lint/suspicious/noExplicitAny: allow
-		} catch (error: any) {
-			throw new Error(`Error saving batch events: ${error.message}`);
-		}
-	}
+  private async processSignature(signatureInfo: any): Promise<any[]> {
+    const startTime = Date.now();
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private async getSignatures(beforeSignature?: string): Promise<any[]> {
-		try {
-			return await this.rpc.getSignaturesForAddress(this.config.autoFunAddress, {
-				limit: this.config.maxSignatures || 500,
-				before: beforeSignature,
-			});
-		} catch (error) {
-			logger.error("Error fetching signatures:", error);
-			return [];
-		}
-	}
+    try {
+      const transaction = await this.rpc.getTransaction(
+        signatureInfo.signature
+      );
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private async processSignature(signatureInfo: any): Promise<any[]> {
-		const startTime = Date.now();
+      if (!transaction?.meta || transaction.meta.err) {
+        return [];
+      }
 
-		try {
-			const transaction = await this.rpc.getTransaction(signatureInfo.signature);
+      const downloadTime = Date.now() - startTime;
+      const processStart = Date.now();
 
-			if (!transaction?.meta || transaction.meta.err) {
-				return [];
-			}
+      const events = this.processTransaction(
+        transaction,
+        transaction.blockTime || 0,
+        transaction.slot
+      );
 
-			const downloadTime = Date.now() - startTime;
-			const processStart = Date.now();
+      const processTime = Date.now() - processStart;
 
-			const events = this.processTransaction(transaction, transaction.blockTime || 0, transaction.slot);
+      if (events.length > 0 && this.debugStatements) {
+        logger.info(
+          `Signature ${signatureInfo.signature}: ${events.length} events ` +
+            `(slot: ${transaction.slot}, ${downloadTime}ms download, ${processTime}ms process)`
+        );
+      }
 
-			const processTime = Date.now() - processStart;
+      return events;
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      logger.error(
+        `Error processing signature ${signatureInfo.signature} (${totalTime}ms):`,
+        error
+      );
+      console.error(error);
+      return [];
+    }
+  }
 
-			if (events.length > 0 && this.debugStatements) {
-				logger.info(
-					`Signature ${signatureInfo.signature}: ${events.length} events ` +
-						`(slot: ${transaction.slot}, ${downloadTime}ms download, ${processTime}ms process)`,
-				);
-			}
+  private async processSignaturesBatch(signatures: any[]): Promise<any[]> {
+    const { concurrencyLimit } = this.config;
+    const allEvents: any[] = [];
 
-			return events;
-		} catch (error) {
-			const totalTime = Date.now() - startTime;
-			logger.error(`Error processing signature ${signatureInfo.signature} (${totalTime}ms):`, error);
-			console.error(error);
-			return [];
-		}
-	}
+    for (let i = 0; i < signatures.length; i += concurrencyLimit!) {
+      const chunk = signatures.slice(i, i + concurrencyLimit!);
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private async processSignaturesBatch(signatures: any[]): Promise<any[]> {
-		const { concurrencyLimit } = this.config;
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-		const allEvents: any[] = [];
-		// biome-ignore lint/style/noNonNullAssertion: allow
-		for (let i = 0; i < signatures.length; i += concurrencyLimit!) {
-			// biome-ignore lint/style/noNonNullAssertion: allow
-			const chunk = signatures.slice(i, i + concurrencyLimit!);
+      const chunkPromises = chunk.map((signatureInfo) =>
+        this.processSignature(signatureInfo).catch((error) => {
+          logger.error(
+            `Failed to process signature ${signatureInfo.signature}:`,
+            error
+          );
+          return [];
+        })
+      );
 
-			const chunkPromises = chunk.map((signatureInfo) =>
-				this.processSignature(signatureInfo).catch((error) => {
-					logger.error(`Failed to process signature ${signatureInfo.signature}:`, error);
-					return [];
-				}),
-			);
+      const chunkResults = await Promise.allSettled(chunkPromises);
 
-			const chunkResults = await Promise.allSettled(chunkPromises);
+      for (const result of chunkResults) {
+        if (result.status === "fulfilled") {
+          allEvents.push(...result.value);
+        }
+      }
 
-			for (const result of chunkResults) {
-				if (result.status === "fulfilled") {
-					allEvents.push(...result.value);
-				}
-			}
+      if (i + concurrencyLimit! < signatures.length) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    }
 
-			// biome-ignore lint/style/noNonNullAssertion: allow
-			if (i + concurrencyLimit! < signatures.length) {
-				await new Promise((resolve) => setTimeout(resolve, 200));
-			}
-		}
+    return allEvents;
+  }
 
-		return allEvents;
-	}
+  private shouldStopAtSlot(signatures: any[]): boolean {
+    return signatures.some((sig) => sig.slot && sig.slot <= this.STOP_AT_SLOT);
+  }
 
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	private shouldStopAtSlot(signatures: any[]): boolean {
-		return signatures.some((sig) => sig.slot && sig.slot <= this.STOP_AT_SLOT);
-	}
+  private logBatchProgress(
+    batchNumber: number,
+    signatures: any[],
+    batchDuration: number,
+    batchEventCount: number,
+    totalStats: {
+      processedSignatures: number;
+      events: number;
+      startTime: number;
+    }
+  ): void {
+    if (this.debugStatements) {
+      const batchSignaturesPerSecond = (
+        (signatures.length / batchDuration) *
+        1000
+      ).toFixed(2);
+      const overallDuration = Date.now() - totalStats.startTime;
+      const overallSignaturesPerSecond = (
+        (totalStats.processedSignatures / overallDuration) *
+        1000
+      ).toFixed(2);
 
-	private logBatchProgress(
-		batchNumber: number,
-		// biome-ignore lint/suspicious/noExplicitAny: allow
-		signatures: any[],
-		batchDuration: number,
-		batchEventCount: number,
-		totalStats: {
-			processedSignatures: number;
-			events: number;
-			startTime: number;
-		},
-	): void {
-		if (this.debugStatements) {
-			const batchSignaturesPerSecond = ((signatures.length / batchDuration) * 1000).toFixed(2);
-			const overallDuration = Date.now() - totalStats.startTime;
-			const overallSignaturesPerSecond = ((totalStats.processedSignatures / overallDuration) * 1000).toFixed(2);
+      const memUsage = process.memoryUsage();
+      const memInfo =
+        `RSS ${(memUsage.rss / 1024 / 1024).toFixed(2)}MB, ` +
+        `Heap ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`;
 
-			const memUsage = process.memoryUsage();
-			const memInfo =
-				`RSS ${(memUsage.rss / 1024 / 1024).toFixed(2)}MB, ` + `Heap ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`;
+      logger.info(
+        `Completed batch ${batchNumber} in ${batchDuration}ms with ${batchEventCount} events`
+      );
+      logger.info(
+        `Batch: ${batchSignaturesPerSecond} sigs/sec | ` +
+          `Overall: ${overallSignaturesPerSecond} sigs/sec | ` +
+          `Total events: ${totalStats.events}`
+      );
+      logger.info(`Memory: ${memInfo}`);
+    } else {
+      const firstSlot = signatures[0]?.slot;
+      const lastSlot = signatures[signatures.length - 1]?.slot;
+      logger.info(`Batch ${batchNumber} (${firstSlot}-${lastSlot}) done`);
+    }
+  }
 
-			logger.info(`Completed batch ${batchNumber} in ${batchDuration}ms with ${batchEventCount} events`);
-			logger.info(
-				`Batch: ${batchSignaturesPerSecond} sigs/sec | ` +
-					`Overall: ${overallSignaturesPerSecond} sigs/sec | ` +
-					`Total events: ${totalStats.events}`,
-			);
-			logger.info(`Memory: ${memInfo}`);
-		} else {
-			const firstSlot = signatures[0]?.slot;
-			const lastSlot = signatures[signatures.length - 1]?.slot;
-			logger.info(`Batch ${batchNumber} (${firstSlot}-${lastSlot}) done`);
-		}
-	}
+  private logFinalSummary(totalStats: {
+    processedSignatures: number;
+    events: number;
+    startTime: number;
+  }): void {
+    const totalDuration = Date.now() - totalStats.startTime;
+    const finalSignaturesPerSecond = (
+      (totalStats.processedSignatures / totalDuration) *
+      1000
+    ).toFixed(2);
+    const averageTimePerSignature = (
+      totalDuration / totalStats.processedSignatures
+    ).toFixed(2);
+    const eventsPerSignature = (
+      totalStats.events / totalStats.processedSignatures
+    ).toFixed(4);
 
-	private logFinalSummary(totalStats: {
-		processedSignatures: number;
-		events: number;
-		startTime: number;
-	}): void {
-		const totalDuration = Date.now() - totalStats.startTime;
-		const finalSignaturesPerSecond = ((totalStats.processedSignatures / totalDuration) * 1000).toFixed(2);
-		const averageTimePerSignature = (totalDuration / totalStats.processedSignatures).toFixed(2);
-		const eventsPerSignature = (totalStats.events / totalStats.processedSignatures).toFixed(4);
-
-		logger.info(`
+    logger.info(`
 === SIGNATURE-BASED INDEXING COMPLETE ===
 Total signatures processed: ${totalStats.processedSignatures}
 Total events found: ${totalStats.events}
