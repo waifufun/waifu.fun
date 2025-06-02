@@ -22,7 +22,7 @@ export default function AdvancedSettings() {
 			</div>
 
 			{open && (
-				<div className="mt-2 py-3 rounded-lg flex flex-col gap-4 w-full">
+				<div className="py-4 flex flex-col gap-4 w-full border-t pt-4 mt-4 border-autofun-stroke-primary">
 					{/* Speed */}
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-1">
