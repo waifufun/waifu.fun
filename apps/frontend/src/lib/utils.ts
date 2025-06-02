@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
+import type { TSpeed } from "@/hooks/use-speed";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -223,8 +224,14 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 	return !!maxDecimals && decimalPart.length > maxDecimals;
 }
 
-export const executeSwap = async (token: IToken, inputAmount: bigint | string | number, mode: "buy" | "sell") => {
-	console.log({ inputAmount, mode });
+export const executeSwap = async (
+	token: IToken,
+	inputAmount: bigint | string | number,
+	mode: "buy" | "sell",
+	slippage: number,
+	speed: TSpeed,
+) => {
+	console.log({ inputAmount, mode, slippage, speed });
 	/** If the token was imported or has already migrated we can just use Jupiter */
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 	}

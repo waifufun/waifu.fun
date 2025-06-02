@@ -182,7 +182,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 											<Image
 												src={social.icon}
 												className={cn([
-													"size-6",
+													"size-6 select-none",
 													!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
 												])}
 												unoptimized
