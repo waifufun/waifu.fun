@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/elizaos/autofun-monorepo/compare/v0.3.0...v0.4.0) (2025-06-02)
+
+
+### Features
+
+* cors should be configurable ([08625e0](https://github.com/elizaos/autofun-monorepo/commit/08625e002f0339ccfdc7482da8e6404113c51a25))
+
 # [0.3.0](https://github.com/elizaos/autofun-monorepo/compare/v0.2.0...v0.3.0) (2025-06-02)
 
 
