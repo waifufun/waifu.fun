@@ -14,13 +14,8 @@ jobs:
         run: |
           echo "PR from ${{ github.head_ref }} to ${{ github.base_ref }}"
 
-          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "staging" ]]; then
+          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "develop" ]]; then
             echo "❌ Pull requests to 'main' must come from 'staging'"
-            exit 1
-          fi
-
-          if [[ "${{ github.base_ref }}" == "staging" && "${{ github.head_ref }}" != "develop" ]]; then
-            echo "❌ Pull requests to 'staging' must come from 'develop'"
             exit 1
           fi
 
