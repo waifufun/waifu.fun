@@ -36,9 +36,11 @@ if (!process.env.JWT_SECRET) {
 fastify.register(helmet);
 fastify.register(fastifyCookie);
 
+const configuredCors = process?.env?.CORS_DOMAINS ? String(process.env.CORS_DOMAINS).split(",") : [];
+
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	origin: ["http://localhost:3000"],
+	origin: configuredCors?.length > 0 ? configuredCors : ["http://localhost:3000"],
 	credentials: true,
 });
 
