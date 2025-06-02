@@ -7,7 +7,7 @@ import Image from "next/image";
 import type { AddressLike, IToken } from "@autofun/types";
 import { Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
-import { cn, executeSwap } from "@/lib/utils";
+import { abbreviateNumber, cn, executeSwap } from "@/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Skeleton from "../skeleton-loading";
@@ -93,8 +93,19 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				</div>
 				<div className="flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium">
 					<Wallet size={14} color="#8C8C8C" />
-					<span className="uppercase">
-						{mode === "buy" ? balance?.data : tokenBalance?.data} {mode === "buy" ? "SOL" : token.ticker}
+					{/* biome-ignore lint/a11y/useKeyWithClickEvents: explanation */}
+					<span
+						className="uppercase cursor-pointer"
+						onClick={() => {
+							if (mode === "buy") {
+								setValue(String(balance?.data));
+							} else {
+								setValue(String(tokenBalance?.data));
+							}
+						}}
+					>
+						{mode === "buy" ? balance?.data : tokenBalance?.data ? abbreviateNumber(tokenBalance.data, true) : "-"}{" "}
+						{mode === "buy" ? "SOL" : token.ticker}
 					</span>
 				</div>
 
