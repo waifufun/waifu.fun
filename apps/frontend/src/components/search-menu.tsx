@@ -20,7 +20,7 @@ export default function SearchMenu() {
 		queryKey: ["search", value],
 		queryFn: async () => {
 			if (value?.length === 0) {
-				if (open) {
+				if (open && !searchQuery?.isRefetching) {
 					setOpen(false);
 				}
 				return [];

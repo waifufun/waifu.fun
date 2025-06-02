@@ -99,7 +99,7 @@ export const generateImage = async ({ prompt, width, height }: { prompt: string;
 };
 
 export const generateMetadata = async (prompt?: string) => {
-	return await fetcher("/generation/metadata", "POST", {
+	return await fetcher("/generation/generate-metadata", "POST", {
 		prompt,
 	});
 };
