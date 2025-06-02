@@ -27,10 +27,25 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	});
 
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
+	const quickSetSellButtons = ["Reset", 25, 50, 75, 100];
 
 	const handleQuickSet = (val: string) => {
 		const set = val === "Reset" ? "" : String(val);
 		setValue(set);
+	};
+
+	const handleQuickSetSell = (val: string | number) => {
+		if (val === "Reset") {
+			return setValue("");
+		}
+
+		const balance = tokenBalance?.data;
+		if (val === 100) {
+			return setValue(String(balance));
+		}
+
+		const calc = balance * Number(`0.${val}`);
+		return setValue(String(calc));
 	};
 
 	const minReceivedQuery = useQuery({
@@ -109,21 +124,39 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					</span>
 				</div>
 
-				<div className="flex items-center gap-2 justify-between">
-					{quickSetButtons.map((btn) => (
-						<Button
-							key={btn}
-							variant="secondary"
-							className={cn([
-								"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
-								btn === "Reset" ? "text-autofun-text-secondary" : "",
-							])}
-							onClick={() => handleQuickSet(btn)}
-						>
-							{btn}
-						</Button>
-					))}
-				</div>
+				{mode === "buy" ? (
+					<div className="flex items-center gap-2 justify-between">
+						{quickSetButtons.map((btn) => (
+							<Button
+								key={btn}
+								variant="secondary"
+								className={cn([
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+									btn === "Reset" ? "text-autofun-text-secondary" : "",
+								])}
+								onClick={() => handleQuickSet(btn)}
+							>
+								{btn}
+							</Button>
+						))}
+					</div>
+				) : (
+					<div className="flex items-center gap-2 justify-between">
+						{quickSetSellButtons.map((btn) => (
+							<Button
+								key={btn}
+								variant="secondary"
+								className={cn([
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+									btn === "Reset" ? "text-autofun-text-secondary" : "",
+								])}
+								onClick={() => handleQuickSetSell(btn)}
+							>
+								{btn === "Reset" ? "Reset" : `${btn}%`}
+							</Button>
+						))}
+					</div>
+				)}
 
 				<div className="mt-2 space-y-2">
 					<div className="flex font-medium justify-between text-base text-white">
