@@ -130,3 +130,5 @@ export const FAL_MODELS: FALModels = {
 		klingVideo: "fal-ai/kling-video/v2/master/text-to-video",
 	},
 };
+
+export const FLEEK_API_URL = "https://api.fleek.xyz"

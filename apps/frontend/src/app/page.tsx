@@ -7,7 +7,6 @@ import type { Metadata } from "next";
 import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
 import FilterSelector from "@/components/filter-selector";
-import ConnectToFleek from "@/components/connect-fleek";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -39,7 +38,6 @@ export default async function Home({
 
 	return (
 		<div className="flex flex-col gap-4">
-			<ConnectToFleek />
 			<Image
 				src="/homepage-hero.svg"
 				width={1816}
