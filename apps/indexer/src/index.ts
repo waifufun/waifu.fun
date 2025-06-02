@@ -1,19 +1,15 @@
-import {
-  SolanaIndexer,
-  type SolanaIndexerConfig,
-} from "../indexers/SolanaIndexer";
-import { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import { SolanaIndexer, type SolanaIndexerConfig } from "../indexers/SolanaIndexer";
+import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 
 const config: SolanaIndexerConfig = {
-  networkId: SolanaNetworkIds.Mainnet,
-  autoFunAddress:
-    "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
-  maxSignatures: 40,
-  debugStatements: false,
+	networkId: SolanaNetworkIds.Mainnet,
+	autoFunAddress: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
+	maxSignatures: 40,
+	debugStatements: false,
 };
 
 const indexer = new SolanaIndexer(config);
 
 (async () => {
-  await indexer.runWithSignatures();
+	await indexer.runWithSignatures();
 })();
