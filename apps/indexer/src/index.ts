@@ -8,8 +8,8 @@ const config: SolanaIndexerConfig = {
   networkId: SolanaNetworkIds.Mainnet,
   autoFunAddress:
     "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
-  maxSignatures: 40,
-  debugStatements: false,
+  maxSignatures: 70,
+  debugStatements: true,
 };
 
 const indexer = new SolanaIndexer(config);

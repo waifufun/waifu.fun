@@ -3,6 +3,8 @@ import { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
 import { instructions as IDLInstructions } from "../abi/autofun";
 import DB from "@autofun/database";
 import logger from "@autofun/logger";
+import { PublicKey } from "@solana/web3.js";
+
 
 export interface SolanaIndexerConfig {
   networkId: SolanaNetworkIds;
@@ -33,7 +35,7 @@ export class SolanaIndexer {
 
   constructor(config: SolanaIndexerConfig) {
     this.config = {
-      concurrencyLimit: 1,
+      concurrencyLimit: 2,
       maxSignatures: 500,
       minBlock: 322725834, // Default minimum block
       ...config,
@@ -86,6 +88,42 @@ export class SolanaIndexer {
     return { type: "unknown", discriminator, accounts };
   }
 
+  private decodeCompleteEvent(eventData: Buffer): any {
+    try {
+      const discriminator = Array.from(eventData.slice(0, 8));
+      // the complete event discriminator
+      const expectedDiscriminator = [95, 114, 97, 156, 212, 46, 152, 8];
+      
+      if (!this.arraysEqual(discriminator, expectedDiscriminator)) {
+        return null;
+      }
+  
+      // After discriminator (8 bytes), we have:
+      // user: 32 bytes (pubkey)
+      // mint: 32 bytes (pubkey) 
+      // bonding_curve: 32 bytes (pubkey)
+      const userBytes = eventData.slice(8, 40);
+      const mintBytes = eventData.slice(40, 72);
+      const bondingCurveBytes = eventData.slice(72, 104);
+  
+      // Convert to base58 (standard Solana address format)
+      const user = new PublicKey(userBytes).toBase58();
+      const mint = new PublicKey(mintBytes).toBase58();
+      const bondingCurve = new PublicKey(bondingCurveBytes).toBase58();
+  
+      return {
+        user,
+        mint,
+        bondingCurve,
+      };
+    } catch (error) {
+      if (this.debugStatements) {
+        logger.error("Error decoding complete event:", error);
+      }
+      return null;
+    }
+  }
+
   private hasAutoFunProgram(accounts: any[]): boolean {
     return accounts.some(
       (account) => account.toBase58() === this.config.autoFunAddress
@@ -124,6 +162,7 @@ export class SolanaIndexer {
       return events;
     }
 
+    // Process instructions
     for (const [
       instructionIndex,
       instruction,
@@ -154,6 +193,40 @@ export class SolanaIndexer {
       }
     }
 
+    // Complete event processing
+    const logs = transaction.meta?.logMessages || [];
+    for (const [logIndex, log] of logs.entries()) {
+      if (log.startsWith('Program data: ')) {
+        try {
+          const dataString = log.replace('Program data: ', '');
+          const eventData = Buffer.from(dataString, 'base64');
+          
+          const completeEvent = this.decodeCompleteEvent(eventData);
+          if (completeEvent) {
+            const eventObj = {
+              signature: signatures[0],
+              slot,
+              blockTime,
+              eventType: "curveCompleted",
+              contractAddress: completeEvent.mint,
+              user: completeEvent.user,
+              bondingCurve: completeEvent.bondingCurve,
+              logIndex,
+              programId: this.config.autoFunAddress,
+              processed: true,
+            };
+            events.push(eventObj);
+            
+            if (this.debugStatements) {
+              logger.info(`Found curve completion event for mint: ${completeEvent.mint}`);
+            }
+          }
+        } catch (error) {
+          // Ignore because not all program data logs are events
+        }
+      }
+    }
+
     return events;
   }
 
@@ -168,26 +241,41 @@ export class SolanaIndexer {
       const postTokenBalances = transaction.meta?.postTokenBalances || [];
       const preBalances = transaction.meta?.preBalances || [];
       const postBalances = transaction.meta?.postBalances || [];
-      const accountKeys = transaction.transaction.message.staticAccountKeys || [];
+      const fee = transaction.meta?.fee || 0;
+      const accountKeys = transaction.transaction?.message?.staticAccountKeys || 
+                          transaction.message?.staticAccountKeys || [];
 
       if (direction === 0) {
         // Direction 0: User is buying tokens (NATIVE TOKEN -> Token)
-        const preTokenBalance = preTokenBalances.find((balance: any) => 
-          balance.mint === tokenMint && balance.owner === userAddress
-        );
-        const postTokenBalance = postTokenBalances.find((balance: any) => 
-          balance.mint === tokenMint && balance.owner === userAddress
-        );
+        const preTokenBalance = preTokenBalances.find((balance: any) => {
+          const isCorrectMint = balance.mint === tokenMint;
+          const isCorrectOwner = balance.owner === userAddress;
+          return isCorrectMint && isCorrectOwner;
+        });
+        
+        const postTokenBalance = postTokenBalances.find((balance: any) => {
+          const isCorrectMint = balance.mint === tokenMint;
+          const isCorrectOwner = balance.owner === userAddress;
+          return isCorrectMint && isCorrectOwner;
+        });
 
-        if (preTokenBalance && postTokenBalance) {
-          const preAmount = BigInt(preTokenBalance.uiTokenAmount?.amount || '0');
-          const postAmount = BigInt(postTokenBalance.uiTokenAmount?.amount || '0');
-          const tokensReceived = postAmount - preAmount;
-          
-          if (tokensReceived > 0n) {
-            return { amountGotten: tokensReceived.toString() };
+        // Handle case where user didn't have the token before (new token account)
+        const preAmount = BigInt(preTokenBalance?.uiTokenAmount?.amount || '0');
+        const postAmount = BigInt(postTokenBalance?.uiTokenAmount?.amount || '0');
+        const tokensReceived = postAmount - preAmount;
+        
+        if (tokensReceived > 0n) {
+          return { amountGotten: tokensReceived.toString() };
+        }
+
+        // Look for any post-balance for user if no pre-balance exists
+        if (!preTokenBalance && postTokenBalance) {
+          const tokens = BigInt(postTokenBalance.uiTokenAmount?.amount || '0');
+          if (tokens > 0n) {
+            return { amountGotten: tokens.toString() };
           }
         }
+
       } else {
         // Direction 1: User is selling tokens (Token -> NATIVE TOKEN)
         const userIndex = accountKeys.findIndex((key: any) => 
@@ -197,14 +285,21 @@ export class SolanaIndexer {
         if (userIndex !== -1 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {
           const preBalance = BigInt(preBalances[userIndex]);
           const postBalance = BigInt(postBalances[userIndex]);
-          const solReceived = postBalance - preBalance;
+          
+          const solChange = postBalance - preBalance;
+          
+          let solReceived = solChange;
+          
+          // If the user paid the transaction fee, add it back to get the actual amount received
+          if (userIndex === 0) {
+            solReceived = solChange + BigInt(fee);
+          }
           
           if (solReceived > 0n) {
             return { amountGotten: solReceived.toString() };
           }
         }
       }
-
       return {};
     } catch (error) {
       if (this.debugStatements) {
