@@ -39,7 +39,6 @@ export interface IEventModel extends PaginateModel<IEvent> {
 
 const schema = new Schema<IEvent, IEventModel>(
 	{
-		_id: { type: Schema.Types.ObjectId, auto: true },
 		signature: { type: String, required: true },
 		slot: { type: Number, required: true },
 		blockTime: { type: Number, required: true },
