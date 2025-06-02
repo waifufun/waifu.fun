@@ -14,10 +14,14 @@ import Skeleton from "../skeleton-loading";
 import useBalance from "@/hooks/use-balance";
 import { useWallets } from "../hooks/providers/UseWalletContext";
 import useTokenBalance from "@/hooks/use-token-balance";
+import useSpeed from "@/hooks/use-speed";
+import useSlippage from "@/hooks/use-slippage";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
 	const wallets = useWallets();
+	const { speed } = useSpeed();
+	const { slippage } = useSlippage();
 	const address = wallets?.solanaWallets?.Mainnet?.address as AddressLike;
 	const balance = useBalance({ chain: token.chain, address });
 	const tokenBalance = useTokenBalance({
@@ -66,15 +70,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	});
 
 	const swapMutation = useMutation({
-		mutationKey: [token.contractAddress, value],
+		mutationKey: [token.contractAddress, value, slippage, speed],
 		mutationFn: async () => {
-			await new Promise((resolve) => {
-				setTimeout(() => {
-					resolve(true);
-				}, 2000);
-			});
-
-			await executeSwap(token, value, mode);
+			await executeSwap(token, value, mode, slippage, speed);
 		},
 		onSuccess: () => {},
 		onError: (e) => {

@@ -530,6 +530,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		const cacheKey = `${address}:balance`;
 
+		const cache = await redis.get(cacheKey);
+
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
 		const balancesLookup = await codex.queries.balances({
 			input: {
 				walletAddress: address,
