@@ -4,17 +4,27 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
-import type { IToken } from "@autofun/types";
+import type { AddressLike, IToken } from "@autofun/types";
 import { Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
 import { cn, executeSwap } from "@/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Skeleton from "../skeleton-loading";
+import useBalance from "@/hooks/use-balance";
+import { useWallets } from "../hooks/providers/UseWalletContext";
+import useTokenBalance from "@/hooks/use-token-balance";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
-	const [balance, setBalance] = useState<number>(0);
+	const wallets = useWallets();
+	const address = wallets?.solanaWallets?.Mainnet?.address as AddressLike;
+	const balance = useBalance({ chain: token.chain, address });
+	const tokenBalance = useTokenBalance({
+		chain: token.chain,
+		contractAddress: token.contractAddress,
+		address: address,
+	});
 
 	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
 
@@ -84,7 +94,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				<div className="flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium">
 					<Wallet size={14} color="#8C8C8C" />
 					<span className="uppercase">
-						{balance} {mode === "buy" ? "SOL" : token.ticker}
+						{mode === "buy" ? balance?.data : tokenBalance?.data} {mode === "buy" ? "SOL" : token.ticker}
 					</span>
 				</div>
 

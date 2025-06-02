@@ -258,6 +258,6 @@ export const getTrades = async ({
 	});
 };
 
-const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-export const connection = new Connection(rpcUrl, "confirmed");
+export const connection = new Connection(HELIUS_RPC_URL, "confirmed");
