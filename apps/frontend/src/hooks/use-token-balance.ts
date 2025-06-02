@@ -1,3 +1,5 @@
+"use client";
+
 import type { AddressLike, TChain } from "@autofun/types";
 import { useQuery } from "@tanstack/react-query";
 

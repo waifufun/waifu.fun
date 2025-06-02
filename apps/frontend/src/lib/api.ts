@@ -1,4 +1,5 @@
 import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
+import { Connection } from "@solana/web3.js";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -256,3 +257,7 @@ export const getTrades = async ({
 		contractAddress,
 	});
 };
+
+const rpcUrl = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+export const connection = new Connection(rpcUrl, "confirmed");
