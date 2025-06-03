@@ -1,3 +1,11 @@
+# [0.5.0](https://github.com/elizaos/autofun-monorepo/compare/v0.4.0...v0.5.0) (2025-06-03)
+
+
+### Features
+
+* be able to run indexer as a standalone thing ([2e33d7e](https://github.com/elizaos/autofun-monorepo/commit/2e33d7e47b1415e08add1659a5b6371cebb6fadd))
+* use newer lint ([1335d15](https://github.com/elizaos/autofun-monorepo/commit/1335d1564d40f7a6c680eb4161e5abde3140cb37))
+
 # [0.4.0](https://github.com/elizaos/autofun-monorepo/compare/v0.3.0...v0.4.0) (2025-06-02)
 
 
