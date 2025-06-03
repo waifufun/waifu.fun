@@ -33,7 +33,7 @@ export async function createAgent(body: CreateAIAgentRequest) {
 }
 
 export async function getAgent(agentId: string): Promise<IAgent> {
-	const response = await fetch(`${FLEEK_API_URL}/api/v1/ai-agents/${agentId}`, {
+	const response = await fetch(`${FLEEK_API_URL}/api/v1/ai-agents/${agentId}/public`, {
 		headers: {
 			"X-Api-Key": process.env.FLEEK_API_KEY || "",
 		},
@@ -42,7 +42,7 @@ export async function getAgent(agentId: string): Promise<IAgent> {
 	if (!response.ok) {
 		throw new Error("Failed to fetch agent.");
 	}
-
 	const agent = await response.json();
+	console.log("agent", agent)
 	return agent;
 }

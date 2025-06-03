@@ -44,10 +44,10 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 
 				const agentDoc = await DB.Agent.create({
 					name: agentData.name,
-					bio: agentData.bio,
-					createdBy: agentData.createdBy,
-					image: agentData.image,
-					tokenAddress: contractAddress,
+					bio: agentData.bio || "No bio",
+					createdBy: agentData.createdBy || "Unknown",
+					avatar: agentData.avatar,
+					contractAddress: contractAddress,
 				});
 
 				return { success: true, data: agentDoc };
@@ -57,4 +57,21 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 			}
 		},
 	);
+
+	// get agent(s) based on contractAddress
+	fastify.post<{
+		Body: {
+			contractAddress: string;
+		};
+	}>("/get-agent", async (request, reply) => {
+		const { contractAddress } = request.body;
+
+		try {
+			const result = await DB.Agent.find({ contractAddress }).sort({ createdAt: -1 });
+			return reply.send(result);
+		} catch (error: any) {
+			request.log.error(error);
+			return reply.status(500).send({ error: error.message || "Failed to fetch agents" });
+		}
+	});
 }

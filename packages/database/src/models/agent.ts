@@ -7,18 +7,16 @@ const schema = new Schema<IAgent>(
 		name: { type: String, required: true },
 		bio: { type: String },
 		createdBy: { type: String, required: true },
-		image: { type: String, required: true },
-		tokenAddress: {
+		avatar: { type: String, required: true },
+		contractAddress: {
 			type: String,
-			ref: "Token",
+			required: true
 		},
 	},
 	{ timestamps: true, versionKey: false },
 );
 
 schema.plugin(paginate);
-
-schema.index({ relatedTokenAddress: 1 });
 
 const Model = Mongoose.model<IAgent, PaginateModel<IAgent>>("Agent", schema);
 

@@ -21,7 +21,7 @@ export default function ConnectToFleek({ contractAddress }: { contractAddress: s
 	});
 
 	return (
-		<div className="bg-[#0F0F0F] backdrop-blur-2xl min-w-[300px] max-w-[300px] rounded-md">
+		<div className="bg-[#0F0F0F] ƒlex place-self-center backdrop-blur-2xl min-w-[300px] max-w-[300px] rounded-md">
 			<div className="p-4 flex flex-col text-center transition-all duration-300 ease-in-out">
 				<h1 className="font-semibold text-white text-2xl">
 					Connect An <span className="text-autofun-background-action-highlight">Agent</span>

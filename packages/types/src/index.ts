@@ -211,6 +211,6 @@ export type IAgent = {
 	name: string;
 	bio: string;
 	createdBy: string;
-	image: string
-	tokenAddress: string
+	avatar: string
+	contractAddress: string
 };
