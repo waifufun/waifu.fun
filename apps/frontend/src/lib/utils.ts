@@ -1,9 +1,10 @@
-import { EvmChainIds, SolanaNetworkIds, type IToken, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
+import { parseUnits } from "viem";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -224,16 +225,121 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 	return !!maxDecimals && decimalPart.length > maxDecimals;
 }
 
+const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
+
+export const retrieveJupiterQuote = async ({
+	amount,
+	token,
+	mode,
+	slippage,
+}: {
+	amount: string | number;
+	token: IToken;
+	mode: "buy" | "sell";
+	slippage: number;
+	// biome-ignore lint/suspicious/noExplicitAny: allow
+}): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
+	const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
+	const outputMint = mode === "buy" ? token.contractAddress : SOL_MINT_ADDRESS;
+	const amountW = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
+
+	const res = await fetch(
+		`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}`,
+		{
+			method: "GET",
+			headers: {
+				Accept: "application/json",
+			},
+		},
+	);
+
+	const json = await res.json();
+
+	const minimumReceived = json?.outAmount;
+	const swapUsdValue = json?.swapUsdValue;
+	const priceImpactPct = json?.priceImpactPct;
+
+	return { minimumReceived, swapUsdValue, priceImpactPct, quote: json };
+};
+
+export const retrieveQuote = async ({
+	amount,
+	token,
+	mode,
+	slippage,
+}: {
+	amount: string | number;
+	token: IToken;
+	mode: "buy" | "sell";
+	slippage: number;
+	// biome-ignore lint/suspicious/noExplicitAny: allow
+}): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
+	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
+	if (provider === "jupiter") {
+		return await retrieveJupiterQuote({
+			amount,
+			token,
+			mode,
+			slippage,
+		});
+	}
+
+	if (provider === "autofun") {
+		return { minimumReceived: 1337 };
+	}
+
+	throw new Error("No quote route found. Please contact auto.fun");
+};
+
 export const executeSwap = async (
+	from: AddressLike,
 	token: IToken,
-	inputAmount: bigint | string | number,
+	inputAmount: string | number,
 	mode: "buy" | "sell",
 	slippage: number,
 	speed: TSpeed,
-) => {
-	console.log({ inputAmount, mode, slippage, speed });
+): Promise<string> => {
 	/** If the token was imported or has already migrated we can just use Jupiter */
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
+		const quoteResponse = await retrieveJupiterQuote({
+			amount: inputAmount,
+			mode,
+			slippage,
+			token,
+		});
+
+		const quote = quoteResponse?.quote;
+
+		if (!quote) throw new Error("Failed to fetch quote from Jupiter");
+
+		const options = {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json",
+			},
+			body: JSON.stringify({
+				userPublicKey: from,
+				quoteResponse: quote,
+				prioritizationFeeLamports: {
+					priorityLevelWithMaxLamports: {
+						maxLamports: 10000000,
+						// TODO - Implement the right speed
+						priorityLevel: "veryHigh",
+					},
+				},
+				dynamicComputeUnitLimit: true,
+			}),
+		};
+
+		const res = await fetch("https://lite-api.jup.ag/swap/v1/swap", options);
+		const json = await res.json();
+		if (!res.ok && json?.error) {
+			throw new Error(json?.error || "Something went wrong");
+		}
+
+		// TODO - Execute the transaction
+		return "ABCDEFGH";
 	}
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {

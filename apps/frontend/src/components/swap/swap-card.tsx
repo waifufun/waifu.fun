@@ -1,28 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
-import type { AddressLike, IToken } from "@autofun/types";
-import { Wallet } from "lucide-react";
+import type { IToken, SolanaAddressLike } from "@autofun/types";
+import { AlertCircle, Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
-import { abbreviateNumber, cn, executeSwap } from "@/lib/utils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Skeleton from "../skeleton-loading";
 import useBalance from "@/hooks/use-balance";
-import { useWallets } from "../hooks/providers/UseWalletContext";
 import useTokenBalance from "@/hooks/use-token-balance";
 import useSpeed from "@/hooks/use-speed";
 import useSlippage from "@/hooks/use-slippage";
+import { formatUnits } from "viem";
+import useAddress from "@/hooks/use-address";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
-	const wallets = useWallets();
+	const queryClient = useQueryClient();
 	const { speed } = useSpeed();
 	const { slippage } = useSlippage();
-	const address = wallets?.solanaWallets?.Mainnet?.address as AddressLike;
+	const address = useAddress();
 	const balance = useBalance({ chain: token.chain, address });
 	const tokenBalance = useTokenBalance({
 		chain: token.chain,
@@ -53,35 +54,66 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const minReceivedQuery = useQuery({
-		queryKey: [token.contractAddress, "mode", value],
+		queryKey: [token.contractAddress, mode, value, slippage],
 		queryFn: async () => {
-			await new Promise((resolve) => {
-				setTimeout(() => {
-					resolve(true);
-				}, 1000);
-			});
-
-			return {
-				minReceived: 230139,
-			};
+			try {
+				return await retrieveQuote({
+					amount: value,
+					mode,
+					slippage,
+					token,
+				});
+			} catch (e) {
+				const error = e as { message?: string };
+				toast.error(error?.message);
+				throw e;
+			}
 		},
 		enabled: !!value,
-		refetchInterval: 10_000,
+		refetchInterval: 7_000,
 	});
 
 	const swapMutation = useMutation({
 		mutationKey: [token.contractAddress, value, slippage, speed],
 		mutationFn: async () => {
-			await executeSwap(token, value, mode, slippage, speed);
+			const from = address as SolanaAddressLike;
+			if (!from) throw new Error("No wallet connected");
+			await executeSwap(from, token, value, mode, slippage, speed);
 		},
-		onSuccess: () => {},
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["balance"],
+			});
+		},
 		onError: (e) => {
 			toast.error(e.message);
 		},
 	});
 
+	const priceImpact = minReceivedQuery?.data?.priceImpactPct
+		? Number((Number(minReceivedQuery?.data?.priceImpactPct) * 100).toFixed(0))
+		: null;
+
+	useEffect(() => {
+		if (mode) {
+			setValue("");
+		}
+	}, [mode]);
+
+	const hasSufficientBalance = () => {
+		if (!value || value === "0") return true;
+		if (mode === "buy") {
+			console.log(balance?.data, value);
+			return Number(balance?.data) >= Number(value);
+		}
+
+		return Number(tokenBalance?.data) >= Number(value);
+	};
+
+	const insufficientBalance = !hasSufficientBalance();
+
 	return (
-		<div className="w-full h-full rounded-xl overflow-hidden">
+		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
 				<div className="flex items-stretch gap-2 w-full">
 					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
@@ -89,7 +121,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<Image
 							unoptimized
 							priority
-							className="rounded-md"
+							className="rounded-md size-6"
 							src={
 								mode === "buy"
 									? token?.chain === "solana"
@@ -160,25 +192,57 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<div className="flex font-medium justify-between text-base text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
-							{minReceivedQuery?.isPending ? <Skeleton /> : <span>{minReceivedQuery?.data?.minReceived}</span>}
+							{!value || value === "0" ? (
+								<span>0</span>
+							) : (
+								<Fragment>
+									{minReceivedQuery?.isPending || minReceivedQuery?.isRefetching ? (
+										<Skeleton />
+									) : (
+										<Fragment>
+											{minReceivedQuery?.error ? (
+												<span>Error</span>
+											) : (
+												<span>
+													{minReceivedQuery?.data?.minimumReceived
+														? formatUnits(BigInt(minReceivedQuery?.data?.minimumReceived), token.decimals)
+														: null}
+												</span>
+											)}
+										</Fragment>
+									)}
+								</Fragment>
+							)}
 
 							{mode === "buy" ? token.ticker : "SOL"}
 						</div>
 					</div>
-
-					{/* <div className="flex font-medium justify-between text-base text-white">
-						<p>Price Impact</p>
-						<p>25</p>
-					</div> */}
+					{priceImpact ? (
+						<div className="flex font-medium justify-between text-base text-white">
+							<p>Price Impact</p>
+							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
+						</div>
+					) : null}
 					<AdvancedSettings />
+					<div
+						className={cn([
+							insufficientBalance
+								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
+								: "hidden",
+							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] rounded-xl text-sm gap-2 items-center transition-all duration-200",
+						])}
+					>
+						<AlertCircle className="text-autofun-text-error" />
+						Insufficient balance to perform trade.
+					</div>
 					<Button
-						disabled={swapMutation?.isPending}
+						disabled={swapMutation?.isPending || insufficientBalance || !value || value === "0"}
 						onClick={() => {
 							swapMutation?.mutate();
 						}}
 						className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
 					>
-						{swapMutation?.isPending ? "Loading..." : "Swap"}
+						{swapMutation?.isPending ? "Loading..." : insufficientBalance ? "Insufficient balance" : "Swap"}
 					</Button>
 				</div>
 			</div>

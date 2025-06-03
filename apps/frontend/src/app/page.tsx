@@ -1,4 +1,3 @@
-import ChainSelector from "@/components/chain-selector";
 import { GridItem } from "@/components/grid-item";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
@@ -45,7 +44,16 @@ export default async function Home({
 				unoptimized
 				priority
 				alt="hero"
-				className="mx-auto w-full select-none"
+				className="hidden lg:block mx-auto w-full select-none"
+			/>
+			<Image
+				src="/homepage-hero-mini.svg"
+				width={360}
+				height={14}
+				unoptimized
+				priority
+				alt="hero"
+				className="block lg:hidden mx-auto w-full select-none"
 			/>
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 w-full">
 				{tokens.splice(0, 4)?.map((token: IToken) => (
