@@ -5,7 +5,7 @@ import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
-import { VersionedTransaction, type Connection, } from "@solana/web3.js";
+import { PublicKey, VersionedTransaction, type Connection } from "@solana/web3.js";
 import type { WalletAdapterProps } from "@solana/wallet-adapter-base";
 
 export function cn(...inputs: ClassValue[]) {
@@ -229,7 +229,7 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 const platformFeeBps = 100;
-const feeAccount = "autovtovm7oqwtbyrWgdSH7i1W4nLPRWjXM2wcdqn1R";
+const feeAccount = new PublicKey("autovtovm7oqwtbyrWgdSH7i1W4nLPRWjXM2wcdqn1R");
 
 export const retrieveJupiterQuote = async ({
 	amount,
@@ -327,7 +327,7 @@ export const executeSwap = async (
 			},
 			body: JSON.stringify({
 				userPublicKey: from,
-				feeAccount,
+				feeAccount: feeAccount,
 				quoteResponse: quote,
 				prioritizationFeeLamports: {
 					priorityLevelWithMaxLamports: {
@@ -345,6 +345,12 @@ export const executeSwap = async (
 		const json = await res.json();
 		if (!res.ok && json?.error) {
 			throw new Error(json?.error || "Something went wrong");
+		}
+
+		const simulationError = json?.simulationError?.error;
+
+		if (simulationError) {
+			throw new Error(simulationError);
 		}
 
 		const swapTransaction = json?.swapTransaction;

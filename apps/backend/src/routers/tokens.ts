@@ -338,7 +338,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}).lean();
 
 		// If token exists in events but curve is not completed, get swaps from our DB
-		if (eventsExist && !token.curveCompleted) {
+		if (eventsExist && !token.curveCompleted && !token.imported) {
 			const swapEvents = await DB.Event.find({
 				contractAddress: checksummedQueryAddress,
 				eventType: { $in: ["swap", "launchAndSwap"] },
@@ -359,7 +359,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}
 
 			// @ts-ignore
-
 			const priceKey = chain === "solana" ? "solana" : "ethereum";
 			const nativePrice = nativePrices?.[priceKey] || 0;
 
