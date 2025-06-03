@@ -237,7 +237,7 @@ export const retrieveQuote = async ({
 	token: IToken;
 	mode: "buy" | "sell";
 	slippage: number;
-}): Promise<{ minimumReceived: number; swapUsdValue: string; priceImpactPct: string }> => {
+}): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string }> => {
 	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
 	if (provider === "jupiter") {
 		const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
@@ -261,6 +261,10 @@ export const retrieveQuote = async ({
 		const priceImpactPct = json?.priceImpactPct;
 
 		return { minimumReceived, swapUsdValue, priceImpactPct };
+	}
+
+	if (provider === "autofun") {
+		return { minimumReceived: 1337 };
 	}
 
 	throw new Error("No quote route found. Please contact auto.fun");

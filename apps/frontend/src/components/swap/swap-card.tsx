@@ -8,7 +8,7 @@ import type { AddressLike, IToken } from "@autofun/types";
 import { Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
 import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Skeleton from "../skeleton-loading";
 import useBalance from "@/hooks/use-balance";
@@ -20,6 +20,7 @@ import { formatUnits } from "viem";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
+	const queryClient = useQueryClient();
 	const wallets = useWallets();
 	const { speed } = useSpeed();
 	const { slippage } = useSlippage();
@@ -78,14 +79,22 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		mutationFn: async () => {
 			await executeSwap(token, value, mode, slippage, speed);
 		},
-		onSuccess: () => {},
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["balance"],
+			});
+		},
 		onError: (e) => {
 			toast.error(e.message);
 		},
 	});
 
+	const priceImpact = minReceivedQuery?.data?.priceImpactPct
+		? Number((Number(minReceivedQuery?.data?.priceImpactPct) * 100).toFixed(0))
+		: null;
+
 	return (
-		<div className="w-full h-full rounded-xl overflow-hidden">
+		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
 				<div className="flex items-stretch gap-2 w-full">
 					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
@@ -189,11 +198,12 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							{mode === "buy" ? token.ticker : "SOL"}
 						</div>
 					</div>
-
-					{/* <div className="flex font-medium justify-between text-base text-white">
-						<p>Price Impact</p>
-						<p>25</p>
-					</div> */}
+					{priceImpact ? (
+						<div className="flex font-medium justify-between text-base text-white">
+							<p>Price Impact</p>
+							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
+						</div>
+					) : null}
 					<AdvancedSettings />
 					<Button
 						disabled={swapMutation?.isPending}
