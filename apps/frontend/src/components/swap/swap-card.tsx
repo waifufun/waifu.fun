@@ -7,7 +7,7 @@ import Image from "next/image";
 import type { AddressLike, IToken } from "@autofun/types";
 import { Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
-import { abbreviateNumber, cn, executeSwap } from "@/lib/utils";
+import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Skeleton from "../skeleton-loading";
@@ -53,20 +53,17 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const minReceivedQuery = useQuery({
-		queryKey: [token.contractAddress, "mode", value],
+		queryKey: [token.contractAddress, mode, value, slippage],
 		queryFn: async () => {
-			await new Promise((resolve) => {
-				setTimeout(() => {
-					resolve(true);
-				}, 1000);
+			return await retrieveQuote({
+				amount: value,
+				mode,
+				slippage,
+				token,
 			});
-
-			return {
-				minReceived: 230139,
-			};
 		},
 		enabled: !!value,
-		refetchInterval: 10_000,
+		refetchInterval: 15_000,
 	});
 
 	const swapMutation = useMutation({
@@ -160,7 +157,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<div className="flex font-medium justify-between text-base text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
-							{minReceivedQuery?.isPending ? <Skeleton /> : <span>{minReceivedQuery?.data?.minReceived}</span>}
+							{minReceivedQuery?.isPending ? <Skeleton /> : <span>{minReceivedQuery?.data?.minimumReceived}</span>}
 
 							{mode === "buy" ? token.ticker : "SOL"}
 						</div>

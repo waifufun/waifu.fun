@@ -1,9 +1,10 @@
-import { EvmChainIds, SolanaNetworkIds, type IToken, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
+import { parseUnits } from "viem";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -223,6 +224,47 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 	const decimalPart = decimalGroups[1] ?? "";
 	return !!maxDecimals && decimalPart.length > maxDecimals;
 }
+
+const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
+
+export const retrieveQuote = async ({
+	amount,
+	token,
+	mode,
+	slippage,
+}: {
+	amount: string | number;
+	token: IToken;
+	mode: "buy" | "sell";
+	slippage: number;
+}): Promise<{ minimumReceived: number; swapUsdValue: string; priceImpactPct: string }> => {
+	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
+	if (provider === "jupiter") {
+		const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
+		const outputMint = mode === "buy" ? token.contractAddress : SOL_MINT_ADDRESS;
+		const amountW = parseUnits(String(amount), token.decimals);
+
+		const res = await fetch(
+			`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}`,
+			{
+				method: "GET",
+				headers: {
+					Accept: "application/json",
+				},
+			},
+		);
+
+		const json = await res.json();
+
+		const minimumReceived = json?.outAmount;
+		const swapUsdValue = json?.swapUsdValue;
+		const priceImpactPct = json?.priceImpactPct;
+
+		return { minimumReceived, swapUsdValue, priceImpactPct };
+	}
+
+	throw new Error("No quote route found. Please contact auto.fun");
+};
 
 export const executeSwap = async (
 	token: IToken,
