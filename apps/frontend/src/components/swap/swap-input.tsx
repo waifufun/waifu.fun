@@ -39,7 +39,7 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 
 		const displayValue = prependSymbol && value ? prependSymbol + value.toString() : value.toString();
 		return (
-			<div className="rounded-lg w-full">
+			<div className="w-full">
 				<input
 					ref={ref}
 					{...rest}
@@ -61,7 +61,7 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 					maxLength={79}
 					spellCheck={false}
 					className={cn(
-						"outline-none border-none w-full text-4xl text-white truncate rounded-md text-ellipsis transition-colors duration-300",
+						"outline-none border-none w-full text-4xl text-white truncate text-ellipsis transition-colors duration-300",
 						"placeholder:text-gray-400",
 						align === "right" ? "text-right" : "text-left",
 						error ? "text-red-400" : "",

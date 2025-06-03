@@ -1,6 +1,6 @@
 "use client";
 import { Input } from "./ui/input";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getTokens } from "@/lib/api";
@@ -11,16 +11,24 @@ import { CopyButton } from "./copy-button";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@autofun/types";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function SearchMenu() {
 	const [open, setOpen] = useState<boolean>(false);
 	const [value, setValue] = useState<string>("");
+	const pathname = usePathname();
+
+	useEffect(() => {
+		if (pathname) {
+			setValue("");
+		}
+	}, [pathname]);
 
 	const searchQuery = useQuery({
 		queryKey: ["search", value],
 		queryFn: async () => {
 			if (value?.length === 0) {
-				if (open) {
+				if (open && !searchQuery?.isRefetching) {
 					setOpen(false);
 				}
 				return [];
@@ -31,12 +39,13 @@ export default function SearchMenu() {
 			const data = await getTokens({ searchParams: { category: "marketcap", page: 1, limit: 5, search: value } });
 			return data as IToken[];
 		},
+		enabled: !!value,
 		refetchInterval: 10_000,
 	});
 
 	return (
 		<Fragment>
-			<Popover open={open} onOpenChange={(a) => setOpen(a)}>
+			<Popover open={open && value?.length > 0} onOpenChange={(a) => setOpen(a)}>
 				<PopoverTrigger autoFocus={false}>
 					<Input
 						placeholder="Search..."

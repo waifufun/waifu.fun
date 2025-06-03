@@ -20,8 +20,8 @@ import { Connection, PublicKey, type VersionedBlockResponse } from "@solana/web3
 import { updateCryptoPrices } from "@autofun/utils";
 import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
 import autoFunAbi from "./evm/abis/AutoFun.json";
-import { EventEmitter } from 'events';
-import type {SlotInfo} from "@autofun/types";
+import { EventEmitter } from "node:events";
+import type { SlotInfo } from "@autofun/types";
 import logger from "@autofun/logger";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
@@ -262,69 +262,67 @@ export class SolanaRpcProvider extends EventEmitter {
 		this.program = new Program(idl as Idl, provider);
 	}
 
-	public subscribeSlot = withFallBack(async (
-		callback: (slotInfo: SlotInfo) => void
-	): Promise<number> => {
+	public subscribeSlot = withFallBack(async (callback: (slotInfo: SlotInfo) => void): Promise<number> => {
 		const subscriptionId = this.connection.onSlotChange((slotInfo) => {
-		  const slotData: SlotInfo = {
-			slot: slotInfo.slot,
-			parent: slotInfo.parent,
-			root: slotInfo.root,
-		  };
-		  
-		  callback(slotData);
-		  this.emit('slot:change', slotData);
+			const slotData: SlotInfo = {
+				slot: slotInfo.slot,
+				parent: slotInfo.parent,
+				root: slotInfo.root,
+			};
+
+			callback(slotData);
+			this.emit("slot:change", slotData);
 		});
-	
+
 		// Track the subscription
 		this.subscriptions.set(subscriptionId, {
-		  type: 'slot',
-		  cleanup: () => this.connection.removeSlotChangeListener(subscriptionId),
+			type: "slot",
+			cleanup: () => this.connection.removeSlotChangeListener(subscriptionId),
 		});
-	
+
 		logger.info(`Subscribed to slot changes with subscription ID: ${subscriptionId}`);
 		return subscriptionId;
 	}, this);
 
 	public unsubscribe(subscriptionId: number): boolean {
 		const subscription = this.subscriptions.get(subscriptionId);
-		
+
 		if (!subscription) {
-		  logger.warn(`Subscription ${subscriptionId} not found`);
-		  return false;
+			logger.warn(`Subscription ${subscriptionId} not found`);
+			return false;
 		}
-	
+
 		try {
-		  if (subscription.cleanup) {
-			subscription.cleanup();
-		  }
-		  
-		  this.subscriptions.delete(subscriptionId);
-		  logger.info(`Unsubscribed from subscription ${subscriptionId}`);
-		  this.emit('subscription:removed', subscriptionId);
-		  return true;
+			if (subscription.cleanup) {
+				subscription.cleanup();
+			}
+
+			this.subscriptions.delete(subscriptionId);
+			logger.info(`Unsubscribed from subscription ${subscriptionId}`);
+			this.emit("subscription:removed", subscriptionId);
+			return true;
 		} catch (error) {
-		  logger.error(`Error unsubscribing from ${subscriptionId}:`, error);
-		  return false;
+			logger.error(`Error unsubscribing from ${subscriptionId}:`, error);
+			return false;
 		}
 	}
 
 	public unsubscribeAll(): void {
 		logger.info(`Unsubscribing from ${this.subscriptions.size} active subscriptions`);
-		
+
 		for (const [subscriptionId, subscription] of this.subscriptions) {
-		  try {
-			if (subscription.cleanup) {
-			  subscription.cleanup();
+			try {
+				if (subscription.cleanup) {
+					subscription.cleanup();
+				}
+			} catch (error) {
+				logger.error(`Error cleaning up subscription ${subscriptionId}:`, error);
 			}
-		  } catch (error) {
-			logger.error(`Error cleaning up subscription ${subscriptionId}:`, error);
-		  }
 		}
-		
+
 		this.subscriptions.clear();
-		this.emit('subscriptions:cleared');
-		logger.info('All subscriptions cleared');
+		this.emit("subscriptions:cleared");
+		logger.info("All subscriptions cleared");
 	}
 
 	public getActiveSubscriptionCount(): number {
@@ -333,8 +331,8 @@ export class SolanaRpcProvider extends EventEmitter {
 
 	public getActiveSubscriptions(): Array<{ id: number; type: string }> {
 		return Array.from(this.subscriptions.entries()).map(([id, sub]) => ({
-		  id,
-		  type: sub.type,
+			id,
+			type: sub.type,
 		}));
 	}
 
@@ -446,11 +444,7 @@ export class SolanaRpcProvider extends EventEmitter {
 			try {
 				return this.program.coder.accounts.decode("bondingCurve", info.data);
 			} catch (err) {
-				logger.error(
-					"Failed to decode bonding curve for",
-					tokenMints?.[i] ? tokenMints[i].toBase58() : undefined,
-					err,
-				);
+				logger.error("Failed to decode bonding curve for", tokenMints?.[i] ? tokenMints[i].toBase58() : undefined, err);
 				return null;
 			}
 		});

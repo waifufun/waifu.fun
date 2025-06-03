@@ -1,21 +1,23 @@
-[{
-  "_id": {
-    "$oid": "683cb80425f4d833322e6264"
-  },
-  "programId": "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
-  "networkId": "101",
-  "currentBlock": 344022072,
-  "highestSyncedBlock": 344119614,
-  "minBlock": 0,
-  "doneGenesisSync": true,
-  "lastSyncTimestamp": {
-    "$date": "2025-06-02T15:59:36.009Z"
-  },
-  "isActive": true,
-  "createdAt": {
-    "$date": "2025-06-01T20:28:52.187Z"
-  },
-  "updatedAt": {
-    "$date": "2025-06-02T15:59:36.010Z"
-  }
-}]
+[
+	{
+		"_id": {
+			"$oid": "683cb80425f4d833322e6264"
+		},
+		"programId": "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
+		"networkId": "101",
+		"currentBlock": 344022072,
+		"highestSyncedBlock": 344119614,
+		"minBlock": 0,
+		"doneGenesisSync": true,
+		"lastSyncTimestamp": {
+			"$date": "2025-06-02T15:59:36.009Z"
+		},
+		"isActive": true,
+		"createdAt": {
+			"$date": "2025-06-01T20:28:52.187Z"
+		},
+		"updatedAt": {
+			"$date": "2025-06-02T15:59:36.010Z"
+		}
+	}
+]

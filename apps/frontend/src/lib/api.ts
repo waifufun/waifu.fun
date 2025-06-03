@@ -1,7 +1,7 @@
 import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
 import { Connection } from "@solana/web3.js";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const fetcher = async (
 	endpoint: string,
@@ -99,7 +99,7 @@ export const generateImage = async ({ prompt, width, height }: { prompt: string;
 };
 
 export const generateMetadata = async (prompt?: string) => {
-	return await fetcher("/generation/metadata", "POST", {
+	return await fetcher("/generation/generate-metadata", "POST", {
 		prompt,
 	});
 };
