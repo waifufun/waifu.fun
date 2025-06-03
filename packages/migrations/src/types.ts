@@ -113,7 +113,7 @@ export interface ProtocolMigration {
   id: string;
   name: string;
   version: number;
-  status: 'active' | 'migrating' | 'migrated' | 'finalized';
+  status: 'active' | 'migrating' | 'migrated' | 'finalized' | 'failed';
   currentStep: number;
   lastSuccessfulStep?: number;
   protocolState: ProtocolState;

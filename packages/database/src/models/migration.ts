@@ -17,6 +17,7 @@ const schema = new Schema<IMigration, ModelType<IMigration>>(
 		primaryNftMint: { type: String },
 		secondaryNftMint: { type: String },
 		status: { type: String, default: "active" },
+		protocol: { type: String, required: true },
 		protocolState: { type: String, default: "" },
 		currentStep: { type: Number, default: 0 },
 		lastSuccessfulStep: { type: Number, default: 0 },
@@ -28,6 +29,7 @@ const schema = new Schema<IMigration, ModelType<IMigration>>(
 		chainId: { type: Number, required: true },
 		creator: { type: String, required: true },
 		version: { type: Number, default: 1, required: true },
+		startedAt: { type: Date, default: Date.now },
 	},
 	{ timestamps: true, versionKey: false },
 );

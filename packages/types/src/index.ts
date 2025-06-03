@@ -174,6 +174,7 @@ export enum MediaType {
 }
 
 export interface IMigration {
+	_id?: string;
 	withdrawnAt?: Date | undefined;
 	migratedAt?: Date | undefined;
 	marketId?: string | undefined;
@@ -186,8 +187,9 @@ export interface IMigration {
 	lockLpTxId?: string | undefined;
 	primaryNftMint?: string | undefined;
 	secondaryNftMint?: string | undefined;
-	status: string;
+	status: "active" | "migrating" | "migrated" | "finalized" | "failed";
 	protocolState?: string | undefined;
+	protocol: "raydium" | "meteora";
 	currentStep?: number | undefined;
 	lastSuccessfulStep?: number | undefined;
 	positionIds?: string[] | undefined;
@@ -200,6 +202,7 @@ export interface IMigration {
 	version: number;
 	createdAt?: Date | undefined;
 	updatedAt?: Date | undefined;
+	startedAt?: Date | undefined;
 }
 
 export type IAdvancedSettingsProps = {

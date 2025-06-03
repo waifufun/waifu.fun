@@ -7,10 +7,6 @@ import logger from "@autofun/logger";
 import type { IToken, IMigration, AddressLike } from "@autofun/types";
 import { SolanaNetworkIds } from "@autofun/types";
 import Mongoose from "mongoose";
-import migrationSchema from "./schemas/migration.js";
-
-// Register the Migration schema
-Mongoose.model<IMigration>("Migration", migrationSchema);
 
 export class DataSync {
   private pgPool: Pool;
@@ -25,6 +21,7 @@ export class DataSync {
     this.pgDb = drizzle(this.pgPool);
     this.mongoDb = DB;
     this.migrationId = `pg_to_mongo_${Date.now()}`;
+    this.Migration = this.mongoDb.Migration;
     this.Migration = Mongoose.model<IMigration>("Migration");
     logger.info("DataSync initialized");
   }

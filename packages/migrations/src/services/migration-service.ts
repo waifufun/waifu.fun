@@ -4,6 +4,7 @@ import { MigrationManager } from '../migrations';
 import type { ProtocolMigration, ProtocolState } from '../types';
 import DB from '@autofun/database';
 import logger from '@autofun/logger';
+import type { IMigration } from '@autofun/types';
 
 export class MigrationService {
   private isProcessing: boolean = false;
@@ -51,6 +52,7 @@ export class MigrationService {
     this.processMigrations();
     logger.info('Migration processing started');
   }
+  
 
   private async processMigrations(): Promise<void> {
     if (this.isProcessing) {
@@ -73,9 +75,42 @@ export class MigrationService {
       this.isProcessing = false;
     }
   }
+    private async getProtocolFromToken(tokenMint: string): Promise<'raydium' | 'meteora' | string | undefined> {
+    const token = await DB.Token.findOne({ contractAddress: tokenMint });
+    if (!token) {
+      throw new Error(`Token ${tokenMint} not found in database`);
+    }
 
-  private async processMigration(migration: any): Promise<void> {
+    if (!token.pool) {
+      throw new Error(`Token ${tokenMint} has no pool information`);
+    }
+
+    // Convert pool to protocol name
+    const protocol = token.pool.toLowerCase();
+    if (protocol !== 'raydium' && protocol !== 'meteora') {
+      throw new Error(`Unsupported protocol: ${protocol}`);
+    }
+
+    return protocol as 'raydium' | 'meteora';
+  }
+
+  private async processMigration(migration: IMigration): Promise<void> {
     try {
+      // get token 
+      // const token = await DB.Token.findOne({
+      //   contractAddress: migration.contractAddress,
+      //   chain: migration.chain,
+      //   chainId: migration.chainId
+      // });
+      // if (!token) {
+      //   logger.warn(`Token ${migration.contractAddress} not found for migration ${migration.id}`);
+      //   return;
+      // }
+      // const protocol = await this.getProtocolFromToken(token.contractAddress);
+      // if (!protocol) {
+      //   logger.warn(`No protocol found for token ${token.contractAddress}`);
+      //   return;
+      // }
       const isProcessing = await DB.Migration.findOneAndUpdate(
         {
           _id: migration._id,
@@ -108,11 +143,12 @@ export class MigrationService {
             }
           }
         );
-        logger.info(`Migration ${migration.id} finalized successfully`);
+        logger.info(`Migration ${migration._id} finalized successfully`);
         return;
       }
+      const protocolMigration = this.createProtocolMigration(`migration-${Date.now()}`,migration);
 
-      const result = await this.migrationManager.executeMigration(migration, [steps[currentStep]]);
+      const result = await this.migrationManager.executeMigration(protocolMigration, [steps[currentStep]]);
 
       if (!result.success) {
         throw result.error;
@@ -130,7 +166,7 @@ export class MigrationService {
         }
       );
 
-      logger.info(`Migration ${migration.id} completed step ${currentStep}`);
+      logger.info(`Migration ${migration._id} completed step ${currentStep}`);
     } catch (error) {
       await DB.Migration.findOneAndUpdate(
         { _id: migration._id },
@@ -144,9 +180,30 @@ export class MigrationService {
         }
       );
 
-      logger.error(`Migration ${migration.id} failed:`, error);
+      logger.error(`Migration ${migration._id} failed:`, error);
     }
   }
+  private createProtocolMigration(name: string, migration: IMigration): ProtocolMigration {
+      const protocolState = JSON.parse(migration.protocolState || '{}') as ProtocolState;
+      return {
+        id: migration._id || '',
+        name,
+        version: 1,
+        status: migration.status || 'migrating',
+        currentStep: migration.currentStep || 0,
+        protocolState: {
+          ...protocolState,
+          tokenMint: protocolState.tokenMint ?? migration.contractAddress,
+          amount: protocolState?.amount || 0,
+          withdrawnAmounts: undefined,
+          txId: protocolState?.txId ?? undefined,
+          transactions: [],
+        },
+        startedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
 
   async getMigrationStatus(migrationId: string): Promise<{
     status: string;
