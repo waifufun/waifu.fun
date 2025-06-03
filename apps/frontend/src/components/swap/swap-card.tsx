@@ -77,7 +77,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const swapMutation = useMutation({
 		mutationKey: [token.contractAddress, value, slippage, speed],
 		mutationFn: async () => {
-			await executeSwap(token, value, mode, slippage, speed);
+			const from = wallets.solanaWallets?.Mainnet.address as AddressLike;
+			if (!from) throw new Error("No wallet connected");
+			await executeSwap(from, token, value, mode, slippage, speed);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({
