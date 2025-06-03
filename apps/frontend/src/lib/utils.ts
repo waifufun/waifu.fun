@@ -5,6 +5,8 @@ import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
+import { VersionedTransaction, type Connection, } from "@solana/web3.js";
+import type { WalletAdapterProps } from "@solana/wallet-adapter-base";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -226,6 +228,8 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 }
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
+const platformFeeBps = 100;
+const feeAccount = "autovtovm7oqwtbyrWgdSH7i1W4nLPRWjXM2wcdqn1R";
 
 export const retrieveJupiterQuote = async ({
 	amount,
@@ -244,7 +248,7 @@ export const retrieveJupiterQuote = async ({
 	const amountW = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
 
 	const res = await fetch(
-		`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}`,
+		`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}&platformFeeBps=${platformFeeBps}`,
 		{
 			method: "GET",
 			headers: {
@@ -298,8 +302,10 @@ export const executeSwap = async (
 	mode: "buy" | "sell",
 	slippage: number,
 	speed: TSpeed,
+	connection: Connection,
+	sendTransaction: WalletAdapterProps["sendTransaction"],
 ): Promise<string> => {
-	console.log({ speed })
+	if (!connection) throw new Error("No connection was found");
 	/** If the token was imported or has already migrated we can just use Jupiter */
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
@@ -321,12 +327,14 @@ export const executeSwap = async (
 			},
 			body: JSON.stringify({
 				userPublicKey: from,
+				feeAccount,
 				quoteResponse: quote,
 				prioritizationFeeLamports: {
 					priorityLevelWithMaxLamports: {
+						/** Retain a maximum of 0.1 SOL */
 						maxLamports: 10000000,
-						// TODO - Implement the right speed
-						priorityLevel: "veryHigh",
+						priorityLevel:
+							speed === "normal" ? "medium" : speed === "turbo" ? "high" : speed === "ultra" ? "veryHigh" : "medium",
 					},
 				},
 				dynamicComputeUnitLimit: true,
@@ -339,8 +347,15 @@ export const executeSwap = async (
 			throw new Error(json?.error || "Something went wrong");
 		}
 
-		// TODO - Execute the transaction
-		return "ABCDEFGH";
+		const swapTransaction = json?.swapTransaction;
+
+		if (!swapTransaction) throw new Error("Failed to fetch transaction");
+
+		const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+		const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+		const signature = await sendTransaction(transaction, connection);
+
+		return signature;
 	}
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {

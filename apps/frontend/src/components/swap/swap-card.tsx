@@ -17,11 +17,14 @@ import useSpeed from "@/hooks/use-speed";
 import useSlippage from "@/hooks/use-slippage";
 import { formatUnits } from "viem";
 import useAddress from "@/hooks/use-address";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
 	const queryClient = useQueryClient();
+	const { sendTransaction } = useWallet();
 	const { speed } = useSpeed();
+	const { connection } = useConnection();
 	const { slippage } = useSlippage();
 	const address = useAddress();
 	const balance = useBalance({ chain: token.chain, address });
@@ -78,7 +81,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		mutationFn: async () => {
 			const from = address as SolanaAddressLike;
 			if (!from) throw new Error("No wallet connected");
-			await executeSwap(from, token, value, mode, slippage, speed);
+			await executeSwap(from, token, value, mode, slippage, speed, connection, sendTransaction);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({
