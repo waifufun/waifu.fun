@@ -10,7 +10,7 @@ const schema = new Schema<IAgent>(
 		avatar: { type: String, required: true },
 		contractAddress: {
 			type: String,
-			required: true
+			required: true,
 		},
 	},
 	{ timestamps: true, versionKey: false },

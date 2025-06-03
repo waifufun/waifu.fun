@@ -131,4 +131,4 @@ export const FAL_MODELS: FALModels = {
 	},
 };
 
-export const FLEEK_API_URL = "https://api.fleek.xyz"
+export const FLEEK_API_URL = "https://api.fleek.xyz";

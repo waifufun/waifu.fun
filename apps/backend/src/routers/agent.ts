@@ -57,7 +57,7 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 		},
 	);
 
-	// get agent(s) based on contractAddress
+	// get agent based on contractAddress
 	fastify.post<{
 		Body: {
 			contractAddress: string;

@@ -60,7 +60,7 @@ fastify.register(chatRoutes, { prefix: "/chat" });
 fastify.register(transactionsRoutes, { prefix: "/transactions" });
 fastify.register(authRoutes, { prefix: "/auth" });
 fastify.register(generationRoutes, { prefix: "/generation" });
-fastify.register(agentRoutes, {prefix: "/agent"})
+fastify.register(agentRoutes, { prefix: "/agent" });
 
 const port = 3001;
 

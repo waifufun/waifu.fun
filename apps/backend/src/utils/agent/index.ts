@@ -43,6 +43,6 @@ export async function getAgent(agentId: string): Promise<IAgent> {
 		throw new Error("Failed to fetch agent.");
 	}
 	const agent = await response.json();
-	console.log("agent", agent)
+	console.log("agent", agent);
 	return agent;
 }
