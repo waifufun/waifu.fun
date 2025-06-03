@@ -5,31 +5,13 @@ import DB from "@autofun/database";
 import logger from "@autofun/logger";
 import { PublicKey } from "@solana/web3.js";
 import dotenv from "dotenv";
+import type {
+  SolanaIndexerConfig,
+  DecodedInstruction
+} from "../types";
 
 
 dotenv.config();
-
-export interface SolanaIndexerConfig {
-	networkId: SolanaNetworkIds;
-	autoFunAddress: SolanaAddressLike;
-	concurrencyLimit?: number;
-	maxSignatures?: number;
-	beforeSignature?: string;
-	debugStatements?: boolean;
-	minBlock?: number; // Minimum block to sync from (genesis point)
-}
-
-interface DecodedInstruction {
-	type: "launch" | "swap" | "launchAndSwap" | "unknown";
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-	data?: any;
-	mintAddress?: string;
-	tokenMint?: string;
-	creator?: string;
-	user?: string;
-	accounts: string[];
-	discriminator?: number[];
-}
 
 export class SolanaIndexer {
   private rpc: SolanaRpcProvider;
