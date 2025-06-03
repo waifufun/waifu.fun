@@ -299,9 +299,7 @@ export const executeSwap = async (
 	slippage: number,
 	speed: TSpeed,
 ): Promise<string> => {
-	console.log({ inputAmount, mode, slippage, speed });
 	/** If the token was imported or has already migrated we can just use Jupiter */
-	console.log({ imported: token?.imported, ccompleted: token?.curveCompleted });
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
 			amount: inputAmount,
@@ -326,6 +324,7 @@ export const executeSwap = async (
 				prioritizationFeeLamports: {
 					priorityLevelWithMaxLamports: {
 						maxLamports: 10000000,
+						// TODO - Implement the right speed
 						priorityLevel: "veryHigh",
 					},
 				},
@@ -338,7 +337,8 @@ export const executeSwap = async (
 		if (!res.ok && json?.error) {
 			throw new Error(json?.error || "Something went wrong");
 		}
-
+		
+		// TODO - Execute the transaction
 		return "ABCDEFGH";
 	}
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
