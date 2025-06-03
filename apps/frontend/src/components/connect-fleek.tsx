@@ -4,20 +4,18 @@ import { Button } from "./ui/button";
 import { connectAgent } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
-export default function ConnectToFleek({ contractAddress, agentId }: { contractAddress: string; agentId: string }) {
+export default function ConnectToFleek({ contractAddress }: { contractAddress: string }) {
 
 	const { data, error, isLoading, refetch } = useQuery({
-		queryKey: ["connect-agent", agentId],
+		queryKey: ["connect-agent", contractAddress],
 		queryFn: async () => {
 		  return await connectAgent({
-			agentId: "agent1qww3ju3h6kfcuqf54gkghvt2pqe8qp97a7nzm2vp8plfxflc0epzcjsv79t",
+			agentId: "12345",
 			contractAddress: contractAddress,
 		  });
 		},
 		enabled: false,
 	  });
-
-	  console.log("data", data)
 
 	return (
 		<div className="bg-[#0F0F0F] backdrop-blur-2xl min-w-[300px] max-w-[300px] rounded-md">

@@ -33,7 +33,7 @@ export default async function agentRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { agentId } = request.params;
       const { contractAddress } = request.body;
-  
+      
       try {
         const agentData = await getAgent(agentId);
         if (!agentData) throw new Error("No agent data returned from Fleek");
@@ -42,20 +42,20 @@ export default async function agentRoutes(fastify: FastifyInstance) {
           name: agentData.name || "Unnamed Agent",
           bio: agentData.bio || "No bio",
           createdBy: agentData.createdBy || "unknown",
-          imageUrl: agentData.imageUrl || "", 
+          image: agentData.imageUrl || "",
           relatedTokenAddress: contractAddress,
         };
   
-        const savedAgent = await DB.Agent.insertOne(
-          agentDoc,
-        );
+        const token = await DB.Token.findOne({ contractAddress });
+        if (!token) throw new Error("Token not found");
   
-        return { success: true, data: savedAgent };
+        token.agent = agentDoc;
+        await token.save();
+        return { success: true, data: token };
       } catch (error: any) {
-        fastify.log.error(error);
+        request.log.error(error);
         return reply.status(500).send({ error: error.message || "Failed to connect AI agent" });
       }
     }
-  );
-  
+  );  
 }

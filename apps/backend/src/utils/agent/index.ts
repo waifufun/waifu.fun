@@ -32,16 +32,12 @@ export async function createAgent(body: CreateAIAgentRequest) {
 }
 
 export async function getAgent(agentId: string) {
+	console.log("running")
 	const response = await fetch(`${FLEEK_API_URL}/api/v1/ai-agents/${agentId}`, {
 		headers: {
 			"X-Api-Key": process.env.FLEEK_API_KEY || "",
 		},
 	});
 
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw { status: response.status, message: errorData };
-	}
-
-	return response.json();
+	return console.log(response);
 }
