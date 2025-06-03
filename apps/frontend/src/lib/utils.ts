@@ -1,4 +1,4 @@
-import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type IToken, type TChain } from "@autofun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
@@ -242,7 +242,7 @@ export const retrieveQuote = async ({
 	if (provider === "jupiter") {
 		const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
 		const outputMint = mode === "buy" ? token.contractAddress : SOL_MINT_ADDRESS;
-		const amountW = parseUnits(String(amount), token.decimals);
+		const amountW = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
 
 		const res = await fetch(
 			`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}`,

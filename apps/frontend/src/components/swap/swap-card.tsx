@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
@@ -16,6 +16,7 @@ import { useWallets } from "../hooks/providers/UseWalletContext";
 import useTokenBalance from "@/hooks/use-token-balance";
 import useSpeed from "@/hooks/use-speed";
 import useSlippage from "@/hooks/use-slippage";
+import { formatUnits } from "viem";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
@@ -55,15 +56,21 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const minReceivedQuery = useQuery({
 		queryKey: [token.contractAddress, mode, value, slippage],
 		queryFn: async () => {
-			return await retrieveQuote({
-				amount: value,
-				mode,
-				slippage,
-				token,
-			});
+			try {
+				return await retrieveQuote({
+					amount: value,
+					mode,
+					slippage,
+					token,
+				});
+			} catch (e) {
+				const error = e as { message?: string };
+				toast.error(error?.message);
+				throw e;
+			}
 		},
 		enabled: !!value,
-		refetchInterval: 15_000,
+		refetchInterval: 7_000,
 	});
 
 	const swapMutation = useMutation({
@@ -157,7 +164,27 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<div className="flex font-medium justify-between text-base text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
-							{minReceivedQuery?.isPending ? <Skeleton /> : <span>{minReceivedQuery?.data?.minimumReceived}</span>}
+							{!value || value === "0" ? (
+								<span>0</span>
+							) : (
+								<Fragment>
+									{minReceivedQuery?.isPending || minReceivedQuery?.isRefetching ? (
+										<Skeleton />
+									) : (
+										<Fragment>
+											{minReceivedQuery?.error ? (
+												<span>Error</span>
+											) : (
+												<span>
+													{minReceivedQuery?.data?.minimumReceived
+														? formatUnits(BigInt(minReceivedQuery?.data?.minimumReceived), token.decimals)
+														: null}
+												</span>
+											)}
+										</Fragment>
+									)}
+								</Fragment>
+							)}
 
 							{mode === "buy" ? token.ticker : "SOL"}
 						</div>
