@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
@@ -92,6 +92,12 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const priceImpact = minReceivedQuery?.data?.priceImpactPct
 		? Number((Number(minReceivedQuery?.data?.priceImpactPct) * 100).toFixed(0))
 		: null;
+
+	useEffect(() => {
+		if (mode) {
+			setValue("");
+		}
+	}, [mode]);
 
 	return (
 		<div className="w-full h-full overflow-hidden">
