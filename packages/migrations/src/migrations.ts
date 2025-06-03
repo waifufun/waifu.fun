@@ -6,6 +6,8 @@ import type {
   ProtocolMigration,
   ProtocolState,
 } from "./types";
+import { meteoraMigrationSteps } from './protocols/meteora';
+import { raydiumMigrationSteps } from './protocols/raydium';
 
 export class MigrationManager {
   private programContext: ProgramContext | null = null;
@@ -76,101 +78,12 @@ export class MigrationManager {
   }
 
   async getMigrationSteps(protocol: "raydium" | "meteora"): Promise<any[]> {
-    if (protocol === "raydium") {
-      return [
-        {
-          name: "withdraw",
-          description: "Withdraw liquidity from autofun",
-        },
-        {
-          name: "createPool",
-          description: "Create a new Raydium pool",
-        },
-        {
-          name: "createPrimaryPositionNft",
-          description: "Create primary position NFT",
-        },
-        {
-          name: "createSecondaryPositionNft",
-          description: "Create secondary position NFT",
-        },
-        {
-          name: "lockPrimaryPosition",
-          description: "Lock primary position",
-        },
-        {
-          name: "lockSecondaryPosition",
-          description: "Lock secondary position",
-        },
-        {
-          name: "finalizeLockPosition",
-          description: "Finalize position lock",
-        },
-        {
-          name: "sendNft",
-          description: "Send NFT to manager multisig",
-        },
-        {
-          name: "depositNft",
-          description: "Deposit NFT to Raydium vault",
-        },
-        {
-          name: "collectFees",
-          description: "Collect protocol fees",
-        },
-        {
-          name: "finalizeMigration",
-          description: "Finalize Raydium migration",
-        },
-      ];
+    if (protocol === "meteora") {
+      return meteoraMigrationSteps;
+    } else if (protocol === "raydium") {
+      return raydiumMigrationSteps;
     } else {
-      return [
-        {
-          name: "withdraw",
-          description: "Withdraw liquidity from autofun",
-        },
-        {
-          name: "createPrimaryPositionNft",
-          description: "Create primary position NFT",
-        },
-        {
-          name: "createSecondaryPositionNft",
-          description: "Create secondary position NFT",
-        },
-        {
-          name: "finalizePositionNft",
-          description: "Finalize position NFT",
-        },
-        {
-          name: "createPool",
-          description: "Create a new Meteora pool",
-        },
-
-        {
-          name: "createPosition",
-          description: "Create a new position",
-        },
-        {
-          name: "addLiquidity",
-          description: "Add liquidity to Meteora pool",
-        },
-        {
-          name: "sendNft",
-          description: "Send NFT to manager multisig",
-        },
-        {
-          name: "depositNft",
-          description: "Deposit NFT to Meteora vault",
-        },
-        {
-          name: "collectFees",
-          description: "Collect protocol fees",
-        },
-        {
-          name: "finalizeMigration",
-          description: "Finalize Meteora migration",
-        },
-      ];
+      throw new Error(`Unsupported protocol: ${protocol}`);
     }
   }
 }
