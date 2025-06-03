@@ -1,4 +1,3 @@
-
 import { GridItem } from "@/components/grid-item";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
