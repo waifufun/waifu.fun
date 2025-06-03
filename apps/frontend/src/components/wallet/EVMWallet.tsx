@@ -4,7 +4,7 @@ import type { EvmChainIds } from "@autofun/types";
 import { getPublicClient, getWalletClient } from "wagmi/actions";
 import { http } from "viem";
 import { base } from "@reown/appkit/networks";
-import { config } from "@/app/providers";
+// import { config } from "@/app/providers";
 import { formatEther } from "viem";
 // import { EVMRpcProvider } from '@autofun/rpc';
 

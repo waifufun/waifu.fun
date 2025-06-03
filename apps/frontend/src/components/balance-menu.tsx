@@ -2,12 +2,11 @@
 import Image from "next/image";
 import useBalance from "@/hooks/use-balance";
 import type { AddressLike } from "@autofun/types";
-import { useWallets } from "./hooks/providers/UseWalletContext";
 import Skeleton from "./skeleton-loading";
+import useAddress from "@/hooks/use-address";
 
 export default function BalanceMenu() {
-	const wallets = useWallets();
-	const solanaAddress = wallets.solanaWallets?.Mainnet.address;
+	const solanaAddress = useAddress();
 
 	const balance = useBalance({
 		chain: "solana",
@@ -27,36 +26,5 @@ export default function BalanceMenu() {
 				)}
 			</div>
 		</div>
-		// <Menubar>
-		// 	<MenubarMenu>
-		// 		<MenubarTrigger asChild>
-
-		// 		</MenubarTrigger>
-		// 		<MenubarContent>
-		// 			<MenubarItem>
-		// 				<BalanceMenuItem icon="/chain-icons/solana.svg" chain="solana" />
-		// 			</MenubarItem>
-		// 			<MenubarItem>
-		// 				<BalanceMenuItem icon="/chain-icons/ethereum.svg" chain="solana" />
-		// 			</MenubarItem>
-		// 			<MenubarItem>
-		// 				<BalanceMenuItem icon="/chain-icons/base.svg" chain="solana" />
-		// 			</MenubarItem>
-		// 		</MenubarContent>
-		// 	</MenubarMenu>
-		// </Menubar>
 	);
 }
-
-// const BalanceMenuItem = ({ icon, chain }: { icon: string; chain: TChain }) => {
-// 	const balance = useBalance({ chain, address: "7rhxnLV8C77o6d8oz26AgK8x8m5ePsdeRawjqvojbjnQ" as AddressLike });
-// 	console.log({ balance });
-// 	return (
-// 		<div className="flex items-center gap-2">
-// 			<Image src={icon} width={20} height={20} className="size-[24px] object-scale-down" unoptimized alt="balance" />
-// 			<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-satoshi leading-tight">
-// 				{balance?.data}
-// 			</div>
-// 		</div>
-// 	);
-// };

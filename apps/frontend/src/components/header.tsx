@@ -1,16 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "./ui/button";
 import Image from "next/image";
-import { useModal } from "./hooks/providers/UseModalContext";
-import { useWallets } from "./hooks/providers/UseWalletContext";
 import { Menu, Trophy } from "lucide-react";
 import BalanceMenu from "./balance-menu";
 import SearchMenu from "./search-menu";
+import ConnectWallet from "./connect-wallet";
 
 export default function Header() {
-	const { openModal } = useModal();
-	const { solanaWallets, evmWallets } = useWallets();
-
 	return (
 		<div className="flex items-center gap-4 justify-between h-[68px]">
 			<div className="flex items-center gap-4">
@@ -41,9 +39,7 @@ export default function Header() {
 						<Button variant="outline">Create Token</Button>
 					</Link>
 				</div>
-				<Button onClick={() => openModal("WALLET_CONNECT")}>
-					{solanaWallets || evmWallets ? "My Wallets" : "Connect Wallet"}
-				</Button>
+				<ConnectWallet />
 				<div className="flex items-center">
 					<button className="md:hidden items-center" type="button">
 						<Menu size={32} />

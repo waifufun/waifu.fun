@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { RegisterOptions } from "react-hook-form";
 import {
 	usePrompt,
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { useWallets } from "../hooks/providers/UseWalletContext";
 import { useMutation } from "@tanstack/react-query";
 import { createToken } from "@/lib/api";
+import useBalance from "@/hooks/use-balance";
+import useAddress from "@/hooks/use-address";
 
 export const TokenInfoInput = <K extends TokenFormOptions>({
 	title,
@@ -100,24 +102,17 @@ const BuyCoin = () => {
 		formState: { errors },
 		setValue,
 	} = usePrompt();
-	const { solanaWallets } = useWallets();
-	const [balance, setBalance] = useState<number>(0);
-
-	useEffect(() => {
-		const getBalance = async () => {
-			const balance = await solanaWallets?.Devnet?.getNativeBalance();
-			if (balance !== undefined) {
-				setBalance(balance);
-			}
-		};
-
-		if (solanaWallets?.Devnet) {
-			getBalance();
-		}
-	}, [solanaWallets]);
+	const address = useAddress();
+	const balanceQuery = useBalance({
+		chain: "solana",
+		address,
+	});
+	const balance = balanceQuery?.data;
 
 	const setMaxAmount = () => {
-		setValue("buyAmount", balance, { shouldValidate: true, shouldDirty: true });
+		if (balance) {
+			setValue("buyAmount", balance, { shouldValidate: true, shouldDirty: true });
+		}
 	};
 
 	return (
@@ -142,7 +137,7 @@ const BuyCoin = () => {
 						{...registerForm("buyAmount", {
 							valueAsNumber: true,
 							min: { value: 0, message: "Amount cannot be negative" },
-							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
+							max: { value: Math.min(balance || 0, 28), message: "Amount cannot be greater than your balance or 28" },
 						})}
 					/>
 					<p className="text-xl text-[#03FF24] font-[500]">SOL</p>
