@@ -7,7 +7,6 @@ import useAddress from "@/hooks/use-address";
 
 export default function BalanceMenu() {
 	const solanaAddress = useAddress();
-
 	const balance = useBalance({
 		chain: "solana",
 		address: solanaAddress as AddressLike,

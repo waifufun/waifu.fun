@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
-import type { AddressLike, IToken } from "@autofun/types";
+import type { IToken, SolanaAddressLike } from "@autofun/types";
 import { AlertCircle, Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
 import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
@@ -12,19 +12,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Skeleton from "../skeleton-loading";
 import useBalance from "@/hooks/use-balance";
-import { useWallets } from "../hooks/providers/UseWalletContext";
 import useTokenBalance from "@/hooks/use-token-balance";
 import useSpeed from "@/hooks/use-speed";
 import useSlippage from "@/hooks/use-slippage";
 import { formatUnits } from "viem";
+import useAddress from "@/hooks/use-address";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
 	const queryClient = useQueryClient();
-	const wallets = useWallets();
 	const { speed } = useSpeed();
 	const { slippage } = useSlippage();
-	const address = wallets?.solanaWallets?.Mainnet?.address as AddressLike;
+	const address = useAddress();
 	const balance = useBalance({ chain: token.chain, address });
 	const tokenBalance = useTokenBalance({
 		chain: token.chain,
@@ -77,7 +76,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const swapMutation = useMutation({
 		mutationKey: [token.contractAddress, value, slippage, speed],
 		mutationFn: async () => {
-			const from = wallets.solanaWallets?.Mainnet.address as AddressLike;
+			const from = address as SolanaAddressLike;
 			if (!from) throw new Error("No wallet connected");
 			await executeSwap(from, token, value, mode, slippage, speed);
 		},

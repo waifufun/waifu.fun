@@ -7,8 +7,10 @@ import { Menu, Trophy } from "lucide-react";
 import BalanceMenu from "./balance-menu";
 import SearchMenu from "./search-menu";
 import ConnectWallet from "./connect-wallet";
+import useAddress from "@/hooks/use-address";
 
 export default function Header() {
+	const address = useAddress();
 	return (
 		<div className="flex items-center gap-4 justify-between h-[68px]">
 			<div className="flex items-center gap-4">
@@ -26,12 +28,14 @@ export default function Header() {
 			</div>
 			<div className="flex items-center gap-2.5">
 				{/* Points */}
-				<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
-					<Trophy size={20} className="text-autofun-background-action-highlight" />
-					<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
-						0
+				{address ? (
+					<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
+						<Trophy size={20} className="text-autofun-background-action-highlight" />
+						<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
+							0
+						</div>
 					</div>
-				</div>
+				) : null}
 				{/* Balance */}
 				<BalanceMenu />
 				<div className="hidden md:flex gap-2.5">
