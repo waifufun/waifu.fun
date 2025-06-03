@@ -3,23 +3,24 @@ import Image from "next/image";
 
 export default function FleekAgent({ token }: { token: IToken }) {
 	return (
-		<div className="group rounded-lg bg-transparent place-self-center hover:bg-[#0C0C0C] relative flex justify-between items-center w-[750px] h-[94px] px-4 py-2">
-			<div className="flex items-center">
-
-					
-
-				<div className="flex flex-col justify-center min-w-[140px]">
-					<div className="flex items-center gap-1">
-						<p className="text-xl text-white uppercase mr-1 leading-none">{token?.agent?.name}</p>
-					</div>
+		<div className="w-full group rounded-lg place-self-center bg-[#0C0C0C] relative flex items-center h-[150px] p-4">
+			<Image
+				src={token.agent?.image || ""}
+				height={150}
+				width={150}
+				alt={`${token.agent?.name} Agent Avatar Image`}
+				className="rounded-md"
+			/>
+			<div className="flex flex-col justify-start h-[150px] ml-4 gap-y-1">
+				<p className="text-autofun-background-action-highlight text-xl mb-1 font-semibold">{token.agent?.name}</p>
+				<div className="flex items-center gap-1">
+					<p className="text-base text-white leading-none font-semibold">Created by {token?.agent?.createdBy}</p>
 				</div>
-			</div>
-
-			<div className="flex items-center gap-x-8 place-items-end transition-all duration-300 ease-in-out group-hover:gap-x-10">
-				<div className="flex flex-col h-full w-full space-y-1 justify-end transition-all duration-300">{token?.agent?.bio}</div>
-				<div className="self-stretch w-px bg-[#1E1E1E]" />
-				<div className="w-0 overflow-hidden group-hover:w-px transition-all duration-300 ease-in-out self-stretch bg-[#1E1E1E]" />
-				Created by {token?.agent?.createdBy}
+				<div className="flex items-center gap-1 mt-4">
+					<p className="text-base text-autofun-stroke-light leading-none font-semibold">
+						{!token?.agent?.bio.length ? "No bio provided" : token?.agent?.bio}
+					</p>
+				</div>
 			</div>
 		</div>
 	);
