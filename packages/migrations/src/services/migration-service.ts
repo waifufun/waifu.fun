@@ -1,10 +1,11 @@
-import { Connection } from '@solana/web3.js';
-import { AnchorProvider } from '@coral-xyz/anchor';
-import { MigrationManager } from '../migrations';
-import type { ProtocolMigration, ProtocolState } from '../types';
-import DB from '@autofun/database';
-import logger from '@autofun/logger';
-import type { IMigration } from '@autofun/types';
+import { Connection } from "@solana/web3.js";
+import { AnchorProvider } from "@coral-xyz/anchor";
+import { MigrationManager } from "../migrations";
+import type { ProtocolMigration, ProtocolState } from "../types";
+import DB from "@autofun/database";
+import logger from "@autofun/logger";
+import type { IMigration } from "@autofun/types";
+import type { Model } from "mongoose";
 
 export class MigrationService {
   private isProcessing: boolean = false;
@@ -17,16 +18,19 @@ export class MigrationService {
     private readonly connection: Connection,
     private readonly provider: AnchorProvider
   ) {
-    this.migrationManager = new MigrationManager(DB.Migration, connection);
+    this.migrationManager = new MigrationManager(
+      DB.Migration as Model<IMigration>,
+      connection
+    );
   }
 
   async initialize(): Promise<void> {
     try {
       await this.migrationManager.initializePrograms(this.provider);
       this.startProcessing();
-      logger.info('Migration service initialized');
+      logger.info("Migration service initialized");
     } catch (error) {
-      logger.error('Failed to initialize migration service:', error);
+      logger.error("Failed to initialize migration service:", error);
       throw error;
     }
   }
@@ -36,7 +40,7 @@ export class MigrationService {
       clearInterval(this.processingInterval);
       this.processingInterval = null;
     }
-    logger.info('Migration service shut down');
+    logger.info("Migration service shut down");
   }
 
   private startProcessing(): void {
@@ -50,9 +54,8 @@ export class MigrationService {
     );
 
     this.processMigrations();
-    logger.info('Migration processing started');
+    logger.info("Migration processing started");
   }
-  
 
   private async processMigrations(): Promise<void> {
     if (this.isProcessing) {
@@ -63,19 +66,21 @@ export class MigrationService {
       this.isProcessing = true;
 
       const activeMigrations = await DB.Migration.find({
-        status: { $in: ['active', 'migrating', 'migrated'] }
+        status: { $in: ["active", "migrating", "migrated"] },
       }).limit(this.MAX_CONCURRENT_MIGRATIONS);
 
       await Promise.all(
-        activeMigrations.map(migration => this.processMigration(migration))
+        activeMigrations.map((migration) => this.processMigration(migration))
       );
     } catch (error) {
-      logger.error('Error processing migrations:', error);
+      logger.error("Error processing migrations:", error);
     } finally {
       this.isProcessing = false;
     }
   }
-    private async getProtocolFromToken(tokenMint: string): Promise<'raydium' | 'meteora' | string | undefined> {
+  private async getProtocolFromToken(
+    tokenMint: string
+  ): Promise<"raydium" | "meteora" | string | undefined> {
     const token = await DB.Token.findOne({ contractAddress: tokenMint });
     if (!token) {
       throw new Error(`Token ${tokenMint} not found in database`);
@@ -87,41 +92,26 @@ export class MigrationService {
 
     // Convert pool to protocol name
     const protocol = token.pool.toLowerCase();
-    if (protocol !== 'raydium' && protocol !== 'meteora') {
+    if (protocol !== "raydium" && protocol !== "meteora") {
       throw new Error(`Unsupported protocol: ${protocol}`);
     }
 
-    return protocol as 'raydium' | 'meteora';
+    return protocol as "raydium" | "meteora";
   }
 
   private async processMigration(migration: IMigration): Promise<void> {
     try {
-      // get token 
-      // const token = await DB.Token.findOne({
-      //   contractAddress: migration.contractAddress,
-      //   chain: migration.chain,
-      //   chainId: migration.chainId
-      // });
-      // if (!token) {
-      //   logger.warn(`Token ${migration.contractAddress} not found for migration ${migration.id}`);
-      //   return;
-      // }
-      // const protocol = await this.getProtocolFromToken(token.contractAddress);
-      // if (!protocol) {
-      //   logger.warn(`No protocol found for token ${token.contractAddress}`);
-      //   return;
-      // }
       const isProcessing = await DB.Migration.findOneAndUpdate(
         {
           _id: migration._id,
-          status: { $in: ['active', 'migrating', 'migrated'] },
-          processingAt: { $exists: false }
+          status: { $in: ["active", "migrating", "migrated"] },
+          processingAt: { $exists: false },
         },
         {
           $set: {
             processingAt: new Date(),
-            lastProcessedAt: new Date()
-          }
+            lastProcessedAt: new Date(),
+          },
         }
       );
 
@@ -130,30 +120,37 @@ export class MigrationService {
       }
 
       const currentStep = migration.currentStep || 0;
-      const steps = await this.migrationManager.getMigrationSteps(migration.protocol);
+      const steps = await this.migrationManager.getMigrationSteps(
+        migration.protocol
+      );
 
       if (currentStep >= steps.length) {
         await DB.Migration.findOneAndUpdate(
           { _id: migration._id },
           {
             $set: {
-              status: 'finalized',
+              status: "finalized",
               completedAt: new Date(),
-              processingAt: null
-            }
+              processingAt: null,
+            },
           }
         );
         logger.info(`Migration ${migration._id} finalized successfully`);
         return;
       }
-      const protocolMigration = this.createProtocolMigration(`migration-${Date.now()}`,migration);
+      const protocolMigration = this.createProtocolMigration(
+        `migration-${Date.now()}`,
+        migration
+      );
 
-      const result = await this.migrationManager.executeMigration(protocolMigration, [steps[currentStep]]);
+      const result = await this.migrationManager.executeMigration(
+        protocolMigration,
+        [steps[currentStep]]
+      );
 
       if (!result.success) {
-        throw result.error;
+        throw new Error(`Migration step failed: ${result.error?.message}`);
       }
-
       await DB.Migration.findOneAndUpdate(
         { _id: migration._id },
         {
@@ -161,8 +158,8 @@ export class MigrationService {
             currentStep: currentStep + 1,
             lastSuccessfulStep: currentStep,
             processingAt: null,
-            lastProcessedAt: new Date()
-          }
+            lastProcessedAt: new Date(),
+          },
         }
       );
 
@@ -172,38 +169,53 @@ export class MigrationService {
         { _id: migration._id },
         {
           $set: {
-            status: 'active',
-            errors: error instanceof Error ? error.message : 'Unknown error',
+            status: "active",
+            errors: error instanceof Error ? error.message : "Unknown error",
             processingAt: null,
-            lastErrorAt: new Date()
-          }
+            lastErrorAt: new Date(),
+          },
         }
       );
 
       logger.error(`Migration ${migration._id} failed:`, error);
     }
   }
-  private createProtocolMigration(name: string, migration: IMigration): ProtocolMigration {
-      const protocolState = JSON.parse(migration.protocolState || '{}') as ProtocolState;
-      return {
-        id: migration._id || '',
-        name,
-        version: 1,
-        status: migration.status || 'migrating',
-        currentStep: migration.currentStep || 0,
-        protocolState: {
-          ...protocolState,
-          tokenMint: protocolState.tokenMint ?? migration.contractAddress,
-          amount: protocolState?.amount || 0,
-          withdrawnAmounts: undefined,
-          txId: protocolState?.txId ?? undefined,
-          transactions: [],
-        },
-        startedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
+  private createProtocolMigration(
+    name: string,
+    migration: IMigration
+  ): ProtocolMigration {
+    let protocolState: ProtocolState;
+    try {
+      protocolState = JSON.parse(
+        migration.protocolState || "{}"
+      ) as ProtocolState;
+    } catch (error) {
+      logger.error("Failed to parse protocol state:", error);
+      protocolState = {
+        tokenMint: migration.contractAddress,
+        amount: 0,
+        transactions: [],
       };
     }
+    return {
+      id: migration._id || "",
+      name,
+      version: 1,
+      status: migration.status || "migrating",
+      currentStep: migration.currentStep || 0,
+      protocolState: {
+        ...protocolState,
+        tokenMint: protocolState.tokenMint ?? migration.contractAddress,
+        amount: protocolState?.amount || 0,
+        withdrawnAmounts: undefined,
+        txId: protocolState?.txId ?? undefined,
+        transactions: [],
+      },
+      startedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 
   async getMigrationStatus(migrationId: string): Promise<{
     status: string;
@@ -212,13 +224,13 @@ export class MigrationService {
   }> {
     const migration = await DB.Migration.findOne({ id: migrationId });
     if (!migration) {
-      throw new Error('Migration not found');
+      throw new Error("Migration not found");
     }
 
     return {
       status: migration.status,
       currentStep: migration.currentStep || 0,
-      error: migration.errors?.toString()
+      error: migration.errors?.toString(),
     };
   }
-} 
+}
