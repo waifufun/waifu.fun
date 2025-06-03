@@ -16,6 +16,7 @@
 	"dependencies": {
 		"@autofun/utils": "workspace:*",
 		"@autofun/constants": "workspace:*",
+		"@autofun/logger": "workspace:*",
 		"@coral-xyz/anchor": "^0.31.1",
 		"@metaplex-foundation/js": "^0.20.1",
 		"@metaplex-foundation/mpl-token-metadata": "^3.4.0",

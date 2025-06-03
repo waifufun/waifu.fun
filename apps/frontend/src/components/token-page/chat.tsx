@@ -202,7 +202,7 @@ const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 						<ImageIcon size={18} className="text-autofun-icon-secondary size-[18px]" />
 					</Button>
 				</div>
-				<Button size="icon" type="submit" className="self-end">
+				<Button size="icon" type="submit" className="self-end" disabled={mutation?.isPending}>
 					<Send onClick={() => scrollToBottom()} />
 				</Button>
 			</form>

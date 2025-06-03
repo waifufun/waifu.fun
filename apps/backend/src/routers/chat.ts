@@ -48,6 +48,11 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 		const allowedChain = isChainIdAllowedForChain(body.chain, body.chainId);
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 
+		const allowedRooms = ["1000", "100000", "1000000"];
+		if (allowedRooms?.includes(body.room)) {
+			throw new Error("Chat room does not exist");
+		}
+
 		const floodKey = `${JSON.stringify(request.authUser)}:chat`;
 
 		const isFlooding = await redis.get(floodKey);

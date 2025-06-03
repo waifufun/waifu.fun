@@ -43,12 +43,12 @@ export default async function Page({ params, children }: { params: Promise<IToke
 	const token = (await getToken(tokenParams)) as IToken;
 
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex flex-col gap-6 mt-3">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4">
+			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
-					<div className="px-6 py-3 bg-[#333333]/10 rounded-lg flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-						<div className="flex items-center gap-6">
+					<div className="p-4 bg-[#333333]/10 rounded-lg flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+						<div className="flex items-center gap-4">
 							{/* Image */}
 							<Image
 								src={token.image}
@@ -56,7 +56,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								height={60}
 								unoptimized
 								alt="token_image"
-								className="size-[60px] rounded-lg"
+								className="size-[60px] rounded-lg select-none"
 							/>
 							{/* Token Name */}
 							<div className="flex flex-col">
@@ -182,7 +182,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 											<Image
 												src={social.icon}
 												className={cn([
-													"size-6",
+													"size-6 select-none",
 													!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
 												])}
 												unoptimized
@@ -217,12 +217,12 @@ export default async function Page({ params, children }: { params: Promise<IToke
 										: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"}
 								</p>
 							</div>
-							<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
-								<span className="text-base font-medium uppercase">{token.name}</span>
-								<div className="gap-2 flex items-center">
-									<CopyButton textToCopy={token.contractAddress} />
-									<span className="text-sm font-medium">{shortenAddress(token?.contractAddress)}</span>
-								</div>
+						</div>
+						<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
+							<span className="text-base font-medium uppercase">{token.name}</span>
+							<div className="gap-2 flex items-center">
+								<CopyButton textToCopy={token.contractAddress} />
+								<span className="text-sm font-medium">{shortenAddress(token?.contractAddress)}</span>
 							</div>
 						</div>
 					</div>
