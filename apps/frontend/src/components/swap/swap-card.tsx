@@ -103,10 +103,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		if (!value || value === "0") return true;
 		if (mode === "buy") {
 			console.log(balance?.data, value);
-			return Number(balance?.data) > Number(value);
+			return Number(balance?.data) >= Number(value);
 		}
 
-		return Number(tokenBalance?.data) > Number(value);
+		return Number(tokenBalance?.data) >= Number(value);
 	};
 
 	const insufficientBalance = !hasSufficientBalance();
