@@ -71,6 +71,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	status: string;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
@@ -183,7 +184,12 @@ export interface IMigration {
 	withdrawnAmounts?: string | undefined;
 	poolInfo?: string | undefined;
 	lockLpTxId?: string | undefined;
+	primaryNftMint?: string | undefined;
+	secondaryNftMint?: string | undefined;
 	status: string;
+	protocolState?: string | undefined;
+	currentStep?: number | undefined;
+	lastSuccessfulStep?: number | undefined;
 	positionIds?: string[] | undefined;
 	positionNftsSecrets?: string[] | undefined;
 	nftMinted?: string[] | undefined;
@@ -191,6 +197,7 @@ export interface IMigration {
 	chain: TChain;
 	chainId: TChainId;
 	creator: string;
+	version: number;
 	createdAt?: Date | undefined;
 	updatedAt?: Date | undefined;
 }
