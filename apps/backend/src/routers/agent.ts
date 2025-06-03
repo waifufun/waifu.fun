@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { createAgent, getAgent } from "../utils/agent";
 import DB from "@autofun/database";
 
-
 interface CreateAIAgentRequest {
 	avatar?: string | null;
 	config: string;
@@ -29,33 +28,33 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 
 	// Get AI Agent by ID, and store it in DB
 	fastify.post<{ Params: { agentId: string }; Body: { contractAddress: string } }>(
-    "/connect-agent/:agentId",
-    async (request, reply) => {
-      const { agentId } = request.params;
-      const { contractAddress } = request.body;
-      
-      try {
-        const agentData = await getAgent(agentId);
-        if (!agentData) throw new Error("No agent data returned from Fleek");
-  
-        const agentDoc = {
-          name: agentData.name || "Unnamed Agent",
-          bio: agentData.bio || "No bio",
-          createdBy: agentData.createdBy || "unknown",
-          image: agentData.imageUrl || "",
-          relatedTokenAddress: contractAddress,
-        };
-  
-        const token = await DB.Token.findOne({ contractAddress });
-        if (!token) throw new Error("Token not found");
-  
-        token.agent = agentDoc;
-        await token.save();
-        return { success: true, data: token };
-      } catch (error: any) {
-        request.log.error(error);
-        return reply.status(500).send({ error: error.message || "Failed to connect AI agent" });
-      }
-    }
-  );  
+		"/connect-agent/:agentId",
+		async (request, reply) => {
+			const { agentId } = request.params;
+			const { contractAddress } = request.body;
+
+			try {
+				const agentData = await getAgent(agentId);
+				if (!agentData) throw new Error("No agent data returned from Fleek");
+
+				const existingAgent = await DB.Agent.findOne({ tokenAddress: contractAddress });
+				if (existingAgent) {
+					return reply.status(409).send({ error: "Agent already exists for this contract address" });
+				}
+
+				const agentDoc = await DB.Agent.create({
+					name: agentData.name,
+					bio: agentData.bio,
+					createdBy: agentData.createdBy,
+					image: agentData.image,
+					tokenAddress: contractAddress,
+				});
+
+				return { success: true, data: agentDoc };
+			} catch (error: any) {
+				request.log.error(error);
+				return reply.status(500).send({ error: error.message || "Failed to connect AI agent" });
+			}
+		},
+	);
 }
