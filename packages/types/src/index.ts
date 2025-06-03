@@ -87,7 +87,6 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	verified?: boolean;
 	updatedAt: Date;
 	pool?: string;
-	agent?: IAgent
 }
 
 export interface ITokenSocials {
@@ -213,5 +212,5 @@ export type IAgent = {
 	bio: string;
 	createdBy: string;
 	image: string
-	relatedTokenAddress?: string
+	tokenAddress: string
 };
