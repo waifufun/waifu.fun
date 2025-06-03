@@ -1,9 +1,11 @@
 "use client";
+
 import type { IToken } from "@autofun/types";
 import ConnectToFleek from "../connect-fleek";
 import FleekAgent from "../fleek-agent";
 import { useQuery } from "@tanstack/react-query";
 import { getAgent } from "@/lib/api";
+import { useWallets } from "../hooks/providers/UseWalletContext";
 
 export default function Agents({ token }: { token: IToken }) {
 	const query = useQuery({
@@ -16,13 +18,32 @@ export default function Agents({ token }: { token: IToken }) {
 		enabled: true,
 	});
 
-	const agents = query.data;
+	const agent = query.data;
+	const wallets = useWallets();
 
-	const hasAgents = Array.isArray(agents) && agents.length > 0;
+	const connectedWalletAddresses = [
+		...Object.values(wallets.evmWallets || {}).map((w) => w.address),
+		...Object.values(wallets.solanaWallets || {}).map((w) => w.address),
+	];
+
+	const isCreatorConnected = token.creator ? connectedWalletAddresses.includes(token.creator) : false;
 
 	return (
-		<div className="w-full p-4">
-			{hasAgents ? <FleekAgent agents={agents} /> : <ConnectToFleek contractAddress={token.contractAddress} />}
+		<div className="w-full space-y-4">
+			{!agent ? (
+				<div className="bg-[#0F0F0F] w-fit place-self-center p-5 rounded-md">
+					<h1 className="text-white place-self-center text-lg font-semibold">
+						No Agents have been connected to this token
+					</h1>
+				</div>
+			) : null}
+			{agent ? (
+				<FleekAgent agent={agent} />
+			) : isCreatorConnected ? (
+				<div className="mt-4">
+					<ConnectToFleek contractAddress={token.contractAddress} />
+				</div>
+			) : null}
 		</div>
 	);
 }

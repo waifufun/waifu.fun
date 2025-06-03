@@ -17,43 +17,42 @@ interface CreateAIAgentRequest {
 
 export default async function agentRoutes(fastify: FastifyInstance) {
 	// Create AI Agent
-	fastify.post<{ Body: CreateAIAgentRequest }>("/create-agent", async (request, reply) => {
+	fastify.post<{ Body: CreateAIAgentRequest }>("/create-agent", async (request) => {
 		try {
 			const agent = await createAgent(request.body);
 			return { success: true, data: agent };
 		} catch (error) {
-			return reply.status(500).send({ error: error?.message || "Failed to create AI agent" });
+			throw new Error(`Failed To Create Agent: ${(error as Error).message}`);
 		}
 	});
 
 	// Get AI Agent by ID, and store it in DB
 	fastify.post<{ Params: { agentId: string }; Body: { contractAddress: string } }>(
 		"/connect-agent/:agentId",
-		async (request, reply) => {
+		async (request) => {
 			const { agentId } = request.params;
 			const { contractAddress } = request.body;
 
 			try {
 				const agentData = await getAgent(agentId);
 				if (!agentData) throw new Error("No agent data returned from Fleek");
-
+				console.log("agent data", agentData);
 				const existingAgent = await DB.Agent.findOne({ tokenAddress: contractAddress });
 				if (existingAgent) {
-					return reply.status(409).send({ error: "Agent already exists for this contract address" });
+					throw new Error("Agent already exists for this contract address");
 				}
 
 				const agentDoc = await DB.Agent.create({
 					name: agentData.name,
-					bio: agentData.bio || "No bio",
+					bio: agentData.bio || "",
 					createdBy: agentData.createdBy || "Unknown",
-					avatar: agentData.avatar,
-					contractAddress: contractAddress,
+					avatar: agentData.avatar || "",
+					contractAddress: contractAddress || "",
 				});
 
 				return { success: true, data: agentDoc };
-			} catch (error: any) {
-				request.log.error(error);
-				return reply.status(500).send({ error: error.message || "Failed to connect AI agent" });
+			} catch (error) {
+				throw new Error(`Failed To Connect Agent: ${(error as Error).message}`);
 			}
 		},
 	);
@@ -67,11 +66,10 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 		const { contractAddress } = request.body;
 
 		try {
-			const result = await DB.Agent.find({ contractAddress }).sort({ createdAt: -1 });
+			const result = await DB.Agent.findOne({ contractAddress });
 			return reply.send(result);
-		} catch (error: any) {
-			request.log.error(error);
-			return reply.status(500).send({ error: error.message || "Failed to fetch agents" });
+		} catch (error) {
+			throw new Error(`Failed To Fetch Agent: ${(error as Error).message}`);
 		}
 	});
 }

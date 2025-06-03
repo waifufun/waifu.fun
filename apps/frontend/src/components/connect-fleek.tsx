@@ -2,26 +2,32 @@
 import Image from "next/image";
 import { Button } from "./ui/button";
 import { connectAgent } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Input } from "./ui/input";
+import { toast } from "sonner";
 
 export default function ConnectToFleek({ contractAddress }: { contractAddress: string }) {
 	const [showInput, setShowInput] = useState<boolean>(false);
 	const [agentId, setAgentId] = useState<string>("");
-	const query = useQuery({
-		queryKey: ["connect-agent", contractAddress],
-		queryFn: async () => {
-			return await connectAgent({
-				agentId: agentId,
-				contractAddress: contractAddress,
-			});
+	const queryClient = useQueryClient();
+
+	const connectAgentMutation = useMutation({
+		mutationFn: connectAgent,
+		mutationKey: ["connect-agent"],
+		onSuccess: (agent) => {
+			console.log("connected agent succesful:", agent);
+			toast.success("Connected agent successful!");
+			queryClient.invalidateQueries({ queryKey: ["get-agent"] });
 		},
-		enabled: false,
+		onError: (error) => {
+			console.error("Error connecting agent:", error);
+			toast.error(`Error connecting agent: ${error.message}`);
+		},
 	});
 
 	return (
-		<div className="bg-[#0F0F0F] ƒlex place-self-center backdrop-blur-2xl min-w-[300px] max-w-[300px] rounded-md">
+		<div className="bg-[#0F0F0F] ƒlex place-self-center backdrop-blur-2xl w-[408px] rounded-md">
 			<div className="p-4 flex flex-col text-center transition-all duration-300 ease-in-out">
 				<h1 className="font-semibold text-white text-2xl">
 					Connect An <span className="text-autofun-background-action-highlight">Agent</span>
@@ -52,13 +58,13 @@ export default function ConnectToFleek({ contractAddress }: { contractAddress: s
 								placeholder="Enter agent ID"
 								className="text-white bg-transparent border-white/20"
 							/>
-							{query.error && <p className="text-red-500 text-sm">Something went wrong.</p>}{" "}
+							{connectAgentMutation.isError && <p className="text-red-500 text-sm">Something went wrong.</p>}
 							<Button
-								onClick={query.refetch}
+								onClick={() => connectAgentMutation.mutate({ agentId, contractAddress })}
 								className="mt-2 bg-autofun-background-action-highlight text-black hover:bg-opacity-90"
-								disabled={query.isFetching}
+								disabled={connectAgentMutation.isPending}
 							>
-								{query.isFetching ? "Submitting..." : "Submit"}
+								{connectAgentMutation.isPending ? "Submitting..." : "Submit"}
 							</Button>
 						</div>
 					)}
