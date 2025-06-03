@@ -1,4 +1,3 @@
-// import ConnectToFleek from "@/components/connect-fleek";
 import { getToken } from "@/lib/api";
 import type { ITokenLookUp } from "@autofun/types";
 import FleekAgent from "@/components/fleek-agent";
