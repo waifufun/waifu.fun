@@ -47,7 +47,11 @@ export default async function Home({
 				alt="hero"
 				className="mx-auto w-full select-none"
 			/>
-			<ChainSelector />
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 w-full">
+				{tokens.splice(0, 4)?.map((token: IToken) => (
+					<GridItem token={token} key={token.contractAddress} />
+				))}
+			</div>
 			<div className="flex flex-col items-center">
 				<div className="flex items-center w-full gap-4">
 					<FilterSelector />
