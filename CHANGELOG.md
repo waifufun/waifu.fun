@@ -1,3 +1,25 @@
+# [0.6.0](https://github.com/elizaos/autofun-monorepo/compare/v0.5.0...v0.6.0) (2025-06-03)
+
+
+### Bug Fixes
+
+* corrected some behaviour on sufficiency check ([312e7b1](https://github.com/elizaos/autofun-monorepo/commit/312e7b16719e973d976f9f783d5526c0e514af70))
+* reset value if mode changes ([5c76ab7](https://github.com/elizaos/autofun-monorepo/commit/5c76ab7a73ebb5354fdb68472e025f5b3bfe9df4))
+
+
+### Features
+
+* added jupiter swap quote ([6728dc9](https://github.com/elizaos/autofun-monorepo/commit/6728dc9507ffd4152a6291a3d5ad42228a395b40))
+* added todos ([2562dff](https://github.com/elizaos/autofun-monorepo/commit/2562dffc129870598ca61af992ef4a0a9849249c))
+* almost there ([0d264d9](https://github.com/elizaos/autofun-monorepo/commit/0d264d9673340acd69a2d363c1b70ccf7cee4302))
+* check properly for sufficient balance ([a38bd86](https://github.com/elizaos/autofun-monorepo/commit/a38bd8630784db79ee67294c15c4b495d821d822))
+* cleanup slightly ([2216953](https://github.com/elizaos/autofun-monorepo/commit/22169533207e1782508ffc20911c938abe29c27b))
+* fetching quote with jupiter for imported or curve completed tokens functional ([5177a91](https://github.com/elizaos/autofun-monorepo/commit/5177a917598681525442a81d0182386cbd722760))
+* fixed an issue with search menu ([3dc9da5](https://github.com/elizaos/autofun-monorepo/commit/3dc9da5bf91df70cb09e8a09abc015f20238ccc3))
+* header image is now responsive ([99224f1](https://github.com/elizaos/autofun-monorepo/commit/99224f10b7dc383e2b1c47f001e124828d9dd7a8))
+* implemented price impact from jupiter properly ([17cb681](https://github.com/elizaos/autofun-monorepo/commit/17cb681eb59b1bcc82b41ae672b01269abd6bb4b))
+* quote maker done ([0d2cdf3](https://github.com/elizaos/autofun-monorepo/commit/0d2cdf3f8f6289dc9fe0e21565c3a2445ef6a4d0))
+
 # [0.5.0](https://github.com/elizaos/autofun-monorepo/compare/v0.4.0...v0.5.0) (2025-06-03)
 
 
