@@ -2,6 +2,7 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import type { AddressLike } from "@autofun/types";
 import type { JWT } from "@fastify/jwt";
 import { isAddress as isSolanaAddress } from "@solana/kit";
+import { getChecksummedAddress } from "@autofun/utils";
 
 declare module "fastify" {
 	interface FastifyRequest {
@@ -35,7 +36,7 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 				if (!isSolanaAddress(decoded.address)) {
 					throw new Error("Invalid Solana address in token");
 				}
-				user.solana = decoded.address;
+				user.solana = getChecksummedAddress(decoded.address, "solana");
 				console.log("[Auth] Successfully decoded Solana token");
 			} catch (error) {
 				console.log("[Auth] Failed to decode Solana token:", error);
@@ -46,7 +47,7 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 		if (evm) {
 			try {
 				const decoded = request.server.jwt.decode(evm) as { address: AddressLike };
-				user.evm = decoded.address;
+				user.evm = getChecksummedAddress(decoded.address, "evm");
 				console.log("[Auth] Successfully decoded EVM token");
 			} catch (error) {
 				console.log("[Auth] Failed to decode EVM token:", error);
