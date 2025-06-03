@@ -12,6 +12,8 @@ const schema = new Schema<IAgent>(
 			type: String,
 			required: true,
 		},
+		chain: { type: String, required: true },
+		chainId: { type: Number, required: true },
 	},
 	{ timestamps: true, versionKey: false },
 );

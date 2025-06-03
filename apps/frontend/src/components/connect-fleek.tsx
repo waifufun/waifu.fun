@@ -6,11 +6,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
+import type { IToken, TChainId } from "@autofun/types";
 
-export default function ConnectToFleek({ contractAddress }: { contractAddress: string }) {
+export default function ConnectToFleek({ token }: { token: IToken }) {
 	const [showInput, setShowInput] = useState<boolean>(false);
 	const [agentId, setAgentId] = useState<string>("");
 	const queryClient = useQueryClient();
+	const chain = token.chain
+	const chainId = token.chainId as TChainId
+	const contractAddress = token.contractAddress
 
 	const connectAgentMutation = useMutation({
 		mutationFn: connectAgent,
@@ -60,7 +64,7 @@ export default function ConnectToFleek({ contractAddress }: { contractAddress: s
 							/>
 							{connectAgentMutation.isError && <p className="text-red-500 text-sm">Something went wrong.</p>}
 							<Button
-								onClick={() => connectAgentMutation.mutate({ agentId, contractAddress })}
+								onClick={() => connectAgentMutation.mutate({ agentId, contractAddress, chain, chainId })}
 								className="mt-2 bg-autofun-background-action-highlight text-black hover:bg-opacity-90"
 								disabled={connectAgentMutation.isPending}
 							>

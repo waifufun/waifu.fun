@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createAgent, getAgent } from "../utils/agent";
 import DB from "@autofun/database";
+import type { TChain, TChainId } from "@autofun/types";
 
 interface CreateAIAgentRequest {
 	avatar?: string | null;
@@ -27,10 +28,10 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 	});
 
 	// Get AI Agent by ID, and store it in DB
-	fastify.post<{ Params: { agentId: string }; Body: { contractAddress: string } }>(
-		"/connect-agent/:agentId",
+	fastify.post<{ Params: { chain: TChain; chainId: TChainId; agentId: string }; Body: { contractAddress: string } }>(
+		"/connect-agent/:chain/:chainId/:agentId",
 		async (request) => {
-			const { agentId } = request.params;
+			const { agentId, chain, chainId } = request.params;
 			const { contractAddress } = request.body;
 
 			try {
@@ -48,6 +49,8 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 					createdBy: agentData.createdBy || "Unknown",
 					avatar: agentData.avatar || "",
 					contractAddress: contractAddress || "",
+					chain: chain,
+					chainId: chainId,
 				});
 
 				return { success: true, data: agentDoc };
@@ -57,16 +60,21 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 		},
 	);
 
-	// get agent based on contractAddress
-	fastify.post<{
-		Body: {
+	fastify.get<{
+		Params: {
+			chain: TChain;
+			chainId: TChainId;
 			contractAddress: string;
 		};
-	}>("/get-agent", async (request, reply) => {
-		const { contractAddress } = request.body;
+	}>("/get-agent/:chain/:chainId/:contractAddress", async (request, reply) => {
+		const { contractAddress, chain, chainId } = request.params;
 
 		try {
-			const result = await DB.Agent.findOne({ contractAddress });
+			const result = await DB.Agent.findOne({
+				contractAddress,
+				chain,
+				chainId,
+			});
 			return reply.send(result);
 		} catch (error) {
 			throw new Error(`Failed To Fetch Agent: ${(error as Error).message}`);

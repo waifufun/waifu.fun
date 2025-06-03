@@ -213,4 +213,6 @@ export type IAgent = {
 	createdBy: string;
 	avatar: string;
 	contractAddress: string;
+	chain: TChain,
+	chainId: TChainId
 };

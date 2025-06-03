@@ -1,6 +1,6 @@
 "use client";
 
-import type { IToken } from "@autofun/types";
+import type { IToken, TChainId } from "@autofun/types";
 import ConnectToFleek from "../connect-fleek";
 import FleekAgent from "../fleek-agent";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +13,8 @@ export default function Agents({ token }: { token: IToken }) {
 		queryFn: async () => {
 			return await getAgent({
 				contractAddress: token.contractAddress,
+				chain: token.chain,
+				chainId: token.chainId as TChainId,
 			});
 		},
 		enabled: true,
@@ -41,7 +43,7 @@ export default function Agents({ token }: { token: IToken }) {
 				<FleekAgent agent={agent} />
 			) : isCreatorConnected ? (
 				<div className="mt-4">
-					<ConnectToFleek contractAddress={token.contractAddress} />
+					<ConnectToFleek token={token} />
 				</div>
 			) : null}
 		</div>
