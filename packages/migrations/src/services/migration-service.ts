@@ -6,12 +6,15 @@ import DB from "@autofun/database";
 import logger from "@autofun/logger";
 import type { IMigration } from "@autofun/types";
 import type { Model } from "mongoose";
+import redis from "@autofun/redis";
+
 
 export class MigrationService {
   private isProcessing: boolean = false;
   private processingInterval: NodeJS.Timeout | null = null;
   private readonly POLL_INTERVAL = 5000;
   private readonly MAX_CONCURRENT_MIGRATIONS = 5;
+  private readonly LOCK_TTL = 30; // 30 seconds lock TTL
   private migrationManager: MigrationManager;
 
   constructor(
@@ -43,6 +46,17 @@ export class MigrationService {
     logger.info("Migration service shut down");
   }
 
+  private async acquireLock(migrationId: string): Promise<boolean> {
+    const lockKey = `migration:lock:${migrationId}`;
+    const result = await redis.set(lockKey, '1', 'EX', this.LOCK_TTL, 'NX');
+    return result === 'OK';
+  }
+
+  private async releaseLock(migrationId: string): Promise<void> {
+    const lockKey = `migration:lock:${migrationId}`;
+    await redis.del(lockKey);
+  }
+
   private startProcessing(): void {
     if (this.processingInterval) {
       return;
@@ -65,64 +79,56 @@ export class MigrationService {
     try {
       this.isProcessing = true;
 
+      // Get all active migrations
       const activeMigrations = await DB.Migration.find({
-        status: { $in: ["active", "migrating", "migrated"] },
+        status: { $in: ['active', 'migrating', 'migrated'] }
       }).limit(this.MAX_CONCURRENT_MIGRATIONS);
 
-      await Promise.all(
-        activeMigrations.map((migration) => this.processMigration(migration))
-      );
+      // Process migrations that we can acquire locks for
+      const processingPromises = activeMigrations.map(async (migration) => {
+        const lockAcquired = await this.acquireLock(migration._id.toString());
+        if (lockAcquired) {
+          try {
+            await this.processMigration(migration);
+          } finally {
+            await this.releaseLock(migration._id.toString());
+          }
+        }
+      });
+
+      await Promise.all(processingPromises);
     } catch (error) {
-      logger.error("Error processing migrations:", error);
+      logger.error('Error processing migrations:', error);
     } finally {
       this.isProcessing = false;
     }
   }
-  private async getProtocolFromToken(
-    tokenMint: string
-  ): Promise<"raydium" | "meteora" | string | undefined> {
-    const token = await DB.Token.findOne({ contractAddress: tokenMint });
-    if (!token) {
-      throw new Error(`Token ${tokenMint} not found in database`);
-    }
 
-    if (!token.pool) {
-      throw new Error(`Token ${tokenMint} has no pool information`);
-    }
+  // private async getProtocolFromToken(
+  //   tokenMint: string
+  // ): Promise<"raydium" | "meteora" | string | undefined> {
+  //   const token = await DB.Token.findOne({ contractAddress: tokenMint });
+  //   if (!token) {
+  //     throw new Error(`Token ${tokenMint} not found in database`);
+  //   }
 
-    // Convert pool to protocol name
-    const protocol = token.pool.toLowerCase();
-    if (protocol !== "raydium" && protocol !== "meteora") {
-      throw new Error(`Unsupported protocol: ${protocol}`);
-    }
+  //   if (!token.pool) {
+  //     throw new Error(`Token ${tokenMint} has no pool information`);
+  //   }
 
-    return protocol as "raydium" | "meteora";
-  }
+  //   // Convert pool to protocol name
+  //   const protocol = token.pool.toLowerCase();
+  //   if (protocol !== "raydium" && protocol !== "meteora") {
+  //     throw new Error(`Unsupported protocol: ${protocol}`);
+  //   }
+
+  //   return protocol as "raydium" | "meteora";
+  // }
 
   private async processMigration(migration: IMigration): Promise<void> {
     try {
-      const isProcessing = await DB.Migration.findOneAndUpdate(
-        {
-          _id: migration._id,
-          status: { $in: ["active", "migrating", "migrated"] },
-          processingAt: { $exists: false },
-        },
-        {
-          $set: {
-            processingAt: new Date(),
-            lastProcessedAt: new Date(),
-          },
-        }
-      );
-
-      if (!isProcessing) {
-        return;
-      }
-
       const currentStep = migration.currentStep || 0;
-      const steps = await this.migrationManager.getMigrationSteps(
-        migration.protocol
-      );
+      const steps = await this.migrationManager.getMigrationSteps(migration.protocol);
 
       if (currentStep >= steps.length) {
         await DB.Migration.findOneAndUpdate(
@@ -130,17 +136,30 @@ export class MigrationService {
           {
             $set: {
               status: "finalized",
-              completedAt: new Date(),
-              processingAt: null,
-            },
+              completedAt: new Date()
+            }
           }
         );
         logger.info(`Migration ${migration._id} finalized successfully`);
         return;
       }
+
       const protocolMigration = this.createProtocolMigration(
         `migration-${Date.now()}`,
         migration
+      );
+
+      // Store current state in Redis for recovery
+      const stateKey = `migration:state:${migration._id}`;
+      await redis.set(
+        stateKey,
+        JSON.stringify({
+          currentStep,
+          protocolState: protocolMigration.protocolState,
+          startedAt: new Date()
+        }),
+        'EX',
+        this.LOCK_TTL
       );
 
       const result = await this.migrationManager.executeMigration(
@@ -151,17 +170,20 @@ export class MigrationService {
       if (!result.success) {
         throw new Error(`Migration step failed: ${result.error?.message}`);
       }
+
       await DB.Migration.findOneAndUpdate(
         { _id: migration._id },
         {
           $set: {
             currentStep: currentStep + 1,
             lastSuccessfulStep: currentStep,
-            processingAt: null,
-            lastProcessedAt: new Date(),
-          },
+            lastProcessedAt: new Date()
+          }
         }
       );
+
+      // Clear state from Redis after successful step
+      await redis.del(stateKey);
 
       logger.info(`Migration ${migration._id} completed step ${currentStep}`);
     } catch (error) {
@@ -171,15 +193,15 @@ export class MigrationService {
           $set: {
             status: "active",
             errors: error instanceof Error ? error.message : "Unknown error",
-            processingAt: null,
-            lastErrorAt: new Date(),
-          },
+            lastErrorAt: new Date()
+          }
         }
       );
 
       logger.error(`Migration ${migration._id} failed:`, error);
     }
   }
+
   private createProtocolMigration(
     name: string,
     migration: IMigration

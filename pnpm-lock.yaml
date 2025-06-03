@@ -419,6 +419,9 @@ importers:
       '@autofun/logger':
         specifier: workspace:*
         version: link:../logger
+      '@autofun/redis':
+        specifier: workspace:*
+        version: link:../redis
       '@autofun/rpc':
         specifier: workspace:*
         version: link:../rpc
