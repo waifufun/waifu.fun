@@ -299,6 +299,7 @@ export const executeSwap = async (
 	slippage: number,
 	speed: TSpeed,
 ): Promise<string> => {
+	console.log({ speed })
 	/** If the token was imported or has already migrated we can just use Jupiter */
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
