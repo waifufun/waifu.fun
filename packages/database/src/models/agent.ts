@@ -22,6 +22,4 @@ schema.plugin(paginate);
 
 const Model = Mongoose.model<IAgent, PaginateModel<IAgent>>("Agent", schema);
 
-Model.createIndexes();
-
 export default Model;
