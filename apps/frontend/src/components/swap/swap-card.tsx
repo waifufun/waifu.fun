@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
 import type { AddressLike, IToken } from "@autofun/types";
-import { Wallet } from "lucide-react";
+import { AlertCircle, Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
 import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -99,6 +99,18 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		}
 	}, [mode]);
 
+	const hasSufficientBalance = () => {
+		if (!value || value === "0") return true;
+		if (mode === "buy") {
+			console.log(balance?.data, value);
+			return Number(balance?.data) > Number(value);
+		}
+
+		return Number(tokenBalance?.data) > Number(value);
+	};
+
+	const insufficientBalance = !hasSufficientBalance();
+
 	return (
 		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
@@ -108,7 +120,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<Image
 							unoptimized
 							priority
-							className="rounded-md"
+							className="rounded-md size-6"
 							src={
 								mode === "buy"
 									? token?.chain === "solana"
@@ -211,14 +223,25 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						</div>
 					) : null}
 					<AdvancedSettings />
+					<div
+						className={cn([
+							insufficientBalance
+								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
+								: "hidden",
+							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] rounded-xl text-sm gap-2 items-center transition-all duration-200",
+						])}
+					>
+						<AlertCircle className="text-autofun-text-error" />
+						Insufficient balance to perform trade.
+					</div>
 					<Button
-						disabled={swapMutation?.isPending}
+						disabled={swapMutation?.isPending || insufficientBalance || !value || value === "0"}
 						onClick={() => {
 							swapMutation?.mutate();
 						}}
 						className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
 					>
-						{swapMutation?.isPending ? "Loading..." : "Swap"}
+						{swapMutation?.isPending ? "Loading..." : insufficientBalance ? "Insufficient balance" : "Swap"}
 					</Button>
 				</div>
 			</div>
