@@ -57,6 +57,7 @@
 		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/indexer' --parallel run dev",
 		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/indexer' --parallel run dev",
+		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/frontend' --parallel run dev",
 		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",

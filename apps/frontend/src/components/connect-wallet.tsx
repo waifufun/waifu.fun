@@ -17,7 +17,7 @@ export default function ConnectWallet() {
 	const wallet = useWallet();
 
 	if (!client) {
-		return <Button className={btnClass}>Connect Wallet</Button>;
+		return <Button className={btnClass}>Connect</Button>;
 	}
 
 	if (!wallet.connected) {
@@ -28,7 +28,7 @@ export default function ConnectWallet() {
 					modal.setVisible(true);
 				}}
 			>
-				Connect Wallet
+				Connect
 			</Button>
 		);
 	}
@@ -38,7 +38,7 @@ export default function ConnectWallet() {
 			<MenubarMenu>
 				<MenubarTrigger asChild>
 					<Button className={btnClass}>
-						{wallet?.connected && wallet.publicKey ? shortenAddress(wallet.publicKey.toBase58()) : "Connect Wallet"}
+						{wallet?.connected && wallet.publicKey ? shortenAddress(wallet.publicKey.toBase58()) : "Connect"}
 					</Button>
 				</MenubarTrigger>
 				<MenubarContent>
