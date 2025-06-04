@@ -1,25 +1,18 @@
-"use client";
 import type { IToken, TChainId } from "@autofun/types";
 import ConnectToFleek from "../connect-fleek";
 import FleekAgent from "../fleek-agent";
-import { useQuery } from "@tanstack/react-query";
 import { getAgent } from "@/lib/api";
 import { useWallets } from "../hooks/providers/UseWalletContext";
 
-export default function Agents({ token }: { token: IToken }) {
-	const query = useQuery({
-		queryKey: ["get-agent", token.contractAddress],
-		queryFn: async () => {
-			return await getAgent({
-				contractAddress: token.contractAddress,
-				chain: token.chain,
-				chainId: token.chainId as TChainId,
-			});
-		},
-		enabled: true,
+export default async function Agents({ token }: { token: IToken }) {
+	const data = await getAgent({
+		contractAddress: token.contractAddress,
+		chain: token.chain,
+		chainId: token.chainId as TChainId,
 	});
+	const agents = data?.docs;
 
-	const agents = query.data?.docs;
+	// TODO: Make the current logic work with the new wallet configuration
 	const wallets = useWallets();
 
 	const connectedWalletAddresses = [

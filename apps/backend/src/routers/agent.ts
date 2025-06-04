@@ -16,6 +16,8 @@ interface CreateAIAgentRequest {
 	tee?: boolean | null;
 }
 
+
+//TODO: Add checkbalance and authentication for the tokens held check
 export default async function agentRoutes(fastify: FastifyInstance) {
 	// Create AI Agent
 	fastify.post<{ Body: CreateAIAgentRequest }>("/create-agent", async (request) => {
