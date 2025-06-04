@@ -1,3 +1,23 @@
+# [0.7.0](https://github.com/elizaos/autofun-monorepo/compare/v0.6.0...v0.7.0) (2025-06-04)
+
+
+### Bug Fixes
+
+* fixed an issue where chart was not loading for certain tokens ([0ad1d97](https://github.com/elizaos/autofun-monorepo/commit/0ad1d97a3f72cc32c05ad1acebcd0a2e16d8d34e))
+* fixed an issue where curveCompleted was never set after the fact and not self healing ([6d91c60](https://github.com/elizaos/autofun-monorepo/commit/6d91c60d4b0a8ea2acfb3947c52e953b8706bb55))
+
+
+### Features
+
+* added command to start frontend standalone ([a0fb740](https://github.com/elizaos/autofun-monorepo/commit/a0fb740b11fb9102c05642aae6f523cbd5510e15))
+* implemented simulation error from jupiter swaps ([30d938b](https://github.com/elizaos/autofun-monorepo/commit/30d938b752d569e5cba79b37020213c317789bee))
+* jupiter swaps now possible and using fee amount ([097cb8a](https://github.com/elizaos/autofun-monorepo/commit/097cb8a9fcc153eeeb7bac7163a8b49c6d89e57d))
+* menubar working for wallet ([5a4ba40](https://github.com/elizaos/autofun-monorepo/commit/5a4ba4029796d9a5f73c3d360e83f978d47685a3))
+* some wip on swap on autofun program ([2c2b221](https://github.com/elizaos/autofun-monorepo/commit/2c2b2214bb40c114cab452668896dea1a07a756f))
+* swap modal now properly checks for wallet connection ([a0a8fc3](https://github.com/elizaos/autofun-monorepo/commit/a0a8fc3fcfb6f7e99dcdc5cd0bfc3bfd934a82d7))
+* swapping now works on autofun program ([d84e725](https://github.com/elizaos/autofun-monorepo/commit/d84e72503d217cc982eb807dd3e100d491701de6))
+* tokenFee account is now working ([aeaea54](https://github.com/elizaos/autofun-monorepo/commit/aeaea54b69dfc3a3016c6be512ac3a03a517f927))
+
 # [0.6.0](https://github.com/elizaos/autofun-monorepo/compare/v0.5.0...v0.6.0) (2025-06-03)
 
 
