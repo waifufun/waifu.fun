@@ -459,8 +459,9 @@ export class SolanaRpcProvider extends EventEmitter {
 			// TODO - Ensure non valid values are just skipped entirely if we see such token
 			if (!curve || !curve.reserveToken || String(curve.reserveToken) === "0") {
 				return {
+					contractAddress: mint,
 					tokenMint: mint,
-					curveCompleted: null,
+					curveCompleted: curve?.isCompleted,
 					priceLamports: null,
 					priceSOL: null,
 					marketCapSOL: null,
@@ -471,7 +472,7 @@ export class SolanaRpcProvider extends EventEmitter {
 					virtualReserves: 0,
 					curveLimit: 0,
 					curveProgress: 0,
-					priceUSD: 0,
+					priceUsd: 0,
 					decimals: supplyInfo.decimals || 6,
 					totalSupply: supplyInfo.supply || 0,
 				};
