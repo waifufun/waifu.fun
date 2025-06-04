@@ -2,7 +2,7 @@ import ChainIndicator from "@/components/chain-indicator";
 import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
-import { getToken } from "@/lib/api";
+import { getChartData, getToken, isCurveCompleted } from "@/lib/api";
 import {
 	abbreviateNumber,
 	cn,
@@ -22,6 +22,8 @@ import ScamWarning from "@/components/scam-notice";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = (await getToken(await params)) as IToken;
+
+	var candledata = [] as any;
 
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,

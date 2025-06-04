@@ -62,6 +62,30 @@ export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp
 	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
 };
 
+export const isCurveCompleted = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: ITokenLookUp): Promise<{ curveCompleted: boolean }> => {
+	return await fetcher("/tokens/curve-completed", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+}
+
+export const getChartData = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: ITokenLookUp): Promise<{ data: any[] }> => {
+	return await fetcher("/tokens/chart-data", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+};
+
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
 	return await fetcher("/tokens/trades", "POST", {
 		chain,

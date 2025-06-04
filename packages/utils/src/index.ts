@@ -624,3 +624,104 @@ export const getPercentageOfTotal = (value: number, total: number): string | num
 	const percentage = (value / total) * 100;
 	return percentage?.toFixed(2);
 };
+
+
+export function groupEventsIntoOHLC(
+	priceData: Array<{
+	  timestamp: number;
+	  price: number;
+	  volume: number;
+	  volumeUSD: number;
+	}>,
+	timeframeMs: number,
+	limit: number
+  ): Array<{
+	timestamp: number;
+	open: number;
+	high: number;
+	low: number;
+	close: number;
+	volume: number;
+	volumeUSD: number;
+  }> {
+	if (priceData.length === 0) return [];
+  
+	priceData.sort((a, b) => a.timestamp - b.timestamp);
+  
+	const candles = new Map<number, {
+	  timestamp: number;
+	  open: number;
+	  high: number;
+	  low: number;
+	  close: number;
+	  volume: number;
+	  volumeUSD: number;
+	  trades: Array<{ price: number; volume: number; volumeUSD: number; timestamp: number }>;
+	}>();
+  
+	for (const trade of priceData) {
+	  const bucketTime = Math.floor(trade.timestamp / timeframeMs) * timeframeMs;
+	  
+	  if (!candles.has(bucketTime)) {
+		candles.set(bucketTime, {
+		  timestamp: bucketTime,
+		  open: trade.price,
+		  high: trade.price,
+		  low: trade.price,
+		  close: trade.price,
+		  volume: 0,
+		  volumeUSD: 0,
+		  trades: [],
+		});
+	  }
+  
+	  const candle = candles.get(bucketTime)!;
+	  candle.trades.push({
+		price: trade.price,
+		volume: trade.volume,
+		volumeUSD: trade.volumeUSD,
+		timestamp: trade.timestamp,
+	  });
+	}
+  
+	const result: Array<{
+	  timestamp: number;
+	  open: number;
+	  high: number;
+	  low: number;
+	  close: number;
+	  volume: number;
+	  volumeUSD: number;
+	}> = [];
+  
+	for (const [bucketTime, candle] of candles) {
+	  if (candle.trades.length === 0) continue;
+  
+	  candle.trades.sort((a, b) => a.timestamp - b.timestamp);
+  
+	  const firstTrade = candle.trades[0];
+	  const lastTrade = candle.trades[candle.trades.length - 1];
+	  
+	  if (!firstTrade || !lastTrade) continue;
+	  
+	  const open = firstTrade.price;
+	  const close = lastTrade.price;
+	  const high = Math.max(...candle.trades.map(t => t.price));
+	  const low = Math.min(...candle.trades.map(t => t.price));
+	  const volume = candle.trades.reduce((sum, t) => sum + t.volume, 0);
+	  const volumeUSD = candle.trades.reduce((sum, t) => sum + t.volumeUSD, 0);
+  
+	  result.push({
+		timestamp: bucketTime,
+		open,
+		high,
+		low,
+		close,
+		volume,
+		volumeUSD,
+	  });
+	}
+  
+	result.sort((a, b) => b.timestamp - a.timestamp);
+	return result.slice(0, limit);
+  }
