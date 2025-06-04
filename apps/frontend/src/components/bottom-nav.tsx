@@ -7,26 +7,30 @@ import { usePathname } from "next/navigation";
 export default function BottomNav() {
 	const pathname = usePathname();
 	const mode = pathname === "/" ? "homepage" : pathname?.startsWith("/token/") ? "token" : null;
+	const splitted = pathname?.split("/");
+	const isTokenIndexPage = mode === "token" ? splitted.length === 5 : false;
+	const strippedPath = isTokenIndexPage ? pathname : splitted?.slice(0, -1)?.join("/");
+
 	const LINKS = {
 		token: [
 			{
 				title: "Trades",
-				href: "#trades",
+				href: `${strippedPath}/#trades`,
 				icon: ChartCandlestick,
 			},
 			{
 				title: "Holders",
-				href: "#trades",
+				href: `${strippedPath}/holders#holders`,
 				icon: Users,
 			},
 			{
 				title: "AI Create",
-				href: "#trades",
+				href: `${strippedPath}/create#create`,
 				icon: Stars,
 			},
 			{
 				title: "Chat",
-				href: "#trades",
+				href: `${strippedPath}/chat#chat`,
 				icon: MessagesSquare,
 			},
 		],

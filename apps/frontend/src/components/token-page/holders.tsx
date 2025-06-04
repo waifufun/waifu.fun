@@ -25,7 +25,7 @@ export default async function Holders({ token }: { token: IToken }) {
 	}
 
 	return (
-		<Table>
+		<Table id="holders">
 			<TableHeader>
 				<TableRow>
 					<TableHead className="w-[25px]">Rank</TableHead>
