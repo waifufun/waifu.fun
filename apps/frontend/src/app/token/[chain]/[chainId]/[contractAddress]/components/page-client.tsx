@@ -1,5 +1,4 @@
 "use client";
-import ChainIndicator from "@/components/chain-indicator";
 import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
@@ -57,7 +56,7 @@ export default function PageClient({
 							<div className="flex flex-col">
 								{/* Name */}
 								<div className="flex items-center gap-3">
-									<ChainIndicator chain={token.chain} chainId={token.chainId} />
+									{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 									<Verified isVerified={token?.verified} />
 									<span className="text-white text-2xl font-medium font-satoshi uppercase">{token.name}</span>
 									<div className="h-5 w-[1px] bg-autofun-background-disabled" />

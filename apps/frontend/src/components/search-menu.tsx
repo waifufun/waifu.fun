@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getTokens } from "@/lib/api";
 import Image from "next/image";
-import ChainIndicator from "./chain-indicator";
 import Verified from "./verified";
 import { CopyButton } from "./copy-button";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
@@ -84,7 +83,7 @@ export default function SearchMenu() {
 											<div className="flex flex-col gap-2.5">
 												{/* Name */}
 												<div className="flex items-center gap-1.5">
-													<ChainIndicator chain={token.chain} chainId={token.chainId} />
+													{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 													<span className="text-white text-base font-medium font-satoshi uppercase">{token.name}</span>
 													<span className="text-base font-medium uppercase text-autofun-text-secondary">
 														{token.ticker}

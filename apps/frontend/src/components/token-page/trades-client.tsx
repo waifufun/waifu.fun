@@ -6,7 +6,6 @@ import type { IToken, ITrade } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
 import { cn, formatUsd, shortenAddress } from "@/lib/utils";
 import Triangle from "../triangle";
-import ChainIndicator from "../chain-indicator";
 import { Fragment } from "react";
 import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@autofun/constants";
 import Link from "next/link";
@@ -69,7 +68,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 							</TableCell>
 							<TableCell>
 								<div className="flex items-center gap-2">
-									<ChainIndicator chain={token.chain} chainId={token.chainId} className="size-5" />
+									{/* <ChainIndicator chain={token.chain} chainId={token.chainId} className="size-5" /> */}
 									{new Intl.NumberFormat("en-US", {
 										maximumFractionDigits: 3,
 									}).format(Number(trade.fromAmount))}{" "}
