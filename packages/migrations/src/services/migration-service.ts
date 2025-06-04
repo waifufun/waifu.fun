@@ -19,10 +19,12 @@ export class MigrationService {
 
   constructor(
     private readonly connection: Connection,
-    private readonly provider: AnchorProvider
+    private readonly provider: AnchorProvider,
+    private readonly redisClient: typeof redis = redis,
+    private readonly db: typeof DB = DB
   ) {
     this.migrationManager = new MigrationManager(
-      DB.Migration as Model<IMigration>,
+      this.db.Migration as Model<IMigration>,
       connection
     );
   }
@@ -48,13 +50,13 @@ export class MigrationService {
 
   private async acquireLock(migrationId: string): Promise<boolean> {
     const lockKey = `migration:lock:${migrationId}`;
-    const result = await redis.set(lockKey, '1', 'EX', this.LOCK_TTL, 'NX');
+    const result = await this.redisClient.set(lockKey, '1', 'EX', this.LOCK_TTL, 'NX');
     return result === 'OK';
   }
 
   private async releaseLock(migrationId: string): Promise<void> {
     const lockKey = `migration:lock:${migrationId}`;
-    await redis.del(lockKey);
+    await this.redisClient.del(lockKey);
   }
 
   private startProcessing(): void {
@@ -80,7 +82,7 @@ export class MigrationService {
       this.isProcessing = true;
 
       // Get all active migrations
-      const activeMigrations = await DB.Migration.find({
+      const activeMigrations = await this.db.Migration.find({
         status: { $in: ['active', 'migrating', 'migrated'] }
       }).limit(this.MAX_CONCURRENT_MIGRATIONS);
 
@@ -131,7 +133,7 @@ export class MigrationService {
       const steps = await this.migrationManager.getMigrationSteps(migration.protocol);
 
       if (currentStep >= steps.length) {
-        await DB.Migration.findOneAndUpdate(
+        await this.db.Migration.findOneAndUpdate(
           { _id: migration._id },
           {
             $set: {
@@ -151,7 +153,7 @@ export class MigrationService {
 
       // Store current state in Redis for recovery
       const stateKey = `migration:state:${migration._id}`;
-      await redis.set(
+      await this.redisClient.set(
         stateKey,
         JSON.stringify({
           currentStep,
@@ -171,7 +173,7 @@ export class MigrationService {
         throw new Error(`Migration step failed: ${result.error?.message}`);
       }
 
-      await DB.Migration.findOneAndUpdate(
+      await this.db.Migration.findOneAndUpdate(
         { _id: migration._id },
         {
           $set: {
@@ -183,11 +185,11 @@ export class MigrationService {
       );
 
       // Clear state from Redis after successful step
-      await redis.del(stateKey);
+      await this.redisClient.del(stateKey);
 
       logger.info(`Migration ${migration._id} completed step ${currentStep}`);
     } catch (error) {
-      await DB.Migration.findOneAndUpdate(
+      await this.db.Migration.findOneAndUpdate(
         { _id: migration._id },
         {
           $set: {
@@ -244,7 +246,7 @@ export class MigrationService {
     currentStep: number;
     error?: string;
   }> {
-    const migration = await DB.Migration.findOne({ id: migrationId });
+    const migration = await this.db.Migration.findOne({ id: migrationId });
     if (!migration) {
       throw new Error("Migration not found");
     }

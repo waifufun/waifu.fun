@@ -12,7 +12,7 @@ import {
   finalizeLockLP,
   depositNftToRaydiumVault,
 } from "./raydium/calls";
-import { BN } from "@coral-xyz/anchor";
+import BN from 'bn.js';
 import DB from "@autofun/database";
 import { PublicKey } from "@solana/web3.js";
 

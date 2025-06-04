@@ -8,7 +8,7 @@ import {
   commonCollectFeesStep,
 } from "../steps/common";
 import { withdrawLiquidity, recordTransaction } from "../utils/protocol-utils";
-import { BN } from "@coral-xyz/anchor";
+import BN from 'bn.js';
 import {
   createPositionNft,
   finalizePositionNft,
