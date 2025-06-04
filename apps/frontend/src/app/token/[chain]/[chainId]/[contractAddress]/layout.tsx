@@ -56,7 +56,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 								height={60}
 								unoptimized
 								alt="token_image"
-								className="size-[60px] rounded-lg select-none"
+								className="size-[60px] rounded-lg select-none aspect-square"
 							/>
 							{/* Token Name */}
 							<div className="flex flex-col">

@@ -78,7 +78,7 @@ export default function SearchMenu() {
 												height={48}
 												unoptimized
 												alt="token_image"
-												className="size-[48px] rounded-lg"
+												className="size-[48px] rounded-lg aspect-square"
 											/>
 											{/* Token Name */}
 											<div className="flex flex-col gap-2.5">

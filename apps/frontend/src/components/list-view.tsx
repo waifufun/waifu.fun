@@ -23,7 +23,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 		<Table>
 			<TableHeader>
 				<TableRow>
-					<TableHead className="w-0">Coin</TableHead>
+					<TableHead className="lg:w-0">Coin</TableHead>
 					<TableHead className="text-center">Mcap</TableHead>
 					<TableHead className="text-center">24h Volume</TableHead>
 					<TableHead className="text-center">Holders</TableHead>
@@ -44,7 +44,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 									height={60}
 									unoptimized
 									alt="token_image"
-									className="size-[60px] rounded-lg"
+									className="size-[60px] rounded-lg aspect-square"
 								/>
 								{/* Token Name */}
 								<div className="flex flex-col gap-2.5">
@@ -52,7 +52,9 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 									<div className="flex items-center gap-1.5">
 										<ChainIndicator chain={token.chain} chainId={token.chainId} />
 										<span className="text-white text-xl font-medium font-satoshi uppercase">{token.name}</span>
-										<span className="text-lg font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
+										<span className="text-lg font-medium uppercase text-autofun-text-secondary truncate">
+											{token.ticker}
+										</span>
 										<Verified isVerified={token?.verified} />
 									</div>
 									<div className="flex items-center gap-2">
