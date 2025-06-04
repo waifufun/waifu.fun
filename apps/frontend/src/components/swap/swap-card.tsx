@@ -18,6 +18,7 @@ import useSlippage from "@/hooks/use-slippage";
 import { formatUnits } from "viem";
 import useAddress from "@/hooks/use-address";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
@@ -26,6 +27,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const { speed } = useSpeed();
 	const { connection } = useConnection();
 	const { slippage } = useSlippage();
+	const modal = useWalletModal();
 	const address = useAddress();
 	const balance = useBalance({ chain: token.chain, address });
 	const tokenBalance = useTokenBalance({
@@ -142,7 +144,12 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<span className="uppercase">{mode === "buy" ? "SOL" : token.ticker}</span>
 					</div>
 				</div>
-				<div className="flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium">
+				<div
+					className={cn([
+						"flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium transition-opacity duration-200",
+						!address ? "opacity-0" : "opacity-100",
+					])}
+				>
 					<Wallet size={14} color="#8C8C8C" />
 					{/* biome-ignore lint/a11y/useKeyWithClickEvents: explanation */}
 					<span
@@ -232,7 +239,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<AdvancedSettings />
 					<div
 						className={cn([
-							insufficientBalance
+							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
 							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] rounded-xl text-sm gap-2 items-center transition-all duration-200",
@@ -242,13 +249,23 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						Insufficient balance to perform trade.
 					</div>
 					<Button
-						disabled={swapMutation?.isPending || insufficientBalance || !value || value === "0"}
+						disabled={address ? swapMutation?.isPending || insufficientBalance || !value || value === "0" : false}
 						onClick={() => {
-							swapMutation?.mutate();
+							if (!address) {
+								modal.setVisible(true);
+							} else {
+								swapMutation?.mutate();
+							}
 						}}
 						className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
 					>
-						{swapMutation?.isPending ? "Loading..." : insufficientBalance ? "Insufficient balance" : "Swap"}
+						{!address
+							? "Connect"
+							: swapMutation?.isPending
+								? "Loading..."
+								: insufficientBalance
+									? "Insufficient balance"
+									: "Swap"}
 					</Button>
 				</div>
 			</div>
