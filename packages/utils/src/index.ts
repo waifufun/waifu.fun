@@ -164,7 +164,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
 
 	const tokensToQuery = validTokens
-		.filter((t) => t?.imported)
+		.filter((t) => t?.imported || t?.curveCompleted)
 		.map((token: IToken) => {
 			const { chain, chainId, contractAddress } = token;
 			const networkId =
@@ -248,7 +248,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 	/** All non imported tokens should be determined using RPC */
 	const nonImportedTokens = validTokens.filter(
-		(t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
+		(t) => (t?.imported === false || !t.curveCompleted) && t.chain === "solana" && t.chainId === 101,
 	);
 
 	logger.info(`Found ${nonImportedTokens.length} non-imported Solana tokens`);

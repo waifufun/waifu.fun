@@ -6,7 +6,10 @@ import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
 import { PublicKey, VersionedTransaction, type Connection } from "@solana/web3.js";
-import type { WalletAdapterProps } from "@solana/wallet-adapter-base";
+import { AnchorProvider, Program, type Idl } from "@coral-xyz/anchor";
+import idl from "./autofun.json";
+import type { WalletContextState } from "@solana/wallet-adapter-react";
+import type { Autofun } from "./autofun";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -291,7 +294,7 @@ export const retrieveQuote = async ({
 	}
 
 	if (provider === "autofun") {
-		return { minimumReceived: 1337 };
+		return { minimumReceived: 1337, swapUsdValue: "0" };
 	}
 
 	throw new Error("No quote route found. Please contact auto.fun");
@@ -305,7 +308,7 @@ export const executeSwap = async (
 	slippage: number,
 	speed: TSpeed,
 	connection: Connection,
-	sendTransaction: WalletAdapterProps["sendTransaction"],
+	wallet: WalletContextState,
 ): Promise<string> => {
 	if (!connection) throw new Error("No connection was found");
 	/** If the token was imported or has already migrated we can just use Jupiter */
@@ -362,12 +365,30 @@ export const executeSwap = async (
 		const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
 
 		const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-		const signature = await sendTransaction(transaction, connection);
+		const signature = await wallet.sendTransaction(transaction, connection);
 
 		return signature;
 	}
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
+		if (!wallet.publicKey || !wallet.signTransaction || !wallet.signAllTransactions) {
+			throw new Error("Wallet not fully connected or compatible.");
+		}
+		const provider = new AnchorProvider(
+			connection,
+			{
+				publicKey: wallet.publicKey,
+				signTransaction: wallet.signTransaction,
+				signAllTransactions: wallet.signAllTransactions,
+			},
+			AnchorProvider.defaultOptions(),
+		);
+
+		const program: Program<Autofun> = new Program(idl as Idl, provider);
+
+		// await program.methods.swap({
+
+		// })
 	}
 
 	throw new Error("No route found for token to swap against. Contact autofun.");
