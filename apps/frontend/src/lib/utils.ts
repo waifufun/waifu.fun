@@ -230,6 +230,8 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 const platformFeeBps = 100;
 const feeAccount = new PublicKey("autovtovm7oqwtbyrWgdSH7i1W4nLPRWjXM2wcdqn1R");
+/** Fee token account, used for Jupiter's platform fees */
+const feeTokenAccount = new PublicKey("DxkyyA3Gwt7RpgupCHEZX2y653Mg2byEMTm1ikxaTDR");
 
 export const retrieveJupiterQuote = async ({
 	amount,
@@ -327,7 +329,7 @@ export const executeSwap = async (
 			},
 			body: JSON.stringify({
 				userPublicKey: from,
-				feeAccount: feeAccount,
+				feeAccount: feeTokenAccount,
 				quoteResponse: quote,
 				prioritizationFeeLamports: {
 					priorityLevelWithMaxLamports: {
@@ -358,6 +360,7 @@ export const executeSwap = async (
 		if (!swapTransaction) throw new Error("Failed to fetch transaction");
 
 		const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+
 		const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 		const signature = await sendTransaction(transaction, connection);
 
