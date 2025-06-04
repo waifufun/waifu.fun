@@ -100,6 +100,131 @@ export function getChecksummedAddress(address: AddressLike, chain: TChain): Addr
 	throw new Error("Invalid chain or address passed");
 }
 
+const calculateTokenDataFromEvents = async (contractAddress: string): Promise<{
+	marketcap: number;
+	price: number;
+	curveCompleted: boolean;
+	curveProgress: number;
+	creator?: string;
+	bondingCurveAddress?: string | undefined;
+  } | null> => {
+	try {
+		// Check if curve is completed first
+		const completeEvent = await DB.Event.findOne({
+			contractAddress: contractAddress,
+			eventType: "curveCompleted",
+			processed: true
+		});
+	
+		// If curve completed, then irrelevant
+		if (completeEvent) {
+			return {
+			marketcap: 0,
+			price: 0,
+			curveCompleted: true,
+			curveProgress: 100,
+			creator: completeEvent.creator || "",
+			bondingCurveAddress: completeEvent.bondingCurve || undefined
+			};
+		}
+	
+		const token = await DB.Token.findOne({
+			contractAddress: contractAddress
+		}).select("decimals creator totalSupply imported curveCompleted").lean();
+	
+		if (!token) {
+			logger.warn(`Token ${contractAddress} not found in database`);
+			return null;
+		}
+	
+		const eventsExist = await DB.Event.findOne({
+			contractAddress: contractAddress,
+			eventType: { $in: ["swap", "launchAndSwap", "launch"] },
+			processed: true
+		}).lean();
+	
+		if (!eventsExist) {
+			logger.warn(`No events found for token ${contractAddress}`);
+			return null;
+		}
+	
+		const launchEvent = await DB.Event.findOne({
+			contractAddress: contractAddress,
+			eventType: { $in: ["launch", "launchAndSwap"] },
+			processed: true
+		}).sort({ slot: 1 }).lean();
+	
+		if (!launchEvent) {
+			logger.warn(`No launch event found for token ${contractAddress}`);
+			return null;
+		}
+	
+		// Get latest swap event to determine current price
+		const latestSwapEvent = await DB.Event.findOne({
+			contractAddress: contractAddress,
+			eventType: { $in: ["swap", "launchAndSwap"] },
+			processed: true
+		}).sort({ slot: -1 }).lean();
+	
+		if (!latestSwapEvent) {
+			logger.warn(`No swap events found for token ${contractAddress}`);
+			return null;
+		}
+	
+		let currentPrice = 0;
+		const decimals = token.decimals || 9;
+		const LAMPORTS_PER_SOL = 1000000000;
+	
+		if (latestSwapEvent.swapAmount && latestSwapEvent.amountGotten) {
+			const swapAmount = Number(latestSwapEvent.swapAmount);
+			const amountGotten = Number(latestSwapEvent.amountGotten);
+			
+			if (latestSwapEvent.direction === 0 || latestSwapEvent.eventType === "launchAndSwap") {
+				const solSpent = swapAmount / LAMPORTS_PER_SOL;
+				const tokensReceived = amountGotten / (10 ** decimals);
+				if (tokensReceived > 0) {
+					currentPrice = solSpent / tokensReceived;
+				}
+			} else {
+				const solReceived = amountGotten / LAMPORTS_PER_SOL;
+				const tokensSold = swapAmount / (10 ** decimals);
+				if (tokensSold > 0) {
+					currentPrice = solReceived / tokensSold;
+				}
+			}
+	 	}
+  
+		const totalSupply = token.totalSupply || 0;
+		let curveProgress = 0;
+
+		const nativePricesResult = await redis.get("prices");
+		let nativePrices: Record<string, number> | null = nativePricesResult ? JSON.parse(nativePricesResult) : null;
+		if (!nativePrices) {
+			const cryptoPrices = await updateCryptoPrices({ cacheKey: "prices" });
+			nativePrices = {
+				solana: cryptoPrices.solana ?? 0,
+				ethereum: cryptoPrices.ethereum ?? 0,
+			};
+		}
+
+		currentPrice = currentPrice * (nativePrices?.solana || 1);
+		const marketcap = (currentPrice * totalSupply) / (10 ** decimals);
+  
+		return {
+			marketcap,
+			price: currentPrice,
+			curveCompleted: false,
+			curveProgress,
+			creator: launchEvent.creator || token.creator || "",
+			bondingCurveAddress: undefined
+		};
+  
+	} catch (error) {
+	  logger.error(`Error calculating token data from events for ${contractAddress}:`, error);
+	  return null;
+	}
+};
+
 /**
  * Enriches token objects with live market data from the Codex API.
  *
@@ -119,230 +244,293 @@ export function getChecksummedAddress(address: AddressLike, chain: TChain): Addr
  * If the Codex API doesn't return data for a particular token, the original token
  * object is returned with market values set to 0.
  */
+
 export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Promise<IToken<TChain>[]> => {
 	if (!tokensToPopulate || tokensToPopulate?.length === 0) {
-		logger.warn("No tokens provided to populate");
-		return [];
+	  logger.warn("No tokens provided to populate");
+	  return [];
 	}
-
+  
 	logger.info(`Received ${tokensToPopulate.length} tokens to populate`);
-
+  
 	// Clean up invalid tokens from database
 	const invalidTokens = tokensToPopulate.filter((token) => !token?.contractAddress);
 	if (invalidTokens.length > 0) {
-		logger.warn(`Found ${invalidTokens.length} tokens without contract addresses, removing them from database`);
-		const invalidTokenIds = invalidTokens.map((token) => token._id).filter(Boolean);
-		if (invalidTokenIds.length > 0) {
-			await DB.Token.deleteMany({ _id: { $in: invalidTokenIds } });
-			logger.info(`Removed ${invalidTokenIds.length} invalid tokens from database`);
-		}
+	  logger.warn(`Found ${invalidTokens.length} tokens without contract addresses, removing them from database`);
+	  const invalidTokenIds = invalidTokens.map((token) => token._id).filter(Boolean);
+	  if (invalidTokenIds.length > 0) {
+		await DB.Token.deleteMany({ _id: { $in: invalidTokenIds } });
+		logger.info(`Removed ${invalidTokenIds.length} invalid tokens from database`);
+	  }
 	}
-
+  
 	// Validate tokens have required fields
 	const validTokens = tokensToPopulate.filter((token) => {
-		if (!token) {
-			logger.warn("Found null/undefined token");
-			return false;
-		}
-		if (!token?.contractAddress || !token?.chain || !token?.chainId) {
-			logger.warn(`Skipping invalid token: ${JSON.stringify(token)}`);
-			return false;
-		}
-		return true;
+	  if (!token) {
+		logger.warn("Found null/undefined token");
+		return false;
+	  }
+	  if (!token?.contractAddress || !token?.chain || !token?.chainId) {
+		logger.warn(`Skipping invalid token: ${JSON.stringify(token)}`);
+		return false;
+	  }
+	  return true;
 	});
-
+  
 	if (validTokens.length === 0) {
-		logger.warn("No valid tokens to populate after validation");
-		return [];
+	  logger.warn("No valid tokens to populate after validation");
+	  return [];
 	}
-
+  
 	logger.info(`Found ${validTokens.length} valid tokens after validation`);
-
+  
 	const ops = [];
-
-	/** All imports tokens can be fetched using Codex */
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
-
-	const tokensToQuery = validTokens
-		.filter((t) => t?.imported)
-		.map((token: IToken) => {
-			const { chain, chainId, contractAddress } = token;
-			const networkId =
-				chain === "evm"
-					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
-					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
-
-			tokenIndex[contractAddress] = token;
-
-			return `${contractAddress}:${networkId}`;
+  
+	// Separate tokens by type
+	const importedTokens = validTokens.filter((t) => t?.imported);
+	const nonImportedTokens = validTokens.filter(
+	  (t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
+	);
+  
+	logger.info(`Found ${importedTokens.length} imported tokens and ${nonImportedTokens.length} non-imported tokens`);
+  
+	// Check akk tokens for events first
+	const allTokens = [...importedTokens, ...nonImportedTokens];
+	const tokensWithEvents: typeof allTokens = [];
+	const importedTokensWithoutEvents: typeof importedTokens = [];
+	const nonImportedTokensWithoutEvents: typeof nonImportedTokens = [];
+  
+	for (const token of allTokens) {
+	  const hasEvents = await DB.Event.exists({
+		contractAddress: token.contractAddress,
+		processed: true
+	  });
+  
+	  if (hasEvents) {
+		tokensWithEvents.push(token);
+	  } else {
+		// Sort by type
+		if (token.imported) {
+		  importedTokensWithoutEvents.push(token);
+		} else {
+		  nonImportedTokensWithoutEvents.push(token);
+		}
+	  }
+	}
+  
+	logger.info(`Found ${tokensWithEvents.length} tokens with events, ${importedTokensWithoutEvents.length} imported tokens without events, ${nonImportedTokensWithoutEvents.length} non-imported tokens without events`);
+  
+	if (tokensWithEvents.length > 0) {
+	  logger.info(`Processing ${tokensWithEvents.length} tokens with events data`);
+  
+	  for (const token of tokensWithEvents) {
+		const tokenData = await calculateTokenDataFromEvents(token.contractAddress);
+		console.log(`Token data for ${token.contractAddress}:`, tokenData);
+		
+		if (!tokenData) {
+		  logger.warn(`Could not calculate data from events for ${token.contractAddress}`);
+		  if (token.imported) {
+			importedTokensWithoutEvents.push(token);
+		  } else {
+			nonImportedTokensWithoutEvents.push(token);
+		  }
+		  continue;
+		}
+  
+		const tokenRecord = token as IToken<TChain> & { _id?: string; updatedAt?: Date };
+		
+		tokenIndex[token.contractAddress] = { ...token };
+  
+		const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
+		if (secondsPassedSinceUpdate <= 7) {
+		  logger.info(`Skipping token ${token.contractAddress} - updated recently`);
+		  continue;
+		}
+  
+		if (!tokenRecord?._id) {
+		  logger.warn(`Token ${token.contractAddress} missing _id`);
+		  continue;
+		}
+  
+		const setValues = {
+		  marketcap: tokenData.marketcap,
+		  price: tokenData.price,
+		  curveCompleted: tokenData.curveCompleted,
+		  curveProgress: tokenData.curveProgress,
+		  ...(tokenData.creator && { creator: tokenData.creator as AddressLike }),
+		  ...(tokenData.bondingCurveAddress && { bondingCurveAddress: tokenData.bondingCurveAddress as AddressLike })
+		};
+  
+		ops.push({
+		  updateOne: {
+			filter: { _id: String(tokenRecord._id) },
+			update: { $set: setValues },
+		  },
 		});
-
-	logger.info(`Found ${tokensToQuery.length} imported tokens to query from Codex`);
-
-	const tokenData = await codex.queries.filterTokens({
+  
+		if (tokenRecord._id) {
+		  delete tokenRecord._id;
+		}
+  
+		tokenIndex[token.contractAddress] = {
+		  ...token,
+		  ...setValues,
+		};
+  
+		logger.info(`Updated token ${token.contractAddress} from events data (imported: ${token.imported})`);
+	  }
+	}
+  
+	// codex for curve completed tokens or not found in events
+	if (importedTokensWithoutEvents.length > 0) {
+	  logger.info(`Processing ${importedTokensWithoutEvents.length} imported tokens without events via Codex`);
+  
+	  const tokensToQuery = importedTokensWithoutEvents.map((token: IToken) => {
+		const { chain, chainId, contractAddress } = token;
+		const networkId =
+		  chain === "evm"
+			? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
+			: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
+  
+		tokenIndex[contractAddress] = token;
+		return `${contractAddress}:${networkId}`;
+	  });
+  
+	  logger.info(`Querying ${tokensToQuery.length} imported tokens from Codex`);
+  
+	  const tokenData = await codex.queries.filterTokens({
 		statsType: TokenPairStatisticsType.Unfiltered,
 		tokens: tokensToQuery,
-	});
-
-	const results = tokenData?.filterTokens?.results;
-
-	if (results) {
+	  });
+  
+	  const results = tokenData?.filterTokens?.results;
+  
+	  if (results) {
 		logger.info(`Received ${results.length} results from Codex`);
 		for (const token of results) {
-			const address = token?.token?.address as AddressLike;
-			if (!tokenIndex) {
-				logger.warn("tokenIndex is undefined");
-				continue;
-			}
-
-			const key = Object.keys(tokenIndex).find((a) => address.toLowerCase() === a.toLowerCase());
-			const tokenRecord = key
-				? (tokenIndex[key as AddressLike] as IToken<TChain> & { _id?: string; updatedAt?: Date })
-				: undefined;
-
-			if (!tokenRecord) {
-				logger.warn(`No matching token record found for address ${address}`);
-				continue;
-			}
-
-			/** If the record was already updated very recently, there is no need to do it again.
-			 * This can occur when the user first navigates to /token, and very shortly after to
-			 * a single token page */
-			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
-
-			if (secondsPassedSinceUpdate <= 10) {
-				logger.info(`Skipping token ${address} - updated recently`);
-				continue;
-			}
-
-			const marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
-			tokenRecord.marketcap = marketcap;
-			const price = token?.priceUSD ? Number(token?.priceUSD) : 0;
-			tokenRecord.price = price;
-			const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
-			tokenRecord.volume24h = volume24h;
-			const holders = token?.holders ? Number(token?.holders) : 0;
-
-			ops.push({
-				updateOne: {
-					filter: {
-						_id: String(tokenRecord._id),
-					},
-					update: {
-						$set: {
-							marketcap,
-							price,
-							volume24h,
-							holders,
-						},
-					},
-				},
-			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (tokenRecord?._id) {
-				delete tokenRecord._id;
-			}
+		  const address = token?.token?.address as AddressLike;
+		  const key = Object.keys(tokenIndex).find((a) => address.toLowerCase() === a.toLowerCase());
+		  const tokenRecord = key
+			? (tokenIndex[key as AddressLike] as IToken<TChain> & { _id?: string; updatedAt?: Date })
+			: undefined;
+  
+		  if (!tokenRecord) {
+			logger.warn(`No matching token record found for address ${address}`);
+			continue;
+		  }
+  
+		  const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
+		  if (secondsPassedSinceUpdate <= 10) {
+			logger.info(`Skipping token ${address} - updated recently`);
+			continue;
+		  }
+  
+		  const marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
+		  tokenRecord.marketcap = marketcap;
+		  const price = token?.priceUSD ? Number(token?.priceUSD) : 0;
+		  tokenRecord.price = price;
+		  const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
+		  tokenRecord.volume24h = volume24h;
+		  const holders = token?.holders ? Number(token?.holders) : 0;
+  
+		  ops.push({
+			updateOne: {
+			  filter: { _id: String(tokenRecord._id) },
+			  update: {
+				$set: { marketcap, price, volume24h, holders },
+			  },
+			},
+		  });
+  
+		  if (tokenRecord?._id) {
+			delete tokenRecord._id;
+		  }
 		}
+	  }
 	}
-
-	/** All non imported tokens should be determined using RPC */
-	const nonImportedTokens = validTokens.filter(
-		(t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
-	);
-
-	logger.info(`Found ${nonImportedTokens.length} non-imported Solana tokens`);
-
-	if (nonImportedTokens?.length > 0) {
-		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
-		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
-
-		logger.info(`Received ${bondingCurveInfo.length} bonding curve info results`);
-
-		for (const tokenRecord of bondingCurveInfo) {
-			if (!tokenRecord?.contractAddress) {
-				logger.warn("Bonding curve info missing contractAddress");
-				continue;
-			}
-
-			const nonImportedToken = nonImportedTokens.find(
-				(a) => a.contractAddress === tokenRecord.contractAddress,
-			) as IToken<TChain> & { _id?: string; updatedAt?: Date };
-
-			if (!nonImportedToken) {
-				logger.warn(`No matching non-imported token found for ${tokenRecord.contractAddress}`);
-				continue;
-			}
-
-			tokenIndex[nonImportedToken.contractAddress] = {
-				...nonImportedToken,
-			};
-
-			/** If the record was already updated very recently, there is no need to do it again.
-			 * This can occur when the user first navigates to /token, and very shortly after to
-			 * a single token page */
-			const secondsPassedSinceUpdate = moment().diff(moment(nonImportedToken.updatedAt), "seconds");
-
-			if (secondsPassedSinceUpdate <= 7) {
-				logger.info(`Skipping token ${tokenRecord.contractAddress} - updated recently`);
-				continue;
-			}
-
-			if (!nonImportedToken?._id) {
-				logger.warn(`Token ${tokenRecord.contractAddress} missing _id`);
-				continue;
-			}
-
-			const setValues: {
-				marketcap: number;
-				price: number;
-				curveCompleted?: boolean;
-				curveProgress?: number;
-				creator?: AddressLike;
-				bondingCurveAddress?: AddressLike;
-			} = {
-				marketcap: Number(tokenRecord.marketCapUSD),
-				price: Number(tokenRecord.priceUsd),
-				curveCompleted: Boolean(tokenRecord.curveCompleted),
-				curveProgress: Number(tokenRecord.curveProgress),
-			};
-
-			if (tokenRecord?.bondingCurveAddress) {
-				setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
-			}
-
-			if (tokenRecord?.creator) {
-				setValues.creator = String(tokenRecord?.creator) as AddressLike;
-			}
-
-			ops.push({
-				updateOne: {
-					filter: {
-						_id: String(nonImportedToken?._id),
-					},
-					update: {
-						$set: setValues,
-					},
-				},
-			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (nonImportedToken?._id) {
-				delete nonImportedToken._id;
-			}
-
-			tokenIndex[nonImportedToken.contractAddress] = {
-				...nonImportedToken,
-				...setValues,
-			};
+  
+	if (nonImportedTokensWithoutEvents.length > 0) {
+	  logger.info(`Falling back to RPC for ${nonImportedTokensWithoutEvents.length} non-imported tokens without events`);
+	  
+	  const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
+	  const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokensWithoutEvents.map((k) => k.contractAddress));
+  
+	  logger.info(`Received ${bondingCurveInfo.length} bonding curve info results from RPC`);
+  
+	  for (const tokenRecord of bondingCurveInfo) {
+		if (!tokenRecord?.contractAddress) {
+		  logger.warn("Bonding curve info missing contractAddress");
+		  continue;
 		}
+  
+		const nonImportedToken = nonImportedTokensWithoutEvents.find(
+		  (a) => a.contractAddress === tokenRecord.contractAddress,
+		) as IToken<TChain> & { _id?: string; updatedAt?: Date };
+  
+		if (!nonImportedToken) {
+		  logger.warn(`No matching non-imported token found for ${tokenRecord.contractAddress}`);
+		  continue;
+		}
+  
+		tokenIndex[nonImportedToken.contractAddress] = { ...nonImportedToken };
+  
+		const secondsPassedSinceUpdate = moment().diff(moment(nonImportedToken.updatedAt), "seconds");
+		if (secondsPassedSinceUpdate <= 7) {
+		  logger.info(`Skipping token ${tokenRecord.contractAddress} - updated recently`);
+		  continue;
+		}
+  
+		if (!nonImportedToken?._id) {
+		  logger.warn(`Token ${tokenRecord.contractAddress} missing _id`);
+		  continue;
+		}
+  
+		const setValues: {
+		  marketcap: number;
+		  price: number;
+		  curveCompleted?: boolean;
+		  curveProgress?: number;
+		  creator?: AddressLike;
+		  bondingCurveAddress?: AddressLike;
+		} = {
+		  marketcap: Number(tokenRecord.marketCapUSD),
+		  price: Number(tokenRecord.priceUsd),
+		  curveCompleted: Boolean(tokenRecord.curveCompleted),
+		  curveProgress: Number(tokenRecord.curveProgress),
+		};
+  
+		if (tokenRecord?.bondingCurveAddress) {
+		  setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
+		}
+  
+		if (tokenRecord?.creator) {
+		  setValues.creator = String(tokenRecord?.creator) as AddressLike;
+		}
+  
+		ops.push({
+		  updateOne: {
+			filter: { _id: String(nonImportedToken?._id) },
+			update: { $set: setValues },
+		  },
+		});
+  
+		if (nonImportedToken?._id) {
+		  delete nonImportedToken._id;
+		}
+  
+		tokenIndex[nonImportedToken.contractAddress] = {
+		  ...nonImportedToken,
+		  ...setValues,
+		};
+	  }
 	}
-
+  
 	if (ops?.length > 0) {
-		logger.info(`Performing ${ops.length} database updates`);
-		await DB.Token.bulkWrite(ops);
+	  logger.info(`Performing ${ops.length} database updates`);
+	  await DB.Token.bulkWrite(ops);
 	}
-
+  
 	const finalTokens = Object.values(tokenIndex);
 	logger.info(`Returning ${finalTokens.length} populated tokens`);
 	return finalTokens;

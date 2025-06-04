@@ -7,7 +7,7 @@ export interface IEvent {
 	signature: string;
 	slot: number;
 	blockTime: number;
-	eventType: "launch" | "swap" | "launchAndSwap" | "complete";
+	eventType: "launch" | "swap" | "launchAndSwap" | "curveCompleted";
 	contractAddress: string;
 	creator?: string;
 	user?: string;

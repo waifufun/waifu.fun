@@ -149,7 +149,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const cache = await redis.get(cacheKey);
 
 		if (cache) {
-			return JSON.parse(cache);
+			// return JSON.parse(cache);
 		}
 
 		const token = await DB.Token.findOne({
