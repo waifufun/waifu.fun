@@ -20,7 +20,7 @@ type Inputs = {
 export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
 	return (
-		<div className="bg-[#0c0c0c] rounded-b-xl">
+		<div className="bg-[#0c0c0c] rounded-b-xl" id="chat">
 			<div className="flex flex-col items-center w-full my-3 px-4">
 				<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value as TChatRooms)}>
 					<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">

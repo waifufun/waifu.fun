@@ -238,11 +238,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (tokenRecord?._id) {
-				delete tokenRecord._id;
-			}
 		}
 	}
 
@@ -299,6 +294,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 				curveCompleted?: boolean;
 				curveProgress?: number;
 				creator?: AddressLike;
+				bondingCurveBalance?: number;
 				bondingCurveAddress?: AddressLike;
 			} = {
 				curveCompleted: Boolean(tokenRecord.curveCompleted),
@@ -310,6 +306,11 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 			if (tokenRecord?.priceUsd) {
 				setValues.price = Number(tokenRecord.priceUsd);
+			}
+
+			if (tokenRecord?.bondingCurveBalance) {
+				console.log(tokenRecord?.bondingCurveBalance);
+				setValues.bondingCurveBalance = tokenRecord.bondingCurveBalance;
 			}
 
 			if (tokenRecord?.bondingCurveAddress) {
@@ -330,11 +331,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (nonImportedToken?._id) {
-				delete nonImportedToken._id;
-			}
 
 			tokenIndex[nonImportedToken.contractAddress] = {
 				...nonImportedToken,

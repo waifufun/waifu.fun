@@ -56,6 +56,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				case "new":
 					sortQuery = "-createdAt";
 					break;
+				case "about-to-bond":
+					sortQuery = "-curveProgress";
+					break;
 				case "trending":
 					sortQuery = "-volume24h -marketcap";
 					break;

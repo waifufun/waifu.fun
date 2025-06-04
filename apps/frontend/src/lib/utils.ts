@@ -518,6 +518,7 @@ export const executeSwap = async (
 		const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
 
 		const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
 		const signature = await wallet.sendTransaction(transaction, connection);
 
 		return signature;

@@ -78,6 +78,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	bondingCurveBalance?: number;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
@@ -213,6 +214,17 @@ export type ISwapSettings = {
 	slippage: string;
 	deadline: string;
 };
+
+export interface IAgent {
+	_id: string;
+	name: string;
+	bio: string;
+	createdBy: string;
+	avatar: string;
+	contractAddress: Pick<IToken, "contractAddress">;
+	chain: Pick<IToken, "chain">;
+	chainId: Pick<IToken, "chainId">;
+}
 
 export interface IEventsMeta {
 	_id?: string;

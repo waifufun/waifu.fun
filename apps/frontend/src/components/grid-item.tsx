@@ -3,7 +3,6 @@ import type { IToken } from "@autofun/types";
 import Image from "next/image";
 import Link from "next/link";
 import Verified from "./verified";
-import ChainIndicator from "./chain-indicator";
 
 export const GridItem = ({ token }: { token: IToken }) => {
 	return (
@@ -15,9 +14,9 @@ export const GridItem = ({ token }: { token: IToken }) => {
 				<div className="absolute top-0 left-0 p-2 px-3 z-10 group-hover:opacity-100 opacity-0 transition-opacity duration-200">
 					{/* <TokenStatus token={token} /> */}
 				</div>
-				<div className="absolute top-0 left-0 p-2 px-3 z-10">
+				{/* <div className="absolute top-0 left-0 p-2 px-3 z-10">
 					<ChainIndicator chain={token.chain} chainId={token.chainId} />
-				</div>
+				</div> */}
 				<div className="absolute left-0 bottom-0 p-2 px-3 w-full z-10">
 					<div className="flex items-center gap-4 justify-between">
 						<div className="flex items-center gap-2 w-full min-w-0">

@@ -86,12 +86,15 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		mutationFn: async () => {
 			const from = address as SolanaAddressLike;
 			if (!from) throw new Error("No wallet connected");
-			await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
+			return await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["balance"],
-			});
+		onSuccess: (signature: string) => {
+			toast(`Sent transaction ${signature}`);
+			setTimeout(() => {
+				queryClient.invalidateQueries({
+					queryKey: ["balance"],
+				});
+			}, 1500);
 		},
 		onError: (e) => {
 			toast.error(e.message);
@@ -111,7 +114,6 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const hasSufficientBalance = () => {
 		if (!value || value === "0") return true;
 		if (mode === "buy") {
-			console.log(balance?.data, value);
 			return Number(balance?.data) >= Number(value);
 		}
 
@@ -174,7 +176,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								key={btn}
 								variant="secondary"
 								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
 									btn === "Reset" ? "text-autofun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSet(btn)}
@@ -184,13 +186,13 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						))}
 					</div>
 				) : (
-					<div className="flex items-center gap-2 justify-between">
+					<div className="flex items-center gap-2 justify-between overflow-x-auto">
 						{quickSetSellButtons.map((btn) => (
 							<Button
 								key={btn}
 								variant="secondary"
 								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
 									btn === "Reset" ? "text-autofun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSetSell(btn)}
@@ -216,7 +218,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 											{minReceivedQuery?.error ? (
 												<span>Error</span>
 											) : (
-												<span>
+												<span
+													className="animate-fade animate-once animate-duration-200 animate-ease-linear"
+													key={minReceivedQuery?.data?.minimumReceived || "0"}
+												>
 													{minReceivedQuery?.data?.minimumReceived
 														? formatUnits(BigInt(minReceivedQuery?.data?.minimumReceived), token.decimals)
 														: null}
