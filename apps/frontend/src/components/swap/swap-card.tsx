@@ -219,7 +219,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 											{minReceivedQuery?.error ? (
 												<span>Error</span>
 											) : (
-												<span>
+												<span
+													className="animate-fade animate-once animate-duration-200 animate-ease-linear"
+													key={minReceivedQuery?.data?.minimumReceived || "0"}
+												>
 													{minReceivedQuery?.data?.minimumReceived
 														? formatUnits(BigInt(minReceivedQuery?.data?.minimumReceived), token.decimals)
 														: null}
