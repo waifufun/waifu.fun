@@ -64,7 +64,7 @@ export default function PageClient({
 								</div>
 								{/* Creator */}
 								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
-									<div className="capitalize">Created by:</div>
+									<div className="capitalize">Created By:</div>
 									<div className="hover:underline">
 										<Link href={`/profile/${token.creator}`}>
 											{token?.creator ? shortenAddress(token?.creator) : "-"}

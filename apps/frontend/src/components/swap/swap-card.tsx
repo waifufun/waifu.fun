@@ -114,7 +114,6 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const hasSufficientBalance = () => {
 		if (!value || value === "0") return true;
 		if (mode === "buy") {
-			console.log(balance?.data, value);
 			return Number(balance?.data) >= Number(value);
 		}
 
