@@ -16,7 +16,6 @@ interface CreateAIAgentRequest {
 	tee?: boolean | null;
 }
 
-
 //TODO: Add checkbalance and authentication for the tokens held check
 export default async function agentRoutes(fastify: FastifyInstance) {
 	// Create AI Agent
@@ -82,11 +81,7 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 
 		const query = { contractAddress, chain, chainId };
 
-		try {
-			const result = await DB.Agent.paginate(query, paginationOptions);
-			return reply.send(result);
-		} catch (error) {
-			throw new Error(`Failed To Fetch Agents: ${(error as Error).message}`);
-		}
+		const result = await DB.Agent.paginate(query, paginationOptions);
+		return reply.send(result);
 	});
 }

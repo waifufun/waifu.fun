@@ -1,27 +1,12 @@
-import type { IToken, TChainId } from "@autofun/types";
-import ConnectToFleek from "../connect-fleek";
+'use client';
+import type { IAgent, IToken } from "@autofun/types";
 import FleekAgent from "../fleek-agent";
-import { getAgent } from "@/lib/api";
-import { useWallets } from "../hooks/providers/UseWalletContext";
+import ConnectToFleek from "../connect-fleek";
+import useAddress from "@/hooks/use-address";
 
-export default async function Agents({ token }: { token: IToken }) {
-	const data = await getAgent({
-		contractAddress: token.contractAddress,
-		chain: token.chain,
-		chainId: token.chainId as TChainId,
-	});
-	const agents = data?.docs;
-
-	// TODO: Make the current logic work with the new wallet configuration
-	const wallets = useWallets();
-
-	const connectedWalletAddresses = [
-		...Object.values(wallets.evmWallets || {}).map((w) => w.address),
-		...Object.values(wallets.solanaWallets || {}).map((w) => w.address),
-	];
-
-	const isCreatorConnected = token.creator ? connectedWalletAddresses.includes(token.creator) : false;
-
+export default function Agents({ agents, token }: { agents: IAgent[]; token: IToken }) {
+	const address = useAddress();
+	const isCreatorConnected = address === token?.creator;
 	return (
 		<div className="w-full space-y-4">
 			{!agents ? (
