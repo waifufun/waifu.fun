@@ -86,12 +86,15 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		mutationFn: async () => {
 			const from = address as SolanaAddressLike;
 			if (!from) throw new Error("No wallet connected");
-			await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
+			return await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ["balance"],
-			});
+		onSuccess: (signature: string) => {
+			toast(`Sent transaction ${signature}`);
+			setTimeout(() => {
+				queryClient.invalidateQueries({
+					queryKey: ["balance"],
+				});
+			}, 1500);
 		},
 		onError: (e) => {
 			toast.error(e.message);
