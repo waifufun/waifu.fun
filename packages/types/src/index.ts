@@ -78,6 +78,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	bondingCurveBalance?: number;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;

@@ -294,6 +294,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 				curveCompleted?: boolean;
 				curveProgress?: number;
 				creator?: AddressLike;
+				bondingCurveBalance?: number;
 				bondingCurveAddress?: AddressLike;
 			} = {
 				curveCompleted: Boolean(tokenRecord.curveCompleted),
@@ -305,6 +306,10 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 			if (tokenRecord?.priceUsd) {
 				setValues.price = Number(tokenRecord.priceUsd);
+			}
+
+			if (tokenRecord?.bondingCurveBalance) {
+				setValues.bondingCurveBalance = tokenRecord.bondingCurveBalance;
 			}
 
 			if (tokenRecord?.bondingCurveAddress) {

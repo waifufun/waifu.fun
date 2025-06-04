@@ -16,7 +16,7 @@ import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
 import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
-import { Connection, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
 import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
 import autoFunAbi from "./evm/abis/AutoFun.json";
@@ -495,6 +495,8 @@ export class SolanaRpcProvider extends EventEmitter {
 
 			const creator = curve.creator.toBase58();
 
+			const bondingCurveBalance = (reserveLamport - virtualReserves) / LAMPORTS_PER_SOL;
+
 			return {
 				contractAddress: mint,
 				bondingCurveAddress,
@@ -504,6 +506,7 @@ export class SolanaRpcProvider extends EventEmitter {
 				priceLamports: reserveLamport / reserveToken,
 				decimals: tokenDecimals,
 				virtualReserves,
+				bondingCurveBalance,
 				reserveLamport,
 				curveLimit,
 				priceSOL,

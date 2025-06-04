@@ -134,7 +134,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 				</div>
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
-					<BondingCurveProgress token={token} />
+					<BondingCurveProgress token={token} showTooltip />
 					<div className="flex flex-col gap-4 rounded-xl bg-[#0c0c0c] p-4">
 						<div className="flex items-center gap-4 justify-between">
 							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
