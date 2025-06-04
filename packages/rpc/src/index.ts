@@ -14,7 +14,8 @@ import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/c
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
-import { Program, AnchorProvider, type Idl, type Wallet, BN } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
+import BN from "bn.js";
 import idl from "./idls/autofun.json";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
