@@ -309,6 +309,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			}
 
 			if (tokenRecord?.bondingCurveBalance) {
+				console.log(tokenRecord?.bondingCurveBalance);
 				setValues.bondingCurveBalance = tokenRecord.bondingCurveBalance;
 			}
 

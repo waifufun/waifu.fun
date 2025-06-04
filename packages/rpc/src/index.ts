@@ -504,7 +504,7 @@ export class SolanaRpcProvider extends EventEmitter {
 				curveProgress = numerator.mul(new BN(100)).div(denominator);
 			}
 
-			const bondingCurveBalance = reserveLamportBN.sub(virtualReservesBN).div(LAMPORTS_PER_SOL_BN);
+			const bondingCurveBalance = reserveLamportBN.sub(virtualReservesBN).div(LAMPORTS_PER_SOL_BN).toNumber();
 
 			const creator = curve.creator.toBase58();
 

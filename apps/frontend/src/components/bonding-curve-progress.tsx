@@ -40,7 +40,7 @@ export default function BondingCurveProgress({
 				</div>
 				{/* Bar */}
 				<Progressbar max={100} value={Number(curveProgress.toFixed(2))} />
-				{token?.bondingCurveBalance ? (
+				{typeof token?.bondingCurveBalance === "number" ? (
 					<div className="text-base text-autofun-text-primary">
 						There is {formatNumber(Number(token?.bondingCurveBalance), false, true)} SOL in the bonding curve.
 					</div>
