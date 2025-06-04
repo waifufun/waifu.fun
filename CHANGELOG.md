@@ -1,3 +1,32 @@
+# [0.8.0](https://github.com/elizaos/autofun-monorepo/compare/v0.7.0...v0.8.0) (2025-06-04)
+
+
+### Bug Fixes
+
+* fixed an issue where bondingcurvebalance was saved as BN ([c5c127e](https://github.com/elizaos/autofun-monorepo/commit/c5c127ee8f873181ee218aaf66c8ca0dd19ae0fa))
+* fixed responsiveness ([ee9e694](https://github.com/elizaos/autofun-monorepo/commit/ee9e694f7472f10bba18a28fe6d36d00a805a733))
+* fixed some responseiveness issues on holders table ([7fc20e5](https://github.com/elizaos/autofun-monorepo/commit/7fc20e5dc9779d4bc2fc9c8ea12d6b4fa69cb33b))
+* removel og ([9eb2764](https://github.com/elizaos/autofun-monorepo/commit/9eb2764febd1249ad84d554a9ec06bc826572215))
+
+
+### Features
+
+* about-to-bond now works as expected ([2d72481](https://github.com/elizaos/autofun-monorepo/commit/2d7248144153bf664243c4efb296d491f4130034))
+* added border highlight on hover ([b9cc291](https://github.com/elizaos/autofun-monorepo/commit/b9cc291f43ee3e23a740a6fa67475050fdb0d293))
+* added social icons to initial header ([6253c9f](https://github.com/elizaos/autofun-monorepo/commit/6253c9fa1165ef9cc5d9a183ebfa4b98bafea284))
+* bottombar on mobile operational ([56fd2df](https://github.com/elizaos/autofun-monorepo/commit/56fd2df03b6528d007211531c17475315b45010f))
+* created very initial mobile navigation ([c1664a0](https://github.com/elizaos/autofun-monorepo/commit/c1664a011b9503336c2f5423918534f90f77b2e2))
+* dont show when imported ([730e800](https://github.com/elizaos/autofun-monorepo/commit/730e800d9489bbef9496136183bd3e1f1afca280))
+* dont use WalletContext for agents ([543863f](https://github.com/elizaos/autofun-monorepo/commit/543863fd562081455fff1c2f9765b27bd3fb9271))
+* min received amount is now slightly animated ([a5095ba](https://github.com/elizaos/autofun-monorepo/commit/a5095bae2f163c5aa853aca78b9dc4d26339fe91))
+* quick sell on mobile should scroll ([79384de](https://github.com/elizaos/autofun-monorepo/commit/79384deed6c28bb1048f49a4155c26c4df0454dc))
+* remove chain indicator for now ([6ab96a7](https://github.com/elizaos/autofun-monorepo/commit/6ab96a7f1b5481de30418f686add479ecd893d9c))
+* show toast after swap ([c2e2d6b](https://github.com/elizaos/autofun-monorepo/commit/c2e2d6bc865815e834b999a9065d3973c4461e48))
+* the bondingCurveBalance is now a field that gets calculated in populateTokensLiveData ([0becaed](https://github.com/elizaos/autofun-monorepo/commit/0becaedef5d28200e9fe91750651028cc472f4f0))
+* token page now has hybrid model of rendering ([a6de02f](https://github.com/elizaos/autofun-monorepo/commit/a6de02fca4bbd27ce7af309f94c1b65e876044a9))
+* Trades are only animated now when they are new, aka after initial page view ([7088382](https://github.com/elizaos/autofun-monorepo/commit/70883826069d1b899da8cc7d218c055de9e5b74a))
+* trades now refresh at a 15 second interval ([5427909](https://github.com/elizaos/autofun-monorepo/commit/5427909f8e77d3bd7292754e8b98501ff3aad470))
+
 # [0.7.0](https://github.com/elizaos/autofun-monorepo/compare/v0.6.0...v0.7.0) (2025-06-04)
 
 
