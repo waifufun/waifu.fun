@@ -214,16 +214,12 @@ export type ISwapSettings = {
 	deadline: string;
 };
 
-
-export type IAgent = {
+export interface IAgent extends Pick<IToken, "contractAddress" | "chain" | "chainId"> {
 	name: string;
 	bio: string;
 	createdBy: string;
 	avatar: string;
-	contractAddress: string;
-	chain: TChain,
-	chainId: TChainId
-};
+}
 
 export interface IEventsMeta {
 	_id?: string;
@@ -236,4 +232,3 @@ export interface IEventsMeta {
 	lastSyncTimestamp: Date;
 	isActive: boolean;
 }
-
