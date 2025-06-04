@@ -13,7 +13,7 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
 
 	return (
-		<Tabs value={currentTab}>
+		<Tabs value={currentTab} className="hidden lg:block">
 			<TabsList className="grid w-full grid-cols-5">
 				<TabsTrigger
 					value="trades"

@@ -192,14 +192,14 @@ export default function PageClient({
 						<div>
 							<Image
 								src={token?.image}
-								className="float-right w-52 h-52 ml-4 mb-2 rounded-xl object-cover"
+								className="lg:float-right size-full lg:size-52 lg:ml-4 mb-4 lg:mb-2 rounded-xl object-cover"
 								unoptimized
 								priority
 								width={208}
 								height={208}
 								alt="token"
 							/>
-							<div>
+							<div className="flex flex-col gap-1.5">
 								<span className="font-medium text-xl text-autofun-background-action-highlight uppercase block">
 									{token?.name}
 								</span>
