@@ -1,4 +1,3 @@
-
 import { getToken } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import type { Metadata } from "next";

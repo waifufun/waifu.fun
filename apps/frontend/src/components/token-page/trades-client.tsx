@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getTrades } from "@/lib/api";
 import type { IToken, ITrade } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
-import { formatUsd, shortenAddress } from "@/lib/utils";
+import { cn, formatUsd, shortenAddress } from "@/lib/utils";
 import Triangle from "../triangle";
 import ChainIndicator from "../chain-indicator";
 import { Fragment } from "react";
@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export default function TradesClient({ token, initialData }: { token: IToken; initialData: any }) {
+	const nonAnimatedTrades = Array.from(new Set<string>(initialData?.map((a: { txId: string }) => a.txId)));
 	const query = useQuery({
 		queryKey: ["trades", token.chain, token.chainId, token.contractAddress],
 		queryFn: async () => {
@@ -54,7 +55,14 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 				</TableHeader>
 				<TableBody>
 					{data.map((trade: ITrade) => (
-						<TableRow key={trade.txId} className="animate-shake animate-once animate-duration-200 animate-ease-linear">
+						<TableRow
+							key={trade.txId}
+							className={cn([
+								!nonAnimatedTrades.includes(trade.txId)
+									? "animate-shake animate-once animate-duration-200 animate-ease-linear"
+									: "",
+							])}
+						>
 							<TableCell className="font-medium">{trade.address ? shortenAddress(trade?.address) : "-"}</TableCell>
 							<TableCell>
 								<Triangle direction={trade?.type === "buy" ? "up" : "down"} />
