@@ -238,11 +238,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (tokenRecord?._id) {
-				delete tokenRecord._id;
-			}
 		}
 	}
 
@@ -330,11 +325,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (nonImportedToken?._id) {
-				delete nonImportedToken._id;
-			}
 
 			tokenIndex[nonImportedToken.contractAddress] = {
 				...nonImportedToken,
