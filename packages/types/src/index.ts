@@ -215,6 +215,17 @@ export type ISwapSettings = {
 	deadline: string;
 };
 
+export interface IAgent {
+	_id: string
+	name: string;
+	bio: string;
+	createdBy: string;
+	avatar: string;
+	contractAddress: Pick<IToken, "contractAddress">;
+	chain: Pick<IToken, "chain">;
+	chainId: Pick<IToken, "chainId">;
+}
+
 export interface IEventsMeta {
 	_id?: string;
 	programId: string;
