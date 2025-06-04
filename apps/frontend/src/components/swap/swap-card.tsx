@@ -177,7 +177,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								key={btn}
 								variant="secondary"
 								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
 									btn === "Reset" ? "text-autofun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSet(btn)}
@@ -193,7 +193,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								key={btn}
 								variant="secondary"
 								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]",
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
 									btn === "Reset" ? "text-autofun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSetSell(btn)}
