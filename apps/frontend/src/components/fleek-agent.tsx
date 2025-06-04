@@ -7,7 +7,7 @@ export default function FleekAgent({ agents }: { agents: IAgent[] }) {
 			{agents?.map((agent) => (
 				<div
 					key={agent._id}
-					className="w-full group rounded-lg place-self-center bg-[#0C0C0C] relative flex items-center h-[150px] p-4 mb-4"
+					className="w-full group rounded-sm place-self-center bg-[#0C0C0C] relative flex items-center h-[150px] p-4 mb-4"
 				>
 					{agent?.avatar && (
 						<Image

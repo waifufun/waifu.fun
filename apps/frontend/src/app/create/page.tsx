@@ -15,13 +15,13 @@ const PromptComponent = () => {
 
 	return (
 		<div
-			className="flex gap-4 bg-[#3333331A] px-4 items-center rounded-lg"
+			className="flex gap-4 bg-[#3333331A] px-4 items-center rounded-sm"
 			style={{
 				background: "linear-gradient(180deg, #171717 0%, #141414 100%)",
 			}}
 		>
 			<textarea
-				className="w-full rounded-lg py-3 resize-none overflow-aut focus:outline-none"
+				className="w-full rounded-sm py-3 resize-none overflow-aut focus:outline-none"
 				placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
 				{...registerForm("prompt")}
 				rows={rows}
@@ -34,7 +34,7 @@ const PromptComponent = () => {
 				style={{
 					background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)",
 				}}
-				className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
+				className="border border-[#03FF24] rounded-sm hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
 				onClick={() => {
 					if (!prompt) {
 						generateToken();
@@ -52,21 +52,21 @@ const PromptComponent = () => {
 const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
 	if (!href) {
 		return (
-			<div className="w-full h-full bg-[#3333331A] rounded-lg flex items-center justify-center">
+			<div className="w-full h-full bg-[#3333331A] rounded-sm flex items-center justify-center">
 				<p>No Image</p>
 			</div>
 		);
 	}
 	return (
-		<div className="w-full h-full relative rounded-lg overflow-hidden">
-			<Image alt="Generated Image" src={href} layout="fill" objectFit="cover" className="rounded-lg" />
+		<div className="w-full h-full relative rounded-sm overflow-hidden">
+			<Image alt="Generated Image" src={href} layout="fill" objectFit="cover" className="rounded-sm" />
 		</div>
 	);
 };
 
 const AiImageLoading = () => {
 	return (
-		<div className="w-full h-full bg-[#3333331A] rounded-lg flex items-center justify-center">
+		<div className="w-full h-full bg-[#3333331A] rounded-sm flex items-center justify-center">
 			<p>Loading...</p>
 		</div>
 	);
@@ -94,7 +94,7 @@ const GeneratedImages = () => {
 	return (
 		<div className="w-full flex justify-center">
 			<div className="w-[300px] sm:w-[500px]">
-				<div className="w-full h-[300px] sm:h-[500px] rounded-lg overflow-hidden relative">
+				<div className="w-full h-[300px] sm:h-[500px] rounded-sm overflow-hidden relative">
 					{isGeneratingImage && <AiImageLoading />}
 					{!isGeneratingImage && <AIImageWithPlaceHolder href={previousImages[0]} />}
 				</div>
@@ -109,7 +109,7 @@ const GeneratedImages = () => {
 									}}
 									// biome-ignore lint/suspicious/noArrayIndexKey: Exhaustive deps
 									key={index}
-									className="w-full aspect-square hover:cursor-pointer rounded-lg overflow-hidden relative"
+									className="w-full aspect-square hover:cursor-pointer rounded-sm overflow-hidden relative"
 								>
 									<AIImageWithPlaceHolder href={image} />
 								</button>
@@ -130,7 +130,7 @@ export default function CreateTokenPage() {
 					<div>
 						<img src="/create/coin-machine.png" alt="coin" />
 					</div>
-					<div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
+					<div className="rounded-sm bg-[#3333331A] w-full overflow-hidden">
 						<TokenTypeSelector selected="auto" />
 						<div className="p-4">
 							<PromptComponent />

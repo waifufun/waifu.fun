@@ -13,7 +13,7 @@ const UploadPlaceholder = ({ onClick }: { onClick: () => void }) => {
 		<button
 			type="button"
 			onClick={onClick}
-			className="w-full h-full bg-[#171717] rounded-lg flex items-center justify-center border border-[#262626] hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#03FF24]"
+			className="w-full h-full bg-[#171717] rounded-sm flex items-center justify-center border border-[#262626] hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#03FF24]"
 			aria-label="Upload image"
 		>
 			<div className="flex flex-col items-center justify-center gap-3">
@@ -68,7 +68,7 @@ const UploadImage = () => {
 	return (
 		<div className="w-full flex justify-center">
 			<div className="w-[300px] sm:w-[500px]">
-				<div className="w-full h-[300px] sm:h-[500px] rounded-lg overflow-hidden relative bg-[#171717] border border-[#262626]">
+				<div className="w-full h-[300px] sm:h-[500px] rounded-sm overflow-hidden relative bg-[#171717] border border-[#262626]">
 					{!uploadedImage && <UploadPlaceholder onClick={handlePlaceholderClick} />}
 					{uploadedImage && (
 						<Image
@@ -76,7 +76,7 @@ const UploadImage = () => {
 							alt="Uploaded preview"
 							layout="fill"
 							objectFit="contain"
-							className="rounded-lg cursor-pointer"
+							className="rounded-sm cursor-pointer"
 							onClick={handleDeleteImage}
 						/>
 					)}
@@ -101,7 +101,7 @@ export default function CreateTokenPageManual() {
 					<div>
 						<img src="/create/coin-machine.png" alt="coin-machine" />
 					</div>
-					<div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
+					<div className="rounded-sm bg-[#3333331A] w-full overflow-hidden">
 						<TokenTypeSelector selected="manual" />
 						<div className="p-4">
 							<div className="flex flex-col lg:flex-row w-full gap-10 py-8">

@@ -41,7 +41,7 @@ export default function PageClient({
 			<ScamWarning isHidden={!!token?.hidden} />
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
-					<div className="p-4 bg-[#333333]/10 rounded-lg flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+					<div className="p-4 bg-[#333333]/10 rounded-sm flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
 						<div className="flex items-center gap-4">
 							{/* Image */}
 							<Image
@@ -50,7 +50,7 @@ export default function PageClient({
 								height={60}
 								unoptimized
 								alt="token_image"
-								className="size-[60px] rounded-lg select-none aspect-square"
+								className="size-[60px] rounded-sm select-none aspect-square"
 							/>
 							{/* Token Name */}
 							<div className="flex flex-col">
@@ -108,7 +108,7 @@ export default function PageClient({
 						</div>
 					</div>
 
-					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
+					<div className="w-full min-h-[540px] relative rounded-sm overflow-hidden">
 						<iframe
 							height="100%"
 							width="100%"
@@ -129,7 +129,7 @@ export default function PageClient({
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
 					<BondingCurveProgress token={token} showTooltip />
-					<div className="flex flex-col gap-4 rounded-xl bg-[#0c0c0c] p-4">
+					<div className="flex flex-col gap-4 rounded-sm bg-[#0c0c0c] p-4">
 						<div className="flex items-center gap-4 justify-between">
 							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
 								TOKEN INFO
@@ -192,25 +192,21 @@ export default function PageClient({
 						<div>
 							<Image
 								src={token?.image}
-								className="lg:float-right size-full lg:size-52 lg:ml-4 mb-4 lg:mb-2 rounded-xl object-cover"
+								className="lg:float-right size-full lg:size-52 lg:ml-4 mb-4 lg:mb-2 rounded-sm object-cover"
 								unoptimized
 								priority
 								width={208}
 								height={208}
 								alt="token"
 							/>
-							<div className="flex flex-col gap-1.5">
-								<span className="font-medium text-xl text-autofun-background-action-highlight uppercase block">
-									{token?.name}
-								</span>
-								<span className="font-medium text-xl uppercase block">{token?.ticker}</span>
 
-								<p className="text-base text-autofun-text-secondary">
-									{token?.description
-										? token?.description
-										: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"}
-								</p>
-							</div>
+							<span className="py-0.5 font-medium text-xl text-autofun-background-action-highlight uppercase block">
+								{token?.name}
+							</span>
+							<span className="font-medium text-xl uppercase block py-0.5">{token?.ticker}</span>
+							<p className="text-base text-autofun-text-secondary py-0.5">
+								{token?.description ? token?.description : ""}
+							</p>
 						</div>
 						<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
 							<span className="text-base font-medium uppercase">{token.name}</span>

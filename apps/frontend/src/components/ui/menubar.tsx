@@ -54,7 +54,7 @@ function MenubarContent({
 				alignOffset={alignOffset}
 				sideOffset={sideOffset}
 				className={cn(
-					"bg-gradient-to-b from-[#121212] to-[#0D0D0D] text-white data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[150px] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-xl border p-3 border-autofun-stroke-primary",
+					"bg-gradient-to-b from-[#121212] to-[#0D0D0D] text-white data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[150px] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-sm border p-3 border-autofun-stroke-primary",
 					className,
 				)}
 				{...props}
