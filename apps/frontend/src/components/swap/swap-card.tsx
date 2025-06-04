@@ -187,7 +187,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						))}
 					</div>
 				) : (
-					<div className="flex items-center gap-2 justify-between">
+					<div className="flex items-center gap-2 justify-between overflow-x-auto">
 						{quickSetSellButtons.map((btn) => (
 							<Button
 								key={btn}
