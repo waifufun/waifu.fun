@@ -57,7 +57,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const minReceivedQuery = useQuery({
-		queryKey: [token.contractAddress, mode, value, slippage],
+		queryKey: ["quote", token.contractAddress, mode, value, slippage],
 		queryFn: async () => {
 			try {
 				return await retrieveQuote({
@@ -65,9 +65,12 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					mode,
 					slippage,
 					token,
+					wallet,
+					connection,
 				});
 			} catch (e) {
 				const error = e as { message?: string };
+				console.error(e);
 				toast.error(error?.message);
 				throw e;
 			}

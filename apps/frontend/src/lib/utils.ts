@@ -5,8 +5,18 @@ import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
-import { PublicKey, VersionedTransaction, type Connection } from "@solana/web3.js";
-import { AnchorProvider, Program, type Idl } from "@coral-xyz/anchor";
+import {
+	ComputeBudgetProgram,
+	Keypair,
+	PublicKey,
+	type TransactionInstruction,
+	TransactionMessage,
+	VersionedTransaction,
+	type Connection,
+	Transaction,
+} from "@solana/web3.js";
+
+import { AnchorProvider, BN, Program, type Idl } from "@coral-xyz/anchor";
 import idl from "./autofun.json";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
@@ -271,16 +281,82 @@ export const retrieveJupiterQuote = async ({
 	return { minimumReceived, swapUsdValue, priceImpactPct, quote: json };
 };
 
+const convertToBasisPoints = (feePercent: number): number => {
+	if (feePercent >= 1) {
+		return feePercent;
+	}
+	return Math.floor(feePercent * 10000);
+};
+
+export const retrieveAutofunQuote = async ({
+	wallet,
+	connection,
+	slippage,
+	amount,
+	mode,
+	token,
+}: {
+	amount: string | number;
+	wallet: WalletContextState;
+	slippage: number | string;
+	connection: Connection;
+	token: IToken;
+	mode: "buy" | "sell";
+}) => {
+	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	const contractAddress = token.contractAddress;
+	const FEE_BASIS_POINTS = 10000;
+	const curve = await getBondingCurvePDA(program, contractAddress);
+	const reserveToken = curve.reserveToken;
+	const reserveLamport = curve.reserveLamport;
+	const feePercent = mode === "sell" ? Number(configAccount.platformSellFee) : Number(configAccount.platformBuyFee);
+	const swapAmount = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
+	const adjustedAmountW = Math.floor((Number(swapAmount) * (FEE_BASIS_POINTS - feePercent)) / FEE_BASIS_POINTS);
+
+	let estimatedOutput = 0;
+	if (mode === "buy") {
+		const feeBasisPoints = new BN(convertToBasisPoints(feePercent));
+		const amountBN = new BN(adjustedAmountW);
+		const adjustedAmount = amountBN.mul(new BN(10000)).sub(feeBasisPoints).div(new BN(10000));
+		const reserveTokenBN = new BN(reserveToken.toString());
+		const numerator = reserveTokenBN.mul(adjustedAmount);
+		const denominator = new BN(reserveLamport.toString()).add(adjustedAmount);
+
+		estimatedOutput = numerator.div(denominator).toNumber();
+	}
+	if (mode === "sell") {
+		const feeBasisPoints = convertToBasisPoints(feePercent);
+		const amountBN = new BN(adjustedAmountW);
+		const adjustedAmount = amountBN.mul(new BN(10000 - feeBasisPoints)).div(new BN(10000));
+		const numerator = new BN(reserveLamport.toString()).mul(adjustedAmount);
+		const denominator = new BN(reserveToken.toString()).add(adjustedAmount);
+		if (denominator.isZero()) throw new Error("Division by zero");
+		estimatedOutput = numerator.div(denominator).toNumber();
+	}
+
+	/** Factor in the slippage */
+	const finalAmount = new BN(Math.floor((estimatedOutput * (10000 - Number(slippage))) / 10000));
+
+	return {
+		minimumReceived: finalAmount,
+		swapAmount,
+	};
+};
+
 export const retrieveQuote = async ({
 	amount,
 	token,
 	mode,
 	slippage,
+	wallet,
+	connection,
 }: {
 	amount: string | number;
 	token: IToken;
 	mode: "buy" | "sell";
 	slippage: number;
+	wallet?: WalletContextState;
+	connection?: Connection;
 	// biome-ignore lint/suspicious/noExplicitAny: allow
 }): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
 	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
@@ -294,10 +370,87 @@ export const retrieveQuote = async ({
 	}
 
 	if (provider === "autofun") {
-		return { minimumReceived: 1337, swapUsdValue: "0" };
+		if (!wallet || !connection) throw new Error("No wallet or connection passed.");
+		return await retrieveAutofunQuote({
+			slippage,
+			wallet,
+			connection,
+			amount,
+			token,
+			mode,
+		});
 	}
 
 	throw new Error("No quote route found. Please contact auto.fun");
+};
+
+export const getBondingCurvePDA = async (program: Program<Autofun>, tokenAddress: AddressLike) => {
+	const [bondingCurvePda] = PublicKey.findProgramAddressSync(
+		[Buffer.from("bonding_curve"), new PublicKey(tokenAddress).toBytes()],
+		program.programId,
+	);
+	const curve = await program.account.bondingCurve.fetch(bondingCurvePda);
+	return curve;
+};
+
+type WalletLike = {
+	publicKey: PublicKey;
+	signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T>;
+	signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]>;
+};
+
+function createSpoofedWallet(): WalletLike {
+	const keypair = Keypair.generate();
+
+	return {
+		publicKey: keypair.publicKey,
+
+		async signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
+			if (tx instanceof Transaction) {
+				tx.partialSign(keypair);
+			} else if (tx instanceof VersionedTransaction) {
+				tx.sign([keypair]);
+			}
+			return tx;
+		},
+
+		async signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
+			return txs.map((tx) => {
+				if (tx instanceof Transaction) {
+					tx.partialSign(keypair);
+				} else if (tx instanceof VersionedTransaction) {
+					tx.sign([keypair]);
+				}
+				return tx;
+			});
+		},
+	};
+}
+
+export const getAutofunProgram = async (connection: Connection, wallet: WalletContextState) => {
+	const walletToUse =
+		!wallet?.publicKey || !wallet?.signTransaction || !wallet?.signAllTransactions ? createSpoofedWallet() : wallet;
+
+	if (!walletToUse.publicKey || !walletToUse.signTransaction || !walletToUse.signAllTransactions) {
+		throw new Error("Wallet not fully connected or compatible.");
+	}
+
+	const provider = new AnchorProvider(
+		connection,
+		{
+			publicKey: walletToUse.publicKey,
+			signTransaction: walletToUse.signTransaction,
+			signAllTransactions: walletToUse.signAllTransactions,
+		},
+		AnchorProvider.defaultOptions(),
+	);
+
+	const program: Program<Autofun> = new Program(idl as Idl, provider);
+
+	const [configPda, _] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
+	const configAccount = await program.account.config.fetch(configPda);
+
+	return { program, configAccount };
 };
 
 export const executeSwap = async (
@@ -371,24 +524,79 @@ export const executeSwap = async (
 	}
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
-		if (!wallet.publicKey || !wallet.signTransaction || !wallet.signAllTransactions) {
-			throw new Error("Wallet not fully connected or compatible.");
-		}
-		const provider = new AnchorProvider(
+		const { program, configAccount } = await getAutofunProgram(connection, wallet);
+
+		const quote = await retrieveAutofunQuote({
+			amount: inputAmount,
 			connection,
-			{
-				publicKey: wallet.publicKey,
-				signTransaction: wallet.signTransaction,
-				signAllTransactions: wallet.signAllTransactions,
-			},
-			AnchorProvider.defaultOptions(),
+			mode,
+			slippage,
+			token,
+			wallet,
+		});
+
+		/** Deadline: 5 minutes */
+		const deadline = Math.floor(Date.now() / 1000) + 120;
+
+		const style = mode === "buy" ? 0 : 1;
+		const ixs: TransactionInstruction[] = [];
+		const swapIx = await program.methods
+			.swap(new BN(quote.swapAmount), style, quote.minimumReceived, new BN(deadline))
+			.accounts({
+				teamWallet: configAccount.teamWallet,
+				user: from,
+				tokenMint: new PublicKey(token.contractAddress),
+			})
+			.instruction();
+
+		ixs.push(swapIx);
+
+		/** Handle the priority fee */
+		let solFee = 0.00005;
+		switch (speed) {
+			case "normal":
+				solFee = 0.00005;
+				break;
+			case "turbo":
+				solFee = 0.0005;
+				break;
+			case "ultra":
+				solFee = 0.005;
+				break;
+		}
+		const feeLamports = Math.floor(solFee * 1e9);
+
+		ixs.push(
+			ComputeBudgetProgram.setComputeUnitPrice({
+				microLamports: feeLamports,
+			}),
 		);
 
-		const program: Program<Autofun> = new Program(idl as Idl, provider);
+		const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("finalized");
 
-		// await program.methods.swap({
+		if (!wallet || !wallet?.publicKey) throw new Error("Wallet not connected properly");
 
-		// })
+		const messageV0 = new TransactionMessage({
+			payerKey: wallet.publicKey,
+			recentBlockhash: blockhash,
+			instructions: ixs,
+		}).compileToV0Message();
+
+		const versionedTx = new VersionedTransaction(messageV0);
+
+		const simulation = await connection.simulateTransaction(versionedTx, {
+			sigVerify: false,
+			replaceRecentBlockhash: true,
+		});
+
+		if (simulation?.value?.err) {
+			console.error("Transaction simulation failed:", simulation.value.err);
+			console.error("Simulation Logs:", simulation.value.logs);
+			throw new Error(simulation?.value?.err.toString());
+		}
+
+		const signature = await wallet.sendTransaction(versionedTx, connection);
+		return signature;
 	}
 
 	throw new Error("No route found for token to swap against. Contact autofun.");
