@@ -267,7 +267,7 @@ export const connectAgent = async ({
 	agentId: string;
 	contractAddress: string;
 	chain: TChain;
-	chainId: TChainId
+	chainId: TChainId;
 }) => {
 	return await fetcher(`/agent/connect-agent/${chain}/${chainId}/${agentId}`, "POST", {
 		contractAddress,
@@ -278,14 +278,18 @@ export const getAgent = async ({
 	chain,
 	chainId,
 	contractAddress,
-  }: {
+	page = 1,
+	limit = 50,
+}: {
 	chain: TChain;
 	chainId: TChainId;
 	contractAddress: string;
-  }) => {
-	return await fetcher(`/agent/get-agent/${chain}/${chainId}/${contractAddress}`, "GET");
-  };
-  
+	page?: number;
+	limit?: number;
+}) => {
+	return await fetcher("/agent/get-agents", "POST", { chain, chainId, contractAddress, page, limit });
+};
+
 export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
 export const connection = new Connection(HELIUS_RPC_URL, "confirmed");

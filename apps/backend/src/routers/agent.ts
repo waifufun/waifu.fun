@@ -59,24 +59,32 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 		},
 	);
 
-	fastify.get<{
-		Params: {
+	fastify.post("/get-agents", async (request, reply) => {
+		const body = request.body as {
+			contractAddress: string;
 			chain: TChain;
 			chainId: TChainId;
-			contractAddress: string;
+			page?: number;
+			limit?: number;
 		};
-	}>("/get-agent/:chain/:chainId/:contractAddress", async (request, reply) => {
-		const { contractAddress, chain, chainId } = request.params;
+
+		const { contractAddress, chain, chainId, page = 1, limit } = body;
+
+		const paginationOptions = {
+			page,
+			lean: true,
+			limit: limit ? (limit > 50 ? 50 : limit) : 50,
+			leanWithId: false,
+			sort: "-createdAt",
+		};
+
+		const query = { contractAddress, chain, chainId };
 
 		try {
-			const result = await DB.Agent.findOne({
-				contractAddress,
-				chain,
-				chainId,
-			});
+			const result = await DB.Agent.paginate(query, paginationOptions);
 			return reply.send(result);
 		} catch (error) {
-			throw new Error(`Failed To Fetch Agent: ${(error as Error).message}`);
+			throw new Error(`Failed To Fetch Agents: ${(error as Error).message}`);
 		}
 	});
 }

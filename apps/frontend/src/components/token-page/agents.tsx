@@ -1,5 +1,4 @@
 "use client";
-
 import type { IToken, TChainId } from "@autofun/types";
 import ConnectToFleek from "../connect-fleek";
 import FleekAgent from "../fleek-agent";
@@ -20,7 +19,7 @@ export default function Agents({ token }: { token: IToken }) {
 		enabled: true,
 	});
 
-	const agent = query.data;
+	const agents = query.data?.docs;
 	const wallets = useWallets();
 
 	const connectedWalletAddresses = [
@@ -32,15 +31,15 @@ export default function Agents({ token }: { token: IToken }) {
 
 	return (
 		<div className="w-full space-y-4">
-			{!agent ? (
+			{!agents ? (
 				<div className="bg-[#0F0F0F] w-fit place-self-center p-5 rounded-md">
 					<h1 className="text-white place-self-center text-lg font-semibold">
 						No Agents have been connected to this token
 					</h1>
 				</div>
 			) : null}
-			{agent ? (
-				<FleekAgent agent={agent} />
+			{agents ? (
+				<FleekAgent agents={agents} />
 			) : isCreatorConnected ? (
 				<div className="mt-4">
 					<ConnectToFleek token={token} />
