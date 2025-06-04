@@ -37,7 +37,7 @@ export default async function agentRoutes(fastify: FastifyInstance) {
 			try {
 				const agentData = await getAgent(agentId);
 				if (!agentData) throw new Error("No agent data returned from Fleek");
-				const existingAgent = await DB.Agent.findOne({ tokenAddress: contractAddress });
+				const existingAgent = await DB.Agent.findOne({ contractAddress: contractAddress });
 				if (existingAgent) {
 					throw new Error("Agent already exists for this contract address");
 				}
