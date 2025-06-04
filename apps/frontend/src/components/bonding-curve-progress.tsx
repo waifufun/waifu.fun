@@ -1,3 +1,5 @@
+"use client";
+
 import type { IToken } from "@autofun/types";
 import Progressbar from "./progressbar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -10,7 +12,7 @@ export default function BondingCurveProgress({
 	showTooltip,
 }: { token: IToken; title?: string; showTooltip?: boolean }) {
 	const curveProgress = token?.curveProgress;
-	if (!curveProgress || token?.curveCompleted) {
+	if (typeof curveProgress !== "number" || token?.curveCompleted) {
 		return null;
 	}
 	return (

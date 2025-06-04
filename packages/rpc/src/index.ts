@@ -14,7 +14,7 @@ import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/c
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
-import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
+import { Program, AnchorProvider, type Idl, type Wallet, BN } from "@coral-xyz/anchor";
 import idl from "./idls/autofun.json";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
@@ -490,19 +490,30 @@ export class SolanaRpcProvider extends EventEmitter {
 
 			const virtualReserves = Number(curve.initLamport);
 			const curveLimit = Number(curve.curveLimit);
-			const curveProgress =
-				curveLimit > virtualReserves ? ((reserveLamport - virtualReserves) / (curveLimit - virtualReserves)) * 100 : 0;
+
+			const reserveLamportBN = new BN(reserveLamport.toString());
+			const virtualReservesBN = new BN(virtualReserves.toString());
+			const curveLimitBN = new BN(curveLimit.toString());
+			const LAMPORTS_PER_SOL_BN = new BN(LAMPORTS_PER_SOL.toString());
+
+			let curveProgress = curve?.isCompleted ? new BN(100) : new BN(0);
+
+			if (curveLimitBN.gt(virtualReservesBN) && !curve?.isCompleted) {
+				const numerator = reserveLamportBN.sub(virtualReservesBN);
+				const denominator = curveLimitBN.sub(virtualReservesBN);
+				curveProgress = numerator.mul(new BN(100)).div(denominator);
+			}
+
+			const bondingCurveBalance = reserveLamportBN.sub(virtualReservesBN).div(LAMPORTS_PER_SOL_BN);
 
 			const creator = curve.creator.toBase58();
-
-			const bondingCurveBalance = (reserveLamport - virtualReserves) / LAMPORTS_PER_SOL;
 
 			return {
 				contractAddress: mint,
 				bondingCurveAddress,
 				creator: creator ? creator : undefined,
 				curveCompleted: curve.isCompleted,
-				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
+				curveProgress: Math.min(Math.max(curveProgress.toNumber(), 0), 100),
 				priceLamports: reserveLamport / reserveToken,
 				decimals: tokenDecimals,
 				virtualReserves,

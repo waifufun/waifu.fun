@@ -83,7 +83,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 								</span>
 							) : (
 								<Fragment>
-									{token.curveProgress ? (
+									{typeof token?.curveProgress === "number" ? (
 										<div className="flex flex-col gap-2.5 max-w-[275px]">
 											<div className="text-autofun-text-primary text-base font-medium font-satoshi leading-none inline-flex gap-2">
 												Progress
