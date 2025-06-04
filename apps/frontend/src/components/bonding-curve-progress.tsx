@@ -12,7 +12,7 @@ export default function BondingCurveProgress({
 	showTooltip,
 }: { token: IToken; title?: string; showTooltip?: boolean }) {
 	const curveProgress = token?.curveProgress;
-	if (typeof curveProgress !== "number" || token?.curveCompleted) {
+	if (typeof curveProgress !== "number" || token?.curveCompleted || token?.imported) {
 		return null;
 	}
 	return (

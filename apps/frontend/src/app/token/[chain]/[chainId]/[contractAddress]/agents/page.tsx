@@ -10,7 +10,7 @@ export default async function Page({ params }: { params: Promise<ITokenLookUp> }
 		chain: token.chain,
 		chainId: token.chainId as TChainId,
 	});
-	
+
 	return (
 		<div className="py-12 w-full flex place-content-center">
 			<Agents agents={data?.docs} token={token} />

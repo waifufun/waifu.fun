@@ -12,9 +12,9 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 	const [showInput, setShowInput] = useState<boolean>(false);
 	const [agentId, setAgentId] = useState<string>("");
 	const queryClient = useQueryClient();
-	const chain = token.chain
-	const chainId = token.chainId as TChainId
-	const contractAddress = token.contractAddress
+	const chain = token.chain;
+	const chainId = token.chainId as TChainId;
+	const contractAddress = token.contractAddress;
 
 	const connectAgentMutation = useMutation({
 		mutationFn: connectAgent,

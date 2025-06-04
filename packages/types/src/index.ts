@@ -216,7 +216,7 @@ export type ISwapSettings = {
 };
 
 export interface IAgent {
-	_id: string
+	_id: string;
 	name: string;
 	bio: string;
 	createdBy: string;
