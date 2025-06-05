@@ -1,6 +1,7 @@
-import type { AddressLike, IToken, ITokenLookUp, TChain } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, TChain, TChainId } from "@autofun/types";
+import { Connection } from "@solana/web3.js";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const fetcher = async (
 	endpoint: string,
@@ -38,13 +39,15 @@ export const fetcher = async (
 
 export const getTokens = async ({
 	searchParams,
-}: { searchParams: { [key: string]: string | string[] | undefined } }) => {
+}: { searchParams: { [key: string]: string | string[] | number | number[] | undefined } }) => {
 	try {
 		const body = {
-			chain: (searchParams.chain as TChain) || undefined,
-			chainId: searchParams.chainId ? Number(searchParams.chainId) : undefined,
-			page: searchParams.page ? Number(searchParams.page) : 1,
-			category: (searchParams.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+			chain: (searchParams?.chain as TChain) || undefined,
+			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
+			page: searchParams?.page ? Number(searchParams.page) : 1,
+			category: (searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+			search: searchParams?.search || "",
+			limit: searchParams?.limit || 50,
 		};
 
 		const response = await fetcher("/tokens", "POST", body);
@@ -96,7 +99,7 @@ export const generateImage = async ({ prompt, width, height }: { prompt: string;
 };
 
 export const generateMetadata = async (prompt?: string) => {
-	return await fetcher("/generation/metadata", "POST", {
+	return await fetcher("/generation/generate-metadata", "POST", {
 		prompt,
 	});
 };
@@ -207,6 +210,10 @@ export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };
 
+export const getPrices = async () => {
+	return await fetcher("/prices", "POST");
+};
+
 export const logOut = async (chain: TChain) => {
 	return await fetcher("/auth/logout", "POST", {
 		chain,
@@ -250,3 +257,39 @@ export const getTrades = async ({
 		contractAddress,
 	});
 };
+
+export const connectAgent = async ({
+	agentId,
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	agentId: string;
+	contractAddress: string;
+	chain: TChain;
+	chainId: TChainId;
+}) => {
+	return await fetcher(`/agent/connect-agent/${chain}/${chainId}/${agentId}`, "POST", {
+		contractAddress,
+	});
+};
+
+export const getAgent = async ({
+	chain,
+	chainId,
+	contractAddress,
+	page = 1,
+	limit = 50,
+}: {
+	chain: TChain;
+	chainId: TChainId;
+	contractAddress: string;
+	page?: number;
+	limit?: number;
+}) => {
+	return await fetcher("/agent/get-agents", "POST", { chain, chainId, contractAddress, page, limit });
+};
+
+export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+export const connection = new Connection(HELIUS_RPC_URL, "confirmed");

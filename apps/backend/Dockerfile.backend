@@ -9,7 +9,7 @@ WORKDIR /app
 
 FROM base AS builder
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml ./
 
 RUN corepack prepare $(node -p "require('./package.json').packageManager") --activate
 

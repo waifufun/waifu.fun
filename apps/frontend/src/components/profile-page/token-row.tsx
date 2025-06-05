@@ -32,7 +32,7 @@ export default function TokenRow({
 	const chainIcon = chainIcons[key];
 
 	return (
-		<div className="group rounded-lg bg-transparent place-self-center hover:bg-[#0C0C0C] relative flex justify-between items-center w-[750px] h-[94px] px-4 py-2">
+		<div className="group rounded-sm bg-transparent place-self-center hover:bg-[#0C0C0C] relative flex justify-between items-center w-[750px] h-[94px] px-4 py-2">
 			<div className="flex items-center">
 				<div className="w-[60px] h-[60px] mr-4">
 					<Image

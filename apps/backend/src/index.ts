@@ -11,6 +11,7 @@ import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
 import { registerProtectedRoutes, registerPublicRoutes } from "./middlewares/protected-routes";
+import agentRoutes from "./routers/agent";
 
 const fastify = Fastify({
 	logger: {
@@ -36,9 +37,11 @@ if (!process.env.JWT_SECRET) {
 fastify.register(helmet);
 fastify.register(fastifyCookie);
 
+const configuredCors = process?.env?.CORS_DOMAINS ? String(process.env.CORS_DOMAINS).split(",") : [];
+
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	origin: ["http://localhost:3000"],
+	origin: configuredCors?.length > 0 ? configuredCors : ["http://localhost:3000"],
 	credentials: true,
 });
 
@@ -59,6 +62,7 @@ fastify.register(chatRoutes, { prefix: "/chat" });
 fastify.register(transactionsRoutes, { prefix: "/transactions" });
 fastify.register(authRoutes, { prefix: "/auth" });
 fastify.register(generationRoutes, { prefix: "/generation" });
+fastify.register(agentRoutes, { prefix: "/agent" });
 
 const port = 3001;
 

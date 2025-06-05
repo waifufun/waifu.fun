@@ -11,6 +11,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		ticker: { type: String, required: true },
 		image: { type: String, required: true },
 		price: { type: Number, default: 0 },
+		description: { type: String },
 		imported: { type: Boolean, default: false },
 		decimals: { type: Number, required: true },
 		marketcap: { type: Number, default: 0 },
@@ -24,6 +25,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		totalSupply: { type: Number, required: true, default: 0 },
 		reserveAmount: { type: Number },
 		reserveLamport: { type: Number },
+		bondingCurveBalance: { type: Number },
 		virtualReserves: { type: Number },
 		socials: {
 			twitter: { type: String },
@@ -43,6 +45,9 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 schema.plugin(paginate);
 
 schema.index({ contractAddress: 1, chain: 1, chainId: 1 }, { unique: true });
+schema.index({ hidden: 1, contractAddress: 1, chain: 1, chainId: 1 });
+schema.index({ hidden: 1, contractAddress: 1 });
+schema.index({ name: "text", ticker: "text", contractAddress: "text" });
 
 const Model = Mongoose.model<IToken, PaginateModel<IToken>>("Token", schema);
 

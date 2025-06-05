@@ -14,6 +14,12 @@ export enum SolanaNetworkIds {
 	Devnet = 103,
 }
 
+export interface SlotInfo {
+	slot: number;
+	parent: number;
+	root: number;
+}
+
 export type FalModelMode = "image" | "llm" | "audio" | "video";
 export type FALModels = {
 	image: {
@@ -65,6 +71,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	name: string;
 	ticker: string;
 	image: TURLLike;
+	description?: string;
 	price: number;
 	totalSupply: number;
 	marketcap: number;
@@ -72,6 +79,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	decimals: number;
 	holders: number;
 	status: string;
+	bondingCurveBalance?: number;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
@@ -178,6 +186,7 @@ export interface IMigration {
 	withdrawnAt?: Date | undefined;
 	migratedAt?: Date | undefined;
 	marketId?: string | undefined;
+	description?: string | undefined;
 	baseVault?: string | undefined;
 	quoteVault?: string | undefined;
 	withdrawnAmount?: number | undefined;
@@ -215,3 +224,26 @@ export type ISwapSettings = {
 	slippage: string;
 	deadline: string;
 };
+
+export interface IAgent {
+	_id: string;
+	name: string;
+	bio: string;
+	createdBy: string;
+	avatar: string;
+	contractAddress: Pick<IToken, "contractAddress">;
+	chain: Pick<IToken, "chain">;
+	chainId: Pick<IToken, "chainId">;
+}
+
+export interface IEventsMeta {
+	_id?: string;
+	programId: string;
+	networkId: string;
+	currentBlock: number;
+	highestSyncedBlock: number;
+	minBlock: number;
+	doneGenesisSync: boolean;
+	lastSyncTimestamp: Date;
+	isActive: boolean;
+}

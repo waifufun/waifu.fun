@@ -188,3 +188,8 @@
 	scrollbar-width: auto;
 	scrollbar-color: #03ff24 #212121;
 }
+
+input::selection {
+	color: #212121;
+	background-color: #03ff24;
+}

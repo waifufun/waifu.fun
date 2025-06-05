@@ -101,4 +101,3 @@ testem.log
 /typings
 .yarn-integrity
 *.tsbuildinfo
-pnpm-lock.yaml

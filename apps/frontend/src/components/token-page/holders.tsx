@@ -25,13 +25,13 @@ export default async function Holders({ token }: { token: IToken }) {
 	}
 
 	return (
-		<Table>
+		<Table id="holders">
 			<TableHeader>
 				<TableRow>
 					<TableHead className="w-[25px]">Rank</TableHead>
 					<TableHead className="w-[100px]">Account</TableHead>
 					<TableHead className="text-center">Amount</TableHead>
-					<TableHead className="w-[75px] text-right">Percentage</TableHead>
+					<TableHead className="w-[250px] text-right">Percentage</TableHead>
 					<TableHead className="w-5 text-right" />
 				</TableRow>
 			</TableHeader>
@@ -47,10 +47,12 @@ export default async function Holders({ token }: { token: IToken }) {
 						<TableCell className="text-center">
 							<div className="flex items-center justify-center gap-2 w-full mx-auto">
 								<div className="w-16 text-right">{abbreviateNumber(Number(holder.balanceFormatted), true)}</div>
-								<Progressbar
-									value={Number(holder.balanceFormatted)}
-									max={Number(formatUnits(BigInt(token.totalSupply), token.decimals))}
-								/>
+								<div className="w-32 lg:w-full">
+									<Progressbar
+										value={Number(holder.balanceFormatted)}
+										max={Number(formatUnits(BigInt(token.totalSupply), token.decimals))}
+									/>
+								</div>
 								<div className="w-16 text-left">
 									{abbreviateNumber(Number(formatUnits(BigInt(token.totalSupply), token.decimals)), true)}
 								</div>

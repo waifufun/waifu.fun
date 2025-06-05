@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
+import BottomNav from "@/components/bottom-nav";
 
 export const metadata: Metadata = {
 	title: {
@@ -25,7 +26,10 @@ export default function RootLayout({
 			}}
 		>
 			<body className={"font-satoshi bg-[#080808] text-autofun-text-primary antialiased container"}>
-				<Providers>{children}</Providers>
+				<Providers>
+					{children}
+					<BottomNav />
+				</Providers>
 			</body>
 		</html>
 	);

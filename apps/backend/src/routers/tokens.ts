@@ -17,6 +17,7 @@ import {
 	isChainIdAllowedForChain,
 	isSupportedAddress,
 	populateTokensWithLiveData,
+	updateCryptoPrices,
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { uploadImageFromUrl, upload, uploadBase64Image } from "@autofun/s3-uploader";
@@ -39,10 +40,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				chain: TChain;
 				chainId: TChainId;
 				page: number;
+				limit?: number;
+				search?: string;
 				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
 			};
 
+			const limit = queryParams?.limit;
 			const page = queryParams?.page || 1;
+			const isSearch = !!queryParams?.search;
 
 			const category = queryParams.category || "new";
 			let sortQuery = undefined;
@@ -50,6 +55,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			switch (category) {
 				case "new":
 					sortQuery = "-createdAt";
+					break;
+				case "about-to-bond":
+					sortQuery = "-curveProgress";
 					break;
 				case "trending":
 					sortQuery = "-volume24h -marketcap";
@@ -71,7 +79,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				if (!allowedChain) throw new Error("Unsupported chain pair");
 			}
 
-			const cacheKey = `${chain}:${chainId}:${page}:${sortQuery}:tokens`;
+			const cacheKey = `${chain}:${chainId}:${page}:${category}:${sortQuery}:${limit}:tokens:${isSearch ? queryParams?.search : "non-search"}`;
 			logger.info(`Cache key: ${cacheKey}`);
 
 			const cache = await redis.get(cacheKey);
@@ -85,15 +93,19 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				hidden: { $ne: true },
 			};
 
+			if (queryParams?.search) {
+				query.$text = { $search: queryParams.search };
+			}
+
 			if (chain && chainId) {
 				query.chain = chain;
 				query.chainId = chainId;
 			}
 
 			const paginationOptions: PaginateOptions = {
-				page: 1,
+				page,
 				lean: true,
-				limit: 50,
+				limit: limit ? (limit > 50 ? 50 : limit) : 50,
 				select: "-__v",
 				leanWithId: false,
 				sort: sortQuery,
@@ -322,6 +334,77 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
 		}
 
+		// Check if the token exists in the event collection
+		const eventsExist = await DB.Event.findOne({
+			contractAddress: checksummedQueryAddress,
+			eventType: { $in: ["swap", "launchAndSwap"] },
+		}).lean();
+
+		// If token exists in events but curve is not completed, get swaps from our DB
+		if (eventsExist && !token.curveCompleted && !token.imported) {
+			const swapEvents = await DB.Event.find({
+				contractAddress: checksummedQueryAddress,
+				eventType: { $in: ["swap", "launchAndSwap"] },
+				processed: true,
+			})
+				.sort({ slot: -1 })
+				.limit(50)
+				.lean();
+
+			const nativePricesResult = await redis.get("prices");
+			let nativePrices: Record<string, number> | null = nativePricesResult ? JSON.parse(nativePricesResult) : null;
+			if (!nativePrices) {
+				const cryptoPrices = await updateCryptoPrices({ cacheKey: "prices" });
+				nativePrices = {
+					solana: cryptoPrices.solana ?? 0,
+					ethereum: cryptoPrices.ethereum ?? 0,
+				};
+			}
+
+			// @ts-ignore
+			const priceKey = chain === "solana" ? "solana" : "ethereum";
+			const nativePrice = nativePrices?.[priceKey] || 0;
+
+			const items: ITrade[] = swapEvents.map((event) => {
+				const isBuy = event.direction === 0 || event.eventType === "launchAndSwap";
+
+				let solAmount: string;
+				let tokenAmount: string;
+				let usdValue = 0;
+
+				if (isBuy) {
+					// Buy: NATIVE -> Tokens
+					solAmount = event.swapAmount ? (Number(event.swapAmount) / 10 ** 9).toString() : "0"; // SOL spent
+					tokenAmount = event.amountGotten
+						? (Number(event.amountGotten) / 10 ** (token.decimals || 9)).toString()
+						: "0"; // Tokens received
+					usdValue = Number(solAmount) * nativePrice || 0;
+				} else {
+					// Sell: Tokens -> NATIVE
+					solAmount = event.amountGotten ? (Number(event.amountGotten) / 10 ** 9).toString() : "0"; // SOL received
+					tokenAmount = event.swapAmount ? (Number(event.swapAmount) / 10 ** (token.decimals || 9)).toString() : "0"; // Tokens sold
+					usdValue = Number(solAmount) * nativePrice || 0;
+				}
+
+				return {
+					address: event.user || event.creator || "N/A",
+					fromAmount: solAmount,
+					// @ts-ignore
+					fromToken: CHAINID_TO_SYMBOL[chain][chainId],
+					toAmount: tokenAmount,
+					toToken: token.ticker || "TOKEN",
+					txId: event.signature,
+					timestamp: event.blockTime ? event.blockTime * 1000 : new Date(),
+					usdValue: usdValue,
+					type: isBuy ? "buy" : "sell",
+				} as ITrade;
+			});
+
+			await redis.setex(cacheKey, 7, JSON.stringify(items));
+			return items;
+		}
+
+		// For imported tokens or completed curves, use external Codex API
 		if (token?.imported || (!token.imported && token.curveCompleted)) {
 			const trades = await codex.queries.getTokenEvents({
 				query: {
@@ -449,6 +532,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		};
 
 		const cacheKey = `${address}:balance`;
+
+		const cache = await redis.get(cacheKey);
+
+		if (cache) {
+			return JSON.parse(cache);
+		}
 
 		const balancesLookup = await codex.queries.balances({
 			input: {

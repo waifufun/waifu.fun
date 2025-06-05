@@ -1,4 +1,3 @@
-import ChainSelector from "@/components/chain-selector";
 import { GridItem } from "@/components/grid-item";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
@@ -7,7 +6,6 @@ import type { Metadata } from "next";
 import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
 import FilterSelector from "@/components/filter-selector";
-import AutoRefresher from "@/components/auto-refresher";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -39,7 +37,6 @@ export default async function Home({
 
 	return (
 		<div className="flex flex-col gap-4">
-			<AutoRefresher interval={15_000} />
 			<Image
 				src="/homepage-hero.svg"
 				width={1816}
@@ -47,14 +44,30 @@ export default async function Home({
 				unoptimized
 				priority
 				alt="hero"
-				className="mx-auto w-full select-none"
+				className="hidden lg:block mx-auto w-full select-none"
 			/>
-			<ChainSelector />
+			<Image
+				src="/homepage-hero-mini.svg"
+				width={360}
+				height={14}
+				unoptimized
+				priority
+				alt="hero"
+				className="block lg:hidden mx-auto w-full select-none"
+			/>
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 w-full">
+				{tokens.splice(0, 4)?.map((token: IToken) => (
+					<GridItem token={token} key={token.contractAddress} />
+				))}
+			</div>
 			<div className="flex flex-col items-center">
-				<div className="flex items-center w-full gap-4">
-					<FilterSelector />
+				<div className="flex flex-col md:flex-row items-start md:items-center w-full gap-4">
+					<div className="w-full">
+						<FilterSelector />
+					</div>
 					<GridListSelector />
 				</div>
+
 				{view === "grid" ? (
 					<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4 w-full">
 						{tokens?.map((token: IToken) => (

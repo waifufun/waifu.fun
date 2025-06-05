@@ -114,14 +114,14 @@ const TokenImportInput = <K extends TokenFormOptions>({
 		<div className="flex flex-col gap-1 w-full">
 			<p className="text-xl font-[500]">{title}</p>
 			<div
-				className={`flex items-center w-full px-4 gap-4 rounded-lg ${error ? "border border-red-500" : "border border-transparent"}`}
+				className={`flex items-center w-full px-4 gap-4 rounded-sm ${error ? "border border-red-500" : "border border-transparent"}`}
 				style={{
 					background: "linear-gradient(180deg, #171717 0%, #141414 100%)",
 				}}
 			>
 				{label && <p className="text-[#8C8C8C] text-xl font-[500]">{label}</p>}
 				<input
-					className="w-full rounded-lg py-3 focus:outline-none bg-transparent text-white"
+					className="w-full rounded-sm py-3 focus:outline-none bg-transparent text-white"
 					type="text"
 					{...registerForm(target, validation)}
 				/>
@@ -151,7 +151,7 @@ const ImportButton = ({
 					? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)"
 					: "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)",
 			}}
-			className="px-6 py-3 rounded-lg min-w-[120px]"
+			className="px-6 py-3 rounded-sm min-w-[120px]"
 		>
 			<p className="text-[#0A0A0A] text-base font-[700]">LAUNCH</p>
 		</button>
@@ -203,12 +203,12 @@ const ChainSelector = ({
 }) => {
 	return (
 		<div
-			className="flex items-center gap-2 rounded-lg"
+			className="flex items-center gap-2 rounded-sm"
 			style={{ background: "linear-gradient(180deg, #171717 0%, #121212 100%)" }}
 		>
 			<button
 				type="button"
-				className="hover:cursor-pointer p-2 rounded-lg"
+				className="hover:cursor-pointer p-2 rounded-sm"
 				style={{
 					border: chain.chainId === SolanaNetworkIds.Mainnet ? "2px solid #03FF24" : "2px solid transparent",
 				}}
@@ -221,7 +221,7 @@ const ChainSelector = ({
 			</button>
 			<button
 				type="button"
-				className="hover:cursor-pointer p-2 rounded-lg"
+				className="hover:cursor-pointer p-2 rounded-sm"
 				style={{
 					border: chain.chainId === EvmChainIds.BaseMainnet ? "2px solid #03FF24" : "2px solid transparent",
 				}}
@@ -234,7 +234,7 @@ const ChainSelector = ({
 			</button>
 			<button
 				type="button"
-				className="hover:cursor-pointer p-2 rounded-lg"
+				className="hover:cursor-pointer p-2 rounded-sm"
 				style={{
 					border: chain.chainId === EvmChainIds.EthereumMainnet ? "2px solid #03FF24" : "2px solid transparent",
 				}}
@@ -305,7 +305,7 @@ export default function ImportFormV2() {
 					<div>
 						<img src="/create/coin-machine.png" alt="coin-machine" />
 					</div>
-					<div className="rounded-lg bg-[#3333331A] w-full overflow-hidden">
+					<div className="rounded-sm bg-[#3333331A] w-full overflow-hidden">
 						<TokenTypeSelector selected="import" />
 						<div className="p-4 flex items-center min-h-[400px]">
 							<div className="mx-auto max-w-[400px] bg-[#0F0F0F] flex flex-col gap-4 w-full">

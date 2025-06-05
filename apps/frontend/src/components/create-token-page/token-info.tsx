@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { RegisterOptions } from "react-hook-form";
 import {
 	usePrompt,
@@ -10,9 +10,10 @@ import {
 } from "../hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { useWallets } from "../hooks/providers/UseWalletContext";
 import { useMutation } from "@tanstack/react-query";
 import { createToken } from "@/lib/api";
+import useBalance from "@/hooks/use-balance";
+import useAddress from "@/hooks/use-address";
 
 export const TokenInfoInput = <K extends TokenFormOptions>({
 	title,
@@ -35,14 +36,14 @@ export const TokenInfoInput = <K extends TokenFormOptions>({
 		<div className="flex flex-col gap-1 w-full">
 			<p className="text-xl font-[500]">{title}</p>
 			<div
-				className={`flex items-center w-full px-4 gap-4 rounded-lg ${error ? "border border-red-500" : "border border-transparent"}`}
+				className={`flex items-center w-full px-4 gap-4 rounded-sm ${error ? "border border-red-500" : "border border-transparent"}`}
 				style={{
 					background: "linear-gradient(180deg, #171717 0%, #141414 100%)",
 				}}
 			>
 				{label && <p className="text-[#8C8C8C] text-xl font-[500]">{label}</p>}
 				<input
-					className="w-full rounded-lg py-3 focus:outline-none bg-transparent text-white"
+					className="w-full rounded-sm py-3 focus:outline-none bg-transparent text-white"
 					type="text"
 					{...registerForm(target, validation)}
 				/>
@@ -62,7 +63,7 @@ const GenerateAddress = () => {
 				<p className="text-[#FFFFFF] font-[700] text-lg border-b border-b-[#03FF24]">GENERATE CUSTOM ADDRESS</p>
 				<div className="flex gap-4 mt-4">
 					<input
-						className="rounded-lg py-3 focus:outline-none text-center text-lg w-30 bg-transparent text-white"
+						className="rounded-sm py-3 focus:outline-none text-center text-lg w-30 bg-transparent text-white"
 						type="text"
 						value={suffix}
 						onChange={(e) => setSuffix(e.target.value)}
@@ -77,7 +78,7 @@ const GenerateAddress = () => {
 							generateAddress(suffix);
 							e.preventDefault();
 						}}
-						className="border border-[#03FF24] rounded-lg hover:cursor-pointer px-4 py-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+						className="border border-[#03FF24] rounded-sm hover:cursor-pointer px-4 py-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						<p>{isGeneratingAddress ? "GENERATING..." : "GENERATE"}</p>
 					</button>
@@ -100,24 +101,17 @@ const BuyCoin = () => {
 		formState: { errors },
 		setValue,
 	} = usePrompt();
-	const { solanaWallets } = useWallets();
-	const [balance, setBalance] = useState<number>(0);
-
-	useEffect(() => {
-		const getBalance = async () => {
-			const balance = await solanaWallets?.Devnet?.getNativeBalance();
-			if (balance !== undefined) {
-				setBalance(balance);
-			}
-		};
-
-		if (solanaWallets?.Devnet) {
-			getBalance();
-		}
-	}, [solanaWallets]);
+	const address = useAddress();
+	const balanceQuery = useBalance({
+		chain: "solana",
+		address,
+	});
+	const balance = balanceQuery?.data;
 
 	const setMaxAmount = () => {
-		setValue("buyAmount", balance, { shouldValidate: true, shouldDirty: true });
+		if (balance) {
+			setValue("buyAmount", balance, { shouldValidate: true, shouldDirty: true });
+		}
 	};
 
 	return (
@@ -130,19 +124,19 @@ const BuyCoin = () => {
 					<Info size={14} color="#8C8C8C" />
 				</div>
 				<div
-					className={`flex gap-3 items-center py-3 px-4 rounded-lg ${errors.buyAmount ? "border border-red-500" : "border border-transparent"}`}
+					className={`flex gap-3 items-center py-3 px-4 rounded-sm ${errors.buyAmount ? "border border-red-500" : "border border-transparent"}`}
 					style={{
 						background: "linear-gradient(180deg, #171717 0%, #141414 100%)",
 					}}
 				>
 					<input
-						className="rounded-lg focus:outline-none text-lg w-20 bg-transparent text-white placeholder:text-gray-500"
+						className="rounded-sm focus:outline-none text-lg w-20 bg-transparent text-white placeholder:text-gray-500"
 						type="number"
 						step="any"
 						{...registerForm("buyAmount", {
 							valueAsNumber: true,
 							min: { value: 0, message: "Amount cannot be negative" },
-							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
+							max: { value: Math.min(balance || 0, 28), message: "Amount cannot be greater than your balance or 28" },
 						})}
 					/>
 					<p className="text-xl text-[#03FF24] font-[500]">SOL</p>
@@ -180,12 +174,12 @@ const ChoosePool = () => {
 		<div className="flex flex-col gap-4 xl:flex-row xl:justify-between w-full xl:items-center mt-6">
 			<div className="flex flex-col xl:flex-row gap-2 items-center">
 				<p className="text-xl font-[500] whitespace-nowrap w-full xl:w-auto">Choose Pool</p>
-				<div className="flex px-2 py-1 rounded-lg gap-2 w-full" style={{}}>
+				<div className="flex px-2 py-1 rounded-sm gap-2 w-full" style={{}}>
 					{poolData.map((poolIt) => (
 						<button
 							type="button"
 							key={poolIt.value}
-							className="flex items-center gap-2 p-2 rounded-lg hover:cursor-pointer"
+							className="flex items-center gap-2 p-2 rounded-sm hover:cursor-pointer"
 							onClick={() => setPool(poolIt.value)}
 							style={{
 								border: poolIt.value === pool ? "1px solid #03FF24" : "1px solid #141414",
@@ -207,7 +201,7 @@ const ChoosePool = () => {
 						? "linear-gradient(93.76deg, #03FF24 0%, #00E61E 102.57%)"
 						: "linear-gradient(93.76deg, #028A16 0%, #026B12 102.57%)",
 				}}
-				className="px-6 py-3 rounded-lg min-w-[120px]"
+				className="px-6 py-3 rounded-sm min-w-[120px]"
 			>
 				<p className="text-[#0A0A0A] text-base font-[700]">{isLaunching ? "LAUNCHING..." : "LAUNCH"}</p>
 			</button>
@@ -227,7 +221,6 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 		mintKeyPair,
 		setLaunching,
 	} = usePrompt();
-	const { solanaWallets } = useWallets();
 
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
@@ -251,17 +244,18 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 		setLaunching(true);
 
 		try {
-			const tokenData = await getTokenData(true);
-			console.log("Token Data (manual):", tokenData);
-			const tx = await solanaWallets?.Devnet.createToken(tokenData);
-			console.log("Transaction:", tx);
-			createTokenMutation.mutate({
-				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: "solana",
-				chainId: 103,
-				pool: pool,
-				signature: tx?.signature.toString() || "",
-			});
+			// const tokenData = await getTokenData(true);
+			// console.log("Token Data (manual):", tokenData);
+			// const tx = await solanaWallets?.Devnet.createToken(tokenData);
+			// console.log("Transaction:", tx);
+			// createTokenMutation.mutate({
+			// 	contractAddress: mintKeyPair?.publicKey.toString() || "",
+			// 	chain: "solana",
+			// 	chainId: 103,
+			// 	pool: pool,
+			// 	signature: tx?.signature.toString() || "",
+			// });
+			throw new Error("implement differently");
 			// biome-ignore lint/suspicious/noExplicitAny: error handling
 		} catch (error: any) {
 			console.error("Error creating token:", error);
@@ -274,17 +268,18 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 	const handleAutoSubmit = async () => {
 		setLaunching(true);
 		try {
-			const tokenData = await getTokenData();
-			console.log("Token Data:", tokenData);
-			const tx = await solanaWallets?.Devnet.createToken(tokenData);
-			console.log("Transaction:", tx);
-			createTokenMutation.mutate({
-				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: "solana",
-				chainId: 103,
-				pool: pool,
-				signature: tx?.signature.toString() || "",
-			});
+			// const tokenData = await getTokenData();
+			// console.log("Token Data:", tokenData);
+			// const tx = await solanaWallets?.Devnet.createToken(tokenData);
+			// console.log("Transaction:", tx);
+			// createTokenMutation.mutate({
+			// 	contractAddress: mintKeyPair?.publicKey.toString() || "",
+			// 	chain: "solana",
+			// 	chainId: 103,
+			// 	pool: pool,
+			// 	signature: tx?.signature.toString() || "",
+			// });
+			throw new Error("implement differently");
 			// biome-ignore lint/suspicious/noExplicitAny: error handling
 		} catch (error: any) {
 			console.error("Error creating token:", error);
@@ -295,11 +290,6 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 	};
 
 	const onSubmit = async (_data: TokenFormData) => {
-		if (!solanaWallets?.Devnet) {
-			toast.error("Please connect your Solana wallet.");
-			return;
-		}
-
 		if (!formState.isValid) {
 			toast.error("Please fill in all required fields.");
 			return;

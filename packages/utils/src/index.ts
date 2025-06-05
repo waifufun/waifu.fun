@@ -164,7 +164,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
 
 	const tokensToQuery = validTokens
-		.filter((t) => t?.imported)
+		.filter((t) => t?.imported || t?.curveCompleted)
 		.map((token: IToken) => {
 			const { chain, chainId, contractAddress } = token;
 			const networkId =
@@ -238,17 +238,12 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (tokenRecord?._id) {
-				delete tokenRecord._id;
-			}
 		}
 	}
 
 	/** All non imported tokens should be determined using RPC */
 	const nonImportedTokens = validTokens.filter(
-		(t) => t?.imported === false && t.chain === "solana" && t.chainId === 101,
+		(t) => (t?.imported === false || !t.curveCompleted) && t.chain === "solana" && t.chainId === 101,
 	);
 
 	logger.info(`Found ${nonImportedTokens.length} non-imported Solana tokens`);
@@ -294,18 +289,29 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			}
 
 			const setValues: {
-				marketcap: number;
-				price: number;
+				marketcap?: number;
+				price?: number;
 				curveCompleted?: boolean;
 				curveProgress?: number;
 				creator?: AddressLike;
+				bondingCurveBalance?: number;
 				bondingCurveAddress?: AddressLike;
 			} = {
-				marketcap: Number(tokenRecord.marketCapUSD),
-				price: Number(tokenRecord.priceUsd),
 				curveCompleted: Boolean(tokenRecord.curveCompleted),
 				curveProgress: Number(tokenRecord.curveProgress),
 			};
+			if (tokenRecord?.marketCapUSD) {
+				setValues.marketcap = Number(tokenRecord.marketCapUSD);
+			}
+
+			if (tokenRecord?.priceUsd) {
+				setValues.price = Number(tokenRecord.priceUsd);
+			}
+
+			if (tokenRecord?.bondingCurveBalance) {
+				console.log(tokenRecord?.bondingCurveBalance);
+				setValues.bondingCurveBalance = tokenRecord.bondingCurveBalance;
+			}
 
 			if (tokenRecord?.bondingCurveAddress) {
 				setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
@@ -325,11 +331,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 					},
 				},
 			});
-
-			/* Remove the _id field so we dont return it anywhere **/
-			if (nonImportedToken?._id) {
-				delete nonImportedToken._id;
-			}
 
 			tokenIndex[nonImportedToken.contractAddress] = {
 				...nonImportedToken,
@@ -374,7 +375,7 @@ export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: s
 
 	const resolvedPrices = { solana, ethereum };
 
-	await redis.setex(cacheKey, 45, JSON.stringify(resolvedPrices));
+	await redis.setex(cacheKey, 2 * 60, JSON.stringify(resolvedPrices));
 
 	return resolvedPrices;
 };

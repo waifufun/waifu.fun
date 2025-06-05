@@ -13,6 +13,7 @@
 		},
 		"ignoredBuiltDependencies": [
 			"@biomejs/biome",
+			"@bufbuild/buf",
 			"@tailwindcss/oxide",
 			"bigint-buffer",
 			"blake-hash",
@@ -56,6 +57,8 @@
 		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --parallel run dev",
 		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --parallel run dev",
+		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/indexer' --parallel run dev",
+		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/frontend' --parallel run dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
@@ -67,6 +70,8 @@
 		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm --filter @autofun/migrations dev",
 		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @autofun/migrations build",
 		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @autofun/migrations start"
+		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '@autofun/indexer' run start",
+		"start:frontend": "pnpm --filter '@autofun/frontend' run start"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

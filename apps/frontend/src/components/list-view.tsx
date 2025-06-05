@@ -7,7 +7,6 @@ import { formatUnits } from "viem";
 import Progressbar from "./progressbar";
 import { Fragment } from "react";
 import Image from "next/image";
-import ChainIndicator from "./chain-indicator";
 import Verified from "./verified";
 import { CopyButton } from "./copy-button";
 import { useRouter } from "@bprogress/next/app";
@@ -23,7 +22,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 		<Table>
 			<TableHeader>
 				<TableRow>
-					<TableHead className="w-0">Coin</TableHead>
+					<TableHead className="lg:w-0">Coin</TableHead>
 					<TableHead className="text-center">Mcap</TableHead>
 					<TableHead className="text-center">24h Volume</TableHead>
 					<TableHead className="text-center">Holders</TableHead>
@@ -44,15 +43,17 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 									height={60}
 									unoptimized
 									alt="token_image"
-									className="size-[60px] rounded-lg"
+									className="size-[60px] rounded-sm aspect-square"
 								/>
 								{/* Token Name */}
 								<div className="flex flex-col gap-2.5">
 									{/* Name */}
 									<div className="flex items-center gap-1.5">
-										<ChainIndicator chain={token.chain} chainId={token.chainId} />
+										{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 										<span className="text-white text-xl font-medium font-satoshi uppercase">{token.name}</span>
-										<span className="text-lg font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
+										<span className="text-lg font-medium uppercase text-autofun-text-secondary truncate">
+											{token.ticker}
+										</span>
 										<Verified isVerified={token?.verified} />
 									</div>
 									<div className="flex items-center gap-2">
@@ -81,7 +82,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 								</span>
 							) : (
 								<Fragment>
-									{token.curveProgress ? (
+									{typeof token?.curveProgress === "number" ? (
 										<div className="flex flex-col gap-2.5 max-w-[275px]">
 											<div className="text-autofun-text-primary text-base font-medium font-satoshi leading-none inline-flex gap-2">
 												Progress
