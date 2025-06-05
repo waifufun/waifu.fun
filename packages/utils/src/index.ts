@@ -375,7 +375,7 @@ export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: s
 
 	const resolvedPrices = { solana, ethereum };
 
-	await redis.setex(cacheKey, 45, JSON.stringify(resolvedPrices));
+	await redis.setex(cacheKey, 2 * 60, JSON.stringify(resolvedPrices));
 
 	return resolvedPrices;
 };
