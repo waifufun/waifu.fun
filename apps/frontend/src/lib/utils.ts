@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
+import { toast } from "sonner";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
 import {
@@ -597,6 +598,21 @@ export const executeSwap = async (
 		}
 
 		const signature = await wallet.sendTransaction(versionedTx, connection);
+
+		toast(`Send transaction: ${signature}`);
+
+		await connection
+			.confirmTransaction({
+				blockhash: blockhash,
+				lastValidBlockHeight: lastValidBlockHeight,
+				signature: signature,
+			})
+			.then(() => {
+				toast(`Transaction confirmed: ${signature}`);
+			})
+			.catch((e) => {
+				toast.error(`Transaction failed: ${e.message}`);
+			});
 		return signature;
 	}
 
