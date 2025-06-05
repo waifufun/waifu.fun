@@ -12,7 +12,7 @@ export default async function Chart({ token, tokenLookUp }: ChartProps) {
     const curveCompleted = await isCurveCompleted(tokenLookUp);
     const useCoingecko = curveCompleted.curveCompleted;
 
-    if (!useCoingecko) {
+    if (useCoingecko) {
         return (
             <iframe
                 height="100%"
