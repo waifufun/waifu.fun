@@ -517,22 +517,6 @@ export async function createPosition(
   // Get the position address from the transaction
   const positionAddress = positionNft.toString();
 
-  // Update database with position info
-  await DB.Migration.findOneAndUpdate(
-    { contractAddress: state.tokenMint },
-    {
-      $set: {
-        status: "migrated",
-        txId: txId,
-        nftMinted: state.nftMinted,
-        secondaryPosition: positionAddress,
-        updatedAt: new Date(),
-      },
-      $push: {
-        positionIds: positionAddress,
-      },
-    }
-  );
   await recordTransaction(state, "createPosition", txId, {
     positionId: positionAddress,
     timestamp: new Date(),
@@ -679,6 +663,23 @@ export async function addLiquidity(
       },
       $addToSet: {
         positionIds: positionAddress.toString(),
+      },
+    }
+  );
+
+  // Update database with position info
+  await DB.Token.findOneAndUpdate(
+    { contractAddress: state.tokenMint },
+    {
+      $set: {
+        status: "migrated",
+        txId: txId,
+        nftMinted: state.nftMinted,
+        secondaryPosition: positionAddress,
+        updatedAt: new Date(),
+      },
+      $push: {
+        positionIds: positionAddress,
       },
     }
   );
