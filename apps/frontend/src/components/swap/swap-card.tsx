@@ -94,7 +94,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				queryClient.invalidateQueries({
 					queryKey: ["balance"],
 				});
-			}, 1500);
+			}, 2000);
 		},
 		onError: (e) => {
 			toast.error(e.message);
