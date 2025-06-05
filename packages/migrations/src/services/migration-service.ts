@@ -99,8 +99,9 @@ export class MigrationService {
 
       // Get all active migrations
       const activeMigrations = await this.db.Migration.find({
-        status: { $in: ["active", "migrating", "migrated"] },
+        status: { $in: ["migrating", "migrated"] },
       }).limit(this.MAX_CONCURRENT_MIGRATIONS);
+      logger.info(`Found ${activeMigrations.length} active migrations to process`);
 
       // Process migrations that we can acquire locks for
       const processingPromises = activeMigrations.map(async (migration) => {

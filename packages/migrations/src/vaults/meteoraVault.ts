@@ -3,7 +3,7 @@ import * as spl from "@solana/spl-token";
 import { Program } from "@coral-xyz/anchor";
 import { CP_AMM_PROGRAM_ID, derivePoolAuthority, derivePositionAddress, deriveTokenVaultAddress } from "@meteora-ag/cp-amm-sdk";
 import { MeteoraVault } from "./programs/types/meteora_vault";
-import { getVaultConfig, getUserPosition, getNftTokenFaucet, getEventAuthority } from "./meteroaPdas";
+import { getVaultConfig, getUserPosition, getNftTokenFaucet, getEventAuthority, derivePositionNftAccount } from "./meteroaPdas";
 import { retryOperation } from "../utils";
 
 export async function depositToMeteora(
@@ -33,7 +33,6 @@ export async function depositToMeteora(
       tokenProgram: spl.TOKEN_2022_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,
     };
-    console.log("Accounts: ", accounts);
 
     const call = program.methods.deposit(claimer_address).accounts(accounts);
     const txSignature = await call.rpc();
@@ -171,12 +170,23 @@ export async function emergencyWithdraw(
   position_nft: anchor.web3.PublicKey,
 ) {
   try {
+    console.log("Starting emergencyWithdraw...");
     const vault_config = getVaultConfig(program.programId);
     const user_position = getUserPosition(program.programId, position_nft);
     const to_account = spl.getAssociatedTokenAddressSync(
       position_nft,
       signerWallet.publicKey,
       true,
+      spl.TOKEN_2022_PROGRAM_ID
+    );
+      await spl.getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      signerWallet,
+      position_nft,
+      signerWallet.publicKey,
+      true,
+      undefined,
+      undefined,
       spl.TOKEN_2022_PROGRAM_ID
     );
     const nft_token_faucet = getNftTokenFaucet(program.programId, position_nft);
@@ -193,7 +203,6 @@ export async function emergencyWithdraw(
 
     const call = program.methods.emergencyWithdraw().accounts(accounts);
     const txSignature = await call.rpc();
-    console.log("Transaction Signature", txSignature);
 
     const latestBlockhash = await provider.connection.getLatestBlockhash();
     await retryOperation(

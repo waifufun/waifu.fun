@@ -63,7 +63,10 @@
 		"build:docker": "docker build -t autofun-frontend -f apps/frontend/Dockerfile.frontend .",
 		"start:docker": "docker run -p 3000:3000 autofun-frontend",
 		"sync": "dotenv -e .env -- pnpm --filter @autofun/sync sync tokens",
-		"test-migration": "pnpm --filter @autofun/migrations test"
+		"test-migration": "pnpm --filter @autofun/migrations test",
+		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm --filter @autofun/migrations dev",
+		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @autofun/migrations build",
+		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @autofun/migrations start"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

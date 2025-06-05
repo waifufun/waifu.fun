@@ -25,7 +25,7 @@ import { MigrationService } from "../services/migration-service";
 import type { IMigration, SolanaAddressLike } from "@autofun/types";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
 import { SystemProgram } from "@solana/web3.js";
-import { depositToMeteora } from "../vaults/meteoraVault";
+import { depositToMeteora, emergencyWithdraw, claimPositionFee } from "../vaults/meteoraVault";
 import { MeteoraVault } from "../vaults/programs/types/meteora_vault";
 import idlModule from "../vaults/programs/idl/meteora_vault.json";
 import DB from "@autofun/database";
@@ -418,6 +418,39 @@ describe("Meteora RPC Migration Integration", function () {
 
     expect(depositTxId).to.be.a("string");
     console.log("Step 6 complete: Deposited primary NFT. TX =", depositTxId);
+  });
+
+  //claimPositionFee
+  it("Step 7 – Claim position fee from Meteora vault", async () => {
+    const claimTxId = await claimPositionFee(
+      provider,
+      wallet.payer,
+      program,
+      primaryPositionNftKeypair.publicKey,
+      pool,
+      mint,
+      new PublicKey(
+      "So11111111111111111111111111111111111111112"
+      ),
+      TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID
+    );
+    expect(claimTxId).to.be.a("string");
+    console.log("Step 7 complete: Claimed position fee. TX =", claimTxId);
+  });
+
+
+    it("Step 8 – withdraw primary NFT to Meteora vault", async () => {
+
+    const withdrawTxId = await emergencyWithdraw(
+      provider,
+      wallet.payer,
+      program,
+      primaryPositionNftKeypair.publicKey,
+    );
+
+    expect(withdrawTxId).to.be.a("string");
+  console.log("Step 8 complete: withdraw primary NFT . TX =", withdrawTxId);
   });
 
   it("Bonus Step – Call processMigration on our mock migration record", async () => {
