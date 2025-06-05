@@ -335,7 +335,7 @@ export const retrieveAutofunQuote = async ({
 	}
 
 	/** Factor in the slippage */
-	const finalAmount = new BN(Math.floor((estimatedOutput * (10000 - Number(slippage))) / 10000));
+	const finalAmount = new BN(Math.floor((estimatedOutput * (10000 - Number(slippage))) / 10000)).toNumber();
 
 	return {
 		minimumReceived: finalAmount,
@@ -542,7 +542,7 @@ export const executeSwap = async (
 		const style = mode === "buy" ? 0 : 1;
 		const ixs: TransactionInstruction[] = [];
 		const swapIx = await program.methods
-			.swap(new BN(quote.swapAmount), style, quote.minimumReceived, new BN(deadline))
+			.swap(new BN(String(quote.swapAmount)), style, new BN(quote.minimumReceived), new BN(deadline))
 			.accounts({
 				teamWallet: configAccount.teamWallet,
 				user: from,

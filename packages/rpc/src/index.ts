@@ -575,4 +575,8 @@ export class SolanaRpcProvider extends EventEmitter {
 			maxSupportedTransactionVersion: 0,
 		});
 	}, this);
+
+	getSlot = withFallBack(async () => {
+		return await this.connection.getSlot();
+	}, this);
 }

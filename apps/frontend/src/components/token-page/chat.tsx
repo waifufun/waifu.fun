@@ -20,7 +20,7 @@ type Inputs = {
 export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
 	return (
-		<div className="bg-[#0c0c0c] rounded-b-xl" id="chat">
+		<div className="bg-[#0c0c0c] rounded-b-sm" id="chat">
 			<div className="flex flex-col items-center w-full my-3 px-4">
 				<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value as TChatRooms)}>
 					<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">
@@ -142,7 +142,7 @@ const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 	return (
 		<div className="flex flex-col gap-2 w-full relative">
 			<div className="h-14 w-full absolute top-0 left-0 bg-gradient-to-b from-[#111111] via-[#111111]/80 to-[#111111]/10" />
-			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] rounded-b-xl">
+			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] rounded-b-sm">
 				<div className="h-[600px] w-full p-4 overflow-y-scroll flex flex-col-reverse gap-4" ref={ref}>
 					{query?.data?.map((message: IChatMessage) => (
 						<ChatItem key={String(message._id)} message={message} />
@@ -163,12 +163,12 @@ const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 					}}
 				/>
 
-				<div className="relative w-full bg-gradient-to-b from-[#171717] to-[#141414] rounded-lg transition-all duration-200">
+				<div className="relative w-full bg-gradient-to-b from-[#171717] to-[#141414] rounded-sm transition-all duration-200">
 					{imagePreviewUrl && (
 						<div className="relative w-fit m-2">
 							<button
 								type="button"
-								className="absolute bg-gradient-to-b from-[#171717] to-[#1F1F1F] animate-jump-in animate-once animate-duration-200 animate-ease-linear top-0.5 right-0.5 cursor-pointer size-9 p-1.5 inline-flex rounded-lg border border-autofun-background-action-highlight"
+								className="absolute bg-gradient-to-b from-[#171717] to-[#1F1F1F] animate-jump-in animate-once animate-duration-200 animate-ease-linear top-0.5 right-0.5 cursor-pointer size-9 p-1.5 inline-flex rounded-sm border border-autofun-background-action-highlight"
 								onClick={() => {
 									setValue("attachment", undefined);
 								}}
@@ -221,7 +221,7 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 				alt="avatar"
 				className="rounded-full size-10 bg-autofun-background-action-primary"
 			/>
-			<div className="flex flex-col gap-2.5 bg-[#171717] rounded-xl p-3">
+			<div className="flex flex-col gap-2.5 bg-[#171717] rounded-sm p-3">
 				<div className="inline-flex items-center justify-between gap-3">
 					<div className="justify-start text-autofun-background-action-highlight text-base font-medium">
 						{message?.sender ? shortenAddress(message?.sender) : "-"}

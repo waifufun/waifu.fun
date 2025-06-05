@@ -43,7 +43,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 									height={60}
 									unoptimized
 									alt="token_image"
-									className="size-[60px] rounded-lg aspect-square"
+									className="size-[60px] rounded-sm aspect-square"
 								/>
 								{/* Token Name */}
 								<div className="flex flex-col gap-2.5">

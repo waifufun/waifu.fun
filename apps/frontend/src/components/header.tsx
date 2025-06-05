@@ -21,7 +21,7 @@ export default function Header() {
 						src="/logo_wide.svg"
 						height={43.98}
 						width={87.97}
-						className="h-11 w-auto rounded-lg"
+						className="h-11 w-auto rounded-sm"
 						unoptimized
 						alt="logo"
 					/>
@@ -80,7 +80,7 @@ export default function Header() {
 			<div className="flex items-center gap-2.5">
 				{/* Points */}
 				{address ? (
-					<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-lg justify-center items-center gap-2">
+					<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-sm justify-center items-center gap-2">
 						<Trophy size={20} className="text-autofun-background-action-highlight" />
 						<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
 							0

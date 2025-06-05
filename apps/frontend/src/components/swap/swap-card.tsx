@@ -247,7 +247,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] rounded-xl text-sm gap-2 items-center transition-all duration-200",
+							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] rounded-sm text-sm gap-2 items-center transition-all duration-200",
 						])}
 					>
 						<AlertCircle className="text-autofun-text-error" />
