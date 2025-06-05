@@ -1,4 +1,4 @@
-import { SolanaIndexer, } from "../indexers/solana-indexer";
+import { SolanaIndexer } from "../indexers/solana-indexer";
 import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 import type { SolanaIndexerConfig } from "../types";
 
