@@ -1,3 +1,10 @@
+# [0.12.0](https://github.com/elizaos/autofun-monorepo/compare/v0.11.0...v0.12.0) (2025-06-05)
+
+
+### Features
+
+* set node_env ([476fbe2](https://github.com/elizaos/autofun-monorepo/commit/476fbe25b46b14d9cad0220197936c044e019124))
+
 # [0.11.0](https://github.com/elizaos/autofun-monorepo/compare/v0.10.0...v0.11.0) (2025-06-05)
 
 
