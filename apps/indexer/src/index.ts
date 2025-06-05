@@ -1,5 +1,6 @@
-import { SolanaIndexer, type SolanaIndexerConfig } from "../indexers/SolanaIndexer";
+import { SolanaIndexer, } from "../indexers/solana-indexer";
 import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
+import type { SolanaIndexerConfig } from "../types";
 
 const config: SolanaIndexerConfig = {
 	networkId: SolanaNetworkIds.Mainnet,
