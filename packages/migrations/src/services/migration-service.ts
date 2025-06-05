@@ -55,6 +55,13 @@ export class MigrationService {
       clearInterval(this.processingInterval);
       this.processingInterval = null;
     }
+
+    // wait for any in‐flight processing to finish
+    while (this.isProcessing) {
+      // sleep for a handful of ms and poll again
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
     logger.info("Migration service shut down");
   }
 
@@ -101,7 +108,9 @@ export class MigrationService {
       const activeMigrations = await this.db.Migration.find({
         status: { $in: ["migrating", "migrated"] },
       }).limit(this.MAX_CONCURRENT_MIGRATIONS);
-      logger.info(`Found ${activeMigrations.length} active migrations to process`);
+      logger.info(
+        `Found ${activeMigrations.length} active migrations to process`
+      );
 
       // Process migrations that we can acquire locks for
       const processingPromises = activeMigrations.map(async (migration) => {
