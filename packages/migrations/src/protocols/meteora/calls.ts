@@ -393,8 +393,8 @@ async function prepareCreatePoolTransaction(
   );
   const initPrice = humanB.div(humanA).toString();
 
-  // Set activation point to 7 minutes from now
-  const activationPoint = new BN(Math.floor(Date.now() / 1000) + 7 * 60);
+  // Set activation point to 5 minutes from now
+  const activationPoint = new BN(Math.floor(Date.now() / 1000) + 5 * 60);
 
   // Calculate liquidity delta
   const liquidityDelta = cpAmm.getLiquidityDelta({

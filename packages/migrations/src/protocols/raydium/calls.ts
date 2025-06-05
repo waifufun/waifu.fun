@@ -96,6 +96,7 @@ export async function createPool(
     // Get fee configs
     const feeConfigs = await raydium.api.getCpmmConfigs();
     const feeConfig = feeConfigs[1]; // Use the second config for mainnet
+    const startTime = new BN(Math.floor(Date.now() / 1000) + 5 * 60);
 
     // Create pool using Raydium SDK
     const poolCreation = await raydium.cpmm.createPool({
@@ -105,7 +106,7 @@ export async function createPool(
       mintB,
       mintAAmount: primaryAmount,
       mintBAmount: primaryAmountSol,
-      startTime: new BN(0),
+      startTime: startTime,
       feeConfig,
       associatedOnly: true,
       ownerInfo: { useSOLBalance: true },
@@ -135,9 +136,35 @@ export async function createPool(
           quoteVault: poolAddresses.vaultB,
           baseVault: poolAddresses.vaultA,
           updatedAt: new Date(),
+          status: "migrated"
         },
       }
     );
+    await recordTransaction(
+      state,
+      "createPool",
+      txId,
+      {
+        poolAddresses,
+        primaryAmount: primaryAmount.toString(),
+        secondaryAmount: secondaryAmount.toString(),
+        primaryAmountSol: primaryAmountSol.toString(),
+        secondaryAmountSol: secondaryAmountSol.toString(),
+      }
+    );
+
+    // change token status to migrated in the database 
+    await DB.Token.findOneAndUpdate(
+      { contractAddress: params.tokenMint },
+      {
+        $set: {
+          status: "migrated",
+          poolId: poolAddresses.id,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
 
     return {
       txId,
