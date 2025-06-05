@@ -65,7 +65,7 @@
 		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
 		"build:docker": "docker build -t autofun-frontend -f apps/frontend/Dockerfile.frontend .",
 		"start:docker": "docker run -p 3000:3000 autofun-frontend",
-		"start:indexer": "pnpm -r --filter '@autofun/indexer' --parallel run start",
+		"start:indexer": "dotenv -e .env -- cross-env pnpm -r --filter '@autofun/indexer' run start",
 		"sync": "dotenv -e .env -- pnpm --filter @autofun/sync sync tokens",
 		"start:frontend": "pnpm --filter '@autofun/frontend' run start"
 	},
