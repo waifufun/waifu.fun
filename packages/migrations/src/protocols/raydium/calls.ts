@@ -136,7 +136,8 @@ export async function createPool(
           quoteVault: poolAddresses.vaultB,
           baseVault: poolAddresses.vaultA,
           updatedAt: new Date(),
-          status: "migrated"
+          status: "migrated",
+          migratedAt: new Date(startTime.toNumber() * 1000),
         },
       }
     );

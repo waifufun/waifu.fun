@@ -303,7 +303,7 @@ export async function createPool(
   );
 
   // Prepare pool creation transaction
-  const { tx, pool, position } = await prepareCreatePoolTransaction(
+  const { tx, pool, position, activationPoint } = await prepareCreatePoolTransaction(
     context,
     primaryTokens,
     primarySol,
@@ -329,6 +329,9 @@ export async function createPool(
   const txId = result.signature;
   console.log("createPoolTxId", txId);
 
+  // get date from activationPoint
+  const activationDate = new Date(activationPoint.toNumber() * 1000);
+
   // Update database with pool info
   await DB.Migration.findOneAndUpdate(
     { contractAddress: state.tokenMint },
@@ -341,6 +344,7 @@ export async function createPool(
         poolId: pool.toString(),
         primaryPosition: position.toString(),
         updatedAt: new Date(),
+        migratedAt: activationDate,
       },
     }
   );
@@ -369,7 +373,7 @@ async function prepareCreatePoolTransaction(
   tokenAAmount: BN,
   tokenBAmount: BN,
   positionNft: PublicKey
-): Promise<{ tx: Transaction; pool: PublicKey; position: PublicKey }> {
+): Promise<{ tx: Transaction; pool: PublicKey; position: PublicKey, activationPoint: BN }> {
   const { provider, state } = context;
 
   if (!provider) {
@@ -441,6 +445,7 @@ async function prepareCreatePoolTransaction(
     tokenAProgram: TOKEN_PROGRAM_ID,
     tokenBProgram: TOKEN_PROGRAM_ID,
   };
+  
 
   const { tx, pool, position } = await cpAmm.createCustomPool(
     createCustomPoolParams
@@ -449,6 +454,7 @@ async function prepareCreatePoolTransaction(
     tx,
     pool,
     position,
+    activationPoint
   };
 }
 
