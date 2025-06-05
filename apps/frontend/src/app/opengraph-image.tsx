@@ -30,7 +30,7 @@ export default async function Image() {
 				}}
 			>
 				<img
-					src={`${process.env.NEXT_PUBLIC_HOST}/logo_wide.svg`}
+					src={`${process.env.NEXT_PUBLIC_HOST}/logo_wide.png`}
 					alt="AutoFun"
 					width={87}
 					height={44}
