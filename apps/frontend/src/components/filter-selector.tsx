@@ -30,7 +30,7 @@ export default function FilterSelector() {
 
 	return (
 		<Tabs defaultValue={activeKey} value={activeKey} className="w-full">
-			<TabsList className="grid w-full grid-cols-5">
+			<TabsList className="flex w-full overflow-x-auto no-scrollbar">
 				<TabsTrigger
 					value="new"
 					onClick={() => {
