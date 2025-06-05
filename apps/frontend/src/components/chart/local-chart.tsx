@@ -33,7 +33,7 @@ export default function LocalChart({token}: {token: IToken}) {
       
             return [
               {
-                time: Math.floor(Date.now() / 1000), // Convert to seconds for TradingView
+                time: Math.floor(Date.now() / 1000),
                 open: lastKnownPrice,
                 high: lastKnownPrice,
                 low: lastKnownPrice,
@@ -43,7 +43,6 @@ export default function LocalChart({token}: {token: IToken}) {
             ];
           }
       
-          // Transform data for TradingView Lightweight Charts
           return data
             .filter(
               (candle) =>
@@ -56,14 +55,14 @@ export default function LocalChart({token}: {token: IToken}) {
                 candle.volume > 0,
             )
             .map((candle) => ({
-              time: Math.floor(candle.timestamp / 1000), // Convert from milliseconds to seconds
+              time: Math.floor(candle.timestamp / 1000),
               open: Number(candle.open),
               high: Number(candle.high),
               low: Number(candle.low),
               close: Number(candle.close),
               volume: Number(candle.volume),
             }))
-            .sort((a, b) => a.time - b.time); // Ensure chronological order
+            .sort((a, b) => a.time - b.time);
         },
         staleTime: 60 * 1000,
         refetchInterval: 10_000,
@@ -72,75 +71,71 @@ export default function LocalChart({token}: {token: IToken}) {
         refetchOnReconnect: false,
     });
 
+    const chartData = query?.data;
 
-      const chartData = query?.data;
-
-      useEffect(() => {
-        if (chartData && chartData.length > 0 && candlestickSeriesRef.current) {
-          // Set the initial data
-          console.log("chartData", chartData);
-          candlestickSeriesRef.current.setData(chartData || []);
-        }
-    }, [chartData]);
-
-      useEffect(() => {
+    useEffect(() => {
         const chartOptions: DeepPartial<LightweightChartOptions> = {
             layout: {
-            textColor: "#8c8c8c",
-            background: { type: ColorType.Solid, color: "transparent" },
+                textColor: "#8c8c8c",
+                background: { type: ColorType.Solid, color: "transparent" },
             },
             grid: {
-            vertLines: { color: "#262626", visible: true },
-            horzLines: { color: "#262626", visible: true },
+                vertLines: { color: "#262626", visible: true },
+                horzLines: { color: "#262626", visible: true },
             },
             rightPriceScale: {
-            autoScale: true,
-            borderColor: "#262626",
+                autoScale: true,
+                borderColor: "#262626",
             },
             timeScale: {
-            borderColor: "#262626",
-            timeVisible: true,
-            secondsVisible: false,
+                borderColor: "#262626",
+                timeVisible: true,
+                secondsVisible: false,
             },
             crosshair: {
-            horzLine: {
-                color: "#262626",
-                labelBackgroundColor: "#262626",
-            },
-            vertLine: {
-                color: "#262626",
-                labelBackgroundColor: "#262626",
-            },
+                horzLine: {
+                    color: "#262626",
+                    labelBackgroundColor: "#262626",
+                },
+                vertLine: {
+                    color: "#262626",
+                    labelBackgroundColor: "#262626",
+                },
             },
             localization: {
-            // priceFormatter: (price: number) => formatNumber(price, true, false),
-            priceFormatter: (price: number) => {
-                // Force the price into standard decimal notation (no scientific notation), keeping up to 12 digits after the decimal
-                // Example: 3.5898363524445996e-8 → "0.000000035898"
-                const normal = Number(price).toFixed(12);
-                const decimalsLength =
-                normal.split(".")[1]?.replace(/0+$/, "")?.length || 1;
-    
-                return new Intl.NumberFormat("en-US", {
-                notation: "standard",
-                style: "currency",
-                currency: "USD",
-                maximumFractionDigits:
-                    Number(decimalsLength || "1") > 8
-                    ? 8
-                    : Number(decimalsLength || "1"),
-                }).format(price);
-            },
+                priceFormatter: (price: number) => {
+                    const normal = Number(price).toFixed(12);
+                    const decimalsLength =
+                        normal.split(".")[1]?.replace(/0+$/, "")?.length || 1;
+
+                    return new Intl.NumberFormat("en-US", {
+                        notation: "standard",
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits:
+                            Number(decimalsLength || "1") > 8
+                                ? 8
+                                : Number(decimalsLength || "1"),
+                    }).format(price);
+                },
             },
         };
-    
+
         const chartElement = chartContainerRef.current;
-    
         if (!chartElement) return;
-    
-        const chart = createChart(chartElement, chartOptions);
+
+        if (chartRef.current) {
+            chartRef.current.remove();
+            chartRef.current = null;
+        }
+
+        const chart = createChart(chartElement, {
+            ...chartOptions,
+            width: chartElement.clientWidth,
+            height: chartElement.clientHeight || 500,
+        });
         chartRef.current = chart;
-    
+
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
             wickUpColor: "#03FF24",
             upColor: "#03FF24",
@@ -149,28 +144,42 @@ export default function LocalChart({token}: {token: IToken}) {
             baseLineColor: "#212121",
             borderVisible: false,
             priceFormat: {
-            minMove: 0.00000001,
+                minMove: 0.00000001,
             },
         });
-    
+
         candlestickSeriesRef.current = candlestickSeries;
-    
+
+        if (chartData && chartData.length > 0) {
+            candlestickSeries.setData(chartData);
+        }
+
         const handleResize = () => {
             const width = chartContainerRef?.current?.clientWidth;
-            if (width) {
-                chart.applyOptions({ width });
+            const height = chartContainerRef?.current?.clientHeight;
+            if (width && height && chartRef.current) {
+                chartRef.current.applyOptions({ width, height });
             }
         };
-    
+
         window.addEventListener("resize", handleResize);
-    }, []);
+
+        return () => {
+            window.removeEventListener("resize", handleResize);
+            if (chartRef.current) {
+                chartRef.current.remove();
+                chartRef.current = null;
+            }
+            candlestickSeriesRef.current = null;
+        };
+    }, [chartData]);
 
     return (
         <div
-        ref={chartContainerRef}
-        className="w-full min-h-[500px] relative"
-        style={{ width: "100%", height: "100%" }}
-      >
-      </div>
+            ref={chartContainerRef}
+            className="w-full min-h-[500px] relative"
+            style={{ width: "100%", height: "500px" }}
+        >
+        </div>
     )
 }
