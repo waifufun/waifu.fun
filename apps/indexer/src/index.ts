@@ -13,6 +13,8 @@ const config: SolanaIndexerConfig = {
 
 const indexer = new SolanaIndexer(config);
 
-(async () => {
+const run = async () => {
 	await indexer.runWithRealTimeSync();
-})();
+};
+
+run();
