@@ -1,3 +1,17 @@
+# [0.10.0](https://github.com/elizaos/autofun-monorepo/compare/v0.9.0...v0.10.0) (2025-06-05)
+
+
+### Bug Fixes
+
+* fixed all lint issues ([02ab7f4](https://github.com/elizaos/autofun-monorepo/commit/02ab7f466e572fbdde6181378a13d6ea9760994a))
+
+
+### Features
+
+* added start script ([272ebed](https://github.com/elizaos/autofun-monorepo/commit/272ebedef4d33b2ad2dde84deebef73959d12c81))
+* finish solana indexer ([f3b9323](https://github.com/elizaos/autofun-monorepo/commit/f3b93239667f0c263d8b0f95dafaf3464b6e0aa3))
+* made all borders less round ([a2757f9](https://github.com/elizaos/autofun-monorepo/commit/a2757f9dec99775cf852a928a3caea8dc642c954))
+
 # [0.9.0](https://github.com/elizaos/autofun-monorepo/compare/v0.8.0...v0.9.0) (2025-06-04)
 
 
