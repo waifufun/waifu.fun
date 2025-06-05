@@ -6,7 +6,8 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"dev": "tsx watch src/index.ts",
-		"lint": "biome format . --write && biome lint . --fix"
+		"lint": "biome format . --write && biome lint . --fix",
+		"tests": "tsx watch tests/signatures.ts"
 	},
 	"devDependencies": {
 		"@autofun/types": "workspace:*"

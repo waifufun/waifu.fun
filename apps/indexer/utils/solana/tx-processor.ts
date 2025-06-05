@@ -3,6 +3,7 @@ import type { DecodedInstruction } from "../../types";
 import { SolanaInstructionDecoder } from "./instruction-decoder";
 import { SolanaEventDecoder } from "./event-decoder";
 import { SolanaAmountExtractor } from "./extract-amount";
+import { SolanaLogDecoder } from "./log-decoder";
 
 export class SolanaTransactionProcessor {
   constructor(
@@ -154,6 +155,23 @@ export class SolanaTransactionProcessor {
         const tokenMint = decodedInstruction.tokenMint!;
         const userAddress = decodedInstruction.user!;
         const direction = instructionData.direction;
+
+        const logs = transaction?.meta?.logMessages || [];
+
+        if (logs.length === 0) {
+          if (this.debugStatements) {
+            logger.warn(`No logs found for swap instruction in transaction ${signature}`);
+          }
+          return baseEventData;
+        }
+
+        const swapData = SolanaLogDecoder.decodeSwapLog(logs, this.debugStatements);
+        if (!swapData) {
+          if (this.debugStatements) {
+            logger.warn(`No swap data found in logs for transaction ${signature}`);
+          }
+          return baseEventData;
+        }
         
         let amountGotten = {};
         if (transaction) {
@@ -164,17 +182,22 @@ export class SolanaTransactionProcessor {
 
         return {
           ...baseEventData,
-          swapAmount: instructionData.amount?.toString(),
+          swapAmount: swapData.buyWith,
           direction: direction,
           minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
           deadline: instructionData.deadline?.toString(),
-          ...amountGotten,
+          amountGotten: swapData.sellWith,
         };
       }
 
       case "launchAndSwap": {
         const tokenMint = decodedInstruction.mintAddress!;
         const userAddress = decodedInstruction.creator!;
+
+        const swapData = SolanaLogDecoder.decodeSwapLog(
+          transaction?.meta?.logMessages || [],
+          this.debugStatements
+        );
         
         let amountGotten = {};
         if (transaction) {
@@ -191,10 +214,10 @@ export class SolanaTransactionProcessor {
           decimals: instructionData.decimals,
           tokenSupply: instructionData.tokenSupply?.toString(),
           virtualLamportReserves: instructionData.virtualLamportReserves?.toString(),
-          swapAmount: instructionData.swapAmount?.toString(),
+          swapAmount: swapData ? swapData.buyWith : "0",
           minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
           deadline: instructionData.deadline?.toString(),
-          ...amountGotten,
+          amountGotten: swapData ? swapData.sellWith : "0",
         };
       }
 
