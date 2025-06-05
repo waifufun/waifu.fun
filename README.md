@@ -25,7 +25,6 @@ If you're on MacOS and get a ECONNREFUSED error when connecting to MongoDB (via 
 3: Enable ```Allow host networking```
 4: Restart Docker
 
-
 - Add a host alias to prevent mongoose replica error:
 1: open your teminal
 2: Edit the hosts file by running ```sudo nano /etc/hosts```
