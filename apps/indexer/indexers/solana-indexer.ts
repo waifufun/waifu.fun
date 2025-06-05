@@ -16,7 +16,7 @@ export class SolanaIndexer extends BaseIndexer {
     super();
     
     this.config = {
-      concurrencyLimit: 300,
+      concurrencyLimit: 3,
       maxSignatures: 500,
       minBlock: 322725834,
       ...config,
