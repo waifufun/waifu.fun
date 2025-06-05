@@ -1,0 +1,56 @@
+{
+  "name": "@autofun/migrations",
+  "version": "1.0.0",
+  "description": "Migration service for Autofun",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "start": "tsx src/scripts/run-service.ts",
+    "dev": "nodemon --watch src --ext ts,tsx --exec \"tsx src/scripts/run-service.ts\"",
+    "test": "mocha --require tsx --require ./src/tests/test-setup.ts --require ./src/tests/setup.ts \"src/tests/**/*.test.ts\"",
+    "test:windows": "node \"./node_modules/.bin/mocha\" --loader ts-node/esm --extensions ts,tsx --file src/tests/test-setup.ts --file src/tests/setup.ts src/tests/**/*.test.ts",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@autofun/database": "workspace:*",
+    "@autofun/logger": "workspace:*",
+    "@autofun/redis": "workspace:*",
+    "@autofun/types": "workspace:*",
+    "@coral-xyz/anchor": "^0.30.1",
+    "@solana/web3.js": "^1.91.1",
+    "dotenv": "^16.5.0",
+    "@meteora-ag/dynamic-amm-sdk": "^1.3.5",
+    "@meteora-ag/dlmm": "^1.5.0",
+    "@meteora-ag/cp-amm-sdk": "^1.0.2",
+    "@raydium-io/raydium-sdk-v2": "^0.1.138-alpha",
+    "@solana/spl-token": "^0.3.9",
+    "viem": "^1.19.1",
+    "decimal.js": "^10.5.0",
+    "bn.js": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/bn.js":"5.1.6",
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "@typescript-eslint/parser": "^6.4.0",
+    "@types/sinon": "^17.0.4",
+    "@types/sinon-chai": "^4.0.0",
+    "chai": "^5.2.0",
+    "eslint": "^8.47.0",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.1.10",
+    "rimraf": "^5.0.1",
+    "sinon": "^15.1.0",
+    "sinon-chai": "^4.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.1.6"
+    
+  }
+}
