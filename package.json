@@ -67,7 +67,7 @@
 		"start:docker": "docker run -p 3000:3000 autofun-frontend",
 		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '@autofun/indexer' run start",
 		"sync": "dotenv -e .env -- pnpm --filter @autofun/sync sync tokens",
-		"start:frontend": "cpnpm --filter '@autofun/frontend' run start"
+		"start:frontend": "pnpm --filter '@autofun/frontend' run start"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
