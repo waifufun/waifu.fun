@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import { SolanaIndexer } from "../indexers/solana-indexer";
 import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 import type { SolanaIndexerConfig } from "../types";
