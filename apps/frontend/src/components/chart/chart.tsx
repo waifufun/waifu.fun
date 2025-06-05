@@ -1,27 +1,18 @@
-import type {IToken, ITokenLookUp} from "@autofun/types";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
-import { twMerge } from "tailwind-merge";
-import { isCurveCompleted } from "@/lib/api";
+import { isCurveCompleted } from "../../lib/api";
 import LocalChart from "./local-chart";
-import { getCoinGeckoChainName } from "@/lib/utils";
+import {getCoinGeckoChainName} from "../../lib/utils";
+import type { IToken, ITokenLookUp } from "@autofun/types";
 
 interface ChartProps {
     token: IToken;
     tokenLookUp: ITokenLookUp;
 }
-export default async function Chart({ params }: { params: Promise<ChartProps> }) {
-    const chart = await params;
-    const chartContainerRef = useRef<HTMLDivElement>(null);
-    const candlestickSeriesRef = useRef<any>(null);
-    const chartRef = useRef<any>(null);
-    const curveCompleted = await isCurveCompleted(chart.tokenLookUp);
 
-    const mint = chart.token.contractAddress;
-
+export default async function Chart({ token, tokenLookUp }: ChartProps) {
+    const curveCompleted = await isCurveCompleted(tokenLookUp);
     const useCoingecko = curveCompleted.curveCompleted;
 
-    if (useCoingecko) {
+    if (!useCoingecko) {
         return (
             <iframe
                 height="100%"
@@ -29,12 +20,12 @@ export default async function Chart({ params }: { params: Promise<ChartProps> })
                 className="min-h-[580px] h-full mb-[-41px]"
                 id="geckoterminal-embed"
                 title="GeckoTerminal Embed"
-                src={`https://www.geckoterminal.com/${getCoinGeckoChainName(chart.token.chain, chart.token.chainId)}/pools/${chart.token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
+                src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
                 allow="clipboard-write"
                 allowFullScreen
             />
         )
     } else {
-        return <LocalChart token={chart.token} />;
+        return <LocalChart token={token} />;
     }
 }

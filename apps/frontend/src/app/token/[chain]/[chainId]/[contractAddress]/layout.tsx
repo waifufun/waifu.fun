@@ -19,6 +19,7 @@ import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
+import Chart from "@/components/chart/chart";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = (await getToken(await params)) as IToken;
@@ -117,15 +118,13 @@ export default async function Page({ params, children }: { params: Promise<IToke
 					</div>
 
 					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
-						<iframe
-							height="100%"
-							width="100%"
-							className="min-h-[580px] h-full mb-[-41px]"
-							id="geckoterminal-embed"
-							title="GeckoTerminal Embed"
-							src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
-							allow="clipboard-write"
-							allowFullScreen
+						<Chart 
+							token={token}
+							tokenLookUp={{
+								chain: token.chain,
+								chainId: token.chainId,
+								contractAddress: token.contractAddress,
+							} as ITokenLookUp}
 						/>
 					</div>
 

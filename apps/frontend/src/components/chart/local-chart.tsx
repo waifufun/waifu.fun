@@ -1,3 +1,4 @@
+"use client";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken, TChain } from "@autofun/types";
 import { useEffect, useRef } from "react";
@@ -20,23 +21,19 @@ export default function LocalChart({token}: {token: IToken}) {
     const query = useQuery({
         queryKey: ["token", token.contractAddress, "chart"],
         queryFn: async () => {
-          const to = Math.floor(new Date().getTime() / 1000.0);
-          const from = 0;
-    
           const data = await getChartData({
-            // for now any
             chain: token.chain as any,
             chainId: token.chainId,
             contractAddress: token.contractAddress,
           });
-    
-          if (!data?.data?.length) {
+      
+          if (!data || data.length === 0) {
             const lastKnownPrice = Number(token?.price) || 0;
             if (isNaN(lastKnownPrice)) return [];
-    
+      
             return [
               {
-                time: Math.floor(Date.now() / 1000) * 1000,
+                time: Math.floor(Date.now() / 1000), // Convert to seconds for TradingView
                 open: lastKnownPrice,
                 high: lastKnownPrice,
                 low: lastKnownPrice,
@@ -45,27 +42,46 @@ export default function LocalChart({token}: {token: IToken}) {
               },
             ];
           }
-    
-          return data.data.filter(
-            (candle) =>
-              !isNaN(Number(candle.volume)) &&
-              !isNaN(Number(candle.open)) &&
-              !isNaN(Number(candle.high)) &&
-              !isNaN(Number(candle.low)) &&
-              !isNaN(Number(candle.close)) &&
-              !isNaN(Number(candle.time)) &&
-              candle.volume > 0,
-          );
+      
+          // Transform data for TradingView Lightweight Charts
+          return data
+            .filter(
+              (candle) =>
+                !isNaN(Number(candle.volume)) &&
+                !isNaN(Number(candle.close)) &&
+                !isNaN(Number(candle.high)) &&
+                !isNaN(Number(candle.low)) &&
+                !isNaN(Number(candle.open)) &&
+                !isNaN(Number(candle.timestamp)) &&
+                candle.volume > 0,
+            )
+            .map((candle) => ({
+              time: Math.floor(candle.timestamp / 1000), // Convert from milliseconds to seconds
+              open: Number(candle.open),
+              high: Number(candle.high),
+              low: Number(candle.low),
+              close: Number(candle.close),
+              volume: Number(candle.volume),
+            }))
+            .sort((a, b) => a.time - b.time); // Ensure chronological order
         },
         staleTime: 60 * 1000,
         refetchInterval: 10_000,
         refetchOnWindowFocus: true,
         refetchIntervalInBackground: false,
         refetchOnReconnect: false,
-      });
+    });
 
 
       const chartData = query?.data;
+
+      useEffect(() => {
+        if (chartData && chartData.length > 0 && candlestickSeriesRef.current) {
+          // Set the initial data
+          console.log("chartData", chartData);
+          candlestickSeriesRef.current.setData(chartData || []);
+        }
+    }, [chartData]);
 
       useEffect(() => {
         const chartOptions: DeepPartial<LightweightChartOptions> = {
@@ -150,8 +166,11 @@ export default function LocalChart({token}: {token: IToken}) {
     }, []);
 
     return (
-        <div>
-            <p>local chart</p>
-        </div>
+        <div
+        ref={chartContainerRef}
+        className="w-full min-h-[500px] relative"
+        style={{ width: "100%", height: "100%" }}
+      >
+      </div>
     )
 }

@@ -15,17 +15,11 @@ export class SolanaLogDecoder {
             const swapEventMatch = log.match(/Program log: SwapEvent: \S+ \d+ (\d+)/);
             if (swapEventMatch) {
                 data.sellWith = swapEventMatch[1];
-                if (debugStatements) {
-                    logger.info(`Found SwapEvent amount: ${data.sellWith}`);
-                }
             }
 
             const swapMatch = log.match(/Program log: Swap: \S+ \d+ (\d+)/);
             if (swapMatch) {
                 data.buyWith = swapMatch[1];
-                if (debugStatements) {
-                    logger.info(`Found Swap amount: ${data.buyWith}`);
-                }
             }
         }
 

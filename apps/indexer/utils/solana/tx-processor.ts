@@ -73,6 +73,16 @@ export class SolanaTransactionProcessor {
           decodedInstruction,
           transaction
         );
+
+        // check if direction is 0 or 1
+        if ((decodedInstruction.type === "swap" || decodedInstruction.type == "launchAndSwap") && decodedInstruction.data?.data?.direction !== undefined) {
+          if (eventData.direction != 0 || eventData.direction != 1) {
+            // program only checks if direction is 1, any other value is considered a buy
+            eventData.direction = 0;
+            continue;
+          }
+        }
+
         events.push(eventData);
       }
     }

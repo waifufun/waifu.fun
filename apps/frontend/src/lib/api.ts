@@ -75,15 +75,30 @@ export const isCurveCompleted = async ({
 }
 
 export const getChartData = async ({
-	chain,
-	chainId,
-	contractAddress,
-}: ITokenLookUp): Promise<{ data: any[] }> => {
-	return await fetcher("/tokens/chart-data", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
+    chain,
+    chainId,
+    contractAddress,
+    timeframe,
+    limit,
+}: ITokenLookUp & {
+    timeframe?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+    limit?: number;
+}): Promise<Array<{
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    volumeUSD: number;
+}>> => {
+    return await fetcher("/tokens/chart-data", "POST", {
+        chain,
+        chainId,
+        contractAddress,
+        timeframe,
+        limit,
+    });
 };
 
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {

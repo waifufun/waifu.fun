@@ -913,7 +913,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (!eventsExist) {
 			return [];
 		}
-		
+
 		// Calculate timeframe in milliseconds
 		const timeframeMs = {
 			"1m": 60 * 1000,
@@ -937,13 +937,13 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const priceKey = chain === "solana" ? "solana" : "ethereum";
 		const nativePrice = nativePrices?.[priceKey] || 0;
 		
-		if (eventsExist && !token.curveCompleted) {
+		if (eventsExist) {
 			// const lookbackTime = Date.now() - (7 * 24 * 60 * 60 * 1000 * 4); // 7 days
 			
 			const swapEvents = await DB.Event.find({
-			contractAddress: checksummedQueryAddress,
-			eventType: { $in: ["swap", "launchAndSwap"] },
-			processed: true,
+				contractAddress: checksummedQueryAddress,
+				eventType: { $in: ["swap", "launchAndSwap"] },
+				processed: true,
 			// blockTime: { $gte: Math.floor(lookbackTime / 1000) }, // blockTime is in seconds
 			})
 			.sort({ blockTime: 1 })
@@ -981,6 +981,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					price = solSpent / tokensReceived;
 					volume = tokensReceived;
 					volumeUSD = solSpent * nativePrice;
+
+					console.log("spent sol:", solSpent, "tokens received:", tokensReceived, "price:", price, "volume:", volume, "volumeUSD:", volumeUSD);
+					console.log("txHash", event.signature)
 				}
 				} else {
 				// Sell: Tokens -> SOL
@@ -991,6 +994,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					price = solReceived / tokensSold;
 					volume = tokensSold;
 					volumeUSD = solReceived * nativePrice;
+					
+					console.log("received sol:", solReceived, "tokens sold:", tokensSold, "price:", price, "volume:", volume, "volumeUSD:", volumeUSD);
+					console.log("txHash", event.signature)
 				}
 				}
 			}
