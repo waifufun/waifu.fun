@@ -8,6 +8,7 @@ import type {
 } from "./types";
 import { meteoraMigrationSteps } from './protocols/meteora';
 import { raydiumMigrationSteps } from './protocols/raydium';
+import { Wallet } from "./utils/customWallet";
 
 export class MigrationManager {
   private programContext: ProgramContext | null = null;
@@ -17,8 +18,8 @@ export class MigrationManager {
     private readonly connection: Connection
   ) {}
 
-  async initializePrograms(provider: AnchorProvider): Promise<void> {
-    this.programContext = await initializePrograms(provider);
+  async initializePrograms(provider: AnchorProvider, keypair: Keypair): Promise<void> {
+    this.programContext = await initializePrograms(provider, keypair);
   }
 
   getProgramContext(): ProgramContext | null {
@@ -44,7 +45,7 @@ export class MigrationManager {
       for (const step of steps) {
         const context: MigrationContext = {
           rpc: this.connection,
-          wallet: this.programContext.provider.wallet as unknown as Keypair,
+          wallet: this.programContext.wallet as Wallet,
           state: migration.protocolState,
           provider: this.programContext.provider,
           programContext: this.programContext,

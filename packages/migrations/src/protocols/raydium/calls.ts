@@ -6,7 +6,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import BN from 'bn.js';
+import BN from "bn.js";
 import {
   Raydium,
   TxVersion,
@@ -15,7 +15,10 @@ import {
   ApiV3PoolInfoItem,
 } from "@raydium-io/raydium-sdk-v2";
 import type { MigrationContext } from "../../types";
-import { handleTransaction, recordTransaction } from "../../utils/protocol-utils";
+import {
+  handleTransaction,
+  recordTransaction,
+} from "../../utils/protocol-utils";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { ensureObject } from "../../utils/tools";
 import DB from "@autofun/database";
@@ -27,7 +30,6 @@ interface CreatePoolParams {
   tokenMint: string;
   amountToken: number;
   amountSol: number;
-  virtualTokenReserves: number;
   deadline: number;
 }
 
@@ -41,7 +43,16 @@ interface LockLPParams {
 export async function createPool(
   context: MigrationContext,
   params: CreatePoolParams
-): Promise<{ txId: string; poolAddresses: any }> {
+): Promise<{
+  txId: string;
+  poolAddresses: any;
+  extraData: {
+    primaryAmount: string;
+    secondaryAmount: string;
+    primaryAmountSol: string;
+    secondaryAmountSol: string;
+  };
+}> {
   const { rpc, wallet, state } = context;
   if (!wallet) {
     throw new Error("Wallet is required for pool creation");
@@ -50,7 +61,7 @@ export async function createPool(
   try {
     // Initialize Raydium SDK
     const raydium = await Raydium.load({
-      owner: wallet,
+      owner: wallet.payer,
       connection: rpc,
       cluster: "mainnet",
       disableFeatureCheck: true,
@@ -61,7 +72,20 @@ export async function createPool(
     const mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9); // 6 SOL
     const withdrawnTokensBN = new BN(params.amountToken);
     const withdrawnSolBN = new BN(params.amountSol);
+
+    const remainingTokens = withdrawnTokensBN;
     const remainingSol = withdrawnSolBN.sub(mintConstantFee);
+
+    // Split amounts 90% and 10%
+    const primaryAmount = remainingTokens
+      .muln(Number(process.env.PRIMARY_LOCK_PERCENTAGE ?? 90))
+      .divn(100);
+    const secondaryAmount = remainingTokens.sub(primaryAmount);
+
+    const primaryAmountSol = remainingSol
+      .muln(Number(process.env.PRIMARY_LOCK_PERCENTAGE ?? 90))
+      .divn(100);
+    const secondaryAmountSol = remainingSol.sub(primaryAmountSol);
 
     // Get token info
     const mintA = await raydium.token.getTokenInfo(
@@ -79,8 +103,8 @@ export async function createPool(
       poolFeeAccount: CREATE_CPMM_POOL_FEE_ACC,
       mintA,
       mintB,
-      mintAAmount: withdrawnTokensBN,
-      mintBAmount: remainingSol,
+      mintAAmount: primaryAmount,
+      mintBAmount: primaryAmountSol,
       startTime: new BN(0),
       feeConfig,
       associatedOnly: true,
@@ -115,7 +139,16 @@ export async function createPool(
       }
     );
 
-    return { txId, poolAddresses };
+    return {
+      txId,
+      poolAddresses,
+      extraData: {
+        primaryAmount: primaryAmount.toString(),
+        secondaryAmount: secondaryAmount.toString(),
+        primaryAmountSol: primaryAmountSol.toString(),
+        secondaryAmountSol: secondaryAmountSol.toString(),
+      },
+    };
   } catch (error) {
     console.error("Error creating pool:", error);
     throw error;
@@ -134,7 +167,7 @@ export async function initRaydiumSdkAndFetchPoolInfo(
   try {
     // Initialize Raydium SDK
     const raydium = await Raydium.load({
-      owner: wallet,
+      owner: wallet.payer,
       connection: rpc,
       cluster: "mainnet",
       disableFeatureCheck: true,
@@ -151,15 +184,19 @@ export async function initRaydiumSdkAndFetchPoolInfo(
         throw new Error("Pool info not found");
       }
       const pool = data[0];
-      // check if pool contains lpMint      
-      if (!("lpMint" in pool) || !pool.lpMint || !("address" in pool.lpMint) || !pool.lpMint.address) {
+      // check if pool contains lpMint
+      if (
+        !("lpMint" in pool) ||
+        !pool.lpMint ||
+        !("address" in pool.lpMint) ||
+        !pool.lpMint.address
+      ) {
         throw new Error("Pool does not contain lpMint address");
       }
       result = {
         poolInfo: pool,
         poolKeys: {
           id: pool.id,
-    
         },
       };
     }
@@ -195,7 +232,7 @@ export async function initRaydiumSdkAndFetchPoolInfo(
         primaryAmount: primaryAmount.toString(),
         secondaryAmount: secondaryAmount.toString(),
       }
-    )
+    );
 
     // Update database with pool info
     await DB.Migration.findOneAndUpdate(
@@ -231,7 +268,7 @@ export async function lockLP({
 
   try {
     const raydium = await Raydium.load({
-      owner: wallet,
+      owner: wallet.payer,
       connection: rpc,
       cluster: "mainnet",
       disableFeatureCheck: true,
@@ -308,15 +345,10 @@ export async function lockPrimaryLP(
   }
 
   const primaryAmount = new BN(initLockTx.data.primaryAmount);
-  await recordTransaction(
-    state,
-    "lockPrimaryLP",
-    "lock-primary-lp",
-    {
-      primaryAmount: primaryAmount.toString(),
-      timestamp: new Date(),
-    }
-  )
+  await recordTransaction(state, "lockPrimaryLP", "lock-primary-lp", {
+    primaryAmount: primaryAmount.toString(),
+    timestamp: new Date(),
+  });
   return lockLP({
     context,
     poolId: state.poolInfo.id.toString(),
@@ -340,15 +372,10 @@ export async function lockSecondaryLP(
   }
 
   const secondaryAmount = new BN(initLockTx.data.secondaryAmount);
-  await recordTransaction(
-    state,
-    "lockSecondaryLP",
-    "lock-secondary-lp",
-    {
-      secondaryAmount: secondaryAmount.toString(),
-      timestamp: new Date(),
-    }
-  )
+  await recordTransaction(state, "lockSecondaryLP", "lock-secondary-lp", {
+    secondaryAmount: secondaryAmount.toString(),
+    timestamp: new Date(),
+  });
 
   return lockLP({
     context,
@@ -380,16 +407,11 @@ export async function finalizeLockLP(context: MigrationContext): Promise<void> {
   }
 
   // Record the finalization
-  await recordTransaction(
-    state,
-    "finalizeLockLP",
-    "finalize-lock-lp",
-    {
-      primaryLockTxId: primaryLockTx.data.txId,
-      secondaryLockTxId: secondaryLockTx.data.txId,
-      timestamp: new Date(),
-    }
-)
+  await recordTransaction(state, "finalizeLockLP", "finalize-lock-lp", {
+    primaryLockTxId: primaryLockTx.data.txId,
+    secondaryLockTxId: secondaryLockTx.data.txId,
+    timestamp: new Date(),
+  });
 
   // Update database with lock finalization
   await DB.Migration.findOneAndUpdate(
@@ -411,9 +433,12 @@ export async function depositNftToRaydiumVault(
   nftMint: string,
   claimerAddress: PublicKey
 ): Promise<{ txId: string; extraData: object }> {
-  const { rpc, wallet, state } = context;
+  const { rpc, wallet, state, provider } = context;
   if (!wallet) {
     throw new Error("Wallet is required for NFT deposit");
+  }
+  if (!provider) {
+    throw new Error("Provider is required for NFT deposit");
   }
 
   try {
@@ -427,23 +452,18 @@ export async function depositNftToRaydiumVault(
 
     // Execute the deposit transaction
     const txSignature = await depositToRaydiumVault(
-      context.provider,
-      signerWallet,
+      provider,
+      signerWallet.payer,
       context.programContext.raydiumVaultProgram,
       new PublicKey(nftMint),
       claimerAddress
     );
 
-    await recordTransaction(
-      state,
-      "depositNftToRaydiumVault",
-      txSignature,
-      {
-        nftMint,
-        claimerAddress: claimerAddress.toString(),
-        timestamp: new Date(),
-      }
-    )
+    await recordTransaction(state, "depositNftToRaydiumVault", txSignature, {
+      nftMint,
+      claimerAddress: claimerAddress.toString(),
+      timestamp: new Date(),
+    });
 
     // Update database with deposit information
     await DB.Migration.findOneAndUpdate(
@@ -525,7 +545,7 @@ export async function sendNftToManagerMultisig(
     }).compileToV0Message();
 
     const transaction = new VersionedTransaction(messageV0);
-    transaction.sign([wallet]);
+    transaction.sign([wallet.payer]);
 
     // Send and confirm the transaction
     const signature = await rpc.sendTransaction(transaction);
@@ -544,16 +564,11 @@ export async function sendNftToManagerMultisig(
       2000
     );
 
-    await recordTransaction(
-      state,
-      "sendNftToManager",
-      signature,
-      {
-        nftMint,
-        multisigAddress: multisigAddress.toString(),
-        timestamp: new Date(),
-      }
-    );
+    await recordTransaction(state, "sendNftToManager", signature, {
+      nftMint,
+      multisigAddress: multisigAddress.toString(),
+      timestamp: new Date(),
+    });
 
     // Update database with transfer information
     await DB.Migration.findOneAndUpdate(
@@ -586,16 +601,11 @@ export async function finalizeMigration(
     throw new Error("Pool addresses or info not found in state");
   }
 
-  await recordTransaction(
-    state,
-    "finalizeMigration",
-    "finalize-migration",
-    {
-      poolId: state.poolAddresses.id,
-      tokenMint: state.tokenMint,
-      timestamp: new Date(),
-    }
-)
+  await recordTransaction(state, "finalizeMigration", "finalize-migration", {
+    poolId: state.poolAddresses.id,
+    tokenMint: state.tokenMint,
+    timestamp: new Date(),
+  });
 
   await DB.Migration.findOneAndUpdate(
     { contractAddress: state.tokenMint },

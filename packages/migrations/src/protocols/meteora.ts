@@ -8,7 +8,7 @@ import {
   commonCollectFeesStep,
 } from "../steps/common";
 import { withdrawLiquidity, recordTransaction } from "../utils/protocol-utils";
-import BN from 'bn.js';
+import BN from "bn.js";
 import {
   createPositionNft,
   finalizePositionNft,
@@ -48,8 +48,6 @@ export const meteoraMigrationSteps: MigrationStep[] = [
       state.primaryPositionNftTxId = result.txId;
       state.primaryNftMint = result.nftMint;
       state.primaryPositionNftSecret = result.positionNftSecret;
-
-      
     },
     rollback: async (context: MigrationContext) => {
       // Not implemented
@@ -120,8 +118,6 @@ export const meteoraMigrationSteps: MigrationStep[] = [
         throw new Error("No withdrawn amounts found for pool creation");
       }
 
-      const primaryTokens = new BN(state.withdrawnAmounts.token);
-      const primarySol = new BN(state.withdrawnAmounts.sol);
 
       // Get the primary NFT mint from the database
       const migration = await DB.Migration.findOne({
@@ -132,10 +128,13 @@ export const meteoraMigrationSteps: MigrationStep[] = [
       }
       const primaryNft = new PublicKey(migration.primaryNftMint);
 
+
+      const amountToken = new BN(state.withdrawnAmounts.token)
+      const amountSol = new BN(state.withdrawnAmounts.sol)
       const result = await createPool(
         context,
-        primaryTokens,
-        primarySol,
+        amountToken,
+        amountSol,
         primaryNft
       );
 

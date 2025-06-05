@@ -12,7 +12,8 @@
     "dev": "tsup --watch",
     "lint": "biome format . --write && biome lint . --fix",
     "check": "tsc --noEmit",
-    "test": "mocha --require tsx --require ./src/tests/test-setup.ts --require ./src/tests/setup.ts \"src/tests/**/*.test.ts\""
+    "test": "mocha --require tsx --require ./src/tests/test-setup.ts --require ./src/tests/setup.ts \"src/tests/**/*.test.ts\"",
+    "test-meteora-rpc": "cross-env mocha --require tsx --require ./src/tests/test-setup.ts --require ./src/tests/setup.ts \"src/tests/meteora/meteora-rpc-migration.test.ts\""
   },
   "dependencies": {
     "@autofun/database": "workspace:*",

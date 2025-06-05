@@ -42,16 +42,21 @@ export const raydiumMigrationSteps: MigrationStep[] = [
         );
       }
 
-      const { txId, poolAddresses } = await createPool(context, {
+      const { txId, poolAddresses, extraData } = await createPool(context, {
         tokenMint: state.tokenMint,
         amountToken: state.withdrawnAmounts.token,
         amountSol: state.withdrawnAmounts.sol,
-        virtualTokenReserves: state.withdrawnAmounts.token,
         deadline: Math.floor(Date.now() / 1000) + 120,
       });
 
       // Update state with transaction ID
       state.txId = txId;
+      state.primaryTokenAmount = extraData.primaryAmount;
+      state.primarySolAmount = extraData.primaryAmountSol;
+      state.secondaryTokenAmount = extraData.secondaryAmount;
+      state.secondarySolAmount = extraData.secondaryAmountSol;
+      state.poolId = poolAddresses.id;
+
     },
     rollback: async (context: RaydiumMigrationContext) => {
       throw new Error("Not implemented");
@@ -87,16 +92,6 @@ export const raydiumMigrationSteps: MigrationStep[] = [
       if (!state.transactions) {
         state.transactions = [];
       }
-      state.transactions.push({
-        step: "initLockLP",
-        txId: state.txId,
-        data: {
-          poolInfo,
-          withdrawnAmounts: state.withdrawnAmounts,
-          timestamp: new Date(),
-        },
-        timestamp: new Date(),
-      });
 
       // Update database with pool info and withdrawn amounts
       await DB.Migration.findOneAndUpdate(

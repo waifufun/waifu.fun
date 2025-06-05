@@ -126,7 +126,7 @@ export async function withdrawLiquidity(
       })
       .transaction();
 
-    const result = await handleTransaction(rpc, tx, wallet);
+    const result = await handleTransaction(rpc, tx, wallet.payer);
 
     if (!result.confirmed) {
       throw new Error(`Transaction failed: ${result.error}`);
@@ -216,9 +216,9 @@ export async function sendNftToManager(
     }).compileToV0Message();
 
     const transaction = new VersionedTransaction(messageV0);
-    transaction.sign([wallet]);
+    transaction.sign([wallet.payer]);
 
-    const result = await handleTransaction(rpc, transaction, wallet);
+    const result = await handleTransaction(rpc, transaction, wallet.payer);
 
     if (!result.confirmed) {
       throw new Error(`Transaction failed: ${result.error}`);
@@ -257,7 +257,7 @@ export async function collectProtocolFees(
   );
 
   try {
-    const signature = await sendAndConfirmTransaction(rpc, transaction, [signerWallet]);
+    const signature = await sendAndConfirmTransaction(rpc, transaction, [signerWallet.payer]);
     return { txId: signature, extraData: {} };
   } catch (error: any) {
     console.error('transaction failed: ', error);

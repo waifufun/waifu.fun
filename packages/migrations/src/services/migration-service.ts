@@ -7,7 +7,7 @@ import logger from "@autofun/logger";
 import type { IMigration } from "@autofun/types";
 import type { Model } from "mongoose";
 import redis from "@autofun/redis";
-
+import { Keypair } from "@solana/web3.js";
 
 export class MigrationService {
   private isProcessing: boolean = false;
@@ -16,6 +16,7 @@ export class MigrationService {
   private readonly MAX_CONCURRENT_MIGRATIONS = 5;
   private readonly LOCK_TTL = 30; // 30 seconds lock TTL
   private migrationManager: MigrationManager;
+  private keyPair: Keypair;
 
   constructor(
     private readonly connection: Connection,
@@ -23,6 +24,12 @@ export class MigrationService {
     private readonly redisClient: typeof redis = redis,
     private readonly db: typeof DB = DB
   ) {
+    const rawKey = process.env.EXECUTOR_TEST_PRIVATE_KEY;
+    if (!rawKey) {
+      throw new Error("EXECUTOR_TEST_PRIVATE_KEY is not set in environment");
+    }
+    const privateKey = Uint8Array.from(JSON.parse(rawKey));
+    this.keyPair = Keypair.fromSecretKey(privateKey);
     this.migrationManager = new MigrationManager(
       this.db.Migration as Model<IMigration>,
       connection
@@ -31,7 +38,10 @@ export class MigrationService {
 
   async initialize(): Promise<void> {
     try {
-      await this.migrationManager.initializePrograms(this.provider);
+      await this.migrationManager.initializePrograms(
+        this.provider,
+        this.keyPair
+      );
       this.startProcessing();
       logger.info("Migration service initialized");
     } catch (error) {
@@ -50,8 +60,14 @@ export class MigrationService {
 
   private async acquireLock(migrationId: string): Promise<boolean> {
     const lockKey = `migration:lock:${migrationId}`;
-    const result = await this.redisClient.set(lockKey, '1', 'EX', this.LOCK_TTL, 'NX');
-    return result === 'OK';
+    const result = await this.redisClient.set(
+      lockKey,
+      "1",
+      "EX",
+      this.LOCK_TTL,
+      "NX"
+    );
+    return result === "OK";
   }
 
   private async releaseLock(migrationId: string): Promise<void> {
@@ -83,7 +99,7 @@ export class MigrationService {
 
       // Get all active migrations
       const activeMigrations = await this.db.Migration.find({
-        status: { $in: ['active', 'migrating', 'migrated'] }
+        status: { $in: ["active", "migrating", "migrated"] },
       }).limit(this.MAX_CONCURRENT_MIGRATIONS);
 
       // Process migrations that we can acquire locks for
@@ -100,7 +116,7 @@ export class MigrationService {
 
       await Promise.all(processingPromises);
     } catch (error) {
-      logger.error('Error processing migrations:', error);
+      logger.error("Error processing migrations:", error);
     } finally {
       this.isProcessing = false;
     }
@@ -130,7 +146,9 @@ export class MigrationService {
   private async processMigration(migration: IMigration): Promise<void> {
     try {
       const currentStep = migration.currentStep || 0;
-      const steps = await this.migrationManager.getMigrationSteps(migration.protocol);
+      const steps = await this.migrationManager.getMigrationSteps(
+        migration.protocol
+      );
 
       if (currentStep >= steps.length) {
         await this.db.Migration.findOneAndUpdate(
@@ -138,8 +156,8 @@ export class MigrationService {
           {
             $set: {
               status: "finalized",
-              completedAt: new Date()
-            }
+              completedAt: new Date(),
+            },
           }
         );
         logger.info(`Migration ${migration._id} finalized successfully`);
@@ -158,9 +176,9 @@ export class MigrationService {
         JSON.stringify({
           currentStep,
           protocolState: protocolMigration.protocolState,
-          startedAt: new Date()
+          startedAt: new Date(),
         }),
-        'EX',
+        "EX",
         this.LOCK_TTL
       );
 
@@ -179,8 +197,8 @@ export class MigrationService {
           $set: {
             currentStep: currentStep + 1,
             lastSuccessfulStep: currentStep,
-            lastProcessedAt: new Date()
-          }
+            lastProcessedAt: new Date(),
+          },
         }
       );
 
@@ -195,8 +213,8 @@ export class MigrationService {
           $set: {
             status: "active",
             errors: error instanceof Error ? error.message : "Unknown error",
-            lastErrorAt: new Date()
-          }
+            lastErrorAt: new Date(),
+          },
         }
       );
 

@@ -63,7 +63,8 @@
 		"build:docker": "docker build -t autofun-frontend -f apps/frontend/Dockerfile.frontend .",
 		"start:docker": "docker run -p 3000:3000 autofun-frontend",
 		"sync": "dotenv -e .env -- pnpm --filter @autofun/sync sync tokens",
-		"test-migration": "pnpm --filter @autofun/migrations test"
+		"test-migration": "pnpm --filter @autofun/migrations test",
+		"test-migration-meteora-rpc": "pnpm --filter @autofun/migrations test-meteora-rpc"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

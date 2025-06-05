@@ -1,12 +1,12 @@
 import type { Connection } from '@solana/web3.js';
 import type { Program } from '@coral-xyz/anchor';
 import { AnchorProvider } from '@coral-xyz/anchor';
-import { EVMRpcProvider, SolanaRpcProvider } from '@autofun/rpc';
 import DB from '@autofun/database';
 import { ProgramContext } from './programs';
 import type { RaydiumVault } from './vaults/programs/types/raydium_vault';
 import type { MeteoraVault } from './vaults/programs/types/meteora_vault';
 import type { Autofun } from './vaults/programs/types/autofun';
+import { Wallet } from "./utils/customWallet";
 
 export type RpcClient = Connection;
 
@@ -35,6 +35,10 @@ export interface ProtocolState {
     sol: number;
     token: number;
   };
+  primaryTokenAmount?: string;
+  primarySolAmount?: string;
+  secondaryTokenAmount?: string;
+  secondarySolAmount?: string;
   nftAddress?: string;
   nftMint?: string;
   nftMinted?: string[];
@@ -90,8 +94,8 @@ export interface ProtocolState {
 export interface MigrationContext {
   rpc: Connection;
   state: ProtocolState;
-  wallet?: any;
-  provider?: any;
+  wallet?: Wallet;
+  provider?: AnchorProvider;
   program?: Program;
   programContext?: ProgramContext;
   raydiumVaultProgram?: Program<RaydiumVault>;

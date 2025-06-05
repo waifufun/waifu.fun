@@ -1,9 +1,13 @@
-import { PublicKey, Keypair, Transaction } from '@solana/web3.js';
-import BN from 'bn.js';
-import type { MigrationContext } from '../../types';
-import DB from '@autofun/database';
-import * as spl from '@solana/spl-token';
-import { parseWithdrawLogs, handleTransaction, recordTransaction } from '../../utils/protocol-utils';
+import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
+import BN from "bn.js";
+import type { MigrationContext } from "../../types";
+import DB from "@autofun/database";
+import * as spl from "@solana/spl-token";
+import {
+  parseWithdrawLogs,
+  handleTransaction,
+  recordTransaction,
+} from "../../utils/protocol-utils";
 import {
   CpAmm,
   MIN_SQRT_PRICE,
@@ -13,55 +17,71 @@ import {
   AddLiquidityParams,
   derivePositionNftAccount,
   InitializeCustomizeablePoolParams,
-  CreatePositionParams
+  CreatePositionParams,
 } from "@meteora-ag/cp-amm-sdk";
-import Decimal from 'decimal.js';
-import { TOKEN_PROGRAM_ID, NATIVE_MINT } from '@solana/spl-token';
-import { depositToMeteora } from '../../vaults/meteoraVault';
+import Decimal from "decimal.js";
+import { TOKEN_PROGRAM_ID, NATIVE_MINT } from "@solana/spl-token";
+import { depositToMeteora } from "../../vaults/meteoraVault";
 
 export async function createPositionNft(
   context: MigrationContext,
   isPrimary: boolean
 ): Promise<{ txId: string; nftMint: string; positionNftSecret: string }> {
   const positionNftKeypair = Keypair.generate();
-  const positionNftAccount = derivePositionNftAccount(positionNftKeypair.publicKey);
+  const positionNftAccount = derivePositionNftAccount(
+    positionNftKeypair.publicKey
+  );
   const positionNftMint = positionNftKeypair.publicKey;
 
-  console.log(`${isPrimary ? 'Primary' : 'Secondary'} position NFT mint created:`, positionNftMint.toString());
-  console.log(`${isPrimary ? 'Primary' : 'Secondary'} position NFT token account created:`, positionNftAccount.toString());
+  console.log(
+    `${isPrimary ? "Primary" : "Secondary"} position NFT mint created:`,
+    positionNftMint.toString()
+  );
+  console.log(
+    `${
+      isPrimary ? "Primary" : "Secondary"
+    } position NFT token account created:`,
+    positionNftAccount.toString()
+  );
 
   if (!positionNftMint) {
     throw new Error("No position NFT mint found for pool creation");
   }
 
-  const txId = `createPositionMint${isPrimary ? '' : '2'}`;
+  const txId = `createPositionMint${isPrimary ? "" : "2"}`;
   const nftMint = positionNftMint.toString();
-  const positionNftSecret = JSON.stringify(Array.from(positionNftKeypair.secretKey));
+  const positionNftSecret = JSON.stringify(
+    Array.from(positionNftKeypair.secretKey)
+  );
 
   // Update MongoDB with NFT mint and secret
   await DB.Migration.findOneAndUpdate(
     { contractAddress: context.state.tokenMint },
     {
       $push: {
-        positionNftsSecrets: positionNftSecret
+        positionNftsSecrets: positionNftSecret,
       },
       $set: {
-        [isPrimary ? 'primaryNftMint' : 'secondaryNftMint']: nftMint,
-        updatedAt: new Date()
-      }
+        [isPrimary ? "primaryNftMint" : "secondaryNftMint"]: nftMint,
+        updatedAt: new Date(),
+      },
     }
   );
-  await recordTransaction(context.state, isPrimary ? 'createPrimaryPositionNft' : "createSecondaryPositionNft", txId, {
-    positionNftMint: nftMint,
-    nft : isPrimary ? 'primaryNftMint' : 'secondaryNftMint',
-    timestamp: new Date()
-  }
-  )
+  await recordTransaction(
+    context.state,
+    isPrimary ? "createPrimaryPositionNft" : "createSecondaryPositionNft",
+    txId,
+    {
+      positionNftMint: nftMint,
+      nft: isPrimary ? "primaryNftMint" : "secondaryNftMint",
+      timestamp: new Date(),
+    }
+  );
 
   return {
     txId,
     nftMint,
-    positionNftSecret
+    positionNftSecret,
   };
 }
 
@@ -80,6 +100,11 @@ export async function finalizePositionNft(
     secondaryAmountSol: string;
   };
 }> {
+  if (!context.provider || !context.state) {
+    throw new Error(
+      "Provider and state are required for position NFT finalization"
+    );
+  }
   const aggregatedTxId = `${primary.txId},${secondary.txId}`;
   const aggregatedNftMint = `${primary.nftMint},${secondary.nftMint}`;
 
@@ -90,18 +115,23 @@ export async function finalizePositionNft(
   }
 
   // Get the withdraw transaction from the transactions array
-  const withdrawTx = context.state.transactions?.find(tx => tx.step === 'withdraw');
+  const withdrawTx = context.state.transactions?.find(
+    (tx) => tx.step === "withdraw"
+  );
   if (!withdrawTx?.txId) {
     throw new Error("No withdraw transaction found in state");
   }
 
-  const lastInfo = await context.provider.connection.getTransaction(withdrawTx.txId, {
-    maxSupportedTransactionVersion: 0,
-  });
+  const lastInfo = await context.provider.connection.getTransaction(
+    withdrawTx.txId,
+    {
+      maxSupportedTransactionVersion: 0,
+    }
+  );
 
   const backupLogs = lastInfo?.meta?.logMessages || [];
   const withdrawLogs = parseWithdrawLogs(backupLogs);
-  
+
   // Verify amounts match
   if (
     withdrawLogs.sol !== withdrawnAmounts.token ||
@@ -140,22 +170,27 @@ export async function finalizePositionNft(
         status: "migrating",
         lastUpdated: new Date().toISOString(),
         lockedAt: new Date(),
-        'migration.extraData.primaryAmount': primaryAmount.toString(),
-        'migration.extraData.secondaryAmount': secondaryAmount.toString(),
-        'migration.extraData.primaryAmountSol': primaryAmountSol.toString(),
-        'migration.extraData.secondaryAmountSol': secondaryAmountSol.toString(),
-        updatedAt: new Date()
-      }
+        "migration.extraData.primaryAmount": primaryAmount.toString(),
+        "migration.extraData.secondaryAmount": secondaryAmount.toString(),
+        "migration.extraData.primaryAmountSol": primaryAmountSol.toString(),
+        "migration.extraData.secondaryAmountSol": secondaryAmountSol.toString(),
+        updatedAt: new Date(),
+      },
     }
   );
 
-  await recordTransaction(context.state, 'finalizePositionNft', aggregatedTxId, {
-    primaryAmount: primaryAmount.toString(),
-    secondaryAmount: secondaryAmount.toString(),
-    primaryAmountSol: primaryAmountSol.toString(),
-    secondaryAmountSol: secondaryAmountSol.toString(),
-    timestamp: new Date()
-  });
+  await recordTransaction(
+    context.state,
+    "finalizePositionNft",
+    aggregatedTxId,
+    {
+      primaryAmount: primaryAmount.toString(),
+      secondaryAmount: secondaryAmount.toString(),
+      primaryAmountSol: primaryAmountSol.toString(),
+      secondaryAmountSol: secondaryAmountSol.toString(),
+      timestamp: new Date(),
+    }
+  );
 
   console.log(
     `[Lock] Finalizing position NFT lock for token ${context.state.tokenMint} with txId: ${aggregatedTxId}`
@@ -176,8 +211,8 @@ export async function finalizePositionNft(
 
 export async function createPool(
   context: MigrationContext,
-  primaryTokens: BN,
-  primarySol: BN,
+  amountToken: BN,
+  amountSol: BN,
   primaryNft: PublicKey
 ): Promise<{
   txId: string;
@@ -185,21 +220,36 @@ export async function createPool(
     lockLpTxId: string;
     poolId: string;
     primaryPosition: string;
+    primaryToken: string;
+    primarySol: string;
   };
 }> {
-  const { provider, state } = context;
-  if (!provider.wallet) {
-    throw new Error('Wallet is required for pool creation');
-  }
+  const { provider, state, wallet } = context;
 
-  const mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9); // 6 SOL
+  if (!wallet) {
+    throw new Error("Wallet is required for pool creation");
+  }
+  if (!provider) {
+    throw new Error("Provider is required for NFT deposit");
+  }
+  const mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
+  const withdrawnTokensBN = new BN(amountToken);
+  const withdrawnSolBN = new BN(amountSol);
+  const remainingSol = withdrawnSolBN.sub(mintConstantFee);
+  const primaryTokens = withdrawnTokensBN
+    .muln(Number(process.env.PRIMARY_LOCK_PERCENTAGE ?? 90))
+    .divn(100);
+  const primarySol = remainingSol
+    .muln(Number(process.env.PRIMARY_LOCK_PERCENTAGE ?? 90))
+    .divn(100);
+
   const withdrawnAmounts = state.withdrawnAmounts;
   if (!withdrawnAmounts) {
     throw new Error("No withdrawn amounts found for pool creation");
   }
 
   // Get the withdraw transaction from the transactions array
-  const withdrawTx = state.transactions?.find(tx => tx.step === 'withdraw');
+  const withdrawTx = state.transactions?.find((tx) => tx.step === "withdraw");
   if (!withdrawTx?.txId) {
     throw new Error("No withdraw transaction found in state");
   }
@@ -210,7 +260,7 @@ export async function createPool(
 
   const backupLogs = lastInfo?.meta?.logMessages || [];
   const withdrawLogs = parseWithdrawLogs(backupLogs);
-  
+
   // Verify amounts match
   if (
     withdrawLogs.sol !== withdrawnAmounts.token ||
@@ -235,14 +285,16 @@ export async function createPool(
   const tokenBMint = spl.NATIVE_MINT;
   const cpAmm = new CpAmm(provider.connection);
   const configs = await cpAmm.getAllConfigs();
-  // choose config with 0.5 fee 
+  // choose config with 0.5 fee
   const config = configs?.[0]?.publicKey;
   if (!config) {
     throw new Error("No config found for pool creation");
   }
 
   // Get the position NFT secret from the database
-  const migration = await DB.Migration.findOne({ contractAddress: state.tokenMint });
+  const migration = await DB.Migration.findOne({
+    contractAddress: state.tokenMint,
+  });
   if (!migration?.positionNftsSecrets?.length) {
     throw new Error("No position NFT secret found for pool creation");
   }
@@ -262,11 +314,11 @@ export async function createPool(
   const result = await handleTransaction(
     provider.connection,
     tx,
-    provider.wallet.payer as Keypair,
+    wallet.payer as Keypair,
     {
-      preflightCommitment: 'confirmed',
+      preflightCommitment: "confirmed",
       maxRetries: 3,
-      timeout: 60000
+      timeout: 60000,
     }
   );
 
@@ -288,14 +340,14 @@ export async function createPool(
         marketId: pool.toString(),
         poolId: pool.toString(),
         primaryPosition: position.toString(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     }
   );
-  await recordTransaction(state, 'createPool', txId, {
+  await recordTransaction(state, "createPool", txId, {
     poolId: pool.toString(),
     primaryPosition: position.toString(),
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 
   console.log(`[createPool] Migration update POSTed for ${state.tokenMint}`);
@@ -306,6 +358,8 @@ export async function createPool(
       lockLpTxId: txId,
       poolId: pool.toString(),
       primaryPosition: position.toString(),
+      primaryToken: primaryTokens.toString(),
+      primarySol: primarySol.toString(),
     },
   };
 }
@@ -317,7 +371,11 @@ async function prepareCreatePoolTransaction(
   positionNft: PublicKey
 ): Promise<{ tx: Transaction; pool: PublicKey; position: PublicKey }> {
   const { provider, state } = context;
-  const token = state; 
+
+  if (!provider) {
+    throw new Error("Provider is required for pool creation");
+  }
+  const token = state;
 
   const tokenAMint = new PublicKey(token.tokenMint);
   const tokenBMint = NATIVE_MINT;
@@ -327,8 +385,12 @@ async function prepareCreatePoolTransaction(
   const tokenBDecimal = 9;
 
   // Calculate initial price
-  const humanA = new Decimal(tokenAAmount.toString()).div(new Decimal(10).pow(tokenADecimal));
-  const humanB = new Decimal(tokenBAmount.toString()).div(new Decimal(10).pow(tokenBDecimal));
+  const humanA = new Decimal(tokenAAmount.toString()).div(
+    new Decimal(10).pow(tokenADecimal)
+  );
+  const humanB = new Decimal(tokenBAmount.toString()).div(
+    new Decimal(10).pow(tokenBDecimal)
+  );
   const initPrice = humanB.div(humanA).toString();
 
   // Set activation point to 7 minutes from now
@@ -340,7 +402,7 @@ async function prepareCreatePoolTransaction(
     maxAmountTokenB: tokenBAmount,
     sqrtPrice: getSqrtPriceFromPrice(initPrice, tokenADecimal, tokenBDecimal),
     sqrtMinPrice: MIN_SQRT_PRICE,
-    sqrtMaxPrice: MAX_SQRT_PRICE
+    sqrtMaxPrice: MAX_SQRT_PRICE,
   });
 
   const createCustomPoolParams: InitializeCustomizeablePoolParams = {
@@ -354,33 +416,39 @@ async function prepareCreatePoolTransaction(
     sqrtMinPrice: MIN_SQRT_PRICE,
     sqrtMaxPrice: MAX_SQRT_PRICE,
     liquidityDelta,
-    initSqrtPrice: getSqrtPriceFromPrice(initPrice, tokenADecimal, tokenBDecimal),
+    initSqrtPrice: getSqrtPriceFromPrice(
+      initPrice,
+      tokenADecimal,
+      tokenBDecimal
+    ),
     poolFees: {
       baseFee: {
         cliffFeeNumerator: new BN(2_500_000),
         numberOfPeriod: 0,
         periodFrequency: new BN(0),
         reductionFactor: new BN(0),
-        feeSchedulerMode: 0
+        feeSchedulerMode: 0,
       },
       protocolFeePercent: 20,
       partnerFeePercent: 0,
       referralFeePercent: 20,
-      dynamicFee: null
+      dynamicFee: null,
     },
     hasAlphaVault: false,
     activationType: 1,
     collectFeeMode: 0,
     activationPoint,
     tokenAProgram: TOKEN_PROGRAM_ID,
-    tokenBProgram: TOKEN_PROGRAM_ID
+    tokenBProgram: TOKEN_PROGRAM_ID,
   };
 
-  const { tx, pool, position } = await cpAmm.createCustomPool(createCustomPoolParams);
+  const { tx, pool, position } = await cpAmm.createCustomPool(
+    createCustomPoolParams
+  );
   return {
     tx,
     pool,
-    position
+    position,
   };
 }
 
@@ -392,15 +460,25 @@ export async function createPosition(
   txId: string;
   extraData: Record<string, any>;
 }> {
-  const { provider, state } = context;
-  if (!provider.wallet) {
-    throw new Error('Wallet is required for position creation');
+  const { provider, state, wallet } = context;
+  if (!provider) {
+    throw new Error("Wallet is required for position creation");
+  }
+  if (!wallet) {
+    throw new Error("Wallet is required for position creation");
   }
 
   // Get the secondary position NFT secret from the database
-  const migration = await DB.Migration.findOne({ contractAddress: state.tokenMint });
-  if (!migration?.positionNftsSecrets?.length || migration.positionNftsSecrets.length < 2) {
-    throw new Error("No secondary position NFT secret found for position creation");
+  const migration = await DB.Migration.findOne({
+    contractAddress: state.tokenMint,
+  });
+  if (
+    !migration?.positionNftsSecrets?.length ||
+    migration.positionNftsSecrets.length < 2
+  ) {
+    throw new Error(
+      "No secondary position NFT secret found for position creation"
+    );
   }
   const positionNftKeypair = Keypair.fromSecretKey(
     Uint8Array.from(JSON.parse(migration.positionNftsSecrets[1])) // Use the second secret for secondary position
@@ -414,18 +492,18 @@ export async function createPosition(
     owner: provider.wallet.publicKey,
     payer: provider.wallet.publicKey,
     pool,
-    positionNft
+    positionNft,
   });
 
   // Send and confirm the transaction using handleTransaction
   const result = await handleTransaction(
     provider.connection,
     createPositionTx,
-    provider.wallet.payer as Keypair,
+    wallet.payer as Keypair,
     {
-      preflightCommitment: 'confirmed',
+      preflightCommitment: "confirmed",
       maxRetries: 3,
-      timeout: 60000
+      timeout: 60000,
     }
   );
 
@@ -448,25 +526,27 @@ export async function createPosition(
         txId: txId,
         nftMinted: state.nftMinted,
         secondaryPosition: positionAddress,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       $push: {
-        positionIds: positionAddress
-      }
+        positionIds: positionAddress,
+      },
     }
   );
-  await recordTransaction(state, 'createPosition', txId, {
+  await recordTransaction(state, "createPosition", txId, {
     positionId: positionAddress,
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 
-  console.log(`[createPosition] Secondary position created for ${state.tokenMint} with txId: ${txId}`);
+  console.log(
+    `[createPosition] Secondary position created for ${state.tokenMint} with txId: ${txId}`
+  );
 
   return {
     txId,
     extraData: {
-      positionId: positionAddress
-    }
+      positionId: positionAddress,
+    },
   };
 }
 
@@ -479,9 +559,12 @@ export async function addLiquidity(
     positionId: string;
   };
 }> {
-  const { provider, state } = context;
-  if (!provider.wallet) {
-    throw new Error('Wallet is required for adding liquidity');
+  const { provider, state, wallet } = context;
+  if (!provider) {
+    throw new Error("Provider is required for adding liquidity");
+  }
+  if (!wallet) {
+    throw new Error("Wallet is required for adding liquidity");
   }
 
   const pool = new PublicKey(poolId);
@@ -495,8 +578,8 @@ export async function addLiquidity(
   const tokenBDecimal = 9;
 
   // Get secondary amounts from state
-  const secondaryAmount = new BN(state.secondaryAmount ?? '0');
-  const secondaryAmountSol = new BN(state.secondaryAmountSol ?? '0');
+  const secondaryAmount = new BN(state.secondaryAmount ?? "0");
+  const secondaryAmountSol = new BN(state.secondaryAmountSol ?? "0");
 
   // Get secondary position NFT
   if (!state.nftMinted || state.nftMinted.length < 2) {
@@ -511,7 +594,7 @@ export async function addLiquidity(
     maxAmountTokenB: secondaryAmountSol,
     sqrtPrice: poolState.sqrtPrice,
     sqrtMinPrice: MIN_SQRT_PRICE,
-    sqrtMaxPrice: MAX_SQRT_PRICE
+    sqrtMaxPrice: MAX_SQRT_PRICE,
   });
 
   // Get user position
@@ -519,7 +602,9 @@ export async function addLiquidity(
     provider.wallet.publicKey,
     pool
   );
-  const userPosition = userPositions.find(p => p.positionNftAccount.equals(positionNftAccount));
+  const userPosition = userPositions.find((p) =>
+    p.positionNftAccount.equals(positionNftAccount)
+  );
   if (!userPosition) {
     throw new Error("No user position found for pool");
   }
@@ -531,7 +616,7 @@ export async function addLiquidity(
     isTokenA: true,
     minSqrtPrice: MIN_SQRT_PRICE,
     maxSqrtPrice: MAX_SQRT_PRICE,
-    sqrtPrice: poolState.sqrtPrice
+    sqrtPrice: poolState.sqrtPrice,
   });
 
   const maxAmountTokenA = quote.actualInputAmount;
@@ -556,7 +641,7 @@ export async function addLiquidity(
     tokenAVault: poolState.tokenAVault,
     tokenBVault: poolState.tokenBVault,
     tokenAProgram: TOKEN_PROGRAM_ID,
-    tokenBProgram: TOKEN_PROGRAM_ID
+    tokenBProgram: TOKEN_PROGRAM_ID,
   };
 
   // Create and send transaction
@@ -566,11 +651,11 @@ export async function addLiquidity(
   const result = await handleTransaction(
     provider.connection,
     addLiquidityTx,
-    provider.wallet.payer as Keypair,
+    wallet.payer as Keypair,
     {
-      preflightCommitment: 'confirmed',
+      preflightCommitment: "confirmed",
       maxRetries: 3,
-      timeout: 60000
+      timeout: 60000,
     }
   );
 
@@ -590,25 +675,27 @@ export async function addLiquidity(
         txId: txId,
         nftMinted: state.nftMinted,
         secondaryPosition: positionAddress.toString(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       $addToSet: {
-        positionIds: positionAddress.toString()
-      }
+        positionIds: positionAddress.toString(),
+      },
     }
   );
-  await recordTransaction(state, 'addLiquidity', txId, {
+  await recordTransaction(state, "addLiquidity", txId, {
     positionId: positionAddress.toString(),
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 
-  console.log(`[addLiquidity] Liquidity added for ${state.tokenMint} with txId: ${txId}`);
+  console.log(
+    `[addLiquidity] Liquidity added for ${state.tokenMint} with txId: ${txId}`
+  );
 
   return {
     txId,
     extraData: {
-      positionId: positionAddress.toString()
-    }
+      positionId: positionAddress.toString(),
+    },
   };
 }
 
@@ -621,6 +708,9 @@ export async function depositNftToMeteora(
   if (!wallet) {
     throw new Error("Wallet is required for NFT deposit");
   }
+  if (!provider) {
+    throw new Error("Provider is required for NFT deposit");
+  }
 
   try {
     const signerWallet = wallet;
@@ -628,20 +718,21 @@ export async function depositNftToMeteora(
       throw new Error("Meteora vault program not initialized");
     }
     const fromAccount = derivePositionNftAccount(new PublicKey(nftMint));
-    const balance = await provider.connection.getTokenAccountBalance(fromAccount);
-    if (balance.value.uiAmount < 1) {
+    const balance = await provider.connection.getTokenAccountBalance(
+      fromAccount
+    );
+    if (balance.value.uiAmount && balance.value.uiAmount < 1) {
       throw new Error("Insufficient NFT balance in token account");
     }
 
     const txSignature = await depositToMeteora(
       provider,
-      signerWallet,
+      signerWallet.payer,
       context.programContext.meteoraVaultProgram,
       new PublicKey(nftMint),
       claimerAddress,
       fromAccount
     );
-
 
     await DB.Migration.findOneAndUpdate(
       { contractAddress: state.tokenMint },
@@ -649,23 +740,22 @@ export async function depositNftToMeteora(
         $set: {
           nftDeposited: true,
           nftDepositedAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       }
     );
-    await recordTransaction(state, 'depositNft', txSignature, {
+    await recordTransaction(state, "depositNft", txSignature, {
       nftMint,
       claimerAddress: claimerAddress.toString(),
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     return {
       txId: txSignature,
-      extraData: { depositedNftMint: nftMint }
+      extraData: { depositedNftMint: nftMint },
     };
   } catch (error) {
     console.error("Error depositing NFT to Meteora vault:", error);
     throw error;
   }
 }
-

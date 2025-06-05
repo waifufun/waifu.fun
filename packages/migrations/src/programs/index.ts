@@ -1,10 +1,12 @@
 import { Program, AnchorProvider, web3 } from "@coral-xyz/anchor";
-import * as raydiumVaultIdl from "../vaults/programs/idl/raydium_vault.json";
-import * as meteoraVaultIdl from "../vaults/programs/idl/meteora_vault.json";
-import * as autofunIdl from "../vaults/programs/idl/autofun.json";
+import raydiumVaultIdl from "../vaults/programs/idl/raydium_vault.json";
+import meteoraVaultIdl from "../vaults/programs/idl/meteora_vault.json";
+import autofunIdl from "../vaults/programs/idl/autofun.json";
 import { RaydiumVault } from "../vaults/programs/types/raydium_vault";
 import { MeteoraVault } from "../vaults/programs/types/meteora_vault";
 import { Autofun } from "../vaults/programs/types/autofun";
+import { Wallet } from "../utils/customWallet";
+import { Keypair } from "@solana/web3.js";
 
 // Program IDs
 const raydiumVaultId = raydiumVaultIdl.address;
@@ -19,9 +21,10 @@ export interface ProgramContext {
   meteoraVaultProgram: Program<MeteoraVault>;
   autofunProgram: Program<Autofun>;
   provider: AnchorProvider;
+  wallet: Wallet;
 }
 
-export async function initializePrograms(provider: AnchorProvider): Promise<ProgramContext> {
+export async function initializePrograms(provider: AnchorProvider, keypair: Keypair): Promise<ProgramContext> {
   // Initialize RaydiumVault program
   const raydiumVaultProgram = new Program<RaydiumVault>(
     raydiumVaultIdl as any,
@@ -39,11 +42,14 @@ export async function initializePrograms(provider: AnchorProvider): Promise<Prog
     autofunIdl as any,
     provider
   );
+  // Create a custom wallet instance
+  const wallet = new Wallet(keypair);
 
   return {
     raydiumVaultProgram,
     meteoraVaultProgram,
     autofunProgram,
-    provider
+    provider,
+    wallet,
   };
 } 
