@@ -88,6 +88,16 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 			if (!from) throw new Error("No wallet connected");
 			return await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
 		},
+		onSuccess: () => {
+			setTimeout(() => {
+				queryClient.invalidateQueries({
+					queryKey: ["balance"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["trades"],
+				});
+			}, 1500);
+		},
 		onError: (e) => {
 			toast.error(e.message);
 		},
