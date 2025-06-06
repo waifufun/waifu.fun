@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import ChainIndicator from "@/components/chain-indicator";
 import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
@@ -11,15 +12,22 @@ import {
 	getCoinGeckoChainName,
 	shortenAddress,
 } from "@/lib/utils";
+=======
+import { getToken } from "@/lib/api";
+>>>>>>> origin/develop
 import type { IToken, ITokenLookUp } from "@autofun/types";
-import Image from "next/image";
 import type { Metadata } from "next";
+<<<<<<< HEAD
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import Chart from "@/components/chart/chart";
+=======
+import type { ReactNode } from "react";
+import PageClient from "./components/page-client";
+>>>>>>> origin/develop
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = (await getToken(await params)) as IToken;
@@ -46,6 +54,7 @@ export default async function Page({ params, children }: { params: Promise<IToke
 	const token = (await getToken(tokenParams)) as IToken;
 
 	return (
+<<<<<<< HEAD
 		<div className="flex flex-col gap-6 mt-3">
 			<ScamWarning isHidden={!!token?.hidden} />
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
@@ -230,5 +239,10 @@ export default async function Page({ params, children }: { params: Promise<IToke
 				</div>
 			</div>
 		</div>
+=======
+		<PageClient initialData={token} tokenParams={tokenParams}>
+			{children}
+		</PageClient>
+>>>>>>> origin/develop
 	);
 }

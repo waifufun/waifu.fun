@@ -1,8 +1,19 @@
-import { getToken } from "@/lib/api";
-import type { ITokenLookUp } from "@autofun/types";
+import Agents from "@/components/token-page/agents";
+import { getAgent, getToken } from "@/lib/api";
+import type { ITokenLookUp, TChainId } from "@autofun/types";
 
 export default async function Page({ params }: { params: Promise<ITokenLookUp> }) {
 	const tokenParams = await params;
 	const token = await getToken(tokenParams);
-	return <div>agents</div>;
+	const data = await getAgent({
+		contractAddress: token.contractAddress,
+		chain: token.chain,
+		chainId: token.chainId as TChainId,
+	});
+
+	return (
+		<div className="py-12 w-full flex place-content-center">
+			<Agents agents={data?.docs} token={token} />
+		</div>
+	);
 }

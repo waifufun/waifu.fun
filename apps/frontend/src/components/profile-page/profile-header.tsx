@@ -27,7 +27,7 @@ export default function ProfileHeader({
 	};
 
 	return (
-		<div className="bg-[#0C0C0C] md:max-h-[182px] md:max-w-[800px] space-y-4 text-white flex flex-col md:flex-row items-center justify-between p-4 rounded-xl w-full mx-auto gap-0">
+		<div className="bg-[#0C0C0C] md:max-h-[182px] md:max-w-[800px] space-y-4 text-white flex flex-col md:flex-row items-center justify-between p-4 rounded-sm w-full mx-auto gap-0">
 			<div className="relative w-[150px] h-[150px]">
 				<Image src="/create/test-img.png" alt="Profile" width={150} height={150} className="object-cover" />
 				<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
@@ -78,11 +78,11 @@ export default function ProfileHeader({
 			</div>
 
 			<div className="flex flex-row md:flex-col w-full md:w-fit place-content-center md:place-content-end gap-2 ml-auto">
-				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-lg">
+				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-sm">
 					<p className="text-white font-bold text-base">Tokens Bought</p>
 					<p className="text-lg  text-autofun-background-action-highlight font-semibold">{data.tokensBought}</p>
 				</div>
-				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-lg">
+				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-sm">
 					<p className="text-white font-bold text-base">Tokens Created</p>
 					<p className="text-base text-autofun-background-action-highlight font-semibold">{data.tokensCreated}</p>
 				</div>

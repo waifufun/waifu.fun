@@ -19,7 +19,7 @@ export default function Swap({ token }: { token: IToken }) {
 					</TabsTrigger>
 				</TabsList>
 
-				<div className="p-4 bg-[#0C0C0C] rounded-b-xl">
+				<div className="p-4 bg-[#0C0C0C] rounded-b-sm">
 					<SwapCard token={token} mode={mode} />
 				</div>
 			</Tabs>

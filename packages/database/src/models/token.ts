@@ -25,6 +25,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		totalSupply: { type: Number, required: true, default: 0 },
 		reserveAmount: { type: Number },
 		reserveLamport: { type: Number },
+		bondingCurveBalance: { type: Number },
 		virtualReserves: { type: Number },
 		socials: {
 			twitter: { type: String },
@@ -35,6 +36,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		hidden: { type: Boolean, default: false },
 		featured: { type: Boolean, default: false },
 		creator: { type: String },
+		status: { type: String, default: "active" },
 		pool: { type: String },
 	},
 	{ timestamps: true, versionKey: false },

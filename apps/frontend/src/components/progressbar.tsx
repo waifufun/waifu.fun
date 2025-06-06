@@ -15,13 +15,13 @@ export default function Progressbar({ value, max, height }: { value: number; max
 		<div
 			className={cn([
 				height ? height : "h-3",
-				"rounded-xl w-full max-w-md bg-autofun-background-action-disabled relative overflow-hidden",
+				"rounded-sm w-full max-w-md bg-autofun-background-action-disabled relative overflow-hidden",
 			])}
 		>
 			<div
 				className={cn([
 					height ? height : "h-3",
-					"rounded-xl bg-autofun-background-action-highlight transition-all duration-300",
+					"rounded-sm bg-autofun-background-action-highlight transition-all duration-300",
 				])}
 				style={{
 					width: `${width}%`,

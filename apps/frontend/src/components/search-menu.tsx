@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getTokens } from "@/lib/api";
 import Image from "next/image";
-import ChainIndicator from "./chain-indicator";
 import Verified from "./verified";
 import { CopyButton } from "./copy-button";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
@@ -57,7 +56,7 @@ export default function SearchMenu() {
 				<PopoverContent
 					onOpenAutoFocus={(e) => e.preventDefault()}
 					onCloseAutoFocus={(e) => e.preventDefault()}
-					className="w-[430px] border-[#262626] rounded-lg bg-gradient-to-b from-[#151515] to-[#0D0D0D]"
+					className="w-[430px] border-[#262626] rounded-sm bg-gradient-to-b from-[#151515] to-[#0D0D0D]"
 				>
 					{searchQuery?.isPending ? (
 						<div className="text-center text-base text-autofun-text-secondary">Searching...</div>
@@ -69,7 +68,7 @@ export default function SearchMenu() {
 									key={token.contractAddress}
 									onClick={() => setOpen(false)}
 								>
-									<div className="rounded-lg hover:bg-[#0C0C0C] p-3 transition-colors duration-200 flex items-center gap-4 justify-between">
+									<div className="rounded-sm hover:bg-[#0C0C0C] p-3 transition-colors duration-200 flex items-center gap-4 justify-between">
 										<div className="flex items-center gap-3">
 											{/* Image */}
 											<Image
@@ -78,13 +77,13 @@ export default function SearchMenu() {
 												height={48}
 												unoptimized
 												alt="token_image"
-												className="size-[48px] rounded-lg"
+												className="size-[48px] rounded-sm aspect-square"
 											/>
 											{/* Token Name */}
 											<div className="flex flex-col gap-2.5">
 												{/* Name */}
 												<div className="flex items-center gap-1.5">
-													<ChainIndicator chain={token.chain} chainId={token.chainId} />
+													{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 													<span className="text-white text-base font-medium font-satoshi uppercase">{token.name}</span>
 													<span className="text-base font-medium uppercase text-autofun-text-secondary">
 														{token.ticker}

@@ -1,4 +1,6 @@
-import { SolanaIndexer, } from "../indexers/solana-indexer";
+import dotenv from "dotenv";
+dotenv.config();
+import { SolanaIndexer } from "../indexers/solana-indexer";
 import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 import type { SolanaIndexerConfig } from "../types";
 
@@ -11,6 +13,8 @@ const config: SolanaIndexerConfig = {
 
 const indexer = new SolanaIndexer(config);
 
-(async () => {
+const run = async () => {
 	await indexer.runWithRealTimeSync();
-})();
+};
+
+run();

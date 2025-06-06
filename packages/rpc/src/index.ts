@@ -15,8 +15,9 @@ import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
 import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
+import BN from "bn.js";
 import idl from "./idls/autofun.json";
-import { Connection, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
 import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
 import autoFunAbi from "./evm/abis/AutoFun.json";
@@ -459,8 +460,9 @@ export class SolanaRpcProvider extends EventEmitter {
 			// TODO - Ensure non valid values are just skipped entirely if we see such token
 			if (!curve || !curve.reserveToken || String(curve.reserveToken) === "0") {
 				return {
+					contractAddress: mint,
 					tokenMint: mint,
-					curveCompleted: null,
+					curveCompleted: curve?.isCompleted,
 					priceLamports: null,
 					priceSOL: null,
 					marketCapSOL: null,
@@ -471,7 +473,7 @@ export class SolanaRpcProvider extends EventEmitter {
 					virtualReserves: 0,
 					curveLimit: 0,
 					curveProgress: 0,
-					priceUSD: 0,
+					priceUsd: 0,
 					decimals: supplyInfo.decimals || 6,
 					totalSupply: supplyInfo.supply || 0,
 				};
@@ -489,8 +491,21 @@ export class SolanaRpcProvider extends EventEmitter {
 
 			const virtualReserves = Number(curve.initLamport);
 			const curveLimit = Number(curve.curveLimit);
-			const curveProgress =
-				curveLimit > virtualReserves ? ((reserveLamport - virtualReserves) / (curveLimit - virtualReserves)) * 100 : 0;
+
+			const reserveLamportBN = new BN(reserveLamport.toString());
+			const virtualReservesBN = new BN(virtualReserves.toString());
+			const curveLimitBN = new BN(curveLimit.toString());
+			const LAMPORTS_PER_SOL_BN = new BN(LAMPORTS_PER_SOL.toString());
+
+			let curveProgress = curve?.isCompleted ? new BN(100) : new BN(0);
+
+			if (curveLimitBN.gt(virtualReservesBN) && !curve?.isCompleted) {
+				const numerator = reserveLamportBN.sub(virtualReservesBN);
+				const denominator = curveLimitBN.sub(virtualReservesBN);
+				curveProgress = numerator.mul(new BN(100)).div(denominator);
+			}
+
+			const bondingCurveBalance = reserveLamportBN.sub(virtualReservesBN).div(LAMPORTS_PER_SOL_BN).toNumber();
 
 			const creator = curve.creator.toBase58();
 
@@ -499,10 +514,11 @@ export class SolanaRpcProvider extends EventEmitter {
 				bondingCurveAddress,
 				creator: creator ? creator : undefined,
 				curveCompleted: curve.isCompleted,
-				curveProgress: Math.min(Math.max(curveProgress, 0), 100),
+				curveProgress: Math.min(Math.max(curveProgress.toNumber(), 0), 100),
 				priceLamports: reserveLamport / reserveToken,
 				decimals: tokenDecimals,
 				virtualReserves,
+				bondingCurveBalance,
 				reserveLamport,
 				curveLimit,
 				priceSOL,
@@ -559,7 +575,6 @@ export class SolanaRpcProvider extends EventEmitter {
 			maxSupportedTransactionVersion: 0,
 		});
 	}, this);
-
 
 	getSlot = withFallBack(async () => {
 		return await this.connection.getSlot();

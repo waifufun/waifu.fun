@@ -78,6 +78,8 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	volume24h: number;
 	decimals: number;
 	holders: number;
+	status: string;
+	bondingCurveBalance?: number;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
 	curveProgress?: number;
@@ -180,6 +182,7 @@ export enum MediaType {
 }
 
 export interface IMigration {
+	_id?: string;
 	withdrawnAt?: Date | undefined;
 	migratedAt?: Date | undefined;
 	marketId?: string | undefined;
@@ -191,7 +194,13 @@ export interface IMigration {
 	withdrawnAmounts?: string | undefined;
 	poolInfo?: string | undefined;
 	lockLpTxId?: string | undefined;
-	status: string;
+	primaryNftMint?: string | undefined;
+	secondaryNftMint?: string | undefined;
+	status: "active" | "migrating" | "migrated" | "finalized" | "failed";
+	protocolState?: string | undefined;
+	protocol: "raydium" | "meteora";
+	currentStep?: number | undefined;
+	lastSuccessfulStep?: number | undefined;
 	positionIds?: string[] | undefined;
 	positionNftsSecrets?: string[] | undefined;
 	nftMinted?: string[] | undefined;
@@ -199,8 +208,10 @@ export interface IMigration {
 	chain: TChain;
 	chainId: TChainId;
 	creator: string;
+	version: number;
 	createdAt?: Date | undefined;
 	updatedAt?: Date | undefined;
+	startedAt?: Date | undefined;
 }
 
 export type IAdvancedSettingsProps = {
@@ -213,6 +224,17 @@ export type ISwapSettings = {
 	slippage: string;
 	deadline: string;
 };
+
+export interface IAgent {
+	_id: string;
+	name: string;
+	bio: string;
+	createdBy: string;
+	avatar: string;
+	contractAddress: Pick<IToken, "contractAddress">;
+	chain: Pick<IToken, "chain">;
+	chainId: Pick<IToken, "chainId">;
+}
 
 export interface IEventsMeta {
 	_id?: string;

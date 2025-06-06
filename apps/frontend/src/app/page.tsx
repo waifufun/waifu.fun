@@ -61,10 +61,13 @@ export default async function Home({
 				))}
 			</div>
 			<div className="flex flex-col items-center">
-				<div className="flex items-center w-full gap-4">
-					<FilterSelector />
+				<div className="flex flex-col md:flex-row items-start md:items-center w-full gap-4">
+					<div className="w-full">
+						<FilterSelector />
+					</div>
 					<GridListSelector />
 				</div>
+
 				{view === "grid" ? (
 					<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4 w-full">
 						{tokens?.map((token: IToken) => (
