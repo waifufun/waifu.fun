@@ -285,9 +285,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	logger.info(`Found ${validTokens.length} valid tokens after validation`);
   
 	const ops = [];
-	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
-<<<<<<< HEAD
-  
+	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};  
 	// Separate tokens by type
 	const importedTokens = validTokens.filter((t) => t?.imported);
 	const nonImportedTokens = validTokens.filter(
@@ -368,21 +366,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			filter: { _id: String(tokenRecord._id) },
 			update: { $set: setValues },
 		  },
-=======
-
-	const tokensToQuery = validTokens
-		.filter((t) => t?.imported || t?.curveCompleted)
-		.map((token: IToken) => {
-			const { chain, chainId, contractAddress } = token;
-			const networkId =
-				chain === "evm"
-					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
-					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
-
-			tokenIndex[contractAddress] = token;
-
-			return `${contractAddress}:${networkId}`;
->>>>>>> origin/develop
 		});
   
 		if (tokenRecord._id) {
@@ -425,7 +408,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	  if (results) {
 		logger.info(`Received ${results.length} results from Codex`);
 		for (const token of results) {
-<<<<<<< HEAD
 		  const address = token?.token?.address as AddressLike;
 		  const key = Object.keys(tokenIndex).find((a) => address.toLowerCase() === a.toLowerCase());
 		  const tokenRecord = key
@@ -463,62 +445,10 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		  if (tokenRecord?._id) {
 			delete tokenRecord._id;
 		  }
-=======
-			const address = token?.token?.address as AddressLike;
-			if (!tokenIndex) {
-				logger.warn("tokenIndex is undefined");
-				continue;
-			}
-
-			const key = Object.keys(tokenIndex).find((a) => address.toLowerCase() === a.toLowerCase());
-			const tokenRecord = key
-				? (tokenIndex[key as AddressLike] as IToken<TChain> & { _id?: string; updatedAt?: Date })
-				: undefined;
-
-			if (!tokenRecord) {
-				logger.warn(`No matching token record found for address ${address}`);
-				continue;
-			}
-
-			/** If the record was already updated very recently, there is no need to do it again.
-			 * This can occur when the user first navigates to /token, and very shortly after to
-			 * a single token page */
-			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
-
-			if (secondsPassedSinceUpdate <= 10) {
-				logger.info(`Skipping token ${address} - updated recently`);
-				continue;
-			}
-
-			const marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
-			tokenRecord.marketcap = marketcap;
-			const price = token?.priceUSD ? Number(token?.priceUSD) : 0;
-			tokenRecord.price = price;
-			const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
-			tokenRecord.volume24h = volume24h;
-			const holders = token?.holders ? Number(token?.holders) : 0;
-
-			ops.push({
-				updateOne: {
-					filter: {
-						_id: String(tokenRecord._id),
-					},
-					update: {
-						$set: {
-							marketcap,
-							price,
-							volume24h,
-							holders,
-						},
-					},
-				},
-			});
->>>>>>> origin/develop
 		}
 	  }
 	}
-<<<<<<< HEAD
-  
+
 	if (nonImportedTokensWithoutEvents.length > 0) {
 	  logger.info(`Falling back to RPC for ${nonImportedTokensWithoutEvents.length} non-imported tokens without events`);
 	  
@@ -531,104 +461,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		if (!tokenRecord?.contractAddress) {
 		  logger.warn("Bonding curve info missing contractAddress");
 		  continue;
-=======
 
-	/** All non imported tokens should be determined using RPC */
-	const nonImportedTokens = validTokens.filter(
-		(t) => (t?.imported === false || !t.curveCompleted) && t.chain === "solana" && t.chainId === 101,
-	);
-
-	logger.info(`Found ${nonImportedTokens.length} non-imported Solana tokens`);
-
-	if (nonImportedTokens?.length > 0) {
-		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
-		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
-
-		logger.info(`Received ${bondingCurveInfo.length} bonding curve info results`);
-
-		for (const tokenRecord of bondingCurveInfo) {
-			if (!tokenRecord?.contractAddress) {
-				logger.warn("Bonding curve info missing contractAddress");
-				continue;
-			}
-
-			const nonImportedToken = nonImportedTokens.find(
-				(a) => a.contractAddress === tokenRecord.contractAddress,
-			) as IToken<TChain> & { _id?: string; updatedAt?: Date };
-
-			if (!nonImportedToken) {
-				logger.warn(`No matching non-imported token found for ${tokenRecord.contractAddress}`);
-				continue;
-			}
-
-			tokenIndex[nonImportedToken.contractAddress] = {
-				...nonImportedToken,
-			};
-
-			/** If the record was already updated very recently, there is no need to do it again.
-			 * This can occur when the user first navigates to /token, and very shortly after to
-			 * a single token page */
-			const secondsPassedSinceUpdate = moment().diff(moment(nonImportedToken.updatedAt), "seconds");
-
-			if (secondsPassedSinceUpdate <= 7) {
-				logger.info(`Skipping token ${tokenRecord.contractAddress} - updated recently`);
-				continue;
-			}
-
-			if (!nonImportedToken?._id) {
-				logger.warn(`Token ${tokenRecord.contractAddress} missing _id`);
-				continue;
-			}
-
-			const setValues: {
-				marketcap?: number;
-				price?: number;
-				curveCompleted?: boolean;
-				curveProgress?: number;
-				creator?: AddressLike;
-				bondingCurveBalance?: number;
-				bondingCurveAddress?: AddressLike;
-			} = {
-				curveCompleted: Boolean(tokenRecord.curveCompleted),
-				curveProgress: Number(tokenRecord.curveProgress),
-			};
-			if (tokenRecord?.marketCapUSD) {
-				setValues.marketcap = Number(tokenRecord.marketCapUSD);
-			}
-
-			if (tokenRecord?.priceUsd) {
-				setValues.price = Number(tokenRecord.priceUsd);
-			}
-
-			if (tokenRecord?.bondingCurveBalance) {
-				console.log(tokenRecord?.bondingCurveBalance);
-				setValues.bondingCurveBalance = tokenRecord.bondingCurveBalance;
-			}
-
-			if (tokenRecord?.bondingCurveAddress) {
-				setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
-			}
-
-			if (tokenRecord?.creator) {
-				setValues.creator = String(tokenRecord?.creator) as AddressLike;
-			}
-
-			ops.push({
-				updateOne: {
-					filter: {
-						_id: String(nonImportedToken?._id),
-					},
-					update: {
-						$set: setValues,
-					},
-				},
-			});
-
-			tokenIndex[nonImportedToken.contractAddress] = {
-				...nonImportedToken,
-				...setValues,
-			};
->>>>>>> origin/develop
 		}
   
 		const nonImportedToken = nonImportedTokensWithoutEvents.find(

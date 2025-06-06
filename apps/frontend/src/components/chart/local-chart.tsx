@@ -17,6 +17,7 @@ export default function LocalChart({token}: {token: IToken}) {
     const candlestickSeriesRef = useRef<any>(null);
     const chartRef = useRef<any>(null);
 
+    console.log("Chart Data:", "ewaaaa");
 
     const query = useQuery({
         queryKey: ["token", token.contractAddress, "chart"],

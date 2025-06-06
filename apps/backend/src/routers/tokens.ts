@@ -342,7 +342,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}).lean();
 
 		// If token exists in events but curve is not completed, get swaps from our DB
-		if (eventsExist && !token.curveCompleted && !token.imported) {
+		if (eventsExist && !token.curveCompleted) {
 			const swapEvents = await DB.Event.find({
 				contractAddress: checksummedQueryAddress,
 				eventType: { $in: ["swap", "launchAndSwap"] },
@@ -406,7 +406,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}
 
 		// For imported tokens or completed curves, use external Codex API
-		if (token?.imported || (!token.imported && token.curveCompleted)) {
+		if (token.curveCompleted) {
 			const trades = await codex.queries.getTokenEvents({
 				query: {
 					address: contractAddress as unknown as string,
