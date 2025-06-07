@@ -29,6 +29,7 @@
 		"@radix-ui/react-tooltip": "^1.2.7",
 		"@reown/appkit": "^1.7.7",
 		"@reown/appkit-adapter-wagmi": "^1.7.7",
+		"@solana/spl-token": "^0.4.1",
 		"@solana/wallet-adapter-base": "^0.9.26",
 		"@solana/wallet-adapter-react": "^0.15.38",
 		"@solana/wallet-adapter-react-ui": "^0.9.38",

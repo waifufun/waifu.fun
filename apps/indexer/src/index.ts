@@ -6,7 +6,7 @@ import type { SolanaIndexerConfig } from "../types";
 
 const config: SolanaIndexerConfig = {
 	networkId: SolanaNetworkIds.Mainnet,
-	autoFunAddress: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
+	autoFunAddress: "CN2Km6FAncCu3mPKCMJhGwenAtC75MoNsoLuXGqwoC3q" as SolanaAddressLike,
 	maxSignatures: 70,
 	debugStatements: false,
 };
