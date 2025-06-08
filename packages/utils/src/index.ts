@@ -107,6 +107,7 @@ const calculateTokenDataFromEvents = async (contractAddress: string): Promise<{
 	curveProgress: number;
 	creator?: string;
 	bondingCurveAddress?: string | undefined;
+	volume24h: number;
   } | null> => {
 	try {
 		// Check if curve is completed first
@@ -209,6 +210,23 @@ const calculateTokenDataFromEvents = async (contractAddress: string): Promise<{
 
 		currentPrice = currentPrice * (nativePrices?.solana || 1);
 		const marketcap = (currentPrice * totalSupply) / (10 ** decimals);
+
+		const volume24hEvent = await DB.Event.findOne({
+			contractAddress: contractAddress,
+			eventType: { $in: ["swap", "launchAndSwap"] },
+			processed: true,
+			slot: { $gte: moment().subtract(24, "hours").unix() }
+		}).sort({ slot: -1 }).lean();
+
+		let volume24h = 0;
+		if (volume24hEvent) {
+			if (volume24hEvent.direction === 0 || volume24hEvent.eventType === "launchAndSwap") {
+				volume24h = Number(volume24hEvent.swapAmount) / (10 ** decimals);
+			} else {
+				volume24h = Number(volume24hEvent.amountGotten) / (10 ** decimals);
+			}
+			volume24h *= nativePrices?.solana || 1;
+		}
   
 		return {
 			marketcap,
@@ -216,7 +234,8 @@ const calculateTokenDataFromEvents = async (contractAddress: string): Promise<{
 			curveCompleted: false,
 			curveProgress,
 			creator: launchEvent.creator || token.creator || "",
-			bondingCurveAddress: undefined
+			bondingCurveAddress: undefined,
+			volume24h: volume24h || 0,
 		};
   
 	} catch (error) {
@@ -358,7 +377,8 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		  curveCompleted: tokenData.curveCompleted,
 		  curveProgress: tokenData.curveProgress,
 		  ...(tokenData.creator && { creator: tokenData.creator as AddressLike }),
-		  ...(tokenData.bondingCurveAddress && { bondingCurveAddress: tokenData.bondingCurveAddress as AddressLike })
+		  ...(tokenData.bondingCurveAddress && { bondingCurveAddress: tokenData.bondingCurveAddress as AddressLike }),
+		  volume24h: tokenData.volume24h
 		};
   
 		ops.push({
