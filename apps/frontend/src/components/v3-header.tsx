@@ -351,7 +351,7 @@ export function FunHeader({ logoUrl = "/logo_wide.svg" }: FunHeaderProps) {
                   </a>
                 </Link>
               </div>
-              <Link href="/create-token" passHref legacyBehavior>
+              <Link href="/create" passHref legacyBehavior>
                 <Button
                   as="a"
                   className={cn(
@@ -414,7 +414,7 @@ export function FunHeader({ logoUrl = "/logo_wide.svg" }: FunHeaderProps) {
                   <Send className="mr-3 h-5 w-5" /> Telegram
                 </a>
               </Link>
-              <Link href="/create-token" passHref legacyBehavior>
+              <Link href="/create" passHref legacyBehavior>
                 <a className={mobileMenuLinkClasses} onClick={() => setIsMobileMenuOpen(false)}>
                   <PlusSquare className="mr-3 h-5 w-5" /> Create Token
                 </a>
