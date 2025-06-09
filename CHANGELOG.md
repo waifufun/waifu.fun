@@ -1,3 +1,31 @@
+# [0.13.0](https://github.com/elizaos/autofun-monorepo/compare/v0.12.0...v0.13.0) (2025-06-09)
+
+
+### Bug Fixes
+
+* fixed agents ([3d8e013](https://github.com/elizaos/autofun-monorepo/commit/3d8e01305021cc2f9a8df678a083c2b923d1c617))
+* fixed an issue ([17961e3](https://github.com/elizaos/autofun-monorepo/commit/17961e37d043e71ddc162e04302594d3f38f5402))
+* fixed lint errors ([2c68f8c](https://github.com/elizaos/autofun-monorepo/commit/2c68f8ce9c3e78072554259458ff2074caa73e99))
+* make sure direction is 0 or 1 ([6ebbb2b](https://github.com/elizaos/autofun-monorepo/commit/6ebbb2b736f12c4ddda3e53c88e94dfe8339a2f3))
+* reinitialize chart container dimensions ([4780479](https://github.com/elizaos/autofun-monorepo/commit/478047974f03c57f908d2147c59ba07b47c1d2fd))
+* remove tests from chart data endpoint ([548d0b6](https://github.com/elizaos/autofun-monorepo/commit/548d0b65bf770a89c3efcfdd989ad3956a2e7ebf))
+
+
+### Features
+
+* add differentiation between chart types ([0e8e5c7](https://github.com/elizaos/autofun-monorepo/commit/0e8e5c75bd49a4b5fd3d61551e2471f39696cf66))
+* add new backups ([9d593cc](https://github.com/elizaos/autofun-monorepo/commit/9d593cca7250c56b43d59f9d8e1673761dd15fc0))
+* added 24h volume from events ([613c521](https://github.com/elizaos/autofun-monorepo/commit/613c5213605c60198041fda6e51c36e1328b681c))
+* added correct index ([516fc67](https://github.com/elizaos/autofun-monorepo/commit/516fc677e8668ecd58c60792fa85c909dee3300f))
+* added transaction confirmer ([4ccac2e](https://github.com/elizaos/autofun-monorepo/commit/4ccac2ec78c16f4c41fa3f09ad621c0640715589))
+* crypto prices can be cached for 2 minutes ([aedac39](https://github.com/elizaos/autofun-monorepo/commit/aedac396bcb23d428b76e53e1cb25d43865c530d))
+* decrease concurrencyLimit ([de5cefa](https://github.com/elizaos/autofun-monorepo/commit/de5cefaf031fc21681fd77384256af881890638d))
+* dont always run indexer ([cee5f70](https://github.com/elizaos/autofun-monorepo/commit/cee5f70f3bcf0ecc0d82715e1dc48a7ea6d63691))
+* fix chart ([045224f](https://github.com/elizaos/autofun-monorepo/commit/045224f916d7c28b5c03ca42a75410be55145c71))
+* fixed indexer ([8a1cbd2](https://github.com/elizaos/autofun-monorepo/commit/8a1cbd2838e32c6a370f410bdc6f36b597af2d70))
+* invalidate both the balance and trades ([89fda56](https://github.com/elizaos/autofun-monorepo/commit/89fda56b367bfb340078e4c76659be24fd115b30))
+* reworked populate live tokens in its entirety ([ac22ec2](https://github.com/elizaos/autofun-monorepo/commit/ac22ec2b4f5ae98d9bb4ce69c1022d62050054ad))
+
 # [0.12.0](https://github.com/elizaos/autofun-monorepo/compare/v0.11.0...v0.12.0) (2025-06-05)
 
 
