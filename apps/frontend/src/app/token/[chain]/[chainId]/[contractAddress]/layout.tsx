@@ -1,4 +1,4 @@
-import { getToken, } from "@/lib/api";
+import { getToken } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";

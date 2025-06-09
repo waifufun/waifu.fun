@@ -3,13 +3,7 @@ import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
-import {
-	abbreviateNumber,
-	cn,
-	formatNumberSubscript,
-	fromNow,
-	shortenAddress,
-} from "@/lib/utils";
+import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } from "@/lib/utils";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import BondingCurveProgress from "@/components/bonding-curve-progress";

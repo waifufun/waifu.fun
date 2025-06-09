@@ -1,5 +1,3 @@
-
-
 export class SolanaLogDecoder {
 	static decodeSwapLog(logs: string[], debugStatements = false): { buyWith: string; sellWith: string } | null {
 		const data = {
