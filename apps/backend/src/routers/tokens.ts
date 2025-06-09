@@ -14,6 +14,7 @@ import type {
 import {
 	getChecksummedAddress,
 	getPercentageOfTotal,
+	groupEventsIntoOHLC,
 	isChainIdAllowedForChain,
 	isSupportedAddress,
 	populateTokensWithLiveData,
@@ -152,7 +153,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const cache = await redis.get(cacheKey);
 
 		if (cache) {
-			return JSON.parse(cache);
+			// return JSON.parse(cache);
 		}
 
 		const token = await DB.Token.findOne({
@@ -341,7 +342,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}).lean();
 
 		// If token exists in events but curve is not completed, get swaps from our DB
-		if (eventsExist && !token.curveCompleted && !token.imported) {
+		if (eventsExist && !token.curveCompleted) {
 			const swapEvents = await DB.Event.find({
 				contractAddress: checksummedQueryAddress,
 				eventType: { $in: ["swap", "launchAndSwap"] },
@@ -405,7 +406,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}
 
 		// For imported tokens or completed curves, use external Codex API
-		if (token?.imported || (!token.imported && token.curveCompleted)) {
+		if (token.curveCompleted) {
 			const trades = await codex.queries.getTokenEvents({
 				query: {
 					address: contractAddress as unknown as string,
@@ -807,4 +808,222 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 	});
+
+	fastify.post<{
+		Body: {
+			chain: TChain;
+			chainId: TChainId;
+			contractAddress: AddressLike;
+		};
+		Reply: { curveCompleted: boolean };
+	}>("/curve-completed", async (request) => {
+
+		// check if the token exists in the events database
+		const { contractAddress, chain, chainId } = request.body;
+		const isAllowed = isSupportedAddress(contractAddress);
+		if (!isAllowed) throw new Error("Unsupported address");
+
+		const isAllowedChainPair = isChainIdAllowedForChain(chain, chainId);
+		if (!isAllowedChainPair) throw new Error("Unsupported chain/chainId value");
+
+		const checksummedQueryAddress =
+			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+
+		const token = await DB.Token.findOne({
+			contractAddress: checksummedQueryAddress,
+			chainId,
+			chain,
+			hidden: { $ne: true },
+		}).lean();
+
+		if (!token) {
+			return { curveCompleted: true };
+		}
+
+		const eventsExist = await DB.Event.findOne({
+			contractAddress: checksummedQueryAddress,
+			eventType: { $in: ["swap", "launchAndSwap", "launch"] },
+		}).lean();
+
+		if (!eventsExist) {
+			return { curveCompleted: true };
+		}
+
+		const curveCompleted = await DB.Event.findOne({
+			contractAddress: checksummedQueryAddress,
+			eventType: "curveCompleted",
+		}).lean();
+
+		if (curveCompleted) {
+			return { curveCompleted: true };
+		} else {
+			return { curveCompleted: false };
+		}
+	});
+
+	fastify.post<{
+		Body: {
+			contractAddress: AddressLike;
+			chain: TChain;
+			chainId: TChainId;
+			timeframe?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+			limit?: number;
+		};
+		Reply: Array<{
+			timestamp: number;
+			open: number;
+			high: number;
+			low: number;
+			close: number;
+			volume: number;
+			volumeUSD: number;
+		}>;
+		}>("/chart-data", async (request) => {
+		const { contractAddress, chain, chainId, timeframe = "5m", limit = 100 } = request.body;
+		
+		const allowedChain = isChainIdAllowedForChain(chain, chainId);
+		if (!allowedChain) throw new Error("Unsupported chain pair");
+		
+		const checksummedQueryAddress =
+			chain === "evm" ? getChecksummedAddress(contractAddress, chain) : getChecksummedAddress(contractAddress, chain);
+		
+		const cacheKey = `${chain}:${chainId}:${checksummedQueryAddress}:chart:${timeframe}:${limit}`;
+		
+		const cache = await redis.get(cacheKey);
+		if (cache) {
+			return JSON.parse(cache);
+		}
+		
+		const token = await DB.Token.findOne({
+			chain,
+			chainId,
+			contractAddress: checksummedQueryAddress,
+		})
+			.select("decimals creator totalSupply imported curveCompleted ticker")
+			.lean();
+		
+		if (!token) {
+			throw new Error(`Token: ${contractAddress} could not be found`);
+		}
+		
+		const eventsExist = await DB.Event.findOne({
+			contractAddress: checksummedQueryAddress,
+			eventType: { $in: ["swap", "launchAndSwap"] },
+			processed: true,
+		}).lean();
+		
+		if (!eventsExist) {
+			return [];
+		}
+
+		// Calculate timeframe in milliseconds
+		const timeframeMs = {
+			"1m": 60 * 1000,
+			"5m": 5 * 60 * 1000,
+			"15m": 15 * 60 * 1000,
+			"1h": 60 * 60 * 1000,
+			"4h": 4 * 60 * 60 * 1000,
+			"1d": 24 * 60 * 60 * 1000,
+		}[timeframe];
+		
+		const nativePricesResult = await redis.get("prices");
+		let nativePrices: Record<string, number> | null = nativePricesResult ? JSON.parse(nativePricesResult) : null;
+		if (!nativePrices) {
+			const cryptoPrices = await updateCryptoPrices({ cacheKey: "prices" });
+			nativePrices = {
+			solana: cryptoPrices.solana ?? 0,
+			ethereum: cryptoPrices.ethereum ?? 0,
+			};
+		}
+		
+		const priceKey = chain === "solana" ? "solana" : "ethereum";
+		const nativePrice = nativePrices?.[priceKey] || 0;
+		
+		if (eventsExist) {
+			// const lookbackTime = Date.now() - (7 * 24 * 60 * 60 * 1000 * 4); // 7 days
+			
+			const swapEvents = await DB.Event.find({
+				contractAddress: checksummedQueryAddress,
+				eventType: { $in: ["swap", "launchAndSwap"] },
+				processed: true,
+			// blockTime: { $gte: Math.floor(lookbackTime / 1000) }, // blockTime is in seconds
+			})
+			.sort({ blockTime: 1 })
+			.limit(1000)
+			.lean();
+		
+			if (swapEvents.length === 0) {
+			return [];
+			}
+		
+			const priceData: Array<{
+				timestamp: number;
+				price: number;
+				volume: number;
+				volumeUSD: number;
+			}> = [];
+		
+			for (const event of swapEvents) {
+			const isBuy = event.direction === 0 || event.eventType === "launchAndSwap";
+			
+			let price = 0;
+			let volume = 0;
+			let volumeUSD = 0;
+		
+			if (event.swapAmount && event.amountGotten) {
+				const swapAmount = Number(event.swapAmount);
+				const amountGotten = Number(event.amountGotten);
+		
+				if (isBuy) {
+				// Buy: SOL -> Tokens
+				const solSpent = swapAmount / 1e9;
+				const tokensReceived = amountGotten / (10 ** (token.decimals || 9));
+				
+				if (tokensReceived > 0) {
+					price = solSpent / tokensReceived;
+					volume = tokensReceived;
+					volumeUSD = solSpent * nativePrice;
+
+					console.log("spent sol:", solSpent, "tokens received:", tokensReceived, "price:", price, "volume:", volume, "volumeUSD:", volumeUSD);
+					console.log("txHash", event.signature)
+				}
+				} else {
+				// Sell: Tokens -> SOL
+				const solReceived = amountGotten / 1e9;
+				const tokensSold = swapAmount / (10 ** (token.decimals || 9));
+				
+				if (tokensSold > 0) {
+					price = solReceived / tokensSold;
+					volume = tokensSold;
+					volumeUSD = solReceived * nativePrice;
+					
+					console.log("received sol:", solReceived, "tokens sold:", tokensSold, "price:", price, "volume:", volume, "volumeUSD:", volumeUSD);
+					console.log("txHash", event.signature)
+				}
+				}
+			}
+		
+			if (price > 0) {
+				priceData.push({
+					timestamp: event.blockTime * 1000,
+					price: price * nativePrice,
+					volume,
+					volumeUSD,
+				});
+			}
+			}
+		
+			if (priceData.length === 0) {
+			return [];
+			}
+		
+			const ohlcData = groupEventsIntoOHLC(priceData, timeframeMs, limit);
+			
+			await redis.setex(cacheKey, 30, JSON.stringify(ohlcData));
+			return ohlcData;
+		}
+		return [];
+	});
+
+
 }

@@ -3,6 +3,7 @@ import type { DecodedInstruction } from "../../types";
 import { SolanaInstructionDecoder } from "./instruction-decoder";
 import { SolanaEventDecoder } from "./event-decoder";
 import { SolanaAmountExtractor } from "./extract-amount";
+import { SolanaLogDecoder } from "./log-decoder";
 
 export class SolanaTransactionProcessor {
 	constructor(
@@ -53,11 +54,32 @@ export class SolanaTransactionProcessor {
 			if (programId !== this.autoFunAddress) continue;
 
 			const instructionAccounts = instruction.accountKeyIndexes.map((index: number) => accountStrings[index]);
-
 			const decodedInstruction = SolanaInstructionDecoder.decodeAutofunInstruction(
 				Buffer.from(instruction.data),
 				instructionAccounts,
 			);
+
+			if (decodedInstruction.type !== "unknown") {
+				const eventData = this.createEventData(
+				signatures[0],
+				slot,
+				blockTime,
+				instructionIndex,
+				decodedInstruction,
+				transaction
+				);
+
+				// check if direction is 0 or 1
+				if ((decodedInstruction.type === "swap" || decodedInstruction.type == "launchAndSwap") && decodedInstruction.data?.data?.direction !== undefined) {
+				if (eventData.direction != 0 || eventData.direction != 1) {
+					// program only checks if direction is 1, any other value is considered a buy
+					eventData.direction = 0;
+					continue;
+				}
+				}
+
+				events.push(eventData);
+			}
 
 			if (decodedInstruction.type !== "unknown") {
 				const eventData = this.createEventData(
@@ -149,50 +171,60 @@ export class SolanaTransactionProcessor {
 				};
 
 			case "swap": {
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const tokenMint = decodedInstruction.tokenMint!;
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const userAddress = decodedInstruction.user!;
 				const direction = instructionData.direction;
-
+		
+				const logs = transaction?.meta?.logMessages || [];
+		
+				if (logs.length === 0) {
+					if (this.debugStatements) {
+					logger.warn(`No logs found for swap instruction in transaction ${signature}`);
+					}
+					return baseEventData;
+				}
+		
+				const swapData = SolanaLogDecoder.decodeSwapLog(logs, this.debugStatements);
+				if (!swapData) {
+					if (this.debugStatements) {
+					logger.warn(`No swap data found in logs for transaction ${signature}`);
+					}
+					return baseEventData;
+				}
+				
 				let amountGotten = {};
 				if (transaction) {
 					amountGotten = SolanaAmountExtractor.extractAmountGotten(
-						transaction,
-						tokenMint,
-						userAddress,
-						direction,
-						this.debugStatements,
+					transaction, tokenMint, userAddress, direction, this.debugStatements
 					);
 				}
-
+			
 				return {
 					...baseEventData,
-					swapAmount: instructionData.amount?.toString(),
+					swapAmount: swapData.buyWith,
 					direction: direction,
 					minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
 					deadline: instructionData.deadline?.toString(),
-					...amountGotten,
+					amountGotten: swapData.sellWith,
 				};
 			}
-
+			
 			case "launchAndSwap": {
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const tokenMint = decodedInstruction.mintAddress!;
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const userAddress = decodedInstruction.creator!;
-
+		
+				const swapData = SolanaLogDecoder.decodeSwapLog(
+					transaction?.meta?.logMessages || [],
+					this.debugStatements
+				);
+				
 				let amountGotten = {};
 				if (transaction) {
 					amountGotten = SolanaAmountExtractor.extractAmountGotten(
-						transaction,
-						tokenMint,
-						userAddress,
-						0,
-						this.debugStatements,
+					transaction, tokenMint, userAddress, 0, this.debugStatements
 					);
 				}
-
+		
 				return {
 					...baseEventData,
 					tokenName: instructionData.name,
@@ -201,13 +233,12 @@ export class SolanaTransactionProcessor {
 					decimals: instructionData.decimals,
 					tokenSupply: instructionData.tokenSupply?.toString(),
 					virtualLamportReserves: instructionData.virtualLamportReserves?.toString(),
-					swapAmount: instructionData.swapAmount?.toString(),
+					swapAmount: swapData ? swapData.buyWith : "0",
 					minimumReceiveAmount: instructionData.minimumReceiveAmount?.toString(),
 					deadline: instructionData.deadline?.toString(),
-					...amountGotten,
+					amountGotten: swapData ? swapData.sellWith : "0",
 				};
 			}
-
 			default:
 				return baseEventData;
 		}
