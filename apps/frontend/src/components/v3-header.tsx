@@ -463,19 +463,7 @@ export function FunHeader({ logoUrl = "/logo_wide.svg" }: FunHeaderProps) {
               </div>
               <div className="my-2 border-t border-[#03FF24]/20 mx-4"></div>
 
-              <Button
-                variant="outline"
-                className={cn(
-                  mobileMenuLinkClasses,
-                  "border-2 border-[#03FF24] text-[#03FF24]",
-                  "hover:bg-[#03FF24]/20 hover:text-white",
-                  "active:bg-[#03FF24]/30 active:text-white",
-                  "my-2 mx-4 w-auto justify-center shadow-[3px_3px_0px_rgba(3,255,36,0.3)] hover:shadow-[2px_2px_0px_rgba(3,255,36,0.3)]",
-                )}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <CreditCard className="mr-2 h-5 w-5" /> CONNECT WALLET
-              </Button>
+              <ConnectWallet/>
             </nav>
           </motion.div>
         )}

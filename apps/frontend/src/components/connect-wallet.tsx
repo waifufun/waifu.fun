@@ -50,9 +50,11 @@ export default function ConnectWallet() {
 		<Menubar>
 			<MenubarMenu>
 				<MenubarTrigger asChild>
-					<Button className={btnClass}>
-						{wallet?.connected && wallet.publicKey ? shortenAddress(wallet.publicKey.toBase58()) : "Connect"}
-					</Button>
+					<div className="w-full justify-center">
+						<Button className={btnClass}>
+								{wallet?.connected && wallet.publicKey ? shortenAddress(wallet.publicKey.toBase58()) : "Connect"}
+						</Button>
+					</div>
 				</MenubarTrigger>
 				<MenubarContent>
 					<MenubarItem>
