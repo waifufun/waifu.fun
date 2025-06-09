@@ -3,7 +3,6 @@ import type { IToken } from "@autofun/types";
 import Image from "next/image";
 import Link from "next/link";
 import Verified from "./verified";
-import { TokenCardGrid } from "./ui/token-card-grid";
 
 export const GridItem = ({ token }: { token: IToken }) => {
 	return (
