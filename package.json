@@ -54,7 +54,7 @@
 		]
 	},
 	"scripts": {
-		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --stream build",
+		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --filter '!@autofun/indexer' --parallel run dev",
 		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --parallel run dev",
 		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/indexer' --parallel run dev",
