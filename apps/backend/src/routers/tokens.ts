@@ -647,6 +647,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const dexscreenerSocials = dexscreenerData?.info?.socials || [];
 			const dexscreenerWebsites = dexscreenerData?.info?.websites || [];
 			const tokenData: IToken<"evm"> = {
+				status: "active",
 				chain: "evm",
 				chainId,
 				contractAddress: getChecksummedAddress(contractAddress, "evm"),
@@ -683,6 +684,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const image = await uploadImageFromUrl(metadata?.image, `${chain}:${chainId}:${contractAddress}`, "token-images");
 
 			const tokenData: IToken<"solana"> = {
+				status: "active",
 				chain: "solana",
 				chainId: solanaChainId,
 				contractAddress: getChecksummedAddress(contractAddress, "solana"),
@@ -855,9 +857,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		if (curveCompleted) {
 			return { curveCompleted: true };
-		} else {
-			return { curveCompleted: false };
 		}
+		return { curveCompleted: false };
 	});
 
 	fastify.post<{

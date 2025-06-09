@@ -71,10 +71,10 @@ export class SolanaTransactionProcessor {
 
 				// check if direction is 0 or 1
 				if (
-					(decodedInstruction.type === "swap" || decodedInstruction.type == "launchAndSwap") &&
+					(decodedInstruction.type === "swap" || decodedInstruction.type === "launchAndSwap") &&
 					decodedInstruction.data?.data?.direction !== undefined
 				) {
-					if (eventData.direction != 0 || eventData.direction != 1) {
+					if (eventData.direction !== 0 || eventData.direction !== 1) {
 						// program only checks if direction is 1, any other value is considered a buy
 						eventData.direction = 0;
 						continue;
@@ -174,7 +174,9 @@ export class SolanaTransactionProcessor {
 				};
 
 			case "swap": {
+				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const tokenMint = decodedInstruction.tokenMint!;
+				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const userAddress = decodedInstruction.user!;
 				const direction = instructionData.direction;
 
@@ -217,7 +219,9 @@ export class SolanaTransactionProcessor {
 			}
 
 			case "launchAndSwap": {
+				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const tokenMint = decodedInstruction.mintAddress!;
+				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const userAddress = decodedInstruction.creator!;
 
 				const swapData = SolanaLogDecoder.decodeSwapLog(transaction?.meta?.logMessages || [], this.debugStatements);

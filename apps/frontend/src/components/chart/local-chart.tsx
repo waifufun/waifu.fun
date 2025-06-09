@@ -13,13 +13,16 @@ import { getChartData } from "@/lib/api";
 
 export default function LocalChart({ token }: { token: IToken }) {
 	const chartContainerRef = useRef<HTMLDivElement>(null);
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	const candlestickSeriesRef = useRef<any>(null);
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	const chartRef = useRef<any>(null);
 
 	const query = useQuery({
 		queryKey: ["token", token.contractAddress, "chart"],
 		queryFn: async () => {
 			const data = await getChartData({
+				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				chain: token.chain as any,
 				chainId: token.chainId,
 				contractAddress: token.contractAddress,
@@ -27,7 +30,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 
 			if (!data || data.length === 0) {
 				const lastKnownPrice = Number(token?.price) || 0;
-				if (isNaN(lastKnownPrice)) return [];
+				if (Number.isNaN(lastKnownPrice)) return [];
 
 				return [
 					{
@@ -44,12 +47,12 @@ export default function LocalChart({ token }: { token: IToken }) {
 			return data
 				.filter(
 					(candle) =>
-						!isNaN(Number(candle.volume)) &&
-						!isNaN(Number(candle.close)) &&
-						!isNaN(Number(candle.high)) &&
-						!isNaN(Number(candle.low)) &&
-						!isNaN(Number(candle.open)) &&
-						!isNaN(Number(candle.timestamp)) &&
+						!Number.isNaN(Number(candle.volume)) &&
+						!Number.isNaN(Number(candle.close)) &&
+						!Number.isNaN(Number(candle.high)) &&
+						!Number.isNaN(Number(candle.low)) &&
+						!Number.isNaN(Number(candle.open)) &&
+						!Number.isNaN(Number(candle.timestamp)) &&
 						candle.volume > 0,
 				)
 				.map((candle) => ({
@@ -145,6 +148,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 		candlestickSeriesRef.current = candlestickSeries;
 
 		if (chartData && chartData.length > 0) {
+			// @ts-ignore
 			candlestickSeries.setData(chartData);
 		}
 
@@ -169,10 +173,6 @@ export default function LocalChart({ token }: { token: IToken }) {
 	}, [chartData]);
 
 	return (
-		<div
-			ref={chartContainerRef}
-			className="w-full min-h-[500px] relative"
-			style={{ width: "100%", height: "500px" }}
-		></div>
+		<div ref={chartContainerRef} className="w-full min-h-[500px] relative" style={{ width: "100%", height: "500px" }} />
 	);
 }

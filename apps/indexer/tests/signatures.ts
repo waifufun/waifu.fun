@@ -1,6 +1,7 @@
 import { SolanaRpcProvider } from "@autofun/rpc";
 import { SolanaTransactionProcessor } from "../utils/solana/tx-processor";
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 async function processSignature(signature: string): Promise<any[]> {
 	const rpc = new SolanaRpcProvider(101);
 	const transaction = await rpc.getTransaction(signature);

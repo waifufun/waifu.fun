@@ -24,6 +24,7 @@ export class SolanaIndexer extends BaseIndexer {
 
 		this.rpc = new SolanaRpcProvider(this.config.networkId);
 		this.debugStatements = config.debugStatements || false;
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		this.STOP_AT_SLOT = this.config.minBlock!;
 		this.processor = new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements);
 	}

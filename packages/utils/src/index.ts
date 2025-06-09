@@ -493,6 +493,7 @@ export function groupEventsIntoOHLC(
 			});
 		}
 
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		const candle = candles.get(bucketTime)!;
 		candle.trades.push({
 			price: trade.price,

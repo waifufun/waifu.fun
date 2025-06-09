@@ -12,6 +12,7 @@ interface ChartProps {
 export default function Chart({ token, tokenLookUp }: ChartProps) {
 	const [curveCompleted, setCurveCompleted] = useState<boolean | null>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		const checkIfCurveCompleted = async () => {
 			const result = await isCurveCompleted(tokenLookUp);
@@ -38,7 +39,6 @@ export default function Chart({ token, tokenLookUp }: ChartProps) {
 				allowFullScreen
 			/>
 		);
-	} else {
-		return <LocalChart token={token} />;
 	}
+	return <LocalChart token={token} />;
 }

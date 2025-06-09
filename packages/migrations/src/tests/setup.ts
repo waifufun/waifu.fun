@@ -8,4 +8,4 @@ const { expect } = chai;
 chai.use(sinonChai);
 
 // Export test utilities
-export { chai, expect, sinon }; 
+export { chai, expect, sinon };
