@@ -213,7 +213,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								<span>0</span>
 							) : (
 								<Fragment>
-									{minReceivedQuery?.isPending || minReceivedQuery?.isRefetching ? (
+									{minReceivedQuery?.isPending ? (
 										<Skeleton />
 									) : (
 										<Fragment>
