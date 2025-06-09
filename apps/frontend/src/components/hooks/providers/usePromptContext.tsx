@@ -61,9 +61,7 @@ export type TokenMetadata = {
 	mintKeyPair: Keypair;
 	buyAmount: number;
 	metadataUrl: string;
-	virtualReserves?: number;
 	curveLimit?: number;
-	initBondingCurve?: number;
 };
 
 export type TokenFormOptions = keyof TokenFormData;
