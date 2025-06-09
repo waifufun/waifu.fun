@@ -1,8 +1,7 @@
-
-import { getChartData, getToken, isCurveCompleted } from "@/lib/api";
+import { getToken, } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import type { Metadata } from "next";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
 
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {

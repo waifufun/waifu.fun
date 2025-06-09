@@ -51,7 +51,7 @@ export default function ConnectWallet() {
 						</Link>
 					</MenubarItem>
 					<MenubarItem onClick={() => wallet.disconnect()}>
-						<div className="flex items-center gap-1.5">
+						<div className="flex items-center gap-1.5 cursor-pointer">
 							<LogOut size={20} />
 							<span className="text-base font-medium">Disconnect</span>
 						</div>

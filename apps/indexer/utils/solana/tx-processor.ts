@@ -61,21 +61,24 @@ export class SolanaTransactionProcessor {
 
 			if (decodedInstruction.type !== "unknown") {
 				const eventData = this.createEventData(
-				signatures[0],
-				slot,
-				blockTime,
-				instructionIndex,
-				decodedInstruction,
-				transaction
+					signatures[0],
+					slot,
+					blockTime,
+					instructionIndex,
+					decodedInstruction,
+					transaction,
 				);
 
 				// check if direction is 0 or 1
-				if ((decodedInstruction.type === "swap" || decodedInstruction.type == "launchAndSwap") && decodedInstruction.data?.data?.direction !== undefined) {
-				if (eventData.direction != 0 || eventData.direction != 1) {
-					// program only checks if direction is 1, any other value is considered a buy
-					eventData.direction = 0;
-					continue;
-				}
+				if (
+					(decodedInstruction.type === "swap" || decodedInstruction.type == "launchAndSwap") &&
+					decodedInstruction.data?.data?.direction !== undefined
+				) {
+					if (eventData.direction != 0 || eventData.direction != 1) {
+						// program only checks if direction is 1, any other value is considered a buy
+						eventData.direction = 0;
+						continue;
+					}
 				}
 
 				events.push(eventData);
@@ -174,31 +177,35 @@ export class SolanaTransactionProcessor {
 				const tokenMint = decodedInstruction.tokenMint!;
 				const userAddress = decodedInstruction.user!;
 				const direction = instructionData.direction;
-		
+
 				const logs = transaction?.meta?.logMessages || [];
-		
+
 				if (logs.length === 0) {
 					if (this.debugStatements) {
-					logger.warn(`No logs found for swap instruction in transaction ${signature}`);
+						logger.warn(`No logs found for swap instruction in transaction ${signature}`);
 					}
 					return baseEventData;
 				}
-		
+
 				const swapData = SolanaLogDecoder.decodeSwapLog(logs, this.debugStatements);
 				if (!swapData) {
 					if (this.debugStatements) {
-					logger.warn(`No swap data found in logs for transaction ${signature}`);
+						logger.warn(`No swap data found in logs for transaction ${signature}`);
 					}
 					return baseEventData;
 				}
-				
+
 				let amountGotten = {};
 				if (transaction) {
 					amountGotten = SolanaAmountExtractor.extractAmountGotten(
-					transaction, tokenMint, userAddress, direction, this.debugStatements
+						transaction,
+						tokenMint,
+						userAddress,
+						direction,
+						this.debugStatements,
 					);
 				}
-			
+
 				return {
 					...baseEventData,
 					swapAmount: swapData.buyWith,
@@ -208,23 +215,24 @@ export class SolanaTransactionProcessor {
 					amountGotten: swapData.sellWith,
 				};
 			}
-			
+
 			case "launchAndSwap": {
 				const tokenMint = decodedInstruction.mintAddress!;
 				const userAddress = decodedInstruction.creator!;
-		
-				const swapData = SolanaLogDecoder.decodeSwapLog(
-					transaction?.meta?.logMessages || [],
-					this.debugStatements
-				);
-				
+
+				const swapData = SolanaLogDecoder.decodeSwapLog(transaction?.meta?.logMessages || [], this.debugStatements);
+
 				let amountGotten = {};
 				if (transaction) {
 					amountGotten = SolanaAmountExtractor.extractAmountGotten(
-					transaction, tokenMint, userAddress, 0, this.debugStatements
+						transaction,
+						tokenMint,
+						userAddress,
+						0,
+						this.debugStatements,
 					);
 				}
-		
+
 				return {
 					...baseEventData,
 					tokenName: instructionData.name,

@@ -14,21 +14,18 @@ export class SolanaIndexer extends BaseIndexer {
 
 	constructor(config: SolanaIndexerConfig) {
 		super();
-		
+
 		this.config = {
-		concurrencyLimit: 3,
-		maxSignatures: 500,
-		minBlock: 322725834,
-		...config,
+			concurrencyLimit: 3,
+			maxSignatures: 500,
+			minBlock: 322725834,
+			...config,
 		};
-		
+
 		this.rpc = new SolanaRpcProvider(this.config.networkId);
 		this.debugStatements = config.debugStatements || false;
 		this.STOP_AT_SLOT = this.config.minBlock!;
-		this.processor = new SolanaTransactionProcessor(
-		this.config.autoFunAddress,
-		this.debugStatements
-		);
+		this.processor = new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements);
 	}
 
 	protected async resetConnections(): Promise<void> {

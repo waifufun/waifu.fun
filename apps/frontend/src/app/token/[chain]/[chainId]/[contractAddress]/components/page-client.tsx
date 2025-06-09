@@ -8,7 +8,6 @@ import {
 	cn,
 	formatNumberSubscript,
 	fromNow,
-	getCoinGeckoChainName,
 	shortenAddress,
 } from "@/lib/utils";
 import type { IToken, ITokenLookUp } from "@autofun/types";
@@ -38,7 +37,7 @@ export default function PageClient({
 	});
 
 	const token = query?.data;
-	
+
 	return (
 		<div className="flex flex-col gap-6 mt-3">
 			<ScamWarning isHidden={!!token?.hidden} />
@@ -112,13 +111,15 @@ export default function PageClient({
 					</div>
 
 					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
-						<Chart 
+						<Chart
 							token={token}
-							tokenLookUp={{
-								chain: token.chain,
-								chainId: token.chainId,
-								contractAddress: token.contractAddress,
-							} as ITokenLookUp}
+							tokenLookUp={
+								{
+									chain: token.chain,
+									chainId: token.chainId,
+									contractAddress: token.contractAddress,
+								} as ITokenLookUp
+							}
 						/>
 					</div>
 

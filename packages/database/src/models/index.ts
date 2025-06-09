@@ -8,4 +8,3 @@ import Migration from "./migration";
 
 export { Token, User, ChatMessage, Event, EventsMeta, Agent, Migration };
 export type { IEvent } from "./events";
-
