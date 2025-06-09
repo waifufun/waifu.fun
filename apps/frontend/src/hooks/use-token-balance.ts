@@ -38,6 +38,7 @@ export default function useTokenBalance({
 			}
 			return 0;
 		},
+		refetchInterval: 10_000,
 		enabled: !!address,
 	});
 

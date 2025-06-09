@@ -9,10 +9,10 @@ import {
 	type TChainId,
 } from "@autofun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
-import { getAddress, isAddress as isEvmAddress, type Address } from "viem";
+import { formatUnits, getAddress, isAddress as isEvmAddress, type Address } from "viem";
 import logger from "@autofun/logger";
 import { Codex } from "@codex-data/sdk";
-import { CHAINID_TO_CODEX_NETWORK_ID, WETH_ADDRESSES } from "@autofun/constants";
+import { CHAINID_TO_CODEX_NETWORK_ID, FALLBACK_PRICES, WETH_ADDRESSES } from "@autofun/constants";
 import dotenv from "dotenv";
 import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import DB from "@autofun/database";
@@ -21,6 +21,7 @@ import redis from "@autofun/redis";
 import { SolanaRpcProvider } from "@autofun/rpc";
 import { EVMRpcProvider } from "@autofun/rpc";
 import { PublicKey } from "@solana/web3.js";
+import { BigNumber } from "bignumber.js";
 
 dotenv.config();
 
@@ -100,6 +101,50 @@ export function getChecksummedAddress(address: AddressLike, chain: TChain): Addr
 	throw new Error("Invalid chain or address passed");
 }
 
+export const lookUp24hVolume = async (
+	contractAddresses: AddressLike[],
+): Promise<{ totalVolumeDollars?: number; totalVolume?: number; contractAddress?: AddressLike }[]> => {
+	const prices = await updateCryptoPrices({});
+	const solanaPrice = prices.solana;
+	const tokens = await DB.Event.aggregate([
+		{
+			$match: {
+				contractAddress: {
+					$in: contractAddresses,
+				},
+				eventType: {
+					$in: ["swap", "launchAndSwap"],
+				},
+				createdAt: { $gte: moment().subtract(1, "day").toDate(), $lte: moment().toDate() },
+			},
+		},
+		{
+			$group: {
+				_id: "$contractAddress",
+				totalVolume: {
+					$sum: {
+						$toDouble: "$amountGotten",
+					},
+				},
+			},
+		},
+		{
+			$project: {
+				contractAddress: "$_id",
+				_id: 0,
+				totalVolume: 1,
+			},
+		},
+	]);
+	for (const token of tokens) {
+		token.totalVolumeDollars = new BigNumber(formatUnits(token.totalVolume, 9))
+			.multipliedBy(new BigNumber(solanaPrice))
+			.toNumber();
+	}
+
+	return tokens;
+};
+
 /**
  * Enriches token objects with live market data from the Codex API.
  *
@@ -125,59 +170,56 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		return [];
 	}
 
-	logger.info(`Received ${tokensToPopulate.length} tokens to populate`);
-
-	// Clean up invalid tokens from database
-	const invalidTokens = tokensToPopulate.filter((token) => !token?.contractAddress);
-	if (invalidTokens.length > 0) {
-		logger.warn(`Found ${invalidTokens.length} tokens without contract addresses, removing them from database`);
-		const invalidTokenIds = invalidTokens.map((token) => token._id).filter(Boolean);
-		if (invalidTokenIds.length > 0) {
-			await DB.Token.deleteMany({ _id: { $in: invalidTokenIds } });
-			logger.info(`Removed ${invalidTokenIds.length} invalid tokens from database`);
-		}
-	}
-
-	// Validate tokens have required fields
-	const validTokens = tokensToPopulate.filter((token) => {
-		if (!token) {
-			logger.warn("Found null/undefined token");
-			return false;
-		}
-		if (!token?.contractAddress || !token?.chain || !token?.chainId) {
-			logger.warn(`Skipping invalid token: ${JSON.stringify(token)}`);
+	const needsUpdate = (token: IToken) => {
+		const secondsPassedSinceUpdate = moment().diff(moment(token.updatedAt), "seconds");
+		if (secondsPassedSinceUpdate <= 7) {
+			logger.info(`Skipping token ${token.contractAddress} - updated recently`);
 			return false;
 		}
 		return true;
-	});
+	};
 
-	if (validTokens.length === 0) {
-		logger.warn("No valid tokens to populate after validation");
-		return [];
+	logger.info(`Received ${tokensToPopulate.length} tokens to populate`);
+
+	const ops: {
+		updateOne: {
+			filter: {
+				_id: string;
+			};
+			update: {
+				$set: Partial<IToken>;
+			};
+		};
+	}[] = [];
+
+	const tokens: Record<"codex" | "indexer", (IToken & { originalIndex?: number })[]> = {
+		codex: [],
+		indexer: [],
+	};
+
+	logger.info(`Querying tokens: Codex -> ${tokens?.codex?.length || 0} | Indexer -> ${tokens?.indexer?.length || 0}`);
+
+	const originalMapping: AddressLike[] = [];
+	for (const token of tokensToPopulate) {
+		originalMapping.push(token.contractAddress);
+		if (token?.imported || token?.curveCompleted) {
+			tokens.codex.push(token);
+		} else {
+			tokens.indexer.push(token);
+		}
 	}
 
-	logger.info(`Found ${validTokens.length} valid tokens after validation`);
-
-	const ops = [];
-
-	/** All imports tokens can be fetched using Codex */
-	const tokenIndex: Record<AddressLike, IToken<TChain>> = {};
-
-	const tokensToQuery = validTokens
-		.filter((t) => t?.imported || t?.curveCompleted)
+	/** Query Codex for imported or tokens that having curveCompleted */
+	const tokensToQuery = tokens.codex
+		.filter((t) => needsUpdate(t))
 		.map((token: IToken) => {
 			const { chain, chainId, contractAddress } = token;
 			const networkId =
 				chain === "evm"
 					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
 					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
-
-			tokenIndex[contractAddress] = token;
-
 			return `${contractAddress}:${networkId}`;
 		});
-
-	logger.info(`Found ${tokensToQuery.length} imported tokens to query from Codex`);
 
 	const tokenData = await codex.queries.filterTokens({
 		statsType: TokenPairStatisticsType.Unfiltered,
@@ -190,26 +232,14 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		logger.info(`Received ${results.length} results from Codex`);
 		for (const token of results) {
 			const address = token?.token?.address as AddressLike;
-			if (!tokenIndex) {
-				logger.warn("tokenIndex is undefined");
-				continue;
-			}
-
-			const key = Object.keys(tokenIndex).find((a) => address.toLowerCase() === a.toLowerCase());
-			const tokenRecord = key
-				? (tokenIndex[key as AddressLike] as IToken<TChain> & { _id?: string; updatedAt?: Date })
-				: undefined;
+			const tokenRecord = tokens.codex.find((a) => address.toLowerCase() === a.contractAddress.toLowerCase());
 
 			if (!tokenRecord) {
 				logger.warn(`No matching token record found for address ${address}`);
 				continue;
 			}
 
-			/** If the record was already updated very recently, there is no need to do it again.
-			 * This can occur when the user first navigates to /token, and very shortly after to
-			 * a single token page */
 			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
-
 			if (secondsPassedSinceUpdate <= 10) {
 				logger.info(`Skipping token ${address} - updated recently`);
 				continue;
@@ -225,118 +255,67 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 			ops.push({
 				updateOne: {
-					filter: {
-						_id: String(tokenRecord._id),
-					},
+					filter: { _id: String(tokenRecord._id) },
 					update: {
-						$set: {
-							marketcap,
-							price,
-							volume24h,
-							holders,
-						},
+						$set: { marketcap, price, volume24h, holders },
 					},
 				},
 			});
 		}
 	}
 
-	/** All non imported tokens should be determined using RPC */
-	const nonImportedTokens = validTokens.filter(
-		(t) => (t?.imported === false || !t.curveCompleted) && t.chain === "solana" && t.chainId === 101,
-	);
+	/** Indexer */
+	const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
+	const mustUpdateTokens = tokens.indexer.filter((t) => needsUpdate(t)).map((k) => k.contractAddress);
+	const bondingCurveInfo = await rpc.getBondingCurveInfo(mustUpdateTokens);
+	const volume24hTokens = await lookUp24hVolume(mustUpdateTokens);
 
-	logger.info(`Found ${nonImportedTokens.length} non-imported Solana tokens`);
+	for (const indexedToken of tokens.indexer) {
+		const tokenBondingCurveInfo = bondingCurveInfo.find((a) => a.contractAddress === indexedToken.contractAddress);
+		if (!tokenBondingCurveInfo) continue;
+		const setValues: {
+			marketcap: number;
+			price: number;
+			curveCompleted?: boolean;
+			curveProgress?: number;
+			creator?: AddressLike;
+			bondingCurveAddress?: AddressLike;
+		} = {
+			marketcap: Number(tokenBondingCurveInfo.marketCapUSD),
+			price: Number(tokenBondingCurveInfo.priceUsd),
+			curveCompleted: Boolean(tokenBondingCurveInfo.curveCompleted),
+			curveProgress: Number(tokenBondingCurveInfo.curveProgress),
+		};
 
-	if (nonImportedTokens?.length > 0) {
-		const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
-		const bondingCurveInfo = await rpc.getBondingCurveInfo(nonImportedTokens.map((k) => k.contractAddress));
+		indexedToken.marketcap = Number(tokenBondingCurveInfo.marketCapUSD);
+		indexedToken.price = Number(tokenBondingCurveInfo.priceUsd);
+		indexedToken.curveCompleted = Boolean(tokenBondingCurveInfo.curveCompleted);
+		indexedToken.curveProgress = Number(tokenBondingCurveInfo.curveProgress);
 
-		logger.info(`Received ${bondingCurveInfo.length} bonding curve info results`);
+		const volume24h = volume24hTokens?.find((a) => a?.contractAddress === indexedToken.contractAddress);
 
-		for (const tokenRecord of bondingCurveInfo) {
-			if (!tokenRecord?.contractAddress) {
-				logger.warn("Bonding curve info missing contractAddress");
-				continue;
-			}
-
-			const nonImportedToken = nonImportedTokens.find(
-				(a) => a.contractAddress === tokenRecord.contractAddress,
-			) as IToken<TChain> & { _id?: string; updatedAt?: Date };
-
-			if (!nonImportedToken) {
-				logger.warn(`No matching non-imported token found for ${tokenRecord.contractAddress}`);
-				continue;
-			}
-
-			tokenIndex[nonImportedToken.contractAddress] = {
-				...nonImportedToken,
-			};
-
-			/** If the record was already updated very recently, there is no need to do it again.
-			 * This can occur when the user first navigates to /token, and very shortly after to
-			 * a single token page */
-			const secondsPassedSinceUpdate = moment().diff(moment(nonImportedToken.updatedAt), "seconds");
-
-			if (secondsPassedSinceUpdate <= 7) {
-				logger.info(`Skipping token ${tokenRecord.contractAddress} - updated recently`);
-				continue;
-			}
-
-			if (!nonImportedToken?._id) {
-				logger.warn(`Token ${tokenRecord.contractAddress} missing _id`);
-				continue;
-			}
-
-			const setValues: {
-				marketcap?: number;
-				price?: number;
-				curveCompleted?: boolean;
-				curveProgress?: number;
-				creator?: AddressLike;
-				bondingCurveBalance?: number;
-				bondingCurveAddress?: AddressLike;
-			} = {
-				curveCompleted: Boolean(tokenRecord.curveCompleted),
-				curveProgress: Number(tokenRecord.curveProgress),
-			};
-			if (tokenRecord?.marketCapUSD) {
-				setValues.marketcap = Number(tokenRecord.marketCapUSD);
-			}
-
-			if (tokenRecord?.priceUsd) {
-				setValues.price = Number(tokenRecord.priceUsd);
-			}
-
-			if (tokenRecord?.bondingCurveBalance) {
-				console.log(tokenRecord?.bondingCurveBalance);
-				setValues.bondingCurveBalance = tokenRecord.bondingCurveBalance;
-			}
-
-			if (tokenRecord?.bondingCurveAddress) {
-				setValues.bondingCurveAddress = String(tokenRecord?.bondingCurveAddress) as AddressLike;
-			}
-
-			if (tokenRecord?.creator) {
-				setValues.creator = String(tokenRecord?.creator) as AddressLike;
-			}
-
-			ops.push({
-				updateOne: {
-					filter: {
-						_id: String(nonImportedToken?._id),
-					},
-					update: {
-						$set: setValues,
-					},
-				},
-			});
-
-			tokenIndex[nonImportedToken.contractAddress] = {
-				...nonImportedToken,
-				...setValues,
-			};
+		if (volume24h?.totalVolumeDollars) {
+			indexedToken.volume24h = volume24h.totalVolumeDollars;
 		}
+
+		if (tokenBondingCurveInfo?.bondingCurveAddress) {
+			const bondingCurveAddress = String(tokenBondingCurveInfo?.bondingCurveAddress) as AddressLike;
+			indexedToken.bondingCurveAddress = bondingCurveAddress;
+			setValues.bondingCurveAddress = bondingCurveAddress;
+		}
+
+		if (tokenBondingCurveInfo?.creator) {
+			const creator = String(tokenBondingCurveInfo?.creator) as AddressLike;
+			indexedToken.creator = creator;
+			setValues.creator = creator;
+		}
+
+		ops.push({
+			updateOne: {
+				filter: { _id: String(indexedToken?._id) },
+				update: { $set: setValues },
+			},
+		});
 	}
 
 	if (ops?.length > 0) {
@@ -344,40 +323,64 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		await DB.Token.bulkWrite(ops);
 	}
 
-	const finalTokens = Object.values(tokenIndex);
-	logger.info(`Returning ${finalTokens.length} populated tokens`);
-	return finalTokens;
+	/** Return the tokens in the original way they came in to respect sorting and other things */
+	const allTokens = [...tokens.codex, ...tokens.indexer];
+	const returnTokens = [];
+	for (const token of allTokens) {
+		const index = originalMapping.indexOf(token.contractAddress);
+		returnTokens[index] = token;
+	}
+	return returnTokens;
 };
 
-export const updateCryptoPrices = async ({ cacheKey = "prices" }: { cacheKey?: string }) => {
-	const wrappedSol = "So11111111111111111111111111111111111111112";
+export const updateCryptoPrices = async ({
+	cacheKey = "prices",
+}: { cacheKey?: string }): Promise<{ solana: number; ethereum: number }> => {
+	try {
+		const wrappedSol = "So11111111111111111111111111111111111111112";
 
-	const prices = await codex.queries.getTokenPrices({
-		inputs: [
-			/** Ethereum */
-			{
-				address: WETH_ADDRESSES[EvmChainIds.EthereumMainnet],
-				networkId: CHAINID_TO_CODEX_NETWORK_ID.evm[EvmChainIds.EthereumMainnet] as number,
-			},
-			/** Solana */
-			{
-				address: wrappedSol,
-				networkId: CHAINID_TO_CODEX_NETWORK_ID.solana[SolanaNetworkIds.Mainnet] as number,
-			},
-		],
-	});
+		const prices = await codex.queries.getTokenPrices({
+			inputs: [
+				/** Ethereum */
+				{
+					address: WETH_ADDRESSES[EvmChainIds.EthereumMainnet],
+					networkId: CHAINID_TO_CODEX_NETWORK_ID.evm[EvmChainIds.EthereumMainnet] as number,
+				},
+				/** Solana */
+				{
+					address: wrappedSol,
+					networkId: CHAINID_TO_CODEX_NETWORK_ID.solana[SolanaNetworkIds.Mainnet] as number,
+				},
+			],
+		});
 
-	const results = prices?.getTokenPrices;
-	const solana = results?.find((token) => token?.address.toLowerCase() === wrappedSol.toLowerCase())?.priceUsd;
-	const ethereum = results?.find(
-		(token) => token?.address.toLowerCase() === WETH_ADDRESSES[EvmChainIds.EthereumMainnet].toLowerCase(),
-	)?.priceUsd;
+		const results = prices?.getTokenPrices;
+		const solana = results?.find((token) => token?.address.toLowerCase() === wrappedSol.toLowerCase())?.priceUsd;
+		const ethereum = results?.find(
+			(token) => token?.address.toLowerCase() === WETH_ADDRESSES[EvmChainIds.EthereumMainnet].toLowerCase(),
+		)?.priceUsd;
 
-	const resolvedPrices = { solana, ethereum };
+		if (!solana) {
+			throw new Error("Failed to determine Solana price, using fallback...");
+		}
 
-	await redis.setex(cacheKey, 45, JSON.stringify(resolvedPrices));
+		if (!ethereum) {
+			throw new Error("Failed to determine Ethereum price, using fallback...");
+		}
 
-	return resolvedPrices;
+		const resolvedPrices = { solana, ethereum };
+
+		if (!resolvedPrices?.solana || !resolvedPrices?.ethereum) {
+			throw new Error("Missing Solana or Ethereum price...");
+		}
+
+		await redis.setex(cacheKey, 2 * 60, JSON.stringify(resolvedPrices));
+
+		return resolvedPrices;
+	} catch (e) {
+		logger.error(e);
+		return FALLBACK_PRICES;
+	}
 };
 
 export async function userHasEnoughTokenBalance({
@@ -437,3 +440,107 @@ export const getPercentageOfTotal = (value: number, total: number): string | num
 	const percentage = (value / total) * 100;
 	return percentage?.toFixed(2);
 };
+
+export function groupEventsIntoOHLC(
+	priceData: Array<{
+		timestamp: number;
+		price: number;
+		volume: number;
+		volumeUSD: number;
+	}>,
+	timeframeMs: number,
+	limit: number,
+): Array<{
+	timestamp: number;
+	open: number;
+	high: number;
+	low: number;
+	close: number;
+	volume: number;
+	volumeUSD: number;
+}> {
+	if (priceData.length === 0) return [];
+
+	priceData.sort((a, b) => a.timestamp - b.timestamp);
+
+	const candles = new Map<
+		number,
+		{
+			timestamp: number;
+			open: number;
+			high: number;
+			low: number;
+			close: number;
+			volume: number;
+			volumeUSD: number;
+			trades: Array<{ price: number; volume: number; volumeUSD: number; timestamp: number }>;
+		}
+	>();
+
+	for (const trade of priceData) {
+		const bucketTime = Math.floor(trade.timestamp / timeframeMs) * timeframeMs;
+
+		if (!candles.has(bucketTime)) {
+			candles.set(bucketTime, {
+				timestamp: bucketTime,
+				open: trade.price,
+				high: trade.price,
+				low: trade.price,
+				close: trade.price,
+				volume: 0,
+				volumeUSD: 0,
+				trades: [],
+			});
+		}
+
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		const candle = candles.get(bucketTime)!;
+		candle.trades.push({
+			price: trade.price,
+			volume: trade.volume,
+			volumeUSD: trade.volumeUSD,
+			timestamp: trade.timestamp,
+		});
+	}
+
+	const result: Array<{
+		timestamp: number;
+		open: number;
+		high: number;
+		low: number;
+		close: number;
+		volume: number;
+		volumeUSD: number;
+	}> = [];
+
+	for (const [bucketTime, candle] of candles) {
+		if (candle.trades.length === 0) continue;
+
+		candle.trades.sort((a, b) => a.timestamp - b.timestamp);
+
+		const firstTrade = candle.trades[0];
+		const lastTrade = candle.trades[candle.trades.length - 1];
+
+		if (!firstTrade || !lastTrade) continue;
+
+		const open = firstTrade.price;
+		const close = lastTrade.price;
+		const high = Math.max(...candle.trades.map((t) => t.price));
+		const low = Math.min(...candle.trades.map((t) => t.price));
+		const volume = candle.trades.reduce((sum, t) => sum + t.volume, 0);
+		const volumeUSD = candle.trades.reduce((sum, t) => sum + t.volumeUSD, 0);
+
+		result.push({
+			timestamp: bucketTime,
+			open,
+			high,
+			low,
+			close,
+			volume,
+			volumeUSD,
+		});
+	}
+
+	result.sort((a, b) => b.timestamp - a.timestamp);
+	return result.slice(0, limit);
+}

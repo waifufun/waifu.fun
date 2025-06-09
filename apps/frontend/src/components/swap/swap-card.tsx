@@ -88,11 +88,13 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 			if (!from) throw new Error("No wallet connected");
 			return await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
 		},
-		onSuccess: (signature: string) => {
-			toast(`Sent transaction ${signature}`);
+		onSuccess: () => {
 			setTimeout(() => {
 				queryClient.invalidateQueries({
 					queryKey: ["balance"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["trades"],
 				});
 			}, 1500);
 		},
@@ -211,7 +213,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								<span>0</span>
 							) : (
 								<Fragment>
-									{minReceivedQuery?.isPending || minReceivedQuery?.isRefetching ? (
+									{minReceivedQuery?.isPending ? (
 										<Skeleton />
 									) : (
 										<Fragment>
@@ -223,7 +225,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 													key={minReceivedQuery?.data?.minimumReceived || "0"}
 												>
 													{minReceivedQuery?.data?.minimumReceived
-														? formatUnits(BigInt(minReceivedQuery?.data?.minimumReceived), token.decimals)
+														? formatUnits(
+																BigInt(minReceivedQuery?.data?.minimumReceived),
+																mode === "sell" ? 9 : token.decimals,
+															)
 														: null}
 												</span>
 											)}
