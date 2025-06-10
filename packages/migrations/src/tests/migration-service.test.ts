@@ -115,7 +115,6 @@
 //       .stub(AnchorProvider.prototype, "sendAndConfirm")
 //       .resolves("test-signature");
 
-   
 //     migrationService = new MigrationService(
 //       mockConnection as unknown as Connection,
 //       mockProvider as unknown as AnchorProvider,

@@ -62,6 +62,47 @@ export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp
 	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
 };
 
+export const isCurveCompleted = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: ITokenLookUp): Promise<{ curveCompleted: boolean }> => {
+	return await fetcher("/tokens/curve-completed", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+	});
+};
+
+export const getChartData = async ({
+	chain,
+	chainId,
+	contractAddress,
+	timeframe,
+	limit,
+}: ITokenLookUp & {
+	timeframe?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+	limit?: number;
+}): Promise<
+	Array<{
+		timestamp: number;
+		open: number;
+		high: number;
+		low: number;
+		close: number;
+		volume: number;
+		volumeUSD: number;
+	}>
+> => {
+	return await fetcher("/tokens/chart-data", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+		timeframe,
+		limit,
+	});
+};
+
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
 	return await fetcher("/tokens/trades", "POST", {
 		chain,
@@ -91,7 +132,7 @@ export const getChatHistory = async ({
 };
 
 export const generateImage = async ({ prompt, width, height }: { prompt: string; width: number; height: number }) => {
-	return await fetcher("/generation/image", "POST", {
+	return await fetcher("/generation/generate", "POST", {
 		prompt,
 		width,
 		height,

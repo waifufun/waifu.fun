@@ -42,6 +42,7 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"crypto-browserify": "^3.12.1",
+		"lightweight-charts": "^5.0.7",
 		"lucide-react": "^0.511.0",
 		"moment": "^2.30.1",
 		"next": "15.3.2",

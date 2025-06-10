@@ -132,3 +132,8 @@ export const FAL_MODELS: FALModels = {
 };
 
 export const FLEEK_API_URL = "https://api.fleek.xyz";
+
+export const FALLBACK_PRICES = {
+	solana: 153,
+	ethereum: 2518,
+};

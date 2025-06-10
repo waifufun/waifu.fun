@@ -14,6 +14,8 @@ import { useMutation } from "@tanstack/react-query";
 import { createToken } from "@/lib/api";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
+import { createTokenTx } from "@/lib/utils";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 export const TokenInfoInput = <K extends TokenFormOptions>({
 	title,
@@ -210,6 +212,8 @@ const ChoosePool = () => {
 };
 
 const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
+	const wallet = useWallet();
+	const { connection } = useConnection();
 	const {
 		handleSubmit,
 		formState,
@@ -244,18 +248,17 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 		setLaunching(true);
 
 		try {
-			// const tokenData = await getTokenData(true);
-			// console.log("Token Data (manual):", tokenData);
-			// const tx = await solanaWallets?.Devnet.createToken(tokenData);
-			// console.log("Transaction:", tx);
-			// createTokenMutation.mutate({
-			// 	contractAddress: mintKeyPair?.publicKey.toString() || "",
-			// 	chain: "solana",
-			// 	chainId: 103,
-			// 	pool: pool,
-			// 	signature: tx?.signature.toString() || "",
-			// });
-			throw new Error("implement differently");
+			const tokenData = await getTokenData(true);
+			console.log("Token Data (manual):", tokenData);
+			const tx = await createTokenTx(tokenData, { connection, wallet });
+			console.log("Transaction:", tx);
+			createTokenMutation.mutate({
+				contractAddress: mintKeyPair?.publicKey.toString() || "",
+				chain: "solana",
+				chainId: 103,
+				pool: pool,
+				signature: tx?.signature.toString() || "",
+			});
 			// biome-ignore lint/suspicious/noExplicitAny: error handling
 		} catch (error: any) {
 			console.error("Error creating token:", error);
@@ -268,18 +271,17 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 	const handleAutoSubmit = async () => {
 		setLaunching(true);
 		try {
-			// const tokenData = await getTokenData();
-			// console.log("Token Data:", tokenData);
-			// const tx = await solanaWallets?.Devnet.createToken(tokenData);
-			// console.log("Transaction:", tx);
-			// createTokenMutation.mutate({
-			// 	contractAddress: mintKeyPair?.publicKey.toString() || "",
-			// 	chain: "solana",
-			// 	chainId: 103,
-			// 	pool: pool,
-			// 	signature: tx?.signature.toString() || "",
-			// });
-			throw new Error("implement differently");
+			const tokenData = await getTokenData();
+			console.log("Token Data:", tokenData);
+			const tx = await createTokenTx(tokenData, { connection, wallet });
+			console.log("Transaction:", tx);
+			createTokenMutation.mutate({
+				contractAddress: mintKeyPair?.publicKey.toString() || "",
+				chain: "solana",
+				chainId: 103,
+				pool: pool,
+				signature: tx?.signature.toString() || "",
+			});
 			// biome-ignore lint/suspicious/noExplicitAny: error handling
 		} catch (error: any) {
 			console.error("Error creating token:", error);

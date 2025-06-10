@@ -15,12 +15,15 @@ import {
 	VersionedTransaction,
 	type Connection,
 	Transaction,
+	LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 
 import { AnchorProvider, BN, Program, type Idl } from "@coral-xyz/anchor";
 import idl from "./autofun.json";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
+import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
+import type { CreateTokenResponse } from "@/components/wallet/SolanaWallet";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -617,4 +620,144 @@ export const executeSwap = async (
 	}
 
 	throw new Error("No route found for token to swap against. Contact autofun.");
+};
+
+export const launchAndSwapTx = async (
+	creator: PublicKey,
+	decimals: number,
+	tokenSupply: number,
+	virtualLamportReserves: number,
+	name: string,
+	symbol: string,
+	uri: string,
+	swapAmount: number,
+	slippageBps: number,
+	connection: Connection,
+	mintKeypair: Keypair,
+	wallet: WalletContextState,
+) => {
+	const slippage = slippageBps ? slippageBps : 100;
+	const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
+	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+
+	// Calculate minimum receive amount based on bonding curve formula
+	// This is an estimate and should be calculated more precisely based on the bonding curve
+	const initBondingCurvePercentage = configAccount.initBondingCurve;
+	const initBondingCurveAmount = (tokenSupply * initBondingCurvePercentage) / 100;
+
+	// Calculate expected output using constant product formula: dy = (y * dx) / (x + dx)
+	// where x = reserveToken, y = reserveLamport, dx = swapAmount
+	const numerator = virtualLamportReserves * swapAmount;
+	const denominator = initBondingCurveAmount + swapAmount;
+	const expectedOutput = Math.floor(numerator / denominator);
+
+	// Apply slippage to expected output
+	const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
+
+	const tx = await program.methods
+		.launchAndSwap(
+			decimals,
+			new BN(tokenSupply),
+			new BN(virtualLamportReserves),
+			name,
+			symbol,
+			uri,
+			new BN(swapAmount),
+			new BN(minOutput),
+			new BN(deadline),
+		)
+		.accounts({
+			teamWallet: configAccount.teamWallet,
+			creator: creator,
+			token: mintKeypair.publicKey,
+		})
+		.transaction();
+
+	tx.feePayer = creator;
+	tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+	return tx;
+};
+export const createTokenTx = async (
+	tokenData: TokenMetadata,
+	{ connection, wallet }: { connection: Connection; wallet: WalletContextState },
+): Promise<CreateTokenResponse> => {
+	console.log("SolanaWallet: Creating token with data:", tokenData);
+	console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+	console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
+	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
+	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	const [configPda] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
+	if (!wallet?.publicKey) throw new Error("Wallet not correctly initialized");
+	const address = wallet.publicKey.toBase58();
+
+	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+		units: 300000,
+	});
+
+	const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+		microLamports: 50000,
+	});
+
+	const tx =
+		tokenData.buyAmount > 0
+			? await launchAndSwapTx(
+					new PublicKey(address),
+					Number(process.env.NEXT_PUBLIC_DECIMALS),
+					Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
+					Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES),
+					tokenData.name,
+					tokenData.symbol,
+					tokenData.metadataUrl,
+					tokenData.buyAmount * LAMPORTS_PER_SOL,
+					100,
+					connection,
+					tokenData.mintKeyPair,
+					wallet,
+				)
+			: await program.methods
+					.launch(
+						Number(process.env.NEXT_PUBLIC_DECIMALS),
+						new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
+						new BN(Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES)),
+						tokenData.name,
+						tokenData.symbol,
+						tokenData.metadataUrl,
+					)
+					.accounts({
+						creator: new PublicKey(address),
+						token: tokenData.mintKeyPair.publicKey,
+						teamWallet: configAccount.teamWallet,
+					})
+					.transaction();
+
+	tx.instructions = [modifyComputeUnits, addPriorityFee, ...tx.instructions];
+
+	tx.feePayer = new PublicKey(address);
+	const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+	tx.recentBlockhash = blockhash;
+
+	tx.sign(tokenData.mintKeyPair);
+
+	if (!wallet || !wallet?.signTransaction) throw new Error("Wallet not properly initialized");
+	const signedTx = await wallet.signTransaction(tx);
+	const txId = await connection.sendRawTransaction(signedTx.serialize(), {
+		preflightCommitment: "confirmed",
+		maxRetries: 5,
+	});
+
+	await connection.confirmTransaction(
+		{
+			signature: txId,
+			blockhash,
+			lastValidBlockHeight,
+		},
+		"confirmed",
+	);
+
+	return {
+		mintPublicKey: tokenData.mintKeyPair.publicKey,
+		userPublicKey: new PublicKey(address),
+		signature: txId,
+	};
 };

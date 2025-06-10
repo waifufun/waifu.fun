@@ -81,7 +81,7 @@ export const instructions = {
 				const direction = payload.readUInt8(offset);
 				offset += 1;
 
-				const minimumReceiveAmount = payload.readBigUInt64LE(offset);
+				const minimumReceiveAmount = payload.readBigInt64LE(offset);
 				offset += 8;
 
 				const deadline = payload.readBigInt64LE(offset);
