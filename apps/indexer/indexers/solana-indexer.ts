@@ -398,7 +398,6 @@ export class SolanaIndexer extends BaseIndexer {
 				}
 
 				const signatures = await this.getSignatures(beforeSignature);
-
 				if (signatures.length === 0) {
 					if (showLogs) {
 						logger.info("No more signatures found");
@@ -490,11 +489,11 @@ export class SolanaIndexer extends BaseIndexer {
 			}
 
 			if (isGenesisSync) {
-				await this.safeAsyncOperation(
-					() => DB.EventsMeta.markGenesisComplete(this.config.autoFunAddress, this.config.networkId.toString()),
-					"markGenesisComplete",
-					3,
-				);
+				// await this.safeAsyncOperation(
+				// 	() => DB.EventsMeta.markGenesisComplete(this.config.autoFunAddress, this.config.networkId.toString()),
+				// 	"markGenesisComplete",
+				// 	3,
+				// );
 				if (showLogs) {
 					logger.info("Genesis sync marked as complete");
 				}
