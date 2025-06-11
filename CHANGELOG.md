@@ -1,3 +1,18 @@
+# [0.14.0](https://github.com/elizaos/autofun-monorepo/compare/v0.13.0...v0.14.0) (2025-06-11)
+
+
+### Bug Fixes
+
+* dont create 2 queryclientprovider instances ([dbb3041](https://github.com/elizaos/autofun-monorepo/commit/dbb3041fb839da8519f7bf71bba228e95d6f0987))
+* fixed broken route ([31b0aa9](https://github.com/elizaos/autofun-monorepo/commit/31b0aa95a3a0646fe79ccb955dc419109152b622))
+* ported create token to new system ([2d65d08](https://github.com/elizaos/autofun-monorepo/commit/2d65d08dc0eb28609f59a024fd99fa86fbe72cb3))
+* uncomment markGenesisSync ([845826f](https://github.com/elizaos/autofun-monorepo/commit/845826f12b287d8a395609d15c53d828c610f317))
+
+
+### Features
+
+* fixed indexer ([9f69d9c](https://github.com/elizaos/autofun-monorepo/commit/9f69d9ce91d2a507086f0c7d72ce87d4e895da27))
+
 # [0.13.0](https://github.com/elizaos/autofun-monorepo/compare/v0.12.0...v0.13.0) (2025-06-09)
 
 
