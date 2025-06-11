@@ -633,12 +633,11 @@ export const executeSwap = async (
 
 export const calculateBondingCurveParams = (
 	curveLimit: number,
-	decimals: number,
 ): { virtualLamportReserves: number; initBondingCurve: number } => {
 	// Default values in SOL
 	const defaultCurveLimit = Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL;
 	const defaultVirtualReserves = Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
-	const normalizedCurveLimit = curveLimit / decimals;
+	const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
 
 	const defaultInitBondingCurve = 75;
 	// Calculate the ratio based on curve limit
@@ -671,7 +670,7 @@ export const launchAndSwapTx = async (
 
 	// Calculate minimum receive amount based on bonding curve formula
 	// This is an estimate and should be calculated more precisely based on the bonding curve
-	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit, decimals);
+	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
 
 	const initBondingCurveAmount = (tokenSupply * initBondingCurve) / 100;
 
@@ -731,10 +730,10 @@ export const createTokenTx = async (
 		microLamports: 50000,
 	});
 	const curveLimit = tokenData.curveLimit
-		? Number(tokenData.curveLimit) * 10 ** Number(process.env.NEXT_PUBLIC_DECIMALS)
+		? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL
 		: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
 	const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
-	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit, decimals);
+	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
 	console.log({
 		decimals: Number(process.env.NEXT_PUBLIC_DECIMALS),
 		tokenSupply: Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
