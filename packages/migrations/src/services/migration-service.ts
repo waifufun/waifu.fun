@@ -4,7 +4,7 @@ import { MigrationManager } from "../migrations";
 import type { ProtocolMigration, ProtocolState } from "../types";
 import DB from "@autofun/database";
 import logger from "@autofun/logger";
-import type { IMigration } from "@autofun/types";
+import { SolanaNetworkIds, type IMigration } from "@autofun/types";
 import type { Model } from "mongoose";
 import redis from "@autofun/redis";
 import { Keypair } from "@solana/web3.js";
@@ -12,7 +12,9 @@ import { Keypair } from "@solana/web3.js";
 export class MigrationService {
 	private isProcessing = false;
 	private processingInterval: NodeJS.Timeout | null = null;
+	private populationInterval: NodeJS.Timeout | null = null;
 	private readonly POLL_INTERVAL = 5000;
+	private readonly POPULATION_INTERVAL = 60000; // 1 minute
 	private readonly MAX_CONCURRENT_MIGRATIONS = 5;
 	private readonly LOCK_TTL = 30; // 30 seconds lock TTL
 	private migrationManager: MigrationManager;
@@ -49,6 +51,10 @@ export class MigrationService {
 			clearInterval(this.processingInterval);
 			this.processingInterval = null;
 		}
+		if (this.populationInterval) {
+			clearInterval(this.populationInterval);
+			this.populationInterval = null;
+		}
 
 		// wait for any in‐flight processing to finish
 		while (this.isProcessing) {
@@ -71,14 +77,100 @@ export class MigrationService {
 	}
 
 	private startProcessing(): void {
-		if (this.processingInterval) {
+		if (this.processingInterval || this.populationInterval) {
 			return;
 		}
 
 		this.processingInterval = setInterval(() => this.processMigrations(), this.POLL_INTERVAL);
-
+		this.populationInterval = setInterval(() => this.populateMigrations(), this.POPULATION_INTERVAL);
+		
+		// Initial population and processing
+		this.populateMigrations();
 		this.processMigrations();
 		logger.info("Migration processing started");
+	}
+
+	private async populateMigrations(): Promise<void> {
+		try {
+			const migrationEvents = await this.db.Event.find({
+				eventType: "curveCompleted",
+				processed: false,
+			}).limit(100);
+			if (migrationEvents.length === 0) {
+				logger.info("No new migration events found");
+				return;
+			}
+			logger.info(`Found ${migrationEvents.length} new migration events to process`);
+
+			// Process migrations sequentially
+			for (const event of migrationEvents) {
+				try {
+					const { contractAddress } = event;
+					if (!contractAddress) {
+						logger.warn(`Skipping event ${event._id} due to missing data`);
+						continue;
+					}
+					// get protocol from the token mint
+					const token = await this.db.Token.findOne({ contractAddress });
+					if (!token) {
+						logger.warn(`Token not found for contract address ${contractAddress}, skipping event ${event._id}`);
+						continue;
+					}
+					// Check if migration already exists
+					const existingMigration = await this.db.Migration.findOne({
+						contractAddress,
+						status: { $in: ["migrating", "migrated"] },
+					});
+					if (existingMigration) {
+						logger.info(`Migration for ${contractAddress} already exists, skipping`);
+						continue;
+					}
+					const protocol = token.pool?.toLowerCase();
+					if (!protocol || (protocol !== "raydium" && protocol !== "meteora")) {
+						logger.warn(
+							`Unsupported protocol ${protocol} for contract address ${contractAddress}, skipping event ${event._id}`,
+						);
+						continue;
+					}
+					const address = token.contractAddress as IMigration["contractAddress"];
+					const chainId = token.chainId;
+					if (chainId !== SolanaNetworkIds.Devnet && chainId !== SolanaNetworkIds.Mainnet) {
+						logger.warn(
+							`Unsupported chain ID ${chainId} for contract address ${contractAddress}, skipping event ${event._id}`,
+						);
+						continue;
+					}
+					// Create new migration
+					const newMigration = {
+						_id: new this.db.Migration()._id,
+						contractAddress: address,
+						protocol,
+						status: "migrating" as const,
+						currentStep: 0,
+						protocolState: JSON.stringify({
+							tokenMint: contractAddress,
+							amount: 0,
+							withdrawnAmounts: [],
+							txId: "",
+							transactions: [],
+						}),
+						startedAt: new Date(),
+						creator: event.creator || "unknown",
+						chain: "solana" as const,
+						chainId: chainId,
+						version: 2,
+					} as unknown as IMigration;
+
+					await this.db.Migration.create(newMigration);
+					await this.db.Event.updateOne({ _id: event._id }, { $set: { processed: true } });
+					logger.info(`Created new migration for ${contractAddress}`);
+				} catch (error) {
+					logger.error(`Error processing migration event ${event._id}:`, error);
+				}
+			}
+		} catch (error) {
+			logger.error("Error populating migrations:", error);
+		}
 	}
 
 	private async processMigrations(): Promise<void> {
