@@ -398,7 +398,6 @@ export class SolanaIndexer extends BaseIndexer {
 				}
 
 				const signatures = await this.getSignatures(beforeSignature);
-
 				if (signatures.length === 0) {
 					if (showLogs) {
 						logger.info("No more signatures found");

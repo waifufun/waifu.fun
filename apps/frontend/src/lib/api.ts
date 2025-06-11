@@ -132,7 +132,7 @@ export const getChatHistory = async ({
 };
 
 export const generateImage = async ({ prompt, width, height }: { prompt: string; width: number; height: number }) => {
-	return await fetcher("/generation/image", "POST", {
+	return await fetcher("/generation/generate", "POST", {
 		prompt,
 		width,
 		height,
