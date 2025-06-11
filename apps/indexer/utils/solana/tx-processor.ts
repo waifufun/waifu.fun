@@ -33,6 +33,7 @@ export class SolanaTransactionProcessor {
 		}
 
 		if (!this.hasAutoFunProgram(accounts)) {
+			console.warn(`Transaction ${signatures[0]} does not involve AutoFun program`);
 			return events;
 		}
 
@@ -74,10 +75,9 @@ export class SolanaTransactionProcessor {
 					(decodedInstruction.type === "swap" || decodedInstruction.type === "launchAndSwap") &&
 					decodedInstruction.data?.data?.direction !== undefined
 				) {
-					if (eventData.direction !== 0 || eventData.direction !== 1) {
+					if (eventData.direction !== 0 && eventData.direction !== 1) {
 						// program only checks if direction is 1, any other value is considered a buy
 						eventData.direction = 0;
-						continue;
 					}
 				}
 

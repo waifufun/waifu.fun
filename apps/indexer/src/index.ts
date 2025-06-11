@@ -8,7 +8,7 @@ const config: SolanaIndexerConfig = {
 	networkId: SolanaNetworkIds.Devnet,
 	autoFunAddress: "CN2Km6FAncCu3mPKCMJhGwenAtC75MoNsoLuXGqwoC3q" as SolanaAddressLike,
 	maxSignatures: 70,
-	debugStatements: false,
+	debugStatements: true,
 };
 
 const indexer = new SolanaIndexer(config);
