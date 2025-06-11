@@ -69,7 +69,7 @@ export default async function Home({
 				</div>
 
 				{view === "grid" ? (
-					<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4 w-full">
+					<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
 						{tokens?.map((token: IToken) => (
 							<GridItem token={token} key={token.contractAddress} />
 						))}
