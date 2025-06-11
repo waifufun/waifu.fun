@@ -489,11 +489,11 @@ export class SolanaIndexer extends BaseIndexer {
 			}
 
 			if (isGenesisSync) {
-				// await this.safeAsyncOperation(
-				// 	() => DB.EventsMeta.markGenesisComplete(this.config.autoFunAddress, this.config.networkId.toString()),
-				// 	"markGenesisComplete",
-				// 	3,
-				// );
+				await this.safeAsyncOperation(
+					() => DB.EventsMeta.markGenesisComplete(this.config.autoFunAddress, this.config.networkId.toString()),
+					"markGenesisComplete",
+					3,
+				);
 				if (showLogs) {
 					logger.info("Genesis sync marked as complete");
 				}
