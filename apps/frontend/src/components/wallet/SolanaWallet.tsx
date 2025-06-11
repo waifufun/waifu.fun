@@ -108,17 +108,20 @@ export class SolanaWallet extends WalletClass {
 		}
 	}
 
-	private calculateBondingCurveParams(curveLimit: number): {
+	private calculateBondingCurveParams(
+		curveLimit: number,
+		decimals: number,
+	): {
 		virtualLamportReserves: number;
 		initBondingCurve: number;
 	} {
-		// Default values in SOL
 		const defaultCurveLimit = Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL;
 		const defaultVirtualReserves = Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+		const normalizedCurveLimit = curveLimit / decimals;
 
 		const defaultInitBondingCurve = 75;
 		// Calculate the ratio based on curve limit
-		const ratio = curveLimit / defaultCurveLimit;
+		const ratio = normalizedCurveLimit / defaultCurveLimit;
 
 		// Calculate new values maintaining the same proportions
 		const virtualLamportReserves = Math.floor(defaultVirtualReserves * ratio);
@@ -156,7 +159,7 @@ export class SolanaWallet extends WalletClass {
 		const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
 
 		// Calculate bonding curve parameters
-		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
+		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit, decimals);
 
 		// Calculate init_bonding_curve amount as a percentage of total supply
 		const initBondingCurveAmount = Math.floor((tokenSupply * initBondingCurve) / 100);
@@ -211,8 +214,11 @@ export class SolanaWallet extends WalletClass {
 		});
 
 		// Calculate bonding curve parameters
-		const curveLimit = Number(tokenData.curveLimit) ?? Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
-		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
+		const curveLimit = tokenData.curveLimit
+			? Number(tokenData.curveLimit) * 10 ** Number(process.env.NEXT_PUBLIC_DECIMALS)
+			: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
+		const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
+		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit, decimals);
 
 		const tx =
 			tokenData.buyAmount > 0
