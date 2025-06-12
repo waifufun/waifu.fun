@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Trophy } from "lucide-react";
 import BalanceMenu from "./balance-menu";
 import SearchMenu from "./search-menu";
-import ConnectWallet from "./connect-wallet";
 import useAddress from "@/hooks/use-address";
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
@@ -17,8 +16,8 @@ export default function Header() {
 	return (
 		<div className="flex items-center gap-4 justify-between h-[68px] px-4 border-b-2 border-autofun-background-action-highlight/50">
 			<div className="flex items-center gap-4">
-				<SidebarTrigger className="md:hidden" />
-				<Link href="/" className="shrink-0 grow">
+				<SidebarTrigger />
+				{/* <Link href="/" className="shrink-0 grow">
 					<Image
 						src="/logo_wide.svg"
 						height={43.98}
@@ -27,7 +26,7 @@ export default function Header() {
 						unoptimized
 						alt="logo"
 					/>
-				</Link>
+				</Link> */}
 				<SearchMenu />
 				{/* Social Icons */}
 				<div className="flex items-center gap-6">
@@ -96,7 +95,6 @@ export default function Header() {
 						<Button variant="outline">Create Token</Button>
 					</Link>
 				</div>
-				<ConnectWallet />
 			</div>
 		</div>
 	);
