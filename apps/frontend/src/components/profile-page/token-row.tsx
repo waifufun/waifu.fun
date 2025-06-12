@@ -49,10 +49,10 @@ export default function TokenRow({
 				</div>
 				<div className="flex flex-col justify-center min-w-[140px]">
 					<div className="flex items-center gap-2">
-						<p className="text-xl text-white uppercase mr-1 leading-none">{data.title}</p>
-						<p className="text-base text-[#8C8C8C] leading-none">${data.ticker}</p>
+						<p className="text-sm md:text-xl text-white uppercase leading-none">{data.title}</p>
+						<p className="text-sm md:text-xl text-[#8C8C8C] leading-none">${data.ticker}</p>
 					</div>
-					<p className="text-base mt-3 ml-1.5 text-[#8C8C8C] leading-none">
+					<p className="text-base mt-3 md:ml-1.5 text-[#8C8C8C] leading-none">
 						<CopyButton textToCopy={data.contractAddress} />{" "}
 						{`${data.contractAddress.slice(0, 6)}...${data.contractAddress.slice(-4)}`}
 					</p>
@@ -81,27 +81,27 @@ export default function TokenRow({
 						</div>
 					</div>
 					{mode === "activity" ? (
-						<div className="text-white text-base">
+						<div className="text-white place-items-center text-base">
 							<Link href={`/token/${data.contractAddress}`}>
 								<Image
 									src={"/profile/link.svg"}
 									alt="link icon"
 									width={24}
 									height={24}
-									className="object-contain w-6 h-6"
+									className="object-contain w-5 h-5 md:w-6 md:h-6"
 								/>
 							</Link>
+							<div className="flex flex-col justify-center mt-2 h-full">
+								<div className="space-y-0 flex flex-row">
+									<p className="text-base text-autofun-background-action-highlight text-yellow-400">
+										+ {data.points} pts
+									</p>
+								</div>
+							</div>
 						</div>
 					) : null}
 				</div>
-			) : (
-				<div className="flex flex-col justify-center h-full">
-					<div className="space-y-0">
-						<p className="text-base text-white">Points</p>
-						<p className="text-base text-autofun-background-action-highlight">{data.points} FUN</p>
-					</div>
-				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

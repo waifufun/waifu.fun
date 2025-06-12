@@ -20,11 +20,7 @@ export default function Page({ balances }: { balances: any[] }) {
 						address: "0xa83114a443da1cecefc50368531cace9f37fcccb",
 						tokensBought: 128,
 						tokensCreated: 42,
-						chains: [
-							{ chain: "solana", chainId: 101, amount: 120 },
-							{ chain: "evm", chainId: 1, amount: 120 },
-							{ chain: "evm", chainId: 8453, amount: 240 },
-						],
+						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
 					}}
 				/>
 				{/* tabs section */}
