@@ -1,5 +1,4 @@
 "use client";
-import PointCounter from "@/components/profile-page/point-counter";
 import ProfileFilters from "@/components/profile-page/profile-filters";
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
@@ -15,7 +14,7 @@ export default function Page({ balances }: { balances: any[] }) {
 
 	return (
 		<div className="mt-10 flex place-self-center w-full flex-col">
-			<div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
+			<div className="w-full max-w-full mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
 						username: "AlienMaster42",
@@ -30,14 +29,14 @@ export default function Page({ balances }: { balances: any[] }) {
 					}}
 				/>
 				{/* tabs section */}
-				<div className="w-[800px] rounded-md bg-[#0F0F0F] h-full flex place-self-center">
+				<div className="w-full h-full flex place-self-center">
 					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">
 						<TabsList className="grid w-full grid-cols-2">
 							<TabsTrigger value="wallet" className="w-full">
 								Wallet
 							</TabsTrigger>
-							<TabsTrigger value="Points" className="w-full">
-								Points
+							<TabsTrigger value="Activity" className="w-full">
+								Activity
 							</TabsTrigger>
 						</TabsList>
 						{tab === "wallet" ? <ProfileFilters mode={tab} /> : null}
@@ -65,15 +64,12 @@ export default function Page({ balances }: { balances: any[] }) {
 								})}
 							</div>
 						</TabsContent>
-						<TabsContent value="Points" className="bg-transparent">
-							<div className="flex justify-center mt-2">
-								<PointCounter points={12} />
-							</div>
-							<div className="mt-6 border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center h-[650px] overflow-y-auto">
+						<TabsContent value="Activity" className="bg-transparent">
+							<div className="mt-6 border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center h-[650px] overflow-y-auto">
 								<div className="border-b-2 border-[#03FF24]/40">
 									<TokensFilter />
 								</div>
-								<div className="p-4">
+								<div className="p-0">
 									{Array(3)
 										.fill(null)
 										.map((_, i) => (
