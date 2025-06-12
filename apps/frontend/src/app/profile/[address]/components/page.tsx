@@ -39,7 +39,7 @@ export default function Page({ balances }: { balances: any[] }) {
 							</TabsTrigger>
 						</TabsList>
 						<TabsContent value="wallet" className="bg-transparent h-[800px] overflow-y-auto pr-1">
-							<div className="mt-6 border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center h-[650px] overflow-y-auto">
+							<div className="mt-6 border-2 h-fit w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="w-full max-h-full overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40 w-full">
 										<h1 className="p-4 text-white">
@@ -71,7 +71,7 @@ export default function Page({ balances }: { balances: any[] }) {
 							</div>
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
-							<div className="mt-6 border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center h-[650px] overflow-y-auto">
+							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="border-b-2 border-[#03FF24]/40">
 									<TokensFilter />
 								</div>

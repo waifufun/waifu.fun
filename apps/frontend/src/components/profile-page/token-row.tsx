@@ -34,7 +34,7 @@ export default function TokenRow({
 	// if mode equals activity show mcap, amount bought, amount pts earned, link to token page, and dollarworth
 
 	return (
-		<div className="group w-full place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[94px] px-4 py-13">
+		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[94px] px-4 py-13">
 			<div className="flex items-center space-x-4">
 				<div className="w-[60px] h-[60px]">
 					<Image
@@ -47,7 +47,6 @@ export default function TokenRow({
 						className="object-contain"
 					/>
 				</div>
-
 				<div className="flex flex-col justify-center min-w-[140px]">
 					<div className="flex items-center gap-2">
 						<p className="text-xl text-white uppercase mr-1 leading-none">{data.title}</p>
@@ -61,19 +60,21 @@ export default function TokenRow({
 			</div>
 			{mode === "activity" || mode === "wallet" ? (
 				<div className="flex items-center justify-center flex-row space-x-4">
-					<div className="flex flex-col items-end">
+					<div className="flex flex-col items-end space-y-1">
 						<div className="flex flex-row space-x-2 w-full justify-end">
 							{mode === "activity" ? (
 								<>
-									<p className="text-base font-bold text-yellow-400">Mcap</p>
-									<p className="text-base font-semibold text-yellow-400">{formatNumber(data.marketCap, false, true)}</p>
+									<p className="text-sm md:text-base font-bold text-yellow-400">Mcap</p>
+									<p className="text-sm md:text-base font-semibold text-yellow-400">
+										{formatNumber(data.marketCap, false, true)}
+									</p>
 								</>
 							) : null}
 						</div>
-						<div className="flex flex-col w-full space-y-1 items-end justify-center transition-all duration-300">
-							<p className="text-white font-medium text-base">{data.amountHeld}</p>
+						<div className="flex flex-col space-y-1 w-full items-end justify-center transition-all duration-300">
+							<p className="text-white font-medium text-sm md:text-base">{data.amountHeld}</p>
 							{data?.dollarWorth ? (
-								<p className="text-autofun-background-action-highlight text-base">
+								<p className="text-autofun-background-action-highlight text-sm md:text-base">
 									${data.dollarWorth.toLocaleString()}
 								</p>
 							) : null}
