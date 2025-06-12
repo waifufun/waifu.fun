@@ -49,8 +49,8 @@ export default function TokenRow({
 				</div>
 				<div className="flex flex-col justify-center min-w-[140px]">
 					<div className="flex items-center gap-2">
-						<p className="text-sm md:text-xl text-white uppercase leading-none">{data.title}</p>
-						<p className="text-sm md:text-xl text-[#8C8C8C] leading-none">${data.ticker}</p>
+						<p className="text-xs md:text-xl text-white uppercase leading-none">{data.title}</p>
+						<p className="text-xs md:text-xl text-[#8C8C8C] leading-none">${data.ticker}</p>
 					</div>
 					<p className="text-base mt-3 md:ml-1.5 text-[#8C8C8C] leading-none">
 						<CopyButton textToCopy={data.contractAddress} />{" "}
@@ -64,15 +64,15 @@ export default function TokenRow({
 						<div className="flex flex-row space-x-2 w-full justify-end">
 							{mode === "activity" ? (
 								<>
-									<p className="text-sm md:text-base font-bold text-yellow-400">Mcap</p>
-									<p className="text-sm md:text-base font-semibold text-yellow-400">
+									<p className="text-xs md:text-base font-bold text-yellow-400">Mcap</p>
+									<p className="text-xs md:text-base font-semibold text-yellow-400">
 										{formatNumber(data.marketCap, false, true)}
 									</p>
 								</>
 							) : null}
 						</div>
 						<div className="flex flex-col space-y-1 w-full items-end justify-center transition-all duration-300">
-							<p className="text-white font-medium text-sm md:text-base">{data.amountHeld}</p>
+							<p className="text-white font-medium text-xs md:text-base">{data.amountHeld}</p>
 							{data?.dollarWorth ? (
 								<p className="text-autofun-background-action-highlight text-sm md:text-base">
 									${data.dollarWorth.toLocaleString()}
@@ -91,9 +91,9 @@ export default function TokenRow({
 									className="object-contain w-5 h-5 md:w-6 md:h-6"
 								/>
 							</Link>
-							<div className="flex flex-col justify-center mt-2 h-full">
+							<div className="flex flex-col justify-center mt-3 h-full">
 								<div className="space-y-0 flex flex-row">
-									<p className="text-base text-autofun-background-action-highlight text-yellow-400">
+									<p className="text-xs text-center text-autofun-background-action-highlight text-yellow-400">
 										+ {data.points} pts
 									</p>
 								</div>

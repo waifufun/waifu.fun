@@ -25,7 +25,7 @@ export default function TokensFilter() {
 	];
 
 	return (
-		<div className="w-full p-2 place-self-center flex items-center">
+		<div className="w-full justify-around md:justify-start p-2 place-self-center flex items-center">
 			{buttons.map((btn) => {
 				const isActive = (currentMode ?? "tokens-bought") === btn.value;
 				return (

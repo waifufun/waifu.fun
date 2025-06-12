@@ -49,11 +49,13 @@ export default function ProfileHeader({
 				</div>
 			</div>
 
-			<div className="ml-6 space-y-1 mb-2 flex flex-col h-full">
-				<h1 className="text-2xl sm:text-3xl font-bold text-gray-100 uppercase tracking-wider">{data.username}</h1>
+			<div className="md:ml-6 space-y-1 mb-2 flex flex-col h-full">
+				<h1 className="text-2xl mt-2 sm:text-3xl font-bold text-gray-100 text-center md:text-start uppercase tracking-wider">
+					{data.username}
+				</h1>
 
-				<div className="flex items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 px-2 py-1 border border-[#03FF24]/30 rounded-none shadow-inner max-w-xs mx-auto sm:mx-0">
-					<span className="truncate">{data.address}</span>
+				<div className="flex w-full items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 py-1 border border-[#03FF24]/30 rounded-none shadow-inner">
+					<span className="p-1 truncate">{data.address}</span>
 					<CopyButton
 						textToCopy={data.address}
 						className=" mr-2 text-[#03FF24]/70 hover:text-[#03FF24] cursor-pointer flex-shrink-0"
