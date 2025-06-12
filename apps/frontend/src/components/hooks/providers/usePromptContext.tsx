@@ -51,6 +51,7 @@ export type TokenFormData = {
 	description: string;
 	symbol: string;
 	buyAmount: number;
+	curveLimit: number;
 };
 
 export type TokenMetadata = {
@@ -61,6 +62,7 @@ export type TokenMetadata = {
 	mintKeyPair: Keypair;
 	buyAmount: number;
 	metadataUrl: string;
+	curveLimit: number;
 };
 
 export type TokenFormOptions = keyof TokenFormData;
@@ -302,6 +304,7 @@ const PromptProviderContent = ({ children }: { children: ReactNode }) => {
 		const description = watch("description") || "No description provided.";
 		const mintKeyPairr = mintKeyPair || Keypair.generate();
 		const buyAmount = watch("buyAmount") || 0;
+		const curveLimit = watch("curveLimit") || Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) 
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
@@ -330,6 +333,7 @@ const PromptProviderContent = ({ children }: { children: ReactNode }) => {
 			mintKeyPair: mintKeyPairr,
 			buyAmount,
 			metadataUrl,
+			curveLimit: Number(curveLimit),
 		};
 	};
 
@@ -400,4 +404,11 @@ export const descriptionValidation: RegisterOptions<TokenFormData, "description"
 	required: "Description is required",
 	minLength: { value: 10, message: "Description must be at least 10 characters long" },
 	maxLength: { value: 200, message: "Description must be at most 1000 characters long" },
+};
+
+export const curveLimitValidation: RegisterOptions<TokenFormData, "curveLimit"> = {
+  valueAsNumber: true,
+  required: "Curve limit is required",
+	min: { value: 0, message: "Curve limit must be ≥ 0" }, // we will change this to 113 in mainnet
+	max: { value: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) || 675, message: `Curve limit must be ≤ ${process.env.NEXT_PUBLIC_CURVE_LIMIT || 675}` },
 };

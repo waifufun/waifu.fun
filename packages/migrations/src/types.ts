@@ -34,6 +34,7 @@ export interface ProtocolState {
 		sol: number;
 		token: number;
 	};
+	nftVersion?: "2022" | "legacy";
 	primaryTokenAmount?: string;
 	primarySolAmount?: string;
 	secondaryTokenAmount?: string;
@@ -59,6 +60,7 @@ export interface ProtocolState {
 	lockLpTxId?: string;
 	nftSentToManager?: boolean;
 	nftSentToManagerAt?: Date;
+	nftSentToManageTxId?: string;
 	status?: MigrationStatus;
 	poolCreationTxId?: string;
 	primaryPositionNftTxId?: string;
