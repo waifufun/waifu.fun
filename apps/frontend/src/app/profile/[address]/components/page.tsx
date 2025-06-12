@@ -39,30 +39,36 @@ export default function Page({ balances }: { balances: any[] }) {
 								Activity
 							</TabsTrigger>
 						</TabsList>
-						{tab === "wallet" ? <ProfileFilters mode={tab} /> : null}
 						<TabsContent value="wallet" className="bg-transparent h-[800px] overflow-y-auto pr-1">
-							<div className="p-4 w-full max-h-full overflow-y-auto">
-								{balances.map((balance, i) => {
-									console.log(balance);
-									return (
-										<TokenRow
-											mode="wallet"
-											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
-											key={i}
-											data={{
-												chain: "solana",
-												chainId: 101,
-												image: balance?.info?.imageThumbUrl,
-												title: balance?.info?.name,
-												ticker: balance?.info?.symbol,
-												marketCap: 1240000,
-												contractAddress: balance?.tokenAddress,
-												amountHeld: balance?.shiftedBalance,
-												dollarWorth: 123123123,
-											}}
-										/>
-									);
-								})}
+							<div className="mt-6 border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center h-[650px] overflow-y-auto">
+								<div className="w-full max-h-full overflow-y-auto">
+									<div className="border-b-1 border-[#03FF24]/40 w-full">
+										<h1 className="p-4 text-white">
+											Total Value: <span className="text-autofun-background-action-highlight font-bold">$444</span>
+										</h1>
+									</div>
+									{balances.map((balance, i) => {
+										console.log(balance);
+										return (
+											<TokenRow
+												mode="wallet"
+												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
+												key={i}
+												data={{
+													chain: "solana",
+													chainId: 101,
+													image: balance?.info?.imageThumbUrl,
+													title: balance?.info?.name,
+													ticker: balance?.info?.symbol,
+													marketCap: 1240000,
+													contractAddress: balance?.tokenAddress,
+													amountHeld: balance?.shiftedBalance,
+													dollarWorth: 123123123,
+												}}
+											/>
+										);
+									})}
+								</div>
 							</div>
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
@@ -75,7 +81,7 @@ export default function Page({ balances }: { balances: any[] }) {
 										.fill(null)
 										.map((_, i) => (
 											<TokenRow
-												mode="points"
+												mode="activity"
 												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 												key={i}
 												data={{
