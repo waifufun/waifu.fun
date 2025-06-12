@@ -1,5 +1,5 @@
 export interface EventData {
-	event: "launch" | "swap" | "curveComplete";
+	event: "launch" | "swap" | "curveComplete" | "withdraw";
 	signature: string;
 	data: LaunchData | SwapData | CurveCompleteData;
 	blockHeight: number;
@@ -28,4 +28,13 @@ export interface CurveCompleteData {
 	user: string;
 	mint: string;
 	bondingCurve: string;
+}
+
+export interface WithdrawEvent {
+	eventType: "withdraw";
+	data: {
+		admin: string;
+		tokenMint: string;
+		bondingCurve: string;
+	};
 }
