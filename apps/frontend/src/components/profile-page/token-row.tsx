@@ -35,7 +35,7 @@ export default function TokenRow({
 
 	return (
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[94px] px-4 py-13">
-			<div className="flex items-center space-x-4">
+			<div className="flex items-stretch space-x-4">
 				<div className="w-[60px] h-[60px]">
 					<Image
 						src={data.image}
@@ -47,24 +47,25 @@ export default function TokenRow({
 						className="object-contain"
 					/>
 				</div>
-				<div className="flex flex-col justify-center min-w-[140px]">
+				<div className="flex flex-col justify-between h-[60px] min-w-[140px] py-1">
 					<div className="flex items-center gap-2">
 						<p className="text-xs md:text-xl text-white uppercase leading-none">{data.title}</p>
 						<p className="text-xs md:text-xl text-[#8C8C8C] leading-none">${data.ticker}</p>
 					</div>
-					<p className="text-base mt-3 md:ml-1.5 text-[#8C8C8C] leading-none">
+					<p className="text-base md:ml-1.5 text-[#8C8C8C] leading-none">
 						<CopyButton textToCopy={data.contractAddress} />{" "}
 						{`${data.contractAddress.slice(0, 6)}...${data.contractAddress.slice(-4)}`}
 					</p>
 				</div>
 			</div>
+
 			{mode === "activity" || mode === "wallet" ? (
 				<div className="flex items-center justify-center flex-row space-x-4">
 					<div className="flex flex-col items-end space-y-1">
 						<div className="flex flex-row space-x-2 w-full justify-end">
 							{mode === "activity" ? (
 								<>
-									<p className="text-xs md:text-base font-bold text-yellow-400">Mcap</p>
+									<p className="text-xs md:text-base font-semibold text-yellow-400">Mcap</p>
 									<p className="text-xs md:text-base font-semibold text-yellow-400">
 										{formatNumber(data.marketCap, false, true)}
 									</p>
