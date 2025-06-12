@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
-import { SidebarProvider, } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +25,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 			>
 				<QueryClientProvider client={queryClient}>
 					<SolanaProvider>
-						<SidebarProvider>{children}</SidebarProvider>
+						{children}
 						<Toaster />
 						<GoogleAnalytics gaId={googleTagID} />
 					</SolanaProvider>
