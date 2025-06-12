@@ -1,7 +1,6 @@
 import { GridItem } from "@/components/grid-item";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
-import Image from "next/image";
 import type { Metadata } from "next";
 import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
@@ -37,24 +36,6 @@ export default async function Home({
 
 	return (
 		<div className="flex flex-col gap-4">
-			<Image
-				src="/homepage-hero.svg"
-				width={1816}
-				height={52}
-				unoptimized
-				priority
-				alt="hero"
-				className="hidden lg:block mx-auto w-full select-none"
-			/>
-			<Image
-				src="/homepage-hero-mini.svg"
-				width={360}
-				height={14}
-				unoptimized
-				priority
-				alt="hero"
-				className="block lg:hidden mx-auto w-full select-none"
-			/>
 			<div className="flex flex-col items-center">
 				<div className="flex flex-col md:flex-row items-start md:items-center w-full gap-4">
 					<div className="w-full">

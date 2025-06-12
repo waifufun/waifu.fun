@@ -7,6 +7,8 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import Footer from "@/components/footer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 const queryClient = new QueryClient();
 
@@ -27,9 +29,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 			>
 				<QueryClientProvider client={queryClient}>
 					<SolanaProvider>
-						<Header />
-						<div className="container">{children}</div>
-						<Footer />
+						<SidebarProvider defaultOpen={true}>
+							<SidebarInset>
+								<Header />
+								<div className="container">{children}</div>
+								<Footer />
+							</SidebarInset>
+							<AppSidebar /> {/* Moved AppSidebar to be after SidebarInset for right-side rendering */}
+						</SidebarProvider>
 						<Toaster />
 						<GoogleAnalytics gaId={googleTagID} />
 					</SolanaProvider>
