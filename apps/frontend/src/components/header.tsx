@@ -15,7 +15,7 @@ import { SidebarTrigger } from "./ui/sidebar";
 export default function Header() {
 	const address = useAddress();
 	return (
-		<div className="flex items-center gap-4 justify-between h-[68px] container">
+		<div className="flex items-center gap-4 justify-between h-[68px] px-4 border-b-2 border-autofun-background-action-highlight/50">
 			<div className="flex items-center gap-4">
 				<SidebarTrigger className="md:hidden" />
 				<Link href="/" className="shrink-0 grow">

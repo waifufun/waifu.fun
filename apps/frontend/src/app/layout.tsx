@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import Header from "@/components/header";
+import Footer from "@/components/footer";
 
 const inter = Inter({
 	subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({
 						<SidebarInset>
 							<Header />
 							<main className="flex-1 p-4">{children}</main>
+							<Footer />
 							<BottomNav />
 						</SidebarInset>
 					</SidebarProvider>
