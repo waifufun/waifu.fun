@@ -163,6 +163,7 @@ export class MigrationService {
 
 					await this.db.Migration.create(newMigration);
 					await this.db.Event.updateOne({ _id: event._id }, { $set: { processed: true } });
+					await this.db.Token.updateOne({ contractAddress }, { $set: { curveCompleted: true, status: "migrating" } });
 					logger.info(`Created new migration for ${contractAddress}`);
 				} catch (error) {
 					logger.error(`Error processing migration event ${event._id}:`, error);
