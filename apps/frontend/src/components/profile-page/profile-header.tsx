@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import type { TChain } from "@autofun/types";
 import { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
+import { Trophy } from "lucide-react";
 
 export default function ProfileHeader({
 	data,
@@ -58,7 +59,7 @@ export default function ProfileHeader({
 						className=" mr-2 text-[#03FF24]/70 hover:text-[#03FF24] cursor-pointer flex-shrink-0"
 					/>
 				</div>
-				<div className="flex gap-2 mt-2">
+				{/* <div className="flex gap-2 mt-2">
 					{data.chains.map(({ chain, chainId, amount }) => {
 						// for lint
 						const key = `${chain}_${chainId}`;
@@ -78,6 +79,13 @@ export default function ProfileHeader({
 							</div>
 						);
 					})}
+				</div> */}
+				<div className="flex gap-2 mt-2">
+					<div className="px-2 py-1 flex items-center justify-center">
+						{/* <Image alt="icons" src="" width={24} height={24} /> */}
+						<Trophy size={20} className="text-autofun-background-action-highlight" />
+						<p className="px-2 font-semibold text-[#03FF24] text-base">12</p>
+					</div>
 				</div>
 			</div>
 

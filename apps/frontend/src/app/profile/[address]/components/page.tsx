@@ -2,8 +2,10 @@
 import PointCounter from "@/components/profile-page/point-counter";
 import ProfileFilters from "@/components/profile-page/profile-filters";
 import ProfileHeader from "@/components/profile-page/profile-header";
-import PointsFilter from "@/components/profile-page/profile-points-filter";
+// import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
+import TokensFilter from "@/components/profile-page/tokens-filter";
+// import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 
@@ -67,31 +69,33 @@ export default function Page({ balances }: { balances: any[] }) {
 							<div className="flex justify-center mt-2">
 								<PointCounter points={12} />
 							</div>
-							<div className="mt-4">
-								<PointsFilter />
-							</div>
-							<div className="mt-6 flex flex-col place-self-center h-[650px] overflow-y-auto pr-1">
-								{Array(3)
-									.fill(null)
-									.map((_, i) => (
-										<TokenRow
-											mode="points"
-											// biome-ignore lint/suspicious/noArrayIndexKey: DEV
-											key={i}
-											data={{
-												chain: "solana",
-												chainId: 101,
-												image: "/create/test-img.png",
-												title: `AlienToken ${i + 1}`,
-												ticker: "ALIEN",
-												marketCap: 1240000,
-												contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
-												amountHeld: 124_543_343,
-												dollarWorth: 1337.42,
-												points: 12,
-											}}
-										/>
-									))}
+							<div className="mt-6 border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center h-[650px] overflow-y-auto">
+								<div className="border-b-2 border-[#03FF24]/40">
+									<TokensFilter />
+								</div>
+								<div className="p-4">
+									{Array(3)
+										.fill(null)
+										.map((_, i) => (
+											<TokenRow
+												mode="points"
+												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
+												key={i}
+												data={{
+													chain: "solana",
+													chainId: 101,
+													image: "/create/test-img.png",
+													title: `AlienToken ${i + 1}`,
+													ticker: "ALIEN",
+													marketCap: 1240000,
+													contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
+													amountHeld: 124_543_343,
+													dollarWorth: 1337.42,
+													points: 12,
+												}}
+											/>
+										))}
+								</div>
 							</div>
 						</TabsContent>
 					</Tabs>
