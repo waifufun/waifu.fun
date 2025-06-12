@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AutoCreateForm } from "@/components/ui/create-token/auto-create-form";
+import AutoCreateForm from "@/components/ui/create-token/auto-create-form";
 import { ManualCreateForm } from "@/components/ui/create-token/manual-create-form";
 import { ImportTokenForm } from "@/components/ui/create-token/import-token-form";
 

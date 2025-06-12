@@ -9,6 +9,20 @@ import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import {
+	usePrompt,
+	nameValidation,
+	tickerValidation,
+	descriptionValidation,
+} from "@/components/hooks/providers/usePromptContext";
+import { Info, Wallet } from "lucide-react";
+import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { createToken } from "@/lib/api";
+import useBalance from "@/hooks/use-balance";
+import useAddress from "@/hooks/use-address";
+import { createTokenTx } from "@/lib/utils";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -22,62 +36,117 @@ export const CoinInfoFields = ({
 	idPrefix,
 	collapsible = false,
 	defaultOpen = true,
-}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => (
-	<FormSection title="Coin Info" collapsible={collapsible} defaultOpen={defaultOpen}>
-		<div className="grid sm:grid-cols-2 gap-4">
-			<div>
-				<Label htmlFor={`${idPrefix}Name`} className={formLabelBaseClass}>
-					Name
-				</Label>
-				<Input type="text" id={`${idPrefix}Name`} className={cn(formElementBaseClass, "mt-1 h-10")} />
+}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
+	const {
+		registerForm,
+		formState: { errors },
+	} = usePrompt();
+
+	return (
+		<FormSection title="Coin Info" collapsible={collapsible} defaultOpen={defaultOpen}>
+			<div className="grid sm:grid-cols-2 gap-4">
+				<div>
+					<Label htmlFor={`${idPrefix}Name`} className={formLabelBaseClass}>
+						Name
+					</Label>
+					<Input
+						type="text"
+						id={`${idPrefix}Name`}
+						className={cn(formElementBaseClass, "mt-1 h-10", errors.name && "border-red-500 focus:border-red-500")}
+						{...registerForm("name", nameValidation)}
+					/>
+					{errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+				</div>
+				<div>
+					<Label htmlFor={`${idPrefix}Ticker`} className={formLabelBaseClass}>
+						Ticker
+					</Label>
+					<div className="relative">
+						<Input
+							type="text"
+							id={`${idPrefix}Ticker`}
+							className={cn(
+								formElementBaseClass,
+								"mt-1 h-10 pl-6",
+								errors.symbol && "border-red-500 focus:border-red-500",
+							)}
+							{...registerForm("symbol", tickerValidation)}
+						/>
+						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">$</span>
+					</div>
+					{errors.symbol && <p className="text-red-500 text-xs mt-1">{errors.symbol.message}</p>}
+				</div>
 			</div>
 			<div>
-				<Label htmlFor={`${idPrefix}Ticker`} className={formLabelBaseClass}>
-					Ticker
+				<Label htmlFor={`${idPrefix}Description`} className={formLabelBaseClass}>
+					Description
 				</Label>
-				<Input type="text" id={`${idPrefix}Ticker`} placeholder="$" className={cn(formElementBaseClass, "mt-1 h-10")} />
+				<Textarea
+					id={`${idPrefix}Description`}
+					className={cn(
+						formElementBaseClass,
+						"mt-1 min-h-[80px]",
+						errors.description && "border-red-500 focus:border-red-500",
+					)}
+					{...registerForm("description", descriptionValidation)}
+				/>
+				{errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
 			</div>
-		</div>
-		<div>
-			<Label htmlFor={`${idPrefix}Description`} className={formLabelBaseClass}>
-				Description
-			</Label>
-			<Textarea id={`${idPrefix}Description`} className={cn(formElementBaseClass, "mt-1 min-h-[80px]")} />
-		</div>
-	</FormSection>
-);
+		</FormSection>
+	);
+};
 
 export const CustomAddressGenerator = ({
 	idPrefix,
 	collapsible = true,
 	defaultOpen = false,
-}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => (
-	<FormSection title="Generate Custom Address" collapsible={collapsible} defaultOpen={defaultOpen}>
-		<div className="flex items-end gap-2">
-			<div className="flex-grow">
-				<Label htmlFor={`${idPrefix}CustomAddress`} className={formLabelBaseClass}>
-					Prefix / Suffix
-				</Label>
-				<Input
-					type="text"
-					id={`${idPrefix}CustomAddress`}
-					defaultValue="FUN"
-					className={cn(formElementBaseClass, "mt-1 h-10 uppercase")}
-				/>
+}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
+	const [suffix, setSuffix] = useState("FUN");
+	const { generateAddress, mintKeyPair, isGeneratingAddress } = usePrompt();
+
+	const handleGenerate = () => {
+		generateAddress(suffix);
+	};
+
+	return (
+		<FormSection title="Generate Custom Address" collapsible={collapsible} defaultOpen={defaultOpen}>
+			<div className="flex items-end gap-2">
+				<div className="flex-grow">
+					<Label htmlFor={`${idPrefix}CustomAddress`} className={formLabelBaseClass}>
+						Prefix / Suffix
+					</Label>
+					<Input
+						type="text"
+						id={`${idPrefix}CustomAddress`}
+						value={suffix}
+						onChange={(e) => setSuffix(e.target.value.toUpperCase())}
+						className={cn(formElementBaseClass, "mt-1 h-10 uppercase")}
+					/>
+				</div>
+				<Button
+					type="button"
+					onClick={handleGenerate}
+					disabled={isGeneratingAddress}
+					variant="outline"
+					className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3 disabled:opacity-50"
+				>
+					{isGeneratingAddress ? "GENERATING..." : "GENERATE"}
+				</Button>
 			</div>
-			<Button
-				variant="outline"
-				className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3"
-			>
-				Generate
-			</Button>
-		</div>
-		<p className="text-xs text-[#03FF24] font-mono break-all bg-black/40 p-2 border border-[#03FF24]/30 rounded-none shadow-inner">
-			12FmM4TY8S9Ck3wCvYR5gkbUuGrAC5V4WmiwdQmFUN
-		</p>
-		<p className="text-[10px] text-gray-500">ⓘ Longer suffixes are slower to generate.</p>
-	</FormSection>
-);
+			<p className="text-xs text-[#03FF24] font-mono break-all bg-black/40 p-2 border border-[#03FF24]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
+				{mintKeyPair
+					? mintKeyPair.publicKey.toString()
+					: isGeneratingAddress
+						? "GENERATING..."
+						: "Generate an address to see it here"}
+			</p>
+			<div className="flex items-center gap-2">
+				<Info size={12} className="text-gray-500" />
+				<p className="text-[10px] text-gray-500">Longer suffixes are slower to generate.</p>
+			</div>
+		</FormSection>
+	);
+};
 
 export const CustomCurveSection = ({
 	collapsible = true,
@@ -138,7 +207,7 @@ export const TradeLimitSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [tradeLimitSol, setTradeLimitSol] = useState(0.1); // Default to 0.1 SOL
+	const [tradeLimitSol, setTradeLimitSol] = useState(0.1);
 	return (
 		<FormSection title="Trade Limit" collapsible={collapsible} defaultOpen={defaultOpen}>
 			<div className="space-y-2">
@@ -160,8 +229,8 @@ export const TradeLimitSection = ({
 								}
 							}}
 							min="0"
-							step="0.01" // Allow for smaller SOL increments
-							className={cn(formElementBaseClass, "h-10 pr-16")} // Added pr-16 for SOL text
+							step="0.01"
+							className={cn(formElementBaseClass, "h-10 pr-16")}
 						/>
 						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
 					</div>
@@ -178,58 +247,181 @@ export const PreBuySection = ({
 	idPrefix,
 	collapsible = true,
 	defaultOpen = false,
-}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => (
-	<FormSection title="Pre-buy" collapsible={collapsible} defaultOpen={defaultOpen}>
-		<div>
-			<Label htmlFor={`${idPrefix}BuyAmount`} className={formLabelBaseClass}>
-				Buy Amount (SOL)
-			</Label>
-			<div className="relative mt-1">
-				<Input
-					type="number"
-					id={`${idPrefix}BuyAmount`}
-					defaultValue="0.0000"
-					className={cn(formElementBaseClass, "h-10 pr-16")}
-				/>
-				<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
+}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
+	const {
+		registerForm,
+		formState: { errors },
+		setValue,
+	} = usePrompt();
+	const address = useAddress();
+	const balanceQuery = useBalance({
+		chain: "solana",
+		address,
+	});
+	const balance = balanceQuery?.data || 0;
+
+	const setMaxAmount = () => {
+		if (balance) {
+			setValue("buyAmount", Math.min(balance, 28), { shouldValidate: true, shouldDirty: true });
+		}
+	};
+
+	return (
+		<FormSection title="Pre-buy" collapsible={collapsible} defaultOpen={defaultOpen}>
+			<div>
+				<div className="flex items-center gap-2 mb-1">
+					<Label htmlFor={`${idPrefix}BuyAmount`} className={formLabelBaseClass}>
+						Buy Amount (SOL)
+					</Label>
+					<Info size={12} className="text-gray-500" />
+				</div>
+				<div className="relative mt-1">
+					<Input
+						type="number"
+						id={`${idPrefix}BuyAmount`}
+						step="any"
+						className={cn(
+							formElementBaseClass,
+							"h-10 pr-16",
+							errors.buyAmount && "border-red-500 focus:border-red-500",
+						)}
+						{...registerForm("buyAmount", {
+							valueAsNumber: true,
+							min: { value: 0, message: "Amount cannot be negative" },
+							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
+						})}
+					/>
+					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
+				</div>
+				{errors.buyAmount && <p className="text-red-500 text-xs mt-1">{errors.buyAmount.message}</p>}
+				<div className="flex justify-between items-center mt-1.5">
+					<div className="flex items-center gap-2">
+						<Wallet size={12} className="text-gray-400" />
+						<p className="text-xs text-gray-400">Balance: {balance.toFixed(4)} SOL</p>
+					</div>
+					<Button
+						type="button"
+						variant="link"
+						onClick={setMaxAmount}
+						className="text-xs text-[#03FF24] hover:text-white p-0 h-auto"
+					>
+						Max
+					</Button>
+				</div>
+				<p className="text-[10px] text-yellow-400 mt-1">Maximum amount based on your balance (max 28 SOL).</p>
 			</div>
-			<div className="flex justify-between items-center mt-1.5">
-				<p className="text-xs text-gray-400">Balance: 0.00 SOL</p>
-				<Button variant="link" className="text-xs text-[#03FF24] hover:text-white p-0 h-auto">
-					Max
-				</Button>
-			</div>
-			<p className="text-[10px] text-yellow-400 mt-1">Maximum amount based on your fee tier.</p>
-		</div>
-	</FormSection>
-);
+		</FormSection>
+	);
+};
 
 export const PoolSelection = ({
 	collapsible = true,
 	defaultOpen = false,
-}: { collapsible?: boolean; defaultOpen?: boolean }) => (
-	<FormSection title="Choose Pool" collapsible={collapsible} defaultOpen={defaultOpen}>
-		<ToggleGroup type="single" defaultValue="meteora" className="grid grid-cols-2 gap-3">
-			<ToggleGroupItem
-				value="meteora"
-				aria-label="Meteora"
-				className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
-			>
-				Meteora
-			</ToggleGroupItem>
-			<ToggleGroupItem
-				value="raydium"
-				aria-label="Raydium"
-				className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
-			>
-				Raydium
-			</ToggleGroupItem>
-		</ToggleGroup>
-	</FormSection>
-);
+}: { collapsible?: boolean; defaultOpen?: boolean }) => {
+	const { pool, setPool } = usePrompt();
 
-export const LaunchButton = () => (
-	<Button className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider">
-		Launch Token
-	</Button>
-);
+	const poolData = [
+		{ name: "Meteora", value: "meteora", image: "/pools/meteora.svg" },
+		{ name: "Raydium", value: "raydium", image: "/pools/raydium.svg" },
+	];
+
+	return (
+		<FormSection title="Choose Pool" collapsible={collapsible} defaultOpen={defaultOpen}>
+			<ToggleGroup type="single" value={pool} onValueChange={setPool} className="grid grid-cols-2 gap-3">
+				{poolData.map((poolItem) => (
+					<ToggleGroupItem
+						key={poolItem.value}
+						value={poolItem.value}
+						aria-label={poolItem.name}
+						className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+					>
+						<div className="flex items-center gap-2">
+							<img src={poolItem.image} alt={poolItem.name} className="w-4 h-4" />
+							{poolItem.name}
+						</div>
+					</ToggleGroupItem>
+				))}
+			</ToggleGroup>
+		</FormSection>
+	);
+};
+
+export const LaunchButton = () => {
+	const wallet = useWallet();
+	const { connection } = useConnection();
+	const {
+		handleSubmit,
+		formState,
+		uploadedImage,
+		isGeneratingAddress,
+		isGeneratingImage,
+		getTokenData,
+		pool,
+		mintKeyPair,
+		setLaunching,
+		isLaunching,
+	} = usePrompt();
+
+	const createTokenMutation = useMutation({
+		mutationFn: createToken,
+		mutationKey: ["createToken"],
+		onSuccess: (tx) => {
+			console.log("Transaction successful:", tx);
+			toast.success("Token created successfully!");
+		},
+		onError: (error) => {
+			console.error("Error creating token:", error);
+			toast.error(`Error creating token: ${error.message}`);
+		},
+	});
+
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage || isLaunching;
+
+	const onSubmit = async () => {
+		if (!formState.isValid) {
+			toast.error("Please fill in all required fields.");
+			return;
+		}
+
+		if (isGeneratingAddress) {
+			toast.error("Please wait for the address to be generated.");
+			return;
+		}
+
+		if (isGeneratingImage) {
+			toast.error("Please wait for the image to be generated.");
+			return;
+		}
+
+		setLaunching(true);
+		try {
+			const tokenData = await getTokenData();
+			console.log("Token Data:", tokenData);
+			const tx = await createTokenTx(tokenData, { connection, wallet });
+			console.log("Transaction:", tx);
+			createTokenMutation.mutate({
+				contractAddress: mintKeyPair?.publicKey.toString() || "",
+				chain: "solana",
+				chainId: 103,
+				pool: pool,
+				signature: tx?.signature.toString() || "",
+			});
+		} catch (error: any) {
+			console.error("Error creating token:", error);
+			toast.error(`Error creating token: ${error.message}`);
+		} finally {
+			setLaunching(false);
+		}
+	};
+
+	return (
+		<Button
+			type="button"
+			onClick={onSubmit}
+			disabled={shouldDisable}
+			className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
+		>
+			{isLaunching ? "LAUNCHING..." : "LAUNCH TOKEN"}
+		</Button>
+	);
+};
