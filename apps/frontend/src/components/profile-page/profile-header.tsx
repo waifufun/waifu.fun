@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import type { TChain } from "@autofun/types";
-import { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
+import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
 import { Trophy } from "lucide-react";
 
 export default function ProfileHeader({
@@ -21,11 +21,11 @@ export default function ProfileHeader({
 		}[];
 	};
 }) {
-	const chainIcons: Record<string, { name: string; icon: string }> = {
-		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
-		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
-		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
-	};
+	// const chainIcons: Record<string, { name: string; icon: string }> = {
+	// 	[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
+	// 	[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
+	// 	[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
+	// };
 
 	return (
 		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[182px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">

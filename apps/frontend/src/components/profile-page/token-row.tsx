@@ -59,22 +59,36 @@ export default function TokenRow({
 					</p>
 				</div>
 			</div>
-
 			{mode === "activity" || mode === "wallet" ? (
-				<div className="flex items-center justify-center flex-col">
-					<div className="flex flex-row space-x-2 h-full w-full space-y-1 justify-end">
-						{mode === "wallet" ? (
-							<>
-								<p className="text-md font-bold text-yellow-400">Mcap</p>
-								<p className="text-md font-semibold text-yellow-400">{formatNumber(data.marketCap, false, true)}</p>
-							</>
-						) : null}
+				<div className="flex items-center justify-center flex-row space-x-4">
+					<div className="flex flex-col items-end">
+						<div className="flex flex-row space-x-2 w-full justify-end">
+							{mode === "wallet" ? (
+								<>
+									<p className="text-md font-bold text-yellow-400">Mcap</p>
+									<p className="text-md font-semibold text-yellow-400">{formatNumber(data.marketCap, false, true)}</p>
+								</>
+							) : null}
+						</div>
+						<div className="flex flex-col w-full space-y-1 items-end justify-center transition-all duration-300">
+							<p className="text-white font-medium text-base">Amount held: {data.amountHeld}</p>
+							{data?.dollarWorth ? (
+								<p className="text-autofun-background-action-highlight text-base">
+									${data.dollarWorth.toLocaleString()}
+								</p>
+							) : null}
+						</div>
 					</div>
-					<div className="flex flex-col w-full space-y-1 place-items-end justify-center transition-all duration-300">
-						<p className="text-white font-medium text-base">Amount held: {data.amountHeld}</p>
-						{data?.dollarWorth ? (
-							<p className="text-autofun-background-action-highlight text-base">${data.dollarWorth.toLocaleString()}</p>
-						) : null}
+					<div className="text-white text-lg">
+					<Link href={`/token/${data.contractAddress}`}>
+							<Image
+								src={"/profile/link.svg"}
+								alt="link icon"
+								width={24}
+								height={24}
+								className="object-contain w-6 h-6"
+							/>
+						</Link>
 					</div>
 				</div>
 			) : (
