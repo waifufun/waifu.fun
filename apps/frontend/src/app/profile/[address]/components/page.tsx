@@ -1,5 +1,4 @@
 "use client";
-import ProfileFilters from "@/components/profile-page/profile-filters";
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";

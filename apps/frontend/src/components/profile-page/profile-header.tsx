@@ -29,7 +29,7 @@ export default function ProfileHeader({
 
 	return (
 		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[182px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
-			<div className="border-4 border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] pixelated-image-render  relative w-[150px] h-[150px]">
+			<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] pixelated-image-render  relative w-[150px]">
 				<Image src="/create/test-img.png" alt="Profile" width={150} height={150} className="object-cover" />
 				<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
 					<button
@@ -81,7 +81,7 @@ export default function ProfileHeader({
 					})}
 				</div> */}
 				<div className="flex gap-2 mt-2">
-					<div className="px-2 py-1 flex items-center justify-center">
+					<div className="px-2 py-1 flex items-center justify-center md:justify-start w-full">
 						{/* <Image alt="icons" src="" width={24} height={24} /> */}
 						<Trophy size={20} className="text-autofun-background-action-highlight" />
 						<p className="px-2 font-semibold text-[#03FF24] text-base">12</p>
