@@ -1,41 +1,26 @@
 import Link from "next/link";
-import { Fragment } from "react";
-
-const FOOTER_LINKS = [
-	{
-		href: "/privacy-policy",
-		title: "Privacy Policy",
-	},
-	{
-		href: "/terms-of-service",
-		title: "Terms of Service",
-	},
-	{
-		href: "/fees",
-		title: "Fees",
-	},
-	{
-		title: `© ${new Date().getFullYear()} auto.fun`,
-	},
-];
 
 export default function Footer() {
 	return (
-		<div className="w-full py-3">
-			<div className="flex flex-col lg:flex-row items-center flex-wrap justify-center gap-4">
-				{FOOTER_LINKS.map((link, _: number) => (
-					<Fragment key={link?.href || _}>
-						<Link
-							aria-disabled={!link?.href}
-							href={link?.href ? link.href : "#"}
-							className="font-medium text-base text-autofun-text-secondary hover:text-autofun-text-primary transition-all duration-200"
-						>
-							{link.title}
+		<footer className="border-t-2 border-[#03FF24]/40 py-8 text-center text-sm text-gray-500 bg-black/70 mt-4">
+			<div className="container mx-auto px-4">
+				<div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+					<p className="uppercase tracking-wider">
+						&copy; {new Date().getFullYear()} Auto.fun Network. Engage the Neon.
+					</p>
+					<div className="flex gap-4">
+						<Link href="#" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
+							Network Policy
 						</Link>
-						<div className="hidden lg:block h-3.5 w-[1px] bg-[#707070]" />
-					</Fragment>
-				))}
+						<Link href="#" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
+							Security Matrix
+						</Link>
+						<Link href="#" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
+							System Status
+						</Link>
+					</div>
+				</div>
 			</div>
-		</div>
+		</footer>
 	);
 }

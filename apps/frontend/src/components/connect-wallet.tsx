@@ -3,13 +3,12 @@
 import { Button } from "./ui/button";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { shortenAddress } from "@/lib/utils";
 import { useIsClient } from "usehooks-ts";
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from "./ui/menubar";
 import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 
-const btnClass = "bg-gradient-to-b from-[#171717] to-[#121212] text-white border-[#1A1A1A]";
+const btnClass = "bg-gradient-to-b from-[#171717] to-[#121212] text-white border-[#1A1A1A] w-full";
 
 export default function ConnectWallet() {
 	const client = useIsClient();
@@ -38,7 +37,11 @@ export default function ConnectWallet() {
 			<MenubarMenu>
 				<MenubarTrigger asChild>
 					<Button className={btnClass}>
-						{wallet?.connected && wallet.publicKey ? shortenAddress(wallet.publicKey.toBase58()) : "Connect"}
+						{wallet?.connected && wallet.publicKey ? (
+							<span className="truncate">{wallet.publicKey.toBase58()}</span>
+						) : (
+							"Connect"
+						)}
 					</Button>
 				</MenubarTrigger>
 				<MenubarContent>
