@@ -12,6 +12,8 @@ import {
 	depositNftToMeteora,
 } from "./meteora/calls";
 import DB from "@autofun/database";
+import { recordTransaction } from "../utils/protocol-utils";
+import { aw } from "@raydium-io/raydium-sdk-v2/lib/api-7daf490d";
 
 export type MeteoraMigrationContext = MigrationContext;
 
@@ -261,7 +263,43 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			throw new Error("Not implemented");
 		},
 	},
-	commonSendNftStep,
+	{
+		name: "sendNftToManager",
+		description: "Send primary NFT to manager multisig",
+		execute: async (context: MeteoraMigrationContext) => {
+			const { state } = context;
+			if (!state.primaryNftMint) {
+				throw new Error("Primary NFT mint not found in state");
+			}
+
+			const multisigAddress = process.env.ACCOUNT_FEE_MULTISIG;
+			if (!multisigAddress) {
+				throw new Error("Multisig address not found in environment variables");
+			}
+
+			const txId = await commonSendNftStep.execute(context);
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						"protocolState.nftSentToManager": true,
+						"protocolState.nftSentToManagerAt": new Date(),
+						"protocolState.nftSentToManageTxId": txId,
+					},
+				},
+			);
+
+			// recordTransaction
+			await recordTransaction(state, "sendNftToManager", txId, {
+				multisigAddress,
+				primaryNftMint: state.primaryNftMint,
+			});
+			return { txId };
+		},
+		rollback: async (context: MeteoraMigrationContext) => {
+			throw new Error("Not implemented");
+		},
+	},
 	{
 		name: "depositNft",
 		description: "Deposit NFT to Meteora vault",
@@ -305,7 +343,40 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			throw new Error("Not implemented");
 		},
 	},
-	commonCollectFeesStep,
+	{
+		name: "collectFees",
+		description: "Collect fees from Meteora pool",
+		execute: async (context: MeteoraMigrationContext) => {
+			const { state } = context;
+			if (!state.poolId) {
+				throw new Error("Pool ID not found in state");
+			}
+
+			const result = await commonCollectFeesStep.execute(context);
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						"protocolState.feesCollected": true,
+						"protocolState.feesCollectedAt": new Date(),
+						"protocolState.feesCollectedTxId": result.txId,
+					},
+				},
+			);
+			// recordTransaction
+			await recordTransaction(state, "collectFees", result.txId, {
+				poolId: state.poolId,
+				primaryPosition: state.primaryPosition,
+				secondaryPosition: state.secondaryPosition,
+			});
+			return {
+				txId: result.txId,
+			};
+		},
+		rollback: async (context: MeteoraMigrationContext) => {
+			throw new Error("Not implemented");
+		},
+	},
 	{
 		name: "finalize",
 		description: "Finalize migration",

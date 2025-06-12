@@ -26,7 +26,10 @@ export const commonSendNftStep: MigrationStep = {
 		if (!multisigAddress) {
 			throw new Error("Multisig address not found in environment variables");
 		}
-		await sendNftToManager(context, primaryNftMint, multisigAddress);
+		const txId = await sendNftToManager(context, primaryNftMint, multisigAddress);
+		state.txId = txId;
+
+		return txId;
 	},
 	rollback: async (context: MigrationContext) => {
 		throw new Error("Not implemented");
@@ -44,6 +47,7 @@ export const commonCollectFeesStep: MigrationStep = {
 		}
 		const result = await collectProtocolFees(context, state.tokenMint);
 		state.txId = result.txId;
+		return result;
 	},
 	rollback: async (context: MigrationContext) => {
 		throw new Error("Not implemented");
