@@ -10,12 +10,13 @@ import {
 	MAX_SQRT_PRICE,
 	getSqrtPriceFromPrice,
 	type AddLiquidityParams,
-	derivePositionNftAccount,
 	type InitializeCustomizeablePoolParams,
 } from "@meteora-ag/cp-amm-sdk";
 import Decimal from "decimal.js";
 import { TOKEN_PROGRAM_ID, NATIVE_MINT } from "@solana/spl-token";
 import { depositToMeteora } from "../../vaults/meteoraVault";
+import { VersionedTransaction } from "@solana/web3.js";
+import { derivePositionNftAccount } from "../../vaults/meteroaPdas";
 
 export async function createPositionNft(
 	context: MigrationContext,
@@ -93,7 +94,7 @@ export async function finalizePositionNft(
 	}
 
 	// Get the withdraw transaction from the transactions array
-	const withdrawTx = context.state.transactions?.find((tx) => tx.step === "withdraw");
+	const withdrawTx = context.state.transactions?.find((tx) => tx.step === "withdrawLiquidity");
 	if (!withdrawTx?.txId) {
 		throw new Error("No withdraw transaction found in state");
 	}
@@ -106,7 +107,7 @@ export async function finalizePositionNft(
 	const withdrawLogs = parseWithdrawLogs(backupLogs);
 
 	// Verify amounts match
-	if (withdrawLogs.sol !== withdrawnAmounts.token || withdrawLogs.token !== withdrawnAmounts.sol) {
+	if (withdrawLogs.sol !== withdrawnAmounts.sol || withdrawLogs.token !== withdrawnAmounts.token) {
 		console.log(`Amounts do not match for token ${context.state.tokenMint}`);
 		throw new Error(
 			`Withdrawn amounts do not match: ${withdrawLogs.token} vs ${withdrawnAmounts.token} and ${withdrawLogs.sol} vs ${withdrawnAmounts.sol}`,
@@ -204,7 +205,7 @@ export async function createPool(
 	}
 
 	// Get the withdraw transaction from the transactions array
-	const withdrawTx = state.transactions?.find((tx) => tx.step === "withdraw");
+	const withdrawTx = state.transactions?.find((tx) => tx.step === "withdrawLiquidity");
 	if (!withdrawTx?.txId) {
 		throw new Error("No withdraw transaction found in state");
 	}
@@ -217,7 +218,7 @@ export async function createPool(
 	const withdrawLogs = parseWithdrawLogs(backupLogs);
 
 	// Verify amounts match
-	if (withdrawLogs.sol !== withdrawnAmounts.token || withdrawLogs.token !== withdrawnAmounts.sol) {
+	if (withdrawLogs.sol !== withdrawnAmounts.sol || withdrawLogs.token !== withdrawnAmounts.token) {
 		console.log(`Amounts do not match for token ${state.tokenMint}`);
 		throw new Error(
 			`Withdrawn amounts do not match: ${withdrawLogs.token} vs ${withdrawnAmounts.token} and ${withdrawLogs.sol} vs ${withdrawnAmounts.sol}`,
@@ -243,6 +244,14 @@ export async function createPool(
 		throw new Error("No config found for pool creation");
 	}
 
+	// Prepare pool creation transaction
+	const { tx, pool, position, activationPoint } = await prepareCreatePoolTransaction(
+		context,
+		primaryTokens,
+		primarySol,
+		primaryNft,
+	);
+
 	// Get the position NFT secret from the database
 	const migration = await DB.Migration.findOne({
 		contractAddress: state.tokenMint,
@@ -252,26 +261,10 @@ export async function createPool(
 	}
 	const positionNftKeypair = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(migration.positionNftsSecrets[0])));
 
-	// Prepare pool creation transaction
-	const { tx, pool, position, activationPoint } = await prepareCreatePoolTransaction(
-		context,
-		primaryTokens,
-		primarySol,
-		primaryNft,
-	);
+	// Send and confirm the transaction directly
+	const txId = await provider.connection.sendTransaction(tx, [wallet.payer as Keypair, positionNftKeypair]);
+	await provider.connection.confirmTransaction(txId, "confirmed");
 
-	// Send and confirm the transaction using handleTransaction
-	const result = await handleTransaction(provider.connection, tx, wallet.payer as Keypair, {
-		preflightCommitment: "confirmed",
-		maxRetries: 3,
-		timeout: 60000,
-	});
-
-	if (!result.confirmed) {
-		throw new Error(`Transaction failed: ${result.error}`);
-	}
-
-	const txId = result.signature;
 	console.log("createPoolTxId", txId);
 
 	// get date from activationPoint
@@ -318,7 +311,12 @@ async function prepareCreatePoolTransaction(
 	tokenAAmount: BN,
 	tokenBAmount: BN,
 	positionNft: PublicKey,
-): Promise<{ tx: Transaction; pool: PublicKey; position: PublicKey; activationPoint: BN }> {
+): Promise<{
+	tx: Transaction;
+	pool: PublicKey;
+	position: PublicKey;
+	activationPoint: BN;
+}> {
 	const { provider, state } = context;
 
 	if (!provider) {
@@ -384,6 +382,12 @@ async function prepareCreatePoolTransaction(
 	};
 
 	const { tx, pool, position } = await cpAmm.createCustomPool(createCustomPoolParams);
+
+	// Get recent blockhash and add it to the transaction
+	const { blockhash } = await provider.connection.getLatestBlockhash();
+	tx.recentBlockhash = blockhash;
+	tx.feePayer = provider.wallet.publicKey;
+
 	return {
 		tx,
 		pool,
@@ -427,25 +431,47 @@ export async function createPosition(
 		owner: provider.wallet.publicKey,
 		payer: provider.wallet.publicKey,
 		pool,
-		positionNft,
+		positionNft: positionNftKeypair.publicKey,
 	});
 
-	// Send and confirm the transaction using handleTransaction
-	const result = await handleTransaction(provider.connection, createPositionTx, wallet.payer as Keypair, {
-		preflightCommitment: "confirmed",
-		maxRetries: 3,
-		timeout: 60000,
-	});
+	// Check if position already exists
 
-	if (!result.confirmed) {
-		throw new Error(`Transaction failed: ${result.error}`);
+	const positionNftAccount = derivePositionNftAccount(positionNftKeypair.publicKey);
+	const userPositions = await cpAmm.getUserPositionByPool(pool, provider.wallet.publicKey);
+	const existingPosition = userPositions.find((p) => p.positionNftAccount.equals(positionNftAccount));
+
+	if (existingPosition) {
+		console.log("Position already exists, skipping creation");
+		const txId = "position-already-exists";
+		await recordTransaction(state, "createPosition", txId, {
+			positionId: positionNftKeypair.publicKey.toString(),
+			timestamp: new Date(),
+		});
+
+		return {
+			txId,
+			extraData: {
+				positionId: positionNftKeypair.publicKey.toString(),
+			},
+		};
 	}
 
-	const txId = result.signature;
+	// Get recent blockhash and add it to the transaction
+	const { blockhash } = await provider.connection.getLatestBlockhash();
+	createPositionTx.recentBlockhash = blockhash;
+	createPositionTx.feePayer = provider.wallet.publicKey;
+
+	// Send and confirm the transaction with both keypairs in the correct order
+	const txId = await provider.connection.sendTransaction(createPositionTx, [
+		wallet.payer as Keypair,
+		positionNftKeypair,
+	]);
+	await provider.connection.confirmTransaction(txId, "confirmed");
+
 	console.log("createPositionTxId", txId);
 
 	// Get the position address from the transaction
-	const positionAddress = positionNft.toString();
+	const positionAddress = positionNftKeypair.publicKey.toString();
 
 	await recordTransaction(state, "createPosition", txId, {
 		positionId: positionAddress,
@@ -478,6 +504,7 @@ export async function addLiquidity(
 	if (!wallet) {
 		throw new Error("Wallet is required for adding liquidity");
 	}
+	console.log("wallet", wallet.publicKey.toString());
 
 	const pool = new PublicKey(poolId);
 	const cpAmm = new CpAmm(provider.connection);
@@ -490,15 +517,25 @@ export async function addLiquidity(
 	const tokenBDecimal = 9;
 
 	// Get secondary amounts from state
+	if (!state.secondaryAmount || !state.secondaryAmountSol) {
+		throw new Error("Secondary amounts not found in state");
+	}
 	const secondaryAmount = new BN(state.secondaryAmount ?? "0");
 	const secondaryAmountSol = new BN(state.secondaryAmountSol ?? "0");
-
-	// Get secondary position NFT
-	if (!state.nftMinted || state.nftMinted.length < 2) {
-		throw new Error("Secondary NFT mint not found in state");
+	// Get the secondary position NFT secret from the database
+	const migration = await DB.Migration.findOne({
+		contractAddress: state.tokenMint,
+	});
+	if (!migration?.positionNftsSecrets?.length || migration.positionNftsSecrets.length < 2) {
+		throw new Error("No secondary position NFT secret found for position creation");
 	}
-	const positionNftMint = new PublicKey(state.nftMinted[1]); // Get the second NFT mint
-	const positionNftAccount = derivePositionNftAccount(positionNftMint);
+	const positionNftKeypair = Keypair.fromSecretKey(
+		Uint8Array.from(JSON.parse(migration.positionNftsSecrets[1])), // Use the second secret for secondary position
+	);
+
+	const positionNftAccount = derivePositionNftAccount(positionNftKeypair.publicKey);
+
+	// const positionNftAccount = derivePositionNftAccount(positionNftMint);
 
 	// Calculate liquidity delta
 	const liquidityDelta = await cpAmm.getLiquidityDelta({
@@ -510,7 +547,9 @@ export async function addLiquidity(
 	});
 
 	// Get user position
-	const userPositions = await cpAmm.getUserPositionByPool(provider.wallet.publicKey, pool);
+	console.log(pool.toString());
+	// console.log("allPosition", allPosition);
+	const userPositions = await cpAmm.getUserPositionByPool(pool, provider.wallet.publicKey);
 	const userPosition = userPositions.find((p) => p.positionNftAccount.equals(positionNftAccount));
 	if (!userPosition) {
 		throw new Error("No user position found for pool");

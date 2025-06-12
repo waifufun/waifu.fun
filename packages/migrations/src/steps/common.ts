@@ -1,4 +1,3 @@
-
 import type { MigrationStep, MigrationContext } from "../types";
 import { withdrawLiquidity, sendNftToManager, collectProtocolFees } from "../utils/protocol-utils";
 
@@ -19,11 +18,15 @@ export const commonSendNftStep: MigrationStep = {
 	description: "Send NFT to manager multisig",
 	execute: async (context: MigrationContext) => {
 		const { state } = context;
-		const { nftMint } = state;
-		if (!nftMint) {
+		const { primaryNftMint } = state;
+		if (!primaryNftMint) {
 			throw new Error("NFT mint not found in state");
 		}
-		await sendNftToManager(context, nftMint, process.env.ACCOUNT_FEE_MULTISIG!);
+		const multisigAddress = process.env.ACCOUNT_FEE_MULTISIG;
+		if (!multisigAddress) {
+			throw new Error("Multisig address not found in environment variables");
+		}
+		await sendNftToManager(context, primaryNftMint, multisigAddress);
 	},
 	rollback: async (context: MigrationContext) => {
 		throw new Error("Not implemented");

@@ -83,7 +83,7 @@ export class MigrationService {
 
 		this.processingInterval = setInterval(() => this.processMigrations(), this.POLL_INTERVAL);
 		this.populationInterval = setInterval(() => this.populateMigrations(), this.POPULATION_INTERVAL);
-		
+
 		// Initial population and processing
 		this.populateMigrations();
 		this.processMigrations();
@@ -155,7 +155,7 @@ export class MigrationService {
 							transactions: [],
 						}),
 						startedAt: new Date(),
-						creator: event.creator || "unknown",
+						creator: token.creator || "unknown",
 						chain: "solana" as const,
 						chainId: chainId,
 						version: 2,
@@ -207,26 +207,29 @@ export class MigrationService {
 		}
 	}
 
-	// private async getProtocolFromToken(
-	//   tokenMint: string
-	// ): Promise<"raydium" | "meteora" | string | undefined> {
-	//   const token = await DB.Token.findOne({ contractAddress: tokenMint });
-	//   if (!token) {
-	//     throw new Error(`Token ${tokenMint} not found in database`);
-	//   }
+	private parseNestedJson(obj: any): any {
+		if (typeof obj !== "object" || obj === null) {
+			return obj;
+		}
 
-	//   if (!token.pool) {
-	//     throw new Error(`Token ${tokenMint} has no pool information`);
-	//   }
+		if (Array.isArray(obj)) {
+			return obj.map((item) => this.parseNestedJson(item));
+		}
 
-	//   // Convert pool to protocol name
-	//   const protocol = token.pool.toLowerCase();
-	//   if (protocol !== "raydium" && protocol !== "meteora") {
-	//     throw new Error(`Unsupported protocol: ${protocol}`);
-	//   }
-
-	//   return protocol as "raydium" | "meteora";
-	// }
+		const result: any = {};
+		for (const [key, value] of Object.entries(obj)) {
+			if (typeof value === "string") {
+				try {
+					result[key] = JSON.parse(value);
+				} catch {
+					result[key] = value;
+				}
+			} else {
+				result[key] = this.parseNestedJson(value);
+			}
+		}
+		return result;
+	}
 
 	private async processMigration(migration: IMigration): Promise<void> {
 		try {
@@ -288,21 +291,28 @@ export class MigrationService {
 				{ _id: migration._id },
 				{
 					$set: {
-						status: "active",
+						status: "migrating",
 						errors: error instanceof Error ? error.message : "Unknown error",
 						lastErrorAt: new Date(),
 					},
 				},
 			);
 
-			logger.error(`Migration ${migration._id} failed:`, error);
+			logger.error({
+				msg: `Migration ${migration._id} failed`,
+				error: error instanceof Error ? error.message : "Unknown error",
+				stack: error instanceof Error ? error.stack : undefined,
+				currentStep: migration.currentStep,
+				protocol: migration.protocol,
+				status: migration.status,
+			});
 		}
 	}
 
 	private createProtocolMigration(name: string, migration: IMigration): ProtocolMigration {
 		let protocolState: ProtocolState;
 		try {
-			protocolState = JSON.parse(migration.protocolState || "{}") as ProtocolState;
+			protocolState = this.parseNestedJson(JSON.parse(migration.protocolState || "{}")) as ProtocolState;
 		} catch (error) {
 			logger.error("Failed to parse protocol state:", error);
 			protocolState = {
@@ -311,6 +321,36 @@ export class MigrationService {
 				transactions: [],
 			};
 		}
+
+		// Parse positionNftsSecrets if they exist
+		let positionNftsSecrets: any[] = [];
+		if (migration.positionNftsSecrets?.length) {
+			try {
+				positionNftsSecrets = migration.positionNftsSecrets.map((secret) =>
+					typeof secret === "string" ? JSON.parse(secret) : secret,
+				);
+			} catch (error) {
+				logger.error("Failed to parse positionNftsSecrets:", error);
+			}
+		}
+
+		// Parse withdrawnAmounts if it exists
+		let withdrawnAmounts: any;
+		if (migration.withdrawnAmounts) {
+			try {
+				withdrawnAmounts =
+					typeof migration.withdrawnAmounts === "string"
+						? JSON.parse(migration.withdrawnAmounts)
+						: migration.withdrawnAmounts;
+			} catch (error) {
+				logger.error("Failed to parse withdrawnAmounts:", error);
+			}
+		}
+
+		// Get amounts from finalizePositionNft transaction
+		const finalizeTx = protocolState.transactions?.find((tx) => tx.step === "finalizePositionNft");
+		const finalizeData = finalizeTx?.data || {};
+
 		return {
 			id: migration._id || "",
 			name,
@@ -321,13 +361,39 @@ export class MigrationService {
 				...protocolState,
 				tokenMint: protocolState.tokenMint ?? migration.contractAddress,
 				amount: protocolState?.amount || 0,
-				withdrawnAmounts: undefined,
+				withdrawnAmounts: withdrawnAmounts || protocolState.withdrawnAmounts,
 				txId: protocolState?.txId ?? undefined,
-				transactions: [],
+				transactions: protocolState.transactions || [],
+				// Primary NFT info
+				primaryPositionNftSecret: positionNftsSecrets[0],
+				primaryNftMint: migration.primaryNftMint,
+				primaryPositionNftTxId: protocolState.transactions?.find((tx) => tx.step === "createPrimaryPositionNft")?.txId,
+				// Secondary NFT info
+				secondaryPositionNftSecret: positionNftsSecrets[1],
+				secondaryNftMint: migration.secondaryNftMint,
+				secondaryPositionNftTxId: protocolState.transactions?.find((tx) => tx.step === "createSecondaryPositionNft")
+					?.txId,
+				// Pool info
+				poolId: protocolState.poolId || migration.marketId,
+				poolCreationTxId: protocolState.transactions?.find((tx) => tx.step === "createPool")?.txId,
+				// Position info
+				primaryPosition: protocolState.primaryPosition,
+				secondaryPosition: protocolState.secondaryPosition,
+				// NFT deposit info
+				nftDeposited: protocolState.nftDeposited,
+				nftDepositedAt: protocolState.nftDepositedAt,
+				primaryNftDepositTxId: protocolState.primaryNftDepositTxId,
+				// Finalization info
+				positionNftFinalized: protocolState.positionNftFinalized,
+				positionNftFinalizedTxId: protocolState.positionNftFinalizedTxId,
+				primaryAmount: finalizeData.primaryAmount,
+				secondaryAmount: finalizeData.secondaryAmount,
+				primaryAmountSol: finalizeData.primaryAmountSol,
+				secondaryAmountSol: finalizeData.secondaryAmountSol,
 			},
-			startedAt: new Date(),
-			createdAt: new Date(),
-			updatedAt: new Date(),
+			startedAt: new Date(migration.startedAt || Date.now()),
+			createdAt: new Date(migration.createdAt || Date.now()),
+			updatedAt: new Date(migration.updatedAt || Date.now()),
 		};
 	}
 

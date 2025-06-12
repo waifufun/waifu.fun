@@ -17,7 +17,7 @@ import {
 } from "@solana/spl-token";
 import type { MigrationContext } from "../types";
 import DB from "@autofun/database";
-import type { ProtocolState, } from "../types";
+import type { ProtocolState } from "../types";
 
 export interface WithdrawLog {
 	sol: number;
@@ -99,6 +99,7 @@ export async function handleTransaction(
 export function parseWithdrawLogs(logs: string[]): WithdrawLog {
 	let sol = 0;
 	let token = 0;
+	// biome-ignore lint/complexity/noForEach: <explanation>
 	logs.forEach((log) => {
 		if (log.includes("withdraw lamports:")) {
 			sol = Number(log.replace("Program log: withdraw lamports:", "").trim());
@@ -142,6 +143,7 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 
 		// Parse withdrawal logs
 		const withdrawnAmounts = parseWithdrawLogs(logs);
+		// biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
 		console.log(`Withdrawal successful. Withdrawn amounts:`, withdrawnAmounts);
 
 		// Update state
@@ -241,6 +243,7 @@ export async function collectProtocolFees(
 		return { txId: "no_fee", extraData: {} };
 	}
 
+	// biome-ignore lint/style/noNonNullAssertion: <explanation>
 	const feeWallet = new PublicKey(process.env.ACCOUNT_FEE_MULTISIG!);
 	const signerWallet = wallet;
 
@@ -262,12 +265,20 @@ export async function collectProtocolFees(
 }
 
 export async function recordTransaction(state: ProtocolState, step: string, txId?: string, data?: any) {
-	if (!state.transactions) state.transactions = [];
-	state.transactions.push({
-		step,
-		txId,
-		data,
-		timestamp: new Date(),
-	});
-	await DB.Migration.findOneAndUpdate({ contractAddress: state.tokenMint }, { $set: { protocolState: state } });
+	try {
+		if (!state.transactions) state.transactions = [];
+		state.transactions.push({
+			step,
+			txId,
+			data,
+			timestamp: new Date(),
+		});
+		await DB.Migration.findOneAndUpdate(
+			{ contractAddress: state.tokenMint },
+			{ $set: { protocolState: JSON.stringify(state) } },
+		);
+	} catch (error) {
+		console.error("Error recording transaction:", error);
+		throw error;
+	}
 }

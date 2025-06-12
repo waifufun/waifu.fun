@@ -1,7 +1,7 @@
-import { PublicKey, } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import type { MigrationStep, MigrationContext } from "../types";
 import { commonSendNftStep, commonCollectFeesStep } from "../steps/common";
-import { withdrawLiquidity, } from "../utils/protocol-utils";
+import { withdrawLiquidity } from "../utils/protocol-utils";
 import BN from "bn.js";
 import {
 	createPositionNft,
@@ -33,8 +33,9 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 		description: "Create primary position NFT",
 		execute: async (context: MigrationContext) => {
 			const { state } = context;
-			if (!state.poolCreationTxId) {
-				throw new Error("Pool creation transaction not found in state");
+			const withdrawTx = state.transactions?.find((tx) => tx.step === "withdrawLiquidity");
+			if (!withdrawTx?.txId) {
+				throw new Error("Withdraw transaction not found in state");
 			}
 
 			const result = await createPositionNft(context, true);
@@ -42,6 +43,22 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			state.primaryPositionNftTxId = result.txId;
 			state.primaryNftMint = result.nftMint;
 			state.primaryPositionNftSecret = result.positionNftSecret;
+
+			// Update database with NFT secrets
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						"protocolState.primaryPositionNftTxId": result.txId,
+						"protocolState.primaryNftMint": result.nftMint,
+						"protocolState.primaryPositionNftSecret": result.positionNftSecret,
+					},
+					$push: {
+						positionNftsSecrets: result.positionNftSecret,
+						nftMinted: result.nftMint,
+					},
+				},
+			);
 		},
 		rollback: async (context: MigrationContext) => {
 			// Not implemented
@@ -53,8 +70,8 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 		description: "Create secondary position NFT",
 		execute: async (context: MigrationContext) => {
 			const { state } = context;
-			if (!state.poolCreationTxId) {
-				throw new Error("Pool creation transaction not found in state");
+			if (!state.primaryPositionNftTxId) {
+				throw new Error("Primary position NFT transaction not found in state");
 			}
 
 			const result = await createPositionNft(context, false);
@@ -62,6 +79,23 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			state.secondaryPositionNftTxId = result.txId;
 			state.secondaryNftMint = result.nftMint;
 			state.secondaryPositionNftSecret = result.positionNftSecret;
+
+			// Update database with secondary NFT info
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						"protocolState.secondaryPositionNftTxId": result.txId,
+						"protocolState.secondaryNftMint": result.nftMint,
+						"protocolState.secondaryPositionNftSecret": result.positionNftSecret,
+						secondaryNftMint: result.nftMint,
+					},
+					$push: {
+						positionNftsSecrets: result.positionNftSecret,
+						nftMinted: result.nftMint,
+					},
+				},
+			);
 		},
 		rollback: async (context: MigrationContext) => {
 			// Not implemented
@@ -73,15 +107,20 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 		description: "Finalize position NFT",
 		execute: async (context: MeteoraMigrationContext) => {
 			const { state } = context;
-			if (!state.primaryNftMint || !state.secondaryNftMint) {
+			if (
+				!state.primaryNftMint ||
+				!state.secondaryNftMint ||
+				!state.primaryPositionNftTxId ||
+				!state.secondaryPositionNftTxId
+			) {
 				throw new Error("Primary or secondary NFT mint not found in state");
 			}
 
 			const result = await finalizePositionNft(
 				context,
-				{ txId: state.primaryPositionNftTxId!, nftMint: state.primaryNftMint },
+				{ txId: state.primaryPositionNftTxId, nftMint: state.primaryNftMint },
 				{
-					txId: state.secondaryPositionNftTxId!,
+					txId: state.secondaryPositionNftTxId,
 					nftMint: state.secondaryNftMint,
 				},
 			);
@@ -130,6 +169,19 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			state.poolId = result.extraData.poolId;
 			state.primaryPosition = result.extraData.primaryPosition;
 
+			// Update database with pool info
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						"protocolState.poolCreationTxId": result.txId,
+						"protocolState.poolId": result.extraData.poolId,
+						"protocolState.primaryPosition": result.extraData.primaryPosition,
+						marketId: result.extraData.poolId,
+					},
+				},
+			);
+
 			return {
 				txId: result.txId,
 				data: result.extraData,
@@ -163,6 +215,18 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 
 			// Update state with position creation results
 			state.secondaryPosition = result.extraData.positionId;
+			// save position ID in the database
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						"protocolState.secondaryPosition": result.extraData.positionId,
+					},
+					$push: {
+						positions: result.extraData.positionId,
+					},
+				},
+			);
 
 			return {
 				txId: result.txId,
