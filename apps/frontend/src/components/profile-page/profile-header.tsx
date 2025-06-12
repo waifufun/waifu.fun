@@ -27,8 +27,8 @@ export default function ProfileHeader({
 	};
 
 	return (
-		<div className="bg-[#0C0C0C] md:max-h-[182px] md:max-w-[800px] space-y-4 text-white flex flex-col md:flex-row items-center justify-between p-4 rounded-sm w-full mx-auto gap-0">
-			<div className="relative w-[150px] h-[150px]">
+		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[182px] md:max-w-[800px] space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
+			<div className="border-4 border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] pixelated-image-render  relative w-[150px] h-[150px]">
 				<Image src="/create/test-img.png" alt="Profile" width={150} height={150} className="object-cover" />
 				<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
 					<button
@@ -49,11 +49,15 @@ export default function ProfileHeader({
 			</div>
 
 			<div className="ml-6 space-y-1 mb-2 flex flex-col h-full">
-				<h1 className="text-lg font-semibold uppercase">{data.username}</h1>
-				<p className="text-sm text-gray-400 items-center flex">
-					<CopyButton className="mr-2" textToCopy={data.address} />
-					{data.address}
-				</p>
+				<h1 className="text-2xl sm:text-3xl font-bold text-gray-100 uppercase tracking-wider">{data.username}</h1>
+
+				<div className="flex items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 px-2 py-1 border border-[#03FF24]/30 rounded-none shadow-inner max-w-xs mx-auto sm:mx-0">
+					<span className="truncate">{data.address}</span>
+					<CopyButton
+						textToCopy={data.address}
+						className=" mr-2 text-[#03FF24]/70 hover:text-[#03FF24] cursor-pointer flex-shrink-0"
+					/>
+				</div>
 				<div className="flex gap-2 mt-2">
 					{data.chains.map(({ chain, chainId, amount }) => {
 						// for lint
@@ -77,14 +81,12 @@ export default function ProfileHeader({
 				</div>
 			</div>
 
-			<div className="flex flex-row md:flex-col w-full md:w-fit place-content-center md:place-content-end gap-2 ml-auto">
-				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-sm">
-					<p className="text-white font-bold text-base">Tokens Bought</p>
-					<p className="text-lg  text-autofun-background-action-highlight font-semibold">{data.tokensBought}</p>
+			<div className="flex flex-row md:flex-col w-full space-y-2 md:w-fit place-content-center md:place-content-end gap-2 ml-auto">
+				<div className="bg-[#03FF24]/10 text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center sm:text-right">
+					Tokens Created: <span className="font-bold">{data.tokensCreated}</span>
 				</div>
-				<div className="bg-gradient-to-t from-[#121212] to-[#171717] h-[70px] w-[166px] flex flex-row items-center place-content-center space-x-2 rounded-sm">
-					<p className="text-white font-bold text-base">Tokens Created</p>
-					<p className="text-base text-autofun-background-action-highlight font-semibold">{data.tokensCreated}</p>
+				<div className="bg-[#03FF24]/10 text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center sm:text-right">
+					Tokens Bought: <span className="font-bold">{data.tokensBought}</span>
 				</div>
 			</div>
 		</div>
