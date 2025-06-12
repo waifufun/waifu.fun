@@ -29,7 +29,7 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={`${inter.className} bg-[#080808] text-autofun-text-primary antialiased container`}>
+			<body className={`${inter.className} bg-[#080808] text-autofun-text-primary antialiased`}>
 				<Providers>
 					{children}
 					<BottomNav />

@@ -28,9 +28,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				<QueryClientProvider client={queryClient}>
 					<SolanaProvider>
 						<Header />
-						{children}
-						<Toaster />
+						<div className="container">{children}</div>
 						<Footer />
+						<Toaster />
 						<GoogleAnalytics gaId={googleTagID} />
 					</SolanaProvider>
 				</QueryClientProvider>

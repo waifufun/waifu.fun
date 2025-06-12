@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export default function Header() {
 	const address = useAddress();
 	return (
-		<div className="flex items-center gap-4 justify-between h-[68px]">
+		<div className="flex items-center gap-4 justify-between h-[68px] container">
 			<div className="flex items-center gap-4">
 				<Link href="/" className="shrink-0 grow">
 					<Image
