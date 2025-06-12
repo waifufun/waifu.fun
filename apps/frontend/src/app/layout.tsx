@@ -2,7 +2,11 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
 import BottomNav from "@/components/bottom-nav";
+import { Inter } from "next/font/google";
 
+const inter = Inter({
+	subsets: ["latin"],
+});
 export const metadata: Metadata = {
 	title: {
 		default: "Auto.Fun",
@@ -25,7 +29,7 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={"font-satoshi bg-[#080808] text-autofun-text-primary antialiased container"}>
+			<body className={`${inter.className} bg-[#080808] text-autofun-text-primary antialiased container`}>
 				<Providers>
 					{children}
 					<BottomNav />

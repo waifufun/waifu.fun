@@ -55,11 +55,6 @@ export default async function Home({
 				alt="hero"
 				className="block lg:hidden mx-auto w-full select-none"
 			/>
-			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 w-full">
-				{tokens.splice(0, 4)?.map((token: IToken) => (
-					<GridItem token={token} key={token.contractAddress} />
-				))}
-			</div>
 			<div className="flex flex-col items-center">
 				<div className="flex flex-col md:flex-row items-start md:items-center w-full gap-4">
 					<div className="w-full">
@@ -70,8 +65,8 @@ export default async function Home({
 
 				{view === "grid" ? (
 					<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
-						{tokens?.map((token: IToken) => (
-							<GridItem token={token} key={token.contractAddress} />
+						{tokens?.map((token: IToken, idx: number) => (
+							<GridItem token={token} key={token.contractAddress} index={idx} />
 						))}
 					</div>
 				) : (

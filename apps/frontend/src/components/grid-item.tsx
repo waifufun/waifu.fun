@@ -1,23 +1,116 @@
-import { abbreviateNumber, fromNow } from "@/lib/utils";
+"use client";
+import { abbreviateNumber, cn, fromNow } from "@/lib/utils";
 import type { IToken } from "@autofun/types";
 import Image from "next/image";
 import Link from "next/link";
 import Verified from "./verified";
-import { Clock } from "lucide-react";
+import { Archive, Hourglass, Star, Timer } from "lucide-react";
+import Progressbar from "./progressbar";
+import { Badge } from "./ui/badge";
+import { useMemo } from "react";
 
-export const GridItem = ({ token }: { token: IToken }) => {
+const animationLevel = 1;
+
+export const GridItem = ({ token, index }: { token: IToken; index: number }) => {
+	const useBlueTheme = token?.imported === true;
+	const usePurpleTheme = !token?.imported && Number(token?.curveProgress || 0) > 80 && !useBlueTheme;
+	const useYellowTheme = token?.featured;
+	const cardAccentTheme = useYellowTheme ? "yellow" : usePurpleTheme ? "purple" : useBlueTheme ? "blue" : "green";
+	const badgeBaseClasses =
+		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
+	const badgeIconClasses = "h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 pixelated-icon";
+	const cardItemBaseDelay = useMemo(() => (animationLevel >= 1 ? index * 0.07 : 0), [index]);
+
 	return (
 		<Link
 			href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
-			className="bg-black border border-autofun-background-action-highlight/50 group overflow-hidden flex flex-col h-fit break-inside-avoid"
+			className={cn([
+				"bg-black border group overflow-hidden flex flex-col h-fit break-inside-avoid",
+				cardAccentTheme === "blue"
+					? "border-sky-400/50"
+					: cardAccentTheme === "purple"
+						? "border-purple-500/50"
+						: cardAccentTheme === "yellow"
+							? "border-yellow-400/50"
+							: "border-[#03FF24]/50",
+			])}
 		>
 			<div className="relative">
 				{token?.createdAt ? (
-					<div className="absolute top-2 left-2 z-20 bg-black py-0.5 text-base px-2 border border-autofun-background-action-highlight/50 py-0.5 flex items-center gap-1">
-						<Clock size={14} />
-						<span>{fromNow(token?.createdAt, true)}</span>
+					<div className="absolute top-2 left-2 z-20 flex flex-col items-start">
+						<div
+							className={cn(
+								"flex items-center gap-1 bg-black/75 text-gray-200 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)] border",
+								cardAccentTheme === "blue"
+									? "border-sky-400/50"
+									: cardAccentTheme === "purple"
+										? "border-purple-500/50"
+										: cardAccentTheme === "yellow"
+											? "border-yellow-400/50"
+											: "border-[#03FF24]/50",
+							)}
+						>
+							<Timer
+								className={cn(
+									"h-2 w-2 sm:h-2.5 sm:w-2.5 pixelated-icon",
+									cardAccentTheme === "blue"
+										? "text-sky-400"
+										: cardAccentTheme === "purple"
+											? "text-purple-500"
+											: cardAccentTheme === "yellow"
+												? "text-yellow-400"
+												: "text-[#03FF24]",
+								)}
+							/>
+							<span>{fromNow(token?.createdAt, true).toUpperCase()}</span>
+						</div>
 					</div>
 				) : null}
+				<div className="absolute top-2 right-2 flex flex-col gap-1.5 items-end z-20">
+					{token?.imported && !token?.featured ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-sky-500/90 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
+								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.1s]",
+							)}
+							style={{ color: "#000000" }}
+						>
+							<Archive className={cn(badgeIconClasses, "fill-current")} /> IMPORTED
+						</Badge>
+					) : Number(token?.curveProgress || 0) > 80 && !token?.imported ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-purple-500 text-white shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)] border border-purple-700",
+								animationLevel >= 1 && "animate-badge-glint",
+							)}
+						>
+							<Hourglass className={cn(badgeIconClasses, animationLevel >= 1 && "animate-spin-slow")} />
+							BONDING SOON
+						</Badge>
+					) : token?.featured ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-yellow-400 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.7)] sm:shadow-[2px_2px_0px_rgba(0,0,0,0.7)] border border-black",
+								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.2s]",
+							)}
+							style={{ color: "#000000" }}
+						>
+							<Star className={cn(badgeIconClasses, "fill-current")} /> FEATURED
+						</Badge>
+					) : !token?.imported && !token?.featured ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-black/80 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+							)}
+						>
+							NEW
+						</Badge>
+					) : null}
+				</div>
 				<Image
 					src={token.image}
 					width={500}
@@ -30,69 +123,58 @@ export const GridItem = ({ token }: { token: IToken }) => {
 			<div className="flex flex-col gap-4 p-4">
 				<div className="flex flex-col">
 					<div className="flex items-center gap-2">
-						<span className="text-lg font-semibold">{token?.name}</span>
+						<span
+							className={cn([
+								"text-lg font-semibold",
+								cardAccentTheme === "blue"
+									? "text-sky-400"
+									: cardAccentTheme === "purple"
+										? "text-purple-400"
+										: cardAccentTheme === "yellow"
+											? "text-yellow-400 filter drop-shadow-[1px_1px_0px_black]"
+											: "group-hover:text-[#03FF24]",
+							])}
+						>
+							{token?.name}
+						</span>
 						<Verified isVerified={token?.verified} />
 					</div>
-					<div className="text-base text-autofun-background-action-highlight">${token?.ticker}</div>
+					<div
+						className={cn([
+							"text-base text-autofun-background-action-highlight font-mono",
+							cardAccentTheme === "blue"
+								? "text-sky-400/80 group-hover:text-sky-400"
+								: cardAccentTheme === "purple"
+									? "text-purple-400/80 group-hover:text-purple-400"
+									: cardAccentTheme === "yellow"
+										? "text-yellow-400/80 group-hover:text-yellow-400"
+										: "text-[#03FF24]/70 group-hover:text-[#03FF24]/90",
+						])}
+					>
+						${token?.ticker}
+					</div>
 				</div>
 				<div className="flex justify-between items-center gap-2">
-					<div className="text-autofun-text-secondary text-base">MCAP:</div>
-					<div className="text-autofun-background-action-highlight text-base font-medium">
+					<span className={cn("text-gray-400 text-[10px] sm:text-[11px]")}>MCAP:</span>
+					<div
+						className={cn(
+							"font-semibold filter drop-shadow-[1px_1px_0px_black] text-sm",
+							cardAccentTheme === "blue"
+								? "text-sky-400"
+								: cardAccentTheme === "purple"
+									? "text-purple-400"
+									: cardAccentTheme === "yellow"
+										? "text-yellow-400"
+										: "text-[#03FF24]",
+						)}
+					>
 						{abbreviateNumber(token.marketcap)}
 					</div>
 				</div>
+				{typeof token?.curveProgress === "number" && !token?.imported && !token?.curveCompleted ? (
+					<Progressbar max={100} height="h-2.5" value={Number(token.curveProgress.toFixed(2))} />
+				) : null}
 			</div>
 		</Link>
-		// <Link
-		// 	href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
-		// 	className="bg-black group overflow-hidden"
-		// >
-		// 	<div className="flex flex-col min-w-0 relative">
-		// 		<div className="absolute top-0 left-0 p-2 px-3 z-10 group-hover:opacity-100 opacity-0 transition-opacity duration-200">
-		// 			{/* <TokenStatus token={token} /> */}
-		// 		</div>
-		// 		{/* <div className="absolute top-0 left-0 p-2 px-3 z-10">
-		// 			<ChainIndicator chain={token.chain} chainId={token.chainId} />
-		// 		</div> */}
-		// 		<div className="p-2 px-3 w-full z-10">
-		// 			<div className="flex items-center gap-4 justify-between">
-		// 				<div className="flex items-center gap-2 w-full min-w-0">
-		// 					<div className="bg-autofun-background-muted/65 px-1.5 text-autofun-text-primary text-lg font-medium rounded-sm uppercase leading-normal tracking-widest truncate min-w-0 drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
-		// 						${token.ticker}
-		// 					</div>
-		// 					<Verified isVerified={token?.verified} />
-		// 				</div>
-		// 				{token?.createdAt ? (
-		// 					<div className="px-1.5 bg-autofun-background-muted/65 rounded-sm text-autofun-text-primary text-sm shrink-0 font-medium  drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
-		// 						{fromNow(token?.createdAt, true)}
-		// 					</div>
-		// 				) : null}
-		// 			</div>
-		// 		</div>
-		// 		<div className="flex flex-col w-full min-w-0 z-10">
-		// 			<div className="absolute flex flex-col top-0 right-0 p-2 px-3 items-end min-w-0 gap-2">
-		// 				<div className="bg-autofun-background-muted/65 px-1.5 text-autofun-text-highlight text-base font-medium leading-7 rounded-sm truncate drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
-		// 					MC {abbreviateNumber(token.marketcap)}
-		// 				</div>
-		// 				<div className="bg-autofun-background-muted/65 px-1.5 text-autofun-text-primary text-base font-medium leading-7 rounded-sm truncate drop-shadow-[0_0px_2px_rgba(0,0,0,0.4)] z-[2]">
-		// 					Vol {abbreviateNumber(token.volume24h)}
-		// 				</div>
-		// 			</div>
-		// 		</div>
-
-		// 		<div className="w-full h-full aspect-square relative">
-		// 			<div className="absolute top-0 rotate-180 aspect-square size-full bg-[linear-gradient(to_bottom,rgba(0,0,0,0.8)_0%,transparent_20%,transparent_80%,rgba(0,0,0,0.5)_100%)] z-1" />
-		// 			<Image
-		// 				src={token.image}
-		// 				width={500}
-
-		// 				height={500}
-		// 				unoptimized
-		// 				alt="image"
-		// 				className="w-full h-full object-cover aspect-square z-[-1] group-hover:scale-105 transition-all duration-200"
-		// 			/>
-		// 		</div>
-		// 	</div>
-		// </Link>
 	);
 };

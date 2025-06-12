@@ -193,3 +193,24 @@ input::selection {
 	color: #212121;
 	background-color: #03ff24;
 }
+
+.flashy-bonding-block {
+	background-color: #03ff24;
+	animation: pixel-pulse-green 1.5s infinite;
+}
+
+.yellow-flashy-bonding-block {
+	background-color: #facc15; /* Tailwind yellow-400 */
+	animation: pixel-pulse-yellow 1.5s infinite;
+}
+
+.blue-flashy-bonding-block {
+	background-color: #38bdf8; /* Tailwind sky-400 */
+	animation: pixel-pulse-blue 1.5s infinite;
+}
+
+.purple-flashy-bonding-block {
+	/* New purple flashy block */
+	background-color: #a855f7; /* Tailwind purple-500 */
+	animation: pixel-pulse-purple 1.5s infinite;
+}

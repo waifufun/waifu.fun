@@ -7,26 +7,30 @@ export default function Progressbar({ value, max, height }: { value: number; max
 
 	useEffect(() => {
 		setTimeout(() => {
-			setWidth(getPercentageOfTotal(value, max));
+			const percentage = getPercentageOfTotal(value, max);
+			const maxCubes = 20;
+			const renderCubes = Math.round((maxCubes / 100) * percentage);
+			setWidth(renderCubes);
 		}, 10);
 	}, [max, value]);
 
 	return (
-		<div
-			className={cn([
-				height ? height : "h-3",
-				"rounded-sm w-full max-w-md bg-autofun-background-action-disabled relative overflow-hidden",
-			])}
-		>
-			<div
-				className={cn([
-					height ? height : "h-3",
-					"rounded-sm bg-autofun-background-action-highlight transition-all duration-300",
-				])}
-				style={{
-					width: `${width}%`,
-				}}
-			/>
+		<div className={cn([height ? height : "h-3", "w-full max-w-md"])}>
+			<div className="grid grid-cols-[repeat(20,minmax(0,1fr))] gap-px w-full border bg-black/50 p-0.5 rounded-none shadow-inner border-[#03FF24]/30 h-3">
+				{Array(20)
+					.fill("A")
+					.map((_, idx) => (
+						<div
+							className={cn([
+								idx < width ? "flashy-bonding-block" : "bg-gray-500",
+								"h-full relative overflow-hidden transition-colors duration-300",
+							])}
+							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+							key={idx}
+							style={{ animationDelay: "0s" }}
+						/>
+					))}
+			</div>
 		</div>
 	);
 }
