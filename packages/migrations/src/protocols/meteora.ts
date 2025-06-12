@@ -276,24 +276,31 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			if (!multisigAddress) {
 				throw new Error("Multisig address not found in environment variables");
 			}
+			context.state.nftVersion = "2022";
 
 			const txId = await commonSendNftStep.execute(context);
+			await recordTransaction(state, "sendNftToManager", txId, {
+				multisigAddress,
+				primaryNftMint: state.primaryNftMint,
+			});
+			const protocolState = state || {};
+
 			await DB.Migration.findOneAndUpdate(
 				{ contractAddress: state.tokenMint },
 				{
 					$set: {
-						"protocolState.nftSentToManager": true,
-						"protocolState.nftSentToManagerAt": new Date(),
-						"protocolState.nftSentToManageTxId": txId,
+						protocolState: JSON.stringify({
+							...protocolState,
+							nftSentToManager: true,
+							nftSentToManagerAt: new Date(),
+							nftSentToManageTxId: txId,
+						}),
 					},
 				},
 			);
 
 			// recordTransaction
-			await recordTransaction(state, "sendNftToManager", txId, {
-				multisigAddress,
-				primaryNftMint: state.primaryNftMint,
-			});
+
 			return { txId };
 		},
 		rollback: async (context: MeteoraMigrationContext) => {
@@ -324,15 +331,18 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			state.nftDeposited = true;
 			state.nftDepositedAt = new Date();
 			state.primaryNftDepositTxId = txId;
-
+			const protocolState = state || {};
 			// Update database
 			await DB.Migration.findOneAndUpdate(
 				{ contractAddress: state.tokenMint },
 				{
 					$set: {
-						"protocolState.nftDeposited": true,
-						"protocolState.nftDepositedAt": new Date(),
-						"protocolState.primaryNftDepositTxId": txId,
+						protocolState: JSON.stringify({
+							...protocolState,
+							nftDeposited: true,
+							nftDepositedAt: new Date(),
+							primaryNftDepositTxId: txId,
+						}),
 					},
 				},
 			);
@@ -353,22 +363,27 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			}
 
 			const result = await commonCollectFeesStep.execute(context);
-			await DB.Migration.findOneAndUpdate(
-				{ contractAddress: state.tokenMint },
-				{
-					$set: {
-						"protocolState.feesCollected": true,
-						"protocolState.feesCollectedAt": new Date(),
-						"protocolState.feesCollectedTxId": result.txId,
-					},
-				},
-			);
+			const protocolState = state || {};
 			// recordTransaction
 			await recordTransaction(state, "collectFees", result.txId, {
 				poolId: state.poolId,
 				primaryPosition: state.primaryPosition,
 				secondaryPosition: state.secondaryPosition,
 			});
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						protocolState: JSON.stringify({
+							...protocolState,
+							"protocolState.feesCollected": true,
+							"protocolState.feesCollectedAt": new Date(),
+							"protocolState.feesCollectedTxId": result.txId,
+						}),
+					},
+				},
+			);
+
 			return {
 				txId: result.txId,
 			};
@@ -382,7 +397,8 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 		description: "Finalize migration",
 		execute: async (context: MeteoraMigrationContext) => {
 			const { state } = context;
-			if (!state.poolId || !state.primaryPosition || !state.secondaryPosition) {
+			console.log("Finalizing migration with state:", state);
+			if (!state.poolId || !state.primaryNftDepositTxId || !state.nftSentToManageTxId) {
 				throw new Error("Required state information not found for finalization");
 			}
 

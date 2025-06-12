@@ -547,7 +547,6 @@ export async function addLiquidity(
 	});
 
 	// Get user position
-	console.log(pool.toString());
 	// console.log("allPosition", allPosition);
 	const userPositions = await cpAmm.getUserPositionByPool(pool, provider.wallet.publicKey);
 	const userPosition = userPositions.find((p) => p.positionNftAccount.equals(positionNftAccount));

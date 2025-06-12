@@ -19,6 +19,7 @@ export const commonSendNftStep: MigrationStep = {
 	execute: async (context: MigrationContext) => {
 		const { state } = context;
 		const { primaryNftMint } = state;
+		const version = state.nftVersion || "legacy";
 		if (!primaryNftMint) {
 			throw new Error("NFT mint not found in state");
 		}
@@ -26,7 +27,8 @@ export const commonSendNftStep: MigrationStep = {
 		if (!multisigAddress) {
 			throw new Error("Multisig address not found in environment variables");
 		}
-		const txId = await sendNftToManager(context, primaryNftMint, multisigAddress);
+		console.log(`Sending NFT to multisig: ${multisigAddress}, version: ${version}, nft mint: ${primaryNftMint}`);
+		const txId = await sendNftToManager(context, primaryNftMint, multisigAddress, version);
 		state.txId = txId;
 
 		return txId;

@@ -2,13 +2,7 @@ import type { Autofun } from "@/lib/autofun";
 import { WalletClass } from "./WalletClass";
 import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
 import { BN, Program } from "@coral-xyz/anchor";
-import {
-	type Connection,
-	PublicKey,
-	type Transaction,
-	type VersionedTransaction,
-	SystemProgram,
-} from "@solana/web3.js";
+import { type Connection, PublicKey, type Transaction, type VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import IDL from "@/lib/autofun.json";
