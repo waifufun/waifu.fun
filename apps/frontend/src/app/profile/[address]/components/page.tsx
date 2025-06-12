@@ -58,6 +58,7 @@ export default function Page({ balances }: { balances: any[] }) {
 												marketCap: 1240000,
 												contractAddress: balance?.tokenAddress,
 												amountHeld: balance?.shiftedBalance,
+												dollarWorth: 123123123,
 											}}
 										/>
 									);
