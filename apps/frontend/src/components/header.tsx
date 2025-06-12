@@ -3,19 +3,21 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
 import Image from "next/image";
-import { Menu, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import BalanceMenu from "./balance-menu";
 import SearchMenu from "./search-menu";
 import ConnectWallet from "./connect-wallet";
 import useAddress from "@/hooks/use-address";
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
+import { SidebarTrigger } from "./ui/sidebar";
 
 export default function Header() {
 	const address = useAddress();
 	return (
 		<div className="flex items-center gap-4 justify-between h-[68px] container">
 			<div className="flex items-center gap-4">
+				<SidebarTrigger className="md:hidden" />
 				<Link href="/" className="shrink-0 grow">
 					<Image
 						src="/logo_wide.svg"
@@ -95,11 +97,6 @@ export default function Header() {
 					</Link>
 				</div>
 				<ConnectWallet />
-				<div className="flex items-center">
-					<button className="md:hidden items-center" type="button">
-						<Menu size={32} />
-					</button>
-				</div>
 			</div>
 		</div>
 	);

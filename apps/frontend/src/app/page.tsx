@@ -2,9 +2,7 @@ import { GridItem } from "@/components/grid-item";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@autofun/types";
 import type { Metadata } from "next";
-import GridListSelector from "@/components/grid-list-selector";
 import ListView from "@/components/list-view";
-import FilterSelector from "@/components/filter-selector";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -37,13 +35,6 @@ export default async function Home({
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex flex-col items-center">
-				<div className="flex flex-col md:flex-row items-start md:items-center w-full gap-4">
-					<div className="w-full">
-						<FilterSelector />
-					</div>
-					<GridListSelector />
-				</div>
-
 				{view === "grid" ? (
 					<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
 						{tokens?.map((token: IToken, idx: number) => (
@@ -54,7 +45,6 @@ export default async function Home({
 					<ListView tokens={tokens} />
 				)}
 			</div>
-			{/* <RecentTransactions /> */}
 		</div>
 	);
 }
