@@ -39,7 +39,7 @@ export default function Page({ balances }: { balances: any[] }) {
 							<div className="mt-6 border-2 h-fit w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="w-full max-h-full overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40 w-full">
-										<h1 className="p-4 text-white">
+										<h1 className="p-4 text-sm text-gray-300">
 											Total Value: <span className="text-autofun-background-action-highlight font-bold">$444</span>
 										</h1>
 									</div>
