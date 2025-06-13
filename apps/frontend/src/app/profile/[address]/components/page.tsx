@@ -26,7 +26,7 @@ export default function Page({ balances }: { balances: any[] }) {
 				/>
 				{/* tabs section */}
 				<div className="w-full h-full flex place-self-center">
-					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">
+					<Tabs value={tab} onValueChange={setTab} className="w-full">
 						<TabsList className="grid w-full grid-cols-2">
 							<TabsTrigger value="wallet" className="w-full">
 								Wallet
