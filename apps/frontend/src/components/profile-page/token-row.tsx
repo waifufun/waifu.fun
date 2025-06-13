@@ -32,26 +32,26 @@ export default function TokenRow({
 	// const chainIcon = chainIcons[key];
 
 	return (
-		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[94px] px-4 py-13">
-			<div className="flex items-stretch space-x-4">
-				<div className="w-[60px] h-[60px]">
+		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-4 py-8">
+			<div className="flex items-stretch space-x-4 space-y-0">
+				<div className="place-items-center flex items-center">
 					<Image
 						src={data.image}
 						unoptimized
 						priority
 						alt="Token Image"
-						width={60}
-						height={60}
+						width={40}
+						height={40}
 						className="object-contain"
 					/>
 				</div>
-				<div className="flex flex-col justify-between h-[60px] min-w-[140px] py-1">
+				<div className="flex flex-col justify-between h-[60px] min-w-[140px] py-3">
 					<div className="flex items-center gap-2">
-						<p className="text-xs md:text-xl text-white uppercase leading-none">{data.title}</p>
-						<p className="text-xs md:text-xl text-[#8C8C8C] leading-none">${data.ticker}</p>
+						<p className="text-xs md:text-sm text-white uppercase leading-none">{data.title}</p>
+						<p className="text-xs md:text-sm text-[#8C8C8C] leading-none">${data.ticker}</p>
 					</div>
-					<p className="text-base md:ml-1.5 text-[#8C8C8C] leading-none">
-						<CopyButton textToCopy={data.contractAddress} />{" "}
+					<p className="text-xs text-[#8C8C8C] leading-none flex gap-x-2 items-center justify-items-center">
+						<CopyButton className="h-[10px] w-[10px]" textToCopy={data.contractAddress} />{" "}
 						{`${data.contractAddress.slice(0, 6)}...${data.contractAddress.slice(-4)}`}
 					</p>
 				</div>
@@ -92,9 +92,7 @@ export default function TokenRow({
 							</Link>
 							<div className="flex flex-col justify-center mt-3 h-full">
 								<div className="space-y-0 flex flex-row">
-									<p className="text-xs text-center text-yellow-400">
-										+ {data.points} pts
-									</p>
+									<p className="text-xs text-center text-yellow-400">+ {data.points} pts</p>
 								</div>
 							</div>
 						</div>
