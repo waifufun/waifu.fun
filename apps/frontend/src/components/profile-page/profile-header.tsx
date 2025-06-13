@@ -19,6 +19,7 @@ export default function ProfileHeader({
 			chainId: SolanaNetworkIds | EvmChainIds | null;
 			amount: number;
 		}[];
+		points: number
 	};
 }) {
 	// const chainIcons: Record<string, { name: string; icon: string }> = {
@@ -85,7 +86,7 @@ export default function ProfileHeader({
 				<div className="flex gap-2 mt-2">
 					<div className="px-2 py-1 flex items-center justify-center md:justify-start w-full">
 						<Trophy size={20} className="text-autofun-background-action-highlight" />
-						<p className="px-2 font-semibold text-[#03FF24] text-base">12</p>
+						<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
 					</div>
 				</div>
 			</div>

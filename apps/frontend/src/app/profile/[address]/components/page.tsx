@@ -21,6 +21,7 @@ export default function Page({ balances }: { balances: any[] }) {
 						tokensBought: 128,
 						tokensCreated: 42,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
+						points: 12
 					}}
 				/>
 				{/* tabs section */}
