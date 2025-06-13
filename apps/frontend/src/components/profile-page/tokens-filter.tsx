@@ -33,7 +33,7 @@ export default function TokensFilter() {
 						key={btn.value}
 						type="button"
 						onClick={() => router.push(`${pathname}?${createQueryString({ mode: btn.value })}`)}
-						className={`text-base px-3 cursor-pointer py-1 h-auto rounded-none border-2 ${isActive ? "border-black bg-[#03FF24] text-black hover:bg-[#02e020]" : "border-transparent text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"}`}
+						className={`text-xs px-3 cursor-pointer py-1 h-auto rounded-none border-2 ${isActive ? "border-black bg-[#03FF24] text-black hover:bg-[#02e020]" : "border-transparent text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"}`}
 					>
 						{btn.label}
 					</button>
