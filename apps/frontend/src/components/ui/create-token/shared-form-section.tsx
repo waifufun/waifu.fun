@@ -164,8 +164,8 @@ export const CustomCurveSection = ({
 				</div>
 				<Slider
 					id="raiseAmount"
-					min={85}
-					max={350}
+					min={113}
+					max={400}
 					step={1}
 					value={[raiseAmount]}
 					onValueChange={(value) => setRaiseAmount(value[0])}
