@@ -45,7 +45,7 @@ export async function createPositionNft(
 		await DB.Migration.findOneAndUpdate(
 			{ contractAddress: context.state.tokenMint },
 			{
-				$push: {
+				$addToSet: {
 					positionNftsSecrets: positionNftSecret,
 				},
 				$set: {
@@ -644,7 +644,7 @@ export async function addLiquidity(
 				secondaryPosition: positionAddress,
 				updatedAt: new Date(),
 			},
-			$push: {
+			$addToSet: {
 				positionIds: positionAddress,
 			},
 		},

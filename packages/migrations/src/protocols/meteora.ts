@@ -62,7 +62,7 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 							primaryPositionNftSecret: result.positionNftSecret,
 						}),
 					},
-					$push: {
+					$addToSet: {
 						nftMinted: result.nftMint,
 					},
 				},
@@ -106,7 +106,7 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 						}),
 						secondaryNftMint: result.nftMint,
 					},
-					$push: {
+					$addToSet: {
 						nftMinted: result.nftMint,
 					},
 				},
@@ -245,7 +245,7 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 							secondaryPosition: result.extraData.positionId,
 						}),
 					},
-					$push: {
+					$addToSet: {
 						positions: result.extraData.positionId,
 					},
 				},
