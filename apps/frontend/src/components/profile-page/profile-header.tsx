@@ -50,12 +50,12 @@ export default function ProfileHeader({
 				</div>
 			</div>
 
-			<div className="md:ml-6 space-y-1 mb-2 flex flex-col h-full">
+			<div className="md:ml-5 space-y-1 mb-2 flex flex-col h-full">
 				<h1 className="text-2xl mt-2 sm:text-3xl font-bold text-gray-100 text-center md:text-start uppercase tracking-wider">
 					{data.username}
 				</h1>
 
-				<div className="flex w-full items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 py-1 border border-[#03FF24]/30 rounded-none shadow-inner">
+				<div className="flex w-full max-w-[320px] max-h-[30px] items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 py-1 border border-[#03FF24]/30 rounded-none shadow-inner">
 					<span className="p-1 truncate">{data.address}</span>
 					<CopyButton
 						textToCopy={data.address}
@@ -83,8 +83,8 @@ export default function ProfileHeader({
 						);
 					})}
 				</div> */}
-				<div className="flex gap-2 mt-2">
-					<div className="px-2 py-1 flex items-center justify-center md:justify-start w-full">
+				<div className="flex gap-0 mt-1">
+					<div className="px-0 py-1 flex items-center justify-center md:justify-start w-full">
 						<Trophy size={20} className="text-autofun-background-action-highlight" />
 						<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
 					</div>
