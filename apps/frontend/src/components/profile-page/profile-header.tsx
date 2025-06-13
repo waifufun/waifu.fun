@@ -29,7 +29,7 @@ export default function ProfileHeader({
 	// };
 
 	return (
-		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[182px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
+		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[148px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
 			<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] relative w-fit">
 				<Image src="/create/test-img.png" alt="Profile" width={112} height={112} className="object-cover" />
 				<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
@@ -91,7 +91,7 @@ export default function ProfileHeader({
 				</div>
 			</div>
 
-			<div className="h-full flex flex-col md:flex-col w-full space-y-2 place-self-start md:w-fit place-content-center mt-3 ml-auto">
+			<div className="h-full flex flex-col md:flex-col w-full space-y-2 place-self-start md:w-fit place-content-center ml-auto">
 				<div className="bg-[#03FF24]/10 text-xs text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center">
 					Tokens Created: <span className="font-bold">{data.tokensCreated}</span>
 				</div>
