@@ -88,13 +88,6 @@ export default function TokenRow({
 								</div>
 							</div>
 							<Link className="place-items-end mt-1 w-full h-full" href={`/token/${data.contractAddress}`}>
-								{/* <Image
-									src={"/profile/link.svg"}
-									alt="link icon"
-									width={24}
-									height={24}
-									className="object-contain w-5 h-5 md:w-6 md:h-6"
-								/> */}
 								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[16px] w-[16px] " />
 							</Link>
 						</div>
