@@ -10,6 +10,8 @@ import { useState } from "react";
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
+	const totalValue = balances.reduce((sum, b) => sum + (b?.dollarWorth || 0), 0);
+	
 
 	return (
 		<div className="mt-10 flex place-self-center w-full flex-col">
@@ -40,7 +42,7 @@ export default function Page({ balances }: { balances: any[] }) {
 								<div className="w-full max-h-full overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40 w-full">
 										<h1 className="p-4 text-white">
-											Total Value: <span className="text-autofun-background-action-highlight font-bold">$444</span>
+											Total Value: <span className="text-autofun-background-action-highlight font-bold">${totalValue}</span>
 										</h1>
 									</div>
 									{balances.map((balance, i) => {

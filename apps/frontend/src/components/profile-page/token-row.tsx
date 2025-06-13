@@ -31,8 +31,6 @@ export default function TokenRow({
 	// };
 	// const chainIcon = chainIcons[key];
 
-	// if mode equals activity show mcap, amount bought, amount pts earned, link to token page, and dollarworth
-
 	return (
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[94px] px-4 py-13">
 			<div className="flex items-stretch space-x-4">
@@ -94,7 +92,7 @@ export default function TokenRow({
 							</Link>
 							<div className="flex flex-col justify-center mt-3 h-full">
 								<div className="space-y-0 flex flex-row">
-									<p className="text-xs text-center text-autofun-background-action-highlight text-yellow-400">
+									<p className="text-xs text-center text-yellow-400">
 										+ {data.points} pts
 									</p>
 								</div>
