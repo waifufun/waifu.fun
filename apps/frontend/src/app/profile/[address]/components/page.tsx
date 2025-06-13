@@ -69,7 +69,7 @@ export default function Page({ balances }: { balances: any[] }) {
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
 							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-								<div className="border-b-2 border-[#03FF24]/40">
+								<div className="border-b-1 border-[#03FF24]/40">
 									<TokensFilter />
 								</div>
 								<div className="p-0">
