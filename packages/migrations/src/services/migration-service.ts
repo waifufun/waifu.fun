@@ -391,6 +391,8 @@ export class MigrationService {
 				secondaryAmount: finalizeData.secondaryAmount,
 				primaryAmountSol: finalizeData.primaryAmountSol,
 				secondaryAmountSol: finalizeData.secondaryAmountSol,
+				poolInfo: migration.poolInfo ? JSON.parse(migration.poolInfo) : undefined,
+				poolKeys: migration.poolKeys ? JSON.parse(migration.poolKeys) : undefined,
 			},
 			startedAt: new Date(migration.startedAt || Date.now()),
 			createdAt: new Date(migration.createdAt || Date.now()),

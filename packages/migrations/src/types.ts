@@ -53,6 +53,7 @@ export interface ProtocolState {
 		vaultB: string;
 	};
 	poolInfo?: any; // Store the full SDK object as-is
+	poolKeys?: any; // Store the full SDK object as-is
 	vaultAddress?: string;
 	vaultCreatedAt?: Date;
 	nftDeposited?: boolean;

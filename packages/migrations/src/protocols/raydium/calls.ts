@@ -6,6 +6,10 @@ import {
 	CREATE_CPMM_POOL_PROGRAM,
 	CREATE_CPMM_POOL_FEE_ACC,
 	type ApiV3PoolInfoItem,
+	DEV_LOCK_CPMM_PROGRAM,
+	DEV_LOCK_CPMM_AUTH,
+	getCpmmPdaAmmConfigId,
+	DEVNET_PROGRAM_ID,
 } from "@raydium-io/raydium-sdk-v2";
 import type { MigrationContext } from "../../types";
 import { recordTransaction } from "../../utils/protocol-utils";
@@ -52,7 +56,7 @@ export async function createPool(
 		const raydium = await Raydium.load({
 			owner: wallet.payer,
 			connection: rpc,
-			cluster: "mainnet",
+			cluster: process.env.NETWORK === "devnet" ? "devnet" : "mainnet",
 			disableFeatureCheck: true,
 			disableLoadToken: false,
 			blockhashCommitment: "finalized",
@@ -78,13 +82,23 @@ export async function createPool(
 
 		// Get fee configs
 		const feeConfigs = await raydium.api.getCpmmConfigs();
-		const feeConfig = feeConfigs[1]; // Use the second config for mainnet
+		if (raydium.cluster === "devnet") {
+			// biome-ignore lint/complexity/noForEach: <explanation>
+			feeConfigs.forEach((config: any) => {
+				config.id = getCpmmPdaAmmConfigId(
+					DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
+					config.index,
+				).publicKey.toBase58();
+			});
+		}
+		const feeConfig = raydium.cluster === "devnet" ? feeConfigs[0] : feeConfigs[1];
 		const startTime = new BN(Math.floor(Date.now() / 1000) + 5 * 60);
 
 		// Create pool using Raydium SDK
 		const poolCreation = await raydium.cpmm.createPool({
-			programId: CREATE_CPMM_POOL_PROGRAM,
-			poolFeeAccount: CREATE_CPMM_POOL_FEE_ACC,
+			programId: raydium.cluster === "devnet" ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM : CREATE_CPMM_POOL_PROGRAM,
+			poolFeeAccount:
+				raydium.cluster === "devnet" ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC : CREATE_CPMM_POOL_FEE_ACC,
 			mintA,
 			mintB,
 			mintAAmount: primaryAmount,
@@ -174,13 +188,14 @@ export async function initRaydiumSdkAndFetchPoolInfo(
 		const raydium = await Raydium.load({
 			owner: wallet.payer,
 			connection: rpc,
-			cluster: "mainnet",
+			cluster: process.env.NETWORK === "devnet" ? "devnet" : "mainnet",
 			disableFeatureCheck: true,
 			disableLoadToken: false,
 			blockhashCommitment: "finalized",
 		});
 
 		// Fetch pool information using the api module
+		// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
 		let result;
 		result = await raydium.cpmm.getPoolInfoFromRpc(poolId);
 		if (!result) {
@@ -231,6 +246,7 @@ export async function initRaydiumSdkAndFetchPoolInfo(
 			{
 				$set: {
 					poolInfo: JSON.stringify(poolInfoResult),
+					poolKeys: JSON.stringify(poolKeys),
 					updatedAt: new Date(),
 				},
 			},
@@ -253,7 +269,7 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 		const raydium = await Raydium.load({
 			owner: wallet.payer,
 			connection: rpc,
-			cluster: "mainnet",
+			cluster: process.env.NETWORK === "devnet" ? "devnet" : "mainnet",
 			disableFeatureCheck: true,
 			disableLoadToken: false,
 			blockhashCommitment: "finalized",
@@ -262,8 +278,14 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 		if (!state.poolInfo) {
 			throw new Error("Pool info not found in state");
 		}
+		if (!state.poolKeys) {
+			throw new Error("Pool keys not found in state");
+		}
 		// Create lock transaction
 		const lockTx = await raydium.cpmm.lockLp({
+			programId: DEV_LOCK_CPMM_PROGRAM, // devnet
+			authProgram: DEV_LOCK_CPMM_AUTH,
+			poolKeys: state.poolKeys,
 			poolInfo: state.poolInfo,
 			lpAmount: amount,
 			txVersion: TxVersion.V0,

@@ -13,7 +13,6 @@ import {
 } from "./meteora/calls";
 import DB from "@autofun/database";
 import { recordTransaction } from "../utils/protocol-utils";
-import { aw } from "@raydium-io/raydium-sdk-v2/lib/api-7daf490d";
 
 export type MeteoraMigrationContext = MigrationContext;
 

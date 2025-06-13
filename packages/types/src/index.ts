@@ -193,6 +193,7 @@ export interface IMigration {
 	migration?: string | undefined;
 	withdrawnAmounts?: string | undefined;
 	poolInfo?: string | undefined;
+	poolKeys?: string | undefined;
 	lockLpTxId?: string | undefined;
 	primaryNftMint?: string | undefined;
 	secondaryNftMint?: string | undefined;
