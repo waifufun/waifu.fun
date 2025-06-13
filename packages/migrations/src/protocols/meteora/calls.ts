@@ -22,48 +22,58 @@ export async function createPositionNft(
 	context: MigrationContext,
 	isPrimary: boolean,
 ): Promise<{ txId: string; nftMint: string; positionNftSecret: string }> {
-	const positionNftKeypair = Keypair.generate();
-	const positionNftAccount = derivePositionNftAccount(positionNftKeypair.publicKey);
-	const positionNftMint = positionNftKeypair.publicKey;
+	try {
+		const positionNftKeypair = Keypair.generate();
+		const positionNftAccount = derivePositionNftAccount(positionNftKeypair.publicKey);
+		const positionNftMint = positionNftKeypair.publicKey;
 
-	console.log(`${isPrimary ? "Primary" : "Secondary"} position NFT mint created:`, positionNftMint.toString());
-	console.log(
-		`${isPrimary ? "Primary" : "Secondary"} position NFT token account created:`,
-		positionNftAccount.toString(),
-	);
+		console.log(`${isPrimary ? "Primary" : "Secondary"} position NFT mint created:`, positionNftMint.toString());
+		console.log(
+			`${isPrimary ? "Primary" : "Secondary"} position NFT token account created:`,
+			positionNftAccount.toString(),
+		);
 
-	if (!positionNftMint) {
-		throw new Error("No position NFT mint found for pool creation");
+		if (!positionNftMint) {
+			throw new Error("No position NFT mint found for pool creation");
+		}
+
+		const txId = `createPositionMint${isPrimary ? "" : "2"}`;
+		const nftMint = positionNftMint.toString();
+		const positionNftSecret = JSON.stringify(Array.from(positionNftKeypair.secretKey));
+
+		// Update MongoDB with NFT mint and secret
+		await DB.Migration.findOneAndUpdate(
+			{ contractAddress: context.state.tokenMint },
+			{
+				$push: {
+					positionNftsSecrets: positionNftSecret,
+				},
+				$set: {
+					[isPrimary ? "primaryNftMint" : "secondaryNftMint"]: nftMint,
+					updatedAt: new Date(),
+				},
+			},
+		);
+		await recordTransaction(
+			context.state,
+			isPrimary ? "createPrimaryPositionNft" : "createSecondaryPositionNft",
+			txId,
+			{
+				positionNftMint: nftMint,
+				nft: isPrimary ? "primaryNftMint" : "secondaryNftMint",
+				timestamp: new Date(),
+			},
+		);
+
+		return {
+			txId,
+			nftMint,
+			positionNftSecret,
+		};
+	} catch (error) {
+		console.error("Error creating position NFT:", error);
+		throw new Error(`Failed to create position NFT: ${error.message}`);
 	}
-
-	const txId = `createPositionMint${isPrimary ? "" : "2"}`;
-	const nftMint = positionNftMint.toString();
-	const positionNftSecret = JSON.stringify(Array.from(positionNftKeypair.secretKey));
-
-	// Update MongoDB with NFT mint and secret
-	await DB.Migration.findOneAndUpdate(
-		{ contractAddress: context.state.tokenMint },
-		{
-			$push: {
-				positionNftsSecrets: positionNftSecret,
-			},
-			$set: {
-				[isPrimary ? "primaryNftMint" : "secondaryNftMint"]: nftMint,
-				updatedAt: new Date(),
-			},
-		},
-	);
-	await recordTransaction(context.state, isPrimary ? "createPrimaryPositionNft" : "createSecondaryPositionNft", txId, {
-		positionNftMint: nftMint,
-		nft: isPrimary ? "primaryNftMint" : "secondaryNftMint",
-		timestamp: new Date(),
-	});
-
-	return {
-		txId,
-		nftMint,
-		positionNftSecret,
-	};
 }
 
 export async function finalizePositionNft(

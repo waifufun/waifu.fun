@@ -53,6 +53,7 @@ export const getTokens = async ({
 			search: searchParams?.search || "",
 			limit: searchParams?.limit || 50,
 		};
+		console.log("Fetching tokens with body:", body);
 
 		const response = await fetcher("/tokens", "POST", body);
 		return response.docs || [];

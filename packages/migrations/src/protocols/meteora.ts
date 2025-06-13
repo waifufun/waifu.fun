@@ -39,24 +39,30 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			if (!withdrawTx?.txId) {
 				throw new Error("Withdraw transaction not found in state");
 			}
-
+			if (state.primaryNftMint && state.primaryPositionNftSecret) {
+				console.log("Primary NFT and secret already exist, skipping creation");
+				return;
+			}
 			const result = await createPositionNft(context, true);
 
 			state.primaryPositionNftTxId = result.txId;
 			state.primaryNftMint = result.nftMint;
 			state.primaryPositionNftSecret = result.positionNftSecret;
+			const protocolState = state || {};
 
 			// Update database with NFT secrets
 			await DB.Migration.findOneAndUpdate(
 				{ contractAddress: state.tokenMint },
 				{
 					$set: {
-						"protocolState.primaryPositionNftTxId": result.txId,
-						"protocolState.primaryNftMint": result.nftMint,
-						"protocolState.primaryPositionNftSecret": result.positionNftSecret,
+						protocolState: JSON.stringify({
+							...protocolState,
+							primaryPositionNftTxId: result.txId,
+							primaryNftMint: result.nftMint,
+							primaryPositionNftSecret: result.positionNftSecret,
+						}),
 					},
 					$push: {
-						positionNftsSecrets: result.positionNftSecret,
 						nftMinted: result.nftMint,
 					},
 				},
@@ -75,25 +81,32 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			if (!state.primaryPositionNftTxId) {
 				throw new Error("Primary position NFT transaction not found in state");
 			}
+			if (state.secondaryNftMint && state.secondaryPositionNftSecret) {
+				console.log("Secondary NFT and secret already exist, skipping creation");
+				return;
+			}
 
 			const result = await createPositionNft(context, false);
 
 			state.secondaryPositionNftTxId = result.txId;
 			state.secondaryNftMint = result.nftMint;
 			state.secondaryPositionNftSecret = result.positionNftSecret;
+			const protocolState = state || {};
 
 			// Update database with secondary NFT info
 			await DB.Migration.findOneAndUpdate(
 				{ contractAddress: state.tokenMint },
 				{
 					$set: {
-						"protocolState.secondaryPositionNftTxId": result.txId,
-						"protocolState.secondaryNftMint": result.nftMint,
-						"protocolState.secondaryPositionNftSecret": result.positionNftSecret,
+						protocolState: JSON.stringify({
+							...protocolState,
+							secondaryPositionNftTxId: result.txId,
+							secondaryNftMint: result.nftMint,
+							secondaryPositionNftSecret: result.positionNftSecret,
+						}),
 						secondaryNftMint: result.nftMint,
 					},
 					$push: {
-						positionNftsSecrets: result.positionNftSecret,
 						nftMinted: result.nftMint,
 					},
 				},
@@ -170,15 +183,19 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 			state.poolCreationTxId = result.txId;
 			state.poolId = result.extraData.poolId;
 			state.primaryPosition = result.extraData.primaryPosition;
+			const protocolState = state || {};
 
 			// Update database with pool info
 			await DB.Migration.findOneAndUpdate(
 				{ contractAddress: state.tokenMint },
 				{
 					$set: {
-						"protocolState.poolCreationTxId": result.txId,
-						"protocolState.poolId": result.extraData.poolId,
-						"protocolState.primaryPosition": result.extraData.primaryPosition,
+						protocolState: JSON.stringify({
+							...protocolState,
+							poolCreationTxId: result.txId,
+							poolId: result.extraData.poolId,
+							primaryPosition: result.extraData.primaryPosition,
+						}),
 						marketId: result.extraData.poolId,
 					},
 				},
@@ -217,12 +234,16 @@ export const meteoraMigrationSteps: MigrationStep[] = [
 
 			// Update state with position creation results
 			state.secondaryPosition = result.extraData.positionId;
+			const protocolState = state || {};
 			// save position ID in the database
 			await DB.Migration.findOneAndUpdate(
 				{ contractAddress: state.tokenMint },
 				{
 					$set: {
-						"protocolState.secondaryPosition": result.extraData.positionId,
+						protocolState: JSON.stringify({
+							...protocolState,
+							secondaryPosition: result.extraData.positionId,
+						}),
 					},
 					$push: {
 						positions: result.extraData.positionId,
