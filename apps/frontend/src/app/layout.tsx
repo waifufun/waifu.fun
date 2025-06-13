@@ -37,13 +37,13 @@ export default function RootLayout({
 			<body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
 				<Providers>
 					<SidebarProvider>
-						<AppSidebar />
 						<SidebarInset>
 							<Header />
 							<main className="flex-1 p-4">{children}</main>
 							<Footer />
 							<BottomNav />
 						</SidebarInset>
+						<AppSidebar />
 					</SidebarProvider>
 				</Providers>
 			</body>

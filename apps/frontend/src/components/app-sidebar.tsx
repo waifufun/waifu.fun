@@ -45,7 +45,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
 
 	return (
-		<Sidebar collapsible="icon" side="left" {...props}>
+		<Sidebar collapsible="icon" side="right" {...props}>
 			<SidebarHeader>
 				<div className="flex items-center gap-2 px-2 py-1">
 					<Link href="/" className="flex items-center gap-2">
