@@ -91,7 +91,7 @@ export default function ProfileHeader({
 				</div>
 			</div>
 
-			<div className="flex flex-col md:flex-col w-full space-y-2 md:w-fit place-content-center gap-2 ml-auto">
+			<div className="h-full flex flex-col md:flex-col w-full space-y-2 place-self-start md:w-fit place-content-center mt-3 ml-auto">
 				<div className="bg-[#03FF24]/10 text-xs text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center">
 					Tokens Created: <span className="font-bold">{data.tokensCreated}</span>
 				</div>
