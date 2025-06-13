@@ -31,6 +31,7 @@ export default function TokenRow({
 	// 	[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
 	// };
 	// const chainIcon = chainIcons[key];
+	const dollarWorth = data?.amountHeld * (data?.dollarWorth ?? 0);
 
 	return (
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-4 py-8">
@@ -75,7 +76,7 @@ export default function TokenRow({
 							<p className="text-sm font-medium text-gray-200">{data.amountHeld.toLocaleString()}</p>
 							{data?.dollarWorth ? (
 								<p className="text-autofun-background-action-highlight text-sm md:text-xs">
-									${data.dollarWorth.toLocaleString()}
+									${dollarWorth.toLocaleString()}
 								</p>
 							) : null}
 						</div>

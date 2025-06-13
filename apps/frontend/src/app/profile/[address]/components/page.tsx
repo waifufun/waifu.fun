@@ -6,20 +6,35 @@ import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
+import { useParams } from "next/navigation";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
+	const params = useParams<{ address: string }>();
+	const address = params?.address;
 
+	const summedTotalWalletValue = balances.reduce((sum, item) => {
+		if (item.price == null || Number.isNaN(item.price)) return sum;
+
+		const balance = Number(item.shiftedBalance) || 0;
+		const price = Number(item.price);
+
+		const totalSum = sum + balance * price;
+		return totalSum.toFixed(2);
+	}, 0);
+
+	const tokensBought = balances?.length;
+	const tokensCreated = balances.filter((token) => token.creatorAddress === address).length;
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
 						username: "AlienMaster42",
-						address: "0xa83114a443da1cecefc50368531cace9f37fcccb",
-						tokensBought: 128,
-						tokensCreated: 42,
+						address: address,
+						tokensBought: tokensBought,
+						tokensCreated: tokensCreated,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
 						points: 12,
 					}}
@@ -40,10 +55,13 @@ export default function Page({ balances }: { balances: any[] }) {
 								<div className="w-full max-h-full overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40 w-full">
 										<h1 className="p-4 text-sm text-gray-300">
-											Total Value: <span className="text-autofun-background-action-highlight font-bold">$444</span>
+											Total Value:{" "}
+											<span className="text-autofun-background-action-highlight font-bold">
+												${summedTotalWalletValue}
+											</span>
 										</h1>
 									</div>
-									{balances.map((balance, i) => {
+									{balances?.map((balance, i) => {
 										console.log(balance);
 										return (
 											<TokenRow
@@ -56,10 +74,10 @@ export default function Page({ balances }: { balances: any[] }) {
 													image: balance?.info?.imageThumbUrl,
 													title: balance?.info?.name,
 													ticker: balance?.info?.symbol,
-													marketCap: 1240000,
+													marketCap: balance?.marketcap,
 													contractAddress: balance?.tokenAddress,
 													amountHeld: balance?.shiftedBalance,
-													dollarWorth: 123123123,
+													dollarWorth: balance?.price,
 												}}
 											/>
 										);
