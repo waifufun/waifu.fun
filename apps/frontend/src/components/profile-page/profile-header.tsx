@@ -56,7 +56,7 @@ export default function ProfileHeader({
 				</h1>
 
 				<div className="flex w-full max-w-[320px] max-h-[30px] items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 py-1 border border-[#03FF24]/30 rounded-none shadow-inner">
-					<span className="p-1 truncate">{data.address}</span>
+					<span className="p-2 truncate">{data.address}</span>
 					<CopyButton
 						textToCopy={data.address}
 						className=" mr-2 text-[#03FF24]/70 hover:text-[#03FF24] cursor-pointer flex-shrink-0"
