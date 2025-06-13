@@ -14,7 +14,7 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
 		<TabsPrimitive.List
 			data-slot="tabs-list"
 			className={cn(
-				"text-muted-foreground bg-red-500 bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] rounded-tl-sm rounded-tr-sm inline-flex h-14 w-fit items-center justify-center",
+				"border-2 border-[#03FF24]/50 rounded-none p-0 h-auto shadow-[3px_3px_0px_rgba(3,255,36,0.3)]",
 				className,
 			)}
 			{...props}
@@ -27,7 +27,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
 		<TabsPrimitive.Trigger
 			data-slot="tabs-trigger"
 			className={cn(
-				"data-[state=active]:bg-gradient-to-b from-[#171717] to-[#121212]  cursor-pointer dark:data-[state=active]:text-foreground dark:data-[state=active]:border-autofun-background-highlight dark:data-[state=active]:bg-autofun-background-card data-[state=active]:rounded-t-sm text-autofun-text-secondary inline-flex h-full flex-1 items-center justify-center gap-1.5 border-b-1 border-autofun-text-stroke-primary px-2 py-1 text-xs md:text-base lg:text-xl font-medium whitespace-nowrap transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+				"cursor-pointer text-sm border-1 data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider border-r border-[#03FF24]/50 data-[state=active]:border-r-[#01a718]",
 				className,
 			)}
 			{...props}
@@ -39,7 +39,7 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
 	return (
 		<TabsPrimitive.Content
 			data-slot="tabs-content"
-			className={cn("flex-1 outline-none rounded-b-sm bg-[#0c0c0c]", className)}
+			className={cn("flex-1 outline-none bg-[#0c0c0c]", className)}
 			{...props}
 		/>
 	);

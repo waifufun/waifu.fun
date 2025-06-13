@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import ProfileChainSelector from "./profile-chain-selector";
+// import ProfileChainSelector from "./profile-chain-selector";
 
 export default function ProfileFilters({ mode }: { mode: "activity" | "wallet" }) {
 	const pathname = usePathname();
@@ -57,16 +57,16 @@ export default function ProfileFilters({ mode }: { mode: "activity" | "wallet" }
 						})}
 					</div>
 				) : (
-					<div className="w-[180px] h-[44px] flex items-center justify-center rounded-md bg-gradient-to-t from-[#121212] to-[#171717]">
+					<div className="w-[180px] h-[44px] flex items-center justify-center bg-black border border-[#03FF24]">
 						<p className="text-base font-bold text-white">
 							Total Value <span className="ml-1 text-autofun-background-action-highlight">$912.36</span>{" "}
 						</p>
 					</div>
 				)}
 
-				<div className="ml-auto">
+				{/* <div className="ml-auto">
 					<ProfileChainSelector />
-				</div>
+				</div> */}
 			</div>
 		</div>
 	);
