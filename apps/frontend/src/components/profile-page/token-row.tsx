@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
 import { formatNumber } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 export default function TokenRow({
 	data,
@@ -59,42 +60,43 @@ export default function TokenRow({
 
 			{mode === "activity" || mode === "wallet" ? (
 				<div className="flex items-center justify-center flex-row space-x-4">
-					<div className="flex flex-col items-end space-y-1">
-						<div className="flex flex-row space-x-2 w-full justify-end">
+					<div className="flex flex-col items-end space-y-0">
+						<div className="flex flex-row space-x-1 w-full justify-end">
 							{mode === "activity" ? (
 								<>
-									<p className="text-xs md:text-base font-semibold text-yellow-400">Mcap</p>
-									<p className="text-xs md:text-base font-semibold text-yellow-400">
+									<p className="text-xs font-bold text-yellow-400">Mcap</p>
+									<p className="text-xs md:text-xs font-semibold text-yellow-400">
 										{formatNumber(data.marketCap, false, true)}
 									</p>
 								</>
 							) : null}
 						</div>
-						<div className="flex flex-col space-y-1 w-full items-end justify-center transition-all duration-300">
-							<p className="text-white font-medium text-xs md:text-base">{data.amountHeld}</p>
+						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300">
+							<p className="text-sm font-medium text-gray-200 ">{data.amountHeld}</p>
 							{data?.dollarWorth ? (
-								<p className="text-autofun-background-action-highlight text-sm md:text-base">
+								<p className="text-autofun-background-action-highlight text-sm md:text-xs">
 									${data.dollarWorth.toLocaleString()}
 								</p>
 							) : null}
 						</div>
 					</div>
 					{mode === "activity" ? (
-						<div className="text-white place-items-center text-base">
-							<Link href={`/token/${data.contractAddress}`}>
-								<Image
+						<div className="flex flex-col justify-around  text-white place-items-center text-base h-[60px]">
+							<div className="flex flex-col justify-center h-full">
+								<div className="space-y-0 flex flex-row">
+									<p className="text-sm font-bold text-yellow-400">+ {data.points} pts</p>
+								</div>
+							</div>
+							<Link className="place-items-end mt-1 w-full h-full" href={`/token/${data.contractAddress}`}>
+								{/* <Image
 									src={"/profile/link.svg"}
 									alt="link icon"
 									width={24}
 									height={24}
 									className="object-contain w-5 h-5 md:w-6 md:h-6"
-								/>
+								/> */}
+								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[16px] w-[16px] " />
 							</Link>
-							<div className="flex flex-col justify-center mt-3 h-full">
-								<div className="space-y-0 flex flex-row">
-									<p className="text-xs text-center text-yellow-400">+ {data.points} pts</p>
-								</div>
-							</div>
 						</div>
 					) : null}
 				</div>
