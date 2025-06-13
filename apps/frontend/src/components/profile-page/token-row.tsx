@@ -66,13 +66,13 @@ export default function TokenRow({
 								<>
 									<p className="text-xs font-bold text-yellow-400">Mcap</p>
 									<p className="text-xs md:text-xs font-semibold text-yellow-400">
-										{formatNumber(data.marketCap, false, true)}
+										${formatNumber(data.marketCap, false, true)}
 									</p>
 								</>
 							) : null}
 						</div>
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300">
-							<p className="text-sm font-medium text-gray-200 ">{data.amountHeld}</p>
+							<p className="text-sm font-medium text-gray-200">{data.amountHeld.toLocaleString()}</p>
 							{data?.dollarWorth ? (
 								<p className="text-autofun-background-action-highlight text-sm md:text-xs">
 									${data.dollarWorth.toLocaleString()}
