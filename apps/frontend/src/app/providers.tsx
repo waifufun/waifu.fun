@@ -1,10 +1,8 @@
 "use client";
-import Header from "@/components/header";
 import { ProgressProvider } from "@bprogress/next/app";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleAnalytics } from "@next/third-parties/google";
-import Footer from "@/components/footer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";

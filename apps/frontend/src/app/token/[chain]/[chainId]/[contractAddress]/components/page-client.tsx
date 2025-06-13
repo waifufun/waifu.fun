@@ -104,17 +104,19 @@ export default function PageClient({
 						</div>
 					</div>
 
-					<div className="w-full min-h-[540px] relative rounded-lg overflow-hidden">
-						<Chart
-							token={token}
-							tokenLookUp={
-								{
-									chain: token.chain,
-									chainId: token.chainId,
-									contractAddress: token.contractAddress,
-								} as ITokenLookUp
-							}
-						/>
+					<div className="w-full min-h-[540px] relative">
+						<div className="bg-black border-2 border-[#03FF24]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
+							<Chart
+								token={token}
+								tokenLookUp={
+									{
+										chain: token.chain,
+										chainId: token.chainId,
+										contractAddress: token.contractAddress,
+									} as ITokenLookUp
+								}
+							/>
+						</div>
 					</div>
 
 					<div className="flex flex-col">
