@@ -284,8 +284,8 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 		// Create lock transaction
 		const lockTx = await raydium.cpmm.lockLp({
 			programId: DEV_LOCK_CPMM_PROGRAM, // devnet
-			authProgram: DEV_LOCK_CPMM_AUTH,
-			poolKeys: state.poolKeys,
+			authProgram: DEV_LOCK_CPMM_AUTH, // devnet
+			poolKeys: state.poolKeys, // devnet
 			poolInfo: state.poolInfo,
 			lpAmount: amount,
 			txVersion: TxVersion.V0,
@@ -315,6 +315,9 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 					[`${isPrimary ? "primary" : "secondary"}LockTxId`]: txId,
 					[`${isPrimary ? "primary" : "secondary"}NftMint`]: nftMint,
 					updatedAt: new Date(),
+				},
+				$addToSet: {
+					nftMinted: nftMint,
 				},
 			},
 		);
@@ -387,17 +390,17 @@ export async function finalizeLockLP(context: MigrationContext): Promise<void> {
 	const primaryLockTx = state.transactions?.find((tx) => tx.step === "lockPrimaryLP");
 	const secondaryLockTx = state.transactions?.find((tx) => tx.step === "lockSecondaryLP");
 
-	if (!primaryLockTx?.data?.txId) {
+	if (!primaryLockTx?.txId) {
 		throw new Error("Primary LP lock transaction not found");
 	}
-	if (!secondaryLockTx?.data?.txId) {
+	if (!secondaryLockTx?.txId) {
 		throw new Error("Secondary LP lock transaction not found");
 	}
 
 	// Record the finalization
 	await recordTransaction(state, "finalizeLockLP", "finalize-lock-lp", {
-		primaryLockTxId: primaryLockTx.data.txId,
-		secondaryLockTxId: secondaryLockTx.data.txId,
+		primaryLockTxId: primaryLockTx.txId,
+		secondaryLockTxId: secondaryLockTx.txId,
 		timestamp: new Date(),
 	});
 
