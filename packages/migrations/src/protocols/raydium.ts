@@ -10,7 +10,7 @@ import {
 } from "./raydium/calls";
 import BN from "bn.js";
 import DB from "@autofun/database";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Keypair } from "@solana/web3.js";
 import { recordTransaction } from "../utils/protocol-utils";
 
 export type RaydiumMigrationContext = MigrationContext;
@@ -143,7 +143,7 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			if (!multisigAddress) {
 				throw new Error("Multisig address not found in environment variables");
 			}
-			context.state.nftVersion = "2022";
+			context.state.nftVersion = "legacy";
 
 			const txId = await commonSendNftStep.execute(context);
 			await recordTransaction(state, "sendNftToManager", txId, {
@@ -174,6 +174,7 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			throw new Error("Not implemented");
 		},
 	},
+
 	{
 		name: "depositNft",
 		description: "Deposit NFT to Raydium vault",

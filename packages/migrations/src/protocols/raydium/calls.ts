@@ -1,4 +1,4 @@
-import { PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, TransactionMessage, VersionedTransaction, Keypair } from "@solana/web3.js";
 import BN from "bn.js";
 import {
 	Raydium,
@@ -18,6 +18,7 @@ import DB from "@autofun/database";
 import { depositToRaydiumVault } from "../../vaults/raydiumVault";
 import * as spl from "@solana/spl-token";
 import { retryOperation } from "../../utils";
+import { Wallet } from "../../utils/customWallet";
 
 interface CreatePoolParams {
 	tokenMint: string;
@@ -435,7 +436,6 @@ export async function depositNftToRaydiumVault(
 	try {
 		// Get the signer wallet
 		const signerWallet = wallet;
-
 		// Get the program from context
 		if (!context.programContext?.raydiumVaultProgram) {
 			throw new Error("Raydium vault program not initialized");
