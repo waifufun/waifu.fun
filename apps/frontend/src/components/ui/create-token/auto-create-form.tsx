@@ -66,7 +66,7 @@ function AutoCreateForm() {
 	// ignore biome
 	useEffect(() => {
 		generateToken();
-	}, []);
+	}, [generateToken]);
 
 	return (
 		<div className="grid md:grid-cols-2 gap-6 md:items-start">
@@ -96,7 +96,7 @@ function AutoCreateForm() {
 									changeMainImage(index + 1);
 								}
 							}}
-							key={index}
+							key={image}
 							className="aspect-square bg-black/50 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] hover:border-[#03FF24] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 							disabled={!image}
 						>
