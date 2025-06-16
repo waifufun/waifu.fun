@@ -1,8 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType } from "@autofun/types";
+import { MediaType, type TURLLike } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
+import { uploadBase64Image, uploadImageFromUrl } from "@autofun/s3-uploader";
+import DB from "@autofun/database";
+import { randomUUID } from "crypto";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -269,6 +272,49 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			return reply.code(500).send({
 				error: error instanceof Error ? error.message : "Unknown error generating token",
+			});
+		}
+	});
+
+	fastify.post<{
+		Body: {
+			address: string; // Add this to know which user to update
+			imageUrl?: string;
+			image?: string; // base64 image
+		};
+		Reply: { success: boolean; imageUrl?: string; error?: string };
+	}>("/upload-profile-image", async (request, reply) => {
+		const { imageUrl, image, address } = request.body;
+
+		if (!address) {
+			return reply.code(400).send({ success: false, error: "Missing address" });
+		}
+
+		try {
+			const fileName = `avatars/${address}-${randomUUID()}`;
+			let uploadedUrl: TURLLike | false;
+
+			if (image) {
+				console.log("going into image");
+				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images");
+			} else if (imageUrl) {
+				console.log("going into URLimage");
+				uploadedUrl = await uploadImageFromUrl(imageUrl, fileName, "avatar-images");
+			} else {
+				return reply.code(400).send({ success: false, error: "No image or imageUrl provided" });
+			}
+
+			if (!uploadedUrl) {
+				return reply.code(500).send({ success: false, error: "Image upload failed" });
+			}
+
+			await DB.User.findOneAndUpdate({ address }, { avatar: uploadedUrl });
+
+			return reply.send({ success: true, imageUrl: uploadedUrl });
+		} catch (error) {
+			return reply.code(500).send({
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error uploading profile image",
 			});
 		}
 	});

@@ -1,4 +1,5 @@
 "use client";
+import AvatarUploadModal from "@/components/profile-page/avatar-upload";
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
@@ -6,11 +7,19 @@ import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
+import { uploadAvatar } from "@/lib/api";
+import { useParams } from "next/navigation";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
-
+	const params = useParams<{ address: string }>();
+	const address = params?.address;
+	const [showModal, setShowModal] = useState(false);
+	const handleUpload = async (data: { image?: string; imageUrl?: string }) => {
+		await uploadAvatar({ address: address, ...data });
+		// optionally refetch user or show success toast
+	};
 
 	return (
 		<div className="mt-10 flex place-self-center w-full flex-col">
@@ -22,9 +31,10 @@ export default function Page({ balances }: { balances: any[] }) {
 						tokensBought: 128,
 						tokensCreated: 42,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: 12
+						points: 12,
 					}}
 				/>
+				<AvatarUploadModal onClose={() => setShowModal(false)} onUpload={handleUpload} />
 				{/* tabs section */}
 				<div className="w-full h-full flex place-self-center">
 					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">
