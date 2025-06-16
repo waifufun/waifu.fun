@@ -92,9 +92,7 @@ export default function TokenRow({
 							</Link>
 							<div className="flex flex-col justify-center mt-3 h-full">
 								<div className="space-y-0 flex flex-row">
-									<p className="text-xs text-center text-yellow-400">
-										+ {data.points} pts
-									</p>
+									<p className="text-xs text-center text-yellow-400">+ {data.points} pts</p>
 								</div>
 							</div>
 						</div>

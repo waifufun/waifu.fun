@@ -16,7 +16,7 @@ export default function BondingCurveProgress({
 		return null;
 	}
 	return (
-		<div className="rounded-sm bg-[#333333]/10 p-4">
+		<div className="bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 			<div className="flex flex-col gap-3.5">
 				<div className="flex items-center gap-4 justify-between">
 					<div className="font-medium text-xl font-satoshi text-autofun-text-primary inline-flex gap-2">
