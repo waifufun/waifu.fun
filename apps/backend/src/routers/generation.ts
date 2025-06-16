@@ -278,7 +278,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 
 	fastify.post<{
 		Body: {
-			address: string; 
+			address: string;
 			image?: string;
 		};
 		Reply: { success: boolean; imageUrl?: string; error?: string };
@@ -286,7 +286,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 		const { image, address } = request.body;
 
 		if (!address) {
-			return reply.code(400).send({ success: false, error: "Missing address" });
+			throw new Error("Address is missing");
 		}
 
 		try {
@@ -297,11 +297,11 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				console.log("going into image");
 				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images");
 			} else {
-				return reply.code(500).send({ success: false, error: "No image or imageUrl provided" });
+				throw new Error("No image provided");
 			}
 
 			if (!uploadedUrl) {
-				return reply.code(500).send({ success: false, error: "Image upload failed" });
+				throw new Error("Image upload failed");
 			}
 
 			await DB.User.findOneAndUpdate({ address }, { avatar: uploadedUrl });
