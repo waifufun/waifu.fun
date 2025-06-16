@@ -456,18 +456,6 @@ export async function depositNftToRaydiumVault(
 			timestamp: new Date(),
 		});
 
-		// Update database with deposit information
-		await DB.Migration.findOneAndUpdate(
-			{ contractAddress: state.tokenMint },
-			{
-				$set: {
-					nftDeposited: true,
-					nftDepositedAt: new Date(),
-					updatedAt: new Date(),
-				},
-			},
-		);
-
 		return {
 			txId: txSignature,
 			extraData: { depositedNftMint: nftMint },

@@ -198,6 +198,22 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			state.nftDeposited = true;
 			state.nftDepositedAt = new Date();
 			state.txId = txId;
+			const protocolState = state || {};
+
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						protocolState: JSON.stringify({
+							...protocolState,
+							nftDeposited: true,
+							nftDepositedAt: new Date(),
+							nftDepositedTxId: txId,
+						}),
+						updatedAt: new Date(),
+					},
+				},
+			);
 		},
 		rollback: async (context: RaydiumMigrationContext) => {
 			throw new Error("Not implemented");
