@@ -34,7 +34,7 @@ export default async function Home({
 	const view = currentSearchParams?.view || "grid";
 
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="flex flex-col gap-4 container">
 			<div className="flex flex-col items-center">
 				{view === "grid" ? (
 					<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">

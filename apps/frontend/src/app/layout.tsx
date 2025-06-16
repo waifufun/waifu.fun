@@ -34,16 +34,16 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
+			<body className={cn("min-h-screen bg-[#0a0a0a] font-sans antialiased", inter.className)}>
 				<Providers>
 					<SidebarProvider>
-						<AppSidebar />
 						<SidebarInset>
 							<Header />
 							<main className="flex-1 p-4">{children}</main>
 							<Footer />
 							<BottomNav />
 						</SidebarInset>
+						<AppSidebar />
 					</SidebarProvider>
 				</Providers>
 			</body>
