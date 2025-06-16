@@ -290,12 +290,11 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
-			const fileName = `avatars/${address}-${randomUUID()}`;
+			const fileName = `${address}-${randomUUID()}`;
 			let uploadedUrl: TURLLike | false;
 
 			if (image) {
-				console.log("going into image");
-				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images");
+				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images", 40, 40);
 			} else {
 				throw new Error("No image provided");
 			}
