@@ -302,6 +302,18 @@ export async function createPool(
 		timestamp: new Date(),
 	});
 
+	// change token status to migrated in the database
+	await DB.Token.findOneAndUpdate(
+		{ contractAddress: state.tokenMint },
+		{
+			$set: {
+				status: "migrated",
+				updatedAt: new Date(),
+				tradingStartsAt: new Date(activationPoint.toNumber() * 1000),
+			},
+		},
+	);
+
 	console.log(`[createPool] Migration update POSTed for ${state.tokenMint}`);
 
 	return {

@@ -38,6 +38,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		creator: { type: String },
 		status: { type: String, default: "active" },
 		pool: { type: String },
+		tradingStartsAt: { type: Date },
 	},
 	{ timestamps: true, versionKey: false },
 );

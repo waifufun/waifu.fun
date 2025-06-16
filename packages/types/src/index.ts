@@ -95,6 +95,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	verified?: boolean;
 	updatedAt: Date;
 	pool?: string;
+	tradingStartsAt?: Date;
 }
 
 export interface ITokenSocials {

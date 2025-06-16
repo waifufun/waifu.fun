@@ -155,6 +155,7 @@ export async function createPool(
 					status: "migrated",
 					poolId: poolAddresses.id,
 					updatedAt: new Date(),
+					tradingStartsAt: new Date(startTime.toNumber() * 1000),
 				},
 			},
 		);
