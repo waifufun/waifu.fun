@@ -334,7 +334,6 @@ export const getAgent = async ({
 export const uploadAvatar = async ({
 	address,
 	image,
-	imageUrl,
 }: {
 	address: string;
 	image?: string; // base64 image string
@@ -343,7 +342,6 @@ export const uploadAvatar = async ({
 	return await fetcher("/generation/upload-profile-image", "POST", {
 		address,
 		image,
-		imageUrl,
 	});
 };
 

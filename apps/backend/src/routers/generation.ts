@@ -3,9 +3,9 @@ import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
 import { MediaType, type TURLLike } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
-import { uploadBase64Image, uploadImageFromUrl } from "@autofun/s3-uploader";
+import { uploadBase64Image } from "@autofun/s3-uploader";
 import DB from "@autofun/database";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -278,13 +278,12 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 
 	fastify.post<{
 		Body: {
-			address: string; // Add this to know which user to update
-			imageUrl?: string;
-			image?: string; // base64 image
+			address: string; 
+			image?: string;
 		};
 		Reply: { success: boolean; imageUrl?: string; error?: string };
 	}>("/upload-profile-image", async (request, reply) => {
-		const { imageUrl, image, address } = request.body;
+		const { image, address } = request.body;
 
 		if (!address) {
 			return reply.code(400).send({ success: false, error: "Missing address" });
@@ -297,11 +296,8 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 			if (image) {
 				console.log("going into image");
 				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images");
-			} else if (imageUrl) {
-				console.log("going into URLimage");
-				uploadedUrl = await uploadImageFromUrl(imageUrl, fileName, "avatar-images");
 			} else {
-				return reply.code(400).send({ success: false, error: "No image or imageUrl provided" });
+				return reply.code(500).send({ success: false, error: "No image or imageUrl provided" });
 			}
 
 			if (!uploadedUrl) {
