@@ -95,7 +95,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
 							{previousImages.slice(0, 12).map((img, index) => (
 								<div
-									key={index}
+									key={`image-${img}`}
 									className="relative group border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] overflow-hidden"
 								>
 									<Image
