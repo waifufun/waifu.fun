@@ -41,6 +41,19 @@ export class SolanaInstructionDecoder {
 			};
 		}
 
+		// biome-ignore lint/complexity/noThisInStatic: <explanation>
+		if (this.arraysEqual(discriminator, IDLInstructions.withdraw.d8)) {
+			return {
+				type: "withdraw",
+				data: IDLInstructions.withdraw.decode(instructionData),
+				tokenMint: accounts[3], // token_mint account
+				admin: accounts[2], // admin account (signer)
+				bondingCurve: accounts[4], // bonding_curve account
+				globalVault: accounts[1], // global_vault account
+				accounts,
+			};
+		}
+
 		return { type: "unknown", discriminator, accounts };
 	}
 }
