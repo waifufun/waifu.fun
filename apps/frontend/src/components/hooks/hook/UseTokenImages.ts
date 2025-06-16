@@ -6,8 +6,8 @@ type UseTokenImages = {
 	changeMainImage: (index: number) => void;
 };
 
-export default function UseTokenImages() {
-	const [previousImages, setPreviousImages] = useLocalStorage<string[]>("previousImages", []);
+export default function UseTokenImages(tokenImageQuery?: string) {
+	const [previousImages, setPreviousImages] = useLocalStorage<string[]>(tokenImageQuery || "previousImages", []);
 
 	const addImage = (image: string) => {
 		// max length of 3, remove the last one if it exceeds

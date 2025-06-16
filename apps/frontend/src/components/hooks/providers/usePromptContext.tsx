@@ -41,6 +41,7 @@ type PromptContextType = {
 	pool: string;
 	setLaunching: (isLaunching: boolean) => void;
 	isLaunching: boolean;
+	tokenImageQuery?: string | undefined;
 	setValue: UseFormSetValue<TokenFormData>;
 };
 
@@ -67,11 +68,17 @@ export type TokenFormOptions = keyof TokenFormData;
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
 
-export const PromptProvider = ({ children }: { children: ReactNode }) => {
-	return <PromptProviderContent>{children}</PromptProviderContent>;
+export const PromptProvider = ({
+	children,
+	tokenImageQuery,
+}: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
+	return <PromptProviderContent tokenImageQuery={tokenImageQuery}>{children}</PromptProviderContent>;
 };
 
-const PromptProviderContent = ({ children }: { children: ReactNode }) => {
+const PromptProviderContent = ({
+	children,
+	tokenImageQuery,
+}: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
 	const { register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
 		defaultValues: {
 			prompt: "",
@@ -83,9 +90,10 @@ const PromptProviderContent = ({ children }: { children: ReactNode }) => {
 		},
 		mode: "onChange",
 	});
+	console.log("tokenImageQuery: ", tokenImageQuery);
 	const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
 	const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
-	const { previousImages, changeMainImage, addImage } = UseTokenImages();
+	const { previousImages, changeMainImage, addImage } = UseTokenImages(tokenImageQuery);
 	const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
 	const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
 	const [pool, setPool] = useState<string>("meteora");
@@ -369,17 +377,22 @@ const PromptProviderContent = ({ children }: { children: ReactNode }) => {
 		setLaunching: setIsLaunching,
 		isLaunching,
 		setValue,
+		tokenImageQuery,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;
 };
 
-export const usePrompt = (): PromptContextType => {
+export const usePrompt = (tokenImageQuery?: string): PromptContextType => {
 	const context = useContext(PromptContext);
 	if (!context) {
 		throw new Error("usePrompt must be used within a PromptProvider");
 	}
-	return context;
+
+	return {
+		...context,
+		tokenImageQuery: tokenImageQuery || context.tokenImageQuery,
+	};
 };
 
 export const nameValidation: RegisterOptions<TokenFormData, "name"> = {
