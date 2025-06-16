@@ -168,7 +168,7 @@ export const CustomCurveSection = ({
 					max={400}
 					step={1}
 					value={[raiseAmount]}
-					onValueChange={(value) => setRaiseAmount(value[0])}
+					onValueChange={(value) => setRaiseAmount(value[0] || 150)}
 					className="w-full"
 					thumbClassName={sliderThumbClass}
 					trackClassName={sliderTrackClass}
@@ -222,7 +222,7 @@ export const TradeLimitSection = ({
 							value={tradeLimitSol}
 							onChange={(e) => {
 								const val = Number.parseFloat(e.target.value);
-								if (!isNaN(val) && val >= 0) {
+								if (!Number.isNaN(val) && val >= 0) {
 									setTradeLimitSol(val);
 								} else if (e.target.value === "") {
 									setTradeLimitSol(0);
@@ -406,6 +406,7 @@ export const LaunchButton = () => {
 				pool: pool,
 				signature: tx?.signature.toString() || "",
 			});
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
 			console.error("Error creating token:", error);
 			toast.error(`Error creating token: ${error.message}`);
