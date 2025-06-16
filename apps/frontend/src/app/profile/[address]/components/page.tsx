@@ -1,5 +1,4 @@
 "use client";
-import AvatarUploadModal from "@/components/profile-page/avatar-upload";
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
@@ -15,7 +14,6 @@ export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
-	const [showModal, setShowModal] = useState(false);
 	const handleUpload = async (data: { image?: string; imageUrl?: string }) => {
 		await uploadAvatar({ address: address, ...data });
 		// optionally refetch user or show success toast
@@ -27,14 +25,15 @@ export default function Page({ balances }: { balances: any[] }) {
 				<ProfileHeader
 					data={{
 						username: "AlienMaster42",
-						address: "0xa83114a443da1cecefc50368531cace9f37fcccb",
+						// @ts-ignore test purposes only
+						address: "9ngKdds73UCXxCYbYCEAhGF6y58pgiedBcfrAPGqBovr",
 						tokensBought: 128,
 						tokensCreated: 42,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
 						points: 12,
+						image: ""
 					}}
 				/>
-				<AvatarUploadModal onClose={() => setShowModal(false)} onUpload={handleUpload} />
 				{/* tabs section */}
 				<div className="w-full h-full flex place-self-center">
 					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">

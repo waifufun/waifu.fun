@@ -337,7 +337,6 @@ export const uploadAvatar = async ({
 }: {
 	address: string;
 	image?: string; // base64 image string
-	imageUrl?: string;
 }) => {
 	return await fetcher("/generation/upload-profile-image", "POST", {
 		address,
