@@ -33,7 +33,7 @@ export default function PageClient({
 	const token = query?.data;
 
 	return (
-		<div className="flex flex-col gap-6 mt-3">
+		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
