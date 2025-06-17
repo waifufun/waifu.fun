@@ -10,7 +10,7 @@ import { Badge } from "./ui/badge";
 
 const animationLevel = 1;
 
-export const GridItem = ({ token }: { token: IToken; }) => {
+export const GridItem = ({ token }: { token: IToken }) => {
 	const useBlueTheme = token?.imported === true;
 	const usePurpleTheme = !token?.imported && Number(token?.curveProgress || 0) > 80 && !useBlueTheme;
 	const useYellowTheme = token?.featured;
