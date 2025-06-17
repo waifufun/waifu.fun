@@ -1,3 +1,33 @@
+# [0.15.0](https://github.com/elizaos/autofun-monorepo/compare/v0.14.0...v0.15.0) (2025-06-17)
+
+
+### Bug Fixes
+
+* align layout in center ([aeabe71](https://github.com/elizaos/autofun-monorepo/commit/aeabe710dc719b21dd139be6136eb1d30914f7f4))
+* fixed deps ([643663a](https://github.com/elizaos/autofun-monorepo/commit/643663a3793dbc7184882094ff4a8fd3aceaf1ed))
+* lint ([c5638ca](https://github.com/elizaos/autofun-monorepo/commit/c5638ca58506f83a71be2e27e9a25e67ef5968d6))
+
+
+### Features
+
+* add withdraw to schema ([c901c6d](https://github.com/elizaos/autofun-monorepo/commit/c901c6dfe0b0b3d13dbebcb2f323c122927d7673))
+* added withdraw event ([75bb33f](https://github.com/elizaos/autofun-monorepo/commit/75bb33f05528dd21f654806050d3c03784d60620))
+* assign /create to the new design ([53051e7](https://github.com/elizaos/autofun-monorepo/commit/53051e7fc5021f7a8f0a8612a194ab981ae30482))
+* auto token generation ([04be911](https://github.com/elizaos/autofun-monorepo/commit/04be9114023cc84a7a0dd56df639c5efa67b49d2))
+* correct sol for the custom curve ([59fef89](https://github.com/elizaos/autofun-monorepo/commit/59fef89f48ce494e2b001855c8ef9e5727457ffb))
+* create token page almost done ([04d86b0](https://github.com/elizaos/autofun-monorepo/commit/04d86b0bd19035c98247ee676f210fb9524efc53))
+* manual and import token ([1c2e923](https://github.com/elizaos/autofun-monorepo/commit/1c2e9234b87dbad865dff40da77ccc0c5cfb6c9b))
+* more updates to homepage grid ([cc21601](https://github.com/elizaos/autofun-monorepo/commit/cc21601b21c95ac77193da544368018e0bb2bd33))
+* put back footer ([067bcc9](https://github.com/elizaos/autofun-monorepo/commit/067bcc9a3aeeb96df0e292b605e228597fc810b5))
+* reworked footer and container ([d404f88](https://github.com/elizaos/autofun-monorepo/commit/d404f885c7177993c8377d7a4ff43aaa8fde295d))
+* sidebar is now aligned to the right ([3566d4b](https://github.com/elizaos/autofun-monorepo/commit/3566d4b5cf281a0c426c0595af7a570a5c8abdb7))
+* small changes to grid ([4609454](https://github.com/elizaos/autofun-monorepo/commit/460945450030757359e47ceebda0aa73895af3e0))
+* some more work on sidebar ([642639b](https://github.com/elizaos/autofun-monorepo/commit/642639b77954db6fc804a60bd166a99fe03b0edc))
+* styled chart ([c02be54](https://github.com/elizaos/autofun-monorepo/commit/c02be547949f61a6966d270556eae70faa0d853c))
+* updated input ([deba158](https://github.com/elizaos/autofun-monorepo/commit/deba1589ae2fb512a9d26acc04afabbe934b7fd8))
+* very initial empty sidebar ([4769631](https://github.com/elizaos/autofun-monorepo/commit/4769631dafe5a5465889a47ab87728dce4faa8a3))
+* work in progress on sidebar ([fb25c8f](https://github.com/elizaos/autofun-monorepo/commit/fb25c8f2921434df0dcb0f29d2244dc7fdc4d6ef))
+
 # [0.14.0](https://github.com/elizaos/autofun-monorepo/compare/v0.13.0...v0.14.0) (2025-06-11)
 
 
