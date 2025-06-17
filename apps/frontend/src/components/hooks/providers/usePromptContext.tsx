@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
-import UseTokenImages from "../hook/UseTokenImages";
+import UseTokenMedia from "../hook/UseTokenMedia";
 import { useMutation } from "@tanstack/react-query";
 import { generateMedia, generateMetadata, generateRemoteMetadata } from "@/lib/api";
 import {
@@ -22,6 +22,8 @@ const MAX_SUFFIX_LENGTH_FOR_SERIOUS_WARNING = 4;
 const MAX_SUFFIX_LENGTH_FOR_HOURS_WARNING = 4;
 const INITIAL_GENERATION_SUFFIX = "FUN";
 
+type MediaType = "audio" | "video" | "image";
+
 type PromptContextType = {
 	registerForm: UseFormRegister<TokenFormData>;
 	handleSubmit: UseFormHandleSubmit<TokenFormData>;
@@ -30,9 +32,12 @@ type PromptContextType = {
 	generateAddress: (suffix: string) => void;
 	isGeneratingAddress: boolean;
 	isGeneratingMedia: boolean;
-	generateToken: (params: { mediaType: "audio" | "video" | "image"; prompt?: string }) => void;
+	generateToken: (params: { mediaType: MediaType; prompt?: string }) => void;
 	changeMainImage: (index: number) => void;
+	changeMainMedia: (index: number, type: MediaType) => void;
 	previousImages: string[];
+	previousVideos: string[];
+	previousAudios: string[];
 	uploadedImage: string | undefined;
 	setUploadedImage: (image: string | undefined) => void;
 	watchValue: (name: string) => string | number | undefined;
@@ -44,6 +49,8 @@ type PromptContextType = {
 	tokenImageQuery?: string | undefined;
 	setValue: UseFormSetValue<TokenFormData>;
 	deleteImage: (imageLink: string) => void;
+	deleteMedia: (mediaLink: string, mediaType: MediaType) => void;
+	addMedia: (link: string, type: MediaType) => void;
 };
 
 export type TokenFormData = {
@@ -94,7 +101,17 @@ const PromptProviderContent = ({
 	console.log("tokenImageQuery: ", tokenImageQuery);
 	const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
 	const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
-	const { previousImages, changeMainImage, addImage, deleteImage } = UseTokenImages(tokenImageQuery);
+	const {
+		previousImages,
+		previousVideos,
+		previousAudios,
+		changeMainImage,
+		changeMainMedia,
+		addImage,
+		addMedia,
+		deleteImage,
+		deleteMedia,
+	} = UseTokenMedia(tokenImageQuery);
 	const [isGeneratingMedia, setIsGeneratingMedia] = useState<boolean>(false);
 	const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
 	const [pool, setPool] = useState<string>("meteora");
@@ -118,7 +135,7 @@ const PromptProviderContent = ({
 				prompt: data?.metadata?.prompt,
 				width: 512,
 				height: 512,
-				type: (variables as { mediaType?: "audio" | "video" | "image" })?.mediaType || "image",
+				type: (variables as { mediaType?: MediaType })?.mediaType || "image",
 			});
 		},
 		onError: (error) => {
@@ -128,20 +145,35 @@ const PromptProviderContent = ({
 	});
 
 	const generateMediaMutation = useMutation({
-		mutationKey: ["generateImage"],
+		mutationKey: ["generateMedia"],
 		mutationFn: generateMedia,
-		onSuccess: (data) => {
+		onSuccess: (data, variables) => {
 			if (data?.mediaUrl) {
-				addImage(data?.mediaUrl);
+				const mediaType = (variables as { type?: MediaType })?.type || "image";
+
+				let actualMediaUrl: string;
+				if (typeof data.mediaUrl === "string") {
+					// Image
+					actualMediaUrl = data.mediaUrl;
+				} else if (typeof data.mediaUrl === "object" && data.mediaUrl.url) {
+					// Video/Audio
+					actualMediaUrl = data.mediaUrl.url;
+				} else {
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
+				addMedia(actualMediaUrl, mediaType);
 				setIsGeneratingMedia(false);
 			} else {
-				toast.error("Error generating image: No media URL returned");
+				toast.error("Error generating media: No media URL returned");
 				setIsGeneratingMedia(false);
 			}
 		},
 		onError: (error) => {
-			console.error("Error generating image:", error);
-			toast.error("Error generating image");
+			console.error("Error generating media:", error);
+			toast.error("Error generating media");
 			setIsGeneratingMedia(false);
 		},
 	});
@@ -301,7 +333,7 @@ const PromptProviderContent = ({
 		[initializeAndStartWorkers, terminateWorkers],
 	);
 
-	const generateToken = ({ mediaType, prompt }: { mediaType: "audio" | "video" | "image"; prompt?: string }) => {
+	const generateToken = ({ mediaType, prompt }: { mediaType: MediaType; prompt?: string }) => {
 		setIsGeneratingMedia(true);
 		metadataMutation.mutate({ mediaType, prompt });
 	};
@@ -369,7 +401,10 @@ const PromptProviderContent = ({
 		isGeneratingMedia,
 		generateToken,
 		changeMainImage,
+		changeMainMedia,
 		previousImages,
+		previousVideos,
+		previousAudios,
 		uploadedImage,
 		watchValue: watch,
 		setUploadedImage,
@@ -381,6 +416,8 @@ const PromptProviderContent = ({
 		setValue,
 		tokenImageQuery,
 		deleteImage,
+		deleteMedia,
+		addMedia,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;
