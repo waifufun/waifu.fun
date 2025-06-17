@@ -1,8 +1,39 @@
 "use client";
-import { useCallback } from "react";
+import { Fragment, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { useRouter } from "@bprogress/next/app";
+import { SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
+import Link from "next/link";
+import { Flame, Hourglass, Sparkles, Star, Zap } from "lucide-react";
+
+const items = [
+	{
+		title: "ALL",
+		value: "",
+		icon: Zap,
+	},
+
+	{
+		title: "FEATURED",
+		value: "featured",
+		icon: Star,
+	},
+	{
+		title: "HOT NOW",
+		value: "trending",
+		icon: Flame,
+	},
+	{
+		title: "NEWEST",
+		value: "new",
+		icon: Sparkles,
+	},
+	{
+		title: "BONDING SOON",
+		value: "about-to-bond",
+		icon: Hourglass,
+	},
+];
 
 export default function FilterSelector() {
 	const pathname = usePathname();
@@ -29,69 +60,83 @@ export default function FilterSelector() {
 	const activeKey = currentKey ? currentKey : "new";
 
 	return (
-		<Tabs defaultValue={activeKey} value={activeKey} className="w-full">
-			<TabsList className="flex w-full overflow-x-auto no-scrollbar">
-				<TabsTrigger
-					value="new"
-					onClick={() => {
-						router.push(
-							`${pathname}?${createQueryString({
-								category: "new",
-							})}`,
-						);
-					}}
-				>
-					New
-				</TabsTrigger>
-				<TabsTrigger
-					value="trending"
-					onClick={() => {
-						router.push(
-							`${pathname}?${createQueryString({
-								category: "trending",
-							})}`,
-						);
-					}}
-				>
-					Trending
-				</TabsTrigger>
-				<TabsTrigger
-					value="featured"
-					onClick={() => {
-						router.push(
-							`${pathname}?${createQueryString({
-								category: "featured",
-							})}`,
-						);
-					}}
-				>
-					Featured
-				</TabsTrigger>
-				<TabsTrigger
-					value="marketcap"
-					onClick={() => {
-						router.push(
-							`${pathname}?${createQueryString({
-								category: "marketcap",
-							})}`,
-						);
-					}}
-				>
-					Marketcap
-				</TabsTrigger>
-				<TabsTrigger
-					value="about-to-bond"
-					onClick={() => {
-						router.push(
-							`${pathname}?${createQueryString({
-								category: "about-to-bond",
-							})}`,
-						);
-					}}
-				>
-					About to Bond
-				</TabsTrigger>
-			</TabsList>
-		</Tabs>
+		<Fragment>
+			{items?.map((item) => (
+				<SidebarMenuItem key={item.title}>
+					<SidebarMenuButton
+						asChild
+						isActive={activeKey === item.value}
+						tooltip={item.title}
+						className={
+							activeKey === item.value
+								? "bg-autofun-background-action-highlight/20"
+								: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
+						}
+					>
+						<Link
+							href={`${pathname}?${createQueryString({
+								category: item.value,
+							})}`}
+						>
+							<item.icon className="h-4 w-4" />
+							<span>{item.title}</span>
+						</Link>
+					</SidebarMenuButton>
+				</SidebarMenuItem>
+			))}
+		</Fragment>
+		// <Tabs defaultValue={activeKey} value={activeKey} className="w-full">
+		// 	<TabsList className="flex w-full overflow-x-auto no-scrollbar">
+		// 		<TabsTrigger
+		// 			value="new"
+		// 			onClick={() => {
+		// 				router.push(
+		// 					`${pathname}?${createQueryString({
+		// 						category: "new",
+		// 					})}`,
+		// 				);
+		// 			}}
+		// 		>
+		// 			New
+		// 		</TabsTrigger>
+		// 		<TabsTrigger
+		// 			value="trending"
+		// 			onClick={() => {
+		// 				router.push(
+		// 					`${pathname}?${createQueryString({
+		// 						category: "trending",
+		// 					})}`,
+		// 				);
+		// 			}}
+		// 		>
+		// 			Trending
+		// 		</TabsTrigger>
+		// 		<TabsTrigger
+		// 			value="featured"
+		// 			onClick={() => {
+		// 				router.push(
+		// 					`${pathname}?${createQueryString({
+		// 						category: "featured",
+		// 					})}`,
+		// 				);
+		// 			}}
+		// 		>
+		// 			Featured
+		// 		</TabsTrigger>
+		// 		<TabsTrigger
+		// 			value="marketcap"
+		// 			onClick={() => {
+		// 				router.push(
+		// 					`${pathname}?${createQueryString({
+		// 						category: "marketcap",
+		// 					})}`,
+		// 				);
+		// 			}}
+		// 		>
+		// 			Marketcap
+		// 		</TabsTrigger>
+
+		// 	</TabsList>
+		// </Tabs>
 	);
 }

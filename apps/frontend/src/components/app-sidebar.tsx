@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Zap, Star, Flame, Sparkles, Hourglass, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -24,17 +24,7 @@ import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import GridListSelector from "./grid-list-selector";
-
-const casinoFloorNavigation = {
-	title: "CASINO FLOOR",
-	items: [
-		{ title: "ALL", url: "/casino/all", icon: Zap },
-		{ title: "FEATURED", url: "/casino/featured", icon: Star },
-		{ title: "HOT NOW", url: "/casino/hot-now", icon: Flame },
-		{ title: "NEWEST", url: "/casino/newest", icon: Sparkles },
-		{ title: "BONDING SOON", url: "/casino/bonding-soon", icon: Hourglass },
-	],
-};
+import FilterSelector from "./filter-selector";
 
 const viewControlsNavigation = {
 	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
@@ -60,28 +50,10 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 
 			<SidebarContent>
 				<SidebarGroup>
-					<SidebarGroupLabel>{casinoFloorNavigation.title}</SidebarGroupLabel>
+					<SidebarGroupLabel>CASINO FLOOR</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{casinoFloorNavigation.items.map((item) => (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton
-										asChild
-										isActive={pathname === item.url}
-										tooltip={item.title}
-										className={
-											pathname === item.url
-												? "bg-autofun-background-action-highlight/20"
-												: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
-										}
-									>
-										<Link href={item.url}>
-											<item.icon className="h-4 w-4" />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
+							<FilterSelector />
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>

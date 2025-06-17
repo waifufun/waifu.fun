@@ -122,7 +122,7 @@ export default function PageClient({
 				</div>
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
-					<BondingCurveProgress token={token} />
+					<BondingCurveProgress height="h-14" token={token} />
 					<div className="flex flex-col gap-4 bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 						<div className="flex items-center gap-4 justify-between">
 							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
@@ -206,11 +206,13 @@ export default function PageClient({
 								</p>
 							</div>
 						</div>
-						<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
-							<span className="text-base font-medium uppercase">{token.name}</span>
-							<div className="gap-2 flex items-center">
-								<CopyButton textToCopy={token.contractAddress} />
-								<span className="text-sm font-medium">{shortenAddress(token?.contractAddress)}</span>
+						<div className="mt-4 py-4 flex flex-col items-start w-full gap-1 justify-between border-b ">
+							<span className="text-base font-medium uppercase text-autofun-text-secondary">TOKEN:</span>
+							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-autofun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
+								<span className="text-gray-300 font-mono truncate">{shortenAddress(token?.contractAddress)}</span>
+								<div className="flex gap-1 flex-shrink-0">
+									<CopyButton textToCopy={token.contractAddress} />
+								</div>
 							</div>
 						</div>
 					</div>
