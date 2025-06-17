@@ -13,7 +13,6 @@ export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
-
 	const summedTotalWalletValue = balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
