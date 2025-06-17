@@ -37,8 +37,8 @@ export default async function Home({
 			<div className="flex flex-col items-center">
 				{view === "grid" ? (
 					<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
-						{tokens?.map((token: IToken, idx: number) => (
-							<GridItem token={token} key={token.contractAddress} index={idx} />
+						{tokens?.map((token: IToken) => (
+							<GridItem token={token} key={token.contractAddress} />
 						))}
 					</div>
 				) : (
