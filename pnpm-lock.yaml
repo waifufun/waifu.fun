@@ -53,6 +53,9 @@ importers:
       '@autofun/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@autofun/migrations':
+        specifier: workspace:*
+        version: link:../../packages/migrations
       '@autofun/redis':
         specifier: workspace:*
         version: link:../../packages/redis

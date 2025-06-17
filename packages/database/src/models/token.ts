@@ -39,6 +39,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		status: { type: String, default: "active" },
 		pool: { type: String },
 		tradingStartsAt: { type: Date },
+		lastClaimedAt: { type: Date },
 	},
 	{ timestamps: true, versionKey: false },
 );
