@@ -32,7 +32,7 @@ export function FormSection({
 			)}
 		>
 			{collapsible && title ? (
-				<Accordion type="single" collapsible defaultValue={defaultOpen ? "item-1" : undefined} className="w-full">
+				<Accordion type="single" collapsible defaultValue={defaultOpen ? "item-1" : ""} className="w-full">
 					<AccordionItem value="item-1" className="border-b-0">
 						<AccordionTrigger
 							className={cn(
