@@ -6,9 +6,9 @@ export default function Footer() {
 			<div className="container mx-auto px-4">
 				<div className="flex flex-col sm:flex-row justify-between items-center gap-3">
 					<p className="uppercase tracking-wider">
-						&copy; {new Date().getFullYear()} Auto.fun Network. Engage the Neon.
+						&copy; {new Date().getFullYear()} auto.fun. Engage the Neon.
 					</p>
-					<div className="flex gap-4">
+					<div className="flex flex-wrap items-center justify-center md:justify-end gap-4">
 						<Link
 							href="/privacy-policy"
 							className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider"
