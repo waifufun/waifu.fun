@@ -43,6 +43,7 @@ type PromptContextType = {
 	isLaunching: boolean;
 	tokenImageQuery?: string | undefined;
 	setValue: UseFormSetValue<TokenFormData>;
+	deleteImage: (imageLink: string) => void;
 };
 
 export type TokenFormData = {
@@ -93,7 +94,7 @@ const PromptProviderContent = ({
 	console.log("tokenImageQuery: ", tokenImageQuery);
 	const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
 	const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
-	const { previousImages, changeMainImage, addImage } = UseTokenImages(tokenImageQuery);
+	const { previousImages, changeMainImage, addImage, deleteImage } = UseTokenImages(tokenImageQuery);
 	const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
 	const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
 	const [pool, setPool] = useState<string>("meteora");
@@ -378,6 +379,7 @@ const PromptProviderContent = ({
 		isLaunching,
 		setValue,
 		tokenImageQuery,
+		deleteImage,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;

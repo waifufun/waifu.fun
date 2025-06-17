@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { UploadCloud, ImageIcon, Video, Music, AlertTriangle, Share2, Trash2, RefreshCw } from "lucide-react";
+import { UploadCloud, ImageIcon, Video, Music, AlertTriangle, Download, Trash2, RefreshCw } from "lucide-react";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { getToken } from "@/lib/api";
@@ -22,7 +22,7 @@ interface InfoTabsProps {
 
 const AiCreatePanel = ({ token }: { token: IToken }) => {
 	const [activeAiTab, setActiveAiTab] = useState("image");
-	const { previousImages, generateToken, registerForm, watchValue, isGeneratingImage } = usePrompt();
+	const { previousImages, generateToken, registerForm, watchValue, isGeneratingImage, deleteImage } = usePrompt();
 
 	const prompt = watchValue("prompt");
 
@@ -35,25 +35,18 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		await generateToken(promptValue);
 	};
 
-	return (
-		<div className="space-y-4 mx-4 mt-4">
-			<div className="flex gap-1 border-b-2 border-[#03FF24]/30 pb-2">
-				{["image", "video", "audio"].map((tab) => (
-					<Button
-						key={tab}
-						variant={activeAiTab === tab ? "secondary" : "ghost"}
-						onClick={() => setActiveAiTab(tab)}
-						className={`capitalize text-sm px-3 py-1.5 h-auto rounded-none border-2 ${activeAiTab === tab ? "border-black bg-[#03FF24] text-black hover:bg-[#02e020]" : "border-transparent text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"}`}
-					>
-						{tab === "image" && <ImageIcon size={16} className="mr-2" />}
-						{tab === "video" && <Video size={16} className="mr-2" />}
-						{tab === "audio" && <Music size={16} className="mr-2" />}
-						{tab}
-					</Button>
-				))}
-			</div>
+	const handleDownload = (imageUrl: string, index: number) => {
+		const link = document.createElement("a");
+		link.href = imageUrl;
+		link.download = `${token.name}-image-${index + 1}.png`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
 
-			{activeAiTab === "image" && (
+	const renderTabContent = () => {
+		if (activeAiTab === "image") {
+			return (
 				<div className="space-y-4">
 					<Input
 						type="text"
@@ -64,7 +57,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 					<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
 						<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
 						<span>
-							You need to hold at least <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
+							You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
 							generate images in fast mode.
 						</span>
 					</div>
@@ -109,14 +102,16 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 										<Button
 											variant="ghost"
 											size="icon"
+											onClick={() => handleDownload(img, index)}
 											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none"
-											aria-label="Share image"
+											aria-label="Download image"
 										>
-											<Share2 size={14} />
+											<Download size={14} />
 										</Button>
 										<Button
 											variant="ghost"
 											size="icon"
+											onClick={() => deleteImage(img)}
 											className="h-6 w-6 p-1 text-gray-300 hover:text-red-500 rounded-none"
 											aria-label="Delete image"
 										>
@@ -138,14 +133,58 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						)}
 					</div>
 				</div>
-			)}
-			{activeAiTab !== "image" && (
+			);
+		}
+
+		return (
+			<div className="space-y-4">
+				<Input
+					type="text"
+					placeholder={`Generate ${activeAiTab} for ${token.name}...`}
+					className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
+				/>
+				<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
+					<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
+					<span>
+						You need to hold at least <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate{" "}
+						{activeAiTab} in fast mode.
+					</span>
+				</div>
+				<Button
+					disabled
+					className="w-full bg-gray-600 text-gray-400 font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#404040] uppercase tracking-wider cursor-not-allowed"
+				>
+					<UploadCloud size={18} className="mr-2" />
+					Generate {activeAiTab} for {token.ticker}
+				</Button>
 				<div className="text-center py-10 text-gray-500">
 					<p className="text-lg uppercase animate-pulse">
 						{activeAiTab} generation for {token.name} coming soon!
 					</p>
 				</div>
-			)}
+			</div>
+		);
+	};
+
+	return (
+		<div className="space-y-4 mx-4 mt-4">
+			<div className="flex gap-1 border-b-2 border-[#03FF24]/30 pb-2">
+				{["image", "video", "audio"].map((tab) => (
+					<Button
+						key={tab}
+						variant={activeAiTab === tab ? "secondary" : "ghost"}
+						onClick={() => setActiveAiTab(tab)}
+						className={`capitalize text-sm px-3 py-1.5 h-auto rounded-none border-2 ${activeAiTab === tab ? "border-black bg-[#03FF24] text-black hover:bg-[#02e020]" : "border-transparent text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"}`}
+					>
+						{tab === "image" && <ImageIcon size={16} className="mr-2" />}
+						{tab === "video" && <Video size={16} className="mr-2" />}
+						{tab === "audio" && <Music size={16} className="mr-2" />}
+						{tab}
+					</Button>
+				))}
+			</div>
+
+			{renderTabContent()}
 		</div>
 	);
 };

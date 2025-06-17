@@ -4,6 +4,7 @@ type UseTokenImages = {
 	previousImages: string[];
 	addImage: (image: string) => void;
 	changeMainImage: (index: number) => void;
+	deleteImage: (imageLink: string) => void;
 };
 
 export default function UseTokenImages(tokenImageQuery?: string) {
@@ -39,9 +40,20 @@ export default function UseTokenImages(tokenImageQuery?: string) {
 		setPreviousImages(newImages);
 	};
 
+	const deleteImage = (imageLink: string) => {
+		for (let i = 0; i < previousImages.length; i++) {
+			if (previousImages[i] === imageLink) {
+				previousImages.splice(i, 1);
+				setPreviousImages([...previousImages]);
+				break;
+			}
+		}
+	};
+
 	return {
 		previousImages,
 		addImage,
 		changeMainImage,
+		deleteImage,
 	} as UseTokenImages;
 }
