@@ -127,7 +127,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	return (
 		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
-				<div className="flex items-stretch gap-2 w-full">
+				<div className="flex items-stretch gap-2 w-full bg-black border-2 border-[#03FF24]/40 py-3 px-1.5 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
@@ -206,7 +206,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				)}
 
 				<div className="mt-2 space-y-2">
-					<div className="flex font-medium justify-between text-base text-white">
+					<div className="flex font-medium justify-between text-xs text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
 							{!value || value === "0" ? (
@@ -241,7 +241,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						</div>
 					</div>
 					{priceImpact ? (
-						<div className="flex font-medium justify-between text-base text-white">
+						<div className="flex font-medium justify-between text-white text-xs">
 							<p>Price Impact</p>
 							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
 						</div>

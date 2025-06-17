@@ -2,7 +2,16 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
 import BottomNav from "@/components/bottom-nav";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
 
+const inter = Inter({
+	subsets: ["latin"],
+});
 export const metadata: Metadata = {
 	title: {
 		default: "Auto.Fun",
@@ -25,10 +34,17 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={"font-satoshi bg-[#080808] text-autofun-text-primary antialiased container"}>
+			<body className={cn("min-h-screen bg-[#0a0a0a] font-sans antialiased", inter.className)}>
 				<Providers>
-					{children}
-					<BottomNav />
+					<SidebarProvider>
+						<SidebarInset>
+							<Header />
+							<main className="flex-1 p-4">{children}</main>
+							<Footer />
+							<BottomNav />
+						</SidebarInset>
+						<AppSidebar />
+					</SidebarProvider>
 				</Providers>
 			</body>
 		</html>

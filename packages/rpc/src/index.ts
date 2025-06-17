@@ -368,6 +368,7 @@ export class SolanaRpcProvider extends EventEmitter {
 				return provider;
 			} catch (error) {
 				logger.warn(`Failed RPC: ${rpc}. Trying next...`);
+				logger.error(error);
 				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
 				attempts++;
 			}

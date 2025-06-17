@@ -3,14 +3,14 @@ import Mongoose, { Schema, type PaginateModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 export interface IEvent {
-	_id?: string;
 	signature: string;
 	slot: number;
 	blockTime: number;
-	eventType: "launch" | "swap" | "launchAndSwap" | "curveCompleted";
+	eventType: "launch" | "swap" | "launchAndSwap" | "curveCompleted" | "withdraw";
 	contractAddress: string;
 	creator?: string;
 	user?: string;
+	admin?: string;
 	tokenName?: string;
 	tokenSymbol?: string;
 	tokenUri?: string;
@@ -25,6 +25,7 @@ export interface IEvent {
 	bondingCurve?: string;
 	bondingCurveAddress?: string;
 	teamWallet?: string;
+	globalVault?: string;
 	instructionData?: string;
 	accounts?: string[];
 	processed: boolean;
@@ -45,12 +46,13 @@ const schema = new Schema<IEvent, IEventModel>(
 		blockTime: { type: Number, required: true },
 		eventType: {
 			type: String,
-			enum: ["launch", "swap", "launchAndSwap", "curveCompleted"],
+			enum: ["launch", "swap", "launchAndSwap", "curveCompleted", "withdraw"],
 			required: true,
 		},
 		contractAddress: { type: String, required: true },
 		creator: { type: String },
 		user: { type: String },
+		admin: { type: String },
 		tokenName: { type: String },
 		tokenSymbol: { type: String },
 		tokenUri: { type: String },
@@ -65,6 +67,7 @@ const schema = new Schema<IEvent, IEventModel>(
 		bondingCurve: { type: String },
 		bondingCurveAddress: { type: String },
 		teamWallet: { type: String },
+		globalVault: { type: String },
 		instructionData: { type: String },
 		accounts: [{ type: String }],
 		processed: { type: Boolean, default: false },
@@ -93,6 +96,8 @@ schema.index({ contractAddress: 1, eventType: 1 });
 schema.index({ processed: 1 });
 schema.index({ createdAt: -1 });
 schema.index({ contractAddress: 1, eventType: 1, createdAt: 1 });
+schema.index({ admin: 1 });
+schema.index({ eventType: 1, admin: 1 });
 
 // Static method implementation
 schema.statics.createOrUpdate = async function (eventData: Partial<IEvent>): Promise<IEvent> {

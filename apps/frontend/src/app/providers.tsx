@@ -1,12 +1,11 @@
 "use client";
-import Header from "@/components/header";
 import { ProgressProvider } from "@bprogress/next/app";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleAnalytics } from "@next/third-parties/google";
-import Footer from "@/components/footer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
+import { AnimationProvider } from "@/providers/animation-context";
 
 const queryClient = new QueryClient();
 
@@ -26,13 +25,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				shouldCompareComplexProps
 			>
 				<QueryClientProvider client={queryClient}>
-					<SolanaProvider>
-						<Header />
-						{children}
-						<Toaster />
-						<Footer />
-						<GoogleAnalytics gaId={googleTagID} />
-					</SolanaProvider>
+					<AnimationProvider>
+						<SolanaProvider>
+							{children}
+							<Toaster />
+							<GoogleAnalytics gaId={googleTagID} />
+						</SolanaProvider>
+					</AnimationProvider>
 				</QueryClientProvider>
 			</ProgressProvider>
 		</TooltipProvider>
