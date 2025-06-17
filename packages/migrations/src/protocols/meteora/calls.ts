@@ -310,6 +310,7 @@ export async function createPool(
 				status: "migrated",
 				updatedAt: new Date(),
 				tradingStartsAt: new Date(activationPoint.toNumber() * 1000),
+				marketId: pool.toString(),
 			},
 		},
 	);
