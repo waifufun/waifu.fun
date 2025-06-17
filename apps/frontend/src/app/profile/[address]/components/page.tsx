@@ -27,7 +27,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	}, 0);
 
 	const tokensBought = balances?.balances.length;
-	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
+	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address);
+
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
@@ -36,7 +37,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						username: user?.displayName,
 						address: user?.address,
 						tokensBought: tokensBought,
-						tokensCreated: tokensCreated,
+						tokensCreated: tokensCreated.length,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
 						points: user?.points,
 						image: user?.avatar,
@@ -90,31 +91,38 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
 							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-								<div className="border-b-1 border-[#03FF24]/40">
-									<TokensFilter />
+								<div className="border-b-1 p-2 px-3 border-[#03FF24]/40">
+									{/* <TokensFilter /> */}
+									<button
+										type="button"
+										disabled
+										className="text-xs px-3 py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black hover:bg-[#02e020]"
+									>
+										Tokens Created
+									</button>
 								</div>
 								<div className="p-0">
-									{Array(3)
-										.fill(null)
-										.map((_, i) => (
+									{tokensCreated.map((balance, i) => {
+										console.log(balance);
+										return (
 											<TokenRow
-												mode="activity"
+												mode="wallet"
 												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
 												key={i}
 												data={{
 													chain: "solana",
 													chainId: 101,
-													image: "/create/test-img.png",
-													title: `AlienToken ${i + 1}`,
-													ticker: "ALIEN",
-													marketCap: 1240000,
-													contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
-													amountHeld: 124_543_343,
-													dollarWorth: 1337.42,
-													points: 12,
+													image: balance?.info?.imageThumbUrl,
+													title: balance?.info?.name,
+													ticker: balance?.info?.symbol,
+													marketCap: balance?.marketcap,
+													contractAddress: balance?.tokenAddress,
+													amountHeld: balance?.shiftedBalance,
+													dollarWorth: balance?.price,
 												}}
 											/>
-										))}
+										);
+									})}
 								</div>
 							</div>
 						</TabsContent>
