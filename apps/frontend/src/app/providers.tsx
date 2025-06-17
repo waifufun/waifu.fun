@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
+import { AnimationProvider } from "@/providers/animation-context";
 
 const queryClient = new QueryClient();
 
@@ -24,11 +25,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				shouldCompareComplexProps
 			>
 				<QueryClientProvider client={queryClient}>
-					<SolanaProvider>
-						{children}
-						<Toaster />
-						<GoogleAnalytics gaId={googleTagID} />
-					</SolanaProvider>
+					<AnimationProvider>
+						<SolanaProvider>
+							{children}
+							<Toaster />
+							<GoogleAnalytics gaId={googleTagID} />
+						</SolanaProvider>
+					</AnimationProvider>
 				</QueryClientProvider>
 			</ProgressProvider>
 		</TooltipProvider>

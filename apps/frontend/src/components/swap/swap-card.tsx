@@ -206,7 +206,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				)}
 
 				<div className="mt-2 space-y-2">
-					<div className="flex font-medium justify-between text-base text-white">
+					<div className="flex font-medium justify-between text-xs text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
 							{!value || value === "0" ? (
@@ -241,7 +241,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						</div>
 					</div>
 					{priceImpact ? (
-						<div className="flex font-medium justify-between text-base text-white">
+						<div className="flex font-medium justify-between text-white text-xs">
 							<p>Price Impact</p>
 							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
 						</div>
