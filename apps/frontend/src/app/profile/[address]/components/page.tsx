@@ -2,7 +2,7 @@
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
-import TokensFilter from "@/components/profile-page/tokens-filter";
+// import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -65,13 +65,12 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											</span>
 										</h1>
 									</div>
-									{balances?.balances.map((balance, i) => {
+									{balances?.balances.map((balance) => {
 										console.log(balance);
 										return (
 											<TokenRow
 												mode="wallet"
-												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
-												key={i}
+												key={balance?.address}
 												data={{
 													chain: "solana",
 													chainId: 101,
@@ -102,13 +101,12 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 									</button>
 								</div>
 								<div className="p-0">
-									{tokensCreated.map((balance, i) => {
+									{tokensCreated.map((balance) => {
 										console.log(balance);
 										return (
 											<TokenRow
 												mode="wallet"
-												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
-												key={i}
+												key={balance?.address}
 												data={{
 													chain: "solana",
 													chainId: 101,
