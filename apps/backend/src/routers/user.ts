@@ -43,7 +43,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			let uploadedUrl: TURLLike | false;
 
 			if (image) {
-				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images", 40, 40);
+				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images", 150, 150);
 			} else {
 				throw new Error("No image provided");
 			}
