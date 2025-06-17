@@ -545,9 +545,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				walletAddress: address,
 			},
 		});
-		
+
 		const balances = balancesLookup?.balances?.items;
-		
+
 		const tokensLookUp = await codex.queries.tokens({
 			ids: balances?.map((token) => {
 				return {
@@ -556,7 +556,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				};
 			}),
 		});
-		
+
 		const user = await DB.User.findOne({ address });
 
 		// populating only the tokens that are in our DB

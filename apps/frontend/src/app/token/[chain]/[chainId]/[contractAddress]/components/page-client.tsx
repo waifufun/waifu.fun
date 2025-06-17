@@ -115,7 +115,7 @@ export default function PageClient({
 						</div>
 					</div>
 
-					<div className="flex flex-col">
+					<div className="flex flex-col gap-4">
 						<TokenTabs token={token} />
 						{children}
 					</div>

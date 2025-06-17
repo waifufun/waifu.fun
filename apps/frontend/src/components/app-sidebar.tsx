@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Zap, Star, Flame, Sparkles, Hourglass, Filter, } from "lucide-react";
+import { Zap, Star, Flame, Sparkles, Hourglass, Filter } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
