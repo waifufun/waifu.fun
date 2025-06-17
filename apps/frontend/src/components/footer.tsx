@@ -9,14 +9,23 @@ export default function Footer() {
 						&copy; {new Date().getFullYear()} Auto.fun Network. Engage the Neon.
 					</p>
 					<div className="flex gap-4">
-						<Link href="#" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
-							Network Policy
+						<Link
+							href="/privacy-policy"
+							className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider"
+						>
+							Privacy Policy
 						</Link>
-						<Link href="#" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
-							Security Matrix
+						<Link
+							href="/terms-of-service"
+							className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider"
+						>
+							Terms & Conditions
 						</Link>
-						<Link href="#" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
-							System Status
+						<Link href="/fees" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
+							Fees
+						</Link>
+						<Link href="/how-it-works" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
+							How it works
 						</Link>
 					</div>
 				</div>
