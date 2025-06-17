@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Zap, Star, Flame, Sparkles, Hourglass, Filter, LayoutGrid, List, } from "lucide-react";
+import { Zap, Star, Flame, Sparkles, Hourglass, Filter, } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -23,6 +23,7 @@ import {
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
+import GridListSelector from "./grid-list-selector";
 
 const casinoFloorNavigation = {
 	title: "CASINO FLOOR",
@@ -36,11 +37,7 @@ const casinoFloorNavigation = {
 };
 
 const viewControlsNavigation = {
-	items: [
-		{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true },
-		{ title: "GRID VIEW", url: "/casino/view/grid", icon: LayoutGrid },
-		{ title: "LIST VIEW", url: "/casino/view/list", icon: List },
-	],
+	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
 };
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
@@ -92,6 +89,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				<SidebarGroup>
 					<SidebarGroupContent>
 						<SidebarMenu>
+							<GridListSelector />
 							{viewControlsNavigation.items.map((item) => (
 								<SidebarMenuItem key={item.title}>
 									<SidebarMenuButton
@@ -110,26 +108,6 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 										</Link>
 									</SidebarMenuButton>
 								</SidebarMenuItem>
-								// <SidebarMenuItem key={item.title}>
-								// 	<SidebarMenuButton
-								// 		asChild
-								// 		isActive={pathname === item.url}
-								// 		tooltip={item.title}
-								// 		className={
-								// 			pathname === item.url
-								// 				? "bg-autofun-background-action-highlight/20"
-								// 				: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
-								// 		}
-								// 	>
-								// 		<Link href={item.url} className="flex w-full items-center justify-between">
-								// 			<div className="flex items-center gap-2">
-								// 				<item.icon className="h-4 w-4" />
-								// 				<span>{item.title}</span>
-								// 			</div>
-								// 			{item.hasDropdown && <ChevronDown className="h-4 w-4 opacity-70" />}
-								// 		</Link>
-								// 	</SidebarMenuButton>
-								// </SidebarMenuItem>
 							))}
 						</SidebarMenu>
 					</SidebarGroupContent>
