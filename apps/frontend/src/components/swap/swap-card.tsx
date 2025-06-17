@@ -188,21 +188,25 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						))}
 					</div>
 				) : (
-					<div className="flex items-center gap-2 justify-between overflow-x-auto">
-						{quickSetSellButtons.map((btn) => (
-							<Button
-								key={btn}
-								variant="secondary"
-								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
-									btn === "Reset" ? "text-autofun-text-secondary" : "",
-								])}
-								onClick={() => handleQuickSetSell(btn)}
-							>
-								{btn === "Reset" ? "Reset" : `${btn}%`}
-							</Button>
-						))}
-					</div>
+					<Fragment>
+						{address && tokenBalance?.data ? (
+							<div className="flex items-center gap-2 justify-between overflow-x-auto">
+								{quickSetSellButtons.map((btn) => (
+									<Button
+										key={btn}
+										variant="secondary"
+										className={cn([
+											"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
+											btn === "Reset" ? "text-autofun-text-secondary" : "",
+										])}
+										onClick={() => handleQuickSetSell(btn)}
+									>
+										{btn === "Reset" ? "Reset" : `${btn}%`}
+									</Button>
+								))}
+							</div>
+						) : null}
+					</Fragment>
 				)}
 
 				<div className="mt-2 space-y-2">
