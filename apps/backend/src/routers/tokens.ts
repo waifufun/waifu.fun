@@ -545,9 +545,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				walletAddress: address,
 			},
 		});
-
+		
 		const balances = balancesLookup?.balances?.items;
-
+		
 		const tokensLookUp = await codex.queries.tokens({
 			ids: balances?.map((token) => {
 				return {
@@ -556,9 +556,13 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				};
 			}),
 		});
+		
+		const user = await DB.User.findOne({ address });
 
 		// populating only the tokens that are in our DB
-		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) => token?.address);
+		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
+			getChecksummedAddress(token?.address as AddressLike, "solana"),
+		);
 		const tokensFromDatabase = await DB.Token.find({
 			contractAddress: { $in: tokensLookUpContractAddresses },
 		});
@@ -574,7 +578,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const returnData = [];
 
 		for (const balance of balances) {
-			const token = tokens?.find((t) => t?.address === balance.tokenAddress);
+			const token = tokens?.find(
+				(t) =>
+					getChecksummedAddress(t?.address as AddressLike, "solana") ===
+					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
+			);
 			const populated = populatedTokenData?.find((p) => p?.contractAddress === balance.tokenAddress);
 			const limitedPopulatedData = populated
 				? { marketcap: populated.marketcap, price: populated.price, totalSupply: populated.totalSupply }
@@ -586,9 +594,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		await redis.setex(cacheKey, 60, JSON.stringify(returnData));
+		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData }));
 
-		return returnData;
+		return { user, balances: returnData };
 	});
 
 	/** Import an existing token */

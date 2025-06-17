@@ -50,7 +50,12 @@ export const upload = async (bucket: string, file: IFile, fileName: string) => {
 		Body: file.data,
 		ACL: "public-read",
 	});
-	await s3.send(command);
+	try {
+		await s3.send(command);
+	} catch (error) {
+		console.error("S3 upload error:", error);
+		throw error;
+	}
 };
 
 /**
@@ -102,7 +107,6 @@ export const uploadBase64Image = async (
 			.resize({ height: height || 750, width: width || 750 })
 			.webp({ lossless: true })
 			.toBuffer();
-
 		await upload(bucket, { data: compressed, mimetype: "image/webp" }, fileName);
 	} else {
 		return false;

@@ -1,17 +1,17 @@
 "use client";
 
-import Image from "next/image";
 import { CopyButton } from "../copy-button";
-import type { TChain } from "@autofun/types";
+import type { AddressLike, TChain } from "@autofun/types";
 import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
 import { Trophy } from "lucide-react";
+import AvatarImage from "./avatar-image";
 
 export default function ProfileHeader({
 	data,
 }: {
 	data: {
 		username: string;
-		address: string;
+		address: AddressLike;
 		tokensBought: number;
 		tokensCreated: number;
 		chains: {
@@ -20,6 +20,7 @@ export default function ProfileHeader({
 			amount: number;
 		}[];
 		points: number;
+		image: string;
 	};
 }) {
 	// const chainIcons: Record<string, { name: string; icon: string }> = {
@@ -27,30 +28,10 @@ export default function ProfileHeader({
 	// 	[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
 	// 	[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
 	// };
-
 	return (
-		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[148px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
-			<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] relative w-fit">
-				<Image src="/create/test-img.png" alt="Profile" width={112} height={112} className="object-cover" />
-				<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
-					<button
-						type="button"
-						onClick={() => console.log("upload button")}
-						className="cursor-pointer bg-[#0C0C0C]/90 rounded-md p-1 size-6"
-					>
-						<Image src="/profile/upload.svg" alt="Profile" width={24} height={24} className="object-cover" />
-					</button>
-					<button
-						type="button"
-						onClick={() => console.log("refresh button")}
-						className="cursor-pointer bg-[#0C0C0C]/90 rounded-md p-1 w-6 h-6"
-					>
-						<Image src="/profile/rotate.svg" alt="Profile" width={14} height={14} className="object-cover" />
-					</button>
-				</div>
-			</div>
-
-			<div className="md:ml-5 space-y-1 mb-2 flex flex-col h-full">
+		<div className="bg-black/30 border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] md:max-h-[182px] md:max-w-full space-y-1 text-white flex flex-col md:flex-row items-center justify-between p-4 w-full mx-auto gap-0">
+			<AvatarImage image={data?.image} address={data?.address} />
+			<div className="md:ml-6 space-y-1 mb-2 flex flex-col h-full">
 				<h1 className="text-2xl mt-2 sm:text-3xl font-bold text-gray-100 text-center md:text-start uppercase tracking-wider">
 					{data.username}
 				</h1>

@@ -7,35 +7,39 @@ import TokensFilter from "@/components/profile-page/tokens-filter";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { formatNumber } from "@/lib/utils";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
-	const summedTotalWalletValue = balances.reduce((sum, item) => {
+
+	const user = balances?.user;
+	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
 		const balance = Number(item.shiftedBalance) || 0;
 		const price = Number(item.price);
 
 		const totalSum = sum + balance * price;
-		return totalSum.toFixed(2);
+		return totalSum || 0;
 	}, 0);
 
-	const tokensBought = balances?.length;
-	const tokensCreated = balances?.filter((token) => token.creatorAddress === address).length;
+	const tokensBought = balances?.balances.length;
+	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
-						username: "AlienMaster42",
-						address: address,
+						username: user?.displayName,
+						address: user?.address,
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreated,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: 12,
+						points: user?.points,
+						image: user?.avatar,
 					}}
 				/>
 				{/* tabs section */}
@@ -56,11 +60,11 @@ export default function Page({ balances }: { balances: any[] }) {
 										<h1 className="p-4 text-sm text-gray-300">
 											Total Value:{" "}
 											<span className="text-autofun-background-action-highlight font-bold">
-												${summedTotalWalletValue}
+												{formatNumber(summedTotalWalletValue, true)}
 											</span>
 										</h1>
 									</div>
-									{balances?.map((balance, i) => {
+									{balances?.balances.map((balance, i) => {
 										console.log(balance);
 										return (
 											<TokenRow
