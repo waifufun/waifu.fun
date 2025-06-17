@@ -35,75 +35,70 @@ export default function PageClient({
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
-				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
-					<div className="bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-						<div className="flex items-center gap-4">
-							{/* Image */}
-							<Image
-								src={token.image}
-								width={60}
-								height={60}
-								unoptimized
-								alt="token_image"
-								className="size-[60px] rounded-lg select-none"
-							/>
-							{/* Token Name */}
-							<div className="flex flex-col">
-								{/* Name */}
-								<div className="flex items-center gap-3">
-									<ChainIndicator chain={token.chain} chainId={token.chainId} />
-									<Verified isVerified={token?.verified} />
-									<span className="text-white text-2xl font-medium font-satoshi uppercase">{token.name}</span>
-									<div className="h-5 w-[1px] bg-autofun-background-disabled" />
-									<span className="text-xl font-medium uppercase text-autofun-text-secondary">{token.ticker}</span>
-								</div>
-								{/* Creator */}
-								<div className="flex items-center gap-1.5 text-autofun-text-secondary text-base font-normal font-satoshi ">
-									<div className="capitalize">Created by:</div>
-									<div className="hover:underline">
-										<Link href={`/profile/${token.creator}`}>
-											{token?.creator ? shortenAddress(token?.creator) : "-"}
-										</Link>
-									</div>
-								</div>
+			<div className="bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+				<div className="flex items-center gap-4">
+					{/* Image */}
+					<Image
+						src={token.image}
+						width={60}
+						height={60}
+						unoptimized
+						alt="token_image"
+						className="h-10 w-10 rounded-none border-2 border-[#03FF24]/50 shadow-[2px_2px_0px_rgba(3,255,36,0.3)] pixelated-image-render"
+					/>
+					{/* Token Name */}
+					<div>
+						{/* Name */}
+						<div className="flex items-center gap-3">
+							{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
+							<Verified isVerified={token?.verified} />
+							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">{token.name}</span>
+							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
+							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
+						</div>
+						{/* Creator */}
+						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi ">
+							<div className="capitalize">Created by:</div>
+							<div className="hover:underline">
+								<Link href={`/profile/${token.creator}`}>{token?.creator ? shortenAddress(token?.creator) : "-"}</Link>
 							</div>
 						</div>
-						<div className="gap-9 flex flex-wrap justify-between">
-							{[
-								{
-									title: "Market Cap",
-									value: token?.marketcap ? abbreviateNumber(token?.marketcap) : "-",
-								},
-								{
-									title: "24hr Volume",
-									value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
-								},
-								{
-									title: "Holders",
-									value: token?.holders ? abbreviateNumber(token?.holders, true) : "-",
-								},
-								{
-									title: "Price",
-									value: formatNumberSubscript(token?.price),
-								},
-								{
-									title: "Age",
-									value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
-								},
-							].map((item) => (
-								<div className="flex flex-col items-center" key={item.title}>
-									<div className="justify-start text-autofun-text-secondary  text-base font-medium font-satoshi leading-tight">
-										{item.title}
-									</div>
-									<div className="justify-start text-autofun-text-highlight text-lg font-medium font-satoshi leading-normal">
-										{item.value}
-									</div>
-								</div>
-							))}
-						</div>
 					</div>
-
+				</div>
+				<div className="gap-9 flex flex-wrap justify-between">
+					{[
+						{
+							title: "Market Cap",
+							value: token?.marketcap ? abbreviateNumber(token?.marketcap) : "-",
+						},
+						{
+							title: "24hr Volume",
+							value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
+						},
+						{
+							title: "Holders",
+							value: token?.holders ? abbreviateNumber(token?.holders, true) : "-",
+						},
+						{
+							title: "Price",
+							value: formatNumberSubscript(token?.price),
+						},
+						{
+							title: "Age",
+							value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
+						},
+					].map((item) => (
+						<div className="flex flex-col items-end" key={item.title}>
+							<div className="text-autofun-text-secondary uppercase text-xs">{item.title}</div>
+							<div className="text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+								{item.value}
+							</div>
+						</div>
+					))}
+				</div>
+			</div>
+			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
+				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
 					<div className="w-full min-h-[540px] relative">
 						<div className="bg-black border-2 border-[#03FF24]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 							<Chart
