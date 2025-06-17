@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
 	},
 	images: {
 		domains: ["v3.fal.media"],
+		remotePatterns: [
+			{
+			  protocol: 'http',
+			  hostname: 'localhost',
+			  port: '9000',
+			  pathname: '/autofun/avatar-images/**',
+			},
+		  ],
 	},
 	reactStrictMode: false,
 	env: {

@@ -18,7 +18,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike, 
 
 		setImageFile(file);
 
-		// Preview image immediately
+
 		const reader = new FileReader();
 		reader.onloadend = () => {
 			if (reader.result) {
@@ -41,7 +41,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike, 
 
 	return (
 		<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] relative w-[150px]">
-			<Image src={preview || "/create/test-img.png"} alt="Profile" width={150} height={150} className="object-cover" />
+			<Image src={image || "/create/test-img.png"} alt="Profile" width={150} height={150} className="object-cover" />
 			<input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 			<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
 				<button

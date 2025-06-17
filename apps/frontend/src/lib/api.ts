@@ -335,12 +335,23 @@ export const uploadAvatar = async ({
 	address,
 	image,
 }: {
-	address: string;
+	address: AddressLike;
 	image?: string; // base64 image string
 }) => {
-	return await fetcher("/generation/upload-profile-image", "POST", {
+	return await fetcher("/user/upload-profile-image", "POST", {
 		address,
 		image,
+	});
+};
+
+export const getUser = async ({
+	address,
+}: {
+	address: string;
+}) => {
+	address;
+	return await fetcher("/user/get-user", "POST", {
+		address,
 	});
 };
 

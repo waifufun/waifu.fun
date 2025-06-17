@@ -12,6 +12,7 @@ import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";
 import { registerProtectedRoutes, registerPublicRoutes } from "./middlewares/protected-routes";
 import agentRoutes from "./routers/agent";
+import userRoutes from "./routers/user";
 
 const fastify = Fastify({
 	logger: {
@@ -63,6 +64,7 @@ fastify.register(transactionsRoutes, { prefix: "/transactions" });
 fastify.register(authRoutes, { prefix: "/auth" });
 fastify.register(generationRoutes, { prefix: "/generation" });
 fastify.register(agentRoutes, { prefix: "/agent" });
+fastify.register(userRoutes, {prefix: "/user"});
 
 const port = 3001;
 

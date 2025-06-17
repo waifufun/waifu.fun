@@ -1,11 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType, type TURLLike } from "@autofun/types";
+import { MediaType } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
-import { uploadBase64Image } from "@autofun/s3-uploader";
-import DB from "@autofun/database";
-import { randomUUID } from "node:crypto";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -272,44 +269,6 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			return reply.code(500).send({
 				error: error instanceof Error ? error.message : "Unknown error generating token",
-			});
-		}
-	});
-
-	fastify.post<{
-		Body: {
-			address: string;
-			image?: string;
-		};
-		Reply: { success: boolean; imageUrl?: string; error?: string };
-	}>("/upload-profile-image", async (request, reply) => {
-		const { image, address } = request.body;
-
-		if (!address) {
-			throw new Error("Address is missing");
-		}
-
-		try {
-			const fileName = `${address}-${randomUUID()}`;
-			let uploadedUrl: TURLLike | false;
-
-			if (image) {
-				uploadedUrl = await uploadBase64Image(image, fileName, "avatar-images", 40, 40);
-			} else {
-				throw new Error("No image provided");
-			}
-
-			if (!uploadedUrl) {
-				throw new Error("Image upload failed");
-			}
-
-			await DB.User.findOneAndUpdate({ address }, { avatar: uploadedUrl });
-
-			return reply.send({ success: true, imageUrl: uploadedUrl });
-		} catch (error) {
-			return reply.code(500).send({
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error uploading profile image",
 			});
 		}
 	});

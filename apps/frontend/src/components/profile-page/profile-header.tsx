@@ -81,6 +81,5 @@ export default function ProfileHeader({
 				</div>
 			</div>
 		</div>
-		</div>
 	);
 }

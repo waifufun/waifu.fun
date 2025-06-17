@@ -6,14 +6,23 @@ import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
-import { uploadAvatar } from "@/lib/api";
 import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { getUser } from "@/lib/api";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
+	const query = useQuery({
+		queryKey: ["user", address],
+		queryFn: async () => {
+			const user = await getUser({ address });
+			return user;
+		},
+	});
+	const user = query?.data;
 
 	const summedTotalWalletValue = balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
@@ -32,12 +41,13 @@ export default function Page({ balances }: { balances: any[] }) {
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
-						username: "AlienMaster42",
-						address: address,
+						username: user?.displayName,
+						address: user?.address,
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreated,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: 12,
+						points: user?.points,
+						image: user?.avatar,
 					}}
 				/>
 				{/* tabs section */}
