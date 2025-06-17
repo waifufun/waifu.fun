@@ -21,6 +21,8 @@ import {
 	SidebarSeparator,
 } from "@/components/ui/sidebar";
 import ConnectWallet from "@/components/connect-wallet";
+import useBalance from "@/hooks/use-balance";
+import useAddress from "@/hooks/use-address";
 
 const casinoFloorNavigation = {
 	title: "CASINO FLOOR",
@@ -35,14 +37,19 @@ const casinoFloorNavigation = {
 
 const viewControlsNavigation = {
 	items: [
-		{ title: "Filters", url: "/casino/filters", icon: Filter, hasDropdown: true },
-		{ title: "Grid View", url: "/casino/view/grid", icon: LayoutGrid },
-		{ title: "List View", url: "/casino/view/list", icon: List },
+		{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true },
+		{ title: "GRID VIEW", url: "/casino/view/grid", icon: LayoutGrid },
+		{ title: "LIST VIEW", url: "/casino/view/list", icon: List },
 	],
 };
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
+	const address = useAddress();
+	const balance = useBalance({
+		address,
+		chain: "solana",
+	});
 
 	return (
 		<Sidebar collapsible="icon" side="right" {...props}>
@@ -97,15 +104,32 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 												: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
 										}
 									>
-										<Link href={item.url} className="flex w-full items-center justify-between">
-											<div className="flex items-center gap-2">
-												<item.icon className="h-4 w-4" />
-												<span>{item.title}</span>
-											</div>
-											{item.hasDropdown && <ChevronDown className="h-4 w-4 opacity-70" />}
+										<Link href={item.url}>
+											<item.icon className="h-4 w-4" />
+											<span>{item.title}</span>
 										</Link>
 									</SidebarMenuButton>
 								</SidebarMenuItem>
+								// <SidebarMenuItem key={item.title}>
+								// 	<SidebarMenuButton
+								// 		asChild
+								// 		isActive={pathname === item.url}
+								// 		tooltip={item.title}
+								// 		className={
+								// 			pathname === item.url
+								// 				? "bg-autofun-background-action-highlight/20"
+								// 				: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
+								// 		}
+								// 	>
+								// 		<Link href={item.url} className="flex w-full items-center justify-between">
+								// 			<div className="flex items-center gap-2">
+								// 				<item.icon className="h-4 w-4" />
+								// 				<span>{item.title}</span>
+								// 			</div>
+								// 			{item.hasDropdown && <ChevronDown className="h-4 w-4 opacity-70" />}
+								// 		</Link>
+								// 	</SidebarMenuButton>
+								// </SidebarMenuItem>
 							))}
 						</SidebarMenu>
 					</SidebarGroupContent>
@@ -114,10 +138,12 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 			<SidebarFooter>
 				<SidebarSeparator />
 				<div className="space-y-1 p-3 text-xs">
-					<div className="flex items-center justify-between text-white">
-						<span>1.83</span>
-						<span className="font-medium text-green-400">SOL</span>
-					</div>
+					{balance?.data ? (
+						<div className="flex items-center justify-between text-white">
+							<span>{balance?.data}</span>
+							<span className="font-medium text-green-400">SOL</span>
+						</div>
+					) : null}
 					<div className="flex items-center justify-between text-white">
 						<span>250</span>
 						<span className="font-medium text-yellow-400">PP</span>
