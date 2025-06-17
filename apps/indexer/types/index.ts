@@ -41,13 +41,16 @@ export interface ProcessingStats {
 }
 
 export interface DecodedInstruction {
-	type: "launch" | "swap" | "launchAndSwap" | "unknown";
+	type: "launch" | "swap" | "launchAndSwap" | "withdraw" | "unknown";
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	data?: any;
 	mintAddress?: string;
 	tokenMint?: string;
 	creator?: string;
 	user?: string;
+	admin?: string;
+	bondingCurve?: string;
+	globalVault?: string;
 	accounts: string[];
 	discriminator?: number[];
 }
