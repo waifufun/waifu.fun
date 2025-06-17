@@ -93,7 +93,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	featured?: boolean;
 	imported?: boolean;
 	verified?: boolean;
-	createdAt: Date;
+	createdAt: string;
 	updatedAt: Date;
 	pool?: string;
 	isToken2022: boolean;

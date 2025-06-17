@@ -70,7 +70,7 @@ export class DataSync {
 			hidden: Boolean(pgToken.hidden),
 			featured: Boolean(pgToken.featured),
 			creator: (pgToken.creator as AddressLike) || ("system" as AddressLike),
-			createdAt: pgToken.createdAt ? new Date(pgToken?.createdAt) : new Date(),
+			createdAt: pgToken.createdAt ? new Date(pgToken?.createdAt).toISOString() : new Date().toISOString(),
 			updatedAt: pgToken.lastUpdated ? new Date(pgToken?.lastUpdated) : new Date(),
 			isToken2022: Boolean(pgToken.is_token_2022),
 			status: pgToken.status || "active",
@@ -129,7 +129,7 @@ export class DataSync {
 										chainId: transformedToken.chainId,
 									},
 									{ $set: transformedToken },
-									{ upsert: true, session,  timestamps: false  },
+									{ upsert: true, session, timestamps: false },
 								);
 
 								if (pgToken.marketId) {

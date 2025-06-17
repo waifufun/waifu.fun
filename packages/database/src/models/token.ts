@@ -39,7 +39,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		status: { type: String, default: "active" },
 		pool: { type: String },
 		isToken2022: { type: Boolean, default: false },
-		createdAt: { type: Date, default: Date.now },
+		createdAt: { type: String, default: () => new Date().toISOString() },
 		updatedAt: { type: Date, default: Date.now },
 	},
 	{ timestamps: true, versionKey: false },
