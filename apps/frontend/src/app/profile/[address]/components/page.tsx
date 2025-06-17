@@ -7,23 +7,16 @@ import TokensFilter from "@/components/profile-page/tokens-filter";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getUser } from "@/lib/api";
 import { formatNumber } from "@/lib/utils";
+import useUser from "@/hooks/use-user";
+import type { AddressLike } from "@autofun/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
-	const query = useQuery({
-		queryKey: ["user", address],
-		queryFn: async () => {
-			const user = await getUser({ address });
-			return user;
-		},
-	});
-	const user = query?.data;
+	const { data: user, isLoading, error } = useUser(address as AddressLike);
 
 	const summedTotalWalletValue = balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
