@@ -94,14 +94,14 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 							<span className="font-medium text-green-400">SOL</span>
 						</div>
 					) : null}
-					<div className="flex items-center justify-between text-white">
+					{/* <div className="flex items-center justify-between text-white">
 						<span>250</span>
 						<span className="font-medium text-yellow-400">PP</span>
-					</div>
-					<div className="flex items-center justify-between text-white">
+					</div> */}
+					{/* <div className="flex items-center justify-between text-white">
 						<span>1200</span>
 						<span className="font-medium text-gray-400">WP</span>
-					</div>
+					</div> */}
 				</div>
 				<ConnectWallet />
 			</SidebarFooter>

@@ -9,7 +9,7 @@ import { ChartBar, Flame, Hourglass, Sparkles, Star, Zap } from "lucide-react";
 const items = [
 	{
 		title: "ALL",
-		value: "",
+		value: null,
 		icon: Zap,
 	},
 
@@ -79,9 +79,13 @@ export default function FilterSelector() {
 						}
 					>
 						<Link
-							href={`${pathname}?${createQueryString({
-								category: item.value,
-							})}`}
+							href={
+								item?.value
+									? `${pathname}?${createQueryString({
+											category: item.value,
+										})}`
+									: "/"
+							}
 						>
 							<item.icon className="h-4 w-4" />
 							<span>{item.title}</span>

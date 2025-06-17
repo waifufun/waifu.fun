@@ -7,11 +7,10 @@ import Verified from "./verified";
 import { Archive, Hourglass, Star, Timer } from "lucide-react";
 import Progressbar from "./progressbar";
 import { Badge } from "./ui/badge";
-import { useMemo } from "react";
 
 const animationLevel = 1;
 
-export const GridItem = ({ token, index }: { token: IToken; index: number }) => {
+export const GridItem = ({ token }: { token: IToken }) => {
 	const useBlueTheme = token?.imported === true;
 	const usePurpleTheme = !token?.imported && Number(token?.curveProgress || 0) > 80 && !useBlueTheme;
 	const useYellowTheme = token?.featured;
@@ -19,7 +18,6 @@ export const GridItem = ({ token, index }: { token: IToken; index: number }) => 
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 	const badgeIconClasses = "h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 pixelated-icon";
-	const cardItemBaseDelay = useMemo(() => (animationLevel >= 1 ? index * 0.07 : 0), [index]);
 
 	return (
 		<Link
