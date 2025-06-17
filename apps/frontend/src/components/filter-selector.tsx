@@ -4,7 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";
 import { SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
 import Link from "next/link";
-import { Flame, Hourglass, Sparkles, Star, Zap } from "lucide-react";
+import { ChartBar, Flame, Hourglass, Sparkles, Star, Zap } from "lucide-react";
 
 const items = [
 	{
@@ -27,6 +27,11 @@ const items = [
 		title: "NEWEST",
 		value: "new",
 		icon: Sparkles,
+	},
+	{
+		title: "MARKETCAP",
+		value: "marketcap",
+		icon: ChartBar,
 	},
 	{
 		title: "BONDING SOON",
