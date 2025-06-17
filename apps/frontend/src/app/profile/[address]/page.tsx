@@ -8,7 +8,6 @@ export default async function Page({ params }: { params: Promise<{ address: Addr
 
 	try {
 		const balances = await getAddressBalances({ address });
-
 		return <ClientPage balances={balances} />;
 	} catch (err) {
 		notFound();
