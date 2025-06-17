@@ -122,7 +122,7 @@ export default function PageClient({
 				</div>
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
-					<BondingCurveProgress height="h-14" token={token} />
+					<BondingCurveProgress token={token} />
 					<div className="flex flex-col gap-4 bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 						<div className="flex items-center gap-4 justify-between">
 							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
