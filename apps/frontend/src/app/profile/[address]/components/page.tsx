@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getUser } from "@/lib/api";
+import { formatNumber } from "@/lib/utils";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
@@ -31,7 +32,7 @@ export default function Page({ balances }: { balances: any[] }) {
 		const price = Number(item.price);
 
 		const totalSum = sum + balance * price;
-		return totalSum.toFixed(2);
+		return totalSum || 0;
 	}, 0);
 
 	const tokensBought = balances?.length;
@@ -68,7 +69,7 @@ export default function Page({ balances }: { balances: any[] }) {
 										<h1 className="p-4 text-sm text-gray-300">
 											Total Value:{" "}
 											<span className="text-autofun-background-action-highlight font-bold">
-												${summedTotalWalletValue}
+												{formatNumber(summedTotalWalletValue, true)}
 											</span>
 										</h1>
 									</div>

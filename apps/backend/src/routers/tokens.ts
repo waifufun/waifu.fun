@@ -558,7 +558,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		});
 
 		// populating only the tokens that are in our DB
-		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) => token?.address);
+		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
+			getChecksummedAddress(token?.address as AddressLike, "solana"),
+		);
 		const tokensFromDatabase = await DB.Token.find({
 			contractAddress: { $in: tokensLookUpContractAddresses },
 		});
@@ -574,7 +576,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const returnData = [];
 
 		for (const balance of balances) {
-			const token = tokens?.find((t) => t?.address === balance.tokenAddress);
+			const token = tokens?.find(
+				(t) =>
+					getChecksummedAddress(t?.address as AddressLike, "solana") ===
+					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
+			);
 			const populated = populatedTokenData?.find((p) => p?.contractAddress === balance.tokenAddress);
 			const limitedPopulatedData = populated
 				? { marketcap: populated.marketcap, price: populated.price, totalSupply: populated.totalSupply }
