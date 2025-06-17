@@ -10,7 +10,7 @@ import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
-export default function Page({ balances }: { balances: any[] }) {
+export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
