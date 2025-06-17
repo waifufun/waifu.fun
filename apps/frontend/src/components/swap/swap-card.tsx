@@ -151,7 +151,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				<div
 					className={cn([
 						"flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium transition-opacity duration-200",
-						!address ? "opacity-0" : "opacity-100",
+						!address ? "opacity-0 h-0" : "opacity-100",
 					])}
 				>
 					<Wallet size={14} color="#8C8C8C" />
