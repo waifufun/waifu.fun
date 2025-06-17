@@ -37,9 +37,12 @@ const PromptComponent = () => {
 				className="border border-[#03FF24] rounded-sm hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
 				onClick={() => {
 					if (!prompt) {
-						generateToken();
+						generateToken({ mediaType: "image", prompt: "" });
 					} else {
-						generateToken(prompt.toString().length > 0 ? prompt.toString() : "");
+						generateToken({
+							mediaType: "image",
+							prompt: prompt.toString(),
+						});
 					}
 				}}
 			>
@@ -74,14 +77,17 @@ const AiImageLoading = () => {
 
 const GeneratedImages = () => {
 	const { previousImages, generateToken } = usePrompt();
-	const { isGeneratingImage, changeMainImage } = usePrompt();
+	const { isGeneratingMedia, changeMainImage } = usePrompt();
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	useEffect(() => {
-		generateToken();
+		generateToken({
+			mediaType: "image",
+			prompt: "",
+		});
 	}, []);
 
-	const startingIndex = isGeneratingImage ? 0 : 1;
+	const startingIndex = isGeneratingMedia ? 0 : 1;
 
 	const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3);
 
@@ -95,8 +101,8 @@ const GeneratedImages = () => {
 		<div className="w-full flex justify-center">
 			<div className="w-[300px] sm:w-[500px]">
 				<div className="w-full h-[300px] sm:h-[500px] rounded-sm overflow-hidden relative">
-					{isGeneratingImage && <AiImageLoading />}
-					{!isGeneratingImage && <AIImageWithPlaceHolder href={previousImages[0]} />}
+					{isGeneratingMedia && <AiImageLoading />}
+					{!isGeneratingMedia && <AIImageWithPlaceHolder href={previousImages[0]} />}
 				</div>
 				<div>
 					<div>

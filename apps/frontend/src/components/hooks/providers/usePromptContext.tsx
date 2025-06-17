@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import UseTokenImages from "../hook/UseTokenImages";
 import { useMutation } from "@tanstack/react-query";
-import { generateImage, generateMetadata, generateRemoteMetadata } from "@/lib/api";
+import { generateMedia, generateMetadata, generateRemoteMetadata } from "@/lib/api";
 import {
 	useForm,
 	type UseFormHandleSubmit,
@@ -29,8 +29,8 @@ type PromptContextType = {
 	mintKeyPair: Keypair | null;
 	generateAddress: (suffix: string) => void;
 	isGeneratingAddress: boolean;
-	isGeneratingImage: boolean;
-	generateToken: (prompt?: string) => void;
+	isGeneratingMedia: boolean;
+	generateToken: (params: { mediaType: "audio" | "video" | "image"; prompt?: string }) => void;
 	changeMainImage: (index: number) => void;
 	previousImages: string[];
 	uploadedImage: string | undefined;
@@ -95,7 +95,7 @@ const PromptProviderContent = ({
 	const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
 	const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
 	const { previousImages, changeMainImage, addImage, deleteImage } = UseTokenImages(tokenImageQuery);
-	const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
+	const [isGeneratingMedia, setIsGeneratingMedia] = useState<boolean>(false);
 	const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
 	const [pool, setPool] = useState<string>("meteora");
 	const [isLaunching, setIsLaunching] = useState<boolean>(false);
@@ -107,17 +107,18 @@ const PromptProviderContent = ({
 	const metadataMutation = useMutation({
 		mutationKey: ["generateMetadata"],
 		mutationFn: generateMetadata,
-		onSuccess: (data) => {
+		onSuccess: (data, variables) => {
 			setValue("prompt", data?.metadata?.prompt || "", { shouldValidate: true, shouldDirty: true });
 			setValue("name", data?.metadata?.name || "", { shouldValidate: true, shouldDirty: true });
 			setValue("ticker", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
 			setValue("description", data?.metadata?.description || "", { shouldValidate: true, shouldDirty: true });
 			setValue("symbol", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
 
-			generateImageMutation.mutate({
+			generateMediaMutation.mutate({
 				prompt: data?.metadata?.prompt,
 				width: 512,
 				height: 512,
+				type: (variables as { mediaType?: "audio" | "video" | "image" })?.mediaType || "image",
 			});
 		},
 		onError: (error) => {
@@ -126,22 +127,22 @@ const PromptProviderContent = ({
 		},
 	});
 
-	const generateImageMutation = useMutation({
+	const generateMediaMutation = useMutation({
 		mutationKey: ["generateImage"],
-		mutationFn: generateImage,
+		mutationFn: generateMedia,
 		onSuccess: (data) => {
 			if (data?.mediaUrl) {
 				addImage(data?.mediaUrl);
-				setIsGeneratingImage(false);
+				setIsGeneratingMedia(false);
 			} else {
 				toast.error("Error generating image: No media URL returned");
-				setIsGeneratingImage(false);
+				setIsGeneratingMedia(false);
 			}
 		},
 		onError: (error) => {
 			console.error("Error generating image:", error);
 			toast.error("Error generating image");
-			setIsGeneratingImage(false);
+			setIsGeneratingMedia(false);
 		},
 	});
 
@@ -300,9 +301,9 @@ const PromptProviderContent = ({
 		[initializeAndStartWorkers, terminateWorkers],
 	);
 
-	const generateToken = (prompt?: string) => {
-		setIsGeneratingImage(true);
-		metadataMutation.mutate(prompt);
+	const generateToken = ({ mediaType, prompt }: { mediaType: "audio" | "video" | "image"; prompt?: string }) => {
+		setIsGeneratingMedia(true);
+		metadataMutation.mutate({ mediaType, prompt });
 	};
 
 	const getTokenData = async (manual = false): Promise<TokenMetadata> => {
@@ -365,7 +366,7 @@ const PromptProviderContent = ({
 		mintKeyPair,
 		generateAddress,
 		isGeneratingAddress: isGeneratingAddressState,
-		isGeneratingImage,
+		isGeneratingMedia,
 		generateToken,
 		changeMainImage,
 		previousImages,

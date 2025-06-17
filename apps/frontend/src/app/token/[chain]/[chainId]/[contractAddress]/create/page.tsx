@@ -22,17 +22,17 @@ interface InfoTabsProps {
 
 const AiCreatePanel = ({ token }: { token: IToken }) => {
 	const [activeAiTab, setActiveAiTab] = useState("image");
-	const { previousImages, generateToken, registerForm, watchValue, isGeneratingImage, deleteImage } = usePrompt();
+	const { previousImages, generateToken, registerForm, watchValue, isGeneratingMedia, deleteImage } = usePrompt();
 
 	const prompt = watchValue("prompt");
 
-	const handleGenerateImage = async () => {
+	const handleGenerateImage = async (mediaType: "audio" | "video" | "image") => {
 		if (!token || !token.contractAddress || !token.chainId) {
 			return;
 		}
 
 		const promptValue = prompt?.toString() || "";
-		await generateToken(promptValue);
+		await generateToken({ mediaType: mediaType, prompt: promptValue });
 	};
 
 	const handleDownload = (imageUrl: string, index: number) => {
@@ -62,11 +62,11 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						</span>
 					</div>
 					<Button
-						onClick={handleGenerateImage}
-						disabled={isGeneratingImage}
+						onClick={() => handleGenerateImage("image")}
+						disabled={isGeneratingMedia}
 						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{isGeneratingImage ? (
+						{isGeneratingMedia ? (
 							<>
 								<RefreshCw size={16} className="mr-2 animate-spin" />
 								Generating...
