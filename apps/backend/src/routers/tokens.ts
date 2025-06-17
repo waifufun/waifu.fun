@@ -545,9 +545,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				walletAddress: address,
 			},
 		});
-
+		
 		const balances = balancesLookup?.balances?.items;
-
+		
 		const tokensLookUp = await codex.queries.tokens({
 			ids: balances?.map((token) => {
 				return {
@@ -556,6 +556,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				};
 			}),
 		});
+		
+		const user = await DB.User.findOne({ address });
 
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
@@ -592,9 +594,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		await redis.setex(cacheKey, 60, JSON.stringify(returnData));
+		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData }));
 
-		return returnData;
+		return { user, balances: returnData };
 	});
 
 	/** Import an existing token */

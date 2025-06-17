@@ -8,17 +8,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
-import useUser from "@/hooks/use-user";
-import type { AddressLike } from "@autofun/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
-	const { data: user, isLoading, error } = useUser(address as AddressLike);
+	const user = balances?.user;
 
-	const summedTotalWalletValue = balances.reduce((sum, item) => {
+	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
 		const balance = Number(item.shiftedBalance) || 0;
@@ -28,8 +26,8 @@ export default function Page({ balances }: { balances: any[] }) {
 		return totalSum || 0;
 	}, 0);
 
-	const tokensBought = balances?.length;
-	const tokensCreated = balances?.filter((token) => token.creatorAddress === address).length;
+	const tokensBought = balances?.balances.length;
+	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
@@ -66,7 +64,7 @@ export default function Page({ balances }: { balances: any[] }) {
 											</span>
 										</h1>
 									</div>
-									{balances?.map((balance, i) => {
+									{balances?.balances.map((balance, i) => {
 										console.log(balance);
 										return (
 											<TokenRow
