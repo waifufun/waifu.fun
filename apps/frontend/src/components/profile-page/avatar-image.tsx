@@ -51,7 +51,6 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 			setPreview(null);
 			setImageFile(null);
 			toast.success("Avatar image successfully changed");
-			queryClient.invalidateQueries({ queryKey: ["user", address] });
 		},
 		onError: () => {
 			toast.error("Something went wrong");
