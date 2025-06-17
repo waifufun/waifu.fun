@@ -55,7 +55,7 @@ export const upload = async (bucket: string, file: IFile, fileName: string) => {
 	} catch (error) {
 		console.error("S3 upload error:", error);
 		throw error;
-	}	
+	}
 };
 
 /**

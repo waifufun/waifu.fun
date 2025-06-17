@@ -64,7 +64,7 @@ fastify.register(transactionsRoutes, { prefix: "/transactions" });
 fastify.register(authRoutes, { prefix: "/auth" });
 fastify.register(generationRoutes, { prefix: "/generation" });
 fastify.register(agentRoutes, { prefix: "/agent" });
-fastify.register(userRoutes, {prefix: "/user"});
+fastify.register(userRoutes, { prefix: "/user" });
 
 const port = 3001;
 

@@ -18,15 +18,6 @@ const nextConfig: NextConfig = {
 	},
 	images: {
 		domains: ["v3.fal.media"],
-		remotePatterns: [
-			// temporary avatar images locally
-			{
-			  protocol: 'http',
-			  hostname: 'localhost',
-			  port: '9000',
-			  pathname: '/autofun/avatar-images/**',
-			},
-		  ],
 	},
 	reactStrictMode: false,
 	env: {

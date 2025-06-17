@@ -65,6 +65,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 				alt="Profile"
 				width={150}
 				height={150}
+				unoptimized
 				className="object-cover"
 			/>
 			<input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
