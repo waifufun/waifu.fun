@@ -36,8 +36,8 @@ export default function ProfileHeader({
 					{data.username}
 				</h1>
 
-				<div className="flex w-full items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 py-1 border border-[#03FF24]/30 rounded-none shadow-inner">
-					<span className="p-1 truncate">{data.address}</span>
+				<div className="flex w-full max-w-[320px] max-h-[30px] items-center justify-center sm:justify-start gap-1 mt-1 text-sm font-mono text-gray-400 bg-black/40 py-1 border border-[#03FF24]/30 rounded-none shadow-inner">
+					<span className="p-2 truncate">{data.address}</span>
 					<CopyButton
 						textToCopy={data.address}
 						className=" mr-2 text-[#03FF24]/70 hover:text-[#03FF24] cursor-pointer flex-shrink-0"
@@ -64,22 +64,23 @@ export default function ProfileHeader({
 						);
 					})}
 				</div> */}
-				<div className="flex gap-2 mt-2">
-					<div className="px-2 py-1 flex items-center justify-center md:justify-start w-full">
+				<div className="flex gap-0 mt-1">
+					<div className="px-0 py-1 flex items-center justify-center md:justify-start w-full">
 						<Trophy size={20} className="text-autofun-background-action-highlight" />
 						<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
 					</div>
 				</div>
 			</div>
 
-			<div className="flex flex-col md:flex-col w-full space-y-2 md:w-fit place-content-center gap-2 ml-auto">
-				<div className="bg-[#03FF24]/10 text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center">
+			<div className="h-full flex flex-col md:flex-col w-full space-y-2 place-self-start md:w-fit place-content-center ml-auto">
+				<div className="bg-[#03FF24]/10 text-xs text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center">
 					Tokens Created: <span className="font-bold">{data.tokensCreated}</span>
 				</div>
-				<div className="bg-[#03FF24]/10 text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center">
+				<div className="bg-[#03FF24]/10 text-xs text-[#03FF24] border border-[#03FF24]/50 px-2 py-1 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] text-center">
 					Tokens Bought: <span className="font-bold">{data.tokensBought}</span>
 				</div>
 			</div>
+		</div>
 		</div>
 	);
 }
