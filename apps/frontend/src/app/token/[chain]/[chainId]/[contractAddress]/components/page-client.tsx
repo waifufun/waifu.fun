@@ -12,6 +12,7 @@ import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import { useQuery } from "@tanstack/react-query";
+import { BarChart2, Clock, Users } from "lucide-react";
 import Chart from "@/components/chart/chart";
 
 export default function PageClient({
@@ -75,10 +76,12 @@ export default function PageClient({
 						{
 							title: "24hr Volume",
 							value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
+							icon: BarChart2,
 						},
 						{
 							title: "Holders",
 							value: token?.holders ? abbreviateNumber(token?.holders, true) : "-",
+							icon: Users,
 						},
 						{
 							title: "Price",
@@ -87,11 +90,13 @@ export default function PageClient({
 						{
 							title: "Age",
 							value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
+							icon: Clock,
 						},
 					].map((item) => (
 						<div className="flex flex-col items-end" key={item.title}>
 							<div className="text-autofun-text-secondary uppercase text-xs">{item.title}</div>
-							<div className="text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+							<div className="inline-flex items-center gap-1 text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+								{item?.icon ? <item.icon className="size-3 text-autofun-background-action-highlight/70" /> : null}
 								{item.value}
 							</div>
 						</div>
