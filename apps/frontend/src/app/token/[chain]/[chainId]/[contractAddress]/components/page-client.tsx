@@ -49,7 +49,7 @@ export default function PageClient({
 					{/* Token Name */}
 					<div>
 						{/* Name */}
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-3 flex-wrap">
 							{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 							<Verified isVerified={token?.verified} />
 							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">
