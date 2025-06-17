@@ -13,7 +13,6 @@ import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import { useQuery } from "@tanstack/react-query";
 import Chart from "@/components/chart/chart";
-import ChainIndicator from "@/components/chain-indicator";
 
 export default function PageClient({
 	initialData,
@@ -52,7 +51,9 @@ export default function PageClient({
 						<div className="flex items-center gap-3">
 							{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 							<Verified isVerified={token?.verified} />
-							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">{token.name}</span>
+							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">
+								{token.name}
+							</span>
 							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
 						</div>
