@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
-import BottomNav from "@/components/bottom-nav";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -34,14 +33,13 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={cn("min-h-screen bg-[##0a0a0a00] font-sans antialiased", inter.className)}>
+			<body className={cn("min-h-screen bg-[#0a0a0a] font-sans antialiased", inter.className)}>
 				<Providers>
 					<SidebarProvider>
 						<SidebarInset>
 							<Header />
 							<main className="flex-1 p-4">{children}</main>
 							<Footer />
-							<BottomNav />
 						</SidebarInset>
 						<AppSidebar />
 					</SidebarProvider>
