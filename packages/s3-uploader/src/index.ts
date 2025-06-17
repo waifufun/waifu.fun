@@ -107,7 +107,6 @@ export const uploadBase64Image = async (
 			.resize({ height: height || 750, width: width || 750 })
 			.webp({ lossless: true })
 			.toBuffer();
-		console.log("file name ->", compressed)
 		await upload(bucket, { data: compressed, mimetype: "image/webp" }, fileName);
 	} else {
 		return false;

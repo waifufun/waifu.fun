@@ -54,7 +54,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			await DB.User.findOneAndUpdate({ address }, { avatar: uploadedUrl });
 
-			return reply.send({ success: true, imageUrl: uploadedUrl });
+			return reply.send({ success: true });
 		} catch (error) {
 			return reply.code(500).send({
 				success: false,
