@@ -3,10 +3,12 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
 
 export default function NotFound() {
 	return (
-		<div className="h-[80vh] flex items-center justify-center">
+		<Suspense fallback={<div className="h-[80vh] flex items-center justify-center">Loading...</div>}>
+			<div className="h-[80vh] flex items-center justify-center">
 			<div className="my-auto flex flex-col items-center gap-6">
 				<Image src="/404.png" width={495} height={100} unoptimized priority alt="404" />
 
@@ -30,5 +32,6 @@ export default function NotFound() {
 				</div>
 			</div>
 		</div>
+		</Suspense>
 	);
 }
