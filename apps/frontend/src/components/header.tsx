@@ -14,18 +14,11 @@ import { SidebarTrigger } from "./ui/sidebar";
 export default function Header() {
 	const address = useAddress();
 	return (
-		<div className=" px-4 border-b-2 border-autofun-background-action-highlight/50">
+		<div className="bg-black px-4 border-b-2 border-autofun-background-action-highlight/50">
 			<div className="container h-[68px] flex items-center gap-4 justify-between">
 				<div className="flex items-center gap-4">
 					<Link href="/" className="shrink-0 grow">
-						<Image
-							src="/logo_wide.svg"
-							height={43.98}
-							width={87.97}
-							className="h-11 w-auto rounded-sm"
-							unoptimized
-							alt="logo"
-						/>
+						<Image src="/logo_wide.svg" height={44} width={88} className="h-11 w-auto" unoptimized alt="logo" />
 					</Link>
 					<SearchMenu />
 					{/* Social Icons */}
