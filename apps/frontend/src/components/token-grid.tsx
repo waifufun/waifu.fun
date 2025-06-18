@@ -10,7 +10,6 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 		<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
 			{[...Array(columns)].map((_, colIndex) => {
 				const columnItems = tokens.filter((_, idx) => idx % columns === colIndex);
-
 				return (
 					<motion.div
 						key={colIndex}
