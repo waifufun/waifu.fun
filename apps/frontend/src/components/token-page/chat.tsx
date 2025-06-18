@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Image as ImageIcon, Send, XIcon } from "lucide-react";
+import { Image as ImageIcon, Send, XIcon, ExternalLink, Lock } from "lucide-react";
 import { abbreviateNumber, fileToBase64, fromNow, shortenAddress } from "@/lib/utils";
 import Image from "next/image";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
@@ -11,6 +11,10 @@ import { getChatHistory, sendChatMessage } from "@/lib/api";
 import type { IChatMessage, IToken, TChatRooms } from "@autofun/types";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 type Inputs = {
 	message: string;
@@ -19,25 +23,49 @@ type Inputs = {
 
 export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
+
+	const tierTokenRequirements: Record<TChatRooms, string> = {
+		"1000": "1,000+",
+		"100000": "100,000+",
+		"1000000": "1,000,000+",
+	};
+
 	return (
-		<div className="bg-[#0c0c0c] rounded-b-sm" id="chat">
-			<div className="flex flex-col items-center w-full my-3 px-4">
-				<Tabs defaultValue="1000" className="w-full" onValueChange={(value) => setRoom(value as TChatRooms)}>
-					<TabsList className="grid w-full grid-cols-5 h-10 bg-[#11111] border-b border-autofun-text-stroke-primary">
+		<div className="bg-black border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col h-[550px]">
+			<div className="flex items-center justify-between p-2 border-b-2 border-[#03FF24]/30 bg-black/50">
+				<Tabs defaultValue="1000" className="flex" onValueChange={(value) => setRoom(value as TChatRooms)}>
+					<TabsList className="bg-transparent border-0 p-0 h-auto">
 						{["1000", "100000", "1000000"].map((r) => (
-							<TabsTrigger value={String(r)} className="text-base mt-[1px]" key={r}>
+							<TabsTrigger
+								key={r}
+								value={String(r)}
+								className={cn(
+									"text-xs font-bold uppercase tracking-wider rounded-none px-3 py-1.5 h-auto relative data-[state=active]:text-[#03FF24] data-[state=inactive]:text-gray-500 hover:text-gray-300 bg-transparent border-0",
+								)}
+							>
 								{abbreviateNumber(Number(r), true)}+
+								{room === r && (
+									<motion.div
+										layoutId="activeTierUnderline"
+										className="absolute bottom-[-1px] left-0 right-0 h-[3px] bg-[#03FF24]"
+										transition={{ type: "spring", stiffness: 300, damping: 25 }}
+									/>
+								)}
 							</TabsTrigger>
 						))}
 					</TabsList>
 				</Tabs>
-				<ChatWindow room={room} token={token} />
+				<Link href="#" className="text-xs text-gray-400 hover:text-[#03FF24] flex items-center">
+					Open Full Chat Page <ExternalLink size={12} className="ml-1" />
+				</Link>
 			</div>
+
+			<ChatWindow room={room} token={token} tierRequirement={tierTokenRequirements[room]} />
 		</div>
 	);
 }
 
-const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
+const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token: IToken; tierRequirement: string }) => {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const ref = useRef<HTMLDivElement | null>(null);
 	const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -107,7 +135,7 @@ const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 
 	const scrollToBottom = () => {
 		if (ref?.current) {
-			ref.current.scrollTo({ top: 0, behavior: "smooth" });
+			ref.current.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" });
 		}
 	};
 
@@ -139,111 +167,125 @@ const ChatWindow = ({ token, room }: { room: TChatRooms; token: IToken }) => {
 		};
 	}, [attachmentFile]);
 
+	useEffect(() => {
+		if (ref.current) {
+			ref.current.scrollTop = ref.current.scrollHeight;
+		}
+	}, [query.data]);
+
 	return (
-		<div className="flex flex-col gap-2 w-full relative">
-			<div className="h-14 w-full absolute top-0 left-0 bg-gradient-to-b from-[#111111] via-[#111111]/80 to-[#111111]/10" />
-			<div className="flex flex-col gap-2 w-full bg-gradient-to-b from-[#0F0F0F] to-[#0D0D0D] rounded-b-sm">
-				<div className="h-[600px] w-full p-4 overflow-y-scroll flex flex-col-reverse gap-4" ref={ref}>
+		<>
+			<div ref={ref} className="flex-1 overflow-y-auto p-3 space-y-1 bg-black/30">
+				<AnimatePresence>
 					{query?.data?.map((message: IChatMessage) => (
 						<ChatItem key={String(message._id)} message={message} />
 					))}
-				</div>
+				</AnimatePresence>
 			</div>
-			<form className="flex items-center gap-2" onSubmit={handleSubmit(onSubmit)}>
-				<input
-					type="file"
-					accept="image/*"
-					style={{ display: "none" }}
-					ref={fileInputRef}
-					onChange={(e) => {
-						const file = e?.target?.files?.[0];
-						if (file) {
-							setValue("attachment", file);
-						}
-					}}
-				/>
 
-				<div className="relative w-full bg-gradient-to-b from-[#171717] to-[#141414] rounded-sm transition-all duration-200">
-					{imagePreviewUrl && (
-						<div className="relative w-fit m-2">
-							<button
-								type="button"
-								className="absolute bg-gradient-to-b from-[#171717] to-[#1F1F1F] animate-jump-in animate-once animate-duration-200 animate-ease-linear top-0.5 right-0.5 cursor-pointer size-9 p-1.5 inline-flex rounded-sm border border-autofun-background-action-highlight"
-								onClick={() => {
-									setValue("attachment", undefined);
-								}}
-							>
-								<XIcon size={24} className="m-auto" />
-							</button>
-							<Image
-								className="aspect-square size-[160px] object-contain"
-								src={imagePreviewUrl}
-								alt="Selected attachment preview"
-								width={500}
-								height={500}
-								unoptimized
-								priority
-							/>
-						</div>
-					)}
-					<Input
-						placeholder="Send a message"
-						aria-autocomplete="none"
-						autoComplete="off"
-						className="bg-transparent border-0"
-						{...register("message", { required: true })}
+			<div className="p-2 border-t-2 border-[#03FF24]/30 bg-black/50">
+				{imagePreviewUrl && (
+					<div className="relative w-fit mb-2">
+						<button
+							type="button"
+							className="absolute bg-black/80 top-1 right-1 cursor-pointer size-6 p-1 inline-flex rounded-none border border-[#03FF24]/30"
+							onClick={() => {
+								setValue("attachment", undefined);
+							}}
+						>
+							<XIcon size={14} className="m-auto text-white" />
+						</button>
+						<Image
+							className="max-w-[200px] max-h-[150px] object-cover border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)]"
+							src={imagePreviewUrl}
+							alt="Selected attachment preview"
+							width={200}
+							height={150}
+							unoptimized
+							priority
+						/>
+					</div>
+				)}
+
+				<form className="flex items-center gap-2" onSubmit={handleSubmit(onSubmit)}>
+					<input
+						type="file"
+						accept="image/*"
+						style={{ display: "none" }}
+						ref={fileInputRef}
+						onChange={(e) => {
+							const file = e?.target?.files?.[0];
+							if (file) {
+								setValue("attachment", file);
+							}
+						}}
 					/>
+
 					<Button
+						variant="ghost"
 						size="icon"
 						type="button"
 						onClick={handleIconClick}
-						className="absolute p-0 bg-transparent hover:bg-transparent right-0 bottom-0"
+						className="h-9 w-9 p-0 text-gray-400 hover:text-[#03FF24] rounded-none flex-shrink-0"
 					>
-						<ImageIcon size={18} className="text-autofun-icon-secondary size-[18px]" />
+						<ImageIcon size={18} />
 					</Button>
-				</div>
-				<Button size="icon" type="submit" className="self-end" disabled={mutation?.isPending}>
-					<Send onClick={() => scrollToBottom()} />
-				</Button>
-			</form>
-		</div>
+
+					<Input
+						type="text"
+						placeholder="Lorem ipsum 🤔 🔥🔥"
+						className="bg-black border-2 border-[#03FF24]/50 placeholder-gray-600 text-sm h-9 focus:border-[#03FF24] text-gray-200 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] flex-grow"
+						{...register("message", { required: true })}
+					/>
+
+					<Button
+						variant="ghost"
+						size="icon"
+						type="submit"
+						disabled={mutation?.isPending}
+						className="h-9 w-9 p-0 bg-[#03FF24]/80 hover:bg-[#03FF24] text-black rounded-none shadow-[2px_2px_0px_#01a718] flex-shrink-0"
+					>
+						<Send size={18} />
+					</Button>
+				</form>
+
+				<p className="text-xs text-yellow-500 mt-1.5 px-1 flex items-center">
+					<Lock size={12} className="mr-1.5 text-yellow-600" />
+					You need {tierRequirement} tokens to post in this chat.
+				</p>
+			</div>
+		</>
 	);
 };
 
 const ChatItem = ({ message }: { message: IChatMessage }) => {
 	return (
-		<div className="flex items-start gap-2">
-			<Image
-				src="/chain-icons/solana.svg"
-				width={40}
-				height={40}
-				unoptimized
-				alt="avatar"
-				className="rounded-full size-10 bg-autofun-background-action-primary"
-			/>
-			<div className="flex flex-col gap-2.5 bg-[#171717] rounded-sm p-3">
-				<div className="inline-flex items-center justify-between gap-3">
-					<div className="justify-start text-autofun-background-action-highlight text-base font-medium">
-						{message?.sender ? shortenAddress(message?.sender) : "-"}
-					</div>
-					<div className="justify-start text-autofun-text-secondary text-sm font-medium">
-						{message?.createdAt ? fromNow(message?.createdAt) : "-"}
-					</div>
+		<motion.div
+			initial={{ opacity: 0, y: 10 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.3 }}
+			className="flex items-start gap-3 py-2.5"
+		>
+			<Avatar className="h-8 w-8 border-2 border-[#03FF24]/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
+				<AvatarImage src="/chain-icons/solana.svg" alt={message?.sender ? shortenAddress(message?.sender) : "User"} />
+				<AvatarFallback className="bg-gray-700 text-xs text-[#03FF24] rounded-none">
+					{message?.sender ? shortenAddress(message?.sender).substring(0, 2).toUpperCase() : "U"}
+				</AvatarFallback>
+			</Avatar>
+			<div className="flex-1">
+				<div className="flex items-baseline gap-2 text-xs">
+					<span className="font-bold text-[#03FF24]">
+						{message?.sender ? shortenAddress(message?.sender) : "Unknown"}
+					</span>
+					<span className="text-gray-500">{message?.createdAt ? fromNow(message?.createdAt) : "Unknown time"}</span>
 				</div>
-				<div className="self-stretch justify-start text-autofun-text-primary text-base font-medium font-satoshi leading-tight">
-					{message?.message}
-				</div>
-				{message?.image ? (
-					<Image
-						src={message?.image}
-						width={500}
-						height={500}
-						unoptimized
-						className="aspect-square size-80 object-contain"
-						alt="image"
-					/>
-				) : null}
+				{message?.message && <p className="text-sm text-gray-200 mt-0.5">{message.message}</p>}
+				{message?.image && (
+					<div className="mt-2 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] overflow-hidden max-w-xs">
+						<Image src={message.image} alt="Chat image" width={300} height={200} className="object-cover" unoptimized />
+					</div>
+				)}
 			</div>
-		</div>
+		</motion.div>
 	);
 };
