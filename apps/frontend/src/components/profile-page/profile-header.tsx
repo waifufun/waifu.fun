@@ -64,12 +64,14 @@ export default function ProfileHeader({
 						);
 					})}
 				</div> */}
-				<div className="flex gap-0 mt-1">
-					<div className="px-0 py-1 flex items-center justify-center md:justify-start w-full">
-						<Trophy size={20} className="text-autofun-background-action-highlight" />
-						<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
+				{data?.points ? (
+					<div className="flex gap-0 mt-1">
+						<div className="px-0 py-1 flex items-center justify-center md:justify-start w-full">
+							<Trophy size={20} className="text-autofun-background-action-highlight" />
+							<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
+						</div>
 					</div>
-				</div>
+				) : null}
 			</div>
 
 			<div className="h-full flex flex-col md:flex-col w-full space-y-2 place-self-start md:w-fit place-content-center ml-auto">

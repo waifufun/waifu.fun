@@ -557,7 +557,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}),
 		});
 
-		const user = await DB.User.findOne({ address });
+		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
@@ -584,9 +584,18 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
 			);
 
-			const populated = populatedTokenData?.find((p) => p?.contractAddress === balance.tokenAddress);
+			const populated = populatedTokenData?.find(
+				(p) =>
+					getChecksummedAddress(p?.contractAddress as AddressLike, "solana") ===
+					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
+			);
 			const limitedPopulatedData = populated
-				? { marketcap: populated.marketcap, price: populated.price, totalSupply: populated.totalSupply }
+				? {
+						marketcap: populated.marketcap,
+						price: populated.price,
+						totalSupply: populated.totalSupply,
+						image: populated?.image,
+					}
 				: {};
 			returnData.push({
 				...balance,
