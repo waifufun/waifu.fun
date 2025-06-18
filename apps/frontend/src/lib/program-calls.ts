@@ -9,8 +9,7 @@ export interface LaunchParams {
 	virtualLamportReserves: BN;
 	curveLimit: BN;
 	initBondingCurve: number;
-	MaxBuyAmount: BN;
-	MaxSelAmount: BN;
+	maxAmount: BN;
 	delayForTrade: BN;
 	limitTimeToUpdate: BN;
 	name: string;
@@ -32,8 +31,7 @@ export interface SwapParams {
 }
 
 export interface SetMaxAmountsParams {
-	maxBuyAmount: BN;
-	maxSellAmount: BN;
+	maxAmount: BN;
 }
 
 export interface CompleteEvent {
@@ -50,8 +48,7 @@ export interface MaxAmountsSetEvent {
 	bondingCurve: PublicKey;
 	creator: PublicKey;
 	modifiedTime: BN;
-	maxBuyAmount: BN;
-	maxSellAmount: BN;
+	maxAmount: BN;
 }
 
 // Program Calls
@@ -73,8 +70,7 @@ export const launchTx = async (
 			params.virtualLamportReserves,
 			params.curveLimit,
 			params.initBondingCurve,
-			params.MaxBuyAmount,
-			params.MaxSelAmount,
+			params.maxAmount,
 			params.delayForTrade, // delay in seconds before trading is allowed
 			params.limitTimeToUpdate, // maximum time in seconds where the creator can update the max buy and sell
 			params.name,
@@ -112,8 +108,7 @@ export const launchAndSwapTx = async (
 			params.virtualLamportReserves,
 			params.curveLimit,
 			params.initBondingCurve,
-			params.MaxBuyAmount,
-			params.MaxSelAmount,
+			params.maxAmount,
 			params.delayForTrade,
 			params.limitTimeToUpdate,
 			params.name,
@@ -175,7 +170,7 @@ export const setMaxAmountsTx = async (
 	);
 
 	const tx = await program.methods
-		.setMaxAmounts(params.maxBuyAmount, params.maxSellAmount)
+		.setMaxAmounts(params.maxAmount)
 		.accounts({
 			authority,
 			tokenMint: token,

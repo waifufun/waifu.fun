@@ -37,10 +37,7 @@ export const instructions = {
 				const initBondingCurve = payload.readBigUInt64LE(offset);
 				offset += 8;
 
-				const maxBuyAmount = payload.readBigUInt64LE(offset);
-				offset += 8;
-
-				const maxSelAmount = payload.readBigUInt64LE(offset);
+				const maxAmount = payload.readBigUInt64LE(offset);
 				offset += 8;
 
 				const delayForTrade = payload.readBigUInt64LE(offset);
@@ -65,8 +62,7 @@ export const instructions = {
 						virtualLamportReserves,
 						curveLimit,
 						initBondingCurve,
-						maxBuyAmount,
-						maxSelAmount,
+						maxAmount,
 						delayForTrade,
 						limitTimeToUpdate,
 						name: name.value,
@@ -137,6 +133,21 @@ export const instructions = {
 				const virtualLamportReserves = payload.readBigUInt64LE(offset);
 				offset += 8;
 
+				const curveLimit = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const initBondingCurve = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const maxAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const delayForTrade = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
+				offset += 8;
+
 				const name = readBorshString(payload, offset);
 				offset = name.nextOffset;
 
@@ -160,6 +171,11 @@ export const instructions = {
 						decimals,
 						tokenSupply,
 						virtualLamportReserves,
+						curveLimit,
+						initBondingCurve,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,

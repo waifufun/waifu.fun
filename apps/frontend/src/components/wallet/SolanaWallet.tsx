@@ -126,8 +126,7 @@ export class SolanaWallet extends WalletClass {
 		decimals: number,
 		tokenSupply: number,
 		curveLimit: number,
-		maxBuyAmount: number,
-		maxSelAmount: number,
+		maxAmount: number,
 		delayForTrade: number,
 		limitTimeToUpdate: number,
 		name: string,
@@ -173,8 +172,7 @@ export class SolanaWallet extends WalletClass {
 				new BN(virtualLamportReserves),
 				new BN(curveLimit),
 				initBondingCurve,
-				new BN(maxBuyAmount),
-				new BN(maxSelAmount),
+				new BN(maxAmount),
 				new BN(delayForTrade),
 				new BN(limitTimeToUpdate),
 				name,
@@ -217,8 +215,7 @@ export class SolanaWallet extends WalletClass {
 			: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
 		const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
 		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
-		const maxBuyAmount = 1 * LAMPORTS_PER_SOL;
-		const maxSelAmount = 1 * LAMPORTS_PER_SOL;
+		const maxAmount = 1 * LAMPORTS_PER_SOL;
 		const delayForTrade = 60; // 60 seconds delay before trading is allowed
 		const limitTimeToUpdate = 360000; // 100 hour to update max buy/sell amounts
 		const tx =
@@ -228,14 +225,13 @@ export class SolanaWallet extends WalletClass {
 						Number(process.env.NEXT_PUBLIC_DECIMALS),
 						Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
 						curveLimit,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						tokenData.name,
 						tokenData.symbol,
 						tokenData.metadataUrl,
 						tokenData.buyAmount * LAMPORTS_PER_SOL,
-						maxBuyAmount,
-						maxSelAmount,
-						delayForTrade,
-						limitTimeToUpdate,
 						100,
 						this._solanaFunctions.connection,
 						this.program,
@@ -249,8 +245,7 @@ export class SolanaWallet extends WalletClass {
 							new BN(virtualLamportReserves),
 							new BN(curveLimit),
 							initBondingCurve,
-							new BN(maxBuyAmount),
-							new BN(maxSelAmount),
+							new BN(maxAmount),
 							new BN(delayForTrade),
 							new BN(limitTimeToUpdate),
 							tokenData.name,
