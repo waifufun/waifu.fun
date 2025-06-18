@@ -413,10 +413,30 @@ export class SolanaRpcProvider extends EventEmitter {
 		const metaplex = new Metaplex(this.connection);
 		const mint = new PublicKey(contractAddress);
 		const isToken2022 = await this.isToken2022(contractAddress);
-		const mintInfo = await this.connection.getParsedAccountInfo(mint);
-		const parsedData = (mintInfo.value?.data as any)?.parsed;
+		const mintInfo = (await this.connection.getParsedAccountInfo(mint)) as {
+			value: {
+				data: {
+					parsed: {
+						info: {
+							mintAuthority: string;
+							supply: string | number;
+							decimals: string | number;
+							extensions: {
+								extension: string;
+								state: {
+									name: string;
+									symbol: string;
+									uri: string;
+								};
+							}[];
+						};
+					};
+				};
+			};
+		};
+		const parsedData = mintInfo.value?.data?.parsed;
 		if (isToken2022 && parsedData?.info?.extensions) {
-			const metadataExt = parsedData.info.extensions.find((ext: any) => ext.extension === "tokenMetadata");
+			const metadataExt = parsedData.info.extensions.find((ext) => ext.extension === "tokenMetadata");
 			if (metadataExt?.state) {
 				const name = metadataExt.state.name || "";
 				const symbol = metadataExt.state.symbol || "";

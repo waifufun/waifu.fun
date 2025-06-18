@@ -583,7 +583,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					getChecksummedAddress(t?.address as AddressLike, "solana") ===
 					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
 			);
-      
+
 			const populated = populatedTokenData?.find((p) => p?.contractAddress === balance.tokenAddress);
 			const limitedPopulatedData = populated
 				? { marketcap: populated.marketcap, price: populated.price, totalSupply: populated.totalSupply }
