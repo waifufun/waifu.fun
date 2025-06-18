@@ -91,7 +91,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					</TableRow>
 				))}
 			</TableBody>
-			<TableFooter>
+			<TableFooter className="border-t-2 border-autofun-background-action-highlight/25">
 				<TableRow>
 					<TableCell colSpan={7}>
 						<div className="text-gray-500 text-xs uppercase text-center mx-auto w-full">
