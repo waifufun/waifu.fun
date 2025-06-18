@@ -92,7 +92,7 @@ const GeneratedImages = () => {
 
 	const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3);
 
-	if (nextImages.length < 3) {
+	if (nextImages?.length < 3) {
 		const diff = 3 - nextImages.length;
 		for (let i = 0; i < diff; i++) {
 			nextImages.push(undefined);

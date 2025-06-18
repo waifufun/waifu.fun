@@ -1,30 +1,13 @@
-import { isCurveCompleted } from "../../lib/api";
 import LocalChart from "./local-chart";
 import { getCoinGeckoChainName } from "../../lib/utils";
-import type { IToken, ITokenLookUp } from "@autofun/types";
-import { useEffect, useState } from "react";
+import type { IToken } from "@autofun/types";
 
 interface ChartProps {
 	token: IToken;
-	tokenLookUp: ITokenLookUp;
 }
 
-export default function Chart({ token, tokenLookUp }: ChartProps) {
-	const [curveCompleted, setCurveCompleted] = useState<boolean | null>(null);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	useEffect(() => {
-		const checkIfCurveCompleted = async () => {
-			const result = await isCurveCompleted(tokenLookUp);
-			setCurveCompleted(result.curveCompleted);
-		};
-
-		checkIfCurveCompleted();
-	}, []);
-
-	if (curveCompleted === null) {
-		return <div className="flex items-center justify-center h-full">Loading...</div>;
-	}
+export default function Chart({ token }: ChartProps) {
+	const curveCompleted = token?.curveCompleted || token?.imported;
 
 	if (curveCompleted) {
 		return (
