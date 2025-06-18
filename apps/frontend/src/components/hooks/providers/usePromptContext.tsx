@@ -98,7 +98,6 @@ const PromptProviderContent = ({
 		},
 		mode: "onChange",
 	});
-	console.log("tokenImageQuery: ", tokenImageQuery);
 	const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
 	const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
 	const {

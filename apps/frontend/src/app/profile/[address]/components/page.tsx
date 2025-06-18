@@ -28,7 +28,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 	const tokensBought = balances?.balances.length;
 	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
-  
+
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">

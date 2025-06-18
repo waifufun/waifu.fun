@@ -1,10 +1,11 @@
 "use client";
-import TokenTypeSelector from "@/components/create-token-page/token-type-selector";
-import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
 import { usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import TokenInfo from "@/components/create-token-page/token-info";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ManualCreateForm from "@/components/ui/create-token/manual-create-form";
+import AutoCreateForm from "@/components/ui/create-token/auto-create-form";
+import ImportTokenForm from "@/components/ui/create-token/import-token-form";
 
 const PromptComponent = () => {
 	const { registerForm, generateToken, watchValue } = usePrompt();
