@@ -18,14 +18,7 @@ export default function Header() {
 			<div className="container h-[68px] flex items-center gap-4 justify-between">
 				<div className="flex items-center gap-4">
 					<Link href="/" className="shrink-0 grow">
-						<Image
-							src="/logo_wide.svg"
-							height={44}
-							width={88}
-							className="h-11 w-auto"
-							unoptimized
-							alt="logo"
-						/>
+						<Image src="/logo_wide.svg" height={44} width={88} className="h-11 w-auto" unoptimized alt="logo" />
 					</Link>
 					<SearchMenu />
 					{/* Social Icons */}

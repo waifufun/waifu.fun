@@ -106,16 +106,16 @@ export const lookUp24hVolume = async (
 ): Promise<{ totalVolumeDollars?: number; totalVolume?: number; contractAddress?: AddressLike }[]> => {
 	const prices = await updateCryptoPrices({});
 	const solanaPrice = prices.solana;
+
 	const tokens = await DB.Event.aggregate([
 		{
 			$match: {
-				contractAddress: {
-					$in: contractAddresses,
+				contractAddress: { $in: contractAddresses },
+				eventType: { $in: ["swap", "launchAndSwap"] },
+				createdAt: {
+					$gte: moment().subtract(1, "day").toDate(),
+					$lte: moment().toDate(),
 				},
-				eventType: {
-					$in: ["swap", "launchAndSwap"],
-				},
-				createdAt: { $gte: moment().subtract(1, "day").toDate(), $lte: moment().toDate() },
 			},
 		},
 		{
@@ -123,7 +123,9 @@ export const lookUp24hVolume = async (
 				_id: "$contractAddress",
 				totalVolume: {
 					$sum: {
-						$toDouble: "$amountGotten",
+						$toDouble: {
+							$cond: [{ $eq: ["$direction", 0] }, "$swapAmount", "$amountGotten"],
+						},
 					},
 				},
 			},
@@ -136,6 +138,7 @@ export const lookUp24hVolume = async (
 			},
 		},
 	]);
+
 	for (const token of tokens) {
 		token.totalVolumeDollars = new BigNumber(formatUnits(token.totalVolume, 9))
 			.multipliedBy(new BigNumber(solanaPrice))

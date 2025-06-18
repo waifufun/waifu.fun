@@ -93,48 +93,58 @@ export async function generateMedia(data: {
 				};
 			}
 			case "audio": {
-				const stylePrompt = await generateStylePrompt(data.prompt);
-				let lyricsToUsePromise: Promise<string> | undefined;
+				try {
+					const stylePrompt = await generateStylePrompt(data.prompt);
+					let lyricsToUse = data.lyrics;
 
-				if (!data.lyrics) {
-					lyricsToUsePromise = generateLyrics(
-						{
-							name: data.prompt.split(":")[0] || "",
-							symbol: data.prompt.split(":")[1]?.trim() || "",
-							description: data.prompt.split(":")[2]?.trim() || "",
+					// If no lyrics provided, generate them
+					if (!lyricsToUse) {
+						// Handle different prompt formats more gracefully
+						const promptParts = data.prompt.split(":");
+						const tokenData = {
+							name: promptParts[0]?.trim() || "Unknown Token",
+							symbol: promptParts[1]?.trim() || "TOKEN",
+							description: promptParts[2]?.trim() || data.prompt,
+						};
+
+						lyricsToUse = await generateLyrics(tokenData, data.style_prompt || stylePrompt);
+					}
+
+					// Fallback lyrics if generation fails
+					if (!lyricsToUse || lyricsToUse.trim() === "") {
+						lyricsToUse = `Verse about ${data.prompt}
+			This is a song about innovation
+			Building the future with determination
+			Together we rise, together we grow`;
+					}
+
+					const formattedLyrics = formatLyricsForDiffrhythm(lyricsToUse);
+
+					const audioUrl = await Promise.race([
+						ai.createAudio({
+							lyrics: formattedLyrics,
+							reference_audio_url: data.reference_audio_url,
+							style_prompt: data.style_prompt || stylePrompt,
+							music_duration: data.music_duration || "30",
+							cfg_strength: data.cfg_strength || 0.7,
+							scheduler: data.scheduler || "euler_discrete",
+							num_inference_steps: data.num_inference_steps || 50,
+						}),
+						timeoutPromise,
+					]);
+
+					return {
+						data: {
+							audio: {
+								url: audioUrl,
+								lyrics: lyricsToUse,
+							},
 						},
-						data.style_prompt || stylePrompt,
-					);
+					};
+				} catch (error) {
+					console.error("Audio generation error:", error);
+					throw new Error(`Audio generation failed: ${error instanceof Error ? error.message : "Unknown error"}`);
 				}
-
-				const lyricsToUse = await (lyricsToUsePromise || (async () => data.lyrics)());
-
-				if (!lyricsToUse) {
-					throw new Error("No lyrics found");
-				}
-
-				const formattedLyrics = formatLyricsForDiffrhythm(lyricsToUse);
-				const audioUrl = await Promise.race([
-					ai.createAudio({
-						lyrics: formattedLyrics,
-						reference_audio_url: data.reference_audio_url,
-						style_prompt: data.style_prompt || stylePrompt,
-						music_duration: data.music_duration,
-						cfg_strength: data.cfg_strength,
-						scheduler: data.scheduler,
-						num_inference_steps: data.num_inference_steps,
-					}),
-					timeoutPromise,
-				]);
-
-				return {
-					data: {
-						audio: {
-							url: audioUrl,
-							lyrics: lyricsToUse,
-						},
-					},
-				};
 			}
 			default:
 				throw new Error(`Unsupported media type: ${data.type}`);

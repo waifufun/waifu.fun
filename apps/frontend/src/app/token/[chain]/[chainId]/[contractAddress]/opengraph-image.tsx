@@ -1,28 +1,37 @@
 import { ImageResponse } from "next/og";
-import { getToken } from "@/lib/api";
 import type { ITokenLookUp } from "@autofun/types";
+import { getToken } from "@/lib/api";
+import { formatNumberSubscript } from "@/lib/utils";
+
+const fontResponse = await fetch(
+	new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
+);
+
+if (!fontResponse.ok) {
+	throw new Error(`Failed to fetch font: ${fontResponse.statusText}`);
+}
+
+const satoshiFont = await fontResponse.arrayBuffer();
 
 export const runtime = "edge";
-export const alt = "Token Information";
+export const contentType = "image/png";
 export const size = {
 	width: 1200,
 	height: 630,
 };
-export const contentType = "image/png";
 
 export default async function Image({ params }: { params: Promise<ITokenLookUp> }) {
 	const token = await getToken(await params);
-
 	const imageResponse = await fetch(token.image);
-	if (!imageResponse.ok) {
-		throw new Error(`Failed to load token image: ${imageResponse.statusText}`);
-	}
+	if (!imageResponse.ok) throw new Error(`Failed to load token image: ${imageResponse.statusText}`);
+
 	const chainLogo = `${process.env.NEXT_PUBLIC_HOST}/chain-icons/${token.chain.toLowerCase()}.svg`;
 	const projectLogo = `${process.env.NEXT_PUBLIC_HOST}/logo_wide.svg`;
 
 	return new ImageResponse(
 		<div
 			style={{
+				fontFamily: "Satoshi",
 				background: "linear-gradient(to bottom right, #1a1a1a, #2a2a2a)",
 				width: "100%",
 				height: "100%",
@@ -193,7 +202,7 @@ export default async function Image({ params }: { params: Promise<ITokenLookUp> 
 					>
 						<div style={{ display: "flex", gap: "8px" }}>
 							<span style={{ color: "#888", display: "flex" }}>Price:</span>
-							<span style={{ display: "flex" }}>{token.price}</span>
+							<span style={{ display: "flex" }}>{formatNumberSubscript(token?.price)}</span>
 						</div>
 						<div style={{ display: "flex", gap: "8px" }}>
 							<span style={{ color: "#888", display: "flex" }}>MCap:</span>
@@ -226,6 +235,14 @@ export default async function Image({ params }: { params: Promise<ITokenLookUp> 
 		</div>,
 		{
 			...size,
+			fonts: [
+				{
+					name: "Satoshi",
+					data: satoshiFont,
+					style: "normal",
+					weight: 400,
+				},
+			],
 		},
 	);
 }

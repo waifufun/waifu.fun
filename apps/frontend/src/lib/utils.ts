@@ -59,7 +59,7 @@ export const formatNumber = (num: number, showDecimals?: boolean, hideDollarSign
 
 const toSubscript = (num: number): string => {
 	const subDigits: { [key: string]: string } = {
-		"0": "\u2080",
+		"0": "₀",
 		"1": "\u2081",
 		"2": "\u2082",
 		"3": "\u2083",
@@ -805,4 +805,12 @@ export const createTokenTx = async (
 		userPublicKey: new PublicKey(address),
 		signature: txId,
 	};
+};
+
+export const resizeImage = (url: string, width: number, height: number) => {
+	if (!url) return "/logo.png";
+	if (url.includes("ipfs") || !url.startsWith("http")) {
+		return url;
+	}
+	return `https://auto.fun/cdn-cgi/image/width=${width},height=${height},format=png/${url}`;
 };

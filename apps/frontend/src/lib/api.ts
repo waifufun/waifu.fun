@@ -145,25 +145,29 @@ export const getChatHistory = async ({
 	});
 };
 
-export const generateImage = async ({
+
+export const generateMedia = async ({
 	prompt,
 	width,
 	height,
-}: {
-	prompt: string;
-	width: number;
-	height: number;
-}) => {
+	type,
+}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image" }) => {
+
 	return await fetcher("/generation/generate", "POST", {
 		prompt,
 		width,
 		height,
+		type,
 	});
 };
 
-export const generateMetadata = async (prompt?: string) => {
+export const generateMetadata = async ({
+	mediaType,
+	prompt,
+}: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined }) => {
 	return await fetcher("/generation/generate-metadata", "POST", {
 		prompt,
+		mediaType,
 	});
 };
 

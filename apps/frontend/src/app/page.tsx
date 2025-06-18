@@ -1,8 +1,8 @@
-import { GridItem } from "@/components/grid-item";
 import { getTokens } from "@/lib/api";
-import type { IToken } from "@autofun/types";
 import type { Metadata } from "next";
 import ListView from "@/components/list-view";
+import TokenGrid from "@/components/token-grid";
+// import { GridItem } from "@/components/grid-item";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
@@ -32,19 +32,10 @@ export default async function Home({
 	console.log("Current Search Params:", currentSearchParams);
 	const tokens = await getTokens({ searchParams: currentSearchParams });
 	const view = currentSearchParams?.view || "grid";
-
 	return (
 		<div className="flex flex-col gap-4 container">
 			<div className="flex flex-col items-center">
-				{view === "grid" ? (
-					<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
-						{tokens?.map((token: IToken) => (
-							<GridItem token={token} key={token.contractAddress} />
-						))}
-					</div>
-				) : (
-					<ListView tokens={tokens} />
-				)}
+				{view === "grid" ? <TokenGrid tokens={tokens} /> : <ListView tokens={tokens} />}
 			</div>
 		</div>
 	);

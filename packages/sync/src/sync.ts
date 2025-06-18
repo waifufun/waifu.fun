@@ -111,11 +111,6 @@ export class DataSync {
 							status: "active",
 						});
 
-						if (existingMigration) {
-							skippedCount++;
-							continue;
-						}
-
 						const transformedToken = await this.transformToken(pgToken);
 
 						const session = await Mongoose.startSession();
@@ -159,6 +154,10 @@ export class DataSync {
 										protocol: "raydium",
 										version: 1,
 									};
+									if (existingMigration) {
+										skippedCount++;
+										return; // Skip if migration already exists
+									}
 									await this.Migration.create([migrationRecord], { session });
 								}
 							});
