@@ -20,7 +20,7 @@ export default function SideBarFilters() {
 
 			for (const [key, value] of Object.entries(params)) {
 				if (value === "all") {
-					urlParams.delete(key); 
+					urlParams.delete(key);
 				} else {
 					urlParams.set(key, value);
 				}
@@ -45,7 +45,10 @@ export default function SideBarFilters() {
 	return (
 		<>
 			<Collapsible open={showFiltersPanel} onOpenChange={setShowFiltersPanel}>
-				<CollapsibleTrigger asChild>
+				<CollapsibleTrigger
+					className="text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24] py-4.5 cursor-pointer"
+					asChild
+				>
 					<SidebarMenuButton
 						variant="default"
 						className="w-full justify-start group-data-[collapsible=icon]:justify-center"
