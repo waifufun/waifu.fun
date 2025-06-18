@@ -1,3 +1,10 @@
+## [0.16.1](https://github.com/elizaos/autofun-monorepo/compare/v0.16.0...v0.16.1) (2025-06-18)
+
+
+### Bug Fixes
+
+* fix build errors ([d32bc4a](https://github.com/elizaos/autofun-monorepo/commit/d32bc4a8570b0bcb807a83bf8aeba35c34f5ed29))
+
 # [0.16.0](https://github.com/elizaos/autofun-monorepo/compare/v0.15.0...v0.16.0) (2025-06-18)
 
 
