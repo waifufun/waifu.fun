@@ -1,4 +1,4 @@
-import { PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, TransactionMessage, VersionedTransaction, Keypair } from "@solana/web3.js";
 import BN from "bn.js";
 import {
 	Raydium,
@@ -6,6 +6,10 @@ import {
 	CREATE_CPMM_POOL_PROGRAM,
 	CREATE_CPMM_POOL_FEE_ACC,
 	type ApiV3PoolInfoItem,
+	DEV_LOCK_CPMM_PROGRAM,
+	DEV_LOCK_CPMM_AUTH,
+	getCpmmPdaAmmConfigId,
+	DEVNET_PROGRAM_ID,
 } from "@raydium-io/raydium-sdk-v2";
 import type { MigrationContext } from "../../types";
 import { recordTransaction } from "../../utils/protocol-utils";
@@ -14,6 +18,7 @@ import DB from "@autofun/database";
 import { depositToRaydiumVault } from "../../vaults/raydiumVault";
 import * as spl from "@solana/spl-token";
 import { retryOperation } from "../../utils";
+import { Wallet } from "../../utils/customWallet";
 
 interface CreatePoolParams {
 	tokenMint: string;
@@ -52,7 +57,7 @@ export async function createPool(
 		const raydium = await Raydium.load({
 			owner: wallet.payer,
 			connection: rpc,
-			cluster: "mainnet",
+			cluster: process.env.NETWORK === "devnet" ? "devnet" : "mainnet",
 			disableFeatureCheck: true,
 			disableLoadToken: false,
 			blockhashCommitment: "finalized",
@@ -78,13 +83,23 @@ export async function createPool(
 
 		// Get fee configs
 		const feeConfigs = await raydium.api.getCpmmConfigs();
-		const feeConfig = feeConfigs[1]; // Use the second config for mainnet
+		if (raydium.cluster === "devnet") {
+			// biome-ignore lint/complexity/noForEach: <explanation>
+			feeConfigs.forEach((config: any) => {
+				config.id = getCpmmPdaAmmConfigId(
+					DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
+					config.index,
+				).publicKey.toBase58();
+			});
+		}
+		const feeConfig = raydium.cluster === "devnet" ? feeConfigs[0] : feeConfigs[1];
 		const startTime = new BN(Math.floor(Date.now() / 1000) + 5 * 60);
 
 		// Create pool using Raydium SDK
 		const poolCreation = await raydium.cpmm.createPool({
-			programId: CREATE_CPMM_POOL_PROGRAM,
-			poolFeeAccount: CREATE_CPMM_POOL_FEE_ACC,
+			programId: raydium.cluster === "devnet" ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM : CREATE_CPMM_POOL_PROGRAM,
+			poolFeeAccount:
+				raydium.cluster === "devnet" ? DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC : CREATE_CPMM_POOL_FEE_ACC,
 			mintA,
 			mintB,
 			mintAAmount: primaryAmount,
@@ -140,6 +155,7 @@ export async function createPool(
 					status: "migrated",
 					poolId: poolAddresses.id,
 					updatedAt: new Date(),
+					tradingStartsAt: new Date(startTime.toNumber() * 1000),
 				},
 			},
 		);
@@ -174,13 +190,14 @@ export async function initRaydiumSdkAndFetchPoolInfo(
 		const raydium = await Raydium.load({
 			owner: wallet.payer,
 			connection: rpc,
-			cluster: "mainnet",
+			cluster: process.env.NETWORK === "devnet" ? "devnet" : "mainnet",
 			disableFeatureCheck: true,
 			disableLoadToken: false,
 			blockhashCommitment: "finalized",
 		});
 
 		// Fetch pool information using the api module
+		// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
 		let result;
 		result = await raydium.cpmm.getPoolInfoFromRpc(poolId);
 		if (!result) {
@@ -231,6 +248,7 @@ export async function initRaydiumSdkAndFetchPoolInfo(
 			{
 				$set: {
 					poolInfo: JSON.stringify(poolInfoResult),
+					poolKeys: JSON.stringify(poolKeys),
 					updatedAt: new Date(),
 				},
 			},
@@ -253,7 +271,7 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 		const raydium = await Raydium.load({
 			owner: wallet.payer,
 			connection: rpc,
-			cluster: "mainnet",
+			cluster: process.env.NETWORK === "devnet" ? "devnet" : "mainnet",
 			disableFeatureCheck: true,
 			disableLoadToken: false,
 			blockhashCommitment: "finalized",
@@ -262,8 +280,14 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 		if (!state.poolInfo) {
 			throw new Error("Pool info not found in state");
 		}
+		if (!state.poolKeys) {
+			throw new Error("Pool keys not found in state");
+		}
 		// Create lock transaction
 		const lockTx = await raydium.cpmm.lockLp({
+			programId: DEV_LOCK_CPMM_PROGRAM, // devnet
+			authProgram: DEV_LOCK_CPMM_AUTH, // devnet
+			poolKeys: state.poolKeys, // devnet
 			poolInfo: state.poolInfo,
 			lpAmount: amount,
 			txVersion: TxVersion.V0,
@@ -293,6 +317,9 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 					[`${isPrimary ? "primary" : "secondary"}LockTxId`]: txId,
 					[`${isPrimary ? "primary" : "secondary"}NftMint`]: nftMint,
 					updatedAt: new Date(),
+				},
+				$addToSet: {
+					nftMinted: nftMint,
 				},
 			},
 		);
@@ -365,17 +392,17 @@ export async function finalizeLockLP(context: MigrationContext): Promise<void> {
 	const primaryLockTx = state.transactions?.find((tx) => tx.step === "lockPrimaryLP");
 	const secondaryLockTx = state.transactions?.find((tx) => tx.step === "lockSecondaryLP");
 
-	if (!primaryLockTx?.data?.txId) {
+	if (!primaryLockTx?.txId) {
 		throw new Error("Primary LP lock transaction not found");
 	}
-	if (!secondaryLockTx?.data?.txId) {
+	if (!secondaryLockTx?.txId) {
 		throw new Error("Secondary LP lock transaction not found");
 	}
 
 	// Record the finalization
 	await recordTransaction(state, "finalizeLockLP", "finalize-lock-lp", {
-		primaryLockTxId: primaryLockTx.data.txId,
-		secondaryLockTxId: secondaryLockTx.data.txId,
+		primaryLockTxId: primaryLockTx.txId,
+		secondaryLockTxId: secondaryLockTx.txId,
 		timestamp: new Date(),
 	});
 
@@ -410,7 +437,6 @@ export async function depositNftToRaydiumVault(
 	try {
 		// Get the signer wallet
 		const signerWallet = wallet;
-
 		// Get the program from context
 		if (!context.programContext?.raydiumVaultProgram) {
 			throw new Error("Raydium vault program not initialized");
@@ -430,18 +456,6 @@ export async function depositNftToRaydiumVault(
 			claimerAddress: claimerAddress.toString(),
 			timestamp: new Date(),
 		});
-
-		// Update database with deposit information
-		await DB.Migration.findOneAndUpdate(
-			{ contractAddress: state.tokenMint },
-			{
-				$set: {
-					nftDeposited: true,
-					nftDepositedAt: new Date(),
-					updatedAt: new Date(),
-				},
-			},
-		);
 
 		return {
 			txId: txSignature,

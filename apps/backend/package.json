@@ -27,6 +27,7 @@
 		"@autofun/redis": "workspace:*",
 		"@autofun/rpc": "workspace:*",
 		"@autofun/s3-uploader": "workspace:*",
+		"@autofun/migrations": "workspace:*",
 		"@autofun/utils": "workspace:*",
 		"@autofun/ai": "workspace:*",
 		"@codex-data/sdk": "^1.0.6",

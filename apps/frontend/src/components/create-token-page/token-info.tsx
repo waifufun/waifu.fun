@@ -7,6 +7,7 @@ import {
 	nameValidation,
 	tickerValidation,
 	descriptionValidation,
+	curveLimitValidation
 } from "../hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -326,6 +327,12 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 					<TokenInfoInput title="Ticker" label="$" target="symbol" validation={tickerValidation} />
 				</div>
 				<TokenInfoInput title="Description" target="description" validation={descriptionValidation} />
+				<TokenInfoInput
+					title="Curve Limit"
+					target="curveLimit"
+					validation={curveLimitValidation}
+					label=""
+				/>
 			</div>
 			<GenerateAddress />
 			<BuyCoin />

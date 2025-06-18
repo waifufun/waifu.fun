@@ -10,7 +10,8 @@ import {
 } from "./raydium/calls";
 import BN from "bn.js";
 import DB from "@autofun/database";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Keypair } from "@solana/web3.js";
+import { recordTransaction } from "../utils/protocol-utils";
 
 export type RaydiumMigrationContext = MigrationContext;
 
@@ -129,14 +130,58 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			throw new Error("Not implemented");
 		},
 	},
-	commonSendNftStep,
+	{
+		name: "sendNftToManager",
+		description: "Send primary NFT to manager multisig",
+		execute: async (context: RaydiumMigrationContext) => {
+			const { state } = context;
+			if (!state.secondaryNftMint) {
+				throw new Error("Primary NFT mint not found in state");
+			}
+
+			const multisigAddress = process.env.ACCOUNT_FEE_MULTISIG;
+			if (!multisigAddress) {
+				throw new Error("Multisig address not found in environment variables");
+			}
+			context.state.nftVersion = "legacy";
+
+			const txId = await commonSendNftStep.execute(context);
+			await recordTransaction(state, "sendNftToManager", txId, {
+				multisigAddress,
+				secondaryNftMint: state.secondaryNftMint,
+			});
+			const protocolState = state || {};
+
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						protocolState: JSON.stringify({
+							...protocolState,
+							nftSentToManager: true,
+							nftSentToManagerAt: new Date(),
+							nftSentToManageTxId: txId,
+						}),
+					},
+				},
+			);
+
+			// recordTransaction
+
+			return { txId };
+		},
+		rollback: async (context: RaydiumMigrationContext) => {
+			throw new Error("Not implemented");
+		},
+	},
+
 	{
 		name: "depositNft",
 		description: "Deposit NFT to Raydium vault",
 		execute: async (context: RaydiumMigrationContext) => {
 			const { state } = context;
-			const { nftMint } = state;
-			if (!nftMint) {
+			const { primaryNftMint } = state;
+			if (!primaryNftMint) {
 				throw new Error("NFT mint not found in state");
 			}
 
@@ -149,17 +194,69 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			}
 
 			const claimerAddress = new PublicKey(token.creator);
-			const { txId } = await depositNftToRaydiumVault(context, nftMint, claimerAddress);
+			const { txId } = await depositNftToRaydiumVault(context, primaryNftMint, claimerAddress);
 			state.nftDeposited = true;
 			state.nftDepositedAt = new Date();
 			state.txId = txId;
+			const protocolState = state || {};
+
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						protocolState: JSON.stringify({
+							...protocolState,
+							nftDeposited: true,
+							nftDepositedAt: new Date(),
+							nftDepositedTxId: txId,
+						}),
+						updatedAt: new Date(),
+					},
+				},
+			);
 		},
 		rollback: async (context: RaydiumMigrationContext) => {
 			throw new Error("Not implemented");
 		},
 	},
 
-	commonCollectFeesStep,
+	{
+		name: "collectFees",
+		description: "Collect fees from Raydium pool",
+		execute: async (context: RaydiumMigrationContext) => {
+			const { state } = context;
+			if (!state.poolId) {
+				throw new Error("Pool ID not found in state");
+			}
+
+			const result = await commonCollectFeesStep.execute(context);
+			const protocolState = state || {};
+			// recordTransaction
+			await recordTransaction(state, "collectFees", result.txId, {
+				poolId: state.poolId,
+			});
+			await DB.Migration.findOneAndUpdate(
+				{ contractAddress: state.tokenMint },
+				{
+					$set: {
+						protocolState: JSON.stringify({
+							...protocolState,
+							"protocolState.feesCollected": true,
+							"protocolState.feesCollectedAt": new Date(),
+							"protocolState.feesCollectedTxId": result.txId,
+						}),
+					},
+				},
+			);
+
+			return {
+				txId: result.txId,
+			};
+		},
+		rollback: async (context: RaydiumMigrationContext) => {
+			throw new Error("Not implemented");
+		},
+	},
 	{
 		name: "finalize",
 		description: "Finalize migration",

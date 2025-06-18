@@ -29,6 +29,7 @@ export default async function Home({
 	searchParams,
 }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
 	const currentSearchParams = await searchParams;
+	console.log("Current Search Params:", currentSearchParams);
 	const tokens = await getTokens({ searchParams: currentSearchParams });
 	const view = currentSearchParams?.view || "grid";
 

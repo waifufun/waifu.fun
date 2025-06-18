@@ -5,6 +5,10 @@ import type { IRecentTransaction, TChain, TChainId, TSupportProtocol } from "@au
 import { isChainIdAllowedForChain } from "@autofun/utils";
 import { parseEventLogs, erc20Abi, getAddress, type Address, formatUnits, type Hash } from "viem";
 
+import DB from "@autofun/database";
+import { Claimer } from "@autofun/migrations";
+import type { SolanaNetworkIds } from "@autofun/types";
+
 interface TransferEventArgs {
 	from: Address;
 	to: Address;
@@ -165,4 +169,57 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 			throw new Error("Unsupported chain or chainId passed");
 		},
 	);
+
+	fastify.post<{
+		Body: {
+			tokenMint: string;
+		};
+		Reply: {
+			success: boolean;
+			signature?: string;
+			error?: string;
+		};
+	}>("/claim", async (request, reply) => {
+		try {
+			const { tokenMint } = request.body;
+			if (!tokenMint) {
+				return reply.code(400).send({ success: false, error: "Token mint is required" });
+			}
+
+			const migration = await DB.Migration.findOne({ contractAddress: tokenMint });
+			if (!migration) {
+				return reply.code(400).send({ success: false, error: "Token has not been migrated yet" });
+			}
+
+			const token = await DB.Token.findOne({ mint: tokenMint });
+			if (!token) {
+				return reply.code(400).send({ success: false, error: "Token not found" });
+			}
+
+			if (token.chain !== "solana") {
+				return reply.code(400).send({ success: false, error: "Claiming is only supported for Solana tokens" });
+			}
+
+			const claimer = new Claimer(token.chainId as SolanaNetworkIds);
+			let signature: string;
+
+			if (token.pool === "meteora") {
+				signature = await claimer.claimMeteora(tokenMint);
+			} else if (token.pool === "raydium") {
+				signature = await claimer.claimRaydium(tokenMint);
+			} else {
+				return reply.code(400).send({ success: false, error: "Unsupported protocol for claiming" });
+			}
+
+			await DB.Token.updateOne({ mint: tokenMint }, { $set: { lastClaimedAt: new Date() } });
+
+			return reply.send({ success: true, signature });
+		} catch (error) {
+			console.error("Error claiming fees:", error);
+			return reply.code(500).send({
+				success: false,
+				error: error instanceof Error ? error.message : "Failed to claim fees",
+			});
+		}
+	});
 }
