@@ -107,16 +107,7 @@ export default function PageClient({
 					<div className="w-full relative">
 						<div className="bg-black border-2 border-[#03FF24]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 							<div className="overflow-hidden">
-								<Chart
-									token={token}
-									tokenLookUp={
-										{
-											chain: token.chain,
-											chainId: token.chainId,
-											contractAddress: token.contractAddress,
-										} as ITokenLookUp
-									}
-								/>
+								<Chart token={token} />
 							</div>
 						</div>
 					</div>
@@ -130,7 +121,6 @@ export default function PageClient({
 					<Swap token={token} />
 					<div className="flex flex-col gap-4 bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 						<BondingCurveProgress token={token} />
-						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
 						<div className="flex flex-row gap-4 items-start">
 							<Image
 								src={token?.image}
