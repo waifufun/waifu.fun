@@ -10,6 +10,7 @@ import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromp
 import { getToken } from "@/lib/api";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
+import { abbreviateNumber } from "@/lib/utils";
 
 interface GeneratedImage {
 	id: string;
@@ -48,7 +49,8 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 	});
 
 	const userTokenAmount = tokenBalance?.data || 0;
-	const hasEnoughTokens = userTokenAmount >= Number(process.env.NEXT_PUBLIC_GENERATION_MIN_BALANCE) || 1_000_000;
+	const neededAmount = Number(process.env.NEXT_PUBLIC_GENERATION_MIN_BALANCE || 1_000_000); // Default to 1M if not set
+	const hasEnoughTokens = userTokenAmount >= neededAmount;
 
 	const prompt = watchValue("prompt");
 
@@ -85,14 +87,14 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
 							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
 							<span>
-								You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
-								generate images in fast mode.
+								You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
+								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate images in fast mode.
 							</span>
 						</div>
 					)}
 					<Button
 						onClick={() => handleGenerateMedia("image")}
-						disabled={isGeneratingMedia}
+						disabled={isGeneratingMedia || !hasEnoughTokens}
 						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{isGeneratingMedia ? (
@@ -178,14 +180,14 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
 							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
 							<span>
-								You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
-								generate videos in fast mode.
+								You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
+								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate videos in fast mode.
 							</span>
 						</div>
 					)}
 					<Button
 						onClick={() => handleGenerateMedia("video")}
-						disabled={isGeneratingMedia}
+						disabled={isGeneratingMedia || !hasEnoughTokens}
 						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{isGeneratingMedia ? (
@@ -272,14 +274,14 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
 							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
 							<span>
-								You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
-								generate audio in fast mode.
+								You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
+								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate audio in fast mode.
 							</span>
 						</div>
 					)}
 					<Button
 						onClick={() => handleGenerateMedia("audio")}
-						disabled={isGeneratingMedia}
+						disabled={isGeneratingMedia || !hasEnoughTokens}
 						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{isGeneratingMedia ? (
