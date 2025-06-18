@@ -1,7 +1,6 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { tokens, type Token } from "./schema.js";
-import { eq } from "drizzle-orm";
 import DB from "@autofun/database";
 import logger from "@autofun/logger";
 import type { IToken, IMigration, AddressLike, TURLLike } from "@autofun/types";

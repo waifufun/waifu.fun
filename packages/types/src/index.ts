@@ -96,7 +96,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	createdAt: string;
 	updatedAt: Date;
 	pool?: string;
-	isToken2022: boolean;
+	isToken2022?: boolean;
 }
 
 export interface ITokenSocials {
