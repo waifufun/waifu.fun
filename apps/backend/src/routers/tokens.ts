@@ -557,7 +557,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}),
 		});
 
-		const user = await DB.User.findOne({ address });
+		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
