@@ -1,8 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType } from "@autofun/types";
+import { MediaType, type AddressLike } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
+import DB from "@autofun/database";
+import { SolanaRpcProvider } from "@autofun/rpc";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -17,6 +19,7 @@ interface GenerateMetadataRequest {
 
 interface GenerateMediaRequest {
 	prompt: string;
+	address: AddressLike;
 	type?: MediaType;
 	negative_prompt?: string;
 	guidance_scale?: number;
@@ -27,6 +30,10 @@ interface GenerateMediaRequest {
 
 interface GenerateBothRequest extends Omit<GenerateMediaRequest, "prompt"> {
 	metadataPrompt?: string;
+}
+
+if (!process.env.GENERATION_MIN_BALANCE) {
+	throw new Error("GENERATION_MIN_BALANCE environment variable is not set");
 }
 
 export default async function generationRoutes(fastify: FastifyInstance) {
@@ -79,13 +86,15 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				const {
+				let {
 					prompt,
 					type = MediaType.IMAGE,
 					negative_prompt,
 					guidance_scale = 7.5,
 					width = 1024,
 					height = 1024,
+					mode = "fast",
+					address,
 				} = request.body;
 
 				if (!prompt || prompt.length > 2000) {
@@ -93,6 +102,42 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 						error: "Invalid prompt length",
 					});
 				}
+
+				if (!user?.solana) {
+					return reply.code(400).send({
+						message: "Solana wallet address only supported for media generation",
+					});
+				}
+
+				// check if token exists by address
+				if (!address || typeof address !== "string" || address.length < 10) {
+					return reply.code(400).send({
+						message: "Invalid token address",
+					});
+				}
+
+				const token = await DB.Token.findOne({
+					chain: "solana",
+					contractAddress: address,
+				}).lean();
+
+				if (!token) {
+					return reply.code(404).send({
+						error: "Token not found",
+					});
+				}
+
+				// get balance of the token for the user
+				const rpc = new SolanaRpcProvider(101);
+
+				const balance = await rpc.getTokenBalance(address, user.solana);
+				if (!balance || balance < Number(process.env.GENERATION_MIN_BALANCE || 0)) {
+					return reply.code(400).send({
+						message: `Insufficient balance to generate ${type}. Minimum required: ${process.env.GENERATION_MIN_BALANCE} tokens`,
+					});
+				}
+
+				mode = "pro";
 
 				if (width < 512 || width > 1024 || height < 512 || height > 1024) {
 					return reply.code(400).send({
@@ -171,7 +216,6 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 			const user = request.authUser;
 
 			if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
-				console.log("Authentication failed: No valid wallet address found");
 				return reply.code(401).send({
 					success: false,
 					error: "User authentication required",

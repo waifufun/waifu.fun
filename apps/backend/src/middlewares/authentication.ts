@@ -17,6 +17,7 @@ declare module "fastify" {
 export async function authenticationMiddleware(request: FastifyRequest, reply: FastifyReply) {
 	try {
 		const cookies = request.cookies || {};
+		console.log("cookies: ", cookies);
 		if (process.env.NODE_ENV === "development" && !cookies.evm && !cookies.solana) {
 			request.authUser = {
 				evm: "0x0000000000000000000000000000000000000000",

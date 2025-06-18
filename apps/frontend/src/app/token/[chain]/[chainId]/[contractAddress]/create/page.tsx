@@ -8,6 +8,8 @@ import { UploadCloud, ImageIcon, Video, Music, AlertTriangle, Download, Trash2, 
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { getToken } from "@/lib/api";
+import useAddress from "@/hooks/use-address";
+import useTokenBalance from "@/hooks/use-token-balance";
 
 interface GeneratedImage {
 	id: string;
@@ -18,6 +20,10 @@ interface GeneratedImage {
 interface InfoTabsProps {
 	generatedImages: GeneratedImage[];
 	token: IToken;
+}
+
+if (!process.env.NEXT_PUBLIC_GENERATION_MIN_BALANCE) {
+	throw new Error("NEXT_PUBLIC_GENERATION_MIN_BALANCE is not defined in the environment variables.");
 }
 
 const AiCreatePanel = ({ token }: { token: IToken }) => {
@@ -34,6 +40,16 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		deleteMedia,
 	} = usePrompt();
 
+	const address = useAddress();
+	const tokenBalance = useTokenBalance({
+		chain: token.chain,
+		contractAddress: token.contractAddress,
+		address,
+	});
+
+	const userTokenAmount = tokenBalance?.data || 0;
+	const hasEnoughTokens = userTokenAmount >= Number(process.env.NEXT_PUBLIC_GENERATION_MIN_BALANCE) || 1_000_000;
+
 	const prompt = watchValue("prompt");
 
 	const handleGenerateMedia = async (mediaType: "audio" | "video" | "image") => {
@@ -42,7 +58,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		}
 
 		const promptValue = prompt?.toString() || "";
-		await generateToken({ mediaType: mediaType, prompt: promptValue });
+		await generateToken({ mediaType: mediaType, prompt: promptValue, contractAddress: token.contractAddress });
 	};
 
 	const handleDownload = (mediaUrl: string, index: number, type: string) => {
@@ -65,13 +81,15 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
 						{...registerForm("prompt")}
 					/>
-					<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
-						<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
-						<span>
-							You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
-							generate images in fast mode.
-						</span>
-					</div>
+					{!hasEnoughTokens && (
+						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
+							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
+							<span>
+								You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
+								generate images in fast mode.
+							</span>
+						</div>
+					)}
 					<Button
 						onClick={() => handleGenerateMedia("image")}
 						disabled={isGeneratingMedia}
@@ -156,13 +174,15 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
 						{...registerForm("prompt")}
 					/>
-					<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
-						<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
-						<span>
-							You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
-							generate videos in fast mode.
-						</span>
-					</div>
+					{!hasEnoughTokens && (
+						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
+							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
+							<span>
+								You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
+								generate videos in fast mode.
+							</span>
+						</div>
+					)}
 					<Button
 						onClick={() => handleGenerateMedia("video")}
 						disabled={isGeneratingMedia}
@@ -248,13 +268,15 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
 						{...registerForm("prompt")}
 					/>
-					<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
-						<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
-						<span>
-							You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
-							generate audio in fast mode.
-						</span>
-					</div>
+					{!hasEnoughTokens && (
+						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
+							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
+							<span>
+								You need to hold at least 1M <span className="text-[#03FF24] font-bold">{token.name}</span> tokens to
+								generate audio in fast mode.
+							</span>
+						</div>
+					)}
 					<Button
 						onClick={() => handleGenerateMedia("audio")}
 						disabled={isGeneratingMedia}
