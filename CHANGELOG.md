@@ -1,3 +1,16 @@
+# [0.16.0](https://github.com/elizaos/autofun-monorepo/compare/v0.15.0...v0.16.0) (2025-06-18)
+
+
+### Features
+
+* capability for audio and video ([370055d](https://github.com/elizaos/autofun-monorepo/commit/370055d2c32ee3cff48533ce248d3210ce1fb0ab))
+* delete images and download images, also audio and video ([e8c1110](https://github.com/elizaos/autofun-monorepo/commit/e8c1110d80c5e797b0db48e0e7a57e4ce11522c7))
+* fix token creation ([211703a](https://github.com/elizaos/autofun-monorepo/commit/211703a588cce814a4d447781af94514a42b3deb))
+* functional page ([d1bfc4b](https://github.com/elizaos/autofun-monorepo/commit/d1bfc4bd530f2437bc89ef1250b43c1cc02f8f58))
+* timeout increase, audio and video components completely working ([fb382ec](https://github.com/elizaos/autofun-monorepo/commit/fb382ecd6c5eb30467269043fa67f6c20a32b542))
+* updated footer pages and header bg color ([588a8da](https://github.com/elizaos/autofun-monorepo/commit/588a8dac585263ebddddd4f35701b22d30064bf4))
+* updated lookup24hvolume to factor in the direction ([04c3962](https://github.com/elizaos/autofun-monorepo/commit/04c396276fd9a2291b7562fd55b93bb7ccf0870d))
+
 # [0.15.0](https://github.com/elizaos/autofun-monorepo/compare/v0.14.0...v0.15.0) (2025-06-17)
 
 
