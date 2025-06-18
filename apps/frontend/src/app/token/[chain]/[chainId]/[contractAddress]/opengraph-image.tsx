@@ -3,13 +3,14 @@ import type { ITokenLookUp } from "@autofun/types";
 import { getToken } from "@/lib/api";
 import { formatNumberSubscript } from "@/lib/utils";
 
-// Fetch font at runtime (edge-safe way)
 const fontResponse = await fetch(
 	new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
 );
+
 if (!fontResponse.ok) {
 	throw new Error(`Failed to fetch font: ${fontResponse.statusText}`);
 }
+
 const satoshiFont = await fontResponse.arrayBuffer();
 
 export const runtime = "edge";
