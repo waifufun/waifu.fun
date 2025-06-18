@@ -85,7 +85,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				if (!allowedChain) throw new Error("Unsupported chain pair");
 			}
 
-			// const cacheKey = `${chain}:${chainId}:${page}:${category}:${sortQuery}:${limit}:tokens:${isSearch ? queryParams?.search : "non-search"}`;
 			const cacheKey = `${chain}:${chainId}:${page}:${category}:${origin}:${sortQuery}:${limit}:tokens:${isSearch ? queryParams.search : "non-search"}`;
 
 			logger.info(`Cache key: ${cacheKey}`);
