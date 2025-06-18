@@ -116,7 +116,6 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				// check if token exists by address
 				if (!address || typeof address !== "string" || address.length < 10) {
 					return reply.code(400).send({
 						message: "Invalid token address",
@@ -172,6 +171,8 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 						error: "Invalid guidance scale",
 					});
 				}
+
+				console.log("current mode:", mode);
 
 				const result = (await generateMedia({
 					prompt,
