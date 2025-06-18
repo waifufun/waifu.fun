@@ -5,14 +5,15 @@ import type { IToken } from "@autofun/types";
 
 export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const columns = 5;
+	const columnKeys = Array.from({ length: columns }, (_, i) => `col${i + 1}`);
 
 	return (
 		<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
-			{[...Array(columns)].map((_, colIndex) => {
+			{columnKeys.map((colKey, colIndex) => {
 				const columnItems = tokens.filter((_, idx) => idx % columns === colIndex);
 				return (
 					<motion.div
-						key={colIndex}
+						key={colKey}
 						className="flex flex-col space-y-4"
 						initial={{ opacity: 0, y: -250, rotateX: 50 }}
 						animate={{ opacity: 1, y: 0, rotateX: 0 }}
