@@ -16,8 +16,8 @@ export default function AdvancedSettings() {
 
 	return (
 		<div className="w-full">
-			<div className="w-full flex items-center justify-between text-sm font-medium text-white">
-				<span className="text-base">Advanced Settings</span>
+			<div className="w-full flex items-center justify-between text-xs font-medium text-white">
+				<span className="text-xs">Advanced Settings</span>
 				<Switch checked={open} onCheckedChange={setOpen} />
 			</div>
 
@@ -26,7 +26,7 @@ export default function AdvancedSettings() {
 					{/* Speed */}
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-1">
-							<span className="text-base text-white font-medium">Speed</span>
+							<span className="text-xs text-white font-medium">Speed</span>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<HelpCircle size={16} className="text-autofun-text-secondary" />
@@ -58,7 +58,7 @@ export default function AdvancedSettings() {
 					<div className="flex  flex-col gap-4">
 						<div className="flex items-center justify-between w-full">
 							<div className="flex items-center gap-1">
-								<span className="text-base text-white font-medium">Slippage</span>
+								<span className="text-xs text-white font-medium">Slippage</span>
 
 								<Tooltip>
 									<TooltipTrigger asChild>

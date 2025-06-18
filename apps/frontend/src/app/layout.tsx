@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
-import BottomNav from "@/components/bottom-nav";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -41,7 +40,6 @@ export default function RootLayout({
 							<Header />
 							<main className="flex-1 p-4">{children}</main>
 							<Footer />
-							<BottomNav />
 						</SidebarInset>
 						<AppSidebar />
 					</SidebarProvider>

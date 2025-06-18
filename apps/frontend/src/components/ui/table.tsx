@@ -6,7 +6,10 @@ import { cn } from "@/lib/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
 	return (
-		<div data-slot="table-container" className="relative w-full overflow-x-auto bg-[#0C0C0C]">
+		<div
+			data-slot="table-container"
+			className="relative w-full overflow-x-auto bg-black border-2 border-[#03FF24]/50 rounded-none p-0 h-auto shadow-[3px_3px_0px_rgba(3,255,36,0.3)]"
+		>
 			<table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
 		</div>
 	);
@@ -24,7 +27,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
 	return (
 		<tfoot
 			data-slot="table-footer"
-			className={cn("bg-muted/50 border-t font-medium [&>tr]:last:border-b-0", className)}
+			className={cn("bg-black border-t font-medium [&>tr]:last:border-b-0", className)}
 			{...props}
 		/>
 	);
@@ -34,7 +37,10 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	return (
 		<tr
 			data-slot="table-row"
-			className={cn("bg-[#0C0C0C] even:bg-[#0F0F0F] h-14 transition-colors", className)}
+			className={cn(
+				"bg-black h-8 transition-colors not-last:border-b border-autofun-background-action-highlight/25",
+				className,
+			)}
 			{...props}
 		/>
 	);
@@ -45,7 +51,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 		<th
 			data-slot="table-head"
 			className={cn(
-				"h-14 px-6 py-3 bg-[#0f0f0f] text-autofun-text-secondary text-sm font-medium font-satoshi uppercase leading-tight text-left align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+				"px-6 py-3 bg-black border-b-2 border-autofun-background-action-highlight/25 text-xs text-autofun-text-highlight font-medium font-satoshi uppercase leading-tight text-left align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 				className,
 			)}
 			{...props}
@@ -58,7 +64,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 		<td
 			data-slot="table-cell"
 			className={cn(
-				"px-6 py-3 first:rounded-l-sm last:rounded-r-sm align-middle text-text-primary text-base font-normal font-satoshi leading-tight whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+				"px-6 py-3 align-middle text-autofun-text-primary text-sm font-normal font-satoshi leading-tight whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 				className,
 			)}
 			{...props}

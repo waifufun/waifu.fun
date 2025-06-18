@@ -377,9 +377,106 @@ export class SolanaRpcProvider extends EventEmitter {
 		throw new Error("All RPC endpoints failed. Cannot connect to Solana.");
 	}
 
-	getTokenMetadata = withFallBack(async (contractAddress: string) => {
+	getAccountInfo = withFallBack(async (address: AddressLike) => {
+		const publicKey = new PublicKey(address);
+		const accountInfo = await this.connection.getAccountInfo(publicKey);
+		if (!accountInfo) {
+			throw new Error(`No account info found for address: ${address}`);
+		}
+		return {
+			lamports: accountInfo.lamports,
+			data: accountInfo.data,
+			executable: accountInfo.executable,
+			owner: accountInfo.owner,
+			rentEpoch: accountInfo.rentEpoch,
+		};
+	}, this);
+
+	isToken2022 = withFallBack(async (contractAddress: AddressLike) => {
+		const publicKey = new PublicKey(contractAddress);
+		const accountInfo = await this.connection.getAccountInfo(publicKey);
+		if (!accountInfo) {
+			throw new Error(`No account info found for address: ${contractAddress}`);
+		}
+		const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+		const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+		const isSplToken = accountInfo.owner.equals(TOKEN_PROGRAM_ID);
+		const isSPL2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+		if (!isSplToken && !isSPL2022) {
+			throw new Error(`Not a valid SPL token. Owner:  ${accountInfo.owner.toString()}`);
+		}
+		const isToken2022 = accountInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+		return isToken2022;
+	}, this);
+
+	getTokenMetadata = withFallBack(async (contractAddress: AddressLike) => {
 		const metaplex = new Metaplex(this.connection);
 		const mint = new PublicKey(contractAddress);
+		const isToken2022 = await this.isToken2022(contractAddress);
+		const mintInfo = (await this.connection.getParsedAccountInfo(mint)) as {
+			value: {
+				data: {
+					parsed: {
+						info: {
+							mintAuthority: string;
+							supply: string | number;
+							decimals: string | number;
+							extensions: {
+								extension: string;
+								state: {
+									name: string;
+									symbol: string;
+									uri: string;
+								};
+							}[];
+						};
+					};
+				};
+			};
+		};
+		const parsedData = mintInfo.value?.data?.parsed;
+		if (isToken2022 && parsedData?.info?.extensions) {
+			const metadataExt = parsedData.info.extensions.find((ext) => ext.extension === "tokenMetadata");
+			if (metadataExt?.state) {
+				const name = metadataExt.state.name || "";
+				const symbol = metadataExt.state.symbol || "";
+				const uri = metadataExt.state.uri || "";
+				const creator = parsedData?.info?.mintAuthority || null;
+				const totalSupply = parsedData?.info?.supply || 0;
+				const decimals = parsedData?.info?.decimals || 0;
+
+				if (!uri) throw new Error("No URI found in token metadata extension.");
+				const uriData = (await fetch(uri).then(async (resp) => await resp.json())) as {
+					name: string;
+					symbol: string;
+					description: string;
+					image: TURLLike;
+					showName: boolean;
+					createdOn: string;
+					twitter: string;
+					website: string;
+					telegram: string;
+					discord: string;
+				};
+				return {
+					name: name || uriData.name,
+					symbol: symbol || uriData.symbol,
+					description: uriData.description || "",
+					image: uriData.image,
+					showName: uriData.showName || false,
+					createdOn: uriData.createdOn || new Date().toISOString(),
+					twitter: uriData.twitter || undefined,
+					website: uriData.website || undefined,
+					telegram: uriData.telegram || undefined,
+					discord: uriData.discord || undefined,
+					creator: creator,
+					totalSupply: totalSupply,
+					decimals: decimals,
+					isToken2022,
+				};
+			}
+		}
+
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
 		const uri = metadata?.uri || undefined;
 
@@ -404,6 +501,7 @@ export class SolanaRpcProvider extends EventEmitter {
 			creator: metadata?.creators?.[0]?.address?.toBase58(),
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,
+			isToken2022,
 		};
 	}, this);
 
