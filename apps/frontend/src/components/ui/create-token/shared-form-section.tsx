@@ -354,7 +354,7 @@ export const LaunchButton = () => {
 		formState,
 		uploadedImage,
 		isGeneratingAddress,
-		isGeneratingImage,
+		isGeneratingMedia,
 		getTokenData,
 		pool,
 		mintKeyPair,
@@ -375,7 +375,7 @@ export const LaunchButton = () => {
 		},
 	});
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage || isLaunching;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching;
 
 	const onSubmit = async () => {
 		if (!formState.isValid) {
@@ -388,7 +388,7 @@ export const LaunchButton = () => {
 			return;
 		}
 
-		if (isGeneratingImage) {
+		if (isGeneratingMedia) {
 			toast.error("Please wait for the image to be generated.");
 			return;
 		}

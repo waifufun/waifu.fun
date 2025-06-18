@@ -49,7 +49,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 		if (!allowedChain) throw new Error("Unsupported chain pair");
 
 		const allowedRooms = ["1000", "100000", "1000000"];
-		if (allowedRooms?.includes(body.room)) {
+		if (!allowedRooms?.includes(body.room)) {
 			throw new Error("Chat room does not exist");
 		}
 
