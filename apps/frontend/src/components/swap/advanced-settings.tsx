@@ -88,7 +88,7 @@ export default function AdvancedSettings() {
 								slippage > 40
 									? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 									: "hidden",
-								"p-2 bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] rounded-sm text-sm gap-2 items-center transition-all duration-200",
+								"p-2 bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
 							])}
 						>
 							<AlertCircle className="text-autofun-background-action-highlight" />
