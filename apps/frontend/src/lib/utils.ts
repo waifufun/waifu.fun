@@ -762,3 +762,11 @@ export const createTokenTx = async (
 		signature: txId,
 	};
 };
+
+export const resizeImage = (url: string, width: number, height: number) => {
+	if (!url) return "/logo.png";
+	if (url.includes("ipfs") || !url.startsWith("http")) {
+		return url;
+	}
+	return `https://auto.fun/cdn-cgi/image/width=${width},height=${height},format=png/${url}`;
+};
