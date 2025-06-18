@@ -142,6 +142,7 @@ const PromptProviderContent = ({
 		onError: (error: any) => {
 			console.error("Error generating metadata:", error);
 			toast.error("Error generating metadata: ", error?.message || "Unknown error");
+			setIsGeneratingMedia(false);
 		},
 	});
 
