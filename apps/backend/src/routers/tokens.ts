@@ -111,8 +111,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			if (origin === "imported") {
 				query.imported = true;
-			} else {
-				query.imported = { $ne: true };
+			} else if (origin === "auto-fun") {
+				query.imported = false;
 			}
 
 			if (category === "bonded") {
