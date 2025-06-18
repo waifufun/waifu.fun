@@ -1,12 +1,11 @@
 export default function Page() {
 	return (
-		<div className="flex flex-col flex-1 ">
-			<div className="max-w-[800px] mx-auto mb-8">
-				<h1 className="p-6 text-4xl font-bold text-white ">How it works</h1>
-
+		<div className="flex flex-col flex-1">
+			<div className="max-w-[800px] mx-auto flex flex-col gap-4">
+				<h1 className="text-4xl font-bold text-white ">How it works</h1>
 				<div className="space-y-8">
 					{/* FAQ Section */}
-					<section className="bg-none p-6 ">
+					<section className="bg-none">
 						<div className="space-y-6">
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-lg font-bold text-white">Coin Launch Options</h3>
