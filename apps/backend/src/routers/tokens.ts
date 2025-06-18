@@ -583,6 +583,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					getChecksummedAddress(t?.address as AddressLike, "solana") ===
 					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
 			);
+      
 			const populated = populatedTokenData?.find((p) => p?.contractAddress === balance.tokenAddress);
 			const limitedPopulatedData = populated
 				? { marketcap: populated.marketcap, price: populated.price, totalSupply: populated.totalSupply }
@@ -695,6 +696,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				totalSupply: Number(totalSupply),
 				createdAt: createdAt.toISOString(),
 				updatedAt: createdAt,
+				isToken2022: false,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -703,6 +705,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const rpc = await SolanaRpcProvider.connect(solanaChainId);
 
 			const metadata = await rpc.getTokenMetadata(contractAddress);
+			console.log("Metadata for token:", metadata);
 
 			if (!metadata?.image) throw new Error("Token has no image");
 
@@ -733,6 +736,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				totalSupply: Number(metadata?.totalSupply),
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date(),
+				isToken2022: metadata?.isToken2022 || false,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
