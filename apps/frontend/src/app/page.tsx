@@ -31,20 +31,10 @@ export default async function Home({
 	const currentSearchParams = await searchParams;
 	const tokens = await getTokens({ searchParams: currentSearchParams });
 	const view = currentSearchParams?.view || "grid";
-	console.log(tokens);
 	return (
 		<div className="flex flex-col gap-4 container">
 			<div className="flex flex-col items-center">
-				{view === "grid" ? (
-					// <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
-					// 	{tokens?.map((token: IToken) => (
-					// 		<GridItem token={token} key={token.contractAddress} />
-					// 	))}
-					// </div>
-					<TokenGrid tokens={tokens} />
-				) : (
-					<ListView tokens={tokens} />
-				)}
+				{view === "grid" ? <TokenGrid tokens={tokens} /> : <ListView tokens={tokens} />}
 			</div>
 		</div>
 	);

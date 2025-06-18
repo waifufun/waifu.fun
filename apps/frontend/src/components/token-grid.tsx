@@ -7,7 +7,7 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const columns = 5;
 
 	return (
-		<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+		<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
 			{tokens.map((token, idx) => {
 				const col = idx % columns;
 				const row = Math.floor(idx / columns);
