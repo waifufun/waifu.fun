@@ -262,12 +262,13 @@ export const retrieveJupiterQuote = async ({
 	slippage: number;
 	// biome-ignore lint/suspicious/noExplicitAny: allow
 }): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
+	const isToken2022 = token?.isToken2022 || false;
 	const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
 	const outputMint = mode === "buy" ? token.contractAddress : SOL_MINT_ADDRESS;
 	const amountW = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
 
 	const res = await fetch(
-		`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}&platformFeeBps=${platformFeeBps}`,
+		`https://lite-api.jup.ag/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountW}&slippageBps=${slippage}${!isToken2022 ? `&platformFeeBps=${platformFeeBps}` : ""}`,
 		{
 			method: "GET",
 			headers: {
