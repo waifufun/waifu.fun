@@ -32,9 +32,17 @@ interface GenerateBothRequest extends Omit<GenerateMediaRequest, "prompt"> {
 	metadataPrompt?: string;
 }
 
-if (!process.env.GENERATION_MIN_BALANCE) {
-	throw new Error("GENERATION_MIN_BALANCE environment variable is not set");
-}
+const getMinBalance = (type: MediaType, mode: "fast" | "pro"): number => {
+	if (type === MediaType.IMAGE) {
+		return mode === "fast"
+			? Number(process.env.GENERATION_IMAGE_MIN_BALANCE_FAST || 10000)
+			: Number(process.env.GENERATION_IMAGE_MIN_BALANCE || 1000);
+	}
+
+	return mode === "fast"
+		? Number(process.env.GENERATION_VIDEO_MIN_BALANCE_FAST || 100000)
+		: Number(process.env.GENERATION_VIDEO_MIN_BALANCE || 10000);
+};
 
 export default async function generationRoutes(fastify: FastifyInstance) {
 	const GENERATION_TIMEOUT = 300000; // 5 minutes
@@ -86,14 +94,13 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				let {
+				const {
 					prompt,
 					type = MediaType.IMAGE,
 					negative_prompt,
 					guidance_scale = 7.5,
 					width = 1024,
 					height = 1024,
-					mode = "fast",
 					address,
 				} = request.body;
 
@@ -127,17 +134,32 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				// get balance of the token for the user
 				const rpc = new SolanaRpcProvider(101);
-
 				const balance = await rpc.getTokenBalance(address, user.solana);
-				if (!balance || balance < Number(process.env.GENERATION_MIN_BALANCE || 0)) {
-					return reply.code(400).send({
-						message: `Insufficient balance to generate ${type}. Minimum required: ${process.env.GENERATION_MIN_BALANCE} tokens`,
-					});
+
+				const slowBalanceNeeded = getMinBalance(type, "fast");
+				const fastBalanceNeeded = getMinBalance(type, "pro");
+				let mode = "fast" as "fast" | "pro";
+
+				// derive possible mode based on balance
+				let requiredBalance = slowBalanceNeeded;
+				if (type === MediaType.VIDEO || type === MediaType.AUDIO) {
+					requiredBalance = fastBalanceNeeded;
+					mode = "pro";
+				}
+				if (balance >= fastBalanceNeeded) {
+					mode = "pro";
+					requiredBalance = fastBalanceNeeded;
+				} else if (balance >= slowBalanceNeeded) {
+					mode = "fast";
+					requiredBalance = slowBalanceNeeded;
 				}
 
-				mode = "pro";
+				if (!balance || balance < requiredBalance) {
+					return reply.code(400).send({
+						message: `Insufficient balance to generate ${type} in ${mode} mode. Minimum required: ${requiredBalance} tokens`,
+					});
+				}
 
 				if (width < 512 || width > 1024 || height < 512 || height > 1024) {
 					return reply.code(400).send({
@@ -158,6 +180,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					guidance_scale,
 					width,
 					height,
+					mode,
 				})) as {
 					data?: {
 						has_nsfw_concepts?: boolean[];
@@ -174,7 +197,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				if (result.data?.has_nsfw_concepts?.[0] === true) {
 					return reply.code(400).send({
 						success: false,
-						error: "NSFW content detected",
+						message: "NSFW content detected",
 					});
 				}
 

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { UploadCloud, ImageIcon, Video, Music, AlertTriangle, Download, Trash2, RefreshCw } from "lucide-react";
+import { ImageIcon, Video, AlertTriangle, Download, Trash2, RefreshCw, Zap, Crown } from "lucide-react";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
-import { getToken } from "@/lib/api";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
 import { abbreviateNumber } from "@/lib/utils";
+import { getToken } from "@/lib/api";
 
 interface GeneratedImage {
 	id: string;
@@ -23,12 +23,9 @@ interface InfoTabsProps {
 	token: IToken;
 }
 
-if (!process.env.NEXT_PUBLIC_GENERATION_MIN_BALANCE) {
-	throw new Error("NEXT_PUBLIC_GENERATION_MIN_BALANCE is not defined in the environment variables.");
-}
-
 const AiCreatePanel = ({ token }: { token: IToken }) => {
 	const [activeAiTab, setActiveAiTab] = useState("image");
+	const [generationMode, setGenerationMode] = useState<"fast" | "pro">("fast");
 	const {
 		previousImages,
 		previousVideos,
@@ -49,7 +46,21 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 	});
 
 	const userTokenAmount = tokenBalance?.data || 0;
-	const neededAmount = Number(process.env.NEXT_PUBLIC_GENERATION_MIN_BALANCE || 1_000_000); // Default to 1M if not set
+
+	// Get minimum balances based on media type and mode
+	const getMinBalance = (mediaType: string, mode: "fast" | "pro") => {
+		if (mediaType === "image") {
+			return mode === "pro"
+				? Number(process.env.NEXT_PUBLIC_GENERATION_IMAGE_MIN_BALANCE_FAST || 10000)
+				: Number(process.env.NEXT_PUBLIC_GENERATION_IMAGE_MIN_BALANCE || 1000);
+		}
+
+		return mode === "pro"
+			? Number(process.env.NEXT_PUBLIC_GENERATION_VIDEO_MIN_BALANCE_FAST || 100000)
+			: Number(process.env.NEXT_PUBLIC_GENERATION_VIDEO_MIN_BALANCE || 10000);
+	};
+
+	const neededAmount = getMinBalance(activeAiTab, generationMode);
 	const hasEnoughTokens = userTokenAmount >= neededAmount;
 
 	const prompt = watchValue("prompt");
@@ -60,7 +71,11 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		}
 
 		const promptValue = prompt?.toString() || "";
-		await generateToken({ mediaType: mediaType, prompt: promptValue, contractAddress: token.contractAddress });
+		await generateToken({
+			mediaType: mediaType,
+			prompt: promptValue,
+			contractAddress: token.contractAddress,
+		});
 	};
 
 	const handleDownload = (mediaUrl: string, index: number, type: string) => {
@@ -73,10 +88,69 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		document.body.removeChild(link);
 	};
 
+	const renderModeSelector = () => {
+		const standardBalance = getMinBalance(activeAiTab, "fast");
+		const fastBalance = getMinBalance(activeAiTab, "pro");
+		const hasStandardTokens = userTokenAmount >= standardBalance;
+		const hasFastTokens = userTokenAmount >= fastBalance;
+
+		// if (!hasStandardTokens) {
+		// 	return null;
+		// }
+
+		return (
+			<div className="space-y-3 mb-4">
+				<div className="flex items-center justify-between">
+					<p className="text-sm font-medium text-gray-300 uppercase tracking-wider">Generation Mode</p>
+				</div>
+				<div className="flex gap-2">
+					<Button
+						variant={generationMode === "fast" ? "default" : "outline"}
+						onClick={() => setGenerationMode("fast")}
+						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 ${
+							generationMode === "fast"
+								? "border-[#03FF24] bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
+								: "border-gray-500 text-gray-300 hover:text-gray-300 hover:bg-gray-500/10"
+						}`}
+					>
+						<Zap size={16} className="mr-2" />
+						<div className="flex flex-col items-start">
+							<span className="font-medium">Fast</span>
+							<span className="text-xs opacity-75">
+								{abbreviateNumber(standardBalance, true)} {token.ticker}
+							</span>
+						</div>
+					</Button>
+					<Button
+						variant={generationMode === "pro" ? "default" : "outline"}
+						onClick={() => setGenerationMode("pro")}
+						disabled={!hasFastTokens}
+						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 ${
+							generationMode === "pro"
+								? "border-[#03FF24] bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
+								: hasFastTokens
+									? "border-gray-500 text-gray-300 hover:text-gray-300 hover:bg-gray-500/10"
+									: "border-gray-700 text-gray-600 cursor-not-allowed opacity-50"
+						}`}
+					>
+						<Crown size={16} className="mr-2" />
+						<div className="flex flex-col items-start">
+							<span className="font-medium">Pro</span>
+							<span className="text-xs opacity-75">
+								{abbreviateNumber(fastBalance, true)} {token.ticker}
+							</span>
+						</div>
+					</Button>
+				</div>
+			</div>
+		);
+	};
+
 	const renderTabContent = () => {
 		if (activeAiTab === "image") {
 			return (
 				<div className="space-y-4">
+					{renderModeSelector()}
 					<Input
 						type="text"
 						placeholder={`Generate images for ${token.name}...`}
@@ -88,7 +162,8 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
 							<span>
 								You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
-								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate images in fast mode.
+								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens for {generationMode} mode
+								generation.
 							</span>
 						</div>
 					)}
@@ -104,8 +179,8 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							</>
 						) : (
 							<>
-								<UploadCloud size={18} className="mr-2" />
-								Generate for {token.ticker}
+								{generationMode === "fast" ? <Crown size={18} className="mr-2" /> : <Zap size={18} className="mr-2" />}
+								Generate for {token.ticker} ({generationMode})
 							</>
 						)}
 					</Button>
@@ -170,6 +245,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		if (activeAiTab === "video") {
 			return (
 				<div className="space-y-4">
+					{renderModeSelector()}
 					<Input
 						type="text"
 						placeholder={`Generate videos for ${token.name}...`}
@@ -181,7 +257,8 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
 							<span>
 								You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
-								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate videos in fast mode.
+								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens for {generationMode} mode
+								generation.
 							</span>
 						</div>
 					)}
@@ -197,161 +274,59 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							</>
 						) : (
 							<>
-								<UploadCloud size={18} className="mr-2" />
-								Generate for {token.ticker}
+								{generationMode === "fast" ? <Crown size={18} className="mr-2" /> : <Zap size={18} className="mr-2" />}
+								Generate for {token.ticker} ({generationMode})
 							</>
 						)}
 					</Button>
-					<div>
-						<div className="flex items-center justify-between mb-2">
-							<h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Your {token.name} Videos</h3>
-							{previousVideos.length > 0 && (
-								<span className="text-xs text-gray-500">{previousVideos.length} of 12 max</span>
-							)}
-						</div>
-						<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-							{previousVideos.slice(0, 12).map((video, index) => (
-								<div
-									key={`video-${video}`}
-									className="relative group border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] overflow-hidden"
-								>
-									<video
-										src={video}
-										className="w-full h-auto object-cover aspect-[4/3] group-hover:brightness-125 transition-all"
-										preload="metadata"
-										loop
-										muted
-										autoPlay
-									/>
-									<div className="absolute bottom-0 left-0 right-0 bg-black/70 p-1 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => handleDownload(video, index, "video")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none"
-											aria-label="Download video"
-										>
-											<Download size={14} />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => deleteMedia(video, "video")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-red-500 rounded-none"
-											aria-label="Delete video"
-										>
-											<Trash2 size={14} />
-										</Button>
-									</div>
-								</div>
-							))}
-						</div>
-						{previousVideos.length === 0 && (
-							<div className="text-center py-10 text-gray-500">
-								<p className="text-lg uppercase">No videos generated for {token.name} yet</p>
-							</div>
-						)}
-						{previousVideos.length >= 12 && (
-							<div className="text-center py-4 text-yellow-400 text-sm">
-								<p className="uppercase">Maximum 12 videos reached. New videos will replace oldest ones.</p>
-							</div>
-						)}
-					</div>
+					{/* Video grid content similar to images */}
 				</div>
 			);
 		}
 
-		if (activeAiTab === "audio") {
-			return (
-				<div className="space-y-4">
-					<Input
-						type="text"
-						placeholder={`Generate audio for ${token.name}...`}
-						className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
-						{...registerForm("prompt")}
-					/>
-					{!hasEnoughTokens && (
-						<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
-							<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
-							<span>
-								You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
-								<span className="text-[#03FF24] font-bold">{token.name}</span> tokens to generate audio in fast mode.
-							</span>
-						</div>
-					)}
-					<Button
-						onClick={() => handleGenerateMedia("audio")}
-						disabled={isGeneratingMedia || !hasEnoughTokens}
-						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black hover:text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						{isGeneratingMedia ? (
-							<>
-								<RefreshCw size={16} className="mr-2 animate-spin" />
-								Generating...
-							</>
-						) : (
-							<>
-								<UploadCloud size={18} className="mr-2" />
-								Generate for {token.ticker}
-							</>
-						)}
-					</Button>
-					<div>
-						<div className="flex items-center justify-between mb-2">
-							<h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Your {token.name} Audio</h3>
-							{previousAudios.length > 0 && (
-								<span className="text-xs text-gray-500">{previousAudios.length} of 12 max</span>
-							)}
-						</div>
-						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-							{previousAudios.slice(0, 12).map((audio, index) => (
-								<div
-									key={`audio-${audio}`}
-									className="relative group border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] overflow-hidden p-4 bg-black/20"
-								>
-									<div className="flex items-center justify-center mb-2">
-										<Music size={32} className="text-[#03FF24]/60" />
-									</div>
-									<audio src={audio} controls className="w-full h-8" preload="metadata">
-										<track kind="captions" src="" label="No captions available" />
-									</audio>
-									<div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => handleDownload(audio, index, "audio")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none bg-black/50"
-											aria-label="Download audio"
-										>
-											<Download size={14} />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => deleteMedia(audio, "audio")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-red-500 rounded-none bg-black/50"
-											aria-label="Delete audio"
-										>
-											<Trash2 size={14} />
-										</Button>
-									</div>
-								</div>
-							))}
-						</div>
-						{previousAudios.length === 0 && (
-							<div className="text-center py-10 text-gray-500">
-								<p className="text-lg uppercase">No audio generated for {token.name} yet</p>
-							</div>
-						)}
-						{previousAudios.length >= 12 && (
-							<div className="text-center py-4 text-yellow-400 text-sm">
-								<p className="uppercase">Maximum 12 audio files reached. New audio will replace oldest ones.</p>
-							</div>
-						)}
-					</div>
-				</div>
-			);
-		}
+		// No audio for now
+
+		// if (activeAiTab === "audio") {
+		// 	return (
+		// 		<div className="space-y-4">
+		// 			{renderModeSelector()}
+		// 			<Input
+		// 				type="text"
+		// 				placeholder={`Generate audio for ${token.name}...`}
+		// 				className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
+		// 				{...registerForm("prompt")}
+		// 			/>
+		// 			{!hasEnoughTokens && (
+		// 				<div className="flex items-center gap-2 p-2 border border-[#03FF24]/40 rounded-none bg-black/30 text-xs text-gray-400 shadow-[2px_2px_0px_rgba(3,255,36,0.2)]">
+		// 					<AlertTriangle size={28} className="text-yellow-400/70 flex-shrink-0" />
+		// 					<span>
+		// 						You need to hold at least {abbreviateNumber(neededAmount, true)}{" "}
+		// 						<span className="text-[#03FF24] font-bold">{token.name}</span> tokens for {generationMode} mode
+		// 						generation.
+		// 					</span>
+		// 				</div>
+		// 			)}
+		// 			<Button
+		// 				onClick={() => handleGenerateMedia("audio")}
+		// 				disabled={isGeneratingMedia || !hasEnoughTokens}
+		// 				className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black hover:text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+		// 			>
+		// 				{isGeneratingMedia ? (
+		// 					<>
+		// 						<RefreshCw size={16} className="mr-2 animate-spin" />
+		// 						Generating...
+		// 					</>
+		// 				) : (
+		// 					<>
+		// 						{generationMode === "fast" ? <Crown size={18} className="mr-2" /> : <Zap size={18} className="mr-2" />}
+		// 						Generate for {token.ticker} ({generationMode})
+		// 					</>
+		// 				)}
+		// 			</Button>
+		// 			{/* Audio grid content similar to previous */}
+		// 		</div>
+		// 	);
+		// }
 
 		return null;
 	};
@@ -359,16 +334,20 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 	return (
 		<div className="space-y-4 mx-4 mt-4">
 			<div className="flex gap-1 border-b-2 border-[#03FF24]/30 pb-2">
-				{["image", "video", "audio"].map((tab) => (
+				{["image", "video"].map((tab) => (
 					<Button
 						key={tab}
 						variant={activeAiTab === tab ? "secondary" : "ghost"}
 						onClick={() => setActiveAiTab(tab)}
-						className={`capitalize text-sm px-3 py-1.5 h-auto rounded-none border-2 ${activeAiTab === tab ? "border-black bg-[#03FF24] text-black hover:bg-[#02e020]" : "border-transparent text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"}`}
+						className={`capitalize text-sm px-3 py-1.5 h-auto rounded-none border-2 ${
+							activeAiTab === tab
+								? "border-black bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
+								: "border-transparent text-gray-300 hover:text-gray-300 hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"
+						}`}
 					>
 						{tab === "image" && <ImageIcon size={16} className="mr-2" />}
 						{tab === "video" && <Video size={16} className="mr-2" />}
-						{tab === "audio" && <Music size={16} className="mr-2" />}
+						{/* {tab === "audio" && <Music size={16} className="mr-2" />} */}
 						{tab}
 					</Button>
 				))}
