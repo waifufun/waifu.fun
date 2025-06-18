@@ -354,7 +354,6 @@ export const LaunchButton = () => {
 		formState,
 		uploadedImage,
 		isGeneratingAddress,
-		isGeneratingImage,
 		getTokenData,
 		pool,
 		mintKeyPair,
@@ -375,7 +374,7 @@ export const LaunchButton = () => {
 		},
 	});
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingImage || isLaunching;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isLaunching;
 
 	const onSubmit = async () => {
 		if (!formState.isValid) {
