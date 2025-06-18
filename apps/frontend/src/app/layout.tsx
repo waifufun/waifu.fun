@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 		template: "%s | Auto.Fun",
 	},
 	description: "Press the fun button.",
-	metadataBase: new URL("https://auto.fun"),
+	// metadataBase: new URL("https://auto.fun"),
 };
 
 export default function RootLayout({
