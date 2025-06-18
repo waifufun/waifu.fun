@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
-export const programId = new PublicKey("3KwYy1KF1WYfpM9gmLUgi5mhhvQpKgHwBP2rg4KXnGh5");
+export const programId = new PublicKey("J7dskxiQKv8XDRjpfDJY7AQr6ppCesQj8Vbtp3oFhmXd");
 
 function readBorshString(buffer: Buffer, offset: number): { value: string; nextOffset: number } {
 	let off = offset;

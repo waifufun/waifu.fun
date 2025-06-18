@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/autofun.json`.
  */
 export type Autofun = {
-	address: "3KwYy1KF1WYfpM9gmLUgi5mhhvQpKgHwBP2rg4KXnGh5";
+	address: "J7dskxiQKv8XDRjpfDJY7AQr6ppCesQj8Vbtp3oFhmXd";
 	metadata: {
 		name: "autofun";
 		version: "0.1.0";
@@ -559,11 +559,7 @@ export type Autofun = {
 					type: "f64";
 				},
 				{
-					name: "maxBuyAmount";
-					type: "u64";
-				},
-				{
-					name: "maxSellAmount";
+					name: "maxAmount";
 					type: "u64";
 				},
 				{
@@ -1049,11 +1045,7 @@ export type Autofun = {
 					type: "f64";
 				},
 				{
-					name: "maxBuyAmount";
-					type: "u64";
-				},
-				{
-					name: "maxSellAmount";
+					name: "maxAmount";
 					type: "u64";
 				},
 				{
@@ -1151,11 +1143,7 @@ export type Autofun = {
 			];
 			args: [
 				{
-					name: "maxBuyAmount";
-					type: "u64";
-				},
-				{
-					name: "maxSellAmount";
+					name: "maxAmount";
 					type: "u64";
 				},
 			];
@@ -1980,11 +1968,7 @@ export type Autofun = {
 						type: "u64";
 					},
 					{
-						name: "maxBuyAmount";
-						type: "u64";
-					},
-					{
-						name: "maxSellAmount";
+						name: "maxAmount";
 						type: "u64";
 					},
 					{
@@ -2118,11 +2102,7 @@ export type Autofun = {
 						type: "i64";
 					},
 					{
-						name: "maxBuyAmount";
-						type: "u64";
-					},
-					{
-						name: "maxSellAmount";
+						name: "maxAmount";
 						type: "u64";
 					},
 				];

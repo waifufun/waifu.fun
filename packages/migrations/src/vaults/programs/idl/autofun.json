@@ -1,5 +1,5 @@
 {
-	"address": "3KwYy1KF1WYfpM9gmLUgi5mhhvQpKgHwBP2rg4KXnGh5",
+	"address": "J7dskxiQKv8XDRjpfDJY7AQr6ppCesQj8Vbtp3oFhmXd",
 	"metadata": {
 		"name": "autofun",
 		"version": "0.1.0",
@@ -313,11 +313,7 @@
 					"type": "f64"
 				},
 				{
-					"name": "max_buy_amount",
-					"type": "u64"
-				},
-				{
-					"name": "max_sell_amount",
+					"name": "max_amount",
 					"type": "u64"
 				},
 				{
@@ -563,11 +559,7 @@
 					"type": "f64"
 				},
 				{
-					"name": "max_buy_amount",
-					"type": "u64"
-				},
-				{
-					"name": "max_sell_amount",
+					"name": "max_amount",
 					"type": "u64"
 				},
 				{
@@ -665,11 +657,7 @@
 			],
 			"args": [
 				{
-					"name": "max_buy_amount",
-					"type": "u64"
-				},
-				{
-					"name": "max_sell_amount",
+					"name": "max_amount",
 					"type": "u64"
 				}
 			]
@@ -1194,11 +1182,7 @@
 						"type": "u64"
 					},
 					{
-						"name": "max_buy_amount",
-						"type": "u64"
-					},
-					{
-						"name": "max_sell_amount",
+						"name": "max_amount",
 						"type": "u64"
 					},
 					{
@@ -1332,11 +1316,7 @@
 						"type": "i64"
 					},
 					{
-						"name": "max_buy_amount",
-						"type": "u64"
-					},
-					{
-						"name": "max_sell_amount",
+						"name": "max_amount",
 						"type": "u64"
 					}
 				]
