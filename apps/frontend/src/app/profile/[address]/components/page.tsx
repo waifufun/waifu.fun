@@ -16,6 +16,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	const address = params?.address;
 
 	const user = balances?.user;
+
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
@@ -66,7 +67,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										</h1>
 									</div>
 									{balances?.balances.map((balance, i) => {
-										console.log(balance);
 										return (
 											<TokenRow
 												mode="wallet"
@@ -75,7 +75,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												data={{
 													chain: "solana",
 													chainId: 101,
-													image: balance?.info?.imageThumbUrl,
+													image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
 													title: balance?.info?.name,
 													ticker: balance?.info?.symbol,
 													marketCap: balance?.marketcap,
