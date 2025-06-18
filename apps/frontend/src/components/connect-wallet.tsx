@@ -8,21 +8,18 @@ import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } fro
 import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 
-const btnClass = "bg-gradient-to-b from-[#171717] to-[#121212] text-white border-[#1A1A1A] w-full";
-
 export default function ConnectWallet() {
 	const client = useIsClient();
 	const modal = useWalletModal();
 	const wallet = useWallet();
 
 	if (!client) {
-		return <Button className={btnClass}>Connect</Button>;
+		return <Button>Connect</Button>;
 	}
 
 	if (!wallet.connected) {
 		return (
 			<Button
-				className={btnClass}
 				onClick={() => {
 					modal.setVisible(true);
 				}}
@@ -36,7 +33,7 @@ export default function ConnectWallet() {
 		<Menubar>
 			<MenubarMenu>
 				<MenubarTrigger asChild>
-					<Button className={btnClass}>
+					<Button>
 						{wallet?.connected && wallet.publicKey ? (
 							<span className="truncate">{wallet.publicKey.toBase58()}</span>
 						) : (
@@ -48,15 +45,15 @@ export default function ConnectWallet() {
 					<MenubarItem>
 						<Link href={`/profile/${wallet?.publicKey?.toBase58()}`}>
 							<div className="flex items-center gap-1.5">
-								<User size={20} />
-								<span className="text-base font-medium">Profile</span>
+								<User size={20} className="size-4" />
+								<span className="text-sm uppercase">Profile</span>
 							</div>
 						</Link>
 					</MenubarItem>
 					<MenubarItem onClick={() => wallet.disconnect()}>
 						<div className="flex items-center gap-1.5 cursor-pointer">
-							<LogOut size={20} />
-							<span className="text-base font-medium">Disconnect</span>
+							<LogOut size={20} className="size-4" />
+							<span className="text-sm uppercase">Disconnect</span>
 						</div>
 					</MenubarItem>
 				</MenubarContent>

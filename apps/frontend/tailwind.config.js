@@ -5,7 +5,8 @@ module.exports = {
 			container: {
 				center: true,
 				padding: {
-					DEFAULT: "1rem",
+					sm: "0.5rem",
+					md: "1rem",
 				},
 			},
 			fontFamily: {

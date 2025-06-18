@@ -85,7 +85,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/tx/${trade.txId}`}
 								target="_blank"
 							>
-								<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
+								<ExternalLink className="ml-auto size-4 text-autofun-background-action-highlight" />
 							</Link>
 						</TableCell>
 					</TableRow>

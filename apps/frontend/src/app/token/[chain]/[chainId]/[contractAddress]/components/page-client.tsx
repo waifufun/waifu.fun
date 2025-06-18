@@ -12,8 +12,8 @@ import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import { useQuery } from "@tanstack/react-query";
+import { BarChart2, Clock, Users } from "lucide-react";
 import Chart from "@/components/chart/chart";
-import ChainIndicator from "@/components/chain-indicator";
 
 export default function PageClient({
 	initialData,
@@ -49,10 +49,12 @@ export default function PageClient({
 					{/* Token Name */}
 					<div>
 						{/* Name */}
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-3 flex-wrap">
 							{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 							<Verified isVerified={token?.verified} />
-							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">{token.name}</span>
+							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">
+								{token.name}
+							</span>
 							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
 						</div>
@@ -74,10 +76,12 @@ export default function PageClient({
 						{
 							title: "24hr Volume",
 							value: token?.volume24h ? abbreviateNumber(token?.volume24h) : "-",
+							icon: BarChart2,
 						},
 						{
 							title: "Holders",
 							value: token?.holders ? abbreviateNumber(token?.holders, true) : "-",
+							icon: Users,
 						},
 						{
 							title: "Price",
@@ -86,11 +90,13 @@ export default function PageClient({
 						{
 							title: "Age",
 							value: token?.createdAt ? fromNow(token?.createdAt, true) : "-",
+							icon: Clock,
 						},
 					].map((item) => (
 						<div className="flex flex-col items-end" key={item.title}>
 							<div className="text-autofun-text-secondary uppercase text-xs">{item.title}</div>
-							<div className="text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+							<div className="inline-flex items-center gap-1 text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+								{item?.icon ? <item.icon className="size-3 text-autofun-background-action-highlight/70" /> : null}
 								{item.value}
 							</div>
 						</div>
@@ -101,20 +107,22 @@ export default function PageClient({
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
 					<div className="w-full min-h-[540px] relative">
 						<div className="bg-black border-2 border-[#03FF24]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
-							<Chart
-								token={token}
-								tokenLookUp={
-									{
-										chain: token.chain,
-										chainId: token.chainId,
-										contractAddress: token.contractAddress,
-									} as ITokenLookUp
-								}
-							/>
+							<div className="overflow-hidden">
+								<Chart
+									token={token}
+									tokenLookUp={
+										{
+											chain: token.chain,
+											chainId: token.chainId,
+											contractAddress: token.contractAddress,
+										} as ITokenLookUp
+									}
+								/>
+							</div>
 						</div>
 					</div>
 
-					<div className="flex flex-col">
+					<div className="flex flex-col gap-4">
 						<TokenTabs token={token} />
 						{children}
 					</div>
@@ -169,7 +177,7 @@ export default function PageClient({
 											<Image
 												src={social.icon}
 												className={cn([
-													"size-6 select-none",
+													"size-4 select-none",
 													!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
 												])}
 												unoptimized
@@ -185,7 +193,7 @@ export default function PageClient({
 						<div>
 							<Image
 								src={token?.image}
-								className="float-right w-52 h-52 ml-4 mb-2 rounded-xl object-cover"
+								className="float-right w-52 h-52 ml-4 mb-2 rounded-none object-cover"
 								unoptimized
 								priority
 								width={208}
@@ -193,23 +201,25 @@ export default function PageClient({
 								alt="token"
 							/>
 							<div>
-								<span className="font-medium text-xl text-autofun-background-action-highlight uppercase block">
+								<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block">
 									{token?.name}
 								</span>
-								<span className="font-medium text-xl uppercase block">{token?.ticker}</span>
+								<span className="font-medium text-lg uppercase block">{token?.ticker}</span>
 
-								<p className="text-base text-autofun-text-secondary">
+								<p className="text-xs text-autofun-text-secondary">
 									{token?.description
 										? token?.description
 										: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"}
 								</p>
 							</div>
 						</div>
-						<div className="mt-4 py-4 flex items-center gap-4 justify-between border-b border-autofun-background-action-highlight">
-							<span className="text-base font-medium uppercase">{token.name}</span>
-							<div className="gap-2 flex items-center">
-								<CopyButton textToCopy={token.contractAddress} />
-								<span className="text-sm font-medium">{shortenAddress(token?.contractAddress)}</span>
+						<div className="mt-4 py-4 flex flex-col items-start w-full gap-1 justify-between border-b ">
+							<span className="text-base font-medium uppercase text-autofun-text-secondary">TOKEN:</span>
+							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-autofun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
+								<span className="text-gray-300 font-mono truncate">{shortenAddress(token?.contractAddress)}</span>
+								<div className="flex gap-1 flex-shrink-0">
+									<CopyButton textToCopy={token.contractAddress} />
+								</div>
 							</div>
 						</div>
 					</div>
