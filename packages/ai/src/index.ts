@@ -139,6 +139,7 @@ export class AI {
 	async createAudio(params: AudioGenerationParams): Promise<string> {
 		const input = {
 			lyrics: params.lyrics,
+			prompt: params.lyrics,
 			reference_audio_url:
 				params.reference_audio_url || "https://storage.googleapis.com/falserverless/model_tests/diffrythm/rock_en.wav",
 			style_prompt: params.style_prompt,

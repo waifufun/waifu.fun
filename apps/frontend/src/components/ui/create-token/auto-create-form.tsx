@@ -7,7 +7,7 @@ import { Wand2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { CoinInfoFields, CustomAddressGenerator, PreBuySection, LaunchButton } from "./shared-form-section";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
 	if (!href) {
@@ -36,7 +36,8 @@ const AiImageLoading = () => {
 };
 
 function AutoCreateForm() {
-	const { registerForm, generateToken, watchValue, previousImages, isGeneratingImage, changeMainImage } = usePrompt();
+	const { registerForm, generateToken, watchValue, previousImages, isGeneratingMedia, changeMainImage } = usePrompt();
+	const [isClient, setIsClient] = useState(false);
 
 	const formElementBaseClass =
 		"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -44,7 +45,7 @@ function AutoCreateForm() {
 	const prompt = watchValue("prompt");
 
 	// Get the next 3 images for thumbnails
-	const startingIndex = isGeneratingImage ? 0 : 1;
+	const startingIndex = isGeneratingMedia ? 0 : 1;
 	const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3);
 
 	// Fill with undefined if we don't have 3 images
@@ -57,16 +58,73 @@ function AutoCreateForm() {
 
 	const handleGenerateImage = () => {
 		if (!prompt) {
-			generateToken();
+			generateToken({ mediaType: "image", prompt: "" });
 		} else {
-			generateToken(prompt.toString().length > 0 ? prompt.toString() : "");
+			generateToken({
+				mediaType: "image",
+				prompt: prompt.toString(),
+			});
 		}
 	};
 
-	// ignore biome
+	// Fix hydration issue by only running on client
 	useEffect(() => {
-		generateToken();
-	}, [generateToken]);
+		setIsClient(true);
+	}, []);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: This only runs once on client mount
+	useEffect(() => {
+		if (isClient) {
+			generateToken({
+				mediaType: "image",
+				prompt: "",
+			});
+		}
+	}, [isClient]);
+
+	// Don't render anything until hydrated
+	if (!isClient) {
+		return (
+			<div className="grid md:grid-cols-2 gap-6 md:items-start">
+				<FormSection title="AI Image Generation" className="space-y-4" collapsible={false}>
+					<div className="relative">
+						<Wand2 size={16} className="absolute left-3 top-3.5 text-gray-500 pointer-events-none" />
+						<Textarea
+							placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
+							className={cn(formElementBaseClass, "pl-10 pr-3 py-3 min-h-[80px] resize-y tracking-wider")}
+							rows={3}
+						/>
+					</div>
+					<div className="w-full h-[240px]">
+						<AIImageWithPlaceHolder href={undefined} />
+					</div>
+					<div className="grid grid-cols-3 gap-3">
+						{[undefined, undefined, undefined].map((_, index) => (
+							<div
+								// biome-ignore lint/suspicious: This is a placeholder
+								key={`thumbnail-placeholder-${index}`}
+								className="aspect-square bg-black/50 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] opacity-50"
+							>
+								<AIImageWithPlaceHolder href={undefined} />
+							</div>
+						))}
+					</div>
+					<Button
+						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider"
+						disabled
+					>
+						<RefreshCw size={16} className="mr-2" /> Generate Image
+					</Button>
+				</FormSection>
+				<div className="space-y-6">
+					<CoinInfoFields idPrefix="auto" />
+					<CustomAddressGenerator idPrefix="auto" />
+					<PreBuySection idPrefix="auto" />
+					<LaunchButton />
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="grid md:grid-cols-2 gap-6 md:items-start">
@@ -83,7 +141,7 @@ function AutoCreateForm() {
 
 				{/* Main AI Generated Image */}
 				<div className="w-full h-[240px]">
-					{isGeneratingImage ? <AiImageLoading /> : <AIImageWithPlaceHolder href={previousImages[0]} />}
+					{isGeneratingMedia ? <AiImageLoading /> : <AIImageWithPlaceHolder href={previousImages[0]} />}
 				</div>
 
 				{/* Thumbnail Images */}
@@ -96,7 +154,7 @@ function AutoCreateForm() {
 									changeMainImage(index + 1);
 								}
 							}}
-							key={image}
+							key={`thumbnail-${image || index}`}
 							className="aspect-square bg-black/50 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] hover:border-[#03FF24] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 							disabled={!image}
 						>
@@ -108,9 +166,9 @@ function AutoCreateForm() {
 				<Button
 					className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider"
 					onClick={handleGenerateImage}
-					disabled={isGeneratingImage}
+					disabled={isGeneratingMedia}
 				>
-					{isGeneratingImage ? (
+					{isGeneratingMedia ? (
 						<>
 							<RefreshCw size={16} className="mr-2 animate-spin" /> Generating...
 						</>

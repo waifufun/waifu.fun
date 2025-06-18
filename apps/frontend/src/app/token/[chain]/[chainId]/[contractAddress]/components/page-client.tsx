@@ -31,7 +31,6 @@ export default function PageClient({
 	});
 
 	const token = query?.data;
-
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
