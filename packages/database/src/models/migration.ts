@@ -13,6 +13,7 @@ const schema = new Schema<IMigration, ModelType<IMigration>>(
 		migration: { type: String },
 		withdrawnAmounts: { type: String },
 		poolInfo: { type: String },
+		poolKeys: { type: String },
 		lockLpTxId: { type: String },
 		primaryNftMint: { type: String },
 		secondaryNftMint: { type: String },

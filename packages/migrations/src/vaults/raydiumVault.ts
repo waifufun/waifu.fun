@@ -90,7 +90,7 @@ export async function changeClaimer(
 	return txSignature;
 }
 
-export async function emergencyWithdraw(
+export async function emergencyWithdrawRaydium(
 	program: Program<RaydiumVault>,
 	signerWallet: anchor.web3.Keypair,
 	position_nft: anchor.web3.PublicKey,
@@ -218,7 +218,7 @@ export async function claim(
 	return txSignature;
 }
 
-export async function checkBalance(
+export async function checkBalanceRaydium(
 	connection: anchor.web3.Connection,
 	signerWallet: anchor.web3.Keypair,
 	position_nft: anchor.web3.PublicKey,

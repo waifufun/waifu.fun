@@ -354,6 +354,8 @@ describe("Meteora RPC Migration Integration", function () {
 	});
 
 	it("Step 8 – withdraw primary NFT to Meteora vault", async () => {
+		// const key = [];
+		// const primaryPositionNftKeypair = Keypair.fromSecretKey(Uint8Array.from(key));
 		const withdrawTxId = await emergencyWithdraw(provider, wallet.payer, program, primaryPositionNftKeypair.publicKey);
 
 		expect(withdrawTxId).to.be.a("string");

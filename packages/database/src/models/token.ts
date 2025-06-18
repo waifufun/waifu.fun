@@ -41,6 +41,8 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		isToken2022: { type: Boolean, default: false },
 		createdAt: { type: String, default: () => new Date().toISOString() },
 		updatedAt: { type: Date, default: Date.now },
+		tradingStartsAt: { type: Date },
+		lastClaimedAt: { type: Date },
 	},
 	{ timestamps: true, versionKey: false },
 );

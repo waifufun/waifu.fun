@@ -268,7 +268,10 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	/** Indexer */
-	const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
+	const rpc =
+		process.env.NETWORK === "devnet"
+			? await SolanaRpcProvider.connect(SolanaNetworkIds.Devnet)
+			: await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
 	const mustUpdateTokens = tokens.indexer.filter((t) => needsUpdate(t)).map((k) => k.contractAddress);
 	const bondingCurveInfo = await rpc.getBondingCurveInfo(mustUpdateTokens);
 	const volume24hTokens = await lookUp24hVolume(mustUpdateTokens);

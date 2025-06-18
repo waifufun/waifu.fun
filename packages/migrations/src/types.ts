@@ -34,6 +34,7 @@ export interface ProtocolState {
 		sol: number;
 		token: number;
 	};
+	nftVersion?: "2022" | "legacy";
 	primaryTokenAmount?: string;
 	primarySolAmount?: string;
 	secondaryTokenAmount?: string;
@@ -52,6 +53,7 @@ export interface ProtocolState {
 		vaultB: string;
 	};
 	poolInfo?: any; // Store the full SDK object as-is
+	poolKeys?: any; // Store the full SDK object as-is
 	vaultAddress?: string;
 	vaultCreatedAt?: Date;
 	nftDeposited?: boolean;
@@ -59,6 +61,7 @@ export interface ProtocolState {
 	lockLpTxId?: string;
 	nftSentToManager?: boolean;
 	nftSentToManagerAt?: Date;
+	nftSentToManageTxId?: string;
 	status?: MigrationStatus;
 	poolCreationTxId?: string;
 	primaryPositionNftTxId?: string;

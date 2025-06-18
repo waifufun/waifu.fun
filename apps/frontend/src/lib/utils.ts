@@ -261,6 +261,7 @@ export const retrieveJupiterQuote = async ({
 	mode: "buy" | "sell";
 	slippage: number;
 	// biome-ignore lint/suspicious/noExplicitAny: allow
+
 }): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
 	const isToken2022 = token?.isToken2022 || false;
 	const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
@@ -363,7 +364,12 @@ export const retrieveQuote = async ({
 	wallet?: WalletContextState;
 	connection?: Connection;
 	// biome-ignore lint/suspicious/noExplicitAny: allow
-}): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
+}): Promise<{
+	minimumReceived: number;
+	swapUsdValue?: string;
+	priceImpactPct?: string;
+	quote?: any;
+}> => {
 	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
 	if (provider === "jupiter") {
 		return await retrieveJupiterQuote({
@@ -439,7 +445,6 @@ export const getAutofunProgram = async (connection: Connection, wallet: WalletCo
 	if (!walletToUse.publicKey || !walletToUse.signTransaction || !walletToUse.signAllTransactions) {
 		throw new Error("Wallet not fully connected or compatible.");
 	}
-
 	const provider = new AnchorProvider(
 		connection,
 		{
@@ -623,11 +628,30 @@ export const executeSwap = async (
 	throw new Error("No route found for token to swap against. Contact autofun.");
 };
 
+export const calculateBondingCurveParams = (
+	curveLimit: number,
+): { virtualLamportReserves: number; initBondingCurve: number } => {
+	// Default values in SOL
+	const defaultCurveLimit = Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL;
+	const defaultVirtualReserves = Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+	const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
+
+	const defaultInitBondingCurve = 75;
+	// Calculate the ratio based on curve limit
+	const ratio = normalizedCurveLimit / defaultCurveLimit;
+
+	// Calculate new values maintaining the same proportions
+	const virtualLamportReserves = Math.floor(defaultVirtualReserves * ratio);
+	const initBondingCurve = defaultInitBondingCurve;
+
+	return { virtualLamportReserves, initBondingCurve };
+};
+
 export const launchAndSwapTx = async (
 	creator: PublicKey,
 	decimals: number,
 	tokenSupply: number,
-	virtualLamportReserves: number,
+	curveLimit: number,
 	name: string,
 	symbol: string,
 	uri: string,
@@ -643,8 +667,9 @@ export const launchAndSwapTx = async (
 
 	// Calculate minimum receive amount based on bonding curve formula
 	// This is an estimate and should be calculated more precisely based on the bonding curve
-	const initBondingCurvePercentage = configAccount.initBondingCurve;
-	const initBondingCurveAmount = (tokenSupply * initBondingCurvePercentage) / 100;
+	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+
+	const initBondingCurveAmount = (tokenSupply * initBondingCurve) / 100;
 
 	// Calculate expected output using constant product formula: dy = (y * dx) / (x + dx)
 	// where x = reserveToken, y = reserveLamport, dx = swapAmount
@@ -660,6 +685,8 @@ export const launchAndSwapTx = async (
 			decimals,
 			new BN(tokenSupply),
 			new BN(virtualLamportReserves),
+			new BN(curveLimit),
+			initBondingCurve,
 			name,
 			symbol,
 			uri,
@@ -699,6 +726,21 @@ export const createTokenTx = async (
 	const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
 		microLamports: 50000,
 	});
+	const curveLimit = tokenData.curveLimit
+		? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL
+		: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
+	const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
+	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+	console.log({
+		decimals: Number(process.env.NEXT_PUBLIC_DECIMALS),
+		tokenSupply: Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
+		virtualLamportReserves: new BN(virtualLamportReserves).toNumber(),
+		curveLimit: new BN(curveLimit).toNumber(),
+		initBondingCurve: initBondingCurve,
+		name: tokenData.name,
+		symbol: tokenData.symbol,
+		metadataUrl: tokenData.metadataUrl,
+	});
 
 	const tx =
 		tokenData.buyAmount > 0
@@ -706,7 +748,7 @@ export const createTokenTx = async (
 					new PublicKey(address),
 					Number(process.env.NEXT_PUBLIC_DECIMALS),
 					Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
-					Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES),
+					curveLimit,
 					tokenData.name,
 					tokenData.symbol,
 					tokenData.metadataUrl,
@@ -720,7 +762,9 @@ export const createTokenTx = async (
 					.launch(
 						Number(process.env.NEXT_PUBLIC_DECIMALS),
 						new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
-						new BN(Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES)),
+						new BN(virtualLamportReserves),
+						new BN(curveLimit),
+						initBondingCurve,
 						tokenData.name,
 						tokenData.symbol,
 						tokenData.metadataUrl,
