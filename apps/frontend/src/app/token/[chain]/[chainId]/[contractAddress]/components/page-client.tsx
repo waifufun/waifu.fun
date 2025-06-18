@@ -105,7 +105,7 @@ export default function PageClient({
 			</div>
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
-					<div className="w-full min-h-[540px] relative">
+					<div className="w-full relative">
 						<div className="bg-black border-2 border-[#03FF24]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 							<div className="overflow-hidden">
 								<Chart
@@ -129,83 +129,26 @@ export default function PageClient({
 				</div>
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
-					<BondingCurveProgress token={token} />
 					<div className="flex flex-col gap-4 bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
-						<div className="flex items-center gap-4 justify-between">
-							<span className="text-lg border-b border-autofun-background-action-highlight font-medium">
-								TOKEN INFO
-							</span>
-
-							<div className="flex items-center gap-6">
-								{[
-									{
-										title: "website",
-										href: token?.socials?.website,
-										icon: "/socials/website.svg",
-									},
-									{
-										title: "twitter",
-										href: token?.socials?.twitter,
-										icon: "/socials/twitter.svg",
-									},
-									{
-										title: "telegram",
-										href: token?.socials?.telegram,
-										icon: "/socials/telegram.svg",
-									},
-									{
-										title: "discord",
-										href: token?.socials?.discord,
-										icon: "/socials/discord.svg",
-									},
-								].map((social) => {
-									const hasLink = !!social?.href;
-									const Comp = hasLink ? Link : Fragment;
-
-									const compProps: { key: string; href?: string; target?: string } = {
-										key: social.title,
-									};
-
-									if (hasLink && social.href) {
-										compProps.href = social.href;
-										compProps.target = "_blank";
-									}
-
-									return (
-										// @ts-ignore
-										<Comp {...compProps} key={social.title}>
-											<Image
-												src={social.icon}
-												className={cn([
-													"size-4 select-none",
-													!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
-												])}
-												unoptimized
-												width={24}
-												height={24}
-												alt={social.title}
-											/>
-										</Comp>
-									);
-								})}
-							</div>
-						</div>
-						<div>
+						<BondingCurveProgress token={token} />
+						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
+						<div className="flex flex-row gap-4 items-start">
 							<Image
 								src={token?.image}
-								className="float-right w-52 h-52 ml-4 mb-2 rounded-none object-cover"
+								className="border-2 max-w-[50px] border-[#03FF24]/50 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.25)] pixelated-image-render mt-1 flex-shrink-0"
 								unoptimized
 								priority
 								width={208}
 								height={208}
 								alt="token"
 							/>
-							<div>
-								<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block">
-									{token?.name}
-								</span>
-								<span className="font-medium text-lg uppercase block">{token?.ticker}</span>
-
+							<div className="flex flex-col">
+								<div className="flex items-center gap-2">
+									<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block">
+										{token?.name}
+									</span>
+									<span className="font-medium text-lg uppercase block">{token?.ticker}</span>
+								</div>
 								<p className="text-xs text-autofun-text-secondary">
 									{token?.description
 										? token?.description
@@ -213,7 +156,61 @@ export default function PageClient({
 								</p>
 							</div>
 						</div>
-						<div className="mt-4 py-4 flex flex-col items-start w-full gap-1 justify-between border-b ">
+						<div className="flex items-center gap-2">
+							{[
+								{
+									title: "website",
+									href: token?.socials?.website,
+									icon: "/socials/website.svg",
+								},
+								{
+									title: "twitter",
+									href: token?.socials?.twitter,
+									icon: "/socials/twitter.svg",
+								},
+								{
+									title: "telegram",
+									href: token?.socials?.telegram,
+									icon: "/socials/telegram.svg",
+								},
+								{
+									title: "discord",
+									href: token?.socials?.discord,
+									icon: "/socials/discord.svg",
+								},
+							].map((social) => {
+								const hasLink = !!social?.href;
+								const Comp = hasLink ? Link : Fragment;
+
+								const compProps: { key: string; href?: string; target?: string } = {
+									key: social.title,
+								};
+
+								if (hasLink && social.href) {
+									compProps.href = social.href;
+									compProps.target = "_blank";
+								}
+
+								return (
+									// @ts-ignore
+									<Comp {...compProps} key={social.title}>
+										<Image
+											src={social.icon}
+											className={cn([
+												"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background h-7 w-7 p-1 border-2 border-[#03FF24]/50 text-[#03FF24]/80 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24] rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)]",
+												!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
+											])}
+											unoptimized
+											width={24}
+											height={24}
+											alt={social.title}
+										/>
+									</Comp>
+								);
+							})}
+						</div>
+						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
+						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
 							<span className="text-base font-medium uppercase text-autofun-text-secondary">TOKEN:</span>
 							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-autofun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
 								<span className="text-gray-300 font-mono truncate">{shortenAddress(token?.contractAddress)}</span>
