@@ -168,9 +168,9 @@ const ChoosePool = () => {
 		{ name: "Meteora", value: "meteora", image: "/pools/meteora.svg" },
 		{ name: "Raydium", value: "raydium", image: "/pools/raydium.svg" },
 	];
-	const { formState, isGeneratingAddress, pool, setPool, isLaunching } = usePrompt();
+	const { formState, isGeneratingAddress, isGeneratingMedia, pool, setPool, isLaunching } = usePrompt();
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isLaunching;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching;
 
 	return (
 		<div className="flex flex-col gap-4 xl:flex-row xl:justify-between w-full xl:items-center mt-6">
@@ -219,7 +219,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 		formState,
 		uploadedImage,
 		isGeneratingAddress,
-		isGeneratingImage,
+		isGeneratingMedia,
 		getTokenData,
 		pool,
 		mintKeyPair,
@@ -302,7 +302,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 			return;
 		}
 
-		if (isGeneratingImage) {
+		if (isGeneratingMedia) {
 			toast.error("Please wait for the image to be generated.");
 			return;
 		}
