@@ -6,27 +6,46 @@ import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
+import { useParams } from "next/navigation";
+import { formatNumber } from "@/lib/utils";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
-export default function Page({ balances }: { balances: any[] }) {
+export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
 	const [tab, setTab] = useState("wallet");
+	const params = useParams<{ address: string }>();
+	const address = params?.address;
 
+	const user = balances?.user;
+	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
+		if (item.price == null || Number.isNaN(item.price)) return sum;
+
+		const balance = Number(item.shiftedBalance) || 0;
+		const price = Number(item.price);
+
+		const totalSum = sum + balance * price;
+		return totalSum || 0;
+	}, 0);
+
+	const tokensBought = balances?.balances.length;
+	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
+  
 	return (
-		<div className="mt-10 flex place-self-center w-full flex-col">
-			<div className="w-full max-w-full mx-auto flex flex-col gap-6">
+		<div className="mt-5 flex place-self-center w-full flex-col">
+			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
-						username: "AlienMaster42",
-						address: "0xa83114a443da1cecefc50368531cace9f37fcccb",
-						tokensBought: 128,
-						tokensCreated: 42,
+						username: user?.displayName,
+						address: user?.address,
+						tokensBought: tokensBought,
+						tokensCreated: tokensCreated,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: 12,
+						points: user?.points,
+						image: user?.avatar,
 					}}
 				/>
 				{/* tabs section */}
 				<div className="w-full h-full flex place-self-center">
-					<Tabs value={tab} onValueChange={setTab} className="gap-y-3 w-full">
+					<Tabs value={tab} onValueChange={setTab} className="w-full">
 						<TabsList className="grid w-full grid-cols-2">
 							<TabsTrigger value="wallet" className="w-full">
 								Wallet
@@ -35,15 +54,18 @@ export default function Page({ balances }: { balances: any[] }) {
 								Activity
 							</TabsTrigger>
 						</TabsList>
-						<TabsContent value="wallet" className="bg-transparent h-[800px] overflow-y-auto pr-1">
-							<div className="mt-6 border-2 h-fit w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
+						<TabsContent value="wallet" className="bg-transparent">
+							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="w-full max-h-full overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40 w-full">
-										<h1 className="p-4 text-white">
-											Total Value: <span className="text-autofun-background-action-highlight font-bold">$444</span>
+										<h1 className="p-4 text-sm text-gray-300">
+											Total Value:{" "}
+											<span className="text-autofun-background-action-highlight font-bold">
+												{formatNumber(summedTotalWalletValue, true)}
+											</span>
 										</h1>
 									</div>
-									{balances.map((balance, i) => {
+									{balances?.balances.map((balance, i) => {
 										console.log(balance);
 										return (
 											<TokenRow
@@ -56,10 +78,10 @@ export default function Page({ balances }: { balances: any[] }) {
 													image: balance?.info?.imageThumbUrl,
 													title: balance?.info?.name,
 													ticker: balance?.info?.symbol,
-													marketCap: 1240000,
+													marketCap: balance?.marketcap,
 													contractAddress: balance?.tokenAddress,
 													amountHeld: balance?.shiftedBalance,
-													dollarWorth: 123123123,
+													dollarWorth: balance?.price,
 												}}
 											/>
 										);

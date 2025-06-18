@@ -153,7 +153,7 @@ function Sidebar({
 		return (
 			<div
 				data-slot="sidebar"
-				className={cn("bg-black text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col", className)}
+				className={cn("bg-black text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col ", className)}
 				{...props}
 			>
 				{children}
@@ -168,7 +168,7 @@ function Sidebar({
 					data-sidebar="sidebar"
 					data-slot="sidebar"
 					data-mobile="true"
-					className="bg-black text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+					className="bg-black border-r-2 border-autofun-background-action-highlight/25 text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
 					style={
 						{
 							"--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -217,7 +217,8 @@ function Sidebar({
 					// Adjust the padding for floating and inset variants.
 					variant === "floating" || variant === "inset"
 						? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-						: "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r-2 border-r-autofun-background-action-highlight/50 group-data-[side=right]:border-l",
+						: "group-data-[collapsible=icon]:w-(--sidebar-width-icon)  group-data-[side=left]:border-r-2 group-data-[side=right]:border-l-2 border-[#03FF24]/40",
+					"",
 					className,
 				)}
 				{...props}

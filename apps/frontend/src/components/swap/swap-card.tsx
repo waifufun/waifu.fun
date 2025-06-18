@@ -127,7 +127,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	return (
 		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
-				<div className="flex items-stretch gap-2 w-full">
+				<div className="flex items-stretch gap-2 w-full bg-black border-2 border-[#03FF24]/40 py-3 px-1.5 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
 					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
@@ -151,7 +151,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				<div
 					className={cn([
 						"flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium transition-opacity duration-200",
-						!address ? "opacity-0" : "opacity-100",
+						!address ? "opacity-0 h-0" : "opacity-100",
 					])}
 				>
 					<Wallet size={14} color="#8C8C8C" />
@@ -188,25 +188,29 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						))}
 					</div>
 				) : (
-					<div className="flex items-center gap-2 justify-between overflow-x-auto">
-						{quickSetSellButtons.map((btn) => (
-							<Button
-								key={btn}
-								variant="secondary"
-								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
-									btn === "Reset" ? "text-autofun-text-secondary" : "",
-								])}
-								onClick={() => handleQuickSetSell(btn)}
-							>
-								{btn === "Reset" ? "Reset" : `${btn}%`}
-							</Button>
-						))}
-					</div>
+					<Fragment>
+						{address && tokenBalance?.data ? (
+							<div className="flex items-center gap-2 justify-between overflow-x-auto">
+								{quickSetSellButtons.map((btn) => (
+									<Button
+										key={btn}
+										variant="secondary"
+										className={cn([
+											"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
+											btn === "Reset" ? "text-autofun-text-secondary" : "",
+										])}
+										onClick={() => handleQuickSetSell(btn)}
+									>
+										{btn === "Reset" ? "Reset" : `${btn}%`}
+									</Button>
+								))}
+							</div>
+						) : null}
+					</Fragment>
 				)}
 
 				<div className="mt-2 space-y-2">
-					<div className="flex font-medium justify-between text-base text-white">
+					<div className="flex font-medium justify-between text-xs text-white">
 						<p>Min Received</p>
 						<div className="flex items-center gap-2">
 							{!value || value === "0" ? (
@@ -241,7 +245,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						</div>
 					</div>
 					{priceImpact ? (
-						<div className="flex font-medium justify-between text-base text-white">
+						<div className="flex font-medium justify-between text-white text-xs">
 							<p>Price Impact</p>
 							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
 						</div>

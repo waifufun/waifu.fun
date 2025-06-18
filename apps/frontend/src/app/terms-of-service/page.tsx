@@ -258,26 +258,24 @@ A court of competent jurisdiction shall have the authority to enforce these Mass
 const TermsOfService = () => {
 	return (
 		<div className="flex flex-col flex-1 min-h-[100vh]">
-			<div className="max-w-4xl mx-auto p-12 text-white">
+			<div className="flex flex-col gap-4 container">
 				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4">
-						<h1 className="text-6xl font-bold">Platform Terms & Conditions</h1>
-						<div className="text-xl font-medium">Last Updated: 31 January 2025</div>
-					</div>
-					{TERMS_AND_CONDITIONS.map((item, _) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
-						<div key={_} className="flex flex-col gap-4">
-							<div className="text-3xl font-bold">{item.header}</div>
-							<div className="text-xl font-medium">{item.subheader}</div>
-							<div>
-								{typeof item.content === "string"
-									? item.content
-									: // biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
-										item.content.map((line, idx) => <li key={idx}>{line}</li>)}
-							</div>
-						</div>
-					))}
+					<h1 className="text-3xl font-bold">Platform Terms & Conditions</h1>
+					<div className="text-lg font-medium">Last Updated: 31 January 2025</div>
 				</div>
+				{TERMS_AND_CONDITIONS.map((item, _) => (
+					// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
+					<div key={_} className="flex flex-col gap-4">
+						<div className="text-3xl font-bold">{item.header}</div>
+						<div className="text-xl font-medium">{item.subheader}</div>
+						<div>
+							{typeof item.content === "string"
+								? item.content
+								: // biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
+									item.content.map((line, idx) => <li key={idx}>{line}</li>)}
+						</div>
+					</div>
+				))}
 			</div>
 		</div>
 	);

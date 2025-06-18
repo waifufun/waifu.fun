@@ -341,6 +341,30 @@ export const getAgent = async ({
 	return await fetcher("/agent/get-agents", "POST", { chain, chainId, contractAddress, page, limit });
 };
 
+export const uploadAvatar = async ({
+	address,
+	image,
+}: {
+	address: AddressLike;
+	image?: string; // base64 image string
+}) => {
+	return await fetcher("/user/upload-profile-image", "POST", {
+		address,
+		image,
+	});
+};
+
+export const getUser = async ({
+	address,
+}: {
+	address: string;
+}) => {
+	address;
+	return await fetcher("/user/get-user", "POST", {
+		address,
+	});
+};
+
 export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
 export const connection = new Connection(HELIUS_RPC_URL, "confirmed");
