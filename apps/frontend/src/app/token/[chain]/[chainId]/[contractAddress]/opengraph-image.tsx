@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getToken } from "@/lib/api";
 import type { ITokenLookUp } from "@autofun/types";
+import { formatNumberSubscript } from "@/lib/utils";
 
 export const runtime = "edge";
 export const alt = "Token Information";
@@ -193,7 +194,7 @@ export default async function Image({ params }: { params: Promise<ITokenLookUp> 
 					>
 						<div style={{ display: "flex", gap: "8px" }}>
 							<span style={{ color: "#888", display: "flex" }}>Price:</span>
-							<span style={{ display: "flex" }}>{token.price}</span>
+							<span style={{ display: "flex" }}>{formatNumberSubscript(token?.price)}</span>
 						</div>
 						<div style={{ display: "flex", gap: "8px" }}>
 							<span style={{ color: "#888", display: "flex" }}>MCap:</span>
