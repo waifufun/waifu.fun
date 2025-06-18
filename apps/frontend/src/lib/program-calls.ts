@@ -9,6 +9,10 @@ export interface LaunchParams {
 	virtualLamportReserves: BN;
 	curveLimit: BN;
 	initBondingCurve: number;
+	MaxBuyAmount: BN;
+	MaxSelAmount: BN;
+	delayForTrade: BN;
+	limitTimeToUpdate: BN;
 	name: string;
 	symbol: string;
 	uri: string;
@@ -69,6 +73,10 @@ export const launchTx = async (
 			params.virtualLamportReserves,
 			params.curveLimit,
 			params.initBondingCurve,
+			params.MaxBuyAmount,
+			params.MaxSelAmount,
+			params.delayForTrade, // delay in seconds before trading is allowed
+			params.limitTimeToUpdate, // maximum time in seconds where the creator can update the max buy and sell
 			params.name,
 			params.symbol,
 			params.uri,
@@ -104,6 +112,10 @@ export const launchAndSwapTx = async (
 			params.virtualLamportReserves,
 			params.curveLimit,
 			params.initBondingCurve,
+			params.MaxBuyAmount,
+			params.MaxSelAmount,
+			params.delayForTrade,
+			params.limitTimeToUpdate,
 			params.name,
 			params.symbol,
 			params.uri,
@@ -191,46 +203,6 @@ export const withdrawTx = async (
 		.transaction();
 
 	tx.feePayer = user;
-	tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-
-	return tx;
-};
-
-export const switchToInstantModeTx = async (
-	authority: PublicKey,
-	connection: Connection,
-	program: Program<Autofun>,
-): Promise<Transaction> => {
-	const [globalConfig] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
-
-	const tx = await program.methods
-		.switchToInstantMode()
-		.accounts({
-			authority,
-		})
-		.transaction();
-
-	tx.feePayer = authority;
-	tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-
-	return tx;
-};
-
-export const switchToDelayModeTx = async (
-	authority: PublicKey,
-	connection: Connection,
-	program: Program<Autofun>,
-): Promise<Transaction> => {
-	const [globalConfig] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
-
-	const tx = await program.methods
-		.switchToDelayMode()
-		.accounts({
-			authority,
-		})
-		.transaction();
-
-	tx.feePayer = authority;
 	tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
 	return tx;

@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
-export const programId = new PublicKey("CN2Km6FAncCu3mPKCMJhGwenAtC75MoNsoLuXGqwoC3q");
+export const programId = new PublicKey("3KwYy1KF1WYfpM9gmLUgi5mhhvQpKgHwBP2rg4KXnGh5");
 
 function readBorshString(buffer: Buffer, offset: number): { value: string; nextOffset: number } {
 	let off = offset;
@@ -37,6 +37,18 @@ export const instructions = {
 				const initBondingCurve = payload.readBigUInt64LE(offset);
 				offset += 8;
 
+				const maxBuyAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const maxSelAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const delayForTrade = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
+				offset += 8;
+
 				const name = readBorshString(payload, offset);
 				offset = name.nextOffset;
 
@@ -53,6 +65,10 @@ export const instructions = {
 						virtualLamportReserves,
 						curveLimit,
 						initBondingCurve,
+						maxBuyAmount,
+						maxSelAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,
