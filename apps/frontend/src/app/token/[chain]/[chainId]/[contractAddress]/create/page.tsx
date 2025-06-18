@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { UploadCloud, ImageIcon, Video, Music, AlertTriangle, Download, Trash2, RefreshCw, Play } from "lucide-react";
+import { UploadCloud, ImageIcon, Video, Music, AlertTriangle, Download, Trash2, RefreshCw, } from "lucide-react";
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { getToken } from "@/lib/api";

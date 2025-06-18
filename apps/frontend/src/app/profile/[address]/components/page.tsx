@@ -11,7 +11,6 @@ import { useState } from "react";
 export default function Page({ balances }: { balances: any[] }) {
 	const [tab, setTab] = useState("wallet");
 
-
 	return (
 		<div className="mt-10 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-full mx-auto flex flex-col gap-6">
@@ -22,7 +21,7 @@ export default function Page({ balances }: { balances: any[] }) {
 						tokensBought: 128,
 						tokensCreated: 42,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: 12
+						points: 12,
 					}}
 				/>
 				{/* tabs section */}

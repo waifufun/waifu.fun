@@ -19,7 +19,7 @@ export default function ProfileHeader({
 			chainId: SolanaNetworkIds | EvmChainIds | null;
 			amount: number;
 		}[];
-		points: number
+		points: number;
 	};
 }) {
 	// const chainIcons: Record<string, { name: string; icon: string }> = {
