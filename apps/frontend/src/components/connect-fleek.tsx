@@ -31,7 +31,7 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 	});
 
 	return (
-		<div className="bg-[#0F0F0F] ƒlex place-self-center backdrop-blur-2xl w-[408px] rounded-md">
+		<div className="bg-black ƒlex place-self-center backdrop-blur-2xl w-[408px]">
 			<div className="p-4 flex flex-col text-center transition-all duration-300 ease-in-out">
 				<h1 className="font-semibold text-white text-2xl">
 					Connect An <span className="text-autofun-background-action-highlight">Agent</span>

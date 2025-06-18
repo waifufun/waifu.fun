@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Zap, Star, Flame, Sparkles, Hourglass, Filter, LayoutGrid, List, ChevronDown } from "lucide-react";
+import { Filter } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -23,24 +23,11 @@ import {
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
-
-const casinoFloorNavigation = {
-	title: "CASINO FLOOR",
-	items: [
-		{ title: "ALL", url: "/casino/all", icon: Zap },
-		{ title: "FEATURED", url: "/casino/featured", icon: Star },
-		{ title: "HOT NOW", url: "/casino/hot-now", icon: Flame },
-		{ title: "NEWEST", url: "/casino/newest", icon: Sparkles },
-		{ title: "BONDING SOON", url: "/casino/bonding-soon", icon: Hourglass },
-	],
-};
+import GridListSelector from "./grid-list-selector";
+import FilterSelector from "./filter-selector";
 
 const viewControlsNavigation = {
-	items: [
-		{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true },
-		{ title: "GRID VIEW", url: "/casino/view/grid", icon: LayoutGrid },
-		{ title: "LIST VIEW", url: "/casino/view/list", icon: List },
-	],
+	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
 };
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
@@ -63,28 +50,10 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 
 			<SidebarContent>
 				<SidebarGroup>
-					<SidebarGroupLabel>{casinoFloorNavigation.title}</SidebarGroupLabel>
+					<SidebarGroupLabel>CASINO FLOOR</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{casinoFloorNavigation.items.map((item) => (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton
-										asChild
-										isActive={pathname === item.url}
-										tooltip={item.title}
-										className={
-											pathname === item.url
-												? "bg-autofun-background-action-highlight/20"
-												: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
-										}
-									>
-										<Link href={item.url}>
-											<item.icon className="h-4 w-4" />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
+							<FilterSelector />
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
@@ -92,6 +61,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				<SidebarGroup>
 					<SidebarGroupContent>
 						<SidebarMenu>
+							<GridListSelector />
 							{viewControlsNavigation.items.map((item) => (
 								<SidebarMenuItem key={item.title}>
 									<SidebarMenuButton
@@ -110,26 +80,6 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 										</Link>
 									</SidebarMenuButton>
 								</SidebarMenuItem>
-								// <SidebarMenuItem key={item.title}>
-								// 	<SidebarMenuButton
-								// 		asChild
-								// 		isActive={pathname === item.url}
-								// 		tooltip={item.title}
-								// 		className={
-								// 			pathname === item.url
-								// 				? "bg-autofun-background-action-highlight/20"
-								// 				: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
-								// 		}
-								// 	>
-								// 		<Link href={item.url} className="flex w-full items-center justify-between">
-								// 			<div className="flex items-center gap-2">
-								// 				<item.icon className="h-4 w-4" />
-								// 				<span>{item.title}</span>
-								// 			</div>
-								// 			{item.hasDropdown && <ChevronDown className="h-4 w-4 opacity-70" />}
-								// 		</Link>
-								// 	</SidebarMenuButton>
-								// </SidebarMenuItem>
 							))}
 						</SidebarMenu>
 					</SidebarGroupContent>
@@ -144,14 +94,14 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 							<span className="font-medium text-green-400">SOL</span>
 						</div>
 					) : null}
-					<div className="flex items-center justify-between text-white">
+					{/* <div className="flex items-center justify-between text-white">
 						<span>250</span>
 						<span className="font-medium text-yellow-400">PP</span>
-					</div>
-					<div className="flex items-center justify-between text-white">
+					</div> */}
+					{/* <div className="flex items-center justify-between text-white">
 						<span>1200</span>
 						<span className="font-medium text-gray-400">WP</span>
-					</div>
+					</div> */}
 				</div>
 				<ConnectWallet />
 			</SidebarFooter>
