@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import useAddress from "@/hooks/use-address";
+import useTokenBalance from "@/hooks/use-token-balance";
 
 type Inputs = {
 	message: string;
@@ -34,11 +36,12 @@ export default function Chat({ token }: { token: IToken }) {
 		<div className="bg-black border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col h-[550px]">
 			<div className="flex items-center justify-between p-2 border-b-2 border-[#03FF24]/30 bg-black/50">
 				<Tabs defaultValue="1000" className="flex" onValueChange={(value) => setRoom(value as TChatRooms)}>
-					<TabsList className="bg-transparent border-0 p-0 h-auto">
+					<TabsList shadowed={false} className="bg-transparent border-0 p-0 h-auto">
 						{["1000", "100000", "1000000"].map((r) => (
 							<TabsTrigger
 								key={r}
 								value={String(r)}
+								filled={false}
 								className={cn(
 									"text-xs font-bold uppercase tracking-wider rounded-none px-3 py-1.5 h-auto relative data-[state=active]:text-[#03FF24] data-[state=inactive]:text-gray-500 hover:text-gray-300 bg-transparent border-0",
 								)}
@@ -82,6 +85,15 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 			message: "",
 		},
 	});
+
+	const userAddress = useAddress();
+	const balance = useTokenBalance({
+		chain: token.chain,
+		contractAddress: token.contractAddress,
+		address: userAddress,
+	});
+
+	const hasEnoughTokens = balance && Number(balance) >= Number(tierRequirement.replace(/,/g, ""));
 
 	const onSubmit: SubmitHandler<Inputs> = async (data) => {
 		const base64Image = data.attachment ? String(await fileToBase64(data.attachment)) : undefined;
@@ -225,6 +237,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 						variant="ghost"
 						size="icon"
 						type="button"
+						disabled={!hasEnoughTokens}
 						onClick={handleIconClick}
 						className="h-9 w-9 p-0 text-gray-400 hover:text-[#03FF24] rounded-none flex-shrink-0"
 					>
@@ -233,6 +246,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 
 					<Input
 						type="text"
+						disabled={!hasEnoughTokens}
 						placeholder="Lorem ipsum 🤔 🔥🔥"
 						className="bg-black border-2 border-[#03FF24]/50 placeholder-gray-600 text-sm h-9 focus:border-[#03FF24] text-gray-200 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] flex-grow"
 						{...register("message", { required: true })}
@@ -242,7 +256,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 						variant="ghost"
 						size="icon"
 						type="submit"
-						disabled={mutation?.isPending}
+						disabled={mutation?.isPending || !hasEnoughTokens}
 						className="h-9 w-9 p-0 bg-[#03FF24]/80 hover:bg-[#03FF24] text-black rounded-none shadow-[2px_2px_0px_#01a718] flex-shrink-0"
 					>
 						<Send size={18} />

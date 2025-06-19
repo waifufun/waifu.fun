@@ -61,7 +61,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
 		try {
 			const roomWanted = Number(body.room);
-			if (roomWanted > amountOfTokens) {
+			if (roomWanted >= amountOfTokens) {
 				throw new Error("You do not have enough tokens to send a message in this room");
 			}
 		} catch (error) {
