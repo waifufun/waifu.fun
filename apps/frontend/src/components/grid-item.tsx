@@ -69,7 +69,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-sky-500/90 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
+								"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.1s]",
 							)}
 							style={{ color: "#000000" }}
@@ -80,7 +80,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-purple-500 text-white shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)] border border-purple-700",
+								"bg-purple-500 hover:bg-primary/80 text-white shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)] border border-purple-700",
 								animationLevel >= 1 && "animate-badge-glint",
 							)}
 						>
@@ -91,7 +91,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-yellow-400 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.7)] sm:shadow-[2px_2px_0px_rgba(0,0,0,0.7)] border border-black",
+								"bg-yellow-400 hover:bg-primary/80 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.7)] sm:shadow-[2px_2px_0px_rgba(0,0,0,0.7)] border border-black",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.2s]",
 							)}
 							style={{ color: "#000000" }}
@@ -102,7 +102,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-black/80 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+								"bg-black/80 hover:bg-primary/80 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 							)}
 						>
 							NEW
