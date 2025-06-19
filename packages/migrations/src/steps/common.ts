@@ -1,6 +1,6 @@
-
 import type { MigrationStep, MigrationContext } from "../types";
 import { withdrawLiquidity, sendNftToManager, collectProtocolFees } from "../utils/protocol-utils";
+import { Keypair } from "@solana/web3.js";
 
 export const commonWithdrawStep: MigrationStep = {
 	name: "withdraw",
@@ -19,11 +19,21 @@ export const commonSendNftStep: MigrationStep = {
 	description: "Send NFT to manager multisig",
 	execute: async (context: MigrationContext) => {
 		const { state } = context;
-		const { nftMint } = state;
-		if (!nftMint) {
+		const { secondaryNftMint } = state;
+		const version = state.nftVersion || "legacy";
+		if (!secondaryNftMint) {
 			throw new Error("NFT mint not found in state");
 		}
-		await sendNftToManager(context, nftMint, process.env.ACCOUNT_FEE_MULTISIG!);
+		const multisigAddress = process.env.ACCOUNT_FEE_MULTISIG;
+
+		if (!multisigAddress) {
+			throw new Error("Multisig address not found in environment variables");
+		}
+		console.log(`Sending NFT to multisig: ${multisigAddress}, version: ${version}, nft mint: ${secondaryNftMint}`);
+		const txId = await sendNftToManager(context, secondaryNftMint, multisigAddress, version);
+		state.txId = txId;
+
+		return txId;
 	},
 	rollback: async (context: MigrationContext) => {
 		throw new Error("Not implemented");
@@ -41,6 +51,7 @@ export const commonCollectFeesStep: MigrationStep = {
 		}
 		const result = await collectProtocolFees(context, state.tokenMint);
 		state.txId = result.txId;
+		return result;
 	},
 	rollback: async (context: MigrationContext) => {
 		throw new Error("Not implemented");

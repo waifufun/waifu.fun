@@ -97,6 +97,8 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	updatedAt: Date;
 	pool?: string;
 	isToken2022?: boolean;
+	tradingStartsAt?: Date;
+	lastClaimedAt?: Date;
 }
 
 export interface ITokenSocials {
@@ -195,6 +197,7 @@ export interface IMigration {
 	migration?: string | undefined;
 	withdrawnAmounts?: string | undefined;
 	poolInfo?: string | undefined;
+	poolKeys?: string | undefined;
 	lockLpTxId?: string | undefined;
 	primaryNftMint?: string | undefined;
 	secondaryNftMint?: string | undefined;

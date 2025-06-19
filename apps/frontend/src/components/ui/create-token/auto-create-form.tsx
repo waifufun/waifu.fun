@@ -6,7 +6,15 @@ import { FormSection } from "./form-section";
 import { Wand2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
-import { CoinInfoFields, CustomAddressGenerator, PreBuySection, LaunchButton } from "./shared-form-section";
+import {
+	CoinInfoFields,
+	CustomAddressGenerator,
+	PreBuySection,
+	LaunchButton,
+	CustomCurveSection,
+	TradeLimitSection,
+	DelayedStartSection,
+} from "./shared-form-section";
 import { useEffect, useState } from "react";
 
 const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {

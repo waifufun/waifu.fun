@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/autofun.json`.
  */
 export type Autofun = {
-	address: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5";
+	address: "J7dskxiQKv8XDRjpfDJY7AQr6ppCesQj8Vbtp3oFhmXd";
 	metadata: {
 		name: "autofun";
 		version: "0.1.0";
@@ -551,6 +551,26 @@ export type Autofun = {
 					type: "u64";
 				},
 				{
+					name: "curveLimit";
+					type: "u64";
+				},
+				{
+					name: "initBondingCurve";
+					type: "f64";
+				},
+				{
+					name: "maxAmount";
+					type: "u64";
+				},
+				{
+					name: "delayForTrade";
+					type: "u64";
+				},
+				{
+					name: "limitTimeToUpdate";
+					type: "u64";
+				},
+				{
 					name: "name";
 					type: "string";
 				},
@@ -1017,6 +1037,26 @@ export type Autofun = {
 					type: "u64";
 				},
 				{
+					name: "curveLimit";
+					type: "u64";
+				},
+				{
+					name: "initBondingCurve";
+					type: "f64";
+				},
+				{
+					name: "maxAmount";
+					type: "u64";
+				},
+				{
+					name: "delayForTrade";
+					type: "u64";
+				},
+				{
+					name: "limitTimeToUpdate";
+					type: "u64";
+				},
+				{
 					name: "name";
 					type: "string";
 				},
@@ -1069,6 +1109,42 @@ export type Autofun = {
 				{
 					name: "newAdmin";
 					type: "pubkey";
+				},
+			];
+		},
+		{
+			name: "setMaxAmounts";
+			discriminator: [51, 206, 136, 67, 143, 88, 131, 176];
+			accounts: [
+				{
+					name: "authority";
+					writable: true;
+					signer: true;
+				},
+				{
+					name: "tokenMint";
+				},
+				{
+					name: "bondingCurve";
+					writable: true;
+					pda: {
+						seeds: [
+							{
+								kind: "const";
+								value: [98, 111, 110, 100, 105, 110, 103, 95, 99, 117, 114, 118, 101];
+							},
+							{
+								kind: "account";
+								path: "tokenMint";
+							},
+						];
+					};
+				},
+			];
+			args: [
+				{
+					name: "maxAmount";
+					type: "u64";
 				},
 			];
 		},
@@ -1693,6 +1769,14 @@ export type Autofun = {
 			name: "completeEvent";
 			discriminator: [95, 114, 97, 156, 212, 46, 152, 8];
 		},
+		{
+			name: "instantModeSwitched";
+			discriminator: [173, 175, 66, 155, 199, 152, 206, 36];
+		},
+		{
+			name: "maxAmountsSet";
+			discriminator: [233, 20, 37, 198, 155, 37, 64, 10];
+		},
 	];
 	errors: [
 		{
@@ -1770,6 +1854,31 @@ export type Autofun = {
 			name: "decimalOverflow";
 			msg: "Decimal overflow";
 		},
+		{
+			code: 6015;
+			name: "exceedsMaxSellAMount";
+			msg: "Exceeds Max Sell Amount";
+		},
+		{
+			code: 6016;
+			name: "exceedsMaxBuyAmount";
+			msg: "Exceeds Max Buy Amount";
+		},
+		{
+			code: 6017;
+			name: "tradeTooEarly";
+			msg: "Trade Too Early";
+		},
+		{
+			code: 6018;
+			name: "overSetTime";
+			msg: "Over Set Time";
+		},
+		{
+			code: 6019;
+			name: "invalidDirection";
+			msg: "Invalid Direction";
+		},
 	];
 	types: [
 		{
@@ -1831,6 +1940,14 @@ export type Autofun = {
 						type: "pubkey";
 					},
 					{
+						name: "createdTime";
+						type: "i64";
+					},
+					{
+						name: "initBondingCurve";
+						type: "f64";
+					},
+					{
 						name: "initLamport";
 						type: "u64";
 					},
@@ -1840,6 +1957,18 @@ export type Autofun = {
 					},
 					{
 						name: "reserveToken";
+						type: "u64";
+					},
+					{
+						name: "delayForTrade";
+						type: "u64";
+					},
+					{
+						name: "limitTimeToUpdate";
+						type: "u64";
+					},
+					{
+						name: "maxAmount";
 						type: "u64";
 					},
 					{
@@ -1891,20 +2020,12 @@ export type Autofun = {
 						type: "pubkey";
 					},
 					{
-						name: "initBondingCurve";
-						type: "f64";
-					},
-					{
 						name: "platformBuyFee";
 						type: "u128";
 					},
 					{
 						name: "platformSellFee";
 						type: "u128";
-					},
-					{
-						name: "curveLimit";
-						type: "u64";
 					},
 					{
 						name: "lamportAmountConfig";
@@ -1947,6 +2068,42 @@ export type Autofun = {
 								];
 							};
 						};
+					},
+				];
+			};
+		},
+		{
+			name: "instantModeSwitched";
+			type: {
+				kind: "struct";
+				fields: [
+					{
+						name: "instantTrade";
+						type: "bool";
+					},
+				];
+			};
+		},
+		{
+			name: "maxAmountsSet";
+			type: {
+				kind: "struct";
+				fields: [
+					{
+						name: "bondingCurve";
+						type: "pubkey";
+					},
+					{
+						name: "creator";
+						type: "pubkey";
+					},
+					{
+						name: "modifiedTime";
+						type: "i64";
+					},
+					{
+						name: "maxAmount";
+						type: "u64";
 					},
 				];
 			};

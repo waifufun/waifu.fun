@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
-export const programId = new PublicKey("autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5");
+export const programId = new PublicKey("J7dskxiQKv8XDRjpfDJY7AQr6ppCesQj8Vbtp3oFhmXd");
 
 function readBorshString(buffer: Buffer, offset: number): { value: string; nextOffset: number } {
 	let off = offset;
@@ -31,6 +31,21 @@ export const instructions = {
 				const virtualLamportReserves = payload.readBigUInt64LE(offset);
 				offset += 8;
 
+				const curveLimit = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const initBondingCurve = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const maxAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const delayForTrade = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
+				offset += 8;
+
 				const name = readBorshString(payload, offset);
 				offset = name.nextOffset;
 
@@ -45,6 +60,11 @@ export const instructions = {
 						decimals,
 						tokenSupply,
 						virtualLamportReserves,
+						curveLimit,
+						initBondingCurve,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,
@@ -52,7 +72,7 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode launch instruction: ${error.message}`,
+					error: `Failed to decode launch instruction: ${(error as any).message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -89,7 +109,7 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode swap instruction: ${error.message}`,
+					error: `Failed to decode swap instruction: ${(error as any).message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -111,6 +131,21 @@ export const instructions = {
 				offset += 8;
 
 				const virtualLamportReserves = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const curveLimit = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const initBondingCurve = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const maxAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const delayForTrade = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
 				offset += 8;
 
 				const name = readBorshString(payload, offset);
@@ -136,6 +171,11 @@ export const instructions = {
 						decimals,
 						tokenSupply,
 						virtualLamportReserves,
+						curveLimit,
+						initBondingCurve,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,
@@ -146,7 +186,7 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode launchAndSwap instruction: ${error.message}`,
+					error: `Failed to decode launchAndSwap instruction: ${(error as any).message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -202,7 +242,7 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode nominate_authority instruction: ${error.message}`,
+					error: `Failed to decode nominate_authority instruction: ${(error as any).message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -222,7 +262,7 @@ export const instructions = {
 					};
 				} catch (error) {
 					return {
-						error: `Failed to decode CompleteEvent: ${error.message}`,
+						error: `Failed to decode CompleteEvent: ${(error as any).message}`,
 						rawData: Array.from(data),
 					};
 				}
