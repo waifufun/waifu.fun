@@ -1,6 +1,6 @@
 "use client";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getTrades } from "@/lib/api";
 import type { IToken, ITrade } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
@@ -91,6 +91,15 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					</TableRow>
 				))}
 			</TableBody>
+			<TableFooter className="border-t-2 border-autofun-background-action-highlight/25">
+				<TableRow>
+					<TableCell colSpan={7}>
+						<div className="text-gray-500 text-xs uppercase text-center mx-auto w-full">
+							Live Feed - Showing last {data?.length || 0} trades
+						</div>
+					</TableCell>
+				</TableRow>
+			</TableFooter>
 		</Table>
 	);
 }

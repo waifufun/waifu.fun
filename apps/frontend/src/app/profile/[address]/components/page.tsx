@@ -16,6 +16,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	const address = params?.address;
 
 	const user = balances?.user;
+
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
@@ -28,13 +29,14 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 	const tokensBought = balances?.balances.length;
 	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
+
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
 			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
 						username: user?.displayName,
-						address: user?.address,
+						address: user?.address || address,
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreated,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
@@ -64,17 +66,15 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											</span>
 										</h1>
 									</div>
-									{balances?.balances.map((balance, i) => {
-										console.log(balance);
+									{balances?.balances.map((balance) => {
 										return (
 											<TokenRow
 												mode="wallet"
-												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
-												key={i}
+												key={balance?.contractAddress}
 												data={{
 													chain: "solana",
 													chainId: 101,
-													image: balance?.info?.imageThumbUrl,
+													image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
 													title: balance?.info?.name,
 													ticker: balance?.info?.symbol,
 													marketCap: balance?.marketcap,

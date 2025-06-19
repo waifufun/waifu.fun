@@ -5,6 +5,7 @@ import Progressbar from "./progressbar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { AlertCircle } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
+import { Fragment } from "react";
 
 export default function BondingCurveProgress({
 	token,
@@ -16,10 +17,10 @@ export default function BondingCurveProgress({
 		return null;
 	}
 	return (
-		<div className="bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
-			<div className="flex flex-col gap-3.5">
+		<Fragment>
+			<div className="flex flex-col gap-2">
 				<div className="flex items-center gap-4 justify-between">
-					<div className="font-medium text-xl font-satoshi text-autofun-text-primary inline-flex gap-2">
+					<div className="text-sm font-bold text-gray-200 uppercase tracking-wider inline-flex gap-2">
 						{title ? title : "Bonding curve progress:"}
 						<span className="text-autofun-background-action-highlight">{curveProgress.toFixed(2)}%</span>
 					</div>
@@ -39,13 +40,18 @@ export default function BondingCurveProgress({
 					) : null}
 				</div>
 				{/* Bar */}
-				<Progressbar max={100} value={Number(curveProgress.toFixed(2))} />
+				<Progressbar max={100} height="h-4" value={Number(curveProgress.toFixed(2))} />
 				{typeof token?.bondingCurveBalance === "number" ? (
-					<div className="text-base text-autofun-text-primary">
-						There is {formatNumber(Number(token?.bondingCurveBalance), false, true)} SOL in the bonding curve.
+					<div className="text-xs text-autofun-text-primary">
+						There is{" "}
+						<span className="text-autofun-background-action-highlight">
+							{formatNumber(Number(token?.bondingCurveBalance), false, true)} SOL
+						</span>{" "}
+						in the bonding curve.
 					</div>
 				) : null}
 			</div>
-		</div>
+			<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
+		</Fragment>
 	);
 }

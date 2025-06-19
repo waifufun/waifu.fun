@@ -153,7 +153,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		const cache = await redis.get(cacheKey);
 
 		if (cache) {
-			// return JSON.parse(cache);
+			return JSON.parse(cache);
 		}
 
 		const token = await DB.Token.findOne({
@@ -557,7 +557,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}),
 		});
 
-		const user = await DB.User.findOne({ address });
+		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
@@ -583,9 +583,19 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					getChecksummedAddress(t?.address as AddressLike, "solana") ===
 					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
 			);
-			const populated = populatedTokenData?.find((p) => p?.contractAddress === balance.tokenAddress);
+
+			const populated = populatedTokenData?.find(
+				(p) =>
+					getChecksummedAddress(p?.contractAddress as AddressLike, "solana") ===
+					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
+			);
 			const limitedPopulatedData = populated
-				? { marketcap: populated.marketcap, price: populated.price, totalSupply: populated.totalSupply }
+				? {
+						marketcap: populated.marketcap,
+						price: populated.price,
+						totalSupply: populated.totalSupply,
+						image: populated?.image,
+					}
 				: {};
 			returnData.push({
 				...balance,
@@ -695,6 +705,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				totalSupply: Number(totalSupply),
 				createdAt: createdAt.toISOString(),
 				updatedAt: createdAt,
+				isToken2022: false,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -703,6 +714,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const rpc = await SolanaRpcProvider.connect(solanaChainId);
 
 			const metadata = await rpc.getTokenMetadata(contractAddress);
+			console.log("Metadata for token:", metadata);
 
 			if (!metadata?.image) throw new Error("Token has no image");
 
@@ -733,6 +745,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				totalSupply: Number(metadata?.totalSupply),
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date(),
+				isToken2022: metadata?.isToken2022 || false,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
