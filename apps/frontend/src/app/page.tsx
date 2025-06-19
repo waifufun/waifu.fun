@@ -36,7 +36,7 @@ export default async function Home({
 		<div className={`flex flex-col gap-4 container ${noTokens ? "h-screen justify-center items-center" : ""}`}>
 			<div className="flex flex-col items-center w-full">
 				{noTokens ? (
-					<h1 className="text-[#03FF23] text-2xl font-semibold uppercase">No tokens found</h1>
+					<h1 className="text-[#03FF23] text-lg font-semibold uppercase">No tokens found</h1>
 				) : view === "grid" ? (
 					<TokenGrid tokens={tokens} />
 				) : (
