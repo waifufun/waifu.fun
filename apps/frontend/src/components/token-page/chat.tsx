@@ -171,7 +171,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 		if (ref.current) {
 			ref.current.scrollTop = ref.current.scrollHeight;
 		}
-	}, [query.data]);
+	}, []);
 
 	return (
 		<>
