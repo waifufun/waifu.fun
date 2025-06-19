@@ -216,8 +216,8 @@ export class SolanaWallet extends WalletClass {
 		const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
 		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
 		const maxAmount = 1 * LAMPORTS_PER_SOL;
-		const delayForTrade = 60; // 60 seconds delay before trading is allowed
-		const limitTimeToUpdate = 360000; // 100 hour to update max buy/sell amounts
+		const delayForTrade = tokenData.delayForTrade || 0;
+		const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts
 		const tx =
 			tokenData.buyAmount > 0
 				? await this.launchAndSwapTx(

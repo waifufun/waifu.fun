@@ -63,6 +63,7 @@ export type TokenFormData = {
 	symbol: string;
 	buyAmount: number;
 	curveLimit: number;
+	delayForTrade: number;
 };
 
 export type TokenMetadata = {
@@ -74,6 +75,7 @@ export type TokenMetadata = {
 	buyAmount: number;
 	metadataUrl: string;
 	curveLimit: number;
+	delayForTrade: number;
 };
 
 export type TokenFormOptions = keyof TokenFormData;
@@ -102,6 +104,7 @@ const PromptProviderContent = ({
 			curveLimit: process.env.NEXT_PUBLIC_CURVE_LIMIT
 				? Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL
 				: 113,
+			delayForTrade: 0,
 		},
 		mode: "onChange",
 	});
@@ -351,6 +354,7 @@ const PromptProviderContent = ({
 		const mintKeyPairr = mintKeyPair || Keypair.generate();
 		const buyAmount = watch("buyAmount") || 0;
 		const curveLimit = watch("curveLimit") || Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
+		const delayForTrade = watch("delayForTrade") || 0;
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
@@ -380,6 +384,7 @@ const PromptProviderContent = ({
 			buyAmount,
 			metadataUrl,
 			curveLimit: Number(curveLimit),
+			delayForTrade: Number(delayForTrade),
 		};
 	};
 

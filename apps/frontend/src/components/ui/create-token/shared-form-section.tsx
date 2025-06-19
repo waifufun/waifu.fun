@@ -8,7 +8,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
 import {
 	usePrompt,
 	nameValidation,
@@ -201,22 +200,76 @@ export const DelayedStartSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [isDelayEnabled, setIsDelayEnabled] = useState(false);
-
+	const {
+		control,
+		formState: { errors },
+	} = usePrompt();
+	const [mode, setMode] = useState<"preset" | "manual">("preset");
+	const presets = [
+		{ label: "10 Min", value: 10 * 60 },
+		{ label: "1 Hour", value: 60 * 60 },
+		{ label: "4 Hours", value: 4 * 60 * 60 },
+	];
 	return (
 		<FormSection title="Delayed Start" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<div className="flex items-center justify-between">
-				<Label htmlFor="enable-delayed-start" className={cn(formLabelBaseClass, "cursor-pointer")}>
-					Enable Delayed Start
-				</Label>
-				<Switch
-					id="enable-delayed-start"
-					checked={isDelayEnabled}
-					onCheckedChange={setIsDelayEnabled}
-					className="data-[state=checked]:bg-[#03FF24] rounded-none [&>span]:rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.25)]"
-				/>
+			<div className="flex items-center gap-4 mb-3">
+				<ToggleGroup
+					type="single"
+					value={mode}
+					onValueChange={(v) => setMode(v as any)}
+					className="grid grid-cols-2 gap-2"
+				>
+					<ToggleGroupItem value="preset">Preset</ToggleGroupItem>
+					<ToggleGroupItem value="manual">Manual</ToggleGroupItem>
+				</ToggleGroup>
 			</div>
-			<p className="text-[10px] text-gray-500 mt-1">If enabled, trading will start after a fixed delay period.</p>
+			<div className="flex items-center justify-between">
+				<Controller
+					name="delayForTrade"
+					control={control}
+					rules={{ required: "Please choose a delay", min: { value: 0, message: "Delay must be ≥ 0" } }}
+					defaultValue={presets[0]?.value ?? 0}
+					render={({ field }) =>
+						mode === "preset" ? (
+							<>
+								<Label className={formLabelBaseClass}>Choose Delay</Label>
+								<ToggleGroup
+									type="single"
+									value={String(field.value)}
+									onValueChange={(v) => field.onChange(Number(v))}
+									className="grid grid-cols-3 gap-2 mt-1 mb-2"
+								>
+									{presets.map((p) => (
+										<ToggleGroupItem key={p.value} value={String(p.value)}>
+											{p.label}
+										</ToggleGroupItem>
+									))}
+								</ToggleGroup>
+							</>
+						) : (
+							<div className="space-y-1">
+								<Label htmlFor="manual-start" className={formLabelBaseClass}>
+									Pick Start Date &amp; Time
+								</Label>
+								<Input
+									id="manual-start"
+									type="datetime-local"
+									onChange={(e) => {
+										const then = new Date(e.target.value).getTime();
+										const now = Date.now();
+										let secs = Math.floor((then - now) / 1000);
+										if (secs < 0) secs = 0;
+										field.onChange(secs);
+									}}
+									className={cn("mt-1 h-10", errors.delayForTrade && "border-red-500")}
+								/>
+							</div>
+						)
+					}
+				/>
+
+				{errors.delayForTrade && <p className="text-red-500 text-xs mt-1">{errors.delayForTrade.message}</p>}
+			</div>
 		</FormSection>
 	);
 };
