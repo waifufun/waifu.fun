@@ -103,7 +103,7 @@ export default function SideBarFilters() {
 							<Select open={statusOpen} onOpenChange={setStatusOpen}>
 								<SelectTrigger
 									id="token-source-sidebar"
-									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8"
+									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8"
 								>
 									<SelectValue placeholder={searchParams.get("category") || "Select Source"} />
 								</SelectTrigger>
