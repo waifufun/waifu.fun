@@ -43,7 +43,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				page: number;
 				limit?: number;
 				search?: string;
-				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond";
+				category: "new" | "trending" | "featured" | "marketcap" | "about-to-bond" | "bonded";
+				origin?: "imported" | "auto-fun";
 			};
 
 			const limit = queryParams?.limit;
@@ -51,6 +52,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const isSearch = !!queryParams?.search;
 
 			const category = queryParams.category || "new";
+			const origin = queryParams.origin || "auto-fun";
 			let sortQuery = undefined;
 
 			switch (category) {
@@ -69,6 +71,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				case "marketcap":
 					sortQuery = "-marketcap";
 					break;
+				case "bonded":
+					sortQuery = "-createdAt";
+					break;
 			}
 
 			let chain = null;
@@ -80,7 +85,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				if (!allowedChain) throw new Error("Unsupported chain pair");
 			}
 
-			const cacheKey = `${chain}:${chainId}:${page}:${category}:${sortQuery}:${limit}:tokens:${isSearch ? queryParams?.search : "non-search"}`;
+			const cacheKey = `${chain}:${chainId}:${page}:${category}:${origin}:${sortQuery}:${limit}:tokens:${isSearch ? queryParams.search : "non-search"}`;
+
 			logger.info(`Cache key: ${cacheKey}`);
 
 			const cache = await redis.get(cacheKey);
@@ -101,6 +107,16 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			if (chain && chainId) {
 				query.chain = chain;
 				query.chainId = chainId;
+			}
+
+			if (origin === "imported") {
+				query.imported = true;
+			} else if (origin === "auto-fun") {
+				query.imported = false;
+			}
+
+			if (category === "bonded") {
+				query.curveCompleted = true;
 			}
 
 			const paginationOptions: PaginateOptions = {
