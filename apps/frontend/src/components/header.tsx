@@ -22,7 +22,7 @@ export default function Header() {
 					</Link>
 					<SearchMenu />
 					{/* Social Icons */}
-					<div className="flex items-center gap-6">
+					<div className="xl:flex hidden items-center gap-6">
 						{[
 							{
 								title: "twitter",
