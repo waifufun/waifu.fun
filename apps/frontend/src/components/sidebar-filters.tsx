@@ -78,11 +78,11 @@ export default function SideBarFilters() {
 							<Select open={sourceOpen} onOpenChange={setSourceOpen}>
 								<SelectTrigger
 									id="token-source-sidebar"
-									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8"
+									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8"
 								>
 									<SelectValue placeholder={searchParams.get("origin") || "Select Source"} />
 								</SelectTrigger>
-								<SelectContent className="bg-black border-2 border-[#03FF24]/80 text-gray-50 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.45)] uppercase text-[11px]">
+								<SelectContent className="bg-black border-2 border-[#03FF24]/80 text-gray-50 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.45)] uppercase text-[11px]">
 									{sourceOptions.map((option) => (
 										<Link
 											className="hover:bg-[#03FF24]/30 focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2"
