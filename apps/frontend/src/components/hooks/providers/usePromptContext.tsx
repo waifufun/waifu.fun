@@ -64,6 +64,7 @@ export type TokenFormData = {
 	buyAmount: number;
 	curveLimit: number;
 	delayForTrade: number;
+	tradeLimitSol: number;
 };
 
 export type TokenMetadata = {
@@ -76,6 +77,7 @@ export type TokenMetadata = {
 	metadataUrl: string;
 	curveLimit: number;
 	delayForTrade: number;
+	tradeLimitSol: number;
 };
 
 export type TokenFormOptions = keyof TokenFormData;
@@ -105,6 +107,7 @@ const PromptProviderContent = ({
 				? Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL
 				: 113,
 			delayForTrade: 0,
+			tradeLimitSol: 0,
 		},
 		mode: "onChange",
 	});
@@ -355,6 +358,7 @@ const PromptProviderContent = ({
 		const buyAmount = watch("buyAmount") || 0;
 		const curveLimit = watch("curveLimit") || Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
 		const delayForTrade = watch("delayForTrade") || 0;
+		const tradeLimitSol = watch("tradeLimitSol") || 10;
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
@@ -385,6 +389,7 @@ const PromptProviderContent = ({
 			metadataUrl,
 			curveLimit: Number(curveLimit),
 			delayForTrade: Number(delayForTrade),
+			tradeLimitSol: Number(tradeLimitSol),
 		};
 	};
 
@@ -477,4 +482,11 @@ export const curveLimitValidation: RegisterOptions<TokenFormData, "curveLimit"> 
 		value: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) || 675,
 		message: `Curve limit must be ≤ ${process.env.NEXT_PUBLIC_CURVE_LIMIT || 675}`,
 	},
+};
+
+export const tradeLimitValidation: RegisterOptions<TokenFormData, "tradeLimitSol"> = {
+	valueAsNumber: true,
+	required: "Trade limit is required",
+	min: { value: 0, message: "Trade limit must be ≥ 0" },
+	max: { value: 100, message: "Trade limit must be ≤ 100" },
 };

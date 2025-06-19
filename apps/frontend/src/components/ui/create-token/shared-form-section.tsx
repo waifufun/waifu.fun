@@ -13,6 +13,7 @@ import {
 	nameValidation,
 	tickerValidation,
 	descriptionValidation,
+	tradeLimitValidation,
 } from "@/components/hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -278,7 +279,12 @@ export const TradeLimitSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [tradeLimitSol, setTradeLimitSol] = useState(0.1);
+	const {
+		registerForm,
+		watchValue,
+		formState: { errors },
+	} = usePrompt();
+
 	return (
 		<FormSection title="Trade Limit" collapsible={collapsible} defaultOpen={defaultOpen}>
 			<div className="space-y-2">
@@ -290,15 +296,7 @@ export const TradeLimitSection = ({
 						<Input
 							type="number"
 							id="tradeLimitSol"
-							value={tradeLimitSol}
-							onChange={(e) => {
-								const val = Number.parseFloat(e.target.value);
-								if (!Number.isNaN(val) && val >= 0) {
-									setTradeLimitSol(val);
-								} else if (e.target.value === "") {
-									setTradeLimitSol(0);
-								}
-							}}
+							{...registerForm("tradeLimitSol", tradeLimitValidation)}
 							min="0"
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
@@ -308,6 +306,8 @@ export const TradeLimitSection = ({
 					<p className="text-[10px] text-gray-500 mt-1">
 						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
 					</p>
+
+					{errors.tradeLimitSol && <p className="text-red-500 text-xs mt-1">{errors.tradeLimitSol.message}</p>}
 				</div>
 			</div>
 		</FormSection>
