@@ -19,7 +19,7 @@ export class SolanaIndexer extends BaseIndexer {
 			concurrencyLimit: 3,
 			maxSignatures: 500,
 			// minBlock: 322725834, // mainnet
-			minBlock: 386940005,
+			minBlock: 388699253,
 			...config,
 		};
 

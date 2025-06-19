@@ -261,7 +261,6 @@ export const retrieveJupiterQuote = async ({
 	mode: "buy" | "sell";
 	slippage: number;
 	// biome-ignore lint/suspicious/noExplicitAny: allow
-
 }): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
 	const isToken2022 = token?.isToken2022 || false;
 	const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
@@ -652,6 +651,9 @@ export const launchAndSwapTx = async (
 	decimals: number,
 	tokenSupply: number,
 	curveLimit: number,
+	maxAmount: number,
+	delayForTrade: number,
+	limitTimeToUpdate: number,
 	name: string,
 	symbol: string,
 	uri: string,
@@ -687,6 +689,9 @@ export const launchAndSwapTx = async (
 			new BN(virtualLamportReserves),
 			new BN(curveLimit),
 			initBondingCurve,
+			new BN(maxAmount),
+			new BN(delayForTrade),
+			new BN(limitTimeToUpdate),
 			name,
 			symbol,
 			uri,
@@ -714,8 +719,8 @@ export const createTokenTx = async (
 	console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
 	console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
 	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
+
 	const { program, configAccount } = await getAutofunProgram(connection, wallet);
-	const [configPda] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
 	if (!wallet?.publicKey) throw new Error("Wallet not correctly initialized");
 	const address = wallet.publicKey.toBase58();
 
@@ -726,11 +731,15 @@ export const createTokenTx = async (
 	const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
 		microLamports: 50000,
 	});
+
 	const curveLimit = tokenData.curveLimit
 		? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL
 		: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
 	const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
 	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+	const maxAmount = tokenData.tradeLimitSol * LAMPORTS_PER_SOL;
+	const delayForTrade = tokenData.delayForTrade || 0;
+	const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts
 	console.log({
 		decimals: Number(process.env.NEXT_PUBLIC_DECIMALS),
 		tokenSupply: Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
@@ -740,6 +749,9 @@ export const createTokenTx = async (
 		name: tokenData.name,
 		symbol: tokenData.symbol,
 		metadataUrl: tokenData.metadataUrl,
+		maxAmount: new BN(maxAmount).toNumber(),
+		delayForTrade: new BN(delayForTrade).toNumber(),
+		limitTimeToUpdate: new BN(limitTimeToUpdate).toNumber(),
 	});
 
 	const tx =
@@ -749,6 +761,9 @@ export const createTokenTx = async (
 					Number(process.env.NEXT_PUBLIC_DECIMALS),
 					Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
 					curveLimit,
+					maxAmount,
+					delayForTrade,
+					limitTimeToUpdate,
 					tokenData.name,
 					tokenData.symbol,
 					tokenData.metadataUrl,
@@ -765,6 +780,9 @@ export const createTokenTx = async (
 						new BN(virtualLamportReserves),
 						new BN(curveLimit),
 						initBondingCurve,
+						new BN(maxAmount),
+						new BN(delayForTrade),
+						new BN(limitTimeToUpdate),
 						tokenData.name,
 						tokenData.symbol,
 						tokenData.metadataUrl,
