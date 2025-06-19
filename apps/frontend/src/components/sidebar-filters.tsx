@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectTrigger, SelectValue } from "./ui/select";
 
 export default function SideBarFilters() {
 	const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+	const [sourceOpen, setSourceOpen] = useState(false);
+	const [statusOpen, setStatusOpen] = useState(false);
 
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -73,7 +75,7 @@ export default function SideBarFilters() {
 							<Label htmlFor="bonding-status-sidebar" className="text-[10px] mb-2 block">
 								Token Source
 							</Label>
-							<Select>
+							<Select open={sourceOpen} onOpenChange={setSourceOpen}>
 								<SelectTrigger
 									id="token-source-sidebar"
 									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8"
@@ -86,6 +88,7 @@ export default function SideBarFilters() {
 											className="hover:bg-[#03FF24]/30 focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2"
 											key={option.value}
 											href={`${pathname}?${createQueryString({ origin: option.value })}`}
+											onClick={() => setSourceOpen(false)}
 										>
 											{option.label}
 										</Link>
@@ -97,7 +100,7 @@ export default function SideBarFilters() {
 							<Label htmlFor="bonding-status-sidebar" className="text-[10px] mb-2 block">
 								Status
 							</Label>
-							<Select>
+							<Select open={statusOpen} onOpenChange={setStatusOpen}>
 								<SelectTrigger
 									id="token-source-sidebar"
 									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8"
@@ -110,6 +113,7 @@ export default function SideBarFilters() {
 											className="hover:bg-[#03FF24]/30 focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2"
 											key={option.value}
 											href={`${pathname}?${createQueryString({ category: option.value })}`}
+											onClick={() => setStatusOpen(false)}
 										>
 											{option.label}
 										</Link>
