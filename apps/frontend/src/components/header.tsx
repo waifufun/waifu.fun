@@ -74,7 +74,7 @@ export default function Header() {
 				<div className="flex items-center gap-2.5">
 					{/* Points */}
 					{address ? (
-						<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-sm justify-center items-center gap-2">
+						<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 justify-center items-center gap-2">
 							<Trophy size={20} className="text-autofun-background-action-highlight" />
 							<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
 								0

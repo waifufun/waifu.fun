@@ -34,7 +34,7 @@ type PromptContextType = {
 	generateAddress: (suffix: string) => void;
 	isGeneratingAddress: boolean;
 	isGeneratingMedia: boolean;
-	generateToken: (params: { mediaType: MediaType; prompt?: string }) => void;
+	generateToken: (params: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => void;
 	changeMainImage: (index: number) => void;
 	changeMainMedia: (index: number, type: MediaType) => void;
 	previousImages: string[];
@@ -142,17 +142,20 @@ const PromptProviderContent = ({
 			setValue("ticker", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
 			setValue("description", data?.metadata?.description || "", { shouldValidate: true, shouldDirty: true });
 			setValue("symbol", data?.metadata?.symbol || "", { shouldValidate: true, shouldDirty: true });
-
+			const contractAddress = (variables as { mediaType?: MediaType; contractAddress?: string })?.contractAddress;
 			generateMediaMutation.mutate({
 				prompt: data?.metadata?.prompt,
 				width: 512,
 				height: 512,
 				type: (variables as { mediaType?: MediaType })?.mediaType || "image",
+				...(contractAddress && { contractAddress }),
 			});
 		},
-		onError: (error) => {
+		// biome-ignore lint/suspicious/noExplicitAny: Explicit any is used here for error handling
+		onError: (error: any) => {
 			console.error("Error generating metadata:", error);
-			toast.error("Error generating metadata");
+			toast.error("Error generating metadata: ", error?.message || "Unknown error");
+			setIsGeneratingMedia(false);
 		},
 	});
 
@@ -183,9 +186,9 @@ const PromptProviderContent = ({
 				setIsGeneratingMedia(false);
 			}
 		},
-		onError: (error) => {
-			console.error("Error generating media:", error);
-			toast.error("Error generating media");
+		// biome-ignore lint/suspicious/noExplicitAny: Explicit any is used here for error handling
+		onError: (error: any) => {
+			toast.error(error?.message || "Error generating media");
 			setIsGeneratingMedia(false);
 		},
 	});
@@ -345,9 +348,13 @@ const PromptProviderContent = ({
 		[initializeAndStartWorkers, terminateWorkers],
 	);
 
-	const generateToken = ({ mediaType, prompt }: { mediaType: MediaType; prompt?: string }) => {
+	const generateToken = ({
+		mediaType,
+		prompt,
+		contractAddress,
+	}: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => {
 		setIsGeneratingMedia(true);
-		metadataMutation.mutate({ mediaType, prompt });
+		metadataMutation.mutate({ mediaType, prompt, contractAddress });
 	};
 
 	const getTokenData = async (manual = false): Promise<TokenMetadata> => {
