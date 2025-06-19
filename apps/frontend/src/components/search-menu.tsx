@@ -50,7 +50,7 @@ export default function SearchMenu() {
 						placeholder="Search..."
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
-						className="w-[430px] h-11 hidden md:inline-block"
+						className="w-[320px] lg:w-[430px] h-11 hidden md:inline-block"
 					/>
 				</PopoverTrigger>
 				<PopoverContent
