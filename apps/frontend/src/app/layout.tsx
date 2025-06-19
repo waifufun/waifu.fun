@@ -11,6 +11,7 @@ import Footer from "@/components/footer";
 const inter = Inter({
 	subsets: ["latin"],
 });
+
 export const metadata: Metadata = {
 	title: {
 		default: "Auto.Fun",
@@ -28,17 +29,19 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
-			className="dark"
+			className="dark h-full"
 			style={{
 				colorScheme: "dark",
 			}}
 		>
-			<body className={cn("min-h-screen bg-[#0a0a0a] font-sans antialiased", inter.className)}>
+			<body className={cn("h-full bg-[#0a0a0a] font-sans antialiased overflow-hidden", inter.className)}>
 				<Providers>
 					<SidebarProvider>
-						<SidebarInset>
+						<SidebarInset className="flex flex-col max-h-screen overflow-auto">
 							<Header />
-							<main className="flex-1 p-4">{children}</main>
+							<main className="flex-1">
+								<div className="p-4">{children}</div>
+							</main>
 							<Footer />
 						</SidebarInset>
 						<AppSidebar />

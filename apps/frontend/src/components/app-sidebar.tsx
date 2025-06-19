@@ -18,7 +18,6 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
-	SidebarSeparator,
 } from "@/components/ui/sidebar";
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
