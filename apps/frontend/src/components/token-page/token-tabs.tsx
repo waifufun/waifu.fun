@@ -10,8 +10,7 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const router = useRouter();
 	const BASE_URL = `/token/${token.chain}/${token.chainId}/${token.contractAddress}`;
 	const splitted = pathname?.split("/") || [];
-	// const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
-	const currentTab = "trades";
+	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
 
 	return (
 		<Tabs value={currentTab} className="hidden lg:block">
