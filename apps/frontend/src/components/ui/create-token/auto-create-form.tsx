@@ -191,9 +191,6 @@ function AutoCreateForm() {
 			<div className="space-y-6">
 				<CoinInfoFields idPrefix="auto" />
 				<CustomAddressGenerator idPrefix="auto" />
-				<CustomCurveSection />
-				<TradeLimitSection />
-				<DelayedStartSection />
 				<PreBuySection idPrefix="auto" />
 				<LaunchButton />
 			</div>
