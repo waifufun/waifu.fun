@@ -23,6 +23,7 @@ import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Controller } from "react-hook-form";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -152,30 +153,47 @@ export const CustomCurveSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [raiseAmount, setRaiseAmount] = useState(150);
+	const {
+		control,
+		formState: { errors },
+	} = usePrompt();
+
 	return (
-		<FormSection title="Custom Curve" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<div>
-				<div className="flex justify-between items-center mb-1">
-					<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
-						Raise Amount
-					</Label>
-					<span className="text-sm font-bold text-[#03FF24]">{raiseAmount} SOL</span>
-				</div>
-				<Slider
-					id="raiseAmount"
-					min={113}
-					max={400}
-					step={1}
-					value={[raiseAmount]}
-					onValueChange={(value) => setRaiseAmount(value[0] || 150)}
-					className="w-full"
-					thumbClassName={sliderThumbClass}
-					trackClassName={sliderTrackClass}
-					rangeClassName={sliderRangeClass}
-				/>
-			</div>
-		</FormSection>
+		<Controller
+			name="curveLimit"
+			control={control}
+			rules={{
+				required: "Curve limit is required",
+				min: { value: 0, message: "Must be ≥ 0" },
+				max: { value: 1000, message: "Must be ≤ 1000" },
+			}}
+			render={({ field }) => (
+				<FormSection title="curve-limit" collapsible={collapsible} defaultOpen={defaultOpen}>
+					<div>
+						<div className="flex justify-between items-center mb-1">
+							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
+								Raise Amount
+							</Label>
+							<span className="text-sm font-bold text-[#03FF24]">{field.value} SOL</span>
+						</div>
+
+						<Slider
+							id="curveLimit"
+							min={113}
+							max={678}
+							step={1}
+							value={[field.value]}
+							onValueChange={(vals) => field.onChange(vals[0])}
+							className="w-full"
+							thumbClassName={sliderThumbClass}
+							trackClassName={sliderTrackClass}
+							rangeClassName={sliderRangeClass}
+						/>
+					</div>
+					{errors.curveLimit && <p className="text-red-500 text-xs mt-1">{errors.curveLimit.message}</p>}
+				</FormSection>
+			)}
+		/>
 	);
 };
 
