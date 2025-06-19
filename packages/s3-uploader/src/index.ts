@@ -5,30 +5,19 @@ import type { IFile, TURLLike } from "@autofun/types";
 import mime from "mime-types";
 import sharp from "sharp";
 import dotenv from "dotenv";
+import { getS3Client } from "./s3Client";
 
 dotenv.config();
-
-const BUCKET_NAME = "autofun";
-
-if (!process.env.S3_ACCESS_KEY || !process.env.S3_SECRET_KEY || !process.env.S3_STORAGE_ENDPOINT) {
-	logger.error("AWS_ACCESS_KEY or AWS_SECRET_KEY missing from ENV");
+const { PUBLIC_STORAGE_BASE_URL, S3_BUCKET_NAME: bucketName } = process.env;
+if (!PUBLIC_STORAGE_BASE_URL || !bucketName) {
+	logger.error("Missing PUBLIC_STORAGE_BASE_URL or S3_BUCKET_NAME in environment variables.");
 	process.exit(1);
 }
 
-const s3Credentials: aws.S3ClientConfig = {
-	region: process.env.S3_REGION || "us-east-1",
-	endpoint: process.env.S3_STORAGE_ENDPOINT,
-	credentials: {
-		accessKeyId: process.env.S3_ACCESS_KEY,
-		secretAccessKey: process.env.S3_SECRET_KEY,
-	},
-	forcePathStyle: false,
-};
-
-export const s3 = new aws.S3(s3Credentials);
+export const publicBaseUrl = `${PUBLIC_STORAGE_BASE_URL.replace(/\/$/, "")}/${bucketName}`;
 
 export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
-	return `${process.env.S3_STORAGE_ENDPOINT}/${bucket}/${fileName}` as TURLLike;
+	return `${process.env.PUBLIC_STORAGE_BASE_URL}/${bucket}/${fileName}` as TURLLike;
 };
 
 /**
@@ -39,19 +28,27 @@ export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
  * @returns Promise<void>
  */
 export const upload = async (bucket: string, file: IFile, fileName: string) => {
-	const isMacOs = process.platform === "darwin" || process.platform === "linux";
+	const { client, bucketName, publicBaseUrl, isLocal } = await getS3Client();
+	console.log(
+		`Uploading file to S3: ${fileName} in bucket: ${bucket}, bucketName: ${bucketName}, publicBaseUrl: ${publicBaseUrl}, isLocal: ${isLocal}`,
+	);
+
+	const ext = mime.extension(file.mimetype);
+	const key = `${bucket}/${fileName}.${ext}`;
+
+	logger.info(`Uploading to ${bucketName}/${key} (contentType=${file.mimetype})`);
 
 	const command = new aws.PutObjectCommand({
-		Bucket: bucket,
-		Key: isMacOs
-			? `${bucket}/${String(fileName)}.${mime.extension(file?.mimetype)}`
-			: `${String(fileName)}.${mime.extension(file?.mimetype)}`,
+		Bucket: bucketName,
+		Key: key,
+		CacheControl: "max-age=31536000, immutable",
 		ContentType: file.mimetype,
 		Body: file.data,
-		ACL: "public-read",
+		// Only set ACL for local S3
+		...(isLocal ? { ACL: "public-read" } : {}),
 	});
 	try {
-		await s3.send(command);
+		await client.send(command);
 	} catch (error) {
 		console.error("S3 upload error:", error);
 		throw error;
@@ -70,20 +67,23 @@ export const getBase64Buffer = (image: string | undefined | null) => {
 	return imgBuffer;
 };
 
-/**
- * Deletes a file from S3
- * @param bucket The S3 bucket folder where the file is stored
- * @param fileName The name of the file to delete (including extension)
- * @returns Promise<void>
- */
-export const deleteFile = async (bucket: string, fileName: string) => {
-	const data = new aws.DeleteObjectCommand({
-		Bucket: BUCKET_NAME,
-		Key: `${bucket}/${fileName}`,
+export async function deleteFile(folder: string, fileName: string): Promise<void> {
+	const { client, bucketName } = await getS3Client();
+	const key = `${folder}/${fileName}`;
+
+	const cmd = new aws.DeleteObjectCommand({
+		Bucket: bucketName,
+		Key: key,
 	});
 
-	await s3.send(data);
-};
+	try {
+		await client.send(cmd);
+		logger.info(`Deleted S3 object ${bucketName}/${key}`);
+	} catch (err: any) {
+		logger.error(`Failed to delete S3 object ${bucketName}/${key}:`, err);
+		throw err;
+	}
+}
 
 /**
  * Uploads a base64 encoded image to S3
