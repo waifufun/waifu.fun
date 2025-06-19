@@ -136,22 +136,33 @@ export const generateMedia = async ({
 	width,
 	height,
 	type,
-}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image" }) => {
+	contractAddress,
+}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
+	console.log("Generating media with params:", {
+		prompt,
+		width,
+		height,
+		type,
+		contractAddress,
+	});
 	return await fetcher("/generation/generate", "POST", {
 		prompt,
 		width,
 		height,
 		type,
+		address: contractAddress,
 	});
 };
 
 export const generateMetadata = async ({
 	mediaType,
 	prompt,
-}: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined }) => {
+	contractAddress,
+}: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined; contractAddress?: string | undefined }) => {
 	return await fetcher("/generation/generate-metadata", "POST", {
 		prompt,
 		mediaType,
+		contractAddress,
 	});
 };
 

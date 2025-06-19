@@ -1,8 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType } from "@autofun/types";
+import { MediaType, type AddressLike } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
+import DB from "@autofun/database";
+import { SolanaRpcProvider } from "@autofun/rpc";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -17,6 +19,7 @@ interface GenerateMetadataRequest {
 
 interface GenerateMediaRequest {
 	prompt: string;
+	address: AddressLike;
 	type?: MediaType;
 	negative_prompt?: string;
 	guidance_scale?: number;
@@ -28,6 +31,18 @@ interface GenerateMediaRequest {
 interface GenerateBothRequest extends Omit<GenerateMediaRequest, "prompt"> {
 	metadataPrompt?: string;
 }
+
+const getMinBalance = (type: MediaType, mode: "fast" | "pro"): number => {
+	if (type === MediaType.IMAGE) {
+		return mode === "fast"
+			? Number(process.env.GENERATION_IMAGE_MIN_BALANCE_FAST || 10000)
+			: Number(process.env.GENERATION_IMAGE_MIN_BALANCE || 1000);
+	}
+
+	return mode === "fast"
+		? Number(process.env.GENERATION_VIDEO_MIN_BALANCE_FAST || 100000)
+		: Number(process.env.GENERATION_VIDEO_MIN_BALANCE || 10000);
+};
 
 export default async function generationRoutes(fastify: FastifyInstance) {
 	const GENERATION_TIMEOUT = 300000; // 5 minutes
@@ -86,11 +101,62 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					guidance_scale = 7.5,
 					width = 1024,
 					height = 1024,
+					address,
 				} = request.body;
 
 				if (!prompt || prompt.length > 2000) {
 					return reply.code(400).send({
 						error: "Invalid prompt length",
+					});
+				}
+
+				if (!user?.solana) {
+					return reply.code(400).send({
+						message: "Solana wallet address only supported for media generation",
+					});
+				}
+
+				if (!address || typeof address !== "string" || address.length < 10) {
+					return reply.code(400).send({
+						message: "Invalid token address",
+					});
+				}
+
+				const token = await DB.Token.findOne({
+					chain: "solana",
+					contractAddress: address,
+				}).lean();
+
+				if (!token) {
+					return reply.code(404).send({
+						error: "Token not found",
+					});
+				}
+
+				const rpc = new SolanaRpcProvider(101);
+				const balance = await rpc.getTokenBalance(address, user.solana);
+
+				const slowBalanceNeeded = getMinBalance(type, "fast");
+				const fastBalanceNeeded = getMinBalance(type, "pro");
+				let mode = "fast" as "fast" | "pro";
+
+				// derive possible mode based on balance
+				let requiredBalance = slowBalanceNeeded;
+				if (type === MediaType.VIDEO || type === MediaType.AUDIO) {
+					requiredBalance = fastBalanceNeeded;
+					mode = "pro";
+				}
+				if (balance >= fastBalanceNeeded) {
+					mode = "pro";
+					requiredBalance = fastBalanceNeeded;
+				} else if (balance >= slowBalanceNeeded) {
+					mode = "fast";
+					requiredBalance = slowBalanceNeeded;
+				}
+
+				if (!balance || balance < requiredBalance) {
+					return reply.code(400).send({
+						message: `Insufficient balance to generate ${type} in ${mode} mode. Minimum required: ${requiredBalance} tokens`,
 					});
 				}
 
@@ -106,6 +172,8 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					});
 				}
 
+				console.log("current mode:", mode);
+
 				const result = (await generateMedia({
 					prompt,
 					type,
@@ -113,6 +181,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					guidance_scale,
 					width,
 					height,
+					mode,
 				})) as {
 					data?: {
 						has_nsfw_concepts?: boolean[];
@@ -129,7 +198,7 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				if (result.data?.has_nsfw_concepts?.[0] === true) {
 					return reply.code(400).send({
 						success: false,
-						error: "NSFW content detected",
+						message: "NSFW content detected",
 					});
 				}
 
@@ -171,7 +240,6 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 			const user = request.authUser;
 
 			if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
-				console.log("Authentication failed: No valid wallet address found");
 				return reply.code(401).send({
 					success: false,
 					error: "User authentication required",

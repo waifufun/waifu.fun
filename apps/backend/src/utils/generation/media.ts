@@ -151,6 +151,7 @@ export async function generateMedia(data: {
 		}
 	} catch (error) {
 		console.error("Error generating media:", error);
+		console.log(error);
 		throw error;
 	}
 }
