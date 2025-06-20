@@ -9,10 +9,12 @@ import SearchMenu from "./search-menu";
 import useAddress from "@/hooks/use-address";
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
-import { SidebarTrigger } from "./ui/sidebar";
+import { SidebarTrigger, useSidebar } from "./ui/sidebar";
 
 export default function Header() {
 	const address = useAddress();
+	const { open } = useSidebar();
+
 	return (
 		<div className="bg-black px-4 border-b-2 border-autofun-background-action-highlight/50">
 			<div className="container h-[68px] flex items-center gap-4 justify-between">
@@ -22,18 +24,13 @@ export default function Header() {
 					</Link>
 					<SearchMenu />
 					{/* Social Icons */}
-					<div className="flex items-center gap-6">
+					<div className={cn("hidden items-center gap-6", open ? "xl:flex" : "lg:flex")}>
 						{[
 							{
 								title: "twitter",
 								href: "https://x.com/autodotfun",
 								icon: "/socials/twitter.svg",
 							},
-							// {
-							// 	title: "telegram",
-							// 	href: "https://discord.gg/ai16z",
-							// 	icon: "/socials/telegram.svg",
-							// },
 							{
 								title: "discord",
 								href: "https://discord.gg/ai16z",
@@ -74,7 +71,12 @@ export default function Header() {
 				<div className="flex items-center gap-2.5">
 					{/* Points */}
 					{address ? (
-						<div className="hidden lg:inline-flex h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 rounded-sm justify-center items-center gap-2">
+						<div
+							className={cn(
+								"hidden h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 justify-center items-center gap-2",
+								open ? "xl:inline-flex" : "lg:inline-flex",
+							)}
+						>
 							<Trophy size={20} className="text-autofun-background-action-highlight" />
 							<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
 								0
@@ -83,7 +85,7 @@ export default function Header() {
 					) : null}
 					{/* Balance */}
 					<BalanceMenu />
-					<div className="hidden md:flex gap-2.5">
+					<div className="hidden lg:flex gap-2.5">
 						<Link href="/create">
 							<Button variant="outline">Create Token</Button>
 						</Link>

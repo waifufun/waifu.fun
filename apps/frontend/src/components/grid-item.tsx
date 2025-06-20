@@ -35,7 +35,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 		>
 			<div className="relative">
 				{token?.createdAt ? (
-					<div className="absolute top-2 left-2 z-20 flex flex-col items-start">
+					<div className="absolute top-2 left-2 z-10 flex flex-col items-start">
 						<div
 							className={cn(
 								"flex items-center gap-1 bg-black/75 text-gray-200 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)] border",
@@ -64,12 +64,12 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						</div>
 					</div>
 				) : null}
-				<div className="absolute top-2 right-2 flex flex-col gap-1.5 items-end z-20">
+				<div className="absolute top-2 right-2 flex flex-col gap-1.5 items-end z-10">
 					{token?.imported && !token?.featured ? (
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-sky-500/90 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
+								"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.1s]",
 							)}
 							style={{ color: "#000000" }}
@@ -80,7 +80,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-purple-500 text-white shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)] border border-purple-700",
+								"bg-purple-500 hover:bg-primary/80 text-white shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)] border border-purple-700",
 								animationLevel >= 1 && "animate-badge-glint",
 							)}
 						>
@@ -91,7 +91,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-yellow-400 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.7)] sm:shadow-[2px_2px_0px_rgba(0,0,0,0.7)] border border-black",
+								"bg-yellow-400 hover:bg-primary/80 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.7)] sm:shadow-[2px_2px_0px_rgba(0,0,0,0.7)] border border-black",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.2s]",
 							)}
 							style={{ color: "#000000" }}
@@ -102,7 +102,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-black/80 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+								"bg-black/80 hover:bg-primary/80 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 							)}
 						>
 							NEW

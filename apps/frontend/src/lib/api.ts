@@ -45,7 +45,8 @@ export const getTokens = async ({
 			chain: (searchParams?.chain as TChain) || undefined,
 			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
 			page: searchParams?.page ? Number(searchParams.page) : 1,
-			category: (searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond") || "new",
+			category: (searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond" | "bonded") || "new",
+			origin: (searchParams?.origin as "imported" | "auto-fun") || "auto-fun",
 			search: searchParams?.search || "",
 			limit: searchParams?.limit || 50,
 		};
@@ -136,22 +137,33 @@ export const generateMedia = async ({
 	width,
 	height,
 	type,
-}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image" }) => {
+	contractAddress,
+}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
+	console.log("Generating media with params:", {
+		prompt,
+		width,
+		height,
+		type,
+		contractAddress,
+	});
 	return await fetcher("/generation/generate", "POST", {
 		prompt,
 		width,
 		height,
 		type,
+		address: contractAddress,
 	});
 };
 
 export const generateMetadata = async ({
 	mediaType,
 	prompt,
-}: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined }) => {
+	contractAddress,
+}: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined; contractAddress?: string | undefined }) => {
 	return await fetcher("/generation/generate-metadata", "POST", {
 		prompt,
 		mediaType,
+		contractAddress,
 	});
 };
 

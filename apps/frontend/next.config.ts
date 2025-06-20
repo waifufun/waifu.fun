@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
 		return config;
 	},
 	images: {
-		domains: ["v3.fal.media"],
+		domains: ["v3.fal.media", "fal.media"],
 	},
 	reactStrictMode: false,
 	env: {

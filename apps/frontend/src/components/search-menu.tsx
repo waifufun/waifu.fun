@@ -50,13 +50,13 @@ export default function SearchMenu() {
 						placeholder="Search..."
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
-						className="w-[430px] h-11 hidden md:inline-block"
+						className="w-[320px] lg:w-[430px] h-11 hidden md:inline-block"
 					/>
 				</PopoverTrigger>
 				<PopoverContent
 					onOpenAutoFocus={(e) => e.preventDefault()}
 					onCloseAutoFocus={(e) => e.preventDefault()}
-					className="w-[430px] border-[#262626] rounded-sm bg-gradient-to-b from-[#151515] to-[#0D0D0D]"
+					className="w-[430px] border-[#262626] bg-gradient-to-b from-[#151515] to-[#0D0D0D]"
 				>
 					{searchQuery?.isPending ? (
 						<div className="text-center text-base text-autofun-text-secondary">Searching...</div>
@@ -68,7 +68,7 @@ export default function SearchMenu() {
 									key={token.contractAddress}
 									onClick={() => setOpen(false)}
 								>
-									<div className="rounded-sm hover:bg-[#0C0C0C] p-3 transition-colors duration-200 flex items-center gap-4 justify-between">
+									<div className=" hover:bg-[#0C0C0C] p-3 transition-colors duration-200 flex items-center gap-4 justify-between">
 										<div className="flex items-center gap-3">
 											{/* Image */}
 											<Image
@@ -77,7 +77,7 @@ export default function SearchMenu() {
 												height={48}
 												unoptimized
 												alt="token_image"
-												className="size-[48px] rounded-sm aspect-square"
+												className="size-[48px] aspect-square"
 											/>
 											{/* Token Name */}
 											<div className="flex flex-col gap-2.5">

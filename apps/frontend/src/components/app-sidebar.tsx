@@ -18,13 +18,13 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
-	SidebarSeparator,
 } from "@/components/ui/sidebar";
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import GridListSelector from "./grid-list-selector";
 import FilterSelector from "./filter-selector";
+import SideBarFilters from "./sidebar-filters";
 
 const viewControlsNavigation = {
 	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
@@ -62,31 +62,17 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 					<SidebarGroupContent>
 						<SidebarMenu>
 							<GridListSelector />
-							{viewControlsNavigation.items.map((item) => (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton
-										asChild
-										isActive={pathname === item.url}
-										tooltip={item.title}
-										className={
-											pathname === item.url
-												? "bg-autofun-background-action-highlight/20"
-												: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
-										}
-									>
-										<Link href={item.url}>
-											<item.icon className="h-4 w-4" />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
+							<SidebarMenuItem>
+								<SidebarMenuButton asChild>
+									<SideBarFilters />
+								</SidebarMenuButton>
+							</SidebarMenuItem>
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
-				<SidebarSeparator />
+				{/* create token */}
 				<div className="space-y-1 p-3 text-xs">
 					{balance?.data ? (
 						<div className="flex items-center justify-between text-white">
