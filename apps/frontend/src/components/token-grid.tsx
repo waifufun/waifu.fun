@@ -6,14 +6,20 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { getTokens } from "@/lib/api";
 import { useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 export default function TokenGrid() {
 	const columns = 5;
 	const columnKeys = Array.from({ length: columns }, (_, i) => `col${i + 1}`);
+
+	const searchParams = useSearchParams();
+	const category = searchParams.get("category");
+	const origin = searchParams.get("origin")
+
 	const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ["main-page-tokens"],
+		queryKey: ["main-page-tokens", category, origin],
 		queryFn: async ({ pageParam = 1 }) => {
-			const res = await getTokens({ searchParams: { page: pageParam } });
+			const res = await getTokens({ searchParams: { page: pageParam, category: category ?? undefined, origin: origin ?? undefined } });
 			return res as IToken[];
 		},
 		getNextPageParam: (lastPage, allPages) => {
