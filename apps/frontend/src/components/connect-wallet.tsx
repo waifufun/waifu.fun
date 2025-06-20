@@ -5,26 +5,31 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useIsClient } from "usehooks-ts";
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from "./ui/menubar";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Wallet } from "lucide-react";
 import Link from "next/link";
+import { useSidebar } from "./ui/sidebar";
 
 export default function ConnectWallet() {
 	const client = useIsClient();
 	const modal = useWalletModal();
 	const wallet = useWallet();
+	const { state } = useSidebar();
+
+	const isCollapsed = state === "collapsed";
 
 	if (!client) {
-		return <Button>Connect</Button>;
+		return <Button className="w-full">{isCollapsed ? <Wallet size={16} /> : "Connect"}</Button>;
 	}
 
 	if (!wallet.connected) {
 		return (
 			<Button
+				className="w-full"
 				onClick={() => {
 					modal.setVisible(true);
 				}}
 			>
-				Connect
+				{isCollapsed ? <Wallet size={16} /> : "Connect"}
 			</Button>
 		);
 	}
@@ -33,9 +38,13 @@ export default function ConnectWallet() {
 		<Menubar>
 			<MenubarMenu>
 				<MenubarTrigger asChild>
-					<Button>
-						{wallet?.connected && wallet.publicKey ? (
-							<span className="truncate">{wallet.publicKey.toBase58()}</span>
+					<Button className="w-full">
+						{isCollapsed ? (
+							<User size={16} />
+						) : wallet?.connected && wallet.publicKey ? (
+							<span className="truncate">
+								{wallet.publicKey.toBase58().slice(0, 4)}...{wallet.publicKey.toBase58().slice(-4)}
+							</span>
 						) : (
 							"Connect"
 						)}

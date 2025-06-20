@@ -18,7 +18,6 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
-	SidebarSeparator,
 } from "@/components/ui/sidebar";
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
@@ -73,7 +72,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
-				<SidebarSeparator />
+				{/* create token */}
 				<div className="space-y-1 p-3 text-xs">
 					{balance?.data ? (
 						<div className="flex items-center justify-between text-white">
