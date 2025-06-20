@@ -4,7 +4,7 @@ import { GridItem } from "./grid-item";
 import type { IToken } from "@autofun/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getTokens } from "@/lib/api";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -51,8 +51,8 @@ export default function TokenGrid() {
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	return (
-		<div>
-			<div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4">
+		<Fragment>
+			<div className="columns-2 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4 w-full">
 				{columnKeys.map((colKey, colIndex) => {
 					const columnItems = tokens?.filter((_, idx) => idx % columns === colIndex);
 					return (
@@ -85,6 +85,6 @@ export default function TokenGrid() {
 					</div>
 				)}
 			</div>
-		</div>
+		</Fragment>
 	);
 }

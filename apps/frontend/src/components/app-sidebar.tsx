@@ -79,7 +79,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				<div className="space-y-1 p-3 text-xs">
 					{balance?.data ? (
 						<div className="flex items-center justify-between text-white">
-							<span>{formatNumber(balance?.data)}</span>
+							<span>{formatNumber(balance?.data, true, true)}</span>
 							<span className="font-medium text-green-400">SOL</span>
 						</div>
 					) : null}
