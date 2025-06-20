@@ -13,52 +13,52 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
 
 	return (
-		<Tabs value={currentTab} className="hidden lg:block">
+		<Tabs value={currentTab}>
 			<TabsList className="grid w-full grid-cols-5">
 				<TabsTrigger
 					value="trades"
-					className="inline-flex gap-2"
+					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
 					onClick={() => {
 						router.push(BASE_URL);
 					}}
 				>
-					Trades <ChartCandlestick size={24} />
+					Trades <ChartCandlestick className="size-3 md:size-4.5 xl:size-6" />
 				</TabsTrigger>
 				<TabsTrigger
 					value="holders"
-					className="inline-flex gap-2"
+					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
 					onClick={() => {
 						router.push(`${BASE_URL}/holders`);
 					}}
 				>
-					Holders <Users size={24} />
+					Holders <Users className="size-3 md:size-4.5 xl:size-6" />
 				</TabsTrigger>
 				<TabsTrigger
 					value="create"
-					className="inline-flex gap-2"
+					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
 					onClick={() => {
 						router.push(`${BASE_URL}/create`);
 					}}
 				>
-					AI Create <Stars size={24} />
+					AI Create <Stars className="size-3 md:size-4.5 xl:size-6" />
 				</TabsTrigger>
 				<TabsTrigger
 					value="chat"
-					className="inline-flex gap-2"
+					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
 					onClick={() => {
 						router.push(`${BASE_URL}/chat`);
 					}}
 				>
-					Chat <MessagesSquare size={24} />
+					Chat <MessagesSquare className="size-3 md:size-4.5 xl:size-6" />
 				</TabsTrigger>
 				<TabsTrigger
 					value="agents"
-					className="inline-flex gap-2"
+					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
 					onClick={() => {
 						router.push(`${BASE_URL}/agents`);
 					}}
 				>
-					Agents <User size={24} />
+					Agents <User className="size-3 md:size-4.5 xl:size-6" />
 				</TabsTrigger>
 			</TabsList>
 		</Tabs>
