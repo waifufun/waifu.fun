@@ -28,6 +28,9 @@ export default function Footer() {
 						>
 							How it works
 						</Link>
+						<Link href="/support" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
+							Support
+						</Link>
 					</div>
 				</div>
 			</div>

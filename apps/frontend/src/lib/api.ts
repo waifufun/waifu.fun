@@ -49,7 +49,8 @@ export const getTokens = async ({
 			chain: (searchParams?.chain as TChain) || undefined,
 			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
 			page: searchParams?.page ? Number(searchParams.page) : 1,
-			category: (searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond" | "bonded") || "new",
+			category:
+				(searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond" | "bonded") || "new",
 			origin: (searchParams?.origin as "imported" | "auto-fun") || "auto-fun",
 			search: searchParams?.search || "",
 			limit: searchParams?.limit || 50,

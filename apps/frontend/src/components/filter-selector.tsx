@@ -78,15 +78,7 @@ export default function FilterSelector() {
 								: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
 						}
 					>
-						<Link
-							href={
-								item?.value
-									? `${pathname}?${createQueryString({
-											category: item.value,
-										})}`
-									: "/"
-							}
-						>
+						<Link href={item?.value ? `/?${createQueryString({ category: item.value })}` : "/"}>
 							<item.icon className="h-4 w-4" />
 							<span>{item.title}</span>
 						</Link>

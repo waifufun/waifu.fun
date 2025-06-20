@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 import type React from "react";
-import { List, Sun } from "lucide-react"; // Example icons
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 // ChevronDown is automatically included by AccordionTrigger, so direct import is not needed unless for custom use.
 
@@ -8,19 +7,11 @@ interface FormSectionProps {
 	title?: string;
 	children: React.ReactNode;
 	className?: string;
-	showUtilIcons?: boolean;
 	collapsible?: boolean;
 	defaultOpen?: boolean;
 }
 
-export function FormSection({
-	title,
-	children,
-	className,
-	showUtilIcons = false,
-	collapsible = false,
-	defaultOpen = true,
-}: FormSectionProps) {
+export function FormSection({ title, children, className, collapsible = false, defaultOpen = true }: FormSectionProps) {
 	return (
 		<div
 			className={cn(
@@ -42,14 +33,6 @@ export function FormSection({
 							)}
 						>
 							<div className="flex-grow text-left">{title}</div>
-							{showUtilIcons && (
-								<div className="flex items-center gap-2 mr-2">
-									{" "}
-									{/* mr-2 to space from auto-chevron */}
-									<List size={16} className="text-gray-400 hover:text-[#03FF24] cursor-pointer" />
-									<Sun size={16} className="text-gray-400 hover:text-[#03FF24] cursor-pointer" />
-								</div>
-							)}
 						</AccordionTrigger>
 						<AccordionContent className="p-3 md:p-4 pt-0">
 							<div className="space-y-3">{children}</div>
@@ -61,12 +44,6 @@ export function FormSection({
 					{title && (
 						<div className="flex justify-between items-center mb-3">
 							<h2 className="text-sm font-bold text-[#03FF24] uppercase tracking-wider">{title}</h2>
-							{showUtilIcons && (
-								<div className="flex items-center gap-2">
-									<List size={16} className="text-gray-400 hover:text-[#03FF24] cursor-pointer" />
-									<Sun size={16} className="text-gray-400 hover:text-[#03FF24] cursor-pointer" />
-								</div>
-							)}
 						</div>
 					)}
 					<div className="space-y-3">{children}</div>

@@ -39,7 +39,7 @@ export default async function Home({
 				{noTokens ? (
 					<h1 className="text-[#03FF23] text-lg font-semibold uppercase">No tokens found</h1>
 				) : view === "grid" ? (
-					<TokenGrid tokens={tokens} />
+					<TokenGrid />
 				) : (
 					<ListView tokens={tokens} />
 				)}

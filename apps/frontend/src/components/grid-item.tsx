@@ -118,12 +118,12 @@ export const GridItem = ({ token }: { token: IToken }) => {
 					className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-200"
 				/>
 			</div>
-			<div className="flex flex-col gap-4 p-4">
+			<div className="flex flex-col gap-2 md:gap-4 p-2 md:p-4">
 				<div className="flex flex-col">
 					<div className="flex items-center gap-2">
 						<span
 							className={cn([
-								"text-lg font-semibold",
+								"text-lg font-semibold line-clamp-1 truncate",
 								cardAccentTheme === "blue"
 									? "text-sky-400"
 									: cardAccentTheme === "purple"
@@ -139,7 +139,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 					</div>
 					<div
 						className={cn([
-							"text-base text-autofun-background-action-highlight font-mono",
+							"text-base text-autofun-background-action-highlight font-mono line-clamp-1",
 							cardAccentTheme === "blue"
 								? "text-sky-400/80 group-hover:text-sky-400"
 								: cardAccentTheme === "purple"
@@ -153,7 +153,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 					</div>
 				</div>
 				<div className="flex justify-between items-center gap-2">
-					<span className={cn("text-gray-400 text-[10px] sm:text-[11px]")}>MCAP:</span>
+					<span className={cn("text-gray-400 text-xs")}>MCAP:</span>
 					<div
 						className={cn(
 							"font-semibold filter drop-shadow-[1px_1px_0px_black] text-sm",
