@@ -32,7 +32,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
-			<div className="w-full max-w-[1368px] mx-auto flex flex-col gap-6">
+			<div className="w-full container mx-auto flex flex-col gap-6">
 				<ProfileHeader
 					data={{
 						username: user?.displayName,
