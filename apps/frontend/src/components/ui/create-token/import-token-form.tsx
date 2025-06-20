@@ -62,7 +62,7 @@ export default function ImportTokenForm() {
 	const shouldDisable = formState.isSubmitting || !formState.isValid || Object.keys(formState.errors).length > 0;
 
 	return (
-		<FormSection title="Import Token" className="max-w-md mx-auto" showUtilIcons>
+		<FormSection title="Import Token" className="max-w-md mx-auto">
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 				<div>
 					<Label htmlFor="contractAddress" className={formLabelBaseClass}>

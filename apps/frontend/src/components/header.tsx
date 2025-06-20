@@ -10,10 +10,22 @@ import useAddress from "@/hooks/use-address";
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger, useSidebar } from "./ui/sidebar";
+import { useQuery } from "@tanstack/react-query";
+import { getUser } from "@/lib/api";
 
 export default function Header() {
 	const address = useAddress();
 	const { open } = useSidebar();
+
+	const query = useQuery({
+		queryKey: ["get-user", address],
+		queryFn: async () => {
+			if (!address) return null;
+			const user = await getUser({ address });
+			return user;
+		},
+	});
+	const points = query?.data?.points;
 
 	return (
 		<div className="bg-black px-4 border-b-2 border-autofun-background-action-highlight/50">
@@ -79,7 +91,7 @@ export default function Header() {
 						>
 							<Trophy size={20} className="text-autofun-background-action-highlight" />
 							<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
-								0
+								{points}
 							</div>
 						</div>
 					) : null}
