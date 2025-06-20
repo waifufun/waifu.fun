@@ -26,9 +26,9 @@ export class MigrationService {
 		private readonly redisClient: typeof redis = redis,
 		private readonly db: typeof DB = DB,
 	) {
-		const rawKey = process.env.EXECUTOR_TEST_PRIVATE_KEY;
+		const rawKey = process.env.EXECUTOR_PRIVATE_KEY;
 		if (!rawKey) {
-			throw new Error("EXECUTOR_TEST_PRIVATE_KEY is not set in environment");
+			throw new Error("EXECUTOR_PRIVATE_KEY is not set in environment");
 		}
 		const privateKey = Uint8Array.from(JSON.parse(rawKey));
 		this.keyPair = Keypair.fromSecretKey(privateKey);

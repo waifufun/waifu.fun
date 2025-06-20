@@ -19,9 +19,9 @@ async function main() {
 		: "https://api.devnet.solana.com";
 	const connection = new Connection(rpcUrl, "confirmed");
 
-	const rawKey = process.env.EXECUTOR_TEST_PRIVATE_KEY;
+	const rawKey = process.env.EXECUTOR_PRIVATE_KEY;
 	if (!rawKey) {
-		throw new Error("EXECUTOR_TEST_PRIVATE_KEY not set");
+		throw new Error("EXECUTOR_PRIVATE_KEY not set");
 	}
 	const privateKeyBytes = Uint8Array.from(JSON.parse(rawKey));
 	const keypair = Keypair.fromSecretKey(privateKeyBytes);

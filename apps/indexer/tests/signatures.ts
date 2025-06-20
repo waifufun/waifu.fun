@@ -10,7 +10,7 @@ async function processSignature(signature: string): Promise<any[]> {
 		return [];
 	}
 
-	const processor = new SolanaTransactionProcessor("J7dskxiQKv8XDRjpfDJY7AQr6ppCesQj8Vbtp3oFhmXd", true);
+	const processor = new SolanaTransactionProcessor("autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5", true);
 
 	const events = processor.processTransaction(transaction, transaction.blockTime || 0, transaction.slot);
 

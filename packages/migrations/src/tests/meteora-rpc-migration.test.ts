@@ -29,7 +29,7 @@ const SOL_AMOUNT = 8.5 * LAMPORTS_PER_SOL; // 8.5 SOL total (10% of 85 SOL)
 const TOKEN_AMOUNT = 24_778 * 10 ** TOKEN_DECIMALS; // 10% of 247780
 const FIXED_FEE = 0.6 * LAMPORTS_PER_SOL; // 0.6 SOL (10% of 6 SOL)
 
-// {/* Malibu *} this needs a .env file with HELIUS_API_KEY and EXECUTOR_TEST_PRIVATE_KEY in packages/migration
+// {/* Malibu *} this needs a .env file with HELIUS_API_KEY and EXECUTOR_PRIVATE_KEY in packages/migration
 
 describe("Meteora RPC Migration Integration", function () {
 	this.timeout(TEST_TIMEOUT);
@@ -58,9 +58,9 @@ describe("Meteora RPC Migration Integration", function () {
 			: "https://api.devnet.solana.com";
 		connection = new Connection(rpcUrl, "confirmed");
 
-		const rawKey = process.env.EXECUTOR_TEST_PRIVATE_KEY;
+		const rawKey = process.env.EXECUTOR_PRIVATE_KEY;
 		if (!rawKey) {
-			throw new Error("EXECUTOR_TEST_PRIVATE_KEY not set");
+			throw new Error("EXECUTOR_PRIVATE_KEY not set");
 		}
 		const privateKeyBytes = Uint8Array.from(JSON.parse(rawKey));
 		const keypair = Keypair.fromSecretKey(privateKeyBytes);
