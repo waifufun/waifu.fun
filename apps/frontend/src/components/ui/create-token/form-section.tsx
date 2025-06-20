@@ -11,13 +11,7 @@ interface FormSectionProps {
 	defaultOpen?: boolean;
 }
 
-export function FormSection({
-	title,
-	children,
-	className,
-	collapsible = false,
-	defaultOpen = true,
-}: FormSectionProps) {
+export function FormSection({ title, children, className, collapsible = false, defaultOpen = true }: FormSectionProps) {
 	return (
 		<div
 			className={cn(
