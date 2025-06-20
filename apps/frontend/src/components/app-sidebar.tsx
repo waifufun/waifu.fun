@@ -38,6 +38,8 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 		chain: "solana",
 	});
 
+	const tokenPage = pathname.startsWith("/token");
+
 	return (
 		<Sidebar collapsible="icon" side="right" {...props}>
 			<SidebarHeader>
@@ -47,7 +49,6 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 					</Link>
 				</div>
 			</SidebarHeader>
-
 			<SidebarContent>
 				<SidebarGroup>
 					<SidebarGroupLabel>CASINO FLOOR</SidebarGroupLabel>
@@ -57,19 +58,20 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
-
-				<SidebarGroup>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							<GridListSelector />
-							<SidebarMenuItem>
-								<SidebarMenuButton asChild>
-									<SideBarFilters />
-								</SidebarMenuButton>
-							</SidebarMenuItem>
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+				{!tokenPage && (
+					<SidebarGroup>
+						<SidebarGroupContent>
+							<SidebarMenu>
+								<GridListSelector />
+								<SidebarMenuItem>
+									<SidebarMenuButton asChild>
+										<SideBarFilters />
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
 			</SidebarContent>
 			<SidebarFooter>
 				{/* create token */}
