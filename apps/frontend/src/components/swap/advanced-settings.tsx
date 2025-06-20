@@ -37,13 +37,13 @@ export default function AdvancedSettings() {
 							</Tooltip>
 						</div>
 
-						<div className="w-[255px] h-[36px] bg-[#101010] rounded-md flex overflow-hidden">
+						<div className="flex overflow-hidden">
 							{(["normal", "turbo", "ultra"] as TSpeed[]).map((label: TSpeed) => (
 								<Button
 									key={label}
 									onClick={() => setSpeed(label)}
 									className={cn(
-										"flex-1 h-full rounded-md text-base capitalize bg-transparent font-medium text-white hover:bg-[#1a1a1a] transition-colors",
+										"flex-1 text-sm max-h-[36px] h-full capitalize bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] ml-2 font-medium text-white hover:bg-[#1a1a1a] transition-colors",
 										"border border-transparent",
 										String(speed) === String(label) && "border border-[#03FF24]",
 									)}
