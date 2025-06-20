@@ -1,3 +1,29 @@
+# [0.17.0](https://github.com/elizaos/autofun-monorepo/compare/v0.16.1...v0.17.0) (2025-06-20)
+
+
+### Bug Fixes
+
+* highlight current tab ([3552475](https://github.com/elizaos/autofun-monorepo/commit/35524757495eea6f6c4f500fe386bda211d5217a))
+* make sure connect button doesn't overflow on sidemenu collapse ([189ac54](https://github.com/elizaos/autofun-monorepo/commit/189ac5413984e3b47c84c79aa6a54bb0e5bb8200))
+* make sure sidebar doesn't break page height ([52756f3](https://github.com/elizaos/autofun-monorepo/commit/52756f339f4e07616f688fcf75754bf375ee0da1))
+* remove green text on button hover ([abe6f0c](https://github.com/elizaos/autofun-monorepo/commit/abe6f0c9395a444bf8fe6535da47b5e286625fee))
+* stop generating media if fail on media ([0dd0eb2](https://github.com/elizaos/autofun-monorepo/commit/0dd0eb2c49ccde984de737be400c9aad291bee63))
+
+
+### Features
+
+* add mandatory token balance to chat ([3807b9f](https://github.com/elizaos/autofun-monorepo/commit/3807b9fcdab77975208a264b1ab7612518db7fb0))
+* add min amout of tokens for generation ([8389a1a](https://github.com/elizaos/autofun-monorepo/commit/8389a1a785a5fc9a9e11da3781b0044c0fdd6dda))
+* add slider for speeds ([ece0353](https://github.com/elizaos/autofun-monorepo/commit/ece0353e379181efbc997348401719c014c6bbc4))
+* change back to og authentication middleware ([4499612](https://github.com/elizaos/autofun-monorepo/commit/4499612f718f67ef868134a5ea0de3b25e819cc2))
+* chat almost done ([4f4babe](https://github.com/elizaos/autofun-monorepo/commit/4f4babe9e09f27297b9b5185d5ec047b3653d775))
+* disable button if not enough tokens ([f3c6589](https://github.com/elizaos/autofun-monorepo/commit/f3c65897d40199f111367ffd4ba09719999108e9))
+* full screen for images and videos ([77c5a4f](https://github.com/elizaos/autofun-monorepo/commit/77c5a4fd3b0875c37f60d802ef73fa7f9f2afed6))
+* make sure that the header is responsive ([396ff97](https://github.com/elizaos/autofun-monorepo/commit/396ff97d903c1060b66d80dcf840d7c727535c5f))
+* set back default authentication ([c0f4c83](https://github.com/elizaos/autofun-monorepo/commit/c0f4c83474791af577086cd8d266bafa0ccf5244))
+* ui tweaks and disable if not enough tokens ([7573582](https://github.com/elizaos/autofun-monorepo/commit/7573582791f4b2d48fc3645a803c271fee014953))
+* update env.example ([192877d](https://github.com/elizaos/autofun-monorepo/commit/192877d5f0bb62fff58d07694fd7bdaa2de1485c))
+
 ## [0.16.1](https://github.com/elizaos/autofun-monorepo/compare/v0.16.0...v0.16.1) (2025-06-18)
 
 
