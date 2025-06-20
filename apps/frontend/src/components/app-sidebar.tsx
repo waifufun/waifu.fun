@@ -5,6 +5,7 @@ import { Filter } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { formatNumber } from "@/lib/utils";
 
 import {
 	Sidebar,
@@ -76,7 +77,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				<div className="space-y-1 p-3 text-xs">
 					{balance?.data ? (
 						<div className="flex items-center justify-between text-white">
-							<span>{balance?.data}</span>
+							<span>{formatNumber(balance?.data)}</span>
 							<span className="font-medium text-green-400">SOL</span>
 						</div>
 					) : null}
