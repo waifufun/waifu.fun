@@ -79,7 +79,7 @@ export async function deleteFile(folder: string, fileName: string): Promise<void
 	try {
 		await client.send(cmd);
 		logger.info(`Deleted S3 object ${bucketName}/${key}`);
-	} catch (err: any) {
+	} catch (err: unknown) {
 		logger.error(`Failed to delete S3 object ${bucketName}/${key}:`, err);
 		throw err;
 	}
