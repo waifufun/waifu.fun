@@ -47,7 +47,6 @@ export default function TokenGrid() {
             <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
                 {columnKeys.map((colKey, colIndex) => {
                     const columnItems = tokens?.filter((_, idx) => idx % columns === colIndex);
-                    console.log("column itmes ->", columnItems);
                     return (
                         <motion.div
                             key={colKey}
