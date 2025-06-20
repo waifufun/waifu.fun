@@ -78,7 +78,7 @@ export default function TokenGrid() {
 				{isFetchingNextPage && (
 					<div className="mt-2 place-items-center">
 						<div className="w-full flex justify-center animate-spin text-muted-foreground">
-							<LoaderCircle className="h-10 w-10 text-[#03FF23]" />
+							<LoaderCircle className="h-8 w-8 text-[#03FF23]" />
 						</div>
 					</div>
 				)}
