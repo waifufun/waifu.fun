@@ -14,12 +14,14 @@ export default function TokenGrid() {
 
 	const searchParams = useSearchParams();
 	const category = searchParams.get("category");
-	const origin = searchParams.get("origin")
+	const origin = searchParams.get("origin");
 
 	const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ["main-page-tokens", category, origin],
 		queryFn: async ({ pageParam = 1 }) => {
-			const res = await getTokens({ searchParams: { page: pageParam, category: category ?? undefined, origin: origin ?? undefined } });
+			const res = await getTokens({
+				searchParams: { page: pageParam, category: category ?? undefined, origin: origin ?? undefined },
+			});
 			return res as IToken[];
 		},
 		getNextPageParam: (lastPage, allPages) => {
@@ -50,7 +52,7 @@ export default function TokenGrid() {
 
 	return (
 		<div>
-			<div className="columns-1 sm:columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
+			<div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4">
 				{columnKeys.map((colKey, colIndex) => {
 					const columnItems = tokens?.filter((_, idx) => idx % columns === colIndex);
 					return (
