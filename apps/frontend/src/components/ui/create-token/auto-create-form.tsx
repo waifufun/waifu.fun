@@ -11,9 +11,9 @@ import {
 	CustomAddressGenerator,
 	PreBuySection,
 	LaunchButton,
-	CustomCurveSection,
-	TradeLimitSection,
-	DelayedStartSection,
+	// CustomCurveSection,
+	// TradeLimitSection,
+	// DelayedStartSection,
 } from "./shared-form-section";
 import { useEffect, useState } from "react";
 
