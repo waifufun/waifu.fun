@@ -63,10 +63,12 @@ export async function createPool(
 			blockhashCommitment: "finalized",
 		});
 
-		const mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9); // 6 SOL
+		let mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
 		const withdrawnTokensBN = new BN(params.amountToken);
 		const withdrawnSolBN = new BN(params.amountSol);
-
+		if (withdrawnSolBN.gt(new BN(100 * 1e9))) {
+			mintConstantFee = mintConstantFee.add(withdrawnSolBN.muln(1).divn(100));
+		}
 		const remainingTokens = withdrawnTokensBN;
 		const remainingSol = withdrawnSolBN.sub(mintConstantFee);
 

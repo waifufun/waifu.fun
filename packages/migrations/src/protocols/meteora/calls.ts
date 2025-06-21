@@ -97,7 +97,8 @@ export async function finalizePositionNft(
 	const aggregatedTxId = `${primary.txId},${secondary.txId}`;
 	const aggregatedNftMint = `${primary.nftMint},${secondary.nftMint}`;
 
-	const mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9); // 6 SOL
+	let mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
+
 	const withdrawnAmounts = context.state.withdrawnAmounts;
 	if (!withdrawnAmounts) {
 		throw new Error("No withdrawn amounts found for pool creation");
@@ -126,7 +127,10 @@ export async function finalizePositionNft(
 
 	const withdrawnTokensBN = new BN(withdrawnAmounts.token);
 	const withdrawnSolBN = new BN(withdrawnAmounts.sol);
-
+	if (withdrawnSolBN.gt(new BN(100 * 1e9))) {
+		// add 1% of withdrawnSolBN for withdrawnSolBN > 100 SOL
+		mintConstantFee = mintConstantFee.add(withdrawnSolBN.muln(1).divn(100));
+	}
 	const remainingTokens = withdrawnTokensBN;
 	const remainingSol = withdrawnSolBN.sub(mintConstantFee);
 
@@ -202,9 +206,16 @@ export async function createPool(
 	if (!provider) {
 		throw new Error("Provider is required for NFT deposit");
 	}
-	const mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
+	let mintConstantFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
+
 	const withdrawnTokensBN = new BN(amountToken);
 	const withdrawnSolBN = new BN(amountSol);
+
+	if (withdrawnSolBN.gt(new BN(100 * 1e9))) {
+		// add 1% of withdrawnSolBN for withdrawnSolBN > 100 SOL
+		mintConstantFee = mintConstantFee.add(withdrawnSolBN.muln(1).divn(100));
+	}
+
 	const remainingSol = withdrawnSolBN.sub(mintConstantFee);
 	const primaryTokens = withdrawnTokensBN.muln(Number(process.env.PRIMARY_LOCK_PERCENTAGE ?? 90)).divn(100);
 	const primarySol = remainingSol.muln(Number(process.env.PRIMARY_LOCK_PERCENTAGE ?? 90)).divn(100);

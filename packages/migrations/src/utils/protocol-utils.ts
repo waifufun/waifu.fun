@@ -20,6 +20,7 @@ import type { MigrationContext } from "../types";
 import DB from "@autofun/database";
 import type { ProtocolState } from "../types";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
+import BN from "bn.js";
 
 export interface WithdrawLog {
 	sol: number;
@@ -268,8 +269,18 @@ export async function collectProtocolFees(
 		throw new Error("Wallet is required for fee collection");
 	}
 
-	const fixedFee = Number(process.env.FIXED_FEE ?? 6) * 1e9; // 6 SOL default
-	if (!fixedFee || fixedFee === 0) {
+	let fixedFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
+	const withdrawnAmounts = context.state.withdrawnAmounts;
+	if (!withdrawnAmounts || typeof withdrawnAmounts !== "object" || !withdrawnAmounts.sol) {
+		throw new Error("Withdrawn amounts not found in state");
+	}
+	const withdrawnSolBN = new BN(withdrawnAmounts.sol);
+
+	if (withdrawnSolBN.gt(new BN(100 * 1e9))) {
+		// add 1% of withdrawnSolBN for withdrawnSolBN > 100 SOL
+		fixedFee = fixedFee.add(withdrawnSolBN.muln(1).divn(100));
+	}
+	if (!fixedFee || fixedFee.isZero()) {
 		return { txId: "no_fee", extraData: {} };
 	}
 
@@ -281,7 +292,7 @@ export async function collectProtocolFees(
 		SystemProgram.transfer({
 			fromPubkey: signerWallet.publicKey,
 			toPubkey: feeWallet,
-			lamports: fixedFee,
+			lamports: Number(fixedFee),
 		}),
 	);
 
