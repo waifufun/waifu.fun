@@ -24,6 +24,7 @@ import useAddress from "@/hooks/use-address";
 import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Controller } from "react-hook-form";
+import { useRouter } from "next/navigation";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -432,6 +433,11 @@ export const LaunchButton = () => {
 		setLaunching,
 		isLaunching,
 	} = usePrompt();
+	const router = useRouter();
+	const [chain, chainId] = [
+		"solana",
+		103,
+	]; /* Malibu - the chain and chainId should be part of the prompt context or passed as props */
 
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
@@ -439,6 +445,7 @@ export const LaunchButton = () => {
 		onSuccess: (tx) => {
 			console.log("Transaction successful:", tx);
 			toast.success("Token created successfully!");
+			router.push(`/token/${chain}/${chainId}/${mintKeyPair?.publicKey.toString()}`);
 		},
 		onError: (error) => {
 			console.error("Error creating token:", error);
