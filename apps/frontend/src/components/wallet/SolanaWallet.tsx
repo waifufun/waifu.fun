@@ -9,6 +9,7 @@ import IDL from "@/lib/autofun.json";
 import type { TokenMetadata } from "../hooks/providers/usePromptContext";
 import { SEED_CONFIG } from "../hooks/hook/UseProgram";
 import { ComputeBudgetProgram, type Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { virtualReservesConst, curveLimitConst } from "@autofun/constants";
 
 export interface ISolanaFunctions {
 	signMessage: (message: Uint8Array) => Promise<Uint8Array>;
@@ -106,8 +107,8 @@ export class SolanaWallet extends WalletClass {
 		virtualLamportReserves: number;
 		initBondingCurve: number;
 	} {
-		const defaultCurveLimit = Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL;
-		const defaultVirtualReserves = Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+		const defaultCurveLimit = Number(curveLimitConst) / LAMPORTS_PER_SOL;
+		const defaultVirtualReserves = Number(virtualReservesConst);
 		const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
 
 		const defaultInitBondingCurve = 75;

@@ -24,6 +24,7 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 import type { CreateTokenResponse } from "@/components/wallet/SolanaWallet";
+import { virtualReservesConst, curveLimitConst } from "@autofun/constants";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -631,8 +632,8 @@ export const calculateBondingCurveParams = (
 	curveLimit: number,
 ): { virtualLamportReserves: number; initBondingCurve: number } => {
 	// Default values in SOL
-	const defaultCurveLimit = Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL;
-	const defaultVirtualReserves = Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+	const defaultCurveLimit = Number(curveLimitConst) / LAMPORTS_PER_SOL;
+	const defaultVirtualReserves = Number(virtualReservesConst);
 	const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
 
 	const defaultInitBondingCurve = 75;
@@ -716,7 +717,7 @@ export const createTokenTx = async (
 	{ connection, wallet }: { connection: Connection; wallet: WalletContextState },
 ): Promise<CreateTokenResponse> => {
 	console.log("SolanaWallet: Creating token with data:", tokenData);
-	console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
+	console.log("virtualLamportReserves:", virtualReservesConst);
 	console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
 	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
 
