@@ -211,9 +211,7 @@ export class SolanaWallet extends WalletClass {
 		});
 
 		// Calculate bonding curve parameters
-		const curveLimit = tokenData.curveLimit
-			? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL
-			: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
+		const curveLimit = tokenData.curveLimit ? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL : Number(curveLimitConst);
 		const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
 		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
 		const maxAmount = tokenData.tradeLimitSol * LAMPORTS_PER_SOL;

@@ -15,6 +15,7 @@ import {
 	type Control,
 } from "react-hook-form";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { curveLimitConst } from "@autofun/constants";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -103,9 +104,7 @@ const PromptProviderContent = ({
 			description: "",
 			symbol: "",
 			buyAmount: 0,
-			curveLimit: process.env.NEXT_PUBLIC_CURVE_LIMIT
-				? Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL
-				: 113,
+			curveLimit: Number(curveLimitConst) / LAMPORTS_PER_SOL,
 			delayForTrade: 0,
 			tradeLimitSol: 0,
 		},
@@ -363,9 +362,9 @@ const PromptProviderContent = ({
 		const description = watch("description") || "No description provided.";
 		const mintKeyPairr = mintKeyPair || Keypair.generate();
 		const buyAmount = watch("buyAmount") || 0;
-		const curveLimit = watch("curveLimit") || Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
+		const curveLimit = watch("curveLimit") || curveLimitConst;
 		const delayForTrade = watch("delayForTrade") || 0;
-		const tradeLimitSol = watch("tradeLimitSol") || 10;
+		const tradeLimitSol = watch("tradeLimitSol") || 0;
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
@@ -486,8 +485,8 @@ export const curveLimitValidation: RegisterOptions<TokenFormData, "curveLimit"> 
 	required: "Curve limit is required",
 	min: { value: 0, message: "Curve limit must be ≥ 0" }, // we will change this to 113 in mainnet
 	max: {
-		value: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) || 675,
-		message: `Curve limit must be ≤ ${process.env.NEXT_PUBLIC_CURVE_LIMIT || 675}`,
+		value: Number(curveLimitConst) || 675,
+		message: `Curve limit must be ≤ ${curveLimitConst || 675}`,
 	},
 };
 
