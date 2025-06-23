@@ -54,7 +54,7 @@ export default function TokenRow({
 					</div>
 					<p className="text-xs text-[#8C8C8C] leading-none flex gap-x-2 items-center justify-items-center">
 						<CopyButton className="h-[10px] w-[10px]" textToCopy={data.contractAddress} />{" "}
-						{`${data.contractAddress.slice(0, 6)}...${data.contractAddress.slice(-4)}`}
+						{`${data?.contractAddress?.slice(0, 6)}...${data?.contractAddress?.slice(-4)}`}
 					</p>
 				</div>
 			</div>
@@ -73,7 +73,7 @@ export default function TokenRow({
 							) : null}
 						</div>
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300">
-							<p className="text-sm font-medium text-gray-200">{data.amountHeld.toLocaleString()}</p>
+							<p className="text-sm font-medium text-gray-200">{data.amountHeld?.toLocaleString()}</p>
 							{data?.dollarWorth ? (
 								<p className="text-autofun-background-action-highlight text-sm md:text-xs">
 									${dollarWorth.toLocaleString()}
