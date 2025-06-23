@@ -2,7 +2,6 @@
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
-import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -107,18 +106,16 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 									{tokensCreated?.map((token) => (
 										<TokenRow
 											mode="wallet"
-											key={token.contractAddress}
+											key={token.tokenAddress}
 											data={{
 												chain: "solana",
 												chainId: 101,
 												image: token.info?.imageLargeUrl ?? "/create/test-img.png",
 												title: token.title ?? "AlienToken",
 												ticker: token.info?.name ?? "ALIEN",
-												marketCap: token.marketCap ?? 1240000,
-												contractAddress: token.contractAddress,
-												amountHeld: token.amountHeld,
-												dollarWorth: token.dollarWorth,
-												points: token.points ?? 0,
+												contractAddress: token.tokenAddress,
+												marketCap: token?.marketcap,
+												amountHeld: token?.shiftedBalance,
 											}}
 										/>
 									))}
