@@ -25,6 +25,7 @@ import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Controller } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import type { TChain } from "@autofun/types";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -479,8 +480,8 @@ export const LaunchButton = () => {
 			console.log("Transaction:", tx);
 			createTokenMutation.mutate({
 				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: "solana",
-				chainId: 103,
+				chain: chain as TChain,
+				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
 			});
