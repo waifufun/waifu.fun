@@ -95,7 +95,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										<button
 											type="button"
 											disabled
-											className="text-xs px-3 cursor-pointer py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black hover:bg-[#02e020]"
+											className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
 										>
 											Tokens Created
 										</button>
