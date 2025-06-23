@@ -5,8 +5,11 @@ import DB from "@autofun/database";
 import redis from "@autofun/redis";
 import { Wallet } from "../utils/customWallet.js";
 import * as dotenv from "dotenv";
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import { fileURLToPath } from "url";
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import { dirname } from "path";
+import { getRpcUrl } from "../utils/getRpcUrl.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,14 +17,12 @@ const __dirname = dirname(__filename);
 dotenv.config();
 
 async function main() {
-	const rpcUrl = process.env.HELIUS_API_KEY
-		? `https://devnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-		: "https://api.devnet.solana.com";
+	const rpcUrl = getRpcUrl();
 	const connection = new Connection(rpcUrl, "confirmed");
 
-	const rawKey = process.env.EXECUTOR_TEST_PRIVATE_KEY;
+	const rawKey = process.env.EXECUTOR_PRIVATE_KEY;
 	if (!rawKey) {
-		throw new Error("EXECUTOR_TEST_PRIVATE_KEY not set");
+		throw new Error("EXECUTOR_PRIVATE_KEY not set");
 	}
 	const privateKeyBytes = Uint8Array.from(JSON.parse(rawKey));
 	const keypair = Keypair.fromSecretKey(privateKeyBytes);
@@ -31,6 +32,7 @@ async function main() {
 
 	const migrationService = new MigrationService(connection, provider, redis, DB);
 
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	(migrationService as any).keyPair = keypair;
 
 	// Start the service

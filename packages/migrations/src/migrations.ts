@@ -1,7 +1,7 @@
 import type { Connection, Keypair } from "@solana/web3.js";
-import type { AnchorProvider, } from "@coral-xyz/anchor";
+import type { AnchorProvider } from "@coral-xyz/anchor";
 import { initializePrograms, type ProgramContext } from "./programs";
-import type { MigrationContext, ProtocolMigration, } from "./types";
+import type { MigrationContext, ProtocolMigration } from "./types";
 import { meteoraMigrationSteps } from "./protocols/meteora";
 import { raydiumMigrationSteps } from "./protocols/raydium";
 import type { Wallet } from "./utils/customWallet";
@@ -74,8 +74,7 @@ export class MigrationManager {
 			return meteoraMigrationSteps;
 		} else if (protocol === "raydium") {
 			return raydiumMigrationSteps;
-		} else {
-			throw new Error(`Unsupported protocol: ${protocol}`);
 		}
+		throw new Error(`Unsupported protocol: ${protocol}`);
 	}
 }

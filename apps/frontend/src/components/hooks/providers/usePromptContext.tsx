@@ -12,8 +12,9 @@ import {
 	type FormState,
 	type RegisterOptions,
 	type UseFormSetValue,
+	type Control,
 } from "react-hook-form";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -25,6 +26,7 @@ const INITIAL_GENERATION_SUFFIX = "FUN";
 type MediaType = "audio" | "video" | "image";
 
 type PromptContextType = {
+	control: Control<TokenFormData>;
 	registerForm: UseFormRegister<TokenFormData>;
 	handleSubmit: UseFormHandleSubmit<TokenFormData>;
 	formState: FormState<TokenFormData>;
@@ -60,6 +62,9 @@ export type TokenFormData = {
 	description: string;
 	symbol: string;
 	buyAmount: number;
+	curveLimit: number;
+	delayForTrade: number;
+	tradeLimitSol: number;
 };
 
 export type TokenMetadata = {
@@ -70,6 +75,9 @@ export type TokenMetadata = {
 	mintKeyPair: Keypair;
 	buyAmount: number;
 	metadataUrl: string;
+	curveLimit: number;
+	delayForTrade: number;
+	tradeLimitSol: number;
 };
 
 export type TokenFormOptions = keyof TokenFormData;
@@ -87,7 +95,7 @@ const PromptProviderContent = ({
 	children,
 	tokenImageQuery,
 }: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
-	const { register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
+	const { control, register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
 		defaultValues: {
 			prompt: "",
 			name: "",
@@ -95,6 +103,11 @@ const PromptProviderContent = ({
 			description: "",
 			symbol: "",
 			buyAmount: 0,
+			curveLimit: process.env.NEXT_PUBLIC_CURVE_LIMIT
+				? Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) / LAMPORTS_PER_SOL
+				: 113,
+			delayForTrade: 0,
+			tradeLimitSol: 0,
 		},
 		mode: "onChange",
 	});
@@ -350,6 +363,9 @@ const PromptProviderContent = ({
 		const description = watch("description") || "No description provided.";
 		const mintKeyPairr = mintKeyPair || Keypair.generate();
 		const buyAmount = watch("buyAmount") || 0;
+		const curveLimit = watch("curveLimit") || Number(process.env.NEXT_PUBLIC_CURVE_LIMIT);
+		const delayForTrade = watch("delayForTrade") || 0;
+		const tradeLimitSol = watch("tradeLimitSol") || 10;
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
@@ -378,6 +394,9 @@ const PromptProviderContent = ({
 			mintKeyPair: mintKeyPairr,
 			buyAmount,
 			metadataUrl,
+			curveLimit: Number(curveLimit),
+			delayForTrade: Number(delayForTrade),
+			tradeLimitSol: Number(tradeLimitSol),
 		};
 	};
 
@@ -398,6 +417,7 @@ const PromptProviderContent = ({
 	}, [terminateWorkers]);
 
 	const contextValue: PromptContextType = {
+		control,
 		registerForm: register,
 		handleSubmit,
 		formState,
@@ -459,4 +479,21 @@ export const descriptionValidation: RegisterOptions<TokenFormData, "description"
 	required: "Description is required",
 	minLength: { value: 10, message: "Description must be at least 10 characters long" },
 	maxLength: { value: 200, message: "Description must be at most 1000 characters long" },
+};
+
+export const curveLimitValidation: RegisterOptions<TokenFormData, "curveLimit"> = {
+	valueAsNumber: true,
+	required: "Curve limit is required",
+	min: { value: 0, message: "Curve limit must be ≥ 0" }, // we will change this to 113 in mainnet
+	max: {
+		value: Number(process.env.NEXT_PUBLIC_CURVE_LIMIT) || 675,
+		message: `Curve limit must be ≤ ${process.env.NEXT_PUBLIC_CURVE_LIMIT || 675}`,
+	},
+};
+
+export const tradeLimitValidation: RegisterOptions<TokenFormData, "tradeLimitSol"> = {
+	valueAsNumber: true,
+	required: "Trade limit is required",
+	min: { value: 0, message: "Trade limit must be ≥ 0" },
+	max: { value: 100, message: "Trade limit must be ≤ 100" },
 };

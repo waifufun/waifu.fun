@@ -117,7 +117,7 @@ export class SolanaTransactionProcessor {
 							bondingCurve: completeEvent.bondingCurve,
 							logIndex,
 							programId: this.autoFunAddress,
-							processed: true,
+							processed: false,
 						};
 						events.push(eventObj);
 

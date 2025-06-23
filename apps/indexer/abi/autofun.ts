@@ -31,6 +31,21 @@ export const instructions = {
 				const virtualLamportReserves = payload.readBigUInt64LE(offset);
 				offset += 8;
 
+				const curveLimit = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const initBondingCurve = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const maxAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const delayForTrade = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
+				offset += 8;
+
 				const name = readBorshString(payload, offset);
 				offset = name.nextOffset;
 
@@ -45,6 +60,11 @@ export const instructions = {
 						decimals,
 						tokenSupply,
 						virtualLamportReserves,
+						curveLimit,
+						initBondingCurve,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,
@@ -52,7 +72,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode launch instruction: ${error.message}`,
+					error: `Failed to decode launch instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -89,7 +112,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode swap instruction: ${error.message}`,
+					error: `Failed to decode swap instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -111,6 +137,21 @@ export const instructions = {
 				offset += 8;
 
 				const virtualLamportReserves = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const curveLimit = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const initBondingCurve = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const maxAmount = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const delayForTrade = payload.readBigUInt64LE(offset);
+				offset += 8;
+
+				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
 				offset += 8;
 
 				const name = readBorshString(payload, offset);
@@ -136,6 +177,11 @@ export const instructions = {
 						decimals,
 						tokenSupply,
 						virtualLamportReserves,
+						curveLimit,
+						initBondingCurve,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,
@@ -146,7 +192,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode launchAndSwap instruction: ${error.message}`,
+					error: `Failed to decode launchAndSwap instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -202,7 +251,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode nominate_authority instruction: ${error.message}`,
+					error: `Failed to decode nominate_authority instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -222,7 +274,10 @@ export const instructions = {
 					};
 				} catch (error) {
 					return {
-						error: `Failed to decode CompleteEvent: ${error.message}`,
+						error: `Failed to decode CompleteEvent: ${
+							// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+							(error as any).message
+						}`,
 						rawData: Array.from(data),
 					};
 				}

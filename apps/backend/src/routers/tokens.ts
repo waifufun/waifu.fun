@@ -247,8 +247,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				bondingCurveData = await getBondingCurveData(
 					contractAddress,
 					chainId as unknown as SolanaNetworkIds,
-					metadata.totalSupply || 0,
-					metadata.decimals || 9,
+					Number(metadata.totalSupply) || 0,
+					Number(metadata.decimals) || 9,
 				);
 			} catch (error) {
 				console.error("Error getting bonding curve data:", error);
@@ -849,7 +849,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				metadataFilename,
 			);
 
-			const metadataUrl = `${process.env.API_URL}/autofun/token-metadata/${metadataFilename}.json`;
+			const metadataUrl = `${process.env.API_URL}/token-metadata/${metadataFilename}.json`;
 
 			return reply.send({
 				success: true,

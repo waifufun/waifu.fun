@@ -8,12 +8,12 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
 import {
 	usePrompt,
 	nameValidation,
 	tickerValidation,
 	descriptionValidation,
+	tradeLimitValidation,
 } from "@/components/hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,9 @@ import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Controller } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import type { TChain } from "@autofun/types";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -152,30 +155,47 @@ export const CustomCurveSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [raiseAmount, setRaiseAmount] = useState(150);
+	const {
+		control,
+		formState: { errors },
+	} = usePrompt();
+
 	return (
-		<FormSection title="Custom Curve" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<div>
-				<div className="flex justify-between items-center mb-1">
-					<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
-						Raise Amount
-					</Label>
-					<span className="text-sm font-bold text-[#03FF24]">{raiseAmount} SOL</span>
-				</div>
-				<Slider
-					id="raiseAmount"
-					min={113}
-					max={400}
-					step={1}
-					value={[raiseAmount]}
-					onValueChange={(value) => setRaiseAmount(value[0] || 150)}
-					className="w-full"
-					thumbClassName={sliderThumbClass}
-					trackClassName={sliderTrackClass}
-					rangeClassName={sliderRangeClass}
-				/>
-			</div>
-		</FormSection>
+		<Controller
+			name="curveLimit"
+			control={control}
+			rules={{
+				required: "Curve limit is required",
+				min: { value: 0, message: "Must be ≥ 0" },
+				max: { value: 1000, message: "Must be ≤ 1000" },
+			}}
+			render={({ field }) => (
+				<FormSection title="curve-limit" collapsible={collapsible} defaultOpen={defaultOpen}>
+					<div>
+						<div className="flex justify-between items-center mb-1">
+							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
+								Raise Amount
+							</Label>
+							<span className="text-sm font-bold text-[#03FF24]">{field.value} SOL</span>
+						</div>
+
+						<Slider
+							id="curveLimit"
+							min={113}
+							max={678}
+							step={1}
+							value={[field.value]}
+							onValueChange={(vals) => field.onChange(vals[0])}
+							className="w-full"
+							thumbClassName={sliderThumbClass}
+							trackClassName={sliderTrackClass}
+							rangeClassName={sliderRangeClass}
+						/>
+					</div>
+					{errors.curveLimit && <p className="text-red-500 text-xs mt-1">{errors.curveLimit.message}</p>}
+				</FormSection>
+			)}
+		/>
 	);
 };
 
@@ -183,22 +203,76 @@ export const DelayedStartSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [isDelayEnabled, setIsDelayEnabled] = useState(false);
-
+	const {
+		control,
+		formState: { errors },
+	} = usePrompt();
+	const [mode, setMode] = useState<"preset" | "manual">("preset");
+	const presets = [
+		{ label: "10 Min", value: 10 * 60 },
+		{ label: "1 Hour", value: 60 * 60 },
+		{ label: "4 Hours", value: 4 * 60 * 60 },
+	];
 	return (
 		<FormSection title="Delayed Start" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<div className="flex items-center justify-between">
-				<Label htmlFor="enable-delayed-start" className={cn(formLabelBaseClass, "cursor-pointer")}>
-					Enable Delayed Start
-				</Label>
-				<Switch
-					id="enable-delayed-start"
-					checked={isDelayEnabled}
-					onCheckedChange={setIsDelayEnabled}
-					className="data-[state=checked]:bg-[#03FF24] rounded-none [&>span]:rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.25)]"
-				/>
+			<div className="flex items-center gap-4 mb-3">
+				<ToggleGroup
+					type="single"
+					value={mode}
+					onValueChange={(v) => setMode(v as "preset" | "manual")}
+					className="grid grid-cols-2 gap-2"
+				>
+					<ToggleGroupItem value="preset">Preset</ToggleGroupItem>
+					<ToggleGroupItem value="manual">Manual</ToggleGroupItem>
+				</ToggleGroup>
 			</div>
-			<p className="text-[10px] text-gray-500 mt-1">If enabled, trading will start after a fixed delay period.</p>
+			<div className="flex items-center justify-between">
+				<Controller
+					name="delayForTrade"
+					control={control}
+					rules={{ required: "Please choose a delay", min: { value: 0, message: "Delay must be ≥ 0" } }}
+					defaultValue={presets[0]?.value ?? 0}
+					render={({ field }) =>
+						mode === "preset" ? (
+							<>
+								<Label className={formLabelBaseClass}>Choose Delay</Label>
+								<ToggleGroup
+									type="single"
+									value={String(field.value)}
+									onValueChange={(v) => field.onChange(Number(v))}
+									className="grid grid-cols-3 gap-2 mt-1 mb-2"
+								>
+									{presets.map((p) => (
+										<ToggleGroupItem key={p.value} value={String(p.value)}>
+											{p.label}
+										</ToggleGroupItem>
+									))}
+								</ToggleGroup>
+							</>
+						) : (
+							<div className="space-y-1">
+								<Label htmlFor="manual-start" className={formLabelBaseClass}>
+									Pick Start Date &amp; Time
+								</Label>
+								<Input
+									id="manual-start"
+									type="datetime-local"
+									onChange={(e) => {
+										const then = new Date(e.target.value).getTime();
+										const now = Date.now();
+										let secs = Math.floor((then - now) / 1000);
+										if (secs < 0) secs = 0;
+										field.onChange(secs);
+									}}
+									className={cn("mt-1 h-10", errors.delayForTrade && "border-red-500")}
+								/>
+							</div>
+						)
+					}
+				/>
+
+				{errors.delayForTrade && <p className="text-red-500 text-xs mt-1">{errors.delayForTrade.message}</p>}
+			</div>
 		</FormSection>
 	);
 };
@@ -207,7 +281,12 @@ export const TradeLimitSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [tradeLimitSol, setTradeLimitSol] = useState(0.1);
+	const {
+		registerForm,
+		watchValue,
+		formState: { errors },
+	} = usePrompt();
+
 	return (
 		<FormSection title="Trade Limit" collapsible={collapsible} defaultOpen={defaultOpen}>
 			<div className="space-y-2">
@@ -219,15 +298,7 @@ export const TradeLimitSection = ({
 						<Input
 							type="number"
 							id="tradeLimitSol"
-							value={tradeLimitSol}
-							onChange={(e) => {
-								const val = Number.parseFloat(e.target.value);
-								if (!Number.isNaN(val) && val >= 0) {
-									setTradeLimitSol(val);
-								} else if (e.target.value === "") {
-									setTradeLimitSol(0);
-								}
-							}}
+							{...registerForm("tradeLimitSol", tradeLimitValidation)}
 							min="0"
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
@@ -237,6 +308,8 @@ export const TradeLimitSection = ({
 					<p className="text-[10px] text-gray-500 mt-1">
 						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
 					</p>
+
+					{errors.tradeLimitSol && <p className="text-red-500 text-xs mt-1">{errors.tradeLimitSol.message}</p>}
 				</div>
 			</div>
 		</FormSection>
@@ -361,6 +434,11 @@ export const LaunchButton = () => {
 		setLaunching,
 		isLaunching,
 	} = usePrompt();
+	const router = useRouter();
+	const [chain, chainId] = [
+		"solana",
+		process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101,
+	]; /* Malibu - the chain and chainId should be part of the prompt context or passed as props */
 
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
@@ -368,6 +446,7 @@ export const LaunchButton = () => {
 		onSuccess: (tx) => {
 			console.log("Transaction successful:", tx);
 			toast.success("Token created successfully!");
+			router.push(`/token/${chain}/${chainId}/${mintKeyPair?.publicKey.toString()}`);
 		},
 		onError: (error) => {
 			console.error("Error creating token:", error);
@@ -401,8 +480,8 @@ export const LaunchButton = () => {
 			console.log("Transaction:", tx);
 			createTokenMutation.mutate({
 				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: "solana",
-				chainId: 103,
+				chain: chain as TChain,
+				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
 			});

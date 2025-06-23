@@ -7,6 +7,7 @@ import {
 	nameValidation,
 	tickerValidation,
 	descriptionValidation,
+	curveLimitValidation,
 } from "../hooks/providers/usePromptContext";
 import { Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -225,6 +226,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 		mintKeyPair,
 		setLaunching,
 	} = usePrompt();
+	const chainId = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101;
 
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
@@ -255,7 +257,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 			createTokenMutation.mutate({
 				contractAddress: mintKeyPair?.publicKey.toString() || "",
 				chain: "solana",
-				chainId: 103,
+				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
 			});
@@ -271,6 +273,8 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 	const handleAutoSubmit = async () => {
 		setLaunching(true);
 		try {
+			const chainId = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101;
+
 			const tokenData = await getTokenData();
 			console.log("Token Data:", tokenData);
 			const tx = await createTokenTx(tokenData, { connection, wallet });
@@ -278,7 +282,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 			createTokenMutation.mutate({
 				contractAddress: mintKeyPair?.publicKey.toString() || "",
 				chain: "solana",
-				chainId: 103,
+				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
 			});
@@ -326,6 +330,7 @@ const TokenInfo = ({ type }: { type: "auto" | "manual" }) => {
 					<TokenInfoInput title="Ticker" label="$" target="symbol" validation={tickerValidation} />
 				</div>
 				<TokenInfoInput title="Description" target="description" validation={descriptionValidation} />
+				<TokenInfoInput title="Curve Limit" target="curveLimit" validation={curveLimitValidation} label="" />
 			</div>
 			<GenerateAddress />
 			<BuyCoin />

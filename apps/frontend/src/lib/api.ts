@@ -39,7 +39,11 @@ export const fetcher = async (
 
 export const getTokens = async ({
 	searchParams,
-}: { searchParams: { [key: string]: string | string[] | number | number[] | undefined } }) => {
+}: {
+	searchParams: {
+		[key: string]: string | string[] | number | number[] | undefined;
+	};
+}) => {
 	try {
 		const body = {
 			chain: (searchParams?.chain as TChain) || undefined,
@@ -51,6 +55,7 @@ export const getTokens = async ({
 			search: searchParams?.search || "",
 			limit: searchParams?.limit || 50,
 		};
+		console.log("Fetching tokens with body:", body);
 
 		const response = await fetcher("/tokens", "POST", body);
 		return response.docs || [];
@@ -113,7 +118,11 @@ export const getTokenTrades = async ({ chain, chainId, contractAddress }: IToken
 	});
 };
 
-export const getAddressBalances = async ({ address }: { address: AddressLike }) => {
+export const getAddressBalances = async ({
+	address,
+}: {
+	address: AddressLike;
+}) => {
 	return await fetcher("/tokens/balances", "POST", {
 		address,
 	});
@@ -124,7 +133,12 @@ export const getChatHistory = async ({
 	contractAddress,
 	chain,
 	chainId,
-}: { room: string; contractAddress: string; chain: TChain; chainId: string | number }) => {
+}: {
+	room: string;
+	contractAddress: string;
+	chain: TChain;
+	chainId: string | number;
+}) => {
 	return await fetcher("/chat/history", "POST", {
 		room,
 		contractAddress,
@@ -147,6 +161,7 @@ export const generateMedia = async ({
 		type,
 		contractAddress,
 	});
+
 	return await fetcher("/generation/generate", "POST", {
 		prompt,
 		width,
@@ -248,7 +263,11 @@ export const getTransaction = async ({
 	chain,
 	chainId,
 	txId,
-}: { chain: TChain; chainId: string | number; txId: string }) => {
+}: {
+	chain: TChain;
+	chainId: string | number;
+	txId: string;
+}) => {
 	return await fetcher("/transaction", "POST", {
 		chain,
 		chainId,
@@ -351,7 +370,13 @@ export const getAgent = async ({
 	page?: number;
 	limit?: number;
 }) => {
-	return await fetcher("/agent/get-agents", "POST", { chain, chainId, contractAddress, page, limit });
+	return await fetcher("/agent/get-agents", "POST", {
+		chain,
+		chainId,
+		contractAddress,
+		page,
+		limit,
+	});
 };
 
 export const uploadAvatar = async ({
@@ -378,6 +403,9 @@ export const getUser = async ({
 	});
 };
 
-export const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+export const HELIUS_RPC_URL =
+	process.env.NEXT_PUBLIC_NETWORK === "devnet"
+		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
 export const connection = new Connection(HELIUS_RPC_URL, "confirmed");
