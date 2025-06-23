@@ -9,7 +9,7 @@ import raydiumVaultIdl from "../vaults/programs/idl/raydium_vault.json";
 import meteoraVaultIdl from "../vaults/programs/idl/meteora_vault.json";
 import type { RaydiumVault } from "../vaults/programs/types/raydium_vault";
 import type { MeteoraVault } from "../vaults/programs/types/meteora_vault";
-
+import { getRpcUrl } from "../utils/getRpcUrl";
 export class Claimer {
 	private connection: Connection;
 	private provider: AnchorProvider;
@@ -19,9 +19,7 @@ export class Claimer {
 	private SolAddress: PublicKey = new PublicKey("So11111111111111111111111111111111111111112");
 
 	constructor(chainId: SolanaNetworkIds) {
-		const rpcUrl = process.env.HELIUS_API_KEY
-			? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-			: "https://api.mainnet.solana.com";
+		const rpcUrl = getRpcUrl();
 		this.connection = new Connection(rpcUrl, "confirmed");
 		this.wallet = new Wallet(
 			Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.EXECUTOR_PRIVATE_KEY || "[]"))),

@@ -1,6 +1,5 @@
 import type { MigrationStep, MigrationContext } from "../types";
 import { withdrawLiquidity, sendNftToManager, collectProtocolFees } from "../utils/protocol-utils";
-import { Keypair } from "@solana/web3.js";
 
 export const commonWithdrawStep: MigrationStep = {
 	name: "withdraw",

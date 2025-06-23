@@ -7,6 +7,7 @@ import { Wallet } from "../utils/customWallet.js";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { getRpcUrl } from "../utils/getRpcUrl.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,9 +15,7 @@ const __dirname = dirname(__filename);
 dotenv.config();
 
 async function main() {
-	const rpcUrl = process.env.HELIUS_API_KEY
-		? `https://devnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-		: "https://api.devnet.solana.com";
+	const rpcUrl = getRpcUrl();
 	const connection = new Connection(rpcUrl, "confirmed");
 
 	const rawKey = process.env.EXECUTOR_PRIVATE_KEY;
