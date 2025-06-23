@@ -58,9 +58,9 @@ export default function Chat({ token }: { token: IToken }) {
 						))}
 					</TabsList>
 				</Tabs>
-				<Link href="#" className="text-xs text-gray-400 hover:text-[#03FF24] flex items-center">
+				{/* <Link href="#" className="text-xs text-gray-400 hover:text-[#03FF24] flex items-center">
 					Open Full Chat Page <ExternalLink size={12} className="ml-1" />
-				</Link>
+				</Link> */}
 			</div>
 
 			<ChatWindow room={room} token={token} tierRequirement={tierTokenRequirements[room]} />
