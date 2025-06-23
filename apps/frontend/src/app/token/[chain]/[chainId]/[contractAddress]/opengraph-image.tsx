@@ -2,10 +2,6 @@ import { ImageResponse } from "next/og";
 import type { ITokenLookUp } from "@autofun/types";
 import { getToken } from "@/lib/api";
 
-const fontResponse = await fetch(
-	new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
-);
-
 const toSubscript = (num: number): string => {
 	const subDigits: { [key: string]: string } = {
 		"0": "₀",
@@ -59,12 +55,6 @@ export const formatNumberSubscript = (inputNum: number, decimals = 1): string =>
 	return `${sign}0.${"0".repeat(totalZeros)}${mantissaDigits}`;
 };
 
-if (!fontResponse.ok) {
-	throw new Error(`Failed to fetch font: ${fontResponse.statusText}`);
-}
-
-const satoshiFont = await fontResponse.arrayBuffer();
-
 export const runtime = "edge";
 export const contentType = "image/png";
 export const size = {
@@ -73,6 +63,14 @@ export const size = {
 };
 
 export default async function Image({ params }: { params: Promise<ITokenLookUp> }) {
+	const fontResponse = await fetch(
+		new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
+	);
+	if (!fontResponse.ok) {
+		throw new Error(`Failed to fetch font: ${fontResponse.statusText}`);
+	}
+
+	const satoshiFont = await fontResponse.arrayBuffer();
 	const token = await getToken(await params);
 	const imageResponse = await fetch(token.image);
 	if (!imageResponse.ok) throw new Error(`Failed to load token image: ${imageResponse.statusText}`);
