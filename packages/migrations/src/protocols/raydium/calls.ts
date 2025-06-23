@@ -1,4 +1,4 @@
-import { PublicKey, TransactionMessage, VersionedTransaction, Keypair } from "@solana/web3.js";
+import { PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import BN from "bn.js";
 import {
 	Raydium,
@@ -10,6 +10,8 @@ import {
 	DEV_LOCK_CPMM_AUTH,
 	getCpmmPdaAmmConfigId,
 	DEVNET_PROGRAM_ID,
+	type ApiCpmmConfigInfo,
+	type TokenAccount,
 } from "@raydium-io/raydium-sdk-v2";
 import type { MigrationContext } from "../../types";
 import { recordTransaction } from "../../utils/protocol-utils";
@@ -18,7 +20,6 @@ import DB from "@autofun/database";
 import { depositToRaydiumVault } from "../../vaults/raydiumVault";
 import * as spl from "@solana/spl-token";
 import { retryOperation } from "../../utils";
-import { Wallet } from "../../utils/customWallet";
 
 interface CreatePoolParams {
 	tokenMint: string;
@@ -39,7 +40,7 @@ export async function createPool(
 	params: CreatePoolParams,
 ): Promise<{
 	txId: string;
-	poolAddresses: any;
+	poolAddresses: unknown;
 	extraData: {
 		primaryAmount: string;
 		secondaryAmount: string;
@@ -87,7 +88,7 @@ export async function createPool(
 		const feeConfigs = await raydium.api.getCpmmConfigs();
 		if (raydium.cluster === "devnet") {
 			// biome-ignore lint/complexity/noForEach: <explanation>
-			feeConfigs.forEach((config: any) => {
+			feeConfigs.forEach((config: ApiCpmmConfigInfo) => {
 				config.id = getCpmmPdaAmmConfigId(
 					DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
 					config.index,
@@ -225,7 +226,7 @@ export async function initRaydiumSdkAndFetchPoolInfo(
 		const poolKeys = result.poolKeys;
 		const pool = { poolInfo: poolInfoResult, poolKeys };
 		const lpMintStr = pool.poolInfo.lpMint.address;
-		const lpAccount = raydium.account.tokenAccounts.find((a: any) => a.mint.toBase58() === lpMintStr);
+		const lpAccount = raydium.account.tokenAccounts.find((a: TokenAccount) => a.mint.toBase58() === lpMintStr);
 		if (!lpAccount) throw new Error(`No LP balance found for pool: ${poolId}`);
 
 		// Get token information

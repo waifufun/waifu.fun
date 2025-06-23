@@ -219,7 +219,7 @@ export const DelayedStartSection = ({
 				<ToggleGroup
 					type="single"
 					value={mode}
-					onValueChange={(v) => setMode(v as any)}
+					onValueChange={(v) => setMode(v as "preset" | "manual")}
 					className="grid grid-cols-2 gap-2"
 				>
 					<ToggleGroupItem value="preset">Preset</ToggleGroupItem>

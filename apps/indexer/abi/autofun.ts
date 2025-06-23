@@ -72,7 +72,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode launch instruction: ${(error as any).message}`,
+					error: `Failed to decode launch instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -109,7 +112,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode swap instruction: ${(error as any).message}`,
+					error: `Failed to decode swap instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -186,7 +192,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode launchAndSwap instruction: ${(error as any).message}`,
+					error: `Failed to decode launchAndSwap instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -242,7 +251,10 @@ export const instructions = {
 				};
 			} catch (error) {
 				return {
-					error: `Failed to decode nominate_authority instruction: ${(error as any).message}`,
+					error: `Failed to decode nominate_authority instruction: ${
+						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+						(error as any).message
+					}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -262,7 +274,10 @@ export const instructions = {
 					};
 				} catch (error) {
 					return {
-						error: `Failed to decode CompleteEvent: ${(error as any).message}`,
+						error: `Failed to decode CompleteEvent: ${
+							// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+							(error as any).message
+						}`,
 						rawData: Array.from(data),
 					};
 				}

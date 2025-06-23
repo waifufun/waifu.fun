@@ -147,7 +147,6 @@ export const getChatHistory = async ({
 	});
 };
 
-
 export const generateMedia = async ({
 	prompt,
 	width,
@@ -380,7 +379,6 @@ export const getAgent = async ({
 	});
 };
 
-
 export const uploadAvatar = async ({
 	address,
 	image,
@@ -404,7 +402,6 @@ export const getUser = async ({
 		address,
 	});
 };
-
 
 export const HELIUS_RPC_URL =
 	process.env.NEXT_PUBLIC_NETWORK === "devnet"

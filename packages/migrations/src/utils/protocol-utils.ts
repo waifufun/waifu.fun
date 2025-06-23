@@ -299,13 +299,13 @@ export async function collectProtocolFees(
 	try {
 		const signature = await sendAndConfirmTransaction(rpc, transaction, [signerWallet.payer]);
 		return { txId: signature, extraData: {} };
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("transaction failed: ", error);
 		throw error;
 	}
 }
 
-export async function recordTransaction(state: ProtocolState, step: string, txId?: string, data?: any) {
+export async function recordTransaction(state: ProtocolState, step: string, txId?: string, data?: unknown) {
 	try {
 		if (!state.transactions) state.transactions = [];
 		state.transactions.push({

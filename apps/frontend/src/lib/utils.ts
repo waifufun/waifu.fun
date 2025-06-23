@@ -363,12 +363,11 @@ export const retrieveQuote = async ({
 	slippage: number;
 	wallet?: WalletContextState;
 	connection?: Connection;
-	// biome-ignore lint/suspicious/noExplicitAny: allow
 }): Promise<{
 	minimumReceived: number;
 	swapUsdValue?: string;
 	priceImpactPct?: string;
-	quote?: any;
+	quote?: unknown;
 }> => {
 	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
 	if (provider === "jupiter") {

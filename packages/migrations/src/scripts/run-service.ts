@@ -5,7 +5,9 @@ import DB from "@autofun/database";
 import redis from "@autofun/redis";
 import { Wallet } from "../utils/customWallet.js";
 import * as dotenv from "dotenv";
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import { fileURLToPath } from "url";
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import { dirname } from "path";
 import { getRpcUrl } from "../utils/getRpcUrl.js";
 
@@ -30,6 +32,7 @@ async function main() {
 
 	const migrationService = new MigrationService(connection, provider, redis, DB);
 
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	(migrationService as any).keyPair = keypair;
 
 	// Start the service

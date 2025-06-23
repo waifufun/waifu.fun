@@ -144,9 +144,9 @@ export class SolanaWallet extends WalletClass {
 			pendingAuthority: PublicKey;
 			platformBuyFee: BN;
 			platformSellFee: BN;
-			lamportAmountConfig: any;
-			tokenSupplyConfig: any;
-			tokenDecimalsConfig: any;
+			lamportAmountConfig: unknown;
+			tokenSupplyConfig: unknown;
+			tokenDecimalsConfig: unknown;
 		},
 	) => {
 		const slippage = slippageBps ? slippageBps : 100;

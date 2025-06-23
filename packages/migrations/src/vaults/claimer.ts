@@ -25,7 +25,9 @@ export class Claimer {
 			Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.EXECUTOR_PRIVATE_KEY || "[]"))),
 		);
 		this.provider = new AnchorProvider(this.connection, this.wallet, AnchorProvider.defaultOptions());
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		this.raydiumVaultProgram = new Program<RaydiumVault>(raydiumVaultIdl as any, this.provider);
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		this.meteoraVaultProgram = new Program<MeteoraVault>(meteoraVaultIdl as any, this.provider);
 	}
 
