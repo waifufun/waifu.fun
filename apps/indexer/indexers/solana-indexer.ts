@@ -18,7 +18,7 @@ export class SolanaIndexer extends BaseIndexer {
 		this.config = {
 			concurrencyLimit: 3,
 			maxSignatures: 500,
-			minBlock: process.env.NETWORK === "devnet" ? 388699253 : 322725834, // devnet
+			minBlock: process.env.NETWORK === "devnet" ? 388699253 : 322725834,
 			...config,
 		};
 
