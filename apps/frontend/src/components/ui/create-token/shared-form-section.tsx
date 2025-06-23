@@ -437,7 +437,7 @@ export const LaunchButton = () => {
 	const router = useRouter();
 	const [chain, chainId] = [
 		"solana",
-		103,
+		process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101,
 	]; /* Malibu - the chain and chainId should be part of the prompt context or passed as props */
 
 	const createTokenMutation = useMutation({
