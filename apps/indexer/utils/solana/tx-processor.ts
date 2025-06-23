@@ -156,6 +156,7 @@ export class SolanaTransactionProcessor {
 			programId: this.autoFunAddress,
 			accounts: decodedInstruction.accounts,
 			processed: true,
+			chainId: process.env.NETWORK === "mainnet" ? 101 : 103,
 		};
 
 		const instructionData = decodedInstruction.data?.data;

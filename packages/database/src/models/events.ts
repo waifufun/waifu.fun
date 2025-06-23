@@ -32,6 +32,7 @@ export interface IEvent {
 	error?: string;
 	instructionIndex?: number;
 	programId: string;
+	chainId: number;
 }
 
 export interface IEventModel extends PaginateModel<IEvent> {
@@ -74,6 +75,7 @@ const schema = new Schema<IEvent, IEventModel>(
 		error: { type: String },
 		instructionIndex: { type: Number },
 		programId: { type: String, required: true },
+		chainId: { type: Number, required: true }, // Added chainId to support multi-chain
 	},
 	{ timestamps: true, versionKey: false },
 );
