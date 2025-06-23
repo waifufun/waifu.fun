@@ -8,13 +8,13 @@ import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-export default function TokenGrid() {
+export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const columns = 5;
 	const columnKeys = Array.from({ length: columns }, (_, i) => `col${i + 1}`);
 
 	const searchParams = useSearchParams();
-	const category = searchParams.get("category");
-	const origin = searchParams.get("origin");
+	const category = searchParams.get("category") || null;
+	const origin = searchParams.get("origin") || null;
 
 	const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
 		queryKey: ["main-page-tokens", category, origin],
@@ -28,9 +28,14 @@ export default function TokenGrid() {
 			return lastPage.length < 50 ? undefined : allPages.length + 1;
 		},
 		initialPageParam: 1,
+		initialData: {
+			pages: [tokens],
+			pageParams: [1],
+		},
+		refetchOnMount: false,
 	});
 
-	const tokens: IToken[] = data?.pages.flat() ?? [];
+	const allTokens: IToken[] = data?.pages.flat() ?? [];
 	const loaderRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
@@ -54,7 +59,7 @@ export default function TokenGrid() {
 		<Fragment>
 			<div className="columns-2 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4 w-full">
 				{columnKeys.map((colKey, colIndex) => {
-					const columnItems = tokens?.filter((_, idx) => idx % columns === colIndex);
+					const columnItems = allTokens?.filter((_, idx) => idx % columns === colIndex);
 					return (
 						<motion.div
 							key={colKey}
