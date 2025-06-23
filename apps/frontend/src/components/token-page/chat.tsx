@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Image as ImageIcon, Send, XIcon, ExternalLink, Lock } from "lucide-react";
+import { Image as ImageIcon, Send, XIcon, Lock } from "lucide-react";
 import { abbreviateNumber, fileToBase64, fromNow, shortenAddress } from "@/lib/utils";
 import Image from "next/image";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
@@ -14,7 +14,6 @@ import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
 
