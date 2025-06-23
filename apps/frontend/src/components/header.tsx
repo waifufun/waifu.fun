@@ -99,7 +99,7 @@ export default function Header() {
 					<BalanceMenu />
 					<div className="hidden lg:flex gap-2.5">
 						<Link href="/create">
-							<Button variant="outline">Create Token</Button>
+							<Button className="h-10 px-4 py-2" variant="outline">Create Token</Button>
 						</Link>
 					</div>
 					<SidebarTrigger />
