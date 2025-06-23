@@ -288,9 +288,13 @@ export async function lockLP({ context, poolId, amount, isPrimary }: LockLPParam
 		}
 		// Create lock transaction
 		const lockTx = await raydium.cpmm.lockLp({
-			programId: DEV_LOCK_CPMM_PROGRAM, // devnet
-			authProgram: DEV_LOCK_CPMM_AUTH, // devnet
-			poolKeys: state.poolKeys, // devnet
+			...(process.env.NETWORK === "devnet"
+				? {
+						programId: DEV_LOCK_CPMM_PROGRAM, // devnet
+						authProgram: DEV_LOCK_CPMM_AUTH, // devnet
+						poolKeys: state.poolKeys, // devnet
+					}
+				: {}),
 			poolInfo: state.poolInfo,
 			lpAmount: amount,
 			txVersion: TxVersion.V0,
