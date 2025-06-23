@@ -19,6 +19,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
@@ -34,12 +35,14 @@ const viewControlsNavigation = {
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
 	const address = useAddress();
+	const { state } = useSidebar();
 	const balance = useBalance({
 		address,
 		chain: "solana",
 	});
 
 	const tokenPage = pathname.startsWith("/token");
+	const isCollapsed = state === "collapsed";
 
 	return (
 		<Sidebar collapsible="icon" side="right" {...props}>
@@ -75,23 +78,16 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				)}
 			</SidebarContent>
 			<SidebarFooter>
-				{/* create token */}
-				<div className="space-y-1 p-3 text-xs">
-					{balance?.data ? (
-						<div className="flex items-center justify-between text-white">
-							<span>{formatNumber(balance?.data, true, true)}</span>
-							<span className="font-medium text-green-400">SOL</span>
-						</div>
-					) : null}
-					{/* <div className="flex items-center justify-between text-white">
-						<span>250</span>
-						<span className="font-medium text-yellow-400">PP</span>
-					</div> */}
-					{/* <div className="flex items-center justify-between text-white">
-						<span>1200</span>
-						<span className="font-medium text-gray-400">WP</span>
-					</div> */}
-				</div>
+				{!isCollapsed && (
+					<div className="space-y-1 p-3 text-xs">
+						{balance?.data ? (
+							<div className="flex items-center justify-between text-white">
+								<span>{formatNumber(balance?.data, true, true)}</span>
+								<span className="font-medium text-green-400">SOL</span>
+							</div>
+						) : null}
+					</div>
+				)}
 				<ConnectWallet />
 			</SidebarFooter>
 			<SidebarRail />
