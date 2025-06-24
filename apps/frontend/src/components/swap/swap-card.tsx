@@ -73,7 +73,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 			} catch (e) {
 				const error = e as { message?: string };
 				console.error(e);
-				toast.error(error?.message);
+				if (error?.message !== "Assertion failed") {
+					toast.error(error?.message);
+				}
 				throw e;
 			}
 		},
