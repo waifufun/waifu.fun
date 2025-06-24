@@ -279,7 +279,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	for (const indexedToken of tokens.indexer) {
 		const tokenBondingCurveInfo = bondingCurveInfo.find((a) => a.contractAddress === indexedToken.contractAddress);
 		if (!tokenBondingCurveInfo) continue;
-		console.log(tokenBondingCurveInfo)
 		const setValues: {
 			marketcap: number;
 			price: number;
@@ -287,6 +286,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			curveProgress?: number;
 			creator?: AddressLike;
 			bondingCurveAddress?: AddressLike;
+			bondingCurveBalance?: number;
 		} = {
 			marketcap: Number(tokenBondingCurveInfo.marketCapUSD),
 			price: Number(tokenBondingCurveInfo.priceUsd),
@@ -309,6 +309,12 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			const bondingCurveAddress = String(tokenBondingCurveInfo?.bondingCurveAddress) as AddressLike;
 			indexedToken.bondingCurveAddress = bondingCurveAddress;
 			setValues.bondingCurveAddress = bondingCurveAddress;
+		}
+
+		if (tokenBondingCurveInfo?.bondingCurveBalance) {
+			const bondingCurveBalanceB = Number(tokenBondingCurveInfo?.bondingCurveBalance);
+			indexedToken.bondingCurveBalance = bondingCurveBalanceB;
+			setValues.bondingCurveBalance = bondingCurveBalanceB;
 		}
 
 		if (tokenBondingCurveInfo?.creator) {
