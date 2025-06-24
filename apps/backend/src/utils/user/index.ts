@@ -5,19 +5,27 @@ import logger from "@autofun/logger";
 
 export async function getOrCreateUser({ address, chain }: { address: AddressLike, chain: TChain }) {
 	try {
-        
-		let user = await DB.User.findOne({ address: getChecksummedAddress(address, chain) }).lean();
+		let checksummedAddress: string;
+
+		if (chain === "evm") {
+			checksummedAddress = getChecksummedAddress(address, "evm");
+		} else if (chain === "solana") {
+			checksummedAddress = getChecksummedAddress(address, "solana");
+		} else {
+			throw new Error(`Unsupported chain: ${chain}`);
+		}
+		
+		let user = await DB.User.findOne({ address: checksummedAddress }).lean();
 
 		if (user) {
 			console.log("User found:", user._id);
 			return user;
 		}
 
-		logger.warn("No user found. Creating new user...");
-
+		logger.info("No user found. Creating new user...");
 
 		user = await DB.User.create({
-			address,
+			address: address,
 			suspended: false,
 			displayName: address.slice(0, 4),
 			avatar: "",
@@ -26,11 +34,10 @@ export async function getOrCreateUser({ address, chain }: { address: AddressLike
 			points: 0,
 		});
 
-		logger.info("[getOrCreateUser] New user created with ID:", user._id);
 
 		return user;
 	} catch (err) {
-		logger.error("[getOrCreateUser] Error occurred:", err);
+		logger.error("Error occurred:", err);
 		throw new Error("Failed to get or create user");
 	}
 }
