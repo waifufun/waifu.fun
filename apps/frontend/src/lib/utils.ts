@@ -309,7 +309,7 @@ export const retrieveAutofunQuote = async ({
 	token: IToken;
 	mode: "buy" | "sell";
 }) => {
-	if(!amount) throw new Error('Invalid amount passed');
+	if (!amount) throw new Error("Invalid amount passed");
 	const { program, configAccount } = await getAutofunProgram(connection, wallet);
 	const contractAddress = token.contractAddress;
 	const FEE_BASIS_POINTS = 10000;

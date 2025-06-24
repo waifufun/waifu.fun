@@ -413,17 +413,6 @@ export const uploadAvatar = async ({
 	});
 };
 
-export const getUser = async ({
-	address,
-}: {
-	address: string;
-}) => {
-	address;
-	return await fetcher("/user/get-user", "POST", {
-		address,
-	});
-};
-
 export const HELIUS_RPC_URL =
 	process.env.NEXT_PUBLIC_NETWORK === "devnet"
 		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`

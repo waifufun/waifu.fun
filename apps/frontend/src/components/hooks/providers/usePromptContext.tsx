@@ -400,7 +400,7 @@ const PromptProviderContent = ({
 			toast.error("Contract address is required for token media generation");
 			return;
 		}
-		
+
 		setIsGeneratingMedia(true);
 		generateMediaTokenMutation.mutate({
 			prompt: prompt || "",

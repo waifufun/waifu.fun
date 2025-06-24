@@ -604,7 +604,6 @@ export class SolanaRpcProvider extends EventEmitter {
 				const denominator = curveLimitBN.sub(virtualReservesBN);
 				curveProgress = new Decimal(numerator.toString()).mul("100").div(denominator.toString());
 			}
-		
 
 			const difference = new Decimal(reserveLamportBN.sub(virtualReservesBN).toString());
 			const bondingCurveBalance = difference.div(LAMPORTS_PER_SOL.toString()).toNumber();
