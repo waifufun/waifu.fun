@@ -43,6 +43,8 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		updatedAt: { type: Date, default: Date.now },
 		tradingStartsAt: { type: Date },
 		lastClaimedAt: { type: Date },
+		maxBuyAmount: { type: Number },
+		delayForTrade: { type: Number },
 	},
 	{ timestamps: true, versionKey: false },
 );

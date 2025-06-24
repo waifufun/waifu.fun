@@ -99,6 +99,8 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	isToken2022?: boolean;
 	tradingStartsAt?: Date;
 	lastClaimedAt?: Date;
+	maxBuyAmount?: number;
+	delayForTrade?: number;
 }
 
 export interface ITokenSocials {
