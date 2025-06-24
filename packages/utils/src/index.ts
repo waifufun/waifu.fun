@@ -287,6 +287,8 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			creator?: AddressLike;
 			bondingCurveAddress?: AddressLike;
 			bondingCurveBalance?: number;
+			maxBuyAmount?: number;
+			tradingStartsAt?: Date;
 		} = {
 			marketcap: Number(tokenBondingCurveInfo.marketCapUSD),
 			price: Number(tokenBondingCurveInfo.priceUsd),
@@ -321,6 +323,20 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			const creator = String(tokenBondingCurveInfo?.creator) as AddressLike;
 			indexedToken.creator = creator;
 			setValues.creator = creator;
+		}
+
+		if (tokenBondingCurveInfo?.delayForTrade && tokenBondingCurveInfo?.createdTime) {
+			const delayForTrade = tokenBondingCurveInfo?.delayForTrade;
+			const createdTime = tokenBondingCurveInfo?.createdTime;
+			const tradingStartsAt = moment(createdTime).add(delayForTrade, "milliseconds").toDate();
+			indexedToken.tradingStartsAt = tradingStartsAt;
+			setValues.tradingStartsAt = tradingStartsAt;
+		}
+
+		if (tokenBondingCurveInfo?.maxAmount) {
+			const maxAmount = tokenBondingCurveInfo?.maxAmount;
+			indexedToken.maxBuyAmount = maxAmount;
+			setValues.maxBuyAmount = maxAmount;
 		}
 
 		ops.push({
