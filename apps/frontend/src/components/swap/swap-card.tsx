@@ -128,7 +128,18 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const insufficientBalance = !hasSufficientBalance();
+	const maxBuyAmount = token?.maxBuyAmount ? formatUnits(BigInt(token?.maxBuyAmount), 9) : false;
 
+	const isTooHighBuyAmount = () => {
+		if (!value || value === "0") return false;
+		if (mode === "buy") {
+			return Number(value) > Number(maxBuyAmount);
+		}
+
+		return false;
+	};
+
+	const tooHighBuyAmount = isTooHighBuyAmount();
 	const tradingStarted = token?.tradingStartsAt ? moment(token?.tradingStartsAt).isBefore(moment()) : true;
 
 	return (
@@ -260,6 +271,17 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<AdvancedSettings />
 					<div
 						className={cn([
+							tooHighBuyAmount && address
+								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
+								: "hidden",
+							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+						])}
+					>
+						<AlertCircle className="text-autofun-text-error" />
+						You are trying to buy too much. Max allowed is: {maxBuyAmount} SOL
+					</div>
+					<div
+						className={cn([
 							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
@@ -271,7 +293,11 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					</div>
 					{tradingStarted ? (
 						<Button
-							disabled={address ? swapMutation?.isPending || insufficientBalance || !value || value === "0" : false}
+							disabled={
+								address
+									? swapMutation?.isPending || tooHighBuyAmount || insufficientBalance || !value || value === "0"
+									: false
+							}
 							onClick={() => {
 								if (!address) {
 									modal.setVisible(true);
@@ -287,7 +313,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									? "Loading..."
 									: insufficientBalance
 										? "Insufficient balance"
-										: "Swap"}
+										: tooHighBuyAmount
+											? "Amount too high"
+											: "Swap"}
 						</Button>
 					) : (
 						<Tooltip>
