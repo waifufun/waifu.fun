@@ -3,7 +3,6 @@ import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
-import { getOrCreateUser } from "../utils/user";
 
 export default async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/generateNonce", async (request) => {
@@ -11,9 +10,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 		if (!address) {
 			return { error: "Address is required" };
 		}
-		const user = await getOrCreateUser({address})
-		console.log(user)
-		
+
 		const nonce = Math.floor(Math.random() * 1000000).toString();
 		await redis.set(`nonce:${address}`, nonce, "EX", 60 * 5);
 		return { nonce };
