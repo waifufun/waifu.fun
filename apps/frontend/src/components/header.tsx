@@ -1,18 +1,13 @@
 "use client";
-
 import Link from "next/link";
 import { Button } from "./ui/button";
 import Image from "next/image";
-import { Trophy } from "lucide-react";
-import BalanceMenu from "./balance-menu";
 import SearchMenu from "./search-menu";
-import useAddress from "@/hooks/use-address";
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger, useSidebar } from "./ui/sidebar";
 
 export default function Header() {
-	const address = useAddress();
 	const { open } = useSidebar();
 
 	return (
@@ -69,22 +64,6 @@ export default function Header() {
 					</div>
 				</div>
 				<div className="flex items-center gap-2.5">
-					{/* Points */}
-					{address ? (
-						<div
-							className={cn(
-								"hidden h-10 px-4 py-2 bg-gradient-to-b from-neutral-900/80 to-neutral-900/80 justify-center items-center gap-2",
-								open ? "xl:inline-flex" : "lg:inline-flex",
-							)}
-						>
-							<Trophy size={20} className="text-autofun-background-action-highlight" />
-							<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
-								250
-							</div>
-						</div>
-					) : null}
-					{/* Balance */}
-					<BalanceMenu />
 					<div className="hidden lg:flex gap-2.5">
 						<Link href="/create">
 							<Button className="h-10 px-4 py-2" variant="outline">
