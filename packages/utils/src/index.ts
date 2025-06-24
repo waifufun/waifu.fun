@@ -279,6 +279,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	for (const indexedToken of tokens.indexer) {
 		const tokenBondingCurveInfo = bondingCurveInfo.find((a) => a.contractAddress === indexedToken.contractAddress);
 		if (!tokenBondingCurveInfo) continue;
+		console.log(tokenBondingCurveInfo)
 		const setValues: {
 			marketcap: number;
 			price: number;

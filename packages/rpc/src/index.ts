@@ -10,6 +10,7 @@ import {
 	type ReadContractParameters,
 	type WalletClient,
 } from "viem";
+import Decimal from "decimal.js";
 import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
@@ -595,17 +596,18 @@ export class SolanaRpcProvider extends EventEmitter {
 			const reserveLamportBN = new BN(reserveLamport.toString());
 			const virtualReservesBN = new BN(virtualReserves.toString());
 			const curveLimitBN = new BN(curveLimit.toString());
-			const LAMPORTS_PER_SOL_BN = new BN(LAMPORTS_PER_SOL.toString());
 
-			let curveProgress = curve?.isCompleted ? new BN(100) : new BN(0);
+			let curveProgress = curve?.isCompleted ? new Decimal(100) : new Decimal(0);
 
 			if (curveLimitBN.gt(virtualReservesBN) && !curve?.isCompleted) {
 				const numerator = reserveLamportBN.sub(virtualReservesBN);
 				const denominator = curveLimitBN.sub(virtualReservesBN);
-				curveProgress = numerator.mul(new BN(100)).div(denominator);
+				curveProgress = new Decimal(numerator.toString()).mul("100").div(denominator.toString());
 			}
+		
 
-			const bondingCurveBalance = reserveLamportBN.sub(virtualReservesBN).div(LAMPORTS_PER_SOL_BN).toNumber();
+			const difference = new Decimal(reserveLamportBN.sub(virtualReservesBN).toString());
+			const bondingCurveBalance = difference.div(LAMPORTS_PER_SOL.toString()).toNumber();
 
 			const creator = curve.creator.toBase58();
 
