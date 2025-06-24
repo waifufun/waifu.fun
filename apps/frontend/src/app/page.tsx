@@ -2,7 +2,8 @@ import { getTokens } from "@/lib/api";
 import type { Metadata } from "next";
 import ListView from "@/components/list-view";
 import TokenGrid from "@/components/token-grid";
-// import { GridItem } from "@/components/grid-item";
+
+export const revalidate = 4;
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {

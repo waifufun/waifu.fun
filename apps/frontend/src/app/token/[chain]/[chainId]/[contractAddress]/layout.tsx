@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
 
+export const revalidate = 4;
+
 export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
 	const token = (await getToken(await params)) as IToken;
 	return {
