@@ -19,7 +19,7 @@ export default function Header() {
 					</Link>
 					<SearchMenu />
 					{/* Social Icons */}
-					<div className={cn("hidden items-center gap-6", open ? "xl:flex" : "lg:flex")}>
+					<div className={cn("hidden items-center gap-1.5", open ? "xl:flex" : "lg:flex")}>
 						{[
 							{
 								title: "twitter",
@@ -50,7 +50,7 @@ export default function Header() {
 									<Image
 										src={social.icon}
 										className={cn([
-											"size-6 select-none",
+											"size-6 select-none inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:size-4 [&amp;_svg]:shrink-0 bg-background h-7 w-7 p-1 border-2 border-[#03FF24]/50 text-[#03FF24]/80 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24] rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] opacity-50 cursor-not-allowed",
 											!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
 										])}
 										unoptimized
