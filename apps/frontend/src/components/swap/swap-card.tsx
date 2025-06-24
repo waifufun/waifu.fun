@@ -291,7 +291,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						</Button>
 					) : (
 						<Tooltip>
-							<TooltipTrigger asChild>
+							<TooltipTrigger className="w-full">
 								<Button
 									disabled
 									className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
@@ -299,7 +299,6 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									<Countdown
 										date={moment(token?.tradingStartsAt).toDate()}
 										intervalDelay={0}
-										zeroPadTime={2}
 										onComplete={() => {
 											console.log("Trading has started");
 											setTimeout(() => {
@@ -308,8 +307,6 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 												});
 											}, 1000);
 										}}
-										precision={3}
-										renderer={({ hours, minutes, seconds }) => `${hours}:${minutes}:${seconds}`}
 									/>
 								</Button>
 							</TooltipTrigger>
