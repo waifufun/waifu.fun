@@ -22,14 +22,14 @@ type Inputs = {
 	attachment: File | undefined;
 };
 
+const tierTokenRequirements: Record<TChatRooms, string> = {
+	"1000": "1,000+",
+	"100000": "100,000+",
+	"1000000": "1,000,000+",
+};
+
 export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
-
-	const tierTokenRequirements: Record<TChatRooms, string> = {
-		"1000": "1,000+",
-		"100000": "100,000+",
-		"1000000": "1,000,000+",
-	};
 
 	return (
 		<div className="bg-black border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col h-[550px]">
@@ -92,7 +92,9 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 		address: userAddress,
 	});
 
-	const hasEnoughTokens = balance && Number(balance) >= Number(tierRequirement.replace(/,/g, ""));
+	const tierKey = Object.keys(tierTokenRequirements).find((key) => tierTokenRequirements[key] === tierRequirement);
+
+	const hasEnoughTokens = balance.data && tierKey ? Number(balance.data) >= Number(tierKey) : false;
 
 	const onSubmit: SubmitHandler<Inputs> = async (data) => {
 		const base64Image = data.attachment ? String(await fileToBase64(data.attachment)) : undefined;
@@ -262,10 +264,12 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 					</Button>
 				</form>
 
-				<p className="text-xs text-yellow-500 mt-1.5 px-1 flex items-center">
-					<Lock size={12} className="mr-1.5 text-yellow-600" />
-					You need {tierRequirement} tokens to post in this chat.
-				</p>
+				{!hasEnoughTokens && (
+					<p className="text-xs text-yellow-500 mt-1.5 px-1 flex items-center">
+						<Lock size={12} className="mr-1.5 text-yellow-600" />
+						You need {tierRequirement} tokens to post in this chat.
+					</p>
+				)}
 			</div>
 		</>
 	);
