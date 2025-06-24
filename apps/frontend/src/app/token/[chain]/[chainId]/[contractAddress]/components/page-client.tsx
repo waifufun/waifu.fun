@@ -92,7 +92,7 @@ export default function PageClient({
 							icon: Clock,
 						},
 					].map((item) => (
-						<div className="flex flex-col items-end" key={item.title}>
+						<div className="flex flex-col items-end w-24" key={item.title}>
 							<div className="text-autofun-text-secondary uppercase text-xs">{item.title}</div>
 							<div className="inline-flex items-center gap-1 text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
 								{item?.icon ? <item.icon className="size-3 text-autofun-background-action-highlight/70" /> : null}
