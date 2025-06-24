@@ -3,6 +3,7 @@ import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
+import { getOrCreateUser } from "../utils/user";
 
 export default async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/generateNonce", async (request) => {
@@ -38,6 +39,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
+				getOrCreateUser({ address, chain: "solana" });
+
 				const solanaAddress = address as `0x${string}`;
 				const solPayload = {
 					address: solanaAddress,
@@ -67,6 +70,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				if (!isValid) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
+
+				getOrCreateUser({ address, chain: "evm" });
 
 				const evmAddress = address as `0x${string}`;
 				const evmPayload = {

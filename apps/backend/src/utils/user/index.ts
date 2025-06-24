@@ -1,12 +1,12 @@
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike, TChain } from "@autofun/types";
 import DB from "@autofun/database";
 import { getChecksummedAddress } from "@autofun/utils";
 import logger from "@autofun/logger";
 
-export async function getOrCreateUser({ address }: { address: AddressLike }) {
+export async function getOrCreateUser({ address, chain }: { address: AddressLike, chain: TChain }) {
 	try {
         
-		let user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
+		let user = await DB.User.findOne({ address: getChecksummedAddress(address, chain) }).lean();
 
 		if (user) {
 			console.log("User found:", user._id);

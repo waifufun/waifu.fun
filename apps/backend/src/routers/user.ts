@@ -4,14 +4,14 @@ import DB from "@autofun/database";
 import { uploadBase64Image } from "@autofun/s3-uploader";
 
 import { getChecksummedAddress } from "@autofun/utils";
-import { getOrCreateUser } from "../utils/user";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{ Body: { address: AddressLike } }>("/get-user", async (request, reply) => {
 		const { address } = request.body;
 
 		if (!address) throw new Error("No address was passed");
-		const user = getOrCreateUser({address})
+		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
+		if (!user) throw new Error("User not found");
 		return user;
 	});
 
