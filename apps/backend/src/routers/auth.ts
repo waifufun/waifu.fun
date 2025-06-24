@@ -34,11 +34,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 		switch (chain) {
 			case "solana": {
-				getOrCreateUser({ address, chain: "solana" });
 				isValid = await VerifySolanaSignature(nonce, signature, address);
 				if (!isValid) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
+				getOrCreateUser({ address, chain: "solana" });
 
 				const solanaAddress = address as `0x${string}`;
 				const solPayload = {
@@ -69,7 +69,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				if (!isValid) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
-
 				getOrCreateUser({ address, chain: "evm" });
 
 				const evmAddress = address as `0x${string}`;
