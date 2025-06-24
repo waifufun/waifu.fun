@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import UseTokenMedia from "../hook/UseTokenMedia";
 import { useMutation } from "@tanstack/react-query";
-import { generateMedia, generateMetadata, generateRemoteMetadata } from "@/lib/api";
+import { generateMedia, generateMetadata, generateRemoteMetadata, generateMediaForToken } from "@/lib/api";
 import {
 	useForm,
 	type UseFormHandleSubmit,
@@ -35,7 +35,8 @@ type PromptContextType = {
 	generateAddress: (suffix: string) => void;
 	isGeneratingAddress: boolean;
 	isGeneratingMedia: boolean;
-	generateToken: (params: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => void;
+	generateToken: (params: { mediaType: MediaType; prompt?: string }) => void;
+	generateMediaToken: (params: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => void;
 	changeMainImage: (index: number) => void;
 	changeMainMedia: (index: number, type: MediaType) => void;
 	previousImages: string[];
@@ -161,6 +162,40 @@ const PromptProviderContent = ({
 	const generateMediaMutation = useMutation({
 		mutationKey: ["generateMedia"],
 		mutationFn: generateMedia,
+		onSuccess: (data, variables) => {
+			if (data?.mediaUrl) {
+				const mediaType = (variables as { type?: MediaType })?.type || "image";
+
+				let actualMediaUrl: string;
+				if (typeof data.mediaUrl === "string") {
+					// Image
+					actualMediaUrl = data.mediaUrl;
+				} else if (typeof data.mediaUrl === "object" && data.mediaUrl.url) {
+					// Video/Audio
+					actualMediaUrl = data.mediaUrl.url;
+				} else {
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
+				addMedia(actualMediaUrl, mediaType);
+				setIsGeneratingMedia(false);
+			} else {
+				toast.error("Error generating media: No media URL returned");
+				setIsGeneratingMedia(false);
+			}
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: Explicit any is used here for error handling
+		onError: (error: any) => {
+			toast.error(error?.message || "Error generating media");
+			setIsGeneratingMedia(false);
+		},
+	});
+
+	const generateMediaTokenMutation = useMutation({
+		mutationKey: ["generateMediaForToken"],
+		mutationFn: generateMediaForToken,
 		onSuccess: (data, variables) => {
 			if (data?.mediaUrl) {
 				const mediaType = (variables as { type?: MediaType })?.type || "image";
@@ -356,6 +391,26 @@ const PromptProviderContent = ({
 		metadataMutation.mutate({ mediaType, prompt, contractAddress });
 	};
 
+	const generateMediaToken = ({
+		mediaType,
+		prompt,
+		contractAddress,
+	}: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => {
+		if (!contractAddress) {
+			toast.error("Contract address is required for token media generation");
+			return;
+		}
+		
+		setIsGeneratingMedia(true);
+		generateMediaTokenMutation.mutate({
+			prompt: prompt || "",
+			width: 512,
+			height: 512,
+			type: mediaType,
+			contractAddress,
+		});
+	};
+
 	const getTokenData = async (manual = false): Promise<TokenMetadata> => {
 		const name = watch("name") || "Untitled Token";
 		const symbol = watch("symbol") || "";
@@ -425,6 +480,7 @@ const PromptProviderContent = ({
 		isGeneratingAddress: isGeneratingAddressState,
 		isGeneratingMedia,
 		generateToken,
+		generateMediaToken,
 		changeMainImage,
 		changeMainMedia,
 		previousImages,

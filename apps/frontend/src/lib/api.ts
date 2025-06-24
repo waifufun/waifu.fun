@@ -152,6 +152,27 @@ export const generateMedia = async ({
 	width,
 	height,
 	type,
+}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
+	console.log("Generating media with params:", {
+		prompt,
+		width,
+		height,
+		type,
+	});
+
+	return await fetcher("/generation/generate", "POST", {
+		prompt,
+		width,
+		height,
+		type,
+	});
+};
+
+export const generateMediaForToken = async ({
+	prompt,
+	width,
+	height,
+	type,
 	contractAddress,
 }: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
 	console.log("Generating media with params:", {
@@ -162,7 +183,7 @@ export const generateMedia = async ({
 		contractAddress,
 	});
 
-	return await fetcher("/generation/generate", "POST", {
+	return await fetcher("/generation/generate-media", "POST", {
 		prompt,
 		width,
 		height,

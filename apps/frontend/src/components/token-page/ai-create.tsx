@@ -20,7 +20,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		previousImages,
 		previousVideos,
 		previousAudios,
-		generateToken,
+		generateMediaToken,
 		registerForm,
 		watchValue,
 		isGeneratingMedia,
@@ -63,7 +63,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 		}
 
 		const promptValue = prompt?.toString() || "";
-		await generateToken({
+		await generateMediaToken({
 			mediaType: mediaType,
 			prompt: promptValue,
 			contractAddress: token.contractAddress,
