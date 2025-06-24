@@ -5,8 +5,7 @@ import logger from "@autofun/logger";
 
 export async function getOrCreateUser({ address }: { address: AddressLike }) {
 	try {
-		logger.info("Checking for existing user with address:", address);
-
+        
 		let user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
 		if (user) {
@@ -16,7 +15,7 @@ export async function getOrCreateUser({ address }: { address: AddressLike }) {
 
 		logger.warn("No user found. Creating new user...");
 
-        
+
 		user = await DB.User.create({
 			address,
 			suspended: false,
