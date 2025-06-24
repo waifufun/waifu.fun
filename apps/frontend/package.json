@@ -57,6 +57,7 @@
 		"motion": "^12.18.1",
 		"next": "15.3.2",
 		"react": "^19.0.0",
+		"react-countdown": "^2.3.6",
 		"react-dom": "^19.0.0",
 		"react-hook-form": "^7.56.4",
 		"sha512": "link:@noble/hashes/sha512",

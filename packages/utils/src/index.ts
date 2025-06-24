@@ -328,7 +328,9 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		if (tokenBondingCurveInfo?.delayForTrade && tokenBondingCurveInfo?.createdTime) {
 			const delayForTrade = tokenBondingCurveInfo?.delayForTrade;
 			const createdTime = tokenBondingCurveInfo?.createdTime;
-			const tradingStartsAt = moment(Number(createdTime) * 1000).add(delayForTrade, "milliseconds").toDate();
+			const tradingStartsAt = moment(Number(createdTime) * 1000)
+				.add(Number(delayForTrade) * 1000, "milliseconds")
+				.toDate();
 			indexedToken.tradingStartsAt = tradingStartsAt;
 			setValues.tradingStartsAt = tradingStartsAt;
 		}

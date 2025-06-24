@@ -19,6 +19,9 @@ import { formatUnits } from "viem";
 import useAddress from "@/hooks/use-address";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import moment from "moment";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import Countdown from "react-countdown";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
@@ -125,6 +128,8 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const insufficientBalance = !hasSufficientBalance();
+
+	const tradingStarted = token?.tradingStartsAt ? moment(token?.tradingStartsAt).isBefore(moment()) : true;
 
 	return (
 		<div className="w-full h-full overflow-hidden">
@@ -264,25 +269,53 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<AlertCircle className="text-autofun-text-error" />
 						Insufficient balance to perform trade.
 					</div>
-					<Button
-						disabled={address ? swapMutation?.isPending || insufficientBalance || !value || value === "0" : false}
-						onClick={() => {
-							if (!address) {
-								modal.setVisible(true);
-							} else {
-								swapMutation?.mutate();
-							}
-						}}
-						className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
-					>
-						{!address
-							? "Connect"
-							: swapMutation?.isPending
-								? "Loading..."
-								: insufficientBalance
-									? "Insufficient balance"
-									: "Swap"}
-					</Button>
+					{tradingStarted ? (
+						<Button
+							disabled={address ? swapMutation?.isPending || insufficientBalance || !value || value === "0" : false}
+							onClick={() => {
+								if (!address) {
+									modal.setVisible(true);
+								} else {
+									swapMutation?.mutate();
+								}
+							}}
+							className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+						>
+							{!address
+								? "Connect"
+								: swapMutation?.isPending
+									? "Loading..."
+									: insufficientBalance
+										? "Insufficient balance"
+										: "Swap"}
+						</Button>
+					) : (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									disabled
+									className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+								>
+									<Countdown
+										date={moment(token?.tradingStartsAt).toDate()}
+										intervalDelay={0}
+										zeroPadTime={2}
+										onComplete={() => {
+											console.log("Trading has started");
+											setTimeout(() => {
+												queryClient.invalidateQueries({
+													queryKey: ["token", token.chain, token.chainId, token.contractAddress],
+												});
+											}, 1000);
+										}}
+										precision={3}
+										renderer={({ hours, minutes, seconds }) => `${hours}:${minutes}:${seconds}`}
+									/>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Trading starts: {moment(token?.tradingStartsAt)?.format("LLL")}</TooltipContent>
+						</Tooltip>
+					)}
 				</div>
 			</div>
 		</div>
