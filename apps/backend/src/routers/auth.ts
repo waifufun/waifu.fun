@@ -69,6 +69,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				if (!isValid) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
+				
 				getOrCreateUser({ address, chain: "evm" });
 
 				const evmAddress = address as `0x${string}`;
