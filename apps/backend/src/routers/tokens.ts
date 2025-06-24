@@ -719,8 +719,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				hidden: false,
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),
-				createdAt: createdAt,
-				updatedAt: createdAt,
 				isToken2022: false,
 			};
 
@@ -759,8 +757,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				creator: (metadata?.creator as SolanaAddressLike) || undefined,
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
-				createdAt: new Date(),
-				updatedAt: new Date(),
 				isToken2022: metadata?.isToken2022 || false,
 			};
 

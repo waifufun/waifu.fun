@@ -6,7 +6,6 @@ import logger from "@autofun/logger";
 import type { IToken, IMigration, AddressLike, TURLLike } from "@autofun/types";
 import { SolanaNetworkIds } from "@autofun/types";
 import Mongoose from "mongoose";
-
 export class DataSync {
 	private pgPool: Pool;
 	private pgDb: ReturnType<typeof drizzle>;
@@ -69,8 +68,6 @@ export class DataSync {
 			hidden: Boolean(pgToken.hidden),
 			featured: Boolean(pgToken.featured),
 			creator: (pgToken.creator as AddressLike) || ("system" as AddressLike),
-			createdAt: pgToken.createdAt ? new Date(pgToken?.createdAt) : new Date(),
-			updatedAt: pgToken.lastUpdated ? new Date(pgToken?.lastUpdated) : new Date(),
 			isToken2022: Boolean(pgToken.is_token_2022),
 			status: pgToken.status || "active",
 			pool: pgToken.imported ? "raydium" : "unknown",
@@ -122,8 +119,14 @@ export class DataSync {
 										chain: transformedToken.chain,
 										chainId: transformedToken.chainId,
 									},
-									{ $set: transformedToken },
-									{ upsert: true, session, timestamps: false },
+									{
+										$set: transformedToken,
+										$setOnInsert: {
+											createdAt: pgToken.createdAt ? new Date(pgToken.createdAt) : new Date(),
+											updatedAt: pgToken.lastUpdated ? new Date(pgToken.lastUpdated) : new Date(),
+										},
+									},
+									{ upsert: true, session, timestamps: false, strict: false },
 								);
 
 								if (pgToken.marketId) {
