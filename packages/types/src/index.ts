@@ -116,6 +116,7 @@ export interface IUser {
 	verified?: boolean;
 	twitter?: string;
 	points?: number;
+	weekly_points?: number;
 }
 
 export type TChatRooms = "1000" | "100000" | "1000000";

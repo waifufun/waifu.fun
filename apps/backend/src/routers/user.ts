@@ -46,4 +46,102 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 		return { success: true };
 	});
+
+	// This route returns the weekly-points, and the permanent points based on a given wallet address
+	fastify.post<{
+		Body: {
+		  address: string;
+		};
+		Reply: {
+		  success: boolean;
+		  totalPoints?: number;
+		  weeklyPoints?: number;
+		  error?: string;
+		};
+	  }>("/get-address-points", async (request, reply) => {
+		const { address } = request.body;
+		if (!address) {
+			throw new Error("No address was passed")
+		}
+	  
+		try {
+		  const user = await DB.User.findOne({ address });
+	  
+		  if (!user) {
+			return reply.send({ success: false, error: "User not found" });
+		  }
+	  
+		  // Default fallback time (epoch or from DB)
+		  const lastUpdate = user.lastWeeklyUpdate || new Date(0);
+		  const now = new Date();
+	  
+		  const oneWeekLater = new Date(lastUpdate);
+		  oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+	  
+		  const result = await DB.Event.aggregate([
+			{
+			  $match: {
+				eventType: "swap",
+				user: address,
+			  },
+			},
+			{
+			  $project: {
+				swapAmount: { $toDouble: "$swapAmount" },
+				blockTime: 1,
+			  },
+			},
+			{
+			  $addFields: {
+				points: { $multiply: ["$swapAmount", 0.01] },
+				eventTimeMs: { $multiply: ["$blockTime", 1000] },
+			  },
+			},
+			{
+			  $group: {
+				_id: null,
+				totalPoints: { $sum: "$points" },
+				weeklyPoints: {
+				  $sum: {
+					$cond: [
+					  { $gte: ["$eventTimeMs", lastUpdate.getTime()] },
+					  "$points",
+					  0,
+					],
+				  },
+				},
+			  },
+			},
+		  ]);
+	  
+		  const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
+	  
+		  // ----- Weekly rollover logic -----
+		  if (now >= oneWeekLater) {
+			user.points += user.weekly_points;
+			user.weekly_points = 0;
+			user.lastWeeklyUpdate = now;
+			await user.save();
+		  }
+	  
+		  // ----- Cap weekly points -----
+		  const weeklyCap = 1_000_000 * 0.02;
+		  const capped = Math.min(aggregation.weeklyPoints, weeklyCap);
+	  
+		  if (user.weekly_points !== capped) {
+			user.weekly_points = capped;
+			await user.save();
+		  }
+	  
+		  return reply.send({
+			success: true,
+			totalPoints: user.points,
+			weeklyPoints: user.weekly_points,
+		  });
+		} catch (err) {
+		  console.error(err);
+		  return reply.send({ success: false, error: "Internal server error" });
+		}
+	  });
+	  
 }
