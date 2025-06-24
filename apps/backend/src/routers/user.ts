@@ -11,8 +11,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		const { address } = request.body;
 
 		if (!address) throw new Error("No address was passed");
-		// const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
-		// if (!user) throw new Error("User not found");
 		const user = getOrCreateUser({address})
 		return user;
 	});
