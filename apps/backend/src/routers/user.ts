@@ -71,6 +71,10 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				throw new Error("User not found");
 			}
 
+			if (user.points === 0) {
+				user.points = 50;
+			}
+
 			const now = new Date();
 
 			// Get last Monday 00:00 UTC
@@ -131,7 +135,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
 
-
 			if (now >= nextMonday) {
 				user.points += user.weekly_points;
 				user.weekly_points = 0;
@@ -153,7 +156,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			});
 		} catch (err) {
 			console.error(err);
-			return reply.send({ success: false, error: "Internal server error" });
+			throw new Error("Internal server error");
 		}
 	});
 }
