@@ -131,21 +131,20 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
 
-			// Rollover if it's a new week -----
+
 			if (now >= nextMonday) {
 				user.points += user.weekly_points;
 				user.weekly_points = 0;
-				await user.save();
 			}
 
-			// ----- Cap weekly points -----
+			// cap points
 			const weeklyCap = 1_000_000 * 0.02;
-			const capped = Math.min(aggregation.weeklyPoints, weeklyCap);
+			const cappedWeeklyPoints = Math.min(aggregation.weeklyPoints, weeklyCap);
 
-			if (user.weekly_points !== capped) {
-				user.weekly_points = capped;
-				await user.save();
-			}
+			user.points = aggregation.totalPoints;
+			user.weekly_points = cappedWeeklyPoints;
+
+			await user.save();
 
 			return reply.send({
 				success: true,
