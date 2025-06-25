@@ -5,6 +5,8 @@ import { uploadBase64Image } from "@autofun/s3-uploader";
 
 import { getChecksummedAddress } from "@autofun/utils";
 import { calculateStreak } from "../utils/points";
+import logger from "@autofun/logger";
+import redis from "@autofun/redis";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
@@ -63,6 +65,14 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
+			const cacheKey = `address-points:${address}`;
+
+			const cache = await redis.get(cacheKey);
+			if (cache) {
+				logger.info("Returning cached points data");
+				return JSON.parse(cache);
+			}
+
 			const now = new Date();
 			const day = now.getUTCDay(); // 0 = Sunday
 			const diffToMonday = (day === 0 ? -6 : 1) - day;
@@ -176,6 +186,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const weeklyPointsUncapped = rawWeeklyPoints * multiplier;
 
 			const combinedWeeklyPoints = Math.min(weeklyPointsUncapped + streakPoints, WEEKLY_POINTS_CAP);
+
+			await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints: combinedWeeklyPoints }));
 
 			return reply.send({
 				success: true,
