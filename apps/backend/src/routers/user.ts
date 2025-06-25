@@ -116,7 +116,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const multiplier = globalWeeklyPoints > 0 ? MAXIMUM_WEEKLY_POINTS_AMOUNT / globalWeeklyPoints : 0;
 
 			// 2. User total and weekly points
-			const [userResults] = await DB.Event.aggregate([
+			const [userData] = await DB.Event.aggregate([
 				{
 					$match: {
 						eventType: "swap",
@@ -146,42 +146,33 @@ export default async function userRoutes(fastify: FastifyInstance) {
 							{ $match: { createdAt: { $gte: currentWeekStart } } },
 							{ $group: { _id: null, weeklyPoints: { $sum: "$points" } } },
 						],
+						tradedDays: [
+							{ $match: { createdAt: { $gte: currentWeekStart } } },
+							{
+								$project: {
+									dayString: {
+										$dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+									},
+								},
+							},
+							{
+								$group: {
+									_id: "$dayString",
+								},
+							},
+							{
+								$sort: { _id: 1 },
+							},
+						],
 					},
 				},
 			]);
 
-			// 2. Calculate streak points based on trading days in current week
-			// Query distinct days user traded in current week
-			const tradedDaysResult = await DB.Event.aggregate([
-				{
-					$match: {
-						eventType: "swap",
-						user: address,
-						createdAt: { $gte: currentWeekStart },
-					},
-				},
-				{
-					$project: {
-						dayString: {
-							$dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-						},
-					},
-				},
-				{
-					$group: {
-						_id: "$dayString",
-					},
-				},
-				{
-					$sort: { _id: 1 },
-				},
-			]);
-
-			const tradedDays = tradedDaysResult.map((d) => d._id);
+			const tradedDays = userData.tradedDays.map((d) => d._id);
 			const { streakPoints } = calculateStreak(tradedDays);
 
-			const totalPoints = userResults?.totalPoints?.[0]?.totalPoints || 0;
-			const rawWeeklyPoints = userResults?.weeklyPoints?.[0]?.weeklyPoints || 0;
+			const totalPoints = userData?.totalPoints?.[0]?.totalPoints || 0;
+			const rawWeeklyPoints = userData?.weeklyPoints?.[0]?.weeklyPoints || 0;
 
 			const weeklyPointsUncapped = rawWeeklyPoints * multiplier;
 
