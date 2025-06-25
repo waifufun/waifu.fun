@@ -63,20 +63,29 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		if (!address) {
 			throw new Error("No address was passed");
 		}
-
+	
 		try {
 			const user = await DB.User.findOne({ address });
-
+	
 			if (!user) {
-				return reply.send({ success: false, error: "User not found" });
+				throw new Error("User not found")
 			}
-
-			// Default fallback time (epoch or from DB)
-			const lastUpdate = user.lastWeeklyUpdate || new Date(0);
+	
 			const now = new Date();
-
-			const oneWeekLater = new Date(lastUpdate);
-			oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+	
+			 // Get last Monday 00:00 UTC
+			const day = now.getUTCDay();
+			const daysSinceMonday = (day + 6) % 7;
+			const lastMonday = new Date(Date.UTC(
+				now.getUTCFullYear(),
+				now.getUTCMonth(),
+				now.getUTCDate() - daysSinceMonday
+			));
+	
+			// Get next Monday 00:00 UTC
+			const nextMonday = new Date(lastMonday);
+			nextMonday.setUTCDate(lastMonday.getUTCDate() + 7);
+	
 
 			const result = await DB.Event.aggregate([
 				{
@@ -103,34 +112,35 @@ export default async function userRoutes(fastify: FastifyInstance) {
 						totalPoints: { $sum: "$points" },
 						weeklyPoints: {
 							$sum: {
-								$cond: [{ $gte: ["$eventTimeMs", lastUpdate.getTime()] }, "$points", 0],
+								$cond: [
+									{ $gte: ["$eventTimeMs", lastMonday.getTime()] },
+									"$points",
+									0,
+								],
 							},
 						},
 					},
 				},
 			]);
-
+	
 			const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
-
-			console.log("result from aggragation ->", result);
-
-			// ----- Weekly rollover logic -----
-			if (now >= oneWeekLater) {
+	
+			// Rollover if it's a new week -----
+			if (now >= nextMonday) {
 				user.points += user.weekly_points;
 				user.weekly_points = 0;
-				user.lastWeeklyUpdate = now;
 				await user.save();
 			}
-
+	
 			// ----- Cap weekly points -----
 			const weeklyCap = 1_000_000 * 0.02;
 			const capped = Math.min(aggregation.weeklyPoints, weeklyCap);
-
+	
 			if (user.weekly_points !== capped) {
 				user.weekly_points = capped;
 				await user.save();
 			}
-
+	
 			return reply.send({
 				success: true,
 				totalPoints: user.points,
@@ -140,5 +150,5 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			console.error(err);
 			return reply.send({ success: false, error: "Internal server error" });
 		}
-	});
+	});	
 }
