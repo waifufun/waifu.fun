@@ -115,7 +115,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const globalWeeklyPoints = globalStats?.globalWeeklyPoints || 0;
 			const multiplier = globalWeeklyPoints > 0 ? MAXIMUM_WEEKLY_POINTS_AMOUNT / globalWeeklyPoints : 0;
 
-			// 2. User total and weekly points
+			// 2. User total and weekly points, and trading streak
 			const [userData] = await DB.Event.aggregate([
 				{
 					$match: {
@@ -171,7 +171,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const tradedDays = userData.tradedDays.map((d) => d._id);
 			const { streakPoints } = calculateStreak(tradedDays);
 
-			const totalPoints = userData?.totalPoints?.[0]?.totalPoints || 0;
+			// + 50 represents the points you get on wallet connect
+			const totalPoints = userData?.totalPoints?.[0]?.totalPoints || 0 + 50;
+			
 			const rawWeeklyPoints = userData?.weeklyPoints?.[0]?.weeklyPoints || 0;
 
 			const weeklyPointsUncapped = rawWeeklyPoints * multiplier;
