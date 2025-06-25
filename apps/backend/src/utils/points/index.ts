@@ -1,0 +1,22 @@
+export function calculateStreak(dates: string[]): { streakPoints: number } {
+    const pointsPerDay = [10, 20, 30, 40, 50, 60, 70];
+    let streak = 1;
+    let maxStreak = 1;
+    for (let i = 1; i < dates.length; i++) {
+      const prev = new Date(dates[i - 1]);
+      const curr = new Date(dates[i]);
+      const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+  
+      if (diffDays === 1) {
+        streak++;
+        maxStreak = Math.max(maxStreak, streak);
+      } else {
+        streak = 1;
+      }
+    }
+  
+    const limitedStreak = Math.min(maxStreak, 7);
+    const streakPoints = pointsPerDay.slice(0, limitedStreak).reduce((a, b) => a + b, 0);
+    return { streakPoints };
+  }
+  

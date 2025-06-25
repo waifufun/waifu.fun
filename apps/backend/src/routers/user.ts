@@ -4,6 +4,7 @@ import DB from "@autofun/database";
 import { uploadBase64Image } from "@autofun/s3-uploader";
 
 import { getChecksummedAddress } from "@autofun/utils";
+import { calculateStreak } from "../utils/points";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
@@ -133,6 +134,39 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				},
 			]);
 
+			const swapStreak = await DB.Event.aggregate([
+				{
+					$match: {
+						eventType: "swap",
+						creator: address,
+						blockTime: {
+							$gte: Math.floor(lastMonday.getTime() / 1000),
+							$lt: Math.floor(nextMonday.getTime() / 1000),
+						},
+					},
+				},
+				{
+					$project: {
+						date: {
+							$dateToString: {
+								format: "%Y-%m-%d",
+								date: { $toDate: { $multiply: ["$blockTime", 1000] } },
+							},
+						},
+					},
+				},
+				{
+					$group: {
+						_id: "$date",
+					},
+				},
+				{
+					$sort: { _id: 1 },
+				},
+			]);
+			const streakDates = swapStreak.map((d) => d._id);
+			const { streakPoints } = calculateStreak(streakDates);
+
 			const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
 
 			if (now >= nextMonday) {
@@ -142,7 +176,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			// cap points
 			const weeklyCap = 1_000_000 * 0.02;
-			const cappedWeeklyPoints = Math.min(aggregation.weeklyPoints, weeklyCap);
+			const cappedWeeklyPoints = Math.min(aggregation.weeklyPoints + streakPoints, weeklyCap);
 
 			user.points = aggregation.totalPoints;
 			user.weekly_points = cappedWeeklyPoints;
