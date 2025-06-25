@@ -27,6 +27,7 @@ import useAddress from "@/hooks/use-address";
 import GridListSelector from "./grid-list-selector";
 import FilterSelector from "./filter-selector";
 import SideBarFilters from "./sidebar-filters";
+import { Button } from "./ui/button";
 
 const viewControlsNavigation = {
 	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
@@ -86,6 +87,17 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 								<span className="font-medium text-green-400">SOL</span>
 							</div>
 						) : null}
+					</div>
+				)}
+				{!isCollapsed && (
+					<div className="flex items-center justify-center gap-2.5">
+						<div className="gap-2.5 w-full">
+							<Link href="/create" className="w-full">
+								<Button className="h-10 px-4 py-5 w-full" variant="outline">
+									Create Token
+								</Button>
+							</Link>
+						</div>
 					</div>
 				)}
 				<ConnectWallet />
