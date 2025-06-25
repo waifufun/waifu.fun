@@ -63,29 +63,26 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		if (!address) {
 			throw new Error("No address was passed");
 		}
-	
+
 		try {
 			const user = await DB.User.findOne({ address });
-	
+
 			if (!user) {
-				throw new Error("User not found")
+				throw new Error("User not found");
 			}
-	
+
 			const now = new Date();
-	
-			 // Get last Monday 00:00 UTC
+
+			// Get last Monday 00:00 UTC
 			const day = now.getUTCDay();
 			const daysSinceMonday = (day + 6) % 7;
-			const lastMonday = new Date(Date.UTC(
-				now.getUTCFullYear(),
-				now.getUTCMonth(),
-				now.getUTCDate() - daysSinceMonday
-			));
-	
+			const lastMonday = new Date(
+				Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMonday),
+			);
+
 			// Get next Monday 00:00 UTC
 			const nextMonday = new Date(lastMonday);
 			nextMonday.setUTCDate(lastMonday.getUTCDate() + 7);
-	
 
 			const result = await DB.Event.aggregate([
 				{
@@ -96,14 +93,27 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				},
 				{
 					$project: {
-						swapAmount: { $toDouble: "$swapAmount" },
+						swapAmount: 1,
+						direction: 1,
 						blockTime: 1,
 					},
 				},
 				{
 					$addFields: {
-						points: { $multiply: ["$swapAmount", 0.01] },
+						swapAmountDouble: { $toDouble: "$swapAmount" },
 						eventTimeMs: { $multiply: ["$blockTime", 1000] },
+					},
+				},
+				{
+					$addFields: {
+						points: {
+							$multiply: [
+								"$swapAmountDouble",
+								{
+									$cond: [{ $eq: ["$direction", 1] }, 0.1, 0.6],
+								},
+							],
+						},
 					},
 				},
 				{
@@ -112,35 +122,31 @@ export default async function userRoutes(fastify: FastifyInstance) {
 						totalPoints: { $sum: "$points" },
 						weeklyPoints: {
 							$sum: {
-								$cond: [
-									{ $gte: ["$eventTimeMs", lastMonday.getTime()] },
-									"$points",
-									0,
-								],
+								$cond: [{ $gte: ["$eventTimeMs", lastMonday.getTime()] }, "$points", 0],
 							},
 						},
 					},
 				},
 			]);
-	
+
 			const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
-	
+
 			// Rollover if it's a new week -----
 			if (now >= nextMonday) {
 				user.points += user.weekly_points;
 				user.weekly_points = 0;
 				await user.save();
 			}
-	
+
 			// ----- Cap weekly points -----
 			const weeklyCap = 1_000_000 * 0.02;
 			const capped = Math.min(aggregation.weeklyPoints, weeklyCap);
-	
+
 			if (user.weekly_points !== capped) {
 				user.weekly_points = capped;
 				await user.save();
 			}
-	
+
 			return reply.send({
 				success: true,
 				totalPoints: user.points,
@@ -150,5 +156,5 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			console.error(err);
 			return reply.send({ success: false, error: "Internal server error" });
 		}
-	});	
+	});
 }
