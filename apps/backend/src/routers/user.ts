@@ -196,7 +196,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			});
 		} catch (err) {
 			console.error(err);
-			return reply.status(500).send({ success: false, error: "Internal server error" });
+			return reply.code(500).send({ success: false, error: "Internal server error" });
 		}
 	});
 }
