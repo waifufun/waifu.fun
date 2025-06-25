@@ -132,6 +132,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 
 	const isTooHighBuyAmount = () => {
 		if (!value || value === "0") return false;
+		if (!maxBuyAmount) return false;
 		if (mode === "buy") {
 			return Number(value) > Number(maxBuyAmount);
 		}
