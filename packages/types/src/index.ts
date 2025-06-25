@@ -99,6 +99,8 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	lastClaimedAt?: Date;
 	maxBuyAmount?: number;
 	delayForTrade?: number;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export interface ITokenSocials {
