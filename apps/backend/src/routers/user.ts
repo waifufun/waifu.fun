@@ -48,11 +48,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		return { success: true };
 	});
 
-	// This route returns the weekly-points, and the permanent points based on a given wallet address
 	fastify.post<{
-		Body: {
-			address: string;
-		};
+		Body: { address: string };
 		Reply: {
 			success: boolean;
 			totalPoints?: number;
@@ -66,56 +63,33 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
-			const user = await DB.User.findOne({ address });
-
-			if (!user) {
-				throw new Error("User not found");
-			}
-
-			if (user.points === 0) {
-				user.points = 50;
-			}
-
 			const now = new Date();
-
-			// Get last Monday 00:00 UTC
-			const day = now.getUTCDay();
-			const daysSinceMonday = (day + 6) % 7;
-			const lastMonday = new Date(
-				Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMonday),
+			const day = now.getUTCDay(); // 0 = Sunday
+			const diffToMonday = (day === 0 ? -6 : 1) - day;
+			const currentWeekStart = new Date(
+				Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday, 0, 0, 0, 0),
 			);
 
-			// Get next Monday 00:00 UTC
-			const nextMonday = new Date(lastMonday);
-			nextMonday.setUTCDate(lastMonday.getUTCDate() + 7);
+			const MAXIMUM_WEEKLY_POINTS_AMOUNT = 1_000_000;
+			const WEEKLY_POINTS_CAP = MAXIMUM_WEEKLY_POINTS_AMOUNT * 0.02;
 
-			const result = await DB.Event.aggregate([
+			// 1. Global weekly points
+			const [globalStats] = await DB.Event.aggregate([
 				{
 					$match: {
 						eventType: "swap",
-						creator: address,
-					},
-				},
-				{
-					$project: {
-						swapAmount: 1,
-						direction: 1,
-					},
-				},
-				{
-					$addFields: {
-						swapAmountDouble: { $toDouble: "$swapAmount" },
-						eventTimeMs: { $toLong: "$createdAt" },
+						swapAmount: { $exists: true },
+						direction: { $in: [0, 1] },
+						createdAt: { $gte: currentWeekStart },
 					},
 				},
 				{
 					$addFields: {
 						points: {
-							$multiply: [
-								"$swapAmountDouble",
-								{
-									$cond: [{ $eq: ["$direction", 1] }, 0.1, 0.6],
-								},
+							$cond: [
+								{ $eq: ["$direction", 0] },
+								{ $multiply: [{ $toDouble: "$swapAmount" }, 0.6] },
+								{ $multiply: [{ $toDouble: "$swapAmount" }, 0.1] },
 							],
 						},
 					},
@@ -123,73 +97,94 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				{
 					$group: {
 						_id: null,
-						totalPoints: { $sum: "$points" },
-						weeklyPoints: {
-							$sum: {
-								$cond: [{ $gte: ["$eventTimeMs", lastMonday.getTime()] }, "$points", 0],
-							},
-						},
+						globalWeeklyPoints: { $sum: "$points" },
 					},
 				},
 			]);
 
-			const swapStreak = await DB.Event.aggregate([
+			const globalWeeklyPoints = globalStats?.globalWeeklyPoints || 0;
+			const multiplier = globalWeeklyPoints > 0 ? MAXIMUM_WEEKLY_POINTS_AMOUNT / globalWeeklyPoints : 0;
+
+			// 2. User total and weekly points
+			const [userResults] = await DB.Event.aggregate([
 				{
 					$match: {
 						eventType: "swap",
-						creator: address,
-						createdAt: {
-							$gte: lastMonday,
-							$lt: nextMonday,
+						user: address,
+						swapAmount: { $exists: true },
+						direction: { $in: [0, 1] },
+					},
+				},
+				{
+					$addFields: {
+						points: {
+							$cond: [
+								{ $eq: ["$direction", 0] },
+								{ $multiply: [{ $toDouble: "$swapAmount" }, 0.6] },
+								{ $multiply: [{ $toDouble: "$swapAmount" }, 0.1] },
+							],
 						},
 					},
 				},
 				{
+					$facet: {
+						totalPoints: [
+							{ $match: { createdAt: { $lt: currentWeekStart } } },
+							{ $group: { _id: null, totalPoints: { $sum: "$points" } } },
+						],
+						weeklyPoints: [
+							{ $match: { createdAt: { $gte: currentWeekStart } } },
+							{ $group: { _id: null, weeklyPoints: { $sum: "$points" } } },
+						],
+					},
+				},
+			]);
+
+			// 2. Calculate streak points based on trading days in current week
+			// Query distinct days user traded in current week
+			const tradedDaysResult = await DB.Event.aggregate([
+				{
+					$match: {
+						eventType: "swap",
+						user: address,
+						createdAt: { $gte: currentWeekStart },
+					},
+				},
+				{
 					$project: {
-						date: {
-							$dateToString: {
-								format: "%Y-%m-%d",
-								date: "$createdAt",
-							},
+						dayString: {
+							$dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
 						},
 					},
 				},
 				{
 					$group: {
-						_id: "$date",
+						_id: "$dayString",
 					},
 				},
 				{
 					$sort: { _id: 1 },
 				},
 			]);
-			const streakDates = swapStreak.map((d) => d._id);
-			const { streakPoints } = calculateStreak(streakDates);
 
-			const aggregation = result[0] || { totalPoints: 0, weeklyPoints: 0 };
+			const tradedDays = tradedDaysResult.map((d) => d._id);
+			const { streakPoints } = calculateStreak(tradedDays);
 
-			if (now >= nextMonday) {
-				user.points += user.weekly_points;
-				user.weekly_points = 0;
-			}
+			const totalPoints = userResults?.totalPoints?.[0]?.totalPoints || 0;
+			const rawWeeklyPoints = userResults?.weeklyPoints?.[0]?.weeklyPoints || 0;
 
-			// cap points
-			const weeklyCap = 1_000_000 * 0.02;
-			const cappedWeeklyPoints = Math.min(aggregation.weeklyPoints + streakPoints, weeklyCap);
+			const weeklyPointsUncapped = rawWeeklyPoints * multiplier;
 
-			user.points = aggregation.totalPoints;
-			user.weekly_points = cappedWeeklyPoints;
-
-			await user.save();
+			const combinedWeeklyPoints = Math.min(weeklyPointsUncapped + streakPoints, WEEKLY_POINTS_CAP);
 
 			return reply.send({
 				success: true,
-				totalPoints: user.points,
-				weeklyPoints: user.weekly_points,
+				totalPoints,
+				weeklyPoints: combinedWeeklyPoints,
 			});
 		} catch (err) {
 			console.error(err);
-			throw new Error("Internal server error");
+			return reply.status(500).send({ success: false, error: "Internal server error" });
 		}
 	});
 }
