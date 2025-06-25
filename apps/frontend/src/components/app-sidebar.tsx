@@ -27,6 +27,7 @@ import useAddress from "@/hooks/use-address";
 import GridListSelector from "./grid-list-selector";
 import FilterSelector from "./filter-selector";
 import SideBarFilters from "./sidebar-filters";
+import PointCounter from "./profile-page/point-counter";
 
 const viewControlsNavigation = {
 	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
@@ -78,6 +79,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				)}
 			</SidebarContent>
 			<SidebarFooter>
+				<PointCounter address={address} />
 				{!isCollapsed && (
 					<div className="space-y-1 p-3 text-xs">
 						{balance?.data ? (

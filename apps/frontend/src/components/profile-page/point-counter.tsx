@@ -1,8 +1,33 @@
-export default function PointCounter({ points }: { points: number }) {
+"use client";
+
+import { getAddressPoints } from "@/lib/api";
+import type { AddressLike } from "@autofun/types";
+import { useQuery } from "@tanstack/react-query";
+
+export default function PointsCounter({ address }: { address: AddressLike }) {
+	const query = useQuery({
+		queryKey: ["address-points", address],
+		queryFn: async () => {
+			if (!address) return null;
+			const points = await getAddressPoints({ address });
+			return points;
+		},
+		enabled: !!address,
+	});
+
+	const weeklyPoints = query?.data?.weeklyPoints || 0;
+	const points = query?.data?.totalPoints || 0;
+
 	return (
-		<div className="w-[768px] h-[198px] bg-[#0F0F0F] border rounded-md border-[#262626] flex items-center justify-center text-xl">
-			<h1 className="text-white text-base font-semibold">Total Points</h1>
-			<span className="ml-2 text-base text-autofun-background-action-highlight">{points}</span>
+		<div className="flex flex-col space-y-1 px-3 text-xs w-full">
+			<div className="flex justify-between w-full text-white">
+				<span className="font-semibold">{weeklyPoints}</span>
+				<span>WP</span>
+			</div>
+			<div className="flex justify-between w-full text-white">
+				<span className="text-yellow-400 font-semibold">{points}</span>
+				<span>PP</span>
+			</div>
 		</div>
 	);
 }
