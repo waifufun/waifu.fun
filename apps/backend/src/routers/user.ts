@@ -100,13 +100,12 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					$project: {
 						swapAmount: 1,
 						direction: 1,
-						blockTime: 1,
 					},
 				},
 				{
 					$addFields: {
 						swapAmountDouble: { $toDouble: "$swapAmount" },
-						eventTimeMs: { $multiply: ["$blockTime", 1000] },
+						eventTimeMs: { $toLong: "$createdAt" },
 					},
 				},
 				{
@@ -139,9 +138,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					$match: {
 						eventType: "swap",
 						creator: address,
-						blockTime: {
-							$gte: Math.floor(lastMonday.getTime() / 1000),
-							$lt: Math.floor(nextMonday.getTime() / 1000),
+						createdAt: {
+							$gte: lastMonday,
+							$lt: nextMonday,
 						},
 					},
 				},
@@ -150,7 +149,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 						date: {
 							$dateToString: {
 								format: "%Y-%m-%d",
-								date: { $toDate: { $multiply: ["$blockTime", 1000] } },
+								date: "$createdAt",
 							},
 						},
 					},
