@@ -419,7 +419,11 @@ export const PoolSelection = ({
 	);
 };
 
-export const LaunchButton = () => {
+export const LaunchButton = ({
+	idPrefix,
+}: {
+	idPrefix?: string;
+}) => {
 	const wallet = useWallet();
 	const { connection } = useConnection();
 	const {
@@ -474,7 +478,7 @@ export const LaunchButton = () => {
 
 		setLaunching(true);
 		try {
-			const tokenData = await getTokenData();
+			const tokenData = await getTokenData(idPrefix === "manual");
 			console.log("Token Data:", tokenData);
 			const tx = await createTokenTx(tokenData, { connection, wallet });
 			console.log("Transaction:", tx);

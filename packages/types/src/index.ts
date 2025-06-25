@@ -93,14 +93,14 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	featured?: boolean;
 	imported?: boolean;
 	verified?: boolean;
-	createdAt: string;
-	updatedAt: Date;
 	pool?: string;
 	isToken2022?: boolean;
 	tradingStartsAt?: Date;
 	lastClaimedAt?: Date;
 	maxBuyAmount?: number;
 	delayForTrade?: number;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export interface ITokenSocials {
