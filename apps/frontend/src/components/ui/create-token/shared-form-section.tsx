@@ -400,7 +400,16 @@ export const PoolSelection = ({
 
 	return (
 		<FormSection title="Choose Pool" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<ToggleGroup type="single" value={pool} onValueChange={setPool} className="grid grid-cols-2 gap-3">
+			<ToggleGroup
+				type="single"
+				value={pool}
+				onValueChange={(value) => {
+					if (value) {
+						setPool(value);
+					}
+				}}
+				className="grid grid-cols-2 gap-3"
+			>
 				{poolData.map((poolItem) => (
 					<ToggleGroupItem
 						key={poolItem.value}
