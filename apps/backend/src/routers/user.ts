@@ -17,50 +17,40 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		};
 		Reply: { success: boolean; imageUrl?: string; error?: string };
 	}>("/upload-profile-image/:address", async (request, reply) => {
-		// Check if user is authenticated
-		const authAddress = request.authUser?.solana;
-		console.log("authUser:", request.authUser);
-
-		if (!authAddress) {
-			reply.status(401);
-			return { success: false, error: "You must be logged in to upload a profile image" };
-		}
-
+		// TODO - Needs auth, now you can just upload any image for anyone, big security risk
 		const { image } = request.body;
 		const { address } = request.params;
 
 		if (!address) {
-			reply.status(400);
-			return { success: false, error: "Address is missing" };
+			throw new Error("Address is missing");
 		}
 
-		// Normalize addresses to checksummed format for comparison
 		const checksummedAddress = getChecksummedAddress(address, "solana");
-		const checksummedAuthAddress = getChecksummedAddress(authAddress, "solana");
 
-		// Verify that the address in params matches the authenticated user's address
-		if (checksummedAddress !== checksummedAuthAddress) {
-			reply.status(403);
-			return { success: false, error: "Address mismatch: You can only upload your own profile image" };
+		let uploadedUrl: TURLLike | false;
+
+		if (image) {
+			uploadedUrl = await uploadBase64Image(image, checksummedAddress, "avatar-images", 150, 150);
+		} else {
+			throw new Error("No image provided");
 		}
-
-		if (!image) {
-			reply.status(400);
-			return { success: false, error: "No image provided" };
-		}
-
-		// Upload the image
-		const uploadedUrl = await uploadBase64Image(image, checksummedAddress, "avatar-images", 150, 150);
 
 		if (!uploadedUrl) {
-			reply.status(500);
-			return { success: false, error: "Image upload failed" };
+			throw new Error("Image upload failed");
 		}
 
-		// Update DB
-		await DB.User.updateOne({ address: checksummedAddress }, { $set: { avatar: uploadedUrl } });
+		await DB.User.updateOne(
+			{
+				address: checksummedAddress,
+			},
+			{
+				$set: {
+					avatar: uploadedUrl,
+				},
+			},
+		);
 
-		return { success: true, imageUrl: uploadedUrl };
+		return { success: true };
 	});
 
 	fastify.post<{
