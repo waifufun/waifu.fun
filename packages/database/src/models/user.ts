@@ -11,6 +11,7 @@ const schema = new Schema<IUser, ModelType<IUser>>(
 		verified: { type: Boolean, default: false },
 		twitter: { type: String },
 		points: { type: Number, default: 0 },
+		weekly_points: { type: Number, default: 0 },
 	},
 	{ timestamps: true, versionKey: false },
 );

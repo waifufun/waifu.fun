@@ -27,6 +27,7 @@ import useAddress from "@/hooks/use-address";
 import GridListSelector from "./grid-list-selector";
 import FilterSelector from "./filter-selector";
 import SideBarFilters from "./sidebar-filters";
+import PointCounter from "./profile-page/point-counter";
 import { Button } from "./ui/button";
 
 const viewControlsNavigation = {
@@ -79,14 +80,13 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				)}
 			</SidebarContent>
 			<SidebarFooter>
+				<PointCounter address={address} />
 				{!isCollapsed && (
 					<div className="space-y-1 p-3 text-xs">
-						{balance?.data ? (
-							<div className="flex items-center justify-between text-white">
-								<span>{formatNumber(balance?.data, true, true)}</span>
-								<span className="font-medium text-green-400">SOL</span>
-							</div>
-						) : null}
+						<div className="flex items-center justify-between text-white">
+							<span>{balance?.isPending ? "Loading" : formatNumber(balance?.data || 0, true, true)}</span>
+							<span className="font-medium text-green-400">SOL</span>
+						</div>
 					</div>
 				)}
 				{!isCollapsed && (

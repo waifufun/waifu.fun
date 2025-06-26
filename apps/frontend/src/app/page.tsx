@@ -30,10 +30,9 @@ export default async function Home({
 	searchParams,
 }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
 	const currentSearchParams = await searchParams;
-	console.log("Current Search Params:", currentSearchParams);
 	const tokens = await getTokens({ searchParams: currentSearchParams });
 	const view = currentSearchParams?.view || "grid";
-	const noTokens = !tokens.length;
+	const noTokens = (tokens?.length || 0) === 0;
 	return (
 		<div className={`flex flex-col gap-4 container ${noTokens ? "h-screen justify-center items-center" : ""}`}>
 			<div className="flex flex-col items-center w-full">
