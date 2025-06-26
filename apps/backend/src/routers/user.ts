@@ -77,7 +77,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				return JSON.parse(cache);
 			}
 
-			const currentWeekStart = moment().startOf("week");
+			const currentWeekStart = moment().startOf("week").toDate();
 
 			const MAXIMUM_WEEKLY_POINTS_AMOUNT = 1_000_000;
 			const WEEKLY_POINTS_CAP = MAXIMUM_WEEKLY_POINTS_AMOUNT * 0.02;
@@ -92,7 +92,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			}
 
 			if (!globalStats) {
-				[globalStats] = await DB.Event.aggregate([
+				const data = await DB.Event.aggregate([
 					{
 						$match: {
 							eventType: "swap",
@@ -118,7 +118,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					},
 				]);
 
-				await redis.setex(cacheKey, 60, JSON.stringify(globalStats));
+				globalStats = data?.[0];
+
+				await redis.setex(cacheKeyGlobalStats, 60, JSON.stringify(globalStats));
 			}
 
 			const globalWeeklyPoints = globalStats?.globalWeeklyPoints || 0;
