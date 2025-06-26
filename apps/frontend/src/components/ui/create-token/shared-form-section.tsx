@@ -23,7 +23,7 @@ import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Controller } from "react-hook-form";
+import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import type { TChain } from "@autofun/types";
 
@@ -50,7 +50,7 @@ export const CoinInfoFields = ({
 			<div className="grid sm:grid-cols-2 gap-4">
 				<div>
 					<Label htmlFor={`${idPrefix}Name`} className={formLabelBaseClass}>
-						Name
+						Name <span className="text-red-500">*</span>
 					</Label>
 					<Input
 						type="text"
@@ -62,7 +62,7 @@ export const CoinInfoFields = ({
 				</div>
 				<div>
 					<Label htmlFor={`${idPrefix}Ticker`} className={formLabelBaseClass}>
-						Ticker
+						Ticker <span className="text-red-500">*</span>
 					</Label>
 					<div className="relative">
 						<Input
@@ -82,7 +82,7 @@ export const CoinInfoFields = ({
 			</div>
 			<div>
 				<Label htmlFor={`${idPrefix}Description`} className={formLabelBaseClass}>
-					Description
+					Description <span className="text-red-500">*</span>
 				</Label>
 				<Textarea
 					id={`${idPrefix}Description`}
@@ -207,24 +207,58 @@ export const DelayedStartSection = ({
 		control,
 		formState: { errors },
 	} = usePrompt();
-	const [mode, setMode] = useState<"preset" | "manual">("preset");
+	const [mode, setMode] = useState<"preset" | "manual" | "instant">("preset");
 	const presets = [
 		{ label: "10 Min", value: 10 * 60 },
 		{ label: "1 Hour", value: 60 * 60 },
 		{ label: "4 Hours", value: 4 * 60 * 60 },
 	];
+
+	const handleModeChange = (
+		newMode: "preset" | "manual" | "instant",
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		field: ControllerRenderProps<any, "delayForTrade">,
+	) => {
+		setMode(newMode);
+		if (newMode === "instant") {
+			field.onChange(0);
+		}
+	};
+
 	return (
 		<FormSection title="Delayed Start" collapsible={collapsible} defaultOpen={defaultOpen}>
 			<div className="flex items-center gap-4 mb-3">
-				<ToggleGroup
-					type="single"
-					value={mode}
-					onValueChange={(v) => setMode(v as "preset" | "manual")}
-					className="grid grid-cols-2 gap-2"
-				>
-					<ToggleGroupItem value="preset">Preset</ToggleGroupItem>
-					<ToggleGroupItem value="manual">Manual</ToggleGroupItem>
-				</ToggleGroup>
+				<Controller
+					name="delayForTrade"
+					control={control}
+					render={({ field }) => (
+						<ToggleGroup
+							type="single"
+							value={mode}
+							onValueChange={(v) => handleModeChange(v as "preset" | "manual" | "instant", field)}
+							className="grid grid-cols-3 gap-3"
+						>
+							<ToggleGroupItem
+								value="preset"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Preset
+							</ToggleGroupItem>
+							<ToggleGroupItem
+								value="manual"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Manual
+							</ToggleGroupItem>
+							<ToggleGroupItem
+								value="instant"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Instant
+							</ToggleGroupItem>
+						</ToggleGroup>
+					)}
+				/>
 			</div>
 			<div className="flex items-center justify-between">
 				<Controller
@@ -249,7 +283,7 @@ export const DelayedStartSection = ({
 									))}
 								</ToggleGroup>
 							</>
-						) : (
+						) : mode === "manual" ? (
 							<div className="space-y-1">
 								<Label htmlFor="manual-start" className={formLabelBaseClass}>
 									Pick Start Date &amp; Time
@@ -257,21 +291,49 @@ export const DelayedStartSection = ({
 								<Input
 									id="manual-start"
 									type="datetime-local"
+									min={new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)} // Minimum 5 minutes from now
+									max={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
 									onChange={(e) => {
 										const then = new Date(e.target.value).getTime();
 										const now = Date.now();
 										let secs = Math.floor((then - now) / 1000);
-										if (secs < 0) secs = 0;
+
+										// Enforce 5-minute minimum
+										const minSecs = 5 * 60; // 5 minutes in seconds
+										if (secs < minSecs) {
+											secs = minSecs;
+											toast.error("Minimum delay is 5 minutes");
+										}
+
+										// Enforce 24-hour maximum
+										const maxSecs = 24 * 60 * 60; // 24 hours in seconds
+										if (secs > maxSecs) {
+											secs = maxSecs;
+											toast.error("Maximum delay is 24 hours");
+										}
+
 										field.onChange(secs);
 									}}
 									className={cn("mt-1 h-10", errors.delayForTrade && "border-red-500")}
 								/>
+							</div>
+						) : (
+							<div className="space-y-1">
+								<Label className={formLabelBaseClass}>Instant Start</Label>
+								<p className="text-xs text-gray-400 mt-1">Trading will start immediately after token creation.</p>
 							</div>
 						)
 					}
 				/>
 
 				{errors.delayForTrade && <p className="text-red-500 text-xs mt-1">{errors.delayForTrade.message}</p>}
+			</div>
+			<div className="flex items-center gap-2 mt-2">
+				<Info size={12} className="text-gray-500" />
+				<p className="text-[10px] text-gray-500">
+					Delayed start is when trading begins - either after the preset time or at the selected date/time in your local
+					timezone.
+				</p>
 			</div>
 		</FormSection>
 	);
@@ -400,7 +462,16 @@ export const PoolSelection = ({
 
 	return (
 		<FormSection title="Choose Pool" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<ToggleGroup type="single" value={pool} onValueChange={setPool} className="grid grid-cols-2 gap-3">
+			<ToggleGroup
+				type="single"
+				value={pool}
+				onValueChange={(value) => {
+					if (value) {
+						setPool(value);
+					}
+				}}
+				className="grid grid-cols-2 gap-3"
+			>
 				{poolData.map((poolItem) => (
 					<ToggleGroupItem
 						key={poolItem.value}
@@ -419,7 +490,11 @@ export const PoolSelection = ({
 	);
 };
 
-export const LaunchButton = () => {
+export const LaunchButton = ({
+	idPrefix,
+}: {
+	idPrefix?: string;
+}) => {
 	const wallet = useWallet();
 	const { connection } = useConnection();
 	const {
@@ -474,7 +549,7 @@ export const LaunchButton = () => {
 
 		setLaunching(true);
 		try {
-			const tokenData = await getTokenData();
+			const tokenData = await getTokenData(idPrefix === "manual");
 			console.log("Token Data:", tokenData);
 			const tx = await createTokenTx(tokenData, { connection, wallet });
 			console.log("Transaction:", tx);

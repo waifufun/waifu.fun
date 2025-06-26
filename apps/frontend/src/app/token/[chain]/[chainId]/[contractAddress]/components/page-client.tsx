@@ -13,6 +13,7 @@ import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart2, Clock, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import Chart from "@/components/chart/chart";
 
 export default function PageClient({
@@ -29,6 +30,11 @@ export default function PageClient({
 		refetchInterval: 6_000,
 		initialData,
 	});
+
+	const badge = initialData?.imported ? "IMPORTED" : initialData?.curveCompleted ? "BONDED" : "ACTIVE";
+	const badgeBaseClasses =
+		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
+	const badgeIconClasses = "h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 pixelated-icon";
 
 	const token = query?.data;
 	return (
@@ -56,6 +62,14 @@ export default function PageClient({
 							</span>
 							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
+							<Badge
+								className={cn(
+									badgeBaseClasses,
+									"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+								)}
+							>
+								{badge}
+							</Badge>
 						</div>
 						{/* Creator */}
 						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi ">

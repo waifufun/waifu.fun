@@ -52,6 +52,16 @@ function AutoCreateForm() {
 
 	const prompt = watchValue("prompt");
 
+	// Auto-resize prompt container textArea based on content
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		const textarea = document.querySelector('textarea[name="prompt"]') as HTMLTextAreaElement;
+		if (textarea) {
+			textarea.style.height = "auto";
+			textarea.style.height = `${textarea.scrollHeight}px`;
+		}
+	}, [prompt]);
+
 	// Get the next 3 images for thumbnails
 	const startingIndex = isGeneratingMedia ? 0 : 1;
 	const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3);
@@ -99,11 +109,12 @@ function AutoCreateForm() {
 						<Wand2 size={16} className="absolute left-3 top-3.5 text-gray-500 pointer-events-none" />
 						<Textarea
 							placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
-							className={cn(formElementBaseClass, "pl-10 pr-3 py-3 min-h-[80px] resize-y tracking-wider")}
-							rows={3}
+							className={cn(formElementBaseClass, "pl-10 pr-3 py-3 resize-none tracking-wider overflow-hidden")}
+							style={{ height: "auto" }}
+							maxLength={3000}
 						/>
 					</div>
-					<div className="w-full h-[240px]">
+					<div className="w-full aspect-[4/3] min-h-[200px] max-h-[400px]">
 						<AIImageWithPlaceHolder href={undefined} />
 					</div>
 					<div className="grid grid-cols-3 gap-3">
@@ -141,14 +152,15 @@ function AutoCreateForm() {
 					<Wand2 size={16} className="absolute left-3 top-3.5 text-gray-500 pointer-events-none" />
 					<Textarea
 						placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
-						className={cn(formElementBaseClass, "pl-10 pr-3 py-3 min-h-[80px] resize-y tracking-wider")}
-						rows={3}
+						className={cn(formElementBaseClass, "pl-10 pr-3 py-3 resize-none tracking-wider overflow-hidden")}
+						style={{ height: "auto" }}
+						maxLength={3000}
 						{...registerForm("prompt")}
 					/>
 				</div>
 
 				{/* Main AI Generated Image */}
-				<div className="w-full h-[240px]">
+				<div className="w-full aspect-[4/3] min-h-[200px] max-h-[400px]">
 					{isGeneratingMedia ? <AiImageLoading /> : <AIImageWithPlaceHolder href={previousImages[0]} />}
 				</div>
 

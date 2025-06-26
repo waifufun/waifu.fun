@@ -209,7 +209,7 @@ function ManualCreateForm() {
 				<TradeLimitSection />
 				<PreBuySection idPrefix="manual" />
 				<PoolSelection />
-				<LaunchButton />
+				<LaunchButton idPrefix="manual" />
 			</div>
 		</div>
 	);

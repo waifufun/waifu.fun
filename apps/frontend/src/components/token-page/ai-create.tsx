@@ -219,7 +219,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 					<Button
 						variant={generationMode === "standard" ? "default" : "outline"}
 						onClick={() => setGenerationMode("standard")}
-						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 ${
+						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 uppercase ${
 							generationMode === "standard"
 								? "border-[#03FF24] bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
 								: "border-gray-500 text-gray-300 hover:text-gray-300 hover:bg-gray-500/10"
@@ -237,7 +237,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						variant={generationMode === "fast" ? "default" : "outline"}
 						onClick={() => setGenerationMode("fast")}
 						disabled={!hasFastTokens}
-						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 ${
+						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 uppercase ${
 							generationMode === "fast"
 								? "border-[#03FF24] bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
 								: hasFastTokens

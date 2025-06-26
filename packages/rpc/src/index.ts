@@ -610,9 +610,16 @@ export class SolanaRpcProvider extends EventEmitter {
 
 			const creator = curve.creator.toBase58();
 
+			const delayForTrade = curve?.delayForTrade ? Number(curve?.delayForTrade) : undefined;
+			const createdTime = curve?.createdTime ? Number(curve?.createdTime) : undefined;
+			const maxAmount = curve?.maxAmount ? Number(curve?.maxAmount) : undefined;
+
 			return {
 				contractAddress: mint,
 				bondingCurveAddress,
+				maxAmount,
+				delayForTrade,
+				createdTime,
 				creator: creator ? creator : undefined,
 				curveCompleted: curve.isCompleted,
 				curveProgress: Math.min(Math.max(curveProgress.toNumber(), 0), 100),
