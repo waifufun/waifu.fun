@@ -34,7 +34,6 @@ export default function PageClient({
 	const badge = initialData?.imported ? "IMPORTED" : initialData?.curveCompleted ? "BONDED" : "ACTIVE";
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
-	const badgeIconClasses = "h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 pixelated-icon";
 
 	const token = query?.data;
 	return (
@@ -146,7 +145,7 @@ export default function PageClient({
 								alt="token"
 							/>
 							<div className="flex flex-col min-w-0">
-								<div className="flex items-center gap-2 min-w-0">
+								<div className="flex items-center flex-wrap gap-2 min-w-0">
 									<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block truncate">
 										{token?.name}
 									</span>
