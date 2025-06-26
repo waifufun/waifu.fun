@@ -1033,20 +1033,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 							price = solSpent / tokensReceived;
 							volume = tokensReceived;
 							volumeUSD = solSpent * nativePrice;
-
-							console.log(
-								"spent sol:",
-								solSpent,
-								"tokens received:",
-								tokensReceived,
-								"price:",
-								price,
-								"volume:",
-								volume,
-								"volumeUSD:",
-								volumeUSD,
-							);
-							console.log("txHash", event.signature);
 						}
 					} else {
 						// Sell: Tokens -> SOL
