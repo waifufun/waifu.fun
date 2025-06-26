@@ -12,8 +12,8 @@ export default function useSlippage() {
 			return setSlippage(10);
 		}
 
-		if (value > 80) {
-			return setSlippage(80);
+		if (value > 800) {
+			return setSlippage(800);
 		}
 
 		return setSlippage(Number(value));

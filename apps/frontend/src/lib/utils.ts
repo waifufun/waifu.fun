@@ -736,7 +736,9 @@ export const createTokenTx = async (
 	const curveLimit = tokenData.curveLimit ? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL : Number(curveLimitConst);
 	const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
 	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
-	const maxAmount = tokenData.tradeLimitSol * LAMPORTS_PER_SOL;
+	// make sure max amount is in lamports with max 9 decimals
+	const maxAmount = Math.floor(tokenData.tradeLimitSol * LAMPORTS_PER_SOL);
+
 	const delayForTrade = tokenData.delayForTrade || 0;
 	const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts
 	console.log({
@@ -766,7 +768,7 @@ export const createTokenTx = async (
 					tokenData.name,
 					tokenData.symbol,
 					tokenData.metadataUrl,
-					tokenData.buyAmount * LAMPORTS_PER_SOL,
+					Math.floor(tokenData.buyAmount * LAMPORTS_PER_SOL),
 					100,
 					connection,
 					tokenData.mintKeyPair,
