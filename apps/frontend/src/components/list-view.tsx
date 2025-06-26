@@ -18,8 +18,6 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 		router.push(`/token/${token.chain}/${token.chainId}/${token.contractAddress}`);
 	};
 
-	console.log("Rendering ListView with tokens:", tokens);
-
 	return (
 		<Table>
 			<TableHeader>

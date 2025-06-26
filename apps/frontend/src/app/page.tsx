@@ -1,4 +1,4 @@
-import { getAddressPoints, getTokens } from "@/lib/api";
+import { getTokens } from "@/lib/api";
 import type { Metadata } from "next";
 import ListView from "@/components/list-view";
 import TokenGrid from "@/components/token-grid";
@@ -30,12 +30,9 @@ export default async function Home({
 	searchParams,
 }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
 	const currentSearchParams = await searchParams;
-	console.log("Current Search Params:", currentSearchParams);
 	const tokens = await getTokens({ searchParams: currentSearchParams });
 	const view = currentSearchParams?.view || "grid";
-	const noTokens = !tokens.length;
-	const points = await getAddressPoints({ address: "9ngKdds73UCXxCYbYCEAhGF6y58pgiedBcfrAPGqBovr" });
-	console.log("points ->", points);
+	const noTokens = (tokens?.length || 0) === 0;
 	return (
 		<div className={`flex flex-col gap-4 container ${noTokens ? "h-screen justify-center items-center" : ""}`}>
 			<div className="flex flex-col items-center w-full">

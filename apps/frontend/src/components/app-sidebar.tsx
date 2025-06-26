@@ -82,12 +82,10 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				<PointCounter address={address} />
 				{!isCollapsed && (
 					<div className="space-y-1 p-3 text-xs">
-						{balance?.data ? (
-							<div className="flex items-center justify-between text-white">
-								<span>{formatNumber(balance?.data, true, true)}</span>
-								<span className="font-medium text-green-400">SOL</span>
-							</div>
-						) : null}
+						<div className="flex items-center justify-between text-white">
+							<span>{balance?.isPending ? "Loading" : formatNumber(balance?.data || 0, true, true)}</span>
+							<span className="font-medium text-green-400">SOL</span>
+						</div>
 					</div>
 				)}
 				<ConnectWallet />
