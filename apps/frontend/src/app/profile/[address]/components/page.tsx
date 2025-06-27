@@ -65,25 +65,28 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											</span>
 										</h1>
 									</div>
-									{balances?.balances.map((balance) => {
-										return (
-											<TokenRow
-												mode="wallet"
-												key={balance.tokenAddress}
-												data={{
-													chain: "solana",
-													chainId: 101,
-													image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
-													title: balance?.info?.name,
-													ticker: balance?.info?.symbol,
-													marketCap: balance?.marketcap,
-													contractAddress: balance?.tokenAddress,
-													amountHeld: balance?.shiftedBalance,
-													dollarWorth: balance?.price,
-												}}
-											/>
-										);
-									})}
+									{/* ensure highest marketcap comes highest on list */}
+									{[...balances.balances]
+										.sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))
+										.map((balance) => {
+											return (
+												<TokenRow
+													mode="wallet"
+													key={balance.tokenAddress}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
+														title: balance?.info?.name,
+														ticker: balance?.info?.symbol,
+														marketCap: balance?.marketcap,
+														contractAddress: balance?.tokenAddress,
+														amountHeld: balance?.shiftedBalance,
+														dollarWorth: balance?.price,
+													}}
+												/>
+											);
+										})}
 								</div>
 							</div>
 						</TabsContent>
