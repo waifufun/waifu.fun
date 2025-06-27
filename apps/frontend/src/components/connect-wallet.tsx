@@ -8,6 +8,9 @@ import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } fro
 import { LogOut, User, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useSidebar } from "./ui/sidebar";
+import { useEffect } from "react";
+import { authenticate, generateNonce, getWallets } from "@/lib/api";
+import type { AddressLike } from "@autofun/types";
 
 export default function ConnectWallet() {
 	const client = useIsClient();
@@ -16,6 +19,37 @@ export default function ConnectWallet() {
 	const { state } = useSidebar();
 
 	const isCollapsed = state === "collapsed";
+
+	useEffect(() => {
+		const handleAuthentication = async () => {
+			if (wallet.connected && wallet.publicKey && wallet.signMessage) {
+				try {
+					const currentAddress = wallet.publicKey.toBase58();
+
+					const walletsResponse = await getWallets();
+					const existingSolanaAddress = walletsResponse?.wallets?.solana?.address;
+
+					if (!existingSolanaAddress || existingSolanaAddress !== currentAddress) {
+						console.log("Authenticating new or different Solana wallet:", currentAddress);
+
+						const { nonce } = await generateNonce(currentAddress as AddressLike);
+						const message = new TextEncoder().encode(nonce);
+						const signature = await wallet.signMessage(message);
+						const signatureBase58 = Buffer.from(signature).toString("base64");
+
+						await authenticate(currentAddress as AddressLike, signatureBase58, "solana");
+						console.log("Solana wallet authenticated successfully");
+					} else {
+						console.log("Solana wallet already authenticated for this address");
+					}
+				} catch (error) {
+					console.error("Failed to authenticate Solana wallet:", error);
+				}
+			}
+		};
+
+		handleAuthentication();
+	}, [wallet.connected, wallet.publicKey, wallet.signMessage]);
 
 	if (!client) {
 		return <Button className="w-full">{isCollapsed ? <Wallet size={16} /> : "Connect"}</Button>;

@@ -33,8 +33,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 		switch (chain) {
 			case "solana": {
+				console.log("nonce: ", nonce);
+				console.log("signature: ", "sign");
+				console.timeLog("address: ", "	");
 				isValid = await VerifySolanaSignature(nonce, signature, address);
 				if (!isValid) {
+					console.log("not valid solana signature");
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
@@ -65,6 +69,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					signature: signature as `0x${string}`,
 				});
 				if (!isValid) {
+					console.log("invalid evm signature.");
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
@@ -92,7 +97,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				return reply.code(400).send({ error: "Unsupported chain" });
 		}
 
-		// Clean up the used nonce
 		await redis.del(`nonce:${address}`);
 	});
 
