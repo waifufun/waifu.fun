@@ -11,6 +11,7 @@ import { useSidebar } from "./ui/sidebar";
 import { useEffect } from "react";
 import { authenticate, generateNonce, getWallets } from "@/lib/api";
 import type { AddressLike } from "@autofun/types";
+import bs58 from "bs58";
 
 export default function ConnectWallet() {
 	const client = useIsClient();
@@ -35,7 +36,8 @@ export default function ConnectWallet() {
 						const { nonce } = await generateNonce(currentAddress as AddressLike);
 						const message = new TextEncoder().encode(nonce);
 						const signature = await wallet.signMessage(message);
-						const signatureBase58 = Buffer.from(signature).toString("base64");
+
+						const signatureBase58 = bs58.encode(signature);
 
 						await authenticate(currentAddress as AddressLike, signatureBase58, "solana");
 						console.log("Solana wallet authenticated successfully");
