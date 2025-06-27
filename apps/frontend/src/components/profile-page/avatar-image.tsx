@@ -38,7 +38,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 				reader.onloadend = async () => {
 					try {
 						const base64String = reader.result as string;
-						await uploadAvatar({ address, image: base64String });
+						await uploadAvatar({ image: base64String });
 						resolve();
 					} catch (error) {
 						reject(error);
@@ -59,7 +59,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 		},
 	});
 
-	const addressFromHook = useAddress();
+	const isOwner = useAddress() === address;
 
 	return (
 		<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] relative w-[150px]">
@@ -71,7 +71,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 				unoptimized
 				className="object-cover"
 			/>
-			{addressFromHook === address && (
+			{isOwner ? (
 				<>
 					<input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 					<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
@@ -89,7 +89,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 						)}
 					</div>
 				</>
-			)}
+			) : null}
 		</div>
 	);
 }
