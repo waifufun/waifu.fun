@@ -10,19 +10,26 @@ import moment from "moment";
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Body: {
-			address: AddressLike;
 			image?: string;
 		};
 		Reply: { success: boolean; imageUrl?: string; error?: string };
 	}>("/upload-profile-image", async (request, reply) => {
-		// TODO - Needs auth, now you can just upload any image for anyone, big security risk
-		const { image, address } = request.body;
+		const { image } = request.body;
+		const user = request.authUser;
+		const address = request.authUser?.solana;
 
-		if (!address) {
-			throw new Error("Address is missing");
+		if (!isSupportedAddress(address as AddressLike)) {
+			throw new Error("Address is missing or not supported");
 		}
 
-		const checksummedAddress = getChecksummedAddress(address, "solana");
+		const checksummedAddress = getChecksummedAddress(address as AddressLike, "solana");
+
+		if (user?.solana !== checksummedAddress) {
+			return reply.code(401).send({
+				success: false,
+				error: "You are not authorized to update this profile",
+			});
+		}
 
 		let uploadedUrl: TURLLike | false;
 
@@ -44,6 +51,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				$set: {
 					avatar: uploadedUrl,
 				},
+			},
+			{
+				upsert: true,
 			},
 		);
 

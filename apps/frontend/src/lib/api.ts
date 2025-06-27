@@ -401,14 +401,11 @@ export const getAgent = async ({
 };
 
 export const uploadAvatar = async ({
-	address,
 	image,
 }: {
-	address: AddressLike;
-	image?: string; // base64 image string
+	image: string;
 }) => {
 	return await fetcher("/user/upload-profile-image", "POST", {
-		address,
 		image,
 	});
 };
