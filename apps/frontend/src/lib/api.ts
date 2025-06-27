@@ -407,8 +407,7 @@ export const uploadAvatar = async ({
 	address: AddressLike;
 	image?: string; // base64 image string
 }) => {
-	return await fetcher("/user/upload-profile-image", "POST", {
-		address,
+	return await fetcher(`/user/upload-profile-image/${address}`, "POST", {
 		image,
 	});
 };

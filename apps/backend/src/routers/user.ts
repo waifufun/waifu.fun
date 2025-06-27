@@ -10,13 +10,15 @@ import moment from "moment";
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Body: {
-			address: AddressLike;
 			image?: string;
 		};
+		Params: { address: AddressLike };
+
 		Reply: { success: boolean; imageUrl?: string; error?: string };
-	}>("/upload-profile-image", async (request, reply) => {
+	}>("/upload-profile-image/:address", async (request, reply) => {
 		// TODO - Needs auth, now you can just upload any image for anyone, big security risk
-		const { image, address } = request.body;
+		const { image } = request.body;
+		const { address } = request.params;
 
 		if (!address) {
 			throw new Error("Address is missing");
