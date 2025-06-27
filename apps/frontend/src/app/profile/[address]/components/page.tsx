@@ -65,7 +65,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											</span>
 										</h1>
 									</div>
-									{/* ensure highest marketcap comes highest on list */}
 									{[...balances.balances]
 										.sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))
 										.map((balance) => {
