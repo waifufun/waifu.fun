@@ -52,7 +52,6 @@ function AutoCreateForm() {
 
 	const prompt = watchValue("prompt");
 
-	// Auto-resize prompt container textArea based on content
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		const textarea = document.querySelector('textarea[name="prompt"]') as HTMLTextAreaElement;
