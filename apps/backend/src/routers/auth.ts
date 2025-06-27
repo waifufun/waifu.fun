@@ -33,9 +33,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 		switch (chain) {
 			case "solana": {
-				console.log("nonce: ", nonce);
-				console.log("signature: ", "sign");
-				console.timeLog("address: ", "	");
 				isValid = await VerifySolanaSignature(nonce, signature, address);
 				if (!isValid) {
 					console.log("not valid solana signature");

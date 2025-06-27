@@ -5,6 +5,7 @@ import { MediaType, type AddressLike } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
 import DB from "@autofun/database";
 import { SolanaRpcProvider } from "@autofun/rpc";
+import { authenticationMiddleware } from "../middlewares/authentication";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -197,10 +198,12 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 			config: {
 				timeout: GENERATION_TIMEOUT,
 			},
+			preHandler: authenticationMiddleware,
 		},
 		async (request, reply) => {
 			try {
 				const user = request.authUser;
+				console.log("user: ", user);
 				if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
 					return reply.code(401).send({
 						success: false,
