@@ -18,6 +18,10 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 	try {
 		const cookies = request.cookies || {};
 		console.log("cookies: ", cookies);
+
+		// Initialize authUser object
+		request.authUser = {};
+
 		if (process.env.NODE_ENV === "development" && !cookies.evm && !cookies.solana) {
 			request.authUser = {
 				evm: "0x0000000000000000000000000000000000000000",
@@ -29,42 +33,47 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 
 		const { solana, evm } = cookies;
 
-		const user: { evm?: AddressLike; solana?: AddressLike } = {};
-
 		if (solana) {
 			try {
 				const decoded = request.server.jwt.decode(solana) as { address: AddressLike };
 				if (!isSolanaAddress(decoded.address)) {
-					throw new Error("Invalid Solana address in token");
+					throw new Error("Invalid Solana address");
 				}
-				user.solana = getChecksummedAddress(decoded.address, "solana");
-				console.log("[Auth] Successfully decoded Solana token");
+				request.authUser.solana = getChecksummedAddress(decoded.address, "solana");
+				console.log("[Auth] Successfully decoded Solana address");
 			} catch (error) {
-				console.log("[Auth] Failed to decode Solana token:", error);
-				reply.clearCookie("solana");
+				console.log("[Auth] Failed to decode Solana address:", error);
+				reply.clearCookie("solana", {
+					path: "/",
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+				});
 			}
 		}
 
 		if (evm) {
 			try {
 				const decoded = request.server.jwt.decode(evm) as { address: AddressLike };
-				user.evm = getChecksummedAddress(decoded.address, "evm");
+				request.authUser.evm = getChecksummedAddress(decoded.address, "evm");
 				console.log("[Auth] Successfully decoded EVM token");
 			} catch (error) {
-				console.log("[Auth] Failed to decode EVM token:", error);
-				reply.clearCookie("evm");
+				console.log("[Auth] Failed to decode EVM address:", error);
+				reply.clearCookie("evm", {
+					path: "/",
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+				});
 			}
 		}
 
-		if (!user.evm && !user.solana) {
-			console.log("[Auth] No valid tokens found");
-			return reply.code(401).send({ error: "Unauthorized" });
+		if (!request.authUser.evm && !request.authUser.solana) {
+			console.log("[Auth] No valid addresses found, but continuing...");
+			request.authUser = undefined;
 		}
 
-		request.authUser = user;
-		console.log("[Auth] Authentication successful");
+		console.log("[Auth] Final authUser:", request.authUser);
 	} catch (error) {
 		console.log("[Auth] Authentication failed:", error);
-		return reply.code(401).send({ error: "Unauthorized" });
+		request.authUser = undefined;
 	}
 }
