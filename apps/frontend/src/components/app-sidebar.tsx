@@ -82,7 +82,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 			<SidebarFooter>
 				{address && (
 					<>
-						<PointCounter address={address} />
+						{!isCollapsed && <PointCounter address={address} />}
 						{!isCollapsed && (
 							<div className="space-y-1 p-3 text-xs">
 								<div className="flex items-center justify-between text-white">
