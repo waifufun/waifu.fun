@@ -80,14 +80,18 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				)}
 			</SidebarContent>
 			<SidebarFooter>
-				<PointCounter address={address} />
-				{!isCollapsed && (
-					<div className="space-y-1 p-3 text-xs">
-						<div className="flex items-center justify-between text-white">
-							<span>{balance?.isPending ? "Loading" : formatNumber(balance?.data || 0, true, true)}</span>
-							<span className="font-medium text-green-400">SOL</span>
-						</div>
-					</div>
+				{address && (
+					<>
+						<PointCounter address={address} />
+						{!isCollapsed && (
+							<div className="space-y-1 p-3 text-xs">
+								<div className="flex items-center justify-between text-white">
+									<span>{balance?.isPending ? "Loading" : formatNumber(balance?.data || 0, true, true)}</span>
+									<span className="font-medium text-green-400">SOL</span>
+								</div>
+							</div>
+						)}
+					</>
 				)}
 				{!isCollapsed && (
 					<div className="flex items-center justify-center gap-2.5">

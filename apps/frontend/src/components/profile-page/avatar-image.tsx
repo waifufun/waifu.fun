@@ -60,7 +60,6 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 	});
 
 	const addressFromHook = useAddress();
-	console.log("use address hook ->", address);
 
 	return (
 		<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] relative w-[150px]">
