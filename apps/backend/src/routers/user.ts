@@ -6,71 +6,59 @@ import { getChecksummedAddress, isSupportedAddress } from "@autofun/utils";
 import { calculateStreak } from "../utils/points";
 import redis from "@autofun/redis";
 import moment from "moment";
-import { authenticationMiddleware } from "../middlewares/authentication";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Body: {
 			image?: string;
 		};
-		Params: { address: AddressLike };
-
 		Reply: { success: boolean; imageUrl?: string; error?: string };
-	}>(
-		"/upload-profile-image/:address",
+	}>("/upload-profile-image", async (request, reply) => {
+		const { image } = request.body;
+		const user = request.authUser;
+		const address = request.authUser?.solana;
 
-		{ preHandler: authenticationMiddleware },
-		async (request, reply) => {
-			const { image } = request.body;
-			const { address } = request.params;
-			const user = request.authUser;
+		if (!isSupportedAddress(address as AddressLike)) {
+			throw new Error("Address is missing or not supported");
+		}
 
-			if (!address) {
-				throw new Error("Address is missing");
-			}
+		const checksummedAddress = getChecksummedAddress(address as AddressLike, "solana");
 
-			if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
-				return reply.code(401).send({
-					success: false,
-					error: "User authentication required",
-				});
-			}
+		if (user?.solana !== checksummedAddress) {
+			return reply.code(401).send({
+				success: false,
+				error: "You are not authorized to update this profile",
+			});
+		}
 
-			const checksummedAddress = getChecksummedAddress(address, "solana");
+		let uploadedUrl: TURLLike | false;
 
-			if (user?.solana !== checksummedAddress) {
-				return reply.code(401).send({
-					success: false,
-					error: "You are not authorized to update this profile",
-				});
-			}
+		if (image) {
+			uploadedUrl = await uploadBase64Image(image, checksummedAddress, "avatar-images", 150, 150);
+		} else {
+			throw new Error("No image provided");
+		}
 
-			let uploadedUrl: TURLLike | false;
+		if (!uploadedUrl) {
+			throw new Error("Image upload failed");
+		}
 
-			if (image) {
-				uploadedUrl = await uploadBase64Image(image, checksummedAddress, "avatar-images", 150, 150);
-			} else {
-				throw new Error("No image provided");
-			}
-
-			if (!uploadedUrl) {
-				throw new Error("Image upload failed");
-			}
-
-			await DB.User.updateOne(
-				{
-					address: checksummedAddress,
+		await DB.User.updateOne(
+			{
+				address: checksummedAddress,
+			},
+			{
+				$set: {
+					avatar: uploadedUrl,
 				},
-				{
-					$set: {
-						avatar: uploadedUrl,
-					},
-				},
-			);
+			},
+			{
+				upsert: true,
+			},
+		);
 
-			return { success: true };
-		},
-	);
+		return { success: true };
+	});
 
 	fastify.post<{
 		Body: { address: AddressLike };
