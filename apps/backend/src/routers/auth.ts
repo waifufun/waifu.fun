@@ -52,15 +52,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					expiresIn: "7d",
 				});
 
-				reply
-					.setCookie("solana", token, {
-						maxAge: 60 * 60 * 24 * 7,
-						path: "/",
-						httpOnly: true,
-						secure: process.env.NODE_ENV === "production",
-					})
-					.send({ success: true, message: "Authenticated successfully" });
-				break;
+				reply.setCookie("solana", token, {
+					maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+					path: "/",
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+					sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+					domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
+				});
+
+				return reply.send({ success: true, message: "Authenticated successfully" });
 			}
 			case "evm": {
 				isValid = await verifyMessage({
