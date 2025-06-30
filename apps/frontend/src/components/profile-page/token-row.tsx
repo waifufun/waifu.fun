@@ -87,7 +87,7 @@ export default function TokenRow({
 										) : (
 											<>
 												{data.swapAmount} <span className="text-gray-300">${data?.ticker}</span> for{" "}
-												{formatNumber((data.amountGotten ?? 0) / LAMPORTS_PER_SOL, true, true)} SOL
+												{(data.amountGotten ?? 0) / LAMPORTS_PER_SOL} SOL
 											</>
 										)}
 									</p>
