@@ -573,6 +573,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}),
 		});
 
+		const transactions =
+			(await DB.Event.find({
+				eventType: "swap",
+				user: getChecksummedAddress(address, "solana"),
+			})) || [];
+
 		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
 		// populating only the tokens that are in our DB
@@ -620,9 +626,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData }));
+		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData, transactions }));
 
-		return { user, balances: returnData };
+		return { user, balances: returnData, transactions };
 	});
 
 	/** Import an existing token */

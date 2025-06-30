@@ -28,6 +28,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 	const tokensBought = balances?.balances.length;
 	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address);
+	const transactions = balances?.transactions ?? [];
+	console.log("transactions ->", transactions);
 
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
@@ -90,46 +92,76 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							</div>
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
-							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-								<div className="border-b-1 border-[#03FF24]/40">
-									{/* <TokensFilter /> */}
-									<div className="w-full justify-around md:justify-start p-3 place-self-center flex items-center">
-										<button
-											type="button"
-											disabled
-											className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
-										>
-											Tokens Created
-										</button>
+							<Tabs defaultValue="tokens-created" className="w-full">
+								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
+									<div className="border-b-1 border-[#03FF24]/40">
+										<TabsList className="p-2.5">
+											<TabsTrigger
+												value="tokens-created"
+												className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
+											>
+												Tokens Created
+											</TabsTrigger>
+											<TabsTrigger
+												value="transactions"
+												className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
+											>
+												Transactions
+											</TabsTrigger>
+										</TabsList>
 									</div>
-								</div>
-								<div className="p-0">
-									{tokensCreated?.map((token) => (
-										<TokenRow
-											mode="wallet"
-											key={token.tokenAddress}
-											data={{
-												chain: "solana",
-												chainId: 101,
-												image: token.info?.imageLargeUrl ?? "/create/test-img.png",
-												title: token.name,
-												ticker: token.info?.name,
-												contractAddress: token.tokenAddress,
-												marketCap: token?.marketcap,
-												amountHeld: token?.shiftedBalance,
-											}}
-										/>
-									))}
-								</div>
-							</div>
 
-							{(tokensCreated?.length || 0) === 0 && (
-								<div className="flex w-full h-full items-center justify-center">
-									<h1 className="text-[#03FF23] text-base font-semibold uppercase">
-										No tokens have been created by this user
-									</h1>
+									<TabsContent value="tokens-created" className="p-0">
+										{tokensCreated?.length > 0 ? (
+											tokensCreated.map((token) => (
+												<TokenRow
+													mode="wallet"
+													key={token.tokenAddress}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: token.info?.imageLargeUrl ?? "/create/test-img.png",
+														title: token.name,
+														ticker: token.info?.name,
+														contractAddress: token.tokenAddress,
+														marketCap: token?.marketcap,
+														amountHeld: token?.shiftedBalance,
+													}}
+												/>
+											))
+										) : (
+											<div className="flex w-full h-full items-center justify-center">
+												<h1 className="text-[#03FF23] text-base font-semibold uppercase">
+													No tokens have been created by this user
+												</h1>
+											</div>
+										)}
+									</TabsContent>
+
+									<TabsContent value="transactions" className="p-3 space-y-4">
+										{transactions?.length > 0 ? (
+											transactions.map((transaction: any) => (
+												<TokenRow
+													mode="activity"
+													key={transaction._id}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: transaction.info?.imageLargeUrl ?? "/create/test-img.png",
+														title: transaction.name,
+														ticker: transaction.info?.name,
+														contractAddress: transaction.tokenAddress,
+														marketCap: transaction.marketcap,
+														amountHeld: transaction.shiftedBalance,
+													}}
+												/>
+											))
+										) : (
+											<div className="text-center text-[#03FF23]">No transactions found</div>
+										)}
+									</TabsContent>
 								</div>
-							)}
+							</Tabs>
 						</TabsContent>
 					</Tabs>
 				</div>
