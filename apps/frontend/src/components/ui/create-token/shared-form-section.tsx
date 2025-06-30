@@ -207,7 +207,7 @@ export const DelayedStartSection = ({
 		control,
 		formState: { errors },
 	} = usePrompt();
-	const [mode, setMode] = useState<"preset" | "manual" | "instant">("preset");
+	const [mode, setMode] = useState<"preset" | "manual" | "instant">("instant");
 	const presets = [
 		{ label: "10 Min", value: 10 * 60 },
 		{ label: "1 Hour", value: 60 * 60 },
@@ -239,6 +239,12 @@ export const DelayedStartSection = ({
 							className="grid grid-cols-3 gap-3"
 						>
 							<ToggleGroupItem
+								value="instant"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Instant
+							</ToggleGroupItem>
+							<ToggleGroupItem
 								value="preset"
 								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
 							>
@@ -249,12 +255,6 @@ export const DelayedStartSection = ({
 								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
 							>
 								Manual
-							</ToggleGroupItem>
-							<ToggleGroupItem
-								value="instant"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
-							>
-								Instant
 							</ToggleGroupItem>
 						</ToggleGroup>
 					)}
