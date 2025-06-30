@@ -9,7 +9,7 @@ import IDL from "@/lib/autofun.json";
 import type { TokenMetadata } from "../hooks/providers/usePromptContext";
 import { SEED_CONFIG } from "../hooks/hook/UseProgram";
 import { ComputeBudgetProgram, type Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { virtualReservesConst, curveLimitConst } from "@autofun/constants";
+import { virtualReservesConst, curveLimitConst } from "@/lib/utils";
 
 export interface ISolanaFunctions {
 	signMessage: (message: Uint8Array) => Promise<Uint8Array>;
@@ -165,7 +165,7 @@ export class SolanaWallet extends WalletClass {
 
 		// Apply slippage to expected output
 		const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
-
+		const allowCreatorTime = true;
 		const tx = await program.methods
 			.launchAndSwap(
 				decimals,
@@ -176,6 +176,7 @@ export class SolanaWallet extends WalletClass {
 				new BN(maxAmount),
 				new BN(delayForTrade),
 				new BN(limitTimeToUpdate),
+				allowCreatorTime,
 				name,
 				symbol,
 				uri,
@@ -217,6 +218,7 @@ export class SolanaWallet extends WalletClass {
 		const maxAmount = tokenData.tradeLimitSol * LAMPORTS_PER_SOL;
 		const delayForTrade = tokenData.delayForTrade || 0;
 		const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts
+		const allowCreatorTime = true;
 		const tx =
 			tokenData.buyAmount > 0
 				? await this.launchAndSwapTx(
@@ -247,6 +249,7 @@ export class SolanaWallet extends WalletClass {
 							new BN(maxAmount),
 							new BN(delayForTrade),
 							new BN(limitTimeToUpdate),
+							allowCreatorTime,
 							tokenData.name,
 							tokenData.symbol,
 							tokenData.metadataUrl,

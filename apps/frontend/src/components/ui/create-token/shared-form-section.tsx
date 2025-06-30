@@ -26,6 +26,8 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import type { TChain } from "@autofun/types";
+import { curveLimitConst } from "@/lib/utils";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -159,6 +161,7 @@ export const CustomCurveSection = ({
 		control,
 		formState: { errors },
 	} = usePrompt();
+	console.log(curveLimitConst / LAMPORTS_PER_SOL, "curveLimitConst / LAMPORTS_PER_SOL");
 
 	return (
 		<Controller
@@ -181,7 +184,7 @@ export const CustomCurveSection = ({
 
 						<Slider
 							id="curveLimit"
-							min={113}
+							min={curveLimitConst / LAMPORTS_PER_SOL}
 							max={678}
 							step={1}
 							value={[field.value]}
