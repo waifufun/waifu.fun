@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FormSection } from "./form-section";
 import { Wand2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
+import { usePrompt } from "@/components/hooks/providers/usePromptContext";
 import {
 	CoinInfoFields,
 	CustomAddressGenerator,
@@ -209,10 +209,12 @@ function AutoCreateForm() {
 	);
 }
 
-export default function WrappedComponent() {
-	return (
-		<PromptProvider>
-			<AutoCreateForm />
-		</PromptProvider>
-	);
-}
+// export default function WrappedComponent() {
+// 	return (
+// 		<PromptProvider>
+// 			<AutoCreateForm />
+// 		</PromptProvider>
+// 	);
+// }
+
+export default AutoCreateForm;
