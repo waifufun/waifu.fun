@@ -217,28 +217,28 @@ export default async function userRoutes(fastify: FastifyInstance) {
 	
 		const checksummedAddress = getChecksummedAddress(address, "solana");
 	
-		// Fetch swap transactions for this user
+
 		const transactions = await DB.Event.find({
 			eventType: "swap",
 			user: checksummedAddress,
 		}).lean();
 	
-		// Extract unique contract addresses from transactions
+
 		const txContractAddresses = [
 			...new Set(transactions.map((tx) => getChecksummedAddress(tx.contractAddress as AddressLike, "solana"))),
 		];
 	
-		// Fetch tokens for those contract addresses
+
 		const tokensForTx = await DB.Token.find({
 			contractAddress: { $in: txContractAddresses },
 		}).lean();
 	
-		// Map tokens by contractAddress
+
 		const tokenMap = new Map(
 			tokensForTx.map((token) => [getChecksummedAddress(token.contractAddress as AddressLike, "solana"), token]),
 		);
 	
-		// Enrich transactions with token data
+
 		const populatedTransactions = transactions.map((tx) => {
 			const normalizedAddress = getChecksummedAddress(tx.contractAddress as AddressLike, "solana");
 			const tokenInfo = tokenMap.get(normalizedAddress);
