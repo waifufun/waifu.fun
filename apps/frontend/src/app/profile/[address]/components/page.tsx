@@ -93,7 +93,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="border-b-1 border-[#03FF24]/40">
 									{/* <TokensFilter /> */}
-									<div className="w-full justify-around md:justify-start p-2 place-self-center flex items-center">
+									<div className="w-full justify-around md:justify-start p-3 place-self-center flex items-center">
 										<button
 											type="button"
 											disabled
@@ -122,6 +122,14 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 									))}
 								</div>
 							</div>
+
+							{(tokensCreated?.length || 0) === 0 && (
+								<div className="flex w-full h-full items-center justify-center">
+									<h1 className="text-[#03FF23] text-base font-semibold uppercase">
+										No tokens have been created by this user
+									</h1>
+								</div>
+							)}
 						</TabsContent>
 					</Tabs>
 				</div>
