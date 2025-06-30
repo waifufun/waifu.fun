@@ -7,7 +7,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
@@ -29,6 +28,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 	const tokensBought = balances?.balances.length;
 	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address);
+	// @ts-ignore @dev will resolve types
 	const transactions = balances?.transactions ?? [];
 	console.log("transactions ->", transactions);
 

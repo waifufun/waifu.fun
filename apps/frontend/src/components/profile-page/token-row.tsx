@@ -15,7 +15,7 @@ export default function TokenRow({
 		image: string;
 		title: string;
 		ticker: string;
-		marketCap: number;
+		marketCap?: number;
 		contractAddress: string;
 		amountHeld?: number;
 		dollarWorth?: number;
@@ -23,10 +23,10 @@ export default function TokenRow({
 		chain: TChain | null;
 		chainId: SolanaNetworkIds | EvmChainIds | null;
 		direction?: 0 | 1;
-		amountGotten: number;
-		swapAmount: number;
-		createdAt: string;
-		signature: string;
+		amountGotten?: number;
+		swapAmount?: number;
+		createdAt?: string;
+		signature?: string;
 	};
 	mode?: "activity" | "wallet" | "points";
 }) {
