@@ -5,6 +5,7 @@ import type { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
 import { formatNumber } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export default function TokenRow({
 	data,
@@ -22,8 +23,10 @@ export default function TokenRow({
 		chain: TChain | null;
 		chainId: SolanaNetworkIds | EvmChainIds | null;
 		direction?: 0 | 1;
-		amountGotton: number;
+		amountGotten: number;
 		swapAmount: number;
+		createdAt: string;
+		signature: string;
 	};
 	mode?: "activity" | "wallet" | "points";
 }) {
@@ -65,24 +68,29 @@ export default function TokenRow({
 			{mode === "activity" || mode === "wallet" ? (
 				<div className="flex items-center justify-center flex-row space-x-4">
 					<div className="flex flex-col items-end space-y-0">
-						<div className="flex flex-row space-x-1 w-full justify-end">
-							{mode === "activity" ? (
-								<>
-									{/* <p className="text-xs font-bold text-yellow-400">Mcap</p>
-									<p className="text-xs md:text-xs font-semibold text-yellow-400">
-										${formatNumber(data.marketCap, false, true)}
-									</p> */}
-									<p className={`text-xs uppercase font-bold ${data.direction === 0 ? "text-green-500" : "text-red-500"}`}>
-										{data.direction === 0 ? "Buy" : "Sell"}
-									</p>
-									<p className="text-xs uppercase md:text-xs font-semibold text-white">
-										{data.direction === 0
-											? formatNumber(data?.swapAmount, false, true)
-											: formatNumber(data?.amountGotton, false, true)}
-									</p>
-								</>
-							) : null}
-						</div>
+						{mode === "activity" ? (
+							<div className="flex flex-row space-x-1 w-full justify-end">
+								<p
+									className={`text-xs uppercase font-bold ${data.direction === 0 ? "text-green-500" : "text-red-500"}`}
+								>
+									{data.direction === 0 ? "bought" : "sold"}
+								</p>
+								<p className="text-xs uppercase md:text-xs font-semibold text-white inline">
+									{data.direction === 0
+										? `${data.amountGotten} $${data?.ticker} for ${data.swapAmount / LAMPORTS_PER_SOL} SOL`
+										: `${data.swapAmount} $${data?.ticker} for ${formatNumber(data.amountGotten / LAMPORTS_PER_SOL, true, true)} SOL`}
+								</p>
+								<p className="text-xs text-white">
+									{new Date(data.createdAt).toLocaleString("en-US", {
+										year: "numeric",
+										month: "long",
+										day: "numeric",
+										hour: "numeric",
+										minute: "2-digit",
+									})}
+								</p>
+							</div>
+						) : null}
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300">
 							<p className="text-sm font-medium text-gray-200">{data.amountHeld?.toLocaleString()}</p>
 							{data?.dollarWorth ? (
@@ -93,14 +101,14 @@ export default function TokenRow({
 						</div>
 					</div>
 					{mode === "activity" ? (
-						<div className="flex flex-col justify-around  text-white place-items-center text-base h-[60px]">
-							{/* <div className="flex flex-col justify-center h-full">
-								<div className="space-y-0 flex flex-row">
-									<p className="text-sm font-bold text-yellow-400">+ {data.points} pts</p>
-								</div>
-							</div> */}
-							<Link className="place-items-end  mt-1 w-full h-full" href={`/token/${data.contractAddress}`}>
-								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[16px] w-[16px] " />
+						<div className="flex justify-end items-center text-white text-base h-[60px] px-2">
+							<Link
+								href={
+									mode === "activity" ? `https://solscan.io/tx/${data.signature}` : `/token/${data.contractAddress}`
+								}
+								target={mode === "activity" ? "_blank" : undefined}
+							>
+								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[16px] w-[16px]" />
 							</Link>
 						</div>
 					) : null}

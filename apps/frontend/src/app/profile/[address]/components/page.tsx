@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
@@ -95,16 +96,16 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							<Tabs defaultValue="tokens-created" className="w-full">
 								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40">
-										<TabsList className="p-2.5">
+										<TabsList shadowed={false} className="border-none space-x-2 p-2">
 											<TabsTrigger
 												value="tokens-created"
-												className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
 											>
 												Tokens Created
 											</TabsTrigger>
 											<TabsTrigger
 												value="transactions"
-												className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
 											>
 												Transactions
 											</TabsTrigger>
@@ -138,7 +139,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										)}
 									</TabsContent>
 
-									<TabsContent value="transactions" className="p-3 space-y-4">
+									<TabsContent value="transactions">
 										{transactions?.length > 0 ? (
 											transactions.map((transaction) => (
 												<TokenRow
@@ -154,7 +155,9 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 														marketCap: transaction.marketcap,
 														direction: transaction.direction,
 														swapAmount: transaction?.swapAmount,
-														amountGotton: transaction?.amountGotton
+														amountGotten: transaction?.amountGotten,
+														createdAt: transaction?.createdAt,
+														signature: transaction?.signature,
 													}}
 												/>
 											))
