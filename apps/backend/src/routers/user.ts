@@ -210,48 +210,53 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		}
 	});
 
-	fastify.post("/get-swaps", async (request) => {
-		const { address } = request.body as {
+	fastify.post("/get-swaps", async (request, reply) => {
+		const body = request.body as {
 			address: AddressLike;
+			page?: number;
+			limit?: number;
 		};
-	
-		const checksummedAddress = getChecksummedAddress(address, "solana");
-	
 
-		const transactions = await DB.Event.find({
-			eventType: "swap",
-			user: checksummedAddress,
-		}).lean();
-	
+		const { address, page = 1, limit } = body;
+
+		const paginationOptions = {
+			page,
+			lean: true,
+			limit: limit ? (limit > 50 ? 50 : limit) : 50,
+			leanWithId: false,
+		};
+
+		const checksummedAddress = getChecksummedAddress(address, "solana");
+
+		const result = await DB.Event.paginate({ eventType: "swap", user: checksummedAddress }, paginationOptions);
 
 		const txContractAddresses = [
-			...new Set(transactions.map((tx) => getChecksummedAddress(tx.contractAddress as AddressLike, "solana"))),
+			...new Set(result.docs.map((tx) => getChecksummedAddress(tx.contractAddress as AddressLike, "solana"))),
 		];
-	
 
 		const tokensForTx = await DB.Token.find({
 			contractAddress: { $in: txContractAddresses },
 		}).lean();
-	
 
 		const tokenMap = new Map(
 			tokensForTx.map((token) => [getChecksummedAddress(token.contractAddress as AddressLike, "solana"), token]),
 		);
-	
 
-		const populatedTransactions = transactions.map((tx) => {
+		const populatedDocs = result.docs.map((tx) => {
 			const normalizedAddress = getChecksummedAddress(tx.contractAddress as AddressLike, "solana");
 			const tokenInfo = tokenMap.get(normalizedAddress);
-	
+
 			return {
 				...tx,
 				tokenName: tokenInfo?.name,
-				image: tokenInfo?.image,
+			image: tokenInfo?.image,
 				tokenTicker: tokenInfo?.ticker,
 			};
 		});
-	
-		return { swaps: populatedTransactions };
+
+		return reply.send({
+			...result,
+			docs: populatedDocs,
+		});
 	});
-	
 }

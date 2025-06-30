@@ -3,7 +3,6 @@ import { CopyButton } from "../copy-button";
 import Link from "next/link";
 import type { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
-import { formatNumber } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -38,6 +37,14 @@ export default function TokenRow({
 	// };
 	// const chainIcon = chainIcons[key];
 	const dollarWorth = (data?.amountHeld ?? 0) * (data?.dollarWorth ?? 0);
+
+	// formats really high decimal amounts
+	const formatAmount = (value?: string | number) =>
+		value != null
+			? (Number(value) / 1e6).toLocaleString("en-US", {
+					maximumFractionDigits: 6,
+				})
+			: "0";
 
 	return (
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-4 py-8">
@@ -81,12 +88,12 @@ export default function TokenRow({
 									<p className="text-xs uppercase md:text-xs font-semibold text-white inline">
 										{data.direction === 0 ? (
 											<>
-												{data.amountGotten} <span className="text-gray-300">${data?.ticker}</span> for{" "}
+												{formatAmount(data.amountGotten)} <span className="text-gray-300">${data?.ticker}</span> for{" "}
 												{(data.swapAmount ?? 0) / LAMPORTS_PER_SOL} SOL
 											</>
 										) : (
 											<>
-												{data.swapAmount} <span className="text-gray-300">${data?.ticker}</span> for{" "}
+												{formatAmount(data.swapAmount)} <span className="text-gray-300">${data?.ticker}</span> for{" "}
 												{(data.amountGotten ?? 0) / LAMPORTS_PER_SOL} SOL
 											</>
 										)}

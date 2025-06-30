@@ -9,26 +9,21 @@ import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
 import { getSwaps } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
-import type { AddressLike } from "@autofun/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
+	const params = useParams<{ address: string }>();
+	const address = params?.address;
 	const query = useQuery({
-		queryKey: ["get-swaps", balances?.user],
+		queryKey: ["get-swaps", address],
 		queryFn: async () => {
-			const swaps = (await getSwaps(balances?.user)) as AddressLike;
+			const swaps = await getSwaps({ address });
 			return swaps;
 		},
 	});
-	const transactions = query.data ?? [];
-	console.log("user ? ->", balances?.user);
-
+	const transactions = query?.data?.docs ?? [];
 	const [tab, setTab] = useState("wallet");
-	const params = useParams<{ address: string }>();
-	const address = params?.address;
-
 	const user = balances?.user;
-
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
@@ -41,7 +36,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 	const tokensBought = balances?.balances.length;
 	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address);
-	// @ts-ignore @dev will resolve types
 
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
