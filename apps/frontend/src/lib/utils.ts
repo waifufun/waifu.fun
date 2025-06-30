@@ -682,6 +682,7 @@ export const launchAndSwapTx = async (
 
 	// Apply slippage to expected output
 	const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
+	const allowCreatorTime = true;
 
 	const tx = await program.methods
 		.launchAndSwap(
@@ -693,6 +694,7 @@ export const launchAndSwapTx = async (
 			new BN(maxAmount),
 			new BN(delayForTrade),
 			new BN(limitTimeToUpdate),
+			allowCreatorTime,
 			name,
 			symbol,
 			uri,
@@ -754,6 +756,7 @@ export const createTokenTx = async (
 		delayForTrade: new BN(delayForTrade).toNumber(),
 		limitTimeToUpdate: new BN(limitTimeToUpdate).toNumber(),
 	});
+	const allowCreatorTime = true;
 
 	const tx =
 		tokenData.buyAmount > 0
@@ -784,6 +787,7 @@ export const createTokenTx = async (
 						new BN(maxAmount),
 						new BN(delayForTrade),
 						new BN(limitTimeToUpdate),
+						allowCreatorTime,
 						tokenData.name,
 						tokenData.symbol,
 						tokenData.metadataUrl,
@@ -802,6 +806,9 @@ export const createTokenTx = async (
 	tx.recentBlockhash = blockhash;
 
 	tx.sign(tokenData.mintKeyPair);
+
+	const simulation = await connection.simulateTransaction(tx);
+	console.log("Simulation result:", simulation);
 
 	if (!wallet || !wallet?.signTransaction) throw new Error("Wallet not properly initialized");
 	const signedTx = await wallet.signTransaction(tx);

@@ -325,6 +325,10 @@
 					"type": "u64"
 				},
 				{
+					"name": "allow_creator_time",
+					"type": "bool"
+				},
+				{
 					"name": "name",
 					"type": "string"
 				},
@@ -569,6 +573,10 @@
 				{
 					"name": "limit_time_to_update",
 					"type": "u64"
+				},
+				{
+					"name": "allow_creator_time",
+					"type": "bool"
 				},
 				{
 					"name": "name",
@@ -1176,6 +1184,10 @@
 					{
 						"name": "delay_for_trade",
 						"type": "u64"
+					},
+					{
+						"name": "allow_creator_time",
+						"type": "bool"
 					},
 					{
 						"name": "limit_time_to_update",
