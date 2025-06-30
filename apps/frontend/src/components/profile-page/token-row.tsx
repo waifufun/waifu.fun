@@ -37,7 +37,7 @@ export default function TokenRow({
 	// 	[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
 	// };
 	// const chainIcon = chainIcons[key];
-	const dollarWorth = data?.amountHeld * (data?.dollarWorth ?? 0);
+	const dollarWorth = (data?.amountHeld ?? 0) * (data?.dollarWorth ?? 0);
 
 	return (
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-4 py-8">
@@ -69,28 +69,35 @@ export default function TokenRow({
 				<div className="flex items-center justify-center flex-row space-x-4">
 					<div className="flex flex-col items-end space-y-0">
 						{mode === "activity" ? (
-							<div className="flex flex-row space-x-1 w-full justify-end">
-								<p
-									className={`text-xs uppercase font-bold ${data.direction === 0 ? "text-green-500" : "text-red-500"}`}
-								>
-									{data.direction === 0 ? "bought" : "sold"}
-								</p>
-								<p className="text-xs uppercase md:text-xs font-semibold text-white inline">
-									{data.direction === 0
-										? `${data.amountGotten} $${data?.ticker} for ${data.swapAmount / LAMPORTS_PER_SOL} SOL`
-										: `${data.swapAmount} $${data?.ticker} for ${formatNumber(data.amountGotten / LAMPORTS_PER_SOL, true, true)} SOL`}
-								</p>
-								<p className="text-xs text-white">
-									{new Date(data.createdAt).toLocaleString("en-US", {
-										year: "numeric",
-										month: "long",
-										day: "numeric",
-										hour: "numeric",
-										minute: "2-digit",
-									})}
+							<div className="w-full">
+								<div className="flex flex-row space-x-1 justify-end w-full">
+									<p
+										className={`text-xs uppercase font-bold ${
+											data.direction === 0 ? "text-green-500" : "text-red-500"
+										}`}
+									>
+										{data.direction === 0 ? "bought" : "sold"}
+									</p>
+									<p className="text-xs uppercase md:text-xs font-semibold text-white inline">
+										{data.direction === 0 ? (
+											<>
+												{data.amountGotten} <span className="text-gray-300">${data?.ticker}</span> for{" "}
+												{(data.swapAmount ?? 0) / LAMPORTS_PER_SOL} SOL
+											</>
+										) : (
+											<>
+												{data.swapAmount} <span className="text-gray-300">${data?.ticker}</span> for{" "}
+												{formatNumber((data.amountGotten ?? 0) / LAMPORTS_PER_SOL, true, true)} SOL
+											</>
+										)}
+									</p>
+								</div>
+								<p className="text-xs text-gray-300 mt-1 text-right">
+									{data.createdAt ? new Date(data.createdAt).toLocaleDateString() : ""}
 								</p>
 							</div>
 						) : null}
+
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300">
 							<p className="text-sm font-medium text-gray-200">{data.amountHeld?.toLocaleString()}</p>
 							{data?.dollarWorth ? (
