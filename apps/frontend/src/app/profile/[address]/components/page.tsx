@@ -131,7 +131,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												/>
 											))
 										) : (
-											<div className="flex w-full h-full items-center justify-center">
+											<div className="flex w-full p-4 h-full items-center justify-center">
 												<h1 className="text-[#03FF23] text-base font-semibold uppercase">
 													No tokens have been created by this user
 												</h1>
