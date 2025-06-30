@@ -42,8 +42,8 @@ type PromptContextType = {
 	previousImages: string[];
 	previousVideos: string[];
 	previousAudios: string[];
-	uploadedImage: string | undefined;
-	setUploadedImage: (image: string | undefined) => void;
+	uploadedImage: string | undefined | null;
+	setUploadedImage: (image: string | undefined | null) => void;
 	watchValue: (name: string) => string | number | undefined;
 	getTokenData: (manual?: boolean) => Promise<TokenMetadata>;
 	setPool: (pool: string) => void;
@@ -125,7 +125,7 @@ const PromptProviderContent = ({
 		deleteMedia,
 	} = UseTokenMedia(tokenImageQuery);
 	const [isGeneratingMedia, setIsGeneratingMedia] = useState<boolean>(false);
-	const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
+	const [uploadedImage, setUploadedImage] = useState<string | undefined | null>(undefined);
 	const [pool, setPool] = useState<string>("meteora");
 	const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
@@ -423,7 +423,7 @@ const PromptProviderContent = ({
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
-			image: manual ? uploadedImage : previousImages[0],
+			image: manual ? (uploadedImage ?? undefined) : previousImages[0],
 			metadata: {
 				name,
 				description,

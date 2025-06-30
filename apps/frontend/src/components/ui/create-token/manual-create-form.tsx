@@ -5,7 +5,7 @@ import Image from "next/image";
 import { FormSection } from "./form-section";
 import { UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
-import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
+import { usePrompt } from "@/components/hooks/providers/usePromptContext";
 import {
 	CoinInfoFields,
 	CustomAddressGenerator,
@@ -58,9 +58,15 @@ const UploadPlaceholder = ({
 };
 
 const ImageUploadSection = () => {
-	const { uploadedImage, setUploadedImage } = usePrompt();
+	const { uploadedImage, setUploadedImage, previousImages } = usePrompt();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isDragActive, setIsDragActive] = useState(false);
+	const [isConverting, setIsConverting] = useState(false);
+
+	const displayImage =
+		uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
+
+	const hasValidImage = Boolean(displayImage);
 
 	const validateFile = (file: File): boolean => {
 		const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
@@ -139,9 +145,83 @@ const ImageUploadSection = () => {
 		fileInputRef.current?.click();
 	};
 
+	const convertLinkToBase64 = (url: string): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			const img = new window.Image();
+			img.crossOrigin = "Anonymous";
+
+			img.onload = () => {
+				try {
+					const canvas = document.createElement("canvas");
+					const ctx = canvas.getContext("2d");
+
+					if (!ctx) {
+						reject(new Error("Could not get canvas context"));
+						return;
+					}
+
+					canvas.width = img.width;
+					canvas.height = img.height;
+
+					ctx.drawImage(img, 0, 0);
+
+					const base64 = canvas.toDataURL("image/png");
+					resolve(base64);
+				} catch (error) {
+					reject(error);
+				}
+			};
+
+			img.onerror = () => {
+				reject(new Error("Failed to load image"));
+			};
+
+			img.src = url;
+		});
+	};
+
+	const handleUseGeneratedImage = async () => {
+		if (previousImages.length > 0) {
+			const imageUrl = previousImages[0];
+
+			// Check if it's already base64
+			if (imageUrl?.startsWith("data:")) {
+				setUploadedImage(imageUrl);
+				toast.success("Generated image applied!");
+				return;
+			}
+
+			// Convert URL to base64
+			if (!imageUrl) {
+				toast.error("No image URL available");
+				return;
+			}
+
+			try {
+				setIsConverting(true);
+				toast.loading("Converting image...");
+				const base64Image = await convertLinkToBase64(imageUrl);
+				setUploadedImage(base64Image);
+				toast.dismiss();
+				toast.success("Generated image applied!");
+			} catch (error) {
+				toast.dismiss();
+				console.error("Failed to convert image to base64:", error);
+				toast.error("Failed to convert image. Please try uploading manually.");
+			} finally {
+				setIsConverting(false);
+			}
+		}
+	};
+
 	const handleDeleteImage = () => {
-		setUploadedImage(undefined);
-		toast.success("Image removed!");
+		if (uploadedImage && uploadedImage !== previousImages[0]) {
+			setUploadedImage(undefined);
+			toast.success("Manual image removed!");
+		} else {
+			setUploadedImage(null);
+			toast.success("Generated image removed!");
+		}
 	};
 
 	return (
@@ -153,19 +233,15 @@ const ImageUploadSection = () => {
 				onDragOver={handleDragOver}
 				onDrop={handleDrop}
 			>
-				{!uploadedImage && <UploadPlaceholder onClick={handlePlaceholderClick} isDragActive={isDragActive} />}
-				{uploadedImage && (
+				{!displayImage && <UploadPlaceholder onClick={handlePlaceholderClick} isDragActive={isDragActive} />}
+				{displayImage && (
 					<div className="w-full h-full relative rounded-none overflow-hidden bg-black/50 border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.3)]">
-						<Image
-							src={uploadedImage}
-							alt="Uploaded preview"
-							fill
-							className="object-contain p-2 pixelated-image-render"
-						/>
+						<Image src={displayImage} alt="Token preview" fill className="object-contain p-2 pixelated-image-render" />
 						<button
 							type="button"
 							onClick={handleDeleteImage}
-							className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-none w-6 h-6 flex items-center justify-center shadow-[2px_2px_0px_rgba(0,0,0,0.5)] transition-all hover:scale-110"
+							disabled={isConverting}
+							className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded-none w-6 h-6 flex items-center justify-center shadow-[2px_2px_0px_rgba(0,0,0,0.5)] transition-all hover:scale-110 disabled:hover:scale-100"
 							aria-label="Remove image"
 						>
 							<X size={14} />
@@ -180,16 +256,58 @@ const ImageUploadSection = () => {
 					style={{ display: "none" }}
 				/>
 			</div>
-			{uploadedImage && (
+
+			{/* Image status and controls */}
+			{displayImage && (
 				<div className="flex items-center justify-between">
-					<p className="text-xs text-gray-400">Image uploaded successfully</p>
+					<p className="text-xs text-gray-400">
+						{uploadedImage ? "Manual upload" : "Using generated image"}
+						{isConverting && " (Converting...)"}
+					</p>
+					<div className="flex gap-2">
+						{!uploadedImage && previousImages.length > 0 && (
+							<button
+								type="button"
+								onClick={handleUseGeneratedImage}
+								disabled={isConverting}
+								className="text-xs text-[#03FF24] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
+							>
+								{isConverting ? "Converting..." : "Lock Generated Image"}
+							</button>
+						)}
+						<button
+							type="button"
+							onClick={handlePlaceholderClick}
+							disabled={isConverting}
+							className="text-xs text-[#03FF24] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
+						>
+							Change Image
+						</button>
+					</div>
+				</div>
+			)}
+
+			{/* No image notification */}
+			{!displayImage && previousImages.length > 0 && (
+				<div className="flex items-center justify-between p-2 bg-[#03FF24]/10 border border-[#03FF24]/30 rounded-none">
+					<p className="text-xs text-gray-300">Generated image available from Auto tab</p>
 					<button
 						type="button"
-						onClick={handlePlaceholderClick}
-						className="text-xs text-[#03FF24] hover:text-white transition-colors hover:underline"
+						onClick={handleUseGeneratedImage}
+						disabled={isConverting}
+						className="text-xs text-[#03FF24] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline font-semibold"
 					>
-						Change Image
+						{isConverting ? "Converting..." : "Use Generated Image"}
 					</button>
+				</div>
+			)}
+
+			{/* Image required warning */}
+			{!displayImage && previousImages.length === 0 && (
+				<div className="p-2 bg-red-500/10 border border-red-500/30 rounded-none">
+					<p className="text-xs text-red-400">
+						⚠️ Token image is required. Please upload an image or generate one from the Auto tab.
+					</p>
 				</div>
 			)}
 		</FormSection>
@@ -197,6 +315,12 @@ const ImageUploadSection = () => {
 };
 
 function ManualCreateForm() {
+	const { uploadedImage, previousImages } = usePrompt();
+
+	const hasValidImage = Boolean(
+		uploadedImage === null ? false : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined),
+	);
+
 	return (
 		<div className="grid md:grid-cols-2 gap-6 md:items-start">
 			<ImageUploadSection />
@@ -209,16 +333,10 @@ function ManualCreateForm() {
 				<TradeLimitSection />
 				<PreBuySection idPrefix="manual" />
 				<PoolSelection />
-				<LaunchButton idPrefix="manual" />
+				<LaunchButton idPrefix="manual" disabled={!hasValidImage} />
 			</div>
 		</div>
 	);
 }
 
-export default function WrappedManual() {
-	return (
-		<PromptProvider>
-			<ManualCreateForm />
-		</PromptProvider>
-	);
-}
+export default ManualCreateForm;

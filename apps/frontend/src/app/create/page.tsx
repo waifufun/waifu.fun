@@ -1,5 +1,5 @@
 "use client";
-import { usePrompt } from "@/components/hooks/providers/usePromptContext";
+import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -129,18 +129,12 @@ const GeneratedImages = () => {
 	);
 };
 
-export default function CreateTokenPage() {
+function CreateTokenPageContent() {
 	return (
 		<>
-			{" "}
-			{/* Changed from div to fragment */}
-			<div className="flex-1 container mx-auto px-4 py-8 space-y-8">
-				<div className="text-center">
-					{/* The COIN MACHINE logo could be added here if desired, or managed by FunHeader prop */}
-				</div>
-
-				<Tabs defaultValue="auto" className="w-full max-w-4xl mx-auto">
-					<TabsList className="grid w-full grid-cols-3 bg-black border-2 border-[#03FF24]/50 rounded-none p-0 h-auto shadow-[3px_3px_0px_rgba(3,255,36,0.3)] mb-6">
+			<div className="w-full max-w-6xl mx-auto px-4 py-8">
+				<Tabs defaultValue="auto" className="w-full">
+					<TabsList className="grid w-full grid-cols-3 bg-black border-2 border-[#03FF24]/50 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] mb-6">
 						<TabsTrigger
 							value="auto"
 							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
@@ -179,5 +173,13 @@ export default function CreateTokenPage() {
 				</Tabs>
 			</div>
 		</>
+	);
+}
+
+export default function CreateTokenPage() {
+	return (
+		<PromptProvider>
+			<CreateTokenPageContent />
+		</PromptProvider>
 	);
 }
