@@ -227,6 +227,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			throw new Error("Unsupported address");
 		}
 
+		const cacheKey = `${address}:swaps:page=${page}:limit=${limit}`;
+		const cache = await redis.get(cacheKey);
+
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
 		const paginationOptions = {
 			page,
 			lean: true,
@@ -262,9 +269,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			};
 		});
 
-		return reply.send({
+		const response = {
 			...result,
 			docs: populatedDocs,
-		});
+		};
+
+		await redis.setex(cacheKey, 60, JSON.stringify(response));
+
+		return reply.send(response);
 	});
 }
