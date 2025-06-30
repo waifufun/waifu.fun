@@ -65,6 +65,7 @@ export const launchTx = async (
 
 	const tx = await program.methods
 		.launch(
+			// @ts-ignore
 			params.decimals,
 			params.tokenSupply,
 			params.virtualLamportReserves,
@@ -103,6 +104,7 @@ export const launchAndSwapTx = async (
 
 	const tx = await program.methods
 		.launchAndSwap(
+			// @ts-ignore
 			params.decimals,
 			params.tokenSupply,
 			params.virtualLamportReserves,
