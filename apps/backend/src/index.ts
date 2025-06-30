@@ -30,7 +30,7 @@ const fastify = Fastify({
 
 		level: "info",
 	},
-	bodyLimit: 3 * 1024 * 1024, // 3MB global body limit
+	bodyLimit: 7 * 1024 * 1024, // 7MB global body limit
 });
 
 if (!process.env.JWT_SECRET) {
