@@ -573,12 +573,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}),
 		});
 
-		const transactions =
-			(await DB.Event.find({
-				eventType: "swap",
-				user: getChecksummedAddress(address, "solana"),
-			})) || [];
-
 		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
 		// populating only the tokens that are in our DB
@@ -626,33 +620,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		const txContractAddresses = [
-			...new Set(transactions.map((tx) => getChecksummedAddress(tx.contractAddress as AddressLike, "solana"))),
-		];
+		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData }));
 
-		const tokensForTx = await DB.Token.find({
-			contractAddress: { $in: txContractAddresses },
-		}).lean();
-
-		const tokenMap = new Map(
-			tokensForTx.map((token) => [getChecksummedAddress(token.contractAddress as AddressLike, "solana"), token]),
-		);
-
-		const populatedTransactions = transactions.map((tx) => {
-			const normalizedAddress = getChecksummedAddress(tx.contractAddress as AddressLike, "solana");
-			const tokenInfo = tokenMap.get(normalizedAddress);
-
-			return {
-				...tx.toObject(),
-				tokenName: tokenInfo?.name,
-				image: tokenInfo?.image,
-				tokenTicker: tokenInfo?.ticker,
-			};
-		});
-
-		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData, transactions }));
-
-		return { user, balances: returnData, transactions: populatedTransactions };
+		return { user, balances: returnData };
 	});
 
 	/** Import an existing token */

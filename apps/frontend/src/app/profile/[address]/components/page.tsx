@@ -7,9 +7,22 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
+import { getSwaps } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import type { AddressLike } from "@autofun/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
+	const query = useQuery({
+		queryKey: ["get-swaps", balances?.user],
+		queryFn: async () => {
+			const swaps = (await getSwaps(balances?.user)) as AddressLike;
+			return swaps;
+		},
+	});
+	const transactions = query.data ?? [];
+	console.log("user ? ->", balances?.user);
+
 	const [tab, setTab] = useState("wallet");
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
@@ -29,8 +42,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	const tokensBought = balances?.balances.length;
 	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address);
 	// @ts-ignore @dev will resolve types
-	const transactions = balances?.transactions ?? [];
-	console.log("transactions ->", transactions);
 
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">

@@ -420,6 +420,16 @@ export const getAddressPoints = async ({
 	});
 };
 
+export const getSwaps = async ({
+	address,
+}: {
+	address: string;
+}) => {
+	return await fetcher("/user/get-swaps", "POST", {
+		address,
+	});
+};
+
 export const HELIUS_RPC_URL =
 	process.env.NEXT_PUBLIC_NETWORK === "devnet"
 		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
