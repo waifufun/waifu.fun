@@ -147,13 +147,14 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 													data={{
 														chain: "solana",
 														chainId: 101,
-														// direction, is it a buy or sell? This needs to be added
 														image: transaction.image ?? "/create/test-img.png",
 														title: transaction.tokenName,
 														ticker: transaction.tokenTicker,
 														contractAddress: transaction.contractAddress,
 														marketCap: transaction.marketcap,
-														amountHeld: transaction.amountGotten,
+														direction: transaction.direction,
+														swapAmount: transaction?.swapAmount,
+														amountGotton: transaction?.amountGotton
 													}}
 												/>
 											))

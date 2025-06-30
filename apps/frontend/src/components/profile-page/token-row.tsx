@@ -16,11 +16,14 @@ export default function TokenRow({
 		ticker: string;
 		marketCap: number;
 		contractAddress: string;
-		amountHeld: number;
+		amountHeld?: number;
 		dollarWorth?: number;
 		points?: number;
 		chain: TChain | null;
 		chainId: SolanaNetworkIds | EvmChainIds | null;
+		direction?: 0 | 1;
+		amountGotton: number;
+		swapAmount: number;
 	};
 	mode?: "activity" | "wallet" | "points";
 }) {
@@ -65,9 +68,17 @@ export default function TokenRow({
 						<div className="flex flex-row space-x-1 w-full justify-end">
 							{mode === "activity" ? (
 								<>
-									<p className="text-xs font-bold text-yellow-400">Mcap</p>
+									{/* <p className="text-xs font-bold text-yellow-400">Mcap</p>
 									<p className="text-xs md:text-xs font-semibold text-yellow-400">
 										${formatNumber(data.marketCap, false, true)}
+									</p> */}
+									<p className={`text-xs uppercase font-bold ${data.direction === 0 ? "text-green-500" : "text-red-500"}`}>
+										{data.direction === 0 ? "Buy" : "Sell"}
+									</p>
+									<p className="text-xs uppercase md:text-xs font-semibold text-white">
+										{data.direction === 0
+											? formatNumber(data?.swapAmount, false, true)
+											: formatNumber(data?.amountGotton, false, true)}
 									</p>
 								</>
 							) : null}
@@ -83,12 +94,12 @@ export default function TokenRow({
 					</div>
 					{mode === "activity" ? (
 						<div className="flex flex-col justify-around  text-white place-items-center text-base h-[60px]">
-							<div className="flex flex-col justify-center h-full">
+							{/* <div className="flex flex-col justify-center h-full">
 								<div className="space-y-0 flex flex-row">
 									<p className="text-sm font-bold text-yellow-400">+ {data.points} pts</p>
 								</div>
-							</div>
-							<Link className="place-items-end mt-1 w-full h-full" href={`/token/${data.contractAddress}`}>
+							</div> */}
+							<Link className="place-items-end  mt-1 w-full h-full" href={`/token/${data.contractAddress}`}>
 								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[16px] w-[16px] " />
 							</Link>
 						</div>
