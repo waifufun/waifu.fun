@@ -571,6 +571,10 @@ export type Autofun = {
 					type: "u64";
 				},
 				{
+					name: "allowCreatorTime";
+					type: "bool";
+				},
+				{
 					name: "name";
 					type: "string";
 				},
@@ -1055,6 +1059,10 @@ export type Autofun = {
 				{
 					name: "limitTimeToUpdate";
 					type: "u64";
+				},
+				{
+					name: "allowCreatorTime";
+					type: "bool";
 				},
 				{
 					name: "name";
@@ -1962,6 +1970,10 @@ export type Autofun = {
 					{
 						name: "delayForTrade";
 						type: "u64";
+					},
+					{
+						name: "allowCreatorTime";
+						type: "bool";
 					},
 					{
 						name: "limitTimeToUpdate";
