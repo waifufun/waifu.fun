@@ -219,6 +219,14 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 		const { address, page = 1, limit } = body;
 
+		if (!address) {
+			throw new Error("No address was passed");
+		}
+
+		if (!isSupportedAddress(address as AddressLike)) {
+			throw new Error("Unsupported address");
+		}
+
 		const paginationOptions = {
 			page,
 			lean: true,
@@ -249,7 +257,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			return {
 				...tx,
 				tokenName: tokenInfo?.name,
-			image: tokenInfo?.image,
+				image: tokenInfo?.image,
 				tokenTicker: tokenInfo?.ticker,
 			};
 		});
