@@ -573,7 +573,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			}),
 		});
 
-		const transactions =
+		let transactions =
 			(await DB.Event.find({
 				eventType: "swap",
 				user: getChecksummedAddress(address, "solana"),
@@ -625,6 +625,30 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				...limitedPopulatedData,
 			});
 		}
+
+		const txContractAddresses = [
+			...new Set(transactions.map((tx) => getChecksummedAddress(tx.contractAddress as AddressLike, "solana"))),
+		];
+
+		const tokensForTx = await DB.Token.find({
+			contractAddress: { $in: txContractAddresses },
+		}).lean();
+
+		const tokenMap = new Map(
+			tokensForTx.map((token) => [getChecksummedAddress(token.contractAddress as AddressLike, "solana"), token]),
+		);
+
+		transactions = transactions.map((tx) => {
+			const normalizedAddress = getChecksummedAddress(tx.contractAddress as AddressLike, "solana");
+			const tokenInfo = tokenMap.get(normalizedAddress);
+
+			return {
+				...tx.toObject(),
+				tokenName: tokenInfo?.name,
+				image: tokenInfo?.image,
+				tokenTicker: tokenInfo?.ticker,
+			};
+		});
 
 		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData, transactions }));
 

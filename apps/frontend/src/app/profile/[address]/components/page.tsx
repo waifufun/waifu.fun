@@ -140,19 +140,20 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 									<TabsContent value="transactions" className="p-3 space-y-4">
 										{transactions?.length > 0 ? (
-											transactions.map((transaction: any) => (
+											transactions.map((transaction) => (
 												<TokenRow
 													mode="activity"
 													key={transaction._id}
 													data={{
 														chain: "solana",
 														chainId: 101,
-														image: transaction.info?.imageLargeUrl ?? "/create/test-img.png",
-														title: transaction.name,
-														ticker: transaction.info?.name,
-														contractAddress: transaction.tokenAddress,
+														// direction, is it a buy or sell? This needs to be added
+														image: transaction.image ?? "/create/test-img.png",
+														title: transaction.tokenName,
+														ticker: transaction.tokenTicker,
+														contractAddress: transaction.contractAddress,
 														marketCap: transaction.marketcap,
-														amountHeld: transaction.shiftedBalance,
+														amountHeld: transaction.amountGotten,
 													}}
 												/>
 											))
