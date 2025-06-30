@@ -94,7 +94,7 @@ export default function ConnectWallet() {
 					<LogOut size={16} />
 				) : (
 					<div className="flex items-center gap-1.5 cursor-pointer">
-						<LogOut size={20} className="size-4" />
+						<LogOut size={16} className="size-4" />
 						<span>Disconnect</span>
 					</div>
 				)}
