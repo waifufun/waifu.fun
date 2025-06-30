@@ -89,13 +89,13 @@ export default function ConnectWallet() {
 				</Link>
 			</Button>
 
-			<Button className="w-full bg-red-500 p-2 flex items-center justify-center" onClick={() => wallet.disconnect()}>
+			<Button className="w-full" variant="outline" onClick={() => wallet.disconnect()}>
 				{isCollapsed ? (
 					<LogOut size={16} />
 				) : (
 					<div className="flex items-center gap-1.5 cursor-pointer">
 						<LogOut size={20} className="size-4" />
-						<span className="text-sm uppercase">Disconnect</span>
+						<span>Disconnect</span>
 					</div>
 				)}
 			</Button>
