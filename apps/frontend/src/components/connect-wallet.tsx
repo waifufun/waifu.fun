@@ -4,7 +4,6 @@ import { Button } from "./ui/button";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useIsClient } from "usehooks-ts";
-import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from "./ui/menubar";
 import { LogOut, User, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useSidebar } from "./ui/sidebar";
@@ -75,38 +74,31 @@ export default function ConnectWallet() {
 	}
 
 	return (
-		<Menubar>
-			<MenubarMenu>
-				<MenubarTrigger asChild>
-					<Button className="w-full">
-						{isCollapsed ? (
-							<User size={16} />
-						) : wallet?.connected && wallet.publicKey ? (
-							<span className="truncate">
-								{wallet.publicKey.toBase58().slice(0, 4)}...{wallet.publicKey.toBase58().slice(-4)}
-							</span>
-						) : (
-							"Connect"
-						)}
-					</Button>
-				</MenubarTrigger>
-				<MenubarContent>
-					<MenubarItem>
-						<Link href={`/profile/${wallet?.publicKey?.toBase58()}`}>
-							<div className="flex items-center gap-1.5">
-								<User size={20} className="size-4" />
-								<span className="text-sm uppercase">Profile</span>
-							</div>
-						</Link>
-					</MenubarItem>
-					<MenubarItem onClick={() => wallet.disconnect()}>
-						<div className="flex items-center gap-1.5 cursor-pointer">
-							<LogOut size={20} className="size-4" />
-							<span className="text-sm uppercase">Disconnect</span>
-						</div>
-					</MenubarItem>
-				</MenubarContent>
-			</MenubarMenu>
-		</Menubar>
+		<div className="space-y-2">
+			<Button className="w-full p-2">
+				<Link href={`/profile/${wallet?.publicKey?.toBase58()}`} className="flex items-center justify-center w-full">
+					{isCollapsed ? (
+						<User size={16} />
+					) : wallet?.connected && wallet.publicKey ? (
+						<span className="truncate">
+							{wallet.publicKey.toBase58().slice(0, 4)}...{wallet.publicKey.toBase58().slice(-4)}
+						</span>
+					) : (
+						"Connect"
+					)}
+				</Link>
+			</Button>
+
+			<Button className="w-full bg-red-500 p-2 flex items-center justify-center" onClick={() => wallet.disconnect()}>
+				{isCollapsed ? (
+					<LogOut size={16} />
+				) : (
+					<div className="flex items-center gap-1.5 cursor-pointer">
+						<LogOut size={20} className="size-4" />
+						<span className="text-sm uppercase">Disconnect</span>
+					</div>
+				)}
+			</Button>
+		</div>
 	);
 }
