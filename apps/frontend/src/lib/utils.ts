@@ -807,8 +807,12 @@ export const createTokenTx = async (
 
 	tx.sign(tokenData.mintKeyPair);
 
-	const simulation = await connection.simulateTransaction(tx);
-	console.log("Simulation result:", simulation);
+	// const simulation = await connection.simulateTransaction(tx);
+	// if (simulation?.value?.err) {
+	// 	console.error("Transaction simulation failed:", simulation.value.err);
+	// 	console.error("Simulation Logs:", simulation.value.logs);
+	// 	throw new Error(simulation?.value?.err.toString());
+	// }
 
 	if (!wallet || !wallet?.signTransaction) throw new Error("Wallet not properly initialized");
 	const signedTx = await wallet.signTransaction(tx);
