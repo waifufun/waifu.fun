@@ -15,7 +15,7 @@ import {
 	type Control,
 } from "react-hook-form";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { curveLimitConst } from "@autofun/constants";
+import { curveLimitConst } from "@/lib/utils";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;

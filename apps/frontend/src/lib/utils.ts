@@ -24,11 +24,14 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 import type { CreateTokenResponse } from "@/components/wallet/SolanaWallet";
-import { virtualReservesConst, curveLimitConst } from "@autofun/constants";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
+
+export const virtualReservesConst = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 2800000000 : 28000000000;
+
+export const curveLimitConst = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 11300000000 : 113000000000;
 
 export const abbreviateNumber = (num: number, withoutCurrency = false): string => {
 	const absNum = Math.abs(Number(num));
