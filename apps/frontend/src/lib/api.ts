@@ -423,7 +423,7 @@ export const getAddressPoints = async ({
 export const getSwaps = async ({
 	address,
 	page = 1,
-	limit = 50,
+	limit = 10,
   }: {
 	address: string;
 	page?: number;

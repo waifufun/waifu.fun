@@ -9,15 +9,17 @@ import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
 import { getSwaps } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import Pagination from "@/components/pagination";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
+	const [currentPage, setCurrentPage] = useState<number>(1);
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
 	const query = useQuery({
-		queryKey: ["get-swaps", address],
+		queryKey: ["get-swaps", address, currentPage],
 		queryFn: async () => {
-			const swaps = await getSwaps({ address });
+			const swaps = await getSwaps({ address, page: currentPage });
 			return swaps;
 		},
 	});
@@ -169,6 +171,19 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										) : (
 											<div className="text-center text-[#03FF23]">No transactions found</div>
 										)}
+										<div className="my-4 flex w-full">
+											<div className="mx-auto">
+												<Pagination
+													pagination={{
+														page: query?.data?.page,
+														totalPages: query?.data?.totalPages,
+														total: query?.data?.totalDocs,
+														hasMore: query?.data?.hasNextPage,
+													}}
+													onPageChange={setCurrentPage}
+												/>
+											</div>
+										</div>
 									</TabsContent>
 								</div>
 							</Tabs>
