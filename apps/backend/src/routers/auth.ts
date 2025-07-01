@@ -49,13 +49,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					expiresIn: "7d",
 				});
 
+				token = fastify.jwt.sign(solPayload, {
+					expiresIn: "7d",
+				});
+
 				reply.setCookie("solana", token, {
 					maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
 					path: "/",
 					httpOnly: true,
 					secure: process.env.NODE_ENV === "production",
-					sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-					domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
+					sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+					...(process.env.NODE_ENV === "development" && { domain: "localhost" }),
 				});
 
 				return reply.send({ success: true, message: "Authenticated successfully" });
@@ -140,15 +144,20 @@ export default async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/logout", async (request, reply) => {
 		const { chain } = request.body as { chain: TChain };
 		if (!chain) {
-			return { error: "Chain is required" };
+			return reply.code(400).send({ error: "Chain is required" });
 		}
 
 		reply.clearCookie(chain, {
 			path: "/",
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+			...(process.env.NODE_ENV === "development" && { domain: "localhost" }),
 		});
 
-		return { success: true, message: "Logged out successfully" };
+		return reply.send({ success: true, message: "Logged out successfully" });
 	});
+
 	// this is for develepoment to get a cookie for postman {/* Malibu */}
 	if (process.env.NODE_ENV === "development") {
 		fastify.get("/dev-setup", async (request, reply) => {
