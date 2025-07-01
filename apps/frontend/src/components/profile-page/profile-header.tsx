@@ -5,6 +5,7 @@ import type { AddressLike, TChain } from "@autofun/types";
 import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
 import { Trophy } from "lucide-react";
 import AvatarImage from "./avatar-image";
+import { formatNumber } from "@/lib/utils";
 
 export default function ProfileHeader({
 	data,
@@ -68,7 +69,7 @@ export default function ProfileHeader({
 					<div className="flex gap-0 mt-1">
 						<div className="px-0 py-1 flex items-center justify-center md:justify-start w-full">
 							<Trophy size={20} className="text-autofun-background-action-highlight" />
-							<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
+							<p className="px-2 font-semibold text-[#03FF24] text-base">{formatNumber(data.points, true, true)}</p>
 						</div>
 					</div>
 				) : null}
