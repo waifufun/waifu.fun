@@ -20,6 +20,7 @@ import {
 
 import { AnchorProvider, BN, Program, type Idl } from "@coral-xyz/anchor";
 import idl from "./autofun.json";
+import idl_legacy from "./autofun_legacy.json";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
@@ -313,7 +314,7 @@ export const retrieveAutofunQuote = async ({
 	mode: "buy" | "sell";
 }) => {
 	if (!amount) throw new Error("Invalid amount passed");
-	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
 	const contractAddress = token.contractAddress;
 	const FEE_BASIS_POINTS = 10000;
 	const curve = await getBondingCurvePDA(program, contractAddress);
@@ -441,7 +442,7 @@ function createSpoofedWallet(): WalletLike {
 	};
 }
 
-export const getAutofunProgram = async (connection: Connection, wallet: WalletContextState) => {
+export const getAutofunProgram = async (connection: Connection, wallet: WalletContextState, version = 2) => {
 	const walletToUse =
 		!wallet?.publicKey || !wallet?.signTransaction || !wallet?.signAllTransactions ? createSpoofedWallet() : wallet;
 
@@ -458,7 +459,9 @@ export const getAutofunProgram = async (connection: Connection, wallet: WalletCo
 		AnchorProvider.defaultOptions(),
 	);
 
-	const program: Program<Autofun> = new Program(idl as Idl, provider);
+	// Use legacy IDL for version 1, current IDL for other versions
+	const idlToUse = version === 1 ? idl_legacy : idl;
+	const program: Program<Autofun> = new Program(idlToUse as Idl, provider);
 
 	const [configPda, _] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
 	const configAccount = await program.account.config.fetch(configPda);
@@ -538,7 +541,7 @@ export const executeSwap = async (
 	}
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
-		const { program, configAccount } = await getAutofunProgram(connection, wallet);
+		const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
 
 		const quote = await retrieveAutofunQuote({
 			amount: inputAmount,
@@ -669,7 +672,7 @@ export const launchAndSwapTx = async (
 ) => {
 	const slippage = slippageBps ? slippageBps : 100;
 	const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
-	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
 
 	// Calculate minimum receive amount based on bonding curve formula
 	// This is an estimate and should be calculated more precisely based on the bonding curve
@@ -726,7 +729,7 @@ export const createTokenTx = async (
 	console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
 	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
 
-	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
 	if (!wallet?.publicKey) throw new Error("Wallet not correctly initialized");
 	const address = wallet.publicKey.toBase58();
 

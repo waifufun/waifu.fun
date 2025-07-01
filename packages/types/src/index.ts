@@ -88,6 +88,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	reserveLamport?: number;
 	virtualReserves?: number;
 	socials: ITokenSocials;
+	version: number;
 	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;
 	featured?: boolean;
