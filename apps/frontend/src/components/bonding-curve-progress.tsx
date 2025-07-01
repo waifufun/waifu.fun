@@ -48,7 +48,7 @@ export default function BondingCurveProgress({
 					<div className="text-xs text-autofun-text-primary">
 						There is{" "}
 						<span className="text-autofun-background-action-highlight">
-							{formatNumber(Number(currentReserveLamports), false, true)} SOL
+							{formatNumber(Number(currentReserveLamports / LAMPORTS_PER_SOL), false, true)} SOL
 						</span>{" "}
 						in the bonding curve.
 						{solRequiredForMigration > 0 && (
