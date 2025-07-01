@@ -279,4 +279,35 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 		return reply.send(response);
 	});
+
+	fastify.post<{
+		Body: {
+			address: AddressLike;
+			page?: number;
+			limit?: number;
+		};
+	}>("/get-tokens-created", async (request) => {
+		const { address, page = 1, limit = 10 } = request.body;
+	
+		if (!address) {
+			throw new Error("No address was passed");
+		}
+	
+		if (!isSupportedAddress(address as AddressLike)) {
+			throw new Error("Unsupported address");
+		}
+	
+		const paginationOptions = {
+			page,
+			limit,
+			sort: "-createdAt",
+		};
+	
+		const paginatedTokens = await DB.Token.paginate(
+			{ creator: getChecksummedAddress(address, "solana") },
+			paginationOptions,
+		);
+	
+		return paginatedTokens;
+	});	
 }
