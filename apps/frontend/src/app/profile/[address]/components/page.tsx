@@ -46,7 +46,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 					data={{
 						username: user?.displayName,
 						address: user?.address || address,
-						tokensBought: tokensBought,
+						tokensBought: balances?.user?.tokensBoughtOnAutoFunAmount,
 						tokensCreated: tokensCreated?.length,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
 						points: user?.points,
