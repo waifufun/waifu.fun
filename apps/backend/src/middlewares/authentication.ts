@@ -47,6 +47,8 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 					path: "/",
 					httpOnly: true,
 					secure: process.env.NODE_ENV === "production",
+					sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+					...(process.env.NODE_ENV === "development" && { domain: "localhost" }),
 				});
 			}
 		}
@@ -62,6 +64,8 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 					path: "/",
 					httpOnly: true,
 					secure: process.env.NODE_ENV === "production",
+					sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+					...(process.env.NODE_ENV === "development" && { domain: "localhost" }),
 				});
 			}
 		}
