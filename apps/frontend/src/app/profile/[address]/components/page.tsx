@@ -144,7 +144,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 														title: token.name,
 														ticker: token.ticker,
 														contractAddress: token.contractAddress,
-														marketCap: token?.marketcap,
 													}}
 												/>
 											))
