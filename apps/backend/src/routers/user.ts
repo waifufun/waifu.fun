@@ -239,6 +239,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			lean: true,
 			limit: limit ? (limit > 50 ? 50 : limit) : 50,
 			leanWithId: false,
+			sort: "-createdAt",
 		};
 
 		const checksummedAddress = getChecksummedAddress(address, "solana");

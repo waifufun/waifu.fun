@@ -100,7 +100,15 @@ export default function TokenRow({
 									</p>
 								</div>
 								<p className="text-xs text-gray-300 mt-1 text-right">
-									{data.createdAt ? new Date(data.createdAt).toLocaleDateString() : ""}
+									{data.createdAt
+										? new Date(data.createdAt).toLocaleString("en-US", {
+												day: "numeric",
+												month: "long",
+												year: "numeric",
+												hour: "numeric",
+												minute: "2-digit",
+											})
+										: ""}
 								</p>
 							</div>
 						) : null}
