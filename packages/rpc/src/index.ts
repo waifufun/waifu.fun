@@ -18,6 +18,7 @@ import { Metaplex } from "@metaplex-foundation/js";
 import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
 import BN from "bn.js";
 import idl from "./idls/autofun.json";
+import idl_legacy from "./idls/autofun_legacy.json";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
 import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
@@ -237,6 +238,7 @@ export class SolanaRpcProvider extends EventEmitter {
 	public connection;
 	public client;
 	private program;
+	public program_legacy;
 	public networkId: SolanaNetworkIds;
 	private static currentRpc: SolanaRpcProvider | null = null;
 	public static currentRpcIndex = 0;
@@ -262,6 +264,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
 		this.program = new Program(idl as Idl, provider);
+		this.program_legacy = new Program(idl_legacy as Idl, provider);
 	}
 
 	public subscribeSlot = withFallBack(async (callback: (slotInfo: SlotInfo) => void): Promise<number> => {
@@ -518,13 +521,15 @@ export class SolanaRpcProvider extends EventEmitter {
 		});
 	}, this);
 
-	getBondingCurveInfo = withFallBack(async (contractAddresses: string[]) => {
+	getBondingCurveInfo = withFallBack(async (contractAddresses: string[], version?: number) => {
 		if (!contractAddresses || contractAddresses?.length === 0) return [];
 		const tokenMints: PublicKey[] = contractAddresses.map((addr) => new PublicKey(addr));
 
 		if (!tokenMints || tokenMints?.length === 0) return [];
 
-		const PROGRAM_ID = this.program.programId;
+		// Use legacy program for version 1, current program for other versions
+		const programToUse = version === 1 ? this.program_legacy : this.program;
+		const PROGRAM_ID = programToUse.programId;
 
 		const bondingCurvePDAs = await Promise.all(
 			tokenMints.map((mint) =>
@@ -544,7 +549,7 @@ export class SolanaRpcProvider extends EventEmitter {
 			if (!info) return null;
 
 			try {
-				return this.program.coder.accounts.decode("bondingCurve", info.data);
+				return programToUse.coder.accounts.decode("bondingCurve", info.data);
 			} catch (err) {
 				logger.error("Failed to decode bonding curve for", tokenMints?.[i] ? tokenMints[i].toBase58() : undefined, err);
 				return null;

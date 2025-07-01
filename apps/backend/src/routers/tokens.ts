@@ -301,6 +301,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				curveProgress: bondingCurveData.curveProgress,
 				curveLimit: bondingCurveData.curveLimit,
 				pool,
+				version: 2,
 			});
 
 			return {
@@ -720,6 +721,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),
 				isToken2022: false,
+				version: 2,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -758,6 +760,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
 				isToken2022: metadata?.isToken2022 || false,
+				version: 2,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);

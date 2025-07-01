@@ -273,7 +273,26 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			? await SolanaRpcProvider.connect(SolanaNetworkIds.Devnet)
 			: await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
 	const mustUpdateTokens = tokens.indexer.filter((t) => needsUpdate(t)).map((k) => k.contractAddress);
-	const bondingCurveInfo = await rpc.getBondingCurveInfo(mustUpdateTokens);
+
+	// Group tokens by version for bonding curve info retrieval
+	const tokensByVersion = new Map<number, string[]>();
+	for (const token of tokens.indexer) {
+		if (needsUpdate(token)) {
+			const version = token.version || 1;
+			if (!tokensByVersion.has(version)) {
+				tokensByVersion.set(version, []);
+			}
+			tokensByVersion.get(version)?.push(token.contractAddress);
+		}
+	}
+
+	// Get bonding curve info for each version group
+	const bondingCurveInfoPromises = Array.from(tokensByVersion.entries()).map(([version, addresses]) =>
+		rpc.getBondingCurveInfo(addresses, version),
+	);
+	const bondingCurveInfoResults = await Promise.all(bondingCurveInfoPromises);
+	const bondingCurveInfo = bondingCurveInfoResults.flat();
+
 	const volume24hTokens = await lookUp24hVolume(mustUpdateTokens);
 
 	for (const indexedToken of tokens.indexer) {

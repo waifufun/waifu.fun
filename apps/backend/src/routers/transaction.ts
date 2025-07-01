@@ -173,6 +173,8 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 	fastify.post<{
 		Body: {
 			tokenMint: string;
+			chain: TChain;
+			chainId: TChainId;
 		};
 		Reply: {
 			success: boolean;
@@ -181,6 +183,10 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 		};
 	}>("/claim", async (request, reply) => {
 		try {
+			const user = request.authUser;
+			if (!user?.solana) {
+				return reply.code(401).send({ success: false, error: "Authentication required" });
+			}
 			const { tokenMint } = request.body;
 			if (!tokenMint) {
 				return reply.code(400).send({ success: false, error: "Token mint is required" });

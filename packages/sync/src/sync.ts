@@ -71,6 +71,7 @@ export class DataSync {
 			isToken2022: Boolean(pgToken.is_token_2022),
 			status: pgToken.status || "active",
 			pool: pgToken.imported ? "raydium" : "unknown",
+			version: 1,
 		};
 	}
 
