@@ -457,6 +457,10 @@ const PromptProviderContent = ({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	useEffect(() => {
 		generateAddress(INITIAL_GENERATION_SUFFIX);
+		generateToken({
+			mediaType: "image",
+			prompt: "",
+		});
 	}, []);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps

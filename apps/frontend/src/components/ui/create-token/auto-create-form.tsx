@@ -89,16 +89,6 @@ function AutoCreateForm() {
 		setIsClient(true);
 	}, []);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: This only runs once on client mount
-	useEffect(() => {
-		if (isClient) {
-			generateToken({
-				mediaType: "image",
-				prompt: "",
-			});
-		}
-	}, [isClient]);
-
 	// Don't render anything until hydrated
 	if (!isClient) {
 		return (
