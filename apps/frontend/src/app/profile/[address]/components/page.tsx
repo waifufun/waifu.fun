@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
-import { getSwaps, getTokensCreated } from "@/lib/api";
+import { getSwaps, getTokensCreated, getAddressPoints } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/pagination";
 
@@ -20,6 +20,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	});
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
+
 	const query = useQuery({
 		queryKey: ["get-swaps", address, paginationOptions.transactionPage],
 		queryFn: async () => {
@@ -27,6 +28,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 			return swaps;
 		},
 	});
+
 
 	const tokensCreatedQuery = useQuery({
 		queryKey: ["get-tokens-created", address, paginationOptions.createdPage],
@@ -36,6 +38,14 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 		},
 	});
 	const tokensCreated = tokensCreatedQuery.data?.docs ?? [];
+
+	const pointsData = useQuery({
+		queryKey: ["get-points", address],
+		queryFn: async () => {
+			const points = await getAddressPoints({ address });
+			return points;
+		},
+	});
 
 	const transactions = query?.data?.docs ?? [];
 	const user = balances?.user;
@@ -61,7 +71,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreatedQuery.data?.totalDocs,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: user?.points,
+						points: pointsData?.data?.totalPoints,
 						image: user?.avatar,
 					}}
 				/>

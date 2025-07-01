@@ -575,6 +575,25 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		});
 
 		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
+		
+		// this is to calculate how many tokens a user has bought on autofun
+		const swapEvents = await DB.Event.find({
+			user: getChecksummedAddress(address, "solana"),
+			eventType: "swap",
+			direction: 0,
+		  }).select("contractAddress"); 
+
+		  const swapEventsAddresses = new Set(
+			swapEvents.map((event) => event.contractAddress)
+		  );
+
+		  const tokensBoughtOnAutoFunAmount = swapEventsAddresses.size
+
+		  const extendedUser = {
+			...user,
+			tokensBoughtOnAutoFunAmount
+		  };
+		  
 
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
@@ -621,9 +640,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData }));
+		await redis.setex(cacheKey, 60, JSON.stringify({ user: extendedUser, balances: returnData }));
 
-		return { user, balances: returnData };
+		return { user: extendedUser, balances: returnData };
 	});
 
 	/** Import an existing token */
