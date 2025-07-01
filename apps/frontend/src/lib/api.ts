@@ -239,6 +239,22 @@ export const importToken = async ({ chain, chainId, contractAddress }: ITokenLoo
 	});
 };
 
+export const claimFees = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
+	return await fetcher("/transactions/claim", "POST", {
+		chain,
+		chainId,
+		tokenMint: contractAddress,
+	});
+};
+
 export const getHolders = async ({
 	chain,
 	chainId,

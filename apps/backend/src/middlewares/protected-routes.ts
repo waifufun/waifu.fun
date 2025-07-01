@@ -12,6 +12,7 @@ const protectedPaths = [
 	"/tokens/create",
 	"/chat/message",
 	"/user/upload-profile-image",
+	"/transactions/claim",
 ];
 
 export function registerProtectedRoutes(app: FastifyInstance) {
