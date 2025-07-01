@@ -7,24 +7,37 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
-import { getSwaps } from "@/lib/api";
+import { getSwaps, getTokensCreated } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/pagination";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
-	const [currentPage, setCurrentPage] = useState<number>(1);
+	const [tab, setTab] = useState("wallet");
+	const [paginationOptions, setPaginationOptions] = useState({
+		createdPage: 1,
+		transactionPage: 1,
+	});
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
 	const query = useQuery({
-		queryKey: ["get-swaps", address, currentPage],
+		queryKey: ["get-swaps", address, paginationOptions.transactionPage],
 		queryFn: async () => {
-			const swaps = await getSwaps({ address, page: currentPage });
+			const swaps = await getSwaps({ address, page: paginationOptions.transactionPage });
 			return swaps;
 		},
 	});
+
+	const tokensCreatedQuery = useQuery({
+		queryKey: ["get-tokens-created", address, paginationOptions.createdPage],
+		queryFn: async () => {
+			const tokensCreated = await getTokensCreated({ address, page: paginationOptions.createdPage });
+			return tokensCreated;
+		},
+	});
+	const tokensCreated = tokensCreatedQuery.data?.docs ?? [];
+
 	const transactions = query?.data?.docs ?? [];
-	const [tab, setTab] = useState("wallet");
 	const user = balances?.user;
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
@@ -37,7 +50,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	}, 0);
 
 	const tokensBought = balances?.balances.length;
-	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address);
 
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
@@ -47,7 +59,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						username: user?.displayName,
 						address: user?.address || address,
 						tokensBought: tokensBought,
-						tokensCreated: tokensCreated?.length,
+						tokensCreated: tokensCreatedQuery.data?.totalDocs,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
 						points: user?.points,
 						image: user?.avatar,
@@ -124,16 +136,15 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											tokensCreated.map((token) => (
 												<TokenRow
 													mode="wallet"
-													key={token.tokenAddress}
+													key={token.contractAddress}
 													data={{
 														chain: "solana",
 														chainId: 101,
-														image: token.info?.imageLargeUrl ?? "/create/test-img.png",
+														image: token.image ?? "/create/test-img.png",
 														title: token.name,
-														ticker: token.info?.name,
-														contractAddress: token.tokenAddress,
+														ticker: token.ticker,
+														contractAddress: token.contractAddress,
 														marketCap: token?.marketcap,
-														amountHeld: token?.shiftedBalance,
 													}}
 												/>
 											))
@@ -144,6 +155,15 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												</h1>
 											</div>
 										)}
+										<Pagination
+											pagination={{
+												page: tokensCreatedQuery?.data?.page,
+												totalPages: tokensCreatedQuery?.data?.totalPages,
+												total: tokensCreatedQuery?.data?.totalDocs,
+												hasMore: tokensCreatedQuery?.data?.hasNextPage,
+											}}
+											onPageChange={(newPage) => setPaginationOptions((prev) => ({ ...prev, createdPage: newPage }))}
+										/>
 									</TabsContent>
 
 									<TabsContent value="transactions">
@@ -169,16 +189,20 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												/>
 											))
 										) : (
-											<div className="text-center text-[#03FF23]">No transactions found</div>
+											<div className="text-center my-6 text-[#03FF23] text-base font-semibold uppercase">
+												No transactions found
+											</div>
 										)}
 										<Pagination
 											pagination={{
-												page: query?.data?.page,
-												totalPages: query?.data?.totalPages,
-												total: query?.data?.totalDocs,
-												hasMore: query?.data?.hasNextPage,
+												page: query.data?.page,
+												totalPages: query.data?.totalPages,
+												total: query.data?.totalDocs,
+												hasMore: query.data?.hasNextPage,
 											}}
-											onPageChange={setCurrentPage}
+											onPageChange={(newPage) =>
+												setPaginationOptions((prev) => ({ ...prev, transactionPage: newPage }))
+											}
 										/>
 									</TabsContent>
 								</div>

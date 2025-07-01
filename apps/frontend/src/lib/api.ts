@@ -439,13 +439,29 @@ export const getAddressPoints = async ({
 export const getSwaps = async ({
 	address,
 	page = 1,
-	limit = 50,
+	limit = 25,
 }: {
 	address: string;
 	page?: number;
 	limit?: number;
 }) => {
 	return await fetcher("/user/get-swaps", "POST", {
+		address,
+		page,
+		limit,
+	});
+};
+
+export const getTokensCreated = async ({
+	address,
+	page = 1,
+	limit = 25,
+}: {
+	address: string;
+	page?: number;
+	limit?: number;
+}) => {
+	return await fetcher("/user/get-tokens-created", "POST", {
 		address,
 		page,
 		limit,
