@@ -209,4 +209,74 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			return reply.code(500).send({ success: false, error: "Internal server error" });
 		}
 	});
+
+	fastify.post("/get-swaps", async (request, reply) => {
+		const body = request.body as {
+			address: AddressLike;
+			page?: number;
+			limit?: number;
+		};
+
+		const { address, page = 1, limit } = body;
+
+		if (!address) {
+			throw new Error("No address was passed");
+		}
+
+		if (!isSupportedAddress(address as AddressLike)) {
+			throw new Error("Unsupported address");
+		}
+
+		const cacheKey = `${address}:swaps:page=${page}:limit=${limit}`;
+		const cache = await redis.get(cacheKey);
+
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
+		const paginationOptions = {
+			page,
+			lean: true,
+			limit: limit ? (limit > 50 ? 50 : limit) : 50,
+			leanWithId: false,
+			sort: "-createdAt",
+		};
+
+		const checksummedAddress = getChecksummedAddress(address, "solana");
+
+		const result = await DB.Event.paginate({ eventType: "swap", user: checksummedAddress }, paginationOptions);
+
+		const txContractAddresses = [
+			...new Set(result.docs.map((tx) => getChecksummedAddress(tx.contractAddress as AddressLike, "solana"))),
+		];
+
+		const tokensForTx = await DB.Token.find({
+			contractAddress: { $in: txContractAddresses },
+		}).lean();
+
+		const tokenMap = new Map(
+			tokensForTx.map((token) => [getChecksummedAddress(token.contractAddress as AddressLike, "solana"), token]),
+		);
+
+		const populatedDocs = result.docs.map((tx) => {
+			const normalizedAddress = getChecksummedAddress(tx.contractAddress as AddressLike, "solana");
+			const tokenInfo = tokenMap.get(normalizedAddress);
+
+			return {
+				...tx,
+				tokenName: tokenInfo?.name,
+				image: tokenInfo?.image,
+				tokenTicker: tokenInfo?.ticker,
+			};
+		});
+
+		const response = {
+			...result,
+			docs: populatedDocs,
+		};
+
+		await redis.setex(cacheKey, 60, JSON.stringify(response));
+
+		return reply.send(response);
+	});
 }

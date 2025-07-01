@@ -7,15 +7,25 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
+import { getSwaps } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import Pagination from "@/components/pagination";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
-	const [tab, setTab] = useState("wallet");
+	const [currentPage, setCurrentPage] = useState<number>(1);
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
-
+	const query = useQuery({
+		queryKey: ["get-swaps", address, currentPage],
+		queryFn: async () => {
+			const swaps = await getSwaps({ address, page: currentPage });
+			return swaps;
+		},
+	});
+	const transactions = query?.data?.docs ?? [];
+	const [tab, setTab] = useState("wallet");
 	const user = balances?.user;
-
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
@@ -90,38 +100,89 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							</div>
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
-							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-								<div className="border-b-1 border-[#03FF24]/40">
-									{/* <TokensFilter /> */}
-									<div className="w-full justify-around md:justify-start p-2 place-self-center flex items-center">
-										<button
-											type="button"
-											disabled
-											className="text-xs px-3 select-none py-1 h-auto rounded-none border-2 border-black bg-[#03FF24] text-black"
-										>
-											Tokens Created
-										</button>
+							<Tabs defaultValue="tokens-created" className="w-full">
+								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
+									<div className="border-b-1 border-[#03FF24]/40">
+										<TabsList shadowed={false} className="border-none space-x-2 p-2">
+											<TabsTrigger
+												value="tokens-created"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+											>
+												Tokens Created
+											</TabsTrigger>
+											<TabsTrigger
+												value="transactions"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+											>
+												Transactions
+											</TabsTrigger>
+										</TabsList>
 									</div>
-								</div>
-								<div className="p-0">
-									{tokensCreated?.map((token) => (
-										<TokenRow
-											mode="wallet"
-											key={token.tokenAddress}
-											data={{
-												chain: "solana",
-												chainId: 101,
-												image: token.info?.imageLargeUrl ?? "/create/test-img.png",
-												title: token.title ?? "AlienToken",
-												ticker: token.info?.name ?? "ALIEN",
-												contractAddress: token.tokenAddress,
-												marketCap: token?.marketcap,
-												amountHeld: token?.shiftedBalance,
+
+									<TabsContent value="tokens-created" className="p-0">
+										{tokensCreated?.length > 0 ? (
+											tokensCreated.map((token) => (
+												<TokenRow
+													mode="wallet"
+													key={token.tokenAddress}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: token.info?.imageLargeUrl ?? "/create/test-img.png",
+														title: token.name,
+														ticker: token.info?.name,
+														contractAddress: token.tokenAddress,
+														marketCap: token?.marketcap,
+														amountHeld: token?.shiftedBalance,
+													}}
+												/>
+											))
+										) : (
+											<div className="flex w-full p-4 h-full items-center justify-center">
+												<h1 className="text-[#03FF23] text-base font-semibold uppercase">
+													No tokens have been created by this user
+												</h1>
+											</div>
+										)}
+									</TabsContent>
+
+									<TabsContent value="transactions">
+										{transactions?.length > 0 ? (
+											transactions.map((transaction) => (
+												<TokenRow
+													mode="activity"
+													key={transaction._id}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: transaction.image ?? "/create/test-img.png",
+														title: transaction.tokenName,
+														ticker: transaction.tokenTicker,
+														contractAddress: transaction.contractAddress,
+														marketCap: transaction.marketcap,
+														direction: transaction.direction,
+														swapAmount: transaction?.swapAmount,
+														amountGotten: transaction?.amountGotten,
+														createdAt: transaction?.createdAt,
+														signature: transaction?.signature,
+													}}
+												/>
+											))
+										) : (
+											<div className="text-center text-[#03FF23]">No transactions found</div>
+										)}
+										<Pagination
+											pagination={{
+												page: query?.data?.page,
+												totalPages: query?.data?.totalPages,
+												total: query?.data?.totalDocs,
+												hasMore: query?.data?.hasNextPage,
 											}}
+											onPageChange={setCurrentPage}
 										/>
-									))}
+									</TabsContent>
 								</div>
-							</div>
+							</Tabs>
 						</TabsContent>
 					</Tabs>
 				</div>

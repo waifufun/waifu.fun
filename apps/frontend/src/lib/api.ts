@@ -436,6 +436,22 @@ export const getAddressPoints = async ({
 	});
 };
 
+export const getSwaps = async ({
+	address,
+	page = 1,
+	limit = 50,
+}: {
+	address: string;
+	page?: number;
+	limit?: number;
+}) => {
+	return await fetcher("/user/get-swaps", "POST", {
+		address,
+		page,
+		limit,
+	});
+};
+
 export const HELIUS_RPC_URL =
 	process.env.NEXT_PUBLIC_NETWORK === "devnet"
 		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
