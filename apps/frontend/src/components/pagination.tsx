@@ -20,6 +20,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 
 	const renderPages = () => {
 		const pages: (number | string)[] = [];
+		const isValidPage = (p: number) => p >= 1 && p <= totalPages;
 
 		if (totalPages <= 6) {
 			for (let i = 1; i <= totalPages; i++) {
@@ -31,7 +32,14 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 			} else if (page >= totalPages - 2) {
 				pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
 			} else {
-				pages.push(1, page - 1, page, page + 1, "...", totalPages);
+				pages.push(
+					1,
+					isValidPage(page - 1) ? page - 1 : 1,
+					page,
+					isValidPage(page + 1) ? page + 1 : totalPages,
+					"...",
+					totalPages,
+				);
 			}
 		}
 
@@ -41,13 +49,14 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 	const pages = renderPages();
 
 	return (
-		<nav aria-label="pagination" className="ml-auto">
+		<nav aria-label="pagination" className="place-self-center flex my-4">
 			<ul className="flex items-center gap-1">
 				{pages.map((item, index) => {
 					if (typeof item === "number") {
 						const isActive = item === page;
 						return (
 							<button
+								// biome-ignore lint/suspicious/noArrayIndexKey: noArrayIndexKey
 								key={index}
 								type="button"
 								tabIndex={0}
@@ -58,11 +67,6 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 									"cursor-pointer h-8 px-3 py-2 outline outline-offset-[-1px] inline-flex flex-col items-center justify-center gap-2.5 overflow-hidden",
 								])}
 								onClick={() => onPageChange?.(item)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === " ") {
-										onPageChange?.(item);
-									}
-								}}
 							>
 								<div className="select-none text-center text-base font-normal font-dm-mono uppercase leading-normal tracking-widest">
 									{item}
@@ -74,6 +78,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 					return (
 						<button
 							type="button"
+							// biome-ignore lint/suspicious/noArrayIndexKey: noArrayIndexKey
 							key={`ellipsis-${index}`}
 							tabIndex={0}
 							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-autofun-text-secondary text-base font-normal font-dm-mono uppercase leading-normal tracking-widest hover:text-autofun-text-primary transition-colors"
@@ -82,15 +87,6 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 									onPageChange?.(page - 3);
 								} else {
 									onPageChange?.(page + 3);
-								}
-							}}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									if (index < pages.indexOf(page)) {
-										onPageChange?.(page - 3);
-									} else {
-										onPageChange?.(page + 3);
-									}
 								}
 							}}
 						>

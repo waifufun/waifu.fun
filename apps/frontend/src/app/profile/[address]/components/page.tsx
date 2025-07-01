@@ -171,19 +171,15 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										) : (
 											<div className="text-center text-[#03FF23]">No transactions found</div>
 										)}
-										<div className="my-4 flex w-full">
-											<div className="mx-auto">
-												<Pagination
-													pagination={{
-														page: query?.data?.page,
-														totalPages: query?.data?.totalPages,
-														total: query?.data?.totalDocs,
-														hasMore: query?.data?.hasNextPage,
-													}}
-													onPageChange={setCurrentPage}
-												/>
-											</div>
-										</div>
+										<Pagination
+											pagination={{
+												page: query?.data?.page,
+												totalPages: query?.data?.totalPages,
+												total: query?.data?.totalDocs,
+												hasMore: query?.data?.hasNextPage,
+											}}
+											onPageChange={setCurrentPage}
+										/>
 									</TabsContent>
 								</div>
 							</Tabs>
