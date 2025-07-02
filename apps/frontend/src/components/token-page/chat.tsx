@@ -248,7 +248,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 					<Input
 						type="text"
 						disabled={!hasEnoughTokens}
-						placeholder="Lorem ipsum 🤔 🔥🔥"
+						placeholder="Type a message..."
 						className="bg-black border-2 border-[#03FF24]/50 placeholder-gray-600 text-sm h-9 focus:border-[#03FF24] text-gray-200 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] flex-grow"
 						{...register("message", { required: true })}
 					/>
