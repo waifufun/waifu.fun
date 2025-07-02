@@ -6,6 +6,7 @@ import { getChecksummedAddress, isSupportedAddress } from "@autofun/utils";
 import { calculateStreak } from "../utils/points";
 import redis from "@autofun/redis";
 import moment from "moment";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
@@ -114,8 +115,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
 							points: {
 								$cond: [
 									{ $eq: ["$direction", 0] },
-									{ $multiply: [{ $toDouble: "$swapAmount" }, 0.6] },
-									{ $multiply: [{ $toDouble: "$swapAmount" }, 0.1] },
+									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.6] },
+									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.1] },
 								],
 							},
 						},
@@ -149,11 +150,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					$addFields: {
 						points: {
 							$cond: [
-								{ $eq: ["$direction", 0] },
-								{ $multiply: [{ $toDouble: "$swapAmount" }, 0.6] },
-								{ $multiply: [{ $toDouble: "$swapAmount" }, 0.1] },
+							  { $eq: ["$direction", 0] },
+							  { $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.6] },
+							  { $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.1] },
 							],
-						},
+						  },
 					},
 				},
 				{
@@ -288,26 +289,26 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		};
 	}>("/get-tokens-created", async (request) => {
 		const { address, page = 1, limit = 10 } = request.body;
-	
+
 		if (!address) {
 			throw new Error("No address was passed");
 		}
-	
+
 		if (!isSupportedAddress(address as AddressLike)) {
 			throw new Error("Unsupported address");
 		}
-	
+
 		const paginationOptions = {
 			page,
 			limit,
 			sort: "-createdAt",
 		};
-	
+
 		const paginatedTokens = await DB.Token.paginate(
 			{ creator: getChecksummedAddress(address, "solana") },
 			paginationOptions,
 		);
-	
+
 		return paginatedTokens;
-	});	
+	});
 }
