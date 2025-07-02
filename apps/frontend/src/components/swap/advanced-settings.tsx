@@ -24,7 +24,7 @@ export default function AdvancedSettings() {
 			{open && (
 				<div className="py-4 flex flex-col gap-4 w-full border-t pt-4 mt-4 border-autofun-stroke-primary">
 					{/* Speed */}
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between p-2">
 						<div className="flex items-center gap-1">
 							<span className="text-xs text-white font-medium">Speed</span>
 							<Tooltip>
@@ -37,13 +37,13 @@ export default function AdvancedSettings() {
 							</Tooltip>
 						</div>
 
-						<div className="flex overflow-hidden">
+						<div className="flex flex-wrap gap-2 xl:overflow-hidden">
 							{(["normal", "turbo", "ultra"] as TSpeed[]).map((label: TSpeed) => (
 								<Button
 									key={label}
 									onClick={() => setSpeed(label)}
 									className={cn(
-										"flex-1 text-sm max-h-[36px] h-full capitalize bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] ml-2 font-medium text-white hover:bg-[#1a1a1a] transition-colors",
+										"flex-1 text-sm max-h-[36px] h-full capitalize bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] font-medium text-white hover:bg-[#1a1a1a] transition-colors",
 										"border border-transparent",
 										String(speed) === String(label) && "border border-[#03FF24]",
 									)}
