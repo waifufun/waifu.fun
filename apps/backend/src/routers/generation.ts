@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType, type AddressLike } from "@autofun/types";
+import { MediaType, type SolanaNetworkIds, type AddressLike, type TChain } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
 import DB from "@autofun/database";
 import { SolanaRpcProvider } from "@autofun/rpc";
@@ -21,6 +21,8 @@ interface GenerateMetadataRequest {
 interface GenerateMediaRequest {
 	prompt: string;
 	address: AddressLike;
+	chain?: TChain;
+	chainId?: SolanaNetworkIds;
 	type?: MediaType;
 	negative_prompt?: string;
 	guidance_scale?: number;
@@ -203,7 +205,6 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 		async (request, reply) => {
 			try {
 				const user = request.authUser;
-				console.log("user: ", user);
 				if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
 					return reply.code(401).send({
 						success: false,
@@ -253,16 +254,36 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 
 				const token = await DB.Token.findOne({
 					chain: "solana",
+					chainId: request.body.chainId || 101,
 					contractAddress: address,
 				}).lean();
 
 				if (!token) {
 					return reply.code(404).send({
-						error: "Token not found",
+						error: `Token not found on ${request.body.chainId === 103 ? "devnet" : "mainnet"}`,
 					});
 				}
 
-				const rpc = new SolanaRpcProvider(101);
+				const chain = request.body.chain || "solana";
+				const chainId = request.body.chainId || 101;
+
+				if (chain !== "solana") {
+					// Only allow Solana
+					return reply.code(400).send({
+						error: "Only Solana chain is supported for media generation",
+					});
+				}
+
+				if (chainId !== 101 && chainId !== 103) {
+					// Only allow mainnet and devnet
+					return reply.code(400).send({
+						error: "Only Solana mainnet (101) and devnet (103) are supported for media generation",
+					});
+				}
+
+				console.log(`Generating media for token ${address} on ${chain} ${chainId === 103 ? "devnet" : "mainnet"}`);
+
+				const rpc = new SolanaRpcProvider(chainId);
 				const balance = await rpc.getTokenBalance(address, user.solana);
 
 				const slowBalanceNeeded = getMinBalance(type, "fast");
@@ -284,8 +305,9 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				}
 
 				if (!balance || balance < requiredBalance) {
+					const networkName = chainId === 103 ? "devnet" : "mainnet";
 					return reply.code(400).send({
-						message: `Insufficient balance to generate ${type} in ${mode} mode. Minimum required: ${requiredBalance} tokens`,
+						message: `Insufficient balance to generate ${type} in ${mode} mode on ${networkName}. Minimum required: ${requiredBalance} tokens, current: ${balance}`,
 					});
 				}
 
@@ -353,6 +375,9 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				return {
 					success: true,
 					mediaUrl,
+					chain,
+					chainId,
+					networkName: chainId === 103 ? "devnet" : "mainnet",
 					remainingGenerations: rateLimit.remaining - 1,
 					resetTime: rateLimit.resetTime,
 				};

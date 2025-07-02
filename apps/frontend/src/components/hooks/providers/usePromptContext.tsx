@@ -16,6 +16,7 @@ import {
 } from "react-hook-form";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { curveLimitConst } from "@/lib/utils";
+import type { SolanaNetworkIds, TChain } from "@autofun/types";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -36,7 +37,13 @@ type PromptContextType = {
 	isGeneratingAddress: boolean;
 	isGeneratingMedia: boolean;
 	generateToken: (params: { mediaType: MediaType; prompt?: string }) => void;
-	generateMediaToken: (params: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => void;
+	generateMediaToken: (params: {
+		mediaType: MediaType;
+		prompt?: string;
+		contractAddress?: string;
+		chain: TChain;
+		chainId: SolanaNetworkIds;
+	}) => void;
 	changeMainImage: (index: number) => void;
 	changeMainMedia: (index: number, type: MediaType) => void;
 	previousImages: string[];
@@ -194,20 +201,39 @@ const PromptProviderContent = ({
 	});
 
 	const generateMediaTokenMutation = useMutation({
-		mutationKey: ["generateMediaForToken"],
-		mutationFn: generateMediaForToken,
-		onSuccess: (data, variables) => {
+		mutationKey: ["generateMediaToken"],
+		mutationFn: ({
+			prompt,
+			width,
+			height,
+			type,
+			contractAddress,
+			chain,
+			chainId,
+		}: {
+			prompt: string;
+			width: number;
+			height: number;
+			type: MediaType;
+			contractAddress: string;
+			chain: TChain;
+			chainId: SolanaNetworkIds;
+		}) =>
+			generateMediaForToken({
+				prompt,
+				width,
+				height,
+				type: type as "audio" | "video" | "image",
+				contractAddress,
+				chain,
+				chainId,
+			}),
+		onSuccess: (data) => {
 			if (data?.mediaUrl) {
-				const mediaType = (variables as { type?: MediaType })?.type || "image";
+				const actualMediaUrl = data.mediaUrl;
+				const mediaType = data.type || "image";
 
-				let actualMediaUrl: string;
-				if (typeof data.mediaUrl === "string") {
-					// Image
-					actualMediaUrl = data.mediaUrl;
-				} else if (typeof data.mediaUrl === "object" && data.mediaUrl.url) {
-					// Video/Audio
-					actualMediaUrl = data.mediaUrl.url;
-				} else {
+				if (!actualMediaUrl.startsWith("http")) {
 					toast.error("Error generating media: Invalid media URL format");
 					setIsGeneratingMedia(false);
 					return;
@@ -215,6 +241,7 @@ const PromptProviderContent = ({
 
 				addMedia(actualMediaUrl, mediaType);
 				setIsGeneratingMedia(false);
+				toast.success("Media generated successfully!");
 			} else {
 				toast.error("Error generating media: No media URL returned");
 				setIsGeneratingMedia(false);
@@ -395,9 +422,22 @@ const PromptProviderContent = ({
 		mediaType,
 		prompt,
 		contractAddress,
-	}: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => {
+		chain,
+		chainId,
+	}: {
+		mediaType: MediaType;
+		prompt?: string;
+		contractAddress?: string;
+		chain: TChain;
+		chainId: SolanaNetworkIds;
+	}) => {
 		if (!contractAddress) {
 			toast.error("Contract address is required for token media generation");
+			return;
+		}
+
+		if (!chain || !chainId) {
+			toast.error("Chain and chainId are required for token media generation");
 			return;
 		}
 
@@ -408,6 +448,8 @@ const PromptProviderContent = ({
 			height: 512,
 			type: mediaType,
 			contractAddress,
+			chain,
+			chainId,
 		});
 	};
 
