@@ -10,6 +10,7 @@ import { useEffect, useState, useRef } from "react";
 import { authenticate, generateNonce, getAuthStatus, logOut } from "@/lib/api";
 import type { AddressLike } from "@autofun/types";
 import bs58 from "bs58";
+import { useRouter } from "next/navigation";
 
 export default function ConnectWallet() {
 	const client = useIsClient();
@@ -22,6 +23,7 @@ export default function ConnectWallet() {
 	const hasInitialized = useRef(false);
 	const walletStateRef = useRef<{ connected: boolean; address: string | null }>({ connected: false, address: null });
 	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const router = useRouter();
 
 	const isCollapsed = state === "collapsed";
 
@@ -145,7 +147,7 @@ export default function ConnectWallet() {
 					className="flex-1"
 					variant="outline"
 					onClick={() => {
-						modal.setVisible(true);
+						router.push(`/profile/${wallet.publicKey?.toBase58()}`);
 					}}
 				>
 					{isCollapsed ? <User size={16} /> : "Profile"}
