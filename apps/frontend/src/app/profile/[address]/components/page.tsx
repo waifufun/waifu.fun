@@ -71,7 +71,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreatedQuery.data?.totalDocs,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: pointsData?.data?.totalPoints,
+						totalPoints: pointsData?.data?.totalPoints,
+						weeklyPoints: pointsData?.data?.weeklyPoints,
 						image: user?.avatar,
 					}}
 				/>
