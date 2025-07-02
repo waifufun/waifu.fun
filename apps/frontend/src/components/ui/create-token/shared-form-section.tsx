@@ -122,7 +122,7 @@ export const CustomAddressGenerator = ({
 			<div className="flex items-end gap-2">
 				<div className="flex-grow">
 					<Label htmlFor={`${idPrefix}CustomAddress`} className={formLabelBaseClass}>
-						Prefix / Suffix
+						Suffix
 					</Label>
 					<Input
 						type="text"
