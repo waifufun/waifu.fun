@@ -6,7 +6,6 @@ import { getChecksummedAddress, isSupportedAddress } from "@autofun/utils";
 import { calculateStreak } from "../utils/points";
 import redis from "@autofun/redis";
 import moment from "moment";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
@@ -89,7 +88,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			}
 
 			const currentWeekStart = moment().startOf("week").toDate();
-
 			const MAXIMUM_WEEKLY_POINTS_AMOUNT = 1_000_000;
 			const WEEKLY_POINTS_CAP = MAXIMUM_WEEKLY_POINTS_AMOUNT * 0.02;
 
@@ -115,8 +113,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
 							points: {
 								$cond: [
 									{ $eq: ["$direction", 0] },
-									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.6] },
-									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.1] },
+									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.6] },
+									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.1] },
 								],
 							},
 						},
@@ -150,11 +148,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					$addFields: {
 						points: {
 							$cond: [
-							  { $eq: ["$direction", 0] },
-							  { $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.6] },
-							  { $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, LAMPORTS_PER_SOL] }, 0.1] },
+								{ $eq: ["$direction", 0] },
+								{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.6] },
+								{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.1] },
 							],
-						  },
+						},
 					},
 				},
 				{
