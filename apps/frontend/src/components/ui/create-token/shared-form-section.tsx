@@ -558,6 +558,11 @@ export const LaunchButton = ({
 			return;
 		}
 
+		if (idPrefix === "manual" && !uploadedImage) {
+			toast.error("Please upload an image or use the generated image from the Auto tab.");
+			return;
+		}
+
 		setLaunching(true);
 		try {
 			const tokenData = await getTokenData(idPrefix === "manual");
