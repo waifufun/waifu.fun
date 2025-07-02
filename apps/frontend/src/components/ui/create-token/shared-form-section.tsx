@@ -218,14 +218,29 @@ export const DelayedStartSection = ({
 	];
 
 	const handleModeChange = (
-		newMode: "preset" | "manual" | "instant",
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		newMode: "preset" | "manual" | "instant" | undefined,
+		// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
 		field: ControllerRenderProps<any, "delayForTrade">,
 	) => {
+		// Prevent unselecting
+		if (!newMode) {
+			return;
+		}
+
 		setMode(newMode);
 		if (newMode === "instant") {
 			field.onChange(0);
+		} else if (newMode === "preset") {
+			field.onChange(presets[0]?.value ?? 0);
 		}
+	};
+
+	// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
+	const handlePresetChange = (presetValue: string | undefined, field: ControllerRenderProps<any, "delayForTrade">) => {
+		if (!presetValue) {
+			return;
+		}
+		field.onChange(Number(presetValue));
 	};
 
 	return (
@@ -234,11 +249,12 @@ export const DelayedStartSection = ({
 				<Controller
 					name="delayForTrade"
 					control={control}
+					defaultValue={0}
 					render={({ field }) => (
 						<ToggleGroup
 							type="single"
 							value={mode}
-							onValueChange={(v) => handleModeChange(v as "preset" | "manual" | "instant", field)}
+							onValueChange={(v) => handleModeChange(v as "preset" | "manual" | "instant" | undefined, field)}
 							className="grid grid-cols-3 gap-3"
 						>
 							<ToggleGroupItem
@@ -268,69 +284,74 @@ export const DelayedStartSection = ({
 					name="delayForTrade"
 					control={control}
 					rules={{ required: "Please choose a delay", min: { value: 0, message: "Delay must be ≥ 0" } }}
-					defaultValue={presets[0]?.value ?? 0}
+					defaultValue={0}
 					render={({ field }) =>
 						mode === "preset" ? (
-							<>
+							<div className="w-full">
 								<Label className={formLabelBaseClass}>Choose Delay</Label>
 								<ToggleGroup
 									type="single"
 									value={String(field.value)}
-									onValueChange={(v) => field.onChange(Number(v))}
+									onValueChange={(v) => handlePresetChange(v, field)}
 									className="grid grid-cols-3 gap-2 mt-1 mb-2"
 								>
 									{presets.map((p) => (
-										<ToggleGroupItem key={p.value} value={String(p.value)}>
+										<ToggleGroupItem
+											key={p.value}
+											value={String(p.value)}
+											className="h-8 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold text-xs"
+										>
 											{p.label}
 										</ToggleGroupItem>
 									))}
 								</ToggleGroup>
-							</>
+							</div>
 						) : mode === "manual" ? (
-							<div className="space-y-1">
+							<div className="space-y-1 w-full">
 								<Label htmlFor="manual-start" className={formLabelBaseClass}>
 									Pick Start Date &amp; Time
 								</Label>
 								<Input
 									id="manual-start"
 									type="datetime-local"
-									min={new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)} // Minimum 5 minutes from now
+									min={new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)}
 									max={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
 									onChange={(e) => {
-										const then = new Date(e.target.value).getTime();
-										const now = Date.now();
-										let secs = Math.floor((then - now) / 1000);
+										const inputValue = e.target.value;
+										if (!inputValue) return;
 
-										// Enforce 5-minute minimum
-										const minSecs = 5 * 60; // 5 minutes in seconds
+										const then = new Date(inputValue).getTime();
+										const now = Date.now();
+										const secs = Math.floor((then - now) / 1000);
+
+										const minSecs = 5 * 60;
+										const maxSecs = 24 * 60 * 60;
+
 										if (secs < minSecs) {
-											secs = minSecs;
 											toast.error("Minimum delay is 5 minutes");
+											return;
 										}
 
-										// Enforce 24-hour maximum
-										const maxSecs = 24 * 60 * 60; // 24 hours in seconds
 										if (secs > maxSecs) {
-											secs = maxSecs;
 											toast.error("Maximum delay is 24 hours");
+											return;
 										}
 
 										field.onChange(secs);
 									}}
-									className={cn("mt-1 h-10", errors.delayForTrade && "border-red-500")}
+									className={cn(formElementBaseClass, "mt-1 h-10", errors.delayForTrade && "border-red-500")}
 								/>
 							</div>
 						) : (
-							<div className="space-y-1">
+							<div className="space-y-1 w-full">
 								<Label className={formLabelBaseClass}>Instant Start</Label>
 								<p className="text-xs text-gray-400 mt-1">Trading will start immediately after token creation.</p>
 							</div>
 						)
 					}
 				/>
-
-				{errors.delayForTrade && <p className="text-red-500 text-xs mt-1">{errors.delayForTrade.message}</p>}
 			</div>
+			{errors.delayForTrade && <p className="text-red-500 text-xs mt-1">{errors.delayForTrade.message}</p>}
 			<div className="flex items-center gap-2 mt-2">
 				<Info size={12} className="text-gray-500" />
 				<p className="text-[10px] text-gray-500">
