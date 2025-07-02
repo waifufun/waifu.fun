@@ -223,7 +223,7 @@ export default function PageClient({
 							})}
 						</div>
 
-						{isCreator && <ClaimFees token={token} />}
+						{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
 
 						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
