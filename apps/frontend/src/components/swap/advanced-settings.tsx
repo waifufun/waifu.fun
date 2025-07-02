@@ -24,7 +24,7 @@ export default function AdvancedSettings() {
 			{open && (
 				<div className="py-4 flex flex-col gap-4 w-full border-t pt-4 mt-4 border-autofun-stroke-primary">
 					{/* Speed */}
-					<div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between p-2">
+					<div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between p-0">
 						<div className="flex items-center gap-1">
 							<span className="text-xs text-white font-medium">Speed</span>
 							<Tooltip>
@@ -37,7 +37,7 @@ export default function AdvancedSettings() {
 							</Tooltip>
 						</div>
 
-						<div className="flex flex-wrap gap-2 xl:overflow-hidden">
+						<div className="flex flex-wrap gap-2 mt-2 md:mt-0 xl:overflow-hidden">
 							{(["normal", "turbo", "ultra"] as TSpeed[]).map((label: TSpeed) => (
 								<Button
 									key={label}
@@ -55,7 +55,7 @@ export default function AdvancedSettings() {
 					</div>
 
 					{/* Slippage */}
-					<div className="flex  flex-col gap-4">
+					<div className="flex flex-col gap-4">
 						<div className="flex items-center justify-between w-full">
 							<div className="flex items-center gap-1">
 								<span className="text-xs text-white font-medium">Slippage</span>
