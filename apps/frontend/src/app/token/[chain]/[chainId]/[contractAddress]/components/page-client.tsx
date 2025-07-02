@@ -51,7 +51,7 @@ export default function PageClient({
 						className="h-10 w-10 rounded-none border-2 border-[#03FF24]/50 shadow-[2px_2px_0px_rgba(3,255,36,0.3)] pixelated-image-render"
 					/>
 					{/* Token Name */}
-					<div>
+					<div className="space-y-3 xl:space-y-0">
 						{/* Name */}
 						<div className="flex items-center gap-3 flex-wrap">
 							{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
@@ -64,14 +64,14 @@ export default function PageClient({
 							<Badge
 								className={cn(
 									badgeBaseClasses,
-									"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+									"bg-black/80  hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 								)}
 							>
 								{badge}
 							</Badge>
 						</div>
 						{/* Creator */}
-						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi ">
+						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi">
 							<div className="capitalize">Created by:</div>
 							<div className="hover:underline">
 								<Link href={`/profile/${token.creator}`}>{token?.creator ? shortenAddress(token?.creator) : "-"}</Link>
@@ -79,7 +79,7 @@ export default function PageClient({
 						</div>
 					</div>
 				</div>
-				<div className="gap-9 flex flex-wrap justify-between">
+				<div className="gap-0 w-full lg:w-fit mb-3 lg:mb-0 flex flex-wrap md:flex-row gap-y-5 xl:justify-around">
 					{[
 						{
 							title: "Market Cap",
@@ -105,9 +105,9 @@ export default function PageClient({
 							icon: Clock,
 						},
 					].map((item) => (
-						<div className="flex flex-col items-end w-24" key={item.title}>
-							<div className="text-autofun-text-secondary uppercase text-xs">{item.title}</div>
-							<div className="inline-flex items-center gap-1 text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+						<div className="flex flex-col items-end min-w-24" key={item.title}>
+							<div className="text-autofun-text-secondary uppercase text-xs place-self-start">{item.title}</div>
+							<div className="inline-flex items-center gap-1 text-xs justify-start place-self-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
 								{item?.icon ? <item.icon className="size-3 text-autofun-background-action-highlight/70" /> : null}
 								{item.value}
 							</div>
