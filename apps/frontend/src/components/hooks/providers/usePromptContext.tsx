@@ -62,6 +62,8 @@ type PromptContextType = {
 	deleteImage: (imageLink: string) => void;
 	deleteMedia: (mediaLink: string, mediaType: MediaType) => void;
 	addMedia: (link: string, type: MediaType) => void;
+	terminateWorkers: () => void;
+	cancelVanityGeneration: () => void;
 };
 
 export type TokenFormData = {
@@ -276,6 +278,16 @@ const PromptProviderContent = ({
 		}
 		workerRefs.current = [];
 	}, []);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: yes
+	const cancelVanityGeneration = useCallback(() => {
+		if (isGeneratingAddressRef.current) {
+			setIsGeneratingAddress(false);
+			setMintKeyPair(null);
+			activeSuffixRef.current = "";
+			terminateWorkers();
+		}
+	}, [terminateWorkers]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	const initializeAndStartWorkers = useCallback(
@@ -545,6 +557,8 @@ const PromptProviderContent = ({
 		deleteImage,
 		deleteMedia,
 		addMedia,
+		terminateWorkers,
+		cancelVanityGeneration,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;
