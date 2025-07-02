@@ -29,7 +29,7 @@ schema.plugin(paginate);
 
 schema.index({ address: 1 }, { unique: true });
 schema.index({ address: 1, suspended: 1 });
-schema.index({ adminRole: 1 });
+schema.index({ adminRole: 1 }, { sparse: true });
 schema.index({ adminPermissions: 1 });
 
 const Model = Mongoose.model<IUser, PaginateModel<IUser>>("User", schema);
