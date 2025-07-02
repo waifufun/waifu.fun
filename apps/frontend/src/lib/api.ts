@@ -326,6 +326,10 @@ export const authenticate = async (address: AddressLike, signature: string, chai
 	});
 };
 
+export const getAuthStatus = async () => {
+	return await fetcher("/auth/status", "GET");
+};
+
 export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };

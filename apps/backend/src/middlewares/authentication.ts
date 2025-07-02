@@ -3,6 +3,7 @@ import type { AddressLike } from "@autofun/types";
 import type { JWT } from "@fastify/jwt";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { getChecksummedAddress } from "@autofun/utils";
+import DB from "@autofun/database";
 
 declare module "fastify" {
 	interface FastifyRequest {
@@ -11,6 +12,19 @@ declare module "fastify" {
 			solana?: AddressLike;
 		};
 		jwt: JWT;
+	}
+}
+
+async function ensureUserExists(address: AddressLike) {
+	try {
+		await DB.User.updateOne(
+			{ address },
+			{ $setOnInsert: { address } },
+			{ upsert: true }
+		);
+		console.log(`[Auth] Ensured user exists: ${address}`);
+	} catch (error) {
+		console.error(`[Auth] Error ensuring user exists for ${address}:`, error);
 	}
 }
 
@@ -23,10 +37,18 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 		request.authUser = {};
 
 		if (process.env.NODE_ENV === "development" && !cookies.evm && !cookies.solana) {
+			const defaultEVM = "0x0000000000000000000000000000000000000000";
+			const defaultSolana = "11111111111111111111111111111111" as AddressLike;
+			
 			request.authUser = {
-				evm: "0x0000000000000000000000000000000000000000",
-				solana: "11111111111111111111111111111111" as AddressLike,
+				evm: defaultEVM,
+				solana: defaultSolana,
 			};
+			
+			// Ensure default users exist in development
+			await ensureUserExists(defaultEVM);
+			await ensureUserExists(defaultSolana);
+			
 			console.log("[Auth] Development mode - using default addresses");
 			return;
 		}
@@ -39,7 +61,12 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 				if (!isSolanaAddress(decoded.address)) {
 					throw new Error("Invalid Solana address");
 				}
-				request.authUser.solana = getChecksummedAddress(decoded.address, "solana");
+				const checksummedAddress = getChecksummedAddress(decoded.address, "solana");
+				request.authUser.solana = checksummedAddress;
+				
+				// Ensure Solana user exists
+				await ensureUserExists(checksummedAddress);
+				
 				console.log("[Auth] Successfully decoded Solana address");
 			} catch (error) {
 				console.log("[Auth] Failed to decode Solana address:", error);
@@ -56,7 +83,12 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 		if (evm) {
 			try {
 				const decoded = request.server.jwt.decode(evm) as { address: AddressLike };
-				request.authUser.evm = getChecksummedAddress(decoded.address, "evm");
+				const checksummedAddress = getChecksummedAddress(decoded.address, "evm");
+				request.authUser.evm = checksummedAddress;
+				
+				// Ensure EVM user exists
+				await ensureUserExists(checksummedAddress);
+				
 				console.log("[Auth] Successfully decoded EVM token");
 			} catch (error) {
 				console.log("[Auth] Failed to decode EVM address:", error);
