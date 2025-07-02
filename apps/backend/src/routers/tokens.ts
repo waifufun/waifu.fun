@@ -279,6 +279,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: metadata.decimals || 9,
 				totalSupply: metadata.totalSupply || 0,
 				tokenDecimals: metadata.decimals || 9,
+				medatataUrl: metadata.url || "",
 				socials: {
 					twitter,
 					telegram,
