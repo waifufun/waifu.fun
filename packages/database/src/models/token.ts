@@ -33,6 +33,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 			discord: { type: String },
 			telegram: { type: String },
 		},
+		metadataUrl: { type: String },
 		hidden: { type: Boolean, default: false },
 		featured: { type: Boolean, default: false },
 		creator: { type: String },

@@ -477,6 +477,7 @@ export class SolanaRpcProvider extends EventEmitter {
 					totalSupply: totalSupply,
 					decimals: decimals,
 					isToken2022,
+					url: uri,
 				};
 			}
 		}
@@ -507,6 +508,7 @@ export class SolanaRpcProvider extends EventEmitter {
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,
 			isToken2022,
+			url: uri,
 		};
 	}, this);
 

@@ -3,6 +3,26 @@ import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
+import DB from "@autofun/database";
+import { getChecksummedAddress } from "@autofun/utils";
+
+async function ensureUserExists(address: AddressLike) {
+	try {
+		await DB.User.updateOne(
+			{ address },
+			{
+				$setOnInsert: {
+					address,
+					points: 50,
+				},
+			},
+			{ upsert: true },
+		);
+		console.log(`[Auth] Ensured user exists: ${address} with 50 points`);
+	} catch (error) {
+		console.error(`[Auth] Error ensuring user exists for ${address}:`, error);
+	}
+}
 
 export default async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/generateNonce", async (request) => {
@@ -14,6 +34,100 @@ export default async function authRoutes(fastify: FastifyInstance) {
 		const nonce = Math.floor(Math.random() * 1000000).toString();
 		await redis.set(`nonce:${address}`, nonce, "EX", 60 * 5);
 		return { nonce };
+	});
+
+	fastify.get("/status", async (request, reply) => {
+		try {
+			const { solana, evm } = request.cookies;
+			console.log("[Auth] Status check - received cookies:", { solana: !!solana, evm: !!evm });
+
+			const wallets = {
+				solana: null as { address: AddressLike } | null,
+				evm: null as { address: AddressLike } | null,
+			};
+
+			if (!solana && !evm) {
+				console.log("[Auth] No cookies found");
+				return {
+					authenticated: false,
+					wallets,
+					message: "No authentication cookies found",
+				};
+			}
+
+			try {
+				const solanaToken = solana ? (fastify.jwt.decode(solana) as { address: AddressLike } | null) : null;
+				const evmToken = evm ? (fastify.jwt.decode(evm) as { address: AddressLike } | null) : null;
+
+				console.log("[Auth] Decoded tokens:", {
+					solanaToken: solanaToken ? { address: solanaToken.address } : null,
+					evmToken: evmToken ? { address: evmToken.address } : null,
+				});
+
+				if (solanaToken) {
+					wallets.solana = {
+						address: solanaToken.address,
+					};
+					// Ensure user exists in database
+					await ensureUserExists(solanaToken.address);
+				}
+
+				if (evmToken) {
+					wallets.evm = {
+						address: evmToken.address,
+					};
+					// Ensure user exists in database
+					await ensureUserExists(evmToken.address);
+				}
+
+				const isAuthenticated = !!(wallets.solana || wallets.evm);
+				console.log("[Auth] Authentication result:", { isAuthenticated, wallets });
+
+				return {
+					authenticated: isAuthenticated,
+					wallets,
+					message: isAuthenticated ? "User is authenticated" : "Invalid authentication cookies",
+				};
+			} catch (error) {
+				console.error("Error decoding authentication cookies:", error);
+
+				// Clear invalid cookies
+				if (solana) {
+					console.log("[Auth] Clearing invalid solana cookie");
+					reply.clearCookie("solana", {
+						path: "/",
+						httpOnly: true,
+						secure: process.env.NODE_ENV === "production",
+						sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+						domain: process.env.NODE_ENV === "development" ? "localhost" : undefined,
+					});
+				}
+
+				if (evm) {
+					console.log("[Auth] Clearing invalid evm cookie");
+					reply.clearCookie("evm", {
+						path: "/",
+						httpOnly: true,
+						secure: process.env.NODE_ENV === "production",
+						sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+						domain: process.env.NODE_ENV === "development" ? "localhost" : undefined,
+					});
+				}
+
+				return {
+					authenticated: false,
+					wallets,
+					message: "Invalid authentication cookies cleared",
+				};
+			}
+		} catch (error) {
+			console.error("Error checking authentication status:", error);
+			return reply.code(500).send({
+				authenticated: false,
+				wallets: { solana: null, evm: null },
+				message: "Error checking authentication status",
+			});
+		}
 	});
 
 	fastify.post("/authenticate", async (request, reply) => {
@@ -30,6 +144,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 		let isValid = false;
 		let token: string;
+		let checksummedAddress: AddressLike;
 
 		switch (chain) {
 			case "solana": {
@@ -39,15 +154,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
-				const solanaAddress = address as `0x${string}`;
+				checksummedAddress = getChecksummedAddress(address, "solana");
 				const solPayload = {
-					address: solanaAddress,
+					address: checksummedAddress,
 					nonce,
 				};
-
-				token = fastify.jwt.sign(solPayload, {
-					expiresIn: "7d",
-				});
 
 				token = fastify.jwt.sign(solPayload, {
 					expiresIn: "7d",
@@ -59,8 +170,20 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					httpOnly: true,
 					secure: process.env.NODE_ENV === "production",
 					sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-					...(process.env.NODE_ENV === "development" && { domain: "localhost" }),
+					domain: process.env.NODE_ENV === "development" ? "localhost" : undefined,
 				});
+
+				console.log(`[Auth] Setting solana cookie for address: ${checksummedAddress}`);
+				console.log("[Auth] Cookie settings:", {
+					maxAge: 60 * 60 * 24 * 7,
+					path: "/",
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+					sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+				});
+
+				// Ensure user exists in database
+				await ensureUserExists(checksummedAddress);
 
 				return reply.send({ success: true, message: "Authenticated successfully" });
 			}
@@ -75,9 +198,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					return reply.code(401).send({ error: "Invalid signature" });
 				}
 
-				const evmAddress = address as `0x${string}`;
+				checksummedAddress = getChecksummedAddress(address, "evm");
 				const evmPayload = {
-					address: evmAddress,
+					address: checksummedAddress,
 					nonce,
 				};
 
@@ -91,8 +214,13 @@ export default async function authRoutes(fastify: FastifyInstance) {
 						path: "/",
 						httpOnly: true,
 						secure: process.env.NODE_ENV === "production",
+						sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+						domain: process.env.NODE_ENV === "development" ? "localhost" : undefined,
 					})
 					.send({ success: true, message: "Authenticated successfully" });
+
+				// Ensure user exists in database
+				await ensureUserExists(checksummedAddress);
 				break;
 			}
 			default:
@@ -152,7 +280,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
 			sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-			...(process.env.NODE_ENV === "development" && { domain: "localhost" }),
+			domain: process.env.NODE_ENV === "development" ? "localhost" : undefined,
 		});
 
 		return reply.send({ success: true, message: "Logged out successfully" });
@@ -160,7 +288,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
 	// this is for develepoment to get a cookie for postman {/* Malibu */}
 	if (process.env.NODE_ENV === "development") {
-		fastify.get("/dev-setup", async (request, reply) => {
+		fastify.get("/dev-setup", async (_request, reply) => {
 			const evmPayload = {
 				address: "0x0000000000000000000000000000000000000000",
 				nonce: "dev",
@@ -178,6 +306,10 @@ export default async function authRoutes(fastify: FastifyInstance) {
 			const solanaToken = fastify.jwt.sign(solanaPayload, {
 				expiresIn: "7d",
 			});
+
+			// Ensure default users exist in development
+			await ensureUserExists(evmPayload.address as AddressLike);
+			await ensureUserExists(solanaPayload.address as AddressLike);
 
 			reply
 				.setCookie("evm", evmToken, {

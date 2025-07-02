@@ -7,7 +7,7 @@ import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } 
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type ReactNode, useMemo } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { BarChart2, Clock, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Chart from "@/components/chart/chart";
+import useAddress from "@/hooks/use-address";
+import ClaimFees from "@/components/claim-fees";
 
 export default function PageClient({
 	initialData,
@@ -31,11 +33,19 @@ export default function PageClient({
 		initialData,
 	});
 
+	const currentAddress = useAddress();
+	const token = query?.data;
+	const isCreator = useMemo(() => {
+		if (currentAddress && token?.creator) {
+			return currentAddress.toLowerCase() === token.creator.toLowerCase();
+		}
+		return false;
+	}, [currentAddress, token?.creator]);
+
 	const badge = initialData?.imported ? "IMPORTED" : initialData?.curveCompleted ? "BONDED" : "ACTIVE";
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 
-	const token = query?.data;
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
@@ -212,6 +222,9 @@ export default function PageClient({
 								);
 							})}
 						</div>
+
+						{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
+
 						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
 							<span className="text-base font-medium uppercase text-autofun-text-secondary">TOKEN:</span>

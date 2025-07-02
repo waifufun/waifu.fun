@@ -79,6 +79,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	decimals: number;
 	holders: number;
 	status: string;
+	metadataUrl?: TURLLike;
 	bondingCurveBalance?: number;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
@@ -120,6 +121,11 @@ export interface IUser {
 	twitter?: string;
 	points?: number;
 	weekly_points?: number;
+	// Admin fields
+	adminRole?: "super_admin" | "admin" | "moderator";
+	adminPermissions?: string[];
+	adminCreatedBy?: AddressLike;
+	adminCreatedAt?: Date;
 }
 
 export type TChatRooms = "1000" | "100000" | "1000000";
