@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ImageIcon, Video, AlertTriangle, Download, Trash2, RefreshCw, Zap, Crown, Maximize } from "lucide-react";
-import type { IToken } from "@autofun/types";
+import type { IToken, MediaType, SolanaNetworkIds } from "@autofun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
 import { abbreviateNumber } from "@/lib/utils";
+import { toast } from "sonner";
 
 const AiCreatePanel = ({ token }: { token: IToken }) => {
 	const [activeAiTab, setActiveAiTab] = useState("image");
@@ -58,15 +59,18 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 	const prompt = watchValue("prompt");
 
 	const handleGenerateMedia = async (mediaType: "audio" | "video" | "image") => {
-		if (!token || !token.contractAddress || !token.chainId) {
+		if (!token || !token.contractAddress || !token.chainId || !token.chain) {
+			toast.error("Token information is incomplete");
 			return;
 		}
 
 		const promptValue = prompt?.toString() || "";
 		await generateMediaToken({
-			mediaType: mediaType,
+			mediaType: mediaType as MediaType,
 			prompt: promptValue,
 			contractAddress: token.contractAddress,
+			chain: token.chain,
+			chainId: token.chainId as SolanaNetworkIds,
 		});
 	};
 

@@ -1,4 +1,4 @@
-import type { AddressLike, IToken, ITokenLookUp, TChain, TChainId } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@autofun/types";
 import { Connection } from "@solana/web3.js";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -174,13 +174,25 @@ export const generateMediaForToken = async ({
 	height,
 	type,
 	contractAddress,
-}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
+	chain,
+	chainId,
+}: {
+	prompt: string;
+	width: number;
+	height: number;
+	type: "audio" | "video" | "image";
+	contractAddress: string;
+	chain: TChain;
+	chainId: SolanaNetworkIds;
+}) => {
 	console.log("Generating media with params:", {
 		prompt,
 		width,
 		height,
 		type,
 		contractAddress,
+		chain,
+		chainId,
 	});
 
 	return await fetcher("/generation/generate-media", "POST", {
@@ -189,6 +201,8 @@ export const generateMediaForToken = async ({
 		height,
 		type,
 		address: contractAddress,
+		chain,
+		chainId,
 	});
 };
 
