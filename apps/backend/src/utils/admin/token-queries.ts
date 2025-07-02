@@ -77,11 +77,7 @@ export async function getAdminTokens(params: AdminTokenQueryParams) {
 	const filters = buildAdminTokenFilters({ hideImported, search, chain, chainId });
 	const sortOptions = buildAdminTokenSort(sortBy, sortOrder);
 
-	const tokens = await DB.Token.find(filters)
-		.sort(sortOptions)
-		.skip(skip)
-		.limit(limit)
-		.lean();
+	const tokens = await DB.Token.find(filters).sort(sortOptions).skip(skip).limit(limit).lean();
 
 	const total = await DB.Token.countDocuments(filters);
 
@@ -109,12 +105,14 @@ export async function getAdminTokenStats() {
 		},
 	]);
 
-	return stats[0] || {
-		totalTokens: 0,
-		totalVolume: 0,
-		avgMarketCap: 0,
-		featuredCount: 0,
-		verifiedCount: 0,
-		hiddenCount: 0,
-	};
-} 
+	return (
+		stats[0] || {
+			totalTokens: 0,
+			totalVolume: 0,
+			avgMarketCap: 0,
+			featuredCount: 0,
+			verifiedCount: 0,
+			hiddenCount: 0,
+		}
+	);
+}

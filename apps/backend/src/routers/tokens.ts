@@ -576,25 +576,22 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		});
 
 		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
-		
+
 		// this is to calculate how many tokens a user has bought on autofun
 		const swapEvents = await DB.Event.find({
 			user: getChecksummedAddress(address, "solana"),
 			eventType: "swap",
 			direction: 0,
-		  }).select("contractAddress"); 
+		}).select("contractAddress");
 
-		  const swapEventsAddresses = new Set(
-			swapEvents.map((event) => event.contractAddress)
-		  );
+		const swapEventsAddresses = new Set(swapEvents.map((event) => event.contractAddress));
 
-		  const tokensBoughtOnAutoFunAmount = swapEventsAddresses.size
+		const tokensBoughtOnAutoFunAmount = swapEventsAddresses.size;
 
-		  const extendedUser = {
+		const extendedUser = {
 			...user,
-			tokensBoughtOnAutoFunAmount
-		  };
-		  
+			tokensBoughtOnAutoFunAmount,
+		};
 
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>

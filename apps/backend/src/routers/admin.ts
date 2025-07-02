@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { AddressLike, TChain, TChainId } from "@autofun/types";
 import DB from "@autofun/database";
-import { adminMiddleware, requireAdminRole, requirePermission } from "../middlewares/admin";
-import { isAdmin, hasAdminRole, getAdminInfo } from "../utils/admin";
+import { requireAdminRole, requirePermission } from "../middlewares/admin";
+import { getAdminInfo } from "../utils/admin";
 import { getAdminTokens, getAdminTokenStats } from "../utils/admin/token-queries";
 import { modifyFile, extractObjectKeyFromUrl } from "@autofun/s3-uploader";
 

@@ -29,7 +29,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 		},
 	});
 
-
 	const tokensCreatedQuery = useQuery({
 		queryKey: ["get-tokens-created", address, paginationOptions.createdPage],
 		queryFn: async () => {
