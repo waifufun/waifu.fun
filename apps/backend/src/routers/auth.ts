@@ -173,14 +173,14 @@ export default async function authRoutes(fastify: FastifyInstance) {
 					domain: process.env.NODE_ENV === "development" ? "localhost" : undefined,
 				});
 
-				console.log(`[Auth] Setting solana cookie for address: ${checksummedAddress}`);
-				console.log("[Auth] Cookie settings:", {
-					maxAge: 60 * 60 * 24 * 7,
-					path: "/",
-					httpOnly: true,
-					secure: process.env.NODE_ENV === "production",
-					sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-				});
+				// console.log(`[Auth] Setting solana cookie for address: ${checksummedAddress}`);
+				// console.log("[Auth] Cookie settings:", {
+				// 	maxAge: 60 * 60 * 24 * 7,
+				// 	path: "/",
+				// 	httpOnly: true,
+				// 	secure: process.env.NODE_ENV === "production",
+				// 	sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+				// });
 
 				// Ensure user exists in database
 				await ensureUserExists(checksummedAddress);

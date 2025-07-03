@@ -22,15 +22,49 @@ const fastify = Fastify({
 			write: (msg: string) => {
 				try {
 					const logData = JSON.parse(msg);
-					logger.info(logData.msg);
+
+					if (logData.res) {
+						const method = logData.res?.method || "unknown";
+						const url = logData.res?.url || "unknown";
+						const statusCode = logData?.res.statusCode;
+						const responseTime = logData.responseTime?.toFixed(2);
+						const fullMessage = `${method} | ${url} - ${responseTime}ms -> ${statusCode}`;
+						if (statusCode >= 400) {
+							logger.warn(fullMessage);
+						} else {
+							logger.info(fullMessage);
+						}
+					}
+
+					if (!logData.req && !logData.res) {
+						logger.info(logData.msg || logData);
+					}
 				} catch (error) {
 					logger.error(`Error parsing Fastify log: ${error}, original message: ${msg}`);
 					logger.info(msg);
 				}
 			},
 		},
-
 		level: "info",
+		serializers: {
+			req: (request) => ({
+				method: request.method,
+				url: request.url,
+				body: request.body,
+				headers: request.headers,
+				host: request.host,
+				remoteAddress: request.ip,
+				remotePort: request.socket.remotePort,
+			}),
+			res: (reply) => ({
+				method: reply.request?.method,
+				url: reply.request?.url,
+				headers: reply.headers,
+				host: reply?.request?.host,
+				remoteAddress: reply?.request?.ip,
+				statusCode: reply.statusCode,
+			}),
+		},
 	},
 	bodyLimit: 7 * 1024 * 1024, // 7MB global body limit
 });

@@ -200,7 +200,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		indexer: [],
 	};
 
-	logger.info(`Querying tokens: Codex -> ${tokens?.codex?.length || 0} | Indexer -> ${tokens?.indexer?.length || 0}`);
+	// logger.info(`Querying tokens: Codex -> ${tokens?.codex?.length || 0} | Indexer -> ${tokens?.indexer?.length || 0}`);
 
 	const originalMapping: AddressLike[] = [];
 	for (const token of tokensToPopulate) {
