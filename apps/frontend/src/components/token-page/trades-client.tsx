@@ -24,7 +24,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 			});
 		},
 		initialData,
-		refetchInterval: 15_000,
+		refetchInterval: 3_500,
 	});
 
 	const data = query?.data;
