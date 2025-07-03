@@ -423,7 +423,7 @@ export class SolanaRpcProvider extends EventEmitter {
 					parsed: {
 						info: {
 							mintAuthority: string;
-							supply: string | number;
+							supply: string | bigint;
 							decimals: string | number;
 							extensions: {
 								extension: string;
@@ -503,7 +503,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		return {
 			...metadata?.json,
-			totalSupply: metadata?.mint?.supply?.basisPoints?.toNumber() || 0,
+			totalSupply: BigInt(String(metadata?.mint?.supply?.basisPoints)) || 0,
 			creator: metadata?.creators?.[0]?.address?.toBase58(),
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,
