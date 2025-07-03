@@ -622,7 +622,7 @@ export const executeSwap = async (
 
 		toast.promise(confirmation, {
 			loading: "Transaction broadcasted",
-			success: (data) => {
+			success: () => {
 				return "Transaction confirmed";
 			},
 			action: {
