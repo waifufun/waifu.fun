@@ -3,26 +3,8 @@ import redis from "@autofun/redis";
 import type { AddressLike, TChain } from "@autofun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
-import DB from "@autofun/database";
 import { getChecksummedAddress } from "@autofun/utils";
-
-async function ensureUserExists(address: AddressLike) {
-	try {
-		await DB.User.updateOne(
-			{ address },
-			{
-				$setOnInsert: {
-					address,
-					points: 50,
-				},
-			},
-			{ upsert: true },
-		);
-		console.log(`[Auth] Ensured user exists: ${address} with 50 points`);
-	} catch (error) {
-		console.error(`[Auth] Error ensuring user exists for ${address}:`, error);
-	}
-}
+import { ensureUserExists } from "../middlewares/authentication";
 
 export default async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/generateNonce", async (request) => {

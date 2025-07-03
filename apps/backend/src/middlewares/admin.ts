@@ -69,6 +69,8 @@ export function requireAdminRole(role: "super_admin" | "admin" | "moderator") {
 
 export function requirePermission(permission: string) {
 	return async (request: FastifyRequest, reply: FastifyReply) => {
+
+		
 		const user = request.authUser;
 
 		if (!user?.evm && !user?.solana) {
@@ -79,7 +81,9 @@ export function requirePermission(permission: string) {
 		}
 
 		const address = user.evm || user.solana;
+		
 		if (!address) {
+			console.log("No valid address found in requirePermission");
 			return reply.code(401).send({
 				success: false,
 				error: "Valid wallet address required",
@@ -87,11 +91,13 @@ export function requirePermission(permission: string) {
 		}
 
 		const hasUserPermission = await hasPermission(address, permission);
+		
 		if (!hasUserPermission) {
 			return reply.code(403).send({
 				success: false,
 				error: `${permission} permission required`,
 			});
 		}
+		
 	};
 }

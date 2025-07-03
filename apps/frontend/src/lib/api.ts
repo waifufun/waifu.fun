@@ -492,3 +492,160 @@ export const HELIUS_RPC_URL =
 		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
 export const connection = new Connection(HELIUS_RPC_URL, "confirmed");
+
+export const getAdminStats = async () => {
+	const response = await fetcher("/admin/stats", "GET");
+	return response.stats;
+};
+
+export const getAdminStatus = async () => {
+	return await fetcher("/admin/status", "GET");
+};
+
+export const getAdminTokens = async (params: {
+	page?: number;
+	limit?: number;
+	search?: string;
+	sortBy?: string;
+	sortOrder?: string;
+	hideImported?: number;
+	chain?: string;
+	chainId?: string;
+}) => {
+	const queryParams = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value !== undefined) {
+			queryParams.append(key, value.toString());
+		}
+	}
+
+	const response = await fetcher(`/admin/tokens?${queryParams.toString()}`, "GET");
+	return response;
+};
+
+export const getAdminTokenStats = async () => {
+	const response = await fetcher("/admin/tokens/stats", "GET");
+	return response.stats;
+};
+
+export const getAdmins = async () => {
+	const res = await fetcher("/admin/list", "GET");
+	return res.admins;
+};
+
+export const addAdmin = async ({
+	address,
+	role,
+	permissions,
+}: {
+	address: string;
+	role: string;
+	permissions: string[];
+}) => {
+	return await fetcher("/admin/add", "POST", { address, role, permissions });
+};
+
+export const updateAdminPermissions = async ({
+	address,
+	permissions,
+}: {
+	address: string;
+	permissions: string[];
+}) => {
+	return await fetcher(`/admin/permissions/${address}`, "PUT", { permissions });
+};
+
+export const removeAdmin = async (address: string) => {
+	return await fetcher(`/admin/remove/${address}`, "DELETE");
+};
+
+export const getAdminUsers = async ({
+	search = "",
+	page = 1,
+	limit = 20,
+}: { search?: string; page?: number; limit?: number }) => {
+	const params = new URLSearchParams();
+	if (search) params.append("search", search);
+	params.append("page", String(page));
+	params.append("limit", String(limit));
+	const res = await fetcher(`/admin/users?${params.toString()}`, "GET");
+	return res;
+};
+
+export const suspendUser = async ({ address, suspended }: { address: string; suspended: boolean }) => {
+	return await fetcher(`/admin/users/${address}/suspended`, "POST", { suspended });
+};
+
+export const setTokenVerified = async (tokenAddress: string, verified: boolean) => {
+	return await fetcher("/admin/verify-token", "POST", { tokenAddress, verified });
+};
+
+export const setTokenHidden = async ({
+	chain,
+	chainId,
+	contractAddress,
+	hidden,
+}: {
+	chain: string;
+	chainId: string;
+	contractAddress: string;
+	hidden: boolean;
+}) => {
+	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/hidden`, "POST", { hidden });
+};
+
+export const setTokenFeatured = async ({
+	chain,
+	chainId,
+	contractAddress,
+	featured,
+}: {
+	chain: string;
+	chainId: string;
+	contractAddress: string;
+	featured: boolean;
+}) => {
+	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/featured`, "POST", { featured });
+};
+
+export const updateTokenSocials = async ({
+	chain,
+	chainId,
+	contractAddress,
+	socials,
+}: {
+	chain: string;
+	chainId: string;
+	contractAddress: string;
+	socials: Record<string, string>;
+}) => {
+	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/social`, "POST", socials);
+};
+
+export const updateTokenMetadata = async ({
+	chain,
+	chainId,
+	contractAddress,
+	metadata,
+}: {
+	chain: string;
+	chainId: string;
+	contractAddress: string;
+	metadata: Record<string, unknown>;
+}) => {
+	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/metadata`, "POST", metadata);
+};
+
+export const updateTokenSocialsOwner = async ({
+	chain,
+	chainId,
+	contractAddress,
+	socials,
+}: {
+	chain: string;
+	chainId: string;
+	contractAddress: string;
+	socials: Record<string, string>;
+}) => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/social`, "POST", socials);
+};

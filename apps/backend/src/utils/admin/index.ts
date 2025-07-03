@@ -2,11 +2,21 @@ import DB from "@autofun/database";
 import type { AddressLike } from "@autofun/types";
 
 const parseAdminAddresses = (addressesStr: string | undefined): string[] => {
-	if (!addressesStr) return [];
-	return addressesStr.split(",").map((addr) => addr.trim());
+	console.log("=== parseAdminAddresses ===");
+	console.log("Raw ADMIN_ADDRESSES:", addressesStr);
+
+	if (!addressesStr) {
+		console.log("No ADMIN_ADDRESSES found, returning empty array");
+		return [];
+	}
+
+	const addresses = addressesStr.split(",").map((addr) => addr.trim());
+	console.log("Parsed admin addresses:", addresses);
+	return addresses;
 };
 
 export const adminAddresses: string[] = parseAdminAddresses(process.env.ADMIN_ADDRESSES) || [];
+console.log("Final adminAddresses array:", adminAddresses);
 
 export interface AdminRole {
 	address: AddressLike;
@@ -57,16 +67,28 @@ export async function hasAdminRole(
 }
 
 export async function hasPermission(address: AddressLike, permission: string): Promise<boolean> {
+	console.log("=== hasPermission called ===");
+	console.log("Checking permission:", permission);
+	console.log("For address:", address);
+	console.log("Admin addresses from env:", adminAddresses);
+
 	// Super admins from env vars have all permissions
 	if (adminAddresses.includes(address)) {
+		console.log("Address found in ADMIN_ADDRESSES - granting all permissions");
 		return true;
 	}
+
+	console.log("Address not in ADMIN_ADDRESSES, checking database...");
 
 	try {
 		const adminUser = await DB.User.findOne({
 			address,
-			adminPermissions: permission,
+			adminRole: { $exists: true, $ne: null },
+			adminPermissions: { $in: [permission] },
 		}).lean();
+
+		console.log("Database query result:", adminUser);
+		console.log("Permission check result:", !!adminUser);
 
 		return !!adminUser;
 	} catch (error) {
@@ -76,8 +98,13 @@ export async function hasPermission(address: AddressLike, permission: string): P
 }
 
 export async function getAdminInfo(address: AddressLike): Promise<AdminRole | null> {
+	console.log("=== getAdminInfo called ===");
+	console.log("Checking address:", address);
+	console.log("Admin addresses from env:", adminAddresses);
+
 	// Check if super admin from env vars
 	if (adminAddresses.includes(address)) {
+		console.log("Address found in ADMIN_ADDRESSES - super admin");
 		return {
 			address,
 			role: "super_admin",
@@ -86,14 +113,22 @@ export async function getAdminInfo(address: AddressLike): Promise<AdminRole | nu
 		};
 	}
 
+	console.log("Address not in ADMIN_ADDRESSES, checking database...");
+
 	try {
 		const adminUser = await DB.User.findOne({
 			address,
 			adminRole: { $exists: true, $ne: null },
 		}).lean();
 
-		if (!adminUser?.adminRole) return null;
+		console.log("Database query result:", adminUser);
 
+		if (!adminUser?.adminRole) {
+			console.log("No admin role found in database");
+			return null;
+		}
+
+		console.log("Admin role found:", adminUser.adminRole);
 		return {
 			address,
 			role: adminUser.adminRole,

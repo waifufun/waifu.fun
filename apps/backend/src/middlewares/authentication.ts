@@ -4,6 +4,7 @@ import type { JWT } from "@fastify/jwt";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { getChecksummedAddress } from "@autofun/utils";
 import DB from "@autofun/database";
+import { createHash } from "crypto";
 
 declare module "fastify" {
 	interface FastifyRequest {
@@ -15,10 +16,45 @@ declare module "fastify" {
 	}
 }
 
-async function ensureUserExists(address: AddressLike) {
+const adjectives = ["Brave", "Silent", "Cosmic", "Swift", "Lucky", "Mighty", "Clever"];
+const animals    = ["Otter", "Falcon", "Lynx", "Wolf", "Tiger", "Fox", "Bear"];
+
+// Map each animal to an emoji:
+const animalEmojis: Record<string, string> = {
+  Otter:  "🦦",
+  Falcon: "🦅",
+  Lynx:   "🐆",
+  Wolf:   "🐺",
+  Tiger:  "🐯",
+  Fox:    "🦊",
+  Bear:   "🐻",
+};
+
+function getDisplayName(address: string): string {
+  const fullHash = createHash("sha256")
+    .update(address)
+    .digest("hex");
+  const hashInt = Number.parseInt(fullHash.slice(0, 8), 16);
+
+  const adj    = adjectives[ hashInt              % adjectives.length ] ?? "Anon";
+  const animal = animals  [(hashInt >> 4)         % animals.length    ] ?? "User";
+  const emoji = animalEmojis[animal] ?? "🐾";
+  return `${emoji}${adj}${animal}`;
+}
+export async function ensureUserExists(address: AddressLike) {
 	try {
-		await DB.User.updateOne({ address }, { $setOnInsert: { address } }, { upsert: true });
-		console.log(`[Auth] Ensured user exists: ${address}`);
+		await DB.User.updateOne(
+			{ address },
+			{
+				$setOnInsert: {
+					address,
+					displayName: getDisplayName(address),
+					points: 50,
+				},
+			},
+			{ upsert: true },
+		);
+		console.log(`[Auth] Ensured user exists: ${address} with 50 points`);
 	} catch (error) {
 		console.error(`[Auth] Error ensuring user exists for ${address}:`, error);
 	}
@@ -27,8 +63,6 @@ async function ensureUserExists(address: AddressLike) {
 export async function authenticationMiddleware(request: FastifyRequest, reply: FastifyReply) {
 	try {
 		const cookies = request.cookies || {};
-		console.log("cookies: ", cookies);
-
 		// Initialize authUser object
 		request.authUser = {};
 
@@ -62,8 +96,6 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 
 				// Ensure Solana user exists
 				await ensureUserExists(checksummedAddress);
-
-				console.log("[Auth] Successfully decoded Solana address");
 			} catch (error) {
 				console.log("[Auth] Failed to decode Solana address:", error);
 				reply.clearCookie("solana", {
@@ -84,8 +116,6 @@ export async function authenticationMiddleware(request: FastifyRequest, reply: F
 
 				// Ensure EVM user exists
 				await ensureUserExists(checksummedAddress);
-
-				console.log("[Auth] Successfully decoded EVM token");
 			} catch (error) {
 				console.log("[Auth] Failed to decode EVM address:", error);
 				reply.clearCookie("evm", {

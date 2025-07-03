@@ -50,7 +50,7 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 					{ $set: updateData },
 				);
 
-				if (tokenData.metadataUrl) {
+				if (tokenData.metadataUrl && !tokenData.imported) {
 					try {
 						const objectKey = extractObjectKeyFromUrl(tokenData.metadataUrl);
 						const fileName = objectKey.replace("token-metadata/", "");
