@@ -133,8 +133,17 @@ export default function ModeratorsPage() {
 				<div
 					className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
 					onClick={() => setShowAdd(false)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							setShowAdd(false);
+						}
+					}}
 				>
-					<div className="bg-card p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+					<div
+						className="bg-card p-6 w-full max-w-md space-y-4"
+						onClick={(e) => e.stopPropagation()}
+						onKeyDown={(e) => e.stopPropagation()}
+					>
 						<h2 className="text-xl font-bold mb-2">Add Moderator/Admin</h2>
 						<Input placeholder="Wallet address" id="add-address" className="mb-2" />
 						<select id="add-role" className="w-full mb-2 border p-2 bg-zinc-900 text-white focus:border-primary">
@@ -182,8 +191,17 @@ export default function ModeratorsPage() {
 				<div
 					className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
 					onClick={() => setShowEdit(null)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							setShowEdit(null);
+						}
+					}}
 				>
-					<div className="bg-card p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+					<div
+						className="bg-card p-6 w-full max-w-md space-y-4"
+						onClick={(e) => e.stopPropagation()}
+						onKeyDown={(e) => e.stopPropagation()}
+					>
 						<h2 className="text-xl font-bold mb-2">Edit Permissions</h2>
 						<div className="mb-2">
 							<div className="font-semibold mb-1">Permissions</div>
