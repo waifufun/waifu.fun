@@ -99,6 +99,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					queryKey: ["balance"],
 				});
 				queryClient.invalidateQueries({
+					queryKey: ["chart"],
+				});
+				queryClient.invalidateQueries({
 					queryKey: ["trades"],
 				});
 			}, 1500);

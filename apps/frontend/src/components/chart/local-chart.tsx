@@ -19,7 +19,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 	const chartRef = useRef<any>(null);
 
 	const query = useQuery({
-		queryKey: ["token", token.contractAddress, "chart"],
+		queryKey: ["chart", token.contractAddress],
 		queryFn: async () => {
 			const data = await getChartData({
 				// biome-ignore lint/suspicious/noExplicitAny: <explanation>

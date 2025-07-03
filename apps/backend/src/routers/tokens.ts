@@ -419,7 +419,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				} as ITrade;
 			});
 
-			await redis.setex(cacheKey, 7, JSON.stringify(items));
+			await redis.setex(cacheKey, 3, JSON.stringify(items));
 			return items;
 		}
 
@@ -467,7 +467,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				} as ITrade;
 			});
 
-			await redis.setex(cacheKey, 7, JSON.stringify(items));
+			await redis.setex(cacheKey, 15, JSON.stringify(items));
 			return items;
 		}
 
@@ -1083,7 +1083,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			const ohlcData = groupEventsIntoOHLC(priceData, timeframeMs, limit);
 
-			await redis.setex(cacheKey, 30, JSON.stringify(ohlcData));
+			await redis.setex(cacheKey, 3, JSON.stringify(ohlcData));
 			return ohlcData;
 		}
 		return [];
