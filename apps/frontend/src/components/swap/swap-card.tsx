@@ -128,7 +128,13 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const insufficientBalance = !hasSufficientBalance();
-	const maxBuyAmount = token?.maxBuyAmount ? formatUnits(BigInt(token?.maxBuyAmount), 9) : false;
+	const maxBuyAmount =
+		token?.maxBuyAmount &&
+		moment(token.tradingStartsAt || token.createdAt)
+			.add(8, "hours")
+			.isBefore(moment())
+			? formatUnits(BigInt(token?.maxBuyAmount), 9)
+			: false;
 
 	const isTooHighBuyAmount = () => {
 		if (!value || value === "0") return false;
