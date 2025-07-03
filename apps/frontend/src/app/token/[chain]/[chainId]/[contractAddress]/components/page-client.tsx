@@ -230,11 +230,7 @@ export default function PageClient({
 						{/* Owner-only Update Socials button */}
 						{isCreator && (
 							<>
-								<Button
-									variant="outline"
-									className="mb-2 w-fit"
-									onClick={() => setSocialsModalOpen(true)}
-								>
+								<Button variant="outline" className="mb-2 w-fit" onClick={() => setSocialsModalOpen(true)}>
 									Update Socials
 								</Button>
 								<UpdateSocialsModal

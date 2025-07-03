@@ -130,8 +130,11 @@ export default function ModeratorsPage() {
 			</Card>
 
 			{showAdd && (
-				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-					<div className="bg-card p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
+				<div
+					className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+					onClick={() => setShowAdd(false)}
+				>
+					<div className="bg-card p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
 						<h2 className="text-xl font-bold mb-2">Add Moderator/Admin</h2>
 						<Input placeholder="Wallet address" id="add-address" className="mb-2" />
 						<select id="add-role" className="w-full mb-2 border p-2 bg-zinc-900 text-white focus:border-primary">
@@ -176,7 +179,10 @@ export default function ModeratorsPage() {
 
 			{/* Edit Permissions Modal */}
 			{showEdit && (
-				<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowEdit(null)}>
+				<div
+					className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+					onClick={() => setShowEdit(null)}
+				>
 					<div className="bg-card p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
 						<h2 className="text-xl font-bold mb-2">Edit Permissions</h2>
 						<div className="mb-2">
@@ -196,7 +202,13 @@ export default function ModeratorsPage() {
 							</div>
 						</div>
 						<div className="flex gap-2 justify-end">
-							<Button variant="outline" onClick={(e) => { e.stopPropagation(); setShowEdit(null); }}>
+							<Button
+								variant="outline"
+								onClick={(e) => {
+									e.stopPropagation();
+									setShowEdit(null);
+								}}
+							>
 								Cancel
 							</Button>
 							<Button

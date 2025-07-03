@@ -57,10 +57,21 @@ export default function UpdateSocialsModal({ open, onClose, token, onSuccess }: 
 	if (!open) return null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+		<div 
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" 
+			onClick={onClose}
+			onKeyDown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					onClose();
+				}
+			}}
+			role="button"
+			tabIndex={0}
+		>
 			<div
 				className="bg-zinc-900 border border-[#03FF24]/40 shadow-lg w-full max-w-md p-6 relative"
-				onClick={e => e.stopPropagation()}
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
 			>
 				<button
 					className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
@@ -72,31 +83,10 @@ export default function UpdateSocialsModal({ open, onClose, token, onSuccess }: 
 				</button>
 				<h2 className="text-lg font-bold mb-4 text-[#03FF24]">Update Token Socials</h2>
 				<form onSubmit={handleSubmit} className="space-y-3">
-					<Input
-						name="twitter"
-						placeholder="Twitter URL"
-						value={form.twitter}
-						onChange={handleChange}
-						autoFocus
-					/>
-					<Input
-						name="telegram"
-						placeholder="Telegram URL"
-						value={form.telegram}
-						onChange={handleChange}
-					/>
-					<Input
-						name="discord"
-						placeholder="Discord URL"
-						value={form.discord}
-						onChange={handleChange}
-					/>
-					<Input
-						name="website"
-						placeholder="Website URL"
-						value={form.website}
-						onChange={handleChange}
-					/>
+					<Input name="twitter" placeholder="Twitter URL" value={form.twitter} onChange={handleChange} autoFocus />
+					<Input name="telegram" placeholder="Telegram URL" value={form.telegram} onChange={handleChange} />
+					<Input name="discord" placeholder="Discord URL" value={form.discord} onChange={handleChange} />
+					<Input name="website" placeholder="Website URL" value={form.website} onChange={handleChange} />
 					<div className="flex justify-end gap-2 mt-4">
 						<Button type="button" variant="outline" onClick={onClose} disabled={loading}>
 							Cancel

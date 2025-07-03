@@ -16,4 +16,4 @@ export function useAdmin() {
 		adminInfo,
 		isLoading,
 	};
-} 
+}

@@ -64,10 +64,7 @@ export default function EditTokenModal({ open, onClose, token, onSave, loading }
 
 	return (
 		<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-			<div
-				className="bg-card p-6  w-full max-w-lg space-y-4"
-				onClick={e => e.stopPropagation()}
-			>
+			<div className="bg-card p-6  w-full max-w-lg space-y-4" onClick={(e) => e.stopPropagation()}>
 				<h2 className="text-xl font-bold mb-2">Edit Token</h2>
 				<form onSubmit={handleSubmit}>
 					<div className="mb-2">

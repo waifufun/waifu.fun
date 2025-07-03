@@ -17,29 +17,27 @@ declare module "fastify" {
 }
 
 const adjectives = ["Brave", "Silent", "Cosmic", "Swift", "Lucky", "Mighty", "Clever"];
-const animals    = ["Otter", "Falcon", "Lynx", "Wolf", "Tiger", "Fox", "Bear"];
+const animals = ["Otter", "Falcon", "Lynx", "Wolf", "Tiger", "Fox", "Bear"];
 
 // Map each animal to an emoji:
 const animalEmojis: Record<string, string> = {
-  Otter:  "🦦",
-  Falcon: "🦅",
-  Lynx:   "🐆",
-  Wolf:   "🐺",
-  Tiger:  "🐯",
-  Fox:    "🦊",
-  Bear:   "🐻",
+	Otter: "🦦",
+	Falcon: "🦅",
+	Lynx: "🐆",
+	Wolf: "🐺",
+	Tiger: "🐯",
+	Fox: "🦊",
+	Bear: "🐻",
 };
 
 function getDisplayName(address: string): string {
-  const fullHash = createHash("sha256")
-    .update(address)
-    .digest("hex");
-  const hashInt = Number.parseInt(fullHash.slice(0, 8), 16);
+	const fullHash = createHash("sha256").update(address).digest("hex");
+	const hashInt = Number.parseInt(fullHash.slice(0, 8), 16);
 
-  const adj    = adjectives[ hashInt              % adjectives.length ] ?? "Anon";
-  const animal = animals  [(hashInt >> 4)         % animals.length    ] ?? "User";
-  const emoji = animalEmojis[animal] ?? "🐾";
-  return `${emoji}${adj}${animal}`;
+	const adj = adjectives[hashInt % adjectives.length] ?? "Anon";
+	const animal = animals[(hashInt >> 4) % animals.length] ?? "User";
+	const emoji = animalEmojis[animal] ?? "🐾";
+	return `${emoji}${adj}${animal}`;
 }
 export async function ensureUserExists(address: AddressLike) {
 	try {
