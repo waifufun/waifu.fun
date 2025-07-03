@@ -4,7 +4,7 @@ import type { JWT } from "@fastify/jwt";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { getChecksummedAddress } from "@autofun/utils";
 import DB from "@autofun/database";
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 
 declare module "fastify" {
 	interface FastifyRequest {
