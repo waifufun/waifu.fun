@@ -29,7 +29,7 @@ export default function PageClient({
 			const token = (await getToken(tokenParams)) as IToken;
 			return token;
 		},
-		refetchInterval: 6_000,
+		refetchInterval: 5_000,
 		initialData,
 	});
 
