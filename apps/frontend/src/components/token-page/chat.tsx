@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
+import Link from "next/link";
 
 type Inputs = {
 	message: string;
@@ -291,9 +292,9 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 			</Avatar>
 			<div className="flex-1">
 				<div className="flex items-baseline gap-2 text-xs">
-					<span className="font-bold text-[#03FF24]">
-						{message?.sender ? shortenAddress(message?.sender) : "Unknown"}
-					</span>
+					<Link href={`/profile/${message?.sender}`} className="font-bold text-[#03FF24]">
+						{message?.sender ? shortenAddress(message.sender) : "Unknown"}
+					</Link>
 					<span className="text-gray-500">{message?.createdAt ? fromNow(message?.createdAt) : "Unknown time"}</span>
 				</div>
 				{message?.message && <p className="text-sm text-gray-200 mt-0.5">{message.message}</p>}
