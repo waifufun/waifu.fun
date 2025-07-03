@@ -122,21 +122,21 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							</div>
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
-							<Tabs defaultValue="tokens-created" className="w-full">
+							<Tabs defaultValue="transactions" className="w-full">
 								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
 									<div className="border-b-1 border-[#03FF24]/40">
-										<TabsList shadowed={false} className="border-none space-x-2 p-2">
-											<TabsTrigger
-												value="tokens-created"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
-											>
-												Tokens Created
-											</TabsTrigger>
+										<TabsList shadowed={false} className="border-none space-x-2 p-4">
 											<TabsTrigger
 												value="transactions"
 												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
 											>
 												Transactions
+											</TabsTrigger>
+											<TabsTrigger
+												value="tokens-created"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+											>
+												Tokens Created
 											</TabsTrigger>
 										</TabsList>
 									</div>
