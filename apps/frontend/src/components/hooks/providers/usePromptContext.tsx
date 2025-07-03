@@ -177,10 +177,10 @@ const PromptProviderContent = ({
 
 				let actualMediaUrl: string;
 				if (typeof data.mediaUrl === "string") {
-					// Image
+					// Image or direct URL
 					actualMediaUrl = data.mediaUrl;
-				} else if (typeof data.mediaUrl === "object" && data.mediaUrl.url) {
-					// Video/Audio
+				} else if (typeof data.mediaUrl === "object" && data.mediaUrl !== null && "url" in data.mediaUrl) {
+					// Video/Audio object format
 					actualMediaUrl = data.mediaUrl.url;
 				} else {
 					toast.error("Error generating media: Invalid media URL format");
@@ -188,14 +188,30 @@ const PromptProviderContent = ({
 					return;
 				}
 
+				if (typeof actualMediaUrl !== "string" || !actualMediaUrl) {
+					console.error("Error generating media: Invalid media URL format", data);
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
+				console.log("actualMediaUrl: ", actualMediaUrl);
+
+				if (!actualMediaUrl.startsWith("http")) {
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
 				addMedia(actualMediaUrl, mediaType);
 				setIsGeneratingMedia(false);
+				toast.success("Media generated successfully!");
 			} else {
 				toast.error("Error generating media: No media URL returned");
 				setIsGeneratingMedia(false);
 			}
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: Explicit any is used here for error handling
+		// biome-ignore lint/suspicious/noExplicitAny: <reason>
 		onError: (error: any) => {
 			toast.error(error?.message || "Error generating media");
 			setIsGeneratingMedia(false);
@@ -232,8 +248,21 @@ const PromptProviderContent = ({
 			}),
 		onSuccess: (data) => {
 			if (data?.mediaUrl) {
-				const actualMediaUrl = data.mediaUrl;
-				const mediaType = data.type || "image";
+				const actualMediaUrl = data.mediaUrl.url;
+				const contentType = data.mediaUrl.content_type || "image";
+
+				console.log("actualMediaUrl: ", actualMediaUrl);
+				console.log("contentType: ", contentType);
+				console.log("data: ", data);
+
+				let mediaType: MediaType;
+				if (contentType.startsWith("video/")) {
+					mediaType = "video";
+				} else if (contentType.startsWith("audio/")) {
+					mediaType = "audio";
+				} else {
+					mediaType = "image";
+				}
 
 				if (!actualMediaUrl.startsWith("http")) {
 					toast.error("Error generating media: Invalid media URL format");
