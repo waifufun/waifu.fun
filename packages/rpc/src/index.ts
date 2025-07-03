@@ -503,7 +503,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		return {
 			...metadata?.json,
-			totalSupply: BigInt(String(metadata?.mint?.supply?.basisPoints)) || 0,
+			totalSupply: String(metadata?.mint?.supply?.basisPoints) || "0",
 			creator: metadata?.creators?.[0]?.address?.toBase58(),
 			decimals: metadata?.mint?.decimals || 6,
 			...uriData,

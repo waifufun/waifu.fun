@@ -299,7 +299,7 @@ const PromptProviderContent = ({
 
 			terminateWorkers();
 
-			const cores = navigator.hardwareConcurrency || 2;
+			const cores = (navigator.hardwareConcurrency > 12 ? 12 : navigator.hardwareConcurrency) || 2;
 			const workersToCreate = Math.max(1, cores > 1 ? cores - 1 : 1);
 			const newWorkers: Worker[] = [];
 
