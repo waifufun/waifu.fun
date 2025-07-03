@@ -442,7 +442,7 @@ export const PreBuySection = ({
 
 	const setMaxAmount = () => {
 		if (balance) {
-			setValue("buyAmount", Math.min(balance, 28), { shouldValidate: true, shouldDirty: true });
+			setValue("buyAmount", Math.min(balance * 0.97, 28), { shouldValidate: true, shouldDirty: true });
 		}
 	};
 
