@@ -3,7 +3,6 @@
 import { CopyButton } from "../copy-button";
 import type { AddressLike, TChain } from "@autofun/types";
 import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
-import { Trophy } from "lucide-react";
 import AvatarImage from "./avatar-image";
 import { formatNumber } from "@/lib/utils";
 
@@ -46,18 +45,16 @@ export default function ProfileHeader({
 					/>
 				</div>
 				{data?.totalPoints ? (
-					<div className="flex flex-col gap-0 mt-1">
+					<div className="flex flex-col mt-1">
 						<div className="flex justify-between items-center w-full px-0 py-1">
 							<div className="flex items-center gap-1">
-								Total Points
-								<Trophy size={20} className="text-autofun-background-action-highlight" />
+								<span className="text-sm">Total Points</span>
 							</div>
 							<p className="font-semibold text-[#03FF24] text-base">{formatNumber(data.totalPoints, true, true)}</p>
 						</div>
 						<div className="flex justify-between items-center w-full px-0 py-1">
 							<div className="flex items-center gap-1">
-								Weekly Points
-								<Trophy size={20} className="text-autofun-background-action-highlight" />
+								<span className="text-sm">Weekly Points</span>
 							</div>
 							<p className="font-semibold text-yellow-400  text-base">{formatNumber(data.weeklyPoints, true, true)}</p>
 						</div>
