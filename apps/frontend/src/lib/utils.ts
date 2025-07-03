@@ -614,20 +614,26 @@ export const executeSwap = async (
 
 		const signature = await wallet.sendTransaction(versionedTx, connection);
 
-		toast(`Send transaction: ${signature}`);
+		const confirmation = connection.confirmTransaction({
+			blockhash: blockhash,
+			lastValidBlockHeight: lastValidBlockHeight,
+			signature: signature,
+		});
 
-		await connection
-			.confirmTransaction({
-				blockhash: blockhash,
-				lastValidBlockHeight: lastValidBlockHeight,
-				signature: signature,
-			})
-			.then(() => {
-				toast(`Transaction confirmed: ${signature}`);
-			})
-			.catch((e) => {
-				toast.error(`Transaction failed: ${e.message}`);
-			});
+		toast.promise(confirmation, {
+			loading: "Transaction broadcasted",
+			success: (data) => {
+				return "Transaction confirmed";
+			},
+			action: {
+				label: "View on Solscan",
+				onClick: () => {
+					window.open(`https://solscan.io/tx/${signature}`);
+				},
+			},
+			error: (e) => `Transaction failed: ${e.message}`,
+		});
+
 		return signature;
 	}
 
