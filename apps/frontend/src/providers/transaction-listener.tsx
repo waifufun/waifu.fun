@@ -128,7 +128,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		setPendingTransactions((prev) => prev.filter((tx) => tx.timestamp > twentyFourHoursAgo));
 	}, [setPendingTransactions]);
 
-	// Resume monitoring pending transactions on mount
+	// monitor on mount
 	// biome-ignore lint/correctness/useExhaustiveDependencies: This effect runs once on mount to monitor existing transactions
 	useEffect(() => {
 		const unconfirmedTransactions = pendingTransactions.filter((tx) => !tx.confirmed);
