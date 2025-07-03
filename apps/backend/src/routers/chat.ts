@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
-import type { AddressLike, SolanaAddressLike, TChain, TChainId, TChatRooms } from "@autofun/types";
+import type { SolanaNetworkIds, AddressLike, SolanaAddressLike, TChain, TChainId, TChatRooms } from "@autofun/types";
 import { getChecksummedAddress, isChainIdAllowedForChain } from "@autofun/utils";
 import { uploadBase64Image } from "@autofun/s3-uploader";
 import { randomUUID } from "node:crypto";
@@ -38,7 +38,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 			room: TChatRooms;
 			contractAddress: AddressLike;
 			chain: TChain;
-			chainId: TChainId;
+			chainId: SolanaNetworkIds;
 			attachment: Base64URLString;
 		};
 
@@ -56,7 +56,11 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 			throw new Error("You must be logged in to send a message");
 		}
 
-		const rpc = new SolanaRpcProvider(101);
+		if (body.chainId !== 101 && body.chainId !== 103) {
+			throw new Error("Only Solana mainnet (101) and devnet (103) are supported for chat messages");
+		}
+
+		const rpc = new SolanaRpcProvider(body.chainId as 101 | 103);
 		const amountOfTokens = await rpc.getTokenBalance(body.contractAddress as AddressLike, solanaAddress);
 
 		try {
@@ -67,9 +71,6 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 		} catch (error) {
 			throw new Error(error instanceof Error ? error.message : "Invalid room or token balance check failed");
 		}
-
-		const allowedChain = isChainIdAllowedForChain(body.chain, body.chainId);
-		if (!allowedChain) throw new Error("Unsupported chain pair");
 
 		const allowedRooms = ["1000", "100000", "1000000"];
 
