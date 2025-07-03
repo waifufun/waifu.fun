@@ -107,10 +107,14 @@ export const CustomAddressGenerator = ({
 	defaultOpen = false,
 }: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
 	const [suffix, setSuffix] = useState("FUN");
-	const { generateAddress, mintKeyPair, isGeneratingAddress } = usePrompt();
+	const { generateAddress, mintKeyPair, isGeneratingAddress, terminateWorkers, cancelVanityGeneration } = usePrompt();
 
 	const handleGenerate = () => {
 		generateAddress(suffix);
+	};
+
+	const handleCancel = () => {
+		cancelVanityGeneration();
 	};
 
 	return (
@@ -118,7 +122,7 @@ export const CustomAddressGenerator = ({
 			<div className="flex items-end gap-2">
 				<div className="flex-grow">
 					<Label htmlFor={`${idPrefix}CustomAddress`} className={formLabelBaseClass}>
-						Prefix / Suffix
+						Suffix
 					</Label>
 					<Input
 						type="text"
@@ -126,17 +130,28 @@ export const CustomAddressGenerator = ({
 						value={suffix}
 						onChange={(e) => setSuffix(e.target.value.toUpperCase())}
 						className={cn(formElementBaseClass, "mt-1 h-10 uppercase")}
+						disabled={isGeneratingAddress}
 					/>
 				</div>
-				<Button
-					type="button"
-					onClick={handleGenerate}
-					disabled={isGeneratingAddress}
-					variant="outline"
-					className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3 disabled:opacity-50"
-				>
-					{isGeneratingAddress ? "GENERATING..." : "GENERATE"}
-				</Button>
+				{!isGeneratingAddress ? (
+					<Button
+						type="button"
+						onClick={handleGenerate}
+						variant="outline"
+						className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3"
+					>
+						GENERATE
+					</Button>
+				) : (
+					<Button
+						type="button"
+						onClick={handleCancel}
+						variant="outline"
+						className="h-10 border-2 border-red-500/70 text-red-400 hover:bg-red-500/20 hover:border-red-500 rounded-none shadow-[3px_3px_0px_rgba(239,68,68,0.3)] font-bold uppercase text-xs px-3"
+					>
+						CANCEL
+					</Button>
+				)}
 			</div>
 			<p className="text-xs text-[#03FF24] font-mono break-all bg-black/40 p-2 border border-[#03FF24]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
 				{mintKeyPair
@@ -561,7 +576,7 @@ export const LaunchButton = ({
 		},
 	});
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !mintKeyPair;
 
 	const onSubmit = async () => {
 		if (!formState.isValid) {
@@ -576,6 +591,11 @@ export const LaunchButton = ({
 
 		if (isGeneratingMedia) {
 			toast.error("Please wait for the image to be generated.");
+			return;
+		}
+
+		if (!mintKeyPair) {
+			toast.error("Please generate a custom address first.");
 			return;
 		}
 
