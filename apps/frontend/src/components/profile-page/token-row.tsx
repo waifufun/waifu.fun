@@ -50,15 +50,19 @@ export default function TokenRow({
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
 			<div className="flex items-center space-x-2 sm:space-x-4 flex-nowrap overflow-hidden">
 				<div className="flex-shrink-0 flex items-center">
-					<Image
-						src={data.image}
-						unoptimized
-						priority
-						alt="Token Image"
-						width={30}
-						height={30}
-						className="object-contain md:w-[40px] md:h-[40px]"
-					/>
+					{data.image ? (
+						<Image
+							src={data.image}
+							unoptimized
+							priority
+							alt="Token Image"
+							width={30}
+							height={30}
+							className="object-contain md:w-[40px] md:h-[40px]"
+						/>
+					) : (
+						"N/A"
+					)}
 				</div>
 				<div className="flex flex-col justify-center h-full min-w-0 pr-2">
 					<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
