@@ -12,7 +12,7 @@ import {
 	type TransactionInstruction,
 	TransactionMessage,
 	VersionedTransaction,
-	type Connection,
+	Connection,
 	Transaction,
 	LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
@@ -291,10 +291,25 @@ export const retrieveJupiterQuote = async ({
 };
 
 const convertToBasisPoints = (feePercent: number): number => {
-	if (feePercent >= 1) {
-		return feePercent;
+	// Validate that feePercent is reasonable
+	if (feePercent < 0) {
+		console.warn(`Invalid fee percent: ${feePercent}, using 0 as fallback`);
+		return 0;
 	}
-	return Math.floor(feePercent * 10000);
+
+	// If feePercent is already in basis points (e.g., 100 = 1%), return it directly
+	if (feePercent <= 10000) {
+		return Math.floor(feePercent);
+	}
+
+	// If feePercent is a percentage (e.g., 1.5 = 1.5%), convert to basis points
+	if (feePercent <= 100) {
+		return Math.floor(feePercent * 100);
+	}
+
+	// If it's a very large number, assume it's already in basis points but needs to be capped
+	console.warn(`Very large fee percent: ${feePercent}, capping at 10000 basis points`);
+	return Math.min(10000, Math.floor(feePercent));
 };
 
 export const retrieveAutofunQuote = async ({
@@ -313,19 +328,43 @@ export const retrieveAutofunQuote = async ({
 	mode: "buy" | "sell";
 }) => {
 	if (!amount) throw new Error("Invalid amount passed");
+	const HELIUS_RPC_URL =
+		token?.chainId === SolanaNetworkIds.Devnet
+			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+	connection = new Connection(HELIUS_RPC_URL, "confirmed");
 	const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
 	const contractAddress = token.contractAddress;
 	const FEE_BASIS_POINTS = 10000;
 	const curve = await getBondingCurvePDA(program, contractAddress);
 	const reserveToken = curve.reserveToken;
 	const reserveLamport = curve.reserveLamport;
-	const feePercent = mode === "sell" ? Number(configAccount.platformSellFee) : Number(configAccount.platformBuyFee);
+
+	// Try to safely convert BN to number, with fallback
+	let feePercent: number;
+	const rawFeeString =
+		mode === "sell" ? configAccount.platformSellFee.toString() : configAccount.platformBuyFee.toString();
+
+	// Check if the BN represents a reasonable fee value
+	if (rawFeeString === "18446744073709551615" || Number.parseInt(rawFeeString) > 1000000) {
+		console.warn("BN appears to be uninitialized or invalid, using default fee");
+		feePercent = 1; // Default to 1% fee
+	} else {
+		try {
+			feePercent = mode === "sell" ? configAccount.platformSellFee.toNumber() : configAccount.platformBuyFee.toNumber();
+		} catch (error) {
+			feePercent = Number.parseInt(rawFeeString) / 100;
+		}
+	}
+
 	const swapAmount = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
 	const adjustedAmountW = Math.floor((Number(swapAmount) * (FEE_BASIS_POINTS - feePercent)) / FEE_BASIS_POINTS);
 
 	let estimatedOutput = 0;
 	if (mode === "buy") {
 		const feeBasisPoints = new BN(convertToBasisPoints(feePercent));
+		console.log("feeBasisPoints", feeBasisPoints.toString());
 		const amountBN = new BN(adjustedAmountW);
 		const adjustedAmount = amountBN.mul(new BN(10000)).sub(feeBasisPoints).div(new BN(10000));
 		const reserveTokenBN = new BN(reserveToken.toString());
@@ -382,6 +421,12 @@ export const retrieveQuote = async ({
 			slippage,
 		});
 	}
+	const HELIUS_RPC_URL =
+		token?.chainId === SolanaNetworkIds.Devnet
+			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+	connection = new Connection(HELIUS_RPC_URL, "confirmed");
 
 	if (provider === "autofun") {
 		if (!wallet || !connection) throw new Error("No wallet or connection passed.");
@@ -484,6 +529,12 @@ export const executeSwap = async (
 	const parsedInputAmount = parseUnits(String(inputAmount), mode === "buy" ? 9 : token.decimals);
 
 	/** If the token was imported or has already migrated we can just use Jupiter */
+	const HELIUS_RPC_URL =
+		token?.chainId === SolanaNetworkIds.Devnet
+			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+	const heliusConnection = new Connection(HELIUS_RPC_URL, "confirmed");
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
 			amount: inputAmount,
@@ -539,7 +590,7 @@ export const executeSwap = async (
 
 		const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 
-		const signature = await wallet.sendTransaction(transaction, connection);
+		const signature = await wallet.sendTransaction(transaction, heliusConnection);
 
 		// Notify the transaction listener
 		onTransactionStart?.(signature, expectedOutput);
@@ -549,11 +600,11 @@ export const executeSwap = async (
 
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
-		const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
+		const { program, configAccount } = await getAutofunProgram(heliusConnection, wallet, token.version);
 
 		const quote = await retrieveAutofunQuote({
 			amount: inputAmount,
-			connection,
+			connection: heliusConnection,
 			mode,
 			slippage,
 			token,
