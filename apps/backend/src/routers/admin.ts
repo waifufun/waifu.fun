@@ -5,34 +5,59 @@ import { requireAdminRole, requirePermission } from "../middlewares/admin";
 import { getAdminInfo } from "../utils/admin";
 import { getAdminTokens, getAdminTokenStats } from "../utils/admin/token-queries";
 import { modifyFile, extractObjectKeyFromUrl } from "@autofun/s3-uploader";
+import { authenticationMiddleware } from "../middlewares/authentication";
+
+import type { FastifyRequest, FastifyReply } from "fastify";
+
+async function authOnlyMiddleware(request: FastifyRequest, reply: FastifyReply) {
+	await authenticationMiddleware(request, reply);
+
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	if (!(request as any).authUser?.evm && !(request as any).authUser?.solana) {
+		return reply.code(401).send({
+			success: false,
+			error: "Authentication required",
+		});
+	}
+}
 
 export default async function adminRoutes(fastify: FastifyInstance) {
 	// Get current user's admin status
-	fastify.get("/status", async (request, reply) => {
-		const user = request.authUser;
+	fastify.get(
+		"/status",
+		{
+			preHandler: authOnlyMiddleware,
+		},
+		async (request, reply) => {
+			const user = request.authUser;
 
-		if (!user?.evm && !user?.solana) {
-			return reply.code(401).send({
-				success: false,
-				error: "Authentication required",
-			});
-		}
+			if (!user?.evm && !user?.solana) {
+				return reply.code(401).send({
+					success: false,
+					error: "Authentication required",
+				});
+			}
 
-		const address = user.evm || user.solana;
-		if (!address) {
-			return reply.code(401).send({
-				success: false,
-				error: "Valid wallet address required",
-			});
-		}
+			const address = user.evm || user.solana;
 
-		const adminInfo = await getAdminInfo(address);
-		return {
-			success: true,
-			isAdmin: !!adminInfo,
-			adminInfo,
-		};
-	});
+			if (!address) {
+				return reply.code(401).send({
+					success: false,
+					error: "Valid wallet address required",
+				});
+			}
+
+			const adminInfo = await getAdminInfo(address);
+
+			const isAdmin = !!adminInfo;
+
+			return {
+				success: true,
+				isAdmin,
+				adminInfo,
+			};
+		},
+	);
 
 	// Get all admins (super admin only)
 	fastify.get(
@@ -229,27 +254,15 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 			preHandler: requirePermission("verify_tokens"),
 		},
 		async (request, reply) => {
-			const { tokenAddress } = request.body as { tokenAddress: string };
-
+			const { tokenAddress, verified } = request.body as { tokenAddress: string; verified?: boolean };
 			if (!tokenAddress) {
-				return reply.code(400).send({
-					success: false,
-					error: "Token address is required",
-				});
+				return reply.code(400).send({ success: false, error: "Token address is required" });
 			}
-
 			try {
-				await DB.Token.updateOne({ contractAddress: tokenAddress }, { $set: { verified: true } });
-
-				return {
-					success: true,
-					message: "Token verified successfully",
-				};
+				await DB.Token.updateOne({ contractAddress: tokenAddress }, { $set: { verified: verified !== false } });
+				return { success: true, message: `Token ${verified === false ? "unverified" : "verified"} successfully` };
 			} catch (error) {
-				return reply.code(500).send({
-					success: false,
-					error: "Failed to verify token",
-				});
+				return reply.code(500).send({ success: false, error: "Failed to update verification" });
 			}
 		},
 	);
@@ -602,22 +615,39 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 
 				const tokenCount = await DB.Token.countDocuments();
 
-				const volumeResult = await DB.Token.aggregate([
+				const activeModeratorsCount = await DB.User.countDocuments({
+					adminRole: { $in: ["admin", "moderator"] },
+				});
+
+				const tokenStatsResult = await DB.Token.aggregate([
 					{
 						$group: {
 							_id: null,
 							totalVolume: { $sum: "$volume24h" },
+							verifiedCount: { $sum: { $cond: ["$verified", 1, 0] } },
+							featuredCount: { $sum: { $cond: ["$featured", 1, 0] } },
+							hiddenCount: { $sum: { $cond: ["$hidden", 1, 0] } },
 						},
 					},
 				]);
-				const volume24h = Number(volumeResult[0]?.totalVolume || 0);
+
+				const tokenStats = tokenStatsResult[0] || {
+					totalVolume: 0,
+					verifiedCount: 0,
+					featuredCount: 0,
+					hiddenCount: 0,
+				};
 
 				return {
 					success: true,
 					stats: {
 						userCount,
 						tokenCount,
-						volume24h,
+						activeModerators: activeModeratorsCount,
+						volume24h: Number(tokenStats.totalVolume || 0),
+						verifiedTokens: Number(tokenStats.verifiedCount || 0),
+						featuredTokens: Number(tokenStats.featuredCount || 0),
+						hiddenTokens: Number(tokenStats.hiddenCount || 0),
 					},
 				};
 			} catch (error) {

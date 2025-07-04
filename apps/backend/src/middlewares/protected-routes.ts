@@ -3,6 +3,8 @@ import { authenticationMiddleware } from "./authentication";
 import generationRoutes from "../routers/generation";
 import tokenRoutes from "../routers/tokens";
 import authRoutes from "../routers/auth";
+import adminRoutes from "../routers/admin";
+import ownerRoutes from "../routers/owner";
 
 const protectedPaths = [
 	"/generation/generate",
@@ -18,9 +20,16 @@ const protectedPaths = [
 export function registerProtectedRoutes(app: FastifyInstance) {
 	app.register(generationRoutes);
 	app.register(tokenRoutes);
+	app.register(adminRoutes, { prefix: "/admin" });
+	app.register(ownerRoutes, { prefix: "/owner" });
 
 	app.addHook("preHandler", (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction) => {
-		if (protectedPaths.includes(request.url)) {
+		// Check if it's a protected path, admin route, or owner route
+		const isProtectedPath = protectedPaths.includes(request.url);
+		const isAdminRoute = request.url.startsWith("/admin");
+		const isOwnerRoute = request.url.startsWith("/owner");
+
+		if (isProtectedPath || isAdminRoute || isOwnerRoute) {
 			authenticationMiddleware(request, reply);
 		}
 		done();

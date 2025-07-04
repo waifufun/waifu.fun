@@ -7,7 +7,7 @@ import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } 
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
-import { Fragment, type ReactNode, useMemo } from "react";
+import { Fragment, type ReactNode, useMemo, useState } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import Chart from "@/components/chart/chart";
 import useAddress from "@/hooks/use-address";
 import ClaimFees from "@/components/claim-fees";
+import UpdateSocialsModal from "./UpdateSocialsModal";
+import { Button } from "@/components/ui/button";
 
 export default function PageClient({
 	initialData,
@@ -45,6 +47,8 @@ export default function PageClient({
 	const badge = initialData?.imported ? "IMPORTED" : initialData?.curveCompleted ? "BONDED" : "ACTIVE";
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
+
+	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
@@ -223,7 +227,28 @@ export default function PageClient({
 							})}
 						</div>
 
-						{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
+						{/* Owner-only Update Socials button */}
+						{isCreator && (
+							<>
+								<Button variant="outline" className="mb-2 w-fit" onClick={() => setSocialsModalOpen(true)}>
+									Update Socials
+								</Button>
+								<UpdateSocialsModal
+									open={socialsModalOpen}
+									onClose={() => setSocialsModalOpen(false)}
+									token={{
+										chain: token.chain,
+										chainId: String(token.chainId),
+										contractAddress: token.contractAddress,
+										socials: token.socials,
+									}}
+									onSuccess={() => {
+										setSocialsModalOpen(false);
+										query.refetch();
+									}}
+								/>
+							</>
+						)}
 
 						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
@@ -238,6 +263,7 @@ export default function PageClient({
 					</div>
 				</div>
 			</div>
+			{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
 		</div>
 	);
 }

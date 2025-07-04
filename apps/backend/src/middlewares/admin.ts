@@ -79,7 +79,9 @@ export function requirePermission(permission: string) {
 		}
 
 		const address = user.evm || user.solana;
+
 		if (!address) {
+			console.log("No valid address found in requirePermission");
 			return reply.code(401).send({
 				success: false,
 				error: "Valid wallet address required",
@@ -87,6 +89,7 @@ export function requirePermission(permission: string) {
 		}
 
 		const hasUserPermission = await hasPermission(address, permission);
+
 		if (!hasUserPermission) {
 			return reply.code(403).send({
 				success: false,
