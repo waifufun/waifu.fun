@@ -80,56 +80,69 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		}
 
 		try {
-			const cacheKey = `address-points:${address}`;
+			// const cacheKey = `address-points:${address}`;
 
-			const cache = await redis.get(cacheKey);
-			if (cache) {
-				return JSON.parse(cache);
-			}
+			// const cache = await redis.get(cacheKey);
+			// if (cache) {
+			// 	return JSON.parse(cache);
+			// }
 
 			const currentWeekStart = moment().startOf("week").toDate();
 			const MAXIMUM_WEEKLY_POINTS_AMOUNT = 1_000_000;
-			const WEEKLY_POINTS_CAP = MAXIMUM_WEEKLY_POINTS_AMOUNT * 0.02;
+			// const WEEKLY_POINTS_CAP = MAXIMUM_WEEKLY_POINTS_AMOUNT * 0.02;
 
 			const cacheKeyGlobalStats = "globalStatsKey";
 			const cacheGlobalStats = await redis.get(cacheKeyGlobalStats);
+			const now = moment();
+			const isEndOfWeek = now.day() === 0 && now.hour() === 23 && now.minute() >= 55;
+			let WEEKLY_POINTS_CAP = 0;
 
-			let globalStats = undefined;
 
-			if (cacheGlobalStats) {
-				globalStats = JSON.parse(cacheGlobalStats);
-			}
+			// let globalStats = undefined;
 
-			if (!globalStats) {
-				const data = await DB.Event.aggregate([
-					{
-						$match: {
-							eventType: "swap",
-							createdAt: { $gte: currentWeekStart },
-						},
-					},
-					{
-						$addFields: {
-							points: {
-								$cond: [
-									{ $eq: ["$direction", 0] },
-									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.6] },
-									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.1] },
-								],
+			// if (cacheGlobalStats) {
+			// 	globalStats = JSON.parse(cacheGlobalStats);
+			// }
+
+			if (isEndOfWeek) {
+				// const cacheKeyGlobalStats = "globalStatsKey";
+				// const cacheGlobalStats = await redis.get(cacheKeyGlobalStats);
+			
+				let globalStats = cacheGlobalStats ? JSON.parse(cacheGlobalStats) : null;
+			
+				if (!globalStats) {
+					const data = await DB.Event.aggregate([
+						{
+							$match: {
+								eventType: "swap",
+								createdAt: { $gte: currentWeekStart },
 							},
 						},
-					},
-					{
-						$group: {
-							_id: null,
-							globalWeeklyPoints: { $sum: "$points" },
+						{
+							$addFields: {
+								points: {
+									$cond: [
+										{ $eq: ["$direction", 0] },
+										{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1e9] }, 0.6] },
+										{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1e9] }, 0.1] },
+									],
+								},
+							},
 						},
-					},
-				]);
-
-				globalStats = data?.[0];
-
-				await redis.setex(cacheKeyGlobalStats, 60, JSON.stringify(globalStats));
+						{
+							$group: {
+								_id: null,
+								globalWeeklyPoints: { $sum: "$points" },
+							},
+						},
+					]);
+			
+					globalStats = data?.[0];
+					await redis.setex(cacheKeyGlobalStats, 60, JSON.stringify(globalStats));
+				}
+			
+				const globalWeeklyPoints = globalStats?.globalWeeklyPoints || 0;
+				WEEKLY_POINTS_CAP = globalWeeklyPoints * 0.02;
 			}
 
 			const globalWeeklyPoints = globalStats?.globalWeeklyPoints || 0;
@@ -194,9 +207,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const totalPoints = (userData?.totalPoints?.[0]?.totalPoints || 0) + 50;
 			const rawWeeklyPoints = userData?.weeklyPoints?.[0]?.weeklyPoints || 0;
 			const weeklyPointsUncapped = rawWeeklyPoints * multiplier;
-			const combinedWeeklyPoints = Math.min(weeklyPointsUncapped + streakPoints, WEEKLY_POINTS_CAP);
+			// const combinedWeeklyPoints = Math.min(weeklyPointsUncapped + streakPoints, WEEKLY_POINTS_CAP);
+			const combinedWeeklyPoints = WEEKLY_POINTS_CAP === Number.POSITIVE_INFINITY
+	? weeklyPointsUncapped + streakPoints
+	: Math.min(weeklyPointsUncapped + streakPoints, WEEKLY_POINTS_CAP);
 
-			await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints: combinedWeeklyPoints }));
+
+			// await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints: combinedWeeklyPoints }));
 
 			return {
 				success: true,
