@@ -43,7 +43,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 		chain: "solana",
 	});
 
-	const tokenPage = pathname.startsWith("/token");
+	const shouldShowFilters = !pathname.startsWith("/token") && !pathname.startsWith("/profile");
 	const isCollapsed = state === "collapsed";
 
 	return (
@@ -64,7 +64,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
-				{!tokenPage && (
+				{shouldShowFilters && (
 					<SidebarGroup>
 						<SidebarGroupContent>
 							<SidebarMenu>
