@@ -60,7 +60,9 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								: "",
 						])}
 					>
-						<TableCell className="font-medium">{trade.address ? shortenAddress(trade?.address) : "-"}</TableCell>
+						<TableCell className="hover:text-autofun-background-action-highlight font-medium">
+							<Link href={`/profile/${trade.address}`}>{trade.address ? shortenAddress(trade?.address) : "-"}</Link>
+						</TableCell>
 						<TableCell>
 							<Triangle direction={trade?.type === "buy" ? "up" : "down"} />
 						</TableCell>
