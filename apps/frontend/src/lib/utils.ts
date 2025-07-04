@@ -3,7 +3,6 @@ import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
-import { toast } from "sonner";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
 import {
@@ -478,8 +477,12 @@ export const executeSwap = async (
 	speed: TSpeed,
 	connection: Connection,
 	wallet: WalletContextState,
+	onTransactionStart?: (signature: string, expectedOutput: number) => void,
 ): Promise<string> => {
 	if (!connection) throw new Error("No connection was found");
+
+	const parsedInputAmount = parseUnits(String(inputAmount), mode === "buy" ? 9 : token.decimals);
+
 	/** If the token was imported or has already migrated we can just use Jupiter */
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
@@ -490,6 +493,7 @@ export const executeSwap = async (
 		});
 
 		const quote = quoteResponse?.quote;
+		const expectedOutput = quoteResponse?.minimumReceived || 0;
 
 		if (!quote) throw new Error("Failed to fetch quote from Jupiter");
 
@@ -537,8 +541,12 @@ export const executeSwap = async (
 
 		const signature = await wallet.sendTransaction(transaction, connection);
 
+		// Notify the transaction listener
+		onTransactionStart?.(signature, expectedOutput);
+
 		return signature;
 	}
+
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
 		const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
@@ -614,25 +622,7 @@ export const executeSwap = async (
 
 		const signature = await wallet.sendTransaction(versionedTx, connection);
 
-		const confirmation = connection.confirmTransaction({
-			blockhash: blockhash,
-			lastValidBlockHeight: lastValidBlockHeight,
-			signature: signature,
-		});
-
-		toast.promise(confirmation, {
-			loading: "Transaction broadcasted",
-			success: () => {
-				return "Transaction confirmed";
-			},
-			action: {
-				label: "View on Solscan",
-				onClick: () => {
-					window.open(`https://solscan.io/tx/${signature}`);
-				},
-			},
-			error: (e) => `Transaction failed: ${e.message}`,
-		});
+		onTransactionStart?.(signature, quote.minimumReceived);
 
 		return signature;
 	}

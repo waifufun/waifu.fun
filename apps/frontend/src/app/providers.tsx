@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
 import { AnimationProvider } from "@/providers/animation-context";
 import { Suspense } from "react";
+import { TransactionListenerProvider } from "@/providers/transaction-listener";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +30,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 					<QueryClientProvider client={queryClient}>
 						<AnimationProvider>
 							<SolanaProvider>
-								{children}
+								<TransactionListenerProvider>{children}</TransactionListenerProvider>
 								<Toaster />
 								<GoogleAnalytics gaId={googleTagID} />
 							</SolanaProvider>

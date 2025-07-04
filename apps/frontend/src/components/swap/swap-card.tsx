@@ -22,6 +22,7 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import moment from "moment";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import Countdown from "react-countdown";
+import { useTransactionListener } from "@/providers/transaction-listener";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
@@ -29,9 +30,11 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const wallet = useWallet();
 	const { speed } = useSpeed();
 	const { connection } = useConnection();
+	console.log("Connection:", connection);
 	const { slippage } = useSlippage();
 	const modal = useWalletModal();
 	const address = useAddress();
+	const { addTransaction } = useTransactionListener();
 	const balance = useBalance({ chain: token.chain, address });
 	const tokenBalance = useTokenBalance({
 		chain: token.chain,
@@ -91,7 +94,23 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		mutationFn: async () => {
 			const from = address as SolanaAddressLike;
 			if (!from) throw new Error("No wallet connected");
-			return await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
+
+			const inputAmountParsed = Number.parseFloat(value);
+			const inputAmountLamports = Math.floor(inputAmountParsed * 10 ** (mode === "buy" ? 9 : token.decimals));
+
+			return await executeSwap(
+				from,
+				token,
+				value,
+				mode,
+				slippage,
+				speed,
+				connection,
+				wallet,
+				(signature: string, expectedOutput: number) => {
+					addTransaction(signature, token, mode, inputAmountLamports, expectedOutput);
+				},
+			);
 		},
 		onSuccess: () => {
 			setTimeout(() => {
