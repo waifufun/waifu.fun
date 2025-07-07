@@ -1,0 +1,37 @@
+export interface FormState {
+	name: string;
+	symbol: string;
+	description: string;
+	image: string;
+	contractAddress: string;
+	targetAmount: string;
+	targetAmountUsd: string;
+	pricePerToken: string;
+	pricePerTokenUsd: string;
+	minimumInvestment: string;
+	maximumInvestment: string;
+	startDate: string;
+	endDate: string;
+	claimDate: string;
+	presaleAllocation: string;
+	liquidityAllocation: string;
+	teamAllocation: string;
+	marketingAllocation: string;
+	developmentAllocation: string;
+	communityAllocation: string;
+	totalSupply: string;
+	decimals: string;
+	chain: string;
+	chainId: number;
+	currency: string;
+	softCap: string;
+	hardCap: string;
+	vesting: string;
+	creator: string;
+	website: string;
+	telegram: string;
+	twitter: string;
+	discord: string;
+	github: string;
+	whitepaper: string;
+} 

@@ -1,11 +1,11 @@
-import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId, IPresale, CreatePresaleBody } from "@autofun/types";
 import { Connection } from "@solana/web3.js";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const fetcher = async (
 	endpoint: string,
-	method: "GET" | "POST" | "PUT" | "DELETE",
+	method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
 	body?: object | undefined,
 ) => {
 	try {
@@ -62,6 +62,47 @@ export const getTokens = async ({
 	} catch (error) {
 		console.error("Error fetching tokens:", error);
 		return [];
+	}
+};
+
+export const getPresales = async ({
+	searchParams,
+}: {
+	searchParams: {
+		[key: string]: string | string[] | number | number[] | undefined;
+	};
+}) => {
+	try {
+		console.log("Using demo presales data for testing");
+		const response = await fetcher("/presale/demo", "GET");
+		return response || [];
+	} catch (error) {
+		console.error("Error fetching presales:", error);
+		return [];
+	}
+};
+
+export const getPresale = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: { chain: string; chainId: string; contractAddress: string }) => {
+	try {
+		console.log("Using demo presale data for testing");
+		const demoPresales = await fetcher("/presale/demo", "GET");
+		const presale = demoPresales.find(
+			(p: IPresale) =>
+				p.contractAddress === contractAddress && p.chain === chain && p.chainId === Number.parseInt(chainId),
+		);
+
+		if (!presale) {
+			throw new Error("Presale not found");
+		}
+
+		return presale;
+	} catch (error) {
+		console.error("Error fetching presale:", error);
+		throw error;
 	}
 };
 
@@ -648,4 +689,100 @@ export const updateTokenSocialsOwner = async ({
 	socials: Record<string, string>;
 }) => {
 	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/social`, "POST", socials);
+};
+
+type PresaleAllocations = IPresale["allocations"];
+type PresaleUtility = IPresale["utility"];
+type PresaleRoadmap = IPresale["roadmap"];
+type PresaleTeam = IPresale["team"];
+type PresaleSocials = IPresale["socials"];
+type PresaleKYC = IPresale["kyc"];
+type PresaleAudit = IPresale["audit"];
+type PresaleSettings = IPresale["settings"];
+
+export const createPresale = async (
+	presaleData: CreatePresaleBody,
+): Promise<{ success: boolean; presale?: IPresale; error?: string }> => {
+	return await fetcher("/presale/admin/create", "POST", presaleData);
+};
+
+export const getAdminPresales = async (params: {
+	page?: number;
+	limit?: number;
+	status?: "draft" | "active" | "paused" | "completed" | "cancelled" | "failed";
+	search?: string;
+}) => {
+	const queryParams = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value !== undefined) {
+			queryParams.append(key, value.toString());
+		}
+	}
+
+	const response = await fetcher(`/presale/admin/all?${queryParams.toString()}`, "GET");
+	return response;
+};
+
+export const updatePresaleStatus = async ({
+	id,
+	status,
+}: {
+	id: string;
+	status: "draft" | "active" | "paused" | "completed" | "cancelled" | "failed";
+}): Promise<{ success: boolean; error?: string }> => {
+	return await fetcher(`/presale/admin/${id}/status`, "PATCH", { status });
+};
+
+export const togglePresaleFeatured = async ({
+	id,
+	featured,
+}: {
+	id: string;
+	featured: boolean;
+}): Promise<{ success: boolean; error?: string }> => {
+	return await fetcher(`/presale/admin/${id}/featured`, "PATCH", { featured });
+};
+
+export const togglePresaleVerification = async ({
+	id,
+	verified,
+}: {
+	id: string;
+	verified: boolean;
+}): Promise<{ success: boolean; error?: string }> => {
+	return await fetcher(`/presale/admin/${id}/verify`, "PATCH", { verified });
+};
+
+export const deletePresale = async (id: string): Promise<{ success: boolean; error?: string }> => {
+	return await fetcher(`/presale/admin/${id}`, "DELETE");
+};
+
+export const participateInPresale = async ({
+	id,
+	amount,
+	signature,
+}: {
+	id: string;
+	amount: number;
+	signature?: string;
+}): Promise<{ success: boolean; error?: string }> => {
+	return await fetcher(`/presale/${id}/participate`, "POST", { amount, signature });
+};
+
+export const refundPresaleParticipation = async ({
+	id,
+}: {
+	id: string;
+}): Promise<{ success: boolean; error?: string; refundAmount?: number }> => {
+	return await fetcher(`/presale/${id}/refund`, "POST");
+};
+
+export const updatePresale = async ({
+	id,
+	updateData,
+}: {
+	id: string;
+	updateData: Partial<CreatePresaleBody>;
+}): Promise<{ success: boolean; presale?: IPresale; error?: string }> => {
+	return await fetcher(`/presale/${id}`, "PUT", updateData);
 };

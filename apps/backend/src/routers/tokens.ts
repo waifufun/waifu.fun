@@ -425,11 +425,19 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		// For imported tokens or completed curves, use external Codex API
 		if (token.curveCompleted) {
+			const networkId = (
+				CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
+			)[chain]?.[chainId];
+
+			if (!networkId) {
+				logger.warn(`No Codex network ID found for chain: ${chain}, chainId: ${chainId}`);
+				return [];
+			}
+
 			const trades = await codex.queries.getTokenEvents({
 				query: {
 					address: contractAddress as unknown as string,
-					// @ts-ignore
-					networkId: CHAINID_TO_CODEX_NETWORK_ID[chain][chainId],
+					networkId: Number(networkId),
 					eventType: EventType.Swap,
 					priceUsdTotal: {
 						gte: 5,
@@ -507,10 +515,18 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
 		}
 
+		const networkId = (
+			CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
+		)[chain]?.[chainId];
+
+		if (!networkId) {
+			logger.warn(`No Codex network ID found for chain: ${chain}, chainId: ${chainId}`);
+			return [];
+		}
+
 		const holders = await codex.queries.holders({
 			input: {
-				// @ts-ignore - TODO Fix type error
-				tokenId: `${contractAddress}:${CHAINID_TO_CODEX_NETWORK_ID[chain][chainId]}`,
+				tokenId: `${contractAddress}:${networkId}`,
 				sort: {
 					attribute: HoldersSortAttribute.Balance,
 					direction: RankingDirection.Desc,
@@ -747,7 +763,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const rpc = await SolanaRpcProvider.connect(solanaChainId);
 
 			const metadata = await rpc.getTokenMetadata(contractAddress);
-			console.log("Metadata for token:", metadata);
 
 			if (!metadata?.image) throw new Error("Token has no image");
 

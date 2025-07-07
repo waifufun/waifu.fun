@@ -15,6 +15,7 @@ const protectedPaths = [
 	"/chat/message",
 	"/user/upload-profile-image",
 	"/transactions/claim",
+	"/incubator/admin/create",
 ];
 
 export function registerProtectedRoutes(app: FastifyInstance) {
