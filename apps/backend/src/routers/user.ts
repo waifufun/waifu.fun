@@ -84,7 +84,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const currentWeekStart = moment().startOf("week").toDate();
 
 			const cacheKeyGlobalStats = "globalStatsKey";
-			let globalStats = await redis.get(cacheKeyGlobalStats).then((res) => res && JSON.parse(res));
+			const cacheGlobalStats = await redis.get(cacheKeyGlobalStats);
+
+			let globalStats = undefined;
+
+			if (cacheGlobalStats) {
+				globalStats = JSON.parse(cacheGlobalStats);
+			}
 
 			if (!globalStats) {
 				const [data] = await DB.Event.aggregate([
