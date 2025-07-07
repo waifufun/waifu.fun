@@ -200,12 +200,10 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												))}
 											</div>
 										) : (
-											// This message remains outside the scrollable area
 											<div className="text-center my-6 text-[#03FF23] text-base font-semibold uppercase">
 												No transactions found
 											</div>
 										)}
-										{/* The Pagination component also remains outside the scrollable area */}
 										<Pagination
 											pagination={{
 												page: query.data?.page,
