@@ -1952,7 +1952,7 @@ export type Autofun = {
 						type: "i64";
 					},
 					{
-						name: "initBondingCurve";
+						name: "restBondingCurve";
 						type: "f64";
 					},
 					{
