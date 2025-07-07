@@ -71,25 +71,17 @@ export default async function userRoutes(fastify: FastifyInstance) {
 	}>("/get-address-points", async (request, reply) => {
 		const { address } = request.body;
 
-		if (!address) {
-			throw new Error("No address was passed");
-		}
-
-		if (!isSupportedAddress(address as AddressLike)) {
-			throw new Error("Unsupported address");
-		}
+		if (!address) throw new Error("No address was passed");
+		if (!isSupportedAddress(address as AddressLike)) throw new Error("Unsupported address");
 
 		try {
 			const cacheKey = `address-points:${address}`;
-
 			const cache = await redis.get(cacheKey);
 			if (cache) {
 				return JSON.parse(cache);
 			}
 
 			const currentWeekStart = moment().startOf("week").toDate();
-			const MAXIMUM_WEEKLY_POINTS_AMOUNT = 1_000_000;
-			const WEEKLY_POINTS_CAP = MAXIMUM_WEEKLY_POINTS_AMOUNT * 0.02;
 
 			const cacheKeyGlobalStats = "globalStatsKey";
 			const cacheGlobalStats = await redis.get(cacheKeyGlobalStats);
@@ -101,7 +93,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			}
 
 			if (!globalStats) {
-				const data = await DB.Event.aggregate([
+				const [data] = await DB.Event.aggregate([
 					{
 						$match: {
 							eventType: "swap",
@@ -127,13 +119,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					},
 				]);
 
-				globalStats = data?.[0];
-
+				globalStats = data || { globalWeeklyPoints: 0 };
 				await redis.setex(cacheKeyGlobalStats, 60, JSON.stringify(globalStats));
 			}
 
-			const globalWeeklyPoints = globalStats?.globalWeeklyPoints || 0;
-			const multiplier = globalWeeklyPoints > 0 ? MAXIMUM_WEEKLY_POINTS_AMOUNT / globalWeeklyPoints : 0;
+			const globalWeeklyPoints = globalStats.globalWeeklyPoints;
 
 			// 2. User total and weekly points, and trading streak
 			const [userData] = await DB.Event.aggregate([
@@ -169,15 +159,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 							{ $match: { createdAt: { $gte: currentWeekStart } } },
 							{
 								$project: {
-									dayString: {
-										$dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-									},
+									dayString: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
 								},
 							},
 							{
-								$group: {
-									_id: "$dayString",
-								},
+								$group: { _id: "$dayString" },
 							},
 							{
 								$sort: { _id: 1 },
@@ -190,18 +176,22 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			const tradedDays = userData.tradedDays.map((d: { _id: string }) => d._id);
 			const { streakPoints } = calculateStreak(tradedDays);
 
-			// + 50 represents the points you get on wallet connect
-			const totalPoints = (userData?.totalPoints?.[0]?.totalPoints || 0) + 50;
+			const registrationBonus = 50;
+			const totalPoints = (userData?.totalPoints?.[0]?.totalPoints || 0) + registrationBonus;
 			const rawWeeklyPoints = userData?.weeklyPoints?.[0]?.weeklyPoints || 0;
-			const weeklyPointsUncapped = rawWeeklyPoints * multiplier;
-			const combinedWeeklyPoints = Math.min(weeklyPointsUncapped + streakPoints, WEEKLY_POINTS_CAP);
+			const weeklyPointsUncapped = rawWeeklyPoints + streakPoints;
 
-			await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints: combinedWeeklyPoints }));
+			const now = moment();
+			const isEndOfWeek = now.isoWeekday() === 7;
 
+			const weeklyCap = globalWeeklyPoints * 0.02;
+			const weeklyPoints = isEndOfWeek ? Math.min(weeklyPointsUncapped, weeklyCap) : weeklyPointsUncapped;
+
+			await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints }));
 			return {
 				success: true,
 				totalPoints,
-				weeklyPoints: combinedWeeklyPoints,
+				weeklyPoints,
 			};
 		} catch (err) {
 			console.error(err);
