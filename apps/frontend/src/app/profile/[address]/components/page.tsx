@@ -177,31 +177,35 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 
 									<TabsContent value="transactions">
 										{transactions?.length > 0 ? (
-											transactions.map((transaction) => (
-												<TokenRow
-													mode="activity"
-													key={transaction._id}
-													data={{
-														chain: "solana",
-														chainId: 101,
-														image: transaction.image ?? "/create/test-img.png",
-														title: transaction.tokenName,
-														ticker: transaction.tokenTicker,
-														contractAddress: transaction.contractAddress,
-														marketCap: transaction.marketcap,
-														direction: transaction.direction,
-														swapAmount: transaction?.swapAmount,
-														amountGotten: transaction?.amountGotten,
-														createdAt: transaction?.createdAt,
-														signature: transaction?.signature,
-													}}
-												/>
-											))
+											<div className="max-h-[600px] overflow-y-auto">
+												{transactions.map((transaction) => (
+													<TokenRow
+														mode="activity"
+														key={transaction._id}
+														data={{
+															chain: "solana",
+															chainId: 101,
+															image: transaction.image ?? "/create/test-img.png",
+															title: transaction.tokenName,
+															ticker: transaction.tokenTicker,
+															contractAddress: transaction.contractAddress,
+															marketCap: transaction.marketcap,
+															direction: transaction.direction,
+															swapAmount: transaction?.swapAmount,
+															amountGotten: transaction?.amountGotten,
+															createdAt: transaction?.createdAt,
+															signature: transaction?.signature,
+														}}
+													/>
+												))}
+											</div>
 										) : (
+											// This message remains outside the scrollable area
 											<div className="text-center my-6 text-[#03FF23] text-base font-semibold uppercase">
 												No transactions found
 											</div>
 										)}
+										{/* The Pagination component also remains outside the scrollable area */}
 										<Pagination
 											pagination={{
 												page: query.data?.page,
