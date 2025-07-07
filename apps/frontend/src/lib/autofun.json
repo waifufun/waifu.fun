@@ -1166,7 +1166,7 @@
 						"type": "i64"
 					},
 					{
-						"name": "init_bonding_curve",
+						"name": "rest_bonding_curve",
 						"type": "f64"
 					},
 					{

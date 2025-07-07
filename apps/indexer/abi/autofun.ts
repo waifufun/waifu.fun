@@ -157,6 +157,8 @@ export const instructions = {
 
 				const limitTimeToUpdate = payload.readBigUInt64LE(offset);
 				offset += 8;
+				const allowCreatorTime = payload.readUInt8(offset) === 1;
+				offset += 1;
 
 				const name = readBorshString(payload, offset);
 				offset = name.nextOffset;
@@ -186,6 +188,7 @@ export const instructions = {
 						maxAmount,
 						delayForTrade,
 						limitTimeToUpdate,
+						allowCreatorTime,
 						name: name.value,
 						symbol: symbol.value,
 						uri: uri.value,
