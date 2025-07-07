@@ -215,6 +215,14 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	/** Query Codex for imported or tokens that having curveCompleted */
 	const tokensToQuery = tokens.codex
 		.filter((t) => needsUpdate(t))
+		.filter((token: IToken) => {
+			const { chain, chainId } = token;
+			const networkId =
+				chain === "evm"
+					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
+					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
+			return networkId !== undefined;
+		})
 		.map((token: IToken) => {
 			const { chain, chainId, contractAddress } = token;
 			const networkId =

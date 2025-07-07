@@ -425,6 +425,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		// For imported tokens or completed curves, use external Codex API
 		if (token.curveCompleted) {
+			const networkId = (
+				CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
+			)[chain]?.[chainId];
+
+			if (!networkId) {
+				logger.warn(`No Codex network ID found for chain: ${chain}, chainId: ${chainId}`);
+				return [];
+			}
 			const trades = await codex.queries.getTokenEvents({
 				query: {
 					address: contractAddress as unknown as string,
@@ -506,7 +514,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (!token) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
 		}
+		const networkId = (
+			CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
+		)[chain]?.[chainId];
 
+		if (!networkId) {
+			logger.warn(`No Codex network ID found for chain: ${chain}, chainId: ${chainId}`);
+			return [];
+		}
 		const holders = await codex.queries.holders({
 			input: {
 				// @ts-ignore - TODO Fix type error
