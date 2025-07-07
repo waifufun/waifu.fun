@@ -75,13 +75,14 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		if (!isSupportedAddress(address as AddressLike)) throw new Error("Unsupported address");
 
 		try {
-			//   const cacheKey = address-points:${address};
-			//   const cache = await redis.get(cacheKey);
-			//   if (cache) return JSON.parse(cache);
+			const cacheKey = `address-points:${address}`;
+			const cache = await redis.get(cacheKey);
+			if (cache) {
+				return JSON.parse(cache);
+			}
 
 			const currentWeekStart = moment().startOf("week").toDate();
 
-			// 1. Aggregate total global weekly points (used for calculating 2% cap later, not here)
 			const cacheKeyGlobalStats = "globalStatsKey";
 			let globalStats = await redis.get(cacheKeyGlobalStats).then((res) => res && JSON.parse(res));
 
@@ -113,7 +114,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 				]);
 
 				globalStats = data || { globalWeeklyPoints: 0 };
-				// await redis.setex(cacheKeyGlobalStats, 60, JSON.stringify(globalStats));
+				await redis.setex(cacheKeyGlobalStats, 60, JSON.stringify(globalStats));
 			}
 
 			const globalWeeklyPoints = globalStats.globalWeeklyPoints;
@@ -167,7 +168,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			]);
 
 			const tradedDays = userData.tradedDays.map((d: { _id: string }) => d._id);
-			console.log("traded days of user ->", tradedDays)
 			const { streakPoints } = calculateStreak(tradedDays);
 
 			const registrationBonus = 50;
@@ -177,14 +177,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			const now = moment();
 			const isEndOfWeek = now.isoWeekday() === 7;
-			console.log("is end of week? ->", isEndOfWeek)
 
 			const weeklyCap = globalWeeklyPoints * 0.02;
-			const weeklyPoints = isEndOfWeek
-				? Math.min(weeklyPointsUncapped, weeklyCap) 
-				: weeklyPointsUncapped; 
+			const weeklyPoints = isEndOfWeek ? Math.min(weeklyPointsUncapped, weeklyCap) : weeklyPointsUncapped;
 
-			//   await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints }));
+			await redis.setex(cacheKey, 120, JSON.stringify({ totalPoints, weeklyPoints }));
 			return {
 				success: true,
 				totalPoints,
