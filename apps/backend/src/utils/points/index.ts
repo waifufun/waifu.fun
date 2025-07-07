@@ -1,4 +1,5 @@
 export function calculateStreak(dates: string[]): { streakPoints: number } {
+	// Requires at least 2 days to begin counting a streak
 	if (dates.length < 2) return { streakPoints: 0 };
 
 	const pointsPerDay = [10, 20, 30, 40, 50, 60, 70];
