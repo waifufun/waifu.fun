@@ -122,7 +122,14 @@ export default function ConnectWallet() {
 				clearTimeout(debounceTimeoutRef.current);
 			}
 		};
-	}, [wallet.connected, wallet.publicKey, wallet.signMessage, isAuthenticated, authenticatedAddress]);
+	}, [
+		wallet.connected,
+		wallet.publicKey,
+		wallet.signMessage,
+		isAuthenticated,
+		authenticatedAddress,
+		wallet.disconnect,
+	]);
 
 	if (!client || isCheckingAuth) {
 		return <Button className="w-full">{isCollapsed ? <Wallet size={16} /> : "Loading..."}</Button>;
