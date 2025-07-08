@@ -182,7 +182,7 @@ export const uploadBase64Image = async (
 	} else {
 		return false;
 	}
-	return getFileUrl(`${fileName}.webp`, bucket);
+	return getFileUrl(`${fileName}.png`, bucket);
 };
 
 /**
@@ -212,10 +212,13 @@ export const uploadImageFromUrl = async (
 
 	const compressed = await sharp(imageBuffer)
 		.resize({ height: height || 750, width: width || 750 })
-		.webp({ lossless: true })
+		.png({
+			compressionLevel: 2,
+			quality: 100,
+		})
 		.toBuffer();
 
-	await upload(bucket, { data: compressed, mimetype: "image/webp" }, fileName);
+	await upload(bucket, { data: compressed, mimetype: "image/png" }, fileName);
 
-	return getFileUrl(`${fileName}.webp`, bucket);
+	return getFileUrl(`${fileName}.png`, bucket);
 };
