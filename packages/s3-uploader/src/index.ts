@@ -173,9 +173,12 @@ export const uploadBase64Image = async (
 	if (imgBuffer) {
 		const compressed = await sharp(imgBuffer)
 			.resize({ height: height || 750, width: width || 750 })
-			.webp({ lossless: true })
+			.png({
+				compressionLevel: 2,
+				quality: 100,
+			})
 			.toBuffer();
-		await upload(bucket, { data: compressed, mimetype: "image/webp" }, fileName);
+		await upload(bucket, { data: compressed, mimetype: "image/png" }, fileName);
 	} else {
 		return false;
 	}
