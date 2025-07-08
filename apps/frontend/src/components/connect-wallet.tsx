@@ -102,6 +102,7 @@ export default function ConnectWallet() {
 					hasInitialized.current = true;
 				} catch (error) {
 					console.error("Failed to authenticate Solana wallet:", error);
+					await wallet.disconnect();
 					setIsAuthenticated(false);
 					setAuthenticatedAddress(null);
 				}
