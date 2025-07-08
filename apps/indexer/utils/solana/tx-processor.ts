@@ -210,11 +210,6 @@ export class SolanaTransactionProcessor {
 						};
 						events.push(eventObj);
 
-						// Update token status to completed when curve is completed
-						this.updateTokenCurveStatus(completeEvent.mint, true).catch((error) => {
-							logger.error("Failed to update token curve status:", error);
-						});
-
 						if (this.debugStatements) {
 							logger.info(`Found curve completion event for mint: ${completeEvent.mint}`);
 						}
@@ -226,31 +221,6 @@ export class SolanaTransactionProcessor {
 		}
 
 		return events;
-	}
-
-	private async updateTokenCurveStatus(contractAddress: string, completed: boolean): Promise<void> {
-		try {
-			const chainId = process.env.NETWORK === "mainnet" ? 101 : 103;
-
-			await DB.Token.updateOne(
-				{
-					contractAddress,
-					chain: "solana",
-					chainId,
-				},
-				{
-					$set: {
-						curveCompleted: completed,
-						curveProgress: completed ? 100 : undefined,
-						status: completed ? "migrated" : undefined,
-					},
-				},
-			);
-
-			logger.info(`Updated token ${contractAddress} curve completion status to ${completed}`);
-		} catch (error) {
-			logger.error(`Failed to update token curve status for ${contractAddress}:`, error);
-		}
 	}
 
 	private createEventData(
