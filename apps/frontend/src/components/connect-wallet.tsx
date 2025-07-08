@@ -102,6 +102,7 @@ export default function ConnectWallet() {
 					hasInitialized.current = true;
 				} catch (error) {
 					console.error("Failed to authenticate Solana wallet:", error);
+					await wallet.disconnect();
 					setIsAuthenticated(false);
 					setAuthenticatedAddress(null);
 				}
@@ -121,7 +122,14 @@ export default function ConnectWallet() {
 				clearTimeout(debounceTimeoutRef.current);
 			}
 		};
-	}, [wallet.connected, wallet.publicKey, wallet.signMessage, isAuthenticated, authenticatedAddress]);
+	}, [
+		wallet.connected,
+		wallet.publicKey,
+		wallet.signMessage,
+		isAuthenticated,
+		authenticatedAddress,
+		wallet.disconnect,
+	]);
 
 	if (!client || isCheckingAuth) {
 		return <Button className="w-full">{isCollapsed ? <Wallet size={16} /> : "Loading..."}</Button>;
