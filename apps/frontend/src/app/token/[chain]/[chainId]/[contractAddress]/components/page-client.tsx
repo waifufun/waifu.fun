@@ -33,8 +33,6 @@ export default function PageClient({
 		initialData,
 	});
 
-	initialData.status = "migrating";
-
 	const currentAddress = useAddress();
 	const token = query?.data;
 	const isCreator = useMemo(() => {
@@ -61,7 +59,8 @@ export default function PageClient({
 		if (initialData?.imported) {
 			return {
 				badge: "IMPORTED",
-				classes: "bg-blue-400/80 hover:bg-blue-400/50 text-white border border-blue-400/50",
+				classes:
+					"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
 			};
 		}
 

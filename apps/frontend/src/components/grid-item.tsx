@@ -119,7 +119,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-blue-400/80 hover:bg-blue-400/50 text-white border border-blue-400/50",
+								"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.1s]",
 							)}
 						>
