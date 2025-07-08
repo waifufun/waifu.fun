@@ -30,6 +30,20 @@ import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/s
 import { getBondingCurveData } from "../utils/bonding-curve";
 import logger from "@autofun/logger";
 
+async function getMigrationStatus(contractAddress: string, chain: TChain, chainId: TChainId) {
+	const migration = await DB.Migration.findOne({
+		contractAddress,
+		chain,
+		chainId,
+	}).lean();
+
+	if (!migration) {
+		return null;
+	}
+
+	return migration.status;
+}
+
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
 	fastify.post<{
@@ -136,6 +150,13 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				docs: populatedTokens,
 			};
 
+			for (const token of returnData.docs) {
+				const migrationStatus = await getMigrationStatus(token.contractAddress, token.chain, token.chainId as TChainId);
+				if (migrationStatus) {
+					token.status = migrationStatus;
+				}
+			}
+
 			await redis.setex(cacheKey, 10, JSON.stringify(returnData));
 
 			return returnData;
@@ -180,6 +201,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}).lean();
 
 		if (!token) throw new Error("Token was not found");
+
+		const migrationStatus = await getMigrationStatus(checksummedQueryAddress, chain, chainId);
+
+		if (migrationStatus) {
+			token.status = migrationStatus;
+		}
 
 		const populatedToken = await populateTokensWithLiveData([token]);
 
