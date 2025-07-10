@@ -202,9 +202,32 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 
 	// logger.info(`Querying tokens: Codex -> ${tokens?.codex?.length || 0} | Indexer -> ${tokens?.indexer?.length || 0}`);
 
+	// batch
+	const migrationStatuses = await DB.Migration.find({
+		$or: tokensToPopulate.map((token) => ({
+			contractAddress: token.contractAddress,
+			chain: token.chain,
+			chainId: token.chainId,
+		})),
+	}).lean();
+
+	const migrationStatusMap = new Map(
+		migrationStatuses.map((migration) => [
+			`${migration.contractAddress}:${migration.chain}:${migration.chainId}`,
+			migration.status,
+		]),
+	);
+
 	const originalMapping: AddressLike[] = [];
 	for (const token of tokensToPopulate) {
 		originalMapping.push(token.contractAddress);
+
+		const migrationKey = `${token.contractAddress}:${token.chain}:${token.chainId}`;
+		const migrationStatus = migrationStatusMap.get(migrationKey);
+		if (migrationStatus) {
+			token.status = migrationStatus;
+		}
+
 		if (token?.imported || token?.curveCompleted) {
 			tokens.codex.push(token);
 		} else {
