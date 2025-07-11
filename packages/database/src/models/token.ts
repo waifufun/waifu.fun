@@ -22,7 +22,7 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		curveLimit: { type: Number },
 		holders: { type: Number, default: 0 },
 		verified: { type: Boolean, default: false },
-		totalSupply: { type: Number, required: true, default: 0 },
+		totalSupply: { type: Number, required: true, default: 1000000000000000 },
 		reserveAmount: { type: Number },
 		reserveLamport: { type: Number },
 		bondingCurveBalance: { type: Number },
