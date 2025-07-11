@@ -237,14 +237,14 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				) : (
 					<Fragment>
 						{address && tokenBalance?.data ? (
-							<div className="grid grid-cols-3 gap-1">
+							<div className="grid grid-cols-5 gap-1">
 								{quickSetSellButtons.map((btn) => (
 									<Button
 										key={btn}
 										variant="secondary"
 										className={cn([
 											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
-											btn === "Reset" ? "text-autofun-text-secondary col-span-2" : "",
+											btn === "Reset" ? "text-autofun-text-secondary" : "",
 										])}
 										onClick={() => handleQuickSetSell(btn)}
 									>
