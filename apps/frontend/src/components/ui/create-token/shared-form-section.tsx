@@ -554,6 +554,7 @@ export const LaunchButton = ({
 		pool,
 		mintKeyPair,
 		setLaunching,
+		setMintKeyPair,
 		isLaunching,
 	} = usePrompt();
 	const router = useRouter();
@@ -610,13 +611,21 @@ export const LaunchButton = ({
 			console.log("Token Data:", tokenData);
 			const tx = await createTokenTx(tokenData, { connection, wallet });
 			console.log("Transaction:", tx);
-			createTokenMutation.mutate({
-				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: chain as TChain,
-				chainId: chainId,
-				pool: pool,
-				signature: tx?.signature.toString() || "",
-			});
+			createTokenMutation.mutate(
+				{
+					contractAddress: mintKeyPair?.publicKey.toString() || "",
+					chain: chain as TChain,
+					chainId: chainId,
+					pool: pool,
+					signature: tx?.signature.toString() || "",
+				},
+				{
+					onSuccess: (data) => {
+						setMintKeyPair(null);
+						router.push(`/token/${chain}/${chainId}/${data.contractAddress}`);
+					},
+				},
+			);
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
 			console.error("Error creating token:", error);

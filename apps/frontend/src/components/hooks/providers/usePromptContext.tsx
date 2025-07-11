@@ -64,6 +64,7 @@ type PromptContextType = {
 	addMedia: (link: string, type: MediaType) => void;
 	terminateWorkers: () => void;
 	cancelVanityGeneration: () => void;
+	setMintKeyPair: (keypair: Keypair | null) => void;
 };
 
 export type TokenFormData = {
@@ -167,6 +168,11 @@ const PromptProviderContent = ({
 			setIsGeneratingMedia(false);
 		},
 	});
+
+	const resetMintKeyPair = useCallback(() => {
+		setMintKeyPair(null);
+		setIsGeneratingAddress(false);
+	}, []);
 
 	const generateMediaMutation = useMutation({
 		mutationKey: ["generateMedia"],
@@ -588,6 +594,7 @@ const PromptProviderContent = ({
 		addMedia,
 		terminateWorkers,
 		cancelVanityGeneration,
+		setMintKeyPair,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;
