@@ -125,7 +125,7 @@ export default async function Image() {
 					>
 						<div style={{ color: "#888", fontSize: 24, display: "flex" }}>Cross-chain</div>
 						<div style={{ color: "#FFFFFF", fontSize: 32, fontWeight: "bold", display: "flex" }}>
-							Solana • Ethereum • Base
+							Solana
 						</div>
 					</div>
 					<div
