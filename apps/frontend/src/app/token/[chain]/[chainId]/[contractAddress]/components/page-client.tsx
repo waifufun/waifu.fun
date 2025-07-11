@@ -44,7 +44,36 @@ export default function PageClient({
 		return false;
 	}, [currentAddress, token?.creator]);
 
-	const badge = initialData?.imported ? "IMPORTED" : initialData?.curveCompleted ? "BONDED" : "ACTIVE";
+	const getBadgeInfo = () => {
+		if (initialData?.status === "migrating") {
+			return {
+				badge: "MIGRATING",
+				classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
+			};
+		}
+		if (initialData?.status === "migrated") {
+			return {
+				badge: "BONDED",
+				classes:
+					"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px 0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+			};
+		}
+		if (initialData?.imported) {
+			return {
+				badge: "IMPORTED",
+				classes:
+					"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
+			};
+		}
+
+		return {
+			badge: "ACTIVE",
+			classes:
+				"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px 0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+		};
+	};
+
+	const badge = getBadgeInfo();
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 
@@ -75,14 +104,7 @@ export default function PageClient({
 							</span>
 							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
-							<Badge
-								className={cn(
-									badgeBaseClasses,
-									"bg-black/80  hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-								)}
-							>
-								{badge}
-							</Badge>
+							<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
 						</div>
 						{/* Creator */}
 						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi">
