@@ -30,7 +30,6 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const wallet = useWallet();
 	const { speed } = useSpeed();
 	const { connection } = useConnection();
-	console.log("Connection:", connection);
 	const { slippage } = useSlippage();
 	const modal = useWalletModal();
 	const address = useAddress();

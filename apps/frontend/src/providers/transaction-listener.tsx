@@ -5,6 +5,7 @@ import { useLocalStorage } from "usehooks-ts";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import type { IToken } from "@autofun/types";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface PendingTransaction {
 	signature: string;
@@ -32,6 +33,7 @@ interface TransactionListenerContextType {
 const TransactionListenerContext = createContext<TransactionListenerContextType | undefined>(undefined);
 
 export const TransactionListenerProvider = ({ children }: { children: ReactNode }) => {
+	const queryClient = useQueryClient();
 	const [pendingTransactions, setPendingTransactions] = useLocalStorage<PendingTransaction[]>(
 		"autofun-pending-transactions",
 		[],
@@ -163,6 +165,18 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				const confirmation = await connection.confirmTransaction(transaction.signature, "confirmed");
 
 				const success = !confirmation.value.err;
+
+				if (success) {
+					queryClient.invalidateQueries({
+						queryKey: ["balance"],
+					});
+					queryClient.invalidateQueries({
+						queryKey: ["chart"],
+					});
+					queryClient.invalidateQueries({
+						queryKey: ["trades"],
+					});
+				}
 
 				setPendingTransactions((prev) =>
 					prev.map((tx) => (tx.signature === transaction.signature ? { ...tx, confirmed: true } : tx)),
