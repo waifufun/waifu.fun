@@ -122,6 +122,8 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 
 	try {
 		console.log(`Starting liquidity withdrawal for token ${tokenMint}`);
+	{	/* TO do malibu: add the possibility for legacy tokens to be withdrawn , in order to migrate
+		Legacy tokens should migrate to meteora and be branded v2 once that is done */ }
 
 		// Create transaction
 		const tx = await programContext.autofunProgram.methods

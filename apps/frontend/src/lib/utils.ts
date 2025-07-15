@@ -22,8 +22,10 @@ import idl from "./autofun.json";
 import idl_legacy from "./autofun_legacy.json";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
+import type { AutofunLegacy}  from "./autofun_legacy";
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 import type { CreateTokenResponse } from "@/components/wallet/SolanaWallet";
+import { getLaunchAccounts } from "./pdas";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -443,7 +445,7 @@ export const retrieveQuote = async ({
 	throw new Error("No quote route found. Please contact auto.fun");
 };
 
-export const getBondingCurvePDA = async (program: Program<Autofun>, tokenAddress: AddressLike) => {
+export const getBondingCurvePDA = async (program: Program<Autofun> | Program<AutofunLegacy>, tokenAddress: AddressLike) => {
 	const [bondingCurvePda] = PublicKey.findProgramAddressSync(
 		[Buffer.from("bonding_curve"), new PublicKey(tokenAddress).toBytes()],
 		program.programId,
@@ -505,7 +507,9 @@ export const getAutofunProgram = async (connection: Connection, wallet: WalletCo
 
 	// Use legacy IDL for version 1, current IDL for other versions
 	const idlToUse = version === 1 ? idl_legacy : idl;
-	const program: Program<Autofun> = new Program(idlToUse as Idl, provider);
+	const program = version === 1
+		? new Program<AutofunLegacy>(idlToUse as Idl, provider)
+		: new Program<Autofun>(idlToUse as Idl, provider);
 
 	const [configPda, _] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
 	const configAccount = await program.account.config.fetch(configPda);
@@ -685,16 +689,17 @@ export const calculateBondingCurveParams = (
 	curveLimit: number,
 ): { virtualLamportReserves: number; initBondingCurve: number } => {
 	// Default values in SOL
-	const defaultCurveLimit = Number(curveLimitConst) / LAMPORTS_PER_SOL;
-	const defaultVirtualReserves = Number(virtualReservesConst);
 	const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
 
 	const defaultInitBondingCurve = 75;
-	// Calculate the ratio based on curve limit
-	const ratio = normalizedCurveLimit / defaultCurveLimit;
 
-	// Calculate new values maintaining the same proportions
-	const virtualLamportReserves = Math.floor(defaultVirtualReserves * ratio);
+	// Calculate virtual reserves as 25% of the curve limit (100 - 75 = 25%)
+	const virtualReservesSOL = (normalizedCurveLimit * (100 - defaultInitBondingCurve)) / 100;
+
+	// Devnet: round to 0.1 SOL, Mainnet: round to 1 SOL
+	const roundingFactor = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 10 : 1;
+	const roundedVirtualReservesSOL = Math.round(virtualReservesSOL * roundingFactor) / roundingFactor;
+	const virtualLamportReserves = Math.floor(roundedVirtualReservesSOL * LAMPORTS_PER_SOL);
 	const initBondingCurve = defaultInitBondingCurve;
 
 	return { virtualLamportReserves, initBondingCurve };
@@ -722,8 +727,9 @@ export const launchAndSwapTx = async (
 	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
 
 	// Calculate minimum receive amount based on bonding curve formula
-	// This is an estimate and should be calculated more precisely based on the bonding curve
 	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+	console.log("virtualLamportReserves:", virtualLamportReserves);
+	console.log("initBondingCurve:", initBondingCurve);
 
 	const initBondingCurveAmount = (tokenSupply * initBondingCurve) / 100;
 
@@ -743,7 +749,6 @@ export const launchAndSwapTx = async (
 			new BN(tokenSupply),
 			new BN(virtualLamportReserves),
 			new BN(curveLimit),
-			initBondingCurve,
 			new BN(maxAmount),
 			new BN(delayForTrade),
 			new BN(limitTimeToUpdate),
@@ -772,7 +777,6 @@ export const createTokenTx = async (
 	{ connection, wallet }: { connection: Connection; wallet: WalletContextState },
 ): Promise<CreateTokenResponse> => {
 	console.log("SolanaWallet: Creating token with data:", tokenData);
-	console.log("virtualLamportReserves:", virtualReservesConst);
 	console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
 	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
 
@@ -791,11 +795,19 @@ export const createTokenTx = async (
 	const curveLimit = tokenData.curveLimit ? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL : Number(curveLimitConst);
 	const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
 	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+	console.log("virtualLamportReserves:", virtualLamportReserves);
+
 	// make sure max amount is in lamports with max 9 decimals
 	const maxAmount = Math.floor(tokenData.tradeLimitSol * LAMPORTS_PER_SOL);
 
 	const delayForTrade = tokenData.delayForTrade || 0;
-	const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts
+	const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts	//
+	const accounts = getLaunchAccounts({
+		programId: program.programId,
+		creator: wallet.publicKey,
+		tokenMint: tokenData.mintKeyPair.publicKey,
+		teamWallet: configAccount.teamWallet,
+	});
 	console.log({
 		decimals: Number(process.env.NEXT_PUBLIC_DECIMALS),
 		tokenSupply: Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
@@ -808,8 +820,11 @@ export const createTokenTx = async (
 		maxAmount: new BN(maxAmount).toNumber(),
 		delayForTrade: new BN(delayForTrade).toNumber(),
 		limitTimeToUpdate: new BN(limitTimeToUpdate).toNumber(),
+		accounts: accounts
+		
 	});
 	const allowCreatorTime = true;
+
 
 	const tx =
 		tokenData.buyAmount > 0
@@ -836,7 +851,6 @@ export const createTokenTx = async (
 						new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
 						new BN(virtualLamportReserves),
 						new BN(curveLimit),
-						initBondingCurve,
 						new BN(maxAmount),
 						new BN(delayForTrade),
 						new BN(limitTimeToUpdate),
@@ -851,6 +865,7 @@ export const createTokenTx = async (
 						teamWallet: configAccount.teamWallet,
 					})
 					.transaction();
+					
 
 	tx.instructions = [modifyComputeUnits, addPriorityFee, ...tx.instructions];
 
@@ -860,12 +875,12 @@ export const createTokenTx = async (
 
 	tx.sign(tokenData.mintKeyPair);
 
-	// const simulation = await connection.simulateTransaction(tx);
-	// if (simulation?.value?.err) {
-	// 	console.error("Transaction simulation failed:", simulation.value.err);
-	// 	console.error("Simulation Logs:", simulation.value.logs);
-	// 	throw new Error(simulation?.value?.err.toString());
-	// }
+	const simulation = await connection.simulateTransaction(tx);
+	if (simulation?.value?.err) {
+		console.error("Transaction simulation failed:", simulation.value.err);
+		console.error("Simulation Logs:", simulation.value.logs);
+		throw new Error(simulation?.value?.err.toString());
+	}
 
 	if (!wallet || !wallet?.signTransaction) throw new Error("Wallet not properly initialized");
 	const signedTx = await wallet.signTransaction(tx);

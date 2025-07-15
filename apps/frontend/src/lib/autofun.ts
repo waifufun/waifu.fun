@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/autofun.json`.
  */
 export type Autofun = {
-	address: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5";
+	address: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS";
 	metadata: {
 		name: "autofun";
 		version: "0.1.0";
@@ -446,96 +446,6 @@ export type Autofun = {
 					name: "teamWallet";
 					writable: true;
 				},
-				{
-					name: "teamWalletAta";
-					writable: true;
-					pda: {
-						seeds: [
-							{
-								kind: "account";
-								path: "teamWallet";
-							},
-							{
-								kind: "const";
-								value: [
-									6,
-									221,
-									246,
-									225,
-									215,
-									101,
-									161,
-									147,
-									217,
-									203,
-									225,
-									70,
-									206,
-									235,
-									121,
-									172,
-									28,
-									180,
-									133,
-									237,
-									95,
-									91,
-									55,
-									145,
-									58,
-									140,
-									245,
-									133,
-									126,
-									255,
-									0,
-									169,
-								];
-							},
-							{
-								kind: "account";
-								path: "token";
-							},
-						];
-						program: {
-							kind: "const";
-							value: [
-								140,
-								151,
-								37,
-								143,
-								78,
-								36,
-								137,
-								241,
-								187,
-								61,
-								16,
-								41,
-								20,
-								142,
-								13,
-								131,
-								11,
-								90,
-								19,
-								153,
-								218,
-								255,
-								16,
-								132,
-								4,
-								142,
-								123,
-								216,
-								219,
-								233,
-								248,
-								89,
-							];
-						};
-					};
-				},
 			];
 			args: [
 				{
@@ -553,10 +463,6 @@ export type Autofun = {
 				{
 					name: "curveLimit";
 					type: "u64";
-				},
-				{
-					name: "initBondingCurve";
-					type: "f64";
 				},
 				{
 					name: "maxAmount";
@@ -1043,10 +949,6 @@ export type Autofun = {
 				{
 					name: "curveLimit";
 					type: "u64";
-				},
-				{
-					name: "initBondingCurve";
-					type: "f64";
 				},
 				{
 					name: "maxAmount";
@@ -1950,10 +1852,6 @@ export type Autofun = {
 					{
 						name: "createdTime";
 						type: "i64";
-					},
-					{
-						name: "restBondingCurve";
-						type: "f64";
 					},
 					{
 						name: "initLamport";
