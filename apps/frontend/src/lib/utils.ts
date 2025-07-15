@@ -24,8 +24,14 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
 import type { AutofunLegacy}  from "./autofun_legacy";
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
-import type { CreateTokenResponse } from "@/components/wallet/SolanaWallet";
+
 import { getLaunchAccounts } from "./pdas";
+
+export type CreateTokenResponse = {
+	mintPublicKey: PublicKey;
+	userPublicKey: PublicKey;
+	signature: string;
+};
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
