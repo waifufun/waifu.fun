@@ -13,7 +13,8 @@ const animationLevel = 1;
 export const GridItem = ({ token }: { token: IToken }) => {
 	const useBlueTheme = token?.imported === true;
 	const useMigratingTheme = token?.status === "migrating";
-	const useMigratedTheme = token?.status === "migrated";
+	const useMigratedTheme = token?.status === "migrated" || token?.status === "finalized";
+
 	const usePurpleTheme =
 		!token?.imported &&
 		Number(token?.curveProgress || 0) > 80 &&
@@ -106,7 +107,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 							<ArrowUpDown className={cn(badgeIconClasses, animationLevel >= 1 && "animate-bounce")} />
 							MIGRATING
 						</Badge>
-					) : token?.status === "migrated" ? (
+					) : token?.status === "migrated" || token?.status === "finalized" ? (
 						<Badge
 							className={cn(
 								badgeBaseClasses,

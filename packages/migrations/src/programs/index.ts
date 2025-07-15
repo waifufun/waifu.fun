@@ -2,11 +2,11 @@ import { Program, type AnchorProvider, web3 } from "@coral-xyz/anchor";
 import raydiumVaultIdl from "../vaults/programs/idl/raydium_vault.json";
 import meteoraVaultIdl from "../vaults/programs/idl/meteora_vault.json";
 import autofunIdl from "../vaults/programs/idl/autofun.json";
-import autofunLegacyIdl from "@/vaults/programs/idl/autofun_legacy.json";
+import autofunLegacyIdl from "../vaults/programs/idl/autofun_legacy.json";
 import type { RaydiumVault } from "../vaults/programs/types/raydium_vault";
 import type { MeteoraVault } from "../vaults/programs/types/meteora_vault";
 import type { Autofun } from "../vaults/programs/types/autofun";
-import type { AutofunLegacy } from "@/vaults/programs/types/autofun_legacy";
+import type { AutofunLegacy } from "../vaults/programs/types/autofun_legacy";
 import { Wallet } from "../utils/customWallet";
 import type { Keypair } from "@solana/web3.js";
 
