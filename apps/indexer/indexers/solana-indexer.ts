@@ -10,7 +10,7 @@ export class SolanaIndexer extends BaseIndexer {
 	private rpc: SolanaRpcProvider;
 	private config: SolanaIndexerConfig;
 	private readonly STOP_AT_SLOT: number;
-	private processor: SolanaTransactionProcessor;
+	private processors: SolanaTransactionProcessor[];
 
 	constructor(config: SolanaIndexerConfig) {
 		super();
@@ -26,7 +26,10 @@ export class SolanaIndexer extends BaseIndexer {
 		this.debugStatements = config.debugStatements || false;
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		this.STOP_AT_SLOT = this.config.minBlock!;
-		this.processor = new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements);
+		this.processors = [
+			new SolanaTransactionProcessor(this.config.autoFunAddressLegacy, this.debugStatements, "legacy"),
+			new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements, "v2"),
+		];
 	}
 
 	protected async resetConnections(): Promise<void> {
@@ -197,7 +200,9 @@ export class SolanaIndexer extends BaseIndexer {
 						return [];
 					}
 
-					const events = this.processor.processTransaction(transaction, transaction.blockTime || 0, transaction.slot);
+					const events = this.processors.flatMap((processor) =>
+						processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot),
+					);
 
 					if (events.length > 0 && this.debugStatements) {
 						logger.info(`Signature ${signatureInfo.signature}: ${events.length} events (slot: ${transaction.slot})`);
@@ -384,7 +389,8 @@ export class SolanaIndexer extends BaseIndexer {
 			let hasMoreSignatures = true;
 
 			if (showLogs) {
-				logger.info(`Starting indexer for address: ${this.config.autoFunAddress}`);
+				logger.info(`Starting indexer for v2 address: ${this.config.autoFunAddress}`);
+				logger.info(`Legacy address: ${this.config.autoFunAddressLegacy}`);
 				logger.info(`Network: ${this.config.networkId}`);
 				logger.info(`Genesis sync: ${isGenesisSync}`);
 				logger.info(`Target min slot: ${targetMinSlot}`);
@@ -547,7 +553,7 @@ export class SolanaIndexer extends BaseIndexer {
 
 	public async runWithRealTimeSync(): Promise<void> {
 		try {
-			logger.info("=== STARTING ROBUST SOLANA INDEXER ===");
+			logger.info("=== STARTING AUTOFUN SOLANA INDEXER ===");
 
 			while (!this.isShuttingDown) {
 				try {

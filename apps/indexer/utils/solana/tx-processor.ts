@@ -1,22 +1,33 @@
 import logger from "@autofun/logger";
 import type { DecodedInstruction } from "../../types";
-import { SolanaInstructionDecoder } from "./instruction-decoder";
+import { SolanaInstructionDecoderV2 } from "./implementations/v2/instruction-decoder-v2";
+import type { SolanaInstructionDecoder } from "./abstract/instruction-decoder";
 import { SolanaEventDecoder } from "./event-decoder";
 import { SolanaAmountExtractor } from "./extract-amount";
 import { SolanaLogDecoder } from "./log-decoder";
 import DB from "@autofun/database";
 import { SolanaRpcProvider } from "@autofun/rpc";
+import { SolanaInstructionDecoderLegacy } from "./implementations/legacy/instruction-decoder-legacy";
 
 export class SolanaTransactionProcessor {
 	private rpc: SolanaRpcProvider;
+	private version: "legacy" | "v2";
+	private instructionDecoder: SolanaInstructionDecoder;
 
 	constructor(
 		private autoFunAddress: string,
 		private debugStatements = false,
+		version: "legacy" | "v2" = "v2",
 	) {
 		// Initialize RPC provider based on environment
 		const networkId = process.env.NETWORK === "mainnet" ? 101 : 103;
 		this.rpc = new SolanaRpcProvider(networkId);
+		this.version = version;
+		if (version === "v2") {
+			this.instructionDecoder = new SolanaInstructionDecoderV2();
+		} else {
+			this.instructionDecoder = new SolanaInstructionDecoderLegacy();
+		}
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -127,7 +138,6 @@ export class SolanaTransactionProcessor {
 		}
 
 		if (!this.hasAutoFunProgram(accounts)) {
-			console.warn(`Transaction ${signatures[0]} does not involve AutoFun program`);
 			return events;
 		}
 
@@ -149,7 +159,7 @@ export class SolanaTransactionProcessor {
 			if (programId !== this.autoFunAddress) continue;
 
 			const instructionAccounts = instruction.accountKeyIndexes.map((index: number) => accountStrings[index]);
-			const decodedInstruction = SolanaInstructionDecoder.decodeAutofunInstruction(
+			const decodedInstruction = this.instructionDecoder.decodeAutofunInstruction(
 				Buffer.from(instruction.data),
 				instructionAccounts,
 			);
@@ -246,6 +256,7 @@ export class SolanaTransactionProcessor {
 			accounts: decodedInstruction.accounts,
 			processed: true,
 			chainId: process.env.NETWORK === "mainnet" ? 101 : 103,
+			version: this.version,
 		};
 
 		const instructionData = decodedInstruction.data?.data;

@@ -30,6 +30,7 @@ export interface IndexerConfig {
 export interface SolanaIndexerConfig extends IndexerConfig {
 	networkId: SolanaNetworkIds;
 	autoFunAddress: SolanaAddressLike;
+	autoFunAddressLegacy: SolanaAddressLike;
 	maxSignatures?: number;
 	beforeSignature?: string;
 }
