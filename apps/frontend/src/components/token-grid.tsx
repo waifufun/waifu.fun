@@ -32,7 +32,8 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 			pages: [tokens],
 			pageParams: [1],
 		},
-		refetchOnMount: false,
+		refetchInterval: 10000,
+		refetchOnMount: true,
 	});
 
 	const allTokens: IToken[] = data?.pages.flat() ?? [];
