@@ -136,6 +136,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			const globalWeeklyPoints = globalStats.globalWeeklyPoints;
 
+			// 2. User total and weekly points, and trading streak
 			const [userData] = await DB.Event.aggregate([
 				{
 					$match: {
