@@ -1,5 +1,5 @@
 {
-	"address": "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS",
+	"address": "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
 	"metadata": {
 		"name": "autofun",
 		"version": "0.1.0",
@@ -259,6 +259,36 @@
 				{
 					"name": "team_wallet",
 					"writable": true
+				},
+				{
+					"name": "team_wallet_ata",
+					"writable": true,
+					"pda": {
+						"seeds": [
+							{
+								"kind": "account",
+								"path": "team_wallet"
+							},
+							{
+								"kind": "const",
+								"value": [
+									6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95,
+									91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169
+								]
+							},
+							{
+								"kind": "account",
+								"path": "token"
+							}
+						],
+						"program": {
+							"kind": "const",
+							"value": [
+								140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16,
+								132, 4, 142, 123, 216, 219, 233, 248, 89
+							]
+						}
+					}
 				}
 			],
 			"args": [
@@ -273,26 +303,6 @@
 				{
 					"name": "virtual_lamport_reserves",
 					"type": "u64"
-				},
-				{
-					"name": "curve_limit",
-					"type": "u64"
-				},
-				{
-					"name": "max_amount",
-					"type": "u64"
-				},
-				{
-					"name": "delay_for_trade",
-					"type": "u64"
-				},
-				{
-					"name": "limit_time_to_update",
-					"type": "u64"
-				},
-				{
-					"name": "allow_creator_time",
-					"type": "bool"
 				},
 				{
 					"name": "name",
@@ -521,26 +531,6 @@
 					"type": "u64"
 				},
 				{
-					"name": "curve_limit",
-					"type": "u64"
-				},
-				{
-					"name": "max_amount",
-					"type": "u64"
-				},
-				{
-					"name": "delay_for_trade",
-					"type": "u64"
-				},
-				{
-					"name": "limit_time_to_update",
-					"type": "u64"
-				},
-				{
-					"name": "allow_creator_time",
-					"type": "bool"
-				},
-				{
 					"name": "name",
 					"type": "string"
 				},
@@ -593,42 +583,6 @@
 				{
 					"name": "new_admin",
 					"type": "pubkey"
-				}
-			]
-		},
-		{
-			"name": "set_max_amounts",
-			"discriminator": [51, 206, 136, 67, 143, 88, 131, 176],
-			"accounts": [
-				{
-					"name": "authority",
-					"writable": true,
-					"signer": true
-				},
-				{
-					"name": "token_mint"
-				},
-				{
-					"name": "bonding_curve",
-					"writable": true,
-					"pda": {
-						"seeds": [
-							{
-								"kind": "const",
-								"value": [98, 111, 110, 100, 105, 110, 103, 95, 99, 117, 114, 118, 101]
-							},
-							{
-								"kind": "account",
-								"path": "token_mint"
-							}
-						]
-					}
-				}
-			],
-			"args": [
-				{
-					"name": "max_amount",
-					"type": "u64"
 				}
 			]
 		},
@@ -952,14 +906,6 @@
 		{
 			"name": "CompleteEvent",
 			"discriminator": [95, 114, 97, 156, 212, 46, 152, 8]
-		},
-		{
-			"name": "InstantModeSwitched",
-			"discriminator": [173, 175, 66, 155, 199, 152, 206, 36]
-		},
-		{
-			"name": "MaxAmountsSet",
-			"discriminator": [233, 20, 37, 198, 155, 37, 64, 10]
 		}
 	],
 	"errors": [
@@ -1037,31 +983,6 @@
 			"code": 6014,
 			"name": "DecimalOverflow",
 			"msg": "Decimal overflow"
-		},
-		{
-			"code": 6015,
-			"name": "ExceedsMaxSellAMount",
-			"msg": "Exceeds Max Sell Amount"
-		},
-		{
-			"code": 6016,
-			"name": "ExceedsMaxBuyAmount",
-			"msg": "Exceeds Max Buy Amount"
-		},
-		{
-			"code": 6017,
-			"name": "TradeTooEarly",
-			"msg": "Trade Too Early"
-		},
-		{
-			"code": 6018,
-			"name": "OverSetTime",
-			"msg": "Over Set Time"
-		},
-		{
-			"code": 6019,
-			"name": "InvalidDirection",
-			"msg": "Invalid Direction"
 		}
 	],
 	"types": [
@@ -1124,10 +1045,6 @@
 						"type": "pubkey"
 					},
 					{
-						"name": "created_time",
-						"type": "i64"
-					},
-					{
 						"name": "init_lamport",
 						"type": "u64"
 					},
@@ -1137,22 +1054,6 @@
 					},
 					{
 						"name": "reserve_token",
-						"type": "u64"
-					},
-					{
-						"name": "delay_for_trade",
-						"type": "u64"
-					},
-					{
-						"name": "allow_creator_time",
-						"type": "bool"
-					},
-					{
-						"name": "limit_time_to_update",
-						"type": "u64"
-					},
-					{
-						"name": "max_amount",
 						"type": "u64"
 					},
 					{
@@ -1204,12 +1105,20 @@
 						"type": "pubkey"
 					},
 					{
+						"name": "init_bonding_curve",
+						"type": "f64"
+					},
+					{
 						"name": "platform_buy_fee",
 						"type": "u128"
 					},
 					{
 						"name": "platform_sell_fee",
 						"type": "u128"
+					},
+					{
+						"name": "curve_limit",
+						"type": "u64"
 					},
 					{
 						"name": "lamport_amount_config",
@@ -1252,42 +1161,6 @@
 								]
 							}
 						}
-					}
-				]
-			}
-		},
-		{
-			"name": "InstantModeSwitched",
-			"type": {
-				"kind": "struct",
-				"fields": [
-					{
-						"name": "instant_trade",
-						"type": "bool"
-					}
-				]
-			}
-		},
-		{
-			"name": "MaxAmountsSet",
-			"type": {
-				"kind": "struct",
-				"fields": [
-					{
-						"name": "bonding_curve",
-						"type": "pubkey"
-					},
-					{
-						"name": "creator",
-						"type": "pubkey"
-					},
-					{
-						"name": "modified_time",
-						"type": "i64"
-					},
-					{
-						"name": "max_amount",
-						"type": "u64"
 					}
 				]
 			}
