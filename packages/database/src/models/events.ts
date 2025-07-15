@@ -33,6 +33,7 @@ export interface IEvent {
 	instructionIndex?: number;
 	programId: string;
 	chainId: number;
+	version?: string;
 }
 
 export interface IEventModel extends PaginateModel<IEvent> {

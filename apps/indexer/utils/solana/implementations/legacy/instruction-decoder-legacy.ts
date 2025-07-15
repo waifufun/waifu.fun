@@ -5,12 +5,11 @@ import { SolanaInstructionDecoder } from "../../abstract/instruction-decoder";
 export class SolanaInstructionDecoderLegacy extends SolanaInstructionDecoder {
 	public decodeAutofunInstruction(instructionData: Buffer, accounts: string[]): DecodedInstruction {
 		const discriminator = Array.from(instructionData.slice(0, 8));
-
 		if (this.arraysEqual(discriminator, LegacyIDLInstructions.launch.d8)) {
 			return {
 				type: "launch",
 				data: LegacyIDLInstructions.launch.decode(instructionData),
-				mintAddress: accounts[3], // Assuming same account structure as v2
+				mintAddress: accounts[3],
 				creator: accounts[2],
 				accounts,
 			};
@@ -20,12 +19,11 @@ export class SolanaInstructionDecoderLegacy extends SolanaInstructionDecoder {
 			return {
 				type: "swap",
 				data: LegacyIDLInstructions.swap.decode(instructionData),
-				tokenMint: accounts[5], // Assuming same account structure as v2
+				tokenMint: accounts[5],
 				user: accounts[8],
 				accounts,
 			};
 		}
-
 		if (this.arraysEqual(discriminator, LegacyIDLInstructions.launchAndSwap.d8)) {
 			return {
 				type: "launchAndSwap",

@@ -50,12 +50,10 @@ export const instructions = {
 						uri: uri.value,
 					},
 				};
-			} catch (error) {
+				// biome-ignore lint/suspicious/noExplicitAny: <reason>
+			} catch (error: any) {
 				return {
-					error: `Failed to decode legacy launch instruction: ${
-						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-						(error as any).message
-					}`,
+					error: `Failed to decode launch instruction: ${error.message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -76,7 +74,7 @@ export const instructions = {
 				const direction = payload.readUInt8(offset);
 				offset += 1;
 
-				const minimumReceiveAmount = payload.readBigUInt64LE(offset);
+				const minimumReceiveAmount = payload.readBigInt64LE(offset);
 				offset += 8;
 
 				const deadline = payload.readBigInt64LE(offset);
@@ -90,12 +88,10 @@ export const instructions = {
 						deadline,
 					},
 				};
-			} catch (error) {
+				// biome-ignore lint/suspicious/noExplicitAny: <reason>
+			} catch (error: any) {
 				return {
-					error: `Failed to decode legacy swap instruction: ${
-						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-						(error as any).message
-					}`,
+					error: `Failed to decode swap instruction: ${error.message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -150,12 +146,10 @@ export const instructions = {
 						deadline,
 					},
 				};
-			} catch (error) {
+				// biome-ignore lint/suspicious/noExplicitAny: <reason>
+			} catch (error: any) {
 				return {
-					error: `Failed to decode legacy launchAndSwap instruction: ${
-						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-						(error as any).message
-					}`,
+					error: `Failed to decode launchAndSwap instruction: ${error.message}`,
 					rawPayload: Array.from(payload),
 				};
 			}
@@ -199,10 +193,23 @@ export const instructions = {
 		name: "nominate_authority",
 		d8: [148, 182, 144, 91, 186, 12, 118, 18],
 		decode: (data: Buffer) => {
-			return {
-				type: "nominate_authority",
-				rawData: Array.from(data.slice(8)),
-			};
+			const payload = data.slice(8);
+
+			try {
+				const newAdmin = payload.slice(0, 32).toString("hex");
+
+				return {
+					data: {
+						newAdmin,
+					},
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: <reason>
+			} catch (error: any) {
+				return {
+					error: `Failed to decode nominate_authority instruction: ${error.message}`,
+					rawPayload: Array.from(payload),
+				};
+			}
 		},
 	},
 
@@ -217,12 +224,10 @@ export const instructions = {
 						mint: data.slice(32, 64).toString("hex"),
 						bondingCurve: data.slice(64, 96).toString("hex"),
 					};
-				} catch (error) {
+					// biome-ignore lint/suspicious/noExplicitAny: <reason>
+				} catch (error: any) {
 					return {
-						error: `Failed to decode legacy CompleteEvent: ${
-							// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-							(error as any).message
-						}`,
+						error: `Failed to decode CompleteEvent: ${error.message}`,
 						rawData: Array.from(data),
 					};
 				}
