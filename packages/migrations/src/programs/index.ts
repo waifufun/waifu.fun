@@ -16,7 +16,7 @@ import {
 	type CurrentAutofunTypes,
 	type LegacyAutofunTypes,
 } from "@autofun/programs";
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 
 // Program IDs - now using centralized addresses
 export const RAYDIUM_VAULT_PROGRAM_ID = new web3.PublicKey(getRaydiumVaultProgramAddress());
@@ -25,10 +25,10 @@ export const AUTOFUN_PROGRAM_ID = new web3.PublicKey(getCurrentProgramAddress())
 export const AUTOFUN_LEGACY_PROGRAM_ID = new web3.PublicKey(getLegacyProgramAddress());
 
 export interface ProgramContext {
-	raydiumVaultProgram: Program<RaydiumVaultTypes>; 
-	meteoraVaultProgram: Program<MeteoraVaultTypes>; 
-	autofunProgram: Program<CurrentAutofunTypes>; 
-	autofunLegacyProgram?: Program<LegacyAutofunTypes>; 
+	raydiumVaultProgram: Program<RaydiumVaultTypes>;
+	meteoraVaultProgram: Program<MeteoraVaultTypes>;
+	autofunProgram: Program<CurrentAutofunTypes>;
+	autofunLegacyProgram?: Program<LegacyAutofunTypes>;
 	provider: AnchorProvider;
 	wallet: Wallet;
 }

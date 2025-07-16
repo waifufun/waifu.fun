@@ -15,7 +15,7 @@ import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/c
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
-import { AnchorProvider, type Wallet, Program } from "@coral-xyz/anchor";
+import { AnchorProvider, type Wallet, type Program } from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
@@ -267,7 +267,7 @@ export class SolanaRpcProvider extends EventEmitter {
 		};
 
 		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
-		
+
 		this.program = createCurrentAutofunProgramWithProvider(provider);
 		this.program_legacy = createLegacyAutofunProgramWithProvider(provider);
 	}
@@ -489,6 +489,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
 		const uri = metadata?.uri || undefined;
+		console.log("Metadata URI:", uri);
 
 		if (!uri) throw new Error("No URI could be determined for token.");
 

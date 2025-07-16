@@ -1,9 +1,17 @@
 {
 	"name": "@autofun/programs",
+	"type": "module",
 	"version": "0.1.0",
 	"description": "Autofun programs, IDLs, and types with network detection",
 	"main": "dist/index.js",
+	"module": "dist/index.mjs",
 	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.js"
+		}
+	},
 	"scripts": {
 		"build": "tsup",
 		"dev": "tsup --watch",
