@@ -21,10 +21,11 @@ export type GetVaultTypes<T extends VaultType> = T extends "raydium"
 		? MainnetMeteoraVault
 		: DevnetMeteoraVault;
 
-export type CurrentAutofunTypes = GetAutofunTypes<"v2">;
-export type LegacyAutofunTypes = GetAutofunTypes<"v1">;
-export type RaydiumVaultTypes = GetVaultTypes<"raydium">;
-export type MeteoraVaultTypes = GetVaultTypes<"meteora">;
+// Explicit type aliases for better Next.js compatibility
+export type CurrentAutofunTypes = MainnetAutofun | DevnetAutofun;
+export type LegacyAutofunTypes = MainnetAutofunLegacy | DevnetAutofunLegacy;
+export type RaydiumVaultTypes = MainnetRaydiumVault | DevnetRaydiumVault;
+export type MeteoraVaultTypes = MainnetMeteoraVault | DevnetMeteoraVault;
 
 export type { MainnetAutofun, MainnetAutofunLegacy, MainnetRaydiumVault, MainnetMeteoraVault } from "./types/mainnet";
 export type { DevnetAutofun, DevnetAutofunLegacy, DevnetRaydiumVault, DevnetMeteoraVault } from "./types/devnet";

@@ -1,6 +1,6 @@
 import { type Connection, PublicKey, type Transaction } from "@solana/web3.js";
 import type { Program, BN } from "@coral-xyz/anchor";
-import type { Autofun } from "./autofun";
+import type { CurrentAutofunTypes } from "@autofun/programs";
 import { getConfigPda } from "./pdas";
 
 export interface LaunchParams {
@@ -57,7 +57,7 @@ export const launchTx = async (
 	token: PublicKey,
 	params: LaunchParams,
 	connection: Connection,
-	program: Program<Autofun>,
+	program: Program<CurrentAutofunTypes>,
 ): Promise<Transaction> => {
 	const configPda = getConfigPda(program.programId);
 
@@ -96,7 +96,7 @@ export const launchAndSwapTx = async (
 	token: PublicKey,
 	params: LaunchAndSwapParams,
 	connection: Connection,
-	program: Program<Autofun>,
+	program: Program<CurrentAutofunTypes>,
 ): Promise<Transaction> => {
 	const configPda = getConfigPda(program.programId);
 
@@ -138,7 +138,7 @@ export const swapTx = async (
 	token: PublicKey,
 	params: SwapParams,
 	connection: Connection,
-	program: Program<Autofun>,
+	program: Program<CurrentAutofunTypes>,
 ): Promise<Transaction> => {
 	const configPda = getConfigPda(program.programId);
 
@@ -164,7 +164,7 @@ export const setMaxAmountsTx = async (
 	token: PublicKey,
 	params: SetMaxAmountsParams,
 	connection: Connection,
-	program: Program<Autofun>,
+	program: Program<CurrentAutofunTypes>,
 ): Promise<Transaction> => {
 	const [bondingCurve] = PublicKey.findProgramAddressSync(
 		[Buffer.from("bonding_curve"), token.toBuffer()],
@@ -189,7 +189,7 @@ export const withdrawTx = async (
 	user: PublicKey,
 	token: PublicKey,
 	connection: Connection,
-	program: Program<Autofun>,
+	program: Program<CurrentAutofunTypes>,
 ): Promise<Transaction> => {
 	const tx = await program.methods
 		.withdraw()

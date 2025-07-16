@@ -1,16 +1,14 @@
-import type { Autofun } from "@/lib/autofun";
 import { WalletClass } from "./WalletClass";
 import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
-import { BN, Program } from "@coral-xyz/anchor";
+import { BN, type Program } from "@coral-xyz/anchor";
 import { type Connection, PublicKey, type Transaction, type VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import { AnchorProvider } from "@coral-xyz/anchor";
-import IDL from "@/lib/autofun.json";
 import type { TokenMetadata } from "../hooks/providers/usePromptContext";
 import { SEED_CONFIG } from "../hooks/hook/UseProgram";
 import { ComputeBudgetProgram, type Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { virtualReservesConst, curveLimitConst } from "@/lib/utils";
-
+import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@autofun/programs";
 export interface ISolanaFunctions {
 	signMessage: (message: Uint8Array) => Promise<Uint8Array>;
 	sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>;
@@ -29,7 +27,7 @@ export class SolanaWallet extends WalletClass {
 	private _solanaFunctions: ISolanaFunctions;
 	public readonly address: SolanaAddressLike;
 	public readonly chain: SolanaNetworkIds;
-	private program: Program<Autofun>;
+	private program: Program<CurrentAutofunTypes>;
 
 	constructor(address: SolanaAddressLike, chain: SolanaNetworkIds, functions: ISolanaFunctions) {
 		super();
@@ -52,7 +50,7 @@ export class SolanaWallet extends WalletClass {
 					},
 					AnchorProvider.defaultOptions(),
 				);
-				this.program = new Program<Autofun>(IDL, provider);
+				this.program = createCurrentAutofunProgramWithProvider(provider);
 				console.log("SolanaWallet: Program created successfully.");
 			} catch (error) {
 				console.error("SolanaWallet: Error creating program:", error);
@@ -136,7 +134,7 @@ export class SolanaWallet extends WalletClass {
 		swapAmount: number,
 		slippageBps: number,
 		connection: Connection,
-		program: Program<Autofun>,
+		program: Program<CurrentAutofunTypes>,
 		mintKeypair: Keypair,
 		configAccount: {
 			teamWallet: PublicKey;
@@ -166,13 +164,13 @@ export class SolanaWallet extends WalletClass {
 		// Apply slippage to expected output
 		const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
 		const allowCreatorTime = true;
+
 		const tx = await program.methods
 			.launchAndSwap(
 				decimals,
 				new BN(tokenSupply),
 				new BN(virtualLamportReserves),
 				new BN(curveLimit),
-				initBondingCurve,
 				new BN(maxAmount),
 				new BN(delayForTrade),
 				new BN(limitTimeToUpdate),
@@ -199,6 +197,9 @@ export class SolanaWallet extends WalletClass {
 
 	public override async createToken(tokenData: TokenMetadata): Promise<CreateTokenResponse> {
 		console.log("SolanaWallet: Creating token with data:", tokenData);
+		if (!this.program) {
+			throw new Error("SolanaWallet: Program is not initialized.");
+		}
 		const [configPda] = PublicKey.findProgramAddressSync([Buffer.from(SEED_CONFIG)], this.program.programId);
 
 		const configAccount = await this.program.account.config.fetch(configPda);
@@ -245,7 +246,6 @@ export class SolanaWallet extends WalletClass {
 							new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
 							new BN(virtualLamportReserves),
 							new BN(curveLimit),
-							initBondingCurve,
 							new BN(maxAmount),
 							new BN(delayForTrade),
 							new BN(limitTimeToUpdate),
