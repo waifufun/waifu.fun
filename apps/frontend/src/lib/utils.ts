@@ -735,7 +735,7 @@ export const launchAndSwapTx = async (
 ) => {
 	const slippage = slippageBps ? slippageBps : 100;
 	const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
-	const { program,  configAccount } = await getAutofunProgram(connection, wallet, 2);
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
 
 	// Calculate minimum receive amount based on bonding curve formula
 	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
