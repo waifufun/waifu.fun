@@ -22,7 +22,7 @@ import idl from "./autofun.json";
 import idl_legacy from "./autofun_legacy.json";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import type { Autofun } from "./autofun";
-import type { AutofunLegacy}  from "./autofun_legacy";
+import type { AutofunLegacy } from "./autofun_legacy";
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 
 import { getLaunchAccounts } from "./pdas";
@@ -451,7 +451,10 @@ export const retrieveQuote = async ({
 	throw new Error("No quote route found. Please contact auto.fun");
 };
 
-export const getBondingCurvePDA = async (program: Program<Autofun> | Program<AutofunLegacy>, tokenAddress: AddressLike) => {
+export const getBondingCurvePDA = async (
+	program: Program<Autofun> | Program<AutofunLegacy>,
+	tokenAddress: AddressLike,
+) => {
 	const [bondingCurvePda] = PublicKey.findProgramAddressSync(
 		[Buffer.from("bonding_curve"), new PublicKey(tokenAddress).toBytes()],
 		program.programId,
@@ -513,9 +516,10 @@ export const getAutofunProgram = async (connection: Connection, wallet: WalletCo
 
 	// Use legacy IDL for version 1, current IDL for other versions
 	const idlToUse = version === 1 ? idl_legacy : idl;
-	const program = version === 1
-		? new Program<AutofunLegacy>(idlToUse as Idl, provider)
-		: new Program<Autofun>(idlToUse as Idl, provider);
+	const program =
+		version === 1
+			? new Program<AutofunLegacy>(idlToUse as Idl, provider)
+			: new Program<Autofun>(idlToUse as Idl, provider);
 
 	const [configPda, _] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
 	const configAccount = await program.account.config.fetch(configPda);
@@ -827,11 +831,9 @@ export const createTokenTx = async (
 		maxAmount: new BN(maxAmount).toNumber(),
 		delayForTrade: new BN(delayForTrade).toNumber(),
 		limitTimeToUpdate: new BN(limitTimeToUpdate).toNumber(),
-		accounts: accounts
-		
+		accounts: accounts,
 	});
 	const allowCreatorTime = true;
-
 
 	const tx =
 		tokenData.buyAmount > 0
@@ -872,7 +874,6 @@ export const createTokenTx = async (
 						teamWallet: configAccount.teamWallet,
 					})
 					.transaction();
-					
 
 	tx.instructions = [modifyComputeUnits, addPriorityFee, ...tx.instructions];
 
