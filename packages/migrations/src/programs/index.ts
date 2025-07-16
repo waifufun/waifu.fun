@@ -1,45 +1,46 @@
-import { Program, type AnchorProvider, web3 } from "@coral-xyz/anchor";
-import raydiumVaultIdl from "../vaults/programs/idl/raydium_vault.json";
-import meteoraVaultIdl from "../vaults/programs/idl/meteora_vault.json";
-import autofunIdl from "../vaults/programs/idl/autofun.json";
-import autofunLegacyIdl from "../vaults/programs/idl/autofun_legacy.json";
-import type { RaydiumVault } from "../vaults/programs/types/raydium_vault";
-import type { MeteoraVault } from "../vaults/programs/types/meteora_vault";
-import type { Autofun } from "../vaults/programs/types/autofun";
-import type { AutofunLegacy } from "../vaults/programs/types/autofun_legacy";
-import { Wallet } from "../utils/customWallet";
+import { type AnchorProvider, web3 } from "@coral-xyz/anchor";
 import type { Keypair } from "@solana/web3.js";
+import { Wallet } from "../utils/customWallet";
 
-// Program IDs
-const raydiumVaultId = raydiumVaultIdl.address;
-const meteoraVaultId = meteoraVaultIdl.address;
-const autofunId = autofunIdl.address;
-const autofunLegacyId = autofunLegacyIdl.address;
-export const RAYDIUM_VAULT_PROGRAM_ID = new web3.PublicKey(raydiumVaultId);
-export const METEORA_VAULT_PROGRAM_ID = new web3.PublicKey(meteoraVaultId);
-export const AUTOFUN_PROGRAM_ID = new web3.PublicKey(autofunId);
-export const AUTOFUN_LEGACY_PROGRAM_ID = new web3.PublicKey(autofunLegacyId); // Legacy program ID
+// Import from the centralized programs package
+import {
+	createRaydiumVaultProgramWithProvider,
+	createMeteoraVaultProgramWithProvider,
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
+	getRaydiumVaultProgramAddress,
+	getMeteoraVaultProgramAddress,
+	getCurrentProgramAddress,
+	getLegacyProgramAddress,
+	type RaydiumVaultTypes,
+	type MeteoraVaultTypes,
+	type CurrentAutofunTypes,
+	type LegacyAutofunTypes,
+} from "@autofun/programs";
+import { Program } from "@coral-xyz/anchor";
+
+// Program IDs - now using centralized addresses
+export const RAYDIUM_VAULT_PROGRAM_ID = new web3.PublicKey(getRaydiumVaultProgramAddress());
+export const METEORA_VAULT_PROGRAM_ID = new web3.PublicKey(getMeteoraVaultProgramAddress());
+export const AUTOFUN_PROGRAM_ID = new web3.PublicKey(getCurrentProgramAddress());
+export const AUTOFUN_LEGACY_PROGRAM_ID = new web3.PublicKey(getLegacyProgramAddress());
 
 export interface ProgramContext {
-	raydiumVaultProgram: Program<RaydiumVault>;
-	meteoraVaultProgram: Program<MeteoraVault>;
-	autofunProgram: Program<Autofun>;
-	autofunLegacyProgram?: Program<AutofunLegacy>;
+	raydiumVaultProgram: Program<RaydiumVaultTypes>; 
+	meteoraVaultProgram: Program<MeteoraVaultTypes>; 
+	autofunProgram: Program<CurrentAutofunTypes>; 
+	autofunLegacyProgram?: Program<LegacyAutofunTypes>; 
 	provider: AnchorProvider;
 	wallet: Wallet;
 }
 
 export async function initializePrograms(provider: AnchorProvider, keypair: Keypair): Promise<ProgramContext> {
-	// Initialize RaydiumVault program
-	const raydiumVaultProgram = new Program<RaydiumVault>(raydiumVaultIdl as any, provider);
+	// Initialize programs using centralized package
+	const raydiumVaultProgram = createRaydiumVaultProgramWithProvider(provider);
+	const meteoraVaultProgram = createMeteoraVaultProgramWithProvider(provider);
+	const autofunProgram = createCurrentAutofunProgramWithProvider(provider);
+	const autofunLegacyProgram = createLegacyAutofunProgramWithProvider(provider);
 
-	// Initialize MeteoraVault program
-	const meteoraVaultProgram = new Program<MeteoraVault>(meteoraVaultIdl as any, provider);
-
-	// Initialize Autofun program
-	const autofunProgram = new Program<Autofun>(autofunIdl as any, provider);
-	// Initialize Autofun Legacy program if available
-	const autofunLegacyProgram = new Program<AutofunLegacy>(autofunLegacyIdl as any, provider);
 	// Create a custom wallet instance
 	const wallet = new Wallet(keypair);
 
