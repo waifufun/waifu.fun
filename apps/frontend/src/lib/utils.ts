@@ -463,6 +463,9 @@ export const getBondingCurvePDA = async (
 		[Buffer.from("bonding_curve"), new PublicKey(tokenAddress).toBytes()],
 		program.programId,
 	);
+	if (!program.account.bondingCurve) {
+		throw new Error("program.account.bondingCurve is undefined");
+	}
 	const curve = await program.account.bondingCurve.fetch(bondingCurvePda);
 	return curve;
 };
@@ -832,7 +835,6 @@ export const createTokenTx = async (
 		maxAmount: new BN(maxAmount).toNumber(),
 		delayForTrade: new BN(delayForTrade).toNumber(),
 		limitTimeToUpdate: new BN(limitTimeToUpdate).toNumber(),
-		accounts: accounts,
 		accounts: accounts,
 	});
 	const allowCreatorTime = true;
