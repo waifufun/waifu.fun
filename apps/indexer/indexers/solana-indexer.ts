@@ -28,12 +28,11 @@ export class SolanaIndexer extends BaseIndexer {
 		this.STOP_AT_SLOT = this.config.minBlock!;
 		this.processors = [
 			new SolanaTransactionProcessor(
-				this.config.autoFunAddressLegacy,
+				this.config.autoFunAddress,
 				this.debugStatements,
-				"legacy",
-				this.config.maxBlock.legacy,
+				this.config.version,
+				this.config.maxBlock,
 			),
-			new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements, "v2", this.config.maxBlock.v2),
 		];
 	}
 
@@ -106,6 +105,7 @@ export class SolanaIndexer extends BaseIndexer {
 	}
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async saveBatchEvents(events: any[]): Promise<void> {
+		console.log(`Saving ${events.length} events to database...`);
 		if (events.length === 0) return;
 
 		await this.safeAsyncOperation(
@@ -206,7 +206,7 @@ export class SolanaIndexer extends BaseIndexer {
 					}
 
 					const events = this.processors.flatMap((processor) =>
-						processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot),
+						processor.processTransaction(transaction, transaction.blockTime || 0, transaction.slot),
 					);
 
 					if (events.length > 0 && this.debugStatements) {
@@ -394,8 +394,7 @@ export class SolanaIndexer extends BaseIndexer {
 			let hasMoreSignatures = true;
 
 			if (showLogs) {
-				logger.info(`Starting indexer for v2 address: ${this.config.autoFunAddress}`);
-				logger.info(`Legacy address: ${this.config.autoFunAddressLegacy}`);
+				logger.info(`Starting indexer for address: ${this.config.autoFunAddress}`);
 				logger.info(`Network: ${this.config.networkId}`);
 				logger.info(`Genesis sync: ${isGenesisSync}`);
 				logger.info(`Target min slot: ${targetMinSlot}`);
@@ -456,6 +455,8 @@ export class SolanaIndexer extends BaseIndexer {
 					const allBatchEvents = await this.processSignaturesBatch(signatures);
 
 					if (allBatchEvents.length > 0) {
+						console.log(`Saving ${allBatchEvents.length} events from batch ${batchNumber}`);
+						console.log(`Events: ${JSON.stringify(allBatchEvents.slice(0, 5))}...`);
 						await this.saveBatchEvents(allBatchEvents);
 					}
 

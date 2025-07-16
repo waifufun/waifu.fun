@@ -206,9 +206,9 @@ export class SolanaTransactionProcessor {
 
 				// Create token in database for launch events
 				if (decodedInstruction.type === "launch" || decodedInstruction.type === "launchAndSwap") {
-					this.createTokenFromLaunchEvent(eventData, blockTime).catch((error) => {
-						logger.error("Failed to create token from launch event:", error);
-					});
+					// this.createTokenFromLaunchEvent(eventData, blockTime).catch((error) => {
+					// 	logger.error("Failed to create token from launch event:", error);
+					// });
 				}
 			}
 		}
