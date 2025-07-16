@@ -4,7 +4,6 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { ProgramContext } from "./programs";
 import type { Wallet } from "./utils/customWallet";
 
-// Import centralized types from the programs package
 import type {
 	RaydiumVaultTypes,
 	MeteoraVaultTypes,

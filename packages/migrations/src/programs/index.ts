@@ -2,7 +2,6 @@ import { type AnchorProvider, web3 } from "@coral-xyz/anchor";
 import type { Keypair } from "@solana/web3.js";
 import { Wallet } from "../utils/customWallet";
 
-// Import from the centralized programs package
 import {
 	createRaydiumVaultProgramWithProvider,
 	createMeteoraVaultProgramWithProvider,
