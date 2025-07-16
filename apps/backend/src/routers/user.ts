@@ -2,7 +2,7 @@ import type { AddressLike, TURLLike } from "@autofun/types";
 import type { FastifyInstance } from "fastify";
 import DB from "@autofun/database";
 import { uploadBase64Image } from "@autofun/s3-uploader";
-import { getChecksummedAddress, isSupportedAddress } from "@autofun/utils";
+import { getChecksummedAddress, isSupportedAddress, updateCryptoPrices } from "@autofun/utils";
 import { calculateStreak } from "../utils/points";
 import redis from "@autofun/redis";
 import moment from "moment";
@@ -75,19 +75,19 @@ export default async function userRoutes(fastify: FastifyInstance) {
 		if (!isSupportedAddress(address as AddressLike)) throw new Error("Unsupported address");
 
 		try {
+			const cryptoPrices = await updateCryptoPrices({});
+			if (!cryptoPrices?.solana) throw new Error("Failed to fetch Solana price");
+
 			const cacheKey = `address-points:${address}`;
 			const cache = await redis.get(cacheKey);
 			if (cache) {
 				return JSON.parse(cache);
 			}
-
 			const currentWeekStart = moment().startOf("week").toDate();
-
 			const cacheKeyGlobalStats = "globalStatsKey";
 			const cacheGlobalStats = await redis.get(cacheKeyGlobalStats);
 
 			let globalStats = undefined;
-
 			if (cacheGlobalStats) {
 				globalStats = JSON.parse(cacheGlobalStats);
 			}
@@ -100,13 +100,24 @@ export default async function userRoutes(fastify: FastifyInstance) {
 							createdAt: { $gte: currentWeekStart },
 						},
 					},
+					{ $addFields: { solPrice: { $literal: cryptoPrices?.solana } } },
 					{
 						$addFields: {
 							points: {
 								$cond: [
 									{ $eq: ["$direction", 0] },
-									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.6] },
-									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.1] },
+									{
+										$multiply: [
+											{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
+											0.6,
+										],
+									},
+									{
+										$multiply: [
+											{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
+											0.1,
+										],
+									},
 								],
 							},
 						},
@@ -134,13 +145,25 @@ export default async function userRoutes(fastify: FastifyInstance) {
 						direction: { $in: [0, 1] },
 					},
 				},
+				{ $addFields: { solPrice: { $literal: cryptoPrices?.solana } } },
+
 				{
 					$addFields: {
 						points: {
 							$cond: [
 								{ $eq: ["$direction", 0] },
-								{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.6] },
-								{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, 0.1] },
+								{
+									$multiply: [
+										{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
+										0.6,
+									],
+								},
+								{
+									$multiply: [
+										{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
+										0.1,
+									],
+								},
 							],
 						},
 					},
@@ -162,12 +185,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
 									dayString: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
 								},
 							},
-							{
-								$group: { _id: "$dayString" },
-							},
-							{
-								$sort: { _id: 1 },
-							},
+							{ $group: { _id: "$dayString" } },
+							{ $sort: { _id: 1 } },
 						],
 					},
 				},
@@ -183,7 +202,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			const now = moment();
 			const isEndOfWeek = now.isoWeekday() === 7;
-
 			const weeklyCap = globalWeeklyPoints * 0.02;
 			const weeklyPoints = isEndOfWeek ? Math.min(weeklyPointsUncapped, weeklyCap) : weeklyPointsUncapped;
 
