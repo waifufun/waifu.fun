@@ -27,8 +27,7 @@ export function FormSection({ title, children, className, collapsible = false, d
 					<AccordionItem value="item-1" className="border-b-0">
 						<AccordionTrigger
 							className={cn(
-								"p-3 md:p-4 hover:no-underline focus-visible:ring-1 focus-visible:ring-[#03FF24] focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-none data-[state=open]:bg-[#03FF24]/10 text-sm font-bold text-[#03FF24] uppercase tracking-wider",
-								// Custom styling for the trigger's chevron:
+								"p-3 md:p-4 hover:no-underline focus-visible:ring-1 focus-visible:ring-[#03FF24] focus-visible:ring-offset-2 focus-visible:ring-offset-black rounded-none data-[state=open]:bg-[#03FF24]/10 text-sm font-bold text-[#03FF24] uppercase tracking-wider cursor-pointer",
 								"[&>svg]:text-[#03FF24]/70 [&>svg]:hover:text-[#03FF24]",
 							)}
 						>

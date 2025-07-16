@@ -10,9 +10,9 @@
 		"target": "ES2022",
 		"lib": ["ES2022", "ES2022.Intl"],
 
-		// fastify-tsconfig recommends "NodeNext" (we use esbuild config for builds -- see `build.ts`)
-		// "module": "NodeNext",
-		// "moduleResolution": "NodeNext",
+		// Use NodeNext for better ESM/CJS interop
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 
 		"sourceMap": true,
 		"resolveJsonModule": true,

@@ -20,7 +20,7 @@ export default function TokensFilter() {
 	);
 
 	const buttons = [
-		{ label: "Tokens Bought", value: "tokens-bought" },
+		// { label: "Tokens Bought", value: "tokens-bought" },
 		{ label: "Tokens Created", value: "tokens-created" },
 	];
 

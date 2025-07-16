@@ -11,13 +11,16 @@ import {
 } from "@solana/web3.js";
 import {
 	TOKEN_PROGRAM_ID,
+	TOKEN_2022_PROGRAM_ID,
 	getAssociatedTokenAddressSync,
 	createAssociatedTokenAccountInstruction,
 	createTransferInstruction,
 } from "@solana/spl-token";
 import type { MigrationContext } from "../types";
 import DB from "@autofun/database";
-import type { ProtocolState, } from "../types";
+import type { ProtocolState } from "../types";
+import { derivePositionNftAccount } from "../vaults/meteroaPdas";
+import BN from "bn.js";
 
 export interface WithdrawLog {
 	sol: number;
@@ -99,6 +102,7 @@ export async function handleTransaction(
 export function parseWithdrawLogs(logs: string[]): WithdrawLog {
 	let sol = 0;
 	let token = 0;
+	// biome-ignore lint/complexity/noForEach: <explanation>
 	logs.forEach((log) => {
 		if (log.includes("withdraw lamports:")) {
 			sol = Number(log.replace("Program log: withdraw lamports:", "").trim());
@@ -120,7 +124,7 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 		console.log(`Starting liquidity withdrawal for token ${tokenMint}`);
 
 		// Create transaction
-		const tx = await programContext.autofunProgram.methods
+		const tx = await program.methods
 			.withdraw()
 			.accounts({
 				admin: wallet.publicKey,
@@ -142,6 +146,7 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 
 		// Parse withdrawal logs
 		const withdrawnAmounts = parseWithdrawLogs(logs);
+		// biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
 		console.log(`Withdrawal successful. Withdrawn amounts:`, withdrawnAmounts);
 
 		// Update state
@@ -170,6 +175,7 @@ export async function sendNftToManager(
 	context: MigrationContext,
 	nftMint: string,
 	managerAddress: string,
+	version: "2022" | "legacy" = "legacy",
 ): Promise<string> {
 	const { rpc, wallet } = context;
 	if (!wallet) {
@@ -177,10 +183,27 @@ export async function sendNftToManager(
 	}
 
 	try {
-		const signerTokenAccount = getAssociatedTokenAddressSync(new PublicKey(nftMint), wallet.publicKey);
-		const managerTokenAccount = getAssociatedTokenAddressSync(new PublicKey(nftMint), new PublicKey(managerAddress));
+		let signerTokenAccount = null;
+		if (version === "2022") {
+			signerTokenAccount = derivePositionNftAccount(new PublicKey(nftMint));
+		} else {
+			signerTokenAccount = getAssociatedTokenAddressSync(new PublicKey(nftMint), wallet.publicKey);
+		}
+		let managerTokenAccount = null;
+		if (version === "2022") {
+			managerTokenAccount = derivePositionNftAccount(new PublicKey(nftMint));
+		} else {
+			managerTokenAccount = getAssociatedTokenAddressSync(new PublicKey(nftMint), new PublicKey(managerAddress));
+		}
+
+		console.log({
+			signerTokenAccount: signerTokenAccount.toBase58(),
+			managerTokenAccount: managerTokenAccount.toBase58(),
+		});
+		// toAtaInfo = derivePositionNftAccount(new PublicKey(nftMint));
 
 		const toAtaInfo = await rpc.getAccountInfo(managerTokenAccount);
+
 		const instructions = [];
 
 		if (!toAtaInfo) {
@@ -190,6 +213,7 @@ export async function sendNftToManager(
 					managerTokenAccount,
 					new PublicKey(managerAddress),
 					new PublicKey(nftMint),
+					version === "2022" ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
 				),
 			);
 		}
@@ -200,7 +224,7 @@ export async function sendNftToManager(
 			wallet.publicKey,
 			1,
 			[],
-			TOKEN_PROGRAM_ID,
+			version === "2022" ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
 		);
 		instructions.push(transferIx);
 
@@ -213,14 +237,23 @@ export async function sendNftToManager(
 
 		const transaction = new VersionedTransaction(messageV0);
 		transaction.sign([wallet.payer]);
+		const signature = await rpc.sendTransaction(transaction);
+		await rpc.confirmTransaction(
+			{
+				signature,
+				blockhash: latestBlockhash.blockhash,
+				lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+			},
+			"finalized",
+		);
+		return signature;
+		// const result = await handleTransaction(rpc, transaction, wallet.payer);
 
-		const result = await handleTransaction(rpc, transaction, wallet.payer);
+		// if (!result.confirmed) {
+		// 	throw new Error(`Transaction failed: ${result.error}`);
+		// }
 
-		if (!result.confirmed) {
-			throw new Error(`Transaction failed: ${result.error}`);
-		}
-
-		return result.signature;
+		// return result.signature;
 	} catch (error) {
 		console.error("Error sending NFT to manager:", error);
 		throw error;
@@ -236,11 +269,22 @@ export async function collectProtocolFees(
 		throw new Error("Wallet is required for fee collection");
 	}
 
-	const fixedFee = Number(process.env.FIXED_FEE ?? 6) * 1e9; // 6 SOL default
-	if (!fixedFee || fixedFee === 0) {
+	let fixedFee = new BN(Number(process.env.FIXED_FEE ?? 6) * 1e9);
+	const withdrawnAmounts = context.state.withdrawnAmounts;
+	if (!withdrawnAmounts || typeof withdrawnAmounts !== "object" || !withdrawnAmounts.sol) {
+		throw new Error("Withdrawn amounts not found in state");
+	}
+	const withdrawnSolBN = new BN(withdrawnAmounts.sol);
+
+	if (withdrawnSolBN.gt(new BN(100 * 1e9))) {
+		// add 1% of withdrawnSolBN for withdrawnSolBN > 100 SOL
+		fixedFee = fixedFee.add(withdrawnSolBN.muln(1).divn(100));
+	}
+	if (!fixedFee || fixedFee.isZero()) {
 		return { txId: "no_fee", extraData: {} };
 	}
 
+	// biome-ignore lint/style/noNonNullAssertion: <explanation>
 	const feeWallet = new PublicKey(process.env.ACCOUNT_FEE_MULTISIG!);
 	const signerWallet = wallet;
 
@@ -248,26 +292,34 @@ export async function collectProtocolFees(
 		SystemProgram.transfer({
 			fromPubkey: signerWallet.publicKey,
 			toPubkey: feeWallet,
-			lamports: fixedFee,
+			lamports: Number(fixedFee),
 		}),
 	);
 
 	try {
 		const signature = await sendAndConfirmTransaction(rpc, transaction, [signerWallet.payer]);
 		return { txId: signature, extraData: {} };
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error("transaction failed: ", error);
 		throw error;
 	}
 }
 
-export async function recordTransaction(state: ProtocolState, step: string, txId?: string, data?: any) {
-	if (!state.transactions) state.transactions = [];
-	state.transactions.push({
-		step,
-		txId,
-		data,
-		timestamp: new Date(),
-	});
-	await DB.Migration.findOneAndUpdate({ contractAddress: state.tokenMint }, { $set: { protocolState: state } });
+export async function recordTransaction(state: ProtocolState, step: string, txId?: string, data?: unknown) {
+	try {
+		if (!state.transactions) state.transactions = [];
+		state.transactions.push({
+			step,
+			txId,
+			data,
+			timestamp: new Date(),
+		});
+		await DB.Migration.findOneAndUpdate(
+			{ contractAddress: state.tokenMint },
+			{ $set: { protocolState: JSON.stringify(state) } },
+		);
+	} catch (error) {
+		console.error("Error recording transaction:", error);
+		throw error;
+	}
 }

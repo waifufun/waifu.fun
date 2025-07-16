@@ -19,7 +19,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 	const chartRef = useRef<any>(null);
 
 	const query = useQuery({
-		queryKey: ["token", token.contractAddress, "chart"],
+		queryKey: ["chart", token.contractAddress],
 		queryFn: async () => {
 			const data = await getChartData({
 				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -66,7 +66,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 				.sort((a, b) => a.time - b.time);
 		},
 		staleTime: 60 * 1000,
-		refetchInterval: 10_000,
+		refetchInterval: 3_500,
 		refetchOnWindowFocus: true,
 		refetchIntervalInBackground: false,
 		refetchOnReconnect: false,

@@ -7,13 +7,18 @@ import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } 
 import type { IToken, ITokenLookUp } from "@autofun/types";
 import Image from "next/image";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type ReactNode, useMemo, useState } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart2, Clock, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import Chart from "@/components/chart/chart";
+import useAddress from "@/hooks/use-address";
+import ClaimFees from "@/components/claim-fees";
+import UpdateSocialsModal from "./UpdateSocialsModal";
+import { Button } from "@/components/ui/button";
 
 export default function PageClient({
 	initialData,
@@ -26,11 +31,54 @@ export default function PageClient({
 			const token = (await getToken(tokenParams)) as IToken;
 			return token;
 		},
-		refetchInterval: 6_000,
+		refetchInterval: 5_000,
 		initialData,
 	});
 
+	const currentAddress = useAddress();
 	const token = query?.data;
+	const isCreator = useMemo(() => {
+		if (currentAddress && token?.creator) {
+			return currentAddress.toLowerCase() === token.creator.toLowerCase();
+		}
+		return false;
+	}, [currentAddress, token?.creator]);
+
+	const getBadgeInfo = () => {
+		if (initialData?.status === "migrating") {
+			return {
+				badge: "MIGRATING",
+				classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
+			};
+		}
+		if (initialData?.status === "migrated") {
+			return {
+				badge: "BONDED",
+				classes:
+					"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px 0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+			};
+		}
+		if (initialData?.imported) {
+			return {
+				badge: "IMPORTED",
+				classes:
+					"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
+			};
+		}
+
+		return {
+			badge: "ACTIVE",
+			classes:
+				"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px 0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+		};
+	};
+
+	const badge = getBadgeInfo();
+	const badgeBaseClasses =
+		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
+
+	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
+
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
@@ -46,7 +94,7 @@ export default function PageClient({
 						className="h-10 w-10 rounded-none border-2 border-[#03FF24]/50 shadow-[2px_2px_0px_rgba(3,255,36,0.3)] pixelated-image-render"
 					/>
 					{/* Token Name */}
-					<div>
+					<div className="space-y-3 xl:space-y-0">
 						{/* Name */}
 						<div className="flex items-center gap-3 flex-wrap">
 							{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
@@ -56,9 +104,10 @@ export default function PageClient({
 							</span>
 							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
+							<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
 						</div>
 						{/* Creator */}
-						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi ">
+						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi">
 							<div className="capitalize">Created by:</div>
 							<div className="hover:underline">
 								<Link href={`/profile/${token.creator}`}>{token?.creator ? shortenAddress(token?.creator) : "-"}</Link>
@@ -66,7 +115,7 @@ export default function PageClient({
 						</div>
 					</div>
 				</div>
-				<div className="gap-9 flex flex-wrap justify-between">
+				<div className="gap-0 w-full lg:w-fit mb-3 lg:mb-0 flex flex-wrap md:flex-row gap-y-5 xl:justify-around">
 					{[
 						{
 							title: "Market Cap",
@@ -92,9 +141,9 @@ export default function PageClient({
 							icon: Clock,
 						},
 					].map((item) => (
-						<div className="flex flex-col items-end" key={item.title}>
-							<div className="text-autofun-text-secondary uppercase text-xs">{item.title}</div>
-							<div className="inline-flex items-center gap-1 text-xs justify-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
+						<div className="flex flex-col items-end min-w-24" key={item.title}>
+							<div className="text-autofun-text-secondary uppercase text-xs place-self-start">{item.title}</div>
+							<div className="inline-flex items-center gap-1 text-xs justify-start place-self-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
 								{item?.icon ? <item.icon className="size-3 text-autofun-background-action-highlight/70" /> : null}
 								{item.value}
 							</div>
@@ -131,14 +180,15 @@ export default function PageClient({
 								height={208}
 								alt="token"
 							/>
-							<div className="flex flex-col">
-								<div className="flex items-center gap-2">
-									<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block">
+							<div className="flex flex-col min-w-0">
+								<div className="flex items-center flex-wrap gap-2 min-w-0">
+									<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block truncate">
 										{token?.name}
 									</span>
-									<span className="font-medium text-lg uppercase block">{token?.ticker}</span>
+									<span className="font-medium text-lg uppercase block truncate">{token?.ticker}</span>
 								</div>
-								<p className="text-xs text-autofun-text-secondary">
+
+								<p className="text-xs text-autofun-text-secondary break-words">
 									{token?.description
 										? token?.description
 										: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"}
@@ -198,6 +248,30 @@ export default function PageClient({
 								);
 							})}
 						</div>
+
+						{/* Owner-only Update Socials button */}
+						{isCreator && (
+							<>
+								<Button variant="outline" className="mb-2 w-fit" onClick={() => setSocialsModalOpen(true)}>
+									Update Socials
+								</Button>
+								<UpdateSocialsModal
+									open={socialsModalOpen}
+									onClose={() => setSocialsModalOpen(false)}
+									token={{
+										chain: token.chain,
+										chainId: String(token.chainId),
+										contractAddress: token.contractAddress,
+										socials: token.socials,
+									}}
+									onSuccess={() => {
+										setSocialsModalOpen(false);
+										query.refetch();
+									}}
+								/>
+							</>
+						)}
+
 						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
 							<span className="text-base font-medium uppercase text-autofun-text-secondary">TOKEN:</span>
@@ -211,6 +285,7 @@ export default function PageClient({
 					</div>
 				</div>
 			</div>
+			{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
 		</div>
 	);
 }

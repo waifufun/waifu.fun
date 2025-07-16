@@ -1,11 +1,10 @@
-"use client";
-
-import type { IToken } from "@autofun/types";
-import Progressbar from "./progressbar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { AlertCircle } from "lucide-react";
-import { formatNumber } from "@/lib/utils";
 import { Fragment } from "react";
+import { AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import Progressbar from "./progressbar";
+import { formatNumber } from "@/lib/utils";
+import type { IToken } from "@autofun/types";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 export default function BondingCurveProgress({
 	token,
@@ -16,6 +15,11 @@ export default function BondingCurveProgress({
 	if (typeof curveProgress !== "number" || token?.curveCompleted || token?.imported) {
 		return null;
 	}
+
+	const currentReserveLamports = token?.bondingCurveBalance ? token.bondingCurveBalance * LAMPORTS_PER_SOL : 0;
+	const curveLimitLamports = token?.curveLimit || 113 * LAMPORTS_PER_SOL;
+	const solRequiredForMigration = Math.max(0, (curveLimitLamports - currentReserveLamports) / LAMPORTS_PER_SOL);
+
 	return (
 		<Fragment>
 			<div className="flex flex-col gap-2">
@@ -39,15 +43,23 @@ export default function BondingCurveProgress({
 						</Tooltip>
 					) : null}
 				</div>
-				{/* Bar */}
 				<Progressbar max={100} height="h-4" value={Number(curveProgress.toFixed(2))} />
-				{typeof token?.bondingCurveBalance === "number" ? (
+				{solRequiredForMigration > 0 ? (
 					<div className="text-xs text-autofun-text-primary">
 						There is{" "}
 						<span className="text-autofun-background-action-highlight">
-							{formatNumber(Number(token?.bondingCurveBalance), false, true)} SOL
+							{formatNumber(Number(currentReserveLamports / LAMPORTS_PER_SOL), false, true)} SOL
 						</span>{" "}
 						in the bonding curve.
+						{solRequiredForMigration > 0 && (
+							<>
+								{" "}
+								<span className="text-autofun-background-action-highlight">
+									{formatNumber(solRequiredForMigration, true, true)} more SOL
+								</span>{" "}
+								is required for migration.
+							</>
+						)}
 					</div>
 				) : null}
 			</div>

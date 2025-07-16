@@ -8,14 +8,14 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { cn } from "@/lib/utils";
-import { Switch } from "@/components/ui/switch";
 import {
 	usePrompt,
 	nameValidation,
 	tickerValidation,
 	descriptionValidation,
+	tradeLimitValidation,
 } from "@/components/hooks/providers/usePromptContext";
-import { Info, Wallet } from "lucide-react";
+import { AlertTriangle, Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { createToken } from "@/lib/api";
@@ -23,6 +23,11 @@ import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Controller, type ControllerRenderProps } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import type { TChain } from "@autofun/types";
+import { curveLimitConst } from "@/lib/utils";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -47,7 +52,7 @@ export const CoinInfoFields = ({
 			<div className="grid sm:grid-cols-2 gap-4">
 				<div>
 					<Label htmlFor={`${idPrefix}Name`} className={formLabelBaseClass}>
-						Name
+						Name <span className="text-red-500">*</span>
 					</Label>
 					<Input
 						type="text"
@@ -59,7 +64,7 @@ export const CoinInfoFields = ({
 				</div>
 				<div>
 					<Label htmlFor={`${idPrefix}Ticker`} className={formLabelBaseClass}>
-						Ticker
+						Ticker <span className="text-red-500">*</span>
 					</Label>
 					<div className="relative">
 						<Input
@@ -79,7 +84,7 @@ export const CoinInfoFields = ({
 			</div>
 			<div>
 				<Label htmlFor={`${idPrefix}Description`} className={formLabelBaseClass}>
-					Description
+					Description <span className="text-red-500">*</span>
 				</Label>
 				<Textarea
 					id={`${idPrefix}Description`}
@@ -102,10 +107,14 @@ export const CustomAddressGenerator = ({
 	defaultOpen = false,
 }: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
 	const [suffix, setSuffix] = useState("FUN");
-	const { generateAddress, mintKeyPair, isGeneratingAddress } = usePrompt();
+	const { generateAddress, mintKeyPair, isGeneratingAddress, terminateWorkers, cancelVanityGeneration } = usePrompt();
 
 	const handleGenerate = () => {
 		generateAddress(suffix);
+	};
+
+	const handleCancel = () => {
+		cancelVanityGeneration();
 	};
 
 	return (
@@ -113,7 +122,7 @@ export const CustomAddressGenerator = ({
 			<div className="flex items-end gap-2">
 				<div className="flex-grow">
 					<Label htmlFor={`${idPrefix}CustomAddress`} className={formLabelBaseClass}>
-						Prefix / Suffix
+						Suffix
 					</Label>
 					<Input
 						type="text"
@@ -121,17 +130,28 @@ export const CustomAddressGenerator = ({
 						value={suffix}
 						onChange={(e) => setSuffix(e.target.value.toUpperCase())}
 						className={cn(formElementBaseClass, "mt-1 h-10 uppercase")}
+						disabled={isGeneratingAddress}
 					/>
 				</div>
-				<Button
-					type="button"
-					onClick={handleGenerate}
-					disabled={isGeneratingAddress}
-					variant="outline"
-					className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3 disabled:opacity-50"
-				>
-					{isGeneratingAddress ? "GENERATING..." : "GENERATE"}
-				</Button>
+				{!isGeneratingAddress ? (
+					<Button
+						type="button"
+						onClick={handleGenerate}
+						variant="outline"
+						className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3"
+					>
+						GENERATE
+					</Button>
+				) : (
+					<Button
+						type="button"
+						onClick={handleCancel}
+						variant="outline"
+						className="h-10 border-2 border-red-500/70 text-red-400 hover:bg-red-500/20 hover:border-red-500 rounded-none shadow-[3px_3px_0px_rgba(239,68,68,0.3)] font-bold uppercase text-xs px-3"
+					>
+						CANCEL
+					</Button>
+				)}
 			</div>
 			<p className="text-xs text-[#03FF24] font-mono break-all bg-black/40 p-2 border border-[#03FF24]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
 				{mintKeyPair
@@ -152,30 +172,48 @@ export const CustomCurveSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [raiseAmount, setRaiseAmount] = useState(150);
+	const {
+		control,
+		formState: { errors },
+	} = usePrompt();
+	console.log(curveLimitConst / LAMPORTS_PER_SOL, "curveLimitConst / LAMPORTS_PER_SOL");
+
 	return (
-		<FormSection title="Custom Curve" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<div>
-				<div className="flex justify-between items-center mb-1">
-					<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
-						Raise Amount
-					</Label>
-					<span className="text-sm font-bold text-[#03FF24]">{raiseAmount} SOL</span>
-				</div>
-				<Slider
-					id="raiseAmount"
-					min={113}
-					max={400}
-					step={1}
-					value={[raiseAmount]}
-					onValueChange={(value) => setRaiseAmount(value[0] || 150)}
-					className="w-full"
-					thumbClassName={sliderThumbClass}
-					trackClassName={sliderTrackClass}
-					rangeClassName={sliderRangeClass}
-				/>
-			</div>
-		</FormSection>
+		<Controller
+			name="curveLimit"
+			control={control}
+			rules={{
+				required: "Curve limit is required",
+				min: { value: 0, message: "Must be ≥ 0" },
+				max: { value: 1000, message: "Must be ≤ 1000" },
+			}}
+			render={({ field }) => (
+				<FormSection title="curve-limit" collapsible={collapsible} defaultOpen={defaultOpen}>
+					<div>
+						<div className="flex justify-between items-center mb-1">
+							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
+								Raise Amount
+							</Label>
+							<span className="text-sm font-bold text-[#03FF24]">{field.value} SOL</span>
+						</div>
+
+						<Slider
+							id="curveLimit"
+							min={curveLimitConst / LAMPORTS_PER_SOL}
+							max={678}
+							step={1}
+							value={[field.value]}
+							onValueChange={(vals) => field.onChange(vals[0])}
+							className="w-full"
+							thumbClassName={sliderThumbClass}
+							trackClassName={sliderTrackClass}
+							rangeClassName={sliderRangeClass}
+						/>
+					</div>
+					{errors.curveLimit && <p className="text-red-500 text-xs mt-1">{errors.curveLimit.message}</p>}
+				</FormSection>
+			)}
+		/>
 	);
 };
 
@@ -183,22 +221,159 @@ export const DelayedStartSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [isDelayEnabled, setIsDelayEnabled] = useState(false);
+	const {
+		control,
+		formState: { errors },
+	} = usePrompt();
+	const [mode, setMode] = useState<"preset" | "manual" | "instant">("instant");
+	const presets = [
+		{ label: "10 Min", value: 10 * 60 },
+		{ label: "1 Hour", value: 60 * 60 },
+		{ label: "4 Hours", value: 4 * 60 * 60 },
+	];
+
+	const handleModeChange = (
+		newMode: "preset" | "manual" | "instant" | undefined,
+		// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
+		field: ControllerRenderProps<any, "delayForTrade">,
+	) => {
+		// Prevent unselecting
+		if (!newMode) {
+			return;
+		}
+
+		setMode(newMode);
+		if (newMode === "instant") {
+			field.onChange(0);
+		} else if (newMode === "preset") {
+			field.onChange(presets[0]?.value ?? 0);
+		}
+	};
+
+	// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
+	const handlePresetChange = (presetValue: string | undefined, field: ControllerRenderProps<any, "delayForTrade">) => {
+		if (!presetValue) {
+			return;
+		}
+		field.onChange(Number(presetValue));
+	};
 
 	return (
 		<FormSection title="Delayed Start" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<div className="flex items-center justify-between">
-				<Label htmlFor="enable-delayed-start" className={cn(formLabelBaseClass, "cursor-pointer")}>
-					Enable Delayed Start
-				</Label>
-				<Switch
-					id="enable-delayed-start"
-					checked={isDelayEnabled}
-					onCheckedChange={setIsDelayEnabled}
-					className="data-[state=checked]:bg-[#03FF24] rounded-none [&>span]:rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.25)]"
+			<div className="flex items-center gap-4 mb-3">
+				<Controller
+					name="delayForTrade"
+					control={control}
+					defaultValue={0}
+					render={({ field }) => (
+						<ToggleGroup
+							type="single"
+							value={mode}
+							onValueChange={(v) => handleModeChange(v as "preset" | "manual" | "instant" | undefined, field)}
+							className="grid grid-cols-3 gap-3"
+						>
+							<ToggleGroupItem
+								value="instant"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Instant
+							</ToggleGroupItem>
+							<ToggleGroupItem
+								value="preset"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Preset
+							</ToggleGroupItem>
+							<ToggleGroupItem
+								value="manual"
+								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+							>
+								Manual
+							</ToggleGroupItem>
+						</ToggleGroup>
+					)}
 				/>
 			</div>
-			<p className="text-[10px] text-gray-500 mt-1">If enabled, trading will start after a fixed delay period.</p>
+			<div className="flex items-center justify-between">
+				<Controller
+					name="delayForTrade"
+					control={control}
+					rules={{ required: "Please choose a delay", min: { value: 0, message: "Delay must be ≥ 0" } }}
+					defaultValue={0}
+					render={({ field }) =>
+						mode === "preset" ? (
+							<div className="w-full">
+								<Label className={formLabelBaseClass}>Choose Delay</Label>
+								<ToggleGroup
+									type="single"
+									value={String(field.value)}
+									onValueChange={(v) => handlePresetChange(v, field)}
+									className="grid grid-cols-3 gap-2 mt-1 mb-2"
+								>
+									{presets.map((p) => (
+										<ToggleGroupItem
+											key={p.value}
+											value={String(p.value)}
+											className="h-8 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold text-xs"
+										>
+											{p.label}
+										</ToggleGroupItem>
+									))}
+								</ToggleGroup>
+							</div>
+						) : mode === "manual" ? (
+							<div className="space-y-1 w-full">
+								<Label htmlFor="manual-start" className={formLabelBaseClass}>
+									Pick Start Date &amp; Time
+								</Label>
+								<Input
+									id="manual-start"
+									type="datetime-local"
+									min={new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)}
+									max={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+									onChange={(e) => {
+										const inputValue = e.target.value;
+										if (!inputValue) return;
+
+										const then = new Date(inputValue).getTime();
+										const now = Date.now();
+										const secs = Math.floor((then - now) / 1000);
+
+										const minSecs = 5 * 60;
+										const maxSecs = 24 * 60 * 60;
+
+										if (secs < minSecs) {
+											toast.error("Minimum delay is 5 minutes");
+											return;
+										}
+
+										if (secs > maxSecs) {
+											toast.error("Maximum delay is 24 hours");
+											return;
+										}
+
+										field.onChange(secs);
+									}}
+									className={cn(formElementBaseClass, "mt-1 h-10", errors.delayForTrade && "border-red-500")}
+								/>
+							</div>
+						) : (
+							<div className="space-y-1 w-full">
+								<Label className={formLabelBaseClass}>Instant Start</Label>
+								<p className="text-xs text-gray-400 mt-1">Trading will start immediately after token creation.</p>
+							</div>
+						)
+					}
+				/>
+			</div>
+			{errors.delayForTrade && <p className="text-red-500 text-xs mt-1">{errors.delayForTrade.message}</p>}
+			<div className="flex items-center gap-2 mt-2">
+				<Info size={12} className="text-gray-500" />
+				<p className="text-[10px] text-gray-500">
+					Delayed start is when trading begins - either after the preset time or at the selected date/time in your local
+					timezone.
+				</p>
+			</div>
 		</FormSection>
 	);
 };
@@ -207,7 +382,12 @@ export const TradeLimitSection = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [tradeLimitSol, setTradeLimitSol] = useState(0.1);
+	const {
+		registerForm,
+		watchValue,
+		formState: { errors },
+	} = usePrompt();
+
 	return (
 		<FormSection title="Trade Limit" collapsible={collapsible} defaultOpen={defaultOpen}>
 			<div className="space-y-2">
@@ -219,15 +399,7 @@ export const TradeLimitSection = ({
 						<Input
 							type="number"
 							id="tradeLimitSol"
-							value={tradeLimitSol}
-							onChange={(e) => {
-								const val = Number.parseFloat(e.target.value);
-								if (!Number.isNaN(val) && val >= 0) {
-									setTradeLimitSol(val);
-								} else if (e.target.value === "") {
-									setTradeLimitSol(0);
-								}
-							}}
+							{...registerForm("tradeLimitSol", tradeLimitValidation)}
 							min="0"
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
@@ -237,6 +409,14 @@ export const TradeLimitSection = ({
 					<p className="text-[10px] text-gray-500 mt-1">
 						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
 					</p>
+					{watchValue("tradeLimitSol") === 0 && (
+						<div className="flex items-center mt-2 gap-2">
+							<AlertTriangle className="w-5 h-5 flex-shrink-0 text-yellow-400" />
+							<p className="text-xs text-yellow-400">0 indicates no maximum token limit per trade</p>
+						</div>
+					)}
+
+					{errors.tradeLimitSol && <p className="text-red-500 text-xs mt-1">{errors.tradeLimitSol.message}</p>}
 				</div>
 			</div>
 		</FormSection>
@@ -262,7 +442,7 @@ export const PreBuySection = ({
 
 	const setMaxAmount = () => {
 		if (balance) {
-			setValue("buyAmount", Math.min(balance, 28), { shouldValidate: true, shouldDirty: true });
+			setValue("buyAmount", Math.min(balance * 0.97, 28), { shouldValidate: true, shouldDirty: true });
 		}
 	};
 
@@ -327,7 +507,16 @@ export const PoolSelection = ({
 
 	return (
 		<FormSection title="Choose Pool" collapsible={collapsible} defaultOpen={defaultOpen}>
-			<ToggleGroup type="single" value={pool} onValueChange={setPool} className="grid grid-cols-2 gap-3">
+			<ToggleGroup
+				type="single"
+				value={pool}
+				onValueChange={(value) => {
+					if (value) {
+						setPool(value);
+					}
+				}}
+				className="grid grid-cols-2 gap-3"
+			>
 				{poolData.map((poolItem) => (
 					<ToggleGroupItem
 						key={poolItem.value}
@@ -346,7 +535,13 @@ export const PoolSelection = ({
 	);
 };
 
-export const LaunchButton = () => {
+export const LaunchButton = ({
+	idPrefix,
+	disabled = false,
+}: {
+	idPrefix?: string;
+	disabled?: boolean;
+}) => {
 	const wallet = useWallet();
 	const { connection } = useConnection();
 	const {
@@ -359,8 +554,14 @@ export const LaunchButton = () => {
 		pool,
 		mintKeyPair,
 		setLaunching,
+		setMintKeyPair,
 		isLaunching,
 	} = usePrompt();
+	const router = useRouter();
+	const [chain, chainId] = [
+		"solana",
+		process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101,
+	]; /* Malibu - the chain and chainId should be part of the prompt context or passed as props */
 
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
@@ -368,6 +569,7 @@ export const LaunchButton = () => {
 		onSuccess: (tx) => {
 			console.log("Transaction successful:", tx);
 			toast.success("Token created successfully!");
+			router.push(`/token/${chain}/${chainId}/${mintKeyPair?.publicKey.toString()}`);
 		},
 		onError: (error) => {
 			console.error("Error creating token:", error);
@@ -375,7 +577,7 @@ export const LaunchButton = () => {
 		},
 	});
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !mintKeyPair;
 
 	const onSubmit = async () => {
 		if (!formState.isValid) {
@@ -393,19 +595,37 @@ export const LaunchButton = () => {
 			return;
 		}
 
+		if (!mintKeyPair) {
+			toast.error("Please generate a custom address first.");
+			return;
+		}
+
+		if (idPrefix === "manual" && !uploadedImage) {
+			toast.error("Please upload an image or use the generated image from the Auto tab.");
+			return;
+		}
+
 		setLaunching(true);
 		try {
-			const tokenData = await getTokenData();
+			const tokenData = await getTokenData(idPrefix === "manual");
 			console.log("Token Data:", tokenData);
 			const tx = await createTokenTx(tokenData, { connection, wallet });
 			console.log("Transaction:", tx);
-			createTokenMutation.mutate({
-				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: "solana",
-				chainId: 103,
-				pool: pool,
-				signature: tx?.signature.toString() || "",
-			});
+			createTokenMutation.mutate(
+				{
+					contractAddress: mintKeyPair?.publicKey.toString() || "",
+					chain: chain as TChain,
+					chainId: chainId,
+					pool: pool,
+					signature: tx?.signature.toString() || "",
+				},
+				{
+					onSuccess: (data) => {
+						setMintKeyPair(null);
+						router.push(`/token/${chain}/${chainId}/${data.contractAddress}`);
+					},
+				},
+			);
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
 			console.error("Error creating token:", error);
@@ -419,7 +639,7 @@ export const LaunchButton = () => {
 		<Button
 			type="button"
 			onClick={onSubmit}
-			disabled={shouldDisable}
+			disabled={shouldDisable || disabled}
 			className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
 		>
 			{isLaunching ? "LAUNCHING..." : "LAUNCH TOKEN"}

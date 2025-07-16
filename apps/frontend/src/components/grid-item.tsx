@@ -4,7 +4,7 @@ import type { IToken } from "@autofun/types";
 import Image from "next/image";
 import Link from "next/link";
 import Verified from "./verified";
-import { Archive, Hourglass, Star, Timer } from "lucide-react";
+import { Archive, Hourglass, Star, Timer, ArrowUpDown } from "lucide-react";
 import Progressbar from "./progressbar";
 import { Badge } from "./ui/badge";
 
@@ -12,9 +12,28 @@ const animationLevel = 1;
 
 export const GridItem = ({ token }: { token: IToken }) => {
 	const useBlueTheme = token?.imported === true;
-	const usePurpleTheme = !token?.imported && Number(token?.curveProgress || 0) > 80 && !useBlueTheme;
+	const useMigratingTheme = token?.status === "migrating";
+	const useMigratedTheme = token?.status === "migrated" || token?.status === "finalized";
+
+	const usePurpleTheme =
+		!token?.imported &&
+		Number(token?.curveProgress || 0) > 80 &&
+		!useBlueTheme &&
+		!useMigratingTheme &&
+		!useMigratedTheme;
 	const useYellowTheme = token?.featured;
-	const cardAccentTheme = useYellowTheme ? "yellow" : usePurpleTheme ? "purple" : useBlueTheme ? "blue" : "green";
+	const cardAccentTheme = useYellowTheme
+		? "yellow"
+		: useMigratingTheme
+			? "migrating"
+			: useMigratedTheme
+				? "migrated"
+				: usePurpleTheme
+					? "purple"
+					: useBlueTheme
+						? "blue"
+						: "green";
+
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 	const badgeIconClasses = "h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 pixelated-icon";
@@ -30,7 +49,11 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						? "border-purple-500/50"
 						: cardAccentTheme === "yellow"
 							? "border-yellow-400/50"
-							: "border-[#03FF24]/50",
+							: cardAccentTheme === "migrating"
+								? "border-orange-400/50"
+								: cardAccentTheme === "migrated"
+									? "border-[#03FF24]/50"
+									: "border-[#03FF24]/50",
 			])}
 		>
 			<div className="relative">
@@ -45,7 +68,11 @@ export const GridItem = ({ token }: { token: IToken }) => {
 										? "border-purple-500/50"
 										: cardAccentTheme === "yellow"
 											? "border-yellow-400/50"
-											: "border-[#03FF24]/50",
+											: cardAccentTheme === "migrating"
+												? "border-orange-400/50"
+												: cardAccentTheme === "migrated"
+													? "border-[#03FF24]/50"
+													: "border-[#03FF24]/50",
 							)}
 						>
 							<Timer
@@ -57,7 +84,11 @@ export const GridItem = ({ token }: { token: IToken }) => {
 											? "text-purple-500"
 											: cardAccentTheme === "yellow"
 												? "text-yellow-400"
-												: "text-[#03FF24]",
+												: cardAccentTheme === "migrating"
+													? "text-orange-400"
+													: cardAccentTheme === "migrated"
+														? "text-[#03FF24]"
+														: "text-[#03FF24]",
 								)}
 							/>
 							<span>{fromNow(token?.createdAt, true).toUpperCase()}</span>
@@ -65,14 +96,33 @@ export const GridItem = ({ token }: { token: IToken }) => {
 					</div>
 				) : null}
 				<div className="absolute top-2 right-2 flex flex-col gap-1.5 items-end z-10">
-					{token?.imported && !token?.featured ? (
+					{token?.status === "migrating" ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
+								animationLevel >= 1 && "animate-pulse",
+							)}
+						>
+							<ArrowUpDown className={cn(badgeIconClasses, animationLevel >= 1 && "animate-bounce")} />
+							MIGRATING
+						</Badge>
+					) : token?.status === "migrated" || token?.status === "finalized" ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)]",
+							)}
+						>
+							BONDED
+						</Badge>
+					) : token?.imported && !token?.featured ? (
 						<Badge
 							className={cn(
 								badgeBaseClasses,
 								"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.1s]",
 							)}
-							style={{ color: "#000000" }}
 						>
 							<Archive className={cn(badgeIconClasses, "fill-current")} /> IMPORTED
 						</Badge>
@@ -102,10 +152,10 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-black/80 hover:bg-primary/80 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+								"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 							)}
 						>
-							NEW
+							ACTIVE
 						</Badge>
 					) : null}
 				</div>
@@ -130,7 +180,11 @@ export const GridItem = ({ token }: { token: IToken }) => {
 										? "text-purple-400"
 										: cardAccentTheme === "yellow"
 											? "text-yellow-400 filter drop-shadow-[1px_1px_0px_black]"
-											: "group-hover:text-[#03FF24]",
+											: cardAccentTheme === "migrating"
+												? "text-orange-400"
+												: cardAccentTheme === "migrated"
+													? "text-[#03FF24] group-hover:text-[#03FF24]"
+													: "group-hover:text-[#03FF24]",
 							])}
 						>
 							{token?.name}
@@ -146,30 +200,38 @@ export const GridItem = ({ token }: { token: IToken }) => {
 									? "text-purple-400/80 group-hover:text-purple-400"
 									: cardAccentTheme === "yellow"
 										? "text-yellow-400/80 group-hover:text-yellow-400"
-										: "text-[#03FF24]/70 group-hover:text-[#03FF24]/90",
+										: cardAccentTheme === "migrating"
+											? "text-orange-400/80 group-hover:text-orange-400"
+											: cardAccentTheme === "migrated"
+												? "text-[#03FF24]/70 group-hover:text-[#03FF24]/90"
+												: "text-[#03FF24]/70 group-hover:text-[#03FF24]/90",
 						])}
 					>
 						${token?.ticker}
 					</div>
 				</div>
-				<div className="flex justify-between items-center gap-2">
-					<span className={cn("text-gray-400 text-xs")}>MCAP:</span>
-					<div
-						className={cn(
-							"font-semibold filter drop-shadow-[1px_1px_0px_black] text-sm",
-							cardAccentTheme === "blue"
-								? "text-sky-400"
-								: cardAccentTheme === "purple"
-									? "text-purple-400"
-									: cardAccentTheme === "yellow"
-										? "text-yellow-400"
-										: "text-[#03FF24]",
-						)}
-					>
-						{abbreviateNumber(token.marketcap)}
-					</div>
+				<div
+					className={cn(
+						"font-semibold filter drop-shadow-[1px_1px_0px_black] text-sm",
+						cardAccentTheme === "blue"
+							? "text-sky-400"
+							: cardAccentTheme === "purple"
+								? "text-purple-400"
+								: cardAccentTheme === "yellow"
+									? "text-yellow-400"
+									: cardAccentTheme === "migrating"
+										? "text-orange-400"
+										: cardAccentTheme === "migrated"
+											? "text-[#03FF24]"
+											: "text-[#03FF24]",
+					)}
+				>
+					{abbreviateNumber(token.marketcap)}
 				</div>
-				{typeof token?.curveProgress === "number" && !token?.imported && !token?.curveCompleted ? (
+				{typeof token?.curveProgress === "number" &&
+				!token?.imported &&
+				!token?.curveCompleted &&
+				token?.status !== "migrating" ? (
 					<Progressbar max={100} height="h-2.5" value={Number(token.curveProgress.toFixed(2))} />
 				) : null}
 			</div>

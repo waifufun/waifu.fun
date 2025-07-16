@@ -5,8 +5,8 @@ import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 import type { SolanaIndexerConfig } from "../types";
 
 const config: SolanaIndexerConfig = {
-	networkId: SolanaNetworkIds.Mainnet,
-	autoFunAddress: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
+	networkId: process.env.NETWORK === "devnet" ? SolanaNetworkIds.Devnet : SolanaNetworkIds.Mainnet,
+	autoFunAddress: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA" as SolanaAddressLike,
 	maxSignatures: 70,
 	debugStatements: true,
 };

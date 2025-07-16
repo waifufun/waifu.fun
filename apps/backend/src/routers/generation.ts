@@ -1,10 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType, type AddressLike } from "@autofun/types";
+import { MediaType, type SolanaNetworkIds, type AddressLike, type TChain } from "@autofun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
 import DB from "@autofun/database";
 import { SolanaRpcProvider } from "@autofun/rpc";
+import { authenticationMiddleware } from "../middlewares/authentication";
 
 interface GenerateMetadataRequest {
 	fields?: ("name" | "symbol" | "description" | "prompt")[];
@@ -20,6 +21,8 @@ interface GenerateMetadataRequest {
 interface GenerateMediaRequest {
 	prompt: string;
 	address: AddressLike;
+	chain?: TChain;
+	chainId?: SolanaNetworkIds;
 	type?: MediaType;
 	negative_prompt?: string;
 	guidance_scale?: number;
@@ -101,8 +104,135 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 					guidance_scale = 7.5,
 					width = 1024,
 					height = 1024,
+				} = request.body;
+
+				if (!prompt || prompt.length > 2000) {
+					return reply.code(400).send({
+						error: "Invalid prompt length",
+					});
+				}
+
+				if (!user?.solana) {
+					return reply.code(400).send({
+						message: "Solana wallet address only supported for media generation",
+					});
+				}
+
+				const mode = "fast" as "fast" | "pro";
+
+				if (width < 512 || width > 1024 || height < 512 || height > 1024) {
+					return reply.code(400).send({
+						error: "Invalid dimensions",
+					});
+				}
+
+				if (guidance_scale < 1 || guidance_scale > 20) {
+					return reply.code(400).send({
+						error: "Invalid guidance scale",
+					});
+				}
+
+				const result = (await generateMedia({
+					prompt,
+					type,
+					negative_prompt,
+					guidance_scale,
+					width,
+					height,
+					mode,
+				})) as {
+					data?: {
+						has_nsfw_concepts?: boolean[];
+						video?: { url?: string };
+						audio?: { url?: string };
+						images?: { url: string }[];
+					};
+				};
+				console.log("Media generation result:", result);
+
+				if (!result || typeof result !== "object") {
+					throw new Error("Invalid response format");
+				}
+
+				if (result.data?.has_nsfw_concepts?.[0] === true) {
+					return reply.code(400).send({
+						success: false,
+						message: "NSFW content detected",
+					});
+				}
+
+				let mediaUrl = "";
+
+				if (type === MediaType.VIDEO && result.data?.video?.url) {
+					mediaUrl = result.data.video.url;
+				} else if (type === MediaType.AUDIO && result.data?.audio?.url) {
+					mediaUrl = result.data.audio.url;
+				} else if (result.data?.images && result.data.images.length > 0) {
+					mediaUrl = result.data.images?.[0]?.url || "";
+				}
+
+				if (!mediaUrl) {
+					return reply.code(500).send({
+						success: false,
+						error: `Failed to generate ${type}. Please try again.`,
+					});
+				}
+
+				await incrementRateLimit(userPublicKey);
+
+				return {
+					success: true,
+					mediaUrl,
+					remainingGenerations: rateLimit.remaining - 1,
+					resetTime: rateLimit.resetTime,
+				};
+			} catch (error) {
+				return reply.code(500).send({
+					error: error instanceof Error ? error.message : "Unknown error generating media",
+				});
+			}
+		},
+	);
+
+	fastify.post<{ Body: GenerateMediaRequest }>(
+		"/generate-media",
+		{
+			config: {
+				timeout: GENERATION_TIMEOUT,
+			},
+			preHandler: authenticationMiddleware,
+		},
+		async (request, reply) => {
+			try {
+				const user = request.authUser;
+				if (!user?.evm && !user?.solana && process.env.NODE_ENV !== "development") {
+					return reply.code(401).send({
+						success: false,
+						error: "User authentication required",
+					});
+				}
+
+				const userPublicKey = user?.evm || user?.solana || "dev";
+				const rateLimit = await checkRateLimit(userPublicKey);
+				if (!rateLimit.allowed) {
+					return reply.code(429).send({
+						success: false,
+						error: "Rate limit exceeded",
+						remainingGenerations: rateLimit.remaining,
+						resetTime: rateLimit.resetTime,
+					});
+				}
+
+				const {
+					prompt,
+					type = MediaType.IMAGE,
+					negative_prompt,
+					guidance_scale = 7.5,
+					width = 1024,
+					height = 1024,
 					address,
 				} = request.body;
+				console.log({ body: request.body, userPublicKey });
 
 				if (!prompt || prompt.length > 2000) {
 					return reply.code(400).send({
@@ -124,16 +254,36 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 
 				const token = await DB.Token.findOne({
 					chain: "solana",
+					chainId: request.body.chainId || 101,
 					contractAddress: address,
 				}).lean();
 
 				if (!token) {
 					return reply.code(404).send({
-						error: "Token not found",
+						error: `Token not found on ${request.body.chainId === 103 ? "devnet" : "mainnet"}`,
 					});
 				}
 
-				const rpc = new SolanaRpcProvider(101);
+				const chain = request.body.chain || "solana";
+				const chainId = request.body.chainId || 101;
+
+				if (chain !== "solana") {
+					// Only allow Solana
+					return reply.code(400).send({
+						error: "Only Solana chain is supported for media generation",
+					});
+				}
+
+				if (chainId !== 101 && chainId !== 103) {
+					// Only allow mainnet and devnet
+					return reply.code(400).send({
+						error: "Only Solana mainnet (101) and devnet (103) are supported for media generation",
+					});
+				}
+
+				console.log(`Generating media for token ${address} on ${chain} ${chainId === 103 ? "devnet" : "mainnet"}`);
+
+				const rpc = new SolanaRpcProvider(chainId);
 				const balance = await rpc.getTokenBalance(address, user.solana);
 
 				const slowBalanceNeeded = getMinBalance(type, "fast");
@@ -155,8 +305,9 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				}
 
 				if (!balance || balance < requiredBalance) {
+					const networkName = chainId === 103 ? "devnet" : "mainnet";
 					return reply.code(400).send({
-						message: `Insufficient balance to generate ${type} in ${mode} mode. Minimum required: ${requiredBalance} tokens`,
+						message: `Insufficient balance to generate ${type} in ${mode} mode on ${networkName}. Minimum required: ${requiredBalance} tokens, current: ${balance}`,
 					});
 				}
 
@@ -224,6 +375,9 @@ export default async function generationRoutes(fastify: FastifyInstance) {
 				return {
 					success: true,
 					mediaUrl,
+					chain,
+					chainId,
+					networkName: chainId === 103 ? "devnet" : "mainnet",
 					remainingGenerations: rateLimit.remaining - 1,
 					resetTime: rateLimit.resetTime,
 				};

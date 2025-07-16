@@ -19,6 +19,10 @@ import { formatUnits } from "viem";
 import useAddress from "@/hooks/use-address";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import moment from "moment";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import Countdown from "react-countdown";
+import { useTransactionListener } from "@/providers/transaction-listener";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const [value, setValue] = useState<string>("");
@@ -29,6 +33,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const { slippage } = useSlippage();
 	const modal = useWalletModal();
 	const address = useAddress();
+	const { addTransaction } = useTransactionListener();
 	const balance = useBalance({ chain: token.chain, address });
 	const tokenBalance = useTokenBalance({
 		chain: token.chain,
@@ -73,7 +78,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 			} catch (e) {
 				const error = e as { message?: string };
 				console.error(e);
-				toast.error(error?.message);
+				if (error?.message !== "Assertion failed") {
+					toast.error(error?.message);
+				}
 				throw e;
 			}
 		},
@@ -86,12 +93,31 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		mutationFn: async () => {
 			const from = address as SolanaAddressLike;
 			if (!from) throw new Error("No wallet connected");
-			return await executeSwap(from, token, value, mode, slippage, speed, connection, wallet);
+
+			const inputAmountParsed = Number.parseFloat(value);
+			const inputAmountLamports = Math.floor(inputAmountParsed * 10 ** (mode === "buy" ? 9 : token.decimals));
+
+			return await executeSwap(
+				from,
+				token,
+				value,
+				mode,
+				slippage,
+				speed,
+				connection,
+				wallet,
+				(signature: string, expectedOutput: number) => {
+					addTransaction(signature, token, mode, inputAmountLamports, expectedOutput);
+				},
+			);
 		},
 		onSuccess: () => {
 			setTimeout(() => {
 				queryClient.invalidateQueries({
 					queryKey: ["balance"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["chart"],
 				});
 				queryClient.invalidateQueries({
 					queryKey: ["trades"],
@@ -123,6 +149,26 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	};
 
 	const insufficientBalance = !hasSufficientBalance();
+	const maxBuyAmount =
+		token?.maxBuyAmount &&
+		moment(token.tradingStartsAt || token.createdAt)
+			.add(8, "hours")
+			.isBefore(moment())
+			? formatUnits(BigInt(token?.maxBuyAmount), 9)
+			: false;
+
+	const isTooHighBuyAmount = () => {
+		if (!value || value === "0") return false;
+		if (!maxBuyAmount) return false;
+		if (mode === "buy") {
+			return Number(value) > Number(maxBuyAmount);
+		}
+
+		return false;
+	};
+
+	const tooHighBuyAmount = isTooHighBuyAmount();
+	const tradingStarted = token?.tradingStartsAt ? moment(token?.tradingStartsAt).isBefore(moment()) : true;
 
 	return (
 		<div className="w-full h-full overflow-hidden">
@@ -172,7 +218,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				</div>
 
 				{mode === "buy" ? (
-					<div className="flex items-center gap-2 justify-between">
+					<div className="flex items-center gap-2 justify-between w-full overflow-x-auto whitespace-nowrap">
 						{quickSetButtons.map((btn) => (
 							<Button
 								key={btn}
@@ -190,18 +236,18 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				) : (
 					<Fragment>
 						{address && tokenBalance?.data ? (
-							<div className="flex items-center gap-2 justify-between overflow-x-auto">
+							<div className="grid grid-cols-5 gap-1">
 								{quickSetSellButtons.map((btn) => (
 									<Button
 										key={btn}
 										variant="secondary"
 										className={cn([
-											"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px]  border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
+											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
 											btn === "Reset" ? "text-autofun-text-secondary" : "",
 										])}
 										onClick={() => handleQuickSetSell(btn)}
 									>
-										{btn === "Reset" ? "Reset" : `${btn}%`}
+										<span className="truncate">{btn === "Reset" ? "Reset" : `${btn}%`}</span>
 									</Button>
 								))}
 							</div>
@@ -253,6 +299,17 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					<AdvancedSettings />
 					<div
 						className={cn([
+							tooHighBuyAmount && address
+								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
+								: "hidden",
+							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+						])}
+					>
+						<AlertCircle className="text-autofun-text-error" />
+						You are trying to buy too much. Max allowed is: {maxBuyAmount} SOL
+					</div>
+					<div
+						className={cn([
 							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
@@ -262,25 +319,59 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						<AlertCircle className="text-autofun-text-error" />
 						Insufficient balance to perform trade.
 					</div>
-					<Button
-						disabled={address ? swapMutation?.isPending || insufficientBalance || !value || value === "0" : false}
-						onClick={() => {
-							if (!address) {
-								modal.setVisible(true);
-							} else {
-								swapMutation?.mutate();
+					{tradingStarted ? (
+						<Button
+							disabled={
+								token.status === "migrating" ||
+								(address
+									? swapMutation?.isPending || tooHighBuyAmount || insufficientBalance || !value || value === "0"
+									: false)
 							}
-						}}
-						className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
-					>
-						{!address
-							? "Connect"
-							: swapMutation?.isPending
-								? "Loading..."
-								: insufficientBalance
-									? "Insufficient balance"
-									: "Swap"}
-					</Button>
+							onClick={() => {
+								if (!address) {
+									modal.setVisible(true);
+								} else {
+									swapMutation?.mutate();
+								}
+							}}
+							className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+						>
+							{token.status === "migrating"
+								? "Token migrating"
+								: !address
+									? "Connect"
+									: swapMutation?.isPending
+										? "Loading..."
+										: insufficientBalance
+											? "Insufficient balance"
+											: tooHighBuyAmount
+												? "Amount too high"
+												: "Swap"}
+						</Button>
+					) : (
+						<Tooltip>
+							<TooltipTrigger className="w-full">
+								<Button
+									disabled
+									className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+								>
+									<Countdown
+										date={moment(token?.tradingStartsAt).toDate()}
+										intervalDelay={0}
+										onComplete={() => {
+											console.log("Trading has started");
+											setTimeout(() => {
+												queryClient.invalidateQueries({
+													queryKey: ["token", token.chain, token.chainId, token.contractAddress],
+												});
+											}, 1000);
+										}}
+									/>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Trading starts: {moment(token?.tradingStartsAt)?.format("LLL")}</TooltipContent>
+						</Tooltip>
+					)}
 				</div>
 			</div>
 		</div>

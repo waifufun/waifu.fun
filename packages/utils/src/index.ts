@@ -200,11 +200,34 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 		indexer: [],
 	};
 
-	logger.info(`Querying tokens: Codex -> ${tokens?.codex?.length || 0} | Indexer -> ${tokens?.indexer?.length || 0}`);
+	// logger.info(`Querying tokens: Codex -> ${tokens?.codex?.length || 0} | Indexer -> ${tokens?.indexer?.length || 0}`);
+
+	// batch
+	const migrationStatuses = await DB.Migration.find({
+		$or: tokensToPopulate.map((token) => ({
+			contractAddress: token.contractAddress,
+			chain: token.chain,
+			chainId: token.chainId,
+		})),
+	}).lean();
+
+	const migrationStatusMap = new Map(
+		migrationStatuses.map((migration) => [
+			`${migration.contractAddress}:${migration.chain}:${migration.chainId}`,
+			migration.status,
+		]),
+	);
 
 	const originalMapping: AddressLike[] = [];
 	for (const token of tokensToPopulate) {
 		originalMapping.push(token.contractAddress);
+
+		const migrationKey = `${token.contractAddress}:${token.chain}:${token.chainId}`;
+		const migrationStatus = migrationStatusMap.get(migrationKey);
+		if (migrationStatus) {
+			token.status = migrationStatus;
+		}
+
 		if (token?.imported || token?.curveCompleted) {
 			tokens.codex.push(token);
 		} else {
@@ -215,6 +238,14 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	/** Query Codex for imported or tokens that having curveCompleted */
 	const tokensToQuery = tokens.codex
 		.filter((t) => needsUpdate(t))
+		.filter((token: IToken) => {
+			const { chain, chainId } = token;
+			const networkId =
+				chain === "evm"
+					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
+					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
+			return networkId !== undefined;
+		})
 		.map((token: IToken) => {
 			const { chain, chainId, contractAddress } = token;
 			const networkId =
@@ -268,9 +299,31 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	/** Indexer */
-	const rpc = await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
+	const rpc =
+		process.env.NETWORK === "devnet"
+			? await SolanaRpcProvider.connect(SolanaNetworkIds.Devnet)
+			: await SolanaRpcProvider.connect(SolanaNetworkIds.Mainnet);
 	const mustUpdateTokens = tokens.indexer.filter((t) => needsUpdate(t)).map((k) => k.contractAddress);
-	const bondingCurveInfo = await rpc.getBondingCurveInfo(mustUpdateTokens);
+
+	// Group tokens by version for bonding curve info retrieval
+	const tokensByVersion = new Map<number, string[]>();
+	for (const token of tokens.indexer) {
+		if (needsUpdate(token)) {
+			const version = token.version || 1;
+			if (!tokensByVersion.has(version)) {
+				tokensByVersion.set(version, []);
+			}
+			tokensByVersion.get(version)?.push(token.contractAddress);
+		}
+	}
+
+	// Get bonding curve info for each version group
+	const bondingCurveInfoPromises = Array.from(tokensByVersion.entries()).map(([version, addresses]) =>
+		rpc.getBondingCurveInfo(addresses, version),
+	);
+	const bondingCurveInfoResults = await Promise.all(bondingCurveInfoPromises);
+	const bondingCurveInfo = bondingCurveInfoResults.flat();
+
 	const volume24hTokens = await lookUp24hVolume(mustUpdateTokens);
 
 	for (const indexedToken of tokens.indexer) {
@@ -283,6 +336,9 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			curveProgress?: number;
 			creator?: AddressLike;
 			bondingCurveAddress?: AddressLike;
+			bondingCurveBalance?: number;
+			maxBuyAmount?: number;
+			tradingStartsAt?: Date;
 		} = {
 			marketcap: Number(tokenBondingCurveInfo.marketCapUSD),
 			price: Number(tokenBondingCurveInfo.priceUsd),
@@ -307,10 +363,32 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 			setValues.bondingCurveAddress = bondingCurveAddress;
 		}
 
+		if (tokenBondingCurveInfo?.bondingCurveBalance) {
+			const bondingCurveBalanceB = Number(tokenBondingCurveInfo?.bondingCurveBalance);
+			indexedToken.bondingCurveBalance = bondingCurveBalanceB;
+			setValues.bondingCurveBalance = bondingCurveBalanceB;
+		}
+
 		if (tokenBondingCurveInfo?.creator) {
 			const creator = String(tokenBondingCurveInfo?.creator) as AddressLike;
 			indexedToken.creator = creator;
 			setValues.creator = creator;
+		}
+
+		if (tokenBondingCurveInfo?.delayForTrade && tokenBondingCurveInfo?.createdTime) {
+			const delayForTrade = tokenBondingCurveInfo?.delayForTrade;
+			const createdTime = tokenBondingCurveInfo?.createdTime;
+			const tradingStartsAt = moment(Number(createdTime) * 1000)
+				.add(Number(delayForTrade) * 1000, "milliseconds")
+				.toDate();
+			indexedToken.tradingStartsAt = tradingStartsAt;
+			setValues.tradingStartsAt = tradingStartsAt;
+		}
+
+		if (tokenBondingCurveInfo?.maxAmount) {
+			const maxAmount = tokenBondingCurveInfo?.maxAmount;
+			indexedToken.maxBuyAmount = maxAmount;
+			setValues.maxBuyAmount = maxAmount;
 		}
 
 		ops.push({

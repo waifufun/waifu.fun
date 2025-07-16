@@ -19,6 +19,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import ConnectWallet from "@/components/connect-wallet";
 import useBalance from "@/hooks/use-balance";
@@ -26,6 +27,8 @@ import useAddress from "@/hooks/use-address";
 import GridListSelector from "./grid-list-selector";
 import FilterSelector from "./filter-selector";
 import SideBarFilters from "./sidebar-filters";
+import PointCounter from "./profile-page/point-counter";
+import { Button } from "./ui/button";
 
 const viewControlsNavigation = {
 	items: [{ title: "FILTERS", url: "/casino/filters", icon: Filter, hasDropdown: true }],
@@ -34,12 +37,14 @@ const viewControlsNavigation = {
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
 	const address = useAddress();
+	const { state } = useSidebar();
 	const balance = useBalance({
 		address,
 		chain: "solana",
 	});
 
-	const tokenPage = pathname.startsWith("/token");
+	const shouldShowFilters = !pathname.startsWith("/token") && !pathname.startsWith("/profile");
+	const isCollapsed = state === "collapsed";
 
 	return (
 		<Sidebar collapsible="icon" side="right" {...props}>
@@ -59,7 +64,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
-				{!tokenPage && (
+				{shouldShowFilters && (
 					<SidebarGroup>
 						<SidebarGroupContent>
 							<SidebarMenu>
@@ -75,23 +80,30 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 				)}
 			</SidebarContent>
 			<SidebarFooter>
-				{/* create token */}
-				<div className="space-y-1 p-3 text-xs">
-					{balance?.data ? (
-						<div className="flex items-center justify-between text-white">
-							<span>{formatNumber(balance?.data, true, true)}</span>
-							<span className="font-medium text-green-400">SOL</span>
+				{address && (
+					<>
+						{!isCollapsed && <PointCounter address={address} />}
+						{!isCollapsed && (
+							<div className="space-y-1 p-3 text-xs">
+								<div className="flex items-center justify-between text-white">
+									<span>{balance?.isPending ? "Loading" : formatNumber(balance?.data || 0, true, true)}</span>
+									<span className="font-medium text-green-400">SOL</span>
+								</div>
+							</div>
+						)}
+					</>
+				)}
+				{!isCollapsed && (
+					<div className="flex items-center justify-center gap-2.5">
+						<div className="gap-2.5 w-full">
+							<Link href="/create" className="w-full">
+								<Button className="h-10 px-4 py-5 w-full" variant="outline">
+									Create Token
+								</Button>
+							</Link>
 						</div>
-					) : null}
-					{/* <div className="flex items-center justify-between text-white">
-						<span>250</span>
-						<span className="font-medium text-yellow-400">PP</span>
-					</div> */}
-					{/* <div className="flex items-center justify-between text-white">
-						<span>1200</span>
-						<span className="font-medium text-gray-400">WP</span>
-					</div> */}
-				</div>
+					</div>
+				)}
 				<ConnectWallet />
 			</SidebarFooter>
 			<SidebarRail />

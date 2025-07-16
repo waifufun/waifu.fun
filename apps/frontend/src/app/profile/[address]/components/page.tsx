@@ -2,21 +2,52 @@
 import ProfileHeader from "@/components/profile-page/profile-header";
 // import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
-import TokensFilter from "@/components/profile-page/tokens-filter";
 // import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
+import { getSwaps, getTokensCreated, getAddressPoints } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import Pagination from "@/components/pagination";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
 	const [tab, setTab] = useState("wallet");
+	const [paginationOptions, setPaginationOptions] = useState({
+		createdPage: 1,
+		transactionPage: 1,
+	});
 	const params = useParams<{ address: string }>();
 	const address = params?.address;
 
-	const user = balances?.user;
+	const query = useQuery({
+		queryKey: ["get-swaps", address, paginationOptions.transactionPage],
+		queryFn: async () => {
+			const swaps = await getSwaps({ address, page: paginationOptions.transactionPage });
+			return swaps;
+		},
+	});
 
+	const tokensCreatedQuery = useQuery({
+		queryKey: ["get-tokens-created", address, paginationOptions.createdPage],
+		queryFn: async () => {
+			const tokensCreated = await getTokensCreated({ address, page: paginationOptions.createdPage });
+			return tokensCreated;
+		},
+	});
+	const tokensCreated = tokensCreatedQuery.data?.docs ?? [];
+
+	const pointsData = useQuery({
+		queryKey: ["get-points", address],
+		queryFn: async () => {
+			const points = await getAddressPoints({ address });
+			return points;
+		},
+	});
+
+	const transactions = query?.data?.docs ?? [];
+	const user = balances?.user;
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
 
@@ -28,7 +59,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	}, 0);
 
 	const tokensBought = balances?.balances.length;
-	const tokensCreated = balances?.balances.filter((token) => token.creatorAddress === address).length;
 
 	return (
 		<div className="mt-5 flex place-self-center w-full flex-col">
@@ -38,9 +68,10 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						username: user?.displayName,
 						address: user?.address || address,
 						tokensBought: tokensBought,
-						tokensCreated: tokensCreated,
+						tokensCreated: tokensCreatedQuery.data?.totalDocs,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						points: user?.points,
+						totalPoints: pointsData?.data?.totalPoints,
+						weeklyPoints: pointsData?.data?.weeklyPoints,
 						image: user?.avatar,
 					}}
 				/>
@@ -66,57 +97,127 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											</span>
 										</h1>
 									</div>
-									{balances?.balances.map((balance) => {
-										return (
-											<TokenRow
-												mode="wallet"
-												key={balance?.contractAddress}
-												data={{
-													chain: "solana",
-													chainId: 101,
-													image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
-													title: balance?.info?.name,
-													ticker: balance?.info?.symbol,
-													marketCap: balance?.marketcap,
-													contractAddress: balance?.tokenAddress,
-													amountHeld: balance?.shiftedBalance,
-													dollarWorth: balance?.price,
-												}}
-											/>
-										);
-									})}
+									{[...balances.balances]
+										.sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))
+										.map((balance) => {
+											return (
+												<TokenRow
+													mode="wallet"
+													key={balance.tokenAddress}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
+														title: balance?.info?.name,
+														ticker: balance?.info?.symbol,
+														marketCap: balance?.marketcap,
+														contractAddress: balance?.tokenAddress,
+														amountHeld: balance?.shiftedBalance,
+														dollarWorth: balance?.price,
+													}}
+												/>
+											);
+										})}
 								</div>
 							</div>
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
-							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-								<div className="border-b-1 border-[#03FF24]/40">
-									<TokensFilter />
+							<Tabs defaultValue="transactions" className="w-full">
+								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
+									<div className="border-b-1 border-[#03FF24]/40">
+										<TabsList shadowed={false} className="border-none space-x-2 p-4">
+											<TabsTrigger
+												value="transactions"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+											>
+												Transactions
+											</TabsTrigger>
+											<TabsTrigger
+												value="tokens-created"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+											>
+												Tokens Created
+											</TabsTrigger>
+										</TabsList>
+									</div>
+
+									<TabsContent value="tokens-created" className="p-0">
+										{tokensCreated?.length > 0 ? (
+											tokensCreated.map((token) => (
+												<TokenRow
+													mode="wallet"
+													key={token.contractAddress}
+													data={{
+														chain: "solana",
+														chainId: 101,
+														image: token.image ?? "/create/test-img.png",
+														title: token.name,
+														ticker: token.ticker,
+														contractAddress: token.contractAddress,
+													}}
+												/>
+											))
+										) : (
+											<div className="flex w-full p-4 h-full items-center justify-center">
+												<h1 className="text-[#03FF23] text-base font-semibold uppercase">
+													No tokens have been created by this user
+												</h1>
+											</div>
+										)}
+										<Pagination
+											pagination={{
+												page: tokensCreatedQuery?.data?.page,
+												totalPages: tokensCreatedQuery?.data?.totalPages,
+												total: tokensCreatedQuery?.data?.totalDocs,
+												hasMore: tokensCreatedQuery?.data?.hasNextPage,
+											}}
+											onPageChange={(newPage) => setPaginationOptions((prev) => ({ ...prev, createdPage: newPage }))}
+										/>
+									</TabsContent>
+
+									<TabsContent value="transactions">
+										{transactions?.length > 0 ? (
+											<div className="max-h-[600px] overflow-y-auto">
+												{transactions.map((transaction) => (
+													<TokenRow
+														mode="activity"
+														key={transaction._id}
+														data={{
+															chain: "solana",
+															chainId: 101,
+															image: transaction.image ?? "/create/test-img.png",
+															title: transaction.tokenName,
+															ticker: transaction.tokenTicker,
+															contractAddress: transaction.contractAddress,
+															marketCap: transaction.marketcap,
+															direction: transaction.direction,
+															swapAmount: transaction?.swapAmount,
+															amountGotten: transaction?.amountGotten,
+															createdAt: transaction?.createdAt,
+															signature: transaction?.signature,
+														}}
+													/>
+												))}
+											</div>
+										) : (
+											<div className="text-center my-6 text-[#03FF23] text-base font-semibold uppercase">
+												No transactions found
+											</div>
+										)}
+										<Pagination
+											pagination={{
+												page: query.data?.page,
+												totalPages: query.data?.totalPages,
+												total: query.data?.totalDocs,
+												hasMore: query.data?.hasNextPage,
+											}}
+											onPageChange={(newPage) =>
+												setPaginationOptions((prev) => ({ ...prev, transactionPage: newPage }))
+											}
+										/>
+									</TabsContent>
 								</div>
-								<div className="p-0">
-									{Array(3)
-										.fill(null)
-										.map((_, i) => (
-											<TokenRow
-												mode="activity"
-												// biome-ignore lint/suspicious/noArrayIndexKey: DEV
-												key={i}
-												data={{
-													chain: "solana",
-													chainId: 101,
-													image: "/create/test-img.png",
-													title: `AlienToken ${i + 1}`,
-													ticker: "ALIEN",
-													marketCap: 1240000,
-													contractAddress: "0xa83114a443da1cecefc50368531cace9f37fcccb",
-													amountHeld: 124_543_343,
-													dollarWorth: 1337.42,
-													points: 12,
-												}}
-											/>
-										))}
-								</div>
-							</div>
+							</Tabs>
 						</TabsContent>
 					</Tabs>
 				</div>

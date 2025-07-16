@@ -79,6 +79,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	decimals: number;
 	holders: number;
 	status: string;
+	metadataUrl?: TURLLike;
 	bondingCurveBalance?: number;
 	bondingCurveAddress?: AddressLike;
 	curveCompleted?: boolean;
@@ -88,15 +89,20 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	reserveLamport?: number;
 	virtualReserves?: number;
 	socials: ITokenSocials;
+	version: number;
 	creator?: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	hidden?: boolean;
 	featured?: boolean;
 	imported?: boolean;
 	verified?: boolean;
-	createdAt: string;
-	updatedAt: Date;
 	pool?: string;
 	isToken2022?: boolean;
+	tradingStartsAt?: Date;
+	lastClaimedAt?: Date;
+	maxBuyAmount?: number;
+	delayForTrade?: number;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export interface ITokenSocials {
@@ -114,6 +120,12 @@ export interface IUser {
 	verified?: boolean;
 	twitter?: string;
 	points?: number;
+	weekly_points?: number;
+	// Admin fields
+	adminRole?: "super_admin" | "admin" | "moderator";
+	adminPermissions?: string[];
+	adminCreatedBy?: AddressLike;
+	adminCreatedAt?: Date;
 }
 
 export type TChatRooms = "1000" | "100000" | "1000000";
@@ -195,6 +207,7 @@ export interface IMigration {
 	migration?: string | undefined;
 	withdrawnAmounts?: string | undefined;
 	poolInfo?: string | undefined;
+	poolKeys?: string | undefined;
 	lockLpTxId?: string | undefined;
 	primaryNftMint?: string | undefined;
 	secondaryNftMint?: string | undefined;

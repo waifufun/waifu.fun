@@ -1,13 +1,5 @@
 import { ImageResponse } from "next/og";
 
-const fontResponse = await fetch(
-	new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
-);
-if (!fontResponse.ok) {
-	throw new Error(`Failed to fetch font: ${fontResponse.statusText}`);
-}
-const satoshiFont = await fontResponse.arrayBuffer();
-
 export const runtime = "edge";
 export const alt = "Auto.Fun - Fair Launchpad & Token Analytics Platform";
 export const size = {
@@ -18,6 +10,13 @@ export const size = {
 export const contentType = "image/png";
 
 export default async function Image() {
+	const fontResponse = await fetch(
+		new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
+	);
+	if (!fontResponse.ok) {
+		throw new Error(`Failed to fetch font: ${fontResponse.statusText}`);
+	}
+	const satoshiFont = await fontResponse.arrayBuffer();
 	return new ImageResponse(
 		<div
 			style={{
@@ -125,9 +124,7 @@ export default async function Image() {
 						}}
 					>
 						<div style={{ color: "#888", fontSize: 24, display: "flex" }}>Cross-chain</div>
-						<div style={{ color: "#FFFFFF", fontSize: 32, fontWeight: "bold", display: "flex" }}>
-							Solana • Ethereum • Base
-						</div>
+						<div style={{ color: "#FFFFFF", fontSize: 32, fontWeight: "bold", display: "flex" }}>Solana</div>
 					</div>
 					<div
 						style={{

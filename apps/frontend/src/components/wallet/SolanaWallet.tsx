@@ -1,15 +1,14 @@
-import type { Autofun } from "@/lib/autofun";
 import { WalletClass } from "./WalletClass";
 import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
-import { BN, Program } from "@coral-xyz/anchor";
+import { BN, type Program } from "@coral-xyz/anchor";
 import { type Connection, PublicKey, type Transaction, type VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import { AnchorProvider } from "@coral-xyz/anchor";
-import IDL from "@/lib/autofun.json";
 import type { TokenMetadata } from "../hooks/providers/usePromptContext";
 import { SEED_CONFIG } from "../hooks/hook/UseProgram";
 import { ComputeBudgetProgram, type Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-
+import { virtualReservesConst, curveLimitConst } from "@/lib/utils";
+import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@autofun/programs";
 export interface ISolanaFunctions {
 	signMessage: (message: Uint8Array) => Promise<Uint8Array>;
 	sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>;
@@ -28,7 +27,7 @@ export class SolanaWallet extends WalletClass {
 	private _solanaFunctions: ISolanaFunctions;
 	public readonly address: SolanaAddressLike;
 	public readonly chain: SolanaNetworkIds;
-	private program: Program<Autofun>;
+	private program: Program<CurrentAutofunTypes>;
 
 	constructor(address: SolanaAddressLike, chain: SolanaNetworkIds, functions: ISolanaFunctions) {
 		super();
@@ -51,7 +50,7 @@ export class SolanaWallet extends WalletClass {
 					},
 					AnchorProvider.defaultOptions(),
 				);
-				this.program = new Program<Autofun>(IDL, provider);
+				this.program = createCurrentAutofunProgramWithProvider(provider);
 				console.log("SolanaWallet: Program created successfully.");
 			} catch (error) {
 				console.error("SolanaWallet: Error creating program:", error);
@@ -102,46 +101,80 @@ export class SolanaWallet extends WalletClass {
 		}
 	}
 
+	private calculateBondingCurveParams(curveLimit: number): {
+		virtualLamportReserves: number;
+		initBondingCurve: number;
+	} {
+		const defaultCurveLimit = Number(curveLimitConst) / LAMPORTS_PER_SOL;
+		const defaultVirtualReserves = Number(virtualReservesConst);
+		const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
+
+		const defaultInitBondingCurve = 75;
+		// Calculate the ratio based on curve limit
+		const ratio = normalizedCurveLimit / defaultCurveLimit;
+
+		// Calculate new values maintaining the same proportions
+		const virtualLamportReserves = Math.floor(defaultVirtualReserves * ratio);
+		const initBondingCurve = defaultInitBondingCurve;
+
+		return { virtualLamportReserves, initBondingCurve };
+	}
+
 	private launchAndSwapTx = async (
 		creator: PublicKey,
 		decimals: number,
 		tokenSupply: number,
-		virtualLamportReserves: number,
+		curveLimit: number,
+		maxAmount: number,
+		delayForTrade: number,
+		limitTimeToUpdate: number,
 		name: string,
 		symbol: string,
 		uri: string,
 		swapAmount: number,
 		slippageBps: number,
 		connection: Connection,
-		program: Program<Autofun>,
+		program: Program<CurrentAutofunTypes>,
 		mintKeypair: Keypair,
 		configAccount: {
 			teamWallet: PublicKey;
-			initBondingCurve: number;
+			authority: PublicKey;
+			pendingAuthority: PublicKey;
+			platformBuyFee: BN;
+			platformSellFee: BN;
+			lamportAmountConfig: unknown;
+			tokenSupplyConfig: unknown;
+			tokenDecimalsConfig: unknown;
 		},
 	) => {
 		const slippage = slippageBps ? slippageBps : 100;
 		const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
 
-		// Calculate minimum receive amount based on bonding curve formula
-		// This is an estimate and should be calculated more precisely based on the bonding curve
-		const initBondingCurvePercentage = configAccount.initBondingCurve;
-		const initBondingCurveAmount = (tokenSupply * initBondingCurvePercentage) / 100;
+		// Calculate bonding curve parameters
+		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
+
+		// Calculate init_bonding_curve amount as a percentage of total supply
+		const initBondingCurveAmount = Math.floor((tokenSupply * initBondingCurve) / 100);
 
 		// Calculate expected output using constant product formula: dy = (y * dx) / (x + dx)
-		// where x = reserveToken, y = reserveLamport, dx = swapAmount
 		const numerator = virtualLamportReserves * swapAmount;
 		const denominator = initBondingCurveAmount + swapAmount;
 		const expectedOutput = Math.floor(numerator / denominator);
 
 		// Apply slippage to expected output
 		const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
+		const allowCreatorTime = true;
 
 		const tx = await program.methods
 			.launchAndSwap(
 				decimals,
 				new BN(tokenSupply),
 				new BN(virtualLamportReserves),
+				new BN(curveLimit),
+				new BN(maxAmount),
+				new BN(delayForTrade),
+				new BN(limitTimeToUpdate),
+				allowCreatorTime,
 				name,
 				symbol,
 				uri,
@@ -164,9 +197,9 @@ export class SolanaWallet extends WalletClass {
 
 	public override async createToken(tokenData: TokenMetadata): Promise<CreateTokenResponse> {
 		console.log("SolanaWallet: Creating token with data:", tokenData);
-		console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
-		console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
-		console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
+		if (!this.program) {
+			throw new Error("SolanaWallet: Program is not initialized.");
+		}
 		const [configPda] = PublicKey.findProgramAddressSync([Buffer.from(SEED_CONFIG)], this.program.programId);
 
 		const configAccount = await this.program.account.config.fetch(configPda);
@@ -179,13 +212,24 @@ export class SolanaWallet extends WalletClass {
 			microLamports: 50000,
 		});
 
+		// Calculate bonding curve parameters
+		const curveLimit = tokenData.curveLimit ? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL : Number(curveLimitConst);
+		const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
+		const { virtualLamportReserves, initBondingCurve } = this.calculateBondingCurveParams(curveLimit);
+		const maxAmount = tokenData.tradeLimitSol * LAMPORTS_PER_SOL;
+		const delayForTrade = tokenData.delayForTrade || 0;
+		const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts
+		const allowCreatorTime = true;
 		const tx =
 			tokenData.buyAmount > 0
 				? await this.launchAndSwapTx(
 						new PublicKey(this.address),
 						Number(process.env.NEXT_PUBLIC_DECIMALS),
 						Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
-						Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES),
+						curveLimit,
+						maxAmount,
+						delayForTrade,
+						limitTimeToUpdate,
 						tokenData.name,
 						tokenData.symbol,
 						tokenData.metadataUrl,
@@ -200,7 +244,12 @@ export class SolanaWallet extends WalletClass {
 						.launch(
 							Number(process.env.NEXT_PUBLIC_DECIMALS),
 							new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
-							new BN(Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES)),
+							new BN(virtualLamportReserves),
+							new BN(curveLimit),
+							new BN(maxAmount),
+							new BN(delayForTrade),
+							new BN(limitTimeToUpdate),
+							allowCreatorTime,
 							tokenData.name,
 							tokenData.symbol,
 							tokenData.metadataUrl,

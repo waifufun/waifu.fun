@@ -33,7 +33,6 @@ export default function useTokenBalance({
 				});
 
 				const data = await response.json();
-				console.log(data);
 				const uiAmount = data?.result?.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount;
 				return uiAmount || 0;
 			}

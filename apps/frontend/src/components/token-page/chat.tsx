@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Image as ImageIcon, Send, XIcon, ExternalLink, Lock } from "lucide-react";
+import { Image as ImageIcon, Send, XIcon, Lock } from "lucide-react";
 import { abbreviateNumber, fileToBase64, fromNow, shortenAddress } from "@/lib/utils";
 import Image from "next/image";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
@@ -14,23 +14,23 @@ import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
+import Link from "next/link";
 
 type Inputs = {
 	message: string;
 	attachment: File | undefined;
 };
 
+const tierTokenRequirements: Record<TChatRooms, string> = {
+	"1000": "1,000+",
+	"100000": "100,000+",
+	"1000000": "1,000,000+",
+};
+
 export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
-
-	const tierTokenRequirements: Record<TChatRooms, string> = {
-		"1000": "1,000+",
-		"100000": "100,000+",
-		"1000000": "1,000,000+",
-	};
 
 	return (
 		<div className="bg-black border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col h-[550px]">
@@ -58,9 +58,9 @@ export default function Chat({ token }: { token: IToken }) {
 						))}
 					</TabsList>
 				</Tabs>
-				<Link href="#" className="text-xs text-gray-400 hover:text-[#03FF24] flex items-center">
+				{/* <Link href="#" className="text-xs text-gray-400 hover:text-[#03FF24] flex items-center">
 					Open Full Chat Page <ExternalLink size={12} className="ml-1" />
-				</Link>
+				</Link> */}
 			</div>
 
 			<ChatWindow room={room} token={token} tierRequirement={tierTokenRequirements[room]} />
@@ -93,7 +93,9 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 		address: userAddress,
 	});
 
-	const hasEnoughTokens = balance && Number(balance) >= Number(tierRequirement.replace(/,/g, ""));
+	const tierKey = Object.keys(tierTokenRequirements).find((key) => tierTokenRequirements[key] === tierRequirement);
+
+	const hasEnoughTokens = balance.data && tierKey ? Number(balance.data) >= Number(tierKey) : false;
 
 	const onSubmit: SubmitHandler<Inputs> = async (data) => {
 		const base64Image = data.attachment ? String(await fileToBase64(data.attachment)) : undefined;
@@ -247,7 +249,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 					<Input
 						type="text"
 						disabled={!hasEnoughTokens}
-						placeholder="Lorem ipsum 🤔 🔥🔥"
+						placeholder="Type a message..."
 						className="bg-black border-2 border-[#03FF24]/50 placeholder-gray-600 text-sm h-9 focus:border-[#03FF24] text-gray-200 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] flex-grow"
 						{...register("message", { required: true })}
 					/>
@@ -263,10 +265,12 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 					</Button>
 				</form>
 
-				<p className="text-xs text-yellow-500 mt-1.5 px-1 flex items-center">
-					<Lock size={12} className="mr-1.5 text-yellow-600" />
-					You need {tierRequirement} tokens to post in this chat.
-				</p>
+				{!hasEnoughTokens && (
+					<p className="text-xs text-yellow-500 mt-1.5 px-1 flex items-center">
+						<Lock size={12} className="mr-1.5 text-yellow-600" />
+						You need {tierRequirement} tokens to post in this chat.
+					</p>
+				)}
 			</div>
 		</>
 	);
@@ -288,9 +292,9 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 			</Avatar>
 			<div className="flex-1">
 				<div className="flex items-baseline gap-2 text-xs">
-					<span className="font-bold text-[#03FF24]">
-						{message?.sender ? shortenAddress(message?.sender) : "Unknown"}
-					</span>
+					<Link href={`/profile/${message?.sender}`} className="font-bold text-[#03FF24]">
+						{message?.sender ? shortenAddress(message.sender) : "Unknown"}
+					</Link>
 					<span className="text-gray-500">{message?.createdAt ? fromNow(message?.createdAt) : "Unknown time"}</span>
 				</div>
 				{message?.message && <p className="text-sm text-gray-200 mt-0.5">{message.message}</p>}

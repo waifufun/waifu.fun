@@ -32,6 +32,8 @@ export interface IEvent {
 	error?: string;
 	instructionIndex?: number;
 	programId: string;
+	chainId: number;
+	version?: string;
 }
 
 export interface IEventModel extends PaginateModel<IEvent> {
@@ -74,6 +76,7 @@ const schema = new Schema<IEvent, IEventModel>(
 		error: { type: String },
 		instructionIndex: { type: Number },
 		programId: { type: String, required: true },
+		chainId: { type: Number, required: true }, // Added chainId to support multi-chain
 	},
 	{ timestamps: true, versionKey: false },
 );
@@ -98,6 +101,7 @@ schema.index({ createdAt: -1 });
 schema.index({ contractAddress: 1, eventType: 1, createdAt: 1 });
 schema.index({ admin: 1 });
 schema.index({ eventType: 1, admin: 1 });
+schema.index({ eventType: 1, createdAt: 1 });
 
 // Static method implementation
 schema.statics.createOrUpdate = async function (eventData: Partial<IEvent>): Promise<IEvent> {

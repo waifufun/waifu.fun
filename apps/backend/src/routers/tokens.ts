@@ -247,8 +247,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				bondingCurveData = await getBondingCurveData(
 					contractAddress,
 					chainId as unknown as SolanaNetworkIds,
-					metadata.totalSupply || 0,
-					metadata.decimals || 9,
+					Number(metadata.totalSupply) || 0,
+					Number(metadata.decimals) || 9,
 				);
 			} catch (error) {
 				console.error("Error getting bonding curve data:", error);
@@ -279,6 +279,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				decimals: metadata.decimals || 9,
 				totalSupply: metadata.totalSupply || 0,
 				tokenDecimals: metadata.decimals || 9,
+				medatataUrl: metadata.url || "",
 				socials: {
 					twitter,
 					telegram,
@@ -301,6 +302,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				curveProgress: bondingCurveData.curveProgress,
 				curveLimit: bondingCurveData.curveLimit,
 				pool,
+				version: 2,
 			});
 
 			return {
@@ -417,12 +419,20 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				} as ITrade;
 			});
 
-			await redis.setex(cacheKey, 7, JSON.stringify(items));
+			await redis.setex(cacheKey, 3, JSON.stringify(items));
 			return items;
 		}
 
 		// For imported tokens or completed curves, use external Codex API
 		if (token.curveCompleted) {
+			const networkId = (
+				CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
+			)[chain]?.[chainId];
+
+			if (!networkId) {
+				logger.warn(`No Codex network ID found for chain: ${chain}, chainId: ${chainId}`);
+				return [];
+			}
 			const trades = await codex.queries.getTokenEvents({
 				query: {
 					address: contractAddress as unknown as string,
@@ -465,7 +475,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				} as ITrade;
 			});
 
-			await redis.setex(cacheKey, 7, JSON.stringify(items));
+			await redis.setex(cacheKey, 15, JSON.stringify(items));
 			return items;
 		}
 
@@ -504,7 +514,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (!token) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
 		}
+		const networkId = (
+			CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
+		)[chain]?.[chainId];
 
+		if (!networkId) {
+			logger.warn(`No Codex network ID found for chain: ${chain}, chainId: ${chainId}`);
+			return [];
+		}
 		const holders = await codex.queries.holders({
 			input: {
 				// @ts-ignore - TODO Fix type error
@@ -575,6 +592,22 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
+		// this is to calculate how many tokens a user has bought on autofun
+		const swapEvents = await DB.Event.find({
+			user: getChecksummedAddress(address, "solana"),
+			eventType: "swap",
+			direction: 0,
+		}).select("contractAddress");
+
+		const swapEventsAddresses = new Set(swapEvents.map((event) => event.contractAddress));
+
+		const tokensBoughtOnAutoFunAmount = swapEventsAddresses.size;
+
+		const extendedUser = {
+			...user,
+			tokensBoughtOnAutoFunAmount,
+		};
+
 		// populating only the tokens that are in our DB
 		const tokensLookUpContractAddresses = tokensLookUp?.tokens?.map((token) =>
 			getChecksummedAddress(token?.address as AddressLike, "solana"),
@@ -620,9 +653,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			});
 		}
 
-		await redis.setex(cacheKey, 60, JSON.stringify({ user, balances: returnData }));
+		await redis.setex(cacheKey, 60, JSON.stringify({ user: extendedUser, balances: returnData }));
 
-		return { user, balances: returnData };
+		return { user: extendedUser, balances: returnData };
 	});
 
 	/** Import an existing token */
@@ -719,9 +752,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				hidden: false,
 				decimals: Number(decimals),
 				totalSupply: Number(totalSupply),
-				createdAt: createdAt.toISOString(),
-				updatedAt: createdAt,
 				isToken2022: false,
+				version: 2,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -759,9 +791,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				creator: (metadata?.creator as SolanaAddressLike) || undefined,
 				decimals: Number(metadata?.decimals),
 				totalSupply: Number(metadata?.totalSupply),
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date(),
 				isToken2022: metadata?.isToken2022 || false,
+				version: 2,
 			};
 
 			await DB.Token.create([{ ...tokenData, ...(await populateTokensWithLiveData([tokenData])) }]);
@@ -849,7 +880,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				metadataFilename,
 			);
 
-			const metadataUrl = `${process.env.API_URL}/autofun/token-metadata/${metadataFilename}.json`;
+			const metadataUrl = `${process.env.API_URL}/token-metadata/${metadataFilename}.json`;
 
 			return reply.send({
 				success: true,
@@ -1037,20 +1068,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 							price = solSpent / tokensReceived;
 							volume = tokensReceived;
 							volumeUSD = solSpent * nativePrice;
-
-							console.log(
-								"spent sol:",
-								solSpent,
-								"tokens received:",
-								tokensReceived,
-								"price:",
-								price,
-								"volume:",
-								volume,
-								"volumeUSD:",
-								volumeUSD,
-							);
-							console.log("txHash", event.signature);
 						}
 					} else {
 						// Sell: Tokens -> SOL
@@ -1061,20 +1078,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 							price = solReceived / tokensSold;
 							volume = tokensSold;
 							volumeUSD = solReceived * nativePrice;
-
-							console.log(
-								"received sol:",
-								solReceived,
-								"tokens sold:",
-								tokensSold,
-								"price:",
-								price,
-								"volume:",
-								volume,
-								"volumeUSD:",
-								volumeUSD,
-							);
-							console.log("txHash", event.signature);
 						}
 					}
 				}
@@ -1095,7 +1098,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			const ohlcData = groupEventsIntoOHLC(priceData, timeframeMs, limit);
 
-			await redis.setex(cacheKey, 30, JSON.stringify(ohlcData));
+			await redis.setex(cacheKey, 3, JSON.stringify(ohlcData));
 			return ohlcData;
 		}
 		return [];

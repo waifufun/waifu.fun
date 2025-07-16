@@ -1,19 +1,129 @@
 import logger from "@autofun/logger";
 import type { DecodedInstruction } from "../../types";
-import { SolanaInstructionDecoder } from "./instruction-decoder";
+import { SolanaInstructionDecoderV2 } from "./implementations/v2/instruction-decoder-v2";
+import type { SolanaInstructionDecoder } from "./abstract/instruction-decoder";
 import { SolanaEventDecoder } from "./event-decoder";
 import { SolanaAmountExtractor } from "./extract-amount";
 import { SolanaLogDecoder } from "./log-decoder";
+import DB from "@autofun/database";
+import { SolanaRpcProvider } from "@autofun/rpc";
+import { SolanaInstructionDecoderLegacy } from "./implementations/legacy/instruction-decoder-legacy";
 
 export class SolanaTransactionProcessor {
+	private rpc: SolanaRpcProvider;
+	private version: "legacy" | "v2";
+	private instructionDecoder: SolanaInstructionDecoder;
+	public readonly maxBlock: number;
+
 	constructor(
 		private autoFunAddress: string,
 		private debugStatements = false,
-	) {}
+		version: "legacy" | "v2" = "v2",
+		maxBlock: number = Number.POSITIVE_INFINITY,
+	) {
+		// Initialize RPC provider based on environment
+		const networkId = process.env.NETWORK === "mainnet" ? 101 : 103;
+		this.rpc = new SolanaRpcProvider(networkId);
+		this.version = version;
+		if (version === "v2") {
+			this.instructionDecoder = new SolanaInstructionDecoderV2();
+		} else {
+			this.instructionDecoder = new SolanaInstructionDecoderLegacy();
+		}
+		this.maxBlock = maxBlock;
+	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	hasAutoFunProgram(accounts: any[]): boolean {
 		return accounts.some((account) => account.toBase58() === this.autoFunAddress);
+	}
+
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	private async createTokenFromLaunchEvent(eventData: any, blockTime: number): Promise<void> {
+		try {
+			const contractAddress = eventData.contractAddress;
+
+			if (!contractAddress) {
+				logger.warn("No contract address found in launch event");
+				return;
+			}
+
+			const existingToken = await DB.Token.findOne({
+				contractAddress,
+				chain: "solana",
+				chainId: eventData.chainId,
+			});
+
+			if (existingToken) {
+				logger.info(`Token ${contractAddress} already exists, skipping creation`);
+				return;
+			}
+
+			let image = "";
+			let description = "";
+			let socials = {};
+
+			if (contractAddress) {
+				try {
+					const metadata = await this.rpc.getTokenMetadata(contractAddress);
+					if (metadata) {
+						image = metadata.image || "";
+						description = metadata.description || "";
+						socials = this.extractSocialsFromMetadata(metadata);
+					}
+				} catch (error) {
+					logger.warn(`Failed to fetch metadata for ${contractAddress}:`, error);
+				}
+			}
+
+			const tokenData = {
+				contractAddress,
+				chain: "solana",
+				chainId: eventData.chainId,
+				name: eventData.tokenName || "Unknown Token",
+				ticker: eventData.tokenSymbol || "UNK",
+				decimals: eventData.decimals || 9,
+				image,
+				description,
+				socials,
+				creator: eventData.creator,
+				createdAt: new Date(blockTime * 1000),
+				imported: false,
+				verified: false,
+				featured: false,
+				hidden: false,
+				status: "active",
+				curveCompleted: false,
+				curveProgress: 0,
+				volume24h: 0,
+				holders: 1,
+				price: 0,
+				marketcap: 0,
+				tokenSupply: eventData.tokenSupply || "0",
+				virtualLamportReserves: eventData.virtualLamportReserves || "0",
+				version: 2,
+				pool: "meteora",
+			};
+
+			const newToken = await DB.Token.create(tokenData);
+			logger.info(`Created token ${contractAddress} from launch event`);
+		} catch (error) {
+			logger.error("Failed to create token from launch event:", error);
+		}
+	}
+
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	private extractSocialsFromMetadata(metadata: any): any {
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		const socials: any = {};
+
+		// Extract social links from RPC metadata response
+		if (metadata.website) socials.website = metadata.website;
+		if (metadata.twitter) socials.twitter = metadata.twitter;
+		if (metadata.telegram) socials.telegram = metadata.telegram;
+		if (metadata.discord) socials.discord = metadata.discord;
+
+		return socials;
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -33,7 +143,6 @@ export class SolanaTransactionProcessor {
 		}
 
 		if (!this.hasAutoFunProgram(accounts)) {
-			console.warn(`Transaction ${signatures[0]} does not involve AutoFun program`);
 			return events;
 		}
 
@@ -55,7 +164,7 @@ export class SolanaTransactionProcessor {
 			if (programId !== this.autoFunAddress) continue;
 
 			const instructionAccounts = instruction.accountKeyIndexes.map((index: number) => accountStrings[index]);
-			const decodedInstruction = SolanaInstructionDecoder.decodeAutofunInstruction(
+			const decodedInstruction = this.instructionDecoder.decodeAutofunInstruction(
 				Buffer.from(instruction.data),
 				instructionAccounts,
 			);
@@ -82,18 +191,13 @@ export class SolanaTransactionProcessor {
 				}
 
 				events.push(eventData);
-			}
 
-			if (decodedInstruction.type !== "unknown") {
-				const eventData = this.createEventData(
-					signatures[0],
-					slot,
-					blockTime,
-					instructionIndex,
-					decodedInstruction,
-					transaction,
-				);
-				events.push(eventData);
+				// Create token in database for launch events
+				if (decodedInstruction.type === "launch" || decodedInstruction.type === "launchAndSwap") {
+					this.createTokenFromLaunchEvent(eventData, blockTime).catch((error) => {
+						logger.error("Failed to create token from launch event:", error);
+					});
+				}
 			}
 		}
 
@@ -117,7 +221,7 @@ export class SolanaTransactionProcessor {
 							bondingCurve: completeEvent.bondingCurve,
 							logIndex,
 							programId: this.autoFunAddress,
-							processed: true,
+							processed: false,
 						};
 						events.push(eventObj);
 
@@ -156,6 +260,8 @@ export class SolanaTransactionProcessor {
 			programId: this.autoFunAddress,
 			accounts: decodedInstruction.accounts,
 			processed: true,
+			chainId: process.env.NETWORK === "mainnet" ? 101 : 103,
+			version: this.version,
 		};
 
 		const instructionData = decodedInstruction.data?.data;

@@ -3,8 +3,8 @@
 import { CopyButton } from "../copy-button";
 import type { AddressLike, TChain } from "@autofun/types";
 import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
-import { Trophy } from "lucide-react";
 import AvatarImage from "./avatar-image";
+import { formatNumber } from "@/lib/utils";
 
 export default function ProfileHeader({
 	data,
@@ -19,7 +19,8 @@ export default function ProfileHeader({
 			chainId: SolanaNetworkIds | EvmChainIds | null;
 			amount: number;
 		}[];
-		points: number;
+		totalPoints: number;
+		weeklyPoints: number;
 		image: string;
 	};
 }) {
@@ -43,32 +44,19 @@ export default function ProfileHeader({
 						className=" mr-2 text-[#03FF24]/70 hover:text-[#03FF24] cursor-pointer flex-shrink-0"
 					/>
 				</div>
-				{/* <div className="flex gap-2 mt-2">
-					{data.chains.map(({ chain, chainId, amount }) => {
-						// for lint
-						const key = `${chain}_${chainId}`;
-						const chainIcon = chainIcons[key];
-
-						return (
-							<div
-								key={key}
-								className="bg-[#171717] bg-opacity-10 px-2 py-1 rounded-md flex items-center justify-center"
-							>
-								{chainIcon ? (
-									<Image src={chainIcon.icon} alt={`${chainIcon.name} icon`} width={24} height={24} />
-								) : (
-									<div className="w-6 h-6 bg-gray-500 rounded" />
-								)}
-								<p className="px-2 text-base font-bold">{amount}</p>
+				{data?.totalPoints ? (
+					<div className="flex flex-col mt-1">
+						<div className="flex justify-between items-center w-full px-0 py-1">
+							<div className="flex items-center gap-1">
+								<span className="text-sm">Total Points</span>
 							</div>
-						);
-					})}
-				</div> */}
-				{data?.points ? (
-					<div className="flex gap-0 mt-1">
-						<div className="px-0 py-1 flex items-center justify-center md:justify-start w-full">
-							<Trophy size={20} className="text-autofun-background-action-highlight" />
-							<p className="px-2 font-semibold text-[#03FF24] text-base">{data.points}</p>
+							<p className="font-semibold text-[#03FF24] text-base">{formatNumber(data.totalPoints, false, true)}</p>
+						</div>
+						<div className="flex justify-between items-center w-full px-0 py-1">
+							<div className="flex items-center gap-1">
+								<span className="text-sm">Weekly Points</span>
+							</div>
+							<p className="font-semibold text-yellow-400  text-base">{formatNumber(data.weeklyPoints, false, true)}</p>
 						</div>
 					</div>
 				) : null}

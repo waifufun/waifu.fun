@@ -137,3 +137,7 @@ export const FALLBACK_PRICES = {
 	solana: 153,
 	ethereum: 2518,
 };
+
+export const virtualReservesConst = process.env.NETWORK === "devnet" ? 2800000000 : 28000000000;
+
+export const curveLimitConst = process.env.NETWORK === "devnet" ? 11300000000 : 113000000000;

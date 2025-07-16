@@ -3,7 +3,6 @@ import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
-import { toast } from "sonner";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
 import {
@@ -13,21 +12,38 @@ import {
 	type TransactionInstruction,
 	TransactionMessage,
 	VersionedTransaction,
-	type Connection,
+	Connection,
 	Transaction,
 	LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 
-import { AnchorProvider, BN, Program, type Idl } from "@coral-xyz/anchor";
-import idl from "./autofun.json";
+import { AnchorProvider, BN, type Program } from "@coral-xyz/anchor";
+
 import type { WalletContextState } from "@solana/wallet-adapter-react";
-import type { Autofun } from "./autofun";
+
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
-import type { CreateTokenResponse } from "@/components/wallet/SolanaWallet";
+
+import { getLaunchAccounts } from "./pdas";
+import {
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
+	type CurrentAutofunTypes,
+	type LegacyAutofunTypes,
+} from "@autofun/programs";
+
+export type CreateTokenResponse = {
+	mintPublicKey: PublicKey;
+	userPublicKey: PublicKey;
+	signature: string;
+};
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
+
+export const virtualReservesConst = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 2800000000 : 28000000000;
+
+export const curveLimitConst = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 11300000000 : 113000000000;
 
 export const abbreviateNumber = (num: number, withoutCurrency = false): string => {
 	const absNum = Math.abs(Number(num));
@@ -287,10 +303,25 @@ export const retrieveJupiterQuote = async ({
 };
 
 const convertToBasisPoints = (feePercent: number): number => {
-	if (feePercent >= 1) {
-		return feePercent;
+	// Validate that feePercent is reasonable
+	if (feePercent < 0) {
+		console.warn(`Invalid fee percent: ${feePercent}, using 0 as fallback`);
+		return 0;
 	}
-	return Math.floor(feePercent * 10000);
+
+	// If feePercent is already in basis points (e.g., 100 = 1%), return it directly
+	if (feePercent <= 10000) {
+		return Math.floor(feePercent);
+	}
+
+	// If feePercent is a percentage (e.g., 1.5 = 1.5%), convert to basis points
+	if (feePercent <= 100) {
+		return Math.floor(feePercent * 100);
+	}
+
+	// If it's a very large number, assume it's already in basis points but needs to be capped
+	console.warn(`Very large fee percent: ${feePercent}, capping at 10000 basis points`);
+	return Math.min(10000, Math.floor(feePercent));
 };
 
 export const retrieveAutofunQuote = async ({
@@ -308,19 +339,44 @@ export const retrieveAutofunQuote = async ({
 	token: IToken;
 	mode: "buy" | "sell";
 }) => {
-	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	if (!amount) throw new Error("Invalid amount passed");
+	const HELIUS_RPC_URL =
+		token?.chainId === SolanaNetworkIds.Devnet
+			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+	connection = new Connection(HELIUS_RPC_URL, "confirmed");
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
 	const contractAddress = token.contractAddress;
 	const FEE_BASIS_POINTS = 10000;
 	const curve = await getBondingCurvePDA(program, contractAddress);
 	const reserveToken = curve.reserveToken;
 	const reserveLamport = curve.reserveLamport;
-	const feePercent = mode === "sell" ? Number(configAccount.platformSellFee) : Number(configAccount.platformBuyFee);
+
+	// Try to safely convert BN to number, with fallback
+	let feePercent: number;
+	const rawFeeString =
+		mode === "sell" ? configAccount.platformSellFee.toString() : configAccount.platformBuyFee.toString();
+
+	// Check if the BN represents a reasonable fee value
+	if (rawFeeString === "18446744073709551615" || Number.parseInt(rawFeeString) > 1000000) {
+		console.warn("BN appears to be uninitialized or invalid, using default fee");
+		feePercent = 1; // Default to 1% fee
+	} else {
+		try {
+			feePercent = mode === "sell" ? configAccount.platformSellFee.toNumber() : configAccount.platformBuyFee.toNumber();
+		} catch (error) {
+			feePercent = Number.parseInt(rawFeeString) / 100;
+		}
+	}
+
 	const swapAmount = parseUnits(String(amount), mode === "buy" ? 9 : token.decimals);
 	const adjustedAmountW = Math.floor((Number(swapAmount) * (FEE_BASIS_POINTS - feePercent)) / FEE_BASIS_POINTS);
 
 	let estimatedOutput = 0;
 	if (mode === "buy") {
 		const feeBasisPoints = new BN(convertToBasisPoints(feePercent));
+		console.log("feeBasisPoints", feeBasisPoints.toString());
 		const amountBN = new BN(adjustedAmountW);
 		const adjustedAmount = amountBN.mul(new BN(10000)).sub(feeBasisPoints).div(new BN(10000));
 		const reserveTokenBN = new BN(reserveToken.toString());
@@ -362,8 +418,12 @@ export const retrieveQuote = async ({
 	slippage: number;
 	wallet?: WalletContextState;
 	connection?: Connection;
-	// biome-ignore lint/suspicious/noExplicitAny: allow
-}): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
+}): Promise<{
+	minimumReceived: number;
+	swapUsdValue?: string;
+	priceImpactPct?: string;
+	quote?: unknown;
+}> => {
 	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
 	if (provider === "jupiter") {
 		return await retrieveJupiterQuote({
@@ -373,6 +433,12 @@ export const retrieveQuote = async ({
 			slippage,
 		});
 	}
+	const HELIUS_RPC_URL =
+		token?.chainId === SolanaNetworkIds.Devnet
+			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+	connection = new Connection(HELIUS_RPC_URL, "confirmed");
 
 	if (provider === "autofun") {
 		if (!wallet || !connection) throw new Error("No wallet or connection passed.");
@@ -389,11 +455,17 @@ export const retrieveQuote = async ({
 	throw new Error("No quote route found. Please contact auto.fun");
 };
 
-export const getBondingCurvePDA = async (program: Program<Autofun>, tokenAddress: AddressLike) => {
+export const getBondingCurvePDA = async (
+	program: Program<CurrentAutofunTypes> | Program<LegacyAutofunTypes>,
+	tokenAddress: AddressLike,
+) => {
 	const [bondingCurvePda] = PublicKey.findProgramAddressSync(
 		[Buffer.from("bonding_curve"), new PublicKey(tokenAddress).toBytes()],
 		program.programId,
 	);
+	if (!program.account.bondingCurve) {
+		throw new Error("program.account.bondingCurve is undefined");
+	}
 	const curve = await program.account.bondingCurve.fetch(bondingCurvePda);
 	return curve;
 };
@@ -432,14 +504,13 @@ function createSpoofedWallet(): WalletLike {
 	};
 }
 
-export const getAutofunProgram = async (connection: Connection, wallet: WalletContextState) => {
+export const getAutofunProgram = async (connection: Connection, wallet: WalletContextState, version = 2) => {
 	const walletToUse =
 		!wallet?.publicKey || !wallet?.signTransaction || !wallet?.signAllTransactions ? createSpoofedWallet() : wallet;
 
 	if (!walletToUse.publicKey || !walletToUse.signTransaction || !walletToUse.signAllTransactions) {
 		throw new Error("Wallet not fully connected or compatible.");
 	}
-
 	const provider = new AnchorProvider(
 		connection,
 		{
@@ -449,8 +520,10 @@ export const getAutofunProgram = async (connection: Connection, wallet: WalletCo
 		},
 		AnchorProvider.defaultOptions(),
 	);
-
-	const program: Program<Autofun> = new Program(idl as Idl, provider);
+	const program =
+		version === 1
+			? createLegacyAutofunProgramWithProvider(provider)
+			: createCurrentAutofunProgramWithProvider(provider);
 
 	const [configPda, _] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
 	const configAccount = await program.account.config.fetch(configPda);
@@ -467,9 +540,19 @@ export const executeSwap = async (
 	speed: TSpeed,
 	connection: Connection,
 	wallet: WalletContextState,
+	onTransactionStart?: (signature: string, expectedOutput: number) => void,
 ): Promise<string> => {
 	if (!connection) throw new Error("No connection was found");
+
+	const parsedInputAmount = parseUnits(String(inputAmount), mode === "buy" ? 9 : token.decimals);
+
 	/** If the token was imported or has already migrated we can just use Jupiter */
+	const HELIUS_RPC_URL =
+		token?.chainId === SolanaNetworkIds.Devnet
+			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+	const heliusConnection = new Connection(HELIUS_RPC_URL, "confirmed");
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
 			amount: inputAmount,
@@ -479,6 +562,7 @@ export const executeSwap = async (
 		});
 
 		const quote = quoteResponse?.quote;
+		const expectedOutput = quoteResponse?.minimumReceived || 0;
 
 		if (!quote) throw new Error("Failed to fetch quote from Jupiter");
 
@@ -524,17 +608,21 @@ export const executeSwap = async (
 
 		const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 
-		const signature = await wallet.sendTransaction(transaction, connection);
+		const signature = await wallet.sendTransaction(transaction, heliusConnection);
+
+		// Notify the transaction listener
+		onTransactionStart?.(signature, expectedOutput);
 
 		return signature;
 	}
+
 	/** If the token was not imported, the curve hasn't completed and it's Solana we use our program */
 	if (!token?.imported && !token?.curveCompleted && token.chain === "solana") {
-		const { program, configAccount } = await getAutofunProgram(connection, wallet);
+		const { program, configAccount } = await getAutofunProgram(heliusConnection, wallet, token.version);
 
 		const quote = await retrieveAutofunQuote({
 			amount: inputAmount,
-			connection,
+			connection: heliusConnection,
 			mode,
 			slippage,
 			token,
@@ -603,31 +691,42 @@ export const executeSwap = async (
 
 		const signature = await wallet.sendTransaction(versionedTx, connection);
 
-		toast(`Send transaction: ${signature}`);
+		onTransactionStart?.(signature, quote.minimumReceived);
 
-		await connection
-			.confirmTransaction({
-				blockhash: blockhash,
-				lastValidBlockHeight: lastValidBlockHeight,
-				signature: signature,
-			})
-			.then(() => {
-				toast(`Transaction confirmed: ${signature}`);
-			})
-			.catch((e) => {
-				toast.error(`Transaction failed: ${e.message}`);
-			});
 		return signature;
 	}
 
 	throw new Error("No route found for token to swap against. Contact autofun.");
 };
 
+export const calculateBondingCurveParams = (
+	curveLimit: number,
+): { virtualLamportReserves: number; initBondingCurve: number } => {
+	// Default values in SOL
+	const normalizedCurveLimit = curveLimit / LAMPORTS_PER_SOL;
+
+	const defaultInitBondingCurve = 75;
+
+	// Calculate virtual reserves as 25% of the curve limit (100 - 75 = 25%)
+	const virtualReservesSOL = (normalizedCurveLimit * (100 - defaultInitBondingCurve)) / 100;
+
+	// Devnet: round to 0.1 SOL, Mainnet: round to 1 SOL
+	const roundingFactor = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 10 : 1;
+	const roundedVirtualReservesSOL = Math.round(virtualReservesSOL * roundingFactor) / roundingFactor;
+	const virtualLamportReserves = Math.floor(roundedVirtualReservesSOL * LAMPORTS_PER_SOL);
+	const initBondingCurve = defaultInitBondingCurve;
+
+	return { virtualLamportReserves, initBondingCurve };
+};
+
 export const launchAndSwapTx = async (
 	creator: PublicKey,
 	decimals: number,
 	tokenSupply: number,
-	virtualLamportReserves: number,
+	curveLimit: number,
+	maxAmount: number,
+	delayForTrade: number,
+	limitTimeToUpdate: number,
 	name: string,
 	symbol: string,
 	uri: string,
@@ -639,12 +738,14 @@ export const launchAndSwapTx = async (
 ) => {
 	const slippage = slippageBps ? slippageBps : 100;
 	const deadline = Math.floor(Date.now() / 1000) + 120; // 2 minutes from now
-	const { program, configAccount } = await getAutofunProgram(connection, wallet);
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
 
 	// Calculate minimum receive amount based on bonding curve formula
-	// This is an estimate and should be calculated more precisely based on the bonding curve
-	const initBondingCurvePercentage = configAccount.initBondingCurve;
-	const initBondingCurveAmount = (tokenSupply * initBondingCurvePercentage) / 100;
+	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+	console.log("virtualLamportReserves:", virtualLamportReserves);
+	console.log("initBondingCurve:", initBondingCurve);
+
+	const initBondingCurveAmount = (tokenSupply * initBondingCurve) / 100;
 
 	// Calculate expected output using constant product formula: dy = (y * dx) / (x + dx)
 	// where x = reserveToken, y = reserveLamport, dx = swapAmount
@@ -654,12 +755,18 @@ export const launchAndSwapTx = async (
 
 	// Apply slippage to expected output
 	const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
+	const allowCreatorTime = true;
 
 	const tx = await program.methods
 		.launchAndSwap(
 			decimals,
 			new BN(tokenSupply),
 			new BN(virtualLamportReserves),
+			new BN(curveLimit),
+			new BN(maxAmount),
+			new BN(delayForTrade),
+			new BN(limitTimeToUpdate),
+			allowCreatorTime,
 			name,
 			symbol,
 			uri,
@@ -684,11 +791,10 @@ export const createTokenTx = async (
 	{ connection, wallet }: { connection: Connection; wallet: WalletContextState },
 ): Promise<CreateTokenResponse> => {
 	console.log("SolanaWallet: Creating token with data:", tokenData);
-	console.log("virtualLamportReserves:", process.env.NEXT_PUBLIC_VIRTUAL_RESERVES);
 	console.log("tokenSupply:", process.env.NEXT_PUBLIC_TOKEN_SUPPLY);
 	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
-	const { program, configAccount } = await getAutofunProgram(connection, wallet);
-	const [configPda] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
+
+	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
 	if (!wallet?.publicKey) throw new Error("Wallet not correctly initialized");
 	const address = wallet.publicKey.toBase58();
 
@@ -700,17 +806,52 @@ export const createTokenTx = async (
 		microLamports: 50000,
 	});
 
+	const curveLimit = tokenData.curveLimit ? Number(tokenData.curveLimit) * LAMPORTS_PER_SOL : Number(curveLimitConst);
+	const decimals = Number(process.env.NEXT_PUBLIC_DECIMALS);
+	const { virtualLamportReserves, initBondingCurve } = calculateBondingCurveParams(curveLimit);
+	console.log("virtualLamportReserves:", virtualLamportReserves);
+
+	// make sure max amount is in lamports with max 9 decimals
+	const maxAmount = Math.floor(tokenData.tradeLimitSol * LAMPORTS_PER_SOL);
+
+	const delayForTrade = tokenData.delayForTrade || 0;
+	const limitTimeToUpdate = 360000; // 100 hours to update max buy/sell amounts	//
+	const accounts = getLaunchAccounts({
+		programId: program.programId,
+		creator: wallet.publicKey,
+		tokenMint: tokenData.mintKeyPair.publicKey,
+		teamWallet: configAccount.teamWallet,
+	});
+	console.log({
+		decimals: Number(process.env.NEXT_PUBLIC_DECIMALS),
+		tokenSupply: Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
+		virtualLamportReserves: new BN(virtualLamportReserves).toNumber(),
+		curveLimit: new BN(curveLimit).toNumber(),
+		initBondingCurve: initBondingCurve,
+		name: tokenData.name,
+		symbol: tokenData.symbol,
+		metadataUrl: tokenData.metadataUrl,
+		maxAmount: new BN(maxAmount).toNumber(),
+		delayForTrade: new BN(delayForTrade).toNumber(),
+		limitTimeToUpdate: new BN(limitTimeToUpdate).toNumber(),
+		accounts: accounts,
+	});
+	const allowCreatorTime = true;
+
 	const tx =
 		tokenData.buyAmount > 0
 			? await launchAndSwapTx(
 					new PublicKey(address),
 					Number(process.env.NEXT_PUBLIC_DECIMALS),
 					Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY),
-					Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES),
+					curveLimit,
+					maxAmount,
+					delayForTrade,
+					limitTimeToUpdate,
 					tokenData.name,
 					tokenData.symbol,
 					tokenData.metadataUrl,
-					tokenData.buyAmount * LAMPORTS_PER_SOL,
+					Math.floor(tokenData.buyAmount * LAMPORTS_PER_SOL),
 					100,
 					connection,
 					tokenData.mintKeyPair,
@@ -720,7 +861,12 @@ export const createTokenTx = async (
 					.launch(
 						Number(process.env.NEXT_PUBLIC_DECIMALS),
 						new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
-						new BN(Number(process.env.NEXT_PUBLIC_VIRTUAL_RESERVES)),
+						new BN(virtualLamportReserves),
+						new BN(curveLimit),
+						new BN(maxAmount),
+						new BN(delayForTrade),
+						new BN(limitTimeToUpdate),
+						allowCreatorTime,
 						tokenData.name,
 						tokenData.symbol,
 						tokenData.metadataUrl,
@@ -739,6 +885,13 @@ export const createTokenTx = async (
 	tx.recentBlockhash = blockhash;
 
 	tx.sign(tokenData.mintKeyPair);
+
+	const simulation = await connection.simulateTransaction(tx);
+	if (simulation?.value?.err) {
+		console.error("Transaction simulation failed:", simulation.value.err);
+		console.error("Simulation Logs:", simulation.value.logs);
+		throw new Error(simulation?.value?.err.toString());
+	}
 
 	if (!wallet || !wallet?.signTransaction) throw new Error("Wallet not properly initialized");
 	const signedTx = await wallet.signTransaction(tx);

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import UseTokenMedia from "../hook/UseTokenMedia";
 import { useMutation } from "@tanstack/react-query";
-import { generateMedia, generateMetadata, generateRemoteMetadata } from "@/lib/api";
+import { generateMedia, generateMetadata, generateRemoteMetadata, generateMediaForToken } from "@/lib/api";
 import {
 	useForm,
 	type UseFormHandleSubmit,
@@ -12,8 +12,11 @@ import {
 	type FormState,
 	type RegisterOptions,
 	type UseFormSetValue,
+	type Control,
 } from "react-hook-form";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { curveLimitConst } from "@/lib/utils";
+import type { SolanaNetworkIds, TChain } from "@autofun/types";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -25,6 +28,7 @@ const INITIAL_GENERATION_SUFFIX = "FUN";
 type MediaType = "audio" | "video" | "image";
 
 type PromptContextType = {
+	control: Control<TokenFormData>;
 	registerForm: UseFormRegister<TokenFormData>;
 	handleSubmit: UseFormHandleSubmit<TokenFormData>;
 	formState: FormState<TokenFormData>;
@@ -32,14 +36,21 @@ type PromptContextType = {
 	generateAddress: (suffix: string) => void;
 	isGeneratingAddress: boolean;
 	isGeneratingMedia: boolean;
-	generateToken: (params: { mediaType: MediaType; prompt?: string; contractAddress?: string }) => void;
+	generateToken: (params: { mediaType: MediaType; prompt?: string }) => void;
+	generateMediaToken: (params: {
+		mediaType: MediaType;
+		prompt?: string;
+		contractAddress?: string;
+		chain: TChain;
+		chainId: SolanaNetworkIds;
+	}) => void;
 	changeMainImage: (index: number) => void;
 	changeMainMedia: (index: number, type: MediaType) => void;
 	previousImages: string[];
 	previousVideos: string[];
 	previousAudios: string[];
-	uploadedImage: string | undefined;
-	setUploadedImage: (image: string | undefined) => void;
+	uploadedImage: string | undefined | null;
+	setUploadedImage: (image: string | undefined | null) => void;
 	watchValue: (name: string) => string | number | undefined;
 	getTokenData: (manual?: boolean) => Promise<TokenMetadata>;
 	setPool: (pool: string) => void;
@@ -51,6 +62,9 @@ type PromptContextType = {
 	deleteImage: (imageLink: string) => void;
 	deleteMedia: (mediaLink: string, mediaType: MediaType) => void;
 	addMedia: (link: string, type: MediaType) => void;
+	terminateWorkers: () => void;
+	cancelVanityGeneration: () => void;
+	setMintKeyPair: (keypair: Keypair | null) => void;
 };
 
 export type TokenFormData = {
@@ -60,6 +74,9 @@ export type TokenFormData = {
 	description: string;
 	symbol: string;
 	buyAmount: number;
+	curveLimit: number;
+	delayForTrade: number;
+	tradeLimitSol: number;
 };
 
 export type TokenMetadata = {
@@ -70,6 +87,9 @@ export type TokenMetadata = {
 	mintKeyPair: Keypair;
 	buyAmount: number;
 	metadataUrl: string;
+	curveLimit: number;
+	delayForTrade: number;
+	tradeLimitSol: number;
 };
 
 export type TokenFormOptions = keyof TokenFormData;
@@ -87,7 +107,7 @@ const PromptProviderContent = ({
 	children,
 	tokenImageQuery,
 }: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
-	const { register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
+	const { control, register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
 		defaultValues: {
 			prompt: "",
 			name: "",
@@ -95,6 +115,9 @@ const PromptProviderContent = ({
 			description: "",
 			symbol: "",
 			buyAmount: 0,
+			curveLimit: Number(curveLimitConst) / LAMPORTS_PER_SOL,
+			delayForTrade: 0,
+			tradeLimitSol: 0,
 		},
 		mode: "onChange",
 	});
@@ -112,7 +135,7 @@ const PromptProviderContent = ({
 		deleteMedia,
 	} = UseTokenMedia(tokenImageQuery);
 	const [isGeneratingMedia, setIsGeneratingMedia] = useState<boolean>(false);
-	const [uploadedImage, setUploadedImage] = useState<string | undefined>(undefined);
+	const [uploadedImage, setUploadedImage] = useState<string | undefined | null>(undefined);
 	const [pool, setPool] = useState<string>("meteora");
 	const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
@@ -146,6 +169,11 @@ const PromptProviderContent = ({
 		},
 	});
 
+	const resetMintKeyPair = useCallback(() => {
+		setMintKeyPair(null);
+		setIsGeneratingAddress(false);
+	}, []);
+
 	const generateMediaMutation = useMutation({
 		mutationKey: ["generateMedia"],
 		mutationFn: generateMedia,
@@ -155,10 +183,10 @@ const PromptProviderContent = ({
 
 				let actualMediaUrl: string;
 				if (typeof data.mediaUrl === "string") {
-					// Image
+					// Image or direct URL
 					actualMediaUrl = data.mediaUrl;
-				} else if (typeof data.mediaUrl === "object" && data.mediaUrl.url) {
-					// Video/Audio
+				} else if (typeof data.mediaUrl === "object" && data.mediaUrl !== null && "url" in data.mediaUrl) {
+					// Video/Audio object format
 					actualMediaUrl = data.mediaUrl.url;
 				} else {
 					toast.error("Error generating media: Invalid media URL format");
@@ -166,8 +194,91 @@ const PromptProviderContent = ({
 					return;
 				}
 
+				if (typeof actualMediaUrl !== "string" || !actualMediaUrl) {
+					console.error("Error generating media: Invalid media URL format", data);
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
+				console.log("actualMediaUrl: ", actualMediaUrl);
+
+				if (!actualMediaUrl.startsWith("http")) {
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
 				addMedia(actualMediaUrl, mediaType);
 				setIsGeneratingMedia(false);
+				toast.success("Media generated successfully!");
+			} else {
+				toast.error("Error generating media: No media URL returned");
+				setIsGeneratingMedia(false);
+			}
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: <reason>
+		onError: (error: any) => {
+			toast.error(error?.message || "Error generating media");
+			setIsGeneratingMedia(false);
+		},
+	});
+
+	const generateMediaTokenMutation = useMutation({
+		mutationKey: ["generateMediaToken"],
+		mutationFn: ({
+			prompt,
+			width,
+			height,
+			type,
+			contractAddress,
+			chain,
+			chainId,
+		}: {
+			prompt: string;
+			width: number;
+			height: number;
+			type: MediaType;
+			contractAddress: string;
+			chain: TChain;
+			chainId: SolanaNetworkIds;
+		}) =>
+			generateMediaForToken({
+				prompt,
+				width,
+				height,
+				type: type as "audio" | "video" | "image",
+				contractAddress,
+				chain,
+				chainId,
+			}),
+		onSuccess: (data) => {
+			if (data?.mediaUrl) {
+				const actualMediaUrl = data.mediaUrl.url;
+				const contentType = data.mediaUrl.content_type || "image";
+
+				console.log("actualMediaUrl: ", actualMediaUrl);
+				console.log("contentType: ", contentType);
+				console.log("data: ", data);
+
+				let mediaType: MediaType;
+				if (contentType.startsWith("video/")) {
+					mediaType = "video";
+				} else if (contentType.startsWith("audio/")) {
+					mediaType = "audio";
+				} else {
+					mediaType = "image";
+				}
+
+				if (!actualMediaUrl.startsWith("http")) {
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
+
+				addMedia(actualMediaUrl, mediaType);
+				setIsGeneratingMedia(false);
+				toast.success("Media generated successfully!");
 			} else {
 				toast.error("Error generating media: No media URL returned");
 				setIsGeneratingMedia(false);
@@ -203,6 +314,16 @@ const PromptProviderContent = ({
 		workerRefs.current = [];
 	}, []);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: yes
+	const cancelVanityGeneration = useCallback(() => {
+		if (isGeneratingAddressRef.current) {
+			setIsGeneratingAddress(false);
+			setMintKeyPair(null);
+			activeSuffixRef.current = "";
+			terminateWorkers();
+		}
+	}, [terminateWorkers]);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	const initializeAndStartWorkers = useCallback(
 		(suffix: string) => {
@@ -213,7 +334,7 @@ const PromptProviderContent = ({
 
 			terminateWorkers();
 
-			const cores = navigator.hardwareConcurrency || 2;
+			const cores = (navigator.hardwareConcurrency > 12 ? 12 : navigator.hardwareConcurrency) || 2;
 			const workersToCreate = Math.max(1, cores > 1 ? cores - 1 : 1);
 			const newWorkers: Worker[] = [];
 
@@ -344,16 +465,54 @@ const PromptProviderContent = ({
 		metadataMutation.mutate({ mediaType, prompt, contractAddress });
 	};
 
+	const generateMediaToken = ({
+		mediaType,
+		prompt,
+		contractAddress,
+		chain,
+		chainId,
+	}: {
+		mediaType: MediaType;
+		prompt?: string;
+		contractAddress?: string;
+		chain: TChain;
+		chainId: SolanaNetworkIds;
+	}) => {
+		if (!contractAddress) {
+			toast.error("Contract address is required for token media generation");
+			return;
+		}
+
+		if (!chain || !chainId) {
+			toast.error("Chain and chainId are required for token media generation");
+			return;
+		}
+
+		setIsGeneratingMedia(true);
+		generateMediaTokenMutation.mutate({
+			prompt: prompt || "",
+			width: 512,
+			height: 512,
+			type: mediaType,
+			contractAddress,
+			chain,
+			chainId,
+		});
+	};
+
 	const getTokenData = async (manual = false): Promise<TokenMetadata> => {
 		const name = watch("name") || "Untitled Token";
 		const symbol = watch("symbol") || "";
 		const description = watch("description") || "No description provided.";
 		const mintKeyPairr = mintKeyPair || Keypair.generate();
 		const buyAmount = watch("buyAmount") || 0;
+		const curveLimit = watch("curveLimit") || curveLimitConst;
+		const delayForTrade = watch("delayForTrade") || 0;
+		const tradeLimitSol = watch("tradeLimitSol") || 0;
 
 		const remoteMetadata = await remoteMetadataMutation.mutateAsync({
 			imageUrl: !manual && previousImages[0] ? previousImages[0] : undefined,
-			image: manual ? uploadedImage : previousImages[0],
+			image: manual ? (uploadedImage ?? undefined) : previousImages[0],
 			metadata: {
 				name,
 				description,
@@ -378,12 +537,19 @@ const PromptProviderContent = ({
 			mintKeyPair: mintKeyPairr,
 			buyAmount,
 			metadataUrl,
+			curveLimit: Number(curveLimit),
+			delayForTrade: Number(delayForTrade),
+			tradeLimitSol: Number(tradeLimitSol),
 		};
 	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	useEffect(() => {
 		generateAddress(INITIAL_GENERATION_SUFFIX);
+		generateToken({
+			mediaType: "image",
+			prompt: "",
+		});
 	}, []);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
@@ -398,6 +564,7 @@ const PromptProviderContent = ({
 	}, [terminateWorkers]);
 
 	const contextValue: PromptContextType = {
+		control,
 		registerForm: register,
 		handleSubmit,
 		formState,
@@ -406,6 +573,7 @@ const PromptProviderContent = ({
 		isGeneratingAddress: isGeneratingAddressState,
 		isGeneratingMedia,
 		generateToken,
+		generateMediaToken,
 		changeMainImage,
 		changeMainMedia,
 		previousImages,
@@ -424,6 +592,9 @@ const PromptProviderContent = ({
 		deleteImage,
 		deleteMedia,
 		addMedia,
+		terminateWorkers,
+		cancelVanityGeneration,
+		setMintKeyPair,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;
@@ -459,4 +630,21 @@ export const descriptionValidation: RegisterOptions<TokenFormData, "description"
 	required: "Description is required",
 	minLength: { value: 10, message: "Description must be at least 10 characters long" },
 	maxLength: { value: 200, message: "Description must be at most 1000 characters long" },
+};
+
+export const curveLimitValidation: RegisterOptions<TokenFormData, "curveLimit"> = {
+	valueAsNumber: true,
+	required: "Curve limit is required",
+	min: { value: 0, message: "Curve limit must be ≥ 0" }, // we will change this to 113 in mainnet
+	max: {
+		value: Number(curveLimitConst) || 675,
+		message: `Curve limit must be ≤ ${curveLimitConst || 675}`,
+	},
+};
+
+export const tradeLimitValidation: RegisterOptions<TokenFormData, "tradeLimitSol"> = {
+	valueAsNumber: true,
+	required: "Trade limit is required",
+	min: { value: 0, message: "Trade limit must be ≥ 0" },
+	max: { value: 100, message: "Trade limit must be ≤ 100" },
 };

@@ -32,7 +32,7 @@ export async function getBondingCurveData(
 	const curveLimit = info.curveLimit || Number(process.env.CURVE_LIMIT) || 1000000000;
 	const currentPrice = info.priceSOL || 0;
 	const marketCapUSD = info.marketCapUSD || 0;
-	const tokenPriceUSD = info.priceUSD || 0;
+	const tokenPriceUSD = info.priceUsd || 0;
 	const curveProgress = info.curveProgress || 0;
 
 	return {
