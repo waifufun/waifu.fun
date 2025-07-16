@@ -50,13 +50,13 @@ export default function ProfileHeader({
 							<div className="flex items-center gap-1">
 								<span className="text-sm">Total Points</span>
 							</div>
-							<p className="font-semibold text-[#03FF24] text-base">{formatNumber(data.totalPoints, true, true)}</p>
+							<p className="font-semibold text-[#03FF24] text-base">{formatNumber(data.totalPoints, false, true)}</p>
 						</div>
 						<div className="flex justify-between items-center w-full px-0 py-1">
 							<div className="flex items-center gap-1">
 								<span className="text-sm">Weekly Points</span>
 							</div>
-							<p className="font-semibold text-yellow-400  text-base">{formatNumber(data.weeklyPoints, true, true)}</p>
+							<p className="font-semibold text-yellow-400  text-base">{formatNumber(data.weeklyPoints, false, true)}</p>
 						</div>
 					</div>
 				) : null}
