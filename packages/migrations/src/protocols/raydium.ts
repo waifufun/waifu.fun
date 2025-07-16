@@ -50,7 +50,7 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			state.primarySolAmount = extraData.primaryAmountSol;
 			state.secondaryTokenAmount = extraData.secondaryAmount;
 			state.secondarySolAmount = extraData.secondaryAmountSol;
-			state.poolId = poolAddresses.id;
+			state.poolId = (poolAddresses && typeof poolAddresses === "object" && "id" in poolAddresses) ? (poolAddresses as { id: string }).id : undefined;
 		},
 		rollback: async (context: RaydiumMigrationContext) => {
 			throw new Error("Not implemented");

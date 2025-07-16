@@ -15,10 +15,8 @@ import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/c
 import type { SolanaNetworkIds } from "@autofun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
-import { Program, AnchorProvider, type Idl, type Wallet } from "@coral-xyz/anchor";
+import { AnchorProvider, type Wallet, type Program } from "@coral-xyz/anchor";
 import BN from "bn.js";
-import idl from "./idls/autofun.json";
-import idl_legacy from "./idls/autofun_legacy.json";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
 import { updateCryptoPrices } from "@autofun/utils";
 import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
@@ -26,6 +24,12 @@ import autoFunAbi from "./evm/abis/AutoFun.json";
 import { EventEmitter } from "node:events";
 import type { SlotInfo } from "@autofun/types";
 import logger from "@autofun/logger";
+import {
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
+	type CurrentAutofunTypes,
+	type LegacyAutofunTypes,
+} from "@autofun/programs";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -237,8 +241,8 @@ function withFallBack<TArgs extends unknown[], TResult>(
 export class SolanaRpcProvider extends EventEmitter {
 	public connection;
 	public client;
-	private program;
-	public program_legacy;
+	private program: Program<CurrentAutofunTypes>;
+	public program_legacy: Program<LegacyAutofunTypes>;
 	public networkId: SolanaNetworkIds;
 	private static currentRpc: SolanaRpcProvider | null = null;
 	public static currentRpcIndex = 0;
@@ -263,8 +267,9 @@ export class SolanaRpcProvider extends EventEmitter {
 		};
 
 		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
-		this.program = new Program(idl as Idl, provider);
-		this.program_legacy = new Program(idl_legacy as Idl, provider);
+
+		this.program = createCurrentAutofunProgramWithProvider(provider);
+		this.program_legacy = createLegacyAutofunProgramWithProvider(provider);
 	}
 
 	public subscribeSlot = withFallBack(async (callback: (slotInfo: SlotInfo) => void): Promise<number> => {
@@ -484,6 +489,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
 		const uri = metadata?.uri || undefined;
+		console.log("Metadata URI:", uri);
 
 		if (!uri) throw new Error("No URI could be determined for token.");
 

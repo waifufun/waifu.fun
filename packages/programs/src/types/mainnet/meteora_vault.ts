@@ -2,19 +2,16 @@
  * Program IDL in camelCase format in order to be used in JS/TS.
  *
  * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/raydium_vault.json`.
+ * IDL can be found at `target/idl/meteora_vault.json`.
  */
-export type RaydiumVault = {
-	address: "TeStUSBVoCDbKRRXX3H4Bz9w9wnDTavKVN7YtnDoK1B";
+export type MeteoraVault = {
+	address: "auto8znD4FacuJSPEfD6hpFUZTUaakso8dbEgDD1P84";
 	metadata: {
-		name: "raydiumVault";
+		name: "meteoraVault";
 		version: "0.1.0";
 		spec: "0.1.0";
 		description: "Created with Anchor";
 	};
-	docs: [
-		"* Raydium CLMM\n * devnet: devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH\n * mainnet: CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
-	];
 	instructions: [
 		{
 			name: "changeClaimer";
@@ -31,7 +28,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -42,7 +39,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 112, 111, 115, 105, 116, 105, 111, 110];
 							},
 							{
 								kind: "account";
@@ -63,8 +60,8 @@ export type RaydiumVault = {
 			];
 		},
 		{
-			name: "changeEmergencyAuthority";
-			discriminator: [14, 23, 238, 255, 180, 142, 114, 8];
+			name: "changeEmergency";
+			discriminator: [162, 172, 152, 154, 224, 204, 91, 122];
 			accounts: [
 				{
 					name: "authority";
@@ -78,7 +75,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -92,8 +89,8 @@ export type RaydiumVault = {
 			];
 		},
 		{
-			name: "changeExecutorAuthority";
-			discriminator: [158, 112, 196, 228, 59, 224, 185, 41];
+			name: "changeExecutor";
+			discriminator: [192, 236, 44, 38, 136, 100, 140, 158];
 			accounts: [
 				{
 					name: "authority";
@@ -107,7 +104,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -121,8 +118,8 @@ export type RaydiumVault = {
 			];
 		},
 		{
-			name: "changeManagerAuthority";
-			discriminator: [60, 237, 137, 28, 46, 142, 255, 123];
+			name: "changeManager";
+			discriminator: [97, 44, 74, 213, 119, 243, 203, 8];
 			accounts: [
 				{
 					name: "authority";
@@ -136,7 +133,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -150,8 +147,8 @@ export type RaydiumVault = {
 			];
 		},
 		{
-			name: "claim";
-			discriminator: [62, 198, 214, 193, 213, 159, 108, 210];
+			name: "claimPositionFee";
+			discriminator: [180, 38, 154, 17, 133, 33, 162, 211];
 			accounts: [
 				{
 					name: "authority";
@@ -164,446 +161,73 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
 				},
 				{
-					name: "userPosition";
-					pda: {
-						seeds: [
-							{
-								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110];
-							},
-							{
-								kind: "account";
-								path: "locked_liquidity.fee_nft_mint";
-								account: "lockedCpLiquidityState";
-							},
-						];
-					};
-				},
-				{
-					name: "lockingProgram";
-					address: "LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE";
-				},
-				{
-					name: "lockedAuthority";
-					pda: {
-						seeds: [
-							{
-								kind: "const";
-								value: [
-									108,
-									111,
-									99,
-									107,
-									95,
-									99,
-									112,
-									95,
-									97,
-									117,
-									116,
-									104,
-									111,
-									114,
-									105,
-									116,
-									121,
-									95,
-									115,
-									101,
-									101,
-									100,
-								];
-							},
-						];
-						program: {
-							kind: "account";
-							path: "lockingProgram";
-						};
-					};
-				},
-				{
-					name: "feeNftOwner";
-					docs: ["Fee nft owner who is allowed to receive fees"];
-				},
-				{
-					name: "feeNftAccount";
-					docs: ["Fee token account"];
-				},
-				{
-					name: "lockedLiquidity";
-					docs: ["Store the locked the information of liquidity"];
+					name: "poolAuthority";
 					writable: true;
 				},
 				{
-					name: "cpmmProgram";
-					docs: ["cpmm program"];
-					address: "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C";
-				},
-				{
-					name: "cpAuthority";
-					pda: {
-						seeds: [
-							{
-								kind: "const";
-								value: [
-									118,
-									97,
-									117,
-									108,
-									116,
-									95,
-									97,
-									110,
-									100,
-									95,
-									108,
-									112,
-									95,
-									109,
-									105,
-									110,
-									116,
-									95,
-									97,
-									117,
-									116,
-									104,
-									95,
-									115,
-									101,
-									101,
-									100,
-								];
-							},
-						];
-						program: {
-							kind: "account";
-							path: "cpmmProgram";
-						};
-					};
-				},
-				{
-					name: "poolState";
+					name: "pool";
 					writable: true;
 				},
 				{
-					name: "lpMint";
-					docs: ["The mint of liquidity token", "address = pool_state.lp_mint"];
+					name: "position";
 					writable: true;
 				},
 				{
-					name: "recipientToken0Account";
-					docs: ["The token account for receive token_0"];
-					writable: true;
-					pda: {
-						seeds: [
-							{
-								kind: "account";
-								path: "user_position.claimer";
-								account: "userPosition";
-							},
-							{
-								kind: "const";
-								value: [
-									6,
-									221,
-									246,
-									225,
-									215,
-									101,
-									161,
-									147,
-									217,
-									203,
-									225,
-									70,
-									206,
-									235,
-									121,
-									172,
-									28,
-									180,
-									133,
-									237,
-									95,
-									91,
-									55,
-									145,
-									58,
-									140,
-									245,
-									133,
-									126,
-									255,
-									0,
-									169,
-								];
-							},
-							{
-								kind: "account";
-								path: "token_0_vault.mint";
-							},
-						];
-						program: {
-							kind: "const";
-							value: [
-								140,
-								151,
-								37,
-								143,
-								78,
-								36,
-								137,
-								241,
-								187,
-								61,
-								16,
-								41,
-								20,
-								142,
-								13,
-								131,
-								11,
-								90,
-								19,
-								153,
-								218,
-								255,
-								16,
-								132,
-								4,
-								142,
-								123,
-								216,
-								219,
-								233,
-								248,
-								89,
-							];
-						};
-					};
-				},
-				{
-					name: "recipientToken1Account";
-					docs: ["The token account for receive token_1"];
-					writable: true;
-					pda: {
-						seeds: [
-							{
-								kind: "account";
-								path: "user_position.claimer";
-								account: "userPosition";
-							},
-							{
-								kind: "const";
-								value: [
-									6,
-									221,
-									246,
-									225,
-									215,
-									101,
-									161,
-									147,
-									217,
-									203,
-									225,
-									70,
-									206,
-									235,
-									121,
-									172,
-									28,
-									180,
-									133,
-									237,
-									95,
-									91,
-									55,
-									145,
-									58,
-									140,
-									245,
-									133,
-									126,
-									255,
-									0,
-									169,
-								];
-							},
-							{
-								kind: "account";
-								path: "token_1_vault.mint";
-							},
-						];
-						program: {
-							kind: "const";
-							value: [
-								140,
-								151,
-								37,
-								143,
-								78,
-								36,
-								137,
-								241,
-								187,
-								61,
-								16,
-								41,
-								20,
-								142,
-								13,
-								131,
-								11,
-								90,
-								19,
-								153,
-								218,
-								255,
-								16,
-								132,
-								4,
-								142,
-								123,
-								216,
-								219,
-								233,
-								248,
-								89,
-							];
-						};
-					};
-				},
-				{
-					name: "token0Vault";
-					docs: ["The address that holds pool tokens for token_0", "address = pool_state.token_0_vault"];
+					name: "tokenAAccount";
+					docs: ["The user token a account"];
 					writable: true;
 				},
 				{
-					name: "token1Vault";
-					docs: ["The address that holds pool tokens for token_1", "address = pool_state.token_1_vault"];
+					name: "tokenBAccount";
+					docs: ["The user token b account"];
 					writable: true;
 				},
 				{
-					name: "vault0Mint";
-					docs: ["The mint of token_0 vault"];
-				},
-				{
-					name: "vault1Mint";
-					docs: ["The mint of token_1 vault"];
-				},
-				{
-					name: "lockedLpVault";
-					docs: ["locked lp token account"];
+					name: "tokenAVault";
+					docs: ["The vault token account for input token"];
 					writable: true;
-					pda: {
-						seeds: [
-							{
-								kind: "account";
-								path: "lockedAuthority";
-							},
-							{
-								kind: "const";
-								value: [
-									6,
-									221,
-									246,
-									225,
-									215,
-									101,
-									161,
-									147,
-									217,
-									203,
-									225,
-									70,
-									206,
-									235,
-									121,
-									172,
-									28,
-									180,
-									133,
-									237,
-									95,
-									91,
-									55,
-									145,
-									58,
-									140,
-									245,
-									133,
-									126,
-									255,
-									0,
-									169,
-								];
-							},
-							{
-								kind: "account";
-								path: "lpMint";
-							},
-						];
-						program: {
-							kind: "const";
-							value: [
-								140,
-								151,
-								37,
-								143,
-								78,
-								36,
-								137,
-								241,
-								187,
-								61,
-								16,
-								41,
-								20,
-								142,
-								13,
-								131,
-								11,
-								90,
-								19,
-								153,
-								218,
-								255,
-								16,
-								132,
-								4,
-								142,
-								123,
-								216,
-								219,
-								233,
-								248,
-								89,
-							];
-						};
-					};
 				},
 				{
-					name: "tokenProgram";
-					docs: ["token Program"];
-					address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+					name: "tokenBVault";
+					docs: ["The vault token account for output token"];
+					writable: true;
 				},
 				{
-					name: "tokenProgram2022";
-					docs: ["Token program 2022"];
-					address: "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+					name: "tokenAMint";
+					docs: ["The mint of token a"];
 				},
 				{
-					name: "memoProgram";
-					docs: ["memo program"];
-					address: "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+					name: "tokenBMint";
+					docs: ["The mint of token b"];
+				},
+				{
+					name: "positionNftAccount";
+					docs: ["The token account for nft"];
+					writable: true;
+				},
+				{
+					name: "owner";
+				},
+				{
+					name: "tokenAProgram";
+					docs: ["Token a program"];
+				},
+				{
+					name: "tokenBProgram";
+					docs: ["Token b program"];
+				},
+				{
+					name: "eventAuthority";
+				},
+				{
+					name: "dynamicAmm";
+					address: "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG";
 				},
 			];
 			args: [];
@@ -623,7 +247,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -635,7 +259,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 112, 111, 115, 105, 116, 105, 111, 110];
 							},
 							{
 								kind: "account";
@@ -650,6 +274,59 @@ export type RaydiumVault = {
 				{
 					name: "fromAccount";
 					writable: true;
+					pda: {
+						seeds: [
+							{
+								kind: "account";
+								path: "authority";
+							},
+							{
+								kind: "account";
+								path: "tokenProgram";
+							},
+							{
+								kind: "account";
+								path: "positionNft";
+							},
+						];
+						program: {
+							kind: "const";
+							value: [
+								140,
+								151,
+								37,
+								143,
+								78,
+								36,
+								137,
+								241,
+								187,
+								61,
+								16,
+								41,
+								20,
+								142,
+								13,
+								131,
+								11,
+								90,
+								19,
+								153,
+								218,
+								255,
+								16,
+								132,
+								4,
+								142,
+								123,
+								216,
+								219,
+								233,
+								248,
+								89,
+							];
+						};
+					};
 				},
 				{
 					name: "nftTokenFaucet";
@@ -659,13 +336,13 @@ export type RaydiumVault = {
 							{
 								kind: "const";
 								value: [
+									109,
+									101,
+									116,
+									101,
+									111,
 									114,
 									97,
-									121,
-									100,
-									105,
-									117,
-									109,
 									95,
 									118,
 									97,
@@ -692,7 +369,6 @@ export type RaydiumVault = {
 				},
 				{
 					name: "tokenProgram";
-					address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 				},
 				{
 					name: "systemProgram";
@@ -721,7 +397,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -733,7 +409,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 112, 111, 115, 105, 116, 105, 111, 110];
 							},
 							{
 								kind: "account";
@@ -754,13 +430,13 @@ export type RaydiumVault = {
 							{
 								kind: "const";
 								value: [
+									109,
+									101,
+									116,
+									101,
+									111,
 									114,
 									97,
-									121,
-									100,
-									105,
-									117,
-									109,
 									95,
 									118,
 									97,
@@ -791,7 +467,6 @@ export type RaydiumVault = {
 				},
 				{
 					name: "tokenProgram";
-					address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 				},
 			];
 			args: [];
@@ -812,7 +487,7 @@ export type RaydiumVault = {
 						seeds: [
 							{
 								kind: "const";
-								value: [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
+								value: [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103];
 							},
 						];
 					};
@@ -836,10 +511,6 @@ export type RaydiumVault = {
 		},
 	];
 	accounts: [
-		{
-			name: "lockedCpLiquidityState";
-			discriminator: [25, 10, 238, 197, 207, 234, 73, 22];
-		},
 		{
 			name: "userPosition";
 			discriminator: [251, 248, 209, 245, 83, 234, 17, 27];
@@ -1050,71 +721,6 @@ export type RaydiumVault = {
 					{
 						name: "managerAuthority";
 						type: "pubkey";
-					},
-				];
-			};
-		},
-		{
-			name: "lockedCpLiquidityState";
-			type: {
-				kind: "struct";
-				fields: [
-					{
-						name: "lockedLpAmount";
-						docs: ["The Locked liquidity amount without claimed lp fee"];
-						type: "u64";
-					},
-					{
-						name: "claimedLpAmount";
-						docs: ["Claimed lp fee amount"];
-						type: "u64";
-					},
-					{
-						name: "unclaimedLpAmount";
-						docs: ["Unclaimed lp fee amount"];
-						type: "u64";
-					},
-					{
-						name: "lastLp";
-						docs: ["Last updated cp pool lp total supply"];
-						type: "u64";
-					},
-					{
-						name: "lastK";
-						docs: ["Last updated cp pool k"];
-						type: "u128";
-					},
-					{
-						name: "recentEpoch";
-						docs: ["Account update recent epoch"];
-						type: "u64";
-					},
-					{
-						name: "poolId";
-						docs: ["The ID of the pool with which this record is connected"];
-						type: "pubkey";
-					},
-					{
-						name: "feeNftMint";
-						docs: ["nft mint to check who has authority to collect fee"];
-						type: "pubkey";
-					},
-					{
-						name: "lockedOwner";
-						docs: ["The owner who has locked liquidity"];
-						type: "pubkey";
-					},
-					{
-						name: "lockedLpMint";
-						docs: ["The mint of locked lp token"];
-						type: "pubkey";
-					},
-					{
-						name: "padding";
-						docs: ["Unused bytes for future upgrades."];
-						type: {
-							array: ["u64", 8];
-						};
 					},
 				];
 			};

@@ -14,6 +14,7 @@
 	},
 	"dependencies": {
 		"@autofun/constants": "workspace:*",
+		"@autofun/programs": "workspace:*",
 		"@bprogress/next": "^3.2.12",
 		"@coral-xyz/anchor": "^0.31.1",
 		"@next/third-parties": "^15.3.2",

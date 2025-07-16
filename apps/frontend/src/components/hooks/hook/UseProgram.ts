@@ -1,8 +1,7 @@
-import IDL from "@/lib/autofun.json";
-import type { Autofun } from "@/lib/autofun";
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
+import { AnchorProvider, type Program } from "@coral-xyz/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useMemo } from "react";
+import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@autofun/programs";
 
 export const SEED_CONFIG = "config";
 export const SEED_BONDING_CURVE = "bonding_curve";
@@ -27,7 +26,7 @@ export const useProgram = () => {
 		);
 
 		// Use the imported IDL for typing, cast to any to bypass potential strict type mismatch
-		const program = new Program<Autofun>(IDL, provider);
+		const program = createCurrentAutofunProgramWithProvider(provider) as Program<CurrentAutofunTypes>;
 
 		return program;
 	}, [connection, wallet.publicKey, wallet.signAllTransactions, wallet.signTransaction]);

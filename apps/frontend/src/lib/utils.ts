@@ -17,15 +17,19 @@ import {
 	LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 
-import { AnchorProvider, BN, Program, type Idl } from "@coral-xyz/anchor";
-import idl from "./autofun.json";
-import idl_legacy from "./autofun_legacy.json";
+import { AnchorProvider, BN, type Program } from "@coral-xyz/anchor";
+
 import type { WalletContextState } from "@solana/wallet-adapter-react";
-import type { Autofun } from "./autofun";
-import type { AutofunLegacy } from "./autofun_legacy";
+
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 
 import { getLaunchAccounts } from "./pdas";
+import {
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
+	type CurrentAutofunTypes,
+	type LegacyAutofunTypes,
+} from "@autofun/programs";
 
 export type CreateTokenResponse = {
 	mintPublicKey: PublicKey;
@@ -452,13 +456,16 @@ export const retrieveQuote = async ({
 };
 
 export const getBondingCurvePDA = async (
-	program: Program<Autofun> | Program<AutofunLegacy>,
+	program: Program<CurrentAutofunTypes> | Program<LegacyAutofunTypes>,
 	tokenAddress: AddressLike,
 ) => {
 	const [bondingCurvePda] = PublicKey.findProgramAddressSync(
 		[Buffer.from("bonding_curve"), new PublicKey(tokenAddress).toBytes()],
 		program.programId,
 	);
+	if (!program.account.bondingCurve) {
+		throw new Error("program.account.bondingCurve is undefined");
+	}
 	const curve = await program.account.bondingCurve.fetch(bondingCurvePda);
 	return curve;
 };
@@ -513,13 +520,10 @@ export const getAutofunProgram = async (connection: Connection, wallet: WalletCo
 		},
 		AnchorProvider.defaultOptions(),
 	);
-
-	// Use legacy IDL for version 1, current IDL for other versions
-	const idlToUse = version === 1 ? idl_legacy : idl;
 	const program =
 		version === 1
-			? new Program<AutofunLegacy>(idlToUse as Idl, provider)
-			: new Program<Autofun>(idlToUse as Idl, provider);
+			? createLegacyAutofunProgramWithProvider(provider)
+			: createCurrentAutofunProgramWithProvider(provider);
 
 	const [configPda, _] = PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
 	const configAccount = await program.account.config.fetch(configPda);

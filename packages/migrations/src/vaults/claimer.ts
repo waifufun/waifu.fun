@@ -3,19 +3,24 @@ import { claimPositionFee } from "./meteoraVault";
 import { claim } from "./raydiumVault";
 import DB from "@autofun/database";
 import type { SolanaNetworkIds } from "@autofun/types";
-import { Program, AnchorProvider } from "@coral-xyz/anchor";
+import { AnchorProvider } from "@coral-xyz/anchor";
 import { Wallet } from "../utils/customWallet.js";
-import raydiumVaultIdl from "../vaults/programs/idl/raydium_vault.json";
-import meteoraVaultIdl from "../vaults/programs/idl/meteora_vault.json";
-import type { RaydiumVault } from "../vaults/programs/types/raydium_vault";
-import type { MeteoraVault } from "../vaults/programs/types/meteora_vault";
 import { getRpcUrl } from "../utils/getRpcUrl";
+import { Program } from "@coral-xyz/anchor";
+
+import {
+	createRaydiumVaultProgramWithProvider,
+	createMeteoraVaultProgramWithProvider,
+	type RaydiumVaultTypes,
+	type MeteoraVaultTypes,
+} from "@autofun/programs";
+
 export class Claimer {
 	private connection: Connection;
 	private provider: AnchorProvider;
 	private wallet: Wallet;
-	private raydiumVaultProgram: Program<RaydiumVault>;
-	private meteoraVaultProgram: Program<MeteoraVault>;
+	private raydiumVaultProgram: Program<RaydiumVaultTypes>;
+	private meteoraVaultProgram: Program<MeteoraVaultTypes>;
 	private SolAddress: PublicKey = new PublicKey("So11111111111111111111111111111111111111112");
 
 	constructor(chainId: SolanaNetworkIds) {
@@ -25,10 +30,10 @@ export class Claimer {
 			Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.EXECUTOR_PRIVATE_KEY || "[]"))),
 		);
 		this.provider = new AnchorProvider(this.connection, this.wallet, AnchorProvider.defaultOptions());
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		this.raydiumVaultProgram = new Program<RaydiumVault>(raydiumVaultIdl as any, this.provider);
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		this.meteoraVaultProgram = new Program<MeteoraVault>(meteoraVaultIdl as any, this.provider);
+		
+		// Initialize programs using centralized package
+		this.raydiumVaultProgram = createRaydiumVaultProgramWithProvider(this.provider);
+		this.meteoraVaultProgram = createMeteoraVaultProgramWithProvider(this.provider);
 	}
 
 	async claimMeteora(tokenMint: string): Promise<string> {
@@ -42,7 +47,6 @@ export class Claimer {
 			this.wallet.payer as Keypair,
 			this.meteoraVaultProgram,
 			new PublicKey(migration.primaryNftMint),
-			// Add other required parameters from migration state
 			new PublicKey(migration.marketId),
 			new PublicKey(tokenMint),
 			this.SolAddress,

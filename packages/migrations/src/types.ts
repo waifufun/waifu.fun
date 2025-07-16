@@ -2,10 +2,14 @@ import type { Connection } from "@solana/web3.js";
 import type { Program } from "@coral-xyz/anchor";
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { ProgramContext } from "./programs";
-import type { RaydiumVault } from "./vaults/programs/types/raydium_vault";
-import type { MeteoraVault } from "./vaults/programs/types/meteora_vault";
-import type { Autofun } from "./vaults/programs/types/autofun";
 import type { Wallet } from "./utils/customWallet";
+
+import type {
+	RaydiumVaultTypes,
+	MeteoraVaultTypes,
+	CurrentAutofunTypes,
+	LegacyAutofunTypes,
+} from "@autofun/programs";
 
 export type RpcClient = Connection;
 
@@ -100,9 +104,10 @@ export interface MigrationContext {
 	provider?: AnchorProvider;
 	program?: Program;
 	programContext?: ProgramContext;
-	raydiumVaultProgram?: Program<RaydiumVault>;
-	meteoraVaultProgram?: Program<MeteoraVault>;
-	autofunProgram?: Program<Autofun>;
+	raydiumVaultProgram?: Program<RaydiumVaultTypes>;
+	meteoraVaultProgram?: Program<MeteoraVaultTypes>;
+	autofunProgram?: Program<CurrentAutofunTypes>;
+	autofunLegacyProgram?: Program<LegacyAutofunTypes>;
 }
 
 export interface MigrationOptions {

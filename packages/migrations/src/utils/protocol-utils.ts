@@ -122,13 +122,6 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 
 	try {
 		console.log(`Starting liquidity withdrawal for token ${tokenMint}`);
-		const token = await DB.Token.findOne({ contractAddress: tokenMint });
-		if (!token) {
-			throw new Error(`Token with address ${tokenMint} not found in database`);
-		}
-		
-		const programVersion = token.version
-		const program = programVersion === 1 ? programContext.autofunLegacyProgram : programContext.autofunProgram;
 
 		// Create transaction
 		const tx = await program.methods

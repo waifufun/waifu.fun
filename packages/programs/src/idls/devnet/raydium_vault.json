@@ -1,11 +1,14 @@
 {
-	"address": "TeStvTwde9FRhwwQM3DCRogrjhwGQS9RSe3oZqcXrgM",
+	"address": "autoFENwXX1Y3V4pkUdJw7WzhF1ZT6xQsyJWkLqBcta",
 	"metadata": {
-		"name": "meteora_vault",
+		"name": "raydium_vault",
 		"version": "0.1.0",
 		"spec": "0.1.0",
 		"description": "Created with Anchor"
 	},
+	"docs": [
+		"* Raydium CLMM\n * devnet: devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH\n * mainnet: CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+	],
 	"instructions": [
 		{
 			"name": "change_claimer",
@@ -22,7 +25,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -33,7 +36,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 112, 111, 115, 105, 116, 105, 111, 110]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]
 							},
 							{
 								"kind": "account",
@@ -54,8 +57,8 @@
 			]
 		},
 		{
-			"name": "change_emergency",
-			"discriminator": [162, 172, 152, 154, 224, 204, 91, 122],
+			"name": "change_emergency_authority",
+			"discriminator": [14, 23, 238, 255, 180, 142, 114, 8],
 			"accounts": [
 				{
 					"name": "authority",
@@ -69,7 +72,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -83,8 +86,8 @@
 			]
 		},
 		{
-			"name": "change_executor",
-			"discriminator": [192, 236, 44, 38, 136, 100, 140, 158],
+			"name": "change_executor_authority",
+			"discriminator": [158, 112, 196, 228, 59, 224, 185, 41],
 			"accounts": [
 				{
 					"name": "authority",
@@ -98,7 +101,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -112,8 +115,8 @@
 			]
 		},
 		{
-			"name": "change_manager",
-			"discriminator": [97, 44, 74, 213, 119, 243, 203, 8],
+			"name": "change_manager_authority",
+			"discriminator": [60, 237, 137, 28, 46, 142, 255, 123],
 			"accounts": [
 				{
 					"name": "authority",
@@ -127,7 +130,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -141,8 +144,8 @@
 			]
 		},
 		{
-			"name": "claim_position_fee",
-			"discriminator": [180, 38, 154, 17, 133, 33, 162, 211],
+			"name": "claim",
+			"discriminator": [62, 198, 214, 193, 213, 159, 108, 210],
 			"accounts": [
 				{
 					"name": "authority",
@@ -155,73 +158,220 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
 				},
 				{
-					"name": "pool_authority",
+					"name": "user_position",
+					"pda": {
+						"seeds": [
+							{
+								"kind": "const",
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]
+							},
+							{
+								"kind": "account",
+								"path": "locked_liquidity.fee_nft_mint",
+								"account": "LockedCpLiquidityState"
+							}
+						]
+					}
+				},
+				{
+					"name": "locking_program",
+					"address": "LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE"
+				},
+				{
+					"name": "locked_authority",
+					"pda": {
+						"seeds": [
+							{
+								"kind": "const",
+								"value": [
+									108, 111, 99, 107, 95, 99, 112, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121, 95, 115, 101, 101, 100
+								]
+							}
+						],
+						"program": {
+							"kind": "account",
+							"path": "locking_program"
+						}
+					}
+				},
+				{
+					"name": "fee_nft_owner",
+					"docs": ["Fee nft owner who is allowed to receive fees"]
+				},
+				{
+					"name": "fee_nft_account",
+					"docs": ["Fee token account"]
+				},
+				{
+					"name": "locked_liquidity",
+					"docs": ["Store the locked the information of liquidity"],
 					"writable": true
 				},
 				{
-					"name": "pool",
+					"name": "cpmm_program",
+					"docs": ["cpmm program"],
+					"address": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+				},
+				{
+					"name": "cp_authority",
+					"pda": {
+						"seeds": [
+							{
+								"kind": "const",
+								"value": [
+									118, 97, 117, 108, 116, 95, 97, 110, 100, 95, 108, 112, 95, 109, 105, 110, 116, 95, 97, 117, 116, 104,
+									95, 115, 101, 101, 100
+								]
+							}
+						],
+						"program": {
+							"kind": "account",
+							"path": "cpmm_program"
+						}
+					}
+				},
+				{
+					"name": "pool_state",
 					"writable": true
 				},
 				{
-					"name": "position",
+					"name": "lp_mint",
+					"docs": ["The mint of liquidity token", "address = pool_state.lp_mint"],
 					"writable": true
 				},
 				{
-					"name": "token_a_account",
-					"docs": ["The user token a account"],
+					"name": "recipient_token_0_account",
+					"docs": ["The token account for receive token_0"],
+					"writable": true,
+					"pda": {
+						"seeds": [
+							{
+								"kind": "account",
+								"path": "user_position.claimer",
+								"account": "UserPosition"
+							},
+							{
+								"kind": "const",
+								"value": [
+									6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95,
+									91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169
+								]
+							},
+							{
+								"kind": "account",
+								"path": "token_0_vault.mint"
+							}
+						],
+						"program": {
+							"kind": "const",
+							"value": [
+								140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16,
+								132, 4, 142, 123, 216, 219, 233, 248, 89
+							]
+						}
+					}
+				},
+				{
+					"name": "recipient_token_1_account",
+					"docs": ["The token account for receive token_1"],
+					"writable": true,
+					"pda": {
+						"seeds": [
+							{
+								"kind": "account",
+								"path": "user_position.claimer",
+								"account": "UserPosition"
+							},
+							{
+								"kind": "const",
+								"value": [
+									6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95,
+									91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169
+								]
+							},
+							{
+								"kind": "account",
+								"path": "token_1_vault.mint"
+							}
+						],
+						"program": {
+							"kind": "const",
+							"value": [
+								140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16,
+								132, 4, 142, 123, 216, 219, 233, 248, 89
+							]
+						}
+					}
+				},
+				{
+					"name": "token_0_vault",
+					"docs": ["The address that holds pool tokens for token_0", "address = pool_state.token_0_vault"],
 					"writable": true
 				},
 				{
-					"name": "token_b_account",
-					"docs": ["The user token b account"],
+					"name": "token_1_vault",
+					"docs": ["The address that holds pool tokens for token_1", "address = pool_state.token_1_vault"],
 					"writable": true
 				},
 				{
-					"name": "token_a_vault",
-					"docs": ["The vault token account for input token"],
-					"writable": true
+					"name": "vault_0_mint",
+					"docs": ["The mint of token_0 vault"]
 				},
 				{
-					"name": "token_b_vault",
-					"docs": ["The vault token account for output token"],
-					"writable": true
+					"name": "vault_1_mint",
+					"docs": ["The mint of token_1 vault"]
 				},
 				{
-					"name": "token_a_mint",
-					"docs": ["The mint of token a"]
+					"name": "locked_lp_vault",
+					"docs": ["locked lp token account"],
+					"writable": true,
+					"pda": {
+						"seeds": [
+							{
+								"kind": "account",
+								"path": "locked_authority"
+							},
+							{
+								"kind": "const",
+								"value": [
+									6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95,
+									91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169
+								]
+							},
+							{
+								"kind": "account",
+								"path": "lp_mint"
+							}
+						],
+						"program": {
+							"kind": "const",
+							"value": [
+								140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16,
+								132, 4, 142, 123, 216, 219, 233, 248, 89
+							]
+						}
+					}
 				},
 				{
-					"name": "token_b_mint",
-					"docs": ["The mint of token b"]
+					"name": "token_program",
+					"docs": ["token Program"],
+					"address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 				},
 				{
-					"name": "position_nft_account",
-					"docs": ["The token account for nft"],
-					"writable": true
+					"name": "token_program_2022",
+					"docs": ["Token program 2022"],
+					"address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 				},
 				{
-					"name": "owner"
-				},
-				{
-					"name": "token_a_program",
-					"docs": ["Token a program"]
-				},
-				{
-					"name": "token_b_program",
-					"docs": ["Token b program"]
-				},
-				{
-					"name": "event_authority"
-				},
-				{
-					"name": "dynamic_amm",
-					"address": "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG"
+					"name": "memo_program",
+					"docs": ["memo program"],
+					"address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
 				}
 			],
 			"args": []
@@ -241,7 +391,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -253,7 +403,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 112, 111, 115, 105, 116, 105, 111, 110]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]
 							},
 							{
 								"kind": "account",
@@ -267,30 +417,7 @@
 				},
 				{
 					"name": "from_account",
-					"writable": true,
-					"pda": {
-						"seeds": [
-							{
-								"kind": "account",
-								"path": "authority"
-							},
-							{
-								"kind": "account",
-								"path": "token_program"
-							},
-							{
-								"kind": "account",
-								"path": "position_nft"
-							}
-						],
-						"program": {
-							"kind": "const",
-							"value": [
-								140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16,
-								132, 4, 142, 123, 216, 219, 233, 248, 89
-							]
-						}
-					}
+					"writable": true
 				},
 				{
 					"name": "nft_token_faucet",
@@ -300,7 +427,7 @@
 							{
 								"kind": "const",
 								"value": [
-									109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 110, 102, 116, 95, 115, 101, 101,
+									114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 110, 102, 116, 95, 115, 101, 101,
 									100
 								]
 							},
@@ -312,7 +439,8 @@
 					}
 				},
 				{
-					"name": "token_program"
+					"name": "token_program",
+					"address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 				},
 				{
 					"name": "system_program",
@@ -341,7 +469,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -353,7 +481,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 112, 111, 115, 105, 116, 105, 111, 110]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]
 							},
 							{
 								"kind": "account",
@@ -374,7 +502,7 @@
 							{
 								"kind": "const",
 								"value": [
-									109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 110, 102, 116, 95, 115, 101, 101,
+									114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 110, 102, 116, 95, 115, 101, 101,
 									100
 								]
 							},
@@ -390,7 +518,8 @@
 					"writable": true
 				},
 				{
-					"name": "token_program"
+					"name": "token_program",
+					"address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 				}
 			],
 			"args": []
@@ -411,7 +540,7 @@
 						"seeds": [
 							{
 								"kind": "const",
-								"value": [109, 101, 116, 101, 111, 114, 97, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
+								"value": [114, 97, 121, 100, 105, 117, 109, 95, 118, 97, 117, 108, 116, 95, 99, 111, 110, 102, 105, 103]
 							}
 						]
 					}
@@ -435,6 +564,10 @@
 		}
 	],
 	"accounts": [
+		{
+			"name": "LockedCpLiquidityState",
+			"discriminator": [25, 10, 238, 197, 207, 234, 73, 22]
+		},
 		{
 			"name": "UserPosition",
 			"discriminator": [251, 248, 209, 245, 83, 234, 17, 27]
@@ -645,6 +778,71 @@
 					{
 						"name": "manager_authority",
 						"type": "pubkey"
+					}
+				]
+			}
+		},
+		{
+			"name": "LockedCpLiquidityState",
+			"type": {
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "locked_lp_amount",
+						"docs": ["The Locked liquidity amount without claimed lp fee"],
+						"type": "u64"
+					},
+					{
+						"name": "claimed_lp_amount",
+						"docs": ["Claimed lp fee amount"],
+						"type": "u64"
+					},
+					{
+						"name": "unclaimed_lp_amount",
+						"docs": ["Unclaimed lp fee amount"],
+						"type": "u64"
+					},
+					{
+						"name": "last_lp",
+						"docs": ["Last updated cp pool lp total supply"],
+						"type": "u64"
+					},
+					{
+						"name": "last_k",
+						"docs": ["Last updated cp pool k"],
+						"type": "u128"
+					},
+					{
+						"name": "recent_epoch",
+						"docs": ["Account update recent epoch"],
+						"type": "u64"
+					},
+					{
+						"name": "pool_id",
+						"docs": ["The ID of the pool with which this record is connected"],
+						"type": "pubkey"
+					},
+					{
+						"name": "fee_nft_mint",
+						"docs": ["nft mint to check who has authority to collect fee"],
+						"type": "pubkey"
+					},
+					{
+						"name": "locked_owner",
+						"docs": ["The owner who has locked liquidity"],
+						"type": "pubkey"
+					},
+					{
+						"name": "locked_lp_mint",
+						"docs": ["The mint of locked lp token"],
+						"type": "pubkey"
+					},
+					{
+						"name": "padding",
+						"docs": ["Unused bytes for future upgrades."],
+						"type": {
+							"array": ["u64", 8]
+						}
 					}
 				]
 			}

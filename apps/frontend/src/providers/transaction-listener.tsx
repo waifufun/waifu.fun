@@ -142,7 +142,6 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		[connection, setPendingTransactions, showTransactionToast],
 	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	const monitorTransaction = useCallback(
 		async (transaction: PendingTransaction) => {
 			if (!connection) {
