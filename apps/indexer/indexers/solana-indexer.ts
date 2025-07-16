@@ -105,7 +105,6 @@ export class SolanaIndexer extends BaseIndexer {
 	}
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async saveBatchEvents(events: any[]): Promise<void> {
-		console.log(`Saving ${events.length} events to database...`);
 		if (events.length === 0) return;
 
 		await this.safeAsyncOperation(

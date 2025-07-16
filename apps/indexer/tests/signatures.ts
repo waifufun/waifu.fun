@@ -14,8 +14,6 @@ async function processSignature(signature: string): Promise<any[]> {
 
 	const events = processor.processTransaction(transaction, transaction.blockTime || 0, transaction.slot);
 
-	console.log("events: ", events);
-
 	return events;
 }
 
