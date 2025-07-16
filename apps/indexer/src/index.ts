@@ -6,7 +6,7 @@ import type { SolanaIndexerConfig } from "../types";
 
 const config: SolanaIndexerConfig = {
 	networkId: process.env.NETWORK === "devnet" ? SolanaNetworkIds.Devnet : SolanaNetworkIds.Mainnet,
-	autoFunAddress: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS" as SolanaAddressLike,
+	autoFunAddress: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA" as SolanaAddressLike,
 	maxSignatures: 70,
 	debugStatements: true,
 };

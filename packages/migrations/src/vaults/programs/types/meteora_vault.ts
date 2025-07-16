@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/meteora_vault.json`.
  */
 export type MeteoraVault = {
-	address: "TeStvTwde9FRhwwQM3DCRogrjhwGQS9RSe3oZqcXrgM";
+	address: "auto8znD4FacuJSPEfD6hpFUZTUaakso8dbEgDD1P84";
 	metadata: {
 		name: "meteoraVault";
 		version: "0.1.0";

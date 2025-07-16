@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/autofun.json`.
  */
 export type Autofun = {
-	address: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS";
+	address: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA";
 	metadata: {
 		name: "autofun";
 		version: "0.1.0";
