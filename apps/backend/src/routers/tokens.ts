@@ -249,6 +249,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					chainId as unknown as SolanaNetworkIds,
 					Number(metadata.totalSupply) || 0,
 					Number(metadata.decimals) || 9,
+					existingToken.version,
 				);
 			} catch (error) {
 				console.error("Error getting bonding curve data:", error);

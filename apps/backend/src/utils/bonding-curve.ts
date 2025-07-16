@@ -20,9 +20,10 @@ export async function getBondingCurveData(
 	chainId: SolanaNetworkIds,
 	totalSupply: number,
 	decimals: number,
+	version = 2,
 ): Promise<BondingCurveData> {
 	const rpc = new SolanaRpcProvider(chainId);
-	const bondingCurveInfo = await rpc.getBondingCurveInfo([contractAddress]);
+	const bondingCurveInfo = await rpc.getBondingCurveInfo([contractAddress], version);
 	if (!bondingCurveInfo || bondingCurveInfo.length === 0 || !bondingCurveInfo[0]) {
 		throw new Error(`Bonding curve account not found for token ${contractAddress}`);
 	}
