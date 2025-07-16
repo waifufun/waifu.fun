@@ -795,7 +795,6 @@ export const createTokenTx = async (
 	console.log("decimals:", process.env.NEXT_PUBLIC_DECIMALS);
 
 	const { program, configAccount } = await getAutofunProgram(connection, wallet, 2);
-	const typedProgram = program as Program<Autofun>;
 	if (!wallet?.publicKey) throw new Error("Wallet not correctly initialized");
 	const address = wallet.publicKey.toBase58();
 
