@@ -25,17 +25,10 @@ export const AUTOFUN_PROGRAM_ID = new web3.PublicKey(getCurrentProgramAddress())
 export const AUTOFUN_LEGACY_PROGRAM_ID = new web3.PublicKey(getLegacyProgramAddress());
 
 export interface ProgramContext {
-<<<<<<< HEAD
 	raydiumVaultProgram: Program<RaydiumVaultTypes>; 
 	meteoraVaultProgram: Program<MeteoraVaultTypes>; 
 	autofunProgram: Program<CurrentAutofunTypes>; 
 	autofunLegacyProgram?: Program<LegacyAutofunTypes>; 
-=======
-	raydiumVaultProgram: Program<RaydiumVault>;
-	meteoraVaultProgram: Program<MeteoraVault>;
-	autofunProgram: Program<Autofun>;
-	autofunLegacyProgram: Program<AutofunLegacy>;
->>>>>>> e5ea85a8227ffa0cdb9d54f69bd77ab760131d51
 	provider: AnchorProvider;
 	wallet: Wallet;
 }
