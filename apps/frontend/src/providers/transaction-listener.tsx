@@ -200,7 +200,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				monitoringRef.current.delete(transaction.signature);
 			}
 		},
-		[connection, setPendingTransactions, checkTransactionStatus, showTransactionToast],
+		[connection, setPendingTransactions, checkTransactionStatus, showTransactionToast, queryClient],
 	);
 
 	const clearConfirmedTransactions = useCallback(() => {
