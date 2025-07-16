@@ -10,6 +10,10 @@ const config: SolanaIndexerConfig = {
 	autoFunAddressLegacy: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
 	maxSignatures: 10,
 	debugStatements: false,
+	maxBlock: {
+		legacy: 353572944,
+		v2: Number.POSITIVE_INFINITY,
+	},
 };
 
 const indexer = new SolanaIndexer(config);

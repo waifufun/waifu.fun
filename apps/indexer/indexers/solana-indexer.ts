@@ -27,8 +27,13 @@ export class SolanaIndexer extends BaseIndexer {
 		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		this.STOP_AT_SLOT = this.config.minBlock!;
 		this.processors = [
-			new SolanaTransactionProcessor(this.config.autoFunAddressLegacy, this.debugStatements, "legacy"),
-			new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements, "v2"),
+			new SolanaTransactionProcessor(
+				this.config.autoFunAddressLegacy,
+				this.debugStatements,
+				"legacy",
+				this.config.maxBlock.legacy,
+			),
+			new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements, "v2", this.config.maxBlock.v2),
 		];
 	}
 
@@ -201,7 +206,9 @@ export class SolanaIndexer extends BaseIndexer {
 					}
 
 					const events = this.processors.flatMap((processor) =>
-						processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot),
+						transaction.slot <= processor.maxBlock
+							? processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot)
+							: [],
 					);
 
 					if (events.length > 0 && this.debugStatements) {

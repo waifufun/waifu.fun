@@ -13,11 +13,13 @@ export class SolanaTransactionProcessor {
 	private rpc: SolanaRpcProvider;
 	private version: "legacy" | "v2";
 	private instructionDecoder: SolanaInstructionDecoder;
+	public readonly maxBlock: number;
 
 	constructor(
 		private autoFunAddress: string,
 		private debugStatements = false,
 		version: "legacy" | "v2" = "v2",
+		maxBlock: number = Number.POSITIVE_INFINITY,
 	) {
 		// Initialize RPC provider based on environment
 		const networkId = process.env.NETWORK === "mainnet" ? 101 : 103;
@@ -28,6 +30,7 @@ export class SolanaTransactionProcessor {
 		} else {
 			this.instructionDecoder = new SolanaInstructionDecoderLegacy();
 		}
+		this.maxBlock = maxBlock;
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>

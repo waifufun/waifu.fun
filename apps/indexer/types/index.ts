@@ -33,6 +33,10 @@ export interface SolanaIndexerConfig extends IndexerConfig {
 	autoFunAddressLegacy: SolanaAddressLike;
 	maxSignatures?: number;
 	beforeSignature?: string;
+	maxBlock: {
+		legacy: number;
+		v2: number;
+	};
 }
 
 export interface ProcessingStats {
