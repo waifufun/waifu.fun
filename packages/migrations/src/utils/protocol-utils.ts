@@ -124,7 +124,7 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 		console.log(`Starting liquidity withdrawal for token ${tokenMint}`);
 
 		// Create transaction
-		const tx = await programContext.autofunProgram.methods
+		const tx = await program.methods
 			.withdraw()
 			.accounts({
 				admin: wallet.publicKey,
