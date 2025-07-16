@@ -206,9 +206,7 @@ export class SolanaIndexer extends BaseIndexer {
 					}
 
 					const events = this.processors.flatMap((processor) =>
-						transaction.slot <= processor.maxBlock
-							? processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot)
-							: [],
+						processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot),
 					);
 
 					if (events.length > 0 && this.debugStatements) {

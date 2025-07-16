@@ -170,6 +170,18 @@ export class SolanaTransactionProcessor {
 			);
 
 			if (decodedInstruction.type !== "unknown") {
+				if (
+					this.maxBlock &&
+					slot > this.maxBlock &&
+					(decodedInstruction.type === "launch" || decodedInstruction.type === "launchAndSwap")
+				) {
+					// we don't want to process launch events beyond maxBlock
+					if (this.debugStatements) {
+						logger.warn(`Skipping instruction in block ${slot} as it exceeds maxBlock limit`);
+					}
+					continue;
+				}
+
 				const eventData = this.createEventData(
 					signatures[0],
 					slot,
