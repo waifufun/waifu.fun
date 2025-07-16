@@ -484,7 +484,6 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		const metadata = await metaplex.nfts().findByMint({ mintAddress: mint });
 		const uri = metadata?.uri || undefined;
-		console.log("Metadata URI:", uri);
 
 		if (!uri) throw new Error("No URI could be determined for token.");
 

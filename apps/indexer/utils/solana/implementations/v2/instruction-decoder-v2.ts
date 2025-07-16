@@ -1,15 +1,10 @@
-import { instructions as IDLInstructions } from "../../abi/autofun";
-import type { DecodedInstruction } from "../../types";
+import { instructions as IDLInstructions } from "../../../../abi/solana/v2/autofun";
+import type { DecodedInstruction } from "../../../../types";
+import { SolanaInstructionDecoder } from "../../abstract/instruction-decoder";
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
-export class SolanaInstructionDecoder {
-	private static arraysEqual(a: number[], b: number[]): boolean {
-		return a.length === b.length && a.every((val, i) => val === b[i]);
-	}
-
-	static decodeAutofunInstruction(instructionData: Buffer, accounts: string[]): DecodedInstruction {
+export class SolanaInstructionDecoderV2 extends SolanaInstructionDecoder {
+	public decodeAutofunInstruction(instructionData: Buffer, accounts: string[]): DecodedInstruction {
 		const discriminator = Array.from(instructionData.slice(0, 8));
-		// biome-ignore lint/complexity/noThisInStatic: <explanation>
 		if (this.arraysEqual(discriminator, IDLInstructions.launch.d8)) {
 			return {
 				type: "launch",
@@ -20,7 +15,6 @@ export class SolanaInstructionDecoder {
 			};
 		}
 
-		// biome-ignore lint/complexity/noThisInStatic: <explanation>
 		if (this.arraysEqual(discriminator, IDLInstructions.swap.d8)) {
 			return {
 				type: "swap",
@@ -30,7 +24,6 @@ export class SolanaInstructionDecoder {
 				accounts,
 			};
 		}
-		// biome-ignore lint/complexity/noThisInStatic: <explanation>
 		if (this.arraysEqual(discriminator, IDLInstructions.launchAndSwap.d8)) {
 			return {
 				type: "launchAndSwap",
@@ -41,7 +34,6 @@ export class SolanaInstructionDecoder {
 			};
 		}
 
-		// biome-ignore lint/complexity/noThisInStatic: <explanation>
 		if (this.arraysEqual(discriminator, IDLInstructions.withdraw.d8)) {
 			return {
 				type: "withdraw",
