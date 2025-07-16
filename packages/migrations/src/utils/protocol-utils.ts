@@ -122,11 +122,16 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 
 	try {
 		console.log(`Starting liquidity withdrawal for token ${tokenMint}`);
-	{	/* TO do malibu: add the possibility for legacy tokens to be withdrawn , in order to migrate
-		Legacy tokens should migrate to meteora and be branded v2 once that is done */ }
+		const token = await DB.Token.findOne({ contractAddress: tokenMint });
+		if (!token) {
+			throw new Error(`Token with address ${tokenMint} not found in database`);
+		}
+		
+		const programVersion = token.version
+		const program = programVersion === 1 ? programContext.autofunLegacyProgram : programContext.autofunProgram;
 
 		// Create transaction
-		const tx = await programContext.autofunProgram.methods
+		const tx = await program.methods
 			.withdraw()
 			.accounts({
 				admin: wallet.publicKey,

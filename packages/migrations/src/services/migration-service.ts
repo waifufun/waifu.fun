@@ -116,6 +116,7 @@ export class MigrationService {
 						logger.warn(`Token not found for contract address ${contractAddress}, skipping event ${event._id}`);
 						continue;
 					}
+					const tokenVersion = token.version;
 					// Check if migration already exists
 					const existingMigration = await this.db.Migration.findOne({
 						contractAddress,
@@ -125,7 +126,19 @@ export class MigrationService {
 						logger.info(`Migration for ${contractAddress} already exists, skipping`);
 						continue;
 					}
-					const protocol = token.pool?.toLowerCase();
+					
+					// For version 1 tokens (legacy), use Meteora by default
+					let protocol = token.pool?.toLowerCase();
+					if (tokenVersion === 1) {
+						protocol = "meteora";
+						// Update the token's protocol in the database
+						await this.db.Token.updateOne(
+							{ contractAddress },
+							{ $set: { pool: "meteora" } }
+						);
+						logger.info(`Set protocol to Meteora for legacy token ${contractAddress}`);
+					}
+					
 					if (!protocol || (protocol !== "raydium" && protocol !== "meteora")) {
 						logger.warn(
 							`Unsupported protocol ${protocol} for contract address ${contractAddress}, skipping event ${event._id}`,
@@ -158,7 +171,7 @@ export class MigrationService {
 						creator: token.creator || "unknown",
 						chain: "solana" as const,
 						chainId: chainId,
-						version: 2,
+						version: tokenVersion,
 					} as unknown as IMigration;
 
 					await this.db.Migration.create(newMigration);

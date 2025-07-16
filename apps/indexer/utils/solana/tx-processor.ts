@@ -87,6 +87,8 @@ export class SolanaTransactionProcessor {
 				marketcap: 0,
 				tokenSupply: eventData.tokenSupply || "0",
 				virtualLamportReserves: eventData.virtualLamportReserves || "0",
+				version: 2,
+				pool: "meteora",
 			};
 
 			const newToken = await DB.Token.create(tokenData);

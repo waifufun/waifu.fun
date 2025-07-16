@@ -24,7 +24,7 @@ export interface ProgramContext {
 	raydiumVaultProgram: Program<RaydiumVault>;
 	meteoraVaultProgram: Program<MeteoraVault>;
 	autofunProgram: Program<Autofun>;
-	autofunLegacyProgram?: Program<AutofunLegacy>;
+	autofunLegacyProgram: Program<AutofunLegacy>;
 	provider: AnchorProvider;
 	wallet: Wallet;
 }
