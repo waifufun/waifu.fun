@@ -322,9 +322,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					{tradingStarted ? (
 						<Button
 							disabled={
-								address
+								token.status === "migrating" ||
+								(address
 									? swapMutation?.isPending || tooHighBuyAmount || insufficientBalance || !value || value === "0"
-									: false
+									: false)
 							}
 							onClick={() => {
 								if (!address) {
@@ -335,15 +336,17 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							}}
 							className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
 						>
-							{!address
-								? "Connect"
-								: swapMutation?.isPending
-									? "Loading..."
-									: insufficientBalance
-										? "Insufficient balance"
-										: tooHighBuyAmount
-											? "Amount too high"
-											: "Swap"}
+							{token.status === "migrating"
+								? "Token migrating"
+								: !address
+									? "Connect"
+									: swapMutation?.isPending
+										? "Loading..."
+										: insufficientBalance
+											? "Insufficient balance"
+											: tooHighBuyAmount
+												? "Amount too high"
+												: "Swap"}
 						</Button>
 					) : (
 						<Tooltip>
