@@ -7,8 +7,13 @@ import type { SolanaIndexerConfig } from "../types";
 const config: SolanaIndexerConfig = {
 	networkId: process.env.NETWORK === "devnet" ? SolanaNetworkIds.Devnet : SolanaNetworkIds.Mainnet,
 	autoFunAddress: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA" as SolanaAddressLike,
-	maxSignatures: 70,
-	debugStatements: true,
+	autoFunAddressLegacy: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
+	maxSignatures: 10,
+	debugStatements: false,
+	maxBlock: {
+		legacy: 353572944,
+		v2: Number.POSITIVE_INFINITY,
+	},
 };
 
 const indexer = new SolanaIndexer(config);
