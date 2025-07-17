@@ -7,7 +7,8 @@ interface ChartProps {
 }
 
 export default function Chart({ token }: ChartProps) {
-	const curveCompleted = (token?.curveCompleted && !(token?.status !== "migrating")) || token?.imported;
+	const isMigrated = token?.status === "migrated" || token?.status === "locked";
+	const curveCompleted = (token?.curveCompleted && isMigrated) || token?.imported;
 
 	if (curveCompleted) {
 		return (

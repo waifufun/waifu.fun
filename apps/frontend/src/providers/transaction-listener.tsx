@@ -166,17 +166,15 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 
 				const success = !confirmation.value.err;
 
-				if (success) {
-					queryClient.invalidateQueries({
-						queryKey: ["balance"],
-					});
-					queryClient.invalidateQueries({
-						queryKey: ["chart"],
-					});
-					queryClient.invalidateQueries({
-						queryKey: ["trades"],
-					});
-				}
+				queryClient.invalidateQueries({
+					queryKey: ["balance"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["chart"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["trades"],
+				});
 
 				setPendingTransactions((prev) =>
 					prev.map((tx) => (tx.signature === transaction.signature ? { ...tx, confirmed: true } : tx)),
