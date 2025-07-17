@@ -29,7 +29,7 @@ export default function PageClient({
 		queryKey: ["token", initialData.chain, initialData.chainId, initialData.contractAddress],
 		queryFn: async () => {
 			const token = (await getToken(tokenParams)) as IToken;
-			console.log(token)
+
 			return token;
 		},
 		refetchInterval: 5_000,
