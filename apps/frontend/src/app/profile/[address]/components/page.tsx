@@ -47,6 +47,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	});
 
 	const transactions = query?.data?.docs ?? [];
+	console.log("transactions ->", transactions);
 	const user = balances?.user;
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
@@ -104,6 +105,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												<TokenRow
 													mode="wallet"
 													key={balance.tokenAddress}
+													verified={balance.verified}
 													data={{
 														chain: "solana",
 														chainId: 101,
@@ -146,6 +148,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											tokensCreated.map((token) => (
 												<TokenRow
 													mode="wallet"
+													verified={tokensCreated.verified}
 													key={token.contractAddress}
 													data={{
 														chain: "solana",
@@ -182,6 +185,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 													<TokenRow
 														mode="activity"
 														key={transaction._id}
+														verified={transaction.verified}
 														data={{
 															chain: "solana",
 															chainId: 101,

@@ -272,6 +272,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			return {
 				...tx,
 				tokenName: tokenInfo?.name,
+				verified: tokenInfo?.verified,
 				image: tokenInfo?.image,
 				tokenTicker: tokenInfo?.ticker,
 			};
