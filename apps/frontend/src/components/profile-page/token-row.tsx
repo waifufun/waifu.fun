@@ -5,10 +5,12 @@ import type { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
 import type { TChain } from "@autofun/types";
 import { ExternalLink } from "lucide-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import Verified from "../verified";
 
 export default function TokenRow({
 	data,
 	mode = "activity",
+	verified,
 }: {
 	data: {
 		image: string;
@@ -28,6 +30,7 @@ export default function TokenRow({
 		signature?: string;
 	};
 	mode?: "activity" | "wallet" | "points";
+	verified?: boolean;
 }) {
 	// const key = `${data.chain}_${data.chainId}`;
 	// const chainIcons: Record<string, { name: string; icon: string }> = {
@@ -64,24 +67,25 @@ export default function TokenRow({
 						"N/A"
 					)}
 				</Link>
-
-				<div className="flex flex-col justify-center h-full min-w-0 pr-2">
-					<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
-						<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
-							<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-autofun-background-action-highlight text-white cursor-pointer">
-								{data.title}
-							</p>
-						</Link>
-						<p className="text-[10px] sm:text-xs text-[#8C8C8C] leading-none flex-shrink-0">${data.ticker}</p>
+				<div className="flex items-start gap-2 h-full min-w-0 pr-2">
+					<div className="flex flex-col justify-center min-w-0">
+						<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
+							<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
+								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-autofun-background-action-highlight text-white cursor-pointer">
+									{data.title}
+								</p>
+							</Link>
+							<p className="text-[10px] sm:text-xs text-[#8C8C8C] leading-none flex-shrink-0">${data.ticker}</p>
+						</div>
+						<p className="text-[9px] sm:text-xs text-[#8C8C8C] leading-none flex gap-x-1 items-center overflow-hidden mt-1">
+							<CopyButton
+								className="h-[8px] w-[8px] sm:h-[10px] sm:w-[10px] flex-shrink-0"
+								textToCopy={data.contractAddress}
+							/>
+							<span className="truncate">{`${data?.contractAddress?.slice(0, 4)}...${data?.contractAddress?.slice(-3)}`}</span>
+						</p>
 					</div>
-
-					<p className="text-[9px] sm:text-xs text-[#8C8C8C] leading-none flex gap-x-1 items-center justify-items-center flex-nowrap overflow-hidden mt-1">
-						<CopyButton
-							className="h-[8px] w-[8px] sm:h-[10px] sm:w-[10px] flex-shrink-0"
-							textToCopy={data.contractAddress}
-						/>{" "}
-						<span className="truncate">{`${data?.contractAddress?.slice(0, 4)}...${data?.contractAddress?.slice(-3)}`}</span>
-					</p>
+					<div className="-mt-1 size-4">{verified && <Verified isVerified={true} />}</div>
 				</div>
 			</div>
 
