@@ -454,8 +454,6 @@ export class SolanaIndexer extends BaseIndexer {
 					const allBatchEvents = await this.processSignaturesBatch(signatures);
 
 					if (allBatchEvents.length > 0) {
-						console.log(`Saving ${allBatchEvents.length} events from batch ${batchNumber}`);
-						console.log(`Events: ${JSON.stringify(allBatchEvents.slice(0, 5))}...`);
 						await this.saveBatchEvents(allBatchEvents);
 					}
 
