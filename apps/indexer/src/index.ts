@@ -7,19 +7,43 @@ import type { SolanaIndexerConfig } from "../types";
 const config: SolanaIndexerConfig = {
 	networkId: process.env.NETWORK === "devnet" ? SolanaNetworkIds.Devnet : SolanaNetworkIds.Mainnet,
 	autoFunAddress: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA" as SolanaAddressLike,
-	autoFunAddressLegacy: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
-	maxSignatures: 10,
+	maxSignatures: 1,
+	minBlock: 323781260,
 	debugStatements: false,
-	maxBlock: {
-		legacy: 353572944,
-		v2: Number.POSITIVE_INFINITY,
-	},
+	maxBlock: 353572944,
+	version: "v2",
 };
 
+// autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5
+
+const configLegacy: SolanaIndexerConfig = {
+	networkId: process.env.NETWORK === "devnet" ? SolanaNetworkIds.Devnet : SolanaNetworkIds.Mainnet,
+	autoFunAddress: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5" as SolanaAddressLike,
+	maxSignatures: 1,
+	minBlock: 323781260,
+	debugStatements: false,
+	maxBlock: Number.POSITIVE_INFINITY,
+	version: "legacy",
+};
 const indexer = new SolanaIndexer(config);
+const indexerLegacy = new SolanaIndexer(configLegacy);
 
 const run = async () => {
-	await indexer.runWithRealTimeSync();
+	try {
+		await Promise.all([
+			indexer.runWithRealTimeSync().catch((err) => {
+				console.error("V2 Indexer failed:", err);
+				throw new Error(`V2 Indexer: ${err.message}`);
+			}),
+			indexerLegacy.runWithRealTimeSync().catch((err) => {
+				console.error("Legacy Indexer failed:", err);
+				throw new Error(`Legacy Indexer: ${err.message}`);
+			}),
+		]);
+	} catch (error) {
+		console.error("One or both indexers failed:", error);
+		process.exit(1);
+	}
 };
 
 run();

@@ -170,6 +170,18 @@ export class SolanaTransactionProcessor {
 			);
 
 			if (decodedInstruction.type !== "unknown") {
+				if (
+					this.maxBlock &&
+					slot > this.maxBlock &&
+					(decodedInstruction.type === "launch" || decodedInstruction.type === "launchAndSwap")
+				) {
+					// we don't want to process launch events beyond maxBlock
+					if (this.debugStatements) {
+						logger.warn(`Skipping instruction in block ${slot} as it exceeds maxBlock limit`);
+					}
+					continue;
+				}
+
 				const eventData = this.createEventData(
 					signatures[0],
 					slot,
@@ -194,9 +206,9 @@ export class SolanaTransactionProcessor {
 
 				// Create token in database for launch events
 				if (decodedInstruction.type === "launch" || decodedInstruction.type === "launchAndSwap") {
-					this.createTokenFromLaunchEvent(eventData, blockTime).catch((error) => {
-						logger.error("Failed to create token from launch event:", error);
-					});
+					// this.createTokenFromLaunchEvent(eventData, blockTime).catch((error) => {
+					// 	logger.error("Failed to create token from launch event:", error);
+					// });
 				}
 			}
 		}

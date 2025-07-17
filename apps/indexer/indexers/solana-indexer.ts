@@ -28,12 +28,11 @@ export class SolanaIndexer extends BaseIndexer {
 		this.STOP_AT_SLOT = this.config.minBlock!;
 		this.processors = [
 			new SolanaTransactionProcessor(
-				this.config.autoFunAddressLegacy,
+				this.config.autoFunAddress,
 				this.debugStatements,
-				"legacy",
-				this.config.maxBlock.legacy,
+				this.config.version,
+				this.config.maxBlock,
 			),
-			new SolanaTransactionProcessor(this.config.autoFunAddress, this.debugStatements, "v2", this.config.maxBlock.v2),
 		];
 	}
 
@@ -206,9 +205,7 @@ export class SolanaIndexer extends BaseIndexer {
 					}
 
 					const events = this.processors.flatMap((processor) =>
-						transaction.slot <= processor.maxBlock
-							? processor.processTransaction(transaction, signatureInfo.signature, signatureInfo.slot)
-							: [],
+						processor.processTransaction(transaction, transaction.blockTime || 0, transaction.slot),
 					);
 
 					if (events.length > 0 && this.debugStatements) {
@@ -396,8 +393,7 @@ export class SolanaIndexer extends BaseIndexer {
 			let hasMoreSignatures = true;
 
 			if (showLogs) {
-				logger.info(`Starting indexer for v2 address: ${this.config.autoFunAddress}`);
-				logger.info(`Legacy address: ${this.config.autoFunAddressLegacy}`);
+				logger.info(`Starting indexer for address: ${this.config.autoFunAddress}`);
 				logger.info(`Network: ${this.config.networkId}`);
 				logger.info(`Genesis sync: ${isGenesisSync}`);
 				logger.info(`Target min slot: ${targetMinSlot}`);
