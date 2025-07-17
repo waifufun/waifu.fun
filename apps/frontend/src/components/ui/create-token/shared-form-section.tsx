@@ -25,7 +25,7 @@ import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import type { TChain } from "@autofun/types";
+import type { AddressLike, TChain } from "@autofun/types";
 import { curveLimitConst } from "@/lib/utils";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -580,6 +580,13 @@ export const LaunchButton = ({
 
 	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !mintKeyPair;
 
+	const balanceQuery = useBalance({
+		chain: "solana",
+		address: (wallet?.publicKey?.toString() || "") as AddressLike,
+	});
+
+	const balance = balanceQuery?.data || 0;
+
 	const onSubmit = async () => {
 		if (!formState.isValid) {
 			toast.error("Please fill in all required fields.");
@@ -603,6 +610,11 @@ export const LaunchButton = ({
 
 		if (idPrefix === "manual" && !uploadedImage) {
 			toast.error("Please upload an image or use the generated image from the Auto tab.");
+			return;
+		}
+
+		if (balance < 0.04) {
+			toast.error("Insufficient balance. You need at least 0.04 SOL to create a token.");
 			return;
 		}
 
