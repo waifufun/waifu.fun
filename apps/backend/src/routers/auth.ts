@@ -63,7 +63,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
 				}
 
 				const isAuthenticated = !!(wallets.solana || wallets.evm);
-				console.log("[Auth] Authentication result:", { isAuthenticated, wallets });
 
 				return {
 					authenticated: isAuthenticated,
