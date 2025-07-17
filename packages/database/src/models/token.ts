@@ -53,6 +53,8 @@ schema.plugin(paginate);
 schema.index({ contractAddress: 1, chain: 1, chainId: 1 }, { unique: true });
 schema.index({ hidden: 1, contractAddress: 1, chain: 1, chainId: 1 });
 schema.index({ hidden: 1, contractAddress: 1 });
+schema.index({ imported: 1, createdAt: -1, hidden: 1 });
+schema.index({ imported: 1, marketcap: -1, hidden: 1 });
 schema.index({ name: "text", ticker: "text", contractAddress: "text" });
 schema.index({ createdAt: -1 });
 const Model = Mongoose.model<IToken, PaginateModel<IToken>>("Token", schema);
