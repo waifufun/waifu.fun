@@ -55,6 +55,26 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				toastShown: false,
 			};
 
+			const toastAction = {
+				label: "View on Solscan",
+				onClick: () => {
+					const network = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? "?cluster=devnet" : "";
+					window.open(`https://solscan.io/tx/${newTransaction.signature}${network}`);
+				},
+			};
+
+			const outputSymbol = newTransaction.mode === "buy" ? newTransaction.token.ticker : "SOL";
+			const inputDecimals = newTransaction.mode === "buy" ? 9 : newTransaction.token.decimals;
+			const outputDecimals = newTransaction.mode === "buy" ? newTransaction.token.decimals : 9;
+			const inputFormatted = (newTransaction.inputAmount / 10 ** inputDecimals).toFixed(inputDecimals === 9 ? 4 : 2);
+			const outputFormatted = (newTransaction.expectedOutput / 10 ** outputDecimals).toFixed(
+				outputDecimals === 9 ? 4 : 2,
+			);
+
+			toast.info(`Swapping ${inputFormatted} ${newTransaction.token.ticker} for ${outputFormatted} ${outputSymbol}`, {
+				action: toastAction,
+			});
+
 			setPendingTransactions((prev) => {
 				const filtered = prev.filter((tx) => tx.signature !== signature);
 				return [newTransaction, ...filtered];
@@ -162,21 +182,19 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				}
 
 				// if not confirmed, wait
-				const confirmation = await connection.confirmTransaction(transaction.signature, "confirmed");
+				const confirmation = await connection.confirmTransaction(transaction.signature, "finalized");
 
 				const success = !confirmation.value.err;
 
-				if (success) {
-					queryClient.invalidateQueries({
-						queryKey: ["balance"],
-					});
-					queryClient.invalidateQueries({
-						queryKey: ["chart"],
-					});
-					queryClient.invalidateQueries({
-						queryKey: ["trades"],
-					});
-				}
+				queryClient.invalidateQueries({
+					queryKey: ["balance"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["chart"],
+				});
+				queryClient.invalidateQueries({
+					queryKey: ["trades"],
+				});
 
 				setPendingTransactions((prev) =>
 					prev.map((tx) => (tx.signature === transaction.signature ? { ...tx, confirmed: true } : tx)),

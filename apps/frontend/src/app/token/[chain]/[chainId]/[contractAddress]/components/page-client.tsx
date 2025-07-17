@@ -12,7 +12,7 @@ import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import ScamWarning from "@/components/scam-notice";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart2, Clock, Users } from "lucide-react";
+import { BarChart2, Clock, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Chart from "@/components/chart/chart";
 import useAddress from "@/hooks/use-address";
@@ -107,6 +107,17 @@ export default function PageClient({
 							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
 							<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
+							{token?.featured ? (
+								<Badge
+									className={cn(
+										"font-bold mt-0.5 uppercase tracking-wider rounded-none text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1",
+										"bg-yellow-400 text-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,0.7)] sm:shadow-[2px_2px_0px_rgba(0,0,0,0.7)] border border-black",
+									)}
+									style={{ color: "#000000" }}
+								>
+									<Star className={cn("h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 pixelated-icon", "fill-current")} /> FEATURED
+								</Badge>
+							) : null}
 						</div>
 						{/* Creator */}
 						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi">
