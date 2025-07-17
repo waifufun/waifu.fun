@@ -30,13 +30,10 @@ export interface IndexerConfig {
 export interface SolanaIndexerConfig extends IndexerConfig {
 	networkId: SolanaNetworkIds;
 	autoFunAddress: SolanaAddressLike;
-	autoFunAddressLegacy: SolanaAddressLike;
 	maxSignatures?: number;
 	beforeSignature?: string;
-	maxBlock: {
-		legacy: number;
-		v2: number;
-	};
+	maxBlock: number;
+	version: "v2" | "legacy";
 }
 
 export interface ProcessingStats {
