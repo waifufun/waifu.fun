@@ -1,3 +1,10 @@
+# [0.19.0](https://github.com/elizaos/autofun-monorepo/compare/v0.18.0...v0.19.0) (2025-07-17)
+
+
+### Features
+
+* fix indexer ([0ed8a9d](https://github.com/elizaos/autofun-monorepo/commit/0ed8a9d64267dfa5d2cfa37f747a5e93d95483cd))
+
 # [0.18.0](https://github.com/elizaos/autofun-monorepo/compare/v0.17.0...v0.18.0) (2025-07-16)
 
 
