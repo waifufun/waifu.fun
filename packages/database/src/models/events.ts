@@ -98,6 +98,7 @@ schema.index({ blockTime: 1 });
 schema.index({ contractAddress: 1, eventType: 1 });
 schema.index({ processed: 1 });
 schema.index({ createdAt: -1 });
+schema.index({ programId: 1, slot: -1 });
 schema.index({ contractAddress: 1, eventType: 1, createdAt: 1 });
 schema.index({ admin: 1 });
 schema.index({ eventType: 1, admin: 1 });

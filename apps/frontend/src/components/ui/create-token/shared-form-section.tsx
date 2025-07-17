@@ -566,10 +566,11 @@ export const LaunchButton = ({
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
 		mutationKey: ["createToken"],
-		onSuccess: (tx) => {
+		onSuccess: (tx, variables) => {
 			console.log("Transaction successful:", tx);
 			toast.success("Token created successfully!");
-			router.push(`/token/${chain}/${chainId}/${mintKeyPair?.publicKey.toString()}`);
+			router.push(`/token/${chain}/${chainId}/${variables.contractAddress}`);
+			setMintKeyPair(null);
 		},
 		onError: (error) => {
 			console.error("Error creating token:", error);
@@ -611,21 +612,13 @@ export const LaunchButton = ({
 			console.log("Token Data:", tokenData);
 			const tx = await createTokenTx(tokenData, { connection, wallet });
 			console.log("Transaction:", tx);
-			createTokenMutation.mutate(
-				{
-					contractAddress: mintKeyPair?.publicKey.toString() || "",
-					chain: chain as TChain,
-					chainId: chainId,
-					pool: pool,
-					signature: tx?.signature.toString() || "",
-				},
-				{
-					onSuccess: (data) => {
-						setMintKeyPair(null);
-						router.push(`/token/${chain}/${chainId}/${data.contractAddress}`);
-					},
-				},
-			);
+			createTokenMutation.mutate({
+				contractAddress: mintKeyPair?.publicKey.toString() || "",
+				chain: chain as TChain,
+				chainId: chainId,
+				pool: pool,
+				signature: tx?.signature.toString() || "",
+			});
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
 			console.error("Error creating token:", error);
