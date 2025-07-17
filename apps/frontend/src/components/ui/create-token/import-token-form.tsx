@@ -10,6 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { importToken } from "@/lib/api";
 import { type AddressLike, SolanaNetworkIds, type ITokenLookUp } from "@autofun/types";
+import { useRouter } from "next/navigation";
 
 type TokenForm = {
 	contractAddress: string;
@@ -27,6 +28,7 @@ const validationRules: Record<keyof TokenForm, RegisterOptions<TokenForm>> = {
 };
 
 export default function ImportTokenForm() {
+	const router = useRouter();
 	const { animationLevel } = useAnimation();
 	const formElementBaseClass =
 		"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -42,8 +44,9 @@ export default function ImportTokenForm() {
 	const mutation = useMutation({
 		mutationKey: ["import"],
 		mutationFn: importToken,
-		onSuccess: () => {
+		onSuccess: (_, variables) => {
 			toast.success(`Imported: ${watch("contractAddress")}`);
+			router.push(`/token/${variables.chain}/${variables.chainId}/${variables.contractAddress}`);
 		},
 		onError: (e) => {
 			toast.error(`Error: ${e.message}`);
