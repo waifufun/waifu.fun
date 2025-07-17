@@ -639,6 +639,13 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					getChecksummedAddress(p?.contractAddress as AddressLike, "solana") ===
 					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
 			);
+
+			const tokenFromDB = tokensFromDatabase.find(
+				(dbToken: IToken) =>
+					getChecksummedAddress(dbToken.contractAddress as AddressLike, "solana") ===
+					getChecksummedAddress(balance.tokenAddress as AddressLike, "solana"),
+			);
+
 			const limitedPopulatedData = populated
 				? {
 						marketcap: populated.marketcap,
@@ -647,11 +654,18 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 						image: populated?.image,
 					}
 				: {};
-			returnData.push({
+
+			const result = {
 				...balance,
 				...token,
 				...limitedPopulatedData,
-			});
+			};
+
+			if (tokenFromDB) {
+				result.verified = tokenFromDB.verified;
+			}
+
+			returnData.push(result);
 		}
 
 		await redis.setex(cacheKey, 60, JSON.stringify({ user: extendedUser, balances: returnData }));
