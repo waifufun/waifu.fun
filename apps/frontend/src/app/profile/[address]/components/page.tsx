@@ -47,7 +47,6 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	});
 
 	const transactions = query?.data?.docs ?? [];
-	console.log("transactions ->", transactions);
 	const user = balances?.user;
 	const summedTotalWalletValue = balances?.balances.reduce((sum, item) => {
 		if (item.price == null || Number.isNaN(item.price)) return sum;
