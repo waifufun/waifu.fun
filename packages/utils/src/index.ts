@@ -222,12 +222,6 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	for (const token of tokensToPopulate) {
 		originalMapping.push(token.contractAddress);
 
-		const migrationKey = `${token.contractAddress}:${token.chain}:${token.chainId}`;
-		const migrationStatus = migrationStatusMap.get(migrationKey);
-		if (migrationStatus) {
-			token.status = migrationStatus;
-		}
-
 		if (token?.imported || token?.curveCompleted) {
 			tokens.codex.push(token);
 		} else {

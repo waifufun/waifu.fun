@@ -73,7 +73,7 @@ export async function generateMetadata(data: GenerateMetadataParams): Promise<To
 		try {
 			console.log(`[generateMetadata] Attempt ${retryCount + 1}/${MAX_RETRIES}`);
 			const systemPromptContent = await createTokenPrompt({ prompt: data.prompt });
-			console.log("[generateMetadata] Generated system prompt:", systemPromptContent);
+			console.log("[generateMetadata] Generated system prompt");
 
 			const response = await ai.createText(systemPromptContent);
 			const jsonRegex = /{[\s\S]*}/;
@@ -87,13 +87,13 @@ export async function generateMetadata(data: GenerateMetadataParams): Promise<To
 			try {
 				const parsed = JSON.parse(jsonString);
 				if (validateMetadata(parsed)) {
-					console.log("[generateMetadata] Successfully validated metadata:", parsed);
+					console.log("[generateMetadata] Successfully validated metadata");
 					return parsed;
 				}
 			} catch {
 				const extracted = extractMetadataFromString(jsonString);
 				if (extracted) {
-					console.log("[generateMetadata] Successfully extracted metadata:", extracted);
+					console.log("[generateMetadata] Successfully extracted metadata:");
 					return extracted;
 				}
 			}

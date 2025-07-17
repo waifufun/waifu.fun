@@ -49,7 +49,7 @@ export default function TokenRow({
 	return (
 		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
 			<div className="flex items-center space-x-2 sm:space-x-4 flex-nowrap overflow-hidden">
-				<div className="flex-shrink-0 flex items-center">
+				<Link href={`/token/${data.contractAddress}`} className="flex-shrink-0 flex items-center">
 					{data.image ? (
 						<Image
 							src={data.image}
@@ -63,12 +63,18 @@ export default function TokenRow({
 					) : (
 						"N/A"
 					)}
-				</div>
+				</Link>
+
 				<div className="flex flex-col justify-center h-full min-w-0 pr-2">
 					<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
-						<p className="text-[10px] sm:text-xs text-white uppercase leading-none truncate">{data.title}</p>
+						<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
+							<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-autofun-background-action-highlight text-white cursor-pointer">
+								{data.title}
+							</p>
+						</Link>
 						<p className="text-[10px] sm:text-xs text-[#8C8C8C] leading-none flex-shrink-0">${data.ticker}</p>
 					</div>
+
 					<p className="text-[9px] sm:text-xs text-[#8C8C8C] leading-none flex gap-x-1 items-center justify-items-center flex-nowrap overflow-hidden mt-1">
 						<CopyButton
 							className="h-[8px] w-[8px] sm:h-[10px] sm:w-[10px] flex-shrink-0"
