@@ -29,6 +29,7 @@ export default function PageClient({
 		queryKey: ["token", initialData.chain, initialData.chainId, initialData.contractAddress],
 		queryFn: async () => {
 			const token = (await getToken(tokenParams)) as IToken;
+			console.log(token)
 			return token;
 		},
 		refetchInterval: 5_000,
@@ -51,7 +52,8 @@ export default function PageClient({
 				classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
 			};
 		}
-		if (initialData?.status === "migrated") {
+
+		if (initialData?.status === "migrated" || initialData?.status === "locked") {
 			return {
 				badge: "BONDED",
 				classes:
