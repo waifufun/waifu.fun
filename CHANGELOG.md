@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/elizaos/autofun-monorepo/compare/v0.19.1...v0.20.0) (2025-07-17)
+
+
+### Features
+
+* make sure balance is atleast 0.04 before launching ([a6d77e2](https://github.com/elizaos/autofun-monorepo/commit/a6d77e2881a16f6e63b50cf99f5e6effb57f7d47))
+
 ## [0.19.1](https://github.com/elizaos/autofun-monorepo/compare/v0.19.0...v0.19.1) (2025-07-17)
 
 
