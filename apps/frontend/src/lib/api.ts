@@ -489,7 +489,7 @@ export const HELIUS_RPC_URL =
 		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
 		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-export const connection = new Connection(HELIUS_RPC_URL, "confirmed");
+export const connection = new Connection(HELIUS_RPC_URL, "finalized");
 
 export const getAdminStats = async () => {
 	const response = await fetcher("/admin/stats", "GET");

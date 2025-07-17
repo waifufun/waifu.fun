@@ -122,6 +122,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				queryClient.invalidateQueries({
 					queryKey: ["trades"],
 				});
+
+				tokenBalance.refetch();
+				balance.refetch();
 			}, 1500);
 		},
 		onError: (e) => {

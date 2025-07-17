@@ -345,7 +345,7 @@ export const retrieveAutofunQuote = async ({
 			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
 			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-	connection = new Connection(HELIUS_RPC_URL, "confirmed");
+	connection = new Connection(HELIUS_RPC_URL, "finalized");
 	const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
 	const contractAddress = token.contractAddress;
 	const FEE_BASIS_POINTS = 10000;
@@ -438,7 +438,7 @@ export const retrieveQuote = async ({
 			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
 			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-	connection = new Connection(HELIUS_RPC_URL, "confirmed");
+	connection = new Connection(HELIUS_RPC_URL, "finalized");
 
 	if (provider === "autofun") {
 		if (!wallet || !connection) throw new Error("No wallet or connection passed.");
@@ -552,7 +552,7 @@ export const executeSwap = async (
 			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
 			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-	const heliusConnection = new Connection(HELIUS_RPC_URL, "confirmed");
+	const heliusConnection = new Connection(HELIUS_RPC_URL, "finalized");
 	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
 		const quoteResponse = await retrieveJupiterQuote({
 			amount: inputAmount,
