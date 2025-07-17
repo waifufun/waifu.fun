@@ -1,3 +1,10 @@
+## [0.19.1](https://github.com/elizaos/autofun-monorepo/compare/v0.19.0...v0.19.1) (2025-07-17)
+
+
+### Bug Fixes
+
+* remove log ([0c253da](https://github.com/elizaos/autofun-monorepo/commit/0c253dac44e8c495c6b25de1ff82fb0c4ecac3cd))
+
 # [0.19.0](https://github.com/elizaos/autofun-monorepo/compare/v0.18.0...v0.19.0) (2025-07-17)
 
 
