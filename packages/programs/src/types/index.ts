@@ -1,2 +1,2 @@
 export * from "./mainnet";
-export * from "./devnet"; 
+export * from "./devnet";

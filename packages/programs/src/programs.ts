@@ -51,15 +51,11 @@ export function createAutofunProgramWithProvider<T extends IdlVersion>(
 	return new Program<GetAutofunTypes<T>>(idl as any, provider);
 }
 
-export function createCurrentAutofunProgramWithProvider(
-	provider: AnchorProvider,
-): Program<CurrentAutofunTypes> {
+export function createCurrentAutofunProgramWithProvider(provider: AnchorProvider): Program<CurrentAutofunTypes> {
 	return createAutofunProgramWithProvider(provider, "v2");
 }
 
-export function createLegacyAutofunProgramWithProvider(
-	provider: AnchorProvider,
-): Program<LegacyAutofunTypes> {
+export function createLegacyAutofunProgramWithProvider(provider: AnchorProvider): Program<LegacyAutofunTypes> {
 	return createAutofunProgramWithProvider(provider, "v1");
 }
 
@@ -101,15 +97,11 @@ export function createVaultProgramWithProvider<T extends VaultType>(
 	return new Program<GetVaultTypes<T>>(idl as any, provider);
 }
 
-export function createRaydiumVaultProgramWithProvider(
-	provider: AnchorProvider,
-): Program<RaydiumVaultTypes> {
+export function createRaydiumVaultProgramWithProvider(provider: AnchorProvider): Program<RaydiumVaultTypes> {
 	return createVaultProgramWithProvider(provider, "raydium");
 }
 
-export function createMeteoraVaultProgramWithProvider(
-	provider: AnchorProvider,
-): Program<MeteoraVaultTypes> {
+export function createMeteoraVaultProgramWithProvider(provider: AnchorProvider): Program<MeteoraVaultTypes> {
 	return createVaultProgramWithProvider(provider, "meteora");
 }
 
