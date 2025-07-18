@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/elizaos/autofun-monorepo/compare/v0.20.0...v0.21.0) (2025-07-18)
+
+
+### Features
+
+* the big chart update ([32b29dd](https://github.com/elizaos/autofun-monorepo/commit/32b29dd24522a0c20aa5c6430d16461033cd52e6))
+
 # [0.20.0](https://github.com/elizaos/autofun-monorepo/compare/v0.19.1...v0.20.0) (2025-07-17)
 
 
