@@ -154,7 +154,7 @@ export class DataSync {
 										withdrawnAmounts: pgToken.withdrawnAmounts ?? "",
 										poolInfo: pgToken.poolInfo ?? "",
 										lockLpTxId: pgToken.lockLpTxId ?? "",
-										withdrawnAt: pgToken.withdrawnAt ? new Date(pgToken.withdrawnAt) : new Date(0),
+										withdrawnAt: new Date(),
 										migratedAt: new Date(),
 										protocol: "raydium",
 										version: 1,
