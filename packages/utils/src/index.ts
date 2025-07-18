@@ -530,7 +530,8 @@ export function groupEventsIntoOHLC(
 		volumeUSD: number;
 	}>,
 	timeframeMs: number,
-	limit: number,
+	codexCloses: number[],
+	codexTimestamps: number[],
 ): Array<{
 	timestamp: number;
 	open: number;
@@ -544,44 +545,62 @@ export function groupEventsIntoOHLC(
 
 	priceData.sort((a, b) => a.timestamp - b.timestamp);
 
-	const candles = new Map<
-		number,
-		{
-			timestamp: number;
-			open: number;
-			high: number;
-			low: number;
-			close: number;
-			volume: number;
-			volumeUSD: number;
-			trades: Array<{ price: number; volume: number; volumeUSD: number; timestamp: number }>;
+	if (!priceData[0]?.timestamp || !priceData[0]?.price) {
+		logger.error("Invalid price data provided, missing timestamp or price");
+		return [];
+	}
+
+	const firstTimestamp = Date.now() - 24 * 60 * 60 * 1000;
+	const lastTimestamp = Date.now();
+	const startBucket = Math.floor(firstTimestamp / timeframeMs) * timeframeMs;
+	const endBucket = Math.floor(lastTimestamp / timeframeMs) * timeframeMs;
+
+	const getSolPriceForTimestamp = (timestamp: number): number => {
+		if (codexCloses.length === 0 || codexTimestamps.length === 0) return 1;
+
+		const eventTime = Math.floor(timestamp / 1000 / 300) * 300;
+		const correctIndex = codexTimestamps.findIndex((t) => t === eventTime);
+
+		if (correctIndex >= 0 && correctIndex < codexCloses.length) {
+			return codexCloses[correctIndex] || 1;
 		}
+
+		// fallback incase no exact match is found
+		let closestIndex = 0;
+		let minDiff = Math.abs(codexTimestamps[0] || Date.now() - eventTime);
+
+		for (let i = 1; i < codexTimestamps.length; i++) {
+			const diff = Math.abs(codexTimestamps[i] || Date.now() - eventTime);
+			if (diff < minDiff) {
+				minDiff = diff;
+				closestIndex = i;
+			}
+		}
+
+		return codexCloses[closestIndex] || 1;
+	};
+
+	const tradesByBucket = new Map<
+		number,
+		Array<{ price: number; volume: number; volumeUSD: number; timestamp: number }>
 	>();
 
 	for (const trade of priceData) {
 		const bucketTime = Math.floor(trade.timestamp / timeframeMs) * timeframeMs;
 
-		if (!candles.has(bucketTime)) {
-			candles.set(bucketTime, {
-				timestamp: bucketTime,
-				open: trade.price,
-				high: trade.price,
-				low: trade.price,
-				close: trade.price,
-				volume: 0,
-				volumeUSD: 0,
-				trades: [],
-			});
+		if (!tradesByBucket.has(bucketTime)) {
+			tradesByBucket.set(bucketTime, []);
 		}
 
-		// biome-ignore lint/style/noNonNullAssertion: <explanation>
-		const candle = candles.get(bucketTime)!;
-		candle.trades.push({
-			price: trade.price,
-			volume: trade.volume,
-			volumeUSD: trade.volumeUSD,
-			timestamp: trade.timestamp,
-		});
+		const bucket = tradesByBucket.get(bucketTime);
+		if (bucket) {
+			bucket.push({
+				price: trade.price,
+				volume: trade.volume,
+				volumeUSD: trade.volumeUSD,
+				timestamp: trade.timestamp,
+			});
+		}
 	}
 
 	const result: Array<{
@@ -594,34 +613,57 @@ export function groupEventsIntoOHLC(
 		volumeUSD: number;
 	}> = [];
 
-	for (const [bucketTime, candle] of candles) {
-		if (candle.trades.length === 0) continue;
+	let previousClose: number | null = null;
+	let previousSolPrice: number | null = null;
 
-		candle.trades.sort((a, b) => a.timestamp - b.timestamp);
+	for (let currentBucket = startBucket; currentBucket <= endBucket; currentBucket += timeframeMs) {
+		const trades = tradesByBucket.get(currentBucket) || [];
+		const currentSolPrice = getSolPriceForTimestamp(currentBucket);
 
-		const firstTrade = candle.trades[0];
-		const lastTrade = candle.trades[candle.trades.length - 1];
+		if (trades.length > 0) {
+			trades.sort((a, b) => a.timestamp - b.timestamp);
 
-		if (!firstTrade || !lastTrade) continue;
+			const firstTrade = trades[0];
+			const lastTrade = trades[trades.length - 1];
 
-		const open = firstTrade.price;
-		const close = lastTrade.price;
-		const high = Math.max(...candle.trades.map((t) => t.price));
-		const low = Math.min(...candle.trades.map((t) => t.price));
-		const volume = candle.trades.reduce((sum, t) => sum + t.volume, 0);
-		const volumeUSD = candle.trades.reduce((sum, t) => sum + t.volumeUSD, 0);
+			const open = previousClose !== null ? previousClose : firstTrade?.price || 0;
+			const close = lastTrade?.price || 0;
+			const high = Math.max(...trades.map((t) => t.price));
+			const low = Math.min(...trades.map((t) => t.price));
+			const volume = trades.reduce((sum, t) => sum + t.volume, 0);
+			const volumeUSD = trades.reduce((sum, t) => sum + t.volumeUSD, 0);
 
-		result.push({
-			timestamp: bucketTime,
-			open,
-			high,
-			low,
-			close,
-			volume,
-			volumeUSD,
-		});
+			result.push({
+				timestamp: currentBucket,
+				open,
+				high: Math.max(open, high),
+				low: Math.min(open, low),
+				close,
+				volume,
+				volumeUSD,
+			});
+
+			previousClose = close;
+			previousSolPrice = currentSolPrice;
+		} else if (previousClose !== null && previousSolPrice !== null) {
+			const solPriceRatio = currentSolPrice / previousSolPrice;
+			const adjustedPrice: number = previousClose * solPriceRatio;
+
+			result.push({
+				timestamp: currentBucket,
+				open: previousClose,
+				high: adjustedPrice,
+				low: adjustedPrice,
+				close: adjustedPrice,
+				volume: 0,
+				volumeUSD: 0,
+			});
+
+			previousClose = adjustedPrice;
+			previousSolPrice = currentSolPrice;
+		}
 	}
 
 	result.sort((a, b) => b.timestamp - a.timestamp);
-	return result.slice(0, limit);
+	return result;
 }
