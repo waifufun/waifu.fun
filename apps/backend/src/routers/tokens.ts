@@ -919,7 +919,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		};
 		Reply: { curveCompleted: boolean };
 	}>("/curve-completed", async (request) => {
-		// check if the token exists in the events database
 		const { contractAddress, chain, chainId } = request.body;
 		const isAllowed = isSupportedAddress(contractAddress);
 		if (!isAllowed) throw new Error("Unsupported address");
@@ -1016,7 +1015,6 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			return [];
 		}
 
-		// Calculate timeframe in milliseconds
 		const timeframeMs = {
 			"1m": 60 * 1000,
 			"5m": 5 * 60 * 1000,
@@ -1026,96 +1024,144 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			"1d": 24 * 60 * 60 * 1000,
 		}[timeframe];
 
-		const nativePricesResult = await redis.get("prices");
-		let nativePrices: Record<string, number> | null = nativePricesResult ? JSON.parse(nativePricesResult) : null;
-		if (!nativePrices) {
-			const cryptoPrices = await updateCryptoPrices({ cacheKey: "prices" });
-			nativePrices = {
-				solana: cryptoPrices.solana ?? 0,
-				ethereum: cryptoPrices.ethereum ?? 0,
-			};
-		}
+		let swapEvents = await DB.Event.find({
+			contractAddress: checksummedQueryAddress,
+			eventType: { $in: ["swap", "launchAndSwap"] },
+			processed: true,
+			blockTime: { $gte: Math.floor(Date.now() / 1000) - 24 * 60 * 60 },
+		})
+			.sort({ blockTime: 1 })
+			.limit(1000)
+			.lean();
 
-		const priceKey = chain === "solana" ? "solana" : "ethereum";
-		const nativePrice = nativePrices?.[priceKey] || 0;
-
-		if (eventsExist) {
-			// const lookbackTime = Date.now() - (7 * 24 * 60 * 60 * 1000 * 4); // 7 days
-
-			const swapEvents = await DB.Event.find({
+		if (swapEvents.length === 0) {
+			swapEvents = await DB.Event.find({
 				contractAddress: checksummedQueryAddress,
 				eventType: { $in: ["swap", "launchAndSwap"] },
 				processed: true,
-				// blockTime: { $gte: Math.floor(lookbackTime / 1000) }, // blockTime is in seconds
 			})
-				.sort({ blockTime: 1 })
-				.limit(1000)
+				.sort({ blockTime: -1 })
+				.limit(1)
 				.lean();
 
-			if (swapEvents.length === 0) {
-				return [];
+			if (swapEvents.length > 0) {
+				const event = swapEvents[0];
+				event.blockTime = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // pretend it happened exactly 24 hours ago, for logic purposes
+			}
+		}
+
+		if (swapEvents.length === 0) {
+			// should technically never happen, unless only launch event exist
+			return [];
+		}
+
+		const solPriceResolution = timeframe === "1m" ? "1" : "5";
+		const firstTimestamp = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
+		const lastTimestamp = Math.floor(Date.now() / 1000);
+		const solPrices = await codex.queries.getBars({
+			symbol: "So11111111111111111111111111111111111111112:1399811149",
+			from: firstTimestamp,
+			to: lastTimestamp,
+			resolution: solPriceResolution,
+		});
+
+		const priceData: Array<{
+			timestamp: number;
+			price: number;
+			volume: number;
+			volumeUSD: number;
+		}> = [];
+
+		const getSolPriceAtTime = (timestamp: number): number => {
+			if (!solPrices.getBars?.t || !solPrices.getBars?.c) return 1;
+
+			const bucketSeconds = solPriceResolution === "1" ? 60 : 300;
+			const eventTime = Math.floor(timestamp / bucketSeconds) * bucketSeconds;
+
+			const correctIndex = solPrices.getBars.t.findIndex((t) => t === eventTime);
+
+			if (correctIndex >= 0 && correctIndex < solPrices.getBars.c.length) {
+				return solPrices.getBars.c[correctIndex] || 1;
 			}
 
-			const priceData: Array<{
-				timestamp: number;
-				price: number;
-				volume: number;
-				volumeUSD: number;
-			}> = [];
+			let closestIndex = 0;
+			let minDiff = Math.abs((solPrices.getBars.t?.[0] ?? 0) - eventTime);
 
-			for (const event of swapEvents) {
-				const isBuy = event.direction === 0 || event.eventType === "launchAndSwap";
-
-				let price = 0;
-				let volume = 0;
-				let volumeUSD = 0;
-
-				if (event.swapAmount && event.amountGotten) {
-					const swapAmount = Number(event.swapAmount);
-					const amountGotten = Number(event.amountGotten);
-
-					if (isBuy) {
-						// Buy: SOL -> Tokens
-						const solSpent = swapAmount / 1e9;
-						const tokensReceived = amountGotten / 10 ** (token.decimals || 9);
-
-						if (tokensReceived > 0) {
-							price = solSpent / tokensReceived;
-							volume = tokensReceived;
-							volumeUSD = solSpent * nativePrice;
-						}
-					} else {
-						// Sell: Tokens -> SOL
-						const solReceived = amountGotten / 1e9;
-						const tokensSold = swapAmount / 10 ** (token.decimals || 9);
-
-						if (tokensSold > 0) {
-							price = solReceived / tokensSold;
-							volume = tokensSold;
-							volumeUSD = solReceived * nativePrice;
-						}
+			for (let i = 1; i < solPrices.getBars.t.length; i++) {
+				const timeValue = solPrices.getBars.t[i];
+				if (timeValue !== null && timeValue !== undefined) {
+					const diff = Math.abs(timeValue - eventTime);
+					if (diff < minDiff) {
+						minDiff = diff;
+						closestIndex = i;
 					}
 				}
+			}
 
-				if (price > 0) {
-					priceData.push({
-						timestamp: event.blockTime * 1000,
-						price: price * nativePrice,
-						volume,
-						volumeUSD,
-					});
+			return solPrices.getBars.c[closestIndex] || 1;
+		};
+
+		for (const event of swapEvents) {
+			const isBuy = event.direction === 0 || event.eventType === "launchAndSwap";
+
+			let price = 0;
+			let volume = 0;
+			let volumeUSD = 0;
+
+			if (event.swapAmount && event.amountGotten) {
+				const swapAmount = Number(event.swapAmount);
+				const amountGotten = Number(event.amountGotten);
+
+				// Get SOL price for this specific event time
+				const solPriceAtEventTime = getSolPriceAtTime(event.blockTime);
+
+				if (isBuy) {
+					// Buy: SOL -> Tokens
+					const solSpent = swapAmount / 1e9;
+					const tokensReceived = amountGotten / 10 ** (token.decimals || 9);
+
+					if (tokensReceived > 0) {
+						price = solSpent / tokensReceived; // Price in SOL per token
+						volume = tokensReceived;
+						volumeUSD = solSpent * solPriceAtEventTime; // Convert SOL volume to USD
+					}
+				} else {
+					// Sell: Tokens -> SOL
+					const solReceived = amountGotten / 1e9;
+					const tokensSold = swapAmount / 10 ** (token.decimals || 9);
+
+					if (tokensSold > 0) {
+						price = solReceived / tokensSold; // Price in SOL per token
+						volume = tokensSold;
+						volumeUSD = solReceived * solPriceAtEventTime; // Convert SOL volume to USD
+					}
 				}
 			}
 
-			if (priceData.length === 0) {
-				return [];
+			if (price > 0) {
+				const solPriceForUSD = getSolPriceAtTime(event.blockTime);
+
+				priceData.push({
+					timestamp: event.blockTime * 1000,
+					price: price * solPriceForUSD,
+					volume,
+					volumeUSD,
+				});
 			}
-
-			const ohlcData = groupEventsIntoOHLC(priceData, timeframeMs, limit);
-
-			await redis.setex(cacheKey, 3, JSON.stringify(ohlcData));
-			return ohlcData;
 		}
-		return [];
+
+		if (priceData.length === 0) {
+			return [];
+		}
+
+		const ohlcData = groupEventsIntoOHLC(
+			priceData,
+			timeframeMs,
+			(solPrices.getBars?.c || []).filter((c): c is number => c !== null),
+			(solPrices.getBars?.t || []).filter((t): t is number => t !== null),
+		);
+
+		await redis.setex(cacheKey, 3, JSON.stringify(ohlcData));
+		return ohlcData;
 	});
 }

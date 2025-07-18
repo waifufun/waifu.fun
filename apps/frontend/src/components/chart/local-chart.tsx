@@ -52,8 +52,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 						!Number.isNaN(Number(candle.high)) &&
 						!Number.isNaN(Number(candle.low)) &&
 						!Number.isNaN(Number(candle.open)) &&
-						!Number.isNaN(Number(candle.timestamp)) &&
-						candle.volume > 0,
+						!Number.isNaN(Number(candle.timestamp)),
 				)
 				.map((candle) => ({
 					time: Math.floor(candle.timestamp / 1000),
@@ -73,6 +72,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 	});
 
 	const chartData = query?.data;
+	console.log("Chart data:", chartData);
 
 	useEffect(() => {
 		const chartOptions: DeepPartial<LightweightChartOptions> = {
@@ -138,11 +138,14 @@ export default function LocalChart({ token }: { token: IToken }) {
 			upColor: "#03FF24",
 			wickDownColor: "rgb(225, 50, 85)",
 			downColor: "rgb(225, 50, 85)",
-			baseLineColor: "#212121",
-			borderVisible: false,
+			borderVisible: true,
 			priceFormat: {
-				minMove: 0.00000001,
+				minMove: 0.000000001,
+				precision: 9,
 			},
+			borderUpColor: "#03FF24",
+			borderDownColor: "rgb(225, 50, 85)",
+			wickVisible: true,
 		});
 
 		candlestickSeriesRef.current = candlestickSeries;
