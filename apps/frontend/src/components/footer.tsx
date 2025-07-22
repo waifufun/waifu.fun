@@ -26,7 +26,7 @@ export default function Footer() {
 							href="/how-it-works"
 							className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider"
 						>
-							How it works
+							FAQ
 						</Link>
 						<Link href="/support" className="hover:text-[#03FF24] transition-colors font-bold uppercase tracking-wider">
 							Support
