@@ -12,7 +12,7 @@ export default function useTimeAgo({ date }: { date: Date | string | number }) {
 		const diffSecs = now.diff(dateToCheck, "seconds");
 
 		if (diffSecs > 59) {
-			return setTimeAgo(fromNow(date));
+			return setTimeAgo(fromNow(date, true));
 		}
 
 		return setTimeAgo(`${diffSecs}s`);
