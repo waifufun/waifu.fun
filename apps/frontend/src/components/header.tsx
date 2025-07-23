@@ -26,11 +26,6 @@ export default function Header() {
 								href: "https://x.com/autodotfun",
 								icon: "/socials/twitter.svg",
 							},
-							{
-								title: "discord",
-								href: "https://discord.gg/ai16z",
-								icon: "/socials/discord.svg",
-							},
 						].map((social) => {
 							const hasLink = !!social?.href;
 							const Comp = hasLink ? Link : Fragment;
