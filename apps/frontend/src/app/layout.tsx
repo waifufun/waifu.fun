@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { AlertTriangleIcon } from "lucide-react";
 
 const inter = Inter({
 	subsets: ["latin"],
@@ -40,7 +41,20 @@ export default function RootLayout({
 						<SidebarInset className="flex flex-col max-h-screen overflow-auto">
 							<Header />
 							<main className="flex-1">
-								<div className="p-4">{children}</div>
+								<div className="p-4">
+									{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
+										<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
+											<div className="inline-flex gap-x-2">
+												<AlertTriangleIcon />
+												<span>
+													<span className="font-bold">WARNING</span> This is a development enviroment connected to
+													Testnet. Nothing you do here is real.
+												</span>
+											</div>
+										</div>
+									) : null}
+									{children}
+								</div>
 							</main>
 							<Footer />
 						</SidebarInset>
