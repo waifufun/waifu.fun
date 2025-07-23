@@ -4,9 +4,14 @@ import { SolanaIndexer } from "../indexers/solana-indexer";
 import { SolanaNetworkIds, type SolanaAddressLike } from "@autofun/types";
 import type { SolanaIndexerConfig } from "../types";
 
+const v2Address =
+	process.env.NETWORK === "devnet"
+		? "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS"
+		: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA";
+
 const config: SolanaIndexerConfig = {
 	networkId: process.env.NETWORK === "devnet" ? SolanaNetworkIds.Devnet : SolanaNetworkIds.Mainnet,
-	autoFunAddress: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA" as SolanaAddressLike,
+	autoFunAddress: v2Address as SolanaAddressLike,
 	maxSignatures: 1,
 	minBlock: 323781260,
 	debugStatements: false,
