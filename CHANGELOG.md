@@ -1,3 +1,15 @@
+# [0.22.0](https://github.com/elizaos/autofun-monorepo/compare/v0.21.1...v0.22.0) (2025-07-23)
+
+
+### Bug Fixes
+
+* make sure the token page scrolls to top on load ([2e9ba0b](https://github.com/elizaos/autofun-monorepo/commit/2e9ba0b0ec798a017d350395a5f9c9987547c65b))
+
+
+### Features
+
+* add bonding curve and creator data to holders ([859d8c5](https://github.com/elizaos/autofun-monorepo/commit/859d8c5aacb251889e9ecfb4f8010c037f55e28e))
+
 ## [0.21.1](https://github.com/elizaos/autofun-monorepo/compare/v0.21.0...v0.21.1) (2025-07-23)
 
 
