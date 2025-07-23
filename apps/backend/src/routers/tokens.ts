@@ -119,6 +119,10 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				query.curveCompleted = true;
 			}
 
+			if(category === "featured"){
+				query.featured = true;
+			}
+
 			const paginationOptions: PaginateOptions = {
 				page,
 				lean: true,

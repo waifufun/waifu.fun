@@ -9,7 +9,7 @@ import { ChartBar, Flame, Hourglass, Sparkles, Star, Zap } from "lucide-react";
 const items = [
 	{
 		title: "ALL",
-		value: null,
+		value: "/",
 		icon: Zap,
 	},
 
