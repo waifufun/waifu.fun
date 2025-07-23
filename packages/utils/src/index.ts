@@ -214,7 +214,7 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	const migrationStatusMap = new Map(
 		migrationStatuses.map((migration) => [
 			`${migration.contractAddress}:${migration.chain}:${migration.chainId}`,
-			migration.status,
+			"migrated" as IToken["status"],
 		]),
 	);
 
