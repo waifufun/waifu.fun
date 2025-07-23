@@ -47,7 +47,7 @@ export default function RootLayout({
 											<div className="inline-flex gap-x-2">
 												<AlertTriangleIcon />
 												<span>
-													<span className="font-bold">WARNING</span> This is a development enviroment connected to
+													<span className="font-bold">WARNING</span> This is a development environment connected to
 													Testnet. Nothing you do here is real.
 												</span>
 											</div>
