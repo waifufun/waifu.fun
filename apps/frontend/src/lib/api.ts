@@ -9,6 +9,7 @@ export const fetcher = async (
 	body?: object | undefined,
 ) => {
 	try {
+		
 		const response = await fetch(`${BASE_URL}${endpoint}`, {
 			method,
 			headers: {
