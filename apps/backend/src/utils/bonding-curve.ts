@@ -1,7 +1,18 @@
-import type { SolanaNetworkIds } from "@autofun/types";
+import { SolanaNetworkIds } from "@autofun/types";
 import { SolanaRpcProvider } from "@autofun/rpc";
 
 export const SEED_BONDING_CURVE = "bonding_curve";
+import { PublicKey } from "@solana/web3.js";
+
+const addressConstantsV1 = {
+	[SolanaNetworkIds.Mainnet]: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
+	[SolanaNetworkIds.Devnet]: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
+};
+
+const addressConstantsV2 = {
+	[SolanaNetworkIds.Mainnet]: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA",
+	[SolanaNetworkIds.Devnet]: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS",
+};
 
 export interface BondingCurveData {
 	reserveAmount: number;
@@ -48,3 +59,15 @@ export async function getBondingCurveData(
 		curveLimit,
 	};
 }
+
+export const getGlobalVault = (chainId: SolanaNetworkIds, version: 1 | 2) => {
+	const addressConstants = version === 1 ? addressConstantsV1 : addressConstantsV2;
+	const address = addressConstants[chainId];
+	if (!address) {
+		throw new Error(`No global vault address found for chainId ${chainId} and version ${version}`);
+	}
+	const programId = new PublicKey(address);
+
+	const [globalVault] = PublicKey.findProgramAddressSync([Buffer.from("global")], programId);
+	return globalVault;
+};

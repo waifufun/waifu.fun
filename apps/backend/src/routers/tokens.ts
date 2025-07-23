@@ -29,6 +29,8 @@ import { codex } from "@autofun/utils";
 import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import { getBondingCurveData } from "../utils/bonding-curve";
 import logger from "@autofun/logger";
+import { getGlobalVault } from "../utils/bonding-curve";
+import { PublicKey } from "@solana/web3.js";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -119,7 +121,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				query.curveCompleted = true;
 			}
 
-			if(category === "featured"){
+			if (category === "featured") {
 				query.featured = true;
 			}
 
@@ -514,7 +516,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			chain,
 			chainId,
 			contractAddress: checksummedQueryAddress,
-		}).select("decimals creator totalSupply holders");
+		}).select("decimals creator totalSupply holders version");
 
 		if (!token) {
 			throw new Error(`Token: ${contractAddress} could not be found`);
@@ -544,17 +546,31 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			await token.save();
 		}
 
+		const solanaNetworkId = chainId as unknown as SolanaNetworkIds;
+		const rpc = await SolanaRpcProvider.connect(solanaNetworkId);
+
+		const bondingCurveData = await rpc.getBondingCurveInfo(
+			[checksummedQueryAddress as SolanaAddressLike],
+			token?.version || 2,
+		);
+
+		if (!bondingCurveData || bondingCurveData.length === 0) {
+			logger.warn(`No bonding curve data found for token: ${checksummedQueryAddress}`);
+		}
+
 		const items: IHolder[] = holders?.holders?.items
 			?.splice(0, 50)
 			?.filter((item) => Number(item.balance) > 1)
 			?.map((item) => {
 				const percentage = getPercentageOfTotal(Number(item?.balance ? item?.balance : "0"), Number(token.totalSupply));
+
+				const globalVaultAddress = getGlobalVault(chainId, token.version);
+
 				return {
 					address: item.address,
 					balance: item.balance,
 					balanceFormatted: item.shiftedBalance,
-					// TODO - Add bonding curve
-					isBondingCurve: false,
+					isBondingCurve: globalVaultAddress.toString() === item.address || false,
 					isCreator: token?.creator === item.address,
 					percentage,
 				} as IHolder;
