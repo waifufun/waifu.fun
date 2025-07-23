@@ -1,8 +1,8 @@
-name: Hourly Warmup
+name: Warmup
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs at minute 0 of every hour
+    - cron: '*/15 * * * *'  # Runs every 15 minutes
   workflow_dispatch:     # Allows manual triggering via GitHub UI
 
 jobs:
