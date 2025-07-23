@@ -42,7 +42,12 @@ export default async function Holders({ token }: { token: IToken }) {
 							<TableCell className="text-autofun-text-secondary font-medium">#{rank + 1}</TableCell>
 							<TableCell>
 								<div className="flex items-center gap-2 font-medium">
-									{shortenAddress(holder.address)} <HolderLabels address={holder.address} />
+									{shortenAddress(holder.address)}{" "}
+									<HolderLabels
+										address={holder.address}
+										isBondingCurve={holder.isBondingCurve || false}
+										isCreator={holder.isCreator || false}
+									/>
 								</div>
 							</TableCell>
 							<TableCell className="text-center">
@@ -62,7 +67,7 @@ export default async function Holders({ token }: { token: IToken }) {
 							<TableCell className="text-right">{holder.percentage}%</TableCell>
 							<TableCell>
 								<Link
-									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/${token?.chain === "solana" ? "account" : "address"}account/${holder.address}`}
+									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/${token?.chain === "solana" ? "account" : "address"}/${holder.address}`}
 									target="blank"
 								>
 									<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />

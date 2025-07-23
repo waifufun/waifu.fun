@@ -37,6 +37,7 @@
 		"@fastify/helmet": "^13.0.1",
 		"@fastify/jwt": "^9.1.0",
 		"@solana/kit": "^2.1.0",
+		"@solana/web3.js": "^1.98.2",
 		"alchemy-sdk": "^3.5.8",
 		"bs58": "^6.0.0",
 		"decimal.js": "^10.5.0",
