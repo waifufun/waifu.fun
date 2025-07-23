@@ -42,7 +42,6 @@ export default function RootLayout({
 							<Header />
 							<main className="flex-1">
 								<div className="p-4">
-									
 									{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
 										<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
 											<div className="inline-flex gap-x-2">
