@@ -72,7 +72,6 @@ export default function LocalChart({ token }: { token: IToken }) {
 	});
 
 	const chartData = query?.data;
-	console.log("Chart data:", chartData);
 
 	useEffect(() => {
 		const chartOptions: DeepPartial<LightweightChartOptions> = {

@@ -3,6 +3,7 @@ import type { IToken, ITokenLookUp } from "@autofun/types";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
+import { notFound } from "next/navigation";
 
 export const revalidate = 4;
 
@@ -25,7 +26,15 @@ export async function generateMetadata({ params }: { params: Promise<ITokenLookU
 
 export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
 	const tokenParams = await params;
-	const token = (await getToken(tokenParams)) as IToken;
+	let token: null | IToken = null;
+	try {
+		token = (await getToken(tokenParams)) as IToken;
+	} catch (e) {
+		console.error(e);
+	}
+
+	if (!token) notFound();
+
 	return (
 		<PageClient initialData={token} tokenParams={tokenParams}>
 			{children}
