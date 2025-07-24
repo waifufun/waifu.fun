@@ -26,6 +26,11 @@ export default function Header() {
 								href: "https://x.com/autodotfun",
 								icon: "/socials/twitter.svg",
 							},
+							{
+								title: "telegram",
+								href: "https://t.me/autofun_official",
+								icon: "/socials/telegram.svg",
+							},
 						].map((social) => {
 							const hasLink = !!social?.href;
 							const Comp = hasLink ? Link : Fragment;
