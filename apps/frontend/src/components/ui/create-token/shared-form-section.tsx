@@ -27,6 +27,7 @@ import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import type { AddressLike, TChain } from "@autofun/types";
 import { curveLimitConst } from "@/lib/utils";
+import {getErrorMessage} from "@/lib/errorMessage";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const formElementBaseClass =
@@ -574,7 +575,8 @@ export const LaunchButton = ({
 		},
 		onError: (error) => {
 			console.error("Error creating token:", error);
-			toast.error(`Error creating token: ${error.message}`);
+		   const message = getErrorMessage(error);
+			toast.error(`Error creating token: ${message}`);
 		},
 	});
 
@@ -634,7 +636,8 @@ export const LaunchButton = ({
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
 			console.error("Error creating token:", error);
-			toast.error(`Error creating token: ${error.message}`);
+			const message = getErrorMessage(error);
+			toast.error(`Error creating token: ${message}`);
 		} finally {
 			setLaunching(false);
 		}
