@@ -70,10 +70,7 @@ export default function TokenRow({
 				<div className="flex items-start gap-2 h-full min-w-0 pr-2">
 					<div className="flex flex-col justify-center min-w-0">
 						<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
-							<Link
-								href={`/token/${data.chain}/${data.chainId}/${data.contractAddress}`}
-								className="truncate max-w-full"
-							>
+							<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
 								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-autofun-background-action-highlight text-white cursor-pointer">
 									{data.title}
 								</p>
