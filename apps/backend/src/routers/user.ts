@@ -103,21 +103,22 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					{ $addFields: { solPrice: { $literal: cryptoPrices?.solana } } },
 					{
 						$addFields: {
+							usdVolume: {
+								$cond: [
+									{ $eq: ["$direction", 0] },
+									{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1_000_000_000] }, "$solPrice"] },
+									{ $multiply: [{ $divide: [{ $toDouble: "$amountGotten" }, 1_000_000_000] }, "$solPrice"] },
+								],
+							},
+						},
+					},
+					{
+						$addFields: {
 							points: {
 								$cond: [
 									{ $eq: ["$direction", 0] },
-									{
-										$multiply: [
-											{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
-											0.6,
-										],
-									},
-									{
-										$multiply: [
-											{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
-											0.1,
-										],
-									},
+									{ $multiply: ["$usdVolume", 0.6] },
+									{ $multiply: ["$usdVolume", 0.1] },
 								],
 							},
 						},
@@ -136,7 +137,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
 			const globalWeeklyPoints = globalStats.globalWeeklyPoints;
 
-			// 2. User total and weekly points, and trading streak
 			const [userData] = await DB.Event.aggregate([
 				{
 					$match: {
@@ -146,24 +146,24 @@ export default async function userRoutes(fastify: FastifyInstance) {
 					},
 				},
 				{ $addFields: { solPrice: { $literal: cryptoPrices?.solana } } },
-
+				{
+					$addFields: {
+						usdVolume: {
+							$cond: [
+								{ $eq: ["$direction", 0] },
+								{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1_000_000_000] }, "$solPrice"] },
+								{ $multiply: [{ $divide: [{ $toDouble: "$amountGotten" }, 1_000_000_000] }, "$solPrice"] },
+							],
+						},
+					},
+				},
 				{
 					$addFields: {
 						points: {
 							$cond: [
 								{ $eq: ["$direction", 0] },
-								{
-									$multiply: [
-										{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
-										0.6,
-									],
-								},
-								{
-									$multiply: [
-										{ $multiply: [{ $divide: [{ $toDouble: "$swapAmount" }, 1000000000] }, "$solPrice"] },
-										0.1,
-									],
-								},
+								{ $multiply: ["$usdVolume", 0.6] },
+								{ $multiply: ["$usdVolume", 0.1] },
 							],
 						},
 					},
