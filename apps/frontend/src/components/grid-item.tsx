@@ -17,7 +17,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 
 	const usePurpleTheme =
 		!token?.imported &&
-		Number(token?.curveProgress || 0) > 80 &&
+		(token?.curveCompleted || Number(token?.curveProgress || 0) >= 100) && // Updated condition for bonded tokens
 		!useBlueTheme &&
 		!useMigratingTheme &&
 		!useMigratedTheme;
@@ -52,7 +52,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 							: cardAccentTheme === "migrating"
 								? "border-orange-400/50"
 								: cardAccentTheme === "migrated"
-									? "border-[#03FF24]/50"
+									? "border-purple-500/50"
 									: "border-[#03FF24]/50",
 			])}
 		>
@@ -71,7 +71,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 											: cardAccentTheme === "migrating"
 												? "border-orange-400/50"
 												: cardAccentTheme === "migrated"
-													? "border-[#03FF24]/50"
+													? "border-purple-500/50"
 													: "border-[#03FF24]/50",
 							)}
 						>
@@ -87,7 +87,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 												: cardAccentTheme === "migrating"
 													? "text-orange-400"
 													: cardAccentTheme === "migrated"
-														? "text-[#03FF24]"
+														? "text-purple-500/50"
 														: "text-[#03FF24]",
 								)}
 							/>
@@ -111,16 +111,27 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)]",
+								"bg-purple-500 hover:bg-purple-600 text-white border border-purple-700 shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)]",
 							)}
 						>
+							BONDED
+						</Badge>
+					) : (token?.curveCompleted || Number(token?.curveProgress || 0) >= 100) && !token?.imported ? (
+						<Badge
+							className={cn(
+								badgeBaseClasses,
+								"bg-purple-500 hover:bg-primary/80 text-white shadow-[1.5px_1.5px_0px_rgba(59,7,100,0.7)] sm:shadow-[2px_2px_0px_rgba(59,7,100,0.7)] border border-purple-700",
+								animationLevel >= 1 && "animate-badge-glint",
+							)}
+						>
+							<Hourglass className={cn(badgeIconClasses, animationLevel >= 1 && "animate-spin-slow")} />
 							BONDED
 						</Badge>
 					) : token?.imported && !token?.featured ? (
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-sky-500/90 hover:bg-primary/80 text-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
+								"bg-sky-500/90 hover:bg-primary/80 t	ext-black border border-black shadow-[1.5px_1.5px_0px_#01579b] sm:shadow-[2px_2px_0px_#01579b]",
 								animationLevel >= 1 && "animate-badge-glint [animation-delay:0.1s]",
 							)}
 						>
@@ -183,7 +194,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 											: cardAccentTheme === "migrating"
 												? "text-orange-400"
 												: cardAccentTheme === "migrated"
-													? "text-[#03FF24] group-hover:text-[#03FF24]"
+													? "group-hover:text-purple-500/90"
 													: "group-hover:text-[#03FF24]",
 							])}
 						>
@@ -203,7 +214,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 										: cardAccentTheme === "migrating"
 											? "text-orange-400/80 group-hover:text-orange-400"
 											: cardAccentTheme === "migrated"
-												? "text-[#03FF24]/70 group-hover:text-[#03FF24]/90"
+												? "text-purple-500/50 group-hover:text-purple-500/70"
 												: "text-[#03FF24]/70 group-hover:text-[#03FF24]/90",
 						])}
 					>
@@ -222,7 +233,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 									: cardAccentTheme === "migrating"
 										? "text-orange-400"
 										: cardAccentTheme === "migrated"
-											? "text-[#03FF24]"
+											? "text-purple-500/50 group-hover:text-purple-500/70"
 											: "text-[#03FF24]",
 					)}
 				>
