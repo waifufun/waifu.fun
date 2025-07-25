@@ -63,6 +63,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				},
 			};
 
+			const inputSymbol = newTransaction.mode === "buy" ? "SOL" : newTransaction.token.ticker;
 			const outputSymbol = newTransaction.mode === "buy" ? newTransaction.token.ticker : "SOL";
 			const inputDecimals = newTransaction.mode === "buy" ? 9 : newTransaction.token.decimals;
 			const outputDecimals = newTransaction.mode === "buy" ? newTransaction.token.decimals : 9;
@@ -71,7 +72,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				outputDecimals === 9 ? 4 : 2,
 			);
 
-			toast.info(`Swapping ${inputFormatted} ${newTransaction.token.ticker} for ${outputFormatted} ${outputSymbol}`, {
+			toast.info(`Swapping ${inputFormatted} ${inputSymbol} for ${outputFormatted} ${outputSymbol}`, {
 				action: toastAction,
 			});
 
