@@ -923,5 +923,3 @@ export const resizeImage = (url: string, width: number, height: number) => {
 	}
 	return `https://auto.fun/cdn-cgi/image/width=${width},height=${height},format=png/${url}`;
 };
-
-
