@@ -31,6 +31,7 @@ import { getBondingCurveData } from "../utils/bonding-curve";
 import logger from "@autofun/logger";
 import { getGlobalVault } from "../utils/bonding-curve";
 import { PublicKey } from "@solana/web3.js";
+import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -273,7 +274,10 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					curveLimit: 0,
 				};
 			}
-
+			const sanitizedTwitter = sanitizeSocialLink(twitter);
+			const sanitizedTelegram = sanitizeSocialLink(telegram);
+			const sanitizedWebsite = sanitizeSocialLink(website);
+			const sanitizedDiscord = sanitizeSocialLink(discord);
 			// Create new token
 			const newToken = await DB.Token.create({
 				contractAddress,
@@ -288,10 +292,10 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				tokenDecimals: metadata.decimals || 9,
 				medatataUrl: metadata.url || "",
 				socials: {
-					twitter,
-					telegram,
-					website,
-					discord,
+					twitter: sanitizedTwitter,
+					telegram: sanitizedTelegram,
+					website: sanitizedWebsite,
+					discord: sanitizedDiscord,
 				},
 				creator: user?.solana || "unknown",
 				hidden: false,
