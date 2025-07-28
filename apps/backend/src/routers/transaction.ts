@@ -189,20 +189,24 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 			}
 			const { tokenMint } = request.body;
 			if (!tokenMint) {
+				console.error("Token mint is required for claiming fees");
 				return reply.code(400).send({ success: false, error: "Token mint is required" });
 			}
 
 			const migration = await DB.Migration.findOne({ contractAddress: tokenMint });
 			if (!migration) {
+				console.error("Token has not been migrated yet");
 				return reply.code(400).send({ success: false, error: "Token has not been migrated yet" });
 			}
 
-			const token = await DB.Token.findOne({ mint: tokenMint });
+			const token = await DB.Token.findOne({ contractAddress: tokenMint });
 			if (!token) {
+				console.error("Token not found for claiming fees");
 				return reply.code(400).send({ success: false, error: "Token not found" });
 			}
 
 			if (token.chain !== "solana") {
+				console.error("Claiming is only supported for Solana tokens");
 				return reply.code(400).send({ success: false, error: "Claiming is only supported for Solana tokens" });
 			}
 
@@ -210,8 +214,10 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 			let signature: string;
 
 			if (token.pool === "meteora") {
+				console.log("Claiming fees from Meteora pool");
 				signature = await claimer.claimMeteora(tokenMint);
 			} else if (token.pool === "raydium") {
+				console.log("Claiming fees from Raydium pool");
 				signature = await claimer.claimRaydium(tokenMint);
 			} else {
 				return reply.code(400).send({ success: false, error: "Unsupported protocol for claiming" });
