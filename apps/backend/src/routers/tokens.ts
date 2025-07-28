@@ -30,7 +30,7 @@ import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/s
 import { getBondingCurveData } from "../utils/bonding-curve";
 import logger from "@autofun/logger";
 import { getGlobalVault } from "../utils/bonding-curve";
-import { PublicKey } from "@solana/web3.js";
+import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
 	/** Retrieve multiple tokens */
@@ -273,7 +273,10 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					curveLimit: 0,
 				};
 			}
-
+			const sanitizedTwitter = sanitizeSocialLink(twitter);
+			const sanitizedTelegram = sanitizeSocialLink(telegram);
+			const sanitizedWebsite = sanitizeSocialLink(website);
+			const sanitizedDiscord = sanitizeSocialLink(discord);
 			// Create new token
 			const newToken = await DB.Token.create({
 				contractAddress,
@@ -288,10 +291,10 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				tokenDecimals: metadata.decimals || 9,
 				medatataUrl: metadata.url || "",
 				socials: {
-					twitter,
-					telegram,
-					website,
-					discord,
+					twitter: sanitizedTwitter,
+					telegram: sanitizedTelegram,
+					website: sanitizedWebsite,
+					discord: sanitizedDiscord,
 				},
 				creator: user?.solana || "unknown",
 				hidden: false,
@@ -363,14 +366,14 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		// Check if the token exists in the event collection
 		const eventsExist = await DB.Event.findOne({
 			contractAddress: checksummedQueryAddress,
-			eventType: { $in: ["swap", "launchAndSwap"] },
+			eventType: { $in: ["swap"] },
 		}).lean();
 
 		// If token exists in events but curve is not completed, get swaps from our DB
 		if (eventsExist && !token.curveCompleted) {
 			const swapEvents = await DB.Event.find({
 				contractAddress: checksummedQueryAddress,
-				eventType: { $in: ["swap", "launchAndSwap"] },
+				eventType: { $in: ["swap"] },
 				processed: true,
 			})
 				.sort({ slot: -1 })
@@ -392,7 +395,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			const nativePrice = nativePrices?.[priceKey] || 0;
 
 			const items: ITrade[] = swapEvents.map((event) => {
-				const isBuy = event.direction === 0 || event.eventType === "launchAndSwap";
+				const isBuy = event.direction === 0;
 
 				let solAmount: string;
 				let tokenAmount: string;

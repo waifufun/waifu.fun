@@ -11,8 +11,8 @@
 		"lib": ["ES2022", "ES2022.Intl"],
 
 		// Use NodeNext for better ESM/CJS interop
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+		// "module": "NodeNext",
+		// "moduleResolution": "NodeNext",
 
 		"sourceMap": true,
 		"resolveJsonModule": true,

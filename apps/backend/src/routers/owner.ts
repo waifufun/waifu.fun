@@ -3,6 +3,7 @@ import type { TChain, TChainId } from "@autofun/types";
 import DB from "@autofun/database";
 import { requireTokenOwner } from "../middlewares/token-owner";
 import { modifyFile, extractObjectKeyFromUrl } from "@autofun/s3-uploader";
+import { sanitizeSocialLink } from "../utils/tokens/santize-links";
 
 export default async function ownerRoutes(fastify: FastifyInstance) {
 	fastify.post(
@@ -35,11 +36,11 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 				}
 
 				const updateData: Record<string, unknown> = {};
-				if (twitter !== undefined) updateData["socials.twitter"] = twitter;
-				if (telegram !== undefined) updateData["socials.telegram"] = telegram;
-				if (discord !== undefined) updateData["socials.discord"] = discord;
-				if (website !== undefined) updateData["socials.website"] = website;
-				if (farcaster !== undefined) updateData["socials.farcaster"] = farcaster;
+				if (twitter !== undefined) updateData["socials.twitter"] = sanitizeSocialLink(twitter);
+				if (telegram !== undefined) updateData["socials.telegram"] = sanitizeSocialLink(telegram);
+				if (discord !== undefined) updateData["socials.discord"] = sanitizeSocialLink(discord);
+				if (website !== undefined) updateData["socials.website"] = sanitizeSocialLink(website);
+				if (farcaster !== undefined) updateData["socials.farcaster"] = sanitizeSocialLink(farcaster);
 
 				await DB.Token.updateOne(
 					{
