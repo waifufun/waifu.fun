@@ -1,3 +1,16 @@
+# [0.23.0](https://github.com/elizaos/autofun-monorepo/compare/v0.22.0...v0.23.0) (2025-07-28)
+
+
+### Bug Fixes
+
+* make sure to consider inputSymboL ([b4a209c](https://github.com/elizaos/autofun-monorepo/commit/b4a209c96baf2d1892161d1716ba4a22d640029a))
+
+
+### Features
+
+* changing bonded color of token ([92a8d61](https://github.com/elizaos/autofun-monorepo/commit/92a8d61000470359d713c8a494718a4abb134cb0))
+* make sure creator launchAndSwap not considered ([028777e](https://github.com/elizaos/autofun-monorepo/commit/028777e26075ce5a0776d9cb9351301da3fcc177))
+
 # [0.22.0](https://github.com/elizaos/autofun-monorepo/compare/v0.21.1...v0.22.0) (2025-07-23)
 
 
