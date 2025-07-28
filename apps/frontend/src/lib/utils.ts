@@ -757,7 +757,7 @@ export const launchAndSwapTx = async (
 	const minOutput = Math.floor((expectedOutput * (10000 - slippage)) / 10000);
 	const allowCreatorTime = true;
 
-	const tx = await program.methods
+	const tx = await (program as unknown as Program<CurrentAutofunTypes>).methods
 		.launchAndSwap(
 			decimals,
 			new BN(tokenSupply),
@@ -857,7 +857,7 @@ export const createTokenTx = async (
 					tokenData.mintKeyPair,
 					wallet,
 				)
-			: await program.methods
+			: await (program as unknown as Program<CurrentAutofunTypes>).methods
 					.launch(
 						Number(process.env.NEXT_PUBLIC_DECIMALS),
 						new BN(Number(process.env.NEXT_PUBLIC_TOKEN_SUPPLY)),
