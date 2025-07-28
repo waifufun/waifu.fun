@@ -3,7 +3,7 @@ import type { TChain, TChainId } from "@autofun/types";
 import DB from "@autofun/database";
 import { requireTokenOwner } from "../middlewares/token-owner";
 import { modifyFile, extractObjectKeyFromUrl } from "@autofun/s3-uploader";
-import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
+import { sanitizeSocialLink } from "../utils/tokens/santize-links";
 
 export default async function ownerRoutes(fastify: FastifyInstance) {
 	fastify.post(
