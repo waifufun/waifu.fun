@@ -19,12 +19,17 @@ export default function Header() {
 					</Link>
 					<SearchMenu />
 					{/* Social Icons */}
-					<div className={cn("hidden items-center gap-1.5", open ? "xl:flex" : "lg:flex")}>
+					<div className={cn("flex items-center gap-1.5", open ? "xl:flex" : "lg:flex")}>
 						{[
 							{
 								title: "twitter",
 								href: "https://x.com/autodotfun",
 								icon: "/socials/twitter.svg",
+							},
+							{
+								title: "telegram",
+								href: "https://t.me/autofun_official",
+								icon: "/socials/telegram.svg",
 							},
 						].map((social) => {
 							const hasLink = !!social?.href;
