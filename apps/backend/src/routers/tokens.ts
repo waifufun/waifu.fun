@@ -30,7 +30,6 @@ import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/s
 import { getBondingCurveData } from "../utils/bonding-curve";
 import logger from "@autofun/logger";
 import { getGlobalVault } from "../utils/bonding-curve";
-import { PublicKey } from "@solana/web3.js";
 import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
