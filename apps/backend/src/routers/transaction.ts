@@ -205,6 +205,13 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 				return reply.code(400).send({ success: false, error: "Token not found" });
 			}
 
+			// check if user is owner of the tokenMint
+			const owner = token.creator;
+			const isOwner = user.solana === owner || user.evm === owner;
+			if (!isOwner) {
+				console.error("User is not the owner of the tokenMint", owner, user.solana);
+				return reply.code(403).send({ success: false, error: "You are not the owner of this token" });
+			}
 			if (token.chain !== "solana") {
 				console.error("Claiming is only supported for Solana tokens");
 				return reply.code(400).send({ success: false, error: "Claiming is only supported for Solana tokens" });
