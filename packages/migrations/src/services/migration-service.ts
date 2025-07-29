@@ -8,6 +8,9 @@ import { SolanaNetworkIds, type IMigration } from "@autofun/types";
 import type { Model } from "mongoose";
 import redis from "@autofun/redis";
 import { Keypair } from "@solana/web3.js";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 export class MigrationService {
 	private isProcessing = false;
@@ -126,19 +129,16 @@ export class MigrationService {
 						logger.info(`Migration for ${contractAddress} already exists, skipping`);
 						continue;
 					}
-					
+
 					// For version 1 tokens (legacy), use Meteora by default
 					let protocol = token.pool?.toLowerCase();
 					if (tokenVersion === 1) {
 						protocol = "meteora";
 						// Update the token's protocol in the database
-						await this.db.Token.updateOne(
-							{ contractAddress },
-							{ $set: { pool: "meteora" } }
-						);
+						await this.db.Token.updateOne({ contractAddress }, { $set: { pool: "meteora" } });
 						logger.info(`Set protocol to Meteora for legacy token ${contractAddress}`);
 					}
-					
+
 					if (!protocol || (protocol !== "raydium" && protocol !== "meteora")) {
 						logger.warn(
 							`Unsupported protocol ${protocol} for contract address ${contractAddress}, skipping event ${event._id}`,
