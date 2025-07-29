@@ -7,6 +7,8 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import { Wallet } from "../utils/customWallet.js";
 import { getRpcUrl } from "../utils/getRpcUrl";
 import { Program } from "@coral-xyz/anchor";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 import {
 	createRaydiumVaultProgramWithProvider,
@@ -26,11 +28,12 @@ export class Claimer {
 	constructor(chainId: SolanaNetworkIds) {
 		const rpcUrl = getRpcUrl();
 		this.connection = new Connection(rpcUrl, "confirmed");
+		console.log(process.env.EXECUTOR_PRIVATE_KEY, "EXECUTOR_PRIVATE_KEY");
 		this.wallet = new Wallet(
 			Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.EXECUTOR_PRIVATE_KEY || "[]"))),
 		);
 		this.provider = new AnchorProvider(this.connection, this.wallet, AnchorProvider.defaultOptions());
-		
+
 		// Initialize programs using centralized package
 		this.raydiumVaultProgram = createRaydiumVaultProgramWithProvider(this.provider);
 		this.meteoraVaultProgram = createMeteoraVaultProgramWithProvider(this.provider);
@@ -57,14 +60,20 @@ export class Claimer {
 
 	async claimRaydium(tokenMint: string): Promise<string> {
 		const migration = await DB.Migration.findOne({ contractAddress: tokenMint });
-		if (!migration?.primaryNftMint || !migration.marketId || !migration.creator) {
+		if (!migration) {
+			throw new Error("Migration not found for the provided token mint");
+		}
+		const nftsMinted = migration?.nftMinted?.[0] || "";
+		const nftMinted = typeof nftsMinted === "string" && nftsMinted ? nftsMinted.split(",")[0] : null;
+		const primaryNftMint = migration?.primaryNftMint || nftMinted;
+		if (!primaryNftMint || !migration.marketId || !migration.creator) {
 			throw new Error("No NFT found for claiming");
 		}
 
 		const result = await claim(
 			this.raydiumVaultProgram,
 			this.wallet.payer as Keypair,
-			new PublicKey(migration.primaryNftMint),
+			new PublicKey(primaryNftMint),
 			new PublicKey(migration.marketId),
 			this.connection,
 			new PublicKey(migration.creator),
