@@ -70,7 +70,7 @@ export async function createPositionNft(
 			nftMint,
 			positionNftSecret,
 		};
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error creating position NFT:", error);
 		throw new Error(`Failed to create position NFT: ${error.message}`);
 	}
@@ -413,6 +413,7 @@ async function prepareCreatePoolTransaction(
 		activationPoint,
 		tokenAProgram: TOKEN_PROGRAM_ID,
 		tokenBProgram: TOKEN_PROGRAM_ID,
+		isLockLiquidity: true,
 	};
 
 	const { tx, pool, position } = await cpAmm.createCustomPool(createCustomPoolParams);
@@ -743,6 +744,72 @@ export async function depositNftToMeteora(
 		};
 	} catch (error) {
 		console.error("Error depositing NFT to Meteora vault:", error);
+		throw error;
+	}
+}
+
+export async function permanentLockPosition(
+	context: MigrationContext,
+	params: {
+		owner: PublicKey;
+		position: PublicKey;
+		positionNftAccount: PublicKey;
+		pool: PublicKey;
+		unlockedLiquidity: BN;
+	},
+): Promise<{ txId: string; extraData: object }> {
+	const { provider, wallet, state } = context;
+	if (!wallet) {
+		throw new Error("Wallet is required for position locking");
+	}
+	if (!provider) {
+		throw new Error("Provider is required for position locking");
+	}
+
+	try {
+		const signerWallet = wallet;
+		const cpAmm = new CpAmm(provider.connection);
+
+		// Create permanent lock position transaction
+		const permanentLockTx = await cpAmm.permanentLockPosition({
+			owner: wallet.publicKey,
+			position: params.position,
+			positionNftAccount: params.positionNftAccount,
+			pool: params.pool,
+			unlockedLiquidity: params.unlockedLiquidity,
+		});
+
+		// Sign and send transaction
+		const result = await handleTransaction(provider.connection, permanentLockTx, signerWallet.payer);
+
+		// Update database
+		await DB.Migration.findOneAndUpdate(
+			{ contractAddress: state.tokenMint },
+			{
+				$set: {
+					positionLocked: true,
+					positionLockedAt: new Date(),
+					updatedAt: new Date(),
+				},
+			},
+		);
+		const txId = result.signature;
+
+		await recordTransaction(state, "permanentLockPosition", txId, {
+			position: params.position.toString(),
+			pool: params.pool.toString(),
+			timestamp: new Date(),
+		});
+
+		return {
+			txId: txId,
+			extraData: {
+				position: params.position.toString(),
+				lockedAt: new Date(),
+			},
+		};
+	} catch (error) {
+		console.error("Error permanently locking position:", error);
 		throw error;
 	}
 }

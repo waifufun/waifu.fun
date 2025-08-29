@@ -15,7 +15,7 @@ const config: SolanaIndexerConfig = {
 	maxSignatures: 1,
 	minBlock: 323781260,
 	debugStatements: false,
-	maxBlock: 353572944,
+	maxBlock: Number.POSITIVE_INFINITY,
 	version: "v2",
 };
 
