@@ -7,21 +7,21 @@ export const revalidate = 4;
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
-		title: "Auto.Fun - Fair Launchpad & Trading Platform",
+		title: "Auto.Fun - Multi-Chain Launchpad & Trading Platform",
 		description:
-			"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
+			"Launch your token fairly on Jeju, BSC, Solana, Base, and Ethereum. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
 		openGraph: {
-			title: "Auto.Fun - Fair Launchpad & Trading Platform",
+			title: "Auto.Fun - Multi-Chain Launchpad & Trading Platform",
 			description:
-				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
+				"Launch your token fairly on Jeju, BSC, Solana, Base, and Ethereum. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
 			type: "website",
 			locale: "en_US",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "Auto.Fun - Fair Launchpad & Trading Platform",
+			title: "Auto.Fun - Multi-Chain Launchpad & Trading Platform",
 			description:
-				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
+				"Launch your token fairly on Jeju, BSC, Solana, Base, and Ethereum. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
 		},
 	};
 };

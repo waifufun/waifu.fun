@@ -42,6 +42,5 @@ schema.index({ marketId: 1 });
 
 const Model = Mongoose.model<IMigration, PaginateModel<IMigration>>("Migration", schema);
 
-Model.createIndexes();
 
 export default Model;

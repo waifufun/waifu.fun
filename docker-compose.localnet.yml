@@ -1,0 +1,111 @@
+services:
+  # PostgreSQL for backend services
+  postgres:
+    image: postgres:15-alpine
+    container_name: autofun-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: autofun
+      POSTGRES_USER: autofun
+      POSTGRES_PASSWORD: autofun_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autofun"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: autofun-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # MongoDB (if needed for legacy compatibility)
+  mongo:
+    image: mongo:7
+    container_name: autofun-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: autofun
+      MONGO_INITDB_ROOT_PASSWORD: autofun_dev_password
+      MONGO_INITDB_DATABASE: autofun
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Blockscout explorer for Jeju (optional)
+  blockscout:
+    image: blockscout/blockscout:latest
+    container_name: jeju-blockscout
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@blockscout-db:5432/blockscout
+      ETHEREUM_JSONRPC_VARIANT: geth
+      ETHEREUM_JSONRPC_HTTP_URL: http://host.docker.internal:9545
+      ETHEREUM_JSONRPC_WS_URL: ws://host.docker.internal:9546
+      CHAIN_ID: 1337
+      NETWORK: Jeju Localnet
+      SUBNETWORK: Localnet
+      COIN: ETH
+      LOGO: /images/blockscout_logo.svg
+      DISABLE_EXCHANGE_RATES: "true"
+      DISABLE_INDEXER: "false"
+      INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER: "true"
+    ports:
+      - "4000:4000"
+    depends_on:
+      blockscout-db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Blockscout database
+  blockscout-db:
+    image: postgres:15-alpine
+    container_name: blockscout-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: blockscout
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - blockscout_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  mongo_data:
+    driver: local
+  blockscout_db_data:
+    driver: local
+
+networks:
+  default:
+    name: autofun-localnet

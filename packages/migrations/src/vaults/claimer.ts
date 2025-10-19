@@ -6,7 +6,7 @@ import type { SolanaNetworkIds } from "@autofun/types";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { Wallet } from "../utils/customWallet.js";
 import { getRpcUrl } from "../utils/getRpcUrl";
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 import * as dotenv from "dotenv";
 dotenv.config();
 

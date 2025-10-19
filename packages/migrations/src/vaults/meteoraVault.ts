@@ -8,12 +8,7 @@ import {
 	deriveTokenVaultAddress,
 } from "@meteora-ag/cp-amm-sdk";
 import type { MeteoraVault } from "./programs/types/meteora_vault";
-import {
-	getVaultConfig,
-	getUserPosition,
-	getNftTokenFaucet,
-	getEventAuthority,
-} from "./meteroaPdas";
+import { getVaultConfig, getUserPosition, getNftTokenFaucet, getEventAuthority } from "./meteroaPdas";
 import { retryOperation } from "../utils";
 
 export async function depositToMeteora(

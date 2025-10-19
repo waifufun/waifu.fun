@@ -17,8 +17,15 @@ export default function ChainIndicator({
 	const key = `${chain}_${chainId}`;
 	const chainIcons: Record<string, { name: string; icon: string }> = {
 		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
+		[`evm_${EvmChainIds.JejuMainnet}`]: { name: "Jeju", icon: "/chain-icons/jeju.svg" },
+		[`evm_${EvmChainIds.JejuTestnet}`]: { name: "Jeju Testnet", icon: "/chain-icons/jeju.svg" },
+		[`evm_${EvmChainIds.JejuLocalnet}`]: { name: "Jeju Localnet", icon: "/chain-icons/jeju.svg" },
+		[`evm_${EvmChainIds.BSCMainnet}`]: { name: "BSC", icon: "/chain-icons/bsc.svg" },
+		[`evm_${EvmChainIds.BSCTestnet}`]: { name: "BSC Testnet", icon: "/chain-icons/bsc.svg" },
 		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
+		[`evm_${EvmChainIds.BaseSepolia}`]: { name: "Base Sepolia", icon: "/chain-icons/base.svg" },
 		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
+		[`evm_${EvmChainIds.EthereumSepolia}`]: { name: "Ethereum Sepolia", icon: "/chain-icons/ethereum.svg" },
 	};
 
 	if (!chainIcons[key]) {

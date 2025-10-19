@@ -1,28 +1,23 @@
-FROM node:20-slim AS base
-
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-RUN corepack enable
+FROM oven/bun:1 AS base
 
 WORKDIR /app
 
 FROM base AS builder
 
-COPY package.json pnpm-workspace.yaml ./
-
-RUN corepack prepare $(node -p "require('./package.json').packageManager") --activate
+COPY package.json ./
 
 RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-RUN pnpm install
+RUN bun install
 
-RUN pnpm --filter backend run build
+RUN bun --filter backend run build
 
 RUN mkdir /deploy
-RUN pnpm deploy --legacy --filter backend /deploy/backend --prod
+RUN cp -r /app/apps/backend/dist /deploy/backend
+RUN cp -r /app/apps/backend/package.json /deploy/backend/
+RUN cd /deploy/backend && bun install --production
 
 FROM base AS runner
 
@@ -35,6 +30,6 @@ ENV NODE_ENV=production
 
 COPY --from=builder /deploy/backend ./
 
-EXPOSE 3001
+EXPOSE 3331
 
 CMD ["node", "dist/index.js"]

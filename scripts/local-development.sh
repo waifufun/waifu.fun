@@ -1,5 +1,5 @@
 #!/bin/bash
-EXPECTED_CONTAINERS=("autofun-dragonfly" "autofun-minio" "autofun-mongo1" "autofun-mongo2" "autofun-mongo3")
+EXPECTED_CONTAINERS=("autofun-dragonfly" "autofun-minio" "autofun-mongo")
 TIMEOUT=300
 INTERVAL=5
 
@@ -18,8 +18,8 @@ if $all_running; then
   exit 0
 fi
 
-echo "🚀 Starting missing Docker services with pnpm..."
-pnpm run docker:up
+echo "🚀 Starting missing Docker services with bun..."
+bun run docker:up
 
 echo "⏳ Waiting for containers to be ready..."
 start_time=$(date +%s)

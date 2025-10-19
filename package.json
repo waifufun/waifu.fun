@@ -6,35 +6,7 @@
 	},
 	"type": "module",
 	"private": true,
-	"pnpm": {
-		"supportedArchitectures": {
-			"os": [
-				"current"
-			],
-			"cpu": [
-				"x64",
-				"arm64"
-			]
-		},
-		"ignoredBuiltDependencies": [
-			"@biomejs/biome",
-			"@bufbuild/buf",
-			"@tailwindcss/oxide",
-			"bigint-buffer",
-			"blake-hash",
-			"bufferutil",
-			"core-js-pure",
-			"es5-ext",
-			"esbuild",
-			"keccak",
-			"protobufjs",
-			"secp256k1",
-			"sharp",
-			"tiny-secp256k1",
-			"usb",
-			"utf-8-validate"
-		]
-	},
+	"workspaces": ["apps/*", "packages/*"],
 	"release": {
 		"branches": [
 			"main",
@@ -52,37 +24,45 @@
 			[
 				"@semantic-release/git",
 				{
-					"assets": [
-						"CHANGELOG.md",
-						"package.json"
-					],
+					"assets": ["CHANGELOG.md", "package.json"],
 					"message": "chore(release): ${nextRelease.version}"
 				}
 			]
 		]
 	},
 	"scripts": {
-		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --stream build",
-		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@autofun/frontend' --filter '!@autofun/backend' --filter '!@autofun/sync' --filter '!@autofun/migrations' --stream build",
-		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --filter '!@autofun/indexer' --parallel run dev",
-		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@autofun/sync' --filter '!@autofun/migrations' --filter !@autofun/indexer --parallel run dev",
-		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/indexer' --parallel run dev",
-		"dev:indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/indexer' --parallel run dev",
-		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@autofun/frontend' --parallel run dev",
+		"build": "dotenv -e .env -- cross-env NODE_ENV=production bun run --cwd apps/frontend build && bun run --cwd apps/backend build",
+		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --cwd apps/indexer build",
+		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run dev:apps",
+		"dev:apps": "bun run --cwd apps/frontend dev & bun run --cwd apps/backend dev",
+		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run dev:apps",
+		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --cwd apps/indexer dev",
+		"dev:indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --cwd apps/indexer dev",
+		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --cwd apps/frontend dev",
+		"dev:backend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --cwd apps/backend dev",
 		"docker:up": "docker compose up -d && exit 0",
 		"docker:down": "docker compose down",
 		"docker:kill": "docker compose down -v",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
-		"lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& pnpm -r --stream --parallel lint",
+		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" biome format . --write && biome lint . --fix",
+		"lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& biome format . --write && biome lint . --fix",
 		"build:docker": "docker build -t autofun-frontend -f apps/frontend/Dockerfile.frontend .",
 		"start:docker": "docker run -p 3000:3000 autofun-frontend",
-		"sync": "dotenv -e .env -- pnpm --filter @autofun/sync sync tokens",
-		"test-migration": "pnpm --filter @autofun/migrations test",
-		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm --filter @autofun/migrations dev",
-		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @autofun/migrations build",
-		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @autofun/migrations start",
-		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '@autofun/indexer' run start",
-		"start:frontend": "pnpm --filter '@autofun/frontend' run start"
+		"sync": "dotenv -e .env -- bun run --cwd packages/sync sync tokens",
+		"test-migration": "bun run --cwd packages/migrations test",
+		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development bun run --cwd packages/migrations dev",
+		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production bun run --cwd packages/migrations build",
+		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production bun run --cwd packages/migrations start",
+		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --cwd apps/indexer start",
+		"start:frontend": "bun run --cwd apps/frontend start",
+		"localnet:start": "./scripts/localnet-start.sh",
+		"localnet:stop": "./scripts/localnet-stop.sh",
+		"deploy:jeju": "bun run scripts/deploy-jeju.ts",
+		"validate:env": "bun run scripts/validate-env.ts",
+		"test": "vitest run",
+		"test:unit": "vitest run apps/frontend/src/**/__tests__/**/*.test.ts",
+		"test:integration": "vitest run apps/frontend/src/__tests__/integration/**/*.test.ts",
+		"test:e2e": "playwright test",
+		"test:watch": "vitest"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
@@ -92,11 +72,12 @@
 		"cross-env": "^7.0.3",
 		"dotenv-cli": "^8.0.0",
 		"esbuild": "^0.25.4",
+		"jsdom": "^27.0.0",
 		"semantic-release": "^24.2.3",
 		"tsx": "^4.15.1",
 		"typescript": "^5.4.5"
 	},
-	"packageManager": "pnpm@10.11.0",
+	"packageManager": "bun@1.0.0",
 	"dependencies": {
 		"@coral-xyz/anchor": "0.31.1"
 	}

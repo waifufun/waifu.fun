@@ -19,6 +19,7 @@ import {
 	isSupportedAddress,
 	populateTokensWithLiveData,
 	updateCryptoPrices,
+	shouldSkipExternalAPIs,
 } from "@autofun/utils";
 import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
 import { uploadImageFromUrl, upload, uploadBase64Image } from "@autofun/s3-uploader";
@@ -434,7 +435,8 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}
 
 		// For imported tokens or completed curves, use external Codex API
-		if (token.curveCompleted) {
+		// Skip Codex on localnet
+		if (token.curveCompleted && !shouldSkipExternalAPIs() && codex) {
 			const networkId = (
 				CHAINID_TO_CODEX_NETWORK_ID as unknown as Record<TChain, Record<TChainId, number | string | undefined>>
 			)[chain]?.[chainId];
@@ -534,8 +536,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}
 		const holders = await codex.queries.holders({
 			input: {
-				// @ts-ignore - TODO Fix type error
-				tokenId: `${contractAddress}:${CHAINID_TO_CODEX_NETWORK_ID[chain][chainId]}`,
+				tokenId: `${contractAddress}:${CHAINID_TO_CODEX_NETWORK_ID[chain][chainId]}` as string,
 				sort: {
 					attribute: HoldersSortAttribute.Balance,
 					direction: RankingDirection.Desc,

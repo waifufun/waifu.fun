@@ -15,7 +15,6 @@ import {
 import Decimal from "decimal.js";
 import { TOKEN_PROGRAM_ID, NATIVE_MINT } from "@solana/spl-token";
 import { depositToMeteora } from "../../vaults/meteoraVault";
-import { VersionedTransaction } from "@solana/web3.js";
 import { derivePositionNftAccount } from "../../vaults/meteroaPdas";
 
 export async function createPositionNft(

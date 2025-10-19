@@ -6,14 +6,31 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/providers/solana-provider";
 import { AnimationProvider } from "@/providers/animation-context";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { TransactionListenerProvider } from "@/providers/transaction-listener";
+import dynamic from "next/dynamic";
 
-const queryClient = new QueryClient();
+// Dynamically import EvmProvider with SSR disabled
+const EvmProvider = dynamic(() => import("@/providers/evm-provider").then((mod) => mod.EvmProvider), {
+	ssr: false,
+});
 
 const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+	// Create a new QueryClient instance per request to avoid SSR hydration issues
+	const [queryClient] = useState(
+		() =>
+			new QueryClient({
+				defaultOptions: {
+					queries: {
+						staleTime: 60 * 1000, // 1 minute
+						refetchOnWindowFocus: false,
+					},
+				},
+			})
+	);
+
 	return (
 		<Suspense>
 			<TooltipProvider delayDuration={0}>
@@ -29,11 +46,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				>
 					<QueryClientProvider client={queryClient}>
 						<AnimationProvider>
-							<SolanaProvider>
-								<TransactionListenerProvider>{children}</TransactionListenerProvider>
-								<Toaster />
-								<GoogleAnalytics gaId={googleTagID} />
-							</SolanaProvider>
+							<EvmProvider>
+								<SolanaProvider>
+									<TransactionListenerProvider>{children}</TransactionListenerProvider>
+									<Toaster />
+									<GoogleAnalytics gaId={googleTagID} />
+								</SolanaProvider>
+							</EvmProvider>
 						</AnimationProvider>
 					</QueryClientProvider>
 				</ProgressProvider>

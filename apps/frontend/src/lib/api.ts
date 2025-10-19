@@ -45,9 +45,7 @@ export const getTokens = async ({
 	};
 }) => {
 	try {
-		const body = {
-			chain: (searchParams?.chain as TChain) || undefined,
-			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
+		const body: Record<string, unknown> = {
 			page: searchParams?.page ? Number(searchParams.page) : 1,
 			category:
 				(searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond" | "bonded") || "new",
@@ -55,6 +53,13 @@ export const getTokens = async ({
 			search: searchParams?.search || "",
 			limit: searchParams?.limit || 50,
 		};
+		
+		// Only include chain/chainId if both are provided
+		if (searchParams?.chain && searchParams?.chainId) {
+			body.chain = searchParams.chain as TChain;
+			body.chainId = Number(searchParams.chainId);
+		}
+		
 		const response = await fetcher("/tokens", "POST", body);
 		return response.docs || [];
 	} catch (error) {
@@ -484,8 +489,12 @@ export const getTokensCreated = async ({
 	});
 };
 
-export const HELIUS_RPC_URL =
-	process.env.NEXT_PUBLIC_NETWORK === "devnet"
+import { shouldSkipExternalAPIs } from "./localnet";
+
+// Use Jeju RPC on localnet, Helius for Solana networks
+export const HELIUS_RPC_URL = shouldSkipExternalAPIs()
+	? process.env.NEXT_PUBLIC_JEJU_RPC_URL || "http://127.0.0.1:9545"
+	: process.env.NEXT_PUBLIC_NETWORK === "devnet"
 		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
 		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 

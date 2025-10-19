@@ -40,10 +40,15 @@ export type FALModels = {
 export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";
 
 export enum EvmChainIds {
-	BaseMainnet = 8453,
-	BaseSepolia = 84532,
 	EthereumMainnet = 1,
 	EthereumSepolia = 11155111,
+	BaseMainnet = 8453,
+	BaseSepolia = 84532,
+	JejuMainnet = 420691,
+	JejuTestnet = 420690,
+	JejuLocalnet = 1337,
+	BSCMainnet = 56,
+	BSCTestnet = 97,
 }
 
 export type TURLLike = `https://${string}` | `http://${string}`;

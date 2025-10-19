@@ -563,92 +563,77 @@ export class SolanaRpcProvider extends EventEmitter {
 			}
 		});
 
-		return bondingCurves.map((curve, i) => {
-			const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
-			const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
-			const supplyInfo = supplies[i];
+		return bondingCurves
+			.map((curve, i) => {
+				const mint = tokenMints?.[i] ? tokenMints[i].toBase58() : undefined;
+				const bondingCurveAddress = bondingCurvePDAs[i]?.toBase58();
+				const supplyInfo = supplies[i];
 
-			if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
+				if (!supplyInfo) throw new Error(`Unable to determine supplyInfo for token: ${mint}`);
 
-			// TODO - Ensure non valid values are just skipped entirely if we see such token
-			if (!curve || !curve.reserveToken || String(curve.reserveToken) === "0") {
+				// Skip tokens with invalid bonding curve data
+				if (!curve || !curve.reserveToken || String(curve.reserveToken) === "0") {
+					return null;
+				}
+
+				const reserveLamport = Number(curve.reserveLamport);
+				const reserveToken = Number(curve.reserveToken);
+				const tokenDecimals = supplyInfo.decimals || 6;
+
+				const priceSOL = reserveLamport / 1e9 / (reserveToken / 10 ** tokenDecimals);
+				const priceUsd = solanaUsdPrice * priceSOL;
+				const totalSupply = supplyInfo.supply;
+				const marketCapSOL = (totalSupply / 10 ** tokenDecimals) * priceSOL;
+				const marketCapUSD = marketCapSOL * solanaUsdPrice;
+
+				const virtualReserves = Number(curve.initLamport);
+				const curveLimit = Number(curve.curveLimit);
+
+				const reserveLamportBN = new BN(reserveLamport.toString());
+				const virtualReservesBN = new BN(virtualReserves.toString());
+				const curveLimitBN = new BN(curveLimit.toString());
+
+				let curveProgress = curve?.isCompleted ? new Decimal(100) : new Decimal(0);
+
+				if (curveLimitBN.gt(virtualReservesBN) && !curve?.isCompleted) {
+					const numerator = reserveLamportBN.sub(virtualReservesBN);
+					const denominator = curveLimitBN.sub(virtualReservesBN);
+					curveProgress = new Decimal(numerator.toString()).mul("100").div(denominator.toString());
+				}
+
+				const difference = new Decimal(reserveLamportBN.sub(virtualReservesBN).toString());
+				const bondingCurveBalance = difference.div(LAMPORTS_PER_SOL.toString()).toNumber();
+
+				const creator = curve.creator.toBase58();
+
+				const delayForTrade = curve?.delayForTrade ? Number(curve?.delayForTrade) : undefined;
+				const createdTime = curve?.createdTime ? Number(curve?.createdTime) : undefined;
+				const maxAmount = curve?.maxAmount ? Number(curve?.maxAmount) : undefined;
+
 				return {
 					contractAddress: mint,
-					tokenMint: mint,
-					curveCompleted: curve?.isCompleted,
-					priceLamports: null,
-					priceSOL: null,
-					marketCapSOL: null,
-					marketCapUSD: null,
-					exists: false,
-					reserveLamport: 0,
-					reserveToken: 0,
-					virtualReserves: 0,
-					curveLimit: 0,
-					curveProgress: 0,
-					priceUsd: 0,
-					decimals: supplyInfo.decimals || 6,
-					totalSupply: supplyInfo.supply || 0,
+					bondingCurveAddress,
+					maxAmount,
+					delayForTrade,
+					createdTime,
+					creator: creator ? creator : undefined,
+					curveCompleted: curve.isCompleted,
+					curveProgress: Math.min(Math.max(curveProgress.toNumber(), 0), 100),
+					priceLamports: reserveLamport / reserveToken,
+					decimals: tokenDecimals,
+					virtualReserves,
+					bondingCurveBalance,
+					reserveLamport,
+					curveLimit,
+					priceSOL,
+					priceUsd,
+					totalSupply,
+					marketCapSOL,
+					marketCapUSD,
+					exists: true,
 				};
-			}
-
-			const reserveLamport = Number(curve.reserveLamport);
-			const reserveToken = Number(curve.reserveToken);
-			const tokenDecimals = supplyInfo.decimals || 6;
-
-			const priceSOL = reserveLamport / 1e9 / (reserveToken / 10 ** tokenDecimals);
-			const priceUsd = solanaUsdPrice * priceSOL;
-			const totalSupply = supplyInfo.supply;
-			const marketCapSOL = (totalSupply / 10 ** tokenDecimals) * priceSOL;
-			const marketCapUSD = marketCapSOL * solanaUsdPrice;
-
-			const virtualReserves = Number(curve.initLamport);
-			const curveLimit = Number(curve.curveLimit);
-
-			const reserveLamportBN = new BN(reserveLamport.toString());
-			const virtualReservesBN = new BN(virtualReserves.toString());
-			const curveLimitBN = new BN(curveLimit.toString());
-
-			let curveProgress = curve?.isCompleted ? new Decimal(100) : new Decimal(0);
-
-			if (curveLimitBN.gt(virtualReservesBN) && !curve?.isCompleted) {
-				const numerator = reserveLamportBN.sub(virtualReservesBN);
-				const denominator = curveLimitBN.sub(virtualReservesBN);
-				curveProgress = new Decimal(numerator.toString()).mul("100").div(denominator.toString());
-			}
-
-			const difference = new Decimal(reserveLamportBN.sub(virtualReservesBN).toString());
-			const bondingCurveBalance = difference.div(LAMPORTS_PER_SOL.toString()).toNumber();
-
-			const creator = curve.creator.toBase58();
-
-			const delayForTrade = curve?.delayForTrade ? Number(curve?.delayForTrade) : undefined;
-			const createdTime = curve?.createdTime ? Number(curve?.createdTime) : undefined;
-			const maxAmount = curve?.maxAmount ? Number(curve?.maxAmount) : undefined;
-
-			return {
-				contractAddress: mint,
-				bondingCurveAddress,
-				maxAmount,
-				delayForTrade,
-				createdTime,
-				creator: creator ? creator : undefined,
-				curveCompleted: curve.isCompleted,
-				curveProgress: Math.min(Math.max(curveProgress.toNumber(), 0), 100),
-				priceLamports: reserveLamport / reserveToken,
-				decimals: tokenDecimals,
-				virtualReserves,
-				bondingCurveBalance,
-				reserveLamport,
-				curveLimit,
-				priceSOL,
-				priceUsd,
-				totalSupply,
-				marketCapSOL,
-				marketCapUSD,
-				exists: true,
-			};
-		});
+			})
+			.filter((curve): curve is NonNullable<typeof curve> => curve !== null);
 	}, this);
 
 	getTokenBalance = withFallBack(async (contractAddress: AddressLike, owner: AddressLike, raw?: boolean) => {

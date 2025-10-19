@@ -16,7 +16,6 @@ const schema = new Schema<IUser, ModelType<IUser>>(
 		adminRole: {
 			type: String,
 			enum: ["super_admin", "admin", "moderator"],
-			sparse: true,
 		},
 		adminPermissions: [{ type: String }],
 		adminCreatedBy: { type: String },
@@ -34,6 +33,5 @@ schema.index({ adminPermissions: 1 });
 
 const Model = Mongoose.model<IUser, PaginateModel<IUser>>("User", schema);
 
-Model.createIndexes();
 
 export default Model;

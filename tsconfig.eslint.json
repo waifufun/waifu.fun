@@ -2,7 +2,6 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "compilerOptions": {
-    // ensure this tsconfig cannot accidentally be used for a build
     "noEmit": true
   },
   "include": [
@@ -13,5 +12,4 @@
     "*.config.ts",
     "*.config.js"
   ]
-  // "exclude": ["templates/**/*"]
 }

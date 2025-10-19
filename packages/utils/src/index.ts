@@ -25,14 +25,17 @@ import { BigNumber } from "bignumber.js";
 
 dotenv.config();
 
+export * from "./localnet";
+import { isLocalnet, shouldSkipExternalAPIs } from "./localnet";
+
 const CODEX_API_KEY = process.env.CODEX_API_KEY;
 
-if (!CODEX_API_KEY) {
-	logger.error("Missing CODEX_API_KEY in enviroment variables");
+if (!CODEX_API_KEY && !isLocalnet()) {
+	logger.error("Missing CODEX_API_KEY in environment variables (required for production)");
 	process.exit(1);
 }
 
-export const codex = new Codex(CODEX_API_KEY);
+export const codex = CODEX_API_KEY ? new Codex(CODEX_API_KEY) : null;
 
 /**
  * Determines the blockchain type (flavor) of a given address.
@@ -213,66 +216,71 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 	}
 
 	/** Query Codex for imported or tokens that having curveCompleted */
-	const tokensToQuery = tokens.codex
-		.filter((t) => needsUpdate(t))
-		.filter((token: IToken) => {
-			const { chain, chainId } = token;
-			const networkId =
-				chain === "evm"
-					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
-					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
-			return networkId !== undefined;
-		})
-		.map((token: IToken) => {
-			const { chain, chainId, contractAddress } = token;
-			const networkId =
-				chain === "evm"
-					? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
-					: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
-			return `${contractAddress}:${networkId}`;
+	// Skip Codex queries on localnet
+	if (!shouldSkipExternalAPIs() && codex) {
+		const tokensToQuery = tokens.codex
+			.filter((t) => needsUpdate(t))
+			.filter((token: IToken) => {
+				const { chain, chainId } = token;
+				const networkId =
+					chain === "evm"
+						? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
+						: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
+				return networkId !== undefined;
+			})
+			.map((token: IToken) => {
+				const { chain, chainId, contractAddress } = token;
+				const networkId =
+					chain === "evm"
+						? CHAINID_TO_CODEX_NETWORK_ID.evm[chainId as EvmChainIds]
+						: CHAINID_TO_CODEX_NETWORK_ID.solana[chainId as SolanaNetworkIds];
+				return `${contractAddress}:${networkId}`;
+			});
+
+		const tokenData = await codex.queries.filterTokens({
+			statsType: TokenPairStatisticsType.Unfiltered,
+			tokens: tokensToQuery,
 		});
 
-	const tokenData = await codex.queries.filterTokens({
-		statsType: TokenPairStatisticsType.Unfiltered,
-		tokens: tokensToQuery,
-	});
+		const results = tokenData?.filterTokens?.results;
 
-	const results = tokenData?.filterTokens?.results;
+		if (results) {
+			logger.info(`Received ${results.length} results from Codex`);
+			for (const token of results) {
+				const address = token?.token?.address as AddressLike;
+				const tokenRecord = tokens.codex.find((a) => address.toLowerCase() === a.contractAddress.toLowerCase());
 
-	if (results) {
-		logger.info(`Received ${results.length} results from Codex`);
-		for (const token of results) {
-			const address = token?.token?.address as AddressLike;
-			const tokenRecord = tokens.codex.find((a) => address.toLowerCase() === a.contractAddress.toLowerCase());
+				if (!tokenRecord) {
+					logger.warn(`No matching token record found for address ${address}`);
+					continue;
+				}
 
-			if (!tokenRecord) {
-				logger.warn(`No matching token record found for address ${address}`);
-				continue;
-			}
+				const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
+				if (secondsPassedSinceUpdate <= 10) {
+					logger.info(`Skipping token ${address} - updated recently`);
+					continue;
+				}
 
-			const secondsPassedSinceUpdate = moment().diff(moment(tokenRecord.updatedAt), "seconds");
-			if (secondsPassedSinceUpdate <= 10) {
-				logger.info(`Skipping token ${address} - updated recently`);
-				continue;
-			}
+				const marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
+				tokenRecord.marketcap = marketcap;
+				const price = token?.priceUSD ? Number(token?.priceUSD) : 0;
+				tokenRecord.price = price;
+				const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
+				tokenRecord.volume24h = volume24h;
+				const holders = token?.holders ? Number(token?.holders) : 0;
 
-			const marketcap = token?.marketCap ? Number(token?.marketCap) : 0;
-			tokenRecord.marketcap = marketcap;
-			const price = token?.priceUSD ? Number(token?.priceUSD) : 0;
-			tokenRecord.price = price;
-			const volume24h = token?.volume24 ? Number(token?.volume24) : 0;
-			tokenRecord.volume24h = volume24h;
-			const holders = token?.holders ? Number(token?.holders) : 0;
-
-			ops.push({
-				updateOne: {
-					filter: { _id: String(tokenRecord._id) },
-					update: {
-						$set: { marketcap, price, volume24h, holders },
+				ops.push({
+					updateOne: {
+						filter: { _id: String(tokenRecord._id) },
+						update: {
+							$set: { marketcap, price, volume24h, holders },
+						},
 					},
-				},
-			});
+				});
+			}
 		}
+	} else {
+		logger.info("Skipping Codex queries - localnet mode or Codex not available");
 	}
 
 	/** Indexer */
@@ -394,6 +402,18 @@ export const populateTokensWithLiveData = async (tokensToPopulate: IToken[]): Pr
 export const updateCryptoPrices = async ({
 	cacheKey = "prices",
 }: { cacheKey?: string }): Promise<{ solana: number; ethereum: number }> => {
+	// Skip Codex on localnet, use fallback prices
+	if (shouldSkipExternalAPIs()) {
+		logger.info("Localnet detected - using fallback prices, skipping Codex API");
+		await redis.setex(cacheKey, 2 * 60, JSON.stringify(FALLBACK_PRICES));
+		return FALLBACK_PRICES;
+	}
+
+	if (!codex) {
+		logger.warn("Codex not available - using fallback prices");
+		return FALLBACK_PRICES;
+	}
+
 	try {
 		const wrappedSol = "So11111111111111111111111111111111111111112";
 

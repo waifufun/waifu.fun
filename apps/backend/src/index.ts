@@ -2,6 +2,8 @@ import Fastify from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import fastifyCookie from "@fastify/cookie";
+import fastifySwagger from "@fastify/swagger";
+import fastifySwaggerUI from "@fastify/swagger-ui";
 import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
@@ -78,12 +80,59 @@ const configuredCors = process?.env?.CORS_DOMAINS ? String(process.env.CORS_DOMA
 
 fastify.register(cors, {
 	allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-	origin: configuredCors?.length > 0 ? configuredCors : ["http://localhost:3000"],
+	origin: configuredCors?.length > 0 ? configuredCors : ["http://localhost:3000", "http://localhost:3330"],
 	credentials: true,
 });
 
 fastify.register(fastifyJWT, {
 	secret: process.env.JWT_SECRET,
+});
+
+fastify.register(fastifySwagger, {
+	openapi: {
+		openapi: "3.0.3",
+		info: {
+			title: "Launchpad API",
+			description: "API for token launchpad with trading, authentication, and agent management",
+			version: "1.0.0",
+		},
+		servers: [
+			{
+				url: process.env.API_URL || "http://localhost:3331",
+				description: "API server",
+			},
+		],
+		tags: [
+			{ name: "tokens", description: "Token management endpoints" },
+			{ name: "prices", description: "Price tracking endpoints" },
+			{ name: "auth", description: "Authentication endpoints" },
+			{ name: "chat", description: "Chat endpoints" },
+			{ name: "generation", description: "AI generation endpoints" },
+			{ name: "transactions", description: "Transaction endpoints" },
+			{ name: "agents", description: "Agent management endpoints" },
+			{ name: "user", description: "User management endpoints" },
+		],
+		components: {
+			securitySchemes: {
+				bearerAuth: {
+					type: "http",
+					scheme: "bearer",
+					bearerFormat: "JWT",
+					description: "JWT authentication",
+				},
+			},
+		},
+	},
+});
+
+fastify.register(fastifySwaggerUI, {
+	routePrefix: "/docs",
+	uiConfig: {
+		docExpansion: "list",
+		deepLinking: true,
+	},
+	staticCSP: true,
+	transformStaticCSP: (header) => header,
 });
 
 fastify.get("/", (_, reply) => {
@@ -102,7 +151,7 @@ fastify.register(generationRoutes, { prefix: "/generation" });
 fastify.register(agentRoutes, { prefix: "/agent" });
 fastify.register(userRoutes, { prefix: "/user" });
 
-const port = 3001;
+const port = 3331;
 
 const start = async () => {
 	try {

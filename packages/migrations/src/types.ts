@@ -4,12 +4,7 @@ import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { ProgramContext } from "./programs";
 import type { Wallet } from "./utils/customWallet";
 
-import type {
-	RaydiumVaultTypes,
-	MeteoraVaultTypes,
-	CurrentAutofunTypes,
-	LegacyAutofunTypes,
-} from "@autofun/programs";
+import type { RaydiumVaultTypes, MeteoraVaultTypes, CurrentAutofunTypes, LegacyAutofunTypes } from "@autofun/programs";
 
 export type RpcClient = Connection;
 

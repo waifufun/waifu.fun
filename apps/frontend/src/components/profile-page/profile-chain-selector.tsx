@@ -36,6 +36,8 @@ export default function ProfileChainSelector() {
 
 	const chains: IChainSelector[] = [
 		{ name: "All", chain: null, chainId: null },
+		{ name: "Jeju", chain: "evm", chainId: EvmChainIds.JejuMainnet, icon: "/chain-icons/jeju.svg" },
+		{ name: "BSC", chain: "evm", chainId: EvmChainIds.BSCMainnet, icon: "/chain-icons/bsc.svg" },
 		{ name: "Solana", chain: "solana", chainId: SolanaNetworkIds.Mainnet, icon: "/chain-icons/solana.svg" },
 		{ name: "Ethereum", chain: "evm", chainId: EvmChainIds.EthereumMainnet, icon: "/chain-icons/ethereum.svg" },
 		{ name: "Base", chain: "evm", chainId: EvmChainIds.BaseMainnet, icon: "/chain-icons/base.svg" },

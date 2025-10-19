@@ -20,6 +20,5 @@ schema.index({ contractAddress: 1, room: 1 });
 
 const Model = Mongoose.model<IChatMessage, PaginateModel<IChatMessage>>("ChatMessage", schema);
 
-Model.createIndexes();
 
 export default Model;

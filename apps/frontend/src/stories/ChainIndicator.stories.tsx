@@ -10,6 +10,20 @@ export default meta;
 
 type Story = StoryObj<typeof ChainIndicator>;
 
+export const Jeju: Story = {
+	args: {
+		chain: "evm" as TChain,
+		chainId: EvmChainIds.JejuMainnet,
+	},
+};
+
+export const BSC: Story = {
+	args: {
+		chain: "evm" as TChain,
+		chainId: EvmChainIds.BSCMainnet,
+	},
+};
+
 export const Ethereum: Story = {
 	args: {
 		chain: "evm" as TChain,

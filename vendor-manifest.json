@@ -1,0 +1,19 @@
+{
+  "name": "launchpad",
+  "displayName": "Jeju Launchpad",
+  "version": "1.0.0",
+  "description": "Token launch platform for Jeju L3",
+  "commands": {
+    "dev": "bun run dev",
+    "build": "bun run build",
+    "start": "bun run start"
+  },
+  "ports": {
+    "main": 3002
+  },
+  "dependencies": ["contracts", "config"],
+  "optional": true,
+  "enabled": true,
+  "tags": ["defi", "launchpad", "tokens"]
+}
+

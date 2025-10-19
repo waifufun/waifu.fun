@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 		template: "%s | Auto.Fun",
 	},
 	description: "Press the fun button.",
-	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST as string),
+	metadataBase: process.env.NEXT_PUBLIC_HOST ? new URL(process.env.NEXT_PUBLIC_HOST) : undefined,
 };
 
 export default function RootLayout({

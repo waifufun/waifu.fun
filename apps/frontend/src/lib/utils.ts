@@ -5,6 +5,7 @@ import { twMerge } from "tailwind-merge";
 import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
 import { parseUnits } from "viem";
+import { shouldSkipExternalAPIs } from "./localnet";
 import {
 	ComputeBudgetProgram,
 	Keypair,
@@ -178,6 +179,12 @@ export function getCoinGeckoChainName<T extends TChain>(
 		if (chainId === EvmChainIds.BaseMainnet) {
 			return "base";
 		}
+		if (chainId === EvmChainIds.JejuMainnet) {
+			return "jeju";
+		}
+		if (chainId === EvmChainIds.BSCMainnet) {
+			return "bsc";
+		}
 	}
 	if (chain === "solana") {
 		if (chainId === SolanaNetworkIds.Mainnet) {
@@ -278,6 +285,12 @@ export const retrieveJupiterQuote = async ({
 	slippage: number;
 	// biome-ignore lint/suspicious/noExplicitAny: allow
 }): Promise<{ minimumReceived: number; swapUsdValue?: string; priceImpactPct?: string; quote?: any }> => {
+	// Skip Jupiter on localnet (Jeju is EVM-based, not Solana)
+	if (shouldSkipExternalAPIs()) {
+		console.warn("Jupiter API skipped - localnet mode (Jeju is EVM-based)");
+		return { minimumReceived: 0, swapUsdValue: "0", priceImpactPct: "0" };
+	}
+
 	const isToken2022 = token?.isToken2022 || false;
 	const inputMint = mode === "buy" ? SOL_MINT_ADDRESS : token.contractAddress;
 	const outputMint = mode === "buy" ? token.contractAddress : SOL_MINT_ADDRESS;
@@ -340,12 +353,16 @@ export const retrieveAutofunQuote = async ({
 	mode: "buy" | "sell";
 }) => {
 	if (!amount) throw new Error("Invalid amount passed");
-	const HELIUS_RPC_URL =
-		token?.chainId === SolanaNetworkIds.Devnet
-			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
-			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+	
+	// Skip Helius on localnet, use existing connection
+	if (!shouldSkipExternalAPIs()) {
+		const HELIUS_RPC_URL =
+			token?.chainId === SolanaNetworkIds.Devnet
+				? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+				: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-	connection = new Connection(HELIUS_RPC_URL, "finalized");
+		connection = new Connection(HELIUS_RPC_URL, "finalized");
+	}
 	const { program, configAccount } = await getAutofunProgram(connection, wallet, token.version);
 	const contractAddress = token.contractAddress;
 	const FEE_BASIS_POINTS = 10000;
@@ -433,12 +450,16 @@ export const retrieveQuote = async ({
 			slippage,
 		});
 	}
-	const HELIUS_RPC_URL =
-		token?.chainId === SolanaNetworkIds.Devnet
-			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
-			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+	
+	// Skip Helius on localnet, use existing connection
+	if (!shouldSkipExternalAPIs()) {
+		const HELIUS_RPC_URL =
+			token?.chainId === SolanaNetworkIds.Devnet
+				? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+				: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-	connection = new Connection(HELIUS_RPC_URL, "finalized");
+		connection = new Connection(HELIUS_RPC_URL, "finalized");
+	}
 
 	if (provider === "autofun") {
 		if (!wallet || !connection) throw new Error("No wallet or connection passed.");
@@ -547,13 +568,18 @@ export const executeSwap = async (
 	const parsedInputAmount = parseUnits(String(inputAmount), mode === "buy" ? 9 : token.decimals);
 
 	/** If the token was imported or has already migrated we can just use Jupiter */
-	const HELIUS_RPC_URL =
-		token?.chainId === SolanaNetworkIds.Devnet
-			? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
-			: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+	// Skip Jupiter/Helius on localnet (Jeju is EVM-based)
+	let heliusConnection = connection;
+	if (!shouldSkipExternalAPIs()) {
+		const HELIUS_RPC_URL =
+			token?.chainId === SolanaNetworkIds.Devnet
+				? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+				: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
 
-	const heliusConnection = new Connection(HELIUS_RPC_URL, "finalized");
-	if ((token?.imported || token?.curveCompleted) && token.chain === "solana") {
+		heliusConnection = new Connection(HELIUS_RPC_URL, "finalized");
+	}
+	
+	if ((token?.imported || token?.curveCompleted) && token.chain === "solana" && !shouldSkipExternalAPIs()) {
 		const quoteResponse = await retrieveJupiterQuote({
 			amount: inputAmount,
 			mode,
