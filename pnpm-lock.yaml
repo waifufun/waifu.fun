@@ -45,33 +45,6 @@ importers:
 
   apps/backend:
     dependencies:
-      '@autofun/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
-      '@autofun/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
-      '@autofun/database':
-        specifier: workspace:*
-        version: link:../../packages/database
-      '@autofun/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@autofun/migrations':
-        specifier: workspace:*
-        version: link:../../packages/migrations
-      '@autofun/redis':
-        specifier: workspace:*
-        version: link:../../packages/redis
-      '@autofun/rpc':
-        specifier: workspace:*
-        version: link:../../packages/rpc
-      '@autofun/s3-uploader':
-        specifier: workspace:*
-        version: link:../../packages/s3-uploader
-      '@autofun/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
       '@codex-data/sdk':
         specifier: ^1.0.6
         version: 1.0.7(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -96,6 +69,33 @@ importers:
       '@solana/web3.js':
         specifier: ^1.98.2
         version: 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@waifufun/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@waifufun/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
+      '@waifufun/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@waifufun/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@waifufun/migrations':
+        specifier: workspace:*
+        version: link:../../packages/migrations
+      '@waifufun/redis':
+        specifier: workspace:*
+        version: link:../../packages/redis
+      '@waifufun/rpc':
+        specifier: workspace:*
+        version: link:../../packages/rpc
+      '@waifufun/s3-uploader':
+        specifier: workspace:*
+        version: link:../../packages/s3-uploader
+      '@waifufun/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       alchemy-sdk:
         specifier: ^3.5.8
         version: 3.5.10(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -121,24 +121,18 @@ importers:
         specifier: 2.30.5
         version: 2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
     devDependencies:
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.29
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
 
   apps/frontend:
     dependencies:
-      '@autofun/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
-      '@autofun/programs':
-        specifier: workspace:*
-        version: link:../../packages/programs
       '@bprogress/next':
         specifier: ^3.2.12
         version: 3.2.12(next@15.3.2(@babel/core@7.27.3)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -207,7 +201,7 @@ importers:
         version: 1.7.7(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@types/react@19.1.6)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@reown/appkit-adapter-wagmi':
         specifier: ^1.7.7
-        version: 1.7.7(bc1cb1462459228a894f1e1191922e49)
+        version: 1.7.7(6fofye72kelpwueanzwfkr6zsi)
       '@solana/spl-token':
         specifier: ^0.4.1
         version: 0.4.13(@solana/web3.js@1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -229,6 +223,12 @@ importers:
       '@uidotdev/usehooks':
         specifier: ^2.4.1
         version: 2.4.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@waifufun/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
+      '@waifufun/programs':
+        specifier: workspace:*
+        version: link:../../packages/programs
       bs58:
         specifier: ^6.0.0
         version: 6.0.0
@@ -302,9 +302,6 @@ importers:
         specifier: ^2.15.3
         version: 2.15.4(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@tanstack/query-core@5.77.2)(@tanstack/react-query@5.77.2(react@19.1.0))(@types/react@19.1.6)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4))(zod@3.22.4)
     devDependencies:
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@chromatic-com/storybook':
         specifier: ^3
         version: 3.2.6(react@19.1.0)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -322,7 +319,7 @@ importers:
         version: 8.6.14(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@storybook/experimental-addon-test':
         specifier: ^8.6.13
-        version: 8.6.14(@vitest/browser@3.1.4)(@vitest/runner@3.1.4)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(vitest@3.1.4)
+        version: 8.6.14(@vitest/browser@3.1.4(bufferutil@4.0.9)(playwright@1.52.0)(utf-8-validate@5.0.10)(vite@6.3.5(@types/node@22.15.29)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))(vitest@3.1.4))(@vitest/runner@3.1.4)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(vitest@3.1.4(@types/debug@4.1.12)(@types/node@22.15.29)(@vitest/browser@3.1.4)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))
       '@storybook/experimental-nextjs-vite':
         specifier: 8.6.14
         version: 8.6.14(@babel/core@7.27.3)(@storybook/test@8.6.14(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10)))(next@15.3.2(@babel/core@7.27.3)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(rollup@4.41.1)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.8.3)(vite@6.3.5(@types/node@22.15.29)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))
@@ -355,7 +352,10 @@ importers:
         version: 3.1.4(bufferutil@4.0.9)(playwright@1.52.0)(utf-8-validate@5.0.10)(vite@6.3.5(@types/node@22.15.29)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))(vitest@3.1.4)
       '@vitest/coverage-v8':
         specifier: ^3.1.3
-        version: 3.1.4(@vitest/browser@3.1.4)(vitest@3.1.4)
+        version: 3.1.4(@vitest/browser@3.1.4(bufferutil@4.0.9)(playwright@1.52.0)(utf-8-validate@5.0.10)(vite@6.3.5(@types/node@22.15.29)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))(vitest@3.1.4))(vitest@3.1.4(@types/debug@4.1.12)(@types/node@22.15.29)(@vitest/browser@3.1.4)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       pino-pretty:
         specifier: ^13.0.0
         version: 13.0.0
@@ -386,21 +386,21 @@ importers:
 
   apps/indexer:
     dependencies:
-      '@autofun/database':
-        specifier: workspace:*
-        version: link:../../packages/database
-      '@autofun/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@autofun/programs':
-        specifier: workspace:*
-        version: link:../../packages/programs
-      '@autofun/rpc':
-        specifier: workspace:*
-        version: link:../../packages/rpc
       '@solana/web3.js':
         specifier: ^1.98.2
         version: 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@waifufun/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@waifufun/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@waifufun/programs':
+        specifier: workspace:*
+        version: link:../../packages/programs
+      '@waifufun/rpc':
+        specifier: workspace:*
+        version: link:../../packages/rpc
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -408,7 +408,7 @@ importers:
         specifier: ^1.5.1
         version: 1.5.1(@solana/web3.js@1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
     devDependencies:
-      '@autofun/types':
+      '@waifufun/types':
         specifier: workspace:*
         version: link:../../packages/types
       rimraf:
@@ -417,12 +417,12 @@ importers:
 
   packages/ai:
     dependencies:
-      '@autofun/constants':
-        specifier: workspace:*
-        version: link:../constants
       '@fal-ai/client':
         specifier: ^1.4.0
         version: 1.4.0
+      '@waifufun/constants':
+        specifier: workspace:*
+        version: link:../constants
     devDependencies:
       '@types/node':
         specifier: ^20.11.24
@@ -449,7 +449,7 @@ importers:
         specifier: 2.30.5
         version: 2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
     devDependencies:
-      '@autofun/types':
+      '@waifufun/types':
         specifier: workspace:*
         version: link:../types
       typescript:
@@ -458,7 +458,7 @@ importers:
 
   packages/database:
     dependencies:
-      '@autofun/logger':
+      '@waifufun/logger':
         specifier: workspace:*
         version: link:../logger
       dotenv:
@@ -471,12 +471,12 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0(mongoose@8.15.1(socks@2.8.4))
     devDependencies:
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.29
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../types
       typescript:
         specifier: ^5.4.5
         version: 5.8.3
@@ -499,21 +499,6 @@ importers:
 
   packages/migrations:
     dependencies:
-      '@autofun/database':
-        specifier: workspace:*
-        version: link:../database
-      '@autofun/logger':
-        specifier: workspace:*
-        version: link:../logger
-      '@autofun/programs':
-        specifier: workspace:*
-        version: link:../programs
-      '@autofun/redis':
-        specifier: workspace:*
-        version: link:../redis
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../types
       '@coral-xyz/anchor':
         specifier: ^0.31.1
         version: 0.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -535,6 +520,21 @@ importers:
       '@solana/web3.js':
         specifier: ^1.91.1
         version: 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@waifufun/database':
+        specifier: workspace:*
+        version: link:../database
+      '@waifufun/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@waifufun/programs':
+        specifier: workspace:*
+        version: link:../programs
+      '@waifufun/redis':
+        specifier: workspace:*
+        version: link:../redis
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../types
       bn.js:
         specifier: ^5.2.2
         version: 5.2.2
@@ -608,15 +608,15 @@ importers:
 
   packages/programs:
     dependencies:
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../types
       '@coral-xyz/anchor':
         specifier: ^0.31.1
         version: 0.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@solana/web3.js':
         specifier: ^1.98.2
         version: 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../types
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -630,7 +630,7 @@ importers:
 
   packages/redis:
     dependencies:
-      '@autofun/logger':
+      '@waifufun/logger':
         specifier: workspace:*
         version: link:../logger
       dotenv:
@@ -646,18 +646,6 @@ importers:
 
   packages/rpc:
     dependencies:
-      '@autofun/constants':
-        specifier: workspace:*
-        version: link:../constants
-      '@autofun/logger':
-        specifier: workspace:*
-        version: link:../logger
-      '@autofun/programs':
-        specifier: workspace:*
-        version: link:../programs
-      '@autofun/utils':
-        specifier: workspace:*
-        version: link:../utils
       '@coral-xyz/anchor':
         specifier: ^0.31.1
         version: 0.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -679,6 +667,18 @@ importers:
       '@solana/web3.js':
         specifier: ^1.98.2
         version: 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@waifufun/constants':
+        specifier: workspace:*
+        version: link:../constants
+      '@waifufun/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@waifufun/programs':
+        specifier: workspace:*
+        version: link:../programs
+      '@waifufun/utils':
+        specifier: workspace:*
+        version: link:../utils
       bn.js:
         specifier: ^5.2.2
         version: 5.2.2
@@ -689,24 +689,24 @@ importers:
         specifier: 2.30.5
         version: 2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
     devDependencies:
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/bn.js':
         specifier: ^5.1.6
         version: 5.1.6
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../types
       typescript:
         specifier: ^5.4.5
         version: 5.8.3
 
   packages/s3-uploader:
     dependencies:
-      '@autofun/logger':
-        specifier: workspace:*
-        version: link:../logger
       '@aws-sdk/client-s3':
         specifier: ^3.803.0
         version: 3.817.0
+      '@waifufun/logger':
+        specifier: workspace:*
+        version: link:../logger
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -717,25 +717,25 @@ importers:
         specifier: ^0.34.1
         version: 0.34.2
     devDependencies:
-      '@autofun/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.29
+      '@waifufun/types':
+        specifier: workspace:*
+        version: link:../types
       typescript:
         specifier: ^5.4.5
         version: 5.8.3
 
   packages/sync:
     dependencies:
-      '@autofun/database':
+      '@waifufun/database':
         specifier: workspace:*
         version: link:../database
-      '@autofun/logger':
+      '@waifufun/logger':
         specifier: workspace:*
         version: link:../logger
-      '@autofun/types':
+      '@waifufun/types':
         specifier: workspace:*
         version: link:../types
       commander:
@@ -794,21 +794,6 @@ importers:
 
   packages/utils:
     dependencies:
-      '@autofun/constants':
-        specifier: workspace:*
-        version: link:../constants
-      '@autofun/database':
-        specifier: workspace:*
-        version: link:../database
-      '@autofun/logger':
-        specifier: workspace:*
-        version: link:../logger
-      '@autofun/redis':
-        specifier: workspace:*
-        version: link:../redis
-      '@autofun/rpc':
-        specifier: workspace:*
-        version: link:../rpc
       '@codex-data/sdk':
         specifier: ^1.0.6
         version: 1.0.7(ws@8.18.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -818,6 +803,21 @@ importers:
       '@solana/web3.js':
         specifier: ^1.98.2
         version: 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@waifufun/constants':
+        specifier: workspace:*
+        version: link:../constants
+      '@waifufun/database':
+        specifier: workspace:*
+        version: link:../database
+      '@waifufun/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@waifufun/redis':
+        specifier: workspace:*
+        version: link:../redis
+      '@waifufun/rpc':
+        specifier: workspace:*
+        version: link:../rpc
       bignumber.js:
         specifier: ^9.3.0
         version: 9.3.0
@@ -831,7 +831,7 @@ importers:
         specifier: 2.30.5
         version: 2.30.5(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
     devDependencies:
-      '@autofun/types':
+      '@waifufun/types':
         specifier: workspace:*
         version: link:../types
       typescript:
@@ -12734,7 +12734,7 @@ snapshots:
   '@coral-xyz/anchor@0.31.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)':
     dependencies:
       '@coral-xyz/anchor-errors': 0.31.1
-      '@coral-xyz/borsh': 0.31.1(@solana/web3.js@1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))
+      '@coral-xyz/borsh': 0.31.1(@solana/web3.js@1.98.2(typescript@5.8.3))
       '@noble/hashes': 1.8.0
       '@solana/web3.js': 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       bn.js: 5.2.2
@@ -12776,7 +12776,7 @@ snapshots:
       bn.js: 5.2.2
       buffer-layout: 1.2.2
 
-  '@coral-xyz/borsh@0.31.1(@solana/web3.js@1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))':
+  '@coral-xyz/borsh@0.31.1(@solana/web3.js@1.98.2(typescript@5.8.3))':
     dependencies:
       '@solana/web3.js': 1.98.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       bn.js: 5.2.2
@@ -15089,7 +15089,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.6
 
-  '@reown/appkit-adapter-wagmi@1.7.7(bc1cb1462459228a894f1e1191922e49)':
+  '@reown/appkit-adapter-wagmi@1.7.7(6fofye72kelpwueanzwfkr6zsi)':
     dependencies:
       '@reown/appkit': 1.7.7(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@types/react@19.1.6)(bufferutil@4.0.9)(ioredis@5.6.1)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@reown/appkit-common': 1.7.7(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.22.4)
@@ -17096,7 +17096,7 @@ snapshots:
       storybook: 9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       unplugin: 1.16.1
 
-  '@storybook/experimental-addon-test@8.6.14(@vitest/browser@3.1.4)(@vitest/runner@3.1.4)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(vitest@3.1.4)':
+  '@storybook/experimental-addon-test@8.6.14(@vitest/browser@3.1.4(bufferutil@4.0.9)(playwright@1.52.0)(utf-8-validate@5.0.10)(vite@6.3.5(@types/node@22.15.29)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))(vitest@3.1.4))(@vitest/runner@3.1.4)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(vitest@3.1.4(@types/debug@4.1.12)(@types/node@22.15.29)(@vitest/browser@3.1.4)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 1.4.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -17766,7 +17766,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/coverage-v8@3.1.4(@vitest/browser@3.1.4)(vitest@3.1.4)':
+  '@vitest/coverage-v8@3.1.4(@vitest/browser@3.1.4(bufferutil@4.0.9)(playwright@1.52.0)(utf-8-validate@5.0.10)(vite@6.3.5(@types/node@22.15.29)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))(vitest@3.1.4))(vitest@3.1.4(@types/debug@4.1.12)(@types/node@22.15.29)(@vitest/browser@3.1.4)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 1.0.2
