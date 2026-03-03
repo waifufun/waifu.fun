@@ -54,7 +54,7 @@ function MenubarContent({
 				alignOffset={alignOffset}
 				sideOffset={sideOffset}
 				className={cn(
-					"bg-black text-white data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[150px] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-none border p-1.5 border-autofun-stroke-primary",
+					"bg-black text-white data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[150px] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-none border p-1.5 border-waifufun-stroke-primary",
 					className,
 				)}
 				{...props}
@@ -78,7 +78,7 @@ function MenubarItem({
 			data-inset={inset}
 			data-variant={variant}
 			className={cn(
-				"relative flex hover:bg-autofun-background-action-highlight/20 hover:text-autofun-background-action-highlight cursor-default items-center gap-2 rounded-none px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+				"relative flex hover:bg-waifufun-background-action-highlight/20 hover:text-waifufun-background-action-highlight cursor-default items-center gap-2 rounded-none px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 				className,
 			)}
 			{...props}

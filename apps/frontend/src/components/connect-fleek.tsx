@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
-import type { IToken, TChainId } from "@autofun/types";
+import type { IToken, TChainId } from "@waifufun/types";
 
 export default function ConnectToFleek({ token }: { token: IToken }) {
 	const [showInput, setShowInput] = useState<boolean>(false);
@@ -34,7 +34,7 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 		<div className="bg-black ƒlex place-self-center backdrop-blur-2xl w-[408px]">
 			<div className="p-4 flex flex-col text-center transition-all duration-300 ease-in-out">
 				<h1 className="font-semibold text-white text-2xl">
-					Connect An <span className="text-autofun-background-action-highlight">Agent</span>
+					Connect An <span className="text-waifufun-background-action-highlight">Agent</span>
 				</h1>
 				<p className="text-white text-lg mt-4">Launch with Eliza on</p>
 				<Image alt="fleek-logo" src="/fleek/fleek-logo.svg" height={50} width={70} className="mt-1 self-center" />
@@ -42,7 +42,7 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 				{!showInput && (
 					<Button
 						onClick={() => setShowInput((prev) => !prev)}
-						className="mt-5 h-fit bg-transparent hover:bg-white/5 border border-autofun-background-action-highlight text-white transition-all"
+						className="mt-5 h-fit bg-transparent hover:bg-white/5 border border-waifufun-background-action-highlight text-white transition-all"
 					>
 						Import Fleek Agent
 					</Button>
@@ -65,7 +65,7 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 							{connectAgentMutation.isError && <p className="text-red-500 text-sm">Something went wrong.</p>}
 							<Button
 								onClick={() => connectAgentMutation.mutate({ agentId, contractAddress, chain, chainId })}
-								className="mt-2 bg-autofun-background-action-highlight text-black hover:bg-opacity-90"
+								className="mt-2 bg-waifufun-background-action-highlight text-black hover:bg-opacity-90"
 								disabled={connectAgentMutation.isPending}
 							>
 								{connectAgentMutation.isPending ? "Submitting..." : "Submit"}

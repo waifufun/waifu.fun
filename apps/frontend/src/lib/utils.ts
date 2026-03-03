@@ -1,4 +1,4 @@
-import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@waifufun/types";
 import { clsx, type ClassValue } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
@@ -29,7 +29,7 @@ import {
 	createLegacyAutofunProgramWithProvider,
 	type CurrentAutofunTypes,
 	type LegacyAutofunTypes,
-} from "@autofun/programs";
+} from "@waifufun/programs";
 
 export type CreateTokenResponse = {
 	mintPublicKey: PublicKey;
@@ -424,7 +424,7 @@ export const retrieveQuote = async ({
 	priceImpactPct?: string;
 	quote?: unknown;
 }> => {
-	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "autofun";
+	const provider = token?.imported || token?.curveCompleted ? "jupiter" : "waifufun";
 	if (provider === "jupiter") {
 		return await retrieveJupiterQuote({
 			amount,
@@ -440,7 +440,7 @@ export const retrieveQuote = async ({
 
 	connection = new Connection(HELIUS_RPC_URL, "finalized");
 
-	if (provider === "autofun") {
+	if (provider === "waifufun") {
 		if (!wallet || !connection) throw new Error("No wallet or connection passed.");
 		return await retrieveAutofunQuote({
 			slippage,
@@ -452,7 +452,7 @@ export const retrieveQuote = async ({
 		});
 	}
 
-	throw new Error("No quote route found. Please contact auto.fun");
+	throw new Error("No quote route found. Please contact waifu.fun");
 };
 
 export const getBondingCurvePDA = async (
@@ -696,7 +696,7 @@ export const executeSwap = async (
 		return signature;
 	}
 
-	throw new Error("No route found for token to swap against. Contact autofun.");
+	throw new Error("No route found for token to swap against. Contact waifufun.");
 };
 
 export const calculateBondingCurveParams = (
@@ -921,5 +921,5 @@ export const resizeImage = (url: string, width: number, height: number) => {
 	if (url.includes("ipfs") || !url.startsWith("http")) {
 		return url;
 	}
-	return `https://auto.fun/cdn-cgi/image/width=${width},height=${height},format=png/${url}`;
+	return `https://waifu.fun/cdn-cgi/image/width=${width},height=${height},format=png/${url}`;
 };

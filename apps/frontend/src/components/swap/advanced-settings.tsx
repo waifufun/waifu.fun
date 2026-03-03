@@ -22,14 +22,14 @@ export default function AdvancedSettings() {
 			</div>
 
 			{open && (
-				<div className="py-4 flex flex-col gap-4 w-full border-t pt-4 mt-4 border-autofun-stroke-primary">
+				<div className="py-4 flex flex-col gap-4 w-full border-t pt-4 mt-4 border-waifufun-stroke-primary">
 					{/* Speed */}
 					<div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between p-0">
 						<div className="flex items-center gap-1">
 							<span className="text-xs text-white font-medium">Speed</span>
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<HelpCircle size={16} className="text-autofun-text-secondary" />
+									<HelpCircle size={16} className="text-waifufun-text-secondary" />
 								</TooltipTrigger>
 								<TooltipContent>
 									<span>Choose how fast your transaction executes</span>
@@ -62,7 +62,7 @@ export default function AdvancedSettings() {
 
 								<Tooltip>
 									<TooltipTrigger asChild>
-										<HelpCircle size={16} className="text-autofun-text-secondary" />
+										<HelpCircle size={16} className="text-waifufun-text-secondary" />
 									</TooltipTrigger>
 									<TooltipContent>
 										<span>This is the maximum amount of slippage you are willing to accept when placing the trade</span>
@@ -77,7 +77,7 @@ export default function AdvancedSettings() {
 									value={slippage / 10}
 									onChange={(e) => setSlippage(Number(e.target.value) * 10)}
 								/>
-								<span className="absolute right-2 top-1/2 -translate-y-1/2 text-autofun-background-action-highlight text-sm pointer-events-none">
+								<span className="absolute right-2 top-1/2 -translate-y-1/2 text-waifufun-background-action-highlight text-sm pointer-events-none">
 									%
 								</span>
 							</div>
@@ -91,7 +91,7 @@ export default function AdvancedSettings() {
 								"p-2 bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
 							])}
 						>
-							<AlertCircle className="text-autofun-background-action-highlight" />
+							<AlertCircle className="text-waifufun-background-action-highlight" />
 							Your transaction may be frontrun and result in an unfavorable trade
 						</div>
 					</div>

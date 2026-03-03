@@ -1,5 +1,5 @@
-import { SolanaNetworkIds } from "@autofun/types";
-import { SolanaRpcProvider } from "@autofun/rpc";
+import { SolanaNetworkIds } from "@waifufun/types";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 
 export const SEED_BONDING_CURVE = "bonding_curve";
 import { PublicKey } from "@solana/web3.js";

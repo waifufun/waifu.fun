@@ -35,9 +35,9 @@ export default function PointsFilter() {
 						onClick={() => router.push(`${pathname}?${createQueryString({ mode: btn.value })}`)}
 						className={`flex-1 h-full text-base rounded-md transition-all ${
 							isActive
-								? "text-white border border-autofun-background-action-highlight font-normal"
-								: "text-autofun-icon-secondary"
-						} hover:outline-1 hover:outline-autofun-background-action-highlight`}
+								? "text-white border border-waifufun-background-action-highlight font-normal"
+								: "text-waifufun-icon-secondary"
+						} hover:outline-1 hover:outline-waifufun-background-action-highlight`}
 					>
 						{btn.label}
 					</button>

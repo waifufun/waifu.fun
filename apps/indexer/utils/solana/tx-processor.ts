@@ -1,12 +1,12 @@
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import type { DecodedInstruction } from "../../types";
-import { SolanaInstructionDecoderV2 } from "./implementations/v2/instruction-decoder-v2";
+import { SolanaInstructionDecoderV2 } from "./implementations/instruction-decoder";
 import type { SolanaInstructionDecoder } from "./abstract/instruction-decoder";
 import { SolanaEventDecoder } from "./event-decoder";
 import { SolanaAmountExtractor } from "./extract-amount";
 import { SolanaLogDecoder } from "./log-decoder";
-import DB from "@autofun/database";
-import { SolanaRpcProvider } from "@autofun/rpc";
+import DB from "@waifufun/database";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 import { SolanaInstructionDecoderLegacy } from "./implementations/legacy/instruction-decoder-legacy";
 
 export class SolanaTransactionProcessor {
@@ -34,7 +34,7 @@ export class SolanaTransactionProcessor {
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	hasAutoFunProgram(accounts: any[]): boolean {
+	hasWaifuFunProgram(accounts: any[]): boolean {
 		return accounts.some((account) => account.toBase58() === this.autoFunAddress);
 	}
 
@@ -142,7 +142,7 @@ export class SolanaTransactionProcessor {
 			return events;
 		}
 
-		if (!this.hasAutoFunProgram(accounts)) {
+		if (!this.hasWaifuFunProgram(accounts)) {
 			return events;
 		}
 

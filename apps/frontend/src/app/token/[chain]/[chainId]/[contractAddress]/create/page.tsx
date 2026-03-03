@@ -1,5 +1,5 @@
 import { getToken } from "@/lib/api";
-import type { IToken, ITokenLookUp } from "@autofun/types";
+import type { IToken, ITokenLookUp } from "@waifufun/types";
 import TokenCreatePageClient from "@/components/token-page/ai-create";
 
 export default async function TokenCreatePage({ params }: { params: Promise<ITokenLookUp> }) {

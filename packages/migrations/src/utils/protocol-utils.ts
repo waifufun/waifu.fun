@@ -17,7 +17,7 @@ import {
 	createTransferInstruction,
 } from "@solana/spl-token";
 import type { MigrationContext } from "../types";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import type { ProtocolState } from "../types";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
 import BN from "bn.js";
@@ -128,7 +128,7 @@ export async function withdrawLiquidity(context: MigrationContext, tokenMint: st
 		}
 
 		const programVersion = token.version;
-		const program = programVersion === 1 ? programContext.autofunLegacyProgram : programContext.autofunProgram;
+		const program = programVersion === 1 ? programContext.waifufunLegacyProgram : programContext.waifufunProgram;
 		if (!program) {
 			throw new Error("Program context is not initialized");
 		}

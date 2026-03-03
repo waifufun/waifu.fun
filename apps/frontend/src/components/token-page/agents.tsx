@@ -1,5 +1,5 @@
 "use client";
-import type { IAgent, IToken } from "@autofun/types";
+import type { IAgent, IToken } from "@waifufun/types";
 import FleekAgent from "../fleek-agent";
 import ConnectToFleek from "../connect-fleek";
 
@@ -9,7 +9,7 @@ export default function Agents({ agents, token }: { agents: IAgent[]; token: ITo
 			{agents?.length > 0 ? (
 				<FleekAgent agents={agents} />
 			) : (
-				<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+				<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
 					There are currently no connected agents.
 				</div>
 			)}

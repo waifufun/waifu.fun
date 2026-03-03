@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import type { TChain, TChainId } from "@autofun/types";
-import DB from "@autofun/database";
+import type { TChain, TChainId } from "@waifufun/types";
+import DB from "@waifufun/database";
 import { requireTokenOwner } from "../middlewares/token-owner";
-import { modifyFile, extractObjectKeyFromUrl } from "@autofun/s3-uploader";
+import { modifyFile, extractObjectKeyFromUrl } from "@waifufun/s3-uploader";
 import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
 export default async function ownerRoutes(fastify: FastifyInstance) {
@@ -65,7 +65,7 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 							telegram: telegram !== undefined ? telegram : tokenData.socials?.telegram || "",
 							website: website !== undefined ? website : tokenData.socials?.website || "",
 							discord: discord !== undefined ? discord : tokenData.socials?.discord || "",
-							createdOn: "https://auto.fun/",
+							createdOn: "https://waifu.fun/",
 						};
 
 						const metadataBuffer = Buffer.from(JSON.stringify(currentMetadata, null, 2), "utf8");
@@ -196,7 +196,7 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 							telegram: tokenData.socials?.telegram || "",
 							website: tokenData.socials?.website || "",
 							discord: tokenData.socials?.discord || "",
-							createdOn: "https://auto.fun/",
+							createdOn: "https://waifu.fun/",
 						};
 
 						const metadataBuffer = Buffer.from(JSON.stringify(currentMetadata, null, 2), "utf8");

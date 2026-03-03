@@ -1,4 +1,4 @@
-import type { IMigration } from "@autofun/types";
+import type { IMigration } from "@waifufun/types";
 import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 

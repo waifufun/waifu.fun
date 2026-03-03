@@ -8,7 +8,7 @@ import Image from "next/image";
 import Verified from "./verified";
 import { CopyButton } from "./copy-button";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -59,7 +59,7 @@ export default function SearchMenu() {
 					className="w-[430px] border-[#262626] bg-gradient-to-b from-[#151515] to-[#0D0D0D]"
 				>
 					{searchQuery?.isPending ? (
-						<div className="text-center text-base text-autofun-text-secondary">Searching...</div>
+						<div className="text-center text-base text-waifufun-text-secondary">Searching...</div>
 					) : searchQuery?.data?.length ? (
 						<div className="flex flex-col gap-1.5">
 							{searchQuery?.data?.map((token) => (
@@ -85,14 +85,14 @@ export default function SearchMenu() {
 												<div className="flex items-center gap-1.5">
 													{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 													<span className="text-white text-base font-medium font-satoshi uppercase">{token.name}</span>
-													<span className="text-base font-medium uppercase text-autofun-text-secondary">
+													<span className="text-base font-medium uppercase text-waifufun-text-secondary">
 														{token.ticker}
 													</span>
 													<Verified isVerified={token?.verified} />
 												</div>
 												<div className="flex items-center gap-2">
 													<CopyButton textToCopy={token.contractAddress} />
-													<span className="text-autofun-text-secondary text-base font-medium font-['Satoshi'] leading-snug">
+													<span className="text-waifufun-text-secondary text-base font-medium font-['Satoshi'] leading-snug">
 														{shortenAddress(token.contractAddress)}
 													</span>
 												</div>
@@ -101,7 +101,7 @@ export default function SearchMenu() {
 
 										<div className="flex flex-col gap-2 items-end">
 											<span className="font-medium text-base text-white">Mcap</span>
-											<span className="font-medium text-base text-autofun-background-action-highlight">
+											<span className="font-medium text-base text-waifufun-background-action-highlight">
 												{abbreviateNumber(token?.marketcap)}
 											</span>
 										</div>
@@ -110,7 +110,7 @@ export default function SearchMenu() {
 							))}
 						</div>
 					) : (
-						<div className="text-center text-base text-autofun-text-secondary">No results found.</div>
+						<div className="text-center text-base text-waifufun-text-secondary">No results found.</div>
 					)}
 				</PopoverContent>
 			</Popover>

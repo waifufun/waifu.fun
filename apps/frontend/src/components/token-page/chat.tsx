@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getChatHistory, sendChatMessage } from "@/lib/api";
-import type { IChatMessage, IToken, TChatRooms } from "@autofun/types";
+import type { IChatMessage, IToken, TChatRooms } from "@waifufun/types";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

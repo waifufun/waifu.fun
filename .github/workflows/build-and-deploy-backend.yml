@@ -8,7 +8,7 @@ on:
          - main
 
 env:
-   NORTHFLANK_PROJECT_ID: autofun
+   NORTHFLANK_PROJECT_ID: waifufun
    NORTHFLANK_CREDENTIALS_ID: "dockerhub"
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
            id: meta
            uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
            with:
-              images: autofun/autofun-backend
+              images: waifufun/waifufun-backend
               tags: |
                 type=raw,value=${{ github.ref_name }}
 

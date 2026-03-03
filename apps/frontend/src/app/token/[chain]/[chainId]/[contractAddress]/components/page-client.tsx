@@ -4,7 +4,7 @@ import TokenTabs from "@/components/token-page/token-tabs";
 import Verified from "@/components/verified";
 import { getToken } from "@/lib/api";
 import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } from "@/lib/utils";
-import type { IToken, ITokenLookUp } from "@autofun/types";
+import type { IToken, ITokenLookUp } from "@waifufun/types";
 import Image from "next/image";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import { Fragment, type ReactNode, useMemo, useState } from "react";
@@ -104,7 +104,7 @@ export default function PageClient({
 							<span className="text-xl md:text-2xl font-bold text-gray-100 uppercase tracking-wider animate-text-flicker-slow">
 								{token.name}
 							</span>
-							{/* <div className="h-5 w-[1px] bg-autofun-background-disabled" /> */}
+							{/* <div className="h-5 w-[1px] bg-waifufun-background-disabled" /> */}
 							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
 							<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
 							{token?.featured ? (
@@ -120,7 +120,7 @@ export default function PageClient({
 							) : null}
 						</div>
 						{/* Creator */}
-						<div className="flex items-center gap-1.5 text-autofun-text-secondary text-xs font-normal font-satoshi">
+						<div className="flex items-center gap-1.5 text-waifufun-text-secondary text-xs font-normal font-satoshi">
 							<div className="capitalize">Created by:</div>
 							<div className="hover:underline">
 								<Link href={`/profile/${token.creator}`}>{token?.creator ? shortenAddress(token?.creator) : "-"}</Link>
@@ -155,9 +155,9 @@ export default function PageClient({
 						},
 					].map((item) => (
 						<div className="flex flex-col items-end min-w-24" key={item.title}>
-							<div className="text-autofun-text-secondary uppercase text-xs place-self-start">{item.title}</div>
-							<div className="inline-flex items-center gap-1 text-xs justify-start place-self-start text-autofun-text-highlight font-medium font-satoshi leading-normal">
-								{item?.icon ? <item.icon className="size-3 text-autofun-background-action-highlight/70" /> : null}
+							<div className="text-waifufun-text-secondary uppercase text-xs place-self-start">{item.title}</div>
+							<div className="inline-flex items-center gap-1 text-xs justify-start place-self-start text-waifufun-text-highlight font-medium font-satoshi leading-normal">
+								{item?.icon ? <item.icon className="size-3 text-waifufun-background-action-highlight/70" /> : null}
 								{item.value}
 							</div>
 						</div>
@@ -195,13 +195,13 @@ export default function PageClient({
 							/>
 							<div className="flex flex-col min-w-0">
 								<div className="flex items-center flex-wrap gap-2 min-w-0">
-									<span className="font-medium text-lg text-autofun-background-action-highlight uppercase block truncate">
+									<span className="font-medium text-lg text-waifufun-background-action-highlight uppercase block truncate">
 										{token?.name}
 									</span>
 									<span className="font-medium text-lg uppercase block truncate">{token?.ticker}</span>
 								</div>
 
-								<p className="text-xs text-autofun-text-secondary break-words">
+								<p className="text-xs text-waifufun-text-secondary break-words">
 									{token?.description
 										? token?.description
 										: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"}
@@ -285,10 +285,10 @@ export default function PageClient({
 							</>
 						)}
 
-						<div className="h-[2px] w-full bg-autofun-background-action-highlight/25" />
+						<div className="h-[2px] w-full bg-waifufun-background-action-highlight/25" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
-							<span className="text-base font-medium uppercase text-autofun-text-secondary">TOKEN:</span>
-							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-autofun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
+							<span className="text-base font-medium uppercase text-waifufun-text-secondary">TOKEN:</span>
+							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-waifufun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
 								<span className="text-gray-300 font-mono truncate">{shortenAddress(token?.contractAddress)}</span>
 								<div className="flex gap-1 flex-shrink-0">
 									<CopyButton textToCopy={token.contractAddress} />

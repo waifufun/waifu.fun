@@ -1,6 +1,6 @@
 import type { Address, Abi, Hash, Chain } from "viem";
 
-export type AutoFunTokenContract = {
+export type WaifuFunTokenContract = {
 	address: Address;
 	abi: readonly Abi[];
 	chain: Chain;
@@ -41,13 +41,13 @@ export type OwnershipTransferredEvent = {
 	newOwner: Address;
 };
 
-export type AutoFunTokenContractFactory = {
+export type WaifuFunTokenContractFactory = {
 	deploy: (args: {
 		name: string;
 		symbol: string;
 		initialSupply: bigint;
 		maxSupply: bigint;
 		owner: Address;
-	}) => Promise<AutoFunTokenContract>;
-	attach: (address: Address) => AutoFunTokenContract;
+	}) => Promise<WaifuFunTokenContract>;
+	attach: (address: Address) => WaifuFunTokenContract;
 };

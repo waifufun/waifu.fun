@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { isAdmin, hasAdminRole, hasPermission } from "../utils/admin";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 
 declare module "fastify" {
 	interface FastifyRequest {

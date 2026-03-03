@@ -1,9 +1,9 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import type { JWT } from "@fastify/jwt";
 import { isAddress as isSolanaAddress } from "@solana/kit";
-import { getChecksummedAddress } from "@autofun/utils";
-import DB from "@autofun/database";
+import { getChecksummedAddress } from "@waifufun/utils";
+import DB from "@waifufun/database";
 import { createHash } from "node:crypto";
 
 declare module "fastify" {

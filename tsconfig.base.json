@@ -85,7 +85,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./apps/frontend/src/*"],
-      "@autofun/*": ["./packages/*/src"]
+      "@waifufun/*": ["./packages/*/src"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],

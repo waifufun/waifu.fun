@@ -1,8 +1,8 @@
 import { PublicKey, Connection, Keypair } from "@solana/web3.js";
 import { claimPositionFee } from "./meteoraVault";
 import { claim } from "./raydiumVault";
-import DB from "@autofun/database";
-import type { SolanaNetworkIds } from "@autofun/types";
+import DB from "@waifufun/database";
+import type { SolanaNetworkIds } from "@waifufun/types";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { Wallet } from "../utils/customWallet.js";
 import { getRpcUrl } from "../utils/getRpcUrl";
@@ -15,7 +15,7 @@ import {
 	createMeteoraVaultProgramWithProvider,
 	type RaydiumVaultTypes,
 	type MeteoraVaultTypes,
-} from "@autofun/programs";
+} from "@waifufun/programs";
 
 export class Claimer {
 	private connection: Connection;

@@ -1,4 +1,4 @@
-import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import type { SolanaAddressLike, SolanaNetworkIds } from "@waifufun/types";
 import type { LaunchData, SwapData, CurveCompleteData } from "./events";
 
 export type EventData =

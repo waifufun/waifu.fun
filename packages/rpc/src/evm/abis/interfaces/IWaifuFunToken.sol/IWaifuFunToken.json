@@ -1,7 +1,7 @@
 {
 	"_format": "hh-sol-artifact-1",
-	"contractName": "IAutoFunToken",
-	"sourceName": "contracts/interfaces/IAutoFunToken.sol",
+	"contractName": "IWaifuFunToken",
+	"sourceName": "contracts/interfaces/IWaifuFunToken.sol",
 	"abi": [
 		{
 			"inputs": [

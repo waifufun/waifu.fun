@@ -11,7 +11,7 @@ import {
 	addLiquidity,
 	depositNftToMeteora,
 } from "./meteora/calls";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import { recordTransaction } from "../utils/protocol-utils";
 
 export type MeteoraMigrationContext = MigrationContext;

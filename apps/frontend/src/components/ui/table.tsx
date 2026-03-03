@@ -38,7 +38,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 		<tr
 			data-slot="table-row"
 			className={cn(
-				"bg-black h-8 transition-colors not-last:border-b border-autofun-background-action-highlight/25",
+				"bg-black h-8 transition-colors not-last:border-b border-waifufun-background-action-highlight/25",
 				className,
 			)}
 			{...props}
@@ -51,7 +51,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 		<th
 			data-slot="table-head"
 			className={cn(
-				"px-6 py-3 bg-black border-b-2 border-autofun-background-action-highlight/25 text-xs text-autofun-text-highlight font-medium font-satoshi uppercase leading-tight text-left align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+				"px-6 py-3 bg-black border-b-2 border-waifufun-background-action-highlight/25 text-xs text-waifufun-text-highlight font-medium font-satoshi uppercase leading-tight text-left align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 				className,
 			)}
 			{...props}
@@ -64,7 +64,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
 		<td
 			data-slot="table-cell"
 			className={cn(
-				"px-6 py-3 align-middle text-autofun-text-primary text-sm font-normal font-satoshi leading-tight whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+				"px-6 py-3 align-middle text-waifufun-text-primary text-sm font-normal font-satoshi leading-tight whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 				className,
 			)}
 			{...props}

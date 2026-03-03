@@ -168,7 +168,7 @@ function Sidebar({
 					data-sidebar="sidebar"
 					data-slot="sidebar"
 					data-mobile="true"
-					className="bg-black border-r-2 border-autofun-background-action-highlight/25 text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+					className="bg-black border-r-2 border-waifufun-background-action-highlight/25 text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
 					style={
 						{
 							"--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -334,7 +334,7 @@ function SidebarSeparator({ className, ...props }: React.ComponentProps<typeof S
 		<Separator
 			data-slot="sidebar-separator"
 			data-sidebar="separator"
-			className={cn("border-autofun-background-action-highlight/20 mx-2 w-fit border-t h-[1px]", className)}
+			className={cn("border-waifufun-background-action-highlight/20 mx-2 w-fit border-t h-[1px]", className)}
 			{...props}
 		/>
 	);

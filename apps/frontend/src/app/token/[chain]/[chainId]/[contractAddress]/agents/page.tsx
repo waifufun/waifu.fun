@@ -1,6 +1,6 @@
 import Agents from "@/components/token-page/agents";
 import { getAgent, getToken } from "@/lib/api";
-import type { ITokenLookUp, TChainId } from "@autofun/types";
+import type { ITokenLookUp, TChainId } from "@waifufun/types";
 
 export default async function Page({ params }: { params: Promise<ITokenLookUp> }) {
 	const tokenParams = await params;

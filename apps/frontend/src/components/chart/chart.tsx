@@ -1,6 +1,6 @@
 import LocalChart from "./local-chart";
 import { getCoinGeckoChainName } from "../../lib/utils";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 
 interface ChartProps {
 	token: IToken;

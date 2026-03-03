@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { uploadAvatar } from "@/lib/api";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import { useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

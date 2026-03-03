@@ -9,11 +9,11 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 		header: "General Notice",
 		subheader: "Legal Agreement",
 		content:
-			'These terms and conditions are a legal contract between you (“you”) and Eliza Foundation OpCo Ltd ("us", "our," or "we") and govern your use of all the text, information, software, graphics, videos, audio, photographs, and other materials that we and our affiliates may make available to you through any area of the auto.fun site (“site”) and the products and services that we make available through the site (our “offerings” and collectively with the site the “platform”). These terms and conditions also govern the creation, sale, purchase, receipt, transfer, trade, exchange, and display of digital assets on the platform.',
+			'These terms and conditions are a legal contract between you (“you”) and Eliza Foundation OpCo Ltd ("us", "our," or "we") and govern your use of all the text, information, software, graphics, videos, audio, photographs, and other materials that we and our affiliates may make available to you through any area of the waifu.fun site (“site”) and the products and services that we make available through the site (our “offerings” and collectively with the site the “platform”). These terms and conditions also govern the creation, sale, purchase, receipt, transfer, trade, exchange, and display of digital assets on the platform.',
 	},
 	{
 		content:
-			"READ THESE TERMS AND CONDITIONS CAREFULLY BEFORE ACCESSING, USING, OR INTERACTING WITH ANY PART OF THE PLATFORM.  BY ACCEPTING THESE TERMS AND CONDITIONS, INTERACTING WITH ANY PART OF THE PLATFORM, USING OR ACCESSING ANY OF OUR SERVICES, OR CREATING OR PURCHASING ANY OFFERINGS OF ANY DIGITAL CURRENCY, ASSETS, OR TOKENS THROUGH AUTO.FUN, YOU AGREE TO BE LEGALLY BOUND BY THESE TERMS AND CONDITIONS. IF YOU DO NOT AGREE, YOU ARE NOT PERMITTED TO USE THE PLATFORM AND MUST IMMEDIATELY DISCONTINUE YOUR USE OF THE PLATFORM AND RELATED DIGITAL ASSETS.",
+			"READ THESE TERMS AND CONDITIONS CAREFULLY BEFORE ACCESSING, USING, OR INTERACTING WITH ANY PART OF THE PLATFORM.  BY ACCEPTING THESE TERMS AND CONDITIONS, INTERACTING WITH ANY PART OF THE PLATFORM, USING OR ACCESSING ANY OF OUR SERVICES, OR CREATING OR PURCHASING ANY OFFERINGS OF ANY DIGITAL CURRENCY, ASSETS, OR TOKENS THROUGH WAIFU.FUN, YOU AGREE TO BE LEGALLY BOUND BY THESE TERMS AND CONDITIONS. IF YOU DO NOT AGREE, YOU ARE NOT PERMITTED TO USE THE PLATFORM AND MUST IMMEDIATELY DISCONTINUE YOUR USE OF THE PLATFORM AND RELATED DIGITAL ASSETS.",
 	},
 	{
 		content:
@@ -30,9 +30,9 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 			"You may only access and use the platform if you are at least 18 years old and have the legal capacity to enter into a binding contract. By using the platform and/or any services made available on the platform, you warrant that you are at least 18 years old and have the legal capacity to enter into a binding contract and further warrant that your access to and use of the platform and our services is lawful in your country of residence in the way you access and use them.",
 	},
 	{
-		header: "About Auto.Fun",
+		header: "About waifu.fun",
 		content:
-			"Auto.Fun is a multi-agent simulation framework designed to create, deploy, and manage autonomous AI agents. Our services leverage AI and collective intelligence to allow provision of AI agent services for entertainment or functional purposes.",
+			"waifu.fun is a multi-agent simulation framework designed to create, deploy, and manage autonomous AI agents. Our services leverage AI and collective intelligence to allow provision of AI agent services for entertainment or functional purposes.",
 	},
 	{
 		header: "Information published is not advice",
@@ -55,7 +55,7 @@ Whether your use of the platform or any of its components requires an account or
 	{
 		header: "User Conduct and Prohibited Use",
 		content: `
-    You agree to use the platform only for lawful purposes and in a manner consistent with all applicable laws and regulations. You must not use the platform for any illicit or illegal activities, including but not limited to fraud, money laundering, terrorism financing, dissemination of unlawful content, or activities that impersonate, stalk, harass, harm, or violate the rights of others. You agree that any image, text, or other content you upload or send to the platform will not violate the intellectual property rights of any third party or be fraudulent, misleading, illegal or inciting illegality, harassing, harmful, discriminatory, hateful, or otherwise violative of the rights of any party. You acknowledge that any such material may be removed at our sole discretion, resulting in potential partial or complete loss of utility of the platform for you and others. You shall not attempt to gain unauthorized access to any systems, data, or information related to Auto.Fun, nor engage in any conduct that disrupts, damages, or impairs the functionality of the platform or related digital currency, tokens, and assets.`,
+    You agree to use the platform only for lawful purposes and in a manner consistent with all applicable laws and regulations. You must not use the platform for any illicit or illegal activities, including but not limited to fraud, money laundering, terrorism financing, dissemination of unlawful content, or activities that impersonate, stalk, harass, harm, or violate the rights of others. You agree that any image, text, or other content you upload or send to the platform will not violate the intellectual property rights of any third party or be fraudulent, misleading, illegal or inciting illegality, harassing, harmful, discriminatory, hateful, or otherwise violative of the rights of any party. You acknowledge that any such material may be removed at our sole discretion, resulting in potential partial or complete loss of utility of the platform for you and others. You shall not attempt to gain unauthorized access to any systems, data, or information related to waifu.fun, nor engage in any conduct that disrupts, damages, or impairs the functionality of the platform or related digital currency, tokens, and assets.`,
 	},
 	{
 		header: "Fees and Payments",
@@ -185,7 +185,7 @@ For avoidance of doubt, your use of the platform does not grant you any rights i
 Any waiver of any term on these terms and conditions by us can only be done in express writing. Any failure on our part to enforce a term does not constitute a waiver and we reserve the right in relation to all breaches unless expressly stated otherwise.
 The contents of these terms and conditions constitute the entire agreement between you and us and supersede any prior negotiations, representations, understandings or arrangements made between you and us regarding the subject matter of this agreement or your access to or use of the platform, whether made orally or in writing.
 If a provision of these terms and conditions is invalid or unenforceable it is to be read down or severed to the extent necessary without affecting the validity or enforceability of the remaining provisions.
-Eliza Foundation OpCo Ltd, a company incorporated in the Cayman Islands, holds the benefit of these terms and conditions on trust for and for the benefit of its affiliates, related entities and other members of the group of companies forming the Auto.Fun group (together, the Eliza Group) and may enforce these terms for and on behalf of each such other person. 
+Eliza Foundation OpCo Ltd, a company incorporated in the Cayman Islands, holds the benefit of these terms and conditions on trust for and for the benefit of its affiliates, related entities and other members of the group of companies forming the waifu.fun group (together, the Eliza Group) and may enforce these terms for and on behalf of each such other person. 
 A provision of these terms and conditions which can and is intended to operate after its conclusion or termination will remain in full force and effect, including all indemnities, limitations on liability and releases.
 You may not commence court proceedings relating to any dispute arising from, or in connection with, the platform without first meeting with us to seek (in good faith) to resolve that dispute.
     `,

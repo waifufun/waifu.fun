@@ -1,8 +1,8 @@
 "use client";
 
 import { CopyButton } from "../copy-button";
-import type { AddressLike, TChain } from "@autofun/types";
-import type { SolanaNetworkIds, EvmChainIds } from "@autofun/types";
+import type { AddressLike, TChain } from "@waifufun/types";
+import type { SolanaNetworkIds, EvmChainIds } from "@waifufun/types";
 import AvatarImage from "./avatar-image";
 import { formatNumber } from "@/lib/utils";
 

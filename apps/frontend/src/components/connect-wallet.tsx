@@ -8,7 +8,7 @@ import { LogOut, User, Wallet } from "lucide-react";
 import { useSidebar } from "./ui/sidebar";
 import { useEffect, useState, useRef } from "react";
 import { authenticate, generateNonce, getAuthStatus, logOut } from "@/lib/api";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import bs58 from "bs58";
 import { useRouter } from "next/navigation";
 

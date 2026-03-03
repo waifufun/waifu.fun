@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { updateCryptoPrices } from "@autofun/utils";
-import redis from "@autofun/redis";
+import { updateCryptoPrices } from "@waifufun/utils";
+import redis from "@waifufun/redis";
 
 export default async function pricesRoutes(fastify: FastifyInstance) {
 	/** Retrieve crypto token prices */

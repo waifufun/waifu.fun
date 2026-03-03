@@ -1,4 +1,4 @@
-import { SolanaRpcProvider } from "@autofun/rpc";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 import { SolanaTransactionProcessor } from "../utils/solana/tx-processor";
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Base URL and headers
-URL="https://api-mainnet.auto.fun/tokens"
-ORIGIN="https://auto.fun"
+URL="https://api-mainnet.waifu.fun/tokens"
+ORIGIN="https://waifu.fun"
 
 # Initial page
 page=1

@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import { ABIS } from "@autofun/constants";
-import { EVMRpcProvider } from "@autofun/rpc";
-import type { IRecentTransaction, TChain, TChainId, TSupportProtocol } from "@autofun/types";
-import { isChainIdAllowedForChain } from "@autofun/utils";
+import { ABIS } from "@waifufun/constants";
+import { EVMRpcProvider } from "@waifufun/rpc";
+import type { IRecentTransaction, TChain, TChainId, TSupportProtocol } from "@waifufun/types";
+import { isChainIdAllowedForChain } from "@waifufun/utils";
 import { parseEventLogs, erc20Abi, getAddress, type Address, formatUnits, type Hash } from "viem";
 
-import DB from "@autofun/database";
-import { Claimer } from "@autofun/migrations";
-import type { SolanaNetworkIds } from "@autofun/types";
+import DB from "@waifufun/database";
+import { Claimer } from "@waifufun/migrations";
+import type { SolanaNetworkIds } from "@waifufun/types";
 
 interface TransferEventArgs {
 	from: Address;

@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { generateMetadata } from "../utils/generation/metadata";
 import { generateMedia } from "../utils/generation/media";
-import { MediaType, type SolanaNetworkIds, type AddressLike, type TChain } from "@autofun/types";
+import { MediaType, type SolanaNetworkIds, type AddressLike, type TChain } from "@waifufun/types";
 import { checkRateLimit, incrementRateLimit } from "../utils/generation/ratelimit";
-import DB from "@autofun/database";
-import { SolanaRpcProvider } from "@autofun/rpc";
+import DB from "@waifufun/database";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 import { authenticationMiddleware } from "../middlewares/authentication";
 
 interface GenerateMetadataRequest {

@@ -9,7 +9,7 @@ import {
 	depositNftToRaydiumVault,
 } from "./raydium/calls";
 import BN from "bn.js";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { recordTransaction } from "../utils/protocol-utils";
 

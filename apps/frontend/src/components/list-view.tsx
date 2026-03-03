@@ -1,6 +1,6 @@
 "use client";
 
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { abbreviateNumber, fromNow, shortenAddress } from "@/lib/utils";
 import { formatUnits } from "viem";
@@ -34,7 +34,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 			<TableBody>
 				{tokens.map((token: IToken) => (
 					<TableRow className="group cursor-pointer" key={token.contractAddress} onClick={() => navigateClick(token)}>
-						<TableCell className="text-autofun-text-secondary font-medium">
+						<TableCell className="text-waifufun-text-secondary font-medium">
 							<div className="flex items-center gap-3">
 								{/* Image */}
 								<Image
@@ -51,14 +51,14 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 									<div className="flex items-center gap-1.5">
 										{/* <ChainIndicator chain={token.chain} chainId={token.chainId} /> */}
 										<span className="text-white text-xl font-medium font-satoshi uppercase">{token.name}</span>
-										<span className="text-lg font-medium uppercase text-autofun-text-secondary truncate">
+										<span className="text-lg font-medium uppercase text-waifufun-text-secondary truncate">
 											{token.ticker}
 										</span>
 										<Verified isVerified={token?.verified} />
 									</div>
 									<div className="flex items-center gap-2">
 										<CopyButton textToCopy={token.contractAddress} />
-										<span className="text-autofun-text-secondary text-base font-medium font-['Satoshi'] leading-snug">
+										<span className="text-waifufun-text-secondary text-base font-medium font-['Satoshi'] leading-snug">
 											{shortenAddress(token.contractAddress)}
 										</span>
 									</div>
@@ -66,7 +66,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 							</div>
 						</TableCell>
 						<TableCell className="text-center">
-							<span className=" text-autofun-background-action-highlight text-base font-medium font-satoshi leading-none">
+							<span className=" text-waifufun-background-action-highlight text-base font-medium font-satoshi leading-none">
 								{abbreviateNumber(token.marketcap)}
 							</span>
 						</TableCell>
@@ -77,16 +77,16 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 						</TableCell>
 						<TableCell className="text-left">
 							{token.imported ? (
-								<span className="text-autofun-background-action-highlight text-sm font-medium font-satoshi uppercase leading-none tracking-widest">
+								<span className="text-waifufun-background-action-highlight text-sm font-medium font-satoshi uppercase leading-none tracking-widest">
 									Import
 								</span>
 							) : (
 								<Fragment>
 									{typeof token?.curveProgress === "number" && !token?.curveCompleted ? (
 										<div className="flex flex-col gap-2.5 max-w-[275px]">
-											<div className="text-autofun-text-primary text-base font-medium font-satoshi leading-none inline-flex gap-2">
+											<div className="text-waifufun-text-primary text-base font-medium font-satoshi leading-none inline-flex gap-2">
 												Progress
-												<span className="text-autofun-background-action-highlight font-normal">
+												<span className="text-waifufun-background-action-highlight font-normal">
 													{token.curveProgress.toFixed(2)}%
 												</span>
 											</div>

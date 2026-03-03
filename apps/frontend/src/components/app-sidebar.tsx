@@ -51,7 +51,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 			<SidebarHeader>
 				<div className="flex items-center gap-2 px-2 py-1">
 					<Link href="/" className="flex items-center gap-2">
-						<Image src="/logo_wide.svg" height={32} width={100} className="h-8 w-auto" unoptimized alt="Auto.Fun" />
+						<Image src="/logo_wide.svg" height={32} width={100} className="h-8 w-auto" unoptimized alt="waifu.fun" />
 					</Link>
 				</div>
 			</SidebarHeader>

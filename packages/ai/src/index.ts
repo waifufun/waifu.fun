@@ -1,5 +1,5 @@
 import { fal } from "@fal-ai/client";
-import { falApiKey } from "@autofun/constants";
+import { falApiKey } from "@waifufun/constants";
 
 fal.config({
 	credentials: falApiKey,

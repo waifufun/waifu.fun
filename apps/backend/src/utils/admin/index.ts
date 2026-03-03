@@ -1,5 +1,5 @@
-import DB from "@autofun/database";
-import type { AddressLike } from "@autofun/types";
+import DB from "@waifufun/database";
+import type { AddressLike } from "@waifufun/types";
 
 const parseAdminAddresses = (addressesStr: string | undefined): string[] => {
 	console.log("=== parseAdminAddresses ===");

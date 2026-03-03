@@ -1,10 +1,10 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { tokens, type Token } from "./schema.js";
-import DB from "@autofun/database";
-import logger from "@autofun/logger";
-import type { IToken, IMigration, AddressLike, TURLLike } from "@autofun/types";
-import { SolanaNetworkIds } from "@autofun/types";
+import DB from "@waifufun/database";
+import logger from "@waifufun/logger";
+import type { IToken, IMigration, AddressLike, TURLLike } from "@waifufun/types";
+import { SolanaNetworkIds } from "@waifufun/types";
 import Mongoose from "mongoose";
 export class DataSync {
 	private pgPool: Pool;

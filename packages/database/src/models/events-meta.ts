@@ -1,6 +1,6 @@
 import Mongoose, { Schema, type Model as ModelType } from "mongoose";
-import logger from "@autofun/logger";
-import type { IEventsMeta } from "@autofun/types";
+import logger from "@waifufun/logger";
+import type { IEventsMeta } from "@waifufun/types";
 
 export interface IEventsMetaModel extends ModelType<IEventsMeta> {
 	getOrCreate(programId: string, networkId: string): Promise<IEventsMeta>;

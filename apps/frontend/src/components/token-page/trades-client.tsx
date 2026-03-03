@@ -2,11 +2,11 @@
 
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getTrades } from "@/lib/api";
-import type { IToken, ITrade } from "@autofun/types";
+import type { IToken, ITrade } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
 import { cn, formatUsd, shortenAddress } from "@/lib/utils";
 import Triangle from "../triangle";
-import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@autofun/constants";
+import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
 import Link from "next/link";
 import TimeAgo from "../time-ago";
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +31,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 
 	if (!data || data?.length === 0) {
 		return (
-			<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+			<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
 				There are currently no trades.
 			</div>
 		);
@@ -60,7 +60,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								: "",
 						])}
 					>
-						<TableCell className="hover:text-autofun-background-action-highlight font-medium">
+						<TableCell className="hover:text-waifufun-background-action-highlight font-medium">
 							<Link href={`/profile/${trade.address}`}>{trade.address ? shortenAddress(trade?.address) : "-"}</Link>
 						</TableCell>
 						<TableCell>
@@ -87,13 +87,13 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/tx/${trade.txId}`}
 								target="_blank"
 							>
-								<ExternalLink className="ml-auto size-4 text-autofun-background-action-highlight" />
+								<ExternalLink className="ml-auto size-4 text-waifufun-background-action-highlight" />
 							</Link>
 						</TableCell>
 					</TableRow>
 				))}
 			</TableBody>
-			<TableFooter className="border-t-2 border-autofun-background-action-highlight/25">
+			<TableFooter className="border-t-2 border-waifufun-background-action-highlight/25">
 				<TableRow>
 					<TableCell colSpan={7}>
 						<div className="text-gray-500 text-xs uppercase text-center mx-auto w-full">

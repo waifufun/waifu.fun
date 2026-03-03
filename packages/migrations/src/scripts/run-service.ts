@@ -1,8 +1,8 @@
 import { Connection, Keypair } from "@solana/web3.js";
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { MigrationService } from "../services/migration-service.js";
-import DB from "@autofun/database";
-import redis from "@autofun/redis";
+import DB from "@waifufun/database";
+import redis from "@waifufun/redis";
 import { Wallet } from "../utils/customWallet.js";
 import * as dotenv from "dotenv";
 // biome-ignore lint/style/useNodejsImportProtocol: <explanation>

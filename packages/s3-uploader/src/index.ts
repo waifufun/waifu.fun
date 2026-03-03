@@ -1,6 +1,6 @@
 import * as aws from "@aws-sdk/client-s3";
-import logger from "@autofun/logger";
-import type { IFile, TURLLike } from "@autofun/types";
+import logger from "@waifufun/logger";
+import type { IFile, TURLLike } from "@waifufun/types";
 // @ts-ignore
 import mime from "mime-types";
 import sharp from "sharp";
@@ -93,7 +93,7 @@ export const extractObjectKeyFromUrl = (metadataUrl: string): string => {
 	const { publicBaseUrl } = getS3Client();
 
 	// Define potential prefixes
-	const expectedR2Prefix = "https://storage.autofun.tech/";
+	const expectedR2Prefix = "https://storage.waifufun.tech/";
 	const expectedMinioPrefixPattern = /^http:\/\/localhost:9000\/[^\/]+\//;
 	const localApiPrefix = "/api/metadata/";
 

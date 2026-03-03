@@ -2,7 +2,7 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SwapCard from "./swap-card";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { useState } from "react";
 
 export default function Swap({ token }: { token: IToken }) {

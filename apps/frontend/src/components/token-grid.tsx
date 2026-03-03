@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { GridItem } from "./grid-item";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getTokens } from "@/lib/api";
 import { Fragment, useEffect, useRef } from "react";

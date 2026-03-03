@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import type { ITokenLookUp } from "@autofun/types";
+import type { ITokenLookUp } from "@waifufun/types";
 import { getToken } from "@/lib/api";
 
 const toSubscript = (num: number): string => {
@@ -165,7 +165,7 @@ export default async function Image({ params }: { params: Promise<ITokenLookUp> 
 					>
 						<img
 							src={projectLogo}
-							alt="AutoFun"
+							alt="WaifuFun"
 							width={84}
 							height={44}
 							style={{ width: 84, height: 44, objectFit: "contain" }}

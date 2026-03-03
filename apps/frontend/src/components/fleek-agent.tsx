@@ -1,4 +1,4 @@
-import type { IAgent } from "@autofun/types";
+import type { IAgent } from "@waifufun/types";
 import Image from "next/image";
 
 export default function FleekAgent({ agents }: { agents: IAgent[] }) {
@@ -19,12 +19,12 @@ export default function FleekAgent({ agents }: { agents: IAgent[] }) {
 						/>
 					)}
 					<div className="flex flex-col justify-start h-[150px] ml-4 gap-y-1">
-						<p className="text-autofun-background-action-highlight text-xl mb-1 font-semibold">{agent.name}</p>
+						<p className="text-waifufun-background-action-highlight text-xl mb-1 font-semibold">{agent.name}</p>
 						<div className="flex items-center gap-1">
 							<p className="text-base text-white leading-none font-semibold">Created by {agent.createdBy}</p>
 						</div>
 						<div className="flex items-center gap-1 mt-4">
-							<p className="text-base text-autofun-stroke-light leading-none font-semibold">
+							<p className="text-base text-waifufun-stroke-light leading-none font-semibold">
 								{agent.bio === "" ? "This Agent does not have a Bio" : agent.bio}
 							</p>
 						</div>

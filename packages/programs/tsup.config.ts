@@ -7,7 +7,7 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: true,
 	clean: true,
-	external: ["@autofun/types"],
+	external: ["@waifufun/types"],
 	outExtension({ format }) {
 		return {
 			js: format === "esm" ? ".mjs" : ".js",

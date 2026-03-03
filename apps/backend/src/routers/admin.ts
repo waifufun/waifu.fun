@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import type { AddressLike, TChain, TChainId } from "@autofun/types";
-import DB from "@autofun/database";
+import type { AddressLike, TChain, TChainId } from "@waifufun/types";
+import DB from "@waifufun/database";
 import { requireAdminRole, requirePermission } from "../middlewares/admin";
 import { getAdminInfo } from "../utils/admin";
 import { getAdminTokens, getAdminTokenStats } from "../utils/admin/token-queries";
-import { modifyFile, extractObjectKeyFromUrl } from "@autofun/s3-uploader";
+import { modifyFile, extractObjectKeyFromUrl } from "@waifufun/s3-uploader";
 import { authenticationMiddleware } from "../middlewares/authentication";
 
 import type { FastifyRequest, FastifyReply } from "fastify";

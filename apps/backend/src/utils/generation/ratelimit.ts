@@ -1,4 +1,4 @@
-import redis from "@autofun/redis";
+import redis from "@waifufun/redis";
 
 const RATE_LIMIT_KEY_PREFIX = "generation:rate:";
 const MAX_GENERATIONS_PER_DAY = 10;

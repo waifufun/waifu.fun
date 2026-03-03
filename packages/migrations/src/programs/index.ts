@@ -15,7 +15,7 @@ import {
 	type MeteoraVaultTypes,
 	type CurrentAutofunTypes,
 	type LegacyAutofunTypes,
-} from "@autofun/programs";
+} from "@waifufun/programs";
 import type { Program } from "@coral-xyz/anchor";
 
 // Program IDs - now using centralized addresses
@@ -27,8 +27,8 @@ export const AUTOFUN_LEGACY_PROGRAM_ID = new web3.PublicKey(getLegacyProgramAddr
 export interface ProgramContext {
 	raydiumVaultProgram: Program<RaydiumVaultTypes>;
 	meteoraVaultProgram: Program<MeteoraVaultTypes>;
-	autofunProgram: Program<CurrentAutofunTypes>;
-	autofunLegacyProgram?: Program<LegacyAutofunTypes>;
+	waifufunProgram: Program<CurrentAutofunTypes>;
+	waifufunLegacyProgram?: Program<LegacyAutofunTypes>;
 	provider: AnchorProvider;
 	wallet: Wallet;
 }
@@ -37,8 +37,8 @@ export async function initializePrograms(provider: AnchorProvider, keypair: Keyp
 	// Initialize programs using centralized package
 	const raydiumVaultProgram = createRaydiumVaultProgramWithProvider(provider);
 	const meteoraVaultProgram = createMeteoraVaultProgramWithProvider(provider);
-	const autofunProgram = createCurrentAutofunProgramWithProvider(provider);
-	const autofunLegacyProgram = createLegacyAutofunProgramWithProvider(provider);
+	const waifufunProgram = createCurrentAutofunProgramWithProvider(provider);
+	const waifufunLegacyProgram = createLegacyAutofunProgramWithProvider(provider);
 
 	// Create a custom wallet instance
 	const wallet = new Wallet(keypair);
@@ -46,8 +46,8 @@ export async function initializePrograms(provider: AnchorProvider, keypair: Keyp
 	return {
 		raydiumVaultProgram,
 		meteoraVaultProgram,
-		autofunProgram,
-		autofunLegacyProgram,
+		waifufunProgram,
+		waifufunLegacyProgram,
 		provider,
 		wallet,
 	};

@@ -1,5 +1,5 @@
 import { createTokenPrompt } from "../../prompts/create-token";
-import { AI } from "@autofun/ai";
+import { AI } from "@waifufun/ai";
 
 const MAX_RETRIES = 10;
 const RETRY_DELAY = 500;

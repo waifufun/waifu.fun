@@ -1,5 +1,5 @@
-import { FLEEK_API_URL } from "@autofun/constants";
-import type { IAgent } from "@autofun/types";
+import { FLEEK_API_URL } from "@waifufun/constants";
+import type { IAgent } from "@waifufun/types";
 
 interface CreateAIAgentRequest {
 	avatar?: string | null;

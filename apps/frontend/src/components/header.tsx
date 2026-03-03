@@ -11,7 +11,7 @@ export default function Header() {
 	const { open } = useSidebar();
 
 	return (
-		<div className="bg-black px-4 border-b-2 border-autofun-background-action-highlight/50">
+		<div className="bg-black px-4 border-b-2 border-waifufun-background-action-highlight/50">
 			<div className="container h-[68px] flex items-center gap-4 justify-between">
 				<div className="flex items-center gap-4">
 					<Link href="/" className="shrink-0 grow">
@@ -28,7 +28,7 @@ export default function Header() {
 							},
 							{
 								title: "telegram",
-								href: "https://t.me/autofun_official",
+								href: "https://t.me/waifufun_official",
 								icon: "/socials/telegram.svg",
 							},
 						].map((social) => {

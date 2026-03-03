@@ -1,11 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import DB from "@autofun/database";
-import type { SolanaNetworkIds, AddressLike, SolanaAddressLike, TChain, TChainId, TChatRooms } from "@autofun/types";
-import { getChecksummedAddress, isChainIdAllowedForChain } from "@autofun/utils";
-import { uploadBase64Image } from "@autofun/s3-uploader";
+import DB from "@waifufun/database";
+import type { SolanaNetworkIds, AddressLike, SolanaAddressLike, TChain, TChainId, TChatRooms } from "@waifufun/types";
+import { getChecksummedAddress, isChainIdAllowedForChain } from "@waifufun/utils";
+import { uploadBase64Image } from "@waifufun/s3-uploader";
 import { randomUUID } from "node:crypto";
-import redis from "@autofun/redis";
-import { SolanaRpcProvider } from "@autofun/rpc";
+import redis from "@waifufun/redis";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 
 export default async function chatRoutes(fastify: FastifyInstance) {
 	fastify.post("/history", async (request) => {

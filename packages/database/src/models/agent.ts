@@ -1,4 +1,4 @@
-import type { IAgent } from "@autofun/types";
+import type { IAgent } from "@waifufun/types";
 import Mongoose, { Schema, type PaginateModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 

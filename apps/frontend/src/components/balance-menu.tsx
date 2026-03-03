@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import useBalance from "@/hooks/use-balance";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import Skeleton from "./skeleton-loading";
 import useAddress from "@/hooks/use-address";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ export default function BalanceMenu() {
 			)}
 		>
 			<Image src="/chain-icons/solana.svg" width={60} height={60} className="size-[20px]" unoptimized alt="balance" />
-			<div className="text-center justify-center text-autofun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
+			<div className="text-center justify-center text-waifufun-text-primary text-base font-bold font-['Satoshi'] leading-tight">
 				{balance?.isPending ? (
 					<Skeleton />
 				) : (

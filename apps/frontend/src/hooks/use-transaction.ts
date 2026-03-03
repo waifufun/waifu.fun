@@ -1,13 +1,13 @@
 "use client";
 
-import type { IRecentTransaction, TChain, TChainId } from "@autofun/types";
+import type { IRecentTransaction, TChain, TChainId } from "@waifufun/types";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import type { Hash } from "viem";
 
 export default function useRecentTransactions() {
 	const [recentTransactions, setRecentTransactions] = useLocalStorage<IRecentTransaction[]>(
-		"recent-transactions-autofun",
+		"recent-transactions-waifufun",
 		[],
 	);
 

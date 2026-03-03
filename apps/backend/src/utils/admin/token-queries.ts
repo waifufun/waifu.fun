@@ -1,5 +1,5 @@
-import type { TChain, TChainId } from "@autofun/types";
-import DB from "@autofun/database";
+import type { TChain, TChainId } from "@waifufun/types";
+import DB from "@waifufun/database";
 
 interface AdminTokenQueryParams {
 	hideImported?: number;

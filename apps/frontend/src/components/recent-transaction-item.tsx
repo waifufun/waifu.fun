@@ -1,7 +1,7 @@
 "use client";
 
 import { getTransaction } from "@/lib/api";
-import type { IRecentTransaction } from "@autofun/types";
+import type { IRecentTransaction } from "@waifufun/types";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Clock, Cross, ExternalLink } from "lucide-react";
 
@@ -42,7 +42,7 @@ export default function RecentTransactionItem({
 			<div className="flex flex-col gap-1">
 				<div className="flex items-center gap-2">
 					<span className="text-base font-medium">Swap</span>
-					<ExternalLink className="size-4 text-autofun-text-secondary cursor-pointer" />
+					<ExternalLink className="size-4 text-waifufun-text-secondary cursor-pointer" />
 				</div>
 				<span className="text-sm">
 					Swap {parsedTransaction?.input?.amountFormatted} {parsedTransaction?.input?.symbol} for{" "}

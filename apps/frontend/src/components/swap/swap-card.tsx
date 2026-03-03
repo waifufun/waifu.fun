@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
-import type { IToken, SolanaAddressLike } from "@autofun/types";
+import type { IToken, SolanaAddressLike } from "@waifufun/types";
 import { AlertCircle, Wallet } from "lucide-react";
 import AdvancedSettings from "./advanced-settings";
 import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
@@ -227,8 +227,8 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								key={btn}
 								variant="secondary"
 								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
-									btn === "Reset" ? "text-autofun-text-secondary" : "",
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
+									btn === "Reset" ? "text-waifufun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSet(btn)}
 							>
@@ -245,8 +245,8 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 										key={btn}
 										variant="secondary"
 										className={cn([
-											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-autofun-background-action-highlight transition-colors duration-200",
-											btn === "Reset" ? "text-autofun-text-secondary" : "",
+											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
+											btn === "Reset" ? "text-waifufun-text-secondary" : "",
 										])}
 										onClick={() => handleQuickSetSell(btn)}
 									>
@@ -308,7 +308,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
 						])}
 					>
-						<AlertCircle className="text-autofun-text-error" />
+						<AlertCircle className="text-waifufun-text-error" />
 						You are trying to buy too much. Max allowed is: {maxBuyAmount} SOL
 					</div>
 					<div
@@ -319,7 +319,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
 						])}
 					>
-						<AlertCircle className="text-autofun-text-error" />
+						<AlertCircle className="text-waifufun-text-error" />
 						Insufficient balance to perform trade.
 					</div>
 					{tradingStarted ? (

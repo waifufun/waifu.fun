@@ -1,5 +1,5 @@
 import { WalletClass } from "./WalletClass";
-import type { SolanaAddressLike, SolanaNetworkIds } from "@autofun/types";
+import type { SolanaAddressLike, SolanaNetworkIds } from "@waifufun/types";
 import { BN, type Program } from "@coral-xyz/anchor";
 import { type Connection, PublicKey, type Transaction, type VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
@@ -8,7 +8,7 @@ import type { TokenMetadata } from "../hooks/providers/usePromptContext";
 import { SEED_CONFIG } from "../hooks/hook/UseProgram";
 import { ComputeBudgetProgram, type Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { virtualReservesConst, curveLimitConst } from "@/lib/utils";
-import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@autofun/programs";
+import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@waifufun/programs";
 export interface ISolanaFunctions {
 	signMessage: (message: Uint8Array) => Promise<Uint8Array>;
 	sendTransaction: (transaction: Transaction | VersionedTransaction) => Promise<string>;

@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { Button } from "./ui/button";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type TChain } from "@waifufun/types";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/indexer",
+	"name": "@waifufun/indexer",
 	"version": "1.0.0",
 	"description": "",
 	"type": "module",
@@ -17,7 +17,7 @@
 		"lint": "biome format . --write && biome lint . --fix"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"rimraf": "^6.0.1"
 	},
 	"keywords": [],
@@ -25,10 +25,10 @@
 	"license": "ISC",
 	"packageManager": "pnpm@10.11.0",
 	"dependencies": {
-		"@autofun/database": "workspace:*",
-		"@autofun/logger": "workspace:*",
-		"@autofun/rpc": "workspace:*",
-		"@autofun/programs": "workspace:*",
+		"@waifufun/database": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"@waifufun/rpc": "workspace:*",
+		"@waifufun/programs": "workspace:*",
 		"@solana/web3.js": "^1.98.2",
 		"dotenv": "^16.5.0",
 		"helius-sdk": "^1.5.1"

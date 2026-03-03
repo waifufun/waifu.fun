@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import type { IMigration } from "@autofun/types";
+import type { IMigration } from "@waifufun/types";
 
 const migrationSchema = new Schema<IMigration>({
   withdrawnAt: { type: Date },

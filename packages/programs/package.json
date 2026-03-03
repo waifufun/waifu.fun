@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/programs",
+	"name": "@waifufun/programs",
 	"type": "module",
 	"version": "0.1.0",
 	"description": "Autofun programs, IDLs, and types with network detection",
@@ -23,6 +23,6 @@
 		"typescript": "^5.3.3"
 	},
 	"peerDependencies": {
-		"@autofun/types": "workspace:*"
+		"@waifufun/types": "workspace:*"
 	}
 }

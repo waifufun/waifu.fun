@@ -1,12 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getHolders } from "@/lib/api";
-import type { IHolder, IToken } from "@autofun/types";
+import type { IHolder, IToken } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
 import HolderLabels from "./holder-labels";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
 import { formatUnits } from "viem";
 import Progressbar from "../progressbar";
-import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@autofun/constants";
+import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
 import Link from "next/link";
 
 export default async function Holders({ token }: { token: IToken }) {
@@ -19,7 +19,7 @@ export default async function Holders({ token }: { token: IToken }) {
 
 		if (!data || data?.length === 0) {
 			return (
-				<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+				<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
 					There are currently no holders.
 				</div>
 			);
@@ -39,7 +39,7 @@ export default async function Holders({ token }: { token: IToken }) {
 				<TableBody>
 					{data.map((holder: IHolder, rank: number) => (
 						<TableRow key={holder.address}>
-							<TableCell className="text-autofun-text-secondary font-medium">#{rank + 1}</TableCell>
+							<TableCell className="text-waifufun-text-secondary font-medium">#{rank + 1}</TableCell>
 							<TableCell>
 								<div className="flex items-center gap-2 font-medium">
 									{shortenAddress(holder.address)}{" "}
@@ -70,7 +70,7 @@ export default async function Holders({ token }: { token: IToken }) {
 									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/${token?.chain === "solana" ? "account" : "address"}/${holder.address}`}
 									target="blank"
 								>
-									<ExternalLink className="ml-auto size-4 text-autofun-icon-secondary" />
+									<ExternalLink className="ml-auto size-4 text-waifufun-icon-secondary" />
 								</Link>
 							</TableCell>
 						</TableRow>
@@ -80,7 +80,7 @@ export default async function Holders({ token }: { token: IToken }) {
 		);
 	} catch (error) {
 		return (
-			<div className="p-4 py-8 text-center w-full text-sm text-autofun-text-secondary">
+			<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
 				Unable to load holder data at this time.
 			</div>
 		);

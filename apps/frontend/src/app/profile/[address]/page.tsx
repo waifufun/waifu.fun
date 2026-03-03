@@ -1,5 +1,5 @@
 import { getAddressBalances } from "@/lib/api";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import ClientPage from "./components/page";
 import { notFound } from "next/navigation";
 

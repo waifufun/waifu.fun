@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type TChain } from "@waifufun/types";
 import Image from "next/image";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 

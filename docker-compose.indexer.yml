@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: autofun-indexer-postgres
+    container_name: waifufun-indexer-postgres
     environment:
       POSTGRES_DB: "${INDEXER_DB_NAME}"
       POSTGRES_USER: "${INDEXER_DB_USER}"

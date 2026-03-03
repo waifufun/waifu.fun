@@ -16,7 +16,7 @@ import {
 import type { MigrationContext } from "../../types";
 import { recordTransaction } from "../../utils/protocol-utils";
 import { NATIVE_MINT } from "@solana/spl-token";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import { depositToRaydiumVault } from "../../vaults/raydiumVault";
 import * as spl from "@solana/spl-token";
 import { retryOperation } from "../../utils";

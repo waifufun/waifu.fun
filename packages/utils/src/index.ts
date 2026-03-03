@@ -7,19 +7,19 @@ import {
 	type SolanaAddressLike,
 	type TChain,
 	type TChainId,
-} from "@autofun/types";
+} from "@waifufun/types";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { formatUnits, getAddress, isAddress as isEvmAddress, type Address } from "viem";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import { Codex } from "@codex-data/sdk";
-import { CHAINID_TO_CODEX_NETWORK_ID, FALLBACK_PRICES, WETH_ADDRESSES } from "@autofun/constants";
+import { CHAINID_TO_CODEX_NETWORK_ID, FALLBACK_PRICES, WETH_ADDRESSES } from "@waifufun/constants";
 import dotenv from "dotenv";
 import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import moment from "moment";
-import redis from "@autofun/redis";
-import { SolanaRpcProvider } from "@autofun/rpc";
-import { EVMRpcProvider } from "@autofun/rpc";
+import redis from "@waifufun/redis";
+import { SolanaRpcProvider } from "@waifufun/rpc";
+import { EVMRpcProvider } from "@waifufun/rpc";
 import { PublicKey } from "@solana/web3.js";
 import { BigNumber } from "bignumber.js";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { getAddressPoints } from "@/lib/api";
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import { useQuery } from "@tanstack/react-query";
 import { formatNumber } from "@/lib/utils";
 

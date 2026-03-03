@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import redis from "@autofun/redis";
-import type { AddressLike, TChain } from "@autofun/types";
+import redis from "@waifufun/redis";
+import type { AddressLike, TChain } from "@waifufun/types";
 import { VerifySolanaSignature } from "../crypto/utils";
 import { verifyMessage } from "viem";
-import { getChecksummedAddress } from "@autofun/utils";
+import { getChecksummedAddress } from "@waifufun/utils";
 import { ensureUserExists } from "../middlewares/authentication";
 
 export default async function authRoutes(fastify: FastifyInstance) {

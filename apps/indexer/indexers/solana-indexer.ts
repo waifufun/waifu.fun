@@ -1,6 +1,6 @@
-import { SolanaRpcProvider } from "@autofun/rpc";
-import DB from "@autofun/database";
-import logger from "@autofun/logger";
+import { SolanaRpcProvider } from "@waifufun/rpc";
+import DB from "@waifufun/database";
+import logger from "@waifufun/logger";
 import { BaseIndexer } from "./base-indexer";
 import { SolanaTransactionProcessor } from "../utils/solana/tx-processor";
 import type { SolanaIndexerConfig } from "../types";

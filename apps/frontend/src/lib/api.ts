@@ -1,4 +1,4 @@
-import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@autofun/types";
+import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 import { Connection } from "@solana/web3.js";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;

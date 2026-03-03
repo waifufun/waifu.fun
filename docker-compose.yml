@@ -1,6 +1,6 @@
 services:
   dragonfly:
-    container_name: autofun-dragonfly
+    container_name: waifufun-dragonfly
     image: docker.dragonflydb.io/dragonflydb/dragonfly
     network_mode: "host"
     restart: unless-stopped
@@ -11,7 +11,7 @@ services:
 
   minio:
     image: minio/minio
-    container_name: autofun-minio
+    container_name: waifufun-minio
     environment:
       MINIO_ROOT_USER: minio_user
       MINIO_ROOT_PASSWORD: minio_password
@@ -36,7 +36,7 @@ services:
       - app-network
       
   mongo1:
-    container_name: autofun-mongo1
+    container_name: waifufun-mongo1
     image: mongo:7.0
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
@@ -55,7 +55,7 @@ services:
       - "mongo1_config:/data/configdb"
 
   mongo2:
-    container_name: autofun-mongo2
+    container_name: waifufun-mongo2
     image: mongo:7.0
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
     ports:
@@ -67,7 +67,7 @@ services:
       - "mongo2_config:/data/configdb"
 
   mongo3:
-    container_name: autofun-mongo3
+    container_name: waifufun-mongo3
     image: mongo:7.0
     command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
     ports:

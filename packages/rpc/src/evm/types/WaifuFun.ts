@@ -1,6 +1,6 @@
 import type { Address, Abi, Hash, Chain } from "viem";
 
-export type AutoFunConfig = {
+export type WaifuFunConfig = {
 	name: string;
 	symbol: string;
 	initialSupply: bigint;
@@ -14,7 +14,7 @@ export type BondingCurveConfig = {
 	minAmountOut: bigint;
 };
 
-export type AutoFunContract = {
+export type WaifuFunContract = {
 	address: Address;
 	abi: readonly Abi[];
 	chain: Chain;
@@ -23,9 +23,9 @@ export type AutoFunContract = {
 	initialize: (factory: Address, globalConfig: Address) => Promise<Hash>;
 	updateFactory: (newFactory: Address) => Promise<Hash>;
 	updateGlobalConfig: (newConfig: Address) => Promise<Hash>;
-	launch: (config: AutoFunConfig) => Promise<Hash>;
+	launch: (config: WaifuFunConfig) => Promise<Hash>;
 	swap: (config: BondingCurveConfig) => Promise<Hash>;
-	launchAndSwap: (launchConfig: AutoFunConfig, swapConfig: BondingCurveConfig) => Promise<Hash>;
+	launchAndSwap: (launchConfig: WaifuFunConfig, swapConfig: BondingCurveConfig) => Promise<Hash>;
 	withdraw: (token: Address, amount: bigint) => Promise<Hash>;
 };
 
@@ -56,7 +56,7 @@ export type WithdrawnEvent = {
 	recipient: Address;
 };
 
-export type AutoFunContractFactory = {
-	deploy: (args: { factory: Address; globalConfig: Address }) => Promise<AutoFunContract>;
-	attach: (address: Address) => AutoFunContract;
+export type WaifuFunContractFactory = {
+	deploy: (args: { factory: Address; globalConfig: Address }) => Promise<WaifuFunContract>;
+	attach: (address: Address) => WaifuFunContract;
 };

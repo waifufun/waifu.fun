@@ -64,7 +64,7 @@ export default function SupportPage() {
 								<p className="text-[#8C8C8C]">
 									<span className="text-[#8C8C8C] font-bold">2. Existing Coins: </span>
 									Import coins already trading elsewhere, maintaining your existing liquidity while gaining access to
-									the auto.fun ecosystem.
+									the waifu.fun ecosystem.
 								</p>
 							</div>
 							<div>

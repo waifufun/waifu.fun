@@ -8,7 +8,7 @@ export type TokenConfig = {
 	owner: Address;
 };
 
-export type AutoFunTokenFactoryContract = {
+export type WaifuFunTokenFactoryContract = {
 	address: Address;
 	abi: readonly Abi[];
 	chain: Chain;
@@ -44,7 +44,7 @@ export type TokenOwnershipTransferredEvent = {
 	newOwner: Address;
 };
 
-export type AutoFunTokenFactoryContractFactory = {
-	deploy: () => Promise<AutoFunTokenFactoryContract>;
-	attach: (address: Address) => AutoFunTokenFactoryContract;
+export type WaifuFunTokenFactoryContractFactory = {
+	deploy: () => Promise<WaifuFunTokenFactoryContract>;
+	attach: (address: Address) => WaifuFunTokenFactoryContract;
 };

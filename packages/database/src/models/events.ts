@@ -1,4 +1,4 @@
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import Mongoose, { Schema, type PaginateModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 

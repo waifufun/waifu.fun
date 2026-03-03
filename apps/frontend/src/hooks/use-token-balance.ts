@@ -1,7 +1,7 @@
 "use client";
 
 import { HELIUS_RPC_URL } from "@/lib/api";
-import type { AddressLike, TChain } from "@autofun/types";
+import type { AddressLike, TChain } from "@waifufun/types";
 import { useQuery } from "@tanstack/react-query";
 
 export default function useTokenBalance({

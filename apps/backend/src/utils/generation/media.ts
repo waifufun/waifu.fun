@@ -1,5 +1,5 @@
-import type { MediaType } from "@autofun/types";
-import { AI } from "@autofun/ai";
+import type { MediaType } from "@waifufun/types";
+import { AI } from "@waifufun/ai";
 import { generateLyrics, formatLyricsForDiffrhythm } from "./lyrics";
 import { generateStylePrompt } from "../../prompts/style-prompt";
 

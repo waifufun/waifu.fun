@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { EvmChainIds, SolanaNetworkIds, type TChain } from "@autofun/types";
+import { EvmChainIds, SolanaNetworkIds, type TChain } from "@waifufun/types";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -60,8 +60,8 @@ export default function ProfileChainSelector() {
 							type="button"
 							className={cn(
 								"flex items-center justify-center h-full w-[40px] rounded-md transition-all",
-								isActive ? "border border-autofun-background-action-highlight grayscale-0" : " text-white",
-								"hover:outline-1 hover:outline-autofun-background-action-highlight",
+								isActive ? "border border-waifufun-background-action-highlight grayscale-0" : " text-white",
+								"hover:outline-1 hover:outline-waifufun-background-action-highlight",
 							)}
 						>
 							{chain?.icon ? <Image src={chain.icon} width={128} height={128} alt="logo" className="size-5" /> : "All"}

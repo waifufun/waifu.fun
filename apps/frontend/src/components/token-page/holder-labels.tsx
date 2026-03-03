@@ -1,4 +1,4 @@
-import type { AddressLike } from "@autofun/types";
+import type { AddressLike } from "@waifufun/types";
 import { Badge } from "../ui/badge";
 
 export default function HolderLabels({

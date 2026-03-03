@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import Link from "next/link";
-import type { EvmChainIds, SolanaNetworkIds } from "@autofun/types";
-import type { TChain } from "@autofun/types";
+import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
+import type { TChain } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import Verified from "../verified";
@@ -71,7 +71,7 @@ export default function TokenRow({
 					<div className="flex flex-col justify-center min-w-0">
 						<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
 							<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
-								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-autofun-background-action-highlight text-white cursor-pointer">
+								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-waifufun-background-action-highlight text-white cursor-pointer">
 									{data.title}
 								</p>
 							</Link>
@@ -133,7 +133,7 @@ export default function TokenRow({
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300 mt-1">
 							<p className="text-sm font-medium text-gray-200">{data.amountHeld?.toLocaleString()}</p>
 							{data?.dollarWorth ? (
-								<p className="text-autofun-background-action-highlight text-xs sm:text-xs">
+								<p className="text-waifufun-background-action-highlight text-xs sm:text-xs">
 									${dollarWorth.toLocaleString()}
 								</p>
 							) : null}

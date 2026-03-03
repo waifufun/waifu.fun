@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/migrations",
+	"name": "@waifufun/migrations",
 	"version": "1.0.0",
 	"description": "Migration service for Autofun",
 	"type": "module",
@@ -14,11 +14,11 @@
 		"clean": "rimraf dist"
 	},
 	"dependencies": {
-		"@autofun/database": "workspace:*",
-		"@autofun/logger": "workspace:*",
-		"@autofun/redis": "workspace:*",
-		"@autofun/types": "workspace:*",
-		"@autofun/programs": "workspace:*",
+		"@waifufun/database": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"@waifufun/redis": "workspace:*",
+		"@waifufun/types": "workspace:*",
+		"@waifufun/programs": "workspace:*",
 		"@coral-xyz/anchor": "^0.31.1",
 		"@solana/web3.js": "^1.91.1",
 		"dotenv": "^16.5.0",

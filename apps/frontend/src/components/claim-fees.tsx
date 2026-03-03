@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { claimFees } from "@/lib/api";
 import { useState } from "react";
 import { Wallet } from "lucide-react";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { toast } from "sonner";
 
 interface ClaimFeesProps {

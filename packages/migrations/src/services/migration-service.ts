@@ -2,11 +2,11 @@ import type { Connection } from "@solana/web3.js";
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import { MigrationManager } from "../migrations";
 import type { ProtocolMigration, ProtocolState } from "../types";
-import DB from "@autofun/database";
-import logger from "@autofun/logger";
-import { SolanaNetworkIds, type IMigration } from "@autofun/types";
+import DB from "@waifufun/database";
+import logger from "@waifufun/logger";
+import { SolanaNetworkIds, type IMigration } from "@waifufun/types";
 import type { Model } from "mongoose";
-import redis from "@autofun/redis";
+import redis from "@waifufun/redis";
 import { Keypair } from "@solana/web3.js";
 import * as dotenv from "dotenv";
 

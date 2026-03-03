@@ -6,7 +6,7 @@ import tokenRoutes from "./routers/tokens";
 import pricesRoutes from "./routers/prices";
 import chatRoutes from "./routers/chat";
 import generationRoutes from "./routers/generation";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import transactionsRoutes from "./routers/transaction";
 import authRoutes from "./routers/auth";
 import fastifyJWT from "@fastify/jwt";

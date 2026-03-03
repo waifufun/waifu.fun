@@ -1,6 +1,6 @@
-import { instructions as IDLInstructions } from "../../../../abi/solana/v2/autofun";
-import type { DecodedInstruction } from "../../../../types";
-import { SolanaInstructionDecoder } from "../../abstract/instruction-decoder";
+import { instructions as IDLInstructions } from "../../../../abi/solana/v2/waifufun";
+import type { DecodedInstruction } from "../../../types";
+import { SolanaInstructionDecoder } from "../abstract/instruction-decoder";
 
 export class SolanaInstructionDecoderV2 extends SolanaInstructionDecoder {
 	public decodeAutofunInstruction(instructionData: Buffer, accounts: string[]): DecodedInstruction {

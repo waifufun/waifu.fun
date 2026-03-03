@@ -9,7 +9,7 @@ import type {
 	MeteoraVaultTypes,
 	CurrentAutofunTypes,
 	LegacyAutofunTypes,
-} from "@autofun/programs";
+} from "@waifufun/programs";
 
 export type RpcClient = Connection;
 
@@ -106,8 +106,8 @@ export interface MigrationContext {
 	programContext?: ProgramContext;
 	raydiumVaultProgram?: Program<RaydiumVaultTypes>;
 	meteoraVaultProgram?: Program<MeteoraVaultTypes>;
-	autofunProgram?: Program<CurrentAutofunTypes>;
-	autofunLegacyProgram?: Program<LegacyAutofunTypes>;
+	waifufunProgram?: Program<CurrentAutofunTypes>;
+	waifufunLegacyProgram?: Program<LegacyAutofunTypes>;
 }
 
 export interface MigrationOptions {

@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import IORedis from "ioredis";
 
 dotenv.config();

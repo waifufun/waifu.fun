@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createAgent, getAgent } from "../utils/agent";
-import DB from "@autofun/database";
-import type { TChain, TChainId } from "@autofun/types";
+import DB from "@waifufun/database";
+import type { TChain, TChainId } from "@waifufun/types";
 
 interface CreateAIAgentRequest {
 	avatar?: string | null;

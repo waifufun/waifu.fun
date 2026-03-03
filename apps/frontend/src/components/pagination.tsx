@@ -62,8 +62,8 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 								tabIndex={0}
 								className={twMerge([
 									isActive
-										? "outline-autofun-background-action-highlight bg-autofun-background-card text-autofun-text-primary"
-										: "outline-transparent bg-transparent text-autofun-text-secondary",
+										? "outline-waifufun-background-action-highlight bg-waifufun-background-card text-waifufun-text-primary"
+										: "outline-transparent bg-transparent text-waifufun-text-secondary",
 									"cursor-pointer h-8 px-3 py-2 outline outline-offset-[-1px] inline-flex flex-col items-center justify-center gap-2.5 overflow-hidden",
 								])}
 								onClick={() => onPageChange?.(item)}
@@ -81,7 +81,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 							// biome-ignore lint/suspicious/noArrayIndexKey: noArrayIndexKey
 							key={`ellipsis-${index}`}
 							tabIndex={0}
-							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-autofun-text-secondary text-base font-normal font-dm-mono uppercase leading-normal tracking-widest hover:text-autofun-text-primary transition-colors"
+							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-waifufun-text-secondary text-base font-normal font-dm-mono uppercase leading-normal tracking-widest hover:text-waifufun-text-primary transition-colors"
 							onClick={() => {
 								if (index < pages.indexOf(page)) {
 									onPageChange?.(page - 3);
@@ -100,7 +100,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 						role="button"
 						tabIndex={0}
 						className={twMerge([
-							"text-autofun-text-primary size-6 cursor-pointer",
+							"text-waifufun-text-primary size-6 cursor-pointer",
 							hasMore ? "opacity-100" : "opacity-50",
 						])}
 						onClick={() => {

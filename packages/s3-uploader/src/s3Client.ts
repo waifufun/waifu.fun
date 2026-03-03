@@ -1,6 +1,6 @@
 // s3Client.ts
 import { S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 
 const {
 	S3_STORAGE_ENDPOINT,

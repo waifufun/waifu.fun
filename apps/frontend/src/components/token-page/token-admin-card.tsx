@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Switch } from "../switch-button";
-import type { IToken, ITokenSocials } from "@autofun/types";
+import type { IToken, ITokenSocials } from "@waifufun/types";
 import { ChevronUp } from "lucide-react";
 import { Input } from "../ui/input";
 import Image from "next/image";
@@ -18,7 +18,7 @@ export default function TokenAdminCard({ token }: { token: IToken }) {
 	return (
 		<div className="w-[460px] p-4 rounded-md overflow-hidden bg-[#0C0C0C]">
 			<div className="flex justify-between items-center h-[44px] w-[428px]">
-				<h2 className="text-white text-lg font-medium border-b border-autofun-background-action-highlight uppercase">
+				<h2 className="text-white text-lg font-medium border-b border-waifufun-background-action-highlight uppercase">
 					owner settings
 				</h2>
 				<div
@@ -56,7 +56,7 @@ export default function TokenAdminCard({ token }: { token: IToken }) {
 							/>
 						</div>
 					))}
-					<Button className="w-full h-[40] font-medium mt-1 rounded-md text-white bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] border border-autofun-background-action-highlight">
+					<Button className="w-full h-[40] font-medium mt-1 rounded-md text-white bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] border border-waifufun-background-action-highlight">
 						Save
 					</Button>
 					<div className="w-full mt-1 h-px bg-[#262626]" />

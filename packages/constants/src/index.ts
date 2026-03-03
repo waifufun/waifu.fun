@@ -1,7 +1,7 @@
-import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol, type FALModels } from "@autofun/types";
+import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol, type FALModels } from "@waifufun/types";
 import { getAddress, type Abi, type Chain } from "viem";
 import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
-import { SolanaNetworkIds } from "@autofun/types";
+import { SolanaNetworkIds } from "@waifufun/types";
 import dotenv from "dotenv";
 import type { ClusterUrl } from "@solana/kit";
 import uniswapv2 from "./abis/uniswap-v2.json";

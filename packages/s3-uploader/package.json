@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/s3-uploader",
+	"name": "@waifufun/s3-uploader",
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
@@ -14,14 +14,14 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@autofun/logger": "workspace:*",
+		"@waifufun/logger": "workspace:*",
 		"@aws-sdk/client-s3": "^3.803.0",
 		"dotenv": "^16.5.0",
 		"mime-types": "^3.0.1",
 		"sharp": "^0.34.1"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"@types/node": "^22.15.3",
 		"typescript": "^5.4.5"
 	}

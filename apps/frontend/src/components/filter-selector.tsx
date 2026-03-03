@@ -74,7 +74,7 @@ export default function FilterSelector() {
 						tooltip={item.title}
 						className={
 							activeKey === item.value
-								? "bg-autofun-background-action-highlight/20"
+								? "bg-waifufun-background-action-highlight/20"
 								: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
 						}
 					>

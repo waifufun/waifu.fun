@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { DataSync } from "./sync.js";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import dotenv from "dotenv";
 import path from "path";
 

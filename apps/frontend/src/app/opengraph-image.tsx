@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Auto.Fun - Fair Launchpad & Token Analytics Platform";
+export const alt = "waifu.fun - Fair Launchpad & Token Analytics Platform";
 export const size = {
 	width: 1200,
 	height: 630,
@@ -40,7 +40,7 @@ export default async function Image() {
 			>
 				<img
 					src={`${process.env.NEXT_PUBLIC_HOST}/logo_wide.svg`}
-					alt="AutoFun"
+					alt="WaifuFun"
 					width={87}
 					height={44}
 					style={{
@@ -157,7 +157,7 @@ export default async function Image() {
 					paddingTop: "20px",
 				}}
 			>
-				<div style={{ display: "flex" }}>auto.fun</div>
+				<div style={{ display: "flex" }}>waifu.fun</div>
 				<div style={{ display: "flex" }}>Fair Launch, Trade Smart</div>
 			</div>
 		</div>,

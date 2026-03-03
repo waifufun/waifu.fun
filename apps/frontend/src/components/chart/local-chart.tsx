@@ -1,6 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { useEffect, useRef } from "react";
 import {
 	CandlestickSeries,

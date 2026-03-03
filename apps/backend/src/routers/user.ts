@@ -1,10 +1,10 @@
-import type { AddressLike, TURLLike } from "@autofun/types";
+import type { AddressLike, TURLLike } from "@waifufun/types";
 import type { FastifyInstance } from "fastify";
-import DB from "@autofun/database";
-import { uploadBase64Image } from "@autofun/s3-uploader";
-import { getChecksummedAddress, isSupportedAddress, updateCryptoPrices } from "@autofun/utils";
+import DB from "@waifufun/database";
+import { uploadBase64Image } from "@waifufun/s3-uploader";
+import { getChecksummedAddress, isSupportedAddress, updateCryptoPrices } from "@waifufun/utils";
 import { calculateStreak } from "../utils/points";
-import redis from "@autofun/redis";
+import redis from "@waifufun/redis";
 import moment from "moment";
 
 export default async function userRoutes(fastify: FastifyInstance) {

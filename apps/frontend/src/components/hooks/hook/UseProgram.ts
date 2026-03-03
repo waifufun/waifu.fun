@@ -1,7 +1,7 @@
 import { AnchorProvider, type Program } from "@coral-xyz/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useMemo } from "react";
-import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@autofun/programs";
+import { createCurrentAutofunProgramWithProvider, type CurrentAutofunTypes } from "@waifufun/programs";
 export const SEED_CONFIG = "config";
 export const SEED_BONDING_CURVE = "bonding_curve";
 

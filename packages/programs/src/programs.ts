@@ -21,14 +21,14 @@ export type WalletLike = {
 
 export const PROGRAM_ADDRESSES = {
 	mainnet: {
-		autofun: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA",
-		autofunLegacy: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
+		waifufun: "autoiNVyGniA5dosggHy34BZYimthNzLy6WXL7qwzPA",
+		waifufunLegacy: "autoUmixaMaYKFjexMpQuBpNYntgbkzCo2b1ZqUaAZ5",
 		raydiumVault: "autoFENwXX1Y3V4pkUdJw7WzhF1ZT6xQsyJWkLqBcta",
 		meteoraVault: "auto8znD4FacuJSPEfD6hpFUZTUaakso8dbEgDD1P84",
 	},
 	devnet: {
-		autofun: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS",
-		autofunLegacy: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS",
+		waifufun: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS",
+		waifufunLegacy: "TeStFsfeHHNsCRNo9WaF6eyo5Fzwm2Yiq5mXfhknvxS",
 		raydiumVault: "autoFENwXX1Y3V4pkUdJw7WzhF1ZT6xQsyJWkLqBcta",
 		meteoraVault: "auto8znD4FacuJSPEfD6hpFUZTUaakso8dbEgDD1P84",
 	},
@@ -38,7 +38,7 @@ export function getProgramAddress(version: IdlVersion = "v2"): string {
 	const network = getNetwork();
 	const addresses = PROGRAM_ADDRESSES[network];
 
-	return version === "v1" ? addresses.autofunLegacy : addresses.autofun;
+	return version === "v1" ? addresses.waifufunLegacy : addresses.waifufun;
 }
 
 // New functions that accept only provider directly

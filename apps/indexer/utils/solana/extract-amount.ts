@@ -1,4 +1,4 @@
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class SolanaAmountExtractor {
 	static extractAmountGotten(

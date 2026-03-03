@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class SolanaEventDecoder {

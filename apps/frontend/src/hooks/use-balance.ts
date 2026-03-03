@@ -1,5 +1,5 @@
 import { connection } from "@/lib/api";
-import type { AddressLike, TChain } from "@autofun/types";
+import type { AddressLike, TChain } from "@waifufun/types";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useQuery } from "@tanstack/react-query";
 

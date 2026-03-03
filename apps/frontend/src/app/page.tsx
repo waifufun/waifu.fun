@@ -7,21 +7,21 @@ export const revalidate = 4;
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
-		title: "Auto.Fun - Fair Launchpad & Trading Platform",
+		title: "waifu.fun - Fair Launchpad & Trading Platform",
 		description:
-			"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
+			"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
 		openGraph: {
-			title: "Auto.Fun - Fair Launchpad & Trading Platform",
+			title: "waifu.fun - Fair Launchpad & Trading Platform",
 			description:
-				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
+				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
 			type: "website",
 			locale: "en_US",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "Auto.Fun - Fair Launchpad & Trading Platform",
+			title: "waifu.fun - Fair Launchpad & Trading Platform",
 			description:
-				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on Auto.Fun.",
+				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
 		},
 	};
 };

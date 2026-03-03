@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/database",
+	"name": "@waifufun/database",
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
@@ -14,13 +14,13 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@autofun/logger": "workspace:*",
+		"@waifufun/logger": "workspace:*",
 		"dotenv": "^16.5.0",
 		"mongoose": "^8.14.1",
 		"mongoose-paginate-v2": "^1.9.0"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"@types/node": "^22.15.3",
 		"typescript": "^5.4.5"
 	}

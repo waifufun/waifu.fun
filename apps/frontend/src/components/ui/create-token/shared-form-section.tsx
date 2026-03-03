@@ -25,7 +25,7 @@ import { createTokenTx } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import type { AddressLike, TChain } from "@autofun/types";
+import type { AddressLike, TChain } from "@waifufun/types";
 import { curveLimitConst } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errorMessage";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";

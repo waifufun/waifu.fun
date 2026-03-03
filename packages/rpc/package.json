@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/rpc",
+	"name": "@waifufun/rpc",
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
@@ -14,10 +14,10 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@autofun/constants": "workspace:*",
-		"@autofun/logger": "workspace:*",
-		"@autofun/utils": "workspace:*",
-		"@autofun/programs": "workspace:*",
+		"@waifufun/constants": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"@waifufun/utils": "workspace:*",
+		"@waifufun/programs": "workspace:*",
 		"@coral-xyz/anchor": "^0.31.1",
 		"@metaplex-foundation/js": "^0.20.1",
 		"@metaplex-foundation/mpl-token-metadata": "^3.4.0",
@@ -30,7 +30,7 @@
 		"viem": "2.30.5"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"@types/bn.js": "^5.1.6",
 		"typescript": "^5.4.5"
 	}

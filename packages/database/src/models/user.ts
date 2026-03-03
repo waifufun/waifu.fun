@@ -1,4 +1,4 @@
-import type { IUser } from "@autofun/types";
+import type { IUser } from "@waifufun/types";
 import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 

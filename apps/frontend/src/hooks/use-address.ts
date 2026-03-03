@@ -1,6 +1,6 @@
 "use client";
 
-import type { SolanaAddressLike } from "@autofun/types";
+import type { SolanaAddressLike } from "@waifufun/types";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 export default function useAddress() {

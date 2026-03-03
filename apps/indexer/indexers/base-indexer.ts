@@ -1,4 +1,4 @@
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import type { ProcessingStats } from "../types";
 
 export abstract class BaseIndexer {

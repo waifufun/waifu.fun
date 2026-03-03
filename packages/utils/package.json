@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/utils",
+	"name": "@waifufun/utils",
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
@@ -14,11 +14,11 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@autofun/constants": "workspace:*",
-		"@autofun/database": "workspace:*",
-		"@autofun/logger": "workspace:*",
-		"@autofun/redis": "workspace:*",
-		"@autofun/rpc": "workspace:*",
+		"@waifufun/constants": "workspace:*",
+		"@waifufun/database": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"@waifufun/redis": "workspace:*",
+		"@waifufun/rpc": "workspace:*",
 		"@codex-data/sdk": "^1.0.6",
 		"@solana/kit": "^2.1.0",
 		"@solana/web3.js": "^1.98.2",
@@ -28,7 +28,7 @@
 		"viem": "2.30.5"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"typescript": "^5.4.5"
 	}
 }

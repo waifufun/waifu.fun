@@ -12,13 +12,13 @@ import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { expect, sinon } from "./setup";
 import { describe, it, before, afterEach } from "mocha";
 import { MigrationService } from "../services/migration-service";
-import type { IMigration, SolanaAddressLike } from "@autofun/types";
+import type { IMigration, SolanaAddressLike } from "@waifufun/types";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
 import { depositToMeteora, emergencyWithdraw, claimPositionFee } from "../vaults/meteoraVault";
 import type { MeteoraVault } from "../vaults/programs/types/meteora_vault";
 import idlModule from "../vaults/programs/idl/meteora_vault.json";
-import type DB from "@autofun/database";
-import type redis from "@autofun/redis";
+import type DB from "@waifufun/database";
+import type redis from "@waifufun/redis";
 import Decimal from "decimal.js";
 const meteoraVaultIdl: any = (idlModule as any).default ?? idlModule;
 

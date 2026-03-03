@@ -1,6 +1,6 @@
 import { type Connection, PublicKey, type Transaction } from "@solana/web3.js";
 import type { Program, BN } from "@coral-xyz/anchor";
-import type { CurrentAutofunTypes } from "@autofun/programs";
+import type { CurrentAutofunTypes } from "@waifufun/programs";
 import { getConfigPda } from "./pdas";
 
 export interface LaunchParams {

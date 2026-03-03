@@ -1,7 +1,7 @@
 {
 	"_format": "hh-sol-artifact-1",
-	"contractName": "AutoFun",
-	"sourceName": "contracts/AutoFun.sol",
+	"contractName": "WaifuFun",
+	"sourceName": "contracts/WaifuFun.sol",
 	"abi": [
 		{
 			"anonymous": false,
@@ -13,7 +13,7 @@
 					"type": "address"
 				}
 			],
-			"name": "AutoFunTokenFactoryUpdated",
+			"name": "WaifuFunTokenFactoryUpdated",
 			"type": "event"
 		},
 		{
@@ -272,7 +272,7 @@
 			"name": "factory",
 			"outputs": [
 				{
-					"internalType": "contract IAutoFunTokenFactory",
+					"internalType": "contract IWaifuFunTokenFactory",
 					"name": "",
 					"type": "address"
 				}
@@ -435,7 +435,7 @@
 							"type": "uint8"
 						}
 					],
-					"internalType": "struct IAutoFun.ConfigParams",
+					"internalType": "struct IWaifuFun.ConfigParams",
 					"name": "_params",
 					"type": "tuple"
 				}
@@ -533,7 +533,7 @@
 							"type": "uint256"
 						}
 					],
-					"internalType": "struct IAutoFun.SwapParameter",
+					"internalType": "struct IWaifuFun.SwapParameter",
 					"name": "_param",
 					"type": "tuple"
 				}
@@ -606,7 +606,7 @@
 							"type": "uint256"
 						}
 					],
-					"internalType": "struct IAutoFun.SwapParameter",
+					"internalType": "struct IWaifuFun.SwapParameter",
 					"name": "_param",
 					"type": "tuple"
 				}
@@ -702,7 +702,7 @@
 							"type": "uint8"
 						}
 					],
-					"internalType": "struct IAutoFun.ConfigParams",
+					"internalType": "struct IWaifuFun.ConfigParams",
 					"name": "_newGlobalParams",
 					"type": "tuple"
 				}

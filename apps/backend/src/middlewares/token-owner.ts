@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { AddressLike } from "@autofun/types";
-import DB from "@autofun/database";
+import type { AddressLike } from "@waifufun/types";
+import DB from "@waifufun/database";
 
 declare module "fastify" {
 	interface FastifyRequest {

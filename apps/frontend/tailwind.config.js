@@ -56,7 +56,7 @@ module.exports = {
 					border: "hsl(var(--sidebar-border))",
 					ring: "hsl(var(--sidebar-ring))",
 				},
-				autofun: {
+				waifufun: {
 					background: {
 						primary: "#0a0a0a",
 						card: "#171717",

@@ -1,4 +1,4 @@
-import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@autofun/types";
+import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@waifufun/types";
 import {
 	createPublicClient,
 	createWalletClient,
@@ -11,25 +11,25 @@ import {
 	type WalletClient,
 } from "viem";
 import Decimal from "decimal.js";
-import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@autofun/constants";
-import type { SolanaNetworkIds } from "@autofun/types";
+import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@waifufun/constants";
+import type { SolanaNetworkIds } from "@waifufun/types";
 import { createSolanaRpc } from "@solana/kit";
 import { Metaplex } from "@metaplex-foundation/js";
 import { AnchorProvider, type Wallet, type Program } from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
-import { updateCryptoPrices } from "@autofun/utils";
-import type { AutoFunConfig, BondingCurveConfig } from "./evm/types/AutoFun";
-import autoFunAbi from "./evm/abis/AutoFun.json";
+import { updateCryptoPrices } from "@waifufun/utils";
+import type { WaifuFunConfig, BondingCurveConfig } from "./evm/types/WaifuFun";
+import autoFunAbi from "./evm/abis/WaifuFun.json";
 import { EventEmitter } from "node:events";
-import type { SlotInfo } from "@autofun/types";
-import logger from "@autofun/logger";
+import type { SlotInfo } from "@waifufun/types";
+import logger from "@waifufun/logger";
 import {
 	createCurrentAutofunProgramWithProvider,
 	createLegacyAutofunProgramWithProvider,
 	type CurrentAutofunTypes,
 	type LegacyAutofunTypes,
-} from "@autofun/programs";
+} from "@waifufun/programs";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -140,7 +140,7 @@ export class EVMRpcProvider {
 	};
 
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	async readAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+	async readWaifuFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
 		return await this.client.readContract({
 			address: getAddress(contractAddress),
 			abi: autoFunAbi.abi,
@@ -149,7 +149,7 @@ export class EVMRpcProvider {
 		});
 	}
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	async writeAutoFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+	async writeWaifuFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
 		if (!this.walletClient) {
 			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
 		}
@@ -164,28 +164,28 @@ export class EVMRpcProvider {
 		});
 	}
 
-	async launch(contractAddress: EvmAddressLike, config: AutoFunConfig) {
-		return await this.writeAutoFunContract(contractAddress, "launch", [config]);
+	async launch(contractAddress: EvmAddressLike, config: WaifuFunConfig) {
+		return await this.writeWaifuFunContract(contractAddress, "launch", [config]);
 	}
 
-	async launchAndSwap(contractAddress: EvmAddressLike, launchConfig: AutoFunConfig, swapConfig: BondingCurveConfig) {
-		return await this.writeAutoFunContract(contractAddress, "launchAndSwap", [launchConfig, swapConfig]);
+	async launchAndSwap(contractAddress: EvmAddressLike, launchConfig: WaifuFunConfig, swapConfig: BondingCurveConfig) {
+		return await this.writeWaifuFunContract(contractAddress, "launchAndSwap", [launchConfig, swapConfig]);
 	}
 
 	async swap(contractAddress: EvmAddressLike, config: BondingCurveConfig) {
-		return await this.writeAutoFunContract(contractAddress, "swap", [config]);
+		return await this.writeWaifuFunContract(contractAddress, "swap", [config]);
 	}
 
 	async withdraw(contractAddress: EvmAddressLike, token: EvmAddressLike, amount: bigint) {
-		return await this.writeAutoFunContract(contractAddress, "withdraw", [token, amount]);
+		return await this.writeWaifuFunContract(contractAddress, "withdraw", [token, amount]);
 	}
 
 	async getLaunchedTokensByOwner(contractAddress: EvmAddressLike, owner: EvmAddressLike) {
-		return await this.readAutoFunContract(contractAddress, "getLaunchedTokensByOwner", [owner]);
+		return await this.readWaifuFunContract(contractAddress, "getLaunchedTokensByOwner", [owner]);
 	}
 
 	async getAllLaunchedTokens(contractAddress: EvmAddressLike) {
-		return await this.readAutoFunContract(contractAddress, "getAllLaunchedTokens", []);
+		return await this.readWaifuFunContract(contractAddress, "getAllLaunchedTokens", []);
 	}
 }
 

@@ -1,6 +1,6 @@
 "use client";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { ChartCandlestick, MessagesSquare, Stars, User, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";

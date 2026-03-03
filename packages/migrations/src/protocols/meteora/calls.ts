@@ -1,7 +1,7 @@
 import { PublicKey, Keypair, type Transaction } from "@solana/web3.js";
 import BN from "bn.js";
 import type { MigrationContext } from "../../types";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import * as spl from "@solana/spl-token";
 import { parseWithdrawLogs, handleTransaction, recordTransaction } from "../../utils/protocol-utils";
 import {

@@ -4,7 +4,7 @@ import { createContext, useContext, useCallback, useEffect, useRef, type ReactNo
 import { useLocalStorage } from "usehooks-ts";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import { useQueryClient } from "@tanstack/react-query";
 
 export interface PendingTransaction {
@@ -35,7 +35,7 @@ const TransactionListenerContext = createContext<TransactionListenerContextType 
 export const TransactionListenerProvider = ({ children }: { children: ReactNode }) => {
 	const queryClient = useQueryClient();
 	const [pendingTransactions, setPendingTransactions] = useLocalStorage<PendingTransaction[]>(
-		"autofun-pending-transactions",
+		"waifufun-pending-transactions",
 		[],
 	);
 	const { connection } = useConnection();

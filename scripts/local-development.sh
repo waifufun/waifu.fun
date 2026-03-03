@@ -1,5 +1,5 @@
 #!/bin/bash
-EXPECTED_CONTAINERS=("autofun-dragonfly" "autofun-minio" "autofun-mongo1" "autofun-mongo2" "autofun-mongo3")
+EXPECTED_CONTAINERS=("waifufun-dragonfly" "waifufun-minio" "waifufun-mongo1" "waifufun-mongo2" "waifufun-mongo3")
 TIMEOUT=300
 INTERVAL=5
 

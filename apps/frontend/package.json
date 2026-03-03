@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/frontend",
+	"name": "@waifufun/frontend",
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
@@ -13,8 +13,8 @@
 		"watch:workers": "tsc -p tsconfig.worker.json --watch"
 	},
 	"dependencies": {
-		"@autofun/constants": "workspace:*",
-		"@autofun/programs": "workspace:*",
+		"@waifufun/constants": "workspace:*",
+		"@waifufun/programs": "workspace:*",
 		"@bprogress/next": "^3.2.12",
 		"@coral-xyz/anchor": "^0.31.1",
 		"@next/third-parties": "^15.3.2",
@@ -71,7 +71,7 @@
 		"wagmi": "^2.15.3"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"@chromatic-com/storybook": "^3",
 		"@storybook/addon-essentials": "^8.6.13",
 		"@storybook/addon-links": "^9.0.0",

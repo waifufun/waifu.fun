@@ -1,5 +1,5 @@
 {
-	"name": "@autofun/constants",
+	"name": "@waifufun/constants",
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
@@ -19,7 +19,7 @@
 		"viem": "2.30.5"
 	},
 	"devDependencies": {
-		"@autofun/types": "workspace:*",
+		"@waifufun/types": "workspace:*",
 		"typescript": "^5.4.5"
 	}
 }

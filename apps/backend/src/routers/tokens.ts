@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import DB from "@autofun/database";
+import DB from "@waifufun/database";
 import type {
 	IHolder,
 	AddressLike,
@@ -10,7 +10,7 @@ import type {
 	TChainId,
 	TURLLike,
 	ITrade,
-} from "@autofun/types";
+} from "@waifufun/types";
 import {
 	getChecksummedAddress,
 	getPercentageOfTotal,
@@ -19,16 +19,16 @@ import {
 	isSupportedAddress,
 	populateTokensWithLiveData,
 	updateCryptoPrices,
-} from "@autofun/utils";
-import { EVMRpcProvider, SolanaRpcProvider } from "@autofun/rpc";
-import { uploadImageFromUrl, upload, uploadBase64Image } from "@autofun/s3-uploader";
-import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@autofun/constants";
-import redis from "@autofun/redis";
+} from "@waifufun/utils";
+import { EVMRpcProvider, SolanaRpcProvider } from "@waifufun/rpc";
+import { uploadImageFromUrl, upload, uploadBase64Image } from "@waifufun/s3-uploader";
+import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@waifufun/constants";
+import redis from "@waifufun/redis";
 import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
-import { codex } from "@autofun/utils";
+import { codex } from "@waifufun/utils";
 import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
 import { getBondingCurveData } from "../utils/bonding-curve";
-import logger from "@autofun/logger";
+import logger from "@waifufun/logger";
 import { getGlobalVault } from "../utils/bonding-curve";
 import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
@@ -616,7 +616,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		const user = await DB.User.findOne({ address: getChecksummedAddress(address, "solana") }).lean();
 
-		// this is to calculate how many tokens a user has bought on autofun
+		// this is to calculate how many tokens a user has bought on waifufun
 		const swapEvents = await DB.Event.find({
 			user: getChecksummedAddress(address, "solana"),
 			eventType: "swap",
@@ -625,11 +625,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 		const swapEventsAddresses = new Set(swapEvents.map((event) => event.contractAddress));
 
-		const tokensBoughtOnAutoFunAmount = swapEventsAddresses.size;
+		const tokensBoughtOnWaifuFunAmount = swapEventsAddresses.size;
 
 		const extendedUser = {
 			...user,
-			tokensBoughtOnAutoFunAmount,
+			tokensBoughtOnWaifuFunAmount,
 		};
 
 		// populating only the tokens that are in our DB
@@ -905,7 +905,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				telegram: metadata.telegram || "",
 				website: metadata.website || "",
 				discord: metadata.discord || "",
-				createdOn: "https://auto.fun/",
+				createdOn: "https://waifu.fun/",
 			};
 
 			const metadataBuffer = Buffer.from(JSON.stringify(finalMetadata, null, 2));

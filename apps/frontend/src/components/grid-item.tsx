@@ -1,6 +1,6 @@
 "use client";
 import { abbreviateNumber, cn, fromNow } from "@/lib/utils";
-import type { IToken } from "@autofun/types";
+import type { IToken } from "@waifufun/types";
 import Image from "next/image";
 import Link from "next/link";
 import Verified from "./verified";
@@ -204,7 +204,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 					</div>
 					<div
 						className={cn([
-							"text-base text-autofun-background-action-highlight font-mono line-clamp-1",
+							"text-base text-waifufun-background-action-highlight font-mono line-clamp-1",
 							cardAccentTheme === "blue"
 								? "text-sky-400/80 group-hover:text-sky-400"
 								: cardAccentTheme === "purple"

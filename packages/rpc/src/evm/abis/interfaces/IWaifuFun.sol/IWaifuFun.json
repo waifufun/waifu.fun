@@ -1,7 +1,7 @@
 {
 	"_format": "hh-sol-artifact-1",
-	"contractName": "IAutoFun",
-	"sourceName": "contracts/interfaces/IAutoFun.sol",
+	"contractName": "IWaifuFun",
+	"sourceName": "contracts/interfaces/IWaifuFun.sol",
 	"abi": [
 		{
 			"anonymous": false,
@@ -13,7 +13,7 @@
 					"type": "address"
 				}
 			],
-			"name": "AutoFunTokenFactoryUpdated",
+			"name": "WaifuFunTokenFactoryUpdated",
 			"type": "event"
 		},
 		{

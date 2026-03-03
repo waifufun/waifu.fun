@@ -11,7 +11,7 @@ const FeesContent = () => {
 									Fees On Auto.fun
 								</h1>
 								<p className="text-sm md:text-base font-satoshi text-[#8C8C8C] leading-6">
-									The following fees apply when using the auto.fun platform
+									The following fees apply when using the waifu.fun platform
 								</p>
 							</div>
 

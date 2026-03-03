@@ -1,5 +1,5 @@
 {
-  "name": "@autofun/sync",
+  "name": "@waifufun/sync",
   "version": "1.0.0",
   "description": "Sync data from PostgreSQL to MongoDB",
   "main": "dist/index.js",
@@ -12,9 +12,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@autofun/database": "workspace:*",
-    "@autofun/logger": "workspace:*",
-    "@autofun/types": "workspace:*",
+    "@waifufun/database": "workspace:*",
+    "@waifufun/logger": "workspace:*",
+    "@waifufun/types": "workspace:*",
     "dotenv": "^16.4.5",
     "pg": "^8.11.3",
     "drizzle-orm": "^0.29.3",
