@@ -3,10 +3,12 @@ import { motion } from "framer-motion";
 import { GridItem } from "./grid-item";
 import type { IToken } from "@waifufun/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getTokens } from "@/lib/api";
 import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+
+/** When true, only use the tokens passed from the server (mock); never hit the API. */
+const USE_MOCK_TOKENS_ONLY = true;
 
 export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const columns = 5;
@@ -17,14 +19,17 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const origin = searchParams.get("origin") || null;
 
 	const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ["main-page-tokens", category, origin],
+		queryKey: ["main-page-tokens", category, origin, USE_MOCK_TOKENS_ONLY],
 		queryFn: async ({ pageParam = 1 }) => {
+			if (USE_MOCK_TOKENS_ONLY) return pageParam === 1 ? tokens : [];
+			const { getTokens } = await import("@/lib/api");
 			const res = await getTokens({
 				searchParams: { page: pageParam, category: category ?? undefined, origin: origin ?? undefined },
 			});
 			return res as IToken[];
 		},
 		getNextPageParam: (lastPage, allPages) => {
+			if (USE_MOCK_TOKENS_ONLY) return undefined;
 			return lastPage.length < 50 ? undefined : allPages.length + 1;
 		},
 		initialPageParam: 1,
@@ -32,8 +37,8 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 			pages: [tokens],
 			pageParams: [1],
 		},
-		refetchInterval: 10000,
-		refetchOnMount: true,
+		refetchInterval: USE_MOCK_TOKENS_ONLY ? false : 10000,
+		refetchOnMount: !USE_MOCK_TOKENS_ONLY,
 	});
 
 	const allTokens: IToken[] = data?.pages.flat() ?? [];
