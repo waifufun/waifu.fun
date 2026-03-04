@@ -1,5 +1,4 @@
 "use client";
-import { motion } from "framer-motion";
 import { GridItem } from "./grid-item";
 import type { IToken } from "@waifufun/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -11,9 +10,6 @@ import { useSearchParams } from "next/navigation";
 const USE_MOCK_TOKENS_ONLY = true;
 
 export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
-	const columns = 5;
-	const columnKeys = Array.from({ length: columns }, (_, i) => `col${i + 1}`);
-
 	const searchParams = useSearchParams();
 	const category = searchParams.get("category") || null;
 	const origin = searchParams.get("origin") || null;
@@ -63,29 +59,11 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 
 	return (
 		<Fragment>
-			<div className="columns-2 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4 space-y-4 w-full">
-				{columnKeys.map((colKey, colIndex) => {
-					const columnItems = allTokens?.filter((_, idx) => idx % columns === colIndex);
-					return (
-						<motion.div
-							key={colKey}
-							className="flex flex-col space-y-4"
-							initial={{ opacity: 0, y: -250, rotateX: 50 }}
-							animate={{ opacity: 1, y: 0, rotateX: 0 }}
-							transition={{
-								delay: colIndex * 0.35,
-								type: "spring",
-								stiffness: 25,
-								damping: 7,
-							}}
-						>
-							{columnItems?.map((token) => (
-								<GridItem key={token?.contractAddress} token={token} />
-							))}
-						</motion.div>
-					);
-				})}
-				<div ref={loaderRef} className="h-10 w-full" />
+			<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-full auto-rows-fr">
+				{allTokens?.map((token) => (
+					<GridItem key={token?.contractAddress} token={token} />
+				))}
+				<div ref={loaderRef} className="h-10 w-full col-span-full" />
 			</div>
 			<div>
 				{isFetchingNextPage && (

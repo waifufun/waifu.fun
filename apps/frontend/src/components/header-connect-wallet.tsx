@@ -12,7 +12,7 @@ export default function HeaderConnectWallet() {
 
 	if (!isClient) {
 		return (
-			<Button className="h-10 px-4 py-2" variant="default" disabled>
+			<Button className="h-10 px-4 py-2 rounded-lg" variant="glass" disabled>
 				Connect Wallet
 			</Button>
 		);
@@ -23,8 +23,8 @@ export default function HeaderConnectWallet() {
 		const short = `${address.slice(0, 4)}...${address.slice(-4)}`;
 		return (
 			<Button
-				className="h-10 px-4 py-2 font-medium"
-				variant="default"
+				className="h-10 px-4 py-2 font-medium rounded-lg"
+				variant="glass"
 				onClick={() => modal.setVisible(true)}
 				title={address}
 			>
@@ -35,8 +35,8 @@ export default function HeaderConnectWallet() {
 
 	return (
 		<Button
-			className="h-10 px-4 py-2 font-medium"
-			variant="default"
+			className="h-10 px-4 py-2 font-medium rounded-lg"
+			variant="glass"
 			onClick={() => modal.setVisible(true)}
 		>
 			<Wallet className="size-4 mr-2" />

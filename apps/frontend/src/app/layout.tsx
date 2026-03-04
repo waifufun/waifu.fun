@@ -1,14 +1,17 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
-import { Inter } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import { cn } from "@/lib/utils";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import InteractiveBackground from "@/components/InteractiveBackground";
 import { AlertTriangleIcon } from "lucide-react";
 
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
 	subsets: ["latin"],
+	weight: ["300", "400", "500", "600", "700"],
+	variable: "--font-space-grotesk",
 });
 
 export const metadata: Metadata = {
@@ -17,7 +20,7 @@ export const metadata: Metadata = {
 		template: "%s | waifu.fun",
 	},
 	description: "Press the fun button.",
-	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST as string),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
 };
 
 export default function RootLayout({
@@ -33,12 +36,13 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={cn("h-full bg-[#0a0a0a] font-sans antialiased overflow-hidden", inter.className)}>
+			<body className={cn("h-full font-sans antialiased overflow-hidden", spaceGrotesk.variable, spaceGrotesk.className)}>
 				<Providers>
-					<div className="flex flex-col min-h-screen max-h-screen overflow-hidden">
+					<InteractiveBackground />
+					<div className="relative z-10 flex flex-col min-h-screen max-h-screen overflow-hidden">
 						<Header />
 						<main className="flex-1 overflow-auto" data-sidebar="inset">
-							<div className="p-4">
+							<div className="p-4 min-h-full">
 								{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
 									<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
 										<div className="inline-flex gap-x-2">

@@ -7,7 +7,7 @@ import HeaderConnectWallet from "./header-connect-wallet";
 
 export default function Header() {
 	return (
-		<div className="bg-black border-b-2 border-waifufun-background-action-highlight/50 shrink-0 w-full">
+		<div className="shrink-0 w-full">
 			<div className="w-full h-[68px] flex items-center justify-between gap-4 px-4">
 				<div className="flex items-center gap-4 min-w-0 flex-1">
 					<Link href="/" className="shrink-0">
