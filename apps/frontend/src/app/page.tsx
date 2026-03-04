@@ -1,7 +1,8 @@
-import { getTokens } from "@/lib/api";
 import type { Metadata } from "next";
 import ListView from "@/components/list-view";
 import TokenGrid from "@/components/token-grid";
+import mockTokens from "@/data/mock-tokens.json";
+import type { IToken } from "@waifufun/types";
 
 export const revalidate = 4;
 
@@ -26,11 +27,16 @@ export const generateMetadata = async (): Promise<Metadata> => {
 	};
 };
 
+/** Mock tokens only — API is not called. */
+function getTokensForPage(): IToken[] {
+	return mockTokens as IToken[];
+}
+
 export default async function Home({
 	searchParams,
 }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
 	const currentSearchParams = await searchParams;
-	const tokens = await getTokens({ searchParams: currentSearchParams });
+	const tokens = getTokensForPage();
 	const view = currentSearchParams?.view || "grid";
 	const noTokens = (tokens?.length || 0) === 0;
 	return (
