@@ -162,7 +162,7 @@ export default function Hero() {
 								not chatbots. <span className="text-[#71717a]">economic actors.</span>
 							</p>
 							<p className="text-[15px] text-[#52525b] mt-2 leading-relaxed">
-								the first agent token launchpad powered by Eliza Cloud. deploy autonomous AI that trades, learns, and earns on Solana.
+								powered by Milady Cloud &amp; Eliza Cloud. your milady becomes a waifu — an autonomous agent that trades, learns, and earns 24/7 on Solana.
 							</p>
 						</motion.div>
 
@@ -201,14 +201,23 @@ export default function Hero() {
 						</motion.div>
 
 						{/* Powered by badge */}
-						<motion.div variants={itemVariants} className="mt-5">
+						<motion.div variants={itemVariants} className="mt-5 flex items-center gap-4">
+							<a
+								href="https://milady.ai"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="inline-flex items-center gap-1.5 text-[#52525b] hover:text-[#c084fc] transition-colors duration-200 text-xs font-mono"
+							>
+								💜 milady cloud
+							</a>
+							<span className="text-[#333] text-xs">×</span>
 							<a
 								href="https://elizaos.ai"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1.5 text-[#52525b] hover:text-[#00ff87] transition-colors duration-200 text-xs font-mono"
 							>
-								⚡ powered by elizaos
+								⚡ elizaos
 							</a>
 						</motion.div>
 

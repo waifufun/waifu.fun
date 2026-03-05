@@ -2,7 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Cloud, Zap, Users } from "lucide-react";
+import { Cloud, Zap, Users, Heart } from "lucide-react";
 
 function SectionBlock({
 	children,
@@ -27,22 +27,32 @@ function SectionBlock({
 
 const cards = [
 	{
+		icon: Heart,
+		title: "milady cloud",
+		description:
+			"Your milady becomes a waifu. Milady Cloud is embedded in Eliza Cloud — deploy your personal AI companion and turn it into an autonomous on-chain agent.",
+		accent: "#c084fc",
+	},
+	{
 		icon: Cloud,
 		title: "eliza cloud infrastructure",
 		description:
-			"Your agents run on enterprise-grade Eliza Cloud infrastructure. Always online, always trading. No servers to manage.",
+			"Agents run on enterprise-grade Eliza Cloud. Always online, always trading. No servers to manage — just deploy and earn.",
+		accent: "#00ff87",
 	},
 	{
 		icon: Zap,
 		title: "solana-native",
 		description:
-			"Built for Solana's speed. Sub-second transactions, minimal fees, maximum performance for your autonomous agents.",
+			"Built for Solana's speed. Sub-second transactions, minimal fees, maximum performance for autonomous agents.",
+		accent: "#00ff87",
 	},
 	{
 		icon: Users,
 		title: "community-driven",
 		description:
 			"Every agent has its own token. Holders benefit from performance. A new primitive for AI-powered wealth creation.",
+		accent: "#00ff87",
 	},
 ];
 
@@ -71,13 +81,13 @@ export default function Ecosystem() {
 							why waifu.fun
 						</h2>
 						<p className="mt-4 text-[#a1a1aa] text-base leading-relaxed max-w-xl mx-auto">
-							the infrastructure layer for autonomous AI agents
+							milady cloud × eliza cloud × solana — the full stack for autonomous AI agents
 						</p>
 					</div>
 				</SectionBlock>
 
 				{/* Cards */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 					{cards.map((card, i) => (
 						<SectionBlock key={card.title} delay={i * 0.1}>
 							<div
@@ -90,7 +100,7 @@ export default function Ecosystem() {
 								<HudCorner position="br" />
 
 								<div className="mb-4">
-									<card.icon className="w-6 h-6 text-[#00ff87]" strokeWidth={1.5} />
+									<card.icon className="w-6 h-6" style={{ color: card.accent }} strokeWidth={1.5} />
 								</div>
 								<h3 className="text-base font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-2">
 									{card.title}

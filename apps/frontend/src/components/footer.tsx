@@ -37,6 +37,14 @@ export default function Footer() {
 				>
 					<div className="flex flex-wrap items-center gap-4 text-xs">
 						<a
+							href="https://milady.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-[#52525b] hover:text-[#c084fc] transition-colors duration-200"
+						>
+							milady.ai
+						</a>
+						<a
 							href="https://elizaos.ai"
 							target="_blank"
 							rel="noopener noreferrer"
@@ -53,7 +61,7 @@ export default function Footer() {
 							docs
 						</a>
 						<a
-							href="https://github.com/elizaOS/eliza"
+							href="https://github.com/milady-ai/milady"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
@@ -69,9 +77,9 @@ export default function Footer() {
 							x
 						</a>
 					</div>
-					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(0,255,135,0.1)] bg-[rgba(0,255,135,0.03)]">
-						<span className="text-[#00ff87] opacity-60">●</span>
-						built on eliza cloud
+					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(192,132,252,0.15)] bg-[rgba(192,132,252,0.04)]">
+						<span className="text-[#c084fc] opacity-60">●</span>
+						milady cloud × eliza cloud
 					</span>
 				</div>
 

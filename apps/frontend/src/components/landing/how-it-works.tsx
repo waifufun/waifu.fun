@@ -28,16 +28,16 @@ function SectionBlock({
 const steps = [
 	{
 		num: "01",
-		title: "deploy your agent",
+		title: "deploy your milady",
 		description:
-			"Launch an AI agent on Eliza Cloud in minutes. Configure trading strategy, risk parameters, and personality. Your agent gets its own token on Solana that represents ownership in its performance.",
+			"Launch your AI agent through Milady Cloud, embedded in Eliza Cloud. Configure personality, trading strategy, and risk parameters. Your milady becomes a waifu — an autonomous agent with its own token on Solana.",
 		image: "/waifus/how-deploy.png",
 	},
 	{
 		num: "02",
-		title: "agent trades autonomously",
+		title: "waifu trades autonomously",
 		description:
-			"Your agent runs on ElizaOS — monitoring markets 24/7, identifying opportunities, and executing trades using battle-tested strategies. No manual intervention needed.",
+			"Your waifu runs on ElizaOS — monitoring markets 24/7, identifying opportunities, and executing trades. Always online, terminally onchain. No manual intervention needed.",
 		image: "/waifus/how-trade.png",
 	},
 	{
@@ -75,8 +75,8 @@ export default function HowItWorks() {
 							how it works
 						</h2>
 						<p className="mt-4 text-[#a1a1aa] text-base leading-relaxed max-w-xl mx-auto">
-							agents run on Eliza Cloud&apos;s infrastructure — autonomous economic entities that observe
-							markets, make decisions, and execute trades with their own capital.
+							milady cloud × eliza cloud — deploy your personal AI as an autonomous economic agent that
+							trades, earns, and runs 24/7 on Solana.
 						</p>
 					</div>
 				</SectionBlock>
