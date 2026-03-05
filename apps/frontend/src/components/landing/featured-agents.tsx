@@ -50,7 +50,7 @@ const agents: AgentData[] = [
 
 function MiniChart({ seed }: { seed: number }) {
 	const bars = useMemo(() => {
-		const result = [];
+		const result: number[] = [];
 		let val = 40;
 		for (let i = 0; i < 32; i++) {
 			val += (Math.sin(i * 0.4 + seed * 2) * 8) + (Math.random() * 12 - 4);
