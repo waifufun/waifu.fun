@@ -59,7 +59,7 @@ export default function AdminTokenCard({
 								className="w-8 h-8 object-cover border border-gray-700 bg-gray-800"
 							/>
 						) : (
-							<div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+							<div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white text-xs font-bold">
 								{token.ticker?.slice(0, 2) || "TK"}
 							</div>
 						)}

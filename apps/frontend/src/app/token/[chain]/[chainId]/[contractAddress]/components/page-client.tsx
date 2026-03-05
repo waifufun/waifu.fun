@@ -63,7 +63,7 @@ export default function PageClient({
 			return {
 				badge: "BONDED",
 				classes:
-					"bg-[#8b5cf6]/15 hover:bg-[#8b5cf6]/25 text-[#c084fc] border border-[#8b5cf6]/40 shadow-[0_0_8px_rgba(139,92,246,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+					"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 shadow-[0_0_8px_rgba(0,255,135,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 			};
 		}
 		if (initialData?.imported) {
@@ -77,7 +77,7 @@ export default function PageClient({
 		return {
 			badge: "ACTIVE",
 			classes:
-				"bg-[#8b5cf6]/15 hover:bg-[#8b5cf6]/25 text-[#c084fc] border border-[#8b5cf6]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+				"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 		};
 	};
 
@@ -90,7 +90,7 @@ export default function PageClient({
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<div className="bg-[rgba(17,17,20,0.7)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] p-4 rounded-xl flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+			<div className="bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] p-4 rounded-sm flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
 				<div className="flex items-center gap-4">
 					{/* Image */}
 					<Image
@@ -99,7 +99,7 @@ export default function PageClient({
 						height={60}
 						unoptimized
 						alt="token_image"
-						className="h-10 w-10 rounded-lg border border-[#8b5cf6]/30"
+						className="h-10 w-10 rounded-sm border border-[#00ff87]/30"
 					/>
 					{/* Token Name */}
 					<div className="space-y-3 xl:space-y-0">
@@ -110,7 +110,7 @@ export default function PageClient({
 							<span className="text-xl md:text-2xl font-bold text-[#e4e4e7] lowercase tracking-wide">
 								{token.name}
 							</span>
-							<span className="text-lg text-[#8b5cf6] font-mono">{token.ticker}</span>
+							<span className="text-lg text-[#00ff87] font-mono">{token.ticker}</span>
 							<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
 							{token?.featured ? (
 								<Badge
@@ -171,7 +171,7 @@ export default function PageClient({
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
 					<div className="w-full relative">
-						<div className="bg-[rgba(17,17,20,0.7)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] p-3 rounded-xl">
+						<div className="bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] p-3 rounded-sm">
 							<div className="overflow-hidden">
 								<Chart token={token} />
 							</div>
@@ -185,12 +185,12 @@ export default function PageClient({
 				</div>
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
-					<div className="flex flex-col gap-4 bg-[rgba(17,17,20,0.7)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] p-4 rounded-xl">
+					<div className="flex flex-col gap-4 bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] p-4 rounded-sm">
 						<BondingCurveProgress token={token} />
 						<div className="flex flex-row gap-4 items-start">
 							<Image
 								src={token?.image}
-								className="max-w-[50px] rounded-lg border border-[#8b5cf6]/30 mt-1 flex-shrink-0"
+								className="max-w-[50px] rounded-sm border border-[#00ff87]/30 mt-1 flex-shrink-0"
 								unoptimized
 								priority
 								width={208}
@@ -253,7 +253,7 @@ export default function PageClient({
 										<Image
 											src={social.icon}
 											className={cn([
-												"inline-flex items-center justify-center h-8 w-8 p-1.5 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] hover:border-[#8b5cf6] hover:bg-[#8b5cf6]/10 transition-all duration-200",
+												"inline-flex items-center justify-center h-8 w-8 p-1.5 rounded-sm border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200",
 												!social?.href ? "opacity-30 cursor-not-allowed" : "opacity-70 hover:opacity-100 cursor-pointer",
 											])}
 											unoptimized
@@ -292,7 +292,7 @@ export default function PageClient({
 						<div className="h-[1px] w-full bg-[rgba(255,255,255,0.06)]" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
 							<span className="text-base font-medium uppercase text-waifufun-text-secondary">TOKEN:</span>
-							<div className="flex items-center w-full text-xs justify-between bg-[rgba(8,8,10,0.5)] p-2 border border-[rgba(255,255,255,0.06)] rounded-lg">
+							<div className="flex items-center w-full text-xs justify-between bg-[rgba(8,8,10,0.5)] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm">
 								<span className="text-gray-300 font-mono truncate">{shortenAddress(token?.contractAddress)}</span>
 								<div className="flex gap-1 flex-shrink-0">
 									<CopyButton textToCopy={token.contractAddress} />

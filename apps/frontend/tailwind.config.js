@@ -63,25 +63,24 @@ module.exports = {
 						card: "#111114",
 						"card-hover": "#18181c",
 						input: "#0e0e12",
-						elevated: "#1a1a1f",
+						elevated: "#0a0a0c",
 						muted: "#0c0c0e",
 					},
 					stroke: {
 						primary: "rgba(255, 255, 255, 0.06)",
 						hover: "rgba(255, 255, 255, 0.12)",
-						active: "rgba(139, 92, 246, 0.3)",
+						active: "rgba(0, 255, 135, 0.25)",
 					},
 					text: {
 						primary: "#e4e4e7",
-						secondary: "#71717a",
+						secondary: "#a1a1aa",
 						tertiary: "#52525b",
-						link: "#a78bfa",
+						link: "#00ff87",
 					},
 					accent: {
-						violet: "#8b5cf6",
-						pink: "#c084fc",
-						cyan: "#67e8f9",
-						green: "#4ade80",
+						green: "#00ff87",
+						emerald: "#22c55e",
+						deep: "#065f46",
 						red: "#f87171",
 					},
 					glass: {
@@ -141,10 +140,10 @@ module.exports = {
 				},
 				"glow-pulse": {
 					"0%, 100%": {
-						boxShadow: "0 0 20px rgba(139, 92, 246, 0.15)",
+						boxShadow: "0 0 20px rgba(0, 255, 135, 0.1)",
 					},
 					"50%": {
-						boxShadow: "0 0 30px rgba(139, 92, 246, 0.25)",
+						boxShadow: "0 0 30px rgba(0, 255, 135, 0.15)",
 					},
 				},
 				"float-jitter": {

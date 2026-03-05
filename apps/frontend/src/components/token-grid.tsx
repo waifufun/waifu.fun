@@ -32,21 +32,21 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 				className="block group"
 			>
 				<motion.div
-					className="relative w-full overflow-hidden rounded-3xl bg-[rgba(17,17,20,0.8)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)]"
+					className="relative w-full overflow-hidden rounded-sm bg-[#111114] border border-[rgba(255,255,255,0.06)]"
 					whileHover={{
-						boxShadow: "0 0 80px rgba(139,92,246,0.2), 0 20px 60px rgba(0,0,0,0.5)",
-						borderColor: "rgba(139,92,246,0.25)",
+						boxShadow: "0 0 60px rgba(0,255,135,0.1), 0 20px 60px rgba(0,0,0,0.5)",
+						borderColor: "rgba(0,255,135,0.25)",
 					}}
 					transition={{ type: "spring", stiffness: 260, damping: 24 }}
 				>
 					{/* HUD corner accents */}
 					<div className="absolute top-0 left-0 w-16 h-16 pointer-events-none">
-						<div className="absolute top-4 left-4 w-8 h-px bg-gradient-to-r from-[#8b5cf6] to-transparent" />
-						<div className="absolute top-4 left-4 w-px h-8 bg-gradient-to-b from-[#8b5cf6] to-transparent" />
+						<div className="absolute top-4 left-4 w-8 h-px bg-gradient-to-r from-[#00ff87] to-transparent" />
+						<div className="absolute top-4 left-4 w-px h-8 bg-gradient-to-b from-[#00ff87] to-transparent" />
 					</div>
 					<div className="absolute top-0 right-0 w-16 h-16 pointer-events-none">
-						<div className="absolute top-4 right-4 w-8 h-px bg-gradient-to-l from-[#67e8f9] to-transparent" />
-						<div className="absolute top-4 right-4 w-px h-8 bg-gradient-to-b from-[#67e8f9] to-transparent" />
+						<div className="absolute top-4 right-4 w-8 h-px bg-gradient-to-l from-[#00ff87] to-transparent" />
+						<div className="absolute top-4 right-4 w-px h-8 bg-gradient-to-b from-[#00ff87] to-transparent" />
 					</div>
 
 					{/* Main content - cinematic layout */}
@@ -72,9 +72,9 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 
 							{/* Rank badge */}
 							{index === 0 && (
-								<div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(17,17,20,0.8)] border border-[rgba(139,92,246,0.3)] backdrop-blur-sm">
+								<div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-sm bg-[rgba(17,17,20,0.8)] border border-[rgba(0,255,135,0.25)]">
 									<span className="text-lg">🔥</span>
-									<span className="text-xs font-mono uppercase tracking-wider text-[#c084fc]">
+									<span className="text-xs font-mono uppercase tracking-wider text-[#00ff87]">
 										#1 trending
 									</span>
 								</div>
@@ -88,16 +88,16 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 								{/* Status badges */}
 								<div className="flex items-center gap-2 flex-wrap">
 									{isBonded && (
-										<div className="px-3 py-1 rounded-full bg-[rgba(139,92,246,0.15)] border border-[rgba(139,92,246,0.3)]">
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#c084fc]">
+										<div className="px-3 py-1 rounded-full bg-[rgba(0,255,135,0.1)] border border-[rgba(0,255,135,0.25)]">
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">
 												bonded
 											</span>
 										</div>
 									)}
 									{token.verified && (
-										<div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(103,232,249,0.1)] border border-[rgba(103,232,249,0.2)]">
-											<span className="text-[#67e8f9]">✓</span>
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#67e8f9]">
+										<div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(0,255,135,0.08)] border border-[rgba(0,255,135,0.2)]">
+											<span className="text-[#00ff87]">✓</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">
 												verified
 											</span>
 										</div>
@@ -109,7 +109,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 									<h3 className="text-3xl sm:text-4xl font-bold text-[#e4e4e7] leading-tight mb-2">
 										{token.name}
 									</h3>
-									<span className="text-xl font-mono text-[#8b5cf6]">
+									<span className="text-xl font-mono text-[#00ff87]">
 										${token.ticker}
 									</span>
 								</div>
@@ -174,13 +174,13 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
 												bonding progress
 											</span>
-											<span className="text-xs font-mono text-[#c084fc]">
+											<span className="text-xs font-mono text-[#00ff87]">
 												{curveProgress}%
 											</span>
 										</div>
-										<div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+										<div className="w-full h-2 rounded-sm bg-[rgba(255,255,255,0.06)] overflow-hidden">
 											<motion.div
-												className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#c084fc] to-[#67e8f9]"
+												className="h-full rounded-sm bg-gradient-to-r from-[#065f46] via-[#22c55e] to-[#00ff87]"
 												initial={{ width: 0 }}
 												animate={{ width: `${curveProgress}%` }}
 												transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
@@ -194,12 +194,12 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 
 					{/* Bottom HUD accents */}
 					<div className="absolute bottom-0 left-0 w-16 h-16 pointer-events-none">
-						<div className="absolute bottom-4 left-4 w-8 h-px bg-gradient-to-r from-[#8b5cf6] to-transparent" />
-						<div className="absolute bottom-4 left-4 w-px h-8 bg-gradient-to-t from-[#8b5cf6] to-transparent" />
+						<div className="absolute bottom-4 left-4 w-8 h-px bg-gradient-to-r from-[#00ff87] to-transparent" />
+						<div className="absolute bottom-4 left-4 w-px h-8 bg-gradient-to-t from-[#00ff87] to-transparent" />
 					</div>
 					<div className="absolute bottom-0 right-0 w-16 h-16 pointer-events-none">
-						<div className="absolute bottom-4 right-4 w-8 h-px bg-gradient-to-l from-[#67e8f9] to-transparent" />
-						<div className="absolute bottom-4 right-4 w-px h-8 bg-gradient-to-t from-[#67e8f9] to-transparent" />
+						<div className="absolute bottom-4 right-4 w-8 h-px bg-gradient-to-l from-[#00ff87] to-transparent" />
+						<div className="absolute bottom-4 right-4 w-px h-8 bg-gradient-to-t from-[#00ff87] to-transparent" />
 					</div>
 				</motion.div>
 			</Link>
@@ -277,9 +277,9 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 				{/* Gradient divider */}
 				{featuredToken && remainingTokens.length > 0 && (
 					<div className="relative py-4">
-						<div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[rgba(139,92,246,0.3)] to-transparent" />
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#8b5cf6] blur-sm" />
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[#c084fc]" />
+						<div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.2)] to-transparent" />
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#00ff87] blur-sm" />
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[#22c55e]" />
 					</div>
 				)}
 
@@ -330,7 +330,7 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 
 			{isFetchingNextPage && (
 				<div className="mt-4 flex justify-center">
-					<LoaderCircle className="h-8 w-8 text-[#8b5cf6] animate-spin" />
+					<LoaderCircle className="h-8 w-8 text-[#00ff87] animate-spin" />
 				</div>
 			)}
 		</Fragment>

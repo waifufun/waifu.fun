@@ -39,9 +39,9 @@ export default function AdminPage() {
 			description: "Manage moderator permissions, assign roles, and oversee moderation team",
 			icon: Shield,
 			href: "/admin/moderators",
-			color: "text-purple-500",
-			bgColor: "bg-purple-500/10",
-			borderColor: "border-purple-500/20",
+			color: "text-emerald-500",
+			bgColor: "bg-emerald-500/10",
+			borderColor: "border-emerald-500/20",
 		},
 	];
 

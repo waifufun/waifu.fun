@@ -24,7 +24,7 @@ export default function Footer() {
 							autonomous agents on solana
 						</p>
 						<p className="text-xs font-mono text-[#52525b] flex items-center gap-1.5 mt-1">
-							<span className="inline-block w-1 h-1 rounded-full bg-[#8b5cf6] opacity-60" />
+							<span className="inline-block w-1 h-1 rounded-full bg-[#00ff87] opacity-60" />
 							powered by ElizaOS
 						</p>
 					</div>
@@ -39,13 +39,13 @@ export default function Footer() {
 					<div className="flex flex-wrap items-center gap-4">
 						<Link
 							href="/privacy-policy"
-							className="text-[#52525b] hover:text-[#8b5cf6] transition-colors duration-200"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
 						>
 							privacy
 						</Link>
 						<Link
 							href="/terms-of-service"
-							className="text-[#52525b] hover:text-[#8b5cf6] transition-colors duration-200"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
 						>
 							terms
 						</Link>

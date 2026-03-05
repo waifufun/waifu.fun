@@ -55,7 +55,7 @@ export default async function Home({
 			>
 				{noTokens ? (
 					<div className="flex flex-col items-center gap-3">
-						<span className="text-[#8b5cf6] text-lg font-semibold">
+						<span className="text-[#00ff87] text-lg font-semibold">
 							no agents found
 						</span>
 						<span className="text-[#52525b] text-sm">

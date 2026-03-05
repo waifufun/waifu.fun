@@ -47,7 +47,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 									height={60}
 									unoptimized
 									alt="token_image"
-									className="size-[60px] rounded-lg aspect-square"
+									className="size-[60px] rounded-sm aspect-square"
 								/>
 								{/* Token Name */}
 								<div className="flex flex-col gap-2.5">
@@ -69,7 +69,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 							</div>
 						</TableCell>
 						<TableCell className="text-center">
-							<span className="text-[#8b5cf6] text-base font-medium font-satoshi leading-none">
+							<span className="text-[#00ff87] text-base font-medium font-satoshi leading-none">
 								{abbreviateNumber(token.marketcap)}
 							</span>
 						</TableCell>
@@ -80,7 +80,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 						</TableCell>
 						<TableCell className="text-left">
 							{token.imported ? (
-								<span className="text-[#8b5cf6] text-sm font-medium font-satoshi uppercase leading-none tracking-widest">
+								<span className="text-[#00ff87] text-sm font-medium font-satoshi uppercase leading-none tracking-widest">
 									Import
 								</span>
 							) : (
@@ -89,7 +89,7 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 										<div className="flex flex-col gap-2.5 max-w-[275px]">
 											<div className="text-[#e4e4e7] text-base font-medium font-satoshi leading-none inline-flex gap-2">
 												Progress
-												<span className="text-[#8b5cf6] font-normal">
+												<span className="text-[#00ff87] font-normal">
 													{token.curveProgress.toFixed(2)}%
 												</span>
 											</div>

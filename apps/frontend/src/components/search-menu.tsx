@@ -64,7 +64,7 @@ export default function SearchMenu() {
 			<PopoverTrigger asChild>
 				<button
 					type="button"
-					className="hidden md:flex items-center gap-2 w-[320px] xl:w-[400px] h-10 rounded-lg text-left px-3 transition-all duration-200"
+					className="hidden md:flex items-center gap-2 w-[320px] xl:w-[400px] h-10 rounded-sm text-left px-3 transition-all duration-200"
 					style={{
 						background: "#111114",
 						border: triggerHover
@@ -94,7 +94,7 @@ export default function SearchMenu() {
 				onCloseAutoFocus={(e) => e.preventDefault()}
 				align="start"
 				sideOffset={8}
-				className="w-[90vw] max-w-2xl p-0 overflow-hidden rounded-xl shadow-2xl"
+				className="w-[90vw] max-w-2xl p-0 overflow-hidden rounded-sm shadow-2xl"
 				style={{
 					background: "#111114",
 					border: "1px solid rgba(255, 255, 255, 0.06)",
@@ -113,7 +113,7 @@ export default function SearchMenu() {
 						placeholder={PLACEHOLDER}
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
-						className="flex-1 h-10 rounded-lg font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
+						className="flex-1 h-10 rounded-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
 						style={{
 							background: "#0e0e12",
 							border: "1px solid rgba(255, 255, 255, 0.06)",
@@ -156,7 +156,7 @@ export default function SearchMenu() {
 									href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
 									key={token.contractAddress}
 									onClick={() => setOpen(false)}
-									className="rounded-lg p-3 transition-colors flex items-center gap-4 justify-between"
+									className="rounded-sm p-3 transition-colors flex items-center gap-4 justify-between"
 									style={{ background: "transparent" }}
 									onMouseEnter={(e) => (e.currentTarget.style.background = "#18181c")}
 									onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -168,7 +168,7 @@ export default function SearchMenu() {
 											height={48}
 											unoptimized
 											alt=""
-											className="size-12 aspect-square rounded-lg object-cover shrink-0"
+											className="size-12 aspect-square rounded-sm object-cover shrink-0"
 										/>
 										<div className="flex flex-col gap-0.5 min-w-0">
 											<div className="flex items-center gap-2 flex-wrap">

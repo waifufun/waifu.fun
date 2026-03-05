@@ -53,21 +53,13 @@ export default function Hero() {
 		<section className="relative overflow-hidden flex items-center py-16 lg:py-24">
 			{/* Background elements */}
 			<div className="absolute inset-0 z-0">
-				{/* Ambient glow behind mascot area */}
+				{/* Subtle ambient behind mascot area */}
 				<div
 					className="absolute w-[500px] h-[500px] rounded-full blur-[120px]"
 					style={{
-						background: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
+						background: "radial-gradient(circle, rgba(0,255,135,0.06) 0%, transparent 70%)",
 						top: "10%",
 						right: "5%",
-					}}
-				/>
-				<div
-					className="absolute w-[300px] h-[300px] rounded-full blur-[80px]"
-					style={{
-						background: "radial-gradient(circle, rgba(103,232,249,0.08) 0%, transparent 70%)",
-						top: "40%",
-						right: "15%",
 					}}
 				/>
 
@@ -103,7 +95,7 @@ export default function Hero() {
 					<div className="flex flex-col">
 						{/* Badge */}
 						<motion.div variants={itemVariants} className="mb-8">
-							<div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.6)] backdrop-blur-sm">
+							<div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.6)]">
 								<span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse" />
 								<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">
 									live on solana
@@ -119,7 +111,7 @@ export default function Hero() {
 									{isGlitching && (
 										<>
 											<span
-												className="absolute inset-0 text-[#67e8f9]"
+												className="absolute inset-0 text-[#00ff87]"
 												style={{
 													transform: "translateX(-1.5px)",
 													opacity: 0.25,
@@ -129,7 +121,7 @@ export default function Hero() {
 												autonomous
 											</span>
 											<span
-												className="absolute inset-0 text-[#c084fc]"
+												className="absolute inset-0 text-[#22c55e]"
 												style={{
 													transform: "translateX(1.5px)",
 													opacity: 0.25,
@@ -142,7 +134,7 @@ export default function Hero() {
 									)}
 								</span>
 								<span className="block text-[#e4e4e7]">agents that</span>
-								<span className="block text-[#c084fc]">
+								<span className="block text-[#00ff87]">
 									build wealth
 								</span>
 							</h1>
@@ -162,12 +154,12 @@ export default function Hero() {
 						<motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-3">
 							<motion.a
 								href="/create"
-								className="inline-flex items-center gap-2 px-7 py-3 rounded-lg font-medium text-white relative overflow-hidden"
+								className="inline-flex items-center gap-2 px-7 py-3 rounded-sm font-medium text-[#08080a] relative overflow-hidden"
 								style={{
-									background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-									boxShadow: "0 0 20px rgba(139,92,246,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
+									background: "#00ff87",
+									boxShadow: "0 0 20px rgba(0,255,135,0.2), inset 0 1px 0 rgba(255,255,255,0.1)",
 								}}
-								whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(139,92,246,0.4), inset 0 1px 0 rgba(255,255,255,0.1)" }}
+								whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(0,255,135,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}
 								whileTap={{ scale: 0.98 }}
 								transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
 							>
@@ -179,10 +171,10 @@ export default function Hero() {
 							</motion.a>
 							<motion.a
 								href="#how-it-works"
-								className="inline-flex items-center px-7 py-3 rounded-lg border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium bg-[rgba(17,17,20,0.4)] backdrop-blur-sm"
+								className="inline-flex items-center px-7 py-3 rounded-sm border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium bg-[rgba(17,17,20,0.4)]"
 								whileHover={{
 									scale: 1.03,
-									borderColor: "rgba(139,92,246,0.3)",
+									borderColor: "rgba(0,255,135,0.25)",
 									color: "#e4e4e7",
 								}}
 								whileTap={{ scale: 0.98 }}
@@ -204,18 +196,11 @@ export default function Hero() {
 							animate={{ y: [0, -8, 0] }}
 							transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
 						>
-							{/* Glow ring behind mascot */}
-							<div
-								className="absolute inset-0 -m-4 rounded-2xl"
-								style={{
-									background: "radial-gradient(ellipse at center, rgba(139,92,246,0.08) 0%, transparent 70%)",
-								}}
-							/>
 							<Image
 								src="/waifus/eliza-hero.png"
 								alt="waifu.fun mascot"
 								fill
-								className="object-contain drop-shadow-[0_0_40px_rgba(139,92,246,0.15)]"
+								className="object-contain drop-shadow-[0_0_30px_rgba(0,255,135,0.08)]"
 								priority
 							/>
 						</motion.div>

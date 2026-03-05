@@ -26,7 +26,7 @@ export default function ExplorerHeader({
 					{/* Title with gradient */}
 					<div className="flex items-baseline gap-4">
 						<h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-							<span className="bg-gradient-to-r from-[#e4e4e7] via-[#c084fc] to-[#8b5cf6] bg-clip-text text-transparent">
+							<span className="bg-gradient-to-r from-[#e4e4e7] via-[#22c55e] to-[#00ff87] bg-clip-text text-transparent">
 								explore agents
 							</span>
 						</h2>
@@ -63,12 +63,12 @@ export default function ExplorerHeader({
 					</div>
 
 					{/* View toggle */}
-					<div className="flex items-center gap-1 p-1 rounded-lg bg-[rgba(17,17,20,0.6)] border border-[rgba(255,255,255,0.06)]">
+					<div className="flex items-center gap-1 p-1 rounded-sm bg-[rgba(17,17,20,0.6)] border border-[rgba(255,255,255,0.06)]">
 						<button
 							onClick={() => onViewModeChange?.("grid")}
 							className={`p-2 rounded-md transition-all duration-200 ${
 								viewMode === "grid"
-									? "bg-[rgba(139,92,246,0.15)] text-[#c084fc]"
+									? "bg-[rgba(0,255,135,0.1)] text-[#00ff87]"
 									: "text-[#52525b] hover:text-[#71717a]"
 							}`}
 						>
@@ -78,7 +78,7 @@ export default function ExplorerHeader({
 							onClick={() => onViewModeChange?.("list")}
 							className={`p-2 rounded-md transition-all duration-200 ${
 								viewMode === "list"
-									? "bg-[rgba(139,92,246,0.15)] text-[#c084fc]"
+									? "bg-[rgba(0,255,135,0.1)] text-[#00ff87]"
 									: "text-[#52525b] hover:text-[#71717a]"
 							}`}
 						>
@@ -89,7 +89,7 @@ export default function ExplorerHeader({
 
 				{/* Thin rule line */}
 				<div className="relative h-px w-full">
-					<div className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6] via-[rgba(139,92,246,0.3)] to-transparent" />
+					<div className="absolute inset-0 bg-gradient-to-r from-[#00ff87] via-[rgba(0,255,135,0.2)] to-transparent" />
 				</div>
 			</div>
 
@@ -103,7 +103,7 @@ export default function ExplorerHeader({
 							relative px-5 py-2 rounded-full text-xs font-mono uppercase tracking-widest
 							border transition-all duration-300
 							${active === filter
-								? "border-[rgba(139,92,246,0.4)] bg-[rgba(139,92,246,0.1)]"
+								? "border-[rgba(0,255,135,0.25)] bg-[rgba(0,255,135,0.08)]"
 								: "border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.4)] hover:border-[rgba(255,255,255,0.1)]"
 							}
 						`}
@@ -113,14 +113,14 @@ export default function ExplorerHeader({
 						{active === filter && (
 							<motion.div
 								layoutId="activeFilterPill"
-								className="absolute inset-0 rounded-full bg-gradient-to-r from-[rgba(139,92,246,0.15)] to-[rgba(192,132,252,0.1)]"
+								className="absolute inset-0 rounded-full bg-gradient-to-r from-[rgba(0,255,135,0.1)] to-[rgba(192,132,252,0.1)]"
 								transition={{ type: "spring", stiffness: 400, damping: 30 }}
 							/>
 						)}
 						<span
 							className={`relative z-10 ${
 								active === filter 
-									? "text-[#c084fc]" 
+									? "text-[#00ff87]" 
 									: "text-[#52525b] hover:text-[#71717a]"
 							}`}
 						>

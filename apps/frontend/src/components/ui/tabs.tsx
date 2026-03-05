@@ -18,7 +18,7 @@ function TabsList({
 		<TabsPrimitive.List
 			data-slot="tabs-list"
 			className={cn(
-				"border border-[rgba(255,255,255,0.06)] rounded-xl p-0.5 h-auto bg-[rgba(17,17,20,0.7)] backdrop-blur-sm",
+				"border border-[rgba(255,255,255,0.06)] rounded-sm p-0.5 h-auto bg-[rgba(17,17,20,0.7)]",
 				className,
 			)}
 			{...props}
@@ -35,10 +35,10 @@ function TabsTrigger({
 		<TabsPrimitive.Trigger
 			data-slot="tabs-trigger"
 			className={cn(
-				"cursor-pointer bg-transparent items-center justify-center text-sm text-[#71717a] hover:text-[#e4e4e7] hover:bg-[rgba(139,92,246,0.08)] rounded-lg py-2.5 font-semibold uppercase tracking-wider transition-all duration-200",
+				"cursor-pointer bg-transparent items-center justify-center text-sm text-[#71717a] hover:text-[#e4e4e7] hover:bg-[rgba(0,255,135,0.06)] rounded-sm py-2.5 font-semibold uppercase tracking-wider transition-all duration-200",
 				filled
-					? "data-[state=active]:bg-[#8b5cf6] data-[state=active]:text-white data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
-					: "data-[state=active]:bg-transparent data-[state=active]:text-[#8b5cf6]",
+					? "data-[state=active]:bg-[#00ff87] data-[state=active]:text-[#08080a] data-[state=active]:shadow-[0_0_12px_rgba(0,255,135,0.2)]"
+					: "data-[state=active]:bg-transparent data-[state=active]:text-[#00ff87]",
 				className,
 			)}
 			{...props}

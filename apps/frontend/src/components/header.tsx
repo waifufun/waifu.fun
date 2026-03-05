@@ -36,7 +36,7 @@ export default function Header() {
 				WebkitBackdropFilter: "blur(20px)",
 				borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
 				boxShadow: scrolled
-					? "0 4px 24px rgba(139, 92, 246, 0.06), 0 1px 0 rgba(139, 92, 246, 0.08)"
+					? "0 4px 24px rgba(0, 255, 135, 0.04), 0 1px 0 rgba(0, 255, 135, 0.06)"
 					: "none",
 				transition: "background 0.3s ease, box-shadow 0.4s ease",
 			}}
@@ -49,7 +49,7 @@ export default function Header() {
 						className="shrink-0 font-bold text-xl tracking-tight transition-all duration-200"
 						style={{
 							color: "#e4e4e7",
-							textShadow: logoHover ? "0 0 12px rgba(139, 92, 246, 0.5)" : "none",
+							textShadow: logoHover ? "0 0 12px rgba(0, 255, 135, 0.4)" : "none",
 						}}
 						onMouseEnter={() => setLogoHover(true)}
 						onMouseLeave={() => setLogoHover(false)}
@@ -83,7 +83,7 @@ export default function Header() {
 					</div>
 					{/* Mobile hamburger button */}
 					<button
-						className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
+						className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
 						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 						aria-label="Toggle menu"
 					>
@@ -127,7 +127,7 @@ export default function Header() {
 								<Link
 									key={link.href}
 									href={link.href}
-									className="text-sm font-medium py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[rgba(139,92,246,0.1)]"
+									className="text-sm font-medium py-3 px-4 rounded-sm transition-colors duration-200 hover:bg-[rgba(0,255,135,0.08)]"
 									style={{ color: "#e4e4e7" }}
 									onClick={() => setMobileMenuOpen(false)}
 								>

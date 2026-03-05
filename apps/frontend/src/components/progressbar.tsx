@@ -14,9 +14,9 @@ export default function Progressbar({ value, max, height }: { value: number; max
 
 	return (
 		<div className={cn([height ? height : "h-3", "w-full max-w-md"])}>
-			<div className="h-full w-full bg-[rgba(139,92,246,0.1)] rounded-full overflow-hidden border border-[rgba(255,255,255,0.06)]">
+			<div className="h-full w-full bg-[rgba(0,255,135,0.06)] rounded-sm overflow-hidden border border-[rgba(255,255,255,0.06)]">
 				<div
-					className="h-full rounded-full bg-gradient-to-r from-[#7c3aed] via-[#8b5cf6] to-[#c084fc] transition-all duration-700 ease-out shadow-[0_0_8px_rgba(139,92,246,0.4)]"
+					className="h-full rounded-sm bg-gradient-to-r from-[#065f46] via-[#22c55e] to-[#00ff87] transition-all duration-700 ease-out shadow-[0_0_8px_rgba(0,255,135,0.3)]"
 					style={{ width: `${Math.min(percentage, 100)}%` }}
 				/>
 			</div>
