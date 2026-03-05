@@ -1,19 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
 
 const NAV_LINKS = [
 	{ href: "/", label: "explore" },
 	{ href: "/create", label: "create" },
-	{ href: "/how-it-works", label: "how it works" },
+	{ href: "#how-it-works", label: "how it works" },
 ];
 
 export default function Header() {
 	const [logoHover, setLogoHover] = useState(false);
+	const [scrolled, setScrolled] = useState(false);
+	const { scrollY } = useScroll();
+
+	useMotionValueEvent(scrollY, "change", (latest) => {
+		setScrolled(latest > 20);
+	});
 
 	return (
 		<motion.header
@@ -22,10 +28,16 @@ export default function Header() {
 			transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
 			className="shrink-0 w-full sticky top-0 z-50"
 			style={{
-				background: "rgba(8, 8, 10, 0.85)",
+				background: scrolled
+					? "rgba(8, 8, 10, 0.92)"
+					: "rgba(8, 8, 10, 0.85)",
 				backdropFilter: "blur(20px)",
 				WebkitBackdropFilter: "blur(20px)",
 				borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+				boxShadow: scrolled
+					? "0 4px 24px rgba(139, 92, 246, 0.06), 0 1px 0 rgba(139, 92, 246, 0.08)"
+					: "none",
+				transition: "background 0.3s ease, box-shadow 0.4s ease",
 			}}
 		>
 			<div className="w-full h-[60px] flex items-center justify-between gap-4 px-4 max-w-7xl mx-auto">
