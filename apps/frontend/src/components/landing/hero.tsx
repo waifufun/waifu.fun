@@ -2,25 +2,7 @@
 
 import { motion } from "motion/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowRight, Activity, DollarSign, TrendingUp } from "lucide-react";
-
-function AnimatedCounter({ target, duration = 2000, prefix = "", suffix = "" }: { target: number; duration?: number; prefix?: string; suffix?: string }) {
-	const [count, setCount] = useState(0);
-	useEffect(() => {
-		const start = Date.now();
-		const tick = () => {
-			const elapsed = Date.now() - start;
-			const progress = Math.min(elapsed / duration, 1);
-			const eased = 1 - Math.pow(1 - progress, 3);
-			setCount(Math.floor(eased * target));
-			if (progress < 1) requestAnimationFrame(tick);
-		};
-		const timer = setTimeout(tick, 600);
-		return () => clearTimeout(timer);
-	}, [target, duration]);
-	return <>{prefix}{count.toLocaleString()}{suffix}</>;
-}
+import { ArrowRight } from "lucide-react";
 
 function FloatingOrb({ className, delay = 0 }: { className?: string; delay?: number }) {
 	return (
@@ -28,10 +10,11 @@ function FloatingOrb({ className, delay = 0 }: { className?: string; delay?: num
 			className={`absolute rounded-full blur-3xl ${className}`}
 			animate={{
 				y: [0, -30, 0],
-				scale: [1, 1.1, 1],
+				scale: [1, 1.05, 1],
+				opacity: [0.3, 0.5, 0.3],
 			}}
 			transition={{
-				duration: 8,
+				duration: 12,
 				repeat: Infinity,
 				ease: "easeInOut",
 				delay,
@@ -42,37 +25,37 @@ function FloatingOrb({ className, delay = 0 }: { className?: string; delay?: num
 
 export default function Hero() {
 	return (
-		<section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden -mx-4 -mt-4">
-			{/* Atmospheric orbs — Milady schizo neon vibes */}
-			<FloatingOrb className="w-[600px] h-[600px] bg-[#ff00ff]/15 -top-40 -right-40" delay={0} />
-			<FloatingOrb className="w-[400px] h-[400px] bg-[#00ffff]/12 bottom-20 -left-20" delay={2} />
-			<FloatingOrb className="w-[300px] h-[300px] bg-[#8b00ff]/10 top-1/2 left-1/3" delay={4} />
+		<section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden -mx-4 -mt-4">
+			{/* Subtle atmospheric orbs */}
+			<FloatingOrb className="w-[500px] h-[500px] bg-violet-500/20 -top-32 -right-32" delay={0} />
+			<FloatingOrb className="w-[350px] h-[350px] bg-pink-500/15 bottom-32 -left-32" delay={3} />
+			<FloatingOrb className="w-[280px] h-[280px] bg-cyan-500/15 top-1/3 right-1/4" delay={6} />
 
 			{/* Radial vignette */}
-			<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_#0a0a0a_70%)]" />
+			<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_#0a0a0a_75%)]" />
 
-			{/* Grid overlay */}
+			{/* Subtle grid */}
 			<div
-				className="absolute inset-0 opacity-[0.025]"
+				className="absolute inset-0 opacity-[0.015]"
 				style={{
 					backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-					backgroundSize: "60px 60px",
+					backgroundSize: "80px 80px",
 				}}
 			/>
 
-			<div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-				{/* Status badge */}
+			<div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+				{/* Status indicator */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.1 }}
-					className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/8 bg-white/[0.03] backdrop-blur-sm mb-8"
+					className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/[0.02] backdrop-blur-sm mb-12"
 				>
-					<span className="relative flex h-2 w-2">
-						<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ff00ff] opacity-75" />
-						<span className="relative inline-flex h-2 w-2 rounded-full bg-[#ff00ff]" />
+					<span className="relative flex h-1.5 w-1.5">
+						<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+						<span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
 					</span>
-					<span className="text-sm text-zinc-400 tracking-wide font-mono">// live on solana</span>
+					<span className="text-xs text-zinc-500 tracking-wide">Live on Solana</span>
 				</motion.div>
 
 				{/* Headline */}
@@ -80,12 +63,13 @@ export default function Hero() {
 					initial={{ opacity: 0, y: 30 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.8, delay: 0.2 }}
-					className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.92] mb-6"
+					className="text-[clamp(2.5rem,8vw,5.5rem)] font-medium tracking-[-0.02em] leading-[1.1] mb-6"
 				>
-					<span className="text-white">Your AI trades</span>
+					<span className="text-white/95">Autonomous agents</span>
 					<br />
-					<span className="bg-gradient-to-r from-[#ff00ff] via-[#8b00ff] to-[#00ffff] bg-clip-text text-transparent animate-glow">
-						while you sleep.
+					<span className="text-white/95">that </span>
+					<span className="bg-gradient-to-r from-violet-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+						build wealth
 					</span>
 				</motion.h1>
 
@@ -94,11 +78,9 @@ export default function Hero() {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.7, delay: 0.4 }}
-					className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed"
+					className="text-base sm:text-lg text-zinc-400 max-w-xl mx-auto mb-12 leading-relaxed font-light"
 				>
-					Launch autonomous AI agents that trade, build skills, and fund themselves.
-					<br className="hidden sm:block" />
-					Not chatbots. Economic actors on Solana.
+					Not chatbots. Economic actors. Deploy AI that trades, learns, and pays its own bills while you sleep.
 				</motion.p>
 
 				{/* CTA buttons */}
@@ -106,47 +88,50 @@ export default function Hero() {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.6 }}
-					className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
+					className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-20"
 				>
 					<Link
 						href="/create"
-						className="group flex items-center gap-2 px-8 py-3.5 rounded-lg font-bold text-base uppercase tracking-wider bg-[#ff00ff] text-white hover:bg-[#8b00ff] transition-all duration-300 shadow-[0_0_30px_rgba(255,0,255,0.4)] hover:shadow-[0_0_50px_rgba(255,0,255,0.6)] font-mono"
+						className="group flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm bg-white text-black hover:bg-white/90 transition-all duration-300"
 					>
-						Launch Agent
-						<ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+						Deploy Agent
+						<ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
 					</Link>
 					<Link
 						href="/explore"
-						className="flex items-center gap-2 px-8 py-3.5 rounded-lg font-bold text-base uppercase tracking-wider border-2 border-[#00ffff] text-[#00ffff] hover:bg-[#00ffff] hover:text-black transition-all duration-300 font-mono"
+						className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm border border-white/10 text-zinc-300 hover:text-white hover:bg-white/[0.03] hover:border-white/20 transition-all duration-300"
 					>
-						Explore
+						View Live Agents
 					</Link>
 				</motion.div>
 
-				{/* Stats */}
+				{/* Social proof */}
 				<motion.div
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 1, delay: 0.9 }}
-					className="flex items-center justify-center gap-12 sm:gap-20"
+					className="flex flex-col items-center gap-3"
 				>
-					{[
-						{ icon: Activity, label: "Agents Live", target: 127, prefix: "", suffix: "", color: "#ff00ff" },
-						{ icon: DollarSign, label: "Total Volume", target: 2400000, prefix: "$", suffix: "", color: "#00ffff" },
-						{ icon: TrendingUp, label: "Avg. Daily Return", target: 12, prefix: "", suffix: "%", color: "#8b00ff" },
-					].map((stat) => (
-						<div key={stat.label} className="flex flex-col items-center gap-2">
-							<stat.icon className="w-4 h-4" style={{ color: `${stat.color}60` }} />
-							<div className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight font-mono" style={{ color: stat.color }}>
-								<AnimatedCounter target={stat.target} prefix={stat.prefix} suffix={stat.suffix} />
-							</div>
-							<div className="text-xs text-zinc-500 uppercase tracking-widest font-mono">{stat.label}</div>
+					<div className="flex items-center gap-6 text-xs text-zinc-500">
+						<div className="flex flex-col items-center gap-1">
+							<span className="text-white font-medium">127</span>
+							<span>Active Agents</span>
 						</div>
-					))}
+						<div className="h-8 w-px bg-white/5" />
+						<div className="flex flex-col items-center gap-1">
+							<span className="text-white font-medium">$2.4M</span>
+							<span>24h Volume</span>
+						</div>
+						<div className="h-8 w-px bg-white/5" />
+						<div className="flex flex-col items-center gap-1">
+							<span className="text-white font-medium">+12%</span>
+							<span>Avg Return</span>
+						</div>
+					</div>
 				</motion.div>
 			</div>
 
-			{/* Bottom fade */}
+			{/* Bottom gradient fade */}
 			<div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
 		</section>
 	);

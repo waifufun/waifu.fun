@@ -2,32 +2,32 @@
 
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
-import { Rocket, ShieldCheck, Bot, TrendingUp } from "lucide-react";
+import { Sparkles, Settings, Play, LineChart } from "lucide-react";
 
 const steps = [
 	{
-		icon: Rocket,
+		icon: Sparkles,
 		number: "01",
-		title: "Launch Your Agent",
-		description: "Deploy via bonding curve. Your agent gets its own wallet, identity, and on-chain presence from day one.",
+		title: "Deploy",
+		description: "Fair launch via bonding curve. Your agent gets its own wallet, identity, on-chain presence.",
 	},
 	{
-		icon: ShieldCheck,
+		icon: Settings,
 		number: "02",
-		title: "Set Risk Controls",
-		description: "Configure position limits, stop losses, and allowed strategies through the handler dashboard.",
+		title: "Configure",
+		description: "Set risk parameters, trading strategies, position limits. Full control over behavior.",
 	},
 	{
-		icon: Bot,
+		icon: Play,
 		number: "03",
-		title: "Agent Trades Autonomously",
-		description: "Your agent scans markets, identifies alpha, and executes trades 24/7 with its own wallet.",
+		title: "Activate",
+		description: "Agent analyzes markets, executes trades, manages positions autonomously 24/7.",
 	},
 	{
-		icon: TrendingUp,
+		icon: LineChart,
 		number: "04",
-		title: "Skills Compound",
-		description: "Over time, your agent develops deeper market intuition, better strategies, and new capabilities.",
+		title: "Evolve",
+		description: "Performance compounds. Strategies sharpen. New capabilities unlock over time.",
 	},
 ];
 
@@ -39,20 +39,20 @@ function StepCard({ step, index }: { step: typeof steps[number]; index: number }
 			ref={ref}
 			initial={{ opacity: 0, y: 40 }}
 			animate={isInView ? { opacity: 1, y: 0 } : {}}
-			transition={{ duration: 0.7, delay: index * 0.12, ease: "easeOut" }}
+			transition={{ duration: 0.7, delay: index * 0.1, ease: "easeOut" }}
 			className="relative flex flex-col items-center text-center group"
 		>
 			<div className="relative mb-6">
-				<div className="w-16 h-16 rounded-2xl bg-[#E8762D]/8 border border-[#E8762D]/15 flex items-center justify-center group-hover:border-[#E8762D]/30 group-hover:bg-[#E8762D]/12 transition-all duration-500">
-					<step.icon className="w-7 h-7 text-[#E8762D]" />
+				<div className="w-14 h-14 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-center group-hover:border-violet-500/20 group-hover:bg-white/[0.03] transition-all duration-500">
+					<step.icon className="w-5 h-5 text-zinc-400 group-hover:text-violet-400 transition-colors" strokeWidth={1.5} />
 				</div>
-				<span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#E8762D] text-white text-[10px] font-bold flex items-center justify-center shadow-[0_0_12px_rgba(232,118,45,0.35)]">
+				<span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-white text-[10px] font-semibold flex items-center justify-center">
 					{step.number}
 				</span>
 			</div>
 
-			<h3 className="text-base font-semibold text-white mb-2">{step.title}</h3>
-			<p className="text-zinc-400 text-sm leading-relaxed max-w-[260px]">{step.description}</p>
+			<h3 className="text-[15px] font-medium text-white/95 mb-2">{step.title}</h3>
+			<p className="text-zinc-500 text-[13px] font-light leading-relaxed max-w-[240px]">{step.description}</p>
 		</motion.div>
 	);
 }
@@ -63,7 +63,7 @@ export default function HowItWorks() {
 
 	return (
 		<section className="py-32 px-6 relative" ref={sectionRef}>
-			<div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+			<div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
 
 			<div className="max-w-5xl mx-auto">
 				<motion.div
@@ -72,15 +72,19 @@ export default function HowItWorks() {
 					transition={{ duration: 0.7 }}
 					className="text-center mb-20"
 				>
-					<p className="text-xs uppercase tracking-[0.25em] text-[#E8762D] mb-5 font-medium">How it works</p>
-					<h2 className="text-4xl sm:text-5xl font-bold text-white">
-						Four steps to autonomous alpha.
+					<p className="text-xs uppercase tracking-[0.3em] text-violet-400/80 mb-5 font-medium">
+						The Process
+					</p>
+					<h2 className="text-4xl sm:text-5xl font-medium tracking-tight text-white/95">
+						Simple to start.
+						<br />
+						<span className="text-zinc-500">Infinite to master.</span>
 					</h2>
 				</motion.div>
 
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 relative">
-					{/* Connecting line */}
-					<div className="hidden lg:block absolute top-8 left-[15%] right-[15%] h-px bg-gradient-to-r from-[#E8762D]/20 via-[#E8762D]/8 to-[#E8762D]/20" />
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-6 relative">
+					{/* Subtle connecting line */}
+					<div className="hidden lg:block absolute top-7 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
 
 					{steps.map((step, i) => (
 						<StepCard key={step.number} step={step} index={i} />
