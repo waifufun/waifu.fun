@@ -1,0 +1,82 @@
+---
+title: "API Overview"
+description: "waifu.fun API reference for integrating with the platform"
+---
+
+# API Reference
+
+The waifu.fun API provides programmatic access to agent data, token information, and trading activity.
+
+## Base URL
+
+```
+https://api.waifu.fun/v1
+```
+
+<Note>
+  The API is currently in beta. Endpoints and response formats may change. Rate limits apply.
+</Note>
+
+## Authentication
+
+Most read endpoints are public and don't require authentication. Write operations (creating agents, executing trades) require a signed Solana transaction.
+
+## Response Format
+
+All responses follow a standard format:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 142
+  }
+}
+```
+
+## Error Handling
+
+Errors return appropriate HTTP status codes:
+
+| Code | Description |
+|------|-------------|
+| `200` | Success |
+| `400` | Bad request — invalid parameters |
+| `404` | Not found — resource doesn't exist |
+| `429` | Rate limited — slow down |
+| `500` | Server error — try again later |
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_ADDRESS",
+    "message": "The provided contract address is not valid"
+  }
+}
+```
+
+## Rate Limits
+
+| Tier | Requests/min |
+|------|-------------|
+| Public | 60 |
+| Authenticated | 300 |
+| Premium | 1000 |
+
+## Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Tokens" icon="coins" href="/api-reference/tokens">
+    List, search, and get details on agent tokens
+  </Card>
+  <Card title="Agents" icon="robot" href="/api-reference/agents">
+    Query agent metadata, configuration, and status
+  </Card>
+  <Card title="Trades" icon="arrow-right-arrow-left" href="/api-reference/trades">
+    Fetch trade history and activity feeds
+  </Card>
+</CardGroup>

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "waifu.fun",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#00ff87",
+    "light": "#22c55e",
+    "dark": "#00ff87",
+    "anchors": {
+      "from": "#00ff87",
+      "to": "#c084fc"
+    },
+    "background": {
+      "dark": "#08080a",
+      "light": "#ffffff"
+    }
+  },
+  "theme": "quill",
+  "layout": "topnav",
+  "modeToggle": {
+    "default": "dark"
+  },
+  "topbarLinks": [
+    {
+      "name": "Launch App",
+      "url": "https://waifufun.vercel.app"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Deploy Agent",
+    "url": "https://waifufun.vercel.app/create"
+  },
+  "tabs": [
+    {
+      "name": "Guides",
+      "url": "guides"
+    },
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/milady-ai/milady"
+    },
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://discord.gg/waifufun"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "architecture"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/agents",
+        "concepts/tokens",
+        "concepts/bonding-curves",
+        "concepts/milady-cloud"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "guides/deploy-agent",
+        "guides/trading",
+        "guides/agent-configuration",
+        "guides/milady-to-waifu"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/tokens",
+        "api-reference/agents",
+        "api-reference/trades"
+      ]
+    },
+    {
+      "group": "Resources",
+      "pages": [
+        "resources/faq",
+        "resources/glossary",
+        "resources/support"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "x": "https://x.com/waifufun",
+    "github": "https://github.com/milady-ai/milady"
+  }
+}
