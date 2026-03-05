@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 		default: "waifu.fun",
 		template: "%s | waifu.fun",
 	},
-	description: "ai agent token launchpad. launch, trade, and keep your agents alive.",
+	description: "they live if you trade. they die if you don't.",
 	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
 	icons: {
 		icon: [
@@ -33,14 +33,14 @@ export const metadata: Metadata = {
 	},
 	openGraph: {
 		title: "waifu.fun",
-		description: "ai agent token launchpad. launch, trade, and keep your agents alive.",
+		description: "they live if you trade. they die if you don't.",
 		siteName: "waifu.fun",
 		type: "website",
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "waifu.fun",
-		description: "ai agent token launchpad. launch, trade, and keep your agents alive.",
+		description: "they live if you trade. they die if you don't.",
 	},
 };
 
