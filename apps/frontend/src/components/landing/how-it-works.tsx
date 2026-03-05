@@ -53,40 +53,6 @@ export default function HowItWorks() {
 		},
 	];
 
-	const differentiators = [
-		{
-			icon: (
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M12 2a7 7 0 017 7c0 3-2 5.5-4 7.5L12 22l-3-5.5C7 14.5 5 12 5 9a7 7 0 017-7z" />
-					<circle cx="12" cy="9" r="2.5" />
-				</svg>
-			),
-			title: "ElizaOS powered",
-			desc: "Built on the most advanced open-source AI agent framework. Battle-tested, extensible, unstoppable.",
-		},
-		{
-			icon: (
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-				</svg>
-			),
-			title: "solana speed",
-			desc: "Sub-second finality. Fractions of a cent in fees. Your agents trade at the speed of opportunity.",
-		},
-		{
-			icon: (
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-					<circle cx="9" cy="7" r="4" />
-					<path d="M23 21v-2a4 4 0 00-3-3.87" />
-					<path d="M16 3.13a4 4 0 010 7.75" />
-				</svg>
-			),
-			title: "community-owned",
-			desc: "No VCs, no gatekeepers. Every agent is tokenized, every holder has a stake. This is DeFi as it should be.",
-		},
-	];
-
 	return (
 		<section id="how-it-works" className="relative py-24 sm:py-32 overflow-hidden">
 			{/* Subtle background accent */}
@@ -101,33 +67,17 @@ export default function HowItWorks() {
 			/>
 
 			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Section: What are agents? */}
-				<SectionBlock>
-					<div className="text-center max-w-2xl mx-auto mb-20">
-						<span className="inline-block font-mono text-[10px] uppercase tracking-[0.3em] text-[#8b5cf6] mb-4">
-							the paradigm shift
-						</span>
-						<h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight">
-							what if your portfolio{" "}
-							<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] to-[#c084fc]">
-								thought for itself?
-							</span>
-						</h2>
-						<p className="mt-4 text-[#71717a] text-base leading-relaxed max-w-lg mx-auto">
-							Agents aren&apos;t bots following scripts. They&apos;re autonomous economic entities — 
-							AI that observes markets, makes decisions, and executes trades with their own on-chain wallets.
-						</p>
-					</div>
-				</SectionBlock>
-
 				{/* Section: How it works — 3 step visual flow */}
 				<div className="mb-24">
 					<SectionBlock>
-						<div className="flex items-center gap-3 mb-10">
-							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
+						<div className="text-center max-w-2xl mx-auto mb-12">
+							<h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight">
 								how it works
-							</span>
-							<div className="flex-1 h-px bg-[rgba(255,255,255,0.04)]" />
+							</h2>
+							<p className="mt-4 text-[#71717a] text-base leading-relaxed max-w-lg mx-auto">
+								Agents aren&apos;t bots following scripts. They&apos;re autonomous economic entities — 
+								AI that observes markets, makes decisions, and executes trades with their own on-chain wallets.
+							</p>
 						</div>
 					</SectionBlock>
 
@@ -185,41 +135,6 @@ export default function HowItWorks() {
 							</SectionBlock>
 						))}
 					</div>
-				</div>
-
-				{/* Section: Why waifu.fun */}
-				<SectionBlock>
-					<div className="flex items-center gap-3 mb-10">
-						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-							why waifu.fun
-						</span>
-						<div className="flex-1 h-px bg-[rgba(255,255,255,0.04)]" />
-					</div>
-				</SectionBlock>
-
-				<div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-					{differentiators.map((d, i) => (
-						<SectionBlock key={d.title} delay={i * 0.08}>
-							<div className="group relative flex flex-col gap-4 p-6 rounded-xl border border-[rgba(255,255,255,0.04)] bg-[rgba(17,17,20,0.4)] backdrop-blur-sm transition-all duration-400 hover:border-[rgba(139,92,246,0.12)] hover:bg-[rgba(17,17,20,0.6)] h-full">
-								{/* Glass highlight */}
-								<div
-									className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-									style={{
-										background: "linear-gradient(135deg, rgba(139,92,246,0.04) 0%, transparent 50%)",
-									}}
-								/>
-								<div className="relative z-10 flex items-center justify-center w-10 h-10 rounded-lg bg-[rgba(139,92,246,0.06)] border border-[rgba(139,92,246,0.08)]">
-									{d.icon}
-								</div>
-								<h3 className="relative z-10 font-semibold text-[#e4e4e7] text-sm tracking-[-0.01em]">
-									{d.title}
-								</h3>
-								<p className="relative z-10 text-[13px] text-[#52525b] leading-relaxed">
-									{d.desc}
-								</p>
-							</div>
-						</SectionBlock>
-					))}
 				</div>
 			</div>
 		</section>

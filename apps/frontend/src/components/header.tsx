@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { motion, useMotionValueEvent, useScroll } from "framer-motion";
+import { useState } from "react";
+import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
 
@@ -15,6 +15,7 @@ const NAV_LINKS = [
 export default function Header() {
 	const [logoHover, setLogoHover] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const { scrollY } = useScroll();
 
 	useMotionValueEvent(scrollY, "change", (latest) => {
@@ -74,12 +75,72 @@ export default function Header() {
 					</nav>
 				</div>
 
-				{/* Right: Search + Wallet */}
+				{/* Right: Search + Wallet + Mobile Menu Button */}
 				<div className="flex items-center gap-3 shrink-0">
 					<SearchMenu />
-					<HeaderConnectWallet />
+					<div className="hidden lg:block">
+						<HeaderConnectWallet />
+					</div>
+					{/* Mobile hamburger button */}
+					<button
+						className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
+						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+						aria-label="Toggle menu"
+					>
+						<span
+							className="block w-5 h-0.5 bg-[#e4e4e7] transition-transform duration-200"
+							style={{
+								transform: mobileMenuOpen ? "rotate(45deg) translateY(3px)" : "none",
+							}}
+						/>
+						<span
+							className="block w-5 h-0.5 bg-[#e4e4e7] my-1 transition-opacity duration-200"
+							style={{ opacity: mobileMenuOpen ? 0 : 1 }}
+						/>
+						<span
+							className="block w-5 h-0.5 bg-[#e4e4e7] transition-transform duration-200"
+							style={{
+								transform: mobileMenuOpen ? "rotate(-45deg) translateY(-3px)" : "none",
+							}}
+						/>
+					</button>
 				</div>
 			</div>
+
+			{/* Mobile dropdown menu */}
+			<AnimatePresence>
+				{mobileMenuOpen && (
+					<motion.div
+						initial={{ opacity: 0, y: -10 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -10 }}
+						transition={{ duration: 0.2 }}
+						className="lg:hidden absolute top-[60px] left-0 right-0 border-b border-[rgba(255,255,255,0.06)]"
+						style={{
+							background: "rgba(8, 8, 10, 0.95)",
+							backdropFilter: "blur(20px)",
+							WebkitBackdropFilter: "blur(20px)",
+						}}
+					>
+						<nav className="flex flex-col p-4 gap-2 max-w-7xl mx-auto">
+							{NAV_LINKS.map((link) => (
+								<Link
+									key={link.href}
+									href={link.href}
+									className="text-sm font-medium py-3 px-4 rounded-lg transition-colors duration-200 hover:bg-[rgba(139,92,246,0.1)]"
+									style={{ color: "#e4e4e7" }}
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									{link.label}
+								</Link>
+							))}
+							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)]">
+								<HeaderConnectWallet />
+							</div>
+						</nav>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</motion.header>
 	);
 }

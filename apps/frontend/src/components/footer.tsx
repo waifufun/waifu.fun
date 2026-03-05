@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Footer() {
 	const year = new Date().getFullYear();
@@ -28,37 +27,6 @@ export default function Footer() {
 							<span className="inline-block w-1 h-1 rounded-full bg-[#8b5cf6] opacity-60" />
 							powered by ElizaOS
 						</p>
-					</div>
-
-					{/* Right: social icons */}
-					<div className="flex items-center gap-4">
-						<Link
-							href="https://waifu.fun"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="opacity-60 hover:opacity-100 transition-opacity duration-200"
-							aria-label="Website"
-						>
-							<Image src="/socials/website.svg" width={18} height={18} alt="" unoptimized />
-						</Link>
-						<Link
-							href="https://discord.gg/waifufun"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="opacity-60 hover:opacity-100 transition-opacity duration-200"
-							aria-label="Discord"
-						>
-							<Image src="/socials/discord.svg" width={18} height={18} alt="" unoptimized />
-						</Link>
-						<Link
-							href="https://x.com/waifufun"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="opacity-60 hover:opacity-100 transition-opacity duration-200"
-							aria-label="X (Twitter)"
-						>
-							<Image src="/socials/twitter.svg" width={18} height={18} alt="" unoptimized />
-						</Link>
 					</div>
 				</div>
 

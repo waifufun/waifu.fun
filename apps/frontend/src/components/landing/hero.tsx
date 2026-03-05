@@ -49,44 +49,6 @@ export default function Hero() {
 		},
 	};
 
-	const steps = [
-		{
-			num: "01",
-			title: "deploy",
-			desc: "launch your agent with a bonding curve token",
-			icon: (
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-					<path d="M12 2L2 7l10 5 10-5-10-5z" />
-					<path d="M2 17l10 5 10-5" />
-					<path d="M2 12l10 5 10-5" />
-				</svg>
-			),
-		},
-		{
-			num: "02",
-			title: "trade",
-			desc: "agent autonomously executes strategies on-chain",
-			icon: (
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-					<polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-					<polyline points="16 7 22 7 22 13" />
-				</svg>
-			),
-		},
-		{
-			num: "03",
-			title: "earn",
-			desc: "token holders share in the agent's performance",
-			icon: (
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-					<circle cx="12" cy="12" r="10" />
-					<path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8" />
-					<path d="M12 18V6" />
-				</svg>
-			),
-		},
-	];
-
 	return (
 		<section className="min-h-[92vh] relative overflow-hidden flex items-center">
 			{/* Background elements */}
@@ -107,20 +69,6 @@ export default function Hero() {
 						top: "40%",
 						right: "15%",
 					}}
-				/>
-
-				{/* Floating orbs */}
-				<motion.div
-					className="absolute w-[100px] h-[100px] rounded-full blur-[50px]"
-					style={{ background: "#8b5cf6", opacity: 0.1, top: "25%", left: "10%" }}
-					animate={{ y: [0, -25, 0], x: [0, 12, 0] }}
-					transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-				/>
-				<motion.div
-					className="absolute w-[70px] h-[70px] rounded-full blur-[35px]"
-					style={{ background: "#c084fc", opacity: 0.07, bottom: "30%", left: "20%" }}
-					animate={{ y: [0, 18, 0], x: [0, -10, 0] }}
-					transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
 				/>
 
 				{/* Grid pattern */}
@@ -194,7 +142,7 @@ export default function Hero() {
 									)}
 								</span>
 								<span className="block text-[#e4e4e7]">agents that</span>
-								<span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#8b5cf6] via-[#c084fc] to-[#67e8f9]">
+								<span className="block text-[#c084fc]">
 									build wealth
 								</span>
 							</h1>
@@ -230,7 +178,7 @@ export default function Hero() {
 								</svg>
 							</motion.a>
 							<motion.a
-								href="/"
+								href="#how-it-works"
 								className="inline-flex items-center px-7 py-3 rounded-lg border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium bg-[rgba(17,17,20,0.4)] backdrop-blur-sm"
 								whileHover={{
 									scale: 1.03,
@@ -244,34 +192,6 @@ export default function Hero() {
 							</motion.a>
 						</motion.div>
 
-						{/* Stats Row */}
-						<motion.div
-							variants={itemVariants}
-							className="mt-12 flex flex-wrap items-center gap-6 sm:gap-8"
-						>
-							{[
-								{ value: "127", label: "active_agents", color: "#e4e4e7" },
-								{ value: "$2.4M", label: "24h_volume", color: "#e4e4e7" },
-								{ value: "+12.3%", label: "avg_return", color: "#4ade80" },
-							].map((stat, i) => (
-								<div key={stat.label} className="flex items-center gap-6 sm:gap-8">
-									{i > 0 && (
-										<div className="hidden sm:block w-px h-6 bg-[rgba(255,255,255,0.06)]" />
-									)}
-									<div className="flex flex-col">
-										<span
-											className="font-mono text-lg font-semibold"
-											style={{ color: stat.color }}
-										>
-											{stat.value}
-										</span>
-										<span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#52525b] mt-0.5">
-											{stat.label}
-										</span>
-									</div>
-								</div>
-							))}
-						</motion.div>
 					</div>
 
 					{/* Right: Mascot illustration */}
@@ -302,43 +222,6 @@ export default function Hero() {
 					</motion.div>
 				</div>
 
-				{/* How it works — mini steps */}
-				<motion.div
-					variants={itemVariants}
-					className="mt-16 lg:mt-20 pt-12 border-t border-[rgba(255,255,255,0.04)]"
-				>
-					<div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-						{steps.map((step, i) => (
-							<motion.div
-								key={step.num}
-								className="group relative flex flex-col gap-3 p-5 rounded-xl border border-[rgba(255,255,255,0.04)] bg-[rgba(17,17,20,0.3)] backdrop-blur-sm"
-								whileHover={{
-									borderColor: "rgba(139,92,246,0.15)",
-									backgroundColor: "rgba(17,17,20,0.5)",
-								}}
-								transition={{ duration: 0.3 }}
-							>
-								<div className="flex items-center gap-3">
-									<div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[rgba(139,92,246,0.08)] border border-[rgba(139,92,246,0.1)]">
-										{step.icon}
-									</div>
-									<span className="font-mono text-[10px] text-[#52525b] tracking-[0.2em] uppercase">
-										{step.num}
-									</span>
-									{i < steps.length - 1 && (
-										<div className="hidden sm:block flex-1 h-px bg-gradient-to-r from-[rgba(139,92,246,0.15)] to-transparent ml-2" />
-									)}
-								</div>
-								<h3 className="font-semibold text-[#e4e4e7] text-sm">
-									{step.title}
-								</h3>
-								<p className="text-[13px] text-[#52525b] leading-relaxed">
-									{step.desc}
-								</p>
-							</motion.div>
-						))}
-					</div>
-				</motion.div>
 			</motion.div>
 		</section>
 	);

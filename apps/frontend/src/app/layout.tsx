@@ -38,28 +38,26 @@ export default function RootLayout({
 			}}
 		>
 			<body
-				className={cn("h-full font-sans antialiased overflow-hidden", spaceGrotesk.variable, spaceGrotesk.className)}
+				className={cn("h-full font-sans antialiased", spaceGrotesk.variable, spaceGrotesk.className)}
 			>
 				<Providers>
 					<InteractiveBackground />
 					<GrainOverlay />
-					<div className="relative z-10 flex flex-col min-h-screen max-h-screen overflow-hidden">
+					<div className="relative z-10 flex flex-col min-h-screen">
 						<Header />
-						<main className="flex-1 overflow-auto flex flex-col min-h-0" data-sidebar="inset">
-							<div className="p-4 shrink-0">
-								{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
-									<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
-										<div className="inline-flex gap-x-2">
-											<AlertTriangleIcon />
-											<span>
-												<span className="font-bold">WARNING</span> This is a development environment connected to
-												Testnet. Nothing you do here is real.
-											</span>
-										</div>
+						<main className="flex-1 flex flex-col" data-sidebar="inset">
+							{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
+								<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
+									<div className="inline-flex gap-x-2">
+										<AlertTriangleIcon />
+										<span>
+											<span className="font-bold">WARNING</span> This is a development environment connected to
+											Testnet. Nothing you do here is real.
+										</span>
 									</div>
-								) : null}
-								{children}
-							</div>
+								</div>
+							) : null}
+							{children}
 							<Footer />
 						</main>
 					</div>
