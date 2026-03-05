@@ -25,116 +25,122 @@ function SectionBlock({
 	);
 }
 
-export default function HowItWorks() {
-	const steps = [
-		{
-			num: "01",
-			title: "deploy your agent",
-			description:
-				"Choose a personality, set a trading strategy, and launch with a bonding curve token. Your agent goes live instantly on Solana.",
-			image: "/waifus/eliza-cyberpunk.png",
-			accent: "#8b5cf6",
-		},
-		{
-			num: "02",
-			title: "agent trades autonomously",
-			description:
-				"Powered by ElizaOS, your agent monitors markets, executes trades, and adapts its strategy in real-time — no babysitting required.",
-			image: "/waifus/eliza-trading.png",
-			accent: "#c084fc",
-		},
-		{
-			num: "03",
-			title: "you earn",
-			description:
-				"As your agent performs, token value reflects its success. Hold, trade, or compound — the choice is yours.",
-			image: "/waifus/solana-chan.png",
-			accent: "#67e8f9",
-		},
-	];
+const steps = [
+	{
+		num: "01",
+		title: "deploy your agent",
+		description:
+			"Launch an AI agent on Solana in minutes. Configure its trading strategy, risk parameters, and personality. Your agent gets its own token that represents ownership in its performance.",
+		image: "/waifus/eliza-trading.png",
+	},
+	{
+		num: "02",
+		title: "agent trades autonomously",
+		description:
+			"Your agent monitors markets 24/7, identifies opportunities, and executes trades using battle-tested strategies powered by ElizaOS. No manual intervention needed.",
+		image: "/waifus/eliza-cyberpunk.png",
+	},
+	{
+		num: "03",
+		title: "earn from performance",
+		description:
+			"As your agent generates returns, token holders benefit proportionally. Track performance in real-time, adjust parameters, or let it run. Your agent works while you sleep.",
+		image: "/waifus/eliza-elegant.png",
+	},
+];
 
+function StepImage({ src, alt }: { src: string; alt: string }) {
 	return (
-		<section id="how-it-works" className="relative py-24 sm:py-32 overflow-hidden">
-			{/* Subtle background accent */}
-			<div
-				className="absolute w-[600px] h-[600px] rounded-full blur-[150px] pointer-events-none"
-				style={{
-					background: "radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)",
-					top: "20%",
-					left: "50%",
-					transform: "translateX(-50%)",
-				}}
+		<div className="relative overflow-hidden rounded-sm w-full aspect-[4/5]">
+			<Image
+				src={src}
+				alt={alt}
+				fill
+				className="object-cover"
 			/>
+			<div className="absolute inset-0 bg-gradient-to-r from-[#08080a] via-transparent to-[#08080a]" />
+			<div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08080a]" />
+		</div>
+	);
+}
 
+export default function HowItWorks() {
+	return (
+		<section id="how-it-works" className="relative py-24 sm:py-32 bg-[#08080a]">
 			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Section: How it works — 3 step visual flow */}
-				<div className="mb-24">
-					<SectionBlock>
-						<div className="text-center max-w-2xl mx-auto mb-12">
-							<h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight">
-								how it works
-							</h2>
-							<p className="mt-4 text-[#71717a] text-base leading-relaxed max-w-lg mx-auto">
-								Agents aren&apos;t bots following scripts. They&apos;re autonomous economic entities — 
-								AI that observes markets, makes decisions, and executes trades with their own on-chain wallets.
-							</p>
-						</div>
-					</SectionBlock>
+				{/* Header */}
+				<SectionBlock>
+					<div className="text-center max-w-2xl mx-auto mb-20">
+						<h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
+							how it works
+						</h2>
+						<p className="mt-4 text-[#a1a1aa] text-base leading-relaxed max-w-xl mx-auto">
+							agents aren&apos;t chatbots. they&apos;re autonomous economic entities that observe
+							markets, make decisions, and execute trades with their own capital.
+						</p>
+					</div>
+				</SectionBlock>
 
-					<div className="space-y-8">
-						{steps.map((step, i) => (
-							<SectionBlock key={step.num} delay={i * 0.1}>
-								<div
-									className={`group relative grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-8 items-center p-6 sm:p-8 rounded-2xl border border-[rgba(255,255,255,0.04)] bg-[rgba(17,17,20,0.3)] backdrop-blur-sm transition-all duration-500 hover:border-[rgba(139,92,246,0.12)]`}
-								>
-									{/* Step image */}
-									<div
-										className={`md:col-span-2 flex justify-center ${i % 2 === 1 ? "md:order-2" : ""}`}
-									>
-										<div className="relative w-[160px] h-[200px] sm:w-[200px] sm:h-[250px]">
-											<Image
-												src={step.image}
-												alt={step.title}
-												fill
-												className="object-contain"
-											/>
-											{/* Glow */}
-											<div
-												className="absolute inset-0 -m-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-												style={{
-													background: `radial-gradient(ellipse at center, ${step.accent}10 0%, transparent 70%)`,
-												}}
-											/>
-										</div>
-									</div>
+				{/* Steps */}
+				<div className="space-y-0">
+					{steps.map((step, i) => {
+						const imageLeft = i % 2 === 0;
 
-									{/* Step text */}
+						const imageBlock = (
+							<div className="md:col-span-1">
+								<StepImage src={step.image} alt={step.title} />
+							</div>
+						);
+
+						const textBlock = (
+							<div className="md:col-span-1 flex flex-col justify-center gap-4 py-6 sm:py-8">
+								{/* Step label */}
+								<div className="flex items-center gap-3">
+									<span className="font-mono text-xs font-semibold tracking-widest text-[#00ff87]">
+										STEP {step.num}
+									</span>
+									<div className="h-px flex-1 max-w-[48px] bg-[#00ff87]/25" />
+								</div>
+
+								{/* Title */}
+								<h3 className="text-xl sm:text-2xl font-bold text-[#e4e4e7] tracking-[-0.02em] lowercase">
+									{step.title}
+								</h3>
+
+								{/* Description */}
+								<p className="text-[#a1a1aa] text-[15px] leading-relaxed max-w-md">
+									{step.description}
+								</p>
+							</div>
+						);
+
+						return (
+							<SectionBlock key={step.num} delay={i * 0.12}>
+								<div className="relative">
+									{/* Connector line between steps */}
+									{i < steps.length - 1 && (
+										<div className="hidden md:block absolute left-1/2 -bottom-0 w-px h-8 bg-gradient-to-b from-[#00ff87]/20 to-transparent -translate-x-1/2 translate-y-full z-10" />
+									)}
+
 									<div
-										className={`md:col-span-3 flex flex-col gap-3 ${i % 2 === 1 ? "md:order-1" : ""}`}
+										className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center border border-[rgba(255,255,255,0.06)] bg-[#111114] rounded-sm p-4 sm:p-6`}
 									>
-										<div className="flex items-center gap-3">
-											<span
-												className="font-mono text-xs font-semibold"
-												style={{ color: step.accent }}
-											>
-												{step.num}
-											</span>
-											<div
-												className="w-8 h-px"
-												style={{ background: `${step.accent}40` }}
-											/>
-										</div>
-										<h3 className="text-xl sm:text-2xl font-bold text-[#e4e4e7] tracking-[-0.02em]">
-											{step.title}
-										</h3>
-										<p className="text-[#71717a] text-[15px] leading-relaxed max-w-md">
-											{step.description}
-										</p>
+										{imageLeft ? (
+											<>
+												{imageBlock}
+												{textBlock}
+											</>
+										) : (
+											<>
+												<div className="md:order-2">{imageBlock}</div>
+												<div className="md:order-1">{textBlock}</div>
+											</>
+										)}
 									</div>
 								</div>
 							</SectionBlock>
-						))}
-					</div>
+						);
+					})}
 				</div>
 			</div>
 		</section>
