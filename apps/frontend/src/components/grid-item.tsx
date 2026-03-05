@@ -13,7 +13,7 @@ function formatMarketCap(mc: number): string {
 function truncateDescription(desc: string | undefined, maxLen: number): string {
 	if (!desc) return "";
 	if (desc.length <= maxLen) return desc;
-	return desc.slice(0, maxLen).trimEnd() + "…";
+	return `${desc.slice(0, maxLen).trimEnd()}…`;
 }
 
 export const GridItem = ({
@@ -31,6 +31,7 @@ export const GridItem = ({
 	
 	const isLarge = variant === "large";
 	const isCompact = variant === "compact";
+	const isVerified = Boolean(token?.verified);
 
 	// Image heights by variant
 	const imageHeight = isLarge ? "h-[300px] sm:h-[360px]" : isCompact ? "h-[200px]" : "h-[240px] sm:h-[280px]";
@@ -39,13 +40,17 @@ export const GridItem = ({
 	// Show rank indicator for top 5
 	const showRank = rank !== undefined && rank <= 5;
 
+	const cardBg = isVerified
+		? "bg-green-900/50 border-green-500/30"
+		: "bg-[#111114] border-[rgba(255,255,255,0.06)]";
+
 	return (
 		<Link
 			href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
 			className="block h-full group"
 		>
 			<motion.div
-				className="relative flex flex-col h-full rounded-sm overflow-hidden bg-[#111114] border border-[rgba(255,255,255,0.06)]"
+				className={`relative flex flex-col h-full rounded-sm overflow-hidden border ${cardBg}`}
 				initial={{ opacity: 1, y: 0 }}
 				whileHover={{
 					y: -6,
@@ -122,7 +127,7 @@ export const GridItem = ({
 								<motion.div
 									className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"
 									animate={{ opacity: [1, 0.5, 1] }}
-									transition={{ duration: 1.5, repeat: Infinity }}
+									transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
 								/>
 								<span className="text-[10px] font-mono uppercase tracking-wider text-[#22c55e]">
 									active

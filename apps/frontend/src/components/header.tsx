@@ -41,7 +41,7 @@ export default function Header() {
 				transition: "background 0.3s ease, box-shadow 0.4s ease",
 			}}
 		>
-			<div className="w-full h-[60px] flex items-center justify-between gap-4 px-4 max-w-7xl mx-auto">
+			<div className="w-full h-[60px] flex items-center justify-between gap-4 px-4 sm:px-6">
 				{/* Left: Logo + Nav */}
 				<div className="flex items-center gap-8 min-w-0">
 					<Link
@@ -122,7 +122,7 @@ export default function Header() {
 							WebkitBackdropFilter: "blur(20px)",
 						}}
 					>
-						<nav className="flex flex-col p-4 gap-2 max-w-7xl mx-auto">
+						<nav className="flex flex-col p-4 gap-2">
 							{NAV_LINKS.map((link) => (
 								<Link
 									key={link.href}

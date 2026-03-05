@@ -1,21 +1,14 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutGrid, List } from "lucide-react";
 
 const filters = ["all", "trending", "new", "bonded"] as const;
 
 interface ExplorerHeaderProps {
 	tokenCount?: number;
-	viewMode?: "grid" | "list";
-	onViewModeChange?: (mode: "grid" | "list") => void;
 }
 
-export default function ExplorerHeader({
-	tokenCount = 0,
-	viewMode = "grid",
-	onViewModeChange,
-}: ExplorerHeaderProps) {
+export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) {
 	const [active, setActive] = useState<string>("all");
 
 	return (
@@ -50,7 +43,7 @@ export default function ExplorerHeader({
 										}}
 										transition={{ 
 											duration: 2,
-											repeat: Infinity,
+											repeat: Number.POSITIVE_INFINITY,
 											ease: "easeInOut"
 										}}
 									/>
@@ -60,30 +53,6 @@ export default function ExplorerHeader({
 								</div>
 							</motion.div>
 						</AnimatePresence>
-					</div>
-
-					{/* View toggle */}
-					<div className="flex items-center gap-1 p-1 rounded-sm bg-[rgba(17,17,20,0.6)] border border-[rgba(255,255,255,0.06)]">
-						<button
-							onClick={() => onViewModeChange?.("grid")}
-							className={`p-2 rounded-md transition-all duration-200 ${
-								viewMode === "grid"
-									? "bg-[rgba(0,255,135,0.1)] text-[#00ff87]"
-									: "text-[#52525b] hover:text-[#71717a]"
-							}`}
-						>
-							<LayoutGrid className="w-4 h-4" />
-						</button>
-						<button
-							onClick={() => onViewModeChange?.("list")}
-							className={`p-2 rounded-md transition-all duration-200 ${
-								viewMode === "list"
-									? "bg-[rgba(0,255,135,0.1)] text-[#00ff87]"
-									: "text-[#52525b] hover:text-[#71717a]"
-							}`}
-						>
-							<List className="w-4 h-4" />
-						</button>
 					</div>
 				</div>
 

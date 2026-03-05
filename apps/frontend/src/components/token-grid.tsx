@@ -22,6 +22,10 @@ function formatMarketCap(mc: number): string {
 function HeroCard({ token, index }: { token: IToken; index: number }) {
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
+	const isVerified = Boolean(token?.verified);
+	const heroCardBg = isVerified
+		? "bg-green-900/50 border-green-500/30"
+		: "bg-[#111114] border-[rgba(255,255,255,0.06)]";
 
 	return (
 		<motion.div
@@ -32,7 +36,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 				className="block group"
 			>
 				<motion.div
-					className="relative w-full overflow-hidden rounded-sm bg-[#111114] border border-[rgba(255,255,255,0.06)]"
+					className={`relative w-full overflow-hidden rounded-sm border ${heroCardBg}`}
 					whileHover={{
 						boxShadow: "0 0 60px rgba(0,255,135,0.1), 0 20px 60px rgba(0,0,0,0.5)",
 						borderColor: "rgba(0,255,135,0.25)",
@@ -118,7 +122,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 								{token.description && (
 									<p className="text-sm text-[#71717a] leading-relaxed max-w-md">
 										{token.description.length > 160
-											? token.description.slice(0, 160).trimEnd() + "…"
+											? `${token.description.slice(0, 160).trimEnd()}…`
 											: token.description}
 									</p>
 								)}

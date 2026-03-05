@@ -32,9 +32,14 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{tokens.map((token: IToken) => (
+				{tokens.map((token: IToken) => {
+					const isVerified = Boolean(token?.verified);
+					const rowBg = isVerified
+						? "bg-green-900/50 hover:bg-green-800/60 border-green-500/20"
+						: "bg-[#111114] hover:bg-[#18181c] border-[rgba(255,255,255,0.06)]";
+					return (
 					<TableRow 
-						className="group cursor-pointer bg-[#111114] hover:bg-[#18181c] border-b border-[rgba(255,255,255,0.06)] transition-colors" 
+						className={`group cursor-pointer border-b transition-colors ${rowBg}`}
 						key={token.contractAddress} 
 						onClick={() => navigateClick(token)}
 					>
@@ -101,7 +106,8 @@ export default function ListView({ tokens }: { tokens: IToken[] }) {
 						</TableCell>
 						<TableCell className="text-right text-[#71717a] rounded-r-lg">{token?.createdAt ? fromNow(token?.createdAt, true) : "-"}</TableCell>
 					</TableRow>
-				))}
+					);
+				})}
 			</TableBody>
 		</Table>
 	);

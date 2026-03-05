@@ -109,16 +109,6 @@ export default function Hero() {
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-4 items-center">
 					{/* Left: Text content */}
 					<div className="flex flex-col">
-						{/* Badge */}
-						<motion.div variants={itemVariants} className="mb-8">
-							<div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.6)]">
-								<span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] animate-pulse" />
-								<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">
-									live on solana
-								</span>
-							</div>
-						</motion.div>
-
 						{/* Headline */}
 						<motion.div variants={itemVariants} className="relative">
 							<h1 className="text-[clamp(2.5rem,6vw,4.5rem)] font-bold tracking-[-0.035em] leading-[1.05]">

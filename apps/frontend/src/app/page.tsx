@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import ListView from "@/components/list-view";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
 import HowItWorks from "@/components/landing/how-it-works";
-import Ecosystem from "@/components/landing/ecosystem";
 import ExplorerHeader from "@/components/explorer-header";
 import mockTokens from "@/data/mock-tokens.json";
 import type { IToken } from "@waifufun/types";
@@ -36,19 +34,14 @@ function getTokensForPage(): IToken[] {
 	return mockTokens as IToken[];
 }
 
-export default async function Home({
-	searchParams,
-}: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-	const currentSearchParams = await searchParams;
+export default async function Home() {
 	const tokens = getTokensForPage();
-	const view = currentSearchParams?.view || "grid";
 	const noTokens = (tokens?.length || 0) === 0;
 
 	return (
 		<div className="flex flex-col w-full">
 			<Hero />
 			<HowItWorks />
-			<Ecosystem />
 
 			<div
 				id="explore"
@@ -68,11 +61,7 @@ export default async function Home({
 				) : (
 					<>
 						<ExplorerHeader />
-						{view === "grid" ? (
-							<TokenGrid tokens={tokens} />
-						) : (
-							<ListView tokens={tokens} />
-						)}
+						<TokenGrid tokens={tokens} />
 					</>
 				)}
 			</div>
