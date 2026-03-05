@@ -3,13 +3,21 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import dynamic from "next/dynamic";
+import type { IToken } from "@waifufun/types";
 
 const Aurora = dynamic(() => import("@/components/backgrounds/Aurora"), {
 	ssr: false,
 });
 
-export default function Hero() {
+function formatMarketCap(mc: number): string {
+	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
+	if (mc >= 1_000) return `$${(mc / 1_000).toFixed(1)}k`;
+	return `$${mc}`;
+}
+
+export default function Hero({ token }: { token: IToken | null }) {
 	const [isGlitching, setIsGlitching] = useState(false);
 
 	useEffect(() => {
@@ -171,6 +179,7 @@ export default function Hero() {
 							>
 								deploy agent
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<title>Deploy</title>
 									<line x1="5" y1="12" x2="19" y2="12" />
 									<polyline points="12 5 19 12 12 19" />
 								</svg>
@@ -213,32 +222,47 @@ export default function Hero() {
 
 					</div>
 
-					{/* Right: Mascot illustration */}
-					<motion.div
-						variants={itemVariants}
-						className="relative flex justify-center lg:justify-end"
-					>
+					{/* Right: Top token card */}
+					{token && (
 						<motion.div
-							className="relative w-[320px] h-[420px] sm:w-[380px] sm:h-[500px] lg:w-[440px] lg:h-[580px]"
-							animate={{ y: [0, -8, 0] }}
-							transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+							variants={itemVariants}
+							className="relative flex justify-center lg:justify-end"
 						>
-							{/* Green glow beneath mascot */}
-							<div
-								className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[60px] rounded-full blur-[40px]"
-								style={{
-									background: "radial-gradient(ellipse, rgba(0,255,135,0.15) 0%, transparent 70%)",
-								}}
-							/>
-							<Image
-								src="/waifus/eliza-hero.png"
-								alt="waifu.fun mascot"
-								fill
-								className="object-contain drop-shadow-[0_0_30px_rgba(0,255,135,0.12)]"
-								priority
-							/>
+							<Link
+								href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
+								className="group block w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[440px]"
+							>
+								<motion.div
+									className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114]"
+									whileHover={{
+										boxShadow: "0 0 40px rgba(0,255,135,0.12), 0 12px 40px rgba(0,0,0,0.4)",
+										borderColor: "rgba(0,255,135,0.25)",
+									}}
+									transition={{ type: "spring", stiffness: 260, damping: 24 }}
+								>
+									<div className="relative aspect-[4/5] w-full overflow-hidden">
+										<Image
+											src={token.image}
+											alt={token.name}
+											fill
+											className="object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+											sizes="(max-width: 1024px) 380px, 440px"
+											priority
+										/>
+										<div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-transparent to-transparent" />
+										<div className="absolute bottom-4 left-4 right-4 flex flex-col gap-1">
+											<span className="text-xl sm:text-2xl font-bold text-[#e4e4e7] truncate">
+												{token.name}
+											</span>
+											<span className="text-sm font-mono text-[#00ff87]">
+												${token.ticker} · {formatMarketCap(token.marketcap ?? 0)}
+											</span>
+										</div>
+									</div>
+								</motion.div>
+							</Link>
 						</motion.div>
-					</motion.div>
+					)}
 				</div>
 
 			</motion.div>

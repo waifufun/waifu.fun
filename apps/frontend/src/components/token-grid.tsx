@@ -259,9 +259,10 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 		};
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-	// Separate featured (hero) token from the rest
-	const featuredToken = allTokens.find((t) => t.featured);
-	const remainingTokens = allTokens.filter((t) => t !== featuredToken);
+	// First card = token with highest market cap; rest in grid
+	const sortedByMarketCap = [...allTokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0));
+	const featuredToken = sortedByMarketCap[0];
+	const remainingTokens = sortedByMarketCap.slice(1);
 
 	// Split remaining tokens for varied layout
 	const firstRowTokens = remainingTokens.slice(0, 2);  // 2 larger cards
