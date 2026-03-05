@@ -15,14 +15,9 @@ const PromptComponent = () => {
 	const prompt = watchValue("prompt");
 
 	return (
-		<div
-			className="flex gap-4 bg-[#3333331A] px-4 items-center rounded-sm"
-			style={{
-				background: "linear-gradient(180deg, #171717 0%, #141414 100%)",
-			}}
-		>
+		<div className="flex gap-4 bg-[#111114] px-4 items-center rounded-sm border border-[rgba(255,255,255,0.06)]">
 			<textarea
-				className="w-full rounded-sm py-3 resize-none overflow-aut focus:outline-none"
+				className="w-full rounded-sm py-3 resize-none overflow-auto focus:outline-none bg-transparent text-[#e4e4e7] placeholder-[#52525b]"
 				placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
 				{...registerForm("prompt")}
 				rows={rows}
@@ -32,10 +27,7 @@ const PromptComponent = () => {
 			/>
 			<button
 				type="button"
-				style={{
-					background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)",
-				}}
-				className="border border-[#03FF24] rounded-sm hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
+				className="bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] rounded-sm hover:cursor-pointer px-4 py-2 text-base uppercase font-bold transition-colors"
 				onClick={() => {
 					if (!prompt) {
 						generateToken({ mediaType: "image", prompt: "" });
@@ -56,8 +48,8 @@ const PromptComponent = () => {
 const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
 	if (!href) {
 		return (
-			<div className="w-full h-full bg-[#3333331A] rounded-sm flex items-center justify-center">
-				<p>No Image</p>
+			<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex items-center justify-center">
+				<p className="text-[#52525b]">No Image</p>
 			</div>
 		);
 	}
@@ -70,8 +62,8 @@ const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
 
 const AiImageLoading = () => {
 	return (
-		<div className="w-full h-full bg-[#3333331A] rounded-sm flex items-center justify-center">
-			<p>Loading...</p>
+		<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex items-center justify-center">
+			<p className="text-[#00ff87]">Loading...</p>
 		</div>
 	);
 };

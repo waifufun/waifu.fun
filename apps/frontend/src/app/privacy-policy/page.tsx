@@ -66,7 +66,7 @@ const PRIVACY_POLICY: PolicySection[] = [
 			"Cookies: Cookies are pieces of information stored in the browser or on the device that you are using. Cookies allow the collection of personal information such as browser type, time spent on the Services, pages visited, language preferences, and other traffic data, which is used for security purposes, to facilitate navigation, to display information more effectively, and to personalize your experience including to send you advertising, and to measure and analyze such activities. We also gather statistical and other information about use of the Services in order to continually improve their design and functionality, understand how they are used, and assist us with resolving questions regarding them. You may also wish to refer to http://www.allaboutcookies.org/manage-cookies/index.html.",
 			"Pixel tags and other similar technologies. Pixel tags (also known as web beacons and clear GIFs) may be used to, among other things, track the actions of users of the Services (including email recipients), measure the success of our marketing campaigns, and compile statistics about usage of the Services and response rates. We may use third party pixel tags on some websites.",
 			"Analytics: We use data analytics providers that use cookies and similar technologies to collect and analyze personal information about use of the Services and report on activities and trends. The analytics service may also collect information regarding the use of other websites, apps, and online resources.",
-			"Location: We may collect the general or precise location of your device by, for example, using satellite, cell phone tower or WiFi signals. We may use your device’s location to provide you with location-based services and content, and you can adjust the permissions on your device to allow or deny such uses and/or sharing of your device’s location.",
+			"Location: We may collect the general or precise location of your device by, for example, using satellite, cell phone tower or WiFi signals. We may use your device's location to provide you with location-based services and content, and you can adjust the permissions on your device to allow or deny such uses and/or sharing of your device's location.",
 		],
 	},
 	{
@@ -139,32 +139,47 @@ const PRIVACY_POLICY: PolicySection[] = [
 const PrivacyPolicy = () => {
 	return (
 		<div className="flex flex-col flex-1 min-h-[100vh]">
-			<div className="flex flex-col gap-4 container">
-				<div className="flex flex-col gap-4">
-					<h1 className="text-3xl font-bold">Privacy Policy</h1>
-					<div className="text-lg font-medium">Last Modified April 1st, 2025</div>
+			<div className="w-full max-w-5xl mx-auto px-4 py-12">
+				{/* Page Header */}
+				<div className="mb-10">
+					<h1 className="text-2xl font-bold text-[#e4e4e7] tracking-tight">Privacy Policy</h1>
+					<p className="text-lg font-medium text-[#a1a1aa] mt-2">Last Modified April 1st, 2025</p>
 				</div>
-				{PRIVACY_POLICY.map((item, _) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
-					<div key={_} className="flex flex-col gap-4">
-						<div className="text-3xl font-bold">{item.header}</div>
-						<div className="text-xl font-medium">{item.subheader}</div>
-						<div>
-							{typeof item.content === "string"
-								? item.content
-								: // biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
-									item.content.map((line, idx) => <li key={idx}>{line}</li>)}
-						</div>
-						{item.subcontent ? (
-							<div>
-								{item.subcontent.map((line, idx) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: Content will stay static
-									<li key={idx}>{line}</li>
-								))}
+
+				{/* Content Sections */}
+				<div className="space-y-6">
+					{PRIVACY_POLICY.map((item, idx) => (
+						<div 
+							key={idx} 
+							className={item.header ? "bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6" : ""}
+						>
+							{item.header && (
+								<h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">{item.header}</h2>
+							)}
+							{item.subheader && (
+								<h3 className="text-base font-medium text-[#a1a1aa] mb-3">{item.subheader}</h3>
+							)}
+							<div className="text-sm text-[#a1a1aa] leading-relaxed">
+								{typeof item.content === "string"
+									? item.content
+									: (
+										<ul className="list-disc list-inside space-y-2">
+											{item.content.map((line, lineIdx) => (
+												<li key={lineIdx} className="text-[#a1a1aa]">{line}</li>
+											))}
+										</ul>
+									)}
 							</div>
-						) : null}
-					</div>
-				))}
+							{item.subcontent && (
+								<ul className="list-disc list-inside space-y-1 mt-3">
+									{item.subcontent.map((line, subIdx) => (
+										<li key={subIdx} className="text-sm text-[#a1a1aa]">{line}</li>
+									))}
+								</ul>
+							)}
+						</div>
+					))}
+				</div>
 			</div>
 		</div>
 	);

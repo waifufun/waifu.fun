@@ -1,45 +1,41 @@
 const FeesContent = () => {
 	return (
-		<div className="h-[70vh] flex items-center justify-center">
-			<div className="flex w-fit lg:w-[600px] border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] bg-black flex-col h-fit">
-				<div className="flex-1">
-					<div className="w-full justify-center">
-						<div className="w-full mb-12">
-							{/* Header */}
-							<div className="flex flex-col py-5 px-4 gap-3.5 border-b">
-								<h1 className="text-2xl md:text-[32px] font-satoshi font-medium leading-9 tracking-[-0.018em] text-[#03FF24]">
-									Fees On waifu.fun
-								</h1>
-								<p className="text-sm md:text-base font-satoshi text-[#8C8C8C] leading-6">
-									The following fees apply when using the waifu.fun platform
-								</p>
-							</div>
-
-							{/* Table Header */}
-							<div className="hidden lg:flex justify-between px-4 py-2 border-b ">
-								<span className="font-dm-mono text-sm md:text-base text-[#8C8C8C] tracking-[2px] uppercase">
-									Actions
-								</span>
-								<span className="font-dm-mono text-sm md:text-base text-[#8C8C8C] tracking-[2px] uppercase">Fee</span>
-							</div>
-
-							{/* Table Rows */}
-							<TableRow title="Create a token" text="0 SOL + blockchain fees" />
-							<TableRow title="Trading while on bonding curve" text="1% of total sale price" />
-							<TableRow title="raydium graduation" text="6 sol" />
-						</div>
-					</div>
+		<div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
+			<div className="w-full max-w-2xl mx-auto bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm">
+				{/* Header */}
+				<div className="flex flex-col py-6 px-6 gap-2 border-b border-[rgba(255,255,255,0.06)]">
+					<h1 className="text-2xl md:text-3xl font-bold text-[#00ff87] tracking-tight">
+						Fees On waifu.fun
+					</h1>
+					<p className="text-sm text-[#a1a1aa]">
+						The following fees apply when using the waifu.fun platform
+					</p>
 				</div>
+
+				{/* Table Header */}
+				<div className="hidden lg:flex justify-between px-6 py-3 border-b border-[rgba(255,255,255,0.06)]">
+					<span className="font-mono text-xs text-[#71717a] tracking-wider uppercase">
+						Actions
+					</span>
+					<span className="font-mono text-xs text-[#71717a] tracking-wider uppercase">
+						Fee
+					</span>
+				</div>
+
+				{/* Table Rows */}
+				<TableRow title="Create a token" text="0 SOL + blockchain fees" />
+				<TableRow title="Trading while on bonding curve" text="1% of total sale price" />
+				<TableRow title="Raydium graduation" text="6 SOL" isLast />
 			</div>
 		</div>
 	);
 };
 
-const TableRow = ({ title, text }: { title: string; text: string }) => {
+const TableRow = ({ title, text, isLast = false }: { title: string; text: string; isLast?: boolean }) => {
 	return (
-		<div className="flex flex-col items-start align-middle lg:flex-row justify-between px-4 py-2 border-b ">
-			<span className="font-dm-mono text-[10px] text-xs lg:text-sm text-white tracking-[2px] uppercase">{title}</span>
-			<span className="font-dm-mono text-[10px] text-xs lg:text-sm text-[#03FF24] tracking-[2px] uppercase">
+		<div className={`flex flex-col items-start lg:flex-row justify-between px-6 py-4 ${!isLast ? 'border-b border-[rgba(255,255,255,0.06)]' : ''}`}>
+			<span className="font-mono text-xs lg:text-sm text-[#e4e4e7] tracking-wide uppercase">{title}</span>
+			<span className="font-mono text-xs lg:text-sm text-[#00ff87] tracking-wide uppercase mt-1 lg:mt-0">
 				{text}
 			</span>
 		</div>
