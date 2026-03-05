@@ -18,8 +18,8 @@ function TabsList({
 		<TabsPrimitive.List
 			data-slot="tabs-list"
 			className={cn(
-				"border-2 border-[#03FF24]/50 rounded-none p-0 h-auto",
-				shadowed ? "shadow-[3px_3px_0px_rgba(3,255,36,0.3)]" : "",
+				"border-2 border-[#FF2D78]/50 rounded-none p-0 h-auto",
+				shadowed ? "shadow-[3px_3px_0px_rgba(255,45,120,0.3)]" : "",
 				className,
 			)}
 			{...props}
@@ -36,8 +36,8 @@ function TabsTrigger({
 		<TabsPrimitive.Trigger
 			data-slot="tabs-trigger"
 			className={cn(
-				"cursor-pointer bg-black items-center justify-center text-sm border-1 data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider",
-				filled ? "data-[state=active]:bg-[#03FF24]" : "data-[state=active]:bg-transparent",
+				"cursor-pointer bg-black items-center justify-center text-sm border-1 data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none py-3 font-bold uppercase tracking-wider",
+				filled ? "data-[state=active]:bg-[#FF2D78]" : "data-[state=active]:bg-transparent",
 				className,
 			)}
 			{...props}

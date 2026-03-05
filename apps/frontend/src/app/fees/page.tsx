@@ -1,14 +1,14 @@
 const FeesContent = () => {
 	return (
 		<div className="h-[70vh] flex items-center justify-center">
-			<div className="flex w-fit lg:w-[600px] border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] bg-black flex-col h-fit">
+			<div className="flex w-fit lg:w-[600px] border-2 border-[#FF2D78]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.2)] bg-black flex-col h-fit">
 				<div className="flex-1">
 					<div className="w-full justify-center">
 						<div className="w-full mb-12">
 							{/* Header */}
 							<div className="flex flex-col py-5 px-4 gap-3.5 border-b">
-								<h1 className="text-2xl md:text-[32px] font-satoshi font-medium leading-9 tracking-[-0.018em] text-[#03FF24]">
-									Fees On Auto.fun
+								<h1 className="text-2xl md:text-[32px] font-satoshi font-medium leading-9 tracking-[-0.018em] text-[#FF2D78]">
+									Fees On Waifu.fun
 								</h1>
 								<p className="text-sm md:text-base font-satoshi text-[#8C8C8C] leading-6">
 									The following fees apply when using the waifu.fun platform
@@ -39,7 +39,7 @@ const TableRow = ({ title, text }: { title: string; text: string }) => {
 	return (
 		<div className="flex flex-col items-start align-middle lg:flex-row justify-between px-4 py-2 border-b ">
 			<span className="font-dm-mono text-[10px] text-xs lg:text-sm text-white tracking-[2px] uppercase">{title}</span>
-			<span className="font-dm-mono text-[10px] text-xs lg:text-sm text-[#03FF24] tracking-[2px] uppercase">
+			<span className="font-dm-mono text-[10px] text-xs lg:text-sm text-[#FF2D78] tracking-[2px] uppercase">
 				{text}
 			</span>
 		</div>

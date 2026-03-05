@@ -31,7 +31,7 @@ export default function ImportTokenForm() {
 	const router = useRouter();
 	const { animationLevel } = useAnimation();
 	const formElementBaseClass =
-		"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
+		"bg-black border-2 border-[#FF2D78]/60 placeholder-gray-500 text-sm focus:border-[#FF2D78] focus:ring-1 focus:ring-[#FF2D78] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.25)]";
 	const formLabelBaseClass = "text-xs text-gray-400 uppercase tracking-wider font-semibold";
 
 	const { register, handleSubmit, formState, watch } = useForm<TokenForm>({
@@ -90,7 +90,7 @@ export default function ImportTokenForm() {
 				<Button
 					type="submit"
 					disabled={shouldDisable || mutation.isPending}
-					className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
+					className="w-full bg-[#FF2D78] hover:bg-[#e6266d] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#b31f57] hover:shadow-[2px_2px_0px_#b31f57] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#b31f57]"
 				>
 					{mutation.isPending ? "IMPORTING..." : "IMPORT"}
 				</Button>

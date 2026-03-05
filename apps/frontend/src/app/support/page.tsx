@@ -16,7 +16,7 @@ export default function SupportPage() {
 								href="https://twitter.com/autodotfun"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#FF2D78] transition-colors"
 							>
 								<Image height={24} width={24} alt="twitter-icon" src="/socials/twitter.svg" />
 								@autodotfun
@@ -25,14 +25,14 @@ export default function SupportPage() {
 								href="https://discord.com/invite/tgCCVF9vEa"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#FF2D78] transition-colors"
 							>
 								<Image height={26} width={26} alt="discord-icon" src="/socials/discord.svg" />
 								Join our Discord
 							</Link>
 							<Link
 								href="https://web.telegram.org/k/#@AutoDotFunBot"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#FF2D78] transition-colors"
 							>
 								<Image height={26} width={26} alt="discord-icon" src="/socials/telegram.svg" />
 								@AutoDotFunBot
@@ -41,7 +41,7 @@ export default function SupportPage() {
 								href="https://tally.so/r/mOr8DM"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#FF2D78] transition-colors"
 							>
 								<Image height={26} width={26} alt="submit-icon" src="/socials/submit.svg" />
 								Submit an issue
@@ -55,7 +55,7 @@ export default function SupportPage() {
 						<div className="space-y-6">
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-lg font-bold text-white">Coin Launch Options</h3>
-								<p className="text-[#8C8C8C]">Auto.fun offers two approaches:</p>
+								<p className="text-[#8C8C8C]">Waifu.fun offers two approaches:</p>
 								<p className="text-[#8C8C8C]">
 									<span className="text-[#8C8C8C] font-bold">1. New Coins: </span>
 									Launch with our bonding curve mechanism that provides initial price stability, dynamic pricing,
@@ -70,14 +70,14 @@ export default function SupportPage() {
 							<div>
 								<h3 className="text-lg font-bold text-white mb-2">Bonding Curve</h3>
 								<p className="text-[#8C8C8C]">
-									Auto.fun uses a bonding curve with 28 SOL initial virtual reserves. When a coin reaches 113 SOL in
+									Waifu.fun uses a bonding curve with 28 SOL initial virtual reserves. When a coin reaches 113 SOL in
 									reserves, it automatically graduates to Raydium with a 6 SOL flat fee.
 								</p>
 							</div>
 							<div>
 								<h3 className="text-lg font-bold text-white mb-2">Liquidity</h3>
 								<p className="text-[#8C8C8C]">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and Auto.fun
+									LP tokens for graduated coins are locked with a 90/10 token split for creators and Waifu.fun
 									respectively with burn and earn mechanisms.
 								</p>
 							</div>

@@ -1,7 +1,7 @@
 # waifufun
 
-Getting Started – the Autofun Monorepo
-This guide helps you set up and run the Autofun monorepo locally.
+Getting Started – the waifu.fun Monorepo
+This guide helps you set up and run the waifu.fun monorepo locally.
 
 1. Install Dependencies (we use pnpm for package management):
 `pnpm i`

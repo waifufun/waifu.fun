@@ -35,7 +35,7 @@ const PromptComponent = () => {
 				style={{
 					background: "linear-gradient(106.96deg, #141414 -24.65%, #131313 48.9%, #121212 109.26%)",
 				}}
-				className="border border-[#03FF24] rounded-sm hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
+				className="border border-[#FF2D78] rounded-sm hover:cursor-pointer px-4 py-2 text-base uppercase font-[500]"
 				onClick={() => {
 					if (!prompt) {
 						generateToken({ mediaType: "image", prompt: "" });
@@ -134,28 +134,28 @@ function CreateTokenPageContent() {
 		<>
 			<div className="w-full max-w-6xl mx-auto px-4 py-8">
 				<Tabs defaultValue="auto" className="w-full">
-					<TabsList className="grid w-full grid-cols-3 bg-black border-2 border-[#03FF24]/50 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] mb-6">
+					<TabsList className="grid w-full grid-cols-3 bg-black border-2 border-[#FF2D78]/50 rounded-none shadow-[4px_4px_0px_rgba(255,45,120,0.3)] mb-6">
 						<TabsTrigger
 							value="auto"
-							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
-                     text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider
-                     border-r border-[#03FF24]/50 data-[state=active]:border-r-[#01a718]"
+							className="text-sm data-[state=active]:bg-[#FF2D78] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
+                     text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none py-3 font-bold uppercase tracking-wider
+                     border-r border-[#FF2D78]/50 data-[state=active]:border-r-[#b31f57]"
 						>
 							Auto
 						</TabsTrigger>
 						<TabsTrigger
 							value="manual"
-							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
-                     text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider
-                     border-x border-transparent data-[state=active]:border-x-[#01a718]"
+							className="text-sm data-[state=active]:bg-[#FF2D78] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
+                     text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none py-3 font-bold uppercase tracking-wider
+                     border-x border-transparent data-[state=active]:border-x-[#b31f57]"
 						>
 							Manual
 						</TabsTrigger>
 						<TabsTrigger
 							value="import"
-							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
-                     text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider
-                     border-l border-[#03FF24]/50 data-[state=active]:border-l-[#01a718]"
+							className="text-sm data-[state=active]:bg-[#FF2D78] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
+                     text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none py-3 font-bold uppercase tracking-wider
+                     border-l border-[#FF2D78]/50 data-[state=active]:border-l-[#b31f57]"
 						>
 							Import
 						</TabsTrigger>

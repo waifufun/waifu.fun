@@ -19,7 +19,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 			<TooltipProvider delayDuration={0}>
 				<ProgressProvider
 					height="4px"
-					color="#03FF24"
+					color="#FF2D78"
 					options={{
 						showSpinner: false,
 					}}

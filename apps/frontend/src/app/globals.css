@@ -195,11 +195,11 @@
 
 input::selection {
 	color: #212121;
-	background-color: #03ff24;
+	background-color: #ff2d78;
 }
 
 .flashy-bonding-block {
-	background-color: #03ff24;
+	background-color: #ff2d78;
 	animation: pixel-pulse-green 1.5s infinite;
 }
 

@@ -50,7 +50,7 @@ export default function TokenRow({
 			: "0";
 
 	return (
-		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
+		<div className="group w-full border-b-2 place-self-center border-[#FF2D78]/10 last:border-b-0 hover:bg-[#FF2D78]/5 transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
 			<div className="flex items-center space-x-2 sm:space-x-4 flex-nowrap overflow-hidden">
 				<Link href={`/token/${data.contractAddress}`} className="flex-shrink-0 flex items-center">
 					{data.image ? (
@@ -147,7 +147,7 @@ export default function TokenRow({
 								}
 								target={mode === "activity" ? "_blank" : undefined}
 							>
-								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[14px] w-[14px] sm:h-[16px] sm:w-[16px]" />
+								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#FF2D78] h-[14px] w-[14px] sm:h-[16px] sm:w-[16px]" />
 							</Link>
 						</div>
 					) : null}

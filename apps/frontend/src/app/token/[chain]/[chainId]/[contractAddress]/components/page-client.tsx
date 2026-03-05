@@ -57,7 +57,7 @@ export default function PageClient({
 			return {
 				badge: "BONDED",
 				classes:
-					"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px 0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+					"bg-black/80 hover:bg-primary/15 text-[#FF2D78] border border-[#FF2D78]/50 shadow-[1.5px_1.5px 0px_rgba(255,45,120,0.3)] sm:shadow-[2px_2px_0px_rgba(255,45,120,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 			};
 		}
 		if (initialData?.imported) {
@@ -71,7 +71,7 @@ export default function PageClient({
 		return {
 			badge: "ACTIVE",
 			classes:
-				"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px 0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+				"bg-black/80 hover:bg-primary/15 text-[#FF2D78] border border-[#FF2D78]/50 shadow-[1.5px_1.5px 0px_rgba(255,45,120,0.3)] sm:shadow-[2px_2px_0px_rgba(255,45,120,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 		};
 	};
 
@@ -84,7 +84,7 @@ export default function PageClient({
 	return (
 		<div className="flex flex-col gap-6 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<div className="bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+			<div className="bg-black border-2 border-[#FF2D78]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(255,45,120,0.3)] flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
 				<div className="flex items-center gap-4">
 					{/* Image */}
 					<Image
@@ -93,7 +93,7 @@ export default function PageClient({
 						height={60}
 						unoptimized
 						alt="token_image"
-						className="h-10 w-10 rounded-none border-2 border-[#03FF24]/50 shadow-[2px_2px_0px_rgba(3,255,36,0.3)] pixelated-image-render"
+						className="h-10 w-10 rounded-none border-2 border-[#FF2D78]/50 shadow-[2px_2px_0px_rgba(255,45,120,0.3)] pixelated-image-render"
 					/>
 					{/* Token Name */}
 					<div className="space-y-3 xl:space-y-0">
@@ -105,7 +105,7 @@ export default function PageClient({
 								{token.name}
 							</span>
 							{/* <div className="h-5 w-[1px] bg-waifufun-background-disabled" /> */}
-							<span className="text-lg text-[#03FF24]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
+							<span className="text-lg text-[#FF2D78]/80 font-mono animate-subtle-flicker">{token.ticker}</span>
 							<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
 							{token?.featured ? (
 								<Badge
@@ -167,7 +167,7 @@ export default function PageClient({
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-6">
 				<div className="w-full lg:w-7/10 flex flex-col gap-6 order-3 lg:order-2">
 					<div className="w-full relative">
-						<div className="bg-black border-2 border-[#03FF24]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
+						<div className="bg-black border-2 border-[#FF2D78]/40 p-1 rounded-none shadow-[4px_4px_0px_rgba(255,45,120,0.3)]">
 							<div className="overflow-hidden">
 								<Chart token={token} />
 							</div>
@@ -181,12 +181,12 @@ export default function PageClient({
 				</div>
 				<div className="w-full lg:w-3/10 flex flex-col md:flex-row lg:flex-col gap-6 order-2 lg:order-3">
 					<Swap token={token} />
-					<div className="flex flex-col gap-4 bg-black border-2 border-[#03FF24]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
+					<div className="flex flex-col gap-4 bg-black border-2 border-[#FF2D78]/40 p-3 rounded-none shadow-[4px_4px_0px_rgba(255,45,120,0.3)]">
 						<BondingCurveProgress token={token} />
 						<div className="flex flex-row gap-4 items-start">
 							<Image
 								src={token?.image}
-								className="border-2 max-w-[50px] border-[#03FF24]/50 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.25)] pixelated-image-render mt-1 flex-shrink-0"
+								className="border-2 max-w-[50px] border-[#FF2D78]/50 rounded-none shadow-[2px_2px_0px_rgba(255,45,120,0.25)] pixelated-image-render mt-1 flex-shrink-0"
 								unoptimized
 								priority
 								width={208}
@@ -249,7 +249,7 @@ export default function PageClient({
 										<Image
 											src={social.icon}
 											className={cn([
-												"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background h-7 w-7 p-1 border-2 border-[#03FF24]/50 text-[#03FF24]/80 hover:text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24] rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)]",
+												"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background h-7 w-7 p-1 border-2 border-[#FF2D78]/50 text-[#FF2D78]/80 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 hover:border-[#FF2D78] rounded-none shadow-[2px_2px_0px_rgba(255,45,120,0.2)]",
 												!social?.href ? "opacity-50 cursor-not-allowed" : "opacity-100 cursor-pointer",
 											])}
 											unoptimized
@@ -288,7 +288,7 @@ export default function PageClient({
 						<div className="h-[2px] w-full bg-waifufun-background-action-highlight/25" />
 						<div className="flex flex-col items-start w-full gap-1 justify-between border-b ">
 							<span className="text-base font-medium uppercase text-waifufun-text-secondary">TOKEN:</span>
-							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-waifufun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
+							<div className="flex items-center w-full text-xs justify-between bg-black/40 p-1.5 border border-waifufun-background-action-highlight/30 rounded-none shadow-[1px_1px_0px_rgba(255,45,120,0.2)]">
 								<span className="text-gray-300 font-mono truncate">{shortenAddress(token?.contractAddress)}</span>
 								<div className="flex gap-1 flex-shrink-0">
 									<CopyButton textToCopy={token.contractAddress} />

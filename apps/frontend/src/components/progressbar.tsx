@@ -16,7 +16,7 @@ export default function Progressbar({ value, max, height }: { value: number; max
 
 	return (
 		<div className={cn([height ? height : "h-3", "w-full max-w-md"])}>
-			<div className="h-full grid grid-cols-[repeat(20,minmax(0,1fr))] gap-px w-full border bg-black/50 p-0.5 rounded-none shadow-inner border-[#03FF24]/30">
+			<div className="h-full grid grid-cols-[repeat(20,minmax(0,1fr))] gap-px w-full border bg-black/50 p-0.5 rounded-none shadow-inner border-[#FF2D78]/30">
 				{Array(20)
 					.fill("A")
 					.map((_, idx) => (
