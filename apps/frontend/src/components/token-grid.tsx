@@ -5,7 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -20,17 +20,12 @@ function formatMarketCap(mc: number): string {
 
 /** Cinematic hero card component */
 function HeroCard({ token, index }: { token: IToken; index: number }) {
-	const cardRef = useRef(null);
-	const isInView = useInView(cardRef, { once: true, margin: "-100px" });
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
 
 	return (
 		<motion.div
-			ref={cardRef}
-			initial={{ opacity: 0, y: 40 }}
-			animate={isInView ? { opacity: 1, y: 0 } : {}}
-			transition={{ duration: 0.7, ease: "easeOut" }}
+			initial={{ opacity: 1, y: 0 }}
 		>
 			<Link
 				href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
@@ -269,32 +264,10 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const secondRowTokens = remainingTokens.slice(2, 5); // 3 medium cards
 	const restTokens = remainingTokens.slice(5);         // 3-column grid
 
-	const containerVariants = {
-		hidden: { opacity: 0 },
-		show: {
-			opacity: 1,
-			transition: {
-				staggerChildren: 0.1,
-			},
-		},
-	};
-
-	const itemVariants = {
-		hidden: { opacity: 0, y: 30 },
-		show: { 
-			opacity: 1, 
-			y: 0, 
-			transition: { duration: 0.6, ease: "easeOut" as const } 
-		},
-	};
-
 	return (
 		<Fragment>
-			<motion.div
+			<div
 				className="flex flex-col gap-8 w-full"
-				variants={containerVariants}
-				initial="hidden"
-				animate="show"
 			>
 				{/* Hero featured card - full width cinematic */}
 				{featuredToken && (
@@ -314,9 +287,9 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 				{firstRowTokens.length > 0 && (
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 						{firstRowTokens.map((token, idx) => (
-							<motion.div key={token.contractAddress} variants={itemVariants}>
+							<div key={token.contractAddress}>
 								<GridItem token={token} variant="large" rank={idx + 2} />
-							</motion.div>
+							</div>
 						))}
 					</div>
 				)}
@@ -325,13 +298,13 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 				{secondRowTokens.length > 0 && (
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 						{secondRowTokens.map((token, idx) => (
-							<motion.div key={token.contractAddress} variants={itemVariants}>
+							<div key={token.contractAddress}>
 								<GridItem 
 									token={token} 
 									variant="medium" 
 									rank={firstRowTokens.length + idx + 2} 
 								/>
-							</motion.div>
+							</div>
 						))}
 					</div>
 				)}
@@ -340,20 +313,20 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 				{restTokens.length > 0 && (
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{restTokens.map((token, idx) => (
-							<motion.div key={token.contractAddress} variants={itemVariants}>
+							<div key={token.contractAddress}>
 								<GridItem 
 									token={token} 
 									variant="compact"
 									rank={firstRowTokens.length + secondRowTokens.length + idx + 2}
 								/>
-							</motion.div>
+							</div>
 						))}
 					</div>
 				)}
 
 				{/* Infinite scroll sentinel */}
 				<div ref={loaderRef} className="h-10 w-full" />
-			</motion.div>
+			</div>
 
 			{isFetchingNextPage && (
 				<div className="mt-4 flex justify-center">

@@ -2,8 +2,7 @@
 import type { IToken } from "@waifufun/types";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 
 function formatMarketCap(mc: number): string {
 	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
@@ -26,9 +25,6 @@ export const GridItem = ({
 	variant?: "large" | "medium" | "compact";
 	rank?: number;
 }) => {
-	const cardRef = useRef(null);
-	const isInView = useInView(cardRef, { once: true, margin: "-50px" });
-	
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
 	const isDead = token?.status === "finalized" || (isBonded && token?.marketcap === 0);
@@ -49,11 +45,8 @@ export const GridItem = ({
 			className="block h-full group"
 		>
 			<motion.div
-				ref={cardRef}
 				className="relative flex flex-col h-full rounded-2xl overflow-hidden bg-[rgba(17,17,20,0.75)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)]"
-				initial={{ opacity: 0, y: 20 }}
-				animate={isInView ? { opacity: 1, y: 0 } : {}}
-				transition={{ duration: 0.5, ease: "easeOut" }}
+				initial={{ opacity: 1, y: 0 }}
 				whileHover={{
 					y: -6,
 					boxShadow: "0 0 50px rgba(139,92,246,0.2), 0 12px 40px rgba(0,0,0,0.5)",

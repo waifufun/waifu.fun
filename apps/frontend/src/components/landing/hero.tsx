@@ -50,7 +50,7 @@ export default function Hero() {
 	};
 
 	return (
-		<section className="min-h-[92vh] relative overflow-hidden flex items-center">
+		<section className="relative overflow-hidden flex items-center py-16 lg:py-24">
 			{/* Background elements */}
 			<div className="absolute inset-0 z-0">
 				{/* Ambient glow behind mascot area */}
