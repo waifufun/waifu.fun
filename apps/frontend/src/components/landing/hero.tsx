@@ -292,7 +292,7 @@ export default function Hero() {
 								}}
 							/>
 							<Image
-								src="/waifus/waifu-charsheet.png"
+								src="/waifus/eliza-hero.png"
 								alt="waifu.fun mascot"
 								fill
 								className="object-contain drop-shadow-[0_0_40px_rgba(139,92,246,0.15)]"

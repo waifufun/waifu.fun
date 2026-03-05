@@ -101,3 +101,5 @@ testem.log
 /typings
 .yarn-integrity
 *.tsbuildinfo
+.env.local
+.vercel/
