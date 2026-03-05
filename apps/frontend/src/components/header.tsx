@@ -9,7 +9,7 @@ import HeaderConnectWallet from "./header-connect-wallet";
 const NAV_LINKS = [
 	{ href: "/", label: "explore" },
 	{ href: "/create", label: "create" },
-	{ href: "#how-it-works", label: "how it works" },
+	{ href: "/#how-it-works", label: "how it works" },
 ];
 
 export default function Header() {
