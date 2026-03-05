@@ -28,31 +28,31 @@ const UploadPlaceholder = ({
 		<button
 			type="button"
 			onClick={onClick}
-			className={`w-full h-full border-2 border-dashed rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all group focus:outline-none focus:ring-2 focus:ring-[#03FF24] ${
+			className={`w-full h-full border border-dashed rounded-sm flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-colors group focus:outline-none focus:ring-1 focus:ring-[#00ff87] ${
 				isDragActive
-					? "bg-[#03FF24]/10 border-[#03FF24] scale-[1.02]"
-					: "bg-black/50 border-[#03FF24]/40 hover:border-[#03FF24] hover:bg-black/70"
+					? "bg-[rgba(0,255,135,0.08)] border-[#00ff87]"
+					: "bg-[rgba(17,17,20,0.7)] border-[rgba(255,255,255,0.15)] hover:border-[#00ff87] hover:bg-[rgba(17,17,20,0.9)]"
 			}`}
 			aria-label="Upload image"
 		>
 			<UploadCloud
 				size={48}
-				className={`mb-2 transition-all ${
-					isDragActive ? "text-[#03FF24] scale-110" : "text-[#03FF24]/70 group-hover:text-[#03FF24]"
+				className={`mb-2 transition-colors ${
+					isDragActive ? "text-[#00ff87]" : "text-[#00ff87]/70 group-hover:text-[#00ff87]"
 				}`}
 			/>
 			<p
-				className={`text-sm transition-colors ${isDragActive ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+				className={`text-sm transition-colors ${isDragActive ? "text-[#e4e4e7]" : "text-[#a1a1aa] group-hover:text-[#e4e4e7]"}`}
 			>
 				{isDragActive ? (
 					"Drop your image here"
 				) : (
 					<>
-						Drag & drop an image or <span className="text-[#03FF24] font-semibold">click to upload</span>
+						Drag & drop an image or <span className="text-[#00ff87] font-semibold">click to upload</span>
 					</>
 				)}
 			</p>
-			<p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WEBP up to 5MB. Recommended: Square, pixel art.</p>
+			<p className="text-xs text-[#52525b] mt-1">PNG, JPG, GIF, WEBP up to 5MB. Recommended: Square.</p>
 		</button>
 	);
 };
@@ -235,13 +235,13 @@ const ImageUploadSection = () => {
 			>
 				{!displayImage && <UploadPlaceholder onClick={handlePlaceholderClick} isDragActive={isDragActive} />}
 				{displayImage && (
-					<div className="w-full h-full relative rounded-none overflow-hidden bg-black/50 border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.3)]">
-						<Image src={displayImage} alt="Token preview" fill className="object-contain p-2 pixelated-image-render" />
+					<div className="w-full h-full relative rounded-sm overflow-hidden bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)]">
+						<Image src={displayImage} alt="Token preview" fill className="object-contain p-2" />
 						<button
 							type="button"
 							onClick={handleDeleteImage}
 							disabled={isConverting}
-							className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded-none w-6 h-6 flex items-center justify-center shadow-[2px_2px_0px_rgba(0,0,0,0.5)] transition-all hover:scale-110 disabled:hover:scale-100"
+							className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white rounded-sm w-6 h-6 flex items-center justify-center transition-colors"
 							aria-label="Remove image"
 						>
 							<X size={14} />
@@ -260,7 +260,7 @@ const ImageUploadSection = () => {
 			{/* Image status and controls */}
 			{displayImage && (
 				<div className="flex items-center justify-between">
-					<p className="text-xs text-gray-400">
+					<p className="text-xs text-[#71717a]">
 						{uploadedImage ? "Manual upload" : "Using generated image"}
 						{isConverting && " (Converting...)"}
 					</p>
@@ -270,7 +270,7 @@ const ImageUploadSection = () => {
 								type="button"
 								onClick={handleUseGeneratedImage}
 								disabled={isConverting}
-								className="text-xs text-[#03FF24] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
+								className="text-xs text-[#00ff87] hover:text-[#e4e4e7] disabled:text-[#52525b] disabled:cursor-not-allowed transition-colors hover:underline"
 							>
 								{isConverting ? "Converting..." : "Lock Generated Image"}
 							</button>
@@ -279,7 +279,7 @@ const ImageUploadSection = () => {
 							type="button"
 							onClick={handlePlaceholderClick}
 							disabled={isConverting}
-							className="text-xs text-[#03FF24] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
+							className="text-xs text-[#00ff87] hover:text-[#e4e4e7] disabled:text-[#52525b] disabled:cursor-not-allowed transition-colors hover:underline"
 						>
 							Change Image
 						</button>
@@ -289,13 +289,13 @@ const ImageUploadSection = () => {
 
 			{/* No image notification */}
 			{!displayImage && previousImages.length > 0 && (
-				<div className="flex items-center justify-between p-2 bg-[#03FF24]/10 border border-[#03FF24]/30 rounded-none">
-					<p className="text-xs text-gray-300">Generated image available from Auto tab</p>
+				<div className="flex items-center justify-between p-2 bg-[rgba(0,255,135,0.08)] border border-[rgba(0,255,135,0.2)] rounded-sm">
+					<p className="text-xs text-[#a1a1aa]">Generated image available from Auto tab</p>
 					<button
 						type="button"
 						onClick={handleUseGeneratedImage}
 						disabled={isConverting}
-						className="text-xs text-[#03FF24] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline font-semibold"
+						className="text-xs text-[#00ff87] hover:text-[#e4e4e7] disabled:text-[#52525b] disabled:cursor-not-allowed transition-colors hover:underline font-semibold"
 					>
 						{isConverting ? "Converting..." : "Use Generated Image"}
 					</button>
@@ -304,7 +304,7 @@ const ImageUploadSection = () => {
 
 			{/* Image required warning */}
 			{!displayImage && previousImages.length === 0 && (
-				<div className="p-2 bg-red-500/10 border border-red-500/30 rounded-none">
+				<div className="p-2 bg-red-500/10 border border-red-500/30 rounded-sm">
 					<p className="text-xs text-red-400">
 						⚠️ Token image is required. Please upload an image or generate one from the Auto tab.
 					</p>

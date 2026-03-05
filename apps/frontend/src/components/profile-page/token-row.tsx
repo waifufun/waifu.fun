@@ -32,13 +32,6 @@ export default function TokenRow({
 	mode?: "activity" | "wallet" | "points";
 	verified?: boolean;
 }) {
-	// const key = `${data.chain}_${data.chainId}`;
-	// const chainIcons: Record<string, { name: string; icon: string }> = {
-	// 	[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
-	// 	[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
-	// 	[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
-	// };
-	// const chainIcon = chainIcons[key];
 	const dollarWorth = (data?.amountHeld ?? 0) * (data?.dollarWorth ?? 0);
 
 	// formats really high decimal amounts
@@ -50,7 +43,7 @@ export default function TokenRow({
 			: "0";
 
 	return (
-		<div className="group w-full border-b-2 place-self-center border-[#03FF24]/10 last:border-b-0 hover:bg-[#03FF24]/5 transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
+		<div className="group w-full border-b border-[rgba(255,255,255,0.04)] last:border-b-0 hover:bg-[rgba(255,255,255,0.02)] transition-colors relative flex justify-between items-center h-[71px] p-2 sm:p-4 py-4 sm:py-8">
 			<div className="flex items-center space-x-2 sm:space-x-4 flex-nowrap overflow-hidden">
 				<Link href={`/token/${data.contractAddress}`} className="flex-shrink-0 flex items-center">
 					{data.image ? (
@@ -61,7 +54,7 @@ export default function TokenRow({
 							alt="Token Image"
 							width={30}
 							height={30}
-							className="object-contain md:w-[40px] md:h-[40px]"
+							className="object-contain md:w-[40px] md:h-[40px] rounded-sm"
 						/>
 					) : (
 						"N/A"
@@ -71,13 +64,13 @@ export default function TokenRow({
 					<div className="flex flex-col justify-center min-w-0">
 						<div className="flex items-center gap-1 sm:gap-2 flex-nowrap overflow-hidden">
 							<Link href={`/token/${data.contractAddress}`} className="truncate max-w-full">
-								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-waifufun-background-action-highlight text-white cursor-pointer">
+								<p className="text-[10px] sm:text-xs uppercase leading-none truncate hover:text-[#00ff87] text-[#e4e4e7] cursor-pointer">
 									{data.title}
 								</p>
 							</Link>
-							<p className="text-[10px] sm:text-xs text-[#8C8C8C] leading-none flex-shrink-0">${data.ticker}</p>
+							<p className="text-[10px] sm:text-xs text-[#71717a] leading-none flex-shrink-0">${data.ticker}</p>
 						</div>
-						<p className="text-[9px] sm:text-xs text-[#8C8C8C] leading-none flex gap-x-1 items-center overflow-hidden mt-1">
+						<p className="text-[9px] sm:text-xs text-[#71717a] leading-none flex gap-x-1 items-center overflow-hidden mt-1">
 							<CopyButton
 								className="h-[8px] w-[8px] sm:h-[10px] sm:w-[10px] flex-shrink-0"
 								textToCopy={data.contractAddress}
@@ -102,21 +95,21 @@ export default function TokenRow({
 									>
 										{data.direction === 0 ? "bought" : "sold"}
 									</p>
-									<p className="text-[9px] sm:text-xs uppercase font-semibold text-white inline truncate">
+									<p className="text-[9px] sm:text-xs uppercase font-semibold text-[#e4e4e7] inline truncate">
 										{data.direction === 0 ? (
 											<>
-												{formatAmount(data.amountGotten)} <span className="text-gray-300">${data?.ticker}</span> for{" "}
+												{formatAmount(data.amountGotten)} <span className="text-[#a1a1aa]">${data?.ticker}</span> for{" "}
 												{(data.swapAmount ?? 0) / LAMPORTS_PER_SOL} SOL
 											</>
 										) : (
 											<>
-												{formatAmount(data.swapAmount)} <span className="text-gray-300">${data?.ticker}</span> for{" "}
+												{formatAmount(data.swapAmount)} <span className="text-[#a1a1aa]">${data?.ticker}</span> for{" "}
 												{(data.amountGotten ?? 0) / LAMPORTS_PER_SOL} SOL
 											</>
 										)}
 									</p>
 								</div>
-								<p className="text-[8px] sm:text-xs text-gray-300 mt-0.5 sm:mt-1 text-right truncate">
+								<p className="text-[8px] sm:text-xs text-[#71717a] mt-0.5 sm:mt-1 text-right truncate">
 									{data.createdAt
 										? new Date(data.createdAt).toLocaleString("en-US", {
 												day: "numeric",
@@ -131,23 +124,23 @@ export default function TokenRow({
 						) : null}
 
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300 mt-1">
-							<p className="text-sm font-medium text-gray-200">{data.amountHeld?.toLocaleString()}</p>
+							<p className="text-sm font-medium text-[#e4e4e7]">{data.amountHeld?.toLocaleString()}</p>
 							{data?.dollarWorth ? (
-								<p className="text-waifufun-background-action-highlight text-xs sm:text-xs">
+								<p className="text-[#00ff87] text-xs sm:text-xs">
 									${dollarWorth.toLocaleString()}
 								</p>
 							) : null}
 						</div>
 					</div>
 					{mode === "activity" ? (
-						<div className="flex justify-end items-center text-white text-base h-[60px] pl-2 flex-shrink-0">
+						<div className="flex justify-end items-center text-[#e4e4e7] text-base h-[60px] pl-2 flex-shrink-0">
 							<Link
 								href={
 									mode === "activity" ? `https://solscan.io/tx/${data.signature}` : `/token/${data.contractAddress}`
 								}
 								target={mode === "activity" ? "_blank" : undefined}
 							>
-								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 [&_svg]:shrink-0 hover:bg-accent text-gray-400 hover:text-[#03FF24] h-[14px] w-[14px] sm:h-[16px] sm:w-[16px]" />
+								<ExternalLink className="transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 [&_svg]:shrink-0 hover:bg-accent text-[#71717a] hover:text-[#00ff87] h-[14px] w-[14px] sm:h-[16px] sm:w-[16px]" />
 							</Link>
 						</div>
 					) : null}

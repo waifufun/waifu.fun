@@ -62,29 +62,29 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 	const isOwner = useAddress() === address;
 
 	return (
-		<div className="border-4 h-fit border-[#03FF24]/60 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.4)] relative w-[150px]">
+		<div className="border border-[rgba(255,255,255,0.06)] rounded-sm h-fit relative w-[150px]">
 			<Image
 				src={preview || image || "/create/test-img.png"}
 				alt="Profile"
 				width={150}
 				height={150}
 				unoptimized
-				className="object-cover"
+				className="object-cover rounded-sm"
 			/>
 			{isOwner ? (
 				<>
 					<input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 					<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
-						<button type="button" onClick={handleUploadClick} className="cursor-pointer bg-[#0C0C0C]/90 p-1 size-6">
+						<button type="button" onClick={handleUploadClick} className="cursor-pointer bg-[#08080a]/90 p-1 size-6 rounded-sm">
 							<Image src="/profile/upload.svg" alt="Upload" width={24} height={24} />
 						</button>
 						{preview && preview !== image && (
 							<button
 								type="button"
 								onClick={() => imageFile && submitAvatarMutation.mutate(imageFile)}
-								className="bg-[#0C0C0C]/90 cursor-pointer p-1 w-6 h-6"
+								className="bg-[#08080a]/90 cursor-pointer p-1 w-6 h-6 rounded-sm"
 							>
-								<Check className="text-[#03FF24]" width={14} height={14} />
+								<Check className="text-[#00ff87]" width={14} height={14} />
 							</button>
 						)}
 					</div>

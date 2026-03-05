@@ -1,8 +1,6 @@
 "use client";
 import ProfileHeader from "@/components/profile-page/profile-header";
-// import PointsFilter from "@/components/profile-page/profile-points-filter";
 import TokenRow from "@/components/profile-page/token-row";
-// import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
@@ -61,8 +59,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 	const tokensBought = balances?.balances.length;
 
 	return (
-		<div className="mt-5 flex place-self-center w-full flex-col">
-			<div className="w-full container mx-auto flex flex-col gap-6">
+		<div className="mt-5 flex place-self-center w-full flex-col max-w-7xl mx-auto px-4">
+			<div className="w-full flex flex-col gap-6">
 				<ProfileHeader
 					data={{
 						username: user?.displayName,
@@ -87,12 +85,12 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							</TabsTrigger>
 						</TabsList>
 						<TabsContent value="wallet" className="bg-transparent">
-							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
+							<div className="mt-6 h-fit w-full bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm flex flex-col place-self-center overflow-y-auto">
 								<div className="w-full max-h-full overflow-y-auto">
-									<div className="border-b-1 border-[#03FF24]/40 w-full">
-										<h1 className="p-4 text-sm text-gray-300">
+									<div className="border-b border-[rgba(255,255,255,0.06)] w-full">
+										<h1 className="p-4 text-sm text-[#a1a1aa]">
 											Total Value:{" "}
-											<span className="text-waifufun-background-action-highlight font-bold">
+											<span className="text-[#00ff87] font-bold">
 												{formatNumber(summedTotalWalletValue, true)}
 											</span>
 										</h1>
@@ -124,18 +122,18 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
 							<Tabs defaultValue="transactions" className="w-full">
-								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-									<div className="border-b-1 border-[#03FF24]/40">
-										<TabsList shadowed={false} className="border-none space-x-2 p-4">
+								<div className="mt-6 h-fit w-full bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm flex flex-col place-self-center overflow-y-auto">
+									<div className="border-b border-[rgba(255,255,255,0.06)]">
+										<TabsList shadowed={false} className="border-none space-x-2 p-4 bg-transparent">
 											<TabsTrigger
 												value="transactions"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+												className="normal-case text-xs px-3 select-none py-1.5 h-auto rounded-sm border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium data-[state=active]:bg-[rgba(0,255,135,0.08)] data-[state=active]:text-[#00ff87] data-[state=active]:border-[rgba(0,255,135,0.2)]"
 											>
 												Transactions
 											</TabsTrigger>
 											<TabsTrigger
 												value="tokens-created"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+												className="normal-case text-xs px-3 select-none py-1.5 h-auto rounded-sm border border-[rgba(255,255,255,0.08)] text-[#71717a] font-medium data-[state=active]:bg-[rgba(0,255,135,0.08)] data-[state=active]:text-[#00ff87] data-[state=active]:border-[rgba(0,255,135,0.2)]"
 											>
 												Tokens Created
 											</TabsTrigger>
@@ -161,7 +159,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											))
 										) : (
 											<div className="flex w-full p-4 h-full items-center justify-center">
-												<h1 className="text-[#03FF23] text-base font-semibold uppercase">
+												<h1 className="text-[#71717a] text-base font-semibold">
 													No tokens have been created by this user
 												</h1>
 											</div>
@@ -203,7 +201,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												))}
 											</div>
 										) : (
-											<div className="text-center my-6 text-[#03FF23] text-base font-semibold uppercase">
+											<div className="text-center my-6 text-[#71717a] text-base font-semibold">
 												No transactions found
 											</div>
 										)}

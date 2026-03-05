@@ -62,13 +62,13 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 								tabIndex={0}
 								className={twMerge([
 									isActive
-										? "outline-waifufun-background-action-highlight bg-waifufun-background-card text-waifufun-text-primary"
-										: "outline-transparent bg-transparent text-waifufun-text-secondary",
-									"cursor-pointer h-8 px-3 py-2 outline outline-offset-[-1px] inline-flex flex-col items-center justify-center gap-2.5 overflow-hidden",
+										? "bg-[#00ff87] text-[#08080a]"
+										: "bg-transparent text-[#71717a] hover:text-[#e4e4e7]",
+									"cursor-pointer h-8 px-3 py-2 rounded-sm inline-flex flex-col items-center justify-center gap-2.5 overflow-hidden transition-colors",
 								])}
 								onClick={() => onPageChange?.(item)}
 							>
-								<div className="select-none text-center text-base font-normal font-dm-mono uppercase leading-normal tracking-widest">
+								<div className="select-none text-center text-base font-normal font-dm-mono leading-normal">
 									{item}
 								</div>
 							</button>
@@ -81,7 +81,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 							// biome-ignore lint/suspicious/noArrayIndexKey: noArrayIndexKey
 							key={`ellipsis-${index}`}
 							tabIndex={0}
-							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-waifufun-text-secondary text-base font-normal font-dm-mono uppercase leading-normal tracking-widest hover:text-waifufun-text-primary transition-colors"
+							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-[#71717a] text-base font-normal font-dm-mono leading-normal hover:text-[#e4e4e7] transition-colors"
 							onClick={() => {
 								if (index < pages.indexOf(page)) {
 									onPageChange?.(page - 3);
@@ -100,7 +100,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 						role="button"
 						tabIndex={0}
 						className={twMerge([
-							"text-waifufun-text-primary size-6 cursor-pointer",
+							"text-[#e4e4e7] size-6 cursor-pointer",
 							hasMore ? "opacity-100" : "opacity-50",
 						])}
 						onClick={() => {

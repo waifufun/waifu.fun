@@ -31,12 +31,12 @@ import { getErrorMessage } from "@/lib/errorMessage";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const formElementBaseClass =
-	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
-const formLabelBaseClass = "text-xs text-gray-400 uppercase tracking-wider font-semibold";
+	"bg-[#0e0e12] border border-[rgba(255,255,255,0.08)] placeholder-[#52525b] text-sm focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87]/30 text-[#e4e4e7] rounded-sm";
+const formLabelBaseClass = "text-xs text-[#71717a] uppercase tracking-wider font-medium";
 const sliderThumbClass =
-	"block h-5 w-5 rounded-none bg-[#03FF24] border-2 border-black ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-[2px_2px_0px_black]";
-const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-none bg-black/50 border border-[#03FF24]/50";
-const sliderRangeClass = "absolute h-full bg-[#03FF24]";
+	"block h-5 w-5 rounded-sm bg-[#00ff87] border-2 border-[#08080a] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-sm bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.08)]";
+const sliderRangeClass = "absolute h-full bg-[#00ff87]";
 
 export const CoinInfoFields = ({
 	idPrefix,
@@ -78,7 +78,7 @@ export const CoinInfoFields = ({
 							)}
 							{...registerForm("symbol", tickerValidation)}
 						/>
-						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">$</span>
+						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">$</span>
 					</div>
 					{errors.symbol && <p className="text-red-500 text-xs mt-1">{errors.symbol.message}</p>}
 				</div>
@@ -139,7 +139,7 @@ export const CustomAddressGenerator = ({
 						type="button"
 						onClick={handleGenerate}
 						variant="outline"
-						className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3"
+						className="h-10 border border-[rgba(255,255,255,0.1)] text-[#00ff87] hover:bg-[rgba(0,255,135,0.08)] hover:border-[#00ff87] rounded-sm font-bold uppercase text-xs px-3 transition-colors"
 					>
 						GENERATE
 					</Button>
@@ -148,13 +148,13 @@ export const CustomAddressGenerator = ({
 						type="button"
 						onClick={handleCancel}
 						variant="outline"
-						className="h-10 border-2 border-red-500/70 text-red-400 hover:bg-red-500/20 hover:border-red-500 rounded-none shadow-[3px_3px_0px_rgba(239,68,68,0.3)] font-bold uppercase text-xs px-3"
+						className="h-10 border border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500 rounded-sm font-bold uppercase text-xs px-3 transition-colors"
 					>
 						CANCEL
 					</Button>
 				)}
 			</div>
-			<p className="text-xs text-[#03FF24] font-mono break-all bg-black/40 p-2 border border-[#03FF24]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
+			<p className="text-xs text-[#00ff87] font-mono break-all bg-[rgba(17,17,20,0.7)] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm min-h-[2rem] flex items-center">
 				{mintKeyPair
 					? mintKeyPair.publicKey.toString()
 					: isGeneratingAddress
@@ -195,7 +195,7 @@ export const CustomCurveSection = ({
 							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
 								Raise Amount
 							</Label>
-							<span className="text-sm font-bold text-[#03FF24]">{field.value} SOL</span>
+							<span className="text-sm font-bold text-[#00ff87]">{field.value} SOL</span>
 						</div>
 
 						<Slider
@@ -275,19 +275,19 @@ export const DelayedStartSection = ({
 						>
 							<ToggleGroupItem
 								value="instant"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#00ff87] data-[state=on]:text-[#08080a] border border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-[#e4e4e7] hover:bg-[rgba(0,255,135,0.08)] rounded-sm font-semibold uppercase transition-colors"
 							>
 								Instant
 							</ToggleGroupItem>
 							<ToggleGroupItem
 								value="preset"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#00ff87] data-[state=on]:text-[#08080a] border border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-[#e4e4e7] hover:bg-[rgba(0,255,135,0.08)] rounded-sm font-semibold uppercase transition-colors"
 							>
 								Preset
 							</ToggleGroupItem>
 							<ToggleGroupItem
 								value="manual"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#00ff87] data-[state=on]:text-[#08080a] border border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-[#e4e4e7] hover:bg-[rgba(0,255,135,0.08)] rounded-sm font-semibold uppercase transition-colors"
 							>
 								Manual
 							</ToggleGroupItem>
@@ -315,7 +315,7 @@ export const DelayedStartSection = ({
 										<ToggleGroupItem
 											key={p.value}
 											value={String(p.value)}
-											className="h-8 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold text-xs"
+											className="h-8 data-[state=on]:bg-[#00ff87] data-[state=on]:text-[#08080a] border border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-[#e4e4e7] hover:bg-[rgba(0,255,135,0.08)] rounded-sm font-semibold text-xs transition-colors"
 										>
 											{p.label}
 										</ToggleGroupItem>
@@ -405,9 +405,9 @@ export const TradeLimitSection = ({
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
 						/>
-						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
+						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">SOL</span>
 					</div>
-					<p className="text-[10px] text-gray-500 mt-1">
+					<p className="text-[10px] text-[#52525b] mt-1">
 						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
 					</p>
 					{watchValue("tradeLimitSol") === 0 && (
@@ -472,19 +472,19 @@ export const PreBuySection = ({
 							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
 						})}
 					/>
-					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
+					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">SOL</span>
 				</div>
 				{errors.buyAmount && <p className="text-red-500 text-xs mt-1">{errors.buyAmount.message}</p>}
 				<div className="flex justify-between items-center mt-1.5">
 					<div className="flex items-center gap-2">
-						<Wallet size={12} className="text-gray-400" />
-						<p className="text-xs text-gray-400">Balance: {balance.toFixed(4)} SOL</p>
+						<Wallet size={12} className="text-[#71717a]" />
+						<p className="text-xs text-[#71717a]">Balance: {balance.toFixed(4)} SOL</p>
 					</div>
 					<Button
 						type="button"
 						variant="link"
 						onClick={setMaxAmount}
-						className="text-xs text-[#03FF24] hover:text-white p-0 h-auto"
+						className="text-xs text-[#00ff87] hover:text-[#e4e4e7] p-0 h-auto transition-colors"
 					>
 						Max
 					</Button>
@@ -523,7 +523,7 @@ export const PoolSelection = ({
 						key={poolItem.value}
 						value={poolItem.value}
 						aria-label={poolItem.name}
-						className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+						className="h-10 data-[state=on]:bg-[#00ff87] data-[state=on]:text-[#08080a] border border-[rgba(255,255,255,0.08)] text-[#a1a1aa] hover:text-[#e4e4e7] hover:bg-[rgba(0,255,135,0.08)] rounded-sm font-semibold uppercase transition-colors"
 					>
 						<div className="flex items-center gap-2">
 							<img src={poolItem.image} alt={poolItem.name} className="w-4 h-4" />
@@ -648,7 +648,7 @@ export const LaunchButton = ({
 			type="button"
 			onClick={onSubmit}
 			disabled={shouldDisable || disabled}
-			className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
+			className="w-full bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] font-bold text-lg py-3 h-auto rounded-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 		>
 			{isLaunching ? "LAUNCHING..." : "LAUNCH TOKEN"}
 		</Button>
