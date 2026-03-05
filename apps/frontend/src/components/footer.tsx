@@ -5,7 +5,7 @@ export default function Footer() {
 	const year = new Date().getFullYear();
 
 	return (
-		<footer className="shrink-0 py-8 pt-10">
+		<footer className="shrink-0 mt-auto py-8 pt-10">
 			<div className="w-full max-w-4xl mx-auto px-4">
 				{/* Footer card: branding, socials, copyright, and legal links */}
 				<div className="rounded-xl border border-white/20 bg-white/25 backdrop-blur-md p-6 sm:p-8">

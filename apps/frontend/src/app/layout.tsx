@@ -42,7 +42,7 @@ export default function RootLayout({
 					<div className="relative z-10 flex flex-col min-h-screen max-h-screen overflow-hidden">
 						<Header />
 						<main className="flex-1 overflow-auto flex flex-col min-h-0" data-sidebar="inset">
-							<div className="p-4 min-h-full flex-1">
+							<div className="p-4 shrink-0">
 								{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
 									<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
 										<div className="inline-flex gap-x-2">

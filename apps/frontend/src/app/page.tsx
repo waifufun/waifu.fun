@@ -40,16 +40,14 @@ export default async function Home({
 	const view = currentSearchParams?.view || "grid";
 	const noTokens = (tokens?.length || 0) === 0;
 	return (
-		<div className={`flex flex-col gap-4 container ${noTokens ? "h-screen justify-center items-center" : ""}`}>
-			<div className="flex flex-col items-center w-full">
-				{noTokens ? (
-					<h1 className="text-[#03FF23] text-lg font-semibold uppercase">No tokens found</h1>
-				) : view === "grid" ? (
-					<TokenGrid tokens={tokens} />
-				) : (
-					<ListView tokens={tokens} />
-				)}
-			</div>
+		<div className={`flex flex-col gap-4 w-full ${noTokens ? "h-screen justify-center items-center" : ""}`}>
+			{noTokens ? (
+				<h1 className="text-[#03FF23] text-lg font-semibold uppercase">No tokens found</h1>
+			) : view === "grid" ? (
+				<TokenGrid tokens={tokens} />
+			) : (
+				<ListView tokens={tokens} />
+			)}
 		</div>
 	);
 }
