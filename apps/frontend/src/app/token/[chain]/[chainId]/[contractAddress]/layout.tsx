@@ -7,8 +7,13 @@ import { notFound } from "next/navigation";
 
 export const revalidate = 4;
 
-export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
-	const token = (await getToken(await params)) as IToken;
+export async function generateMetadata({ 
+	params 
+}: { 
+	params: Promise<{ chain: string; chainId: string; contractAddress: string }> 
+}): Promise<Metadata> {
+	const resolvedParams = await params;
+	const token = (await getToken(resolvedParams as ITokenLookUp)) as IToken;
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
 		description: `${token.name} token information, price, and market data on waifufun`,
@@ -24,8 +29,14 @@ export async function generateMetadata({ params }: { params: Promise<ITokenLookU
 	};
 }
 
-export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
-	const tokenParams = await params;
+export default async function Page({ 
+	params, 
+	children 
+}: { 
+	params: Promise<{ chain: string; chainId: string; contractAddress: string }>; 
+	children: ReactNode 
+}) {
+	const tokenParams = await params as ITokenLookUp;
 	let token: null | IToken = null;
 	try {
 		token = (await getToken(tokenParams)) as IToken;
