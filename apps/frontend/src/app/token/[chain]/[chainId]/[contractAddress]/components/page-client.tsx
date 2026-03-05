@@ -28,11 +28,17 @@ export default function PageClient({
 	const query = useQuery({
 		queryKey: ["token", initialData.chain, initialData.chainId, initialData.contractAddress],
 		queryFn: async () => {
-			const token = (await getToken(tokenParams)) as IToken;
-
-			return token;
+			try {
+				const token = (await getToken(tokenParams)) as IToken;
+				return token;
+			} catch (e) {
+				// API unavailable, return initialData (mock data) silently
+				console.warn("API fetch failed, using initial data:", e);
+				return initialData;
+			}
 		},
-		refetchInterval: 5_000,
+		// Disable refetch when API is not configured
+		refetchInterval: process.env.NEXT_PUBLIC_API_URL ? 5_000 : false,
 		initialData,
 	});
 
