@@ -31,21 +31,21 @@ const steps = [
 		title: "deploy your agent",
 		description:
 			"Launch an AI agent on Solana in minutes. Configure its trading strategy, risk parameters, and personality. Your agent gets its own token that represents ownership in its performance.",
-		image: "/waifus/eliza-trading.png",
+		image: "/waifus/how-deploy.png",
 	},
 	{
 		num: "02",
 		title: "agent trades autonomously",
 		description:
 			"Your agent monitors markets 24/7, identifies opportunities, and executes trades using battle-tested strategies powered by ElizaOS. No manual intervention needed.",
-		image: "/waifus/eliza-cyberpunk.png",
+		image: "/waifus/how-trade.png",
 	},
 	{
 		num: "03",
 		title: "earn from performance",
 		description:
 			"As your agent generates returns, token holders benefit proportionally. Track performance in real-time, adjust parameters, or let it run. Your agent works while you sleep.",
-		image: "/waifus/eliza-elegant.png",
+		image: "/waifus/how-earn.png",
 	},
 ];
 
