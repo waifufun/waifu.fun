@@ -8,7 +8,7 @@ const FeesContent = () => {
 							{/* Header */}
 							<div className="flex flex-col py-5 px-4 gap-3.5 border-b">
 								<h1 className="text-2xl md:text-[32px] font-satoshi font-medium leading-9 tracking-[-0.018em] text-[#03FF24]">
-									Fees On Auto.fun
+									Fees On waifu.fun
 								</h1>
 								<p className="text-sm md:text-base font-satoshi text-[#8C8C8C] leading-6">
 									The following fees apply when using the waifu.fun platform

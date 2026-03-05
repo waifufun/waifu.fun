@@ -55,7 +55,7 @@ export default function SupportPage() {
 						<div className="space-y-6">
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-lg font-bold text-white">Coin Launch Options</h3>
-								<p className="text-[#8C8C8C]">Auto.fun offers two approaches:</p>
+								<p className="text-[#8C8C8C]">waifu.fun offers two approaches:</p>
 								<p className="text-[#8C8C8C]">
 									<span className="text-[#8C8C8C] font-bold">1. New Coins: </span>
 									Launch with our bonding curve mechanism that provides initial price stability, dynamic pricing,
@@ -70,14 +70,14 @@ export default function SupportPage() {
 							<div>
 								<h3 className="text-lg font-bold text-white mb-2">Bonding Curve</h3>
 								<p className="text-[#8C8C8C]">
-									Auto.fun uses a bonding curve with 28 SOL initial virtual reserves. When a coin reaches 113 SOL in
+									waifu.fun uses a bonding curve with 28 SOL initial virtual reserves. When a coin reaches 113 SOL in
 									reserves, it automatically graduates to Raydium with a 6 SOL flat fee.
 								</p>
 							</div>
 							<div>
 								<h3 className="text-lg font-bold text-white mb-2">Liquidity</h3>
 								<p className="text-[#8C8C8C]">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and Auto.fun
+									LP tokens for graduated coins are locked with a 90/10 token split for creators and waifu.fun
 									respectively with burn and earn mechanisms.
 								</p>
 							</div>

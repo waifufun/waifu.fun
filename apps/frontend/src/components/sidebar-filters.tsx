@@ -36,7 +36,7 @@ export default function SideBarFilters() {
 
 	const sourceOptions = [
 		{ label: "All", value: "all" },
-		{ label: "Auto.fun", value: "auto-fun" },
+		{ label: "waifu.fun", value: "auto-fun" },
 		{ label: "Imported", value: "imported" },
 	];
 

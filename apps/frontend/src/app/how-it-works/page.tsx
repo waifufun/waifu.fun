@@ -5,8 +5,8 @@ export default function Page() {
 				<h1 className="text-4xl font-bold text-white ">FAQ</h1>
 				<div className="flex flex-col gap-y-3">
 					<p className="text-[#8C8C8C]">
-						<span className="text-white font-bold">Auto.fun</span> is an all-in-one solution to launch tokens, manage
-						communities, generate visual assets, and grow your project.
+						<span className="text-white font-bold">waifu.fun</span> is an all-in-one solution to launch tokens, manage
+						communities, generate visual assets, and grow your project — powered by ElizaOS.
 					</p>
 				</div>
 				<div className="space-y-8">
@@ -16,7 +16,7 @@ export default function Page() {
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-lg font-bold text-white">Coin Launch Options</h3>
 								<p className="text-[#8C8C8C]">
-									<span className="text-white font-bold">Auto.fun</span> offers three launch modes:
+									<span className="text-white font-bold">waifu.fun</span> offers three launch modes:
 								</p>
 								<p className="text-[#8C8C8C]">
 									<span className="text-[#8C8C8C] font-bold">1. Auto: </span>
@@ -34,19 +34,19 @@ export default function Page() {
 								</p>
 								<p className="text-[#8C8C8C]">
 									<span className="text-[#8C8C8C] font-bold">3. Import: </span>
-									Import lets you add existing tokens to the Auto.fun ecosystem to access community and agent features.
+									Import lets you add existing tokens to the waifu.fun ecosystem to access community and agent features.
 									It does not create a new liquidity pool or bonding curve.
 								</p>
 							</div>
 							<div>
 								<h3 className="text-lg font-bold text-white mb-2">Liquidity</h3>
 								<p className="text-[#8C8C8C]">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and Auto.fun
+									LP tokens for graduated coins are locked with a 90/10 token split for creators and waifu.fun
 									respectively with burn and earn mechanisms.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">Auto.fun Points</h3>
+								<h3 className="text-lg font-bold text-white mb-2">waifu.fun Points</h3>
 								<p className="text-[#8C8C8C]">
 									Each week on Sunday 00:00 UTC, 1,000,000 points are distributed based on the share of weekly points
 									earned by each user. Since the total is fixed, using the platform when fewer people are trading can
