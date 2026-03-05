@@ -103,3 +103,5 @@ testem.log
 *.tsbuildinfo
 .env.local
 .vercel/
+.vercel
+.env*.local
