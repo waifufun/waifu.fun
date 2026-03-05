@@ -20,8 +20,28 @@ export const metadata: Metadata = {
 		default: "waifu.fun",
 		template: "%s | waifu.fun",
 	},
-	description: "Press the fun button.",
-	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
+	description: "they live if you trade. they die if you don't.",
+	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "https://waifufun.vercel.app"),
+	icons: {
+		icon: [
+			{ url: "/favicon.svg", type: "image/svg+xml" },
+			{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+			{ url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/favicon.ico", sizes: "any" },
+		],
+		apple: "/apple-touch-icon.png",
+	},
+	openGraph: {
+		title: "waifu.fun",
+		description: "they live if you trade. they die if you don't.",
+		siteName: "waifu.fun",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "waifu.fun",
+		description: "they live if you trade. they die if you don't.",
+	},
 };
 
 export default function RootLayout({
