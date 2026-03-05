@@ -44,7 +44,7 @@ export function ExploreFilters() {
 						className={cn(
 							"shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all border",
 							isActive
-								? "bg-[#FF2D78] text-white border-[#FF2D78] shadow-[0_0_12px_rgba(255,45,120,0.3)]"
+								? "bg-[#E8762D] text-white border-[#E8762D] shadow-[0_0_12px_rgba(255,45,120,0.3)]"
 								: "bg-white/[0.04] text-zinc-400 border-white/[0.06] hover:text-white hover:border-white/[0.12] hover:bg-white/[0.08]"
 						)}
 					>

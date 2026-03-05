@@ -28,17 +28,17 @@ const UploadPlaceholder = ({
 		<button
 			type="button"
 			onClick={onClick}
-			className={`w-full h-full border-2 border-dashed rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.3)] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all group focus:outline-none focus:ring-2 focus:ring-[#FF2D78] ${
+			className={`w-full h-full border-2 border-dashed rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.3)] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all group focus:outline-none focus:ring-2 focus:ring-[#E8762D] ${
 				isDragActive
-					? "bg-[#FF2D78]/10 border-[#FF2D78] scale-[1.02]"
-					: "bg-black/50 border-[#FF2D78]/40 hover:border-[#FF2D78] hover:bg-black/70"
+					? "bg-[#E8762D]/10 border-[#E8762D] scale-[1.02]"
+					: "bg-black/50 border-[#E8762D]/40 hover:border-[#E8762D] hover:bg-black/70"
 			}`}
 			aria-label="Upload image"
 		>
 			<UploadCloud
 				size={48}
 				className={`mb-2 transition-all ${
-					isDragActive ? "text-[#FF2D78] scale-110" : "text-[#FF2D78]/70 group-hover:text-[#FF2D78]"
+					isDragActive ? "text-[#E8762D] scale-110" : "text-[#E8762D]/70 group-hover:text-[#E8762D]"
 				}`}
 			/>
 			<p
@@ -48,7 +48,7 @@ const UploadPlaceholder = ({
 					"Drop your image here"
 				) : (
 					<>
-						Drag & drop an image or <span className="text-[#FF2D78] font-semibold">click to upload</span>
+						Drag & drop an image or <span className="text-[#E8762D] font-semibold">click to upload</span>
 					</>
 				)}
 			</p>
@@ -235,7 +235,7 @@ const ImageUploadSection = () => {
 			>
 				{!displayImage && <UploadPlaceholder onClick={handlePlaceholderClick} isDragActive={isDragActive} />}
 				{displayImage && (
-					<div className="w-full h-full relative rounded-none overflow-hidden bg-black/50 border-2 border-[#FF2D78]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.3)]">
+					<div className="w-full h-full relative rounded-none overflow-hidden bg-black/50 border-2 border-[#E8762D]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.3)]">
 						<Image src={displayImage} alt="Token preview" fill className="object-contain p-2 pixelated-image-render" />
 						<button
 							type="button"
@@ -270,7 +270,7 @@ const ImageUploadSection = () => {
 								type="button"
 								onClick={handleUseGeneratedImage}
 								disabled={isConverting}
-								className="text-xs text-[#FF2D78] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
+								className="text-xs text-[#E8762D] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
 							>
 								{isConverting ? "Converting..." : "Lock Generated Image"}
 							</button>
@@ -279,7 +279,7 @@ const ImageUploadSection = () => {
 							type="button"
 							onClick={handlePlaceholderClick}
 							disabled={isConverting}
-							className="text-xs text-[#FF2D78] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
+							className="text-xs text-[#E8762D] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline"
 						>
 							Change Image
 						</button>
@@ -289,13 +289,13 @@ const ImageUploadSection = () => {
 
 			{/* No image notification */}
 			{!displayImage && previousImages.length > 0 && (
-				<div className="flex items-center justify-between p-2 bg-[#FF2D78]/10 border border-[#FF2D78]/30 rounded-none">
+				<div className="flex items-center justify-between p-2 bg-[#E8762D]/10 border border-[#E8762D]/30 rounded-none">
 					<p className="text-xs text-gray-300">Generated image available from Auto tab</p>
 					<button
 						type="button"
 						onClick={handleUseGeneratedImage}
 						disabled={isConverting}
-						className="text-xs text-[#FF2D78] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline font-semibold"
+						className="text-xs text-[#E8762D] hover:text-white disabled:text-gray-500 disabled:cursor-not-allowed transition-colors hover:underline font-semibold"
 					>
 						{isConverting ? "Converting..." : "Use Generated Image"}
 					</button>

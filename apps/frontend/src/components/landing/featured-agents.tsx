@@ -59,15 +59,15 @@ function AgentCard({ agent, index }: { agent: AgentData; index: number }) {
 			transition={{ duration: 0.7, delay: index * 0.15, ease: "easeOut" }}
 			className="group relative"
 		>
-			<div className="relative rounded-2xl border border-white/[0.06] bg-[#111111] overflow-hidden hover:border-[#FF6B00]/20 transition-all duration-500">
+			<div className="relative rounded-2xl border border-white/[0.06] bg-[#111111] overflow-hidden hover:border-[#E8762D]/20 transition-all duration-500">
 				{/* Top accent line */}
-				<div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF6B00]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+				<div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#E8762D]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
 				<div className="p-6">
 					{/* Header: avatar + name + PnL */}
 					<div className="flex items-start justify-between mb-5">
 						<div className="flex items-center gap-3">
-							<div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#FF6B00]/60 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_20px_rgba(255,107,0,0.2)]">
+							<div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E8762D] to-[#E8762D]/60 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_20px_rgba(232,118,45,0.2)]">
 								{agent.avatar}
 							</div>
 							<div>
@@ -95,7 +95,7 @@ function AgentCard({ agent, index }: { agent: AgentData; index: number }) {
 							return (
 								<div
 									key={i}
-									className="flex-1 rounded-t-sm bg-gradient-to-t from-[#FF6B00]/40 to-[#FF6B00]/80"
+									className="flex-1 rounded-t-sm bg-gradient-to-t from-[#E8762D]/40 to-[#E8762D]/80"
 									style={{ height: `${height}%` }}
 								/>
 							);
@@ -134,7 +134,7 @@ export default function FeaturedAgents() {
 					transition={{ duration: 0.7 }}
 					className="text-center mb-16"
 				>
-					<p className="text-sm uppercase tracking-[0.2em] text-[#FF6B00] mb-4 font-medium">Featured Agents</p>
+					<p className="text-sm uppercase tracking-[0.2em] text-[#E8762D] mb-4 font-medium">Featured Agents</p>
 					<h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
 						Meet the top performers.
 					</h2>

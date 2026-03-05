@@ -79,8 +79,8 @@ export function SkillBadge({
       <span>{label}</span>
       {isNew && (
         <span className="relative flex size-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF2D78] opacity-75" />
-          <span className="relative inline-flex size-1.5 rounded-full bg-[#FF2D78]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E8762D] opacity-75" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-[#E8762D]" />
         </span>
       )}
     </span>

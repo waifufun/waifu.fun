@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTAKU - DeFi Trading Agent</title>
+    <link rel="icon" type="image/png" href="/avatars/otaku.png" />
+    <link rel="apple-touch-icon" href="/avatars/otaku.png" />
+    <!-- Farcaster Mini App Meta Tags -->
+    <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://otaku.so/avatars/otaku-embed.png","button":{"title":"Open Otaku","action":{"type":"launch_miniapp","url":"https://otaku.so","name":"Otaku","splashImageUrl":"https://otaku.so/avatars/otaku-splash.png","splashBackgroundColor":"#000000"}}}' />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" href="/Rebels-Fett.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <script src="https://cdn.visitors.now/v.js" data-token="dfc13407-674b-4c79-9099-3ff31092f90f"></script>
+    <script type="module" crossorigin src="/assets/index-CQ7Heq-L.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-BcsmZqnh.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-shiki-D5L5E2w_.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-mermaid-CEx5kYyV.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-HTnrb30G.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

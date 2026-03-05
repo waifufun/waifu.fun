@@ -13,7 +13,7 @@ export default function CTA() {
 			<div className="max-w-4xl mx-auto text-center relative">
 				{/* Background glow */}
 				<div className="absolute inset-0 -z-10">
-					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-[#FF6B00]/10 rounded-full blur-[120px]" />
+					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-[#E8762D]/10 rounded-full blur-[120px]" />
 				</div>
 
 				<motion.div
@@ -24,7 +24,7 @@ export default function CTA() {
 					<h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
 						Ready to deploy
 						<br />
-						<span className="bg-gradient-to-r from-[#FF6B00] to-[#FF8A3D] bg-clip-text text-transparent">
+						<span className="bg-gradient-to-r from-[#E8762D] to-[#F4A261] bg-clip-text text-transparent">
 							your first agent?
 						</span>
 					</h2>
@@ -34,7 +34,7 @@ export default function CTA() {
 
 					<Link
 						href="/create"
-						className="inline-flex items-center gap-2 px-10 py-4 rounded-lg font-bold text-lg bg-[#FF6B00] text-white hover:bg-[#e05a00] transition-all duration-300 shadow-[0_0_40px_rgba(255,107,0,0.35)] hover:shadow-[0_0_60px_rgba(255,107,0,0.5)] hover:scale-[1.02] active:scale-[0.98]"
+						className="inline-flex items-center gap-2 px-10 py-4 rounded-lg font-bold text-lg bg-[#E8762D] text-white hover:bg-[#c9621f] transition-all duration-300 shadow-[0_0_40px_rgba(232,118,45,0.35)] hover:shadow-[0_0_60px_rgba(232,118,45,0.5)] hover:scale-[1.02] active:scale-[0.98]"
 					>
 						Launch Your Agent
 						<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

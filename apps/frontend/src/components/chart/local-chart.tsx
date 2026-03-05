@@ -133,8 +133,8 @@ export default function LocalChart({ token }: { token: IToken }) {
 		chartRef.current = chart;
 
 		const candlestickSeries = chart.addSeries(CandlestickSeries, {
-			wickUpColor: "#FF2D78",
-			upColor: "#FF2D78",
+			wickUpColor: "#E8762D",
+			upColor: "#E8762D",
 			wickDownColor: "rgb(225, 50, 85)",
 			downColor: "rgb(225, 50, 85)",
 			borderVisible: true,
@@ -142,7 +142,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 				minMove: 0.000000001,
 				precision: 9,
 			},
-			borderUpColor: "#FF2D78",
+			borderUpColor: "#E8762D",
 			borderDownColor: "rgb(225, 50, 85)",
 			wickVisible: true,
 		});

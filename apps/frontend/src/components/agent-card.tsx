@@ -61,15 +61,15 @@ export function AgentCard({
         className={cn(
           "relative flex flex-col gap-4 rounded-xl border border-white/[0.06] bg-[#111111] p-4",
           "transition-all duration-300 ease-out",
-          "hover:-translate-y-1 hover:border-[#FF2D78]/30 hover:shadow-[0_8px_30px_rgba(255,45,120,0.12)]"
+          "hover:-translate-y-1 hover:border-[#E8762D]/30 hover:shadow-[0_8px_30px_rgba(255,45,120,0.12)]"
         )}
       >
         {/* Top row: Avatar + Name + P&L */}
         <div className="flex items-start gap-3">
           {/* Avatar with pink glow ring */}
           <div className="relative shrink-0">
-            <div className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-[#FF2D78] to-[#FF2D78]/40 opacity-60 blur-[1px] group-hover:opacity-100 transition-opacity" />
-            <div className="relative size-12 rounded-full overflow-hidden ring-2 ring-[#FF2D78]/50 group-hover:ring-[#FF2D78] transition-all">
+            <div className="absolute -inset-[2px] rounded-full bg-gradient-to-br from-[#E8762D] to-[#E8762D]/40 opacity-60 blur-[1px] group-hover:opacity-100 transition-opacity" />
+            <div className="relative size-12 rounded-full overflow-hidden ring-2 ring-[#E8762D]/50 group-hover:ring-[#E8762D] transition-all">
               <Image
                 src={avatar}
                 alt={name}
@@ -82,7 +82,7 @@ export function AgentCard({
 
           {/* Name + Tagline */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-white truncate group-hover:text-[#FF2D78] transition-colors">
+            <h3 className="text-sm font-semibold text-white truncate group-hover:text-[#E8762D] transition-colors">
               {name}
             </h3>
             {tagline && (

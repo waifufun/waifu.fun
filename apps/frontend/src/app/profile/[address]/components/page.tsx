@@ -87,9 +87,9 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							</TabsTrigger>
 						</TabsList>
 						<TabsContent value="wallet" className="bg-transparent">
-							<div className="mt-6 h-fit border-2 w-full border-[#FF2D78]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.2)] flex flex-col place-self-center overflow-y-auto">
+							<div className="mt-6 h-fit border-2 w-full border-[#E8762D]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="w-full max-h-full overflow-y-auto">
-									<div className="border-b-1 border-[#FF2D78]/40 w-full">
+									<div className="border-b-1 border-[#E8762D]/40 w-full">
 										<h1 className="p-4 text-sm text-gray-300">
 											Total Value:{" "}
 											<span className="text-waifufun-background-action-highlight font-bold">
@@ -124,18 +124,18 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
 							<Tabs defaultValue="transactions" className="w-full">
-								<div className="mt-6 h-fit border-2 w-full border-[#FF2D78]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.2)] flex flex-col place-self-center overflow-y-auto">
-									<div className="border-b-1 border-[#FF2D78]/40">
+								<div className="mt-6 h-fit border-2 w-full border-[#E8762D]/40 shadow-[3px_3px_0px_rgba(255,45,120,0.2)] flex flex-col place-self-center overflow-y-auto">
+									<div className="border-b-1 border-[#E8762D]/40">
 										<TabsList shadowed={false} className="border-none space-x-2 p-4">
 											<TabsTrigger
 												value="transactions"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#FF2D78] text-gray-300 font-medium"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#E8762D] text-gray-300 font-medium"
 											>
 												Transactions
 											</TabsTrigger>
 											<TabsTrigger
 												value="tokens-created"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#FF2D78] text-gray-300 font-medium"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#E8762D] text-gray-300 font-medium"
 											>
 												Tokens Created
 											</TabsTrigger>

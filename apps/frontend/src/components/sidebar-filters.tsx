@@ -51,7 +51,7 @@ export default function SideBarFilters() {
 			<Collapsible open={showFiltersPanel && !isCollapsed} onOpenChange={setShowFiltersPanel}>
 				<CollapsibleTrigger
 					className={cn(
-						"text-white hover:bg-[#FF2D78]/10 hover:text-[#FF2D78] py-4.5 cursor-pointer transition-all duration-200",
+						"text-white hover:bg-[#E8762D]/10 hover:text-[#E8762D] py-4.5 cursor-pointer transition-all duration-200",
 						isCollapsed && "absolute left-0 top-0 w-full h-full",
 					)}
 					asChild
@@ -82,7 +82,7 @@ export default function SideBarFilters() {
 						isCollapsed && "hidden",
 					)}
 				>
-					<div className="border-t border-[#FF2D78]/20 mt-2 transition-opacity duration-200" />
+					<div className="border-t border-[#E8762D]/20 mt-2 transition-opacity duration-200" />
 					<div className="p-2 space-y-4 mt-4 text-[11px] uppercase font-semibold text-gray-400">
 						<div className="w-full">
 							<Label htmlFor="token-source-sidebar" className="text-[10px] mb-2 block transition-colors duration-200">
@@ -91,15 +91,15 @@ export default function SideBarFilters() {
 							<Select open={sourceOpen} onOpenChange={setSourceOpen}>
 								<SelectTrigger
 									id="token-source-sidebar"
-									className="w-full bg-black border-2 border-[#FF2D78]/80 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] mt-1 h-8 transition-all duration-200 hover:border-[#FF2D78] hover:shadow-[4px_4px_0px_rgba(255,45,120,0.6)]"
+									className="w-full bg-black border-2 border-[#E8762D]/80 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] mt-1 h-8 transition-all duration-200 hover:border-[#E8762D] hover:shadow-[4px_4px_0px_rgba(255,45,120,0.6)]"
 								>
 									<SelectValue placeholder={searchParams.get("origin") || "Select Source"} />
 								</SelectTrigger>
-								<SelectContent className="bg-black border-2 border-[#FF2D78]/80 text-gray-50 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] animate-in fade-in-0 zoom-in-95">
+								<SelectContent className="bg-black border-2 border-[#E8762D]/80 text-gray-50 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] animate-in fade-in-0 zoom-in-95">
 									{sourceOptions.map((option) => (
 										<Link
 											className={cn(
-												"hover:bg-[#FF2D78]/30 focus:bg-accent focus:text-accent-foreground",
+												"hover:bg-[#E8762D]/30 focus:bg-accent focus:text-accent-foreground",
 												"[&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 py-1.5 pr-8 pl-2 text-sm outline-hidden select-none",
 												"data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 												"*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
@@ -122,15 +122,15 @@ export default function SideBarFilters() {
 							<Select open={statusOpen} onOpenChange={setStatusOpen}>
 								<SelectTrigger
 									id="status-sidebar"
-									className="w-full bg-black border-2 border-[#FF2D78]/80 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] mt-1 h-8 transition-all duration-200 hover:border-[#FF2D78] hover:shadow-[4px_4px_0px_rgba(255,45,120,0.6)]"
+									className="w-full bg-black border-2 border-[#E8762D]/80 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] mt-1 h-8 transition-all duration-200 hover:border-[#E8762D] hover:shadow-[4px_4px_0px_rgba(255,45,120,0.6)]"
 								>
 									<SelectValue placeholder={searchParams.get("category") || "Select Status"} />
 								</SelectTrigger>
-								<SelectContent className="bg-black border-2 border-[#FF2D78]/80 text-gray-50 rounded-none shadow-[4px_4px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] animate-in fade-in-0 zoom-in-95">
+								<SelectContent className="bg-black border-2 border-[#E8762D]/80 text-gray-50 rounded-none shadow-[4px_4px_0px_rgba(255,45,120,0.45)] uppercase text-[11px] animate-in fade-in-0 zoom-in-95">
 									{statusOptions.map((option) => (
 										<Link
 											className={cn(
-												"hover:bg-[#FF2D78]/30 focus:bg-accent focus:text-accent-foreground",
+												"hover:bg-[#E8762D]/30 focus:bg-accent focus:text-accent-foreground",
 												"[&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 py-1.5 pr-8 pl-2 text-sm outline-hidden select-none",
 												"data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 												"*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",

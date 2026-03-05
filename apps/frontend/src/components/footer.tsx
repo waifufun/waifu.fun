@@ -26,7 +26,7 @@ export default function Footer() {
 							className="font-bold text-lg tracking-tight hover:opacity-80 transition-opacity"
 							aria-label="waifu.fun home"
 						>
-							<span className="text-[#FF6B00]">WAIFU</span>
+							<span className="text-[#E8762D]">WAIFU</span>
 							<span className="text-white/80">.FUN</span>
 						</Link>
 						<p className="text-xs text-zinc-600">

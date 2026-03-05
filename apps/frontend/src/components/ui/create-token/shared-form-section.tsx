@@ -31,12 +31,12 @@ import { getErrorMessage } from "@/lib/errorMessage";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const formElementBaseClass =
-	"bg-black border-2 border-[#FF2D78]/60 placeholder-gray-500 text-sm focus:border-[#FF2D78] focus:ring-1 focus:ring-[#FF2D78] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.25)]";
+	"bg-black border-2 border-[#E8762D]/60 placeholder-gray-500 text-sm focus:border-[#E8762D] focus:ring-1 focus:ring-[#E8762D] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.25)]";
 const formLabelBaseClass = "text-xs text-gray-400 uppercase tracking-wider font-semibold";
 const sliderThumbClass =
-	"block h-5 w-5 rounded-none bg-[#FF2D78] border-2 border-black ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-[2px_2px_0px_black]";
-const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-none bg-black/50 border border-[#FF2D78]/50";
-const sliderRangeClass = "absolute h-full bg-[#FF2D78]";
+	"block h-5 w-5 rounded-none bg-[#E8762D] border-2 border-black ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-[2px_2px_0px_black]";
+const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-none bg-black/50 border border-[#E8762D]/50";
+const sliderRangeClass = "absolute h-full bg-[#E8762D]";
 
 export const CoinInfoFields = ({
 	idPrefix,
@@ -78,7 +78,7 @@ export const CoinInfoFields = ({
 							)}
 							{...registerForm("symbol", tickerValidation)}
 						/>
-						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#FF2D78] font-bold text-sm">$</span>
+						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#E8762D] font-bold text-sm">$</span>
 					</div>
 					{errors.symbol && <p className="text-red-500 text-xs mt-1">{errors.symbol.message}</p>}
 				</div>
@@ -139,7 +139,7 @@ export const CustomAddressGenerator = ({
 						type="button"
 						onClick={handleGenerate}
 						variant="outline"
-						className="h-10 border-2 border-[#FF2D78]/70 text-[#FF2D78] hover:bg-[#FF2D78]/20 hover:border-[#FF2D78] rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.3)] font-bold uppercase text-xs px-3"
+						className="h-10 border-2 border-[#E8762D]/70 text-[#E8762D] hover:bg-[#E8762D]/20 hover:border-[#E8762D] rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.3)] font-bold uppercase text-xs px-3"
 					>
 						GENERATE
 					</Button>
@@ -154,7 +154,7 @@ export const CustomAddressGenerator = ({
 					</Button>
 				)}
 			</div>
-			<p className="text-xs text-[#FF2D78] font-mono break-all bg-black/40 p-2 border border-[#FF2D78]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
+			<p className="text-xs text-[#E8762D] font-mono break-all bg-black/40 p-2 border border-[#E8762D]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
 				{mintKeyPair
 					? mintKeyPair.publicKey.toString()
 					: isGeneratingAddress
@@ -195,7 +195,7 @@ export const CustomCurveSection = ({
 							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
 								Raise Amount
 							</Label>
-							<span className="text-sm font-bold text-[#FF2D78]">{field.value} SOL</span>
+							<span className="text-sm font-bold text-[#E8762D]">{field.value} SOL</span>
 						</div>
 
 						<Slider
@@ -275,19 +275,19 @@ export const DelayedStartSection = ({
 						>
 							<ToggleGroupItem
 								value="instant"
-								className="h-10 data-[state=on]:bg-[#FF2D78] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#FF2D78]/50 text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#E8762D] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#E8762D]/50 text-gray-300 hover:text-[#E8762D] hover:bg-[#E8762D]/10 rounded-none font-semibold uppercase"
 							>
 								Instant
 							</ToggleGroupItem>
 							<ToggleGroupItem
 								value="preset"
-								className="h-10 data-[state=on]:bg-[#FF2D78] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#FF2D78]/50 text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#E8762D] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#E8762D]/50 text-gray-300 hover:text-[#E8762D] hover:bg-[#E8762D]/10 rounded-none font-semibold uppercase"
 							>
 								Preset
 							</ToggleGroupItem>
 							<ToggleGroupItem
 								value="manual"
-								className="h-10 data-[state=on]:bg-[#FF2D78] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#FF2D78]/50 text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#E8762D] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#E8762D]/50 text-gray-300 hover:text-[#E8762D] hover:bg-[#E8762D]/10 rounded-none font-semibold uppercase"
 							>
 								Manual
 							</ToggleGroupItem>
@@ -315,7 +315,7 @@ export const DelayedStartSection = ({
 										<ToggleGroupItem
 											key={p.value}
 											value={String(p.value)}
-											className="h-8 data-[state=on]:bg-[#FF2D78] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#FF2D78]/50 text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none font-semibold text-xs"
+											className="h-8 data-[state=on]:bg-[#E8762D] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#E8762D]/50 text-gray-300 hover:text-[#E8762D] hover:bg-[#E8762D]/10 rounded-none font-semibold text-xs"
 										>
 											{p.label}
 										</ToggleGroupItem>
@@ -405,7 +405,7 @@ export const TradeLimitSection = ({
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
 						/>
-						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#FF2D78] font-bold text-sm">SOL</span>
+						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#E8762D] font-bold text-sm">SOL</span>
 					</div>
 					<p className="text-[10px] text-gray-500 mt-1">
 						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
@@ -472,7 +472,7 @@ export const PreBuySection = ({
 							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
 						})}
 					/>
-					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#FF2D78] font-bold text-sm">SOL</span>
+					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#E8762D] font-bold text-sm">SOL</span>
 				</div>
 				{errors.buyAmount && <p className="text-red-500 text-xs mt-1">{errors.buyAmount.message}</p>}
 				<div className="flex justify-between items-center mt-1.5">
@@ -484,7 +484,7 @@ export const PreBuySection = ({
 						type="button"
 						variant="link"
 						onClick={setMaxAmount}
-						className="text-xs text-[#FF2D78] hover:text-white p-0 h-auto"
+						className="text-xs text-[#E8762D] hover:text-white p-0 h-auto"
 					>
 						Max
 					</Button>
@@ -523,7 +523,7 @@ export const PoolSelection = ({
 						key={poolItem.value}
 						value={poolItem.value}
 						aria-label={poolItem.name}
-						className="h-10 data-[state=on]:bg-[#FF2D78] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#FF2D78]/50 text-gray-300 hover:text-[#FF2D78] hover:bg-[#FF2D78]/10 rounded-none font-semibold uppercase"
+						className="h-10 data-[state=on]:bg-[#E8762D] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#E8762D]/50 text-gray-300 hover:text-[#E8762D] hover:bg-[#E8762D]/10 rounded-none font-semibold uppercase"
 					>
 						<div className="flex items-center gap-2">
 							<img src={poolItem.image} alt={poolItem.name} className="w-4 h-4" />
@@ -648,7 +648,7 @@ export const LaunchButton = ({
 			type="button"
 			onClick={onSubmit}
 			disabled={shouldDisable || disabled}
-			className="w-full bg-[#FF2D78] hover:bg-[#e6266d] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#b31f57] hover:shadow-[2px_2px_0px_#b31f57] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#b31f57]"
+			className="w-full bg-[#E8762D] hover:bg-[#e6266d] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#b31f57] hover:shadow-[2px_2px_0px_#b31f57] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#b31f57]"
 		>
 			{isLaunching ? "LAUNCHING..." : "LAUNCH TOKEN"}
 		</Button>

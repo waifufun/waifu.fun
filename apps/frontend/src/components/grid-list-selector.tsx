@@ -41,7 +41,7 @@ export default function GridListSelector() {
 							className={
 								isActive
 									? "bg-waifufun-background-action-highlight/20"
-									: "text-white hover:bg-[#FF2D78]/10 hover:text-[#FF2D78]"
+									: "text-white hover:bg-[#E8762D]/10 hover:text-[#E8762D]"
 							}
 						>
 							<Link

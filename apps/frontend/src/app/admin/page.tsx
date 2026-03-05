@@ -52,13 +52,13 @@ export default function AdminPage() {
 					<h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
 					<p className="text-gray-400 mt-2">Manage platform operations and user activities</p>
 				</div>
-				<Badge variant="outline" className="border-[#FF2D78]/50 text-[#FF2D78]">
+				<Badge variant="outline" className="border-[#E8762D]/50 text-[#E8762D]">
 					Admin Panel
 				</Badge>
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<Card className="bg-black/20 border-[#FF2D78]/20">
+				<Card className="bg-black/20 border-[#E8762D]/20">
 					<CardContent className="p-4">
 						<div className="flex items-center justify-between">
 							<div>
@@ -67,12 +67,12 @@ export default function AdminPage() {
 									{isLoading ? "..." : stats?.userCount?.toLocaleString() || "0"}
 								</p>
 							</div>
-							<Users className="w-8 h-8 text-[#FF2D78]" />
+							<Users className="w-8 h-8 text-[#E8762D]" />
 						</div>
 					</CardContent>
 				</Card>
 
-				<Card className="bg-black/20 border-[#FF2D78]/20">
+				<Card className="bg-black/20 border-[#E8762D]/20">
 					<CardContent className="p-4">
 						<div className="flex items-center justify-between">
 							<div>
@@ -81,12 +81,12 @@ export default function AdminPage() {
 									{isLoading ? "..." : stats?.tokenCount?.toLocaleString() || "0"}
 								</p>
 							</div>
-							<Coins className="w-8 h-8 text-[#FF2D78]" />
+							<Coins className="w-8 h-8 text-[#E8762D]" />
 						</div>
 					</CardContent>
 				</Card>
 
-				<Card className="bg-black/20 border-[#FF2D78]/20">
+				<Card className="bg-black/20 border-[#E8762D]/20">
 					<CardContent className="p-4">
 						<div className="flex items-center justify-between">
 							<div>
@@ -95,12 +95,12 @@ export default function AdminPage() {
 									{isLoading ? "..." : stats?.activeModerators?.toLocaleString() || "0"}
 								</p>
 							</div>
-							<Shield className="w-8 h-8 text-[#FF2D78]" />
+							<Shield className="w-8 h-8 text-[#E8762D]" />
 						</div>
 					</CardContent>
 				</Card>
 
-				<Card className="bg-black/20 border-[#FF2D78]/20">
+				<Card className="bg-black/20 border-[#E8762D]/20">
 					<CardContent className="p-4">
 						<div className="flex items-center justify-between">
 							<div>
@@ -109,7 +109,7 @@ export default function AdminPage() {
 									{isLoading ? "..." : `$${stats?.volume24h?.toLocaleString() || "0"}`}
 								</p>
 							</div>
-							<BarChart3 className="w-8 h-8 text-[#FF2D78]" />
+							<BarChart3 className="w-8 h-8 text-[#E8762D]" />
 						</div>
 					</CardContent>
 				</Card>
@@ -121,17 +121,17 @@ export default function AdminPage() {
 					return (
 						<Link key={section.title} href={section.href}>
 							<Card
-								className={`bg-black/20 border ${section.borderColor} hover:border-[#FF2D78]/50 transition-all duration-200 cursor-pointer group`}
+								className={`bg-black/20 border ${section.borderColor} hover:border-[#E8762D]/50 transition-all duration-200 cursor-pointer group`}
 							>
 								<CardHeader className="pb-3">
 									<div className="flex items-center gap-3">
-										<div className={`p-2 ${section.bgColor} group-hover:bg-[#FF2D78]/10 transition-colors`}>
+										<div className={`p-2 ${section.bgColor} group-hover:bg-[#E8762D]/10 transition-colors`}>
 											<IconComponent
-												className={`w-6 h-6 ${section.color} group-hover:text-[#FF2D78] transition-colors`}
+												className={`w-6 h-6 ${section.color} group-hover:text-[#E8762D] transition-colors`}
 											/>
 										</div>
 										<div>
-											<CardTitle className="text-white group-hover:text-[#FF2D78] transition-colors">
+											<CardTitle className="text-white group-hover:text-[#E8762D] transition-colors">
 												{section.title}
 											</CardTitle>
 										</div>

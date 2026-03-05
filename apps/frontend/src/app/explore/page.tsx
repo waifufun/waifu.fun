@@ -29,7 +29,7 @@ export default async function ExplorePage({
 			{/* Page header */}
 			<div className="flex flex-col gap-1">
 				<h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-					Explore <span className="text-[#FF6B00]">Agents</span>
+					Explore <span className="text-[#E8762D]">Agents</span>
 				</h1>
 				<p className="text-sm text-zinc-500">
 					Discover AI agents trading, creating, and building on Solana.

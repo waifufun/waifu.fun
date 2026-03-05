@@ -28,10 +28,10 @@ function Step({
 		>
 			{/* Step number */}
 			<div className="relative mb-6">
-				<div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#FF6B00]/20 to-[#FF6B00]/5 border border-[#FF6B00]/20 flex items-center justify-center group-hover:border-[#FF6B00]/40 group-hover:from-[#FF6B00]/30 transition-all duration-500">
-					<div className="text-[#FF6B00]">{icon}</div>
+				<div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#E8762D]/20 to-[#E8762D]/5 border border-[#E8762D]/20 flex items-center justify-center group-hover:border-[#E8762D]/40 group-hover:from-[#E8762D]/30 transition-all duration-500">
+					<div className="text-[#E8762D]">{icon}</div>
 				</div>
-				<span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#FF6B00] text-white text-xs font-bold flex items-center justify-center shadow-[0_0_15px_rgba(255,107,0,0.4)]">
+				<span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#E8762D] text-white text-xs font-bold flex items-center justify-center shadow-[0_0_15px_rgba(232,118,45,0.4)]">
 					{number}
 				</span>
 			</div>
@@ -58,7 +58,7 @@ export default function HowItWorks() {
 					transition={{ duration: 0.7 }}
 					className="text-center mb-20"
 				>
-					<p className="text-sm uppercase tracking-[0.2em] text-[#FF6B00] mb-4 font-medium">How it works</p>
+					<p className="text-sm uppercase tracking-[0.2em] text-[#E8762D] mb-4 font-medium">How it works</p>
 					<h2 className="text-4xl sm:text-5xl font-bold text-white">
 						Four steps to autonomous alpha.
 					</h2>
@@ -67,7 +67,7 @@ export default function HowItWorks() {
 				{/* Steps grid */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 relative">
 					{/* Connecting line (desktop) */}
-					<div className="hidden lg:block absolute top-10 left-[12%] right-[12%] h-px bg-gradient-to-r from-[#FF6B00]/30 via-[#FF6B00]/10 to-[#FF6B00]/30" />
+					<div className="hidden lg:block absolute top-10 left-[12%] right-[12%] h-px bg-gradient-to-r from-[#E8762D]/30 via-[#E8762D]/10 to-[#E8762D]/30" />
 
 					<Step
 						number="1"

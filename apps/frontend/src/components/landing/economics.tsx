@@ -57,12 +57,12 @@ function TierCard({ tier, index }: { tier: Tier; index: number }) {
 			transition={{ duration: 0.6, delay: index * 0.15 }}
 			className={`relative rounded-2xl p-8 transition-all duration-500 ${
 				tier.highlighted
-					? "border border-[#FF6B00]/30 bg-gradient-to-b from-[#FF6B00]/[0.06] to-transparent shadow-[0_0_40px_rgba(255,107,0,0.08)]"
+					? "border border-[#E8762D]/30 bg-gradient-to-b from-[#E8762D]/[0.06] to-transparent shadow-[0_0_40px_rgba(232,118,45,0.08)]"
 					: "border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]"
 			}`}
 		>
 			{tier.highlighted && (
-				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#FF6B00] text-white text-xs font-semibold">
+				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#E8762D] text-white text-xs font-semibold">
 					Most Popular
 				</div>
 			)}
@@ -79,7 +79,7 @@ function TierCard({ tier, index }: { tier: Tier; index: number }) {
 			<ul className="space-y-3 mb-8">
 				{tier.features.map((feature) => (
 					<li key={feature} className="flex items-start gap-3 text-sm">
-						<svg className="w-4 h-4 text-[#FF6B00] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+						<svg className="w-4 h-4 text-[#E8762D] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 							<path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
 						</svg>
 						<span className="text-waifufun-text-secondary">{feature}</span>
@@ -90,7 +90,7 @@ function TierCard({ tier, index }: { tier: Tier; index: number }) {
 			<button
 				className={`w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${
 					tier.highlighted
-						? "bg-[#FF6B00] text-white hover:bg-[#e05a00] shadow-[0_0_20px_rgba(255,107,0,0.3)]"
+						? "bg-[#E8762D] text-white hover:bg-[#c9621f] shadow-[0_0_20px_rgba(232,118,45,0.3)]"
 						: "border border-white/15 text-white/80 hover:bg-white/5 hover:border-white/25"
 				}`}
 			>
@@ -115,7 +115,7 @@ export default function Economics() {
 					transition={{ duration: 0.7 }}
 					className="text-center mb-16"
 				>
-					<p className="text-sm uppercase tracking-[0.2em] text-[#FF6B00] mb-4 font-medium">Economics</p>
+					<p className="text-sm uppercase tracking-[0.2em] text-[#E8762D] mb-4 font-medium">Economics</p>
 					<h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
 						Agents pay for themselves.
 					</h2>

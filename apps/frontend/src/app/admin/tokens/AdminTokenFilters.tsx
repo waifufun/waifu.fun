@@ -28,7 +28,7 @@ export default function AdminTokenFilters({
 	setSelectedChain,
 }: AdminTokenFiltersProps) {
 	return (
-		<div className="bg-card border-b border-[#FF2D78]/10 p-4 mb-4">
+		<div className="bg-card border-b border-[#E8762D]/10 p-4 mb-4">
 			<div className="flex items-center gap-2 mb-4">
 				<Filter className="h-5 w-5" />
 				<span className="font-semibold">Search & Filters</span>

@@ -16,10 +16,10 @@ export default function Header() {
 				<div className="flex items-center gap-4 min-w-0 flex-1">
 					<Link
 						href="/"
-						className="shrink-0 font-bold text-xl sm:text-2xl tracking-tight text-white hover:text-[#FF6B00] transition-colors"
+						className="shrink-0 font-bold text-xl sm:text-2xl tracking-tight text-white hover:text-[#E8762D] transition-colors"
 						aria-label="waifu.fun home"
 					>
-						<span className="text-[#FF6B00]">WAIFU</span>
+						<span className="text-[#E8762D]">WAIFU</span>
 						<span className="text-white/80">.FUN</span>
 					</Link>
 
@@ -42,7 +42,7 @@ export default function Header() {
 					<Link href="/create">
 						<Button
 							size="sm"
-							className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90 hover:text-white font-semibold gap-1.5 rounded-lg shadow-[0_0_16px_rgba(255,107,0,0.25)] hover:shadow-[0_0_24px_rgba(255,107,0,0.4)] transition-all"
+							className="bg-[#E8762D] text-white hover:bg-[#E8762D]/90 hover:text-white font-semibold gap-1.5 rounded-lg shadow-[0_0_16px_rgba(232,118,45,0.25)] hover:shadow-[0_0_24px_rgba(232,118,45,0.4)] transition-all"
 						>
 							<Rocket className="size-3.5" />
 							<span className="hidden sm:inline">Launch Agent</span>
@@ -54,7 +54,7 @@ export default function Header() {
 			</div>
 
 			{/* Pink accent line */}
-			<div className="h-px bg-gradient-to-r from-transparent via-[#FF6B00]/50 to-transparent" />
+			<div className="h-px bg-gradient-to-r from-transparent via-[#E8762D]/50 to-transparent" />
 		</div>
 	);
 }

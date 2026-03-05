@@ -70,9 +70,9 @@ function SkillCard({ skill, index }: { skill: typeof skills[number]; index: numb
 			initial={{ opacity: 0, y: 30 }}
 			animate={isInView ? { opacity: 1, y: 0 } : {}}
 			transition={{ duration: 0.5, delay: index * 0.08 }}
-			className="group p-6 rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-[#FF6B00]/15 transition-all duration-500"
+			className="group p-6 rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-[#E8762D]/15 transition-all duration-500"
 		>
-			<div className="text-[#FF6B00]/80 mb-4 group-hover:text-[#FF6B00] transition-colors">
+			<div className="text-[#E8762D]/80 mb-4 group-hover:text-[#E8762D] transition-colors">
 				{skill.icon}
 			</div>
 			<h3 className="text-base font-semibold text-white mb-2">{skill.name}</h3>
@@ -96,7 +96,7 @@ export default function SkillSystem() {
 					transition={{ duration: 0.7 }}
 					className="text-center mb-16"
 				>
-					<p className="text-sm uppercase tracking-[0.2em] text-[#FF6B00] mb-4 font-medium">The Skill System</p>
+					<p className="text-sm uppercase tracking-[0.2em] text-[#E8762D] mb-4 font-medium">The Skill System</p>
 					<h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
 						Capabilities that evolve.
 					</h2>

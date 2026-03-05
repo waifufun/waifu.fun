@@ -62,7 +62,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 	const isOwner = useAddress() === address;
 
 	return (
-		<div className="border-4 h-fit border-[#FF2D78]/60 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.4)] relative w-[150px]">
+		<div className="border-4 h-fit border-[#E8762D]/60 rounded-none shadow-[3px_3px_0px_rgba(255,45,120,0.4)] relative w-[150px]">
 			<Image
 				src={preview || image || "/create/test-img.png"}
 				alt="Profile"
@@ -84,7 +84,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 								onClick={() => imageFile && submitAvatarMutation.mutate(imageFile)}
 								className="bg-[#0C0C0C]/90 cursor-pointer p-1 w-6 h-6"
 							>
-								<Check className="text-[#FF2D78]" width={14} height={14} />
+								<Check className="text-[#E8762D]" width={14} height={14} />
 							</button>
 						)}
 					</div>
