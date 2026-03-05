@@ -16,148 +16,90 @@ import useAddress from "@/hooks/use-address";
 import ClaimFees from "@/components/claim-fees";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { BarChart3, TrendingUp } from "lucide-react";
 
-export default function PageClient({
-	initialData,
-	tokenParams,
-	children,
-}: { initialData: IToken; children: ReactNode; tokenParams: ITokenLookUp }) {
+function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl" | "br"; color?: "green" | "purple" }) {
+	const base = "absolute w-2.5 h-2.5 pointer-events-none";
+	const borderColor = color === "green" ? "border-[#00ff87]/30" : "border-[#c084fc]/30";
+	const styles: Record<string, string> = {
+		tl: `${base} top-0 left-0 border-t border-l ${borderColor}`,
+		tr: `${base} top-0 right-0 border-t border-r ${borderColor}`,
+		bl: `${base} bottom-0 left-0 border-b border-l ${borderColor}`,
+		br: `${base} bottom-0 right-0 border-b border-r ${borderColor}`,
+	};
+	return <span className={styles[position]} />;
+}
+
+const TIMEFRAMES = [{ label: "1h", value: "1h" }, { label: "4h", value: "4h" }, { label: "1d", value: "1d" }, { label: "1w", value: "1w" }, { label: "all", value: "all" }];
+
+export default function PageClient({ initialData, tokenParams, children }: { initialData: IToken; children: ReactNode; tokenParams: ITokenLookUp }) {
 	const query = useQuery({
 		queryKey: ["token", initialData.chain, initialData.chainId, initialData.contractAddress],
-		queryFn: async () => {
-			try {
-				const token = (await getToken(tokenParams)) as IToken;
-				return token;
-			} catch (e) {
-				console.warn("API fetch failed, using initial data:", e);
-				return initialData;
-			}
-		},
+		queryFn: async () => { try { const token = (await getToken(tokenParams)) as IToken; return token; } catch (e) { console.warn("API fetch failed, using initial data:", e); return initialData; } },
 		refetchInterval: process.env.NEXT_PUBLIC_API_URL ? 5_000 : false,
 		initialData,
 	});
 
 	const currentAddress = useAddress();
 	const token = query?.data;
-	const isCreator = useMemo(() => {
-		if (currentAddress && token?.creator) {
-			return currentAddress.toLowerCase() === token.creator.toLowerCase();
-		}
-		return false;
-	}, [currentAddress, token?.creator]);
+	const isCreator = useMemo(() => { if (currentAddress && token?.creator) { return currentAddress.toLowerCase() === token.creator.toLowerCase(); } return false; }, [currentAddress, token?.creator]);
+	const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
+	const isPriceUp = true;
 
 	const getBadgeInfo = () => {
-		if (initialData?.status === "migrating") {
-			return {
-				badge: "MIGRATING",
-				classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
-			};
-		}
-		if (initialData?.status === "migrated" || initialData?.status === "locked") {
-			return {
-				badge: "BONDED",
-				classes:
-					"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 shadow-[0_0_8px_rgba(0,255,135,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-			};
-		}
-		if (initialData?.imported) {
-			return {
-				badge: "IMPORTED",
-				classes: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40",
-			};
-		}
-		return {
-			badge: "ACTIVE",
-			classes:
-				"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-		};
+		if (initialData?.status === "migrating") return { badge: "MIGRATING", classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50" };
+		if (initialData?.status === "migrated" || initialData?.status === "locked") return { badge: "BONDED", classes: "bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 shadow-[0_0_8px_rgba(0,255,135,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]" };
+		if (initialData?.imported) return { badge: "IMPORTED", classes: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40" };
+		return { badge: "ACTIVE", classes: "bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]" };
 	};
 
 	const badge = getBadgeInfo();
-	const badgeBaseClasses =
-		"font-bold uppercase tracking-wider rounded-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
-
+	const badgeBaseClasses = "font-bold uppercase tracking-wider rounded-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 
 	return (
 		<div className="flex flex-col gap-5 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
-
-			{/* agent profile hero */}
-			<AgentProfile
-				token={token}
-				badge={badge}
-				badgeBaseClasses={badgeBaseClasses}
-			/>
-
-			{/* two-column layout */}
+			<AgentProfile token={token} badge={badge} badgeBaseClasses={badgeBaseClasses} />
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-5">
-				{/* left column — chart + activity + tabs */}
 				<div className="w-full lg:w-[65%] flex flex-col gap-5 order-3 lg:order-2">
-					{/* chart */}
-					<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] p-3 rounded-sm">
-						<div className="overflow-hidden">
-							<Chart token={token} />
+					<motion.div className={cn("relative bg-[#111114] border rounded-sm overflow-hidden transition-all duration-500", isPriceUp ? "border-[#00ff87]/20 shadow-[0_0_20px_rgba(0,255,135,0.05)]" : "border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]")} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+						<HudCorner position="tl" color={isPriceUp ? "green" : "purple"} /><HudCorner position="tr" color={isPriceUp ? "green" : "purple"} /><HudCorner position="bl" color={isPriceUp ? "green" : "purple"} /><HudCorner position="br" color={isPriceUp ? "green" : "purple"} />
+						<div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+							<div className="flex items-center gap-2">
+								<BarChart3 className={cn("size-4", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
+								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">price chart</span>
+								{isPriceUp ? <TrendingUp className="size-3 text-[#00ff87]" /> : <TrendingUp className="size-3 text-red-400 rotate-180" />}
+							</div>
+							<div className="flex items-center gap-1">
+								{TIMEFRAMES.map((tf) => (<button key={tf.value} onClick={() => setSelectedTimeframe(tf.value)} className={cn("px-2 py-1 text-[10px] font-mono uppercase rounded-sm transition-all duration-200", selectedTimeframe === tf.value ? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/30" : "text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] border border-transparent")}>{tf.label}</button>))}
+							</div>
 						</div>
-					</div>
-
-					{/* activity feed */}
+						<div className="p-3"><Chart token={token} /></div>
+						<div className={cn("absolute bottom-0 left-0 right-0 h-1 blur-sm", isPriceUp ? "bg-[#00ff87]/20" : "bg-red-500/20")} />
+					</motion.div>
 					<ActivityFeed token={token} />
-
-					{/* tabs + content */}
-					<div className="flex flex-col gap-4">
-						<TokenTabs token={token} />
-						{children}
-					</div>
+					<div className="flex flex-col gap-4"><TokenTabs token={token} />{children}</div>
 				</div>
-
-				{/* right column — sidebar */}
 				<div className="w-full lg:w-[35%] flex flex-col md:flex-row lg:flex-col gap-5 order-2 lg:order-3">
 					<Swap token={token} />
-
-					{/* bonding curve + token info */}
-					<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4">
+					<motion.div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+						<HudCorner position="tl" /><HudCorner position="tr" /><HudCorner position="bl" /><HudCorner position="br" />
 						<BondingCurveProgress token={token} />
-					</div>
-
-					{/* agent personality */}
-					<AgentPersonalityCard token={token} />
-
-					{/* agent skills */}
-					<AgentSkills />
-
-					{/* socials + contract */}
-					<SidebarSocials token={token} />
-
-					{/* owner-only update socials */}
+					</motion.div>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}><AgentPersonalityCard token={token} /></motion.div>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}><AgentSkills /></motion.div>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}><SidebarSocials token={token} /></motion.div>
 					{isCreator && (
-						<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4">
-							<Button
-								variant="outline"
-								className="w-full"
-								onClick={() => setSocialsModalOpen(true)}
-							>
-								update socials
-							</Button>
-							<UpdateSocialsModal
-								open={socialsModalOpen}
-								onClose={() => setSocialsModalOpen(false)}
-								token={{
-									chain: token.chain,
-									chainId: String(token.chainId),
-									contractAddress: token.contractAddress,
-									socials: token.socials,
-								}}
-								onSuccess={() => {
-									setSocialsModalOpen(false);
-									query.refetch();
-								}}
-							/>
-						</div>
+						<motion.div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+							<HudCorner position="tl" /><HudCorner position="tr" /><HudCorner position="bl" /><HudCorner position="br" />
+							<Button variant="outline" className="w-full text-xs font-mono lowercase" onClick={() => setSocialsModalOpen(true)}>update socials</Button>
+							<UpdateSocialsModal open={socialsModalOpen} onClose={() => setSocialsModalOpen(false)} token={{ chain: token.chain, chainId: String(token.chainId), contractAddress: token.contractAddress, socials: token.socials }} onSuccess={() => { setSocialsModalOpen(false); query.refetch(); }} />
+						</motion.div>
 					)}
 				</div>
 			</div>
-
 			{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
 		</div>
 	);

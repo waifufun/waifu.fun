@@ -1,15 +1,16 @@
 "use client";
 import type { IToken } from "@waifufun/types";
 import Image from "next/image";
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { cn, shortenAddress } from "@/lib/utils";
-import { Brain, Globe, LineChart, PieChart, MessageCircle, Zap, Shield } from "lucide-react";
+import { Brain, Globe, LineChart, PieChart, MessageCircle, Zap, Shield, Cpu } from "lucide-react";
 import { motion } from "framer-motion";
 import { CopyButton } from "@/components/copy-button";
 
-function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
-	const base = "absolute w-2.5 h-2.5 pointer-events-none";
+function HudCorner({ position, size = "sm" }: { position: "tl" | "tr" | "bl" | "br"; size?: "sm" | "md" }) {
+	const sizeClass = size === "md" ? "w-3 h-3" : "w-2.5 h-2.5";
+	const base = `absolute ${sizeClass} pointer-events-none`;
 	const styles: Record<string, string> = {
 		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/30`,
 		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/30`,
@@ -20,58 +21,68 @@ function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 }
 
 const MOCK_SKILLS = [
-	{ label: "defi trading", icon: LineChart, color: "text-[#00ff87]" },
-	{ label: "market analysis", icon: Brain, color: "text-[#c084fc]" },
-	{ label: "portfolio mgmt", icon: PieChart, color: "text-[#22c55e]" },
-	{ label: "social intel", icon: MessageCircle, color: "text-[#a1a1aa]" },
+	{ label: "defi trading", icon: LineChart, color: "text-[#00ff87]", bgColor: "bg-[#00ff87]", level: 92 },
+	{ label: "market analysis", icon: Brain, color: "text-[#c084fc]", bgColor: "bg-[#c084fc]", level: 78 },
+	{ label: "portfolio mgmt", icon: PieChart, color: "text-[#22c55e]", bgColor: "bg-[#22c55e]", level: 85 },
+	{ label: "social intel", icon: MessageCircle, color: "text-[#60a5fa]", bgColor: "bg-[#60a5fa]", level: 64 },
 ];
+
+function TypingIndicator() {
+	return (
+		<div className="flex items-center gap-1 px-2 py-1">
+			<motion.span className="w-1.5 h-1.5 rounded-full bg-[#00ff87]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0 }} />
+			<motion.span className="w-1.5 h-1.5 rounded-full bg-[#00ff87]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} />
+			<motion.span className="w-1.5 h-1.5 rounded-full bg-[#00ff87]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} />
+		</div>
+	);
+}
+
+function SkillProgressBar({ level, color }: { level: number; color: string }) {
+	const [width, setWidth] = useState(0);
+	useEffect(() => { const timer = setTimeout(() => setWidth(level), 100); return () => clearTimeout(timer); }, [level]);
+	return (
+		<div className="w-full h-1 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+			<motion.div className={cn("h-full rounded-full", color)} initial={{ width: 0 }} animate={{ width: `${width}%` }} transition={{ duration: 0.8, ease: "easeOut" }} />
+		</div>
+	);
+}
 
 export function AgentPersonalityCard({ token }: { token: IToken }) {
 	const tradingStyles = ["aggressive", "conservative", "balanced"];
 	const mockStyle = tradingStyles[Math.abs(token.name.length) % 3];
 	const activeSince = token.createdAt ? new Date(token.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "jan 2025";
+	const [isThinking, setIsThinking] = useState(true);
+	useEffect(() => { const interval = setInterval(() => { setIsThinking(prev => !prev); }, 5000); return () => clearInterval(interval); }, []);
 
 	return (
-		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4">
-			<HudCorner position="tl" />
-			<HudCorner position="tr" />
-			<HudCorner position="bl" />
-			<HudCorner position="br" />
-
-			<div className="flex items-center gap-2 mb-3">
-				<Zap className="size-3.5 text-[#00ff87]" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
-					agent personality
-				</span>
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
+			<HudCorner position="tl" size="md" /><HudCorner position="tr" size="md" /><HudCorner position="bl" size="md" /><HudCorner position="br" size="md" />
+			<div className="flex items-center justify-between mb-3">
+				<div className="flex items-center gap-2">
+					<Zap className="size-3.5 text-[#00ff87]" />
+					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent personality</span>
+				</div>
+				<div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm">
+					{isThinking ? (<><Cpu className="size-3 text-[#c084fc] animate-pulse" /><span className="text-[9px] text-[#c084fc] font-mono uppercase">thinking</span></>) : (<><span className="h-1.5 w-1.5 rounded-full bg-[#00ff87] animate-pulse" /><span className="text-[9px] text-[#00ff87] font-mono uppercase">online</span></>)}
+				</div>
 			</div>
-
 			<div className="flex items-start gap-3 mb-3">
-				<Image
-					src={token.image}
-					className="w-10 h-10 rounded-sm border border-[#00ff87]/20 flex-shrink-0"
-					unoptimized
-					width={40}
-					height={40}
-					alt="agent"
-				/>
-				<p className="text-xs text-[#a1a1aa] leading-relaxed line-clamp-3">
-					{token.description || "a versatile ai agent designed to navigate the complexities of decentralized finance with precision and adaptability."}
-				</p>
+				<div className="relative">
+					<Image src={token.image} className="w-10 h-10 rounded-sm border border-[#00ff87]/20 flex-shrink-0" unoptimized width={40} height={40} alt="agent" />
+					<div className="absolute inset-0 bg-[#00ff87]/10 blur-md rounded-sm -z-10" />
+				</div>
+				<div className="flex-1 min-w-0">
+					<p className="text-xs text-[#a1a1aa] leading-relaxed line-clamp-2">{token.description || "a versatile ai agent designed to navigate the complexities of decentralized finance with precision and adaptability."}</p>
+					{isThinking && <div className="mt-1"><TypingIndicator /></div>}
+				</div>
 			</div>
-
 			<div className="grid grid-cols-3 gap-2">
-				<div className="bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2">
-					<div className="text-[9px] text-[#52525b] font-mono uppercase">style</div>
-					<div className="text-xs text-[#e4e4e7] font-mono">{mockStyle}</div>
-				</div>
-				<div className="bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2">
-					<div className="text-[9px] text-[#52525b] font-mono uppercase">active since</div>
-					<div className="text-xs text-[#e4e4e7] font-mono lowercase">{activeSince}</div>
-				</div>
-				<div className="bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2">
-					<div className="text-[9px] text-[#52525b] font-mono uppercase">trades</div>
-					<div className="text-xs text-[#e4e4e7] font-mono">{(token.holders || 42) * 7}</div>
-				</div>
+				{[{ label: "style", value: mockStyle }, { label: "active since", value: activeSince }, { label: "trades", value: String((token.holders || 42) * 7) }].map((stat, i) => (
+					<motion.div key={stat.label} className="relative bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2 hover:border-[rgba(255,255,255,0.12)] transition-colors" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+						<div className="text-[9px] text-[#52525b] font-mono uppercase">{stat.label}</div>
+						<div className="text-xs text-[#e4e4e7] font-mono lowercase">{stat.value}</div>
+					</motion.div>
+				))}
 			</div>
 		</div>
 	);
@@ -79,32 +90,36 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 
 export function AgentSkills() {
 	return (
-		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4">
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
+			<HudCorner position="tl" size="md" /><HudCorner position="tr" size="md" /><HudCorner position="bl" size="md" /><HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3">
 				<Shield className="size-3.5 text-[#22c55e]" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
-					agent skills
-				</span>
+				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent skills</span>
 			</div>
-
-			<div className="grid grid-cols-2 gap-2">
-				{MOCK_SKILLS.map((skill) => (
-					<motion.div
-						key={skill.label}
-						className="flex items-center gap-2 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2.5 hover:border-[#00ff87]/20 transition-colors duration-200"
-						whileHover={{ scale: 1.02 }}
-						transition={{ type: "spring", stiffness: 400 }}
-					>
-						<skill.icon className={cn("size-3.5 flex-shrink-0", skill.color)} />
-						<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">
-							{skill.label}
-						</span>
+			<div className="flex flex-col gap-2">
+				{MOCK_SKILLS.map((skill, i) => (
+					<motion.div key={skill.label} className="relative flex flex-col gap-1.5 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2.5 hover:border-[rgba(255,255,255,0.12)] transition-all duration-200 group" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} whileHover={{ x: 2 }}>
+						<div className="relative flex items-center justify-between">
+							<div className="flex items-center gap-2">
+								<skill.icon className={cn("size-3.5 flex-shrink-0", skill.color)} />
+								<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">{skill.label}</span>
+							</div>
+							<span className={cn("text-[10px] font-mono font-medium", skill.color)}>{skill.level}%</span>
+						</div>
+						<SkillProgressBar level={skill.level} color={skill.bgColor} />
 					</motion.div>
 				))}
 			</div>
 		</div>
 	);
 }
+
+const PLATFORM_COLORS: Record<string, string> = {
+	website: "hover:border-[#a1a1aa] hover:bg-[#a1a1aa]/10 hover:shadow-[0_0_12px_rgba(161,161,170,0.15)]",
+	twitter: "hover:border-[#1d9bf0] hover:bg-[#1d9bf0]/10 hover:shadow-[0_0_12px_rgba(29,155,240,0.15)]",
+	telegram: "hover:border-[#0088cc] hover:bg-[#0088cc]/10 hover:shadow-[0_0_12px_rgba(0,136,204,0.15)]",
+	discord: "hover:border-[#5865f2] hover:bg-[#5865f2]/10 hover:shadow-[0_0_12px_rgba(88,101,242,0.15)]",
+};
 
 export function SidebarSocials({ token }: { token: IToken }) {
 	const socials = [
@@ -113,57 +128,33 @@ export function SidebarSocials({ token }: { token: IToken }) {
 		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
 		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
 	];
-
 	return (
-		<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4">
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
+			<HudCorner position="tl" size="md" /><HudCorner position="tr" size="md" /><HudCorner position="bl" size="md" /><HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3">
 				<Globe className="size-3.5 text-[#a1a1aa]" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
-					links
-				</span>
+				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">links</span>
 			</div>
-
 			<div className="flex items-center gap-2">
-				{socials.map((social) => {
+				{socials.map((social, i) => {
 					const hasLink = !!social.href;
 					const Comp = hasLink ? Link : Fragment;
-					const compProps: { key: string; href?: string; target?: string } = {
-						key: social.title,
-					};
-					if (hasLink && social.href) {
-						compProps.href = social.href;
-						compProps.target = "_blank";
-					}
+					const compProps: { key: string; href?: string; target?: string } = { key: social.title };
+					if (hasLink && social.href) { compProps.href = social.href; compProps.target = "_blank"; }
 					return (
 						// @ts-ignore
 						<Comp {...compProps} key={social.title}>
-							<Image
-								src={social.icon}
-								className={cn(
-									"inline-flex items-center justify-center h-8 w-8 p-1.5 rounded-sm border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200",
-									!social.href
-										? "opacity-30 cursor-not-allowed"
-										: "opacity-70 hover:opacity-100 cursor-pointer",
-								)}
-								unoptimized
-								width={24}
-								height={24}
-								alt={social.title}
-							/>
+							<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.1 }}>
+								<Image src={social.icon} className={cn("inline-flex items-center justify-center h-8 w-8 p-1.5 rounded-sm border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] transition-all duration-200", !social.href ? "opacity-30 cursor-not-allowed" : cn("opacity-70 hover:opacity-100 cursor-pointer", PLATFORM_COLORS[social.title]))} unoptimized width={24} height={24} alt={social.title} />
+							</motion.div>
 						</Comp>
 					);
 				})}
 			</div>
-
-			{/* contract address */}
 			<div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-				<div className="text-[9px] text-[#52525b] font-mono uppercase tracking-wider mb-1.5">
-					contract
-				</div>
-				<div className="flex items-center justify-between bg-[#08080a] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm">
-					<span className="text-xs text-[#a1a1aa] font-mono truncate">
-						{shortenAddress(token.contractAddress)}
-					</span>
+				<div className="text-[9px] text-[#52525b] font-mono uppercase tracking-wider mb-1.5">contract</div>
+				<div className="flex items-center justify-between bg-[#08080a] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors group">
+					<span className="text-xs text-[#a1a1aa] font-mono truncate group-hover:text-[#e4e4e7] transition-colors">{shortenAddress(token.contractAddress)}</span>
 					<CopyButton textToCopy={token.contractAddress} />
 				</div>
 			</div>
