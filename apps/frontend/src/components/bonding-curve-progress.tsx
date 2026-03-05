@@ -63,7 +63,7 @@ export default function BondingCurveProgress({
 					</div>
 				) : null}
 			</div>
-			<div className="h-[2px] w-full bg-waifufun-background-action-highlight/25" />
+			<div className="h-[1px] w-full bg-[rgba(255,255,255,0.06)]" />
 		</Fragment>
 	);
 }
