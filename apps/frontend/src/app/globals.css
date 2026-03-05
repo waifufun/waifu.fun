@@ -168,7 +168,12 @@
 	}
 }
 
-/* Global scrollbar: thin pill thumb, no track background, blue */
+/* Smooth scrolling */
+html {
+	scroll-behavior: smooth;
+}
+
+/* Global scrollbar: thin pill thumb, dark theme, pink accent */
 ::-webkit-scrollbar {
 	width: 6px;
 }
@@ -178,19 +183,19 @@
 }
 
 ::-webkit-scrollbar-thumb {
-	background-color: #3b82f6; /* blue-500 */
+	background-color: rgba(255, 45, 120, 0.4);
 	border-radius: 9999px;
 	border: none;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background-color: #2563eb; /* blue-600 */
+	background-color: rgba(255, 45, 120, 0.7);
 }
 
 /* For Firefox: thin thumb, transparent track */
 * {
 	scrollbar-width: thin;
-	scrollbar-color: #3b82f6 transparent;
+	scrollbar-color: rgba(255, 45, 120, 0.4) transparent;
 }
 
 input::selection {
@@ -217,4 +222,101 @@ input::selection {
 	/* New purple flashy block */
 	background-color: #a855f7; /* Tailwind purple-500 */
 	animation: pixel-pulse-purple 1.5s infinite;
+}
+
+/* ============================================
+   waifu.fun Design System Utilities
+   ============================================ */
+
+/* Pink glow effect */
+.glow-pink {
+	box-shadow: 0 0 20px rgba(255, 45, 120, 0.3);
+}
+
+.glow-pink-lg {
+	box-shadow: 0 0 40px rgba(255, 45, 120, 0.25), 0 0 80px rgba(255, 45, 120, 0.1);
+}
+
+/* Glass effect */
+.glass {
+	background: rgba(17, 17, 17, 0.6);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.glass-light {
+	background: rgba(255, 255, 255, 0.05);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient text */
+.gradient-text-pink {
+	background: linear-gradient(135deg, #FF2D78, #FF6B9D);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+.gradient-text-white {
+	background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.6) 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+/* Subtle noise texture overlay */
+.noise::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Animated gradient border */
+.border-gradient-pink {
+	position: relative;
+}
+
+.border-gradient-pink::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(135deg, #FF2D78, transparent 50%, #FF2D78);
+	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	pointer-events: none;
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulse-pink {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.5; }
+}
+
+.animate-pulse-pink {
+	animation: pulse-pink 2s ease-in-out infinite;
+}
+
+/* Fade-up animation for scroll reveals */
+@keyframes fade-up {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-fade-up {
+	animation: fade-up 0.6s ease-out forwards;
 }

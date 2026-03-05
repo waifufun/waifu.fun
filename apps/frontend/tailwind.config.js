@@ -11,6 +11,7 @@ module.exports = {
 			},
 			fontFamily: {
 				satoshi: ["Satoshi", "sans-serif"],
+				mono: ["DMMono", "ui-monospace", "SFMono-Regular", "monospace"],
 			},
 			colors: {
 				border: "hsl(var(--border))",

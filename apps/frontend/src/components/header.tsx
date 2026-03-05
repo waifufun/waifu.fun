@@ -3,28 +3,58 @@
 import Link from "next/link";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
+import { Button } from "./ui/button";
+import { Rocket } from "lucide-react";
 
 export default function Header() {
 	return (
-		<div className="shrink-0 w-full bg-transparent">
+		<div className="shrink-0 w-full sticky top-0 z-50">
+			{/* Glassmorphism header */}
 			<div
-				className="w-full h-[68px] flex items-center justify-between gap-4 px-4"
-				style={{ background: "transparent" }}
+				className="w-full h-[68px] flex items-center justify-between gap-4 px-4 sm:px-6 bg-[#0a0a0a]/70 backdrop-blur-xl border-b border-white/[0.04]"
 			>
 				<div className="flex items-center gap-4 min-w-0 flex-1">
 					<Link
 						href="/"
-						className="shrink-0 font-bold text-xl sm:text-2xl tracking-tight text-[#2563eb] hover:text-[#3b82f6] transition-colors"
+						className="shrink-0 font-bold text-xl sm:text-2xl tracking-tight text-white hover:text-[#FF2D78] transition-colors"
 						aria-label="waifu.fun home"
 					>
-						WAIFU.FUN
+						<span className="text-[#FF2D78]">WAIFU</span>
+						<span className="text-white/80">.FUN</span>
 					</Link>
-					<SearchMenu />
+
+					{/* Nav links */}
+					<nav className="hidden md:flex items-center gap-1 ml-2">
+						<Link
+							href="/explore"
+							className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.04]"
+						>
+							Explore
+						</Link>
+					</nav>
+
+					<div className="flex-1 max-w-sm ml-2">
+						<SearchMenu />
+					</div>
 				</div>
-				<div className="flex items-center shrink-0 ml-auto">
+
+				<div className="flex items-center gap-3 shrink-0 ml-auto">
+					<Link href="/create">
+						<Button
+							size="sm"
+							className="bg-[#FF2D78] text-white hover:bg-[#FF2D78]/90 hover:text-white font-semibold gap-1.5 rounded-lg shadow-[0_0_16px_rgba(255,45,120,0.25)] hover:shadow-[0_0_24px_rgba(255,45,120,0.4)] transition-all"
+						>
+							<Rocket className="size-3.5" />
+							<span className="hidden sm:inline">Launch Agent</span>
+							<span className="sm:hidden">Launch</span>
+						</Button>
+					</Link>
 					<HeaderConnectWallet />
 				</div>
 			</div>
+
+			{/* Pink accent line */}
+			<div className="h-px bg-gradient-to-r from-transparent via-[#FF2D78]/50 to-transparent" />
 		</div>
 	);
 }
