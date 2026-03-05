@@ -84,7 +84,7 @@ export const GridItem = ({
 							fill
 							unoptimized
 							alt={token.name}
-							className="object-cover"
+							className="object-cover object-top"
 						/>
 					</motion.div>
 

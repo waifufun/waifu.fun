@@ -63,7 +63,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 									fill
 									unoptimized
 									alt={token.name}
-									className="object-cover"
+									className="object-cover object-top"
 								/>
 							</motion.div>
 							{/* Gradient overlays */}

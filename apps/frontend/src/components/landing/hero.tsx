@@ -3,6 +3,11 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+
+const Aurora = dynamic(() => import("@/components/backgrounds/Aurora"), {
+	ssr: false,
+});
 
 export default function Hero() {
 	const [isGlitching, setIsGlitching] = useState(false);
@@ -50,19 +55,30 @@ export default function Hero() {
 	};
 
 	return (
-		<section className="relative overflow-hidden flex items-center py-16 lg:py-24">
-			{/* Background elements */}
+		<section className="relative overflow-hidden flex items-center min-h-[85vh] py-16 lg:py-24">
+			{/* Aurora animated background */}
 			<div className="absolute inset-0 z-0">
-				{/* Subtle ambient behind mascot area */}
-				<div
-					className="absolute w-[500px] h-[500px] rounded-full blur-[120px]"
-					style={{
-						background: "radial-gradient(circle, rgba(0,255,135,0.06) 0%, transparent 70%)",
-						top: "10%",
-						right: "5%",
-					}}
+				<Aurora
+					colorStops={["#00ff87", "#065f46", "#00ff87"]}
+					amplitude={1.5}
+					speed={0.5}
+					blend={0.6}
 				/>
+			</div>
 
+			{/* Dark overlay for text readability */}
+			<div className="absolute inset-0 z-[1] bg-[rgba(8,8,10,0.6)]" />
+
+			{/* Bottom gradient fade to page background */}
+			<div
+				className="absolute bottom-0 left-0 right-0 z-[2] h-32"
+				style={{
+					background: "linear-gradient(to bottom, transparent, #08080a)",
+				}}
+			/>
+
+			{/* Background elements */}
+			<div className="absolute inset-0 z-[3]">
 				{/* Grid pattern */}
 				<div
 					className="absolute inset-0"
@@ -208,11 +224,18 @@ export default function Hero() {
 							animate={{ y: [0, -8, 0] }}
 							transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
 						>
+							{/* Green glow beneath mascot */}
+							<div
+								className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[60px] rounded-full blur-[40px]"
+								style={{
+									background: "radial-gradient(ellipse, rgba(0,255,135,0.15) 0%, transparent 70%)",
+								}}
+							/>
 							<Image
 								src="/waifus/eliza-hero.png"
 								alt="waifu.fun mascot"
 								fill
-								className="object-contain drop-shadow-[0_0_30px_rgba(0,255,135,0.08)]"
+								className="object-contain drop-shadow-[0_0_30px_rgba(0,255,135,0.12)]"
 								priority
 							/>
 						</motion.div>

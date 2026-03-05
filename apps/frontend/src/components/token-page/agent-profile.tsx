@@ -91,7 +91,7 @@ export default function AgentProfile({
 							fill
 							unoptimized
 							alt={token.name}
-							className="object-cover"
+							className="object-cover object-top"
 						/>
 					</div>
 				</motion.div>

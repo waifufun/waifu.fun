@@ -1,7 +1,7 @@
-# waifu.fun Design System — Milady Aesthetic v3
+# waifu.fun Design System — Cyberpunk v3
 
 ## Philosophy
-Sophisticated Framer/Webflow polish meets milady/schizo internet culture.
+Sophisticated Framer/Webflow polish meets cyberpunk internet culture.
 Not cheap neon. Not safe corporate. Intentional chaos with restraint.
 
 ## Color Palette

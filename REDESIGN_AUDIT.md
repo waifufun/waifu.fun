@@ -10,7 +10,7 @@
 - Need to update copy throughout the site to reference Eliza Cloud properly
 - How-it-works should emphasize: no servers, no keys, Eliza Cloud handles infra
 - Need "powered by Eliza Cloud" branding/section
-- Milady agents = community/culture angle (TBD how to frame)
+- Waifu agents = community/culture angle (TBD how to frame)
 
 ### Copy Updates Needed:
 - Hero subtitle → mention Eliza Cloud infra
