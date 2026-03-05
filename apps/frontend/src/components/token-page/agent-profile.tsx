@@ -141,14 +141,14 @@ export default function AgentProfile({
 						{token?.creator && <CopyButton textToCopy={token.creator} />}
 					</div>
 
-					{/* stats strip */}
-					<div className="flex flex-wrap gap-x-6 gap-y-2 mt-1 py-2.5 px-3 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm">
+					{/* stats strip - horizontal scroll on mobile */}
+					<div className="flex gap-x-4 sm:gap-x-6 gap-y-2 mt-1 py-2 sm:py-2.5 px-2 sm:px-3 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
 						{stats.map((s) => (
-							<div key={s.label} className="flex flex-col gap-0.5">
-								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
+							<div key={s.label} className="flex flex-col gap-0.5 flex-shrink-0">
+								<span className="text-[9px] sm:text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
 									{s.label}
 								</span>
-								<span className="text-sm text-[#e4e4e7] font-mono font-medium inline-flex items-center gap-1">
+								<span className="text-xs sm:text-sm text-[#e4e4e7] font-mono font-medium inline-flex items-center gap-1">
 									{s.icon && <s.icon className="size-3 text-[#00ff87]/60" />}
 									{s.value}
 								</span>
