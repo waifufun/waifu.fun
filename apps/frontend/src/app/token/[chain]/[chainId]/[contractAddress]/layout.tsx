@@ -1,4 +1,5 @@
 import { getToken } from "@/lib/api";
+import { parseTokenParams } from "@/lib/route-params";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -12,8 +13,8 @@ export async function generateMetadata({
 }: { 
 	params: Promise<{ chain: string; chainId: string; contractAddress: string }> 
 }): Promise<Metadata> {
-	const resolvedParams = await params;
-	const token = (await getToken(resolvedParams as ITokenLookUp)) as IToken;
+	const tokenParams = parseTokenParams(await params);
+	const token = (await getToken(tokenParams)) as IToken;
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
 		description: `${token.name} token information, price, and market data on waifufun`,
@@ -36,7 +37,7 @@ export default async function Page({
 	params: Promise<{ chain: string; chainId: string; contractAddress: string }>; 
 	children: ReactNode 
 }) {
-	const tokenParams = await params as ITokenLookUp;
+	const tokenParams = parseTokenParams(await params);
 	let token: null | IToken = null;
 	try {
 		token = (await getToken(tokenParams)) as IToken;
