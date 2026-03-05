@@ -12,54 +12,29 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const splitted = pathname?.split("/") || [];
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
 
+	const tabs = [
+		{ value: "trades", label: "trades", icon: ChartCandlestick, path: BASE_URL },
+		{ value: "holders", label: "holders", icon: Users, path: `${BASE_URL}/holders` },
+		{ value: "create", label: "ai create", icon: Stars, path: `${BASE_URL}/create` },
+		{ value: "chat", label: "chat", icon: MessagesSquare, path: `${BASE_URL}/chat` },
+		{ value: "agents", label: "agents", icon: User, path: `${BASE_URL}/agents` },
+	];
+
 	return (
 		<Tabs value={currentTab}>
-			<TabsList className="grid w-full grid-cols-5">
-				<TabsTrigger
-					value="trades"
-					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
-					onClick={() => {
-						router.push(BASE_URL);
-					}}
-				>
-					Trades <ChartCandlestick className="size-3 md:size-4.5 xl:size-6" />
-				</TabsTrigger>
-				<TabsTrigger
-					value="holders"
-					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
-					onClick={() => {
-						router.push(`${BASE_URL}/holders`);
-					}}
-				>
-					Holders <Users className="size-3 md:size-4.5 xl:size-6" />
-				</TabsTrigger>
-				<TabsTrigger
-					value="create"
-					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
-					onClick={() => {
-						router.push(`${BASE_URL}/create`);
-					}}
-				>
-					AI Create <Stars className="size-3 md:size-4.5 xl:size-6" />
-				</TabsTrigger>
-				<TabsTrigger
-					value="chat"
-					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
-					onClick={() => {
-						router.push(`${BASE_URL}/chat`);
-					}}
-				>
-					Chat <MessagesSquare className="size-3 md:size-4.5 xl:size-6" />
-				</TabsTrigger>
-				<TabsTrigger
-					value="agents"
-					className="inline-flex gap-1 md:gap-2 text-[8px] xl:text-[14px]"
-					onClick={() => {
-						router.push(`${BASE_URL}/agents`);
-					}}
-				>
-					Agents <User className="size-3 md:size-4.5 xl:size-6" />
-				</TabsTrigger>
+			<TabsList className="grid w-full grid-cols-5 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-0">
+				{tabs.map((tab) => (
+					<TabsTrigger
+						key={tab.value}
+						value={tab.value}
+						filled={false}
+						className="inline-flex items-center justify-center gap-1.5 py-2.5 text-xs font-mono lowercase tracking-wider text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] rounded-sm transition-all duration-200 data-[state=active]:text-[#00ff87] data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#00ff87] data-[state=active]:shadow-none"
+						onClick={() => router.push(tab.path)}
+					>
+						<tab.icon className="size-4" />
+						{tab.label}
+					</TabsTrigger>
+				))}
 			</TabsList>
 		</Tabs>
 	);
