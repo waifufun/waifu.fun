@@ -47,12 +47,12 @@ export default function RootLayout({
 						<Header />
 						<main className="flex-1 flex flex-col" data-sidebar="inset">
 							{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
-								<div className="px-4 py-2 bg-amber-400 text-amber-700 max-w-4xl mx-auto my-4 text-lg">
-									<div className="inline-flex gap-x-2">
-										<AlertTriangleIcon />
-										<span>
-											<span className="font-bold">WARNING</span> This is a development environment connected to
-											Testnet. Nothing you do here is real.
+								<div className="w-full bg-[rgba(0,255,135,0.06)] border-b border-[rgba(0,255,135,0.15)]">
+									<div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2 text-sm">
+										<AlertTriangleIcon className="w-4 h-4 text-[#00ff87] flex-shrink-0" />
+										<span className="text-[#a1a1aa]">
+											<span className="font-mono font-semibold text-[#00ff87] uppercase tracking-wider text-xs">devnet</span>
+											{" "}— this is a development environment connected to testnet. nothing here is real.
 										</span>
 									</div>
 								</div>
