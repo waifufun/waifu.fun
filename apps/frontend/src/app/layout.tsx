@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 		template: "%s | waifu.fun",
 	},
 	description: "they live if you trade. they die if you don't.",
-	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "https://waifufun.vercel.app"),
 	icons: {
 		icon: [
 			{ url: "/favicon.svg", type: "image/svg+xml" },
