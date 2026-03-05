@@ -1,4 +1,4 @@
-import type { ITokenLookUp } from "@waifufun/types";
+import type { AddressLike, ITokenLookUp } from "@waifufun/types";
 import { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
 
 export function parseTokenParams(params: {
@@ -12,7 +12,7 @@ export function parseTokenParams(params: {
 		return {
 			chain: "solana",
 			chainId: chainId as SolanaNetworkIds,
-			contractAddress: params.contractAddress,
+			contractAddress: params.contractAddress as AddressLike,
 		};
 	}
 	
@@ -20,6 +20,6 @@ export function parseTokenParams(params: {
 	return {
 		chain: "evm",
 		chainId: chainId as EvmChainIds,
-		contractAddress: params.contractAddress,
+		contractAddress: params.contractAddress as AddressLike,
 	};
 }

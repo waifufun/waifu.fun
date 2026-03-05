@@ -33,7 +33,10 @@
       "tiny-secp256k1",
       "usb",
       "utf-8-validate"
-    ]
+    ],
+    "overrides": {
+      "@solana/web3.js": "^1.98.2"
+    }
   },
   "release": {
     "branches": [
