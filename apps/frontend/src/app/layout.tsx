@@ -5,7 +5,8 @@ import { Space_Grotesk } from "next/font/google";
 import { cn } from "@/lib/utils";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import InteractiveBackground from "@/components/InteractiveBackground";
+// Moving gradient background (performance-heavy) — uncomment to re-enable
+// import InteractiveBackground from "@/components/InteractiveBackground";
 import GrainOverlay from "@/components/grain-overlay";
 import { AlertTriangleIcon } from "lucide-react";
 
@@ -61,7 +62,8 @@ export default function RootLayout({
 				className={cn("h-full font-sans antialiased", spaceGrotesk.variable, spaceGrotesk.className)}
 			>
 				<Providers>
-					<InteractiveBackground />
+					{/* Moving gradient background — uncomment to re-enable */}
+					{/* <InteractiveBackground /> */}
 					<GrainOverlay />
 					<div className="relative z-10 flex flex-col min-h-screen">
 						<Header />

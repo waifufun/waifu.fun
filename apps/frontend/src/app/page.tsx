@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
-import HowItWorks from "@/components/landing/how-it-works";
+// How it works section on home page — uncomment to re-enable
+// import HowItWorks from "@/components/landing/how-it-works";
 import ExplorerHeader from "@/components/explorer-header";
 import mockTokens from "@/data/mock-tokens.json";
 import type { IToken } from "@waifufun/types";
@@ -44,7 +45,8 @@ export default async function Home() {
 	return (
 		<div className="flex flex-col w-full">
 			<Hero token={topToken} />
-			<HowItWorks />
+			{/* How it works section — uncomment to re-enable */}
+			{/* <HowItWorks /> */}
 
 			<div
 				id="explore"

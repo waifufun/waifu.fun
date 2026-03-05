@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
+import { useWallet } from "@solana/wallet-adapter-react";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
+import { HowItWorksModal } from "./how-it-works-modal";
+
+const HOW_IT_WORKS_SEEN_KEY = "waifu_how_it_works_seen";
 
 const NAV_LINKS = [
 	{ href: "/#explore", label: "explore" },
@@ -16,11 +20,22 @@ export default function Header() {
 	const [logoHover, setLogoHover] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 	const { scrollY } = useScroll();
+	const wallet = useWallet();
 
 	useMotionValueEvent(scrollY, "change", (latest) => {
 		setScrolled(latest > 20);
 	});
+
+	// Show "how it works" modal automatically on first login
+	useEffect(() => {
+		if (!wallet.connected || typeof window === "undefined") return;
+		const seen = localStorage.getItem(HOW_IT_WORKS_SEEN_KEY);
+		if (seen) return;
+		localStorage.setItem(HOW_IT_WORKS_SEEN_KEY, "true");
+		setHowItWorksOpen(true);
+	}, [wallet.connected]);
 
 	return (
 		<motion.header
@@ -60,20 +75,44 @@ export default function Header() {
 
 					{/* Nav links - hidden on mobile */}
 					<nav className="hidden lg:flex items-center gap-6">
+						<button
+							type="button"
+							className="text-sm font-medium transition-colors duration-200"
+							style={{ color: "#71717a" }}
+							onMouseEnter={(e) => {
+								e.currentTarget.style.color = "#e4e4e7";
+							}}
+							onMouseLeave={(e) => {
+								e.currentTarget.style.color = "#71717a";
+							}}
+							onClick={() => setHowItWorksOpen(true)}
+						>
+							how it works
+						</button>
 						{NAV_LINKS.map((link) => (
 							<Link
 								key={link.href}
 								href={link.href}
 								className="text-sm font-medium transition-colors duration-200"
 								style={{ color: "#71717a" }}
-								onMouseEnter={(e) => (e.currentTarget.style.color = "#e4e4e7")}
-								onMouseLeave={(e) => (e.currentTarget.style.color = "#71717a")}
+								onMouseEnter={(e) => {
+									e.currentTarget.style.color = "#e4e4e7";
+								}}
+								onMouseLeave={(e) => {
+									e.currentTarget.style.color = "#71717a";
+								}}
 							>
 								{link.label}
 							</Link>
 						))}
 					</nav>
 				</div>
+
+				<HowItWorksModal
+					open={howItWorksOpen}
+					onOpenChange={setHowItWorksOpen}
+					controlled
+				/>
 
 				{/* Right: Search + Wallet + Mobile Menu Button */}
 				<div className="flex items-center gap-3 shrink-0">
@@ -83,6 +122,7 @@ export default function Header() {
 					</div>
 					{/* Mobile hamburger button */}
 					<button
+						type="button"
 						className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
 						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 						aria-label="Toggle menu"
@@ -123,6 +163,17 @@ export default function Header() {
 						}}
 					>
 						<nav className="flex flex-col p-4 gap-2">
+							<button
+								type="button"
+								className="text-sm font-medium py-3 px-4 rounded-sm transition-colors duration-200 hover:bg-[rgba(0,255,135,0.08)] text-left"
+								style={{ color: "#e4e4e7" }}
+								onClick={() => {
+									setHowItWorksOpen(true);
+									setMobileMenuOpen(false);
+								}}
+							>
+								how it works
+							</button>
 							{NAV_LINKS.map((link) => (
 								<Link
 									key={link.href}
