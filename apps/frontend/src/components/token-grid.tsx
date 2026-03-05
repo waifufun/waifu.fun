@@ -5,10 +5,212 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
 
 /** When true, only use the tokens passed from the server (mock); never hit the API. */
 const USE_MOCK_TOKENS_ONLY = true;
+
+function formatMarketCap(mc: number): string {
+	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
+	if (mc >= 1_000) return `$${(mc / 1_000).toFixed(1)}k`;
+	return `$${mc}`;
+}
+
+/** Cinematic hero card component */
+function HeroCard({ token, index }: { token: IToken; index: number }) {
+	const cardRef = useRef(null);
+	const isInView = useInView(cardRef, { once: true, margin: "-100px" });
+	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
+	const isBonded = token?.curveCompleted || curveProgress >= 100;
+
+	return (
+		<motion.div
+			ref={cardRef}
+			initial={{ opacity: 0, y: 40 }}
+			animate={isInView ? { opacity: 1, y: 0 } : {}}
+			transition={{ duration: 0.7, ease: "easeOut" }}
+		>
+			<Link
+				href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
+				className="block group"
+			>
+				<motion.div
+					className="relative w-full overflow-hidden rounded-3xl bg-[rgba(17,17,20,0.8)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)]"
+					whileHover={{
+						boxShadow: "0 0 80px rgba(139,92,246,0.2), 0 20px 60px rgba(0,0,0,0.5)",
+						borderColor: "rgba(139,92,246,0.25)",
+					}}
+					transition={{ type: "spring", stiffness: 260, damping: 24 }}
+				>
+					{/* HUD corner accents */}
+					<div className="absolute top-0 left-0 w-16 h-16 pointer-events-none">
+						<div className="absolute top-4 left-4 w-8 h-px bg-gradient-to-r from-[#8b5cf6] to-transparent" />
+						<div className="absolute top-4 left-4 w-px h-8 bg-gradient-to-b from-[#8b5cf6] to-transparent" />
+					</div>
+					<div className="absolute top-0 right-0 w-16 h-16 pointer-events-none">
+						<div className="absolute top-4 right-4 w-8 h-px bg-gradient-to-l from-[#67e8f9] to-transparent" />
+						<div className="absolute top-4 right-4 w-px h-8 bg-gradient-to-b from-[#67e8f9] to-transparent" />
+					</div>
+
+					{/* Main content - cinematic layout */}
+					<div className="flex flex-col lg:flex-row">
+						{/* Image section - large */}
+						<div className="relative w-full lg:w-[55%] h-[280px] sm:h-[340px] lg:h-[420px] overflow-hidden">
+							<motion.div
+								className="absolute inset-0"
+								whileHover={{ scale: 1.03 }}
+								transition={{ duration: 0.8, ease: "easeOut" }}
+							>
+								<Image
+									src={token.image}
+									fill
+									unoptimized
+									alt={token.name}
+									className="object-cover"
+								/>
+							</motion.div>
+							{/* Gradient overlays */}
+							<div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[rgba(17,17,20,0.95)] hidden lg:block" />
+							<div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,17,20,0.9)] via-transparent to-transparent lg:hidden" />
+
+							{/* Rank badge */}
+							{index === 0 && (
+								<div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(17,17,20,0.8)] border border-[rgba(139,92,246,0.3)] backdrop-blur-sm">
+									<span className="text-lg">🔥</span>
+									<span className="text-xs font-mono uppercase tracking-wider text-[#c084fc]">
+										#1 trending
+									</span>
+								</div>
+							)}
+						</div>
+
+						{/* Content section */}
+						<div className="flex-1 flex flex-col justify-between p-6 lg:p-8 lg:pl-4">
+							{/* Top content */}
+							<div className="flex flex-col gap-4">
+								{/* Status badges */}
+								<div className="flex items-center gap-2 flex-wrap">
+									{isBonded && (
+										<div className="px-3 py-1 rounded-full bg-[rgba(139,92,246,0.15)] border border-[rgba(139,92,246,0.3)]">
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#c084fc]">
+												bonded
+											</span>
+										</div>
+									)}
+									{token.verified && (
+										<div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(103,232,249,0.1)] border border-[rgba(103,232,249,0.2)]">
+											<span className="text-[#67e8f9]">✓</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#67e8f9]">
+												verified
+											</span>
+										</div>
+									)}
+								</div>
+
+								{/* Name and ticker */}
+								<div>
+									<h3 className="text-3xl sm:text-4xl font-bold text-[#e4e4e7] leading-tight mb-2">
+										{token.name}
+									</h3>
+									<span className="text-xl font-mono text-[#8b5cf6]">
+										${token.ticker}
+									</span>
+								</div>
+
+								{/* Description */}
+								{token.description && (
+									<p className="text-sm text-[#71717a] leading-relaxed max-w-md">
+										{token.description.length > 160
+											? token.description.slice(0, 160).trimEnd() + "…"
+											: token.description}
+									</p>
+								)}
+							</div>
+
+							{/* Bottom stats bar */}
+							<div className="mt-6 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+								<div className="flex items-center gap-6 flex-wrap">
+									{token.marketcap > 0 && (
+										<div className="flex flex-col">
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+												market cap
+											</span>
+											<span className="text-lg font-bold text-[#e4e4e7]">
+												{formatMarketCap(token.marketcap)}
+											</span>
+										</div>
+									)}
+									{token.holders > 0 && (
+										<div className="flex flex-col">
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+												holders
+											</span>
+											<span className="text-lg font-bold text-[#e4e4e7]">
+												{token.holders.toLocaleString()}
+											</span>
+										</div>
+									)}
+									{token.volume24h > 0 && (
+										<div className="flex flex-col">
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+												24h volume
+											</span>
+											<span className="text-lg font-bold text-[#e4e4e7]">
+												{formatMarketCap(token.volume24h)}
+											</span>
+										</div>
+									)}
+									{/* Price */}
+									{token.price && (
+										<div className="ml-auto">
+											<span className="text-xs font-mono text-[#52525b]">
+												${Number(token.price).toFixed(6)}
+											</span>
+										</div>
+									)}
+								</div>
+
+								{/* Bonding curve progress */}
+								{!isBonded && (
+									<div className="mt-4">
+										<div className="flex items-center justify-between mb-2">
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+												bonding progress
+											</span>
+											<span className="text-xs font-mono text-[#c084fc]">
+												{curveProgress}%
+											</span>
+										</div>
+										<div className="w-full h-2 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+											<motion.div
+												className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] via-[#c084fc] to-[#67e8f9]"
+												initial={{ width: 0 }}
+												animate={{ width: `${curveProgress}%` }}
+												transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+											/>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					</div>
+
+					{/* Bottom HUD accents */}
+					<div className="absolute bottom-0 left-0 w-16 h-16 pointer-events-none">
+						<div className="absolute bottom-4 left-4 w-8 h-px bg-gradient-to-r from-[#8b5cf6] to-transparent" />
+						<div className="absolute bottom-4 left-4 w-px h-8 bg-gradient-to-t from-[#8b5cf6] to-transparent" />
+					</div>
+					<div className="absolute bottom-0 right-0 w-16 h-16 pointer-events-none">
+						<div className="absolute bottom-4 right-4 w-8 h-px bg-gradient-to-l from-[#67e8f9] to-transparent" />
+						<div className="absolute bottom-4 right-4 w-px h-8 bg-gradient-to-t from-[#67e8f9] to-transparent" />
+					</div>
+				</motion.div>
+			</Link>
+		</motion.div>
+	);
+}
 
 export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const searchParams = useSearchParams();
@@ -62,56 +264,87 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const featuredToken = allTokens.find((t) => t.featured);
 	const remainingTokens = allTokens.filter((t) => t !== featuredToken);
 
-	// For very few tokens, use larger layout
-	const isFewTokens = allTokens.length <= 3;
+	// Split remaining tokens for varied layout
+	const firstRowTokens = remainingTokens.slice(0, 2);  // 2 larger cards
+	const secondRowTokens = remainingTokens.slice(2, 5); // 3 medium cards
+	const restTokens = remainingTokens.slice(5);         // 3-column grid
 
 	const containerVariants = {
 		hidden: { opacity: 0 },
 		show: {
 			opacity: 1,
 			transition: {
-				staggerChildren: 0.08,
+				staggerChildren: 0.1,
 			},
 		},
 	};
 
 	const itemVariants = {
-		hidden: { opacity: 0, y: 20 },
-		show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
+		hidden: { opacity: 0, y: 30 },
+		show: { 
+			opacity: 1, 
+			y: 0, 
+			transition: { duration: 0.6, ease: "easeOut" as const } 
+		},
 	};
 
 	return (
 		<Fragment>
 			<motion.div
-				className="flex flex-col gap-6 w-full"
+				className="flex flex-col gap-8 w-full"
 				variants={containerVariants}
 				initial="hidden"
 				animate="show"
 			>
-				{/* Hero featured card */}
+				{/* Hero featured card - full width cinematic */}
 				{featuredToken && (
-					<motion.div
-						variants={itemVariants}
-						className={isFewTokens ? "w-full" : "w-full lg:w-2/3"}
-					>
-						<GridItem token={featuredToken} variant="hero" />
-					</motion.div>
+					<HeroCard token={featuredToken} index={0} />
 				)}
 
-				{/* Remaining tokens grid */}
-				{remainingTokens.length > 0 && (
-					<div
-						className={`grid gap-6 w-full ${
-							isFewTokens
-								? "grid-cols-1 sm:grid-cols-2"
-								: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-						}`}
-					>
-						{remainingTokens.map((token) => (
+				{/* Gradient divider */}
+				{featuredToken && remainingTokens.length > 0 && (
+					<div className="relative py-4">
+						<div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[rgba(139,92,246,0.3)] to-transparent" />
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#8b5cf6] blur-sm" />
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[#c084fc]" />
+					</div>
+				)}
+
+				{/* First row - 2 larger cards */}
+				{firstRowTokens.length > 0 && (
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+						{firstRowTokens.map((token, idx) => (
 							<motion.div key={token.contractAddress} variants={itemVariants}>
-								<GridItem
-									token={token}
-									variant={isFewTokens ? "hero" : "medium"}
+								<GridItem token={token} variant="large" rank={idx + 2} />
+							</motion.div>
+						))}
+					</div>
+				)}
+
+				{/* Second row - 3 medium cards */}
+				{secondRowTokens.length > 0 && (
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+						{secondRowTokens.map((token, idx) => (
+							<motion.div key={token.contractAddress} variants={itemVariants}>
+								<GridItem 
+									token={token} 
+									variant="medium" 
+									rank={firstRowTokens.length + idx + 2} 
+								/>
+							</motion.div>
+						))}
+					</div>
+				)}
+
+				{/* Rest - 3-column compact grid */}
+				{restTokens.length > 0 && (
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+						{restTokens.map((token, idx) => (
+							<motion.div key={token.contractAddress} variants={itemVariants}>
+								<GridItem 
+									token={token} 
+									variant="compact"
+									rank={firstRowTokens.length + secondRowTokens.length + idx + 2}
 								/>
 							</motion.div>
 						))}
