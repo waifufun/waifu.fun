@@ -1,138 +1,275 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-
-function FloatingOrb({ className, delay = 0 }: { className?: string; delay?: number }) {
-	return (
-		<motion.div
-			className={`absolute rounded-full blur-3xl ${className}`}
-			animate={{
-				y: [0, -30, 0],
-				scale: [1, 1.05, 1],
-				opacity: [0.3, 0.5, 0.3],
-			}}
-			transition={{
-				duration: 12,
-				repeat: Infinity,
-				ease: "easeInOut",
-				delay,
-			}}
-		/>
-	);
-}
+import { useEffect, useState } from "react";
 
 export default function Hero() {
+	const [glitchActive, setGlitchActive] = useState(false);
+	
+	// Mouse parallax effect
+	const mouseX = useMotionValue(0);
+	const mouseY = useMotionValue(0);
+	
+	const springConfig = { damping: 25, stiffness: 150 };
+	const x = useSpring(mouseX, springConfig);
+	const y = useSpring(mouseY, springConfig);
+	
+	const rotateX = useTransform(y, [-0.5, 0.5], [5, -5]);
+	const rotateY = useTransform(x, [-0.5, 0.5], [-5, 5]);
+
+	useEffect(() => {
+		const handleMouseMove = (e: MouseEvent) => {
+			const { clientX, clientY, currentTarget } = e;
+			const target = currentTarget as HTMLElement;
+			const { width, height, left, top } = target.getBoundingClientRect();
+			
+			const xPct = (clientX - left) / width - 0.5;
+			const yPct = (clientY - top) / height - 0.5;
+			
+			mouseX.set(xPct);
+			mouseY.set(yPct);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		return () => document.removeEventListener('mousemove', handleMouseMove);
+	}, [mouseX, mouseY]);
+	
+	// Trigger random glitch effect
+	useEffect(() => {
+		const interval = setInterval(() => {
+			if (Math.random() > 0.85) {
+				setGlitchActive(true);
+				setTimeout(() => setGlitchActive(false), 200);
+			}
+		}, 3000);
+		
+		return () => clearInterval(interval);
+	}, []);
+
 	return (
-		<section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden -mx-4 -mt-4">
-			{/* Subtle atmospheric orbs */}
-			<FloatingOrb className="w-[500px] h-[500px] bg-violet-500/20 -top-32 -right-32" delay={0} />
-			<FloatingOrb className="w-[350px] h-[350px] bg-pink-500/15 bottom-32 -left-32" delay={3} />
-			<FloatingOrb className="w-[280px] h-[280px] bg-cyan-500/15 top-1/3 right-1/4" delay={6} />
-
-			{/* Radial vignette */}
-			<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_#0a0a0a_75%)]" />
-
-			{/* Subtle grid */}
-			<div
-				className="absolute inset-0 opacity-[0.015]"
+		<section className="relative min-h-[95vh] flex items-center justify-center overflow-hidden -mx-4 -mt-4">
+			{/* Distorted background orbs */}
+			<motion.div
+				className="absolute w-[600px] h-[600px] rounded-full blur-3xl opacity-[0.12]"
 				style={{
-					backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-					backgroundSize: "80px 80px",
+					background: 'radial-gradient(circle, hsl(270, 50%, 55%) 0%, transparent 70%)',
+					top: '-15%',
+					right: '-10%',
+					rotateX,
+					rotateY,
+				}}
+				animate={{
+					scale: [1, 1.1, 1],
+					opacity: [0.12, 0.15, 0.12],
+				}}
+				transition={{
+					duration: 8,
+					repeat: Infinity,
+					ease: "easeInOut",
+				}}
+			/>
+			
+			<motion.div
+				className="absolute w-[400px] h-[400px] rounded-full blur-3xl opacity-[0.1]"
+				style={{
+					background: 'radial-gradient(circle, hsl(180, 40%, 65%) 0%, transparent 70%)',
+					bottom: '10%',
+					left: '-5%',
+				}}
+				animate={{
+					scale: [1, 1.05, 1],
+					x: [0, 20, 0],
+					opacity: [0.1, 0.12, 0.1],
+				}}
+				transition={{
+					duration: 10,
+					repeat: Infinity,
+					ease: "easeInOut",
+					delay: 2,
+				}}
+			/>
+			
+			<motion.div
+				className="absolute w-[300px] h-[300px] rounded-full blur-3xl opacity-[0.08]"
+				style={{
+					background: 'radial-gradient(circle, hsl(330, 45%, 60%) 0%, transparent 70%)',
+					top: '30%',
+					right: '20%',
+				}}
+				animate={{
+					y: [0, -30, 0],
+					scale: [1, 1.08, 1],
+				}}
+				transition={{
+					duration: 12,
+					repeat: Infinity,
+					ease: "easeInOut",
+					delay: 4,
 				}}
 			/>
 
-			<div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-				{/* Status indicator */}
+			{/* Radial vignette */}
+			<div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_#0a0a0a_80%)]" />
+
+			{/* Broken grid overlay */}
+			<div
+				className="absolute inset-0 opacity-[0.018]"
+				style={{
+					backgroundImage: `linear-gradient(rgba(232,232,232,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(232,232,232,0.15) 1px, transparent 1px)`,
+					backgroundSize: "60px 60px",
+					transform: 'skewY(-2deg)',
+				}}
+			/>
+
+			<div className="relative z-10 max-w-5xl mx-auto px-6">
+				{/* Badge - offset for asymmetry */}
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.1 }}
-					className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/[0.02] backdrop-blur-sm mb-12"
+					initial={{ opacity: 0, x: -20 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.6, delay: 0.1, type: "spring", damping: 20 }}
+					className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-waifufun-stroke-primary bg-waifufun-background-card/30 backdrop-blur-sm mb-16 -ml-2"
 				>
 					<span className="relative flex h-1.5 w-1.5">
-						<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-						<span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+						<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-waifufun-neon-purple opacity-75" />
+						<span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-waifufun-neon-purple" />
 					</span>
-					<span className="text-xs text-zinc-500 tracking-wide">Live on Solana</span>
+					<span className="text-[11px] text-waifufun-text-secondary tracking-widest uppercase font-mono">
+						LIVE_MAINNET
+					</span>
 				</motion.div>
 
-				{/* Headline */}
-				<motion.h1
-					initial={{ opacity: 0, y: 30 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.8, delay: 0.2 }}
-					className="text-[clamp(2.5rem,8vw,5.5rem)] font-medium tracking-[-0.02em] leading-[1.1] mb-6"
-				>
-					<span className="text-white/95">Autonomous agents</span>
-					<br />
-					<span className="text-white/95">that </span>
-					<span className="bg-gradient-to-r from-violet-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-						build wealth
-					</span>
-				</motion.h1>
+				{/* Main headline - with glitch effect */}
+				<div className="mb-8 relative">
+					<motion.h1
+						initial={{ opacity: 0, y: 40 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.9, delay: 0.2, type: "spring", damping: 25 }}
+						className={`text-[clamp(3rem,10vw,7rem)] font-bold tracking-[-0.03em] leading-[0.95] ${glitchActive ? 'animate-glitch-text' : ''}`}
+						style={{
+							fontVariantNumeric: 'lining-nums',
+						}}
+					>
+						<span className="block text-waifufun-text-primary mb-2">
+							Autonomous agents
+						</span>
+						<span className="block">
+							<span className="text-waifufun-text-secondary">that </span>
+							<span 
+								className="relative inline-block animate-glow-pulse"
+								style={{
+									background: 'linear-gradient(120deg, hsl(270, 50%, 55%), hsl(330, 45%, 60%), hsl(180, 40%, 65%))',
+									WebkitBackgroundClip: 'text',
+									WebkitTextFillColor: 'transparent',
+									backgroundClip: 'text',
+								}}
+							>
+								build wealth
+							</span>
+						</span>
+					</motion.h1>
+					
+					{/* Glitch clone layers (subtle data corruption effect) */}
+					{glitchActive && (
+						<>
+							<div 
+								className="absolute inset-0 text-[clamp(3rem,10vw,7rem)] font-bold tracking-[-0.03em] leading-[0.95] opacity-50 text-waifufun-neon-cyan"
+								style={{ transform: 'translate(-2px, -2px)', mixBlendMode: 'screen' }}
+							>
+								<span className="block mb-2">Autonomous agents</span>
+								<span className="block"><span className="text-transparent">that </span>build wealth</span>
+							</div>
+							<div 
+								className="absolute inset-0 text-[clamp(3rem,10vw,7rem)] font-bold tracking-[-0.03em] leading-[0.95] opacity-50 text-waifufun-neon-pink"
+								style={{ transform: 'translate(2px, 2px)', mixBlendMode: 'screen' }}
+							>
+								<span className="block mb-2">Autonomous agents</span>
+								<span className="block"><span className="text-transparent">that </span>build wealth</span>
+							</div>
+						</>
+					)}
+				</div>
 
-				{/* Subtitle */}
-				<motion.p
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.7, delay: 0.4 }}
-					className="text-base sm:text-lg text-zinc-400 max-w-xl mx-auto mb-12 leading-relaxed font-light"
-				>
-					Not chatbots. Economic actors. Deploy AI that trades, learns, and pays its own bills while you sleep.
-				</motion.p>
-
-				{/* CTA buttons */}
+				{/* Subtitle - broken into chunks for asymmetry */}
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.6 }}
-					className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-20"
+					transition={{ duration: 0.7, delay: 0.5, type: "spring", damping: 20 }}
+					className="max-w-2xl mb-14 space-y-2"
 				>
-					<Link
-						href="/create"
-						className="group flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm bg-white text-black hover:bg-white/90 transition-all duration-300"
-					>
-						Deploy Agent
-						<ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-					</Link>
-					<Link
-						href="/explore"
-						className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-sm border border-white/10 text-zinc-300 hover:text-white hover:bg-white/[0.03] hover:border-white/20 transition-all duration-300"
-					>
-						View Live Agents
-					</Link>
+					<p className="text-lg text-waifufun-text-primary font-light leading-relaxed">
+						Not chatbots. Economic actors.
+					</p>
+					<p className="text-base text-waifufun-text-secondary font-light leading-relaxed pl-8">
+						Deploy AI that trades, learns, and pays its own bills while you sleep.
+					</p>
 				</motion.div>
 
-				{/* Social proof */}
+				{/* CTA buttons - staggered entry */}
 				<motion.div
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
-					transition={{ duration: 1, delay: 0.9 }}
-					className="flex flex-col items-center gap-3"
+					transition={{ duration: 0.6, delay: 0.7 }}
+					className="flex flex-col sm:flex-row items-start gap-4 mb-20"
 				>
-					<div className="flex items-center gap-6 text-xs text-zinc-500">
-						<div className="flex flex-col items-center gap-1">
-							<span className="text-white font-medium">127</span>
-							<span>Active Agents</span>
-						</div>
-						<div className="h-8 w-px bg-white/5" />
-						<div className="flex flex-col items-center gap-1">
-							<span className="text-white font-medium">$2.4M</span>
-							<span>24h Volume</span>
-						</div>
-						<div className="h-8 w-px bg-white/5" />
-						<div className="flex flex-col items-center gap-1">
-							<span className="text-white font-medium">+12%</span>
-							<span>Avg Return</span>
-						</div>
+					<motion.div
+						whileHover={{ scale: 1.02, y: -2 }}
+						whileTap={{ scale: 0.98 }}
+						transition={{ type: "spring", damping: 15 }}
+					>
+						<Link
+							href="/create"
+							className="group relative flex items-center gap-2.5 px-7 py-3.5 rounded-lg font-medium text-sm bg-waifufun-text-primary text-waifufun-background-primary hover:bg-waifufun-text-secondary transition-colors duration-200 overflow-hidden"
+						>
+							<span className="relative z-10">Deploy Agent</span>
+							<ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+							
+							{/* Subtle hover glow */}
+							<div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-waifufun-neon-purple/10 to-waifufun-neon-cyan/10" />
+						</Link>
+					</motion.div>
+					
+					<motion.div
+						whileHover={{ scale: 1.02, y: -2 }}
+						whileTap={{ scale: 0.98 }}
+						transition={{ type: "spring", damping: 15 }}
+					>
+						<Link
+							href="/explore"
+							className="flex items-center gap-2.5 px-7 py-3.5 rounded-lg font-medium text-sm border border-waifufun-stroke-primary text-waifufun-text-secondary hover:text-waifufun-text-primary hover:border-waifufun-stroke-highlight/50 hover:bg-waifufun-background-card/30 transition-all duration-200 backdrop-blur-sm"
+						>
+							View Live Agents
+						</Link>
+					</motion.div>
+				</motion.div>
+
+				{/* Stats - asymmetric layout with monospace */}
+				<motion.div
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 1, delay: 1 }}
+					className="flex flex-wrap gap-x-8 gap-y-4 text-xs font-mono"
+				>
+					<div className="flex flex-col gap-0.5">
+						<span className="text-waifufun-text-primary text-base font-medium tabular-nums">127</span>
+						<span className="text-waifufun-text-secondary uppercase tracking-wider">ACTIVE_AGENTS</span>
+					</div>
+					<div className="h-12 w-px bg-waifufun-stroke-primary opacity-30" />
+					<div className="flex flex-col gap-0.5">
+						<span className="text-waifufun-text-primary text-base font-medium tabular-nums">$2.4M</span>
+						<span className="text-waifufun-text-secondary uppercase tracking-wider">24H_VOLUME</span>
+					</div>
+					<div className="h-12 w-px bg-waifufun-stroke-primary opacity-30" />
+					<div className="flex flex-col gap-0.5">
+						<span className="text-waifufun-neon-green text-base font-medium tabular-nums">+12.3%</span>
+						<span className="text-waifufun-text-secondary uppercase tracking-wider">AVG_RETURN</span>
 					</div>
 				</motion.div>
 			</div>
 
 			{/* Bottom gradient fade */}
-			<div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+			<div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-waifufun-background-primary to-transparent" />
 		</section>
 	);
 }
