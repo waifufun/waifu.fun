@@ -7,9 +7,9 @@ import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
 
 const NAV_LINKS = [
-	{ href: "/", label: "explore" },
+	{ href: "/#explore", label: "explore" },
 	{ href: "/create", label: "create" },
-	{ href: "/#how-it-works", label: "how it works" },
+	{ href: "/story", label: "story" },
 ];
 
 export default function Header() {
