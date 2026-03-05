@@ -42,7 +42,7 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 	{
 		header: "No Affiliation with Andreessen Horowitz",
 		content:
-			"The information presented on the platform is for informational purposes only. For the avoidance of any doubt, we are in no way affiliated with, endorsed by, or officially connected to the venture capital firm Andreessen Horowitz ("a16z"), its creators, developers, or any of its subsidiaries, partners, or associated entities. Any references to a16z or its trademarks, logos, products, or services on this website are used solely for descriptive or informational purposes and do not imply any partnership, sponsorship, or endorsement by or with a16z or its associated organizations. All trademarks, service marks, and logos related to a16z are the property of their respective owners and are used herein only under fair use for identification and reference purposes only. We do not claim any ownership or rights over these intellectual properties, nor do we intend to infringe upon the rights of any trademark holders. By using the platform, you acknowledge and agree that we are an independent entity and have no direct or indirect affiliation with a16z or any of its related projects.",
+			'The information presented on the platform is for informational purposes only. For the avoidance of any doubt, we are in no way affiliated with, endorsed by, or officially connected to the venture capital firm Andreessen Horowitz ("a16z"), its creators, developers, or any of its subsidiaries, partners, or associated entities. Any references to a16z or its trademarks, logos, products, or services on this website are used solely for descriptive or informational purposes and do not imply any partnership, sponsorship, or endorsement by or with a16z or its associated organizations. All trademarks, service marks, and logos related to a16z are the property of their respective owners and are used herein only under fair use for identification and reference purposes only. We do not claim any ownership or rights over these intellectual properties, nor do we intend to infringe upon the rights of any trademark holders. By using the platform, you acknowledge and agree that we are an independent entity and have no direct or indirect affiliation with a16z or any of its related projects.',
 	},
 	{
 		header: "Using the Platform",
@@ -65,7 +65,7 @@ Whether your use of the platform or any of its components requires an account or
 	{
 		header: "Privacy Policy",
 		content:
-			"We respect the information that you provide to us and want to be sure you fully understand exactly how we use that information.  Please review our Privacy Policy ("Privacy Policy") [LINK], which explains how we use such information.",
+			'We respect the information that you provide to us and want to be sure you fully understand exactly how we use that information.  Please review our Privacy Policy ("Privacy Policy") [LINK], which explains how we use such information.',
 	},
 	{
 		header: "Electronic Communications",
@@ -151,7 +151,7 @@ For avoidance of doubt, your use of the platform does not grant you any rights i
 			"any matter for which we have disclaimed liability under these terms and conditions;",
 			"your misuse or abuse of the platform; and",
 			"your breach or failure to observe any applicable law,",
-			"(together, the "Released Matters").",
+			'(together, the "Released Matters").',
 		],
 	},
 	{
@@ -176,7 +176,7 @@ For avoidance of doubt, your use of the platform does not grant you any rights i
 	{
 		header: "Feedback",
 		content:
-			"Any comments, questions, suggestions or other feedback (collectively, "Feedback") you provide to us through any communication whatsoever (e.g., call, letter, fax, email) will be treated as both non-confidential and non-proprietary.  You hereby assign all right, title, and interest in, and we are free to use, without any attribution or compensation to you, any ideas, know-how, concepts, techniques, or other intellectual property and proprietary rights contained in the Feedback, whether or not patentable, for any purpose whatsoever, including but not limited to, developing, manufacturing, having manufactured, licensing, marketing, and selling, directly or indirectly, products and services using such Feedback.  Where the foregoing assignment is prohibited by law, you hereby grant us an exclusive, transferable, worldwide, royalty-free, fully paid up license (including the right to sublicense) to use and exploit all Feedback as we may determine in our sole discretion.  You understand and agree, however, that we are not obligated to use, display, reproduce, or distribute any such ideas, know-how, concepts, or techniques contained in the Feedback, and you have no right to compel such use, display, reproduction, or distribution.",
+			'Any comments, questions, suggestions or other feedback (collectively, "Feedback") you provide to us through any communication whatsoever (e.g., call, letter, fax, email) will be treated as both non-confidential and non-proprietary.  You hereby assign all right, title, and interest in, and we are free to use, without any attribution or compensation to you, any ideas, know-how, concepts, techniques, or other intellectual property and proprietary rights contained in the Feedback, whether or not patentable, for any purpose whatsoever, including but not limited to, developing, manufacturing, having manufactured, licensing, marketing, and selling, directly or indirectly, products and services using such Feedback.  Where the foregoing assignment is prohibited by law, you hereby grant us an exclusive, transferable, worldwide, royalty-free, fully paid up license (including the right to sublicense) to use and exploit all Feedback as we may determine in our sole discretion.  You understand and agree, however, that we are not obligated to use, display, reproduce, or distribute any such ideas, know-how, concepts, or techniques contained in the Feedback, and you have no right to compel such use, display, reproduction, or distribution.',
 	},
 	{
 		header: "General",
