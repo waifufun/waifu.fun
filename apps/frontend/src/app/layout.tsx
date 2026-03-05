@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import InteractiveBackground from "@/components/InteractiveBackground";
+import GrainOverlay from "@/components/grain-overlay";
 import { AlertTriangleIcon } from "lucide-react";
 
 const spaceGrotesk = Space_Grotesk({
@@ -41,6 +42,7 @@ export default function RootLayout({
 			>
 				<Providers>
 					<InteractiveBackground />
+					<GrainOverlay />
 					<div className="relative z-10 flex flex-col min-h-screen max-h-screen overflow-hidden">
 						<Header />
 						<main className="flex-1 overflow-auto flex flex-col min-h-0" data-sidebar="inset">

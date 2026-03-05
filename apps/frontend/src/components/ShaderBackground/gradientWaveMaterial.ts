@@ -108,12 +108,12 @@ const GradientWaveMaterial = shaderMaterial(
 
       float f = fbm(p + 4.0 * s);
 
-      // Blue-toned palette: clearly visible moving gradient
-      vec3 col1 = vec3(0.85, 0.90, 0.98);
-      vec3 col2 = vec3(0.55, 0.70, 0.95);
-      vec3 col3 = vec3(0.45, 0.62, 0.92);
-      vec3 col4 = vec3(0.60, 0.75, 0.98);
-      vec3 col5 = vec3(0.50, 0.68, 0.88);
+      // Dark cyberpunk palette: deep violet-tinted blacks
+      vec3 col1 = vec3(0.04, 0.03, 0.06);   // dark violet-tinted
+      vec3 col2 = vec3(0.08, 0.04, 0.12);   // deep purple
+      vec3 col3 = vec3(0.03, 0.03, 0.05);   // near black
+      vec3 col4 = vec3(0.06, 0.03, 0.10);   // dark violet
+      vec3 col5 = vec3(0.02, 0.02, 0.04);   // very dark
 
       float ff = clamp((f + 0.5) * 0.9, 0.0, 1.0);
       vec3 color = mix(col1, col2, ff);
