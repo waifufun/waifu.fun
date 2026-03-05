@@ -31,7 +31,7 @@ function ShaderPlane() {
 		};
 	}, []);
 
-	useFrame((state, delta) => {
+	useFrame((state: any, delta: number) => {
 		const mat = matRef.current;
 		if (!mat) return;
 		const clock = state?.clock;
@@ -62,7 +62,7 @@ function ShaderPlane() {
 	return (
 		<mesh>
 			<planeGeometry args={[2, 2]} />
-			{/* @ts-expect-error custom extended element */}
+			{/* @ts-ignore custom extended element */}
 			<gradientWaveMaterial ref={matRef} />
 		</mesh>
 	);

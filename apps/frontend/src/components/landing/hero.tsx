@@ -42,7 +42,7 @@ export default function Hero() {
 			opacity: 1,
 			y: 0,
 			transition: {
-				type: "spring",
+				type: "spring" as const,
 				stiffness: 150,
 				damping: 20,
 			},
@@ -217,7 +217,7 @@ export default function Hero() {
 						className="px-8 py-3 rounded-lg bg-[#8b5cf6] text-white font-medium"
 						whileHover={{ scale: 1.05, backgroundColor: "#7c3aed" }}
 						whileTap={{ scale: 0.98 }}
-						transition={{ type: "spring", stiffness: 200, damping: 20 }}
+						transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
 					>
 						deploy agent
 					</motion.button>
@@ -229,7 +229,7 @@ export default function Hero() {
 							color: "#e4e4e7",
 						}}
 						whileTap={{ scale: 0.98 }}
-						transition={{ type: "spring", stiffness: 200, damping: 20 }}
+						transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
 					>
 						explore agents
 					</motion.button>

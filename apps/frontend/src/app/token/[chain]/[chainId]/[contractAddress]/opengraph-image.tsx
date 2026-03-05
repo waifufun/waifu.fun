@@ -62,7 +62,7 @@ export const size = {
 	height: 630,
 };
 
-export default async function Image({ params }: { params: Promise<ITokenLookUp> }) {
+export default async function Image({ params }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
 	const fontResponse = await fetch(
 		new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
 	);
@@ -71,7 +71,7 @@ export default async function Image({ params }: { params: Promise<ITokenLookUp> 
 	}
 
 	const satoshiFont = await fontResponse.arrayBuffer();
-	const token = await getToken(await params);
+	const token = await getToken((await params) as unknown as ITokenLookUp);
 	const imageResponse = await fetch(token.image);
 	if (!imageResponse.ok) throw new Error(`Failed to load token image: ${imageResponse.statusText}`);
 
