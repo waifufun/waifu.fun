@@ -1,0 +1,135 @@
+"use client";
+
+import { motion, useInView } from "motion/react";
+import { useRef } from "react";
+
+interface Tier {
+	name: string;
+	price: string;
+	period: string;
+	description: string;
+	features: string[];
+	highlighted: boolean;
+}
+
+const tiers: Tier[] = [
+	{
+		name: "Base",
+		price: "$20",
+		period: "/mo",
+		description: "Everything you need to launch and run an autonomous agent.",
+		features: [
+			"Autonomous trading engine",
+			"Basic skill development",
+			"Handler dashboard access",
+			"Community support",
+			"Up to 50 trades/day",
+		],
+		highlighted: false,
+	},
+	{
+		name: "Pro",
+		price: "$300",
+		period: "/mo",
+		description: "For serious operators. Maximum performance, priority execution.",
+		features: [
+			"Everything in Base",
+			"Advanced strategy library",
+			"Priority trade execution",
+			"MEV protection suite",
+			"Unlimited trades",
+			"Custom skill development",
+			"Dedicated support",
+		],
+		highlighted: true,
+	},
+];
+
+function TierCard({ tier, index }: { tier: Tier; index: number }) {
+	const ref = useRef(null);
+	const isInView = useInView(ref, { once: true, margin: "-40px" });
+
+	return (
+		<motion.div
+			ref={ref}
+			initial={{ opacity: 0, y: 30 }}
+			animate={isInView ? { opacity: 1, y: 0 } : {}}
+			transition={{ duration: 0.6, delay: index * 0.15 }}
+			className={`relative rounded-2xl p-8 transition-all duration-500 ${
+				tier.highlighted
+					? "border border-[#FF6B00]/30 bg-gradient-to-b from-[#FF6B00]/[0.06] to-transparent shadow-[0_0_40px_rgba(255,107,0,0.08)]"
+					: "border border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]"
+			}`}
+		>
+			{tier.highlighted && (
+				<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#FF6B00] text-white text-xs font-semibold">
+					Most Popular
+				</div>
+			)}
+
+			<div className="mb-6">
+				<h3 className="text-lg font-semibold text-white mb-1">{tier.name}</h3>
+				<div className="flex items-baseline gap-1 mb-3">
+					<span className="text-4xl font-bold text-white">{tier.price}</span>
+					<span className="text-waifufun-text-secondary text-sm">{tier.period}</span>
+				</div>
+				<p className="text-sm text-waifufun-text-secondary">{tier.description}</p>
+			</div>
+
+			<ul className="space-y-3 mb-8">
+				{tier.features.map((feature) => (
+					<li key={feature} className="flex items-start gap-3 text-sm">
+						<svg className="w-4 h-4 text-[#FF6B00] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+							<path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+						</svg>
+						<span className="text-waifufun-text-secondary">{feature}</span>
+					</li>
+				))}
+			</ul>
+
+			<button
+				className={`w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 ${
+					tier.highlighted
+						? "bg-[#FF6B00] text-white hover:bg-[#e05a00] shadow-[0_0_20px_rgba(255,107,0,0.3)]"
+						: "border border-white/15 text-white/80 hover:bg-white/5 hover:border-white/25"
+				}`}
+			>
+				Get Started
+			</button>
+		</motion.div>
+	);
+}
+
+export default function Economics() {
+	const sectionRef = useRef(null);
+	const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
+
+	return (
+		<section className="py-32 px-6 relative" ref={sectionRef}>
+			<div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+			<div className="max-w-4xl mx-auto">
+				<motion.div
+					initial={{ opacity: 0, y: 30 }}
+					animate={isInView ? { opacity: 1, y: 0 } : {}}
+					transition={{ duration: 0.7 }}
+					className="text-center mb-16"
+				>
+					<p className="text-sm uppercase tracking-[0.2em] text-[#FF6B00] mb-4 font-medium">Economics</p>
+					<h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+						Agents pay for themselves.
+					</h2>
+					<p className="text-waifufun-text-secondary text-lg max-w-xl mx-auto">
+						Simple, transparent pricing. Agents self-fund from trading profits — you only pay infrastructure.
+					</p>
+				</motion.div>
+
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+					{tiers.map((tier, i) => (
+						<TierCard key={tier.name} tier={tier} index={i} />
+					))}
+				</div>
+			</div>
+		</section>
+	);
+}

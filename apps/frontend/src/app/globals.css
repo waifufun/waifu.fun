@@ -183,28 +183,28 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 45, 120, 0.4);
+	background-color: rgba(255, 107, 0, 0.4);
 	border-radius: 9999px;
 	border: none;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background-color: rgba(255, 45, 120, 0.7);
+	background-color: rgba(255, 107, 0, 0.7);
 }
 
 /* For Firefox: thin thumb, transparent track */
 * {
 	scrollbar-width: thin;
-	scrollbar-color: rgba(255, 45, 120, 0.4) transparent;
+	scrollbar-color: rgba(255, 107, 0, 0.4) transparent;
 }
 
 input::selection {
 	color: #212121;
-	background-color: #ff2d78;
+	background-color: #FF6B00;
 }
 
 .flashy-bonding-block {
-	background-color: #ff2d78;
+	background-color: #FF6B00;
 	animation: pixel-pulse-green 1.5s infinite;
 }
 
@@ -230,11 +230,11 @@ input::selection {
 
 /* Pink glow effect */
 .glow-pink {
-	box-shadow: 0 0 20px rgba(255, 45, 120, 0.3);
+	box-shadow: 0 0 20px rgba(255, 107, 0, 0.3);
 }
 
 .glow-pink-lg {
-	box-shadow: 0 0 40px rgba(255, 45, 120, 0.25), 0 0 80px rgba(255, 45, 120, 0.1);
+	box-shadow: 0 0 40px rgba(255, 107, 0, 0.25), 0 0 80px rgba(255, 107, 0, 0.1);
 }
 
 /* Glass effect */
@@ -254,7 +254,7 @@ input::selection {
 
 /* Gradient text */
 .gradient-text-pink {
-	background: linear-gradient(135deg, #FF2D78, #FF6B9D);
+	background: linear-gradient(135deg, #FF6B00, #FF6B9D);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
@@ -288,7 +288,7 @@ input::selection {
 	inset: 0;
 	border-radius: inherit;
 	padding: 1px;
-	background: linear-gradient(135deg, #FF2D78, transparent 50%, #FF2D78);
+	background: linear-gradient(135deg, #FF6B00, transparent 50%, #FF6B00);
 	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
 	-webkit-mask-composite: xor;
 	mask-composite: exclude;

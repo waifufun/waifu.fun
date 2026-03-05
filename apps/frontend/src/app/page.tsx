@@ -1,53 +1,43 @@
 import type { Metadata } from "next";
-import ListView from "@/components/list-view";
-import TokenGrid from "@/components/token-grid";
-import mockTokens from "@/data/mock-tokens.json";
-import type { IToken } from "@waifufun/types";
-
-export const revalidate = 4;
+import Hero from "@/components/landing/hero";
+import WhatIs from "@/components/landing/what-is";
+import HowItWorks from "@/components/landing/how-it-works";
+import FeaturedAgents from "@/components/landing/featured-agents";
+import SkillSystem from "@/components/landing/skill-system";
+import Economics from "@/components/landing/economics";
+import CTA from "@/components/landing/cta";
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
-		title: "waifu.fun - Fair Launchpad & Trading Platform",
+		title: "waifu.fun — Autonomous AI Agents on Solana",
 		description:
-			"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
+			"Launch autonomous AI agents that trade, build skills, and pay their own bills. Not chatbots — economic actors on Solana.",
 		openGraph: {
-			title: "waifu.fun - Fair Launchpad & Trading Platform",
+			title: "waifu.fun — Your AI Trades While You Sleep",
 			description:
-				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
+				"Launch autonomous AI agents that trade, build skills, and pay their own bills on Solana.",
 			type: "website",
 			locale: "en_US",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "waifu.fun - Fair Launchpad & Trading Platform",
+			title: "waifu.fun — Your AI Trades While You Sleep",
 			description:
-				"Launch your token fairly on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
+				"Launch autonomous AI agents that trade, build skills, and pay their own bills on Solana.",
 		},
 	};
 };
 
-/** Mock tokens only — API is not called. */
-function getTokensForPage(): IToken[] {
-	return mockTokens as IToken[];
-}
-
-export default async function Home({
-	searchParams,
-}: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-	const currentSearchParams = await searchParams;
-	const tokens = getTokensForPage();
-	const view = currentSearchParams?.view || "grid";
-	const noTokens = (tokens?.length || 0) === 0;
+export default function Home() {
 	return (
-		<div className={`flex flex-col gap-4 w-full ${noTokens ? "h-screen justify-center items-center" : ""}`}>
-			{noTokens ? (
-				<h1 className="text-[#03FF23] text-lg font-semibold uppercase">No tokens found</h1>
-			) : view === "grid" ? (
-				<TokenGrid tokens={tokens} />
-			) : (
-				<ListView tokens={tokens} />
-			)}
+		<div className="w-full">
+			<Hero />
+			<WhatIs />
+			<HowItWorks />
+			<FeaturedAgents />
+			<SkillSystem />
+			<Economics />
+			<CTA />
 		</div>
 	);
 }
