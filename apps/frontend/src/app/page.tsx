@@ -3,6 +3,7 @@ import ListView from "@/components/list-view";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
 import HowItWorks from "@/components/landing/how-it-works";
+import Ecosystem from "@/components/landing/ecosystem";
 import ExplorerHeader from "@/components/explorer-header";
 import mockTokens from "@/data/mock-tokens.json";
 import type { IToken } from "@waifufun/types";
@@ -47,9 +48,10 @@ export default async function Home({
 		<div className="flex flex-col w-full">
 			<Hero />
 			<HowItWorks />
+			<Ecosystem />
 
 			<div
-				className={`flex flex-col gap-6 w-full px-4 sm:px-6 lg:px-8 py-12 ${
+				className={`flex flex-col gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ${
 					noTokens ? "min-h-[50vh] justify-center items-center" : ""
 				}`}
 			>

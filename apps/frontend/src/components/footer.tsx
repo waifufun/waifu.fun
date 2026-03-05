@@ -30,6 +30,51 @@ export default function Footer() {
 					</div>
 				</div>
 
+				{/* Ecosystem links */}
+				<div
+					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4"
+					style={{ borderTop: "1px solid rgba(255, 255, 255, 0.04)" }}
+				>
+					<div className="flex flex-wrap items-center gap-4 text-xs">
+						<a
+							href="https://elizaos.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
+						>
+							elizaos
+						</a>
+						<a
+							href="https://elizaos.github.io/eliza/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
+						>
+							docs
+						</a>
+						<a
+							href="https://github.com/elizaOS/eliza"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
+						>
+							github
+						</a>
+						<a
+							href="https://x.com/elizaos"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
+						>
+							x
+						</a>
+					</div>
+					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(0,255,135,0.1)] bg-[rgba(0,255,135,0.03)]">
+						<span className="text-[#00ff87] opacity-60">●</span>
+						built on eliza cloud
+					</span>
+				</div>
+
 				{/* Bottom row: copyright + legal */}
 				<div
 					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-5 text-xs"

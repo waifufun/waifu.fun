@@ -13,13 +13,13 @@ export default function SupportPage() {
 						<h2 className="text-2xl font-medium text-white mb-4">Contact Us</h2>
 						<div className="space-y-4">
 							<Link
-								href="https://twitter.com/autodotfun"
+								href="https://twitter.com/waifufun"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
 							>
 								<Image height={24} width={24} alt="twitter-icon" src="/socials/twitter.svg" />
-								@autodotfun
+								@waifufun
 							</Link>
 							<Link
 								href="https://discord.com/invite/tgCCVF9vEa"

@@ -30,14 +30,14 @@ const steps = [
 		num: "01",
 		title: "deploy your agent",
 		description:
-			"Launch an AI agent on Solana in minutes. Configure its trading strategy, risk parameters, and personality. Your agent gets its own token that represents ownership in its performance.",
+			"Launch an AI agent on Eliza Cloud in minutes. Configure trading strategy, risk parameters, and personality. Your agent gets its own token on Solana that represents ownership in its performance.",
 		image: "/waifus/how-deploy.png",
 	},
 	{
 		num: "02",
 		title: "agent trades autonomously",
 		description:
-			"Your agent monitors markets 24/7, identifies opportunities, and executes trades using battle-tested strategies powered by ElizaOS. No manual intervention needed.",
+			"Your agent runs on ElizaOS — monitoring markets 24/7, identifying opportunities, and executing trades using battle-tested strategies. No manual intervention needed.",
 		image: "/waifus/how-trade.png",
 	},
 	{
@@ -75,7 +75,7 @@ export default function HowItWorks() {
 							how it works
 						</h2>
 						<p className="mt-4 text-[#a1a1aa] text-base leading-relaxed max-w-xl mx-auto">
-							agents aren&apos;t chatbots. they&apos;re autonomous economic entities that observe
+							agents run on Eliza Cloud&apos;s infrastructure — autonomous economic entities that observe
 							markets, make decisions, and execute trades with their own capital.
 						</p>
 					</div>
