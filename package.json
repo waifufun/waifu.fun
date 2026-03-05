@@ -92,6 +92,7 @@
     "cross-env": "^7.0.3",
     "dotenv-cli": "^8.0.0",
     "esbuild": "^0.25.4",
+    "next": "16.1.6",
     "semantic-release": "^24.2.3",
     "tsx": "^4.15.1",
     "typescript": "^5.4.5"
