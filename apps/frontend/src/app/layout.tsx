@@ -36,7 +36,9 @@ export default function RootLayout({
 				colorScheme: "dark",
 			}}
 		>
-			<body className={cn("h-full font-sans antialiased overflow-hidden", spaceGrotesk.variable, spaceGrotesk.className)}>
+			<body
+				className={cn("h-full font-sans antialiased overflow-hidden", spaceGrotesk.variable, spaceGrotesk.className)}
+			>
 				<Providers>
 					<InteractiveBackground />
 					<div className="relative z-10 flex flex-col min-h-screen max-h-screen overflow-hidden">
