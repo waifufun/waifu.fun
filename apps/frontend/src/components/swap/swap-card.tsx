@@ -176,7 +176,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	return (
 		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
-				<div className="flex items-stretch gap-2 w-full bg-black border-2 border-[#03FF24]/40 py-3 px-1.5 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)]">
+				<div className="flex items-stretch gap-2 w-full bg-[#08080a] border border-[rgba(255,255,255,0.06)] py-3 px-1.5 rounded-sm">
 					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
@@ -305,7 +305,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							tooHighBuyAmount && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+							"p-2 w-full bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
 						])}
 					>
 						<AlertCircle className="text-waifufun-text-error" />
@@ -316,7 +316,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+							"p-2 w-full bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
 						])}
 					>
 						<AlertCircle className="text-waifufun-text-error" />
@@ -337,7 +337,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									swapMutation?.mutate();
 								}
 							}}
-							className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+							className="w-full mt-2 text-base font-medium bg-[#111114] hover:border hover:border-[#00ff87] text-white uppercase"
 						>
 							{token.status === "migrating"
 								? "Token migrating"
@@ -356,7 +356,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							<TooltipTrigger className="w-full">
 								<Button
 									disabled
-									className="w-full mt-2 text-base font-medium bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] hover:border hover:border-[#03FF24] text-white uppercase"
+									className="w-full mt-2 text-base font-medium bg-[#111114] hover:border hover:border-[#00ff87] text-white uppercase"
 								>
 									<Countdown
 										date={moment(token?.tradingStartsAt).toDate()}

@@ -67,7 +67,7 @@ export default function UpdateSocialsModal({ open, onClose, token, onSuccess }: 
 			}}
 		>
 			<div
-				className="bg-zinc-900 border border-[#03FF24]/40 shadow-lg w-full max-w-md p-6 relative"
+				className="bg-zinc-900 border border-[rgba(255,255,255,0.06)] shadow-lg w-full max-w-md p-6 relative"
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e) => e.stopPropagation()}
 			>
@@ -79,7 +79,7 @@ export default function UpdateSocialsModal({ open, onClose, token, onSuccess }: 
 				>
 					×
 				</button>
-				<h2 className="text-lg font-bold mb-4 text-[#03FF24]">Update Token Socials</h2>
+				<h2 className="text-lg font-bold mb-4 text-[#00ff87]">Update Token Socials</h2>
 				<form onSubmit={handleSubmit} className="space-y-3">
 					<Input name="twitter" placeholder="Twitter URL" value={form.twitter} onChange={handleChange} autoFocus />
 					<Input name="telegram" placeholder="Telegram URL" value={form.telegram} onChange={handleChange} />

@@ -43,9 +43,9 @@ export default function AdvancedSettings() {
 									key={label}
 									onClick={() => setSpeed(label)}
 									className={cn(
-										"flex-1 text-sm max-h-[36px] h-full capitalize bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] font-medium text-white hover:bg-[#1a1a1a] transition-colors",
+										"flex-1 text-sm max-h-[36px] h-full capitalize bg-[#111114] font-medium text-white hover:bg-[#1a1a1a] transition-colors",
 										"border border-transparent",
-										String(speed) === String(label) && "border border-[#03FF24]",
+										String(speed) === String(label) && "border border-[#00ff87]",
 									)}
 								>
 									{String(label)}
@@ -88,7 +88,7 @@ export default function AdvancedSettings() {
 								slippage > 40
 									? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 									: "hidden",
-								"p-2 bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+								"p-2 bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
 							])}
 						>
 							<AlertCircle className="text-waifufun-background-action-highlight" />
