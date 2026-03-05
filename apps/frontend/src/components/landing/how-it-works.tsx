@@ -3,6 +3,8 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 function SectionBlock({
 	children,
@@ -142,6 +144,19 @@ export default function HowItWorks() {
 						);
 					})}
 				</div>
+
+				{/* Read the full story link */}
+				<SectionBlock delay={0.4}>
+					<div className="mt-12 text-center">
+						<Link
+							href="/story"
+							className="inline-flex items-center gap-2 text-[#a1a1aa] hover:text-[#00ff87] transition-colors duration-200 text-sm font-medium group"
+						>
+							read the full story
+							<ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+						</Link>
+					</div>
+				</SectionBlock>
 			</div>
 		</section>
 	);
