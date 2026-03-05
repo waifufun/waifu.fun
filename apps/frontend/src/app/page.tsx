@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import ListView from "@/components/list-view";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
+import HowItWorks from "@/components/landing/how-it-works";
+import ExplorerHeader from "@/components/explorer-header";
 import mockTokens from "@/data/mock-tokens.json";
 import type { IToken } from "@waifufun/types";
 
@@ -40,19 +42,29 @@ export default async function Home({
 	const tokens = getTokensForPage();
 	const view = currentSearchParams?.view || "grid";
 	const noTokens = (tokens?.length || 0) === 0;
-	
+
 	return (
 		<div className="flex flex-col w-full">
 			<Hero />
-			
-			<div className={`flex flex-col gap-4 w-full px-4 sm:px-6 lg:px-8 py-8 ${noTokens ? "min-h-[50vh] justify-center items-center" : ""}`}>
+			<HowItWorks />
+
+			<div
+				className={`flex flex-col gap-6 w-full px-4 sm:px-6 lg:px-8 py-12 ${
+					noTokens ? "min-h-[50vh] justify-center items-center" : ""
+				}`}
+			>
 				{noTokens ? (
-					<h1 className="text-[#8b5cf6] text-lg font-semibold uppercase">No tokens found</h1>
+					<div className="flex flex-col items-center gap-3">
+						<span className="text-[#8b5cf6] text-lg font-semibold">
+							no agents found
+						</span>
+						<span className="text-[#52525b] text-sm">
+							check back soon — new agents are launching
+						</span>
+					</div>
 				) : (
 					<>
-						<h2 className="font-mono text-sm uppercase tracking-[0.2em] text-[#71717a] mb-4">
-							live feed
-						</h2>
+						<ExplorerHeader />
 						{view === "grid" ? (
 							<TokenGrid tokens={tokens} />
 						) : (

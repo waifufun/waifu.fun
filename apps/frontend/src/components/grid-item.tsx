@@ -4,86 +4,189 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-const CardContent = ({ token }: { token: IToken }) => (
-	<>
-		<div className="relative w-full h-[168px] shrink-0">
-			<Image
-				src={token.image}
-				width={500}
-				height={500}
-				unoptimized
-				alt="image"
-				className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-200"
-			/>
-			{/* Dark gradient overlay at bottom of image */}
-			<div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#111114] to-transparent" />
-			{/* Title and ticker: dark glass background */}
-			<div className="absolute top-0 right-0 rounded-bl-lg rounded-tr-xl bg-[rgba(8,8,10,0.8)] backdrop-blur-sm px-3 py-2 border-l border-b border-[rgba(255,255,255,0.06)]">
-				<span className="block text-2xl font-bold text-[#e4e4e7] line-clamp-1 text-right">
-					{token?.name}
-				</span>
-				<span className="block text-xl font-bold text-[#71717a] text-right">
-					${token?.ticker}
-				</span>
-			</div>
-		</div>
-		{/* Bottom section */}
-		<div className="flex flex-col gap-1 flex-1 min-h-0 p-3 bg-[#111114]">
-			<div className="flex flex-col">
-				<span className="text-sm font-medium text-[#e4e4e7] line-clamp-1 truncate">
-					{token?.name}
-				</span>
-				<span className="text-sm font-medium text-[#71717a] line-clamp-1">
-					${token?.ticker}
-				</span>
-			</div>
-		</div>
-	</>
-);
+function formatMarketCap(mc: number): string {
+	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
+	if (mc >= 1_000) return `$${(mc / 1_000).toFixed(1)}k`;
+	return `$${mc}`;
+}
 
-export const GridItem = ({ token }: { token: IToken }) => {
-	const isBonded = token?.curveCompleted || Number(token?.curveProgress ?? 0) >= 100;
+function truncateDescription(desc: string | undefined, maxLen: number): string {
+	if (!desc) return "";
+	if (desc.length <= maxLen) return desc;
+	return desc.slice(0, maxLen).trimEnd() + "…";
+}
+
+export const GridItem = ({
+	token,
+	variant = "medium",
+}: {
+	token: IToken;
+	variant?: "hero" | "medium";
+}) => {
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
-	const progressDeg = (curveProgress / 100) * 360;
-	const ringStyle = {
-		background: `conic-gradient(from 0deg, #8b5cf6 0deg, #8b5cf6 ${progressDeg}deg, rgba(255,255,255,0.06) ${progressDeg}deg, rgba(255,255,255,0.06) 360deg)`,
-	};
+	const isBonded = token?.curveCompleted || curveProgress >= 100;
+	const isDead = token?.status === "finalized" || (isBonded && token?.marketcap === 0);
+	const isHero = variant === "hero";
 
-	const cardBase = "flex flex-col h-full min-h-0 rounded-xl overflow-hidden flex-1 bg-[#111114] border border-[rgba(255,255,255,0.06)] transition-all duration-200";
+	const descMaxLen = isHero ? 120 : 72;
 
 	return (
 		<Link
 			href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
-			className="block h-full min-h-0 group"
+			className="block h-full group"
 		>
-			{isBonded ? (
-				<motion.div 
-					className={cardBase}
-					whileHover={{ 
-						y: -2, 
-						scale: 1.02,
-						borderColor: "rgba(255,255,255,0.12)",
-						boxShadow: "0 0 20px rgba(139, 92, 246, 0.15)"
-					}}
-					transition={{ type: "spring", stiffness: 200, damping: 20 }}
+			<motion.div
+				className={`
+					relative flex flex-col h-full rounded-2xl overflow-hidden
+					bg-[rgba(17,17,20,0.7)] backdrop-blur-md
+					border border-[rgba(255,255,255,0.06)]
+					transition-colors duration-300
+				`}
+				whileHover={{
+					y: -4,
+					boxShadow: "0 0 40px rgba(139,92,246,0.15), 0 8px 32px rgba(0,0,0,0.4)",
+					borderColor: "rgba(139,92,246,0.2)",
+				}}
+				transition={{ type: "spring", stiffness: 260, damping: 24 }}
+			>
+				{/* Image area */}
+				<div
+					className={`relative w-full overflow-hidden ${
+						isHero ? "h-[320px] sm:h-[380px]" : "h-[220px] sm:h-[260px]"
+					}`}
 				>
-					<CardContent token={token} />
-				</motion.div>
-			) : (
-				<motion.div
-					className="rounded-[16px] p-[4px] h-full min-h-0 flex flex-col"
-					style={ringStyle}
-					whileHover={{ 
-						y: -2, 
-						scale: 1.02 
-					}}
-					transition={{ type: "spring", stiffness: 200, damping: 20 }}
-				>
-					<div className={cardBase}>
-						<CardContent token={token} />
+					<motion.div
+						className="absolute inset-0"
+						whileHover={{ scale: 1.05 }}
+						transition={{ duration: 0.6, ease: "easeOut" }}
+					>
+						<Image
+							src={token.image}
+							width={800}
+							height={800}
+							unoptimized
+							alt={token.name}
+							className="w-full h-full object-cover"
+						/>
+					</motion.div>
+
+					{/* Gradient overlay */}
+					<div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,17,20,0.95)] via-[rgba(17,17,20,0.3)] to-transparent" />
+
+					{/* Status badge */}
+					{isDead && (
+						<div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] backdrop-blur-sm">
+							<span className="text-[10px] font-mono uppercase tracking-wider text-red-400">
+								inactive
+							</span>
+						</div>
+					)}
+					{isBonded && !isDead && (
+						<div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[rgba(139,92,246,0.15)] border border-[rgba(139,92,246,0.3)] backdrop-blur-sm">
+							<span className="text-[10px] font-mono uppercase tracking-wider text-[#c084fc]">
+								bonded
+							</span>
+						</div>
+					)}
+
+					{/* Verified badge */}
+					{token.verified && (
+						<div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[rgba(103,232,249,0.1)] border border-[rgba(103,232,249,0.2)] backdrop-blur-sm">
+							<span className="text-[10px] font-mono uppercase tracking-wider text-[#67e8f9]">
+								✓ verified
+							</span>
+						</div>
+					)}
+
+					{/* Name overlay at bottom of image */}
+					<div className="absolute bottom-0 inset-x-0 p-4 pb-3">
+						<h3
+							className={`font-bold text-[#e4e4e7] leading-tight ${
+								isHero ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl"
+							}`}
+						>
+							{token.name}
+						</h3>
+						<span
+							className={`font-mono text-[#8b5cf6] ${
+								isHero ? "text-base" : "text-sm"
+							}`}
+						>
+							${token.ticker}
+						</span>
 					</div>
-				</motion.div>
-			)}
+				</div>
+
+				{/* Content area */}
+				<div className="flex flex-col gap-3 p-4 flex-1">
+					{/* Description */}
+					{token.description && (
+						<p
+							className={`text-[#71717a] leading-relaxed ${
+								isHero ? "text-sm" : "text-xs"
+							}`}
+						>
+							{truncateDescription(token.description, descMaxLen)}
+						</p>
+					)}
+
+					{/* Stats row */}
+					<div className="flex items-center gap-4 mt-auto pt-2">
+						{token.marketcap > 0 && (
+							<div className="flex flex-col">
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+									mcap
+								</span>
+								<span className="text-sm font-semibold text-[#e4e4e7]">
+									{formatMarketCap(token.marketcap)}
+								</span>
+							</div>
+						)}
+						{token.holders > 0 && (
+							<div className="flex flex-col">
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+									holders
+								</span>
+								<span className="text-sm font-semibold text-[#e4e4e7]">
+									{token.holders.toLocaleString()}
+								</span>
+							</div>
+						)}
+						{token.volume24h > 0 && isHero && (
+							<div className="flex flex-col">
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+									24h vol
+								</span>
+								<span className="text-sm font-semibold text-[#e4e4e7]">
+									{formatMarketCap(token.volume24h)}
+								</span>
+							</div>
+						)}
+					</div>
+
+					{/* Bonding curve progress bar (only if not fully bonded) */}
+					{!isBonded && (
+						<div className="w-full mt-1">
+							<div className="flex items-center justify-between mb-1">
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
+									bonding curve
+								</span>
+								<span className="text-[10px] font-mono text-[#71717a]">
+									{curveProgress}%
+								</span>
+							</div>
+							<div className="w-full h-[3px] rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+								<motion.div
+									className="h-full rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#c084fc]"
+									initial={{ width: 0 }}
+									animate={{ width: `${curveProgress}%` }}
+									transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+								/>
+							</div>
+						</div>
+					)}
+				</div>
+			</motion.div>
 		</Link>
 	);
 };
