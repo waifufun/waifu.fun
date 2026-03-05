@@ -5,67 +5,97 @@ export default function Footer() {
 	const year = new Date().getFullYear();
 
 	return (
-		<footer className="shrink-0 mt-auto py-8 pt-10">
-			<div className="w-full max-w-4xl mx-auto px-4">
-				{/* Footer card: branding, socials, copyright, and legal links */}
-				<div className="rounded-xl border border-white/20 bg-white/25 backdrop-blur-md p-6 sm:p-8">
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
-						{/* Left: branding */}
-						<div className="flex flex-col gap-1">
-							<Link href="/" className="font-bold text-lg sm:text-xl tracking-tight text-[#2563eb] hover:text-[#3b82f6] transition-colors" aria-label="waifu.fun home">
-								WAIFU.FUN
-							</Link>
-							<p className="text-sm text-gray-500">Press the fun button.</p>
-						</div>
-						{/* Right: social / utility icons */}
-						<div className="flex items-center gap-4">
-							<Link
-								href="https://waifu.fun"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-gray-400 hover:text-white transition-colors"
-								aria-label="Website"
-							>
-								<Image src="/socials/website.svg" width={24} height={24} alt="" unoptimized />
-							</Link>
-							<Link
-								href="https://discord.gg/waifufun"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-gray-400 hover:text-white transition-colors"
-								aria-label="Discord"
-							>
-								<Image src="/socials/discord.svg" width={24} height={24} alt="" unoptimized />
-							</Link>
-							<Link
-								href="https://x.com/waifufun"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-gray-400 hover:text-white transition-colors"
-								aria-label="X (Twitter)"
-							>
-								<Image src="/socials/twitter.svg" width={24} height={24} alt="" unoptimized />
-							</Link>
-						</div>
+		<footer
+			className="shrink-0 mt-auto py-8"
+			style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}
+		>
+			<div className="w-full max-w-6xl mx-auto px-4">
+				{/* Main footer row */}
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
+					{/* Left: branding */}
+					<div className="flex flex-col gap-1">
+						<Link
+							href="/"
+							className="font-bold text-lg tracking-tight transition-colors duration-200"
+							style={{ color: "#e4e4e7" }}
+							aria-label="waifu.fun home"
+						>
+							waifu.fun
+						</Link>
+						<p
+							className="text-sm font-mono"
+							style={{ color: "#52525b" }}
+						>
+							autonomous agents on solana
+						</p>
 					</div>
 
-					{/* Copyright + legal links inside card */}
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-white/15 text-sm">
-						<p className="text-gray-500">&copy; {year} waifu.fun</p>
-						<div className="flex flex-wrap items-center gap-4">
-							<Link
-								href="/privacy-policy"
-								className="text-blue-600 hover:text-blue-500 transition-colors"
-							>
-								Privacy Policy
-							</Link>
-							<Link
-								href="/terms-of-service"
-								className="text-blue-600 hover:text-blue-500 transition-colors"
-							>
-								Terms of Service
-							</Link>
-						</div>
+					{/* Right: social icons */}
+					<div className="flex items-center gap-4">
+						<Link
+							href="https://waifu.fun"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="transition-opacity duration-200 hover:opacity-100"
+							style={{ color: "#71717a", opacity: 0.7 }}
+							onMouseEnter={(e) => (e.currentTarget.style.color = "#e4e4e7")}
+							onMouseLeave={(e) => (e.currentTarget.style.color = "#71717a")}
+							aria-label="Website"
+						>
+							<Image src="/socials/website.svg" width={20} height={20} alt="" unoptimized />
+						</Link>
+						<Link
+							href="https://discord.gg/waifufun"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="transition-opacity duration-200 hover:opacity-100"
+							style={{ color: "#71717a", opacity: 0.7 }}
+							onMouseEnter={(e) => (e.currentTarget.style.color = "#e4e4e7")}
+							onMouseLeave={(e) => (e.currentTarget.style.color = "#71717a")}
+							aria-label="Discord"
+						>
+							<Image src="/socials/discord.svg" width={20} height={20} alt="" unoptimized />
+						</Link>
+						<Link
+							href="https://x.com/waifufun"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="transition-opacity duration-200 hover:opacity-100"
+							style={{ color: "#71717a", opacity: 0.7 }}
+							onMouseEnter={(e) => (e.currentTarget.style.color = "#e4e4e7")}
+							onMouseLeave={(e) => (e.currentTarget.style.color = "#71717a")}
+							aria-label="X (Twitter)"
+						>
+							<Image src="/socials/twitter.svg" width={20} height={20} alt="" unoptimized />
+						</Link>
+					</div>
+				</div>
+
+				{/* Bottom row: copyright + legal */}
+				<div
+					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 text-sm"
+					style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}
+				>
+					<p style={{ color: "#52525b" }}>&copy; {year} waifu.fun</p>
+					<div className="flex flex-wrap items-center gap-4">
+						<Link
+							href="/privacy-policy"
+							className="transition-colors duration-200"
+							style={{ color: "#71717a" }}
+							onMouseEnter={(e) => (e.currentTarget.style.color = "#a78bfa")}
+							onMouseLeave={(e) => (e.currentTarget.style.color = "#71717a")}
+						>
+							Privacy Policy
+						</Link>
+						<Link
+							href="/terms-of-service"
+							className="transition-colors duration-200"
+							style={{ color: "#71717a" }}
+							onMouseEnter={(e) => (e.currentTarget.style.color = "#a78bfa")}
+							onMouseLeave={(e) => (e.currentTarget.style.color = "#71717a")}
+						>
+							Terms of Service
+						</Link>
 					</div>
 				</div>
 			</div>
