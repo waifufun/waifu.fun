@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent white flash on hero/page: force dark background from first paint */
+html.dark,
+html.dark body {
+	background-color: #08080a !important;
+}
+
 @font-face {
 	font-family: "Satoshi";
 	src: url("/fonts/Satoshi-Regular.otf") format("opentype");

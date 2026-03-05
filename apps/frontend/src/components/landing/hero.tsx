@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -18,25 +18,24 @@ function formatMarketCap(mc: number): string {
 }
 
 export default function Hero({ token }: { token: IToken | null }) {
-	const [isGlitching, setIsGlitching] = useState(false);
+	const [isGlitching, setIsGlitching] = useState(false); // unused while glitch effect is disabled below
 
-	useEffect(() => {
-		const triggerGlitch = () => {
-			setIsGlitching(true);
-			setTimeout(() => setIsGlitching(false), 150);
-		};
-
-		const scheduleNextGlitch = () => {
-			const delay = 6000 + Math.random() * 4000;
-			return setTimeout(() => {
-				triggerGlitch();
-				scheduleNextGlitch();
-			}, delay);
-		};
-
-		const timeoutId = scheduleNextGlitch();
-		return () => clearTimeout(timeoutId);
-	}, []);
+	// Glitch effect disabled (caused white flash ~4–5s); uncomment useEffect to re-enable
+	// useEffect(() => {
+	// 	const triggerGlitch = () => {
+	// 		setIsGlitching(true);
+	// 		setTimeout(() => setIsGlitching(false), 150);
+	// 	};
+	// 	const scheduleNextGlitch = () => {
+	// 		const delay = 6000 + Math.random() * 4000;
+	// 		return setTimeout(() => {
+	// 			triggerGlitch();
+	// 			scheduleNextGlitch();
+	// 		}, delay);
+	// 	};
+	// 	const timeoutId = scheduleNextGlitch();
+	// 	return () => clearTimeout(timeoutId);
+	// }, []);
 
 	const containerVariants = {
 		hidden: { opacity: 0 },
@@ -62,10 +61,21 @@ export default function Hero({ token }: { token: IToken | null }) {
 		},
 	};
 
+	const bgDark = "#08080a";
+
 	return (
-		<section className="relative overflow-hidden flex items-center min-h-[85vh] py-16 lg:py-24">
-			{/* Aurora animated background */}
-			<div className="absolute inset-0 z-0">
+		<section
+			className="relative overflow-hidden flex items-center min-h-[85vh] py-16 lg:py-24 isolate"
+			style={{ backgroundColor: bgDark, transform: "translateZ(0)" }}
+		>
+			{/* Base layer: always present from first paint to prevent any white flash */}
+			<div
+				className="absolute inset-0 z-0"
+				style={{ backgroundColor: bgDark }}
+				aria-hidden
+			/>
+			{/* Aurora animated background (client-only; solid bg prevents white flash before mount) */}
+			<div className="absolute inset-0 z-0" style={{ backgroundColor: bgDark }}>
 				<Aurora
 					colorStops={["#00ff87", "#065f46", "#00ff87"]}
 					amplitude={1.5}
@@ -80,9 +90,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 			{/* Bottom gradient fade to page background */}
 			<div
 				className="absolute bottom-0 left-0 right-0 z-[2] h-32"
-				style={{
-					background: "linear-gradient(to bottom, transparent, #08080a)",
-				}}
+				style={{ background: `linear-gradient(to bottom, transparent, ${bgDark})` }}
 			/>
 
 			{/* Background elements */}
@@ -102,7 +110,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 				<div
 					className="absolute inset-0"
 					style={{
-						background: "radial-gradient(ellipse at 30% 50%, transparent 0%, #08080a 75%)",
+						background: `radial-gradient(ellipse at 30% 50%, transparent 0%, ${bgDark} 75%)`,
 					}}
 				/>
 			</div>
@@ -240,7 +248,10 @@ export default function Hero({ token }: { token: IToken | null }) {
 									}}
 									transition={{ type: "spring", stiffness: 260, damping: 24 }}
 								>
-									<div className="relative aspect-[4/5] w-full overflow-hidden">
+									<div
+									className="relative aspect-[4/5] w-full overflow-hidden"
+									style={{ backgroundColor: bgDark }}
+								>
 										<Image
 											src={token.image}
 											alt={token.name}

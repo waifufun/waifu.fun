@@ -7,6 +7,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 // Moving gradient background (performance-heavy) — uncomment to re-enable
 // import InteractiveBackground from "@/components/InteractiveBackground";
+import StaticBackground from "@/components/StaticBackground";
 import GrainOverlay from "@/components/grain-overlay";
 import { AlertTriangleIcon } from "lucide-react";
 
@@ -54,14 +55,12 @@ export default function RootLayout({
 		<html
 			lang="en"
 			className="dark h-full"
-			style={{
-				colorScheme: "dark",
-			}}
+			style={{ colorScheme: "dark" }}
 		>
-			<body
-				className={cn("h-full font-sans antialiased", spaceGrotesk.variable, spaceGrotesk.className)}
-			>
+			<body className={cn("h-full font-sans antialiased", spaceGrotesk.variable, spaceGrotesk.className)}>
 				<Providers>
+					{/* Static layer prevents white flash when InteractiveBackground is off */}
+					<StaticBackground />
 					{/* Moving gradient background — uncomment to re-enable */}
 					{/* <InteractiveBackground /> */}
 					<GrainOverlay />

@@ -134,10 +134,12 @@ export default function Aurora({
       antialias: true,
     });
     const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
+    // Dark clear color prevents white flash on resize/first frame (e.g. ~4–5s delayed resize)
+    gl.clearColor(8 / 255, 8 / 255, 10 / 255, 1);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    (gl.canvas as HTMLCanvasElement).style.backgroundColor = "transparent";
+    const canvasEl = gl.canvas as HTMLCanvasElement;
+    canvasEl.style.backgroundColor = "#08080a";
 
     let program: any;
 
@@ -146,6 +148,7 @@ export default function Aurora({
       const width = ctn.offsetWidth;
       const height = ctn.offsetHeight;
       renderer.setSize(width, height);
+      canvasEl.style.backgroundColor = "#08080a";
       if (program) {
         program.uniforms.uResolution.value = [width, height];
       }
@@ -207,5 +210,10 @@ export default function Aurora({
     };
   }, [amplitude, blend, colorStops]);
 
-  return <div ref={ctnDom} style={{ width: "100%", height: "100%" }} />;
+  return (
+    <div
+      ref={ctnDom}
+      style={{ width: "100%", height: "100%", backgroundColor: "#08080a" }}
+    />
+  );
 }
