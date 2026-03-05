@@ -1,103 +1,106 @@
 {
-	"name": "@waifufun/monorepo",
-	"repository": {
-		"url": "https://github.com/elizaos/waifufun-monorepo",
-		"type": "github"
-	},
-	"type": "module",
-	"private": true,
-	"pnpm": {
-		"supportedArchitectures": {
-			"os": [
-				"current"
-			],
-			"cpu": [
-				"x64",
-				"arm64"
-			]
-		},
-		"ignoredBuiltDependencies": [
-			"@biomejs/biome",
-			"@bufbuild/buf",
-			"@tailwindcss/oxide",
-			"bigint-buffer",
-			"blake-hash",
-			"bufferutil",
-			"core-js-pure",
-			"es5-ext",
-			"esbuild",
-			"keccak",
-			"protobufjs",
-			"secp256k1",
-			"sharp",
-			"tiny-secp256k1",
-			"usb",
-			"utf-8-validate"
-		]
-	},
-	"release": {
-		"branches": [
-			"main",
-			{
-				"name": "staging",
-				"channel": "staging",
-				"prerelease": true
-			}
-		],
-		"plugins": [
-			"@semantic-release/commit-analyzer",
-			"@semantic-release/release-notes-generator",
-			"@semantic-release/changelog",
-			"@semantic-release/github",
-			[
-				"@semantic-release/git",
-				{
-					"assets": [
-						"CHANGELOG.md",
-						"package.json"
-					],
-					"message": "chore(release): ${nextRelease.version}"
-				}
-			]
-		]
-	},
-	"scripts": {
-		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
-		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/frontend' --filter '!@waifufun/backend' --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
-		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/indexer' --parallel run dev",
-		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter !@waifufun/indexer --parallel run dev",
-		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
-		"dev:indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
-		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/frontend' --parallel run dev",
-		"docker:up": "docker compose up -d && exit 0",
-		"docker:down": "docker compose down",
-		"docker:kill": "docker compose down -v",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
-		"lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& pnpm -r --stream --parallel lint",
-		"build:docker": "docker build -t waifufun-frontend -f apps/frontend/Dockerfile.frontend .",
-		"start:docker": "docker run -p 3000:3000 waifufun-frontend",
-		"sync": "dotenv -e .env -- pnpm --filter @waifufun/sync sync tokens",
-		"test-migration": "pnpm --filter @waifufun/migrations test",
-		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm --filter @waifufun/migrations dev",
-		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @waifufun/migrations build",
-		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @waifufun/migrations start",
-		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '@waifufun/indexer' run start",
-		"start:frontend": "pnpm --filter '@waifufun/frontend' run start"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"@semantic-release/changelog": "^6.0.3",
-		"@semantic-release/git": "^10.0.1",
-		"@semantic-release/github": "^11.0.2",
-		"cross-env": "^7.0.3",
-		"dotenv-cli": "^8.0.0",
-		"esbuild": "^0.25.4",
-		"semantic-release": "^24.2.3",
-		"tsx": "^4.15.1",
-		"typescript": "^5.4.5"
-	},
-	"packageManager": "pnpm@10.11.0",
-	"dependencies": {
-		"@coral-xyz/anchor": "0.31.1"
-	}
+  "name": "@waifufun/monorepo",
+  "repository": {
+    "url": "https://github.com/elizaos/waifufun-monorepo",
+    "type": "github"
+  },
+  "type": "module",
+  "private": true,
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": [
+        "current"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
+    },
+    "ignoredBuiltDependencies": [
+      "@biomejs/biome",
+      "@bufbuild/buf",
+      "@tailwindcss/oxide",
+      "bigint-buffer",
+      "blake-hash",
+      "bufferutil",
+      "core-js-pure",
+      "es5-ext",
+      "esbuild",
+      "keccak",
+      "protobufjs",
+      "secp256k1",
+      "sharp",
+      "tiny-secp256k1",
+      "usb",
+      "utf-8-validate"
+    ]
+  },
+  "release": {
+    "branches": [
+      "main",
+      {
+        "name": "staging",
+        "channel": "staging",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      "@semantic-release/github",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "CHANGELOG.md",
+            "package.json"
+          ],
+          "message": "chore(release): ${nextRelease.version}"
+        }
+      ]
+    ]
+  },
+  "scripts": {
+    "build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
+    "build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/frontend' --filter '!@waifufun/backend' --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
+    "dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/indexer' --parallel run dev",
+    "dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter !@waifufun/indexer --parallel run dev",
+    "dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
+    "dev:indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
+    "dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/frontend' --parallel run dev",
+    "docker:up": "docker compose up -d && exit 0",
+    "docker:down": "docker compose down",
+    "docker:kill": "docker compose down -v",
+    "lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
+    "lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& pnpm -r --stream --parallel lint",
+    "build:docker": "docker build -t waifufun-frontend -f apps/frontend/Dockerfile.frontend .",
+    "start:docker": "docker run -p 3000:3000 waifufun-frontend",
+    "sync": "dotenv -e .env -- pnpm --filter @waifufun/sync sync tokens",
+    "test-migration": "pnpm --filter @waifufun/migrations test",
+    "migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm --filter @waifufun/migrations dev",
+    "migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @waifufun/migrations build",
+    "migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @waifufun/migrations start",
+    "start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '@waifufun/indexer' run start",
+    "start:frontend": "pnpm --filter '@waifufun/frontend' run start"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.2",
+    "cross-env": "^7.0.3",
+    "dotenv-cli": "^8.0.0",
+    "esbuild": "^0.25.4",
+    "semantic-release": "^24.2.3",
+    "tsx": "^4.15.1",
+    "typescript": "^5.4.5"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "@coral-xyz/anchor": "0.31.1"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
 }
