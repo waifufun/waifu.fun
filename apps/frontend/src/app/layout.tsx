@@ -4,7 +4,7 @@ import Providers from "./providers";
 import { Space_Grotesk } from "next/font/google";
 import { cn } from "@/lib/utils";
 import Header from "@/components/header";
-import Footer from "@/components/footer";
+import FooterConditional from "@/components/footer-conditional";
 // Moving gradient background (performance-heavy) — uncomment to re-enable
 // import InteractiveBackground from "@/components/InteractiveBackground";
 import StaticBackground from "@/components/StaticBackground";
@@ -79,7 +79,7 @@ export default function RootLayout({
 								</div>
 							) : null}
 							{children}
-							<Footer />
+							<FooterConditional />
 						</main>
 					</div>
 				</Providers>

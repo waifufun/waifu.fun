@@ -2,10 +2,8 @@
 import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import AgentProfile from "@/components/token-page/agent-profile";
-import ActivityFeed from "@/components/token-page/activity-feed";
-import { AgentPersonalityCard, AgentSkills, SidebarSocials } from "@/components/token-page/agent-skills";
+import { AgentPersonalityCard, AgentSkills } from "@/components/token-page/agent-skills";
 import { getToken } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import { type ReactNode, useMemo, useState } from "react";
@@ -101,9 +99,6 @@ export default function PageClient({
 						</div>
 					</div>
 
-					{/* activity feed */}
-					<ActivityFeed token={token} />
-
 					{/* tabs + content */}
 					<div className="flex flex-col gap-4">
 						<TokenTabs token={token} />
@@ -125,9 +120,6 @@ export default function PageClient({
 
 					{/* agent skills */}
 					<AgentSkills />
-
-					{/* socials + contract */}
-					<SidebarSocials token={token} />
 
 					{/* owner-only update socials */}
 					{isCreator && (
