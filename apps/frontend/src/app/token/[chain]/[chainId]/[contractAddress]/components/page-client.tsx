@@ -2,6 +2,7 @@
 import Swap from "@/components/swap";
 import TokenTabs from "@/components/token-page/token-tabs";
 import AgentProfile from "@/components/token-page/agent-profile";
+import AgentStatusVisual from "@/components/token-page/agent-status-visual";
 import { AgentPersonalityCard, AgentSkills } from "@/components/token-page/agent-skills";
 import { getToken } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
@@ -87,6 +88,9 @@ export default function PageClient({
 				badge={badge}
 				badgeBaseClasses={badgeBaseClasses}
 			/>
+
+			{/* agent status: not woken up / alive / dead */}
+			<AgentStatusVisual token={token} />
 
 			{/* two-column layout */}
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-5">
