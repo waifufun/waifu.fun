@@ -1,8 +1,9 @@
-import type { FastifyInstance } from "fastify";
-import type { TChain, TChainId } from "@waifufun/types";
 import DB from "@waifufun/database";
+import { extractObjectKeyFromUrl, modifyFile } from "@waifufun/s3-uploader";
+import type { TChain, TChainId } from "@waifufun/types";
+import type { FastifyInstance } from "fastify";
 import { requireTokenOwner } from "../middlewares/token-owner";
-import { modifyFile, extractObjectKeyFromUrl } from "@waifufun/s3-uploader";
+import { composeTokensWithRuntimeOverlay } from "../utils/tokens/runtime-overlay";
 import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
 export default async function ownerRoutes(fastify: FastifyInstance) {
@@ -265,13 +266,14 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 				.skip(skip)
 				.limit(limit)
 				.lean();
+			const overlaidTokens = await composeTokensWithRuntimeOverlay(tokens);
 
 			const total = await DB.Token.countDocuments({ creator: ownerAddress });
 			const totalPages = Math.ceil(total / limit);
 
 			return {
 				success: true,
-				tokens,
+				tokens: overlaidTokens,
 				page,
 				totalPages,
 				total,

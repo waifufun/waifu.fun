@@ -1,11 +1,12 @@
-import type { AddressLike, TURLLike } from "@waifufun/types";
-import type { FastifyInstance } from "fastify";
 import DB from "@waifufun/database";
-import { uploadBase64Image } from "@waifufun/s3-uploader";
-import { getChecksummedAddress, isSupportedAddress, updateCryptoPrices } from "@waifufun/utils";
-import { calculateStreak } from "../utils/points";
 import redis from "@waifufun/redis";
+import { uploadBase64Image } from "@waifufun/s3-uploader";
+import type { AddressLike, TURLLike } from "@waifufun/types";
+import { getChecksummedAddress, isSupportedAddress, updateCryptoPrices } from "@waifufun/utils";
+import type { FastifyInstance } from "fastify";
 import moment from "moment";
+import { calculateStreak } from "../utils/points";
+import { composeTokensWithRuntimeOverlay } from "../utils/tokens/runtime-overlay";
 
 export default async function userRoutes(fastify: FastifyInstance) {
 	fastify.post<{
@@ -315,7 +316,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 			{ creator: getChecksummedAddress(address, "solana") },
 			paginationOptions,
 		);
+		const overlaidTokens = await composeTokensWithRuntimeOverlay(paginatedTokens.docs);
 
-		return paginatedTokens;
+		return {
+			...paginatedTokens,
+			docs: overlaidTokens,
+		};
 	});
 }
