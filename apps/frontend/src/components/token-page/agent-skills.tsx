@@ -1,10 +1,10 @@
 "use client";
 import type { IToken } from "@waifufun/types";
 import Image from "next/image";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment } from "react";
 import Link from "next/link";
 import { cn, shortenAddress } from "@/lib/utils";
-import { Brain, Globe, LineChart, PieChart, MessageCircle, Zap, Shield, Cpu } from "lucide-react";
+import { Globe, Zap, Shield, Users, Link2, Calendar, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 import { CopyButton } from "@/components/copy-button";
 
@@ -20,39 +20,15 @@ function HudCorner({ position, size = "sm" }: { position: "tl" | "tr" | "bl" | "
 	return <span className={styles[position]} />;
 }
 
-const MOCK_SKILLS = [
-	{ label: "defi trading", icon: LineChart, color: "text-[#00ff87]", bgColor: "bg-[#00ff87]", level: 92 },
-	{ label: "market analysis", icon: Brain, color: "text-[#c084fc]", bgColor: "bg-[#c084fc]", level: 78 },
-	{ label: "portfolio mgmt", icon: PieChart, color: "text-[#22c55e]", bgColor: "bg-[#22c55e]", level: 85 },
-	{ label: "social intel", icon: MessageCircle, color: "text-[#60a5fa]", bgColor: "bg-[#60a5fa]", level: 64 },
-];
-
-function TypingIndicator() {
-	return (
-		<div className="flex items-center gap-1 px-2 py-1">
-			<motion.span className="w-1.5 h-1.5 rounded-full bg-[#00ff87]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0 }} />
-			<motion.span className="w-1.5 h-1.5 rounded-full bg-[#00ff87]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} />
-			<motion.span className="w-1.5 h-1.5 rounded-full bg-[#00ff87]" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} />
-		</div>
-	);
-}
-
-function SkillProgressBar({ level, color }: { level: number; color: string }) {
-	const [width, setWidth] = useState(0);
-	useEffect(() => { const timer = setTimeout(() => setWidth(level), 100); return () => clearTimeout(timer); }, [level]);
-	return (
-		<div className="w-full h-1 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
-			<motion.div className={cn("h-full rounded-full", color)} initial={{ width: 0 }} animate={{ width: `${width}%` }} transition={{ duration: 0.8, ease: "easeOut" }} />
-		</div>
-	);
+function formatChainName(chain: string): string {
+	if (chain === "evm") return "base";
+	return chain.toLowerCase();
 }
 
 export function AgentPersonalityCard({ token }: { token: IToken }) {
-	const tradingStyles = ["aggressive", "conservative", "balanced"];
-	const mockStyle = tradingStyles[Math.abs(token.name.length) % 3];
-	const activeSince = token.createdAt ? new Date(token.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "jan 2025";
-	const [isThinking, setIsThinking] = useState(true);
-	useEffect(() => { const interval = setInterval(() => { setIsThinking(prev => !prev); }, 5000); return () => clearInterval(interval); }, []);
+	const createdDate = token.createdAt
+		? new Date(token.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+		: "—";
 
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
@@ -60,10 +36,7 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 			<div className="flex items-center justify-between mb-3">
 				<div className="flex items-center gap-2">
 					<Zap className="size-3.5 text-[#00ff87]" />
-					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent personality</span>
-				</div>
-				<div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm">
-					{isThinking ? (<><Cpu className="size-3 text-[#c084fc] animate-pulse" /><span className="text-[9px] text-[#c084fc] font-mono uppercase">thinking</span></>) : (<><span className="h-1.5 w-1.5 rounded-full bg-[#00ff87] animate-pulse" /><span className="text-[9px] text-[#00ff87] font-mono uppercase">online</span></>)}
+					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent profile</span>
 				</div>
 			</div>
 			<div className="flex items-start gap-3 mb-3">
@@ -72,12 +45,19 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 					<div className="absolute inset-0 bg-[#00ff87]/10 blur-md rounded-sm -z-10" />
 				</div>
 				<div className="flex-1 min-w-0">
-					<p className="text-xs text-[#a1a1aa] leading-relaxed line-clamp-2">{token.description || "a versatile ai agent designed to navigate the complexities of decentralized finance with precision and adaptability."}</p>
-					{isThinking && <div className="mt-1"><TypingIndicator /></div>}
+					{token.description ? (
+						<p className="text-xs text-[#a1a1aa] leading-relaxed line-clamp-2">{token.description}</p>
+					) : (
+						<p className="text-xs text-[#52525b] leading-relaxed italic">no description provided</p>
+					)}
 				</div>
 			</div>
 			<div className="grid grid-cols-3 gap-2">
-				{[{ label: "style", value: mockStyle }, { label: "active since", value: activeSince }, { label: "trades", value: String((token.holders || 42) * 7) }].map((stat, i) => (
+				{[
+					{ label: "created", value: createdDate },
+					{ label: "holders", value: token.holders != null ? String(token.holders) : "—" },
+					{ label: "chain", value: formatChainName(token.chain) },
+				].map((stat, i) => (
 					<motion.div key={stat.label} className="relative bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2 hover:border-[rgba(255,255,255,0.12)] transition-colors" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
 						<div className="text-[9px] text-[#52525b] font-mono uppercase">{stat.label}</div>
 						<div className="text-xs text-[#e4e4e7] font-mono lowercase">{stat.value}</div>
@@ -88,25 +68,54 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 	);
 }
 
-export function AgentSkills() {
+export function AgentSkills({ token }: { token: IToken }) {
+	const hasSocials = token.socials && (token.socials.twitter || token.socials.website || token.socials.telegram || token.socials.discord);
+	const socialCount = [token.socials?.twitter, token.socials?.website, token.socials?.telegram, token.socials?.discord].filter(Boolean).length;
+
+	const stats = [
+		{
+			label: "holders",
+			value: token.holders != null ? token.holders.toLocaleString() : "—",
+			icon: Users,
+			color: "text-[#00ff87]",
+		},
+		{
+			label: "socials linked",
+			value: `${socialCount}/4`,
+			icon: Link2,
+			color: "text-[#60a5fa]",
+		},
+		{
+			label: "created",
+			value: token.createdAt
+				? new Date(token.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+				: "—",
+			icon: Calendar,
+			color: "text-[#c084fc]",
+		},
+		{
+			label: "chain",
+			value: formatChainName(token.chain),
+			icon: Layers,
+			color: "text-[#22c55e]",
+		},
+	];
+
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
 			<HudCorner position="tl" size="md" /><HudCorner position="tr" size="md" /><HudCorner position="bl" size="md" /><HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3">
 				<Shield className="size-3.5 text-[#22c55e]" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent skills</span>
+				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">token info</span>
 			</div>
 			<div className="flex flex-col gap-2">
-				{MOCK_SKILLS.map((skill, i) => (
-					<motion.div key={skill.label} className="relative flex flex-col gap-1.5 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2.5 hover:border-[rgba(255,255,255,0.12)] transition-all duration-200 group" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} whileHover={{ x: 2 }}>
-						<div className="relative flex items-center justify-between">
-							<div className="flex items-center gap-2">
-								<skill.icon className={cn("size-3.5 flex-shrink-0", skill.color)} />
-								<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">{skill.label}</span>
-							</div>
-							<span className={cn("text-[10px] font-mono font-medium", skill.color)}>{skill.level}%</span>
+				{stats.map((stat, i) => (
+					<motion.div key={stat.label} className="relative flex items-center justify-between bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2.5 hover:border-[rgba(255,255,255,0.12)] transition-all duration-200 group" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} whileHover={{ x: 2 }}>
+						<div className="flex items-center gap-2">
+							<stat.icon className={cn("size-3.5 flex-shrink-0", stat.color)} />
+							<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">{stat.label}</span>
 						</div>
-						<SkillProgressBar level={skill.level} color={skill.bgColor} />
+						<span className="text-[11px] text-[#e4e4e7] font-mono lowercase">{stat.value}</span>
 					</motion.div>
 				))}
 			</div>
