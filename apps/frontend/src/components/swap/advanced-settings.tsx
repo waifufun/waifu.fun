@@ -22,7 +22,7 @@ export default function AdvancedSettings() {
 			</div>
 
 			{open && (
-				<div className="py-4 flex flex-col gap-4 w-full border-t border-[rgba(255,255,255,0.06)] pt-4 mt-4">
+				<div className="py-4 flex flex-col gap-4 w-full border-t pt-4 mt-4 border-waifufun-stroke-primary">
 					{/* Speed */}
 					<div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between p-0">
 						<div className="flex items-center gap-1">
@@ -43,9 +43,9 @@ export default function AdvancedSettings() {
 									key={label}
 									onClick={() => setSpeed(label)}
 									className={cn(
-										"flex-1 text-sm max-h-[36px] h-full capitalize bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] font-medium text-white hover:bg-[#1a1a1a] transition-colors",
+										"flex-1 text-sm max-h-[36px] h-full capitalize bg-[#111114] font-medium text-white hover:bg-[#1a1a1a] transition-colors",
 										"border border-transparent",
-										String(speed) === String(label) && "border border-white/30 bg-white/5",
+										String(speed) === String(label) && "border border-[#00ff87]",
 									)}
 								>
 									{String(label)}
@@ -77,7 +77,7 @@ export default function AdvancedSettings() {
 									value={slippage / 10}
 									onChange={(e) => setSlippage(Number(e.target.value) * 10)}
 								/>
-								<span className="absolute right-2 top-1/2 -translate-y-1/2 text-[#71717a] text-sm pointer-events-none">
+								<span className="absolute right-2 top-1/2 -translate-y-1/2 text-waifufun-background-action-highlight text-sm pointer-events-none">
 									%
 								</span>
 							</div>
@@ -88,10 +88,10 @@ export default function AdvancedSettings() {
 								slippage > 40
 									? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 									: "hidden",
-								"p-2 bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+								"p-2 bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
 							])}
 						>
-							<AlertCircle className="text-amber-400" />
+							<AlertCircle className="text-waifufun-background-action-highlight" />
 							Your transaction may be frontrun and result in an unfavorable trade
 						</div>
 					</div>

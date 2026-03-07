@@ -176,7 +176,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	return (
 		<div className="w-full h-full overflow-hidden">
 			<div className="flex flex-col gap-2">
-				<div className="flex items-stretch gap-2 w-full bg-[#08080a] border border-[rgba(255,255,255,0.08)] py-3 px-3 rounded-sm">
+				<div className="flex items-stretch gap-2 w-full bg-[#08080a] border border-[rgba(255,255,255,0.06)] py-3 px-1.5 rounded-sm">
 					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
 					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
 						<Image
@@ -227,7 +227,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								key={btn}
 								variant="secondary"
 								className={cn([
-									"bg-[#08080a] text-sm grow h-[36px] border border-[rgba(255,255,255,0.08)] hover:border-white/20 transition-colors duration-200",
+									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
 									btn === "Reset" ? "text-waifufun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSet(btn)}
@@ -245,7 +245,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 										key={btn}
 										variant="secondary"
 										className={cn([
-											"bg-[#08080a] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-[rgba(255,255,255,0.08)] hover:border-white/20 transition-colors duration-200",
+											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
 											btn === "Reset" ? "text-waifufun-text-secondary" : "",
 										])}
 										onClick={() => handleQuickSetSell(btn)}
@@ -305,7 +305,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							tooHighBuyAmount && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+							"p-2 w-full bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
 						])}
 					>
 						<AlertCircle className="text-waifufun-text-error" />
@@ -316,7 +316,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] text-xs gap-2 items-center transition-all duration-200",
+							"p-2 w-full bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
 						])}
 					>
 						<AlertCircle className="text-waifufun-text-error" />
@@ -337,7 +337,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									swapMutation?.mutate();
 								}
 							}}
-							className="w-full mt-2 text-base font-medium bg-[#1a1a1a] hover:bg-white/10 border border-[rgba(255,255,255,0.08)] hover:border-white/20 text-white uppercase transition-colors duration-200"
+							className="w-full mt-2 text-base font-medium bg-[#111114] border border-[rgba(255,255,255,0.08)] hover:border-[#00ff87] text-white uppercase"
 						>
 							{token.status === "migrating"
 								? "Token migrating"
@@ -356,7 +356,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							<TooltipTrigger className="w-full">
 								<Button
 									disabled
-									className="w-full mt-2 text-base font-medium bg-[#1a1a1a] hover:bg-white/10 border border-[rgba(255,255,255,0.08)] hover:border-white/20 text-white uppercase transition-colors duration-200"
+									className="w-full mt-2 text-base font-medium bg-[#111114] border border-[rgba(255,255,255,0.08)] hover:border-[#00ff87] text-white uppercase"
 								>
 									<Countdown
 										date={moment(token?.tradingStartsAt).toDate()}

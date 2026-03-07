@@ -338,3 +338,12 @@ input::selection {
 @keyframes shine { 0% { transform: translateX(-100%); } 50%, 100% { transform: translateX(100%); } }
 @keyframes glow-pulse { 0%, 100% { box-shadow: 0 2px 8px rgba(0,255,135,0.4); } 50% { box-shadow: 0 2px 16px rgba(0,255,135,0.6); } }
 .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}

@@ -33,8 +33,8 @@ export default function Chat({ token }: { token: IToken }) {
 	const [room, setRoom] = useState<TChatRooms>("1000");
 
 	return (
-		<div className="bg-black border-2 border-[#03FF24]/40 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] flex flex-col h-[550px]">
-			<div className="flex items-center justify-between p-2 border-b-2 border-[#03FF24]/30 bg-black/50">
+		<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm flex flex-col h-[550px]">
+			<div className="flex items-center justify-between p-2 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.5)]">
 				<Tabs defaultValue="1000" className="flex" onValueChange={(value) => setRoom(value as TChatRooms)}>
 					<TabsList shadowed={false} className="bg-transparent border-0 p-0 h-auto">
 						{["1000", "100000", "1000000"].map((r) => (
@@ -43,14 +43,14 @@ export default function Chat({ token }: { token: IToken }) {
 								value={String(r)}
 								filled={false}
 								className={cn(
-									"text-xs font-bold uppercase tracking-wider rounded-none px-3 py-1.5 h-auto relative data-[state=active]:text-[#03FF24] data-[state=inactive]:text-gray-500 hover:text-gray-300 bg-transparent border-0",
+									"text-xs font-bold uppercase tracking-wider rounded-sm px-3 py-1.5 h-auto relative data-[state=active]:text-[#00ff87] data-[state=inactive]:text-gray-500 hover:text-gray-300 bg-transparent border-0",
 								)}
 							>
 								{abbreviateNumber(Number(r), true)}+
 								{room === r && (
 									<motion.div
 										layoutId="activeTierUnderline"
-										className="absolute bottom-[-1px] left-0 right-0 h-[3px] bg-[#03FF24]"
+										className="absolute bottom-[-1px] left-0 right-0 h-[3px] bg-[#00ff87]"
 										transition={{ type: "spring", stiffness: 300, damping: 25 }}
 									/>
 								)}
@@ -58,7 +58,7 @@ export default function Chat({ token }: { token: IToken }) {
 						))}
 					</TabsList>
 				</Tabs>
-				{/* <Link href="#" className="text-xs text-gray-400 hover:text-[#03FF24] flex items-center">
+				{/* <Link href="#" className="text-xs text-gray-400 hover:text-[#00ff87] flex items-center">
 					Open Full Chat Page <ExternalLink size={12} className="ml-1" />
 				</Link> */}
 			</div>
@@ -189,7 +189,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 
 	return (
 		<>
-			<div ref={ref} className="flex-1 overflow-y-auto p-3 space-y-1 bg-black/30">
+			<div ref={ref} className="flex-1 overflow-y-auto p-3 space-y-1 bg-[rgba(17,17,20,0.5)]">
 				<AnimatePresence>
 					{query?.data?.map((message: IChatMessage) => (
 						<ChatItem key={String(message._id)} message={message} />
@@ -197,12 +197,12 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 				</AnimatePresence>
 			</div>
 
-			<div className="p-2 border-t-2 border-[#03FF24]/30 bg-black/50">
+			<div className="p-2 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.5)]">
 				{imagePreviewUrl && (
 					<div className="relative w-fit mb-2">
 						<button
 							type="button"
-							className="absolute bg-black/80 top-1 right-1 cursor-pointer size-6 p-1 inline-flex rounded-none border border-[#03FF24]/30"
+							className="absolute bg-black/80 top-1 right-1 cursor-pointer size-6 p-1 inline-flex rounded-sm border border-[rgba(255,255,255,0.06)]"
 							onClick={() => {
 								setValue("attachment", undefined);
 							}}
@@ -210,7 +210,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 							<XIcon size={14} className="m-auto text-white" />
 						</button>
 						<Image
-							className="max-w-[200px] max-h-[150px] object-cover border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)]"
+							className="max-w-[200px] max-h-[150px] object-cover border border-[rgba(255,255,255,0.06)] rounded-sm "
 							src={imagePreviewUrl}
 							alt="Selected attachment preview"
 							width={200}
@@ -241,7 +241,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 						type="button"
 						disabled={!hasEnoughTokens}
 						onClick={handleIconClick}
-						className="h-9 w-9 p-0 text-gray-400 hover:text-[#03FF24] rounded-none flex-shrink-0"
+						className="h-9 w-9 p-0 text-gray-400 hover:text-[#00ff87] rounded-sm flex-shrink-0"
 					>
 						<ImageIcon size={18} />
 					</Button>
@@ -250,7 +250,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 						type="text"
 						disabled={!hasEnoughTokens}
 						placeholder="Type a message..."
-						className="bg-black border-2 border-[#03FF24]/50 placeholder-gray-600 text-sm h-9 focus:border-[#03FF24] text-gray-200 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] flex-grow"
+						className="bg-[#08080a] border border-[rgba(255,255,255,0.06)] placeholder-gray-600 text-sm h-9 focus:border-[#00ff87]/40 text-gray-200 rounded-sm  flex-grow"
 						{...register("message", { required: true })}
 					/>
 
@@ -259,7 +259,7 @@ const ChatWindow = ({ token, room, tierRequirement }: { room: TChatRooms; token:
 						size="icon"
 						type="submit"
 						disabled={mutation?.isPending || !hasEnoughTokens}
-						className="h-9 w-9 p-0 bg-[#03FF24]/80 hover:bg-[#03FF24] text-black rounded-none shadow-[2px_2px_0px_#01a718] flex-shrink-0"
+						className="h-9 w-9 p-0 bg-[#00ff87]/80 hover:bg-[#00ff87] text-black rounded-sm  flex-shrink-0"
 					>
 						<Send size={18} />
 					</Button>
@@ -284,22 +284,22 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 			transition={{ duration: 0.3 }}
 			className="flex items-start gap-3 py-2.5"
 		>
-			<Avatar className="h-8 w-8 border-2 border-[#03FF24]/30 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)]">
+			<Avatar className="h-8 w-8 border border-[rgba(255,255,255,0.06)] rounded-sm ">
 				<AvatarImage src="/chain-icons/solana.svg" alt={message?.sender ? shortenAddress(message?.sender) : "User"} />
-				<AvatarFallback className="bg-gray-700 text-xs text-[#03FF24] rounded-none">
+				<AvatarFallback className="bg-gray-700 text-xs text-[#00ff87] rounded-sm">
 					{message?.sender ? shortenAddress(message?.sender).substring(0, 2).toUpperCase() : "U"}
 				</AvatarFallback>
 			</Avatar>
 			<div className="flex-1">
 				<div className="flex items-baseline gap-2 text-xs">
-					<Link href={`/profile/${message?.sender}`} className="font-bold text-[#03FF24]">
+					<Link href={`/profile/${message?.sender}`} className="font-bold text-[#00ff87]">
 						{message?.sender ? shortenAddress(message.sender) : "Unknown"}
 					</Link>
 					<span className="text-gray-500">{message?.createdAt ? fromNow(message?.createdAt) : "Unknown time"}</span>
 				</div>
 				{message?.message && <p className="text-sm text-gray-200 mt-0.5">{message.message}</p>}
 				{message?.image && (
-					<div className="mt-2 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] overflow-hidden max-w-xs">
+					<div className="mt-2 border border-[rgba(255,255,255,0.06)] rounded-sm  overflow-hidden max-w-xs">
 						<Image src={message.image} alt="Chat image" width={300} height={200} className="object-cover" unoptimized />
 					</div>
 				)}

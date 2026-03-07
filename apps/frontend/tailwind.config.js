@@ -175,6 +175,10 @@ module.exports = {
 					"54%": { opacity: "0.98" },
 					"56%": { opacity: "1" },
 				},
+				"shimmer": {
+					"0%": { transform: "translateX(-100%)" },
+					"100%": { transform: "translateX(100%)" },
+				},
 			},
 			animation: {
 				"fade-in": "fade-in 0.2s ease-out",
@@ -184,6 +188,7 @@ module.exports = {
 				"float-jitter": "float-jitter 4s ease-in-out infinite",
 				"scan-line": "scan-line 8s linear infinite",
 				"flicker": "flicker 4s ease-in-out infinite",
+				"shimmer": "shimmer 2s ease-in-out infinite",
 			},
 		},
 	},

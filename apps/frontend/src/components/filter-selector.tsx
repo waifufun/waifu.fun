@@ -75,7 +75,7 @@ export default function FilterSelector() {
 						className={
 							activeKey === item.value
 								? "bg-waifufun-background-action-highlight/20"
-								: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
+								: "text-white hover:bg-[rgba(0,255,135,0.08)] hover:text-[#00ff87]"
 						}
 					>
 						<Link href={item?.value ? `/?${createQueryString({ category: item.value })}` : "/"}>
