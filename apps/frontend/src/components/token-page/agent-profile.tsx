@@ -160,7 +160,10 @@ export default function AgentProfile({
 						{token?.creator && <CopyButton textToCopy={token.creator} />}
 					</div>
 
-					<div className="relative flex gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible">
+					<div
+						className="relative flex gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible"
+						style={{ WebkitOverflowScrolling: "touch" }}
+					>
 						{stats.map((stat, index) => (
 							<motion.div
 								key={stat.label}
