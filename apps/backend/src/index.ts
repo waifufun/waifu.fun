@@ -106,6 +106,15 @@ const port = 3001;
 
 const start = async () => {
 	try {
+		// On server startup, check milady-cloud connectivity (non-blocking, log only)
+		if (process.env.MILADY_CLOUD_API_URL && process.env.MILADY_CLOUD_SERVICE_KEY) {
+			const { miladyCloud } = await import("./services/milady-cloud");
+			miladyCloud
+				.healthCheck()
+				.then(() => console.log("milady-cloud: connected"))
+				.catch((error: Error) => console.warn("milady-cloud: not reachable", error.message));
+		}
+
 		await fastify.listen({ port, host: "0.0.0.0" });
 	} catch (err) {
 		fastify.log.error(err);
