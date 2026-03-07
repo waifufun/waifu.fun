@@ -188,6 +188,7 @@ export const GridItem = ({
 							</div>
 						</div>
 					)}
+
 				</div>
 
 				{/* Hover glow overlay */}

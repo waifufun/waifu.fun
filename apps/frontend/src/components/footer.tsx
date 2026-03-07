@@ -4,8 +4,11 @@ export default function Footer() {
 	const year = new Date().getFullYear();
 
 	return (
-		<footer className="shrink-0 mt-auto py-10" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}>
-			<div className="w-full max-w-6xl mx-auto px-4">
+		<footer
+			className="w-full shrink-0 mt-auto py-10"
+			style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}
+		>
+			<div className="w-full px-4 sm:px-6 lg:px-8">
 				{/* Main footer row */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
 					{/* Left: branding */}

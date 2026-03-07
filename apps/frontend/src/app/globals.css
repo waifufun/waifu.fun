@@ -432,3 +432,30 @@ input::selection {
 .scrollbar-hide::-webkit-scrollbar {
 	display: none;
 }
+
+/* Heartbeat line (ECG-style) scroll animation */
+@keyframes heartbeat-scroll {
+	0% {
+		stroke-dashoffset: 0;
+	}
+	100% {
+		stroke-dashoffset: -80;
+	}
+}
+
+@keyframes heartbeat-scroll-slow {
+	0% {
+		stroke-dashoffset: 0;
+	}
+	100% {
+		stroke-dashoffset: -80;
+	}
+}
+
+.animate-heartbeat-scroll {
+	animation: heartbeat-scroll 1.4s linear infinite;
+}
+
+.animate-heartbeat-scroll-slow {
+	animation: heartbeat-scroll-slow 2.8s linear infinite;
+}
