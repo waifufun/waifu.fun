@@ -1,15 +1,20 @@
-import type { FastifyInstance } from "fastify";
+import { EventType, HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@waifufun/constants";
 import DB from "@waifufun/database";
+import logger from "@waifufun/logger";
+import redis from "@waifufun/redis";
+import { EVMRpcProvider, SolanaRpcProvider } from "@waifufun/rpc";
+import { upload, uploadBase64Image, uploadImageFromUrl } from "@waifufun/s3-uploader";
 import type {
-	IHolder,
 	AddressLike,
+	IHolder,
 	IToken,
+	ITrade,
 	SolanaAddressLike,
 	SolanaNetworkIds,
 	TChain,
 	TChainId,
 	TURLLike,
-	ITrade,
 } from "@waifufun/types";
 import {
 	getChecksummedAddress,
@@ -20,16 +25,12 @@ import {
 	populateTokensWithLiveData,
 	updateCryptoPrices,
 } from "@waifufun/utils";
-import { EVMRpcProvider, SolanaRpcProvider } from "@waifufun/rpc";
-import { uploadImageFromUrl, upload, uploadBase64Image } from "@waifufun/s3-uploader";
-import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@waifufun/constants";
-import redis from "@waifufun/redis";
-import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@waifufun/utils";
-import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import type { FastifyInstance } from "fastify";
+import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { getBondingCurveData } from "../utils/bonding-curve";
-import logger from "@waifufun/logger";
 import { getGlobalVault } from "../utils/bonding-curve";
+import { composeTokensWithRuntimeOverlay } from "../utils/tokens/runtime-overlay";
 import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
@@ -136,10 +137,11 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			const tokensPaginated = await DB.Token.paginate(query, paginationOptions);
 			const populatedTokens = await populateTokensWithLiveData(tokensPaginated.docs);
+			const overlaidTokens = await composeTokensWithRuntimeOverlay(populatedTokens);
 
 			const returnData = {
 				...tokensPaginated,
-				docs: populatedTokens,
+				docs: overlaidTokens,
 			};
 
 			await redis.setex(cacheKey, 10, JSON.stringify(returnData));
@@ -188,10 +190,12 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		if (!token) throw new Error("Token was not found");
 
 		const populatedToken = await populateTokensWithLiveData([token]);
+		const [overlaidToken] = await composeTokensWithRuntimeOverlay(populatedToken);
+		const responseToken = overlaidToken || populatedToken[0] || token;
 
-		await redis.setex(cacheKey, 8, JSON.stringify(populatedToken[0]));
+		await redis.setex(cacheKey, 8, JSON.stringify(responseToken));
 
-		return token;
+		return responseToken;
 	});
 
 	fastify.post<{
@@ -255,7 +259,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					chainId as unknown as SolanaNetworkIds,
 					Number(metadata.totalSupply) || 0,
 					Number(metadata.decimals) || 9,
-					existingToken.version,
+					2,
 				);
 			} catch (error) {
 				console.error("Error getting bonding curve data:", error);
@@ -566,14 +570,15 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			?.filter((item) => Number(item.balance) > 1)
 			?.map((item) => {
 				const percentage = getPercentageOfTotal(Number(item?.balance ? item?.balance : "0"), Number(token.totalSupply));
-
-				const globalVaultAddress = getGlobalVault(chainId, token.version);
+				const globalVaultVersion = token.version === 1 ? 1 : 2;
+				const globalVaultAddress =
+					chain === "solana" ? getGlobalVault(chainId as unknown as SolanaNetworkIds, globalVaultVersion) : undefined;
 
 				return {
 					address: item.address,
 					balance: item.balance,
 					balanceFormatted: item.shiftedBalance,
-					isBondingCurve: globalVaultAddress.toString() === item.address || false,
+					isBondingCurve: globalVaultAddress?.toString() === item.address || false,
 					isCreator: token?.creator === item.address,
 					percentage,
 				} as IHolder;
@@ -644,7 +649,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			logger.warn("No populateble tokens found");
 		}
 
-		const populatedTokenData = await populateTokensWithLiveData([...tokensFromDatabase]);
+		const populatedTokenData = await composeTokensWithRuntimeOverlay(
+			await populateTokensWithLiveData([...tokensFromDatabase]),
+		);
 
 		const tokens = tokensLookUp?.tokens;
 
@@ -678,7 +685,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					}
 				: {};
 
-			const result = {
+			const result: Record<string, unknown> = {
 				...balance,
 				...token,
 				...limitedPopulatedData,
@@ -1069,7 +1076,9 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 
 			if (swapEvents.length > 0) {
 				const event = swapEvents[0];
-				event.blockTime = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // pretend it happened exactly 24 hours ago, for logic purposes
+				if (event) {
+					event.blockTime = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // pretend it happened exactly 24 hours ago, for logic purposes
+				}
 			}
 		}
 

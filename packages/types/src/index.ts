@@ -1,6 +1,6 @@
 import type { Address as SolanaAddressLikeImport } from "@solana/kit";
-import type { Address as EvmAddressLikeImport, Hash } from "viem";
 import type { Types } from "mongoose";
+import type { Address as EvmAddressLikeImport, Hash } from "viem";
 
 export type EvmAddressLike = EvmAddressLikeImport;
 export type SolanaAddressLike = SolanaAddressLikeImport;
@@ -64,7 +64,53 @@ export interface EvmTokenLookup {
 
 export type ITokenLookUp = SolanaTokenLookup | EvmTokenLookup;
 
-export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument, "updatedAt" | "createdAt"> {
+export type TokenLaunchType = "native" | "imported";
+export type TokenLaunchPlatform = "pump" | "flap" | "external";
+export type TokenOwnerClaimStatus = "unclaimed" | "claimed" | "verified" | "disputed";
+export type TokenAgentStatus = "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
+export type TokenAgentLifecycleState = "birth" | "live" | "dormant" | "reviving";
+export type TokenBillingMode = "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+
+export interface ITokenOwnerWallets {
+	solana?: string[];
+	evm?: string[];
+}
+
+export interface ITokenAgentCharacterConfig {
+	name?: string;
+	bio?: string;
+	avatar?: string;
+}
+
+export interface ITokenRuntimeFields {
+	launchType?: TokenLaunchType;
+	launchPlatform?: TokenLaunchPlatform;
+	ownerClaimStatus?: TokenOwnerClaimStatus;
+	creatorUserId?: string;
+	ownerWallets?: ITokenOwnerWallets;
+	agentCharacterConfig?: ITokenAgentCharacterConfig;
+	cloudAgentId?: string;
+	agentStatus?: TokenAgentStatus;
+	agentLifecycleState?: TokenAgentLifecycleState;
+	billingMode?: TokenBillingMode;
+	infraReserveUsd?: number;
+	lastTradeAt?: Date;
+	suspendAt?: Date;
+	reviveAt?: Date;
+	webUiUrl?: string;
+}
+
+export interface ITokenRuntimeOverlayLookup {
+	contractAddress: AddressLike;
+	chain: TChain;
+	chainId: SolanaNetworkIds | EvmChainIds;
+}
+
+export interface ITokenRuntimeOverlay extends ITokenRuntimeOverlayLookup, ITokenRuntimeFields {}
+
+export interface IToken<T extends TChain = TChain>
+	extends Omit<MongooseDocument, "updatedAt" | "createdAt">,
+		ITokenRuntimeFields {
 	contractAddress: T extends "solana" ? SolanaAddressLike : EvmAddressLike;
 	chain: T;
 	chainId: T extends "solana" ? SolanaNetworkIds : EvmChainIds;
