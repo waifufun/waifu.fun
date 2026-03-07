@@ -5,8 +5,8 @@
 	"description": "Vendored audited Solana Autofun source for reference alongside the canonical WaifuFun IDLs",
 	"author": "Carsen Klock",
 	"scripts": {
-		"lint:fix": "prettier \"**/*.{js,ts}\" -w",
-		"lint": "prettier \"**/*.{js,ts}\" --check",
+		"lint:fix": "prettier \"tests/**/*.ts\" -w",
+		"lint": "prettier \"tests/**/*.ts\" --check",
 		"test:contracts": "mocha -r ts-node/register/transpile-only -t 1000000 tests/autofun.ts",
 		"test:e2e": "mocha -r ts-node/register/transpile-only -t 1000000 tests/launch_and_swap.ts",
 		"test": "pnpm run test:contracts && pnpm run test:e2e",
