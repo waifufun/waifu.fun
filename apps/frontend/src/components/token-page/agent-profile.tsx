@@ -138,11 +138,13 @@ export default function AgentProfile({
 	status,
 	badge,
 	badgeBaseClasses,
+	onOpenChat,
 }: {
 	token: IToken;
 	status: AgentLifecycleStatus;
 	badge: { badge: string; classes: string };
 	badgeBaseClasses: string;
+	onOpenChat?: () => void;
 }) {
 	const stats = [
 		{ label: "mkt cap", value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—", live: true },
@@ -255,7 +257,7 @@ export default function AgentProfile({
 						))}
 					</div>
 
-					<div className="flex items-center gap-2 mt-1">
+					<div className="flex items-center gap-2 mt-1 flex-wrap">
 						{socials.map((social, index) => {
 							const hasLink = !!social.href;
 							const Comp = hasLink ? Link : Fragment;
@@ -291,6 +293,20 @@ export default function AgentProfile({
 								</Comp>
 							);
 						})}
+
+						{onOpenChat && (
+							<motion.button
+								type="button"
+								onClick={onOpenChat}
+								initial={{ opacity: 0, scale: 0.8 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{ delay: 0.45 }}
+								className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-[#00ff87]/20 bg-[#08080a] text-[#00ff87] hover:border-[#00ff87]/40 hover:bg-[#00ff87]/10 transition-all duration-200 font-mono text-[10px] uppercase tracking-[0.2em]"
+							>
+								<span aria-hidden="true">💬</span>
+								<span>chat</span>
+							</motion.button>
+						)}
 					</div>
 				</div>
 			</div>
