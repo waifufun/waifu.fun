@@ -12,6 +12,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.98.2",
     "@waifufun/database": "workspace:*",
     "@waifufun/logger": "workspace:*",
     "@waifufun/types": "workspace:*",
@@ -20,7 +21,8 @@
     "drizzle-orm": "^0.29.3",
     "commander": "^12.0.0",
     "mongoose": "^8.2.0",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "viem": "2.30.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
@@ -28,4 +30,4 @@
     "rimraf": "^5.0.5",
     "typescript": "^5.4.2"
   }
-} 
+}
