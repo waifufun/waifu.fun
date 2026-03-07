@@ -211,7 +211,7 @@ export default function PageClient({
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.2 }}
 					>
-						<AgentSkills />
+						<AgentSkills token={token} />
 					</motion.div>
 
 					<motion.div
