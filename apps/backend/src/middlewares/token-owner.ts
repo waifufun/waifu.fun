@@ -1,6 +1,6 @@
-import type { FastifyRequest, FastifyReply } from "fastify";
-import type { AddressLike } from "@waifufun/types";
-import DB from "@waifufun/database";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import type { AddressLike, TChain, TChainId } from "@waifufun/types";
+import { getTokenRuntimeContext, type TokenRuntimeContext } from "../services/owner-runtime-control-plane";
 
 declare module "fastify" {
 	interface FastifyRequest {
@@ -8,6 +8,7 @@ declare module "fastify" {
 			evm?: AddressLike;
 			solana?: AddressLike;
 		};
+		tokenRuntimeContext?: TokenRuntimeContext;
 	}
 }
 
@@ -21,15 +22,12 @@ export async function requireTokenOwner(request: FastifyRequest, reply: FastifyR
 		});
 	}
 
-	const userAddress = user.evm || user.solana;
-	if (!userAddress) {
-		return reply.code(401).send({
-			success: false,
-			error: "Valid wallet address required",
-		});
-	}
+	const { mint, chain, chainId } = request.params as {
+		mint: string;
+		chain?: TChain;
+		chainId?: TChainId;
+	};
 
-	const { mint } = request.params as { mint: string };
 	if (!mint) {
 		return reply.code(400).send({
 			success: false,
@@ -37,32 +35,42 @@ export async function requireTokenOwner(request: FastifyRequest, reply: FastifyR
 		});
 	}
 
-	try {
-		// Fetch token data to check ownership
-		const tokenData = await DB.Token.findOne({
-			contractAddress: mint,
-		})
-			.select("creator")
-			.lean();
+	if (!chain || chainId === undefined) {
+		return reply.code(400).send({
+			success: false,
+			error: "Token chain and chainId are required",
+		});
+	}
 
-		if (!tokenData) {
+	try {
+		const context = await getTokenRuntimeContext(
+			{
+				mint,
+				chain,
+				chainId,
+			},
+			user,
+		);
+
+		if (!context) {
 			return reply.code(404).send({
 				success: false,
 				error: "Token not found",
 			});
 		}
 
-		const tokenCreator = tokenData.creator;
-
-		if (!tokenCreator || tokenCreator !== userAddress) {
+		if (!context.matchedWallet) {
+			const attemptedWallets = [user.evm, user.solana].filter(Boolean).join(", ");
 			console.warn(
-				`Ownership check failed: User ${userAddress} tried to access owner route for token ${mint} owned by ${tokenCreator || "not found"}`,
+				`Ownership check failed: User ${attemptedWallets || "unknown"} tried to access owner route for token ${mint} on ${chain}:${chainId}`,
 			);
 			return reply.code(403).send({
 				success: false,
 				error: "Token ownership required",
 			});
 		}
+
+		request.tokenRuntimeContext = context;
 	} catch (error) {
 		console.error("Error checking token ownership:", error);
 		return reply.code(500).send({

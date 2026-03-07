@@ -8,6 +8,7 @@ import { parseEventLogs, erc20Abi, getAddress, type Address, formatUnits, type H
 import DB from "@waifufun/database";
 import { Claimer } from "@waifufun/migrations";
 import type { SolanaNetworkIds } from "@waifufun/types";
+import { getTokenRuntimeContext, upsertRuntimeRecord } from "../services/owner-runtime-control-plane";
 
 interface TransferEventArgs {
 	from: Address;
@@ -184,53 +185,84 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 	}>("/claim", async (request, reply) => {
 		try {
 			const user = request.authUser;
-			if (!user?.solana) {
+			if (!user?.solana && !user?.evm) {
 				return reply.code(401).send({ success: false, error: "Authentication required" });
 			}
-			const { tokenMint } = request.body;
+
+			const { tokenMint, chain, chainId } = request.body;
 			if (!tokenMint) {
 				console.error("Token mint is required for claiming fees");
 				return reply.code(400).send({ success: false, error: "Token mint is required" });
 			}
 
-			const migration = await DB.Migration.findOne({ contractAddress: tokenMint });
+			if (!chain || chainId === undefined) {
+				return reply.code(400).send({ success: false, error: "Token chain and chainId are required" });
+			}
+
+			const context = await getTokenRuntimeContext(
+				{
+					mint: tokenMint,
+					chain,
+					chainId,
+				},
+				user,
+			);
+
+			if (!context) {
+				console.error("Token not found for claiming fees", tokenMint, chain, chainId);
+				return reply.code(404).send({ success: false, error: "Token not found" });
+			}
+
+			if (!context.matchedWallet) {
+				console.error("User is not the owner of the tokenMint", tokenMint, chain, chainId, user);
+				return reply.code(403).send({ success: false, error: "You are not the owner of this token" });
+			}
+
+			if (context.token.chain !== "solana") {
+				console.error("Claiming is only supported for Solana tokens");
+				return reply.code(400).send({ success: false, error: "Claiming is only supported for Solana tokens" });
+			}
+
+			const migration = await DB.Migration.findOne({
+				contractAddress: tokenMint,
+				chain,
+				chainId,
+			}).lean();
 			if (!migration) {
 				console.error("Token has not been migrated yet");
 				return reply.code(400).send({ success: false, error: "Token has not been migrated yet" });
 			}
 
-			const token = await DB.Token.findOne({ contractAddress: tokenMint });
-			if (!token) {
-				console.error("Token not found for claiming fees");
-				return reply.code(400).send({ success: false, error: "Token not found" });
-			}
-
-			// check if user is owner of the tokenMint
-			const owner = token.creator;
-			const isOwner = user.solana === owner || user.evm === owner;
-			if (!isOwner) {
-				console.error("User is not the owner of the tokenMint", owner, user.solana);
-				return reply.code(403).send({ success: false, error: "You are not the owner of this token" });
-			}
-			if (token.chain !== "solana") {
-				console.error("Claiming is only supported for Solana tokens");
-				return reply.code(400).send({ success: false, error: "Claiming is only supported for Solana tokens" });
-			}
-
-			const claimer = new Claimer(token.chainId as SolanaNetworkIds);
+			const claimer = new Claimer(context.token.chainId as SolanaNetworkIds);
 			let signature: string;
 
-			if (token.pool === "meteora") {
+			if (context.token.pool === "meteora") {
 				console.log("Claiming fees from Meteora pool");
 				signature = await claimer.claimMeteora(tokenMint);
-			} else if (token.pool === "raydium") {
+			} else if (context.token.pool === "raydium") {
 				console.log("Claiming fees from Raydium pool");
 				signature = await claimer.claimRaydium(tokenMint);
 			} else {
 				return reply.code(400).send({ success: false, error: "Unsupported protocol for claiming" });
 			}
 
-			await DB.Token.updateOne({ mint: tokenMint }, { $set: { lastClaimedAt: new Date() } });
+			const claimedAt = new Date();
+			try {
+				await Promise.all([
+					DB.Token.updateOne(
+						{ contractAddress: tokenMint, chain, chainId },
+						{ $set: { lastClaimedAt: claimedAt } },
+					),
+					upsertRuntimeRecord({
+						mint: tokenMint,
+						chain,
+						chainId,
+						lastClaimedAt: claimedAt,
+					}),
+				]);
+			} catch (syncError) {
+				console.warn("Claim succeeded on-chain but post-claim state sync failed:", syncError);
+			}
 
 			return reply.send({ success: true, signature });
 		} catch (error) {
