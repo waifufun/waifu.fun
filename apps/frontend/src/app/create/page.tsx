@@ -8,9 +8,9 @@ import ManualCreateForm from "@/components/ui/create-token/manual-create-form";
 import { RecentlyCreated } from "@/components/ui/create-token/recently-created";
 import { StepProgress } from "@/components/ui/create-token/step-progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getLaunchGateCheck } from "@/lib/api";
+import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Download, LockKeyhole, Settings2, Sparkles, Wand2 } from "lucide-react";
+import { Download, LockKeyhole, RefreshCcw, Settings2, Sparkles, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -118,6 +118,8 @@ type LaunchGateCheckResponse = {
 	accessSource?: "wallet" | "invite" | "disabled";
 };
 
+type LaunchGateStatus = "loading" | "allowed" | "denied" | "unavailable";
+
 function CreatePageInner() {
 	const wallet = useWallet();
 	const walletKey = wallet.publicKey?.toBase58();
@@ -125,41 +127,45 @@ function CreatePageInner() {
 	const [validatedInviteCode, setValidatedInviteCode] = useState<string | undefined>(undefined);
 	const [isSubmittingInvite, setIsSubmittingInvite] = useState(false);
 	const [launchGate, setLaunchGate] = useState<{
-		loading: boolean;
-		allowed: boolean;
+		status: LaunchGateStatus;
 		reason: string | undefined;
-	}>({ loading: true, allowed: false, reason: undefined });
+	}>({ status: "loading", reason: undefined });
+	const retryInviteCode = inviteCodeInput.trim() || validatedInviteCode;
 
 	const checkAccess = useCallback(async (inviteCode?: string) => {
+		const trimmedInviteCode = inviteCode?.trim();
+
 		try {
-			const response = (await getLaunchGateCheck(inviteCode)) as LaunchGateCheckResponse;
+			const response = (await getLaunchGateCheck(trimmedInviteCode)) as LaunchGateCheckResponse;
 			setLaunchGate({
-				loading: false,
-				allowed: response.allowed,
+				status: response.allowed ? "allowed" : "denied",
 				reason: response.reason,
 			});
 
-			if (response.allowed && inviteCode) {
-				setValidatedInviteCode(inviteCode.trim());
+			if (response.allowed && trimmedInviteCode) {
+				setValidatedInviteCode(trimmedInviteCode);
 			}
 
-			if (!response.allowed && inviteCode) {
+			if (!response.allowed && trimmedInviteCode) {
 				setValidatedInviteCode(undefined);
 			}
-		} catch {
+		} catch (error) {
+			const isUnavailable = isApiUnavailableError(error);
 			setLaunchGate({
-				loading: false,
-				allowed: false,
-				reason: "Unable to verify curated launch access right now. Please try again.",
+				status: isUnavailable ? "unavailable" : "denied",
+				reason: isUnavailable
+					? "Curated launch is being staged right now. Please check back shortly."
+					: "Unable to verify curated launch access right now. Please try again.",
 			});
+
+			if (!isUnavailable) {
+				setValidatedInviteCode(undefined);
+			}
 		}
 	}, []);
 
 	useEffect(() => {
-		setLaunchGate((current) => ({
-			...current,
-			loading: true,
-		}));
+		setLaunchGate((current) => ({ ...current, status: "loading" }));
 
 		const timeout = window.setTimeout(
 			() => {
@@ -185,7 +191,7 @@ function CreatePageInner() {
 		setIsSubmittingInvite(false);
 	};
 
-	if (launchGate.loading) {
+	if (launchGate.status === "loading") {
 		return (
 			<div className="min-h-screen bg-[#08080a] flex items-center justify-center px-4">
 				<div className="w-full max-w-lg border border-[rgba(255,255,255,0.08)] bg-[#111114] rounded-sm p-8 text-center">
@@ -204,7 +210,71 @@ function CreatePageInner() {
 		);
 	}
 
-	if (!launchGate.allowed) {
+	if (launchGate.status === "unavailable") {
+		return (
+			<div className="min-h-screen bg-[#08080a] px-4 py-10 flex items-center justify-center">
+				<div className="w-full max-w-3xl border border-[rgba(255,255,255,0.08)] bg-[#111114] rounded-sm overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.4)]">
+					<div className="border-b border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(0,255,135,0.08),rgba(0,255,135,0.02))] px-6 py-5">
+						<div className="inline-flex items-center gap-2 text-[#00ff87] font-mono text-xs uppercase tracking-[0.28em]">
+							<LockKeyhole size={14} />
+							curated launch
+						</div>
+						<h1 className="mt-4 text-3xl md:text-4xl font-bold text-[#e4e4e7]">Create is being staged</h1>
+						<p className="mt-3 max-w-2xl text-sm md:text-base text-[#a1a1aa] leading-7">
+							{launchGate.reason}
+						</p>
+					</div>
+
+					<div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] p-6 md:p-8">
+						<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] p-5">
+							<p className="text-xs font-mono uppercase tracking-[0.22em] text-[#71717a]">what&apos;s happening</p>
+							<ul className="mt-4 space-y-3 text-sm text-[#a1a1aa]">
+								<li className="flex items-start gap-3">
+									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
+									<span>Curated launch checks are temporarily offline while backend access is finalized.</span>
+								</li>
+								<li className="flex items-start gap-3">
+									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
+									<span>Your wallet and invite status are not lost; this is a temporary availability issue.</span>
+								</li>
+								<li className="flex items-start gap-3">
+									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
+									<span>Retry in a moment and you&apos;ll be routed into create as soon as checks are live.</span>
+								</li>
+							</ul>
+						</div>
+
+						<div className="space-y-4 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] p-5">
+							<p className="text-xs font-mono uppercase tracking-[0.22em] text-[#71717a]">launch status</p>
+							<p className="text-sm text-[#a1a1aa] leading-6">
+								Curated launch is still in rollout mode and this environment is waiting on API availability.
+							</p>
+							<button
+								type="button"
+								onClick={() => void checkAccess(retryInviteCode)}
+								className="inline-flex w-full items-center justify-center gap-2 rounded-sm border border-[rgba(0,255,135,0.24)] px-4 py-3 text-center text-sm font-mono uppercase tracking-[0.18em] text-[#00ff87] transition hover:bg-[rgba(0,255,135,0.08)]"
+							>
+								<RefreshCcw size={14} />
+								Retry access check
+							</button>
+							{retryInviteCode && (
+								<p className="text-xs text-[#71717a] leading-5">
+									Retry will reuse invite code: <span className="font-mono text-[#a1a1aa]">{retryInviteCode}</span>
+								</p>
+							)}
+							{!wallet.connected && (
+								<p className="text-xs text-[#71717a] leading-5">
+									Tip: connect your wallet in the site header before retrying launch access.
+								</p>
+							)}
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (launchGate.status === "denied") {
 		return (
 			<div className="min-h-screen bg-[#08080a] px-4 py-10 flex items-center justify-center">
 				<div className="w-full max-w-3xl border border-[rgba(255,255,255,0.08)] bg-[#111114] rounded-sm overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.4)]">
@@ -274,16 +344,9 @@ function CreatePageInner() {
 								</li>
 								<li className="flex items-start gap-3">
 									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
-									<span>Need access? Reach out and tell us about the token you want to launch.</span>
+									<span>Need access? Watch for curated launch updates and new creator onboarding windows.</span>
 								</li>
 							</ul>
-
-							<a
-								href="mailto:launch@waifu.fun?subject=Curated%20Launch%20Access"
-								className="inline-flex w-full items-center justify-center rounded-sm border border-[rgba(0,255,135,0.24)] px-4 py-3 text-center text-sm font-mono uppercase tracking-[0.18em] text-[#00ff87] transition hover:bg-[rgba(0,255,135,0.08)]"
-							>
-								Apply for Access
-							</a>
 
 							{!wallet.connected && (
 								<p className="text-xs text-[#71717a] leading-5">

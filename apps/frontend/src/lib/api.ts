@@ -1,7 +1,86 @@
 import { Connection } from "@solana/web3.js";
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/+$/, "") : undefined;
+
+export type ApiErrorCode = "CONFIG" | "NETWORK" | "HTTP" | "PARSE";
+
+export class ApiError extends Error {
+	code: ApiErrorCode;
+	status?: number;
+	endpoint: string;
+	details?: unknown;
+
+	constructor({
+		message,
+		code,
+		endpoint,
+		status,
+		details,
+		cause,
+	}: {
+		message: string;
+		code: ApiErrorCode;
+		endpoint: string;
+		status?: number;
+		details?: unknown;
+		cause?: unknown;
+	}) {
+		super(message);
+		this.name = "ApiError";
+		this.code = code;
+		this.endpoint = endpoint;
+		if (status !== undefined) {
+			this.status = status;
+		}
+		if (details !== undefined) {
+			this.details = details;
+		}
+		if (cause !== undefined) {
+			Object.assign(this, { cause });
+		}
+	}
+}
+
+const createApiError = ({
+	message,
+	code,
+	endpoint,
+	status,
+	details,
+	cause,
+}: {
+	message: string;
+	code: ApiErrorCode;
+	endpoint: string;
+	status?: number;
+	details?: unknown;
+	cause?: unknown;
+}) =>
+	new ApiError({
+		message,
+		code,
+		endpoint,
+		...(status !== undefined ? { status } : {}),
+		...(details !== undefined ? { details } : {}),
+		...(cause !== undefined ? { cause } : {}),
+	});
+
+const getApiUrl = (endpoint: string) => {
+	if (!BASE_URL) {
+		throw createApiError({
+			message: "API host is not configured.",
+			code: "CONFIG",
+			endpoint,
+		});
+	}
+	return `${BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+};
+
+export const isApiUnavailableError = (error: unknown) =>
+	error instanceof ApiError &&
+	(error.code === "CONFIG" || error.code === "NETWORK" || (error.code === "HTTP" && (error.status ?? 0) >= 500));
 
 export interface AuthStatusResponse {
 	authenticated: boolean;
@@ -51,7 +130,7 @@ export const fetcher = async (
 	body?: object | undefined,
 ) => {
 	try {
-		const response = await fetch(`${BASE_URL}${endpoint}`, {
+		const response = await fetch(getApiUrl(endpoint), {
 			method,
 			headers: {
 				"Content-Type": "application/json",
@@ -64,18 +143,49 @@ export const fetcher = async (
 		if (!response.ok) {
 			if (response.status === 401) {
 				console.warn(`Authentication required for ${endpoint}`);
-				throw new Error("Authentication required. Please sign in to access this data.");
+				throw createApiError({
+					message: "Authentication required. Please sign in to access this data.",
+					code: "HTTP",
+					endpoint,
+					status: response.status,
+				});
 			}
 
 			const errorBody = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
-			throw new Error(errorBody?.message || errorBody?.error || `Request failed with status ${response.status}`);
+			throw createApiError({
+				message: errorBody?.message || errorBody?.error || `Request failed with status ${response.status}`,
+				code: "HTTP",
+				endpoint,
+				status: response.status,
+				details: errorBody,
+			});
 		}
 
-		const result = await response.json();
+		if (response.status === 204) {
+			return null;
+		}
+
+		const result = await response.json().catch((error: unknown) => {
+			throw createApiError({
+				message: "API returned an invalid response.",
+				code: "PARSE",
+				endpoint,
+				status: response.status,
+				cause: error,
+			});
+		});
 		return result;
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error(`API Request Failed: ${endpoint}`, error);
-		throw error;
+		if (error instanceof ApiError) {
+			throw error;
+		}
+		throw createApiError({
+			message: "Unable to reach API host.",
+			code: "NETWORK",
+			endpoint,
+			cause: error,
+		});
 	}
 };
 
