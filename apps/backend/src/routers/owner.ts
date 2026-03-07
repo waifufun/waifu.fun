@@ -212,13 +212,15 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 				}
 
 				const ownerWallets = Array.from(
-					new Set([
-						context.runtime.ownerWalletEvm,
-						context.runtime.ownerWalletSolana,
-						context.runtime.creatorWallet,
-						...context.runtime.ownerWallets.evm,
-						...context.runtime.ownerWallets.solana,
-					].filter((wallet): wallet is string => Boolean(wallet))),
+					new Set(
+						[
+							context.runtime.ownerWalletEvm,
+							context.runtime.ownerWalletSolana,
+							context.runtime.creatorWallet,
+							...context.runtime.ownerWallets.evm,
+							...context.runtime.ownerWallets.solana,
+						].filter((wallet): wallet is string => Boolean(wallet)),
+					),
 				);
 
 				const ownerData = ownerWallets.length
@@ -330,7 +332,9 @@ export default async function ownerRoutes(fastify: FastifyInstance) {
 					});
 				}
 
-				const selectedBillingMode = (billingMode ?? claimedContext.runtime.billingMode ?? "owner_credits") as BillingMode;
+				const selectedBillingMode = (billingMode ??
+					claimedContext.runtime.billingMode ??
+					"owner_credits") as BillingMode;
 				const selectedCharacter = {
 					name: character?.name || claimedContext.token.name,
 					bio: character?.bio || claimedContext.token.description || undefined,

@@ -120,7 +120,7 @@ const AGENT_STATUS_TO_LIFECYCLE_STATE: Partial<Record<ControlPlaneAgentStatus, C
 	deleted: "dormant",
 };
 
-function hasOwnProperty<T extends object>(value: T, key: keyof T): boolean {
+function hasOwn<T extends object>(value: T, key: keyof T): boolean {
 	return Object.prototype.hasOwnProperty.call(value, key);
 }
 
@@ -294,7 +294,9 @@ function ownershipToWalletMap(
 }
 
 function mapSnapshotToRuntimeRecord(snapshot: ControlPlaneSnapshot): OwnerRuntimeRecord {
-	const runtimeMetadata = isJsonRecord(snapshot.runtimeState?.runtime_metadata) ? snapshot.runtimeState.runtime_metadata : {};
+	const runtimeMetadata = isJsonRecord(snapshot.runtimeState?.runtime_metadata)
+		? snapshot.runtimeState.runtime_metadata
+		: {};
 	const ownerWallets = ownershipToWalletMap(snapshot.creatorWalletIdentity, snapshot.ownerWalletIdentity);
 
 	return {
@@ -403,15 +405,15 @@ async function seedOwnershipFromMongoToken(token: IToken<TChain>): Promise<Owner
 			},
 			creatorWallet: token.creator
 				? {
-					chain: token.chain,
-					chainId: Number(token.chainId),
-					address: String(token.creator),
-					linkSource: "import",
-					verifiedAt: toIsoString(token.createdAt),
-					metadata: {
-						seededFrom: "mongo_token.creator",
-					},
-				}
+						chain: token.chain,
+						chainId: Number(token.chainId),
+						address: String(token.creator),
+						linkSource: "import",
+						verifiedAt: toIsoString(token.createdAt),
+						metadata: {
+							seededFrom: "mongo_token.creator",
+						},
+					}
 				: null,
 		},
 		client,
@@ -438,12 +440,12 @@ async function ensureWalletIdentityForAuthWallet(
 			lastSeenAt: new Date().toISOString(),
 			metadata: isJsonRecord(existing?.metadata)
 				? {
-					...existing.metadata,
-					lastSeenFrom: "owner-runtime-control-plane",
-				}
+						...existing.metadata,
+						lastSeenFrom: "owner-runtime-control-plane",
+					}
 				: {
-					lastSeenFrom: "owner-runtime-control-plane",
-				},
+						lastSeenFrom: "owner-runtime-control-plane",
+					},
 		},
 		getClient(),
 	);
@@ -451,14 +453,15 @@ async function ensureWalletIdentityForAuthWallet(
 
 async function buildWalletIdentityUpsertInputFromAddress(address: string, preferredChainId?: number) {
 	const chain = detectWalletChain(address);
-	if (!chain) {
+	const normalizedAddress = normalizeWallet(address);
+	if (!chain || !normalizedAddress) {
 		throw new Error(`Invalid wallet address: ${address}`);
 	}
 
 	const normalizedWallet: NormalizedAuthWallet = {
 		chain,
-		address: normalizeWallet(address)!,
-		normalizedAddress: chain === "evm" ? normalizeWallet(address)!.toLowerCase() : normalizeWallet(address)!,
+		address: normalizedAddress,
+		normalizedAddress: chain === "evm" ? normalizedAddress.toLowerCase() : normalizedAddress,
 	};
 	const walletIdentity = await ensureWalletIdentityForAuthWallet(
 		normalizedWallet,
@@ -516,7 +519,9 @@ async function ensureControlPlaneSnapshot(token: IToken<TChain>): Promise<Contro
 
 	const runtimeState = await ensureRuntimeStateForToken(token);
 	const walletIdentityMap = await listWalletIdentitiesByIds(
-		[ownership.creator_wallet_identity_id, ownership.owner_wallet_identity_id].filter((value): value is string => Boolean(value)),
+		[ownership.creator_wallet_identity_id, ownership.owner_wallet_identity_id].filter((value): value is string =>
+			Boolean(value),
+		),
 	);
 
 	return {
@@ -575,7 +580,10 @@ function getMatchedWallet(authWallets: string[], snapshot: ControlPlaneSnapshot)
 	return authWallets.find((wallet) => ownedWallets.some((ownedWallet) => walletsMatch(wallet, ownedWallet))) || null;
 }
 
-export async function getTokenRuntimeContext(lookup: RuntimeLookup, authUser?: AuthUser): Promise<TokenRuntimeContext | null> {
+export async function getTokenRuntimeContext(
+	lookup: RuntimeLookup,
+	authUser?: AuthUser,
+): Promise<TokenRuntimeContext | null> {
 	const token = await getTokenByLookup(lookup);
 	if (!token) {
 		return null;
@@ -612,17 +620,19 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 	}
 
 	const snapshot = await ensureControlPlaneSnapshot(token);
-	const existingRuntimeMetadata = isJsonRecord(snapshot.runtimeState?.runtime_metadata) ? snapshot.runtimeState.runtime_metadata : {};
+	const existingRuntimeMetadata = isJsonRecord(snapshot.runtimeState?.runtime_metadata)
+		? snapshot.runtimeState.runtime_metadata
+		: {};
 	const mergedRuntimeMetadata: Record<string, unknown> = {
 		...existingRuntimeMetadata,
 		...(input.runtimeMetadata || {}),
 	};
 
-	if (hasOwnProperty(input, "characterConfig")) {
+	if (hasOwn(input, "characterConfig")) {
 		mergedRuntimeMetadata.characterConfig = input.characterConfig ?? null;
 	}
 
-	if (hasOwnProperty(input, "lastClaimedAt")) {
+	if (hasOwn(input, "lastClaimedAt")) {
 		mergedRuntimeMetadata.lastClaimedAt = toIsoString(input.lastClaimedAt);
 	}
 
@@ -630,7 +640,7 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 	const existingOwnershipMetadata = isJsonRecord(snapshot.ownership.ownership_metadata)
 		? snapshot.ownership.ownership_metadata
 		: {};
-	const creatorWalletInput = hasOwnProperty(input, "creatorWallet")
+	const creatorWalletInput = hasOwn(input, "creatorWallet")
 		? input.creatorWallet
 			? await buildWalletIdentityUpsertInputFromAddress(input.creatorWallet, Number(token.chainId))
 			: null
@@ -638,17 +648,17 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 			? toWalletIdentityUpsertInput(snapshot.creatorWalletIdentity)
 			: token.creator
 				? {
-					chain: token.chain,
-					chainId: Number(token.chainId),
-					address: String(token.creator),
-					linkSource: "import",
-					verifiedAt: toIsoString(token.createdAt),
-					metadata: {
-						seededFrom: "mongo_token.creator",
-					},
-				}
+						chain: token.chain,
+						chainId: Number(token.chainId),
+						address: String(token.creator),
+						linkSource: "import",
+						verifiedAt: toIsoString(token.createdAt),
+						metadata: {
+							seededFrom: "mongo_token.creator",
+						},
+					}
 				: null;
-	const ownerWalletInput = hasOwnProperty(input, "ownerWallet")
+	const ownerWalletInput = hasOwn(input, "ownerWallet")
 		? input.ownerWallet
 			? await buildWalletIdentityUpsertInputFromAddress(input.ownerWallet)
 			: undefined
@@ -657,10 +667,10 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 			: undefined;
 
 	if (
-		hasOwnProperty(input, "claimStatus") ||
-		hasOwnProperty(input, "claimedAt") ||
-		hasOwnProperty(input, "creatorWallet") ||
-		hasOwnProperty(input, "ownerWallet")
+		hasOwn(input, "claimStatus") ||
+		hasOwn(input, "claimedAt") ||
+		hasOwn(input, "creatorWallet") ||
+		hasOwn(input, "ownerWallet")
 	) {
 		await upsertTokenOwnership(
 			{
@@ -668,12 +678,10 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 				chainId: Number(input.chainId),
 				contractAddress: input.mint,
 				launchType: token.imported ? "imported" : "native",
-				ownerClaimStatus: hasOwnProperty(input, "claimStatus")
+				ownerClaimStatus: hasOwn(input, "claimStatus")
 					? (input.claimStatus as OwnershipRow["owner_claim_status"])
 					: snapshot.ownership.owner_claim_status,
-				claimedAt: hasOwnProperty(input, "claimedAt")
-					? toIsoString(input.claimedAt)
-					: snapshot.ownership.claimed_at,
+				claimedAt: hasOwn(input, "claimedAt") ? toIsoString(input.claimedAt) : snapshot.ownership.claimed_at,
 				ownershipSource: snapshot.ownership.ownership_source,
 				ownershipMetadata: existingOwnershipMetadata,
 				creatorWallet: creatorWalletInput,
@@ -681,24 +689,24 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 			},
 			getClient(),
 		);
-		}
+	}
 
-	const runtimeStatus = (hasOwnProperty(input, "runtimeStatus")
-		? input.runtimeStatus || "none"
-		: existingRuntime?.agent_status || "none") as ControlPlaneAgentStatus;
+	const runtimeStatus = (
+		hasOwn(input, "runtimeStatus") ? input.runtimeStatus || "none" : existingRuntime?.agent_status || "none"
+	) as ControlPlaneAgentStatus;
 	const lifecycleState = resolveLifecycleState(
-		hasOwnProperty(input, "lifecycleState") ? input.lifecycleState || null : undefined,
+		hasOwn(input, "lifecycleState") ? input.lifecycleState || null : undefined,
 		runtimeStatus,
 		existingRuntime?.lifecycle_state || null,
 	);
-	const billingMode = (hasOwnProperty(input, "billingMode")
-		? input.billingMode || null
-		: existingRuntime?.billing_mode || null) as ControlPlaneBillingMode | null;
-	const statusReason = hasOwnProperty(input, "suspendedReason")
+	const billingMode = (
+		hasOwn(input, "billingMode") ? input.billingMode || null : existingRuntime?.billing_mode || null
+	) as ControlPlaneBillingMode | null;
+	const statusReason = hasOwn(input, "suspendedReason")
 		? input.suspendedReason || null
 		: existingRuntime?.status_reason || null;
 
-	const runtimeStatusWasExplicitlyUpdated = hasOwnProperty(input, "runtimeStatus");
+	const runtimeStatusWasExplicitlyUpdated = hasOwn(input, "runtimeStatus");
 
 	await upsertTokenRuntimeState(
 		{
@@ -706,28 +714,36 @@ export async function upsertRuntimeRecord(input: RuntimeUpsertInput): Promise<Ow
 			chainId: Number(input.chainId),
 			contractAddress: input.mint,
 			runtimeProvider: existingRuntime?.runtime_provider || "milady-cloud",
-			cloudAgentId: hasOwnProperty(input, "cloudAgentId") ? input.cloudAgentId || null : existingRuntime?.cloud_agent_id || null,
+			cloudAgentId: hasOwn(input, "cloudAgentId")
+				? input.cloudAgentId || null
+				: existingRuntime?.cloud_agent_id || null,
 			agentStatus: runtimeStatus,
 			lifecycleState,
 			billingMode,
-			infraReserveUsd: hasOwnProperty(input, "infraReserveUsd")
+			infraReserveUsd: hasOwn(input, "infraReserveUsd")
 				? input.infraReserveUsd === null || input.infraReserveUsd === undefined
 					? null
 					: input.infraReserveUsd.toFixed(2)
 				: existingRuntime?.infra_reserve_usd || null,
-			webUiUrl: hasOwnProperty(input, "webUiUrl") ? input.webUiUrl || null : existingRuntime?.web_ui_url || null,
-			bridgeUrl: hasOwnProperty(input, "bridgeUrl") ? input.bridgeUrl || null : existingRuntime?.bridge_url || null,
+			webUiUrl: hasOwn(input, "webUiUrl") ? input.webUiUrl || null : existingRuntime?.web_ui_url || null,
+			bridgeUrl: hasOwn(input, "bridgeUrl") ? input.bridgeUrl || null : existingRuntime?.bridge_url || null,
 			statusReason,
-			lastHeartbeatAt: hasOwnProperty(input, "lastHeartbeatAt")
+			lastHeartbeatAt: hasOwn(input, "lastHeartbeatAt")
 				? toIsoString(input.lastHeartbeatAt)
 				: existingRuntime?.last_heartbeat_at || null,
-			lastStatusChangedAt: runtimeStatusWasExplicitlyUpdated ? new Date().toISOString() : existingRuntime?.last_status_changed_at || null,
+			lastStatusChangedAt: runtimeStatusWasExplicitlyUpdated
+				? new Date().toISOString()
+				: existingRuntime?.last_status_changed_at || null,
 			suspendedAt:
-				runtimeStatusWasExplicitlyUpdated && runtimeStatus === "suspended" && existingRuntime?.agent_status !== "suspended"
+				runtimeStatusWasExplicitlyUpdated &&
+				runtimeStatus === "suspended" &&
+				existingRuntime?.agent_status !== "suspended"
 					? new Date().toISOString()
 					: existingRuntime?.suspended_at || null,
 			resumedAt:
-				runtimeStatusWasExplicitlyUpdated && existingRuntime?.agent_status === "suspended" && runtimeStatus !== "suspended"
+				runtimeStatusWasExplicitlyUpdated &&
+				existingRuntime?.agent_status === "suspended" &&
+				runtimeStatus !== "suspended"
 					? new Date().toISOString()
 					: existingRuntime?.resumed_at || null,
 			deletedAt:
@@ -778,11 +794,16 @@ export async function claimTokenRuntimeOwnership(
 	if (!ownerWalletIdentity && creatorMatchedWallet) {
 		const secondaryWallet = authWallets.find((wallet) => wallet.address !== creatorMatchedWallet) || null;
 		if (secondaryWallet) {
-			ownerWalletIdentity = await ensureWalletIdentityForAuthWallet(secondaryWallet, DEFAULT_SECONDARY_CHAIN_IDS[secondaryWallet.chain]);
+			ownerWalletIdentity = await ensureWalletIdentityForAuthWallet(
+				secondaryWallet,
+				DEFAULT_SECONDARY_CHAIN_IDS[secondaryWallet.chain],
+			);
 		}
 	}
 
-	const existingMetadata = isJsonRecord(snapshot.ownership.ownership_metadata) ? snapshot.ownership.ownership_metadata : {};
+	const existingMetadata = isJsonRecord(snapshot.ownership.ownership_metadata)
+		? snapshot.ownership.ownership_metadata
+		: {};
 	const linkedWallets = Array.from(
 		new Set([
 			...(Array.isArray(existingMetadata.linkedWallets)
@@ -800,7 +821,8 @@ export async function claimTokenRuntimeOwnership(
 			launchType: token.imported ? "imported" : "native",
 			ownerClaimStatus: "claimed",
 			claimedAt: snapshot.ownership.claimed_at || new Date().toISOString(),
-			ownershipSource: snapshot.ownership.owner_claim_status === "unclaimed" ? "self_claim" : snapshot.ownership.ownership_source,
+			ownershipSource:
+				snapshot.ownership.owner_claim_status === "unclaimed" ? "self_claim" : snapshot.ownership.ownership_source,
 			ownershipMetadata: {
 				...existingMetadata,
 				linkedWallets,
@@ -810,15 +832,15 @@ export async function claimTokenRuntimeOwnership(
 				? toWalletIdentityUpsertInput(snapshot.creatorWalletIdentity)
 				: token.creator
 					? {
-						chain: token.chain,
-						chainId: Number(token.chainId),
-						address: String(token.creator),
-						linkSource: "import",
-						verifiedAt: toIsoString(token.createdAt),
-						metadata: {
-							seededFrom: "mongo_token.creator",
-						},
-					}
+							chain: token.chain,
+							chainId: Number(token.chainId),
+							address: String(token.creator),
+							linkSource: "import",
+							verifiedAt: toIsoString(token.createdAt),
+							metadata: {
+								seededFrom: "mongo_token.creator",
+							},
+						}
 					: null,
 			ownerWallet: ownerWalletIdentity ? toWalletIdentityUpsertInput(ownerWalletIdentity) : undefined,
 		},
