@@ -25,12 +25,51 @@ function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 function deriveAgentStatus(token: IToken) {
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
-	const isDead = token?.status === "finalized" || (isBonded && (token?.marketcap ?? 0) === 0);
+	const isImported = !!token?.imported;
+
+	// Imported tokens have a simpler lifecycle
+	if (isImported) {
+		const hasActivity = (token?.volume24h ?? 0) > 0;
+		return {
+			isBonded: true,
+			isDead: false,
+			isImported: true,
+			label: hasActivity ? "active" : "imported",
+			color: hasActivity ? "#00ff87" : "#60a5fa",
+		} as const;
+	}
+
+	// Pre-graduation: still on bonding curve
+	if (!isBonded) {
+		return {
+			isBonded: false,
+			isDead: false,
+			isImported: false,
+			label: "bonding",
+			color: "#f59e0b",
+		} as const;
+	}
+
+	// Graduated but no signs of life
+	const hasActivity = (token?.volume24h ?? 0) > 0 || (token?.marketcap ?? 0) > 0;
+	if (!hasActivity) {
+		return {
+			isBonded: true,
+			isDead: true,
+			isImported: false,
+			label: "dormant",
+			color: "#52525b",
+		} as const;
+	}
+
+	// Graduated and active
 	return {
-		isBonded,
-		isDead,
-		label: isDead ? "dead" : isBonded ? "alive" : "sleeping",
-	};
+		isBonded: true,
+		isDead: false,
+		isImported: false,
+		label: "active",
+		color: "#00ff87",
+	} as const;
 }
 
 function AnimatedCounter({ value }: { value: string }) {
@@ -85,12 +124,14 @@ export default function AgentProfile({
 		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
 		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
 	];
-	const statusClass =
-		status.label === "dead"
-			? "bg-red-500/15 text-red-300 border border-red-500/30"
-			: status.label === "alive"
-				? "bg-[#00ff87]/15 text-[#00ff87] border border-[#00ff87]/30"
-				: "bg-amber-400/15 text-amber-300 border border-amber-400/30";
+	const statusColorMap: Record<string, string> = {
+		bonding: "bg-amber-400/15 text-amber-300 border border-amber-400/30",
+		active: "bg-[#00ff87]/15 text-[#00ff87] border border-[#00ff87]/30",
+		dormant: "bg-zinc-500/15 text-zinc-400 border border-zinc-500/30",
+		imported: "bg-sky-500/15 text-sky-300 border border-sky-500/30",
+		dead: "bg-red-500/15 text-red-300 border border-red-500/30",
+	};
+	const statusClass = statusColorMap[status.label] ?? statusColorMap.dormant;
 
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-5 md:p-6 overflow-hidden">
@@ -127,7 +168,7 @@ export default function AgentProfile({
 						<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight">
 							{token.name}
 						</h1>
-						{status.label === "alive" && <LiveDot />}
+						{status.label === "active" && <LiveDot />}
 						<span className="text-lg md:text-xl text-[#00ff87] font-mono font-semibold">${token.ticker}</span>
 						<span className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}>
 							{status.label}

@@ -93,7 +93,8 @@ export default function PageClient({
 		if (initialData?.imported) {
 			return {
 				badge: "IMPORTED",
-				classes: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40",
+				classes:
+					"bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40 shadow-[0_0_8px_rgba(96,165,250,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 			};
 		}
 		return {
@@ -211,7 +212,7 @@ export default function PageClient({
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.2 }}
 					>
-						<AgentSkills />
+						<AgentSkills token={token} />
 					</motion.div>
 
 					<motion.div
