@@ -13,6 +13,23 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		price: { type: Number, default: 0 },
 		description: { type: String },
 		imported: { type: Boolean, default: false },
+		launchType: { type: String, enum: ["native", "imported"] },
+		launchPlatform: { type: String, enum: ["pump", "flap", "external"] },
+		ownerClaimStatus: { type: String, enum: ["unclaimed", "claimed", "verified", "disputed"] },
+		creatorUserId: { type: String },
+		ownerWallets: {
+			solana: [{ type: String }],
+			evm: [{ type: String }],
+		},
+		cloudAgentId: { type: String },
+		agentStatus: {
+			type: String,
+			enum: ["none", "provisioning", "running", "suspended", "failed", "deleted"],
+			default: "none",
+		},
+		agentLifecycleState: { type: String, enum: ["birth", "live", "dormant", "reviving"] },
+		billingMode: { type: String, enum: ["owner_credits", "waifu_treasury_subsidy", "hybrid"] },
+		infraReserveUsd: { type: Number },
 		decimals: { type: Number, required: true },
 		marketcap: { type: Number, default: 0 },
 		volume24h: { type: Number, default: 0 },
@@ -42,6 +59,10 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 		isToken2022: { type: Boolean, default: false },
 		tradingStartsAt: { type: Date },
 		lastClaimedAt: { type: Date },
+		lastTradeAt: { type: Date },
+		suspendAt: { type: Date },
+		reviveAt: { type: Date },
+		webUiUrl: { type: String },
 		maxBuyAmount: { type: Number },
 		version: { type: Number, default: 1 },
 	},
@@ -59,6 +80,9 @@ schema.index({ imported: 1, volume24h: -1, marketcap: -1, hidden: 1 });
 
 schema.index({ name: "text", ticker: "text", contractAddress: "text" });
 schema.index({ createdAt: -1 });
+schema.index({ agentStatus: 1, agentLifecycleState: 1 });
+schema.index({ cloudAgentId: 1 });
+schema.index({ lastTradeAt: -1 });
 const Model = Mongoose.model<IToken, PaginateModel<IToken>>("Token", schema);
 
 Model.createIndexes();
