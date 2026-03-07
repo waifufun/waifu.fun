@@ -12,6 +12,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@waifufun/control-plane": "workspace:*",
     "@waifufun/database": "workspace:*",
     "@waifufun/logger": "workspace:*",
     "@waifufun/types": "workspace:*",
