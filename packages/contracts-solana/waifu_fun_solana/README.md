@@ -2,9 +2,10 @@
 
 IDL-backed Solana contract package for the currently committed WaifuFun programs.
 
-This package intentionally ships the existing committed IDLs and generated types
-for the current and legacy `waifufun` programs instead of pretending the repo
-contains authoritative Rust source for the deployed programs.
+This package is a thin compatibility shim over [`@waifufun/programs`](/Users/shawwalters/eliza-workspace/waifu.fun/packages/programs/package.json)
+for the current and legacy `waifufun` programs. The canonical committed IDLs and
+generated types live in `@waifufun/programs`; this package only preserves the
+legacy import surface.
 
 Current WaifuFun instruction surface:
 

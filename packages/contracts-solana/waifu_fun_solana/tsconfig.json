@@ -3,7 +3,6 @@
 	"compilerOptions": {
 		"strict": true,
 		"outDir": "dist",
-		"rootDir": ".",
 		"target": "ESNext",
 		"module": "ESNext",
 		"lib": ["ES2022"],
@@ -12,6 +11,6 @@
 		"declarationMap": true,
 		"strictFunctionTypes": true
 	},
-	"include": ["../../../reset.d.ts", "src/**/*.d.ts", "src/**/*.ts", "types/**/*.ts"],
+	"include": ["../../../reset.d.ts", "src/**/*.d.ts", "src/**/*.ts"],
 	"exclude": ["dist", "node_modules", "test", "src/**/*.spec.ts", "src/**/*.test.ts", "src/**/test/**"]
 }

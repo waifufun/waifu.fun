@@ -11,13 +11,13 @@ import {
 	LOCKING_PROGRAM,
 	LOCK_CP_AUTH_SEED,
 } from "./pdas";
-import type { RaydiumVault } from "./programs/types/raydium_vault";
+import type { RaydiumVaultTypes } from "@waifufun/programs";
 import { retryOperation } from "../utils";
 
 export async function depositToRaydiumVault(
 	provider: anchor.AnchorProvider,
 	signerWallet: anchor.web3.Keypair,
-	program: Program<RaydiumVault>,
+	program: Program<RaydiumVaultTypes>,
 	position_nft: anchor.web3.PublicKey,
 	claimer_address: anchor.web3.PublicKey,
 ) {
@@ -67,7 +67,7 @@ export async function depositToRaydiumVault(
 }
 
 export async function changeClaimer(
-	program: Program<RaydiumVault>,
+	program: Program<RaydiumVaultTypes>,
 	signerWallet: anchor.web3.Keypair,
 	position_nft: anchor.web3.PublicKey,
 	new_claimer_address: anchor.web3.PublicKey,
@@ -91,7 +91,7 @@ export async function changeClaimer(
 }
 
 export async function emergencyWithdrawRaydium(
-	program: Program<RaydiumVault>,
+	program: Program<RaydiumVaultTypes>,
 	signerWallet: anchor.web3.Keypair,
 	position_nft: anchor.web3.PublicKey,
 ) {
@@ -119,7 +119,7 @@ export async function emergencyWithdrawRaydium(
 }
 
 export async function claim(
-	program: Program<RaydiumVault>,
+	program: Program<RaydiumVaultTypes>,
 	signerWallet: anchor.web3.Keypair,
 	position_nft: anchor.web3.PublicKey,
 	poolId: anchor.web3.PublicKey,

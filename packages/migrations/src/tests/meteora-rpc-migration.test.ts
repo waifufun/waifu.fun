@@ -13,14 +13,13 @@ import { expect, sinon } from "./setup";
 import { describe, it, before, afterEach } from "mocha";
 import { MigrationService } from "../services/migration-service";
 import type { IMigration, SolanaAddressLike } from "@waifufun/types";
+import { getVaultIdl, type MeteoraVaultTypes } from "@waifufun/programs";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
 import { depositToMeteora, emergencyWithdraw, claimPositionFee } from "../vaults/meteoraVault";
-import type { MeteoraVault } from "../vaults/programs/types/meteora_vault";
-import idlModule from "../vaults/programs/idl/meteora_vault.json";
 import type DB from "@waifufun/database";
 import type redis from "@waifufun/redis";
 import Decimal from "decimal.js";
-const meteoraVaultIdl: any = (idlModule as any).default ?? idlModule;
+const meteoraVaultIdl = getVaultIdl("meteora");
 
 const TEST_TIMEOUT = 2 * 60 * 1000;
 const TOTAL_SUPPLY = 1_000_000_000; // 1B tokens
@@ -37,7 +36,7 @@ describe("Meteora RPC Migration Integration", function () {
 	let connection: Connection;
 	let wallet: Wallet;
 	let provider: AnchorProvider;
-	let program: Program<MeteoraVault>;
+	let program: Program<MeteoraVaultTypes>;
 	let migrationService: MigrationService;
 
 	let mockDb: any, mockRedis: any;
@@ -76,7 +75,7 @@ describe("Meteora RPC Migration Integration", function () {
 
 		// Build Anchor provider & program
 		provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
-		program = new Program<MeteoraVault>(meteoraVaultIdl as any, provider);
+		program = new Program<MeteoraVaultTypes>(meteoraVaultIdl as any, provider);
 
 		// mocks for DB and Redis
 		mockDb = {

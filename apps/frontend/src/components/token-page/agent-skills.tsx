@@ -88,7 +88,14 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 			</div>
 			<div className="flex items-start gap-3 mb-3">
 				<div className="relative">
-					<Image src={token.image} className="w-10 h-10 rounded-sm border border-[#00ff87]/20 flex-shrink-0" unoptimized width={40} height={40} alt="agent" />
+					<Image
+						src={token.image}
+						className="w-10 h-10 rounded-sm border border-[#00ff87]/20 flex-shrink-0"
+						unoptimized
+						width={40}
+						height={40}
+						alt="agent"
+					/>
 					<div className="absolute inset-0 bg-[#00ff87]/10 blur-md rounded-sm -z-10" />
 				</div>
 				<div className="flex-1 min-w-0">
@@ -222,8 +229,25 @@ export function SidebarSocials({ token }: { token: IToken }) {
 					return (
 						// @ts-ignore
 						<Comp {...compProps} key={social.title}>
-							<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} whileHover={{ scale: 1.1 }}>
-								<Image src={social.icon} className={cn("inline-flex items-center justify-center h-8 w-8 p-1.5 rounded-sm border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] transition-all duration-200", !social.href ? "opacity-30 cursor-not-allowed" : cn("opacity-70 hover:opacity-100 cursor-pointer", PLATFORM_COLORS[social.title]))} unoptimized width={24} height={24} alt={social.title} />
+							<motion.div
+								initial={{ opacity: 0, scale: 0.8 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{ delay: i * 0.05 }}
+								whileHover={{ scale: 1.1 }}
+							>
+								<Image
+									src={social.icon}
+									className={cn(
+										"inline-flex items-center justify-center h-8 w-8 p-1.5 rounded-sm border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] transition-all duration-200",
+										!social.href
+											? "opacity-30 cursor-not-allowed"
+											: cn("opacity-70 hover:opacity-100 cursor-pointer", PLATFORM_COLORS[social.title]),
+									)}
+									unoptimized
+									width={24}
+									height={24}
+									alt={social.title}
+								/>
 							</motion.div>
 						</Comp>
 					);
@@ -232,7 +256,9 @@ export function SidebarSocials({ token }: { token: IToken }) {
 			<div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
 				<div className="text-[9px] text-[#52525b] font-mono uppercase tracking-wider mb-1.5">contract</div>
 				<div className="flex items-center justify-between bg-[#08080a] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors group">
-					<span className="text-xs text-[#a1a1aa] font-mono truncate group-hover:text-[#e4e4e7] transition-colors">{shortenAddress(token.contractAddress)}</span>
+					<span className="text-xs text-[#a1a1aa] font-mono truncate group-hover:text-[#e4e4e7] transition-colors">
+						{shortenAddress(token.contractAddress)}
+					</span>
 					<CopyButton textToCopy={token.contractAddress} />
 				</div>
 			</div>

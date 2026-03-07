@@ -72,7 +72,8 @@ export async function createPositionNft(
 		};
 	} catch (error: unknown) {
 		console.error("Error creating position NFT:", error);
-		throw new Error(`Failed to create position NFT: ${error.message}`);
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Failed to create position NFT: ${message}`);
 	}
 }
 

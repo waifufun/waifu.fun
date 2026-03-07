@@ -1,0 +1,32 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"rules": {
+		"exports": "off",
+		"nsExports": "off",
+		"types": "off",
+		"nsTypes": "off",
+		"enumMembers": "off",
+		"classMembers": "off",
+		"duplicates": "off"
+	},
+	"ignoreDependencies": ["@biomejs/biome", "@semantic-release/github"],
+	"workspaces": {
+		"apps/backend": {
+			"entry": ["src/services/milady-cloud.test.ts"]
+		},
+		"apps/frontend": {
+			"ignoreDependencies": ["buffer"]
+		},
+		"packages/contracts-evm": {
+			"entry": ["hardhat.config.js", "scripts/**/*.js", "test/**/*.js"],
+			"ignoreDependencies": ["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]
+		},
+		"packages/contracts-solana/autofun-sc-audit": {
+			"entry": ["tests/**/*.ts"],
+			"ignoreBinaries": ["anchor"]
+		},
+		"packages/rpc": {
+			"ignoreFiles": ["src/evm/types/WaifuFunToken.ts", "src/evm/types/WaifuFunTokenFactory.ts"]
+		}
+	}
+}

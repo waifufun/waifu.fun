@@ -1,14 +1,23 @@
-import devnetWaifufunIdl from "../idls/devnet/waifufun.json";
-import devnetWaifufunLegacyIdl from "../idls/devnet/waifufun-legacy.json";
-import mainnetWaifufunIdl from "../idls/mainnet/waifufun.json";
-import mainnetWaifufunLegacyIdl from "../idls/mainnet/waifufun-legacy.json";
+import {
+	devnetAutofun,
+	devnetAutofunLegacy,
+	mainnetAutofun,
+	mainnetAutofunLegacy,
+	type DevnetAutofun,
+	type DevnetAutofunLegacy,
+	type MainnetAutofun,
+	type MainnetAutofunLegacy,
+} from "@waifufun/programs";
 
-export { devnetWaifufunIdl, devnetWaifufunLegacyIdl, mainnetWaifufunIdl, mainnetWaifufunLegacyIdl };
+export const devnetWaifufunIdl = devnetAutofun;
+export const devnetWaifufunLegacyIdl = devnetAutofunLegacy;
+export const mainnetWaifufunIdl = mainnetAutofun;
+export const mainnetWaifufunLegacyIdl = mainnetAutofunLegacy;
 
-export type { Autofun as DevnetWaifufun } from "../types/devnet/waifufun";
-export type { AutofunLegacy as DevnetWaifufunLegacy } from "../types/devnet/waifufun-legacy";
-export type { Autofun as MainnetWaifufun } from "../types/mainnet/waifufun";
-export type { AutofunLegacy as MainnetWaifufunLegacy } from "../types/mainnet/waifufun-legacy";
+export type DevnetWaifufun = DevnetAutofun;
+export type DevnetWaifufunLegacy = DevnetAutofunLegacy;
+export type MainnetWaifufun = MainnetAutofun;
+export type MainnetWaifufunLegacy = MainnetAutofunLegacy;
 
 export const WAIFUFUN_PROGRAM_ADDRESSES = {
 	mainnet: mainnetWaifufunIdl.address,

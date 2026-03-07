@@ -7,19 +7,14 @@ import {
 	derivePositionAddress,
 	deriveTokenVaultAddress,
 } from "@meteora-ag/cp-amm-sdk";
-import type { MeteoraVault } from "./programs/types/meteora_vault";
-import {
-	getVaultConfig,
-	getUserPosition,
-	getNftTokenFaucet,
-	getEventAuthority,
-} from "./meteroaPdas";
+import type { MeteoraVaultTypes } from "@waifufun/programs";
+import { getVaultConfig, getUserPosition, getNftTokenFaucet, getEventAuthority } from "./meteroaPdas";
 import { retryOperation } from "../utils";
 
 export async function depositToMeteora(
 	provider: anchor.AnchorProvider,
 	signerWallet: anchor.web3.Keypair,
-	program: Program<MeteoraVault>,
+	program: Program<MeteoraVaultTypes>,
 	position_nft: anchor.web3.PublicKey,
 	claimer_address: anchor.web3.PublicKey,
 	from_account: anchor.web3.PublicKey,
@@ -73,7 +68,7 @@ export async function depositToMeteora(
 export async function claimPositionFee(
 	provider: anchor.AnchorProvider,
 	signerWallet: anchor.web3.Keypair,
-	program: Program<MeteoraVault>,
+	program: Program<MeteoraVaultTypes>,
 	position_nft: anchor.web3.PublicKey,
 	pool: anchor.web3.PublicKey,
 	token_mint_a: anchor.web3.PublicKey,
@@ -175,7 +170,7 @@ export async function claimPositionFee(
 export async function emergencyWithdraw(
 	provider: anchor.AnchorProvider,
 	signerWallet: anchor.web3.Keypair,
-	program: Program<MeteoraVault>,
+	program: Program<MeteoraVaultTypes>,
 	position_nft: anchor.web3.PublicKey,
 ) {
 	try {

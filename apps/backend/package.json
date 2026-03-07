@@ -12,13 +12,16 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"lint": "biome format . --write && biome lint . --fix",
+		"test": "node --import tsx --test src/services/milady-cloud.test.ts",
 		"build": "rimraf dist && tsx build.ts",
 		"build:sourcemap": "rimraf dist && tsx build.ts --sourcemap"
 	},
 	"devDependencies": {
 		"@waifufun/types": "workspace:*",
 		"@types/node": "^22.15.3",
-		"rimraf": "^6.0.1"
+		"esbuild": "^0.25.4",
+		"rimraf": "^6.0.1",
+		"tsx": "^4.15.1"
 	},
 	"dependencies": {
 		"@waifufun/ai": "workspace:*",

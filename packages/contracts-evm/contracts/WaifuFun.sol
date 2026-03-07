@@ -37,6 +37,7 @@ contract WaifuFun is
     function initialize(ConfigParams memory _params) public initializer {
         __Ownable2Step_init();
         __ReentrancyGuard_init();
+        _validateConfig(_params);
         globalConfig = _params;
     }
 
@@ -48,6 +49,7 @@ contract WaifuFun is
     function updateGlobalConfig(
         ConfigParams memory _newGlobalParams
     ) external onlyOwner {
+        _validateConfig(_newGlobalParams);
         globalConfig = _newGlobalParams;
     }
 
@@ -91,6 +93,7 @@ contract WaifuFun is
     }
 
     function withdraw(address _token) external onlyOwner {
+        require(launchedTokens.contains(_token), "TOKEN_NOT_LAUNCHED");
         BondingCurve storage bondingCurve = bondingCurvesByToken[_token];
         require(bondingCurve.isCompleted, "BONDING_CURVE_IS_NOT_COMPLETED");
 
@@ -131,6 +134,7 @@ contract WaifuFun is
         string memory _symbol
     ) internal returns (address) {
         _validateAmount(_totalSupply, _virtualReserveETHAmount, _decimals);
+        require(address(factory) != address(0), "TOKEN_FACTORY_NOT_SET");
 
         address launcher = msg.sender;
         address deployedTokenAddress = factory.deployToken(
@@ -172,6 +176,7 @@ contract WaifuFun is
     }
 
     function _swap(SwapParameter memory _param) internal {
+        require(launchedTokens.contains(_param.token), "TOKEN_NOT_LAUNCHED");
         BondingCurve storage bondingCurve = bondingCurvesByToken[_param.token];
         address sender = msg.sender;
         require(
@@ -198,6 +203,7 @@ contract WaifuFun is
             uint256 amountOut,
             uint256 feeAmount
         ) = _getAmountOut(_param.token, amountToSwap, _param.direction);
+        require(amountOut > 0, "INSUFFICIENT_OUTPUT_AMOUNT");
         require(amountOut >= adjustedMinAmountOut, "BELOW_MIN_AMOUNT_OUT");
 
         {
@@ -239,19 +245,21 @@ contract WaifuFun is
                 // direction - 0: buy => user sends ETH and receive token.
                 if (feeAmount > 0) {
                     _transferETHTo(globalConfig.teamWallet, feeAmount);
-                    IERC20(_param.token).safeTransfer(sender, amountOut);
                 }
+                IERC20(_param.token).safeTransfer(sender, amountOut);
             } else {
                 // direction - 1: sell => user sends token and receive ETH.
-                IERC20(_param.token).transferFrom(
+                IERC20(_param.token).safeTransferFrom(
                     sender,
                     address(this),
                     amountToSwap
                 );
-                IERC20(_param.token).safeTransfer(
-                    globalConfig.teamWallet,
-                    feeAmount
-                );
+                if (feeAmount > 0) {
+                    IERC20(_param.token).safeTransfer(
+                        globalConfig.teamWallet,
+                        feeAmount
+                    );
+                }
                 _transferETHTo(sender, amountOut);
             }
         }
@@ -293,6 +301,41 @@ contract WaifuFun is
             _reserveETHAmount >= globalConfig.minETHAmount &&
                 _reserveETHAmount <= globalConfig.maxETHAmount,
             "INVALID_RESERVE_ETH_AMOUNT"
+        );
+        require(
+            _reserveETHAmount < globalConfig.curveLimit,
+            "INVALID_RESERVE_ETH_AMOUNT"
+        );
+    }
+
+    function _validateConfig(ConfigParams memory _params) internal pure {
+        require(_params.teamWallet != address(0), "INVALID_TEAM_WALLET");
+        require(
+            _params.buyFee <= FEE_FIXED_POINT &&
+                _params.sellFee <= FEE_FIXED_POINT,
+            "INVALID_FEE"
+        );
+        require(
+            _params.initBondingCurveRate > 0 &&
+                _params.initBondingCurveRate <= BONDING_CURVE_FIXED_POINT,
+            "INVALID_INIT_BONDING_CURVE_RATE"
+        );
+        require(_params.curveLimit > 0, "INVALID_CURVE_LIMIT");
+        require(
+            _params.minETHAmount <= _params.maxETHAmount,
+            "INVALID_ETH_RANGE"
+        );
+        require(
+            _params.curveLimit > _params.minETHAmount,
+            "INVALID_CURVE_LIMIT"
+        );
+        require(
+            _params.minTotalSupply <= _params.maxTotalSupply,
+            "INVALID_TOTAL_SUPPLY_RANGE"
+        );
+        require(
+            _params.minDecimal <= _params.maxDecimal,
+            "INVALID_DECIMAL_RANGE"
         );
     }
 
@@ -342,6 +385,10 @@ contract WaifuFun is
         // buy: swap ETH -> Token
         // sell: swap Token -> ETH
         if (_direction == 0) {
+            require(
+                bondingCurve.reserveETHAmount < bondingCurve.curveLimit,
+                "CURVE_ALREADY_COMPLETED"
+            );
             // buy: check remain amount based on curve limit
             uint256 remainAmount = bondingCurve.curveLimit -
                 bondingCurve.reserveETHAmount;

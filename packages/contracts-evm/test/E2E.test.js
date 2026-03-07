@@ -13,6 +13,8 @@ describe("WaifuFun End-To-End Test", function () {
     let globalConfig;
     let BONDING_CURVE_FIXED_POINT = 1000000;
     let FEE_FIXED_POINT = 10000;
+    let primaryTokenAddress;
+    let secondaryTokenAddress;
     before(async function () {
         Object.assign(this, await setupWaifuFunSuite());
         globalConfig = this.globalConfig;
@@ -52,6 +54,10 @@ describe("WaifuFun End-To-End Test", function () {
         let totalSupply = bigNum(500000, decimals);
         let name = "First Autofun Token";
         let symbol = "AFT_1";
+        let beforeAllLaunchedTokens = await this.WaifuFun.getAllLaunchedTokens();
+        let beforeLaunchedTokensByOwner =
+            await this.WaifuFun.getLaunchedTokensByOwner(this.user_1.address);
+
         await this.WaifuFun.connect(this.user_1).launch(
             BigInt(totalSupply),
             BigInt(virtualReserveETHAmount),
@@ -65,11 +71,19 @@ describe("WaifuFun End-To-End Test", function () {
             this.user_1.address
         );
 
-        expect(launchedTokensByOwner.length).to.be.equal(1);
-        expect(allLaunchedTokens.length).to.be.equal(
-            launchedTokensByOwner.length
+        expect(launchedTokensByOwner.length).to.be.equal(
+            beforeLaunchedTokensByOwner.length + 1
         );
-        let launchedTokenAddress = launchedTokensByOwner[0];
+        expect(allLaunchedTokens.length).to.be.equal(
+            beforeAllLaunchedTokens.length + 1
+        );
+        let launchedTokenAddress =
+            launchedTokensByOwner[launchedTokensByOwner.length - 1];
+        primaryTokenAddress = launchedTokenAddress;
+
+        expect(allLaunchedTokens[allLaunchedTokens.length - 1]).to.be.equal(
+            launchedTokenAddress
+        );
         let token = new ethers.Contract(
             launchedTokenAddress,
             ERC20ABI,
@@ -108,9 +122,13 @@ describe("WaifuFun End-To-End Test", function () {
         let tokenAddress, token;
         it("buy tokens and check", async function () {
             // swap ETH to Token
-            tokenAddress = (
-                await this.WaifuFun.getLaunchedTokensByOwner(this.user_1.address)
-            )[0];
+            tokenAddress =
+                primaryTokenAddress ||
+                (
+                    await this.WaifuFun.getLaunchedTokensByOwner(
+                        this.user_1.address
+                    )
+                ).slice(-1)[0];
             token = new ethers.Contract(tokenAddress, ERC20ABI, this.deployer);
 
             let ethAmountToSwap = ethers.utils.parseEther("0.3");
@@ -329,6 +347,8 @@ describe("WaifuFun End-To-End Test", function () {
             let totalSupply = bigNum(500000, decimals);
             let name = "Second Autofun Token";
             let symbol = "AFT_2";
+            let beforeLaunchedTokensByOwner =
+                await this.WaifuFun.getLaunchedTokensByOwner(this.user_2.address);
 
             let ethAmountToSwap = ethers.utils.parseEther("0.3");
             let minAmountOut = 0;
@@ -353,9 +373,14 @@ describe("WaifuFun End-To-End Test", function () {
                 }
             );
 
-            let tokenAddress = (
-                await this.WaifuFun.getLaunchedTokensByOwner(this.user_2.address)
-            )[0];
+            let launchedTokensByOwner =
+                await this.WaifuFun.getLaunchedTokensByOwner(this.user_2.address);
+            expect(launchedTokensByOwner.length).to.be.equal(
+                beforeLaunchedTokensByOwner.length + 1
+            );
+
+            let tokenAddress = launchedTokensByOwner[launchedTokensByOwner.length - 1];
+            secondaryTokenAddress = tokenAddress;
             let token = new ethers.Contract(
                 tokenAddress,
                 ERC20ABI,
@@ -402,9 +427,8 @@ describe("WaifuFun End-To-End Test", function () {
 
     describe("withdraw", async function () {
         it("withdraw and check", async function () {
-            let allLaunchedTokens = await this.WaifuFun.getAllLaunchedTokens();
-            let tokenAddress0 = allLaunchedTokens[0];
-            let tokenAddress1 = allLaunchedTokens[1];
+            let tokenAddress0 = primaryTokenAddress;
+            let tokenAddress1 = secondaryTokenAddress;
             let token = new ethers.Contract(
                 tokenAddress0,
                 ERC20ABI,

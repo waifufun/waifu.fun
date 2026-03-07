@@ -18,6 +18,8 @@
 	},
 	"devDependencies": {
 		"@waifufun/types": "workspace:*",
+		"esbuild": "^0.25.4",
+		"tsx": "^4.15.1",
 		"rimraf": "^6.0.1"
 	},
 	"keywords": [],
