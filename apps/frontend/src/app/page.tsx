@@ -38,9 +38,10 @@ function getTokensForPage(): IToken[] {
 export default async function Home() {
 	const tokens = getTokensForPage();
 	const noTokens = (tokens?.length || 0) === 0;
-	const topToken = tokens.length > 0
-		? [...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0]
-		: null;
+	const topToken =
+		tokens.length > 0
+			? [...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null
+			: null;
 
 	return (
 		<div className="flex flex-col w-full">

@@ -48,7 +48,7 @@ type HowItWorksModalProps = {
 
 export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksModalProps = {}) {
 	const [stepIndex, setStepIndex] = useState(0);
-	const step = STEPS[stepIndex];
+	const step = (STEPS[stepIndex] ?? STEPS[0])!;
 
 	const goNext = () => setStepIndex((i) => (i + 1) % STEPS.length);
 	const goPrev = () => setStepIndex((i) => (i - 1 + STEPS.length) % STEPS.length);
