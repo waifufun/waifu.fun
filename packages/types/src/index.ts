@@ -94,15 +94,39 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	hidden?: boolean;
 	featured?: boolean;
 	imported?: boolean;
+	launchType?: "native" | "imported";
+	launchPlatform?: "pump" | "flap" | "external";
+	ownerClaimStatus?: "unclaimed" | "claimed" | "verified" | "disputed";
+	creatorUserId?: string;
+	ownerWallets?: {
+		solana?: string[];
+		evm?: string[];
+	};
+	agentCharacterConfig?: ITokenAgentCharacterConfig;
+	cloudAgentId?: string;
+	agentStatus?: "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
+	agentLifecycleState?: "birth" | "live" | "dormant" | "reviving";
+	billingMode?: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+	infraReserveUsd?: number;
 	verified?: boolean;
 	pool?: string;
 	isToken2022?: boolean;
 	tradingStartsAt?: Date;
 	lastClaimedAt?: Date;
+	lastTradeAt?: Date;
+	suspendAt?: Date;
+	reviveAt?: Date;
+	webUiUrl?: string;
 	maxBuyAmount?: number;
 	delayForTrade?: number;
 	createdAt?: string;
 	updatedAt?: string;
+}
+
+export interface ITokenAgentCharacterConfig {
+	name?: string;
+	bio?: string;
+	avatar?: string;
 }
 
 export interface ITokenSocials {
@@ -249,6 +273,14 @@ export interface IAgent {
 	contractAddress: Pick<IToken, "contractAddress">;
 	chain: Pick<IToken, "chain">;
 	chainId: Pick<IToken, "chainId">;
+	cloudAgentId?: string;
+	runtimeProvider?: "milady-cloud";
+	agentStatus?: string;
+	webUiUrl?: string;
+	bridgeUrl?: string;
+	lastHeartbeatAt?: Date;
+	billingMode?: string;
+	suspendedReason?: string;
 }
 
 export interface IEventsMeta {

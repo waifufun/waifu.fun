@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { AddressLike } from "@waifufun/types";
+import type { AddressLike, TChain, TChainId } from "@waifufun/types";
 import DB from "@waifufun/database";
 
 declare module "fastify" {
@@ -29,7 +29,11 @@ export async function requireTokenOwner(request: FastifyRequest, reply: FastifyR
 		});
 	}
 
-	const { mint } = request.params as { mint: string };
+	const { mint, chain, chainId } = request.params as {
+		mint: string;
+		chain?: TChain;
+		chainId?: TChainId;
+	};
 	if (!mint) {
 		return reply.code(400).send({
 			success: false,
@@ -39,9 +43,18 @@ export async function requireTokenOwner(request: FastifyRequest, reply: FastifyR
 
 	try {
 		// Fetch token data to check ownership
-		const tokenData = await DB.Token.findOne({
+		const tokenLookup: {
+			contractAddress: string;
+			chain?: TChain;
+			chainId?: TChainId;
+		} = {
 			contractAddress: mint,
-		})
+		};
+
+		if (chain !== undefined) tokenLookup.chain = chain;
+		if (chainId !== undefined) tokenLookup.chainId = chainId;
+
+		const tokenData = await DB.Token.findOne(tokenLookup)
 			.select("creator")
 			.lean();
 
