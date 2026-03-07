@@ -63,14 +63,14 @@ export default function Header() {
 						href="/"
 						className="shrink-0 font-bold text-xl tracking-tight transition-all duration-200"
 						style={{
-							color: "#e4e4e7",
+							color: logoHover ? "#22c55e" : "#00ff87",
 							textShadow: logoHover ? "0 0 12px rgba(0, 255, 135, 0.4)" : "none",
 						}}
 						onMouseEnter={() => setLogoHover(true)}
 						onMouseLeave={() => setLogoHover(false)}
 						aria-label="waifu.fun home"
 					>
-						waifu.fun
+						WAIFU.FUN
 					</Link>
 
 					{/* Nav links - hidden on mobile */}
