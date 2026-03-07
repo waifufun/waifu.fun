@@ -1,3 +1,10 @@
+## [0.23.1](https://github.com/waifufun/waifu.fun/compare/v0.23.0...v0.23.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* **ci:** sync main workflows and release metadata ([007a713](https://github.com/waifufun/waifu.fun/commit/007a71300d42a9efcd7a36aa2fabbc8b80854c6d))
+
 # [0.23.0](https://github.com/elizaos/autofun-monorepo/compare/v0.22.0...v0.23.0) (2025-07-28)
 
 
