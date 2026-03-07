@@ -48,3 +48,5 @@ Mongoose.connection.on("disconnected", () => {
 });
 
 export default DB;
+export type { IInviteCode } from "./models/invite-code";
+export type { ILaunchGateAllowlistEntry } from "./models/launch-gate-allowlist";

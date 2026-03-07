@@ -29,8 +29,8 @@ export interface BondingCurveData {
 export async function getBondingCurveData(
 	contractAddress: string,
 	chainId: SolanaNetworkIds,
-	totalSupply: number,
-	decimals: number,
+	_totalSupply: number,
+	_decimals: number,
 	version = 2,
 ): Promise<BondingCurveData> {
 	const rpc = new SolanaRpcProvider(chainId);

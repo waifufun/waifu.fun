@@ -4,7 +4,7 @@ import redis from "@waifufun/redis";
 
 export default async function pricesRoutes(fastify: FastifyInstance) {
 	/** Retrieve crypto token prices */
-	fastify.post("/", async (request) => {
+	fastify.post("/", async (_request) => {
 		const cacheKey = "prices";
 
 		const cache = await redis.get(cacheKey);

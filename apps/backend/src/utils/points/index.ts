@@ -7,8 +7,14 @@ export function calculateStreak(dates: string[]): { streakPoints: number } {
 	let maxStreak = 1;
 
 	for (let i = 1; i < dates.length; i++) {
-		const prev = new Date(dates[i - 1]);
-		const curr = new Date(dates[i]);
+		const previousDate = dates[i - 1];
+		const currentDate = dates[i];
+		if (!previousDate || !currentDate) {
+			continue;
+		}
+
+		const prev = new Date(previousDate);
+		const curr = new Date(currentDate);
 		const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
 
 		if (diffDays === 1) {

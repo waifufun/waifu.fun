@@ -558,6 +558,7 @@ export const LaunchButton = ({
 		setLaunching,
 		setMintKeyPair,
 		isLaunching,
+		inviteCode,
 	} = usePrompt();
 	const router = useRouter();
 	const [chain, chainId] = [
@@ -633,6 +634,7 @@ export const LaunchButton = ({
 				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
+				...(inviteCode !== undefined ? { inviteCode } : {}),
 			});
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
