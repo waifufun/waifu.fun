@@ -249,10 +249,7 @@ export default async function transactionsRoutes(fastify: FastifyInstance) {
 			const claimedAt = new Date();
 			try {
 				await Promise.all([
-					DB.Token.updateOne(
-						{ contractAddress: tokenMint, chain, chainId },
-						{ $set: { lastClaimedAt: claimedAt } },
-					),
+					DB.Token.updateOne({ contractAddress: tokenMint, chain, chainId }, { $set: { lastClaimedAt: claimedAt } }),
 					upsertRuntimeRecord({
 						mint: tokenMint,
 						chain,
