@@ -1,13 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import type { IToken, ITokenLookUp } from "@waifufun/types";
-import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, MessageCircle, TrendingUp } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import BondingCurveProgress from "@/components/bonding-curve-progress";
 import Chart from "@/components/chart/chart";
-import Chat from "@/components/token-page/chat";
 import ClaimFees from "@/components/claim-fees";
 import ScamWarning from "@/components/scam-notice";
 import Swap from "@/components/swap";
@@ -15,17 +9,21 @@ import ActivityFeed from "@/components/token-page/activity-feed";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentPersonalityCard, AgentSkills, SidebarSocials } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
+import Chat from "@/components/token-page/chat";
+import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
 import { Button } from "@/components/ui/button";
 import useAddress from "@/hooks/use-address";
 import { getToken } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, isSameWalletAddress } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import type { IToken, ITokenLookUp } from "@waifufun/types";
+import { AnimatePresence, motion } from "framer-motion";
+import { BarChart3, MessageCircle, TrendingUp } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
-function HudCorner({
-	position,
-	color = "green",
-}: { position: "tl" | "tr" | "bl" | "br"; color?: "green" | "purple" }) {
+function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl" | "br"; color?: "green" | "purple" }) {
 	const base = "absolute w-2.5 h-2.5 pointer-events-none";
 	const borderColor = color === "green" ? "border-[#00ff87]/30" : "border-[#c084fc]/30";
 	const styles: Record<string, string> = {
@@ -101,7 +99,7 @@ export default function PageClient({
 	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(token), [token]);
 	const isCreator = useMemo(() => {
 		if (currentAddress && token?.creator) {
-			return currentAddress.toLowerCase() === token.creator.toLowerCase();
+			return isSameWalletAddress(currentAddress, token.creator);
 		}
 		return false;
 	}, [currentAddress, token?.creator]);
@@ -146,10 +144,12 @@ export default function PageClient({
 						className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm"
 					>
 						<div className="inline-flex items-center gap-1 rounded-sm bg-[#08080a] border border-[rgba(255,255,255,0.06)] p-1">
-							{([
-								{ id: "chart", label: "chart", Icon: BarChart3 },
-								{ id: "chat", label: "chat", Icon: MessageCircle },
-							] as const).map(({ id, label, Icon }) => {
+							{(
+								[
+									{ id: "chart", label: "chart", Icon: BarChart3 },
+									{ id: "chat", label: "chat", Icon: MessageCircle },
+								] as const
+							).map(({ id, label, Icon }) => {
 								const isActive = activePanel === id;
 
 								return (
@@ -214,9 +214,7 @@ export default function PageClient({
 									<div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
 										<div className="flex items-center gap-2">
 											<BarChart3 className={cn("size-4", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-											<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
-												price chart
-											</span>
+											<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">price chart</span>
 											{isPriceUp ? (
 												<TrendingUp className="size-3 text-[#00ff87]" />
 											) : (
@@ -292,28 +290,20 @@ export default function PageClient({
 						<BondingCurveProgress token={token} />
 					</motion.div>
 
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.15 }}
-					>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
 						<AgentPersonalityCard token={token} />
 					</motion.div>
 
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.2 }}
-					>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
 						<AgentSkills token={token} />
 					</motion.div>
 
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.25 }}
-					>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
 						<SidebarSocials token={token} />
+					</motion.div>
+
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.275 }}>
+						<OwnerRuntimePanel token={token} />
 					</motion.div>
 
 					{isCreator && (
