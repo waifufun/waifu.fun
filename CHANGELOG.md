@@ -1,3 +1,10 @@
+# [0.2.0-staging.5](https://github.com/waifufun/waifu.fun/compare/v0.2.0-staging.4...v0.2.0-staging.5) (2026-03-07)
+
+
+### Bug Fixes
+
+* **ci:** use github token for staging release ([2063f4f](https://github.com/waifufun/waifu.fun/commit/2063f4f8acc23a8e82d8157196cb9ec2cd37dfa4))
+
 # [0.2.0-staging.4](https://github.com/waifufun/waifu.fun/compare/v0.2.0-staging.3...v0.2.0-staging.4) (2026-03-07)
 
 
