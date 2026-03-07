@@ -1692,7 +1692,9 @@ function pickWalletLinkSource(
 	desired: ControlPlaneWalletLinkSource,
 ): ControlPlaneWalletLinkSource {
 	if (!existing) return desired;
-	return WALLET_LINK_SOURCE_RANK[desired] > WALLET_LINK_SOURCE_RANK[existing] ? desired : existing;
+	const desiredRank = WALLET_LINK_SOURCE_RANK[desired] ?? 0;
+	const existingRank = WALLET_LINK_SOURCE_RANK[existing] ?? 0;
+	return desiredRank > existingRank ? desired : existing;
 }
 
 function pickOwnershipStatus(
