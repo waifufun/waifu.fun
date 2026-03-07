@@ -766,6 +766,9 @@ importers:
 
   packages/sync:
     dependencies:
+      '@waifufun/control-plane':
+        specifier: workspace:*
+        version: link:../control-plane
       '@waifufun/database':
         specifier: workspace:*
         version: link:../database
