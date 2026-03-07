@@ -11,7 +11,7 @@ import ClaimFees from "@/components/claim-fees";
 import ScamWarning from "@/components/scam-notice";
 import Swap from "@/components/swap";
 import ActivityFeed from "@/components/token-page/activity-feed";
-import AgentProfile from "@/components/token-page/agent-profile";
+import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentPersonalityCard, AgentSkills, SidebarSocials } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
 import TokenTabs from "@/components/token-page/token-tabs";
@@ -44,6 +44,37 @@ const TIMEFRAMES = [
 	{ label: "all", value: "all" },
 ];
 
+function getBadgeInfo(token: IToken, isImported: boolean) {
+	if (token?.status === "migrating") {
+		return {
+			badge: "MIGRATING",
+			classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
+		};
+	}
+
+	if (token?.status === "migrated" || token?.status === "locked") {
+		return {
+			badge: "BONDED",
+			classes:
+				"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 shadow-[0_0_8px_rgba(0,255,135,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+		};
+	}
+
+	if (isImported) {
+		return {
+			badge: "IMPORTED",
+			classes:
+				"bg-sky-500/15 hover:bg-sky-500/25 text-[#60a5fa] border border-sky-500/40 shadow-[0_0_10px_rgba(96,165,250,0.16)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+		};
+	}
+
+	return {
+		badge: "ACTIVE",
+		classes:
+			"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+	};
+}
+
 export default function PageClient({
 	initialData,
 	tokenParams,
@@ -65,7 +96,8 @@ export default function PageClient({
 	});
 
 	const currentAddress = useAddress();
-	const token = query.data;
+	const token = query.data ?? initialData;
+	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(token), [token]);
 	const isCreator = useMemo(() => {
 		if (currentAddress && token?.creator) {
 			return currentAddress.toLowerCase() === token.creator.toLowerCase();
@@ -75,43 +107,15 @@ export default function PageClient({
 	const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 	const isPriceUp = true;
-
-	const getBadgeInfo = () => {
-		if (initialData?.status === "migrating") {
-			return {
-				badge: "MIGRATING",
-				classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
-			};
-		}
-		if (initialData?.status === "migrated" || initialData?.status === "locked") {
-			return {
-				badge: "BONDED",
-				classes:
-					"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 shadow-[0_0_8px_rgba(0,255,135,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-			};
-		}
-		if (initialData?.imported) {
-			return {
-				badge: "IMPORTED",
-				classes: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/40",
-			};
-		}
-		return {
-			badge: "ACTIVE",
-			classes:
-				"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-		};
-	};
-
-	const badge = getBadgeInfo();
+	const badge = getBadgeInfo(token, agentStatus.isImported);
 	const badgeBaseClasses =
 		"font-bold uppercase tracking-wider rounded-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 
 	return (
 		<div className="flex flex-col gap-5 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<AgentProfile token={token} badge={badge} badgeBaseClasses={badgeBaseClasses} />
-			<AgentStatusVisual token={token} />
+			<AgentProfile token={token} status={agentStatus} badge={badge} badgeBaseClasses={badgeBaseClasses} />
+			<AgentStatusVisual status={agentStatus} />
 
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-5">
 				<div className="w-full lg:w-[65%] flex flex-col gap-5 order-3 lg:order-2">

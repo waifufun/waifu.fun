@@ -19,24 +19,24 @@ Not cheap neon. Not safe corporate. Intentional chaos with restraint.
 - `--text-tertiary: #52525b` — least emphasis
 - `--text-link: #a78bfa` — links (violet-400)
 
-### Accent Colors (Desaturated, Sophisticated)
-- `--accent-violet: #8b5cf6` — primary accent (violet-500)
-- `--accent-pink: #c084fc` — secondary accent (purple-400, not hot pink)
+### Accent Colors
+- `--accent-green: #00ff87` — active brand green, default accent for live/active UI
+- `--accent-violet: #8b5cf6` — secondary accent (violet-500)
+- `--accent-pink: #c084fc` — supporting accent (purple-400, not hot pink)
 - `--accent-cyan: #67e8f9` — tertiary, used sparingly (cyan-300)
-- `--accent-green: #4ade80` — success/positive (green-400)
 - `--accent-red: #f87171` — error/negative (red-400)
 
 ### Borders & Surfaces
 - `--border-subtle: rgba(255, 255, 255, 0.06)` — default borders
 - `--border-hover: rgba(255, 255, 255, 0.12)` — hover state
-- `--border-active: rgba(139, 92, 246, 0.3)` — active/focused (violet tint)
+- `--border-active: rgba(0, 255, 135, 0.3)` — active/focused (brand green tint)
 - `--glass-bg: rgba(17, 17, 20, 0.8)` — glassmorphism background
 - `--glass-border: rgba(255, 255, 255, 0.08)` — glass borders
 
 ### Shadows (Tinted)
 - `--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3)`
 - `--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.03)`
-- `--shadow-glow: 0 0 20px rgba(139, 92, 246, 0.15)` — violet glow
+- `--shadow-glow: 0 0 20px rgba(0, 255, 135, 0.15)` — brand green glow
 - `--shadow-glow-cyan: 0 0 20px rgba(103, 232, 249, 0.1)` — cyan glow
 
 ## Typography
@@ -84,19 +84,19 @@ One animated scan line sweeping vertically at very low opacity (3-5%).
 ### Cards (Token Cards)
 - Dark bg (#111114), subtle border (rgba(255,255,255,0.06))
 - On hover: border brightens, slight glow, subtle lift
-- Progress ring: violet gradient instead of green
+- Progress ring: brand green by default; blue/amber/gray only when a semantic state calls for it
 - Image at top, data at bottom with monospace numbers
 - Corner badge for ticker/name
 
 ### Buttons
-- Primary: solid bg, no gradient, violet-500 bg with white text
+- Primary: solid bg, no gradient, brand green bg with near-black text
 - Secondary: transparent with border, border-subtle
 - Both: spring hover animation, press feedback
 - Icon buttons: ghost style, no background
 
 ### Navigation
 - Glass background with blur, very dark
-- Logo: "waifu.fun" in brand font, violet accent possible
+- Logo: "waifu.fun" in brand font, green accent by default
 - Compact, no wasted space
 - Search: dark input with subtle border, CMD+K shortcut
 
@@ -107,7 +107,7 @@ One animated scan line sweeping vertically at very low opacity (3-5%).
 - No glass card — just clean dark section
 
 ## Scrollbar
-- Thin (4-6px), violet thumb on transparent track
+- Thin (4-6px), brand green thumb on transparent track
 - Rounded pill shape
 
 ## DO NOT
@@ -116,7 +116,7 @@ One animated scan line sweeping vertically at very low opacity (3-5%).
 - Use gradients on buttons
 - Use glass/white backgrounds on dark theme
 - Use blue (#2563eb) — that's the old brand
-- Use green (#03FF23) — that's the old brand
+- Use green (#03FF23) — that's the old legacy green; `#00ff87` is the current brand green
 - Use `bg-white/X` classes — we're dark mode
 - Use generic AI gradient (purple → blue → pink smooth gradient)
 - Use emojis in UI copy

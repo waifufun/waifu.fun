@@ -1,58 +1,53 @@
 "use client";
 
-import type { IToken } from "@waifufun/types";
+import { Activity, Clock, Download, Moon } from "lucide-react";
+import type { AgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { cn } from "@/lib/utils";
-import { Activity, Moon, Skull } from "lucide-react";
-
-function getAgentState(token: IToken) {
-	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
-	const isBonded = token?.curveCompleted || curveProgress >= 100;
-	const isDead =
-		token?.status === "finalized" || (isBonded && (token?.marketcap ?? 0) === 0);
-
-	if (isDead) return "dead" as const;
-	if (isBonded) return "alive" as const;
-	return "sleeping" as const;
-}
 
 const stateConfig = {
-	sleeping: {
-		label: "Not woken up yet",
-		description: "Bonding curve in progress — agent will wake when bonding completes.",
-		icon: Moon,
-		className:
-			"bg-amber-500/10 border-amber-500/30 text-amber-200",
+	bonding: {
+		label: "Bonding",
+		description: "Still on the bonding curve — graduation hasn’t happened yet.",
+		icon: Clock,
+		className: "bg-amber-500/10 border-amber-500/30 text-amber-200",
 		iconClassName: "text-amber-400",
 	},
-	alive: {
-		label: "Alive",
-		description: "Agent is running and trading.",
+	active: {
+		label: "Active",
+		description: "Graduated and showing recent market activity.",
 		icon: Activity,
-		className:
-			"bg-emerald-500/10 border-emerald-500/30 text-emerald-200",
-		iconClassName: "text-emerald-400",
+		className: "bg-[#00ff87]/10 border-[#00ff87]/30 text-emerald-100",
+		iconClassName: "text-[#00ff87]",
 	},
-	dead: {
-		label: "Dead",
-		description: "Agent has stopped — no remaining value or finalized.",
-		icon: Skull,
-		className:
-			"bg-red-500/10 border-red-500/30 text-red-200",
-		iconClassName: "text-red-400",
+	dormant: {
+		label: "Dormant",
+		description: "Graduated, but currently showing little to no meaningful activity.",
+		icon: Moon,
+		className: "bg-zinc-500/10 border-zinc-500/30 text-zinc-200",
+		iconClassName: "text-zinc-400",
 	},
-};
+	imported: {
+		label: "Imported",
+		description: "Imported token discovered on waifu.fun.",
+		icon: Download,
+		className: "bg-sky-500/10 border-sky-500/30 text-sky-100",
+		iconClassName: "text-[#60a5fa]",
+	},
+} as const;
 
-export default function AgentStatusVisual({ token }: { token: IToken }) {
-	const state = getAgentState(token);
-	const config = stateConfig[state];
+export default function AgentStatusVisual({ status }: { status: AgentLifecycleStatus }) {
+	const config = stateConfig[status.state];
 	const Icon = config.icon;
+	const description =
+		status.state === "imported"
+			? status.hasRecentActivity
+				? "Imported token with current market activity on waifu.fun."
+				: "Imported token with limited recent activity on waifu.fun."
+			: config.description;
 
 	return (
 		<div
-			className={cn(
-				"flex items-center gap-4 rounded-lg border px-4 py-3",
-				config.className,
-			)}
+			className={cn("flex items-center gap-4 rounded-lg border px-4 py-3", config.className)}
 			aria-label={`Agent status: ${config.label}`}
 		>
 			<div
@@ -64,21 +59,13 @@ export default function AgentStatusVisual({ token }: { token: IToken }) {
 				<Icon className="h-5 w-5" aria-hidden />
 			</div>
 			<div className="min-w-0 flex-1">
-				<p className="font-semibold uppercase tracking-wider text-sm">
-					{config.label}
-				</p>
-				<p className="text-xs opacity-90 mt-0.5">
-					{config.description}
-				</p>
+				<p className="font-semibold uppercase tracking-wider text-sm">{config.label}</p>
+				<p className="text-xs opacity-90 mt-0.5">{description}</p>
 			</div>
-			{/* Pulse for alive */}
-			{state === "alive" && (
-				<span
-					className="relative flex h-3 w-3 shrink-0"
-					aria-hidden
-				>
-					<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-					<span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+			{status.state === "active" && (
+				<span className="relative flex h-3 w-3 shrink-0" aria-hidden>
+					<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00ff87] opacity-60" />
+					<span className="relative inline-flex h-3 w-3 rounded-full bg-[#00ff87] shadow-[0_0_10px_rgba(0,255,135,0.35)]" />
 				</span>
 			)}
 		</div>

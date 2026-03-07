@@ -11,6 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import Verified from "@/components/verified";
 import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } from "@/lib/utils";
 
+export type AgentLifecycleState = "bonding" | "active" | "dormant" | "imported";
+
+export interface AgentLifecycleStatus {
+	state: AgentLifecycleState;
+	label: AgentLifecycleState;
+	isBonded: boolean;
+	isImported: boolean;
+	hasRecentActivity: boolean;
+}
+
+const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
+
 function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 	const base = "absolute w-3 h-3 pointer-events-none";
 	const styles: Record<string, string> = {
@@ -22,14 +34,66 @@ function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 	return <span className={styles[position]} />;
 }
 
-function deriveAgentStatus(token: IToken) {
+function isImportedToken(token: IToken) {
+	const tokenWithOrigin = token as IToken & { origin?: string };
+	return Boolean(token?.imported) || tokenWithOrigin?.origin === "imported";
+}
+
+export function deriveAgentLifecycleStatus(token: IToken): AgentLifecycleStatus {
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
-	const isBonded = token?.curveCompleted || curveProgress >= 100;
-	const isDead = token?.status === "finalized" || (isBonded && (token?.marketcap ?? 0) === 0);
+	const isBonded = Boolean(token?.curveCompleted) || curveProgress >= 100;
+	const isImported = isImportedToken(token);
+	const volume24h = Number(token?.volume24h ?? 0);
+	const marketcap = Number(token?.marketcap ?? 0);
+	const isFinalized = token?.status === "finalized";
+	const hasRecentActivity = volume24h > 0 || marketcap >= ACTIVE_MARKETCAP_THRESHOLD;
+
+	if (isImported) {
+		return {
+			state: "imported",
+			label: "imported",
+			isBonded,
+			isImported,
+			hasRecentActivity,
+		};
+	}
+
+	if (isFinalized) {
+		return {
+			state: "dormant",
+			label: "dormant",
+			isBonded,
+			isImported,
+			hasRecentActivity: false,
+		};
+	}
+
+	if (!isBonded) {
+		return {
+			state: "bonding",
+			label: "bonding",
+			isBonded,
+			isImported,
+			hasRecentActivity,
+		};
+	}
+
+	if (hasRecentActivity) {
+		return {
+			state: "active",
+			label: "active",
+			isBonded,
+			isImported,
+			hasRecentActivity,
+		};
+	}
+
 	return {
+		state: "dormant",
+		label: "dormant",
 		isBonded,
-		isDead,
-		label: isDead ? "dead" : isBonded ? "alive" : "sleeping",
+		isImported,
+		hasRecentActivity,
 	};
 }
 
@@ -62,16 +126,24 @@ function LiveDot() {
 	);
 }
 
+const statusClassMap: Record<AgentLifecycleState, string> = {
+	bonding: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+	active: "bg-[#00ff87]/15 text-[#00ff87] border border-[#00ff87]/30",
+	dormant: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/30",
+	imported: "bg-sky-500/15 text-[#60a5fa] border border-sky-500/30",
+};
+
 export default function AgentProfile({
 	token,
+	status,
 	badge,
 	badgeBaseClasses,
 }: {
 	token: IToken;
+	status: AgentLifecycleStatus;
 	badge: { badge: string; classes: string };
 	badgeBaseClasses: string;
 }) {
-	const status = deriveAgentStatus(token);
 	const stats = [
 		{ label: "mkt cap", value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—", live: true },
 		{ label: "24h vol", value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—", icon: BarChart2 },
@@ -85,12 +157,7 @@ export default function AgentProfile({
 		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
 		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
 	];
-	const statusClass =
-		status.label === "dead"
-			? "bg-red-500/15 text-red-300 border border-red-500/30"
-			: status.label === "alive"
-				? "bg-[#00ff87]/15 text-[#00ff87] border border-[#00ff87]/30"
-				: "bg-amber-400/15 text-amber-300 border border-amber-400/30";
+	const statusClass = statusClassMap[status.state];
 
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-5 md:p-6 overflow-hidden">
@@ -127,7 +194,7 @@ export default function AgentProfile({
 						<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight">
 							{token.name}
 						</h1>
-						{status.label === "alive" && <LiveDot />}
+						{status.state === "active" && <LiveDot />}
 						<span className="text-lg md:text-xl text-[#00ff87] font-mono font-semibold">${token.ticker}</span>
 						<span className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}>
 							{status.label}
