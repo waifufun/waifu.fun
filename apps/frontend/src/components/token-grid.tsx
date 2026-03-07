@@ -63,13 +63,6 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 							<div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[rgba(17,17,20,0.95)] hidden lg:block" />
 							<div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,17,20,0.9)] via-transparent to-transparent lg:hidden" />
 
-							{/* Rank badge */}
-							{index === 0 && (
-								<div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-sm bg-[rgba(17,17,20,0.8)] border border-[rgba(0,255,135,0.25)]">
-									<span className="text-lg">🔥</span>
-									<span className="text-xs font-mono uppercase tracking-wider text-[#00ff87]">#1 trending</span>
-								</div>
-							)}
 						</div>
 
 						{/* Content section */}

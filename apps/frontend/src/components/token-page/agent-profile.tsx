@@ -2,12 +2,11 @@
 
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
-import { BarChart2, Clock, Star, Users } from "lucide-react";
+import { BarChart2, Clock, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
-import { Badge } from "@/components/ui/badge";
 import Verified from "@/components/verified";
 import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } from "@/lib/utils";
 
@@ -136,15 +135,9 @@ const statusClassMap: Record<AgentLifecycleState, string> = {
 export default function AgentProfile({
 	token,
 	status,
-	badge,
-	badgeBaseClasses,
-	onOpenChat,
 }: {
 	token: IToken;
 	status: AgentLifecycleStatus;
-	badge: { badge: string; classes: string };
-	badgeBaseClasses: string;
-	onOpenChat?: () => void;
 }) {
 	const stats = [
 		{ label: "mkt cap", value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—", live: true },
@@ -153,12 +146,12 @@ export default function AgentProfile({
 		{ label: "price", value: formatNumberSubscript(token?.price), live: true },
 		{ label: "age", value: token?.createdAt ? fromNow(token.createdAt, true) : "—", icon: Clock },
 	];
-	const socials = [
+	const socialsWithLinks = [
 		{ title: "website", href: token?.socials?.website, icon: "/socials/website.svg" },
 		{ title: "twitter", href: token?.socials?.twitter, icon: "/socials/twitter.svg" },
 		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
 		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
-	];
+	].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 	const statusClass = statusClassMap[status.state];
 
 	return (
@@ -195,17 +188,6 @@ export default function AgentProfile({
 						<span className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}>
 							{status.label}
 						</span>
-						<Badge className={cn(badgeBaseClasses, badge.classes)}>{badge.badge}</Badge>
-						{token?.featured && (
-							<Badge
-								className={cn(
-									"font-bold uppercase tracking-wider rounded-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1",
-									"bg-amber-400/15 text-amber-300 border border-amber-400/40",
-								)}
-							>
-								<Star className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 fill-current" /> FEATURED
-							</Badge>
-						)}
 					</div>
 
 					{token.description && (
@@ -251,20 +233,15 @@ export default function AgentProfile({
 						))}
 					</div>
 
-					<div className="flex items-center gap-2 mt-1 flex-wrap">
-						{socials.map((social, index) => {
-							const hasLink = !!social.href;
-							const Comp = hasLink ? Link : Fragment;
-							const compProps: { key: string; href?: string; target?: string } = { key: social.title };
-
-							if (hasLink && social.href) {
-								compProps.href = social.href;
-								compProps.target = "_blank";
-							}
-
-							return (
-								// @ts-expect-error Comp is Link or Fragment.
-								<Comp {...compProps} key={social.title}>
+					{socialsWithLinks.length > 0 && (
+						<div className="flex items-center gap-2 mt-1 flex-wrap">
+							{socialsWithLinks.map((social, index) => (
+								<Link
+									key={social.title}
+									href={social.href}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									<motion.div
 										initial={{ opacity: 0, scale: 0.8 }}
 										animate={{ opacity: 1, scale: 1 }}
@@ -272,36 +249,17 @@ export default function AgentProfile({
 									>
 										<Image
 											src={social.icon}
-											className={cn(
-												"inline-flex items-center justify-center h-7 w-7 p-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200",
-												!social.href
-													? "opacity-25 cursor-not-allowed"
-													: "opacity-60 hover:opacity-100 cursor-pointer hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]",
-											)}
+											className="inline-flex items-center justify-center h-7 w-7 p-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] opacity-60 hover:opacity-100 cursor-pointer hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
 											unoptimized
 											width={24}
 											height={24}
 											alt={social.title}
 										/>
 									</motion.div>
-								</Comp>
-							);
-						})}
-
-						{onOpenChat && (
-							<motion.button
-								type="button"
-								onClick={onOpenChat}
-								initial={{ opacity: 0, scale: 0.8 }}
-								animate={{ opacity: 1, scale: 1 }}
-								transition={{ delay: 0.45 }}
-								className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border border-[#00ff87]/20 bg-[#08080a] text-[#00ff87] hover:border-[#00ff87]/40 hover:bg-[#00ff87]/10 transition-all duration-200 font-mono text-[10px] uppercase tracking-[0.2em]"
-							>
-								<span aria-hidden="true">💬</span>
-								<span>chat</span>
-							</motion.button>
-						)}
-					</div>
+								</Link>
+							))}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

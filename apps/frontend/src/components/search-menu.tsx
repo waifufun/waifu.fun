@@ -1,10 +1,8 @@
 "use client";
 
 import { Input } from "./ui/input";
-import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getTokens } from "@/lib/api";
 import Image from "next/image";
 import { CopyButton } from "./copy-button";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
@@ -12,8 +10,23 @@ import type { IToken } from "@waifufun/types";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Command } from "lucide-react";
+import mockTokens from "@/data/mock-tokens.json";
 
 const PLACEHOLDER = "Search DAOs & Agents by name, symbol, or CA...";
+
+const TOKENS = mockTokens as IToken[];
+
+function searchTokens(query: string, limit: number): IToken[] {
+	const q = query.trim().toLowerCase();
+	if (!q) return [];
+	return TOKENS.filter(
+		(t) =>
+			t.name?.toLowerCase().includes(q) ||
+			t.ticker?.toLowerCase().includes(q) ||
+			t.contractAddress?.toLowerCase().includes(q),
+	)
+		.slice(0, limit);
+}
 
 export default function SearchMenu() {
 	const [open, setOpen] = useState(false);
@@ -44,19 +57,10 @@ export default function SearchMenu() {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
 
-	const searchQuery = useQuery({
-		queryKey: ["search", value],
-		queryFn: async () => {
-			const data = await getTokens({
-				searchParams: { category: "marketcap", page: 1, limit: 10, search: value },
-			});
-			return data as IToken[];
-		},
-		enabled: open && value.trim().length > 0,
-		refetchInterval: 10_000,
-	});
-
-	const results = searchQuery?.data ?? [];
+	const results = useMemo(
+		() => (open && value.trim().length > 0 ? searchTokens(value, 10) : []),
+		[open, value],
+	);
 	const showResults = value.trim().length > 0;
 
 	return (
@@ -134,17 +138,12 @@ export default function SearchMenu() {
 							Start typing to search DAOs & Agents...
 						</p>
 					)}
-					{showResults && searchQuery?.isPending && (
-						<p className="text-center text-sm py-12" style={{ color: "#52525b" }}>
-							Searching...
-						</p>
-					)}
-					{showResults && !searchQuery?.isPending && results.length === 0 && (
+					{showResults && results.length === 0 && (
 						<p className="text-center text-sm py-12" style={{ color: "#52525b" }}>
 							No results found.
 						</p>
 					)}
-					{showResults && !searchQuery?.isPending && results.length > 0 && (
+					{showResults && results.length > 0 && (
 						<div className="flex flex-col gap-1">
 							{results.map((token) => (
 								<Link

@@ -1,4 +1,5 @@
 import ScrollToTop from "@/components/scroll-to-top";
+import ActivityFeed from "@/components/token-page/activity-feed";
 import Trades from "@/components/token-page/trades";
 import { getToken } from "@/lib/api";
 import { getMockToken } from "@/lib/mock-api";
@@ -24,6 +25,7 @@ export default async function Page({
 	return (
 		<>
 			<ScrollToTop />
+			<ActivityFeed token={token} />
 			<Trades token={token} />
 		</>
 	);

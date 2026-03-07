@@ -5,7 +5,6 @@ import Chart from "@/components/chart/chart";
 import ClaimFees from "@/components/claim-fees";
 import ScamWarning from "@/components/scam-notice";
 import Swap from "@/components/swap";
-import ActivityFeed from "@/components/token-page/activity-feed";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentPersonalityCard, AgentSkills, SidebarSocials } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
@@ -20,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { BarChart3, MessageCircle, TrendingUp } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
 function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl" | "br"; color?: "green" | "purple" }) {
@@ -42,37 +41,6 @@ const TIMEFRAMES = [
 	{ label: "1w", value: "1w" },
 	{ label: "all", value: "all" },
 ];
-
-function getBadgeInfo(token: IToken, isImported: boolean) {
-	if (token?.status === "migrating") {
-		return {
-			badge: "MIGRATING",
-			classes: "bg-orange-400/80 hover:bg-orange-400/50 text-white border border-orange-400/50",
-		};
-	}
-
-	if (token?.status === "migrated" || token?.status === "locked") {
-		return {
-			badge: "BONDED",
-			classes:
-				"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 shadow-[0_0_8px_rgba(0,255,135,0.2)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-		};
-	}
-
-	if (isImported) {
-		return {
-			badge: "IMPORTED",
-			classes:
-				"bg-sky-500/15 hover:bg-sky-500/25 text-[#60a5fa] border border-sky-500/40 shadow-[0_0_10px_rgba(96,165,250,0.16)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-		};
-	}
-
-	return {
-		badge: "ACTIVE",
-		classes:
-			"bg-[#00ff87]/15 hover:bg-[#00ff87]/25 text-[#00ff87] border border-[#00ff87]/40 py-0.5 px-1.5 text-[9px] sm:text-[10px]",
-	};
-}
 
 export default function PageClient({
 	initialData,
@@ -107,34 +75,12 @@ export default function PageClient({
 	const [activePanel, setActivePanel] = useState<"chart" | "chat">("chart");
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 	const panelSectionRef = useRef<HTMLDivElement | null>(null);
-	const [shouldScrollToChat, setShouldScrollToChat] = useState(false);
 	const isPriceUp = true;
-	const badge = getBadgeInfo(token, agentStatus.isImported);
-
-	useEffect(() => {
-		if (activePanel === "chat" && shouldScrollToChat) {
-			panelSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-			setShouldScrollToChat(false);
-		}
-	}, [activePanel, shouldScrollToChat]);
-
-	const handleOpenChat = () => {
-		setShouldScrollToChat(true);
-		setActivePanel("chat");
-	};
-	const badgeBaseClasses =
-		"font-bold uppercase tracking-wider rounded-sm text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1";
 
 	return (
 		<div className="flex flex-col gap-5 mt-3 container">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<AgentProfile
-				token={token}
-				status={agentStatus}
-				badge={badge}
-				badgeBaseClasses={badgeBaseClasses}
-				onOpenChat={handleOpenChat}
-			/>
+			<AgentProfile token={token} status={agentStatus} />
 			<AgentStatusVisual status={agentStatus} />
 
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-5">
@@ -170,20 +116,6 @@ export default function PageClient({
 								);
 							})}
 						</div>
-
-						<span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] text-[#52525b] font-mono uppercase tracking-[0.2em]">
-							{activePanel === "chart" ? (
-								<>
-									<BarChart3 className="size-3 text-[#00ff87]" />
-									price panel
-								</>
-							) : (
-								<>
-									<MessageCircle className="size-3 text-[#00ff87]" />
-									community channel live
-								</>
-							)}
-						</span>
 					</div>
 
 					<AnimatePresence mode="wait" initial={false}>
@@ -265,8 +197,6 @@ export default function PageClient({
 							</motion.div>
 						)}
 					</AnimatePresence>
-
-					<ActivityFeed token={token} />
 
 					<div className="flex flex-col gap-4">
 						<TokenTabs token={token} />

@@ -88,7 +88,6 @@ export const GridItem = ({
 					{/* Rank badge (trending indicator) */}
 					{showRank && (
 						<div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[rgba(17,17,20,0.85)] border border-[rgba(0,255,135,0.25)]">
-							<span className="text-xs">🔥</span>
 							<span className="text-[10px] font-mono font-bold text-[#00ff87]">#{rank}</span>
 						</div>
 					)}
