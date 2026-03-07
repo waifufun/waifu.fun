@@ -18,12 +18,12 @@ jobs:
           persist-credentials: true
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 10.11.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -38,13 +38,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-  
-          # Check if there are any staged or unstaged changes
-          if ! git diff --quiet && ! git diff --staged --quiet; then
+          # Commit either staged or unstaged fixes produced by the lint command.
+          if ! git diff --quiet || ! git diff --cached --quiet; then
             echo "Linting made changes. Committing and pushing..."
-            git add . # Stage all changes made by the linter
+            git add .
             git commit -m "chore(lint): auto-fix lint issues"
-            # Push to the same branch the PR is from
             git push origin HEAD:${{ github.head_ref }}
           else
             echo "No lint changes to commit."
