@@ -159,8 +159,8 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 
 	const authenticatedWallets = useMemo(
 		() =>
-			[authQuery.data?.wallets?.solana?.address, authQuery.data?.wallets?.evm?.address].filter(
-				(wallet): wallet is string => Boolean(wallet),
+			[authQuery.data?.wallets?.solana?.address, authQuery.data?.wallets?.evm?.address].flatMap((wallet) =>
+				wallet ? [String(wallet)] : [],
 			),
 		[authQuery.data],
 	);
@@ -241,8 +241,8 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 				billingMode,
 				character: {
 					name: token.name,
-					bio: token.description,
-					avatar: token.image,
+					...(token.description ? { bio: token.description } : {}),
+					...(token.image ? { avatar: token.image } : {}),
 				},
 			}),
 		onSuccess: async () => {
