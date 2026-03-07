@@ -36,7 +36,8 @@ const formElementBaseClass =
 const formLabelBaseClass = "text-xs text-[#71717a] uppercase tracking-wider font-medium";
 const sliderThumbClass =
 	"block h-5 w-5 rounded-sm bg-[#00ff87] border-2 border-[#08080a] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
-const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-sm bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.08)]";
+const sliderTrackClass =
+	"relative h-2 w-full grow overflow-hidden rounded-sm bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.08)]";
 const sliderRangeClass = "absolute h-full bg-[#00ff87]";
 
 export const CoinInfoFields = ({
@@ -558,6 +559,7 @@ export const LaunchButton = ({
 		setLaunching,
 		setMintKeyPair,
 		isLaunching,
+		inviteCode,
 	} = usePrompt();
 	const router = useRouter();
 	const [chain, chainId] = [
@@ -633,6 +635,7 @@ export const LaunchButton = ({
 				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
+				...(inviteCode !== undefined ? { inviteCode } : {}),
 			});
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
@@ -644,5 +647,14 @@ export const LaunchButton = ({
 		}
 	};
 
-	return <DeployButton onClick={onSubmit} disabled={shouldDisable || disabled} isLoading={isLaunching} loadingText="LAUNCHING...">LAUNCH TOKEN</DeployButton>;
+	return (
+		<DeployButton
+			onClick={onSubmit}
+			disabled={shouldDisable || disabled}
+			isLoading={isLaunching}
+			loadingText="LAUNCHING..."
+		>
+			LAUNCH TOKEN
+		</DeployButton>
+	);
 };

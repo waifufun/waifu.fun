@@ -6,6 +6,7 @@ import { getAdminInfo } from "../utils/admin";
 import { getAdminTokens, getAdminTokenStats } from "../utils/admin/token-queries";
 import { modifyFile, extractObjectKeyFromUrl } from "@waifufun/s3-uploader";
 import { authenticationMiddleware } from "../middlewares/authentication";
+import { launchGateService } from "../services/launch-gate";
 
 import type { FastifyRequest, FastifyReply } from "fastify";
 
@@ -996,6 +997,150 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 				return reply.code(500).send({
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
+				});
+			}
+		},
+	);
+
+	fastify.get(
+		"/launch-gate/allowlist",
+		{
+			preHandler: requirePermission("manage_users"),
+		},
+		async () => {
+			return {
+				success: true,
+				enabled: launchGateService.isEnabled(),
+				allowlist: await launchGateService.listAllowlist(),
+			};
+		},
+	);
+
+	fastify.post(
+		"/launch-gate/allowlist",
+		{
+			preHandler: requirePermission("manage_users"),
+		},
+		async (request, reply) => {
+			const { walletAddress } = request.body as { walletAddress?: string };
+
+			if (!walletAddress) {
+				return reply.code(400).send({
+					success: false,
+					error: "walletAddress is required",
+				});
+			}
+
+			try {
+				const adminAddress = request.authUser?.solana || request.authUser?.evm;
+				await launchGateService.addToAllowlist(walletAddress, adminAddress);
+				return {
+					success: true,
+					allowlist: await launchGateService.listAllowlist(),
+				};
+			} catch (error) {
+				return reply.code(400).send({
+					success: false,
+					error: error instanceof Error ? error.message : "Failed to add wallet to allowlist",
+				});
+			}
+		},
+	);
+
+	fastify.delete(
+		"/launch-gate/allowlist/:wallet",
+		{
+			preHandler: requirePermission("manage_users"),
+		},
+		async (request, reply) => {
+			const { wallet } = request.params as { wallet?: string };
+
+			if (!wallet) {
+				return reply.code(400).send({
+					success: false,
+					error: "wallet is required",
+				});
+			}
+
+			try {
+				await launchGateService.removeFromAllowlist(wallet);
+				return {
+					success: true,
+					allowlist: await launchGateService.listAllowlist(),
+				};
+			} catch (error) {
+				return reply.code(400).send({
+					success: false,
+					error: error instanceof Error ? error.message : "Failed to remove wallet from allowlist",
+				});
+			}
+		},
+	);
+
+	fastify.post(
+		"/launch-gate/invite",
+		{
+			preHandler: requirePermission("manage_users"),
+		},
+		async (request, reply) => {
+			const { maxUses, expiresAt, notes } = request.body as {
+				maxUses?: number;
+				expiresAt?: string | null;
+				notes?: string | null;
+			};
+			const createdBy = request.authUser?.solana || request.authUser?.evm;
+
+			if (!createdBy) {
+				return reply.code(401).send({
+					success: false,
+					error: "Authentication required",
+				});
+			}
+
+			if (!maxUses || maxUses < 1) {
+				return reply.code(400).send({
+					success: false,
+					error: "maxUses must be greater than 0",
+				});
+			}
+
+			try {
+				const invite = await launchGateService.createInviteCode({
+					maxUses,
+					createdBy,
+					expiresAt,
+					notes,
+				});
+				return {
+					success: true,
+					code: invite.code,
+					invite,
+				};
+			} catch (error) {
+				return reply.code(400).send({
+					success: false,
+					error: error instanceof Error ? error.message : "Failed to generate invite code",
+				});
+			}
+		},
+	);
+
+	fastify.get(
+		"/launch-gate/invites",
+		{
+			preHandler: requirePermission("manage_users"),
+		},
+		async (_request, reply) => {
+			try {
+				return {
+					success: true,
+					enabled: launchGateService.isEnabled(),
+					invites: await launchGateService.listInvites(),
+				};
+			} catch (error) {
+				return reply.code(500).send({
+					success: false,
+					error: error instanceof Error ? error.message : "Failed to list invite codes",
 				});
 			}
 		},

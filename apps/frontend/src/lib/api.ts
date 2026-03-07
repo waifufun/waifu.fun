@@ -388,6 +388,11 @@ export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };
 
+export const getLaunchGateCheck = async (inviteCode?: string) => {
+	const query = inviteCode ? `?inviteCode=${encodeURIComponent(inviteCode)}` : "";
+	return await fetcher(`/tokens/api/launch-gate/check${query}`, "GET");
+};
+
 export const getPrices = async () => {
 	return await fetcher("/prices", "POST");
 };
@@ -404,12 +409,14 @@ export const createToken = async ({
 	chainId,
 	pool,
 	signature,
+	inviteCode,
 }: {
 	contractAddress: string;
 	chain: TChain;
 	chainId: number;
 	pool?: string;
 	signature?: string;
+	inviteCode?: string;
 }) => {
 	return await fetcher("/tokens/create", "POST", {
 		contractAddress,
@@ -417,6 +424,7 @@ export const createToken = async ({
 		chainId,
 		pool,
 		signature,
+		inviteCode,
 	});
 };
 

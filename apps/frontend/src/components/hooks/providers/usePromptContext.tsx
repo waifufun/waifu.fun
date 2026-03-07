@@ -65,6 +65,7 @@ type PromptContextType = {
 	terminateWorkers: () => void;
 	cancelVanityGeneration: () => void;
 	setMintKeyPair: (keypair: Keypair | null) => void;
+	inviteCode: string | undefined;
 };
 
 export type TokenFormData = {
@@ -99,14 +100,20 @@ const PromptContext = createContext<PromptContextType | undefined>(undefined);
 export const PromptProvider = ({
 	children,
 	tokenImageQuery,
-}: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
-	return <PromptProviderContent tokenImageQuery={tokenImageQuery}>{children}</PromptProviderContent>;
+	inviteCode,
+}: { children: ReactNode; tokenImageQuery?: string | undefined; inviteCode?: string | undefined }) => {
+	return (
+		<PromptProviderContent tokenImageQuery={tokenImageQuery} inviteCode={inviteCode}>
+			{children}
+		</PromptProviderContent>
+	);
 };
 
 const PromptProviderContent = ({
 	children,
 	tokenImageQuery,
-}: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
+	inviteCode,
+}: { children: ReactNode; tokenImageQuery?: string | undefined; inviteCode?: string | undefined }) => {
 	const { control, register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
 		defaultValues: {
 			prompt: "",
@@ -595,6 +602,7 @@ const PromptProviderContent = ({
 		terminateWorkers,
 		cancelVanityGeneration,
 		setMintKeyPair,
+		inviteCode,
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;
