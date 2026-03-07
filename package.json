@@ -1,7 +1,7 @@
 {
 	"name": "@waifufun/monorepo",
 	"repository": {
-		"url": "https://github.com/elizaos/waifufun-monorepo",
+		"url": "https://github.com/waifufun/waifu.fun",
 		"type": "github"
 	},
 	"type": "module",
