@@ -34,3 +34,18 @@ If you're on MacOS and get a ECONNREFUSED error when connecting to MongoDB (via 
 -add NEXT_PUBLIC_HOST
 
 docker build -t waifufun-frontend -f apps/frontend/Dockerfile.frontend .
+
+## Supabase control-plane foundation
+
+A new shared package and migration set now live in this repo for control-plane data that should move to Supabase/Postgres instead of Mongo:
+
+- Shared helpers: `packages/control-plane`
+- SQL migration: `supabase/migrations/202603070001_control_plane_foundation.sql`
+- Setup notes: `supabase/README.md`
+
+Required server-side env vars:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+No anon/browser key is needed for this initial foundation.
