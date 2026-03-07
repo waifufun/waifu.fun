@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
+import { DeployButton } from "./deploy-button";
 import { cn } from "@/lib/utils";
 import {
 	usePrompt,
@@ -643,14 +644,5 @@ export const LaunchButton = ({
 		}
 	};
 
-	return (
-		<Button
-			type="button"
-			onClick={onSubmit}
-			disabled={shouldDisable || disabled}
-			className="w-full bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] font-bold text-lg py-3 h-auto rounded-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-		>
-			{isLaunching ? "LAUNCHING..." : "LAUNCH TOKEN"}
-		</Button>
-	);
+	return <DeployButton onClick={onSubmit} disabled={shouldDisable || disabled} isLoading={isLaunching} loadingText="LAUNCHING...">LAUNCH TOKEN</DeployButton>;
 };

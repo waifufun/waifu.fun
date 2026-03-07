@@ -1,135 +1,67 @@
 "use client";
 import Image from "next/image";
-import { Textarea } from "@/components/ui/create-token/textarea";
+import { TerminalTextarea } from "@/components/ui/create-token/terminal-textarea";
 import { Button } from "@/components/ui/button";
 import { FormSection } from "./form-section";
-import { Wand2, RefreshCw } from "lucide-react";
+import { RefreshCw, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePrompt } from "@/components/hooks/providers/usePromptContext";
-import {
-	CoinInfoFields,
-	CustomAddressGenerator,
-	PreBuySection,
-	LaunchButton,
-	// CustomCurveSection,
-	// TradeLimitSection,
-	// DelayedStartSection,
-} from "./shared-form-section";
+import { CoinInfoFields, CustomAddressGenerator, PreBuySection, LaunchButton } from "./shared-form-section";
 import { useEffect, useState } from "react";
 
-const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
-	if (!href) {
-		return (
-			<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex items-center justify-center">
-				<p className="text-[#52525b]">No Image</p>
+const ImageSkeleton = ({ isGenerating }: { isGenerating: boolean }) => (
+	<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex flex-col items-center justify-center relative overflow-hidden">
+		{isGenerating ? (
+			<>
+				<div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.05)] to-transparent animate-shimmer" />
+				<div className="relative">
+					<p className="text-[#00ff87] font-mono text-sm uppercase tracking-widest animate-glitch">generating</p>
+					<div className="flex gap-1 mt-2 justify-center">
+						<span className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+						<span className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+						<span className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+					</div>
+				</div>
+			</>
+		) : (
+			<div className="flex flex-col items-center gap-2">
+				<Sparkles size={24} className="text-[#52525b]" />
+				<p className="text-[#52525b] text-sm font-mono">no image</p>
 			</div>
-		);
-	}
-	return (
-		<div className="w-full h-full relative rounded-sm overflow-hidden">
-			<Image alt="Generated Image" src={href} fill className="object-contain p-2" />
-		</div>
-	);
-};
+		)}
+	</div>
+);
 
-const AiImageLoading = () => {
-	return (
-		<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex items-center justify-center">
-			<div className="flex items-center gap-2">
-				<RefreshCw size={16} className="animate-spin text-[#00ff87]" />
-				<p className="text-[#00ff87]">Generating...</p>
-			</div>
-		</div>
-	);
-};
+const ThumbnailSkeleton = ({ isGenerating }: { isGenerating: boolean }) => (
+	<div className="w-full h-full bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.04)] rounded-sm flex items-center justify-center relative overflow-hidden">
+		{isGenerating && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.03)] to-transparent animate-shimmer" />}
+	</div>
+);
 
 function AutoCreateForm() {
 	const { registerForm, generateToken, watchValue, previousImages, isGeneratingMedia, changeMainImage } = usePrompt();
 	const [isClient, setIsClient] = useState(false);
-
-	const formElementBaseClass =
-		"bg-[#0e0e12] border border-[rgba(255,255,255,0.08)] placeholder-[#52525b] text-sm focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87]/30 text-[#e4e4e7] rounded-sm";
-
 	const prompt = watchValue("prompt");
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	useEffect(() => {
-		const textarea = document.querySelector('textarea[name="prompt"]') as HTMLTextAreaElement;
-		if (textarea) {
-			textarea.style.height = "auto";
-			textarea.style.height = `${textarea.scrollHeight}px`;
-		}
-	}, [prompt]);
-
-	// Get the next 3 images for thumbnails
+	
 	const startingIndex = isGeneratingMedia ? 0 : 1;
 	const nextImages: (string | undefined)[] = previousImages.slice(startingIndex, startingIndex + 3);
+	while (nextImages.length < 3) nextImages.push(undefined);
 
-	// Fill with undefined if we don't have 3 images
-	if (nextImages.length < 3) {
-		const diff = 3 - nextImages.length;
-		for (let i = 0; i < diff; i++) {
-			nextImages.push(undefined);
-		}
-	}
+	const handleGenerateImage = () => generateToken({ mediaType: "image", prompt: prompt?.toString() || "" });
+	const handleSelectThumbnail = (index: number) => changeMainImage(index);
 
-	const handleGenerateImage = () => {
-		if (!prompt) {
-			generateToken({ mediaType: "image", prompt: "" });
-		} else {
-			generateToken({
-				mediaType: "image",
-				prompt: prompt.toString(),
-			});
-		}
-	};
+	useEffect(() => { setIsClient(true); }, []);
 
-	// Fix hydration issue by only running on client
-	useEffect(() => {
-		setIsClient(true);
-	}, []);
-
-	// Don't render anything until hydrated
 	if (!isClient) {
 		return (
 			<div className="grid md:grid-cols-2 gap-6 md:items-start">
 				<FormSection title="AI Image Generation" className="space-y-4" collapsible={false}>
-					<div className="relative">
-						<Wand2 size={16} className="absolute left-3 top-3.5 text-gray-500 pointer-events-none" />
-						<Textarea
-							placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
-							className={cn(formElementBaseClass, "pl-10 pr-3 py-3 resize-none tracking-wider overflow-hidden")}
-							style={{ height: "auto" }}
-							maxLength={3000}
-						/>
-					</div>
-					<div className="w-full aspect-[4/3] min-h-[200px] max-h-[400px]">
-						<AIImageWithPlaceHolder href={undefined} />
-					</div>
-					<div className="grid grid-cols-3 gap-3">
-						{[undefined, undefined, undefined].map((_, index) => (
-							<div
-								// biome-ignore lint/suspicious: This is a placeholder
-								key={`thumbnail-placeholder-${index}`}
-								className="aspect-square bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm opacity-50"
-							>
-								<AIImageWithPlaceHolder href={undefined} />
-							</div>
-						))}
-					</div>
-					<Button
-						className="w-full bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] font-bold text-sm h-10 rounded-sm uppercase tracking-wider transition-colors"
-						disabled
-					>
-						<RefreshCw size={16} className="mr-2" /> Generate Image
-					</Button>
+					<TerminalTextarea placeholder="describe your token's vibe..." maxLength={3000} disabled />
+					<div className="w-full aspect-[4/3] min-h-[200px] max-h-[400px]"><ImageSkeleton isGenerating={false} /></div>
+					<div className="grid grid-cols-3 gap-3">{[0, 1, 2].map((i) => <div key={`sk-${i}`} className="aspect-square"><ThumbnailSkeleton isGenerating={false} /></div>)}</div>
+					<Button className="w-full bg-[#00ff87] text-[#08080a] font-bold text-sm h-12 rounded-sm uppercase" disabled><RefreshCw size={16} className="mr-2" /> Generate Image</Button>
 				</FormSection>
-				<div className="space-y-6">
-					<CoinInfoFields idPrefix="auto" />
-					<CustomAddressGenerator idPrefix="auto" />
-					<PreBuySection idPrefix="auto" />
-					<LaunchButton />
-				</div>
+				<div className="space-y-6"><CoinInfoFields idPrefix="auto" /><CustomAddressGenerator idPrefix="auto" /><PreBuySection idPrefix="auto" /><LaunchButton /></div>
 			</div>
 		);
 	}
@@ -137,74 +69,35 @@ function AutoCreateForm() {
 	return (
 		<div className="grid md:grid-cols-2 gap-6 md:items-start">
 			<FormSection title="AI Image Generation" className="space-y-4" collapsible={false}>
-				<div className="relative">
-					<Wand2 size={16} className="absolute left-3 top-3.5 text-gray-500 pointer-events-none" />
-					<Textarea
-						placeholder="A grumpy, older man in a Hawaiian shirt, wildly ripping open a vintage tech package with an ecstatic yet furious expression.  Surrounded by styrofoam peanuts and packing tape.  Highly detailed, 8k resolution, trending art style, vibrant colors, dramatic lighting."
-						className={cn(formElementBaseClass, "pl-10 pr-3 py-3 resize-none tracking-wider overflow-hidden")}
-						style={{ height: "auto" }}
-						maxLength={3000}
-						{...registerForm("prompt")}
-					/>
+				<TerminalTextarea placeholder="describe your token's vibe... a mystical forest creature, a cyberpunk robot, a meme-worthy doge..." maxLength={3000} {...registerForm("prompt")} />
+				<div className="w-full aspect-[4/3] min-h-[200px] max-h-[400px] group">
+					{isGeneratingMedia ? <ImageSkeleton isGenerating={true} /> : previousImages[0] ? (
+						<div className="w-full h-full relative rounded-sm overflow-hidden bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] transition-all group-hover:border-[rgba(0,255,135,0.2)]">
+							<Image alt="Generated Image" src={previousImages[0]} fill className="object-contain p-2" />
+							<div className="absolute top-2 left-2 bg-[#00ff87] text-[#08080a] px-2 py-1 rounded-sm text-xs font-bold uppercase flex items-center gap-1"><Check size={12} strokeWidth={3} />selected</div>
+						</div>
+					) : <ImageSkeleton isGenerating={false} />}
 				</div>
-
-				{/* Main AI Generated Image */}
-				<div className="w-full aspect-[4/3] min-h-[200px] max-h-[400px]">
-					{isGeneratingMedia ? <AiImageLoading /> : <AIImageWithPlaceHolder href={previousImages[0]} />}
-				</div>
-
-				{/* Thumbnail Images */}
 				<div className="grid grid-cols-3 gap-3">
-					{nextImages.map((image, index) => (
-						<button
-							type="button"
-							onClick={() => {
-								if (image) {
-									changeMainImage(index + 1);
-								}
-							}}
-							key={`thumbnail-${image || index}`}
-							className="aspect-square bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[#00ff87] cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={!image}
-						>
-							<AIImageWithPlaceHolder href={image} />
+					{nextImages.map((img, i) => (
+						<button type="button" onClick={() => img && handleSelectThumbnail(i + 1)} key={`thumb-${i}`} disabled={!img} className={cn("aspect-square relative rounded-sm overflow-hidden transition-all", img ? "cursor-pointer hover:scale-105 hover:shadow-[0_0_20px_rgba(0,255,135,0.2)]" : "cursor-not-allowed")}>
+							{img ? (
+								<div className="w-full h-full relative bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(0,255,135,0.3)]">
+									<Image alt={`Thumbnail ${i + 1}`} src={img} fill className="object-contain p-1" />
+									<div className="absolute inset-0 bg-[#00ff87]/0 hover:bg-[#00ff87]/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100"><span className="text-xs font-bold text-[#00ff87] uppercase">select</span></div>
+								</div>
+							) : <ThumbnailSkeleton isGenerating={isGeneratingMedia} />}
 						</button>
 					))}
 				</div>
-
-				<Button
-					className="w-full bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] font-bold text-sm h-10 rounded-sm uppercase tracking-wider transition-colors"
-					onClick={handleGenerateImage}
-					disabled={isGeneratingMedia}
-				>
-					{isGeneratingMedia ? (
-						<>
-							<RefreshCw size={16} className="mr-2 animate-spin" /> Generating...
-						</>
-					) : (
-						<>
-							<RefreshCw size={16} className="mr-2" /> Generate Image
-						</>
-					)}
+				<Button className={cn("w-full font-bold text-sm h-12 rounded-sm uppercase transition-all", isGeneratingMedia ? "bg-[#1a1a1f] text-[#52525b]" : "bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] shadow-[0_0_20px_rgba(0,255,135,0.2)]")} onClick={handleGenerateImage} disabled={isGeneratingMedia}>
+					{isGeneratingMedia ? <><RefreshCw size={16} className="mr-2 animate-spin" /> Generating...</> : <><RefreshCw size={16} className="mr-2" /> Generate Image</>}
 				</Button>
+				<p className="text-[10px] text-[#52525b] text-center">tip: be specific! "a golden retriever wearing sunglasses on a beach" works better than "dog"</p>
 			</FormSection>
-
-			<div className="space-y-6">
-				<CoinInfoFields idPrefix="auto" />
-				<CustomAddressGenerator idPrefix="auto" />
-				<PreBuySection idPrefix="auto" />
-				<LaunchButton />
-			</div>
+			<div className="space-y-6"><CoinInfoFields idPrefix="auto" /><CustomAddressGenerator idPrefix="auto" /><PreBuySection idPrefix="auto" /><LaunchButton /></div>
 		</div>
 	);
 }
-
-// export default function WrappedComponent() {
-// 	return (
-// 		<PromptProvider>
-// 			<AutoCreateForm />
-// 		</PromptProvider>
-// 	);
-// }
 
 export default AutoCreateForm;
