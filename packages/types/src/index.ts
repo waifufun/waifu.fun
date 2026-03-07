@@ -102,6 +102,7 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 		solana?: string[];
 		evm?: string[];
 	};
+	agentCharacterConfig?: ITokenAgentCharacterConfig;
 	cloudAgentId?: string;
 	agentStatus?: "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
 	agentLifecycleState?: "birth" | "live" | "dormant" | "reviving";
@@ -120,6 +121,12 @@ export interface IToken<T extends TChain = TChain> extends Omit<MongooseDocument
 	delayForTrade?: number;
 	createdAt?: string;
 	updatedAt?: string;
+}
+
+export interface ITokenAgentCharacterConfig {
+	name?: string;
+	bio?: string;
+	avatar?: string;
 }
 
 export interface ITokenSocials {

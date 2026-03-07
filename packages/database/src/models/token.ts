@@ -21,6 +21,11 @@ const schema = new Schema<IToken, ModelType<IToken>>(
 			solana: [{ type: String }],
 			evm: [{ type: String }],
 		},
+		agentCharacterConfig: {
+			name: { type: String },
+			bio: { type: String },
+			avatar: { type: String },
+		},
 		cloudAgentId: { type: String },
 		agentStatus: {
 			type: String,
