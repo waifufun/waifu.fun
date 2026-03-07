@@ -1,5 +1,5 @@
-import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 import { Connection } from "@solana/web3.js";
+import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -25,8 +25,8 @@ export const fetcher = async (
 				throw new Error("Authentication required. Please sign in to access this data.");
 			}
 
-			const errorText = (await response.json()) as { message?: string };
-			throw new Error(errorText?.message);
+			const errorText = (await response.json()) as { message?: string; error?: string };
+			throw new Error(errorText?.message || errorText?.error || `Request failed with status ${response.status}`);
 		}
 
 		const result = await response.json();
@@ -346,6 +346,11 @@ export const getWallets = async () => {
 	return await fetcher("/auth/getWallets", "GET");
 };
 
+export const getLaunchGateCheck = async (inviteCode?: string) => {
+	const query = inviteCode ? `?inviteCode=${encodeURIComponent(inviteCode)}` : "";
+	return await fetcher(`/tokens/api/launch-gate/check${query}`, "GET");
+};
+
 export const getPrices = async () => {
 	return await fetcher("/prices", "POST");
 };
@@ -362,12 +367,14 @@ export const createToken = async ({
 	chainId,
 	pool,
 	signature,
+	inviteCode,
 }: {
 	contractAddress: string;
 	chain: TChain;
 	chainId: number;
 	pool?: string;
 	signature?: string;
+	inviteCode?: string;
 }) => {
 	return await fetcher("/tokens/create", "POST", {
 		contractAddress,
@@ -375,6 +382,7 @@ export const createToken = async ({
 		chainId,
 		pool,
 		signature,
+		inviteCode,
 	});
 };
 

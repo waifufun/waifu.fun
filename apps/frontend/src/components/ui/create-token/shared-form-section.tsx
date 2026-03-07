@@ -1,42 +1,43 @@
 "use client";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/create-token/textarea";
-import { Label } from "@/components/ui/label";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Slider } from "@/components/ui/create-token/slider";
-import { FormSection } from "./form-section";
-import { DeployButton } from "./deploy-button";
-import { cn } from "@/lib/utils";
 import {
-	usePrompt,
+	descriptionValidation,
 	nameValidation,
 	tickerValidation,
-	descriptionValidation,
 	tradeLimitValidation,
+	usePrompt,
 } from "@/components/hooks/providers/usePromptContext";
-import { AlertTriangle, Info, Wallet } from "lucide-react";
-import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
-import { createToken } from "@/lib/api";
-import useBalance from "@/hooks/use-balance";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/create-token/slider";
+import { Textarea } from "@/components/ui/create-token/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import useAddress from "@/hooks/use-address";
-import { createTokenTx } from "@/lib/utils";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Controller, type ControllerRenderProps } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import type { AddressLike, TChain } from "@waifufun/types";
-import { curveLimitConst } from "@/lib/utils";
+import useBalance from "@/hooks/use-balance";
+import { createToken } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errorMessage";
+import { cn } from "@/lib/utils";
+import { createTokenTx } from "@/lib/utils";
+import { curveLimitConst } from "@/lib/utils";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useMutation } from "@tanstack/react-query";
+import type { AddressLike, TChain } from "@waifufun/types";
+import { AlertTriangle, Info, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Controller, type ControllerRenderProps } from "react-hook-form";
+import { toast } from "sonner";
+import { DeployButton } from "./deploy-button";
+import { FormSection } from "./form-section";
 
 const formElementBaseClass =
 	"bg-[#0e0e12] border border-[rgba(255,255,255,0.08)] placeholder-[#52525b] text-sm focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87]/30 text-[#e4e4e7] rounded-sm";
 const formLabelBaseClass = "text-xs text-[#71717a] uppercase tracking-wider font-medium";
 const sliderThumbClass =
 	"block h-5 w-5 rounded-sm bg-[#00ff87] border-2 border-[#08080a] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
-const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-sm bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.08)]";
+const sliderTrackClass =
+	"relative h-2 w-full grow overflow-hidden rounded-sm bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.08)]";
 const sliderRangeClass = "absolute h-full bg-[#00ff87]";
 
 export const CoinInfoFields = ({
@@ -558,6 +559,7 @@ export const LaunchButton = ({
 		setLaunching,
 		setMintKeyPair,
 		isLaunching,
+		inviteCode,
 	} = usePrompt();
 	const router = useRouter();
 	const [chain, chainId] = [
@@ -633,6 +635,7 @@ export const LaunchButton = ({
 				chainId: chainId,
 				pool: pool,
 				signature: tx?.signature.toString() || "",
+				...(inviteCode !== undefined ? { inviteCode } : {}),
 			});
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		} catch (error: any) {
@@ -644,5 +647,14 @@ export const LaunchButton = ({
 		}
 	};
 
-	return <DeployButton onClick={onSubmit} disabled={shouldDisable || disabled} isLoading={isLaunching} loadingText="LAUNCHING...">LAUNCH TOKEN</DeployButton>;
+	return (
+		<DeployButton
+			onClick={onSubmit}
+			disabled={shouldDisable || disabled}
+			isLoading={isLaunching}
+			loadingText="LAUNCHING..."
+		>
+			LAUNCH TOKEN
+		</DeployButton>
+	);
 };

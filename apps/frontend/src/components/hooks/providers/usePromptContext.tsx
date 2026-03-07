@@ -1,22 +1,22 @@
 "use client";
-import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
-import type { ReactNode } from "react";
-import { toast } from "sonner";
-import UseTokenMedia from "../hook/UseTokenMedia";
+import { generateMedia, generateMediaForToken, generateMetadata, generateRemoteMetadata } from "@/lib/api";
+import { curveLimitConst } from "@/lib/utils";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useMutation } from "@tanstack/react-query";
-import { generateMedia, generateMetadata, generateRemoteMetadata, generateMediaForToken } from "@/lib/api";
+import type { SolanaNetworkIds, TChain } from "@waifufun/types";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import {
-	useForm,
-	type UseFormHandleSubmit,
-	type UseFormRegister,
+	type Control,
 	type FormState,
 	type RegisterOptions,
+	type UseFormHandleSubmit,
+	type UseFormRegister,
 	type UseFormSetValue,
-	type Control,
+	useForm,
 } from "react-hook-form";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { curveLimitConst } from "@/lib/utils";
-import type { SolanaNetworkIds, TChain } from "@waifufun/types";
+import { toast } from "sonner";
+import UseTokenMedia from "../hook/UseTokenMedia";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -65,6 +65,7 @@ type PromptContextType = {
 	terminateWorkers: () => void;
 	cancelVanityGeneration: () => void;
 	setMintKeyPair: (keypair: Keypair | null) => void;
+	inviteCode?: string;
 };
 
 export type TokenFormData = {
@@ -99,14 +100,20 @@ const PromptContext = createContext<PromptContextType | undefined>(undefined);
 export const PromptProvider = ({
 	children,
 	tokenImageQuery,
-}: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
-	return <PromptProviderContent tokenImageQuery={tokenImageQuery}>{children}</PromptProviderContent>;
+	inviteCode,
+}: { children: ReactNode; tokenImageQuery?: string | undefined; inviteCode?: string | undefined }) => {
+	return (
+		<PromptProviderContent tokenImageQuery={tokenImageQuery} inviteCode={inviteCode}>
+			{children}
+		</PromptProviderContent>
+	);
 };
 
 const PromptProviderContent = ({
 	children,
 	tokenImageQuery,
-}: { children: ReactNode; tokenImageQuery?: string | undefined }) => {
+	inviteCode,
+}: { children: ReactNode; tokenImageQuery?: string | undefined; inviteCode?: string | undefined }) => {
 	const { control, register, handleSubmit, formState, setValue, watch } = useForm<TokenFormData>({
 		defaultValues: {
 			prompt: "",
@@ -595,6 +602,7 @@ const PromptProviderContent = ({
 		terminateWorkers,
 		cancelVanityGeneration,
 		setMintKeyPair,
+		...(inviteCode !== undefined ? { inviteCode } : {}),
 	};
 
 	return <PromptContext.Provider value={contextValue}>{children}</PromptContext.Provider>;

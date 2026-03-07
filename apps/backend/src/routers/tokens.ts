@@ -1,15 +1,20 @@
-import type { FastifyInstance } from "fastify";
+import { EventType, HoldersSortAttribute, RankingDirection } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@waifufun/constants";
 import DB from "@waifufun/database";
+import logger from "@waifufun/logger";
+import redis from "@waifufun/redis";
+import { EVMRpcProvider, SolanaRpcProvider } from "@waifufun/rpc";
+import { upload, uploadBase64Image, uploadImageFromUrl } from "@waifufun/s3-uploader";
 import type {
-	IHolder,
 	AddressLike,
+	IHolder,
 	IToken,
+	ITrade,
 	SolanaAddressLike,
 	SolanaNetworkIds,
 	TChain,
 	TChainId,
 	TURLLike,
-	ITrade,
 } from "@waifufun/types";
 import {
 	getChecksummedAddress,
@@ -20,15 +25,13 @@ import {
 	populateTokensWithLiveData,
 	updateCryptoPrices,
 } from "@waifufun/utils";
-import { EVMRpcProvider, SolanaRpcProvider } from "@waifufun/rpc";
-import { uploadImageFromUrl, upload, uploadBase64Image } from "@waifufun/s3-uploader";
-import { CHAINID_TO_CODEX_NETWORK_ID, CHAINID_TO_DEXSCREENER_NAME, CHAINID_TO_SYMBOL } from "@waifufun/constants";
-import redis from "@waifufun/redis";
-import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
 import { codex } from "@waifufun/utils";
-import { HoldersSortAttribute, RankingDirection, EventType } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import type { FastifyInstance } from "fastify";
+import type { MongooseBaseQueryOptions, PaginateOptions } from "mongoose";
+import { authenticationMiddleware } from "../middlewares/authentication";
+import { launchGatePreHandler } from "../middlewares/launch-gate";
+import { launchGateService } from "../services/launch-gate";
 import { getBondingCurveData } from "../utils/bonding-curve";
-import logger from "@waifufun/logger";
 import { getGlobalVault } from "../utils/bonding-curve";
 import { sanitizeSocialLink } from "../utils/tokens/sanitize-links";
 
@@ -151,6 +154,65 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 		}
 	});
 
+	fastify.get<{
+		Querystring: {
+			inviteCode?: string;
+		};
+		Reply: {
+			allowed: boolean;
+			reason?: string;
+			remainingUses?: number;
+			accessSource?: "wallet" | "invite" | "disabled";
+		};
+	}>("/api/launch-gate/check", { preHandler: authenticationMiddleware }, async (request) => {
+		const { inviteCode } = request.query;
+
+		if (!launchGateService.isEnabled()) {
+			return {
+				allowed: true,
+				accessSource: "disabled",
+			};
+		}
+
+		const walletAddress = request.authUser?.solana || request.authUser?.evm;
+		if (!walletAddress) {
+			return {
+				allowed: false,
+				reason: "Connect and sign with your wallet to check curated launch access.",
+			};
+		}
+
+		const canCreate = await launchGateService.canCreate(walletAddress);
+		if (canCreate.allowed) {
+			return {
+				allowed: true,
+				accessSource: "wallet",
+			};
+		}
+
+		if (inviteCode) {
+			const inviteValidation = await launchGateService.validateInviteCode(inviteCode);
+			if (inviteValidation.valid) {
+				return {
+					allowed: true,
+					reason: "Invite code accepted.",
+					remainingUses: inviteValidation.remainingUses,
+					accessSource: "invite",
+				};
+			}
+
+			return {
+				allowed: false,
+				reason: "Invalid or exhausted invite code.",
+			};
+		}
+
+		return {
+			allowed: false,
+			reason: canCreate.reason,
+		};
+	});
+
 	/** Retrieve a single token */
 	fastify.get<{
 		Params: {
@@ -206,17 +268,29 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 			website?: string;
 			discord?: string;
 			imported?: boolean;
+			inviteCode?: string;
 		};
 		Reply: { success: boolean; token?: IToken; error?: string };
-	}>("/create", async (request, reply) => {
+	}>("/create", { preHandler: launchGatePreHandler }, async (request, reply) => {
 		try {
 			const user = request.authUser;
 			if (!user?.solana && process.env.NODE_ENV !== "development") {
 				return reply.code(401).send({ success: false, error: "Authentication required" });
 			}
 
-			const { contractAddress, chain, chainId, twitter, telegram, website, discord, imported, pool, signature } =
-				request.body;
+			const {
+				contractAddress,
+				chain,
+				chainId,
+				twitter,
+				telegram,
+				website,
+				discord,
+				imported,
+				pool,
+				signature,
+				inviteCode,
+			} = request.body;
 
 			// Only support Solana for now
 			if (chain !== "solana") {
@@ -255,7 +329,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 					chainId as unknown as SolanaNetworkIds,
 					Number(metadata.totalSupply) || 0,
 					Number(metadata.decimals) || 9,
-					existingToken.version,
+					existingToken?.version || 2,
 				);
 			} catch (error) {
 				console.error("Error getting bonding curve data:", error);
@@ -314,6 +388,32 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
 				pool,
 				version: 2,
 			});
+
+			if (request.launchGate?.consumeInviteCode && user?.solana) {
+				const inviteCodeToConsume = request.launchGate.inviteCode || inviteCode;
+
+				if (!inviteCodeToConsume) {
+					await DB.Token.deleteOne({ _id: newToken._id });
+					return reply.code(400).send({
+						success: false,
+						error: "Invite code is required",
+					});
+				}
+
+				try {
+					const inviteWasConsumed = await launchGateService.useInviteCode(inviteCodeToConsume, user.solana);
+					if (!inviteWasConsumed) {
+						await DB.Token.deleteOne({ _id: newToken._id });
+						return reply.code(409).send({
+							success: false,
+							error: "Invite code could not be claimed",
+						});
+					}
+				} catch (inviteError) {
+					await DB.Token.deleteOne({ _id: newToken._id });
+					throw inviteError;
+				}
+			}
 
 			return {
 				success: true,
