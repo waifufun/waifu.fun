@@ -1,3 +1,10 @@
+# [0.2.0-staging.4](https://github.com/waifufun/waifu.fun/compare/v0.2.0-staging.3...v0.2.0-staging.4) (2026-03-07)
+
+
+### Bug Fixes
+
+* **ci:** correct staging release metadata ([455d32a](https://github.com/waifufun/waifu.fun/commit/455d32a6485d44356e8447719ed0b90d92345250))
+
 # [0.2.0-staging.3](https://github.com/elizaos/autofun-monorepo/compare/v0.2.0-staging.2...v0.2.0-staging.3) (2026-03-07)
 
 
