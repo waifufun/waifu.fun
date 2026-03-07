@@ -13,10 +13,10 @@ function HudCorner({ position, size = "sm" }: { position: "tl" | "tr" | "bl" | "
 	const sizeClass = size === "md" ? "w-3 h-3" : "w-2.5 h-2.5";
 	const base = `absolute ${sizeClass} pointer-events-none`;
 	const styles: Record<string, string> = {
-		tl: `${base} top-0 left-0 border-t border-l border-[#8b5cf6]/30`,
-		tr: `${base} top-0 right-0 border-t border-r border-[#8b5cf6]/30`,
-		bl: `${base} bottom-0 left-0 border-b border-l border-[#8b5cf6]/30`,
-		br: `${base} bottom-0 right-0 border-b border-r border-[#8b5cf6]/30`,
+		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/30`,
+		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/30`,
+		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/30`,
+		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/30`,
 	};
 	return <span className={styles[position]} />;
 }
@@ -78,18 +78,18 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 			<HudCorner position="br" size="md" />
 			<div className="flex items-center justify-between mb-3 gap-2">
 				<div className="flex items-center gap-2 min-w-0">
-					<Zap className="size-3.5 text-[#8b5cf6]" />
+					<Zap className="size-3.5 text-[#00ff87]" />
 					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent personality</span>
 				</div>
-				<div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#08080a] border border-[#8b5cf6]/20 rounded-sm shrink-0">
-					<span className="h-1.5 w-1.5 rounded-full bg-[#8b5cf6]" />
-					<span className="text-[9px] text-[#8b5cf6] font-mono uppercase">{chainLabel}</span>
+				<div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#08080a] border border-[#00ff87]/20 rounded-sm shrink-0">
+					<span className="h-1.5 w-1.5 rounded-full bg-[#00ff87]" />
+					<span className="text-[9px] text-[#00ff87] font-mono uppercase">{chainLabel}</span>
 				</div>
 			</div>
 			<div className="flex items-start gap-3 mb-3">
 				<div className="relative">
-					<Image src={token.image} className="w-10 h-10 rounded-sm border border-[#8b5cf6]/20 flex-shrink-0" unoptimized width={40} height={40} alt="agent" />
-					<div className="absolute inset-0 bg-[#8b5cf6]/10 blur-md rounded-sm -z-10" />
+					<Image src={token.image} className="w-10 h-10 rounded-sm border border-[#00ff87]/20 flex-shrink-0" unoptimized width={40} height={40} alt="agent" />
+					<div className="absolute inset-0 bg-[#00ff87]/10 blur-md rounded-sm -z-10" />
 				</div>
 				<div className="flex-1 min-w-0">
 					<p
@@ -127,8 +127,8 @@ export function AgentSkills({ token }: { token: IToken }) {
 			label: "holders",
 			value: token.holders.toLocaleString(),
 			icon: Users,
-			accent: "text-[#8b5cf6]",
-			glow: "bg-[#8b5cf6]/10",
+			accent: "text-[#00ff87]",
+			glow: "bg-[#00ff87]/10",
 		},
 		{
 			label: "linked socials",
@@ -141,8 +141,8 @@ export function AgentSkills({ token }: { token: IToken }) {
 			label: "created",
 			value: formatCreatedAt(token.createdAt),
 			icon: CalendarDays,
-			accent: "text-[#8b5cf6]",
-			glow: "bg-[#8b5cf6]/10",
+			accent: "text-[#00ff87]",
+			glow: "bg-[#00ff87]/10",
 		},
 		{
 			label: "chain",
@@ -160,7 +160,7 @@ export function AgentSkills({ token }: { token: IToken }) {
 			<HudCorner position="bl" size="md" />
 			<HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3">
-				<Shield className="size-3.5 text-[#8b5cf6]" />
+				<Shield className="size-3.5 text-[#00ff87]" />
 				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent skills</span>
 			</div>
 			<div className="flex flex-col gap-2">
