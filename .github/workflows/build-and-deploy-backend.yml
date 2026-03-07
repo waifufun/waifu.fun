@@ -8,6 +8,7 @@ on:
       - main
 
 env:
+  NORTHFLANK_DEPLOY_ENABLED: ${{ vars.NORTHFLANK_DEPLOY_ENABLED || 'false' }}
   NORTHFLANK_PROJECT_ID: ${{ vars.NORTHFLANK_PROJECT_ID || 'autofun' }}
   NORTHFLANK_CREDENTIALS_ID: ${{ vars.NORTHFLANK_CREDENTIALS_ID || 'dockerhub' }}
 
@@ -45,6 +46,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Set Northflank Service ID
+        if: env.NORTHFLANK_DEPLOY_ENABLED == 'true'
         run: |
           BRANCH_NAME=${{ github.ref_name }}
           if [ "$BRANCH_NAME" = "develop" ]; then
@@ -58,7 +60,12 @@ jobs:
             exit 1
           fi
 
+      - name: Skip Northflank deploy
+        if: env.NORTHFLANK_DEPLOY_ENABLED != 'true'
+        run: echo "Northflank deploy skipped. Set NORTHFLANK_DEPLOY_ENABLED=true after the Northflank account is active again."
+
       - name: Deploy to Northflank
+        if: env.NORTHFLANK_DEPLOY_ENABLED == 'true'
         uses: northflank/deploy-to-northflank@v1
         with:
           northflank-api-key: ${{ secrets.NORTHFLANK_API_KEY }}
