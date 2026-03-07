@@ -122,25 +122,21 @@ const infrastructure = [
 		icon: Cloud,
 		title: "milady cloud × eliza cloud",
 		description: "enterprise partnership. your milady becomes a waifu through the unified deployment stack.",
-		animation: "pulse",
 	},
 	{
 		icon: Server,
 		title: "dedicated VPS",
 		description: "every agent runs on its own server. not shared infrastructure — real isolated compute.",
-		animation: "bounce",
 	},
 	{
 		icon: Cpu,
 		title: "elizaOS framework",
 		description: "the agent framework powering autonomous AI. personality, memory, and trading logic built in.",
-		animation: "spin",
 	},
 	{
 		icon: Zap,
 		title: "solana settlement",
 		description: "sub-second finality. minimal fees. maximum throughput for autonomous trading agents.",
-		animation: "flash",
 	},
 ];
 
@@ -545,24 +541,7 @@ export default function StoryPage() {
 									<HudCorner position="bl" />
 									<HudCorner position="br" />
 									<div className="mb-4 relative">
-										<motion.div
-											animate={
-												item.animation === "pulse"
-													? { scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }
-													: item.animation === "spin"
-														? { rotate: 360 }
-														: item.animation === "bounce"
-															? { y: [0, -4, 0] }
-															: { opacity: [1, 0.5, 1] }
-											}
-											transition={{
-												duration: item.animation === "spin" ? 8 : 2,
-												repeat: Number.POSITIVE_INFINITY,
-												ease: item.animation === "spin" ? "linear" : "easeInOut",
-											}}
-										>
-											<item.icon className="w-7 h-7 text-[#00ff87]" strokeWidth={1.5} />
-										</motion.div>
+										<item.icon className="w-7 h-7 text-[#00ff87]" strokeWidth={1.5} />
 									</div>
 									<h3 className="text-base font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-2 group-hover:text-[#00ff87] transition-colors">
 										{item.title}
@@ -713,17 +692,6 @@ export default function StoryPage() {
 				<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 					<SectionBlock>
 						<div className="text-center">
-							<motion.div
-								className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.6)] mb-8"
-								initial={{ opacity: 0, y: 20 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								viewport={{ once: true }}
-							>
-								<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-								<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">
-									<AnimatedCounter target={2847} /> agents deployed
-								</span>
-							</motion.div>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase mb-6">
 								ready to deploy?
 							</h2>

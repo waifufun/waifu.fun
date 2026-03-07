@@ -6,7 +6,7 @@ import ClaimFees from "@/components/claim-fees";
 import ScamWarning from "@/components/scam-notice";
 import Swap from "@/components/swap";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
-import { AgentPersonalityCard, AgentSkills, SidebarSocials } from "@/components/token-page/agent-skills";
+import { AgentPersonalityCard, AgentSkills } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
 import Chat from "@/components/token-page/chat";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
@@ -207,18 +207,22 @@ export default function PageClient({
 				<div className="w-full lg:w-[35%] flex flex-col md:flex-row lg:flex-col gap-5 order-2 lg:order-3">
 					<Swap token={token} />
 
-					<motion.div
-						className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors"
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: 0.1 }}
-					>
-						<HudCorner position="tl" />
-						<HudCorner position="tr" />
-						<HudCorner position="bl" />
-						<HudCorner position="br" />
-						<BondingCurveProgress token={token} />
-					</motion.div>
+					{typeof token?.curveProgress === "number" &&
+						!token?.curveCompleted &&
+						!token?.imported && (
+							<motion.div
+								className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors"
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.1 }}
+							>
+								<HudCorner position="tl" />
+								<HudCorner position="tr" />
+								<HudCorner position="bl" />
+								<HudCorner position="br" />
+								<BondingCurveProgress token={token} />
+							</motion.div>
+						)}
 
 					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
 						<AgentPersonalityCard token={token} />
@@ -229,10 +233,6 @@ export default function PageClient({
 					</motion.div>
 
 					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-						<SidebarSocials token={token} />
-					</motion.div>
-
-					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.275 }}>
 						<OwnerRuntimePanel token={token} />
 					</motion.div>
 
