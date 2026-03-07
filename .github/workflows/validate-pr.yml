@@ -8,19 +8,19 @@ on:
 
 jobs:
   restrict-pr-source:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Check source branch
         run: |
           echo "PR from ${{ github.head_ref }} to ${{ github.base_ref }}"
 
-          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "staging" ]]; then
-            echo "❌ Pull requests to 'main' must come from 'staging'"
+          if [[ "${{ github.base_ref }}" == "staging" && "${{ github.head_ref }}" != "develop" ]]; then
+            echo "❌ Pull requests to 'staging' must come from 'develop'"
             exit 1
           fi
 
-          if [[ "${{ github.base_ref }}" == "staging" && "${{ github.head_ref }}" != "develop" ]]; then
-            echo "❌ Pull requests to 'staging' must come from 'develop'"
+          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "staging" ]]; then
+            echo "❌ Pull requests to 'main' must come from 'staging'"
             exit 1
           fi
 

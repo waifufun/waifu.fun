@@ -1,1 +1,12 @@
 node_modules
+.git
+.github
+.next
+.turbo
+coverage
+dist
+storybook-static
+tmp
+*.log
+packages/contracts-solana/**/target
+packages/contracts-solana/**/Cargo.lock
