@@ -90,9 +90,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 									<div className="border-b border-[rgba(255,255,255,0.06)] w-full">
 										<h1 className="p-4 text-sm text-[#a1a1aa]">
 											Total Value:{" "}
-											<span className="text-[#00ff87] font-bold">
-												{formatNumber(summedTotalWalletValue, true)}
-											</span>
+											<span className="text-[#00ff87] font-bold">{formatNumber(summedTotalWalletValue, true)}</span>
 										</h1>
 									</div>
 									{[...balances.balances]

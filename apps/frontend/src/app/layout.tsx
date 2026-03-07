@@ -52,11 +52,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html
-			lang="en"
-			className="dark h-full"
-			style={{ colorScheme: "dark" }}
-		>
+		<html lang="en" className="dark h-full" style={{ colorScheme: "dark" }}>
 			<body className={cn("h-full font-sans antialiased", spaceGrotesk.variable, spaceGrotesk.className)}>
 				<Providers>
 					{/* Static layer prevents white flash when InteractiveBackground is off */}
@@ -72,8 +68,10 @@ export default function RootLayout({
 									<div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2 text-sm">
 										<AlertTriangleIcon className="w-4 h-4 text-[#00ff87] flex-shrink-0" />
 										<span className="text-[#a1a1aa]">
-											<span className="font-mono font-semibold text-[#00ff87] uppercase tracking-wider text-xs">devnet</span>
-											{" "}— this is a development environment connected to testnet. nothing here is real.
+											<span className="font-mono font-semibold text-[#00ff87] uppercase tracking-wider text-xs">
+												devnet
+											</span>{" "}
+											— this is a development environment connected to testnet. nothing here is real.
 										</span>
 									</div>
 								</div>

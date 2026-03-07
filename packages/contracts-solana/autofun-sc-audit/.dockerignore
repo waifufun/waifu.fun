@@ -1,0 +1,40 @@
+# Node.js
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Rust/Anchor
+target/debug
+target/deploy
+target/release
+target/sbf-solana-solana
+target/.rustc_info.json
+.anchor/
+test-ledger/
+**/*.rs.bk
+Cargo.lock
+
+# Development
+.git
+.github
+.gitignore
+.env
+.env.*
+*.log
+
+# Keys and sensitive data
+key/
+keys/
+*.pem
+*.key
+
+# OS specific
+.DS_Store
+*.swp
+*.swo
+
+# Build artifacts
+dist/
+build/
+*.lock

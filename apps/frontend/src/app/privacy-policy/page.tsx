@@ -5,6 +5,11 @@ type PolicySection = {
 	subcontent?: string[];
 };
 
+function getPolicySectionKey(item: PolicySection) {
+	const contentKey = typeof item.content === "string" ? item.content : item.content.join("|");
+	return [item.header, item.subheader, contentKey].filter(Boolean).join("|");
+}
+
 const PRIVACY_POLICY: PolicySection[] = [
 	{
 		header: "Introduction",
@@ -148,32 +153,34 @@ const PrivacyPolicy = () => {
 
 				{/* Content Sections */}
 				<div className="space-y-6">
-					{PRIVACY_POLICY.map((item, idx) => (
-						<div 
-							key={idx} 
-							className={item.header ? "bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6" : ""}
+					{PRIVACY_POLICY.map((item) => (
+						<div
+							key={getPolicySectionKey(item)}
+							className={
+								item.header ? "bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6" : ""
+							}
 						>
-							{item.header && (
-								<h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">{item.header}</h2>
-							)}
-							{item.subheader && (
-								<h3 className="text-base font-medium text-[#a1a1aa] mb-3">{item.subheader}</h3>
-							)}
+							{item.header && <h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">{item.header}</h2>}
+							{item.subheader && <h3 className="text-base font-medium text-[#a1a1aa] mb-3">{item.subheader}</h3>}
 							<div className="text-sm text-[#a1a1aa] leading-relaxed">
-								{typeof item.content === "string"
-									? item.content
-									: (
-										<ul className="list-disc list-inside space-y-2">
-											{item.content.map((line, lineIdx) => (
-												<li key={lineIdx} className="text-[#a1a1aa]">{line}</li>
-											))}
-										</ul>
-									)}
+								{typeof item.content === "string" ? (
+									item.content
+								) : (
+									<ul className="list-disc list-inside space-y-2">
+										{item.content.map((line) => (
+											<li key={`${getPolicySectionKey(item)}-${line}`} className="text-[#a1a1aa]">
+												{line}
+											</li>
+										))}
+									</ul>
+								)}
 							</div>
 							{item.subcontent && (
 								<ul className="list-disc list-inside space-y-1 mt-3">
-									{item.subcontent.map((line, subIdx) => (
-										<li key={subIdx} className="text-sm text-[#a1a1aa]">{line}</li>
+									{item.subcontent.map((line) => (
+										<li key={`${getPolicySectionKey(item)}-sub-${line}`} className="text-sm text-[#a1a1aa]">
+											{line}
+										</li>
 									))}
 								</ul>
 							)}

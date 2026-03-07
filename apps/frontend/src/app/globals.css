@@ -116,30 +116,30 @@ html.dark body {
 
 .dark {
 	/* Dark cyberpunk palette */
-	--background: oklch(0.078 0.006 285);        /* #08080a - near-black with blue tint */
-	--foreground: oklch(0.918 0.003 286);        /* #e4e4e7 - light gray text */
-	--card: oklch(0.12 0.008 280);               /* #111114 - elevated surface */
-	--card-foreground: oklch(0.918 0.003 286);   /* #e4e4e7 */
-	--popover: oklch(0.14 0.008 280);            /* #1a1a1f - elevated modal */
+	--background: oklch(0.078 0.006 285); /* #08080a - near-black with blue tint */
+	--foreground: oklch(0.918 0.003 286); /* #e4e4e7 - light gray text */
+	--card: oklch(0.12 0.008 280); /* #111114 - elevated surface */
+	--card-foreground: oklch(0.918 0.003 286); /* #e4e4e7 */
+	--popover: oklch(0.14 0.008 280); /* #1a1a1f - elevated modal */
 	--popover-foreground: oklch(0.918 0.003 286);
-	--primary: oklch(0.85 0.25 155);              /* #00ff87 - bright green */
-	--primary-foreground: oklch(0.13 0.02 155);  /* dark text on primary */
-	--secondary: oklch(0.24 0.008 285);          /* dark gray surface */
+	--primary: oklch(0.85 0.25 155); /* #00ff87 - bright green */
+	--primary-foreground: oklch(0.13 0.02 155); /* dark text on primary */
+	--secondary: oklch(0.24 0.008 285); /* dark gray surface */
 	--secondary-foreground: oklch(0.918 0.003 286);
-	--muted: oklch(0.18 0.006 285);              /* muted surface */
-	--muted-foreground: oklch(0.55 0.012 285);   /* #71717a - muted text */
-	--accent: oklch(0.85 0.25 155);              /* #00ff87 - green accent */
+	--muted: oklch(0.18 0.006 285); /* muted surface */
+	--muted-foreground: oklch(0.55 0.012 285); /* #71717a - muted text */
+	--accent: oklch(0.85 0.25 155); /* #00ff87 - green accent */
 	--accent-foreground: oklch(0.13 0.02 155);
-	--destructive: oklch(0.704 0.191 22);        /* #f87171 - red-400 */
-	--border: oklch(1 0 0 / 6%);                 /* rgba(255,255,255,0.06) */
-	--input: oklch(0.10 0.006 285);              /* #0e0e12 - input bg */
-	--ring: oklch(0.85 0.25 155);                /* green focus ring */
-	--chart-1: oklch(0.85 0.25 155);             /* bright green */
-	--chart-2: oklch(0.7 0.18 155);              /* emerald */
-	--chart-3: oklch(0.5 0.15 160);              /* deep green */
-	--chart-4: oklch(0.7 0.18 155);              /* emerald */
-	--chart-5: oklch(0.645 0.246 16);            /* red */
-	--sidebar: oklch(0.10 0.006 285);
+	--destructive: oklch(0.704 0.191 22); /* #f87171 - red-400 */
+	--border: oklch(1 0 0 / 6%); /* rgba(255,255,255,0.06) */
+	--input: oklch(0.1 0.006 285); /* #0e0e12 - input bg */
+	--ring: oklch(0.85 0.25 155); /* green focus ring */
+	--chart-1: oklch(0.85 0.25 155); /* bright green */
+	--chart-2: oklch(0.7 0.18 155); /* emerald */
+	--chart-3: oklch(0.5 0.15 160); /* deep green */
+	--chart-4: oklch(0.7 0.18 155); /* emerald */
+	--chart-5: oklch(0.645 0.246 16); /* red */
+	--sidebar: oklch(0.1 0.006 285);
 	--sidebar-foreground: oklch(0.918 0.003 286);
 	--sidebar-primary: oklch(0.85 0.25 155);
 	--sidebar-primary-foreground: oklch(0.13 0.02 155);
@@ -234,7 +234,8 @@ input::selection {
 }
 
 @keyframes pixel-pulse-green {
-	0%, 100% {
+	0%,
+	100% {
 		opacity: 1;
 		box-shadow: 0 0 8px rgba(0, 255, 135, 0.4);
 	}
@@ -245,7 +246,8 @@ input::selection {
 }
 
 @keyframes pixel-pulse-yellow {
-	0%, 100% {
+	0%,
+	100% {
 		opacity: 1;
 		box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
 	}
@@ -256,7 +258,8 @@ input::selection {
 }
 
 @keyframes pixel-pulse-emerald {
-	0%, 100% {
+	0%,
+	100% {
 		opacity: 1;
 		box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
 	}
@@ -268,17 +271,28 @@ input::selection {
 
 /* Create Flow V2 Animations */
 @keyframes blink {
-	0%, 50% { opacity: 1; }
-	51%, 100% { opacity: 0; }
+	0%,
+	50% {
+		opacity: 1;
+	}
+	51%,
+	100% {
+		opacity: 0;
+	}
 }
 
 @keyframes shine {
-	0% { transform: translateX(-100%); }
-	100% { transform: translateX(200%); }
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(200%);
+	}
 }
 
 @keyframes glow-pulse {
-	0%, 100% {
+	0%,
+	100% {
 		opacity: 1;
 		box-shadow: 0 0 8px rgba(0, 255, 135, 0.6);
 	}
@@ -289,23 +303,46 @@ input::selection {
 }
 
 @keyframes glitch {
-	0% { transform: translate(0); }
-	20% { transform: translate(-2px, 2px); }
-	40% { transform: translate(-2px, -2px); }
-	60% { transform: translate(2px, 2px); }
-	80% { transform: translate(2px, -2px); }
-	100% { transform: translate(0); }
+	0% {
+		transform: translate(0);
+	}
+	20% {
+		transform: translate(-2px, 2px);
+	}
+	40% {
+		transform: translate(-2px, -2px);
+	}
+	60% {
+		transform: translate(2px, 2px);
+	}
+	80% {
+		transform: translate(2px, -2px);
+	}
+	100% {
+		transform: translate(0);
+	}
 }
 
 @keyframes scanline {
-	0% { transform: translateY(-100%); }
-	100% { transform: translateY(100%); }
+	0% {
+		transform: translateY(-100%);
+	}
+	100% {
+		transform: translateY(100%);
+	}
 }
 
 @keyframes flicker {
-	0%, 100% { opacity: 1; }
-	50% { opacity: 0.8; }
-	75% { opacity: 0.9; }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.8;
+	}
+	75% {
+		opacity: 0.9;
+	}
 }
 
 .animate-blink {
@@ -329,15 +366,63 @@ input::selection {
 }
 
 /* Create Token V2 Premium Animations */
-@keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-.animate-blink { animation: blink 1s step-end infinite; }
-@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-.animate-shimmer { animation: shimmer 2s infinite; }
-@keyframes glitch { 0%, 100% { text-shadow: 0.05em 0 0 rgba(0,255,135,0.75), -0.025em -0.05em 0 rgba(192,132,252,0.75); } 50% { text-shadow: 0.025em 0.05em 0 rgba(0,255,135,0.75), 0.05em 0 0 rgba(192,132,252,0.75); } }
-.animate-glitch { animation: glitch 1s linear infinite; }
-@keyframes shine { 0% { transform: translateX(-100%); } 50%, 100% { transform: translateX(100%); } }
-@keyframes glow-pulse { 0%, 100% { box-shadow: 0 2px 8px rgba(0,255,135,0.4); } 50% { box-shadow: 0 2px 16px rgba(0,255,135,0.6); } }
-.animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
+@keyframes blink {
+	0%,
+	50% {
+		opacity: 1;
+	}
+	51%,
+	100% {
+		opacity: 0;
+	}
+}
+.animate-blink {
+	animation: blink 1s step-end infinite;
+}
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+.animate-shimmer {
+	animation: shimmer 2s infinite;
+}
+@keyframes glitch {
+	0%,
+	100% {
+		text-shadow: 0.05em 0 0 rgba(0, 255, 135, 0.75), -0.025em -0.05em 0 rgba(192, 132, 252, 0.75);
+	}
+	50% {
+		text-shadow: 0.025em 0.05em 0 rgba(0, 255, 135, 0.75), 0.05em 0 0 rgba(192, 132, 252, 0.75);
+	}
+}
+.animate-glitch {
+	animation: glitch 1s linear infinite;
+}
+@keyframes shine {
+	0% {
+		transform: translateX(-100%);
+	}
+	50%,
+	100% {
+		transform: translateX(100%);
+	}
+}
+@keyframes glow-pulse {
+	0%,
+	100% {
+		box-shadow: 0 2px 8px rgba(0, 255, 135, 0.4);
+	}
+	50% {
+		box-shadow: 0 2px 16px rgba(0, 255, 135, 0.6);
+	}
+}
+.animate-glow-pulse {
+	animation: glow-pulse 2s ease-in-out infinite;
+}
 
 .scrollbar-hide {
 	-ms-overflow-style: none;

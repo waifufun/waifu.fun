@@ -6,8 +6,8 @@ export default function Page() {
 				<div className="mb-10">
 					<h1 className="text-3xl font-bold text-[#e4e4e7] tracking-tight mb-3">FAQ</h1>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						<span className="text-[#00ff87] font-semibold">waifu.fun</span> is an all-in-one solution to launch tokens, manage
-						communities, generate visual assets, and grow your project — powered by ElizaOS.
+						<span className="text-[#00ff87] font-semibold">waifu.fun</span> is an all-in-one solution to launch tokens,
+						manage communities, generate visual assets, and grow your project — powered by ElizaOS.
 					</p>
 				</div>
 
@@ -33,16 +33,17 @@ export default function Page() {
 								<div>
 									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">2. Manual</h3>
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
-										Manual mode unlocks advanced configuration and sniper protection. Projects can choose a larger bonding
-										curve size, delay the tradable start time, limit transaction amounts for the first 8 hours, and select
-										Raydium as the pool after graduation in addition to Meteora.
+										Manual mode unlocks advanced configuration and sniper protection. Projects can choose a larger
+										bonding curve size, delay the tradable start time, limit transaction amounts for the first 8 hours,
+										and select Raydium as the pool after graduation in addition to Meteora.
 									</p>
 								</div>
 								<div>
 									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">3. Import</h3>
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
-										Import lets you add existing tokens to the <span className="text-[#00ff87] font-semibold">waifu.fun</span> ecosystem to access community and agent features.
-										It does not create a new liquidity pool or bonding curve.
+										Import lets you add existing tokens to the{" "}
+										<span className="text-[#00ff87] font-semibold">waifu.fun</span> ecosystem to access community and
+										agent features. It does not create a new liquidity pool or bonding curve.
 									</p>
 								</div>
 							</div>
@@ -55,8 +56,9 @@ export default function Page() {
 							<div>
 								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Liquidity</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and <span className="text-[#00ff87] font-semibold">waifu.fun</span>{" "}
-									respectively with burn and earn mechanisms.
+									LP tokens for graduated coins are locked with a 90/10 token split for creators and{" "}
+									<span className="text-[#00ff87] font-semibold">waifu.fun</span> respectively with burn and earn
+									mechanisms.
 								</p>
 							</div>
 

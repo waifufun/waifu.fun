@@ -14,8 +14,6 @@
 		".": "./src/index.ts"
 	},
 	"devDependencies": {
-		"@types/bs58": "^5.0.0",
-		"bs58": "^6.0.0",
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {

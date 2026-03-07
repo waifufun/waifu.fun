@@ -4,14 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight, X } from "lucide-react";
-import {
-	Dialog,
-	DialogClose,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +41,13 @@ type HowItWorksModalProps = {
 
 export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksModalProps = {}) {
 	const [stepIndex, setStepIndex] = useState(0);
-	const step = (STEPS[stepIndex] ?? STEPS[0])!;
+	const defaultStep = STEPS[0] ?? {
+		num: "01",
+		title: "deploy your milady",
+		description: "Launch your AI agent on Solana.",
+		image: "/waifus/how-deploy.png",
+	};
+	const step = STEPS[stepIndex] ?? defaultStep;
 
 	const goNext = () => setStepIndex((i) => (i + 1) % STEPS.length);
 	const goPrev = () => setStepIndex((i) => (i - 1 + STEPS.length) % STEPS.length);
@@ -71,9 +70,7 @@ export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksMo
 					<span className="sr-only">Close</span>
 				</DialogClose>
 				<DialogHeader className="px-6 pt-6 pb-2 text-center border-b border-[rgba(255,255,255,0.06)]">
-					<DialogTitle className="text-xl font-bold text-[#e4e4e7] lowercase tracking-tight">
-						how it works
-					</DialogTitle>
+					<DialogTitle className="text-xl font-bold text-[#e4e4e7] lowercase tracking-tight">how it works</DialogTitle>
 					<p className="text-sm text-[#a1a1aa] mt-1">
 						milady cloud × eliza cloud — deploy your personal AI as an autonomous economic agent.
 					</p>
@@ -97,12 +94,8 @@ export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksMo
 						</div>
 					</div>
 					<div className="p-6 flex flex-col gap-3">
-						<h3 className="text-lg font-bold text-[#e4e4e7] tracking-tight lowercase">
-							{step.title}
-						</h3>
-						<p className="text-[#a1a1aa] text-sm leading-relaxed">
-							{step.description}
-						</p>
+						<h3 className="text-lg font-bold text-[#e4e4e7] tracking-tight lowercase">{step.title}</h3>
+						<p className="text-[#a1a1aa] text-sm leading-relaxed">{step.description}</p>
 					</div>
 				</div>
 
@@ -126,9 +119,7 @@ export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksMo
 									onClick={() => setStepIndex(i)}
 									className={cn(
 										"h-2 rounded-full transition-all",
-										i === stepIndex
-											? "w-6 bg-[#00ff87]"
-											: "w-2 bg-[#71717a]/50 hover:bg-[#71717a]/70",
+										i === stepIndex ? "w-6 bg-[#00ff87]" : "w-2 bg-[#71717a]/50 hover:bg-[#71717a]/70",
 									)}
 									aria-label={`Go to step ${i + 1}`}
 								/>

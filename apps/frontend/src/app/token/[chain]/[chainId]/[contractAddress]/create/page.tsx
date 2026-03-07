@@ -3,7 +3,9 @@ import { getMockToken } from "@/lib/mock-api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import TokenCreatePageClient from "@/components/token-page/ai-create";
 
-export default async function TokenCreatePage({ params }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
+export default async function TokenCreatePage({
+	params,
+}: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
 	const tokenParams = (await params) as unknown as ITokenLookUp;
 	let token: IToken | null = null;
 	try {

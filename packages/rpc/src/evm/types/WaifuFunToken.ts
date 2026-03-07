@@ -1,4 +1,11 @@
-import type { Address, Abi, Hash, Chain } from "viem";
+import type { Abi, Address, Chain, Hash } from "viem";
+
+export type WaifuFunTokenDeployParams = {
+	name: string;
+	symbol: string;
+	totalSupply: bigint;
+	decimal: number;
+};
 
 export type WaifuFunTokenContract = {
 	address: Address;
@@ -8,18 +15,15 @@ export type WaifuFunTokenContract = {
 	symbol: () => Promise<string>;
 	decimals: () => Promise<number>;
 	totalSupply: () => Promise<bigint>;
-	maxSupply: () => Promise<bigint>;
 	balanceOf: (account: Address) => Promise<bigint>;
 	allowance: (owner: Address, spender: Address) => Promise<bigint>;
 	owner: () => Promise<Address>;
+	approve: (spender: Address, amount: bigint) => Promise<Hash>;
+	decreaseAllowance: (spender: Address, subtractedValue: bigint) => Promise<Hash>;
+	increaseAllowance: (spender: Address, addedValue: bigint) => Promise<Hash>;
+	mintToken: (recipient: Address, amount: bigint) => Promise<Hash>;
 	transfer: (to: Address, amount: bigint) => Promise<Hash>;
 	transferFrom: (from: Address, to: Address, amount: bigint) => Promise<Hash>;
-	approve: (spender: Address, amount: bigint) => Promise<Hash>;
-	increaseAllowance: (spender: Address, addedValue: bigint) => Promise<Hash>;
-	decreaseAllowance: (spender: Address, subtractedValue: bigint) => Promise<Hash>;
-	mint: (to: Address, amount: bigint) => Promise<Hash>;
-	burn: (amount: bigint) => Promise<Hash>;
-	burnFrom: (account: Address, amount: bigint) => Promise<Hash>;
 	transferOwnership: (newOwner: Address) => Promise<Hash>;
 	renounceOwnership: () => Promise<Hash>;
 };
@@ -42,12 +46,6 @@ export type OwnershipTransferredEvent = {
 };
 
 export type WaifuFunTokenContractFactory = {
-	deploy: (args: {
-		name: string;
-		symbol: string;
-		initialSupply: bigint;
-		maxSupply: bigint;
-		owner: Address;
-	}) => Promise<WaifuFunTokenContract>;
+	deploy: (args: WaifuFunTokenDeployParams) => Promise<WaifuFunTokenContract>;
 	attach: (address: Address) => WaifuFunTokenContract;
 };

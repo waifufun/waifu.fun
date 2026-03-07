@@ -28,13 +28,8 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 		: "bg-[#111114] border-[rgba(255,255,255,0.06)]";
 
 	return (
-		<motion.div
-			initial={{ opacity: 1, y: 0 }}
-		>
-			<Link
-				href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
-				className="block group"
-			>
+		<motion.div initial={{ opacity: 1, y: 0 }}>
+			<Link href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`} className="block group">
 				<motion.div
 					className={`relative w-full overflow-hidden rounded-sm border ${heroCardBg}`}
 					whileHover={{
@@ -62,13 +57,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 								whileHover={{ scale: 1.03 }}
 								transition={{ duration: 0.8, ease: "easeOut" }}
 							>
-								<Image
-									src={token.image}
-									fill
-									unoptimized
-									alt={token.name}
-									className="object-cover object-top"
-								/>
+								<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 							</motion.div>
 							{/* Gradient overlays */}
 							<div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[rgba(17,17,20,0.95)] hidden lg:block" />
@@ -78,9 +67,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 							{index === 0 && (
 								<div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-sm bg-[rgba(17,17,20,0.8)] border border-[rgba(0,255,135,0.25)]">
 									<span className="text-lg">🔥</span>
-									<span className="text-xs font-mono uppercase tracking-wider text-[#00ff87]">
-										#1 trending
-									</span>
+									<span className="text-xs font-mono uppercase tracking-wider text-[#00ff87]">#1 trending</span>
 								</div>
 							)}
 						</div>
@@ -93,29 +80,21 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 								<div className="flex items-center gap-2 flex-wrap">
 									{isBonded && (
 										<div className="px-3 py-1 rounded-full bg-[rgba(0,255,135,0.1)] border border-[rgba(0,255,135,0.25)]">
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">
-												bonded
-											</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">bonded</span>
 										</div>
 									)}
 									{token.verified && (
 										<div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(0,255,135,0.08)] border border-[rgba(0,255,135,0.2)]">
 											<span className="text-[#00ff87]">✓</span>
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">
-												verified
-											</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">verified</span>
 										</div>
 									)}
 								</div>
 
 								{/* Name and ticker */}
 								<div>
-									<h3 className="text-3xl sm:text-4xl font-bold text-[#e4e4e7] leading-tight mb-2">
-										{token.name}
-									</h3>
-									<span className="text-xl font-mono text-[#00ff87]">
-										${token.ticker}
-									</span>
+									<h3 className="text-3xl sm:text-4xl font-bold text-[#e4e4e7] leading-tight mb-2">{token.name}</h3>
+									<span className="text-xl font-mono text-[#00ff87]">${token.ticker}</span>
 								</div>
 
 								{/* Description */}
@@ -133,40 +112,26 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 								<div className="flex items-center gap-6 flex-wrap">
 									{token.marketcap > 0 && (
 										<div className="flex flex-col">
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
-												market cap
-											</span>
-											<span className="text-lg font-bold text-[#e4e4e7]">
-												{formatMarketCap(token.marketcap)}
-											</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">market cap</span>
+											<span className="text-lg font-bold text-[#e4e4e7]">{formatMarketCap(token.marketcap)}</span>
 										</div>
 									)}
 									{token.holders > 0 && (
 										<div className="flex flex-col">
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
-												holders
-											</span>
-											<span className="text-lg font-bold text-[#e4e4e7]">
-												{token.holders.toLocaleString()}
-											</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">holders</span>
+											<span className="text-lg font-bold text-[#e4e4e7]">{token.holders.toLocaleString()}</span>
 										</div>
 									)}
 									{token.volume24h > 0 && (
 										<div className="flex flex-col">
-											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
-												24h volume
-											</span>
-											<span className="text-lg font-bold text-[#e4e4e7]">
-												{formatMarketCap(token.volume24h)}
-											</span>
+											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">24h volume</span>
+											<span className="text-lg font-bold text-[#e4e4e7]">{formatMarketCap(token.volume24h)}</span>
 										</div>
 									)}
 									{/* Price */}
 									{token.price && (
 										<div className="ml-auto">
-											<span className="text-xs font-mono text-[#52525b]">
-												${Number(token.price).toFixed(6)}
-											</span>
+											<span className="text-xs font-mono text-[#52525b]">${Number(token.price).toFixed(6)}</span>
 										</div>
 									)}
 								</div>
@@ -178,9 +143,7 @@ function HeroCard({ token, index }: { token: IToken; index: number }) {
 											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
 												bonding progress
 											</span>
-											<span className="text-xs font-mono text-[#00ff87]">
-												{curveProgress}%
-											</span>
+											<span className="text-xs font-mono text-[#00ff87]">{curveProgress}%</span>
 										</div>
 										<div className="w-full h-2 rounded-sm bg-[rgba(255,255,255,0.06)] overflow-hidden">
 											<motion.div
@@ -265,19 +228,15 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const remainingTokens = sortedByMarketCap.slice(1);
 
 	// Split remaining tokens for varied layout
-	const firstRowTokens = remainingTokens.slice(0, 2);  // 2 larger cards
+	const firstRowTokens = remainingTokens.slice(0, 2); // 2 larger cards
 	const secondRowTokens = remainingTokens.slice(2, 5); // 3 medium cards
-	const restTokens = remainingTokens.slice(5);         // 3-column grid
+	const restTokens = remainingTokens.slice(5); // 3-column grid
 
 	return (
 		<Fragment>
-			<div
-				className="flex flex-col gap-8 w-full"
-			>
+			<div className="flex flex-col gap-8 w-full">
 				{/* Hero featured card - full width cinematic */}
-				{featuredToken && (
-					<HeroCard token={featuredToken} index={0} />
-				)}
+				{featuredToken && <HeroCard token={featuredToken} index={0} />}
 
 				{/* Gradient divider */}
 				{featuredToken && remainingTokens.length > 0 && (
@@ -304,11 +263,7 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 						{secondRowTokens.map((token, idx) => (
 							<div key={token.contractAddress}>
-								<GridItem 
-									token={token} 
-									variant="medium" 
-									rank={firstRowTokens.length + idx + 2} 
-								/>
+								<GridItem token={token} variant="medium" rank={firstRowTokens.length + idx + 2} />
 							</div>
 						))}
 					</div>
@@ -319,8 +274,8 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{restTokens.map((token, idx) => (
 							<div key={token.contractAddress}>
-								<GridItem 
-									token={token} 
+								<GridItem
+									token={token}
 									variant="compact"
 									rank={firstRowTokens.length + secondRowTokens.length + idx + 2}
 								/>

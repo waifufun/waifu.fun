@@ -67,9 +67,7 @@ export default function SearchMenu() {
 					className="hidden md:flex items-center gap-2 w-[320px] xl:w-[400px] h-10 rounded-sm text-left px-3 transition-all duration-200"
 					style={{
 						background: "#111114",
-						border: triggerHover
-							? "1px solid rgba(255, 255, 255, 0.12)"
-							: "1px solid rgba(255, 255, 255, 0.06)",
+						border: triggerHover ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(255, 255, 255, 0.06)",
 						color: "#71717a",
 					}}
 					onMouseEnter={() => setTriggerHover(true)}
@@ -103,10 +101,7 @@ export default function SearchMenu() {
 				}}
 			>
 				{/* Search input inside card */}
-				<div
-					className="flex items-center gap-2 p-4"
-					style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}
-				>
+				<div className="flex items-center gap-2 p-4" style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
 					<Search className="size-4 shrink-0" style={{ color: "#71717a" }} />
 					<Input
 						ref={inputRef}
@@ -158,8 +153,12 @@ export default function SearchMenu() {
 									onClick={() => setOpen(false)}
 									className="rounded-sm p-3 transition-colors flex items-center gap-4 justify-between"
 									style={{ background: "transparent" }}
-									onMouseEnter={(e) => (e.currentTarget.style.background = "#18181c")}
-									onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+									onMouseEnter={(e) => {
+										e.currentTarget.style.background = "#18181c";
+									}}
+									onMouseLeave={(e) => {
+										e.currentTarget.style.background = "transparent";
+									}}
 								>
 									<div className="flex items-center gap-3 min-w-0">
 										<Image
@@ -172,25 +171,16 @@ export default function SearchMenu() {
 										/>
 										<div className="flex flex-col gap-0.5 min-w-0">
 											<div className="flex items-center gap-2 flex-wrap">
-												<span
-													className="text-sm font-medium truncate"
-													style={{ color: "#e4e4e7" }}
-												>
+												<span className="text-sm font-medium truncate" style={{ color: "#e4e4e7" }}>
 													{token.name}
 												</span>
-												<span
-													className="text-sm font-medium truncate"
-													style={{ color: "#71717a" }}
-												>
+												<span className="text-sm font-medium truncate" style={{ color: "#71717a" }}>
 													{token.ticker}
 												</span>
 											</div>
 											<div className="flex items-center gap-2">
 												<CopyButton textToCopy={token.contractAddress} />
-												<span
-													className="text-xs font-medium truncate"
-													style={{ color: "#52525b" }}
-												>
+												<span className="text-xs font-medium truncate" style={{ color: "#52525b" }}>
 													{shortenAddress(token.contractAddress)}
 												</span>
 											</div>

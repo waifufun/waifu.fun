@@ -14,10 +14,10 @@
 			"@/*": ["src/*"]
 		},
 
-		// build configuration - use NodeNext for better ESM/CJS interop
+		// build configuration
 		"target": "ESNext",
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
 		"lib": ["ES2022"], // ["DOM", "DOM.Iterable"],
 
 		// preserve jsdoc comments for intellisense

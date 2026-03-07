@@ -2,10 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const ShaderBackground = dynamic(
-	() => import("@/components/ShaderBackground/ShaderBackground"),
-	{ ssr: false },
-);
+const ShaderBackground = dynamic(() => import("@/components/ShaderBackground/ShaderBackground"), { ssr: false });
 
 export default function InteractiveBackground() {
 	return (

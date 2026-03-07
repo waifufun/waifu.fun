@@ -10,6 +10,7 @@ import {
 	type ReadContractParameters,
 	type WalletClient,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import Decimal from "decimal.js";
 import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@waifufun/constants";
 import type { SolanaNetworkIds } from "@waifufun/types";
@@ -18,8 +19,8 @@ import { Metaplex } from "@metaplex-foundation/js";
 import { AnchorProvider, type Wallet, type Program } from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
-import { updateCryptoPrices } from "@waifufun/utils";
-import type { WaifuFunConfig, BondingCurveConfig } from "./evm/types/WaifuFun";
+import { updateCryptoPrices } from "@waifufun/codex";
+import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun";
 import autoFunAbi from "./evm/abis/WaifuFun.json";
 import { EventEmitter } from "node:events";
 import type { SlotInfo } from "@waifufun/types";
@@ -40,7 +41,8 @@ export class EVMRpcProvider {
 	private chainId: EvmChainIds;
 
 	constructor(chainId: EvmChainIds, privateKey?: string) {
-		if (!CHAINID_TO_VIEM_CHAIN[chainId]) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
+		const chain = CHAINID_TO_VIEM_CHAIN[chainId];
+		if (!chain) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
 		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
 			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
 		}
@@ -50,13 +52,15 @@ export class EVMRpcProvider {
 			batch: {
 				multicall: true,
 			},
-			chain: CHAINID_TO_VIEM_CHAIN[chainId],
+			chain,
 			transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
 		});
 
 		if (privateKey) {
+			const normalizedPrivateKey = (privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`) as `0x${string}`;
 			this.walletClient = createWalletClient({
-				chain: CHAINID_TO_VIEM_CHAIN[chainId],
+				account: privateKeyToAccount(normalizedPrivateKey),
+				chain,
 				transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
 			});
 		}
@@ -149,9 +153,16 @@ export class EVMRpcProvider {
 		});
 	}
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	async writeWaifuFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
+	async writeWaifuFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[], value?: bigint) {
 		if (!this.walletClient) {
 			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
+		}
+		const chain = CHAINID_TO_VIEM_CHAIN[this.chainId];
+		if (!chain) {
+			throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
+		}
+		if (!this.walletClient.account) {
+			throw new Error("Wallet client account not initialized.");
 		}
 
 		return await this.walletClient.writeContract({
@@ -159,25 +170,53 @@ export class EVMRpcProvider {
 			abi: autoFunAbi.abi,
 			functionName,
 			args,
-			chain: CHAINID_TO_VIEM_CHAIN[this.chainId],
-			account: this.walletClient.account ?? null,
+			...(value !== undefined ? { value } : {}),
+			chain,
+			account: this.walletClient.account,
 		});
 	}
 
-	async launch(contractAddress: EvmAddressLike, config: WaifuFunConfig) {
-		return await this.writeWaifuFunContract(contractAddress, "launch", [config]);
+	async launch(contractAddress: EvmAddressLike, config: WaifuFunLaunchParams) {
+		return await this.writeWaifuFunContract(contractAddress, "launch", [
+			config.totalSupply,
+			config.virtualReserveETHAmount,
+			config.decimals,
+			config.name,
+			config.symbol,
+		]);
 	}
 
-	async launchAndSwap(contractAddress: EvmAddressLike, launchConfig: WaifuFunConfig, swapConfig: BondingCurveConfig) {
-		return await this.writeWaifuFunContract(contractAddress, "launchAndSwap", [launchConfig, swapConfig]);
+	async launchAndSwap(
+		contractAddress: EvmAddressLike,
+		launchConfig: WaifuFunLaunchParams,
+		swapConfig: WaifuFunSwapParameter,
+	) {
+		return await this.writeWaifuFunContract(
+			contractAddress,
+			"launchAndSwap",
+			[
+				launchConfig.totalSupply,
+				launchConfig.virtualReserveETHAmount,
+				launchConfig.decimals,
+				launchConfig.name,
+				launchConfig.symbol,
+				swapConfig,
+			],
+			swapConfig.direction === 0 ? swapConfig.amountIn : undefined,
+		);
 	}
 
-	async swap(contractAddress: EvmAddressLike, config: BondingCurveConfig) {
-		return await this.writeWaifuFunContract(contractAddress, "swap", [config]);
+	async swap(contractAddress: EvmAddressLike, config: WaifuFunSwapParameter) {
+		return await this.writeWaifuFunContract(
+			contractAddress,
+			"swap",
+			[config],
+			config.direction === 0 ? config.amountIn : undefined,
+		);
 	}
 
-	async withdraw(contractAddress: EvmAddressLike, token: EvmAddressLike, amount: bigint) {
-		return await this.writeWaifuFunContract(contractAddress, "withdraw", [token, amount]);
+	async withdraw(contractAddress: EvmAddressLike, token: EvmAddressLike) {
+		return await this.writeWaifuFunContract(contractAddress, "withdraw", [token]);
 	}
 
 	async getLaunchedTokensByOwner(contractAddress: EvmAddressLike, owner: EvmAddressLike) {

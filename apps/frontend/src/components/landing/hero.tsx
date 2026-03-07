@@ -69,19 +69,10 @@ export default function Hero({ token }: { token: IToken | null }) {
 			style={{ backgroundColor: bgDark, transform: "translateZ(0)" }}
 		>
 			{/* Base layer: always present from first paint to prevent any white flash */}
-			<div
-				className="absolute inset-0 z-0"
-				style={{ backgroundColor: bgDark }}
-				aria-hidden
-			/>
+			<div className="absolute inset-0 z-0" style={{ backgroundColor: bgDark }} aria-hidden />
 			{/* Aurora animated background (client-only; solid bg prevents white flash before mount) */}
 			<div className="absolute inset-0 z-0" style={{ backgroundColor: bgDark }}>
-				<Aurora
-					colorStops={["#00ff87", "#065f46", "#00ff87"]}
-					amplitude={1.5}
-					speed={0.5}
-					blend={0.6}
-				/>
+				<Aurora colorStops={["#00ff87", "#065f46", "#00ff87"]} amplitude={1.5} speed={0.5} blend={0.6} />
 			</div>
 
 			{/* Dark overlay for text readability */}
@@ -156,9 +147,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 									)}
 								</span>
 								<span className="block text-[#e4e4e7]">agents that</span>
-								<span className="block text-[#00ff87]">
-									build wealth
-								</span>
+								<span className="block text-[#00ff87]">build wealth</span>
 							</h1>
 						</motion.div>
 
@@ -168,7 +157,8 @@ export default function Hero({ token }: { token: IToken | null }) {
 								not chatbots. <span className="text-[#71717a]">economic actors.</span>
 							</p>
 							<p className="text-[15px] text-[#52525b] mt-2 leading-relaxed">
-								powered by Milady Cloud &amp; Eliza Cloud. your milady becomes a waifu — an autonomous agent that trades, learns, and earns 24/7 on Solana.
+								powered by Milady Cloud &amp; Eliza Cloud. your milady becomes a waifu — an autonomous agent that
+								trades, learns, and earns 24/7 on Solana.
 							</p>
 						</motion.div>
 
@@ -181,12 +171,24 @@ export default function Hero({ token }: { token: IToken | null }) {
 									background: "#00ff87",
 									boxShadow: "0 0 20px rgba(0,255,135,0.2), inset 0 1px 0 rgba(255,255,255,0.1)",
 								}}
-								whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(0,255,135,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}
+								whileHover={{
+									scale: 1.03,
+									boxShadow: "0 0 30px rgba(0,255,135,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
+								}}
 								whileTap={{ scale: 0.98 }}
 								transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
 							>
 								deploy agent
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+								>
 									<title>Deploy</title>
 									<line x1="5" y1="12" x2="19" y2="12" />
 									<polyline points="12 5 19 12 12 19" />
@@ -227,15 +229,11 @@ export default function Hero({ token }: { token: IToken | null }) {
 								⚡ elizaos
 							</a>
 						</motion.div>
-
 					</div>
 
 					{/* Right: Top token card */}
 					{token && (
-						<motion.div
-							variants={itemVariants}
-							className="relative flex justify-center lg:justify-end"
-						>
+						<motion.div variants={itemVariants} className="relative flex justify-center lg:justify-end">
 							<Link
 								href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
 								className="group block w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[440px]"
@@ -248,10 +246,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 									}}
 									transition={{ type: "spring", stiffness: 260, damping: 24 }}
 								>
-									<div
-									className="relative aspect-[4/5] w-full overflow-hidden"
-									style={{ backgroundColor: bgDark }}
-								>
+									<div className="relative aspect-[4/5] w-full overflow-hidden" style={{ backgroundColor: bgDark }}>
 										<Image
 											src={token.image}
 											alt={token.name}
@@ -262,9 +257,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 										/>
 										<div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-transparent to-transparent" />
 										<div className="absolute bottom-4 left-4 right-4 flex flex-col gap-1">
-											<span className="text-xl sm:text-2xl font-bold text-[#e4e4e7] truncate">
-												{token.name}
-											</span>
+											<span className="text-xl sm:text-2xl font-bold text-[#e4e4e7] truncate">{token.name}</span>
 											<span className="text-sm font-mono text-[#00ff87]">
 												${token.ticker} · {formatMarketCap(token.marketcap ?? 0)}
 											</span>
@@ -275,7 +268,6 @@ export default function Hero({ token }: { token: IToken | null }) {
 						</motion.div>
 					)}
 				</div>
-
 			</motion.div>
 		</section>
 	);

@@ -23,7 +23,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 								explore agents
 							</span>
 						</h2>
-						
+
 						{/* Animated count */}
 						<AnimatePresence mode="wait">
 							<motion.div
@@ -37,19 +37,17 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 								<div className="flex items-center gap-1.5">
 									<motion.div
 										className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"
-										animate={{ 
+										animate={{
 											scale: [1, 1.2, 1],
-											opacity: [1, 0.7, 1]
+											opacity: [1, 0.7, 1],
 										}}
-										transition={{ 
+										transition={{
 											duration: 2,
 											repeat: Number.POSITIVE_INFINITY,
-											ease: "easeInOut"
+											ease: "easeInOut",
 										}}
 									/>
-									<span className="text-sm font-mono text-[#71717a]">
-										{tokenCount} live
-									</span>
+									<span className="text-sm font-mono text-[#71717a]">{tokenCount} live</span>
 								</div>
 							</motion.div>
 						</AnimatePresence>
@@ -71,9 +69,10 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 						className={`
 							relative px-5 py-2 rounded-full text-xs font-mono uppercase tracking-widest
 							border transition-all duration-300
-							${active === filter
-								? "border-[rgba(0,255,135,0.25)] bg-[rgba(0,255,135,0.08)]"
-								: "border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.4)] hover:border-[rgba(255,255,255,0.1)]"
+							${
+								active === filter
+									? "border-[rgba(0,255,135,0.25)] bg-[rgba(0,255,135,0.08)]"
+									: "border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.4)] hover:border-[rgba(255,255,255,0.1)]"
 							}
 						`}
 						whileHover={{ scale: 1.02 }}
@@ -88,9 +87,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 						)}
 						<span
 							className={`relative z-10 ${
-								active === filter 
-									? "text-[#00ff87]" 
-									: "text-[#52525b] hover:text-[#71717a]"
+								active === filter ? "text-[#00ff87]" : "text-[#52525b] hover:text-[#71717a]"
 							}`}
 						>
 							{filter}

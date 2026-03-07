@@ -28,7 +28,7 @@ export const GridItem = ({
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
 	const isDead = token?.status === "finalized" || (isBonded && token?.marketcap === 0);
-	
+
 	const isLarge = variant === "large";
 	const isCompact = variant === "compact";
 	const isVerified = Boolean(token?.verified);
@@ -40,15 +40,10 @@ export const GridItem = ({
 	// Show rank indicator for top 5
 	const showRank = rank !== undefined && rank <= 5;
 
-	const cardBg = isVerified
-		? "bg-green-900/50 border-green-500/30"
-		: "bg-[#111114] border-[rgba(255,255,255,0.06)]";
+	const cardBg = isVerified ? "bg-green-900/50 border-green-500/30" : "bg-[#111114] border-[rgba(255,255,255,0.06)]";
 
 	return (
-		<Link
-			href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
-			className="block h-full group"
-		>
+		<Link href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`} className="block h-full group">
 			<motion.div
 				className={`relative flex flex-col h-full rounded-sm overflow-hidden border ${cardBg}`}
 				initial={{ opacity: 1, y: 0 }}
@@ -84,13 +79,7 @@ export const GridItem = ({
 						whileHover={{ scale: 1.08 }}
 						transition={{ duration: 0.6, ease: "easeOut" }}
 					>
-						<Image
-							src={token.image}
-							fill
-							unoptimized
-							alt={token.name}
-							className="object-cover object-top"
-						/>
+						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 					</motion.div>
 
 					{/* Gradient overlay */}
@@ -100,9 +89,7 @@ export const GridItem = ({
 					{showRank && (
 						<div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[rgba(17,17,20,0.85)] border border-[rgba(0,255,135,0.25)]">
 							<span className="text-xs">🔥</span>
-							<span className="text-[10px] font-mono font-bold text-[#00ff87]">
-								#{rank}
-							</span>
+							<span className="text-[10px] font-mono font-bold text-[#00ff87]">#{rank}</span>
 						</div>
 					)}
 
@@ -110,16 +97,12 @@ export const GridItem = ({
 					<div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
 						{isDead && (
 							<div className="px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)]">
-								<span className="text-[10px] font-mono uppercase tracking-wider text-red-400">
-									inactive
-								</span>
+								<span className="text-[10px] font-mono uppercase tracking-wider text-red-400">inactive</span>
 							</div>
 						)}
 						{isBonded && !isDead && (
 							<div className="px-2.5 py-1 rounded-full bg-[rgba(0,255,135,0.1)] border border-[rgba(0,255,135,0.3)]">
-								<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">
-									bonded
-								</span>
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">bonded</span>
 							</div>
 						)}
 						{!isBonded && !isDead && (
@@ -129,9 +112,7 @@ export const GridItem = ({
 									animate={{ opacity: [1, 0.5, 1] }}
 									transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
 								/>
-								<span className="text-[10px] font-mono uppercase tracking-wider text-[#22c55e]">
-									active
-								</span>
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#22c55e]">active</span>
 							</div>
 						)}
 						{token.verified && (
@@ -150,13 +131,7 @@ export const GridItem = ({
 						>
 							{token.name}
 						</h3>
-						<span
-							className={`font-mono text-[#00ff87] ${
-								isLarge ? "text-base" : "text-sm"
-							}`}
-						>
-							${token.ticker}
-						</span>
+						<span className={`font-mono text-[#00ff87] ${isLarge ? "text-base" : "text-sm"}`}>${token.ticker}</span>
 					</div>
 				</div>
 
@@ -173,9 +148,7 @@ export const GridItem = ({
 					<div className="flex items-center gap-4 mt-auto">
 						{token.marketcap > 0 && (
 							<div className="flex flex-col">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">
-									mcap
-								</span>
+								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">mcap</span>
 								<span className={`font-semibold text-[#e4e4e7] ${isCompact ? "text-sm" : "text-base"}`}>
 									{formatMarketCap(token.marketcap)}
 								</span>
@@ -183,9 +156,7 @@ export const GridItem = ({
 						)}
 						{token.holders > 0 && (
 							<div className="flex flex-col">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">
-									holders
-								</span>
+								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">holders</span>
 								<span className={`font-semibold text-[#e4e4e7] ${isCompact ? "text-sm" : "text-base"}`}>
 									{token.holders.toLocaleString()}
 								</span>
@@ -195,9 +166,7 @@ export const GridItem = ({
 						{token.price && (
 							<div className="ml-auto text-right">
 								<span className="text-[9px] font-mono text-[#52525b] block">price</span>
-								<span className="text-xs font-mono text-[#71717a]">
-									${Number(token.price).toFixed(6)}
-								</span>
+								<span className="text-xs font-mono text-[#71717a]">${Number(token.price).toFixed(6)}</span>
 							</div>
 						)}
 					</div>
@@ -206,12 +175,8 @@ export const GridItem = ({
 					{!isBonded && (
 						<div className="w-full mt-2 pt-2 border-t border-[rgba(255,255,255,0.04)]">
 							<div className="flex items-center justify-between mb-1.5">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">
-									bonding curve
-								</span>
-								<span className="text-[10px] font-mono font-semibold text-[#00ff87]">
-									{curveProgress}%
-								</span>
+								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">bonding curve</span>
+								<span className="text-[10px] font-mono font-semibold text-[#00ff87]">{curveProgress}%</span>
 							</div>
 							<div className="w-full h-1.5 rounded-sm bg-[rgba(255,255,255,0.06)] overflow-hidden">
 								<motion.div

@@ -179,13 +179,7 @@ export default function AgentProfile({
 				>
 					<div className="absolute inset-0 bg-gradient-to-br from-[#00ff87]/20 via-transparent to-[#c084fc]/10 blur-xl rounded-sm scale-110 opacity-60" />
 					<div className="relative w-[140px] h-[140px] md:w-[180px] md:h-[180px] rounded-sm overflow-hidden border border-[#00ff87]/30 hover:border-[#00ff87]/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,135,0.2)]">
-						<Image
-							src={token.image}
-							fill
-							unoptimized
-							alt={token.name}
-							className="object-cover object-top"
-						/>
+						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 						<div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/40 via-transparent to-transparent" />
 					</div>
 				</motion.div>

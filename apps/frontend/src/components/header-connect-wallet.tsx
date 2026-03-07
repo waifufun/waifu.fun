@@ -25,7 +25,8 @@ export default function HeaderConnectWallet() {
 		wallet.disconnect();
 	};
 
-	const greenButtonClass = "h-[38px] min-h-[38px] max-h-[38px] px-4 py-2 font-medium rounded-sm bg-[#00ff87] text-[#08080a] hover:bg-[#00ff87]/90 border-0 shadow-sm";
+	const greenButtonClass =
+		"h-[38px] min-h-[38px] max-h-[38px] px-4 py-2 font-medium rounded-sm bg-[#00ff87] text-[#08080a] hover:bg-[#00ff87]/90 border-0 shadow-sm";
 
 	if (!isClient) {
 		return (
@@ -41,11 +42,7 @@ export default function HeaderConnectWallet() {
 		return (
 			<Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
 				<PopoverTrigger asChild>
-					<Button
-						className={greenButtonClass}
-						title={address}
-						type="button"
-					>
+					<Button className={greenButtonClass} title={address} type="button">
 						{short}
 					</Button>
 				</PopoverTrigger>
@@ -68,10 +65,7 @@ export default function HeaderConnectWallet() {
 	}
 
 	return (
-		<Button
-			className={greenButtonClass}
-			onClick={() => modal.setVisible(true)}
-		>
+		<Button className={greenButtonClass} onClick={() => modal.setVisible(true)}>
 			<Wallet className="size-4 mr-2" />
 			Connect Wallet
 		</Button>

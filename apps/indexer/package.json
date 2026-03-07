@@ -28,9 +28,7 @@
 		"@waifufun/database": "workspace:*",
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/rpc": "workspace:*",
-		"@waifufun/programs": "workspace:*",
 		"@solana/web3.js": "^1.98.2",
-		"dotenv": "^16.5.0",
-		"helius-sdk": "^1.5.1"
+		"dotenv": "^16.5.0"
 	}
 }

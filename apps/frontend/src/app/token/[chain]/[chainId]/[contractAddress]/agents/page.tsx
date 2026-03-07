@@ -3,7 +3,9 @@ import { getAgent, getToken } from "@/lib/api";
 import { getMockToken } from "@/lib/mock-api";
 import type { IAgent, IToken, ITokenLookUp, TChainId } from "@waifufun/types";
 
-export default async function Page({ params }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
+export default async function Page({
+	params,
+}: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
 	const tokenParams = (await params) as unknown as ITokenLookUp;
 	let token: IToken | null = null;
 	try {

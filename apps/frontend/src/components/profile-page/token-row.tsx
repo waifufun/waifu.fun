@@ -126,9 +126,7 @@ export default function TokenRow({
 						<div className="flex flex-col space-y-0 w-full items-end justify-center transition-all duration-300 mt-1">
 							<p className="text-sm font-medium text-[#e4e4e7]">{data.amountHeld?.toLocaleString()}</p>
 							{data?.dollarWorth ? (
-								<p className="text-[#00ff87] text-xs sm:text-xs">
-									${dollarWorth.toLocaleString()}
-								</p>
+								<p className="text-[#00ff87] text-xs sm:text-xs">${dollarWorth.toLocaleString()}</p>
 							) : null}
 						</div>
 					</div>

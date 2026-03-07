@@ -10,10 +10,7 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogClose = DialogPrimitive.Close;
 const DialogPortal = DialogPrimitive.Portal;
 
-function DialogOverlay({
-	className,
-	...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
 	return (
 		<DialogPrimitive.Overlay
 			className={cn(
@@ -28,11 +25,7 @@ function DialogOverlay({
 	);
 }
 
-function DialogContent({
-	className,
-	children,
-	...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+function DialogContent({ className, children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content>) {
 	return (
 		<DialogPortal>
 			<DialogOverlay />
@@ -85,10 +78,7 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
 	);
 }
 
-function DialogDescription({
-	className,
-	...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
 	return (
 		<DialogPrimitive.Description
 			data-slot="dialog-description"

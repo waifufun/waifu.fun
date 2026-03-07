@@ -61,16 +61,12 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 								type="button"
 								tabIndex={0}
 								className={twMerge([
-									isActive
-										? "bg-[#00ff87] text-[#08080a]"
-										: "bg-transparent text-[#71717a] hover:text-[#e4e4e7]",
+									isActive ? "bg-[#00ff87] text-[#08080a]" : "bg-transparent text-[#71717a] hover:text-[#e4e4e7]",
 									"cursor-pointer h-8 px-3 py-2 rounded-sm inline-flex flex-col items-center justify-center gap-2.5 overflow-hidden transition-colors",
 								])}
 								onClick={() => onPageChange?.(item)}
 							>
-								<div className="select-none text-center text-base font-normal font-dm-mono leading-normal">
-									{item}
-								</div>
+								<div className="select-none text-center text-base font-normal font-dm-mono leading-normal">{item}</div>
 							</button>
 						);
 					}
@@ -99,10 +95,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 					<ChevronRight
 						role="button"
 						tabIndex={0}
-						className={twMerge([
-							"text-[#e4e4e7] size-6 cursor-pointer",
-							hasMore ? "opacity-100" : "opacity-50",
-						])}
+						className={twMerge(["text-[#e4e4e7] size-6 cursor-pointer", hasMore ? "opacity-100" : "opacity-50"])}
 						onClick={() => {
 							if (hasMore) {
 								onPageChange?.(page + 1);

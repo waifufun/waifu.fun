@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
+import type { RootState } from "@react-three/fiber";
 import * as THREE from "three";
 import "./gradientWaveMaterial";
 
@@ -31,12 +32,15 @@ function ShaderPlane() {
 		};
 	}, []);
 
-	useFrame((state: any, delta: number) => {
+	useFrame((state: RootState, delta: number) => {
 		const mat = matRef.current;
 		if (!mat) return;
 		const clock = state?.clock;
-		const elapsedTime =
-			typeof clock?.elapsedTime === "number" ? clock.elapsedTime : (fallbackTime.current += delta);
+		let elapsedTime = typeof clock?.elapsedTime === "number" ? clock.elapsedTime : fallbackTime.current;
+		if (typeof clock?.elapsedTime !== "number") {
+			fallbackTime.current += delta;
+			elapsedTime = fallbackTime.current;
+		}
 		const gl = state?.gl?.domElement;
 
 		mat.uniforms.uTime.value = elapsedTime;
@@ -48,10 +52,7 @@ function ShaderPlane() {
 		mat.uniforms.uMouse.value.copy(mouseSmooth.current);
 
 		const safeDelta = Math.max(delta, 0.001);
-		mouseVel.current.set(
-			(mouseSmooth.current.x - prev.x) / safeDelta,
-			(mouseSmooth.current.y - prev.y) / safeDelta,
-		);
+		mouseVel.current.set((mouseSmooth.current.x - prev.x) / safeDelta, (mouseSmooth.current.y - prev.y) / safeDelta);
 		velSmooth.current.lerp(mouseVel.current, 0.1);
 		mat.uniforms.uMouseVel.value.copy(velSmooth.current);
 

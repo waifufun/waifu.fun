@@ -54,12 +54,7 @@ const steps = [
 function StepImage({ src, alt }: { src: string; alt: string }) {
 	return (
 		<div className="relative overflow-hidden rounded-sm w-full aspect-[4/3] min-h-[120px]">
-			<Image
-				src={src}
-				alt={alt}
-				fill
-				className="object-cover"
-			/>
+			<Image src={src} alt={alt} fill className="object-cover" />
 			<div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/90 via-transparent to-transparent" />
 		</div>
 	);
@@ -76,8 +71,8 @@ export default function HowItWorks() {
 							how it works
 						</h2>
 						<p className="mt-4 text-[#a1a1aa] text-base leading-relaxed max-w-xl mx-auto">
-							milady cloud × eliza cloud — deploy your personal AI as an autonomous economic agent that
-							trades, earns, and runs 24/7 on Solana.
+							milady cloud × eliza cloud — deploy your personal AI as an autonomous economic agent that trades, earns,
+							and runs 24/7 on Solana.
 						</p>
 					</div>
 				</SectionBlock>

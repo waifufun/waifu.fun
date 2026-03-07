@@ -25,12 +25,7 @@ export function RecentlyCreated({
 	tokens = mockRecentTokens,
 }: { className?: string; tokens?: RecentToken[] }) {
 	return (
-		<div
-			className={cn(
-				"bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-4",
-				className,
-			)}
-		>
+		<div className={cn("bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-4", className)}>
 			<div className="flex items-center gap-2 mb-4">
 				<div className="w-2 h-2 bg-[#00ff87] rounded-full animate-pulse" />
 				<h3 className="text-sm font-bold text-[#00ff87] uppercase tracking-wider">recently launched</h3>

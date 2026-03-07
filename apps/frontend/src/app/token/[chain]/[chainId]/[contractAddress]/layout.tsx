@@ -18,17 +18,19 @@ async function fetchTokenWithFallback(tokenParams: ITokenLookUp): Promise<IToken
 	}
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+	params,
+}: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }): Promise<Metadata> {
 	const tokenParams = (await params) as unknown as ITokenLookUp;
 	const token = await fetchTokenWithFallback(tokenParams);
-	
+
 	if (!token) {
 		return {
 			title: "Token Not Found",
 			description: "The requested token could not be found.",
 		};
 	}
-	
+
 	return {
 		title: `${token.name} (${token.ticker} - ${token.price} on ${token.chain})`,
 		description: `${token.name} token information, price, and market data on waifufun`,
@@ -44,7 +46,10 @@ export async function generateMetadata({ params }: { params: Promise<{ chain: st
 	};
 }
 
-export default async function Page({ params, children }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }>; children: ReactNode }) {
+export default async function Page({
+	params,
+	children,
+}: { params: Promise<{ chain: string; chainId: string; contractAddress: string }>; children: ReactNode }) {
 	const tokenParams = (await params) as unknown as ITokenLookUp;
 	const token = await fetchTokenWithFallback(tokenParams);
 

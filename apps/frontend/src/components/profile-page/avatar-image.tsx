@@ -75,7 +75,11 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 				<>
 					<input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 					<div className="absolute px-2 w-full justify-between top-2 flex gap-2">
-						<button type="button" onClick={handleUploadClick} className="cursor-pointer bg-[#08080a]/90 p-1 size-6 rounded-sm">
+						<button
+							type="button"
+							onClick={handleUploadClick}
+							className="cursor-pointer bg-[#08080a]/90 p-1 size-6 rounded-sm"
+						>
 							<Image src="/profile/upload.svg" alt="Upload" width={24} height={24} />
 						</button>
 						{preview && preview !== image && (

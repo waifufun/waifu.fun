@@ -12,20 +12,17 @@ export const revalidate = 4;
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
 		title: "waifu.fun - autonomous agents on solana",
-		description:
-			"Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
+		description: "Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
 		openGraph: {
 			title: "waifu.fun - autonomous agents on solana",
-			description:
-				"Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
+			description: "Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
 			type: "website",
 			locale: "en_US",
 		},
 		twitter: {
 			card: "summary_large_image",
 			title: "waifu.fun - autonomous agents on solana",
-			description:
-				"Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
+			description: "Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
 		},
 	};
 };
@@ -39,9 +36,7 @@ export default async function Home() {
 	const tokens = getTokensForPage();
 	const noTokens = (tokens?.length || 0) === 0;
 	const topToken =
-		tokens.length > 0
-			? [...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null
-			: null;
+		tokens.length > 0 ? ([...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null) : null;
 
 	return (
 		<div className="flex flex-col w-full">
@@ -57,12 +52,8 @@ export default async function Home() {
 			>
 				{noTokens ? (
 					<div className="flex flex-col items-center gap-3">
-						<span className="text-[#00ff87] text-lg font-semibold">
-							no agents found
-						</span>
-						<span className="text-[#52525b] text-sm">
-							check back soon — new agents are launching
-						</span>
+						<span className="text-[#00ff87] text-lg font-semibold">no agents found</span>
+						<span className="text-[#52525b] text-sm">check back soon — new agents are launching</span>
 					</div>
 				) : (
 					<>

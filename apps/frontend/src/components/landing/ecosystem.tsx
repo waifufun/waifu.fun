@@ -63,11 +63,7 @@ function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 		bl: "bottom-0 left-0 border-b border-l",
 		br: "bottom-0 right-0 border-b border-r",
 	};
-	return (
-		<span
-			className={`absolute w-3 h-3 ${styles[position]} border-[#00ff87]/20 pointer-events-none`}
-		/>
-	);
+	return <span className={`absolute w-3 h-3 ${styles[position]} border-[#00ff87]/20 pointer-events-none`} />;
 }
 
 export default function Ecosystem() {
@@ -102,12 +98,8 @@ export default function Ecosystem() {
 								<div className="mb-4">
 									<card.icon className="w-6 h-6" style={{ color: card.accent }} strokeWidth={1.5} />
 								</div>
-								<h3 className="text-base font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-2">
-									{card.title}
-								</h3>
-								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									{card.description}
-								</p>
+								<h3 className="text-base font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-2">{card.title}</h3>
+								<p className="text-sm text-[#a1a1aa] leading-relaxed">{card.description}</p>
 							</div>
 						</SectionBlock>
 					))}

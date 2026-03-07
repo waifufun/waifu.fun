@@ -14,10 +14,10 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
+		"@waifufun/codex": "workspace:*",
 		"@waifufun/constants": "workspace:*",
 		"@waifufun/database": "workspace:*",
 		"@waifufun/logger": "workspace:*",
-		"@waifufun/redis": "workspace:*",
 		"@waifufun/rpc": "workspace:*",
 		"@codex-data/sdk": "^1.0.6",
 		"@solana/kit": "^2.1.0",

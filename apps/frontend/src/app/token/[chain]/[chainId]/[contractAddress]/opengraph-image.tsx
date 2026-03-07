@@ -62,7 +62,9 @@ export const size = {
 	height: 630,
 };
 
-export default async function Image({ params }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
+export default async function Image({
+	params,
+}: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
 	const fontResponse = await fetch(
 		new URL("/fonts/Satoshi-Regular.otf", process.env.NEXT_PUBLIC_HOST || "http://localhost:3000"),
 	);

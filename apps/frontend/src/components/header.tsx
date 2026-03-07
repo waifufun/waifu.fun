@@ -44,15 +44,11 @@ export default function Header() {
 			transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
 			className="shrink-0 w-full sticky top-0 z-50"
 			style={{
-				background: scrolled
-					? "rgba(8, 8, 10, 0.92)"
-					: "rgba(8, 8, 10, 0.85)",
+				background: scrolled ? "rgba(8, 8, 10, 0.92)" : "rgba(8, 8, 10, 0.85)",
 				backdropFilter: "blur(20px)",
 				WebkitBackdropFilter: "blur(20px)",
 				borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-				boxShadow: scrolled
-					? "0 4px 24px rgba(0, 255, 135, 0.04), 0 1px 0 rgba(0, 255, 135, 0.06)"
-					: "none",
+				boxShadow: scrolled ? "0 4px 24px rgba(0, 255, 135, 0.04), 0 1px 0 rgba(0, 255, 135, 0.06)" : "none",
 				transition: "background 0.3s ease, box-shadow 0.4s ease",
 			}}
 		>
@@ -108,11 +104,7 @@ export default function Header() {
 					</nav>
 				</div>
 
-				<HowItWorksModal
-					open={howItWorksOpen}
-					onOpenChange={setHowItWorksOpen}
-					controlled
-				/>
+				<HowItWorksModal open={howItWorksOpen} onOpenChange={setHowItWorksOpen} controlled />
 
 				{/* Right: Search + Wallet + Mobile Menu Button */}
 				<div className="flex items-center gap-3 shrink-0">

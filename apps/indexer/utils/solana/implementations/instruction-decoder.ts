@@ -1,4 +1,4 @@
-import { instructions as IDLInstructions } from "../../../../abi/solana/v2/waifufun";
+import { instructions as IDLInstructions } from "../../../abi/solana/v2/waifufun";
 import type { DecodedInstruction } from "../../../types";
 import { SolanaInstructionDecoder } from "../abstract/instruction-decoder";
 

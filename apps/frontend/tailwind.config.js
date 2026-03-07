@@ -94,24 +94,24 @@ module.exports = {
 					"0%": { opacity: "0" },
 					"100%": { opacity: "1" },
 				},
-				"glitch": {
-					"0%, 100%": { 
+				glitch: {
+					"0%, 100%": {
 						transform: "translate(0)",
 						opacity: "1",
 					},
-					"20%": { 
+					"20%": {
 						transform: "translate(-2px, 2px)",
 						opacity: "0.8",
 					},
-					"40%": { 
+					"40%": {
 						transform: "translate(2px, -2px)",
 						opacity: "0.9",
 					},
-					"60%": { 
+					"60%": {
 						transform: "translate(-1px, 1px)",
 						opacity: "0.8",
 					},
-					"80%": { 
+					"80%": {
 						transform: "translate(1px, -1px)",
 						opacity: "0.9",
 					},
@@ -168,27 +168,27 @@ module.exports = {
 						transform: "translateY(100vh)",
 					},
 				},
-				"flicker": {
+				flicker: {
 					"0%, 100%": { opacity: "1" },
 					"50%": { opacity: "0.97" },
 					"52%": { opacity: "1" },
 					"54%": { opacity: "0.98" },
 					"56%": { opacity: "1" },
 				},
-				"shimmer": {
+				shimmer: {
 					"0%": { transform: "translateX(-100%)" },
 					"100%": { transform: "translateX(100%)" },
 				},
 			},
 			animation: {
 				"fade-in": "fade-in 0.2s ease-out",
-				"glitch": "glitch 0.3s ease-in-out",
+				glitch: "glitch 0.3s ease-in-out",
 				"glitch-text": "glitch-text 0.5s ease-in-out",
 				"glow-pulse": "glow-pulse 2s ease-in-out infinite",
 				"float-jitter": "float-jitter 4s ease-in-out infinite",
 				"scan-line": "scan-line 8s linear infinite",
-				"flicker": "flicker 4s ease-in-out infinite",
-				"shimmer": "shimmer 2s ease-in-out infinite",
+				flicker: "flicker 4s ease-in-out infinite",
+				shimmer: "shimmer 2s ease-in-out infinite",
 			},
 		},
 	},

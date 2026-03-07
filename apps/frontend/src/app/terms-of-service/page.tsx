@@ -4,6 +4,11 @@ type TermsSection = {
 	content: string | string[];
 };
 
+function getTermsSectionKey(item: TermsSection) {
+	const contentKey = typeof item.content === "string" ? item.content : item.content.join("|");
+	return [item.header, item.subheader, contentKey].filter(Boolean).join("|");
+}
+
 const TERMS_AND_CONDITIONS: TermsSection[] = [
 	{
 		header: "General Notice",
@@ -267,27 +272,27 @@ const TermsOfService = () => {
 
 				{/* Content Sections */}
 				<div className="space-y-6">
-					{TERMS_AND_CONDITIONS.map((item, idx) => (
-						<div 
-							key={idx} 
-							className={item.header ? "bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6" : ""}
+					{TERMS_AND_CONDITIONS.map((item) => (
+						<div
+							key={getTermsSectionKey(item)}
+							className={
+								item.header ? "bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6" : ""
+							}
 						>
-							{item.header && (
-								<h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">{item.header}</h2>
-							)}
-							{item.subheader && (
-								<h3 className="text-base font-medium text-[#a1a1aa] mb-3">{item.subheader}</h3>
-							)}
+							{item.header && <h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">{item.header}</h2>}
+							{item.subheader && <h3 className="text-base font-medium text-[#a1a1aa] mb-3">{item.subheader}</h3>}
 							<div className="text-sm text-[#a1a1aa] leading-relaxed">
-								{typeof item.content === "string"
-									? item.content
-									: (
-										<ul className="list-disc list-inside space-y-2">
-											{item.content.map((line, lineIdx) => (
-												<li key={lineIdx} className="text-[#a1a1aa]">{line}</li>
-											))}
-										</ul>
-									)}
+								{typeof item.content === "string" ? (
+									item.content
+								) : (
+									<ul className="list-disc list-inside space-y-2">
+										{item.content.map((line) => (
+											<li key={`${getTermsSectionKey(item)}-${line}`} className="text-[#a1a1aa]">
+												{line}
+											</li>
+										))}
+									</ul>
+								)}
 							</div>
 						</div>
 					))}
