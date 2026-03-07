@@ -195,7 +195,9 @@ export class MiladyCloudClient {
 		const rawBody = await response.text().catch(() => "");
 		const detail = this.formatErrorDetail(rawBody) || response.statusText || "Request failed";
 
-		return new Error(`Milady Cloud ${method} ${url.pathname} failed with ${response.status} ${response.statusText}: ${detail}`);
+		return new Error(
+			`Milady Cloud ${method} ${url.pathname} failed with ${response.status} ${response.statusText}: ${detail}`,
+		);
 	}
 
 	private buildNetworkError(method: string, url: URL, error: unknown): Error {
@@ -237,4 +239,15 @@ export class MiladyCloudClient {
 	}
 }
 
-export const miladyCloud = new MiladyCloudClient(process.env.MILADY_CLOUD_API_URL!, process.env.MILADY_CLOUD_SERVICE_KEY!);
+function getRequiredEnv(name: "MILADY_CLOUD_API_URL" | "MILADY_CLOUD_SERVICE_KEY"): string {
+	const value = process.env[name];
+	if (!value?.trim()) {
+		throw new Error(`${name} is required`);
+	}
+	return value;
+}
+
+export const miladyCloud = new MiladyCloudClient(
+	getRequiredEnv("MILADY_CLOUD_API_URL"),
+	getRequiredEnv("MILADY_CLOUD_SERVICE_KEY"),
+);
