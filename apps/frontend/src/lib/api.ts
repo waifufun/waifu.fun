@@ -1,7 +1,49 @@
-import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 import { Connection } from "@solana/web3.js";
+import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export interface AuthStatusResponse {
+	authenticated: boolean;
+	wallets: {
+		solana: { address: AddressLike } | null;
+		evm: { address: AddressLike } | null;
+	};
+	message?: string;
+}
+
+export interface OwnerRuntimeCharacterInput {
+	name?: string;
+	bio?: string;
+	avatar?: string;
+}
+
+export interface OwnerTokenRuntime {
+	cloudAgentId?: string;
+	agentStatus?: "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
+	agentLifecycleState?: "birth" | "live" | "dormant" | "reviving";
+	webUiUrl?: string;
+	billingMode?: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+	infraReserveUsd?: number;
+	hasAgent?: boolean;
+}
+
+export interface OwnerTokenRuntimeResponse {
+	success: boolean;
+	runtime: OwnerTokenRuntime;
+	message?: string;
+	error?: string;
+}
+
+export interface OwnerTokenBillingResponse {
+	success: boolean;
+	billingMode?: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+	infraReserveUsd?: number;
+	agentStatus?: "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
+	estimatedDailyBurn?: number;
+	message?: string;
+	error?: string;
+}
 
 export const fetcher = async (
 	endpoint: string,
@@ -25,8 +67,8 @@ export const fetcher = async (
 				throw new Error("Authentication required. Please sign in to access this data.");
 			}
 
-			const errorText = (await response.json()) as { message?: string };
-			throw new Error(errorText?.message);
+			const errorBody = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
+			throw new Error(errorBody?.message || errorBody?.error || `Request failed with status ${response.status}`);
 		}
 
 		const result = await response.json();
@@ -338,7 +380,7 @@ export const authenticate = async (address: AddressLike, signature: string, chai
 	});
 };
 
-export const getAuthStatus = async () => {
+export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
 	return await fetcher("/auth/status", "GET");
 };
 
@@ -646,4 +688,83 @@ export const updateTokenSocialsOwner = async ({
 	socials: Record<string, string>;
 }) => {
 	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/social`, "POST", socials);
+};
+
+export const claimTokenOwnership = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/claim`, "POST");
+};
+
+export const getOwnerTokenRuntime = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}): Promise<OwnerTokenRuntimeResponse> => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime`, "GET");
+};
+
+export const activateOwnerTokenRuntime = async ({
+	chain,
+	chainId,
+	contractAddress,
+	billingMode,
+	character,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+	billingMode?: OwnerTokenRuntime["billingMode"];
+	character?: OwnerRuntimeCharacterInput;
+}) => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/activate`, "POST", {
+		billingMode,
+		character,
+	});
+};
+
+export const suspendOwnerTokenRuntime = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/suspend`, "POST");
+};
+
+export const resumeOwnerTokenRuntime = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}) => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/resume`, "POST");
+};
+
+export const getOwnerTokenBilling = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: {
+	chain: TChain;
+	chainId: string | number;
+	contractAddress: string;
+}): Promise<OwnerTokenBillingResponse> => {
+	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/billing`, "GET");
 };

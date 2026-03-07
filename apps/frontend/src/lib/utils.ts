@@ -1,21 +1,21 @@
-import { EvmChainIds, SolanaNetworkIds, type AddressLike, type IToken, type TChain } from "@waifufun/types";
-import { clsx, type ClassValue } from "clsx";
-import moment from "moment";
-import { twMerge } from "tailwind-merge";
-import bs58 from "bs58";
 import type { TSpeed } from "@/hooks/use-speed";
-import { parseUnits } from "viem";
 import {
 	ComputeBudgetProgram,
+	Connection,
 	Keypair,
+	LAMPORTS_PER_SOL,
 	PublicKey,
+	Transaction,
 	type TransactionInstruction,
 	TransactionMessage,
 	VersionedTransaction,
-	Connection,
-	Transaction,
-	LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+import { type AddressLike, EvmChainIds, type IToken, SolanaNetworkIds, type TChain } from "@waifufun/types";
+import bs58 from "bs58";
+import { type ClassValue, clsx } from "clsx";
+import moment from "moment";
+import { twMerge } from "tailwind-merge";
+import { parseUnits } from "viem";
 
 import { AnchorProvider, BN, type Program } from "@coral-xyz/anchor";
 
@@ -23,13 +23,13 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 
-import { getLaunchAccounts } from "./pdas";
 import {
-	createCurrentAutofunProgramWithProvider,
-	createLegacyAutofunProgramWithProvider,
 	type CurrentAutofunTypes,
 	type LegacyAutofunTypes,
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
 } from "@waifufun/programs";
+import { getLaunchAccounts } from "./pdas";
 
 export type CreateTokenResponse = {
 	mintPublicKey: PublicKey;
@@ -165,6 +165,18 @@ export const fromNow = (date: string | Date | number, hideAgo?: boolean): string
 export const shortenAddress = (str: string): string => {
 	const length = 5;
 	return `${str.substring(0, length)}...${str.substring(str.length - length, str.length)}`;
+};
+
+export const isSameWalletAddress = (left?: string | null, right?: string | null): boolean => {
+	if (!left || !right) return false;
+
+	const normalizedLeft = left.trim();
+	const normalizedRight = right.trim();
+	const isEvmAddress = normalizedLeft.startsWith("0x") || normalizedRight.startsWith("0x");
+
+	return isEvmAddress
+		? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+		: normalizedLeft === normalizedRight;
 };
 
 export function getCoinGeckoChainName<T extends TChain>(
