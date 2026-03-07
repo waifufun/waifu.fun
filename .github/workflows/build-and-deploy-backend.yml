@@ -8,8 +8,8 @@ on:
       - main
 
 env:
-  NORTHFLANK_PROJECT_ID: waifufun
-  NORTHFLANK_CREDENTIALS_ID: dockerhub
+  NORTHFLANK_PROJECT_ID: ${{ vars.NORTHFLANK_PROJECT_ID || 'autofun' }}
+  NORTHFLANK_CREDENTIALS_ID: ${{ vars.NORTHFLANK_CREDENTIALS_ID || 'dockerhub' }}
 
 jobs:
   build-and-deploy:
@@ -48,11 +48,11 @@ jobs:
         run: |
           BRANCH_NAME=${{ github.ref_name }}
           if [ "$BRANCH_NAME" = "develop" ]; then
-            echo "SERVICE_ID=develop-backend" >> "$GITHUB_ENV"
+            echo "SERVICE_ID=${{ vars.NORTHFLANK_DEVELOP_BACKEND_SERVICE_ID || 'develop-backend' }}" >> "$GITHUB_ENV"
           elif [ "$BRANCH_NAME" = "staging" ]; then
-            echo "SERVICE_ID=staging-backend" >> "$GITHUB_ENV"
+            echo "SERVICE_ID=${{ vars.NORTHFLANK_STAGING_BACKEND_SERVICE_ID || 'staging-backend' }}" >> "$GITHUB_ENV"
           elif [ "$BRANCH_NAME" = "main" ]; then
-            echo "SERVICE_ID=production-backend" >> "$GITHUB_ENV"
+            echo "SERVICE_ID=${{ vars.NORTHFLANK_PRODUCTION_BACKEND_SERVICE_ID || 'production-backend' }}" >> "$GITHUB_ENV"
           else
             echo "Unsupported branch for Northflank deployment: $BRANCH_NAME"
             exit 1
