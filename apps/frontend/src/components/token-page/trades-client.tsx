@@ -2,18 +2,30 @@
 
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getTrades } from "@/lib/api";
-import type { IToken, ITrade } from "@waifufun/types";
+import type { IToken } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
-import { cn, formatUsd, shortenAddress } from "@/lib/utils";
+import { cn, shortenAddress } from "@/lib/utils";
 import Triangle from "../triangle";
 import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
 import Link from "next/link";
 import TimeAgo from "../time-ago";
 import { useQuery } from "@tanstack/react-query";
 
+interface ApiTrade {
+	id: string;
+	tokenAddress: string;
+	side: "buy" | "sell";
+	traderAddress: string;
+	amountIn: string;
+	amountOut: string;
+	txHash: string;
+	blockNumber: number;
+	timestamp: string;
+}
+
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export default function TradesClient({ token, initialData }: { token: IToken; initialData: any }) {
-	const nonAnimatedTrades = Array.from(new Set<string>(initialData?.map((a: { txId: string }) => a.txId)));
+	const nonAnimatedTrades = Array.from(new Set<string>(initialData?.map((a: ApiTrade) => a.txHash)));
 	const query = useQuery({
 		queryKey: ["trades", token.chain, token.chainId, token.contractAddress],
 		queryFn: async () => {
@@ -27,7 +39,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 		refetchInterval: 3_500,
 	});
 
-	const data = query?.data;
+	const data = query?.data as ApiTrade[] | undefined;
 
 	if (!data || data?.length === 0) {
 		return (
@@ -43,48 +55,41 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 				<TableRow>
 					<TableHead className="w-[100px]">Account</TableHead>
 					<TableHead className="text-center">Type</TableHead>
-					<TableHead>Native</TableHead>
-					<TableHead>USD</TableHead>
-					<TableHead>Tokens</TableHead>
+					<TableHead>Amount</TableHead>
 					<TableHead className="w-12 text-right">Date</TableHead>
 					<TableHead className="w-5 text-right" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{data.map((trade: ITrade) => (
+				{data.map((trade: ApiTrade) => (
 					<TableRow
-						key={trade.txId}
+						key={trade.txHash}
 						className={cn([
-							!nonAnimatedTrades.includes(trade.txId)
+							!nonAnimatedTrades.includes(trade.txHash)
 								? "animate-shake animate-once animate-duration-200 animate-ease-linear"
 								: "",
 						])}
 					>
 						<TableCell className="hover:text-waifufun-background-action-highlight font-medium">
-							<Link href={`/profile/${trade.address}`}>{trade.address ? shortenAddress(trade?.address) : "-"}</Link>
+							<Link href={`/profile/${trade.traderAddress}`}>
+								{trade.traderAddress ? shortenAddress(trade.traderAddress) : "-"}
+							</Link>
 						</TableCell>
 						<TableCell>
-							<Triangle direction={trade?.type === "buy" ? "up" : "down"} />
+							<Triangle direction={trade?.side === "buy" ? "up" : "down"} />
 						</TableCell>
 						<TableCell>
 							<div className="flex items-center gap-2">
-								{/* <ChainIndicator chain={token.chain} chainId={token.chainId} className="size-5" /> */}
 								{new Intl.NumberFormat("en-US", {
-									maximumFractionDigits: 3,
-								}).format(Number(trade.fromAmount))}{" "}
-								{trade.fromToken}
+									maximumFractionDigits: 2,
+								}).format(Number(trade.amountIn))}{" "}
+								{token.ticker}
 							</div>
-						</TableCell>
-						<TableCell>{trade?.usdValue ? formatUsd(Number(trade?.usdValue)) : "-"}</TableCell>
-						<TableCell>
-							{new Intl.NumberFormat("en-US", {
-								maximumFractionDigits: 3,
-							}).format(Number(trade.toAmount))}
 						</TableCell>
 						<TableCell className="text-right">{trade?.timestamp ? <TimeAgo date={trade?.timestamp} /> : "-"}</TableCell>
 						<TableCell>
 							<Link
-								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId] ?? ""}/tx/${trade.txId}`}
+								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId] ?? ""}/tx/${trade.txHash}`}
 								target="_blank"
 							>
 								<ExternalLink className="ml-auto size-4 text-waifufun-background-action-highlight" />
@@ -95,7 +100,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 			</TableBody>
 			<TableFooter className="border-t-2 border-waifufun-background-action-highlight/25">
 				<TableRow>
-					<TableCell colSpan={7}>
+					<TableCell colSpan={5}>
 						<div className="text-gray-500 text-xs uppercase text-center mx-auto w-full">
 							Live Feed - Showing last {data?.length || 0} trades
 						</div>

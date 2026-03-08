@@ -1,6 +1,6 @@
 import ScrollToTop from "@/components/scroll-to-top";
-import ActivityFeed from "@/components/token-page/activity-feed";
-import { getToken } from "@/lib/api";
+import TradesClient from "@/components/token-page/trades-client";
+import { getToken, getTrades } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 
 export default async function Page({
@@ -8,9 +8,17 @@ export default async function Page({
 }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
 	const tokenParams = (await params) as unknown as ITokenLookUp;
 	let token: IToken | null = null;
+	let initialTrades: any[] = [];
 
 	try {
 		token = await getToken(tokenParams);
+		if (token) {
+			initialTrades = await getTrades({
+				chain: token.chain,
+				chainId: token.chainId,
+				contractAddress: token.contractAddress,
+			});
+		}
 	} catch (e) {
 		console.error("API fetch failed:", e);
 	}
@@ -22,7 +30,7 @@ export default async function Page({
 	return (
 		<>
 			<ScrollToTop />
-			<ActivityFeed token={token} />
+			<TradesClient token={token} initialData={initialTrades} />
 		</>
 	);
 }
