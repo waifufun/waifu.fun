@@ -547,7 +547,7 @@ const PromptProviderContent = ({
 
 		if (!metadataUrl) {
 			toast.error("Failed to generate metadata URL.");
-			console.log("metadata: ", remoteMetadata.data);
+			console.log("metadata: ", remoteMetadata);
 			throw new Error("Metadata URL generation failed");
 		}
 
@@ -555,7 +555,7 @@ const PromptProviderContent = ({
 			name,
 			symbol,
 			description,
-			image: remoteMetadataMutation.data?.imageUrl,
+			image: remoteMetadata?.imageUrl || remoteMetadataMutation.data?.imageUrl || "",
 			launchSalt: salt,
 			buyAmount,
 			metadataUrl,

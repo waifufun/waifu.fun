@@ -18,17 +18,18 @@ import {
 } from "@/components/hooks/providers/usePromptContext";
 import { AlertTriangle, Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
 import { createToken } from "@/lib/api";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
-import { createTokenTx } from "@/lib/utils";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract, useConfig } from "wagmi";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { parseEther } from "viem";
 import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import type { AddressLike, TChain } from "@waifufun/types";
 import { curveLimitConst } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errorMessage";
+import { PORTAL_ADDRESS, portalAbi, buildNewTokenV5Params, extractTokenAddressFromReceipt } from "@/lib/portal";
 
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
 const NATIVE_DECIMALS = 1e18;
@@ -551,9 +552,10 @@ export const LaunchButton = ({
 		handleSubmit,
 		formState,
 		uploadedImage,
+		previousImages,
 		isGeneratingAddress,
 		isGeneratingMedia,
-		getTokenData,
+		watchValue,
 		pool,
 		launchSalt,
 		setLaunching,
@@ -562,28 +564,11 @@ export const LaunchButton = ({
 		inviteCode,
 	} = usePrompt();
 	const router = useRouter();
-	const [chain, chainId] = [
-		"evm",
-		56,
-	]; /* BSC mainnet — chain and chainId should be part of the prompt context or passed as props */
+	const wagmiConfig = useConfig();
+	const { writeContractAsync } = useWriteContract();
+	const [chain, chainId] = ["evm", 56];
 
-	const createTokenMutation = useMutation({
-		mutationFn: createToken,
-		mutationKey: ["createToken"],
-		onSuccess: (tx, variables) => {
-			console.log("Transaction successful:", tx);
-			toast.success("Token created successfully!");
-			router.push(`/token/${chain}/${chainId}/${variables.contractAddress}`);
-			setLaunchSalt(null);
-		},
-		onError: (error) => {
-			console.error("Error creating token:", error);
-			const message = getErrorMessage(error);
-			toast.error(`Error creating token: ${message}`);
-		},
-	});
-
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt || !isConnected;
 
 	const balanceQuery = useBalance({
 		chain: "evm",
@@ -598,23 +583,18 @@ export const LaunchButton = ({
 			return;
 		}
 
+		if (!isConnected || !walletAddress) {
+			toast.error("Please connect your wallet first.");
+			return;
+		}
+
 		if (isGeneratingAddress) {
 			toast.error("Please wait for the address to be generated.");
 			return;
 		}
 
-		if (isGeneratingMedia) {
-			toast.error("Please wait for the image to be generated.");
-			return;
-		}
-
 		if (!launchSalt) {
 			toast.error("Please generate a launch salt first.");
-			return;
-		}
-
-		if (idPrefix === "manual" && !uploadedImage) {
-			toast.error("Please upload an image or use the generated image from the Auto tab.");
 			return;
 		}
 
@@ -625,23 +605,76 @@ export const LaunchButton = ({
 
 		setLaunching(true);
 		try {
-			const tokenData = await getTokenData(idPrefix === "manual");
-			console.log("Token Data:", tokenData);
-			const tx = await createTokenTx(tokenData);
-			console.log("Transaction:", tx);
-			createTokenMutation.mutate({
-				contractAddress: tx.contractAddress || "",
-				chain: chain as TChain,
-				chainId: chainId,
-				pool: pool,
-				signature: tx.txHash || "",
-				...(inviteCode !== undefined ? { inviteCode } : {}),
+			const name = String(watchValue("name") || "Untitled Token");
+			const symbol = String(watchValue("symbol") || "TOKEN");
+			const description = String(watchValue("description") || "");
+			const buyAmount = Number(watchValue("buyAmount") || 0);
+			const imageUrl = uploadedImage || previousImages?.[0] || "";
+
+			// Build contract params
+			const params = buildNewTokenV5Params({
+				name,
+				symbol,
+				meta: imageUrl || description,
+				salt: launchSalt as `0x${string}`,
+				beneficiary: walletAddress as `0x${string}`,
+				taxRate: 0,
+				buyAmountBnb: String(buyAmount),
 			});
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+
+			// Send transaction via wagmi
+			toast.info("Confirm the transaction in your wallet...");
+			const txHash = await writeContractAsync({
+				address: PORTAL_ADDRESS,
+				abi: portalAbi,
+				functionName: "newTokenV5",
+				args: [params],
+				value: buyAmount > 0 ? parseEther(String(buyAmount)) : 0n,
+			});
+
+			toast.success("Transaction submitted! Waiting for confirmation...");
+
+			// Wait for receipt to get the token address
+			const receipt = await waitForTransactionReceipt(wagmiConfig, {
+				hash: txHash,
+				confirmations: 2,
+			});
+
+			// Extract the created token address from receipt logs
+			const tokenAddress = extractTokenAddressFromReceipt(receipt.logs);
+
+			if (tokenAddress) {
+				toast.success("Token launched successfully!");
+
+				// Register with backend (non-blocking)
+				createToken({
+					contractAddress: tokenAddress,
+					name,
+					symbol,
+					description,
+					...(imageUrl ? { imageUrl } : {}),
+					chain: chain as TChain,
+					chainId,
+					pool,
+					signature: txHash,
+					...(inviteCode ? { inviteCode } : {}),
+				}).catch(() => {});
+
+				setLaunchSalt(null);
+				router.push(`/token/${chain}/${chainId}/${tokenAddress}`);
+			} else {
+				toast.success("Token launched! Transaction confirmed.");
+				setLaunchSalt(null);
+				router.push(`/token/${chain}/${chainId}/${txHash}`);
+			}
 		} catch (error: any) {
-			console.error("Error creating token:", error);
-			const message = getErrorMessage(error);
-			toast.error(`Error creating token: ${message}`);
+			console.error("Error launching token:", error);
+			if (error?.code === 4001 || error?.message?.includes("rejected")) {
+				toast.error("Transaction rejected by user.");
+			} else {
+				const message = getErrorMessage(error);
+				toast.error(`Error launching token: ${message}`);
+			}
 		} finally {
 			setLaunching(false);
 		}
@@ -654,7 +687,7 @@ export const LaunchButton = ({
 			isLoading={isLaunching}
 			loadingText="LAUNCHING..."
 		>
-			LAUNCH TOKEN
+			{!isConnected ? "CONNECT WALLET" : "LAUNCH TOKEN"}
 		</DeployButton>
 	);
 };

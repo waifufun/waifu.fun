@@ -289,14 +289,13 @@ export const executeSwap = async (
 };
 
 /**
- * Create a token on BSC via waifu-core's launch endpoint.
- * TODO: Implement actual token creation transaction logic.
+ * Token creation now happens directly via wagmi writeContract in the LaunchButton component.
+ * This function is kept for type compatibility but should not be called directly.
  */
 export const createTokenTx = async (
 	tokenData: TokenMetadata,
 ): Promise<CreateTokenResponse> => {
-	// TODO: Replace with actual waifu-core launch flow
-	throw new Error("BSC token creation not yet implemented - wire to waifu-core launch endpoints");
+	throw new Error("Use LaunchButton component which calls Portal.newTokenV5 via wagmi directly");
 };
 
 export const resizeImage = (url: string, width: number, height: number) => {
