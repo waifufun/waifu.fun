@@ -360,7 +360,7 @@ const PromptProviderContent = ({
 			const newWorkers: Worker[] = [];
 
 			for (let i = 0; i < workersToCreate; i++) {
-				const worker = new Worker(new URL("../../../../workers/generateVanity.ts", import.meta.url), {
+				const worker = new Worker(new URL("../../../workers/generateVanity.ts", import.meta.url), {
 					type: "module",
 				});
 

@@ -78,10 +78,7 @@ export default function AdminTokenFilters({
 					className="px-3 py-2 border bg-zinc-900 text-white w-full md:w-auto"
 				>
 					<option value="">All Chains</option>
-					<option value="ethereum">Ethereum</option>
-					<option value="polygon">Polygon</option>
 					<option value="bsc">BSC</option>
-					<option value="solana">Solana</option>
 				</select>
 			</div>
 		</div>

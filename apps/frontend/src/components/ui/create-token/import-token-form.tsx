@@ -8,14 +8,14 @@ import { useForm, type RegisterOptions } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { importToken } from "@/lib/api";
-import { type AddressLike, SolanaNetworkIds, type ITokenLookUp } from "@waifufun/types";
+import { type AddressLike, type ITokenLookUp } from "@waifufun/types";
 import { useRouter } from "next/navigation";
 import { Search, ExternalLink, AlertCircle } from "lucide-react";
 type TokenForm = { contractAddress: string };
 const validationRules: Record<keyof TokenForm, RegisterOptions<TokenForm>> = {
 	contractAddress: {
 		required: "Contract address is required",
-		pattern: { value: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/, message: "Invalid Solana contract address format" },
+		pattern: { value: /^0x[a-fA-F0-9]{40}$/, message: "Invalid BSC contract address format" },
 	},
 };
 export default function ImportTokenForm() {
@@ -41,8 +41,8 @@ export default function ImportTokenForm() {
 	});
 	const onSubmit = (data: TokenForm) =>
 		mutation.mutate({
-			chain: "solana",
-			chainId: SolanaNetworkIds.Mainnet,
+			chain: "evm",
+			chainId: 56 as any,
 			contractAddress: data.contractAddress as AddressLike,
 		} as ITokenLookUp);
 	const shouldDisable = formState.isSubmitting || !formState.isValid || Object.keys(formState.errors).length > 0;
@@ -50,7 +50,7 @@ export default function ImportTokenForm() {
 		<div className="max-w-lg mx-auto space-y-6">
 			<FormSection
 				title="Import Existing Token"
-				description="Add an existing Solana token to our platform"
+				description="Add an existing BSC token to our platform"
 				icon={<Search size={16} />}
 			>
 				<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -62,7 +62,7 @@ export default function ImportTokenForm() {
 							<Input
 								type="text"
 								id="contractAddress"
-								placeholder="Enter Solana token contract address..."
+								placeholder="Enter BSC token contract address (0x...)..."
 								className={cn(
 									formElementBaseClass,
 									"h-12 pl-10",
@@ -86,9 +86,9 @@ export default function ImportTokenForm() {
 						{formState.errors.contractAddress ? (
 							<ValidationMessage message={formState.errors.contractAddress.message} isValid={false} />
 						) : contractAddress && formState.isValid ? (
-							<ValidationMessage message="Valid Solana address format" isValid={true} />
+							<ValidationMessage message="Valid BSC address format" isValid={true} />
 						) : (
-							<FormHelperText>Paste the contract address of an existing Solana token</FormHelperText>
+							<FormHelperText>Paste the contract address of an existing BSC token</FormHelperText>
 						)}
 					</div>
 					<DeployButton
@@ -125,23 +125,23 @@ export default function ImportTokenForm() {
 			</div>
 			<div className="flex items-center justify-center gap-4 text-xs">
 				<a
-					href="https://solscan.io"
+					href="https://bscscan.com"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="flex items-center gap-1 text-[#71717a] hover:text-[#00ff87]"
 				>
 					<ExternalLink size={12} />
-					Find tokens on Solscan
+					Find tokens on BscScan
 				</a>
 				<span className="text-[#52525b]">•</span>
 				<a
-					href="https://birdeye.so"
+					href="https://dexscreener.com/bsc"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="flex items-center gap-1 text-[#71717a] hover:text-[#00ff87]"
 				>
 					<ExternalLink size={12} />
-					Browse on Birdeye
+					Browse on DexScreener
 				</a>
 			</div>
 		</div>

@@ -40,7 +40,7 @@ function CreateTokenLauncher() {
 					</div>
 					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">Create Your Token</h1>
 					<p className="text-sm text-[#71717a] max-w-md mx-auto">
-						Launch your token on Solana in minutes. AI-powered image generation, custom vanity addresses, and instant
+						Launch your token on BSC in minutes. AI-powered image generation, custom vanity addresses, and instant
 						deployment.
 					</p>
 				</div>

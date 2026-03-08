@@ -67,7 +67,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						address: user?.address || address,
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreatedQuery.data?.totalDocs ?? 0,
-						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
+						chains: [{ chain: "evm" as const, chainId: 56 as any, amount: 120 }],
 						totalPoints: pointsData?.data?.totalPoints ?? 0,
 						weeklyPoints: pointsData?.data?.weeklyPoints ?? 0,
 						image: user?.avatar,
@@ -102,8 +102,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 													key={balance.tokenAddress}
 													verified={balance.verified}
 													data={{
-														chain: "solana",
-														chainId: 101,
+														chain: "evm",
+														chainId: 56 as any,
 														image: balance?.image || balance?.info?.imageThumbUrl || "/favicon-96x96.png",
 														title: balance?.info?.name,
 														ticker: balance?.info?.symbol,
@@ -146,8 +146,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 													verified={false}
 													key={token.contractAddress}
 													data={{
-														chain: "solana",
-														chainId: 101,
+														chain: "evm",
+														chainId: 56 as any,
 														image: token.image ?? "/create/test-img.png",
 														title: token.name,
 														ticker: token.ticker,
@@ -182,8 +182,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 														key={transaction._id}
 														verified={transaction.verified}
 														data={{
-															chain: "solana",
-															chainId: 101,
+															chain: "evm",
+															chainId: 56 as any,
 															image: transaction.image ?? "/create/test-img.png",
 															title: transaction.tokenName,
 															ticker: transaction.tokenTicker,

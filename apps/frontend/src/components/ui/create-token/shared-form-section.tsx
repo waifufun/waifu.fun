@@ -199,7 +199,7 @@ export const CustomCurveSection = ({
 							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
 								Raise Amount
 							</Label>
-							<span className="text-sm font-bold text-[#00ff87]">{field.value} SOL</span>
+							<span className="text-sm font-bold text-[#00ff87]">{field.value} BNB</span>
 						</div>
 
 						<Slider
@@ -398,7 +398,7 @@ export const TradeLimitSection = ({
 			<div className="space-y-2">
 				<div>
 					<Label htmlFor="tradeLimitSol" className={formLabelBaseClass}>
-						Max Buy/Sell (SOL) - First 8 Hours
+						Max Buy/Sell (BNB) - First 8 Hours
 					</Label>
 					<div className="relative mt-1">
 						<Input
@@ -409,10 +409,10 @@ export const TradeLimitSection = ({
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
 						/>
-						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">SOL</span>
+						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">BNB</span>
 					</div>
 					<p className="text-[10px] text-[#52525b] mt-1">
-						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
+						Sets the maximum BNB amount per buy/sell transaction for the first 8 hours after launch.
 					</p>
 					{watchValue("tradeLimitSol") === 0 && (
 						<div className="flex items-center mt-2 gap-2">
@@ -456,7 +456,7 @@ export const PreBuySection = ({
 			<div>
 				<div className="flex items-center gap-2 mb-1">
 					<Label htmlFor={`${idPrefix}BuyAmount`} className={formLabelBaseClass}>
-						Buy Amount (SOL)
+						Buy Amount (BNB)
 					</Label>
 					<Info size={12} className="text-gray-500" />
 				</div>
@@ -476,13 +476,13 @@ export const PreBuySection = ({
 							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
 						})}
 					/>
-					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">SOL</span>
+					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">BNB</span>
 				</div>
 				{errors.buyAmount && <p className="text-red-500 text-xs mt-1">{errors.buyAmount.message}</p>}
 				<div className="flex justify-between items-center mt-1.5">
 					<div className="flex items-center gap-2">
 						<Wallet size={12} className="text-[#71717a]" />
-						<p className="text-xs text-[#71717a]">Balance: {balance.toFixed(4)} SOL</p>
+						<p className="text-xs text-[#71717a]">Balance: {balance.toFixed(4)} BNB</p>
 					</div>
 					<Button
 						type="button"
@@ -493,7 +493,7 @@ export const PreBuySection = ({
 						Max
 					</Button>
 				</div>
-				<p className="text-[10px] text-yellow-400 mt-1">Maximum amount based on your balance (max 28 SOL).</p>
+				<p className="text-[10px] text-yellow-400 mt-1">Maximum amount based on your balance (max 28 BNB).</p>
 			</div>
 		</FormSection>
 	);
@@ -506,8 +506,7 @@ export const PoolSelection = ({
 	const { pool, setPool } = usePrompt();
 
 	const poolData = [
-		{ name: "Meteora", value: "meteora", image: "/pools/meteora.svg" },
-		{ name: "Raydium", value: "raydium", image: "/pools/raydium.svg" },
+		{ name: "PancakeSwap", value: "pancakeswap", image: "/pools/pancakeswap.svg" },
 	];
 
 	return (
