@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { AlertCircle, Rocket, Zap, Trophy, Target } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { formatNumber, cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
 const LAMPORTS_PER_SOL = 1e18;
@@ -18,13 +18,6 @@ function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 	};
 	return <span className={styles[position]} />;
 }
-
-const MILESTONES = [
-	{ percent: 25, icon: Zap, label: "ignition" },
-	{ percent: 50, icon: Target, label: "halfway" },
-	{ percent: 75, icon: Rocket, label: "liftoff" },
-	{ percent: 100, icon: Trophy, label: "bonded" },
-];
 
 const PROGRESS_SEGMENTS = [
 	"segment-1",
@@ -49,22 +42,6 @@ function AnimatedProgressBar({ value, max }: { value: number; max: number }) {
 
 	return (
 		<div className="relative">
-			<div className="absolute inset-0 flex items-center pointer-events-none z-10">
-				{MILESTONES.map((milestone) => (
-					<div
-						key={milestone.percent}
-						className="absolute flex flex-col items-center"
-						style={{ left: `${milestone.percent}%`, transform: "translateX(-50%)" }}
-					>
-						<div
-							className={cn(
-								"w-0.5 h-5 -mt-0.5 rounded-full transition-colors duration-500",
-								percentage >= milestone.percent ? "bg-[#00ff87]" : "bg-[rgba(255,255,255,0.1)]",
-							)}
-						/>
-					</div>
-				))}
-			</div>
 			<div className="relative h-5 w-full bg-[rgba(0,255,135,0.06)] rounded-sm overflow-hidden border border-[rgba(255,255,255,0.06)]">
 				<motion.div
 					className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#065f46] via-[#22c55e] to-[#00ff87] rounded-sm"
@@ -91,32 +68,6 @@ function AnimatedProgressBar({ value, max }: { value: number; max: number }) {
 						<div key={segment} className="flex-1 border-r border-[rgba(255,255,255,0.03)] last:border-r-0" />
 					))}
 				</div>
-			</div>
-			<div className="relative mt-2 flex justify-between px-1">
-				{MILESTONES.map((milestone) => {
-					const reached = percentage >= milestone.percent;
-					const MilestoneIcon = milestone.icon;
-					return (
-						<Tooltip key={milestone.percent}>
-							<TooltipTrigger asChild>
-								<div
-									className={cn(
-										"flex items-center gap-1 cursor-default transition-all duration-300",
-										reached ? "text-[#00ff87]" : "text-[#3f3f46]",
-									)}
-								>
-									<MilestoneIcon className={cn("size-3", reached && "animate-pulse")} />
-									<span className="text-[9px] font-mono uppercase hidden sm:inline">{milestone.label}</span>
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<span className="text-xs">
-									{milestone.percent}% — {milestone.label}
-								</span>
-							</TooltipContent>
-						</Tooltip>
-					);
-				})}
 			</div>
 		</div>
 	);

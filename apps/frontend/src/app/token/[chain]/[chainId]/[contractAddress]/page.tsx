@@ -1,6 +1,5 @@
 import ScrollToTop from "@/components/scroll-to-top";
 import ActivityFeed from "@/components/token-page/activity-feed";
-import Trades from "@/components/token-page/trades";
 import { getToken } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 
@@ -24,7 +23,6 @@ export default async function Page({
 		<>
 			<ScrollToTop />
 			<ActivityFeed token={token} />
-			<Trades token={token} />
 		</>
 	);
 }

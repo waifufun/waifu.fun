@@ -42,10 +42,20 @@ function generateMockTrades(ticker: string): MockTrade[] {
 	];
 }
 
+const DEFAULT_EXPLORER = "https://solscan.io";
+
 function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; token: IToken }) {
 	const isBuy = trade.type === "buy";
-	const explorerBase = CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId];
-	const txUrl = explorerBase ? `${explorerBase}/tx/${trade.txId}` : null;
+	const chainId = Number(token.chainId);
+	const chain = token.chain ?? "solana";
+	const explorerBase =
+		CHAIN_TO_BLOCK_EXPLORER_URL[chain as keyof typeof CHAIN_TO_BLOCK_EXPLORER_URL]?.[chainId as number] ??
+		DEFAULT_EXPLORER;
+	const txUrl =
+		explorerBase.includes("?")
+			? `${explorerBase.split("?")[0]}/tx/${trade.txId}?${explorerBase.split("?")[1]}`
+			: `${explorerBase}/tx/${trade.txId}`;
+	const explorerLabel = chain === "solana" ? "View on Solscan" : "View on explorer";
 
 	return (
 		<motion.div
@@ -53,8 +63,7 @@ function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; to
 			animate={{ opacity: 1 }}
 			transition={{ delay: index * 0.03 }}
 			className={cn(
-				"relative w-full grid grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(7rem,1fr)_auto_auto] items-center gap-4 px-4 py-2.5 text-xs font-mono border-b border-[rgba(255,255,255,0.04)] last:border-b-0 transition-colors",
-				"bg-[#111114] hover:bg-[#18181c]",
+				"relative w-full grid grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(7rem,1fr)_auto_2.5rem] items-center gap-4 px-4 py-2.5 text-xs font-mono border-b border-[rgba(255,255,255,0.04)] last:border-b-0 transition-colors bg-[#111114] hover:bg-[#18181c]",
 			)}
 		>
 			<div className="flex items-center gap-2 min-w-0 w-[4.5rem]">
@@ -80,18 +89,18 @@ function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; to
 				</Link>
 			</span>
 			<span className="text-[#52525b] text-[10px] text-right">{trade.time}</span>
-			{txUrl ? (
+			<div className="flex items-center justify-center w-10 shrink-0">
 				<Link
 					href={txUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-flex items-center justify-center w-8 h-8 text-[#52525b] hover:text-[#00ff87] transition-colors"
-					title="View on explorer"
-					aria-label="View transaction on explorer"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-sm text-[#a1a1aa] hover:text-[#00ff87] hover:bg-[rgba(0,255,135,0.08)] transition-colors"
+					title={explorerLabel}
+					aria-label={explorerLabel}
 				>
-					<ExternalLink className="size-4" />
+					<ExternalLink className="size-4" aria-hidden />
 				</Link>
-			) : null}
+			</div>
 		</motion.div>
 	);
 }
@@ -116,9 +125,23 @@ export default function ActivityFeed({ token }: { token: IToken }) {
 	const start = (currentPage - 1) * PAGE_SIZE;
 	const pageTrades = showPagination ? trades.slice(start, start + PAGE_SIZE) : trades;
 
+	const gridClass =
+		"grid grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(7rem,1fr)_auto_2.5rem] items-center gap-4 px-4";
+
 	return (
 		<div className="w-full border border-[rgba(255,255,255,0.06)] bg-[#08080a] overflow-hidden">
-			<div className="max-h-[280px] overflow-y-auto scrollbar-hide">
+			<div
+				className={cn(gridClass, "py-2.5 border-b border-[rgba(255,255,255,0.08)] bg-[#111114] text-[10px] font-mono uppercase tracking-wider text-[#71717a]")}
+				aria-hidden
+			>
+				<span className="w-[4.5rem]">Type</span>
+				<span>Amount</span>
+				<span>Ticker</span>
+				<span>Account</span>
+				<span className="text-right">Date</span>
+				<span className="flex items-center justify-center shrink-0" title="Transaction">Tx</span>
+			</div>
+			<div className="max-h-[280px] overflow-y-auto overflow-x-auto scrollbar-hide min-w-0">
 				{pageTrades.map((trade, i) => (
 					<TradeRow
 						key={`${trade.type}-${start + i}-${trade.time}`}

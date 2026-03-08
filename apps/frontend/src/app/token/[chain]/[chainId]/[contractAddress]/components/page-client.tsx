@@ -8,7 +8,6 @@ import Swap from "@/components/swap";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentPersonalityCard, AgentSkills } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
-import Chat from "@/components/token-page/chat";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
 import { Button } from "@/components/ui/button";
@@ -17,8 +16,8 @@ import { getToken } from "@/lib/api";
 import { cn, isSameWalletAddress } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
-import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, MessageCircle, TrendingUp } from "lucide-react";
+import { motion } from "framer-motion";
+import { BarChart3, TrendingUp } from "lucide-react";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
@@ -72,7 +71,6 @@ export default function PageClient({
 		return false;
 	}, [currentAddress, token?.creator]);
 	const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
-	const [activePanel, setActivePanel] = useState<"chart" | "chat">("chart");
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 	const panelSectionRef = useRef<HTMLDivElement | null>(null);
 	const isPriceUp = true;
@@ -85,118 +83,63 @@ export default function PageClient({
 
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-5">
 				<div className="w-full lg:w-[65%] flex flex-col gap-5 order-3 lg:order-2">
-					<div
+					<motion.div
 						ref={panelSectionRef}
-						className="flex items-center justify-between gap-3 px-3 py-2.5 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm"
+						className={cn(
+							"relative bg-[#111114] border rounded-sm overflow-hidden transition-all duration-500",
+							isPriceUp
+								? "border-[#00ff87]/20 shadow-[0_0_20px_rgba(0,255,135,0.05)]"
+								: "border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]",
+						)}
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.3 }}
 					>
-						<div className="inline-flex items-center gap-1 rounded-sm bg-[#08080a] border border-[rgba(255,255,255,0.06)] p-1">
-							{(
-								[
-									{ id: "chart", label: "chart", Icon: BarChart3 },
-									{ id: "chat", label: "chat", Icon: MessageCircle },
-								] as const
-							).map(({ id, label, Icon }) => {
-								const isActive = activePanel === id;
+						<HudCorner position="tl" color={isPriceUp ? "green" : "purple"} />
+						<HudCorner position="tr" color={isPriceUp ? "green" : "purple"} />
+						<HudCorner position="bl" color={isPriceUp ? "green" : "purple"} />
+						<HudCorner position="br" color={isPriceUp ? "green" : "purple"} />
 
-								return (
+						<div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+							<div className="flex items-center gap-2">
+								<BarChart3 className={cn("size-4", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
+								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">price chart</span>
+								{isPriceUp ? (
+									<TrendingUp className="size-3 text-[#00ff87]" />
+								) : (
+									<TrendingUp className="size-3 text-red-400 rotate-180" />
+								)}
+							</div>
+
+							<div className="flex items-center gap-1">
+								{TIMEFRAMES.map((timeframe) => (
 									<button
-										key={id}
+										key={timeframe.value}
 										type="button"
-										onClick={() => setActivePanel(id)}
+										onClick={() => setSelectedTimeframe(timeframe.value)}
 										className={cn(
-											"inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.2em] transition-all duration-200",
-											isActive
-												? "bg-[#111114] text-[#00ff87] border border-[#00ff87]/30 shadow-[0_0_12px_rgba(0,255,135,0.12)]"
-												: "border border-transparent bg-transparent text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)]",
+											"px-2 py-1 text-[10px] font-mono uppercase rounded-sm transition-all duration-200",
+											selectedTimeframe === timeframe.value
+												? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/30"
+												: "text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] border border-transparent",
 										)}
 									>
-										<Icon className="size-3.5" />
-										<span>{label}</span>
+										{timeframe.label}
 									</button>
-								);
-							})}
+								))}
+							</div>
 						</div>
-					</div>
 
-					<AnimatePresence mode="wait" initial={false}>
-						{activePanel === "chart" ? (
-							<motion.div
-								key="chart-panel"
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -8 }}
-								transition={{ duration: 0.2 }}
-							>
-								<motion.div
-									className={cn(
-										"relative bg-[#111114] border rounded-sm overflow-hidden transition-all duration-500",
-										isPriceUp
-											? "border-[#00ff87]/20 shadow-[0_0_20px_rgba(0,255,135,0.05)]"
-											: "border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]",
-									)}
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.3 }}
-								>
-									<HudCorner position="tl" color={isPriceUp ? "green" : "purple"} />
-									<HudCorner position="tr" color={isPriceUp ? "green" : "purple"} />
-									<HudCorner position="bl" color={isPriceUp ? "green" : "purple"} />
-									<HudCorner position="br" color={isPriceUp ? "green" : "purple"} />
-
-									<div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-										<div className="flex items-center gap-2">
-											<BarChart3 className={cn("size-4", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-											<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">price chart</span>
-											{isPriceUp ? (
-												<TrendingUp className="size-3 text-[#00ff87]" />
-											) : (
-												<TrendingUp className="size-3 text-red-400 rotate-180" />
-											)}
-										</div>
-
-										<div className="flex items-center gap-1">
-											{TIMEFRAMES.map((timeframe) => (
-												<button
-													key={timeframe.value}
-													type="button"
-													onClick={() => setSelectedTimeframe(timeframe.value)}
-													className={cn(
-														"px-2 py-1 text-[10px] font-mono uppercase rounded-sm transition-all duration-200",
-														selectedTimeframe === timeframe.value
-															? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/30"
-															: "text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] border border-transparent",
-													)}
-												>
-													{timeframe.label}
-												</button>
-											))}
-										</div>
-									</div>
-
-									<div className="p-3">
-										<Chart token={token} />
-									</div>
-									<div
-										className={cn(
-											"absolute bottom-0 left-0 right-0 h-1 blur-sm",
-											isPriceUp ? "bg-[#00ff87]/20" : "bg-red-500/20",
-										)}
-									/>
-								</motion.div>
-							</motion.div>
-						) : (
-							<motion.div
-								key="chat-panel"
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -8 }}
-								transition={{ duration: 0.2 }}
-								className="[&>div]:h-[580px] lg:[&>div]:h-[620px]"
-							>
-								<Chat token={token} />
-							</motion.div>
-						)}
-					</AnimatePresence>
+						<div className="p-3">
+							<Chart token={token} />
+						</div>
+						<div
+							className={cn(
+								"absolute bottom-0 left-0 right-0 h-1 blur-sm",
+								isPriceUp ? "bg-[#00ff87]/20" : "bg-red-500/20",
+							)}
+						/>
+					</motion.div>
 
 					<div className="flex flex-col gap-4">
 						<TokenTabs token={token} />

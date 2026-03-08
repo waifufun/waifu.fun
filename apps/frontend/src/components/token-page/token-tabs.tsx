@@ -1,7 +1,7 @@
 "use client";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { IToken } from "@waifufun/types";
-import { ChartCandlestick, MessagesSquare, Stars, User, Users } from "lucide-react";
+import { ChartCandlestick, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";
 
@@ -15,14 +15,11 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const tabs = [
 		{ value: "trades", label: "trades", icon: ChartCandlestick, path: BASE_URL },
 		{ value: "holders", label: "holders", icon: Users, path: `${BASE_URL}/holders` },
-		{ value: "create", label: "ai create", icon: Stars, path: `${BASE_URL}/create` },
-		{ value: "chat", label: "chat", icon: MessagesSquare, path: `${BASE_URL}/chat` },
-		{ value: "agents", label: "agents", icon: User, path: `${BASE_URL}/agents` },
 	];
 
 	return (
 		<Tabs value={currentTab}>
-			<TabsList className="grid w-full grid-cols-5 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-0">
+			<TabsList className="grid w-full grid-cols-2 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-0">
 				{tabs.map((tab) => (
 					<TabsTrigger
 						key={tab.value}
