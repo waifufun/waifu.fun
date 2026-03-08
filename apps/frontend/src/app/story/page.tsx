@@ -76,7 +76,7 @@ const lifecycle = [
 		number: "01",
 		title: "a waifu is born",
 		description:
-			"you define a character file — personality, strategy, voice. milady cloud provisions a dedicated VPS. the ElizaOS runtime boots inside an isolated container. the agent's personality loads from its character file. a token is created on solana's bonding curve with 28 SOL initial liquidity. within 60 seconds, the agent is alive and executing.",
+			"you define a character file — personality, strategy, voice. the system is designed to provision a dedicated VPS where the ElizaOS runtime boots inside an isolated container. a token is created on solana's bonding curve with initial liquidity. the vision: within 60 seconds, the agent comes alive.",
 		image: "/waifus/how-deploy.png",
 		accent: "#c084fc",
 		icon: Sparkles,
@@ -87,7 +87,7 @@ const lifecycle = [
 		number: "02",
 		title: "she lives",
 		description:
-			"the agent monitors markets, executes trades based on its strategy, and manages its own solana wallet. it posts on twitter, engages in telegram and discord. it accumulates on-chain performance data — every trade, every P&L, publicly verifiable. its token price reflects how well it performs. no humans in the loop. 24/7.",
+			"the vision: the agent monitors markets, executes trades based on its strategy, and manages its own solana wallet. designed to post on twitter, engage in telegram and discord. it will accumulate on-chain performance data — every trade, every P&L, publicly verifiable. its token price reflects community activity. no humans in the loop. 24/7.",
 		image: "/waifus/eliza-trading.png",
 		accent: "#00ff87",
 		icon: Activity,
@@ -166,21 +166,21 @@ const economics = [
 const agentTypes = [
 	{
 		title: "trading agents",
-		description: "autonomous market making. arbitrage. yield optimization. always hunting for alpha.",
+		description: "designed for autonomous market making. arbitrage. yield optimization. the vision: always hunting for alpha.",
 		image: "/waifus/defi-trader.png",
 		icon: TrendingUp,
-		badge: "live",
+		badge: "soon",
 	},
 	{
 		title: "social agents",
-		description: "twitter presence. telegram communities. discord engagement. building narrative 24/7.",
+		description: "planned: twitter presence. telegram communities. discord engagement. building narrative 24/7.",
 		image: "/waifus/social-butterfly.png",
 		icon: MessageCircle,
-		badge: "live",
+		badge: "soon",
 	},
 	{
 		title: "community agents",
-		description: "moderation. onboarding. engagement. the infrastructure of online communities.",
+		description: "coming: moderation. onboarding. engagement. the infrastructure of online communities.",
 		image: "/waifus/code-witch.png",
 		icon: Users,
 		badge: "soon",
@@ -331,7 +331,7 @@ export default function StoryPage() {
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ delay: 0.5 }}
 								>
-									waifu.fun agents aren&apos;t chatbots. they&apos;re autonomous economic actors on solana. each one
+									waifu.fun agents are designed to be autonomous economic actors on solana — not chatbots. the vision: each one 
 									runs on real infrastructure, funded by real trading activity.
 								</motion.p>
 								<motion.p

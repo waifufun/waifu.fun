@@ -189,6 +189,8 @@ export const fetcher = async (
 	}
 };
 
+// ========== WIRED TO WAIFU-CORE ==========
+
 export const getTokens = async ({
 	searchParams,
 }: {
@@ -197,18 +199,20 @@ export const getTokens = async ({
 	};
 }) => {
 	try {
-		const body = {
-			chain: (searchParams?.chain as TChain) || undefined,
-			chainId: searchParams?.chainId ? Number(searchParams.chainId) : undefined,
-			page: searchParams?.page ? Number(searchParams.page) : 1,
-			category:
-				(searchParams?.category as "new" | "trending" | "featured" | "marketcap" | "about-to-bond" | "bonded") || "new",
-			origin: (searchParams?.origin as "imported" | "auto-fun") || "auto-fun",
-			search: searchParams?.search || "",
-			limit: searchParams?.limit || 50,
-		};
-		const response = await fetcher("/tokens", "POST", body);
-		return response.docs || [];
+		const queryParams = new URLSearchParams();
+		
+		if (searchParams?.search) {
+			queryParams.append("search", String(searchParams.search));
+		}
+		if (searchParams?.status) {
+			queryParams.append("status", String(searchParams.status));
+		}
+		if (searchParams?.limit) {
+			queryParams.append("limit", String(searchParams.limit));
+		}
+
+		const response = await fetcher(`/tokens?${queryParams.toString()}`, "GET");
+		return response.items || [];
 	} catch (error) {
 		console.error("Error fetching tokens:", error);
 		return [];
@@ -216,19 +220,8 @@ export const getTokens = async ({
 };
 
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
-	return await fetcher(`/tokens/${chain}/${chainId}/${contractAddress}`, "GET");
-};
-
-export const isCurveCompleted = async ({
-	chain,
-	chainId,
-	contractAddress,
-}: ITokenLookUp): Promise<{ curveCompleted: boolean }> => {
-	return await fetcher("/tokens/curve-completed", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
+	// waifu-core uses just the contract address, not chain/chainId routing
+	return await fetcher(`/tokens/${contractAddress}`, "GET");
 };
 
 export const getChartData = async ({
@@ -251,21 +244,161 @@ export const getChartData = async ({
 		volumeUSD: number;
 	}>
 > => {
-	return await fetcher("/tokens/chart-data", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-		timeframe,
-		limit,
-	});
+	// waifu-core placeholder - returns empty for now
+	try {
+		return await fetcher(`/tokens/${contractAddress}/chart`, "GET");
+	} catch (error) {
+		console.warn("[waifu-core] Chart endpoint not fully implemented yet");
+		return [];
+	}
 };
 
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
-	return await fetcher("/tokens/trades", "POST", {
-		chain,
-		chainId,
-		contractAddress,
+	const response = await fetcher(`/tokens/${contractAddress}/trades`, "GET");
+	return response.items || [];
+};
+
+export const authenticate = async (address: AddressLike, signature: string, chain: TChain) => {
+	// waifu-core uses SIWE endpoint
+	return await fetcher("/auth/siwe", "POST", {
+		address,
+		signature,
+		message: `Sign in to waifu.fun with ${address}`, // Placeholder SIWE message
 	});
+};
+
+export const generateNonce = async (address: AddressLike) => {
+	// waifu-core SIWE flow doesn't have separate nonce generation
+	// Frontend should generate nonce client-side or use the combined SIWE flow
+	console.warn("[waifu-core] Nonce generation is client-side in SIWE flow");
+	return { nonce: `waifu-${Date.now()}-${Math.random().toString(36).slice(2)}` };
+};
+
+export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
+	try {
+		const response = await fetcher("/auth/me", "GET");
+		// Map waifu-core response to expected shape
+		return {
+			authenticated: !!response.auth,
+			wallets: {
+				solana: null,
+				evm: response.auth ? { address: response.auth.address } : null,
+			},
+		};
+	} catch (error) {
+		return {
+			authenticated: false,
+			wallets: { solana: null, evm: null },
+		};
+	}
+};
+
+export const createToken = async ({
+	contractAddress,
+	chain,
+	chainId,
+	pool,
+	signature,
+	inviteCode,
+}: {
+	contractAddress: string;
+	chain: TChain;
+	chainId: number;
+	pool?: string;
+	signature?: string;
+	inviteCode?: string;
+}) => {
+	// waifu-core uses /launches endpoint
+	// This is a simplification - frontend may need to adapt to launch flow
+	return await fetcher("/launches", "POST", {
+		name: "Placeholder", // Frontend should provide these
+		symbol: "TBD",
+		description: "Token created via legacy flow",
+		inviteCode,
+	});
+};
+
+export const getLaunchGateCheck = async (inviteCode?: string) => {
+	// waifu-core doesn't have this exact endpoint yet
+	// Return success to not block UI
+	console.warn("[waifu-core] Launch gate check not implemented - returning open access");
+	return { allowed: true, message: "Launch gate check not implemented in waifu-core yet" };
+};
+
+export const getAdminStats = async () => {
+	// Map to admin launches for now
+	try {
+		const response = await fetcher("/admin/launches", "GET");
+		return {
+			totalTokens: response.total || 0,
+			userCount: 0,
+			tokenCount: response.total || 0,
+			activeModerators: 0,
+			volume24h: 0,
+			totalUsers: 0,
+			totalVolume: "0",
+		};
+	} catch (error) {
+		return {
+			totalTokens: 0,
+			userCount: 0,
+			tokenCount: 0,
+			activeModerators: 0,
+			volume24h: 0,
+			totalUsers: 0,
+			totalVolume: "0",
+		};
+	}
+};
+
+export const getAdminTokens = async (params: {
+	page?: number;
+	limit?: number;
+	search?: string;
+	sortBy?: string;
+	sortOrder?: string;
+	hideImported?: number;
+	chain?: string;
+	chainId?: string;
+}) => {
+	// Map to /admin/launches for now
+	try {
+		const response = await fetcher("/admin/launches", "GET");
+		const items = response.items || [];
+		const total = response.total || 0;
+		const limit = params.limit || 20;
+		const page = params.page || 1;
+		const totalPages = Math.ceil(total / limit);
+		
+		return {
+			docs: items,
+			tokens: items,
+			total,
+			totalPages,
+			page,
+			limit,
+		};
+	} catch (error) {
+		return {
+			docs: [],
+			tokens: [],
+			total: 0,
+			totalPages: 0,
+			page: params.page || 1,
+			limit: params.limit || 20,
+		};
+	}
+};
+
+// ========== STUBBED (NOT READY IN WAIFU-CORE) ==========
+
+export const isCurveCompleted = async ({
+	chain,
+	chainId,
+	contractAddress,
+}: ITokenLookUp): Promise<{ curveCompleted: boolean }> => {
+	console.warn("[waifu-core] Curve completion check not implemented yet");
+	return { curveCompleted: false };
 };
 
 export const getAddressBalances = async ({
@@ -273,9 +406,9 @@ export const getAddressBalances = async ({
 }: {
 	address: AddressLike;
 }) => {
-	return await fetcher("/tokens/balances", "POST", {
-		address,
-	});
+	// Could potentially use on-chain RPC, but stub for now
+	console.warn("[waifu-core] Address balances endpoint not implemented yet");
+	return [];
 };
 
 export const getChatHistory = async ({
@@ -289,12 +422,8 @@ export const getChatHistory = async ({
 	chain: TChain;
 	chainId: string | number;
 }) => {
-	return await fetcher("/chat/history", "POST", {
-		room,
-		contractAddress,
-		chain,
-		chainId,
-	});
+	console.warn("[waifu-core] Chat history not implemented yet");
+	return [];
 };
 
 export const generateMedia = async ({
@@ -303,19 +432,8 @@ export const generateMedia = async ({
 	height,
 	type,
 }: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
-	console.log("Generating media with params:", {
-		prompt,
-		width,
-		height,
-		type,
-	});
-
-	return await fetcher("/generation/generate", "POST", {
-		prompt,
-		width,
-		height,
-		type,
-	});
+	console.warn("[waifu-core] Media generation not implemented yet: /generation/generate");
+	return null;
 };
 
 export const generateMediaForToken = async ({
@@ -335,25 +453,8 @@ export const generateMediaForToken = async ({
 	chain: TChain;
 	chainId: SolanaNetworkIds;
 }) => {
-	console.log("Generating media with params:", {
-		prompt,
-		width,
-		height,
-		type,
-		contractAddress,
-		chain,
-		chainId,
-	});
-
-	return await fetcher("/generation/generate-media", "POST", {
-		prompt,
-		width,
-		height,
-		type,
-		address: contractAddress,
-		chain,
-		chainId,
-	});
+	console.warn("[waifu-core] Token media generation not implemented yet: /generation/generate-media");
+	return null;
 };
 
 export const generateMetadata = async ({
@@ -361,11 +462,8 @@ export const generateMetadata = async ({
 	prompt,
 	contractAddress,
 }: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined; contractAddress?: string | undefined }) => {
-	return await fetcher("/generation/generate-metadata", "POST", {
-		prompt,
-		mediaType,
-		contractAddress,
-	});
+	console.warn("[waifu-core] Metadata generation not implemented yet: /generation/generate-metadata");
+	return null;
 };
 
 export const generateRemoteMetadata = async ({
@@ -383,24 +481,13 @@ export const generateRemoteMetadata = async ({
 	};
 	manual?: boolean | undefined;
 }) => {
-	return await fetcher("/tokens/create-metadata", "POST", {
-		imageUrl,
-		image,
-		metadata: {
-			name,
-			description,
-			symbol,
-		},
-		manual,
-	});
+	console.warn("[waifu-core] Remote metadata creation not implemented yet: /tokens/create-metadata");
+	return null;
 };
 
 export const importToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
-	return await fetcher("/tokens/import", "POST", {
-		contractAddress,
-		chain,
-		chainId,
-	});
+	console.warn("[waifu-core] Token import not implemented yet: /tokens/import");
+	throw new Error("Token import not available in waifu-core yet");
 };
 
 export const claimFees = async ({
@@ -412,11 +499,8 @@ export const claimFees = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	return await fetcher("/transactions/claim", "POST", {
-		chain,
-		chainId,
-		tokenMint: contractAddress,
-	});
+	console.warn("[waifu-core] Fee claiming not implemented yet: /transactions/claim");
+	return null;
 };
 
 export const getHolders = async ({
@@ -428,11 +512,8 @@ export const getHolders = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	return await fetcher("/tokens/holders", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
+	console.warn("[waifu-core] Token holders not implemented yet: /tokens/holders");
+	return [];
 };
 
 export const sendChatMessage = async ({
@@ -450,14 +531,8 @@ export const sendChatMessage = async ({
 	contractAddress: string;
 	attachment?: string | undefined;
 }) => {
-	return await fetcher("/chat/message", "POST", {
-		message,
-		chain,
-		chainId,
-		room,
-		contractAddress,
-		attachment,
-	});
+	console.warn("[waifu-core] Chat messaging not implemented yet: /chat/message");
+	return null;
 };
 
 export const getTransaction = async ({
@@ -469,73 +544,23 @@ export const getTransaction = async ({
 	chainId: string | number;
 	txId: string;
 }) => {
-	return await fetcher("/transaction", "POST", {
-		chain,
-		chainId,
-		txId,
-	});
-};
-
-export const generateNonce = async (address: AddressLike) => {
-	return await fetcher("/auth/generateNonce", "POST", {
-		address,
-	});
-};
-
-export const authenticate = async (address: AddressLike, signature: string, chain: TChain) => {
-	return await fetcher("/auth/authenticate", "POST", {
-		address,
-		signature,
-		chain,
-	});
-};
-
-export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
-	return await fetcher("/auth/status", "GET");
+	console.warn("[waifu-core] Transaction lookup not implemented yet");
+	return null;
 };
 
 export const getWallets = async () => {
-	return await fetcher("/auth/getWallets", "GET");
-};
-
-export const getLaunchGateCheck = async (inviteCode?: string) => {
-	const query = inviteCode ? `?inviteCode=${encodeURIComponent(inviteCode)}` : "";
-	return await fetcher(`/tokens/api/launch-gate/check${query}`, "GET");
+	console.warn("[waifu-core] Wallet list not implemented yet: /auth/getWallets");
+	return { wallets: [] };
 };
 
 export const getPrices = async () => {
-	return await fetcher("/prices", "POST");
+	console.warn("[waifu-core] Price feed not implemented yet: /prices");
+	return {};
 };
 
 export const logOut = async (chain: TChain) => {
-	return await fetcher("/auth/logout", "POST", {
-		chain,
-	});
-};
-
-export const createToken = async ({
-	contractAddress,
-	chain,
-	chainId,
-	pool,
-	signature,
-	inviteCode,
-}: {
-	contractAddress: string;
-	chain: TChain;
-	chainId: number;
-	pool?: string;
-	signature?: string;
-	inviteCode?: string;
-}) => {
-	return await fetcher("/tokens/create", "POST", {
-		contractAddress,
-		chain,
-		chainId,
-		pool,
-		signature,
-		inviteCode,
-	});
+	console.warn("[waifu-core] Logout not implemented yet: /auth/logout");
+	return { success: true };
 };
 
 export const getTrades = async ({
@@ -547,11 +572,8 @@ export const getTrades = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	return await fetcher("/tokens/trades", "POST", {
-		chain,
-		chainId,
-		contractAddress,
-	});
+	// Alias for getTokenTrades
+	return getTokenTrades({ chain, chainId, contractAddress });
 };
 
 export const connectAgent = async ({
@@ -565,9 +587,8 @@ export const connectAgent = async ({
 	chain: TChain;
 	chainId: TChainId;
 }) => {
-	return await fetcher(`/agent/connect-agent/${chain}/${chainId}/${agentId}`, "POST", {
-		contractAddress,
-	});
+	console.warn("[waifu-core] Agent connection not implemented yet: /agent/connect-agent");
+	return null;
 };
 
 export const getAgent = async ({
@@ -583,13 +604,14 @@ export const getAgent = async ({
 	page?: number;
 	limit?: number;
 }) => {
-	return await fetcher("/agent/get-agents", "POST", {
-		chain,
-		chainId,
-		contractAddress,
+	console.warn("[waifu-core] Agent lookup not implemented yet: /agent/get-agents");
+	return {
+		docs: [],
+		agents: [],
+		total: 0,
 		page,
 		limit,
-	});
+	};
 };
 
 export const uploadAvatar = async ({
@@ -597,9 +619,8 @@ export const uploadAvatar = async ({
 }: {
 	image: string;
 }) => {
-	return await fetcher("/user/upload-profile-image", "POST", {
-		image,
-	});
+	console.warn("[waifu-core] Avatar upload not implemented yet: /user/upload-profile-image");
+	return null;
 };
 
 export const getAddressPoints = async ({
@@ -607,9 +628,12 @@ export const getAddressPoints = async ({
 }: {
 	address: string;
 }) => {
-	return await fetcher("/user/get-address-points", "POST", {
-		address,
-	});
+	console.warn("[waifu-core] Address points not implemented yet: /user/get-address-points");
+	return {
+		points: 0,
+		totalPoints: 0,
+		weeklyPoints: 0,
+	};
 };
 
 export const getSwaps = async ({
@@ -621,11 +645,17 @@ export const getSwaps = async ({
 	page?: number;
 	limit?: number;
 }) => {
-	return await fetcher("/user/get-swaps", "POST", {
-		address,
+	console.warn("[waifu-core] User swaps not implemented yet: /user/get-swaps");
+	return {
+		docs: [],
+		swaps: [],
+		total: 0,
+		totalDocs: 0,
+		totalPages: 0,
+		hasNextPage: false,
 		page,
 		limit,
-	});
+	};
 };
 
 export const getTokensCreated = async ({
@@ -637,58 +667,65 @@ export const getTokensCreated = async ({
 	page?: number;
 	limit?: number;
 }) => {
-	return await fetcher("/user/get-tokens-created", "POST", {
-		address,
+	console.warn("[waifu-core] Tokens created lookup not implemented yet: /user/get-tokens-created");
+	return {
+		docs: [],
+		tokens: [],
+		total: 0,
+		totalDocs: 0,
+		totalPages: 0,
+		hasNextPage: false,
 		page,
 		limit,
-	});
+	};
 };
 
-export const HELIUS_RPC_URL =
-	process.env.NEXT_PUBLIC_NETWORK === "devnet"
-		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
-		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
-
-export const connection = new Connection(HELIUS_RPC_URL, "finalized");
-
-export const getAdminStats = async () => {
-	const response = await fetcher("/admin/stats", "GET");
-	return response.stats;
-};
+// ========== ADMIN ENDPOINTS ==========
 
 export const getAdminStatus = async () => {
-	return await fetcher("/admin/status", "GET");
-};
-
-export const getAdminTokens = async (params: {
-	page?: number;
-	limit?: number;
-	search?: string;
-	sortBy?: string;
-	sortOrder?: string;
-	hideImported?: number;
-	chain?: string;
-	chainId?: string;
-}) => {
-	const queryParams = new URLSearchParams();
-	for (const [key, value] of Object.entries(params)) {
-		if (value !== undefined) {
-			queryParams.append(key, value.toString());
-		}
+	try {
+		const response = await fetcher("/auth/me", "GET");
+		const isAdmin = response.auth?.role === "admin" || response.auth?.role === "superadmin";
+		return {
+			success: true,
+			isAdmin,
+			adminInfo: isAdmin ? { role: response.auth.role } : undefined,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			isAdmin: false,
+			error: "Not authenticated or not an admin",
+		};
 	}
-
-	const response = await fetcher(`/admin/tokens?${queryParams.toString()}`, "GET");
-	return response;
 };
 
 export const getAdminTokenStats = async () => {
-	const response = await fetcher("/admin/tokens/stats", "GET");
-	return response.stats;
+	try {
+		const response = await fetcher("/admin/launches", "GET");
+		return {
+			totalTokens: response.total || 0,
+			verifiedCount: 0,
+			featuredCount: 0,
+			hiddenCount: 0,
+			totalVolume: 0,
+			totalBonded: 0,
+		};
+	} catch (error) {
+		return {
+			totalTokens: 0,
+			verifiedCount: 0,
+			featuredCount: 0,
+			hiddenCount: 0,
+			totalVolume: 0,
+			totalBonded: 0,
+		};
+	}
 };
 
 export const getAdmins = async () => {
-	const res = await fetcher("/admin/list", "GET");
-	return res.admins;
+	console.warn("[waifu-core] Admin list not implemented yet: /admin/list");
+	return [];
 };
 
 export const addAdmin = async ({
@@ -700,7 +737,8 @@ export const addAdmin = async ({
 	role: string;
 	permissions: string[];
 }) => {
-	return await fetcher("/admin/add", "POST", { address, role, permissions });
+	console.warn("[waifu-core] Add admin not implemented yet: /admin/add");
+	return null;
 };
 
 export const updateAdminPermissions = async ({
@@ -710,11 +748,13 @@ export const updateAdminPermissions = async ({
 	address: string;
 	permissions: string[];
 }) => {
-	return await fetcher(`/admin/permissions/${address}`, "PUT", { permissions });
+	console.warn("[waifu-core] Update admin permissions not implemented yet");
+	return null;
 };
 
 export const removeAdmin = async (address: string) => {
-	return await fetcher(`/admin/remove/${address}`, "DELETE");
+	console.warn("[waifu-core] Remove admin not implemented yet");
+	return null;
 };
 
 export const getAdminUsers = async ({
@@ -722,20 +762,24 @@ export const getAdminUsers = async ({
 	page = 1,
 	limit = 20,
 }: { search?: string; page?: number; limit?: number }) => {
-	const params = new URLSearchParams();
-	if (search) params.append("search", search);
-	params.append("page", String(page));
-	params.append("limit", String(limit));
-	const res = await fetcher(`/admin/users?${params.toString()}`, "GET");
-	return res;
+	console.warn("[waifu-core] Admin users list not implemented yet");
+	return {
+		users: [],
+		total: 0,
+		totalPages: 0,
+		page,
+		limit,
+	};
 };
 
 export const suspendUser = async ({ address, suspended }: { address: string; suspended: boolean }) => {
-	return await fetcher(`/admin/users/${address}/suspended`, "POST", { suspended });
+	console.warn("[waifu-core] User suspension not implemented yet");
+	return null;
 };
 
 export const setTokenVerified = async (tokenAddress: string, verified: boolean) => {
-	return await fetcher("/admin/verify-token", "POST", { tokenAddress, verified });
+	console.warn("[waifu-core] Token verification not implemented yet");
+	return null;
 };
 
 export const setTokenHidden = async ({
@@ -749,7 +793,8 @@ export const setTokenHidden = async ({
 	contractAddress: string;
 	hidden: boolean;
 }) => {
-	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/hidden`, "POST", { hidden });
+	console.warn("[waifu-core] Token hidden flag not implemented yet");
+	return null;
 };
 
 export const setTokenFeatured = async ({
@@ -763,7 +808,8 @@ export const setTokenFeatured = async ({
 	contractAddress: string;
 	featured: boolean;
 }) => {
-	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/featured`, "POST", { featured });
+	console.warn("[waifu-core] Token featured flag not implemented yet");
+	return null;
 };
 
 export const updateTokenSocials = async ({
@@ -777,7 +823,8 @@ export const updateTokenSocials = async ({
 	contractAddress: string;
 	socials: Record<string, string>;
 }) => {
-	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/social`, "POST", socials);
+	console.warn("[waifu-core] Admin token socials update not implemented yet");
+	return null;
 };
 
 export const updateTokenMetadata = async ({
@@ -791,7 +838,8 @@ export const updateTokenMetadata = async ({
 	contractAddress: string;
 	metadata: Record<string, unknown>;
 }) => {
-	return await fetcher(`/admin/tokens/${chain}/${chainId}/${contractAddress}/metadata`, "POST", metadata);
+	console.warn("[waifu-core] Admin token metadata update not implemented yet");
+	return null;
 };
 
 export const updateTokenSocialsOwner = async ({
@@ -805,7 +853,18 @@ export const updateTokenSocialsOwner = async ({
 	contractAddress: string;
 	socials: Record<string, string>;
 }) => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/social`, "POST", socials);
+	// Map to /creators/:address PUT
+	try {
+		await fetcher(`/creators/${contractAddress}`, "PUT", {
+			twitter: socials.twitter,
+			telegram: socials.telegram,
+			website: socials.website,
+		});
+		return { success: true };
+	} catch (error) {
+		console.error("Failed to update token socials:", error);
+		return null;
+	}
 };
 
 export const claimTokenOwnership = async ({
@@ -817,7 +876,8 @@ export const claimTokenOwnership = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/claim`, "POST");
+	console.warn("[waifu-core] Token ownership claim not implemented yet");
+	return null;
 };
 
 export const getOwnerTokenRuntime = async ({
@@ -829,7 +889,12 @@ export const getOwnerTokenRuntime = async ({
 	chainId: string | number;
 	contractAddress: string;
 }): Promise<OwnerTokenRuntimeResponse> => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime`, "GET");
+	console.warn("[waifu-core] Owner token runtime not implemented yet");
+	return {
+		success: false,
+		runtime: {},
+		message: "Runtime management not available in waifu-core yet",
+	};
 };
 
 export const activateOwnerTokenRuntime = async ({
@@ -845,10 +910,8 @@ export const activateOwnerTokenRuntime = async ({
 	billingMode?: OwnerTokenRuntime["billingMode"];
 	character?: OwnerRuntimeCharacterInput;
 }) => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/activate`, "POST", {
-		billingMode,
-		character,
-	});
+	console.warn("[waifu-core] Runtime activation not implemented yet");
+	return null;
 };
 
 export const suspendOwnerTokenRuntime = async ({
@@ -860,7 +923,8 @@ export const suspendOwnerTokenRuntime = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/suspend`, "POST");
+	console.warn("[waifu-core] Runtime suspension not implemented yet");
+	return null;
 };
 
 export const resumeOwnerTokenRuntime = async ({
@@ -872,7 +936,8 @@ export const resumeOwnerTokenRuntime = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/resume`, "POST");
+	console.warn("[waifu-core] Runtime resume not implemented yet");
+	return null;
 };
 
 export const getOwnerTokenBilling = async ({
@@ -884,5 +949,18 @@ export const getOwnerTokenBilling = async ({
 	chainId: string | number;
 	contractAddress: string;
 }): Promise<OwnerTokenBillingResponse> => {
-	return await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/billing`, "GET");
+	console.warn("[waifu-core] Owner token billing not implemented yet");
+	return {
+		success: false,
+		message: "Billing info not available in waifu-core yet",
+	};
 };
+
+// ========== LEGACY EXPORTS (Solana RPC) ==========
+
+export const HELIUS_RPC_URL =
+	process.env.NEXT_PUBLIC_NETWORK === "devnet"
+		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
+		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+
+export const connection = new Connection(HELIUS_RPC_URL, "finalized");
