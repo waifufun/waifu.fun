@@ -248,7 +248,9 @@ export const getTokens = async ({
 		}
 
 		const response = await fetcher(`/tokens?${queryParams.toString()}`, "GET");
-		return (response.items || []).map(mapApiTokenToIToken);
+		// waifu-core wraps in { ok, data: { items, total, limit } }
+		const items = response?.data?.items || response?.items || [];
+		return items.map(mapApiTokenToIToken);
 	} catch (error) {
 		console.error("Error fetching tokens:", error);
 		return [];
