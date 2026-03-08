@@ -158,7 +158,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 							</p>
 							<p className="text-[15px] text-[#52525b] mt-2 leading-relaxed">
 								powered by Milady Cloud &amp; Eliza Cloud. your milady becomes a waifu — an autonomous agent that
-								trades, learns, and earns 24/7 on Solana.
+								trades, learns, and earns 24/7 on-chain.
 							</p>
 						</motion.div>
 

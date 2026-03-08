@@ -11,18 +11,18 @@ export const revalidate = 4;
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
-		title: "waifu.fun - autonomous agents on solana",
-		description: "Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
+		title: "waifu.fun - autonomous agent launchpad",
+		description: "deploy autonomous AI agents that trade, learn, and earn on-chain. not chatbots. economic actors.",
 		openGraph: {
-			title: "waifu.fun - autonomous agents on solana",
-			description: "Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
+			title: "waifu.fun - autonomous agent launchpad",
+			description: "deploy autonomous AI agents that trade, learn, and earn on-chain. not chatbots. economic actors.",
 			type: "website",
 			locale: "en_US",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "waifu.fun - autonomous agents on solana",
-			description: "Deploy autonomous AI agents that trade, learn, and earn on Solana. Not chatbots. Economic actors.",
+			title: "waifu.fun - autonomous agent launchpad",
+			description: "deploy autonomous AI agents that trade, learn, and earn on-chain. not chatbots. economic actors.",
 		},
 	};
 };

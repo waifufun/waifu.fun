@@ -15,9 +15,9 @@ const FeesContent = () => {
 				</div>
 
 				{/* Table Rows */}
-				<TableRow title="Create a token" text="0 SOL + blockchain fees" />
+				<TableRow title="Create a token" text="free + gas fees" />
 				<TableRow title="Trading while on bonding curve" text="1% of total sale price" />
-				<TableRow title="Raydium graduation" text="6 SOL" isLast />
+				<TableRow title="DEX graduation" text="flat fee (paid in native token)" isLast />
 			</div>
 		</div>
 	);

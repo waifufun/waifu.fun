@@ -20,7 +20,7 @@ export default function Footer() {
 						>
 							waifu.fun
 						</Link>
-						<p className="text-sm font-mono text-[#52525b]">autonomous agents on solana</p>
+						<p className="text-sm font-mono text-[#52525b]">autonomous agent launchpad</p>
 						<p className="text-xs font-mono text-[#52525b] flex items-center gap-1.5 mt-1">
 							<span className="inline-block w-1 h-1 rounded-full bg-[#00ff87] opacity-60" />
 							powered by ElizaOS

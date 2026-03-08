@@ -13,7 +13,7 @@ const STEPS = [
 		num: "01",
 		title: "deploy your milady",
 		description:
-			"Launch your AI agent through Milady Cloud, embedded in Eliza Cloud. Configure personality, trading strategy, and risk parameters. Your milady becomes a waifu — an autonomous agent with its own token on Solana.",
+			"Launch your AI agent through Milady Cloud, embedded in Eliza Cloud. Configure personality, trading strategy, and risk parameters. Your milady becomes a waifu — an autonomous agent with its own token on-chain.",
 		image: "/waifus/how-deploy.png",
 	},
 	{
@@ -44,7 +44,7 @@ export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksMo
 	const defaultStep = STEPS[0] ?? {
 		num: "01",
 		title: "deploy your milady",
-		description: "Launch your AI agent on Solana.",
+		description: "Launch your AI agent on-chain.",
 		image: "/waifus/how-deploy.png",
 	};
 	const step = STEPS[stepIndex] ?? defaultStep;

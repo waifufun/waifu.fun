@@ -65,7 +65,7 @@ export default function SupportPage() {
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									<span className="font-semibold text-[#e4e4e7]">1. New Coins: </span>
 									Launch with our bonding curve mechanism that provides initial price stability, dynamic pricing,
-									guaranteed liquidity, and automated graduation to Raydium. Create a coin manually or generate one.
+									guaranteed liquidity, and automated graduation to a DEX. Create a coin manually or generate one.
 								</p>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									<span className="font-semibold text-[#e4e4e7]">2. Existing Coins: </span>
@@ -77,8 +77,8 @@ export default function SupportPage() {
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
 								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Bonding Curve</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									waifu.fun uses a bonding curve with 28 SOL initial virtual reserves. When a coin reaches 113 SOL in
-									reserves, it automatically graduates to Raydium with a 6 SOL flat fee.
+									waifu.fun uses a bonding curve with initial virtual reserves. when reserves hit the graduation
+									threshold, it automatically migrates to a DEX with a flat fee.
 								</p>
 							</div>
 
