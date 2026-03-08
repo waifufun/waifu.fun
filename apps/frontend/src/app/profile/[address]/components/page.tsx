@@ -68,8 +68,8 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						tokensBought: tokensBought,
 						tokensCreated: tokensCreatedQuery.data?.totalDocs ?? 0,
 						chains: [{ chain: "solana", chainId: 101, amount: 120 }],
-						totalPoints: pointsData?.data?.totalPoints,
-						weeklyPoints: pointsData?.data?.weeklyPoints,
+						totalPoints: pointsData?.data?.totalPoints ?? 0,
+						weeklyPoints: pointsData?.data?.weeklyPoints ?? 0,
 						image: user?.avatar,
 					}}
 				/>
