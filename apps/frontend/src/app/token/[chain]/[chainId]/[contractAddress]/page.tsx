@@ -2,7 +2,6 @@ import ScrollToTop from "@/components/scroll-to-top";
 import ActivityFeed from "@/components/token-page/activity-feed";
 import Trades from "@/components/token-page/trades";
 import { getToken } from "@/lib/api";
-import { getMockToken } from "@/lib/mock-api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 
 export default async function Page({
@@ -14,8 +13,7 @@ export default async function Page({
 	try {
 		token = await getToken(tokenParams);
 	} catch (e) {
-		console.error("API fetch failed, trying mock data:", e);
-		token = getMockToken(tokenParams.contractAddress);
+		console.error("API fetch failed:", e);
 	}
 
 	if (!token) {

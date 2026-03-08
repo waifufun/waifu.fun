@@ -1,5 +1,4 @@
 import { getToken } from "@/lib/api";
-import { getMockToken } from "@/lib/mock-api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -12,9 +11,8 @@ async function fetchTokenWithFallback(tokenParams: ITokenLookUp): Promise<IToken
 	try {
 		return (await getToken(tokenParams)) as IToken;
 	} catch (e) {
-		console.error("API fetch failed, trying mock data:", e);
-		// Fall back to mock data
-		return getMockToken(tokenParams.contractAddress);
+		console.error("API fetch failed:", e);
+		return null;
 	}
 }
 

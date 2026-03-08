@@ -1,5 +1,4 @@
 import { getToken } from "@/lib/api";
-import { getMockToken } from "@/lib/mock-api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import TokenCreatePageClient from "@/components/token-page/ai-create";
 
@@ -11,8 +10,7 @@ export default async function TokenCreatePage({
 	try {
 		token = (await getToken(tokenParams)) as IToken;
 	} catch (e) {
-		console.warn("API fetch failed, using mock data:", e);
-		token = getMockToken(tokenParams.contractAddress);
+		console.error("API fetch failed:", e);
 	}
 
 	if (!token) {

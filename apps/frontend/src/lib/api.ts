@@ -259,7 +259,9 @@ export const getTokens = async ({
 
 export const getToken = async ({ chain: _chain, chainId: _chainId, contractAddress }: ITokenLookUp) => {
 	// waifu-core uses just the contract address, not chain/chainId routing
-	return await fetcher(`/tokens/${contractAddress}`, "GET");
+	const response = await fetcher(`/tokens/${contractAddress}`, "GET");
+	const raw = response?.data || response;
+	return mapApiTokenToIToken(raw);
 };
 
 export const getChartData = async ({
@@ -284,7 +286,8 @@ export const getChartData = async ({
 > => {
 	// waifu-core placeholder - returns empty for now
 	try {
-		return await fetcher(`/tokens/${contractAddress}/chart`, "GET");
+		const response = await fetcher(`/tokens/${contractAddress}/chart`, "GET");
+		return response?.data || response || [];
 	} catch (error) {
 		console.warn("[waifu-core] Chart endpoint not fully implemented yet");
 		return [];
@@ -293,7 +296,7 @@ export const getChartData = async ({
 
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
 	const response = await fetcher(`/tokens/${contractAddress}/trades`, "GET");
-	return response.items || [];
+	return response?.data?.items || response?.items || [];
 };
 
 export const authenticate = async (address: AddressLike, signature: string, chain: TChain) => {
@@ -367,10 +370,11 @@ export const getAdminStats = async () => {
 	// Map to admin launches for now
 	try {
 		const response = await fetcher("/admin/launches", "GET");
+		const data = response?.data || response;
 		return {
-			totalTokens: response.total || 0,
+			totalTokens: data.total || 0,
 			userCount: 0,
-			tokenCount: response.total || 0,
+			tokenCount: data.total || 0,
 			activeModerators: 0,
 			volume24h: 0,
 			totalUsers: 0,
@@ -402,8 +406,9 @@ export const getAdminTokens = async (params: {
 	// Map to /admin/launches for now
 	try {
 		const response = await fetcher("/admin/launches", "GET");
-		const items = response.items || [];
-		const total = response.total || 0;
+		const data = response?.data || response;
+		const items = data.items || [];
+		const total = data.total || 0;
 		const limit = params.limit || 20;
 		const page = params.page || 1;
 		const totalPages = Math.ceil(total / limit);
@@ -741,8 +746,9 @@ export const getAdminStatus = async () => {
 export const getAdminTokenStats = async () => {
 	try {
 		const response = await fetcher("/admin/launches", "GET");
+		const data = response?.data || response;
 		return {
-			totalTokens: response.total || 0,
+			totalTokens: data.total || 0,
 			verifiedCount: 0,
 			featuredCount: 0,
 			hiddenCount: 0,
