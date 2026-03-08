@@ -65,7 +65,7 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 	const createdLabel = formatCreatedAt(token.createdAt, { month: "short", year: "numeric" });
 	const stats = [
 		{ label: "created", value: createdLabel },
-		{ label: "holders", value: token.holders.toLocaleString() },
+		{ label: "holders", value: (token.holders ?? 0).toLocaleString() },
 		{ label: "chain", value: chainLabel },
 		{ label: "style", value: "—" },
 	];
@@ -132,7 +132,7 @@ export function AgentSkills({ token }: { token: IToken }) {
 	const infoItems = [
 		{
 			label: "holders",
-			value: token.holders.toLocaleString(),
+			value: (token.holders ?? 0).toLocaleString(),
 			icon: Users,
 			accent: "text-[#00ff87]",
 			glow: "bg-[#00ff87]/10",

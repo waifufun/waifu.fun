@@ -84,7 +84,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 						<TableCell className="text-right">{trade?.timestamp ? <TimeAgo date={trade?.timestamp} /> : "-"}</TableCell>
 						<TableCell>
 							<Link
-								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/tx/${trade.txId}`}
+								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId] ?? ""}/tx/${trade.txId}`}
 								target="_blank"
 							>
 								<ExternalLink className="ml-auto size-4 text-waifufun-background-action-highlight" />
