@@ -67,7 +67,6 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 		{ label: "created", value: createdLabel },
 		{ label: "holders", value: token.holders.toLocaleString() },
 		{ label: "chain", value: chainLabel },
-		{ label: "style", value: "—" },
 	];
 
 	return (
@@ -79,7 +78,7 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 			<div className="flex items-center justify-between mb-3 gap-2">
 				<div className="flex items-center gap-2 min-w-0">
 					<Zap className="size-3.5 text-[#00ff87]" />
-					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent personality</span>
+					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">token overview</span>
 				</div>
 				<div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#08080a] border border-[#00ff87]/20 rounded-sm shrink-0">
 					<span className="h-1.5 w-1.5 rounded-full bg-[#00ff87]" />
@@ -109,7 +108,7 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 					</p>
 				</div>
 			</div>
-			<div className="grid grid-cols-2 gap-2">
+			<div className="grid grid-cols-3 gap-2">
 				{stats.map((stat, index) => (
 					<motion.div
 						key={stat.label}
@@ -168,7 +167,7 @@ export function AgentSkills({ token }: { token: IToken }) {
 			<HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3">
 				<Shield className="size-3.5 text-[#00ff87]" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent skills</span>
+				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">token details</span>
 			</div>
 			<div className="flex flex-col gap-2">
 				{infoItems.map((item, index) => (

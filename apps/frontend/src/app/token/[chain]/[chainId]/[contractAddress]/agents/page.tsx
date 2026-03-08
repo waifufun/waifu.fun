@@ -1,6 +1,5 @@
 import Agents from "@/components/token-page/agents";
 import { getAgent, getToken } from "@/lib/api";
-import { getMockToken } from "@/lib/mock-api";
 import type { IAgent, IToken, ITokenLookUp, TChainId } from "@waifufun/types";
 
 export default async function Page({
@@ -11,10 +10,17 @@ export default async function Page({
 	try {
 		token = (await getToken(tokenParams)) as IToken;
 	} catch (e) {
-		console.warn("API fetch failed, using mock data:", e);
-		token = getMockToken(tokenParams.contractAddress);
+		console.warn("API fetch failed for token:", e);
 	}
-	if (!token) return null;
+	if (!token) {
+		return (
+			<div className="py-12 w-full flex place-content-center">
+				<div className="p-4 py-8 text-center w-full text-sm text-[#71717a] font-mono">
+					Unable to load token data.
+				</div>
+			</div>
+		);
+	}
 
 	let data: { docs?: IAgent[] } | null = null;
 	try {
