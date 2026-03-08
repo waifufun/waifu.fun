@@ -1,4 +1,3 @@
-import { Connection } from "@solana/web3.js";
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
 const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -956,11 +955,8 @@ export const getOwnerTokenBilling = async ({
 	};
 };
 
-// ========== LEGACY EXPORTS (Solana RPC) ==========
+// ========== LEGACY EXPORTS (deprecated — Solana RPC removed) ==========
 
-export const HELIUS_RPC_URL =
-	process.env.NEXT_PUBLIC_NETWORK === "devnet"
-		? `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`
-		: `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
+/** @deprecated BSC uses wagmi/viem public client instead */
+export const HELIUS_RPC_URL = "";
 
-export const connection = new Connection(HELIUS_RPC_URL, "finalized");

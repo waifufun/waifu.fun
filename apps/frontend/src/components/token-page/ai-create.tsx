@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ImageIcon, Video, AlertTriangle, Download, Trash2, RefreshCw, Zap, Crown, Maximize } from "lucide-react";
-import type { IToken, MediaType, SolanaNetworkIds } from "@waifufun/types";
+import type { IToken, MediaType, TChainId } from "@waifufun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
@@ -70,7 +70,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 			prompt: promptValue,
 			contractAddress: token.contractAddress,
 			chain: token.chain,
-			chainId: token.chainId as SolanaNetworkIds,
+			chainId: token.chainId as TChainId,
 		});
 	};
 

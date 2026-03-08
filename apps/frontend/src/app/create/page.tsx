@@ -9,7 +9,7 @@ import { RecentlyCreated } from "@/components/ui/create-token/recently-created";
 import { StepProgress } from "@/components/ui/create-token/step-progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useAccount } from "wagmi";
 import { Download, LockKeyhole, RefreshCcw, Settings2, Sparkles, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -22,13 +22,13 @@ const steps = [
 
 function CreateTokenLauncher() {
 	const [activeTab, setActiveTab] = useState("auto");
-	const { mintKeyPair, isLaunching, previousImages } = usePrompt();
+	const { launchSalt, isLaunching, previousImages } = usePrompt();
 
 	const currentStep = useMemo(() => {
 		if (isLaunching) return 2;
-		if (mintKeyPair || (previousImages && previousImages.length > 0)) return 1;
+		if (launchSalt || (previousImages && previousImages.length > 0)) return 1;
 		return 0;
-	}, [mintKeyPair, isLaunching, previousImages]);
+	}, [launchSalt, isLaunching, previousImages]);
 
 	return (
 		<div className="w-full min-h-screen bg-[#08080a]">
@@ -121,8 +121,8 @@ type LaunchGateCheckResponse = {
 type LaunchGateStatus = "loading" | "allowed" | "denied" | "unavailable";
 
 function CreatePageInner() {
-	const wallet = useWallet();
-	const walletKey = wallet.publicKey?.toBase58();
+	const { address, isConnected } = useAccount();
+	const walletKey = address;
 	const [inviteCodeInput, setInviteCodeInput] = useState("");
 	const [validatedInviteCode, setValidatedInviteCode] = useState<string | undefined>(undefined);
 	const [isSubmittingInvite, setIsSubmittingInvite] = useState(false);
@@ -262,7 +262,7 @@ function CreatePageInner() {
 									Retry will reuse invite code: <span className="font-mono text-[#a1a1aa]">{retryInviteCode}</span>
 								</p>
 							)}
-							{!wallet.connected && (
+							{!isConnected && (
 								<p className="text-xs text-[#71717a] leading-5">
 									Tip: connect your wallet in the site header before retrying launch access.
 								</p>
@@ -348,7 +348,7 @@ function CreatePageInner() {
 								</li>
 							</ul>
 
-							{!wallet.connected && (
+							{!isConnected && (
 								<p className="text-xs text-[#71717a] leading-5">
 									Tip: connect your wallet in the site header first, then enter your invite code here.
 								</p>

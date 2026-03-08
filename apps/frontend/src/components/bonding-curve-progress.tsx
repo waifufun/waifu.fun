@@ -4,7 +4,8 @@ import { AlertCircle, Rocket, Zap, Trophy, Target } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { formatNumber, cn } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+/** BNB has 18 decimals; 1 BNB = 1e18 wei */
+const LAMPORTS_PER_SOL = 1e18;
 import { motion } from "framer-motion";
 
 function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {

@@ -23,13 +23,15 @@ import { createToken } from "@/lib/api";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { createTokenTx } from "@/lib/utils";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useAccount } from "wagmi";
 import { Controller, type ControllerRenderProps } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import type { AddressLike, TChain } from "@waifufun/types";
 import { curveLimitConst } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errorMessage";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+
+/** BNB has 18 decimals; 1 BNB = 1e18 wei */
+const NATIVE_DECIMALS = 1e18;
 
 const formElementBaseClass =
 	"bg-[#0e0e12] border border-[rgba(255,255,255,0.08)] placeholder-[#52525b] text-sm focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87]/30 text-[#e4e4e7] rounded-sm";
@@ -110,7 +112,7 @@ export const CustomAddressGenerator = ({
 	defaultOpen = false,
 }: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
 	const [suffix, setSuffix] = useState("FUN");
-	const { generateAddress, mintKeyPair, isGeneratingAddress, terminateWorkers, cancelVanityGeneration } = usePrompt();
+	const { generateAddress, launchSalt, isGeneratingAddress, terminateWorkers, cancelVanityGeneration } = usePrompt();
 
 	const handleGenerate = () => {
 		generateAddress(suffix);
@@ -157,11 +159,11 @@ export const CustomAddressGenerator = ({
 				)}
 			</div>
 			<p className="text-xs text-[#00ff87] font-mono break-all bg-[rgba(17,17,20,0.7)] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm min-h-[2rem] flex items-center">
-				{mintKeyPair
-					? mintKeyPair.publicKey.toString()
+				{launchSalt
+					? launchSalt
 					: isGeneratingAddress
 						? "GENERATING..."
-						: "Generate an address to see it here"}
+						: "Generate a salt to see it here"}
 			</p>
 			<div className="flex items-center gap-2">
 				<Info size={12} className="text-gray-500" />
@@ -179,7 +181,7 @@ export const CustomCurveSection = ({
 		control,
 		formState: { errors },
 	} = usePrompt();
-	console.log(curveLimitConst / LAMPORTS_PER_SOL, "curveLimitConst / LAMPORTS_PER_SOL");
+	console.log(curveLimitConst / NATIVE_DECIMALS, "curveLimitConst / NATIVE_DECIMALS");
 
 	return (
 		<Controller
@@ -202,7 +204,7 @@ export const CustomCurveSection = ({
 
 						<Slider
 							id="curveLimit"
-							min={curveLimitConst / LAMPORTS_PER_SOL}
+							min={curveLimitConst / NATIVE_DECIMALS}
 							max={678}
 							step={1}
 							value={[field.value]}
@@ -438,7 +440,7 @@ export const PreBuySection = ({
 	} = usePrompt();
 	const address = useAddress();
 	const balanceQuery = useBalance({
-		chain: "solana",
+		chain: "evm",
 		address,
 	});
 	const balance = balanceQuery?.data || 0;
@@ -545,8 +547,7 @@ export const LaunchButton = ({
 	idPrefix?: string;
 	disabled?: boolean;
 }) => {
-	const wallet = useWallet();
-	const { connection } = useConnection();
+	const { address: walletAddress, isConnected } = useAccount();
 	const {
 		handleSubmit,
 		formState,
@@ -555,17 +556,17 @@ export const LaunchButton = ({
 		isGeneratingMedia,
 		getTokenData,
 		pool,
-		mintKeyPair,
+		launchSalt,
 		setLaunching,
-		setMintKeyPair,
+		setLaunchSalt,
 		isLaunching,
 		inviteCode,
 	} = usePrompt();
 	const router = useRouter();
 	const [chain, chainId] = [
-		"solana",
-		process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101,
-	]; /* Malibu - the chain and chainId should be part of the prompt context or passed as props */
+		"evm",
+		56,
+	]; /* BSC mainnet — chain and chainId should be part of the prompt context or passed as props */
 
 	const createTokenMutation = useMutation({
 		mutationFn: createToken,
@@ -574,7 +575,7 @@ export const LaunchButton = ({
 			console.log("Transaction successful:", tx);
 			toast.success("Token created successfully!");
 			router.push(`/token/${chain}/${chainId}/${variables.contractAddress}`);
-			setMintKeyPair(null);
+			setLaunchSalt(null);
 		},
 		onError: (error) => {
 			console.error("Error creating token:", error);
@@ -583,11 +584,11 @@ export const LaunchButton = ({
 		},
 	});
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !mintKeyPair;
+	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt;
 
 	const balanceQuery = useBalance({
-		chain: "solana",
-		address: (wallet?.publicKey?.toString() || "") as AddressLike,
+		chain: "evm",
+		address: (walletAddress || "") as AddressLike,
 	});
 
 	const balance = balanceQuery?.data || 0;
@@ -608,8 +609,8 @@ export const LaunchButton = ({
 			return;
 		}
 
-		if (!mintKeyPair) {
-			toast.error("Please generate a custom address first.");
+		if (!launchSalt) {
+			toast.error("Please generate a launch salt first.");
 			return;
 		}
 
@@ -618,8 +619,8 @@ export const LaunchButton = ({
 			return;
 		}
 
-		if (balance < 0.04) {
-			toast.error("Insufficient balance. You need at least 0.04 SOL to create a token.");
+		if (balance < 0.01) {
+			toast.error("Insufficient balance. You need at least 0.01 BNB to create a token.");
 			return;
 		}
 
@@ -627,14 +628,14 @@ export const LaunchButton = ({
 		try {
 			const tokenData = await getTokenData(idPrefix === "manual");
 			console.log("Token Data:", tokenData);
-			const tx = await createTokenTx(tokenData, { connection, wallet });
+			const tx = await createTokenTx(tokenData);
 			console.log("Transaction:", tx);
 			createTokenMutation.mutate({
-				contractAddress: mintKeyPair?.publicKey.toString() || "",
+				contractAddress: tx.contractAddress || "",
 				chain: chain as TChain,
 				chainId: chainId,
 				pool: pool,
-				signature: tx?.signature.toString() || "",
+				signature: tx.txHash || "",
 				...(inviteCode !== undefined ? { inviteCode } : {}),
 			});
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>

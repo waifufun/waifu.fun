@@ -2,27 +2,27 @@
 
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useIsClient } from "usehooks-ts";
 import { Wallet, LogOut } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { logOut } from "@/lib/api";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount, useDisconnect } from "wagmi";
 
 export default function HeaderConnectWallet() {
 	const isClient = useIsClient();
-	const modal = useWalletModal();
-	const wallet = useWallet();
+	const { address, isConnected } = useAccount();
+	const { disconnect } = useDisconnect();
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 
 	const handleSignOut = async () => {
 		setDropdownOpen(false);
 		try {
-			await logOut("solana");
+			await logOut("evm");
 		} catch {
 			// ignore API errors
 		}
-		wallet.disconnect();
+		disconnect();
 	};
 
 	const greenButtonClass =
@@ -36,9 +36,8 @@ export default function HeaderConnectWallet() {
 		);
 	}
 
-	if (wallet.connected && wallet.publicKey) {
-		const address = wallet.publicKey.toBase58();
-		const short = `${address.slice(0, 4)}...${address.slice(-4)}`;
+	if (isConnected && address) {
+		const short = `${address.slice(0, 6)}...${address.slice(-4)}`;
 		return (
 			<Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
 				<PopoverTrigger asChild>
@@ -65,9 +64,13 @@ export default function HeaderConnectWallet() {
 	}
 
 	return (
-		<Button className={greenButtonClass} onClick={() => modal.setVisible(true)}>
-			<Wallet className="size-4 mr-2" />
-			Connect Wallet
-		</Button>
+		<ConnectButton.Custom>
+			{({ openConnectModal }) => (
+				<Button className={greenButtonClass} onClick={openConnectModal}>
+					<Wallet className="size-4 mr-2" />
+					Connect Wallet
+				</Button>
+			)}
+		</ConnectButton.Custom>
 	);
 }

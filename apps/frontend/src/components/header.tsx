@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useAccount } from "wagmi";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
 import { HowItWorksModal } from "./how-it-works-modal";
@@ -22,7 +22,7 @@ export default function Header() {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 	const { scrollY } = useScroll();
-	const wallet = useWallet();
+	const { isConnected } = useAccount();
 
 	useMotionValueEvent(scrollY, "change", (latest) => {
 		setScrolled(latest > 20);
@@ -30,12 +30,12 @@ export default function Header() {
 
 	// Show "how it works" modal automatically on first login
 	useEffect(() => {
-		if (!wallet.connected || typeof window === "undefined") return;
+		if (!isConnected || typeof window === "undefined") return;
 		const seen = localStorage.getItem(HOW_IT_WORKS_SEEN_KEY);
 		if (seen) return;
 		localStorage.setItem(HOW_IT_WORKS_SEEN_KEY, "true");
 		setHowItWorksOpen(true);
-	}, [wallet.connected]);
+	}, [isConnected]);
 
 	return (
 		<motion.header

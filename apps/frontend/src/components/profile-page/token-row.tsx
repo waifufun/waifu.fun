@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
 import type { TChain } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+/** BNB has 18 decimals; 1 BNB = 1e18 wei */
+const LAMPORTS_PER_SOL = 1e18;
 import Verified from "../verified";
 
 export default function TokenRow({

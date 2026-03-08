@@ -14,9 +14,9 @@ import {
 	type UseFormSetValue,
 	type Control,
 } from "react-hook-form";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { curveLimitConst } from "@/lib/utils";
-import type { SolanaNetworkIds, TChain } from "@waifufun/types";
+import type { TChain, TChainId } from "@waifufun/types";
+import { parseEther } from "viem";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -25,6 +25,9 @@ const MAX_SUFFIX_LENGTH_FOR_SERIOUS_WARNING = 4;
 const MAX_SUFFIX_LENGTH_FOR_HOURS_WARNING = 4;
 const INITIAL_GENERATION_SUFFIX = "FUN";
 
+/** BNB has 18 decimals; use 1e18 as the base unit multiplier */
+const NATIVE_DECIMALS = 18;
+
 type MediaType = "audio" | "video" | "image";
 
 type PromptContextType = {
@@ -32,7 +35,8 @@ type PromptContextType = {
 	registerForm: UseFormRegister<TokenFormData>;
 	handleSubmit: UseFormHandleSubmit<TokenFormData>;
 	formState: FormState<TokenFormData>;
-	mintKeyPair: Keypair | null;
+	/** Salt used for CREATE2 address generation on BSC (replaces Solana mint keypair) */
+	launchSalt: string | null;
 	generateAddress: (suffix: string) => void;
 	isGeneratingAddress: boolean;
 	isGeneratingMedia: boolean;
@@ -42,7 +46,7 @@ type PromptContextType = {
 		prompt?: string;
 		contractAddress?: string;
 		chain: TChain;
-		chainId: SolanaNetworkIds;
+		chainId: TChainId;
 	}) => void;
 	changeMainImage: (index: number) => void;
 	changeMainMedia: (index: number, type: MediaType) => void;
@@ -64,7 +68,7 @@ type PromptContextType = {
 	addMedia: (link: string, type: MediaType) => void;
 	terminateWorkers: () => void;
 	cancelVanityGeneration: () => void;
-	setMintKeyPair: (keypair: Keypair | null) => void;
+	setLaunchSalt: (salt: string | null) => void;
 	inviteCode: string | undefined;
 };
 
@@ -85,7 +89,8 @@ export type TokenMetadata = {
 	symbol: string;
 	description: string;
 	image: string;
-	mintKeyPair: Keypair;
+	/** Salt for CREATE2 address derivation on BSC */
+	launchSalt: string;
 	buyAmount: number;
 	metadataUrl: string;
 	curveLimit: number;
@@ -96,6 +101,17 @@ export type TokenMetadata = {
 export type TokenFormOptions = keyof TokenFormData;
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined);
+
+/** Generate a random hex salt for CREATE2 address derivation */
+function generateRandomSalt(): string {
+	const bytes = new Uint8Array(32);
+	crypto.getRandomValues(bytes);
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
+}
+
+/** Generate a random hex salt for CREATE2 address derivation */
 
 export const PromptProvider = ({
 	children,
@@ -122,13 +138,13 @@ const PromptProviderContent = ({
 			description: "",
 			symbol: "",
 			buyAmount: 0,
-			curveLimit: Number(curveLimitConst) / LAMPORTS_PER_SOL,
+			curveLimit: Number(curveLimitConst) / 1e18,
 			delayForTrade: 0,
 			tradeLimitSol: 0,
 		},
 		mode: "onChange",
 	});
-	const [mintKeyPair, setMintKeyPair] = useState<Keypair | null>(null);
+	const [launchSalt, setLaunchSalt] = useState<string | null>(null);
 	const [isGeneratingAddressState, setIsGeneratingAddressState] = useState<boolean>(false);
 	const {
 		previousImages,
@@ -143,7 +159,7 @@ const PromptProviderContent = ({
 	} = UseTokenMedia(tokenImageQuery);
 	const [isGeneratingMedia, setIsGeneratingMedia] = useState<boolean>(false);
 	const [uploadedImage, setUploadedImage] = useState<string | undefined | null>(undefined);
-	const [pool, setPool] = useState<string>("meteora");
+	const [pool, setPool] = useState<string>("pancakeswap");
 	const [isLaunching, setIsLaunching] = useState<boolean>(false);
 
 	const workerRefs = useRef<Worker[]>([]);
@@ -176,8 +192,8 @@ const PromptProviderContent = ({
 		},
 	});
 
-	const resetMintKeyPair = useCallback(() => {
-		setMintKeyPair(null);
+	const resetLaunchSalt = useCallback(() => {
+		setLaunchSalt(null);
 		setIsGeneratingAddress(false);
 	}, []);
 
@@ -190,10 +206,8 @@ const PromptProviderContent = ({
 
 				let actualMediaUrl: string;
 				if (typeof data.mediaUrl === "string") {
-					// Image or direct URL
 					actualMediaUrl = data.mediaUrl;
 				} else if (typeof data.mediaUrl === "object" && data.mediaUrl !== null && "url" in data.mediaUrl) {
-					// Video/Audio object format
 					actualMediaUrl = data.mediaUrl.url;
 				} else {
 					toast.error("Error generating media: Invalid media URL format");
@@ -248,7 +262,7 @@ const PromptProviderContent = ({
 			type: MediaType;
 			contractAddress: string;
 			chain: TChain;
-			chainId: SolanaNetworkIds;
+			chainId: TChainId;
 		}) =>
 			generateMediaForToken({
 				prompt,
@@ -257,7 +271,7 @@ const PromptProviderContent = ({
 				type: type as "audio" | "video" | "image",
 				contractAddress,
 				chain,
-				chainId,
+				chainId: chainId as any,
 			}),
 		onSuccess: (data) => {
 			if (data?.mediaUrl) {
@@ -325,7 +339,7 @@ const PromptProviderContent = ({
 	const cancelVanityGeneration = useCallback(() => {
 		if (isGeneratingAddressRef.current) {
 			setIsGeneratingAddress(false);
-			setMintKeyPair(null);
+			setLaunchSalt(null);
 			activeSuffixRef.current = "";
 			terminateWorkers();
 		}
@@ -359,10 +373,11 @@ const PromptProviderContent = ({
 
 					switch (type) {
 						case "progress":
-							setMintKeyPair(Keypair.fromSeed(new Uint8Array(keypair.privateKey)));
+							// Store the derived salt from the vanity generation
+							setLaunchSalt(`0x${Array.from(new Uint8Array(keypair.privateKey)).map((b: number) => b.toString(16).padStart(2, "0")).join("")}`);
 							break;
 						case "done":
-							setMintKeyPair(Keypair.fromSeed(new Uint8Array(keypair.privateKey)));
+							setLaunchSalt(`0x${Array.from(new Uint8Array(keypair.privateKey)).map((b: number) => b.toString(16).padStart(2, "0")).join("")}`);
 							setIsGeneratingAddress(false);
 							activeSuffixRef.current = "";
 							if (workerRefs?.current) {
@@ -377,7 +392,7 @@ const PromptProviderContent = ({
 						case "error":
 							if (workerRefs.current.includes(worker)) {
 								setIsGeneratingAddress(false);
-								setMintKeyPair(null);
+								setLaunchSalt(null);
 								activeSuffixRef.current = "";
 								terminateWorkers();
 							}
@@ -386,7 +401,7 @@ const PromptProviderContent = ({
 							if (success === false) {
 								if (workerRefs.current.includes(worker)) {
 									setIsGeneratingAddress(false);
-									setMintKeyPair(null);
+									setLaunchSalt(null);
 									activeSuffixRef.current = "";
 									terminateWorkers();
 								}
@@ -402,7 +417,7 @@ const PromptProviderContent = ({
 						workerRefs.current.includes(worker)
 					) {
 						setIsGeneratingAddress(false);
-						setMintKeyPair(null);
+						setLaunchSalt(null);
 						activeSuffixRef.current = "";
 						terminateWorkers();
 					}
@@ -426,7 +441,7 @@ const PromptProviderContent = ({
 		(newSuffix: string) => {
 			if (!newSuffix || newSuffix.trim() === "") {
 				toast.error("Please enter a suffix to generate an address.");
-				setMintKeyPair(null);
+				setLaunchSalt(null);
 				if (isGeneratingAddressRef.current) {
 					setIsGeneratingAddress(false);
 				}
@@ -456,7 +471,7 @@ const PromptProviderContent = ({
 			}
 
 			setIsGeneratingAddress(true);
-			setMintKeyPair(null);
+			setLaunchSalt(null);
 
 			initializeAndStartWorkers(newSuffix);
 		},
@@ -483,7 +498,7 @@ const PromptProviderContent = ({
 		prompt?: string;
 		contractAddress?: string;
 		chain: TChain;
-		chainId: SolanaNetworkIds;
+		chainId: TChainId;
 	}) => {
 		if (!contractAddress) {
 			toast.error("Contract address is required for token media generation");
@@ -511,7 +526,7 @@ const PromptProviderContent = ({
 		const name = watch("name") || "Untitled Token";
 		const symbol = watch("symbol") || "";
 		const description = watch("description") || "No description provided.";
-		const mintKeyPairr = mintKeyPair || Keypair.generate();
+		const salt = launchSalt || generateRandomSalt();
 		const buyAmount = watch("buyAmount") || 0;
 		const curveLimit = watch("curveLimit") || curveLimitConst;
 		const delayForTrade = watch("delayForTrade") || 0;
@@ -541,7 +556,7 @@ const PromptProviderContent = ({
 			symbol,
 			description,
 			image: remoteMetadataMutation.data?.imageUrl,
-			mintKeyPair: mintKeyPairr,
+			launchSalt: salt,
 			buyAmount,
 			metadataUrl,
 			curveLimit: Number(curveLimit),
@@ -565,7 +580,7 @@ const PromptProviderContent = ({
 			terminateWorkers();
 			if (isGeneratingAddressRef.current) {
 				setIsGeneratingAddress(false);
-				setMintKeyPair(null);
+				setLaunchSalt(null);
 			}
 		};
 	}, [terminateWorkers]);
@@ -575,7 +590,7 @@ const PromptProviderContent = ({
 		registerForm: register,
 		handleSubmit,
 		formState,
-		mintKeyPair,
+		launchSalt,
 		generateAddress,
 		isGeneratingAddress: isGeneratingAddressState,
 		isGeneratingMedia,
@@ -601,7 +616,7 @@ const PromptProviderContent = ({
 		addMedia,
 		terminateWorkers,
 		cancelVanityGeneration,
-		setMintKeyPair,
+		setLaunchSalt,
 		inviteCode,
 	};
 
@@ -643,7 +658,7 @@ export const descriptionValidation: RegisterOptions<TokenFormData, "description"
 export const curveLimitValidation: RegisterOptions<TokenFormData, "curveLimit"> = {
 	valueAsNumber: true,
 	required: "Curve limit is required",
-	min: { value: 0, message: "Curve limit must be ≥ 0" }, // we will change this to 113 in mainnet
+	min: { value: 0, message: "Curve limit must be ≥ 0" },
 	max: {
 		value: Number(curveLimitConst) || 675,
 		message: `Curve limit must be ≤ ${curveLimitConst || 675}`,

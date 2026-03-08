@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useLocalStorage } from "usehooks-ts";
-import { useConnection } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import type { IToken } from "@waifufun/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePublicClient } from "wagmi";
 
 export interface PendingTransaction {
-	signature: string;
+	hash: string;
 	token: IToken;
 	mode: "buy" | "sell";
 	inputAmount: number;
@@ -21,7 +21,7 @@ export interface PendingTransaction {
 interface TransactionListenerContextType {
 	pendingTransactions: PendingTransaction[];
 	addTransaction: (
-		signature: string,
+		hash: string,
 		token: IToken,
 		mode: "buy" | "sell",
 		inputAmount: number,
@@ -38,14 +38,14 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		"waifufun-pending-transactions",
 		[],
 	);
-	const { connection } = useConnection();
+	const publicClient = usePublicClient();
 	const monitoringRef = useRef<Set<string>>(new Set());
 	const hasInitialized = useRef(false);
 
 	const addTransaction = useCallback(
-		(signature: string, token: IToken, mode: "buy" | "sell", inputAmount: number, expectedOutput: number) => {
+		(hash: string, token: IToken, mode: "buy" | "sell", inputAmount: number, expectedOutput: number) => {
 			const newTransaction: PendingTransaction = {
-				signature,
+				hash,
 				token,
 				mode,
 				inputAmount,
@@ -56,20 +56,19 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			};
 
 			const toastAction = {
-				label: "View on Solscan",
+				label: "View on BscScan",
 				onClick: () => {
-					const network = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? "?cluster=devnet" : "";
-					window.open(`https://solscan.io/tx/${newTransaction.signature}${network}`);
+					window.open(`https://bscscan.com/tx/${newTransaction.hash}`);
 				},
 			};
 
-			const inputSymbol = newTransaction.mode === "buy" ? "SOL" : newTransaction.token.ticker;
-			const outputSymbol = newTransaction.mode === "buy" ? newTransaction.token.ticker : "SOL";
-			const inputDecimals = newTransaction.mode === "buy" ? 9 : newTransaction.token.decimals;
-			const outputDecimals = newTransaction.mode === "buy" ? newTransaction.token.decimals : 9;
-			const inputFormatted = (newTransaction.inputAmount / 10 ** inputDecimals).toFixed(inputDecimals === 9 ? 4 : 2);
+			const inputSymbol = newTransaction.mode === "buy" ? "BNB" : newTransaction.token.ticker;
+			const outputSymbol = newTransaction.mode === "buy" ? newTransaction.token.ticker : "BNB";
+			const inputDecimals = newTransaction.mode === "buy" ? 18 : newTransaction.token.decimals;
+			const outputDecimals = newTransaction.mode === "buy" ? newTransaction.token.decimals : 18;
+			const inputFormatted = (newTransaction.inputAmount / 10 ** inputDecimals).toFixed(inputDecimals === 18 ? 4 : 2);
 			const outputFormatted = (newTransaction.expectedOutput / 10 ** outputDecimals).toFixed(
-				outputDecimals === 9 ? 4 : 2,
+				outputDecimals === 18 ? 4 : 2,
 			);
 
 			toast.info(`Swapping ${inputFormatted} ${inputSymbol} for ${outputFormatted} ${outputSymbol}`, {
@@ -77,32 +76,33 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			});
 
 			setPendingTransactions((prev) => {
-				const filtered = prev.filter((tx) => tx.signature !== signature);
+				const filtered = prev.filter((tx) => tx.hash !== hash);
 				return [newTransaction, ...filtered];
 			});
 
-			if (connection) {
+			if (publicClient) {
 				monitorTransaction(newTransaction);
 			}
 		},
-		[setPendingTransactions, connection],
+		[setPendingTransactions, publicClient],
 	);
 
 	const showTransactionToast = useCallback(
 		(transaction: PendingTransaction, success: boolean) => {
-			const inputSymbol = transaction.mode === "buy" ? "SOL" : transaction.token.ticker;
-			const outputSymbol = transaction.mode === "buy" ? transaction.token.ticker : "SOL";
-			const inputDecimals = transaction.mode === "buy" ? 9 : transaction.token.decimals;
-			const outputDecimals = transaction.mode === "buy" ? transaction.token.decimals : 9;
+			const inputSymbol = transaction.mode === "buy" ? "BNB" : transaction.token.ticker;
+			const outputSymbol = transaction.mode === "buy" ? transaction.token.ticker : "BNB";
+			const inputDecimals = transaction.mode === "buy" ? 18 : transaction.token.decimals;
+			const outputDecimals = transaction.mode === "buy" ? transaction.token.decimals : 18;
 
-			const inputFormatted = (transaction.inputAmount / 10 ** inputDecimals).toFixed(inputDecimals === 9 ? 4 : 2);
-			const outputFormatted = (transaction.expectedOutput / 10 ** outputDecimals).toFixed(outputDecimals === 9 ? 4 : 2);
+			const inputFormatted = (transaction.inputAmount / 10 ** inputDecimals).toFixed(inputDecimals === 18 ? 4 : 2);
+			const outputFormatted = (transaction.expectedOutput / 10 ** outputDecimals).toFixed(
+				outputDecimals === 18 ? 4 : 2,
+			);
 
 			const toastAction = {
-				label: "View on Solscan",
+				label: "View on BscScan",
 				onClick: () => {
-					const network = process.env.NEXT_PUBLIC_NETWORK === "devnet" ? "?cluster=devnet" : "";
-					window.open(`https://solscan.io/tx/${transaction.signature}${network}`);
+					window.open(`https://bscscan.com/tx/${transaction.hash}`);
 				},
 			};
 
@@ -111,124 +111,68 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 					action: toastAction,
 				});
 			} else {
-				toast.error(`Swap failed: ${transaction.signature.slice(0, 8)}...`, {
+				toast.error(`Swap failed: ${transaction.hash.slice(0, 10)}...`, {
 					action: toastAction,
 				});
 			}
 
 			setPendingTransactions((prev) =>
-				prev.map((tx) => (tx.signature === transaction.signature ? { ...tx, toastShown: true } : tx)),
+				prev.map((tx) => (tx.hash === transaction.hash ? { ...tx, toastShown: true } : tx)),
 			);
 		},
 		[setPendingTransactions],
 	);
 
-	const checkTransactionStatus = useCallback(
-		async (transaction: PendingTransaction) => {
-			if (!connection) return;
-
-			try {
-				const status = await connection.getSignatureStatus(transaction.signature);
-
-				if (status.value?.confirmationStatus === "confirmed" || status.value?.confirmationStatus === "finalized") {
-					const success = !status.value.err;
-
-					setPendingTransactions((prev) =>
-						prev.map((tx) => (tx.signature === transaction.signature ? { ...tx, confirmed: true } : tx)),
-					);
-
-					if (!transaction.toastShown) {
-						showTransactionToast(transaction, success);
-					}
-
-					// cleanup
-					setTimeout(
-						() => {
-							setPendingTransactions((prev) => prev.filter((tx) => tx.signature !== transaction.signature));
-						},
-						5 * 60 * 1000,
-					);
-
-					return true;
-				}
-
-				return false; // pending
-			} catch (error) {
-				console.error("Error checking transaction status:", error);
-				// failed
-				setPendingTransactions((prev) => prev.filter((tx) => tx.signature !== transaction.signature));
-				return true;
-			}
-		},
-		[connection, setPendingTransactions, showTransactionToast],
-	);
-
 	const monitorTransaction = useCallback(
 		async (transaction: PendingTransaction) => {
-			if (!connection) {
-				console.warn("Connection not available for transaction monitoring");
-				return;
-			}
+			if (!publicClient) return;
+			if (monitoringRef.current.has(transaction.hash)) return;
 
-			if (monitoringRef.current.has(transaction.signature)) {
-				return;
-			}
-
-			monitoringRef.current.add(transaction.signature);
+			monitoringRef.current.add(transaction.hash);
 
 			try {
-				const isDone = await checkTransactionStatus(transaction);
-				if (isDone) {
-					return;
-				}
-
-				// if not confirmed, wait
-				const confirmation = await connection.confirmTransaction(transaction.signature, "finalized");
-
-				const success = !confirmation.value.err;
-
-				queryClient.invalidateQueries({
-					queryKey: ["balance"],
+				const receipt = await publicClient.waitForTransactionReceipt({
+					hash: transaction.hash as `0x${string}`,
 				});
-				queryClient.invalidateQueries({
-					queryKey: ["chart"],
-				});
-				queryClient.invalidateQueries({
-					queryKey: ["trades"],
-				});
+
+				const success = receipt.status === "success";
+
+				queryClient.invalidateQueries({ queryKey: ["balance"] });
+				queryClient.invalidateQueries({ queryKey: ["chart"] });
+				queryClient.invalidateQueries({ queryKey: ["trades"] });
 
 				setPendingTransactions((prev) =>
-					prev.map((tx) => (tx.signature === transaction.signature ? { ...tx, confirmed: true } : tx)),
+					prev.map((tx) => (tx.hash === transaction.hash ? { ...tx, confirmed: true } : tx)),
 				);
 
 				if (!transaction.toastShown) {
 					showTransactionToast(transaction, success);
 				}
 
-				// cleanup
+				// cleanup after 5 minutes
 				setTimeout(
 					() => {
-						setPendingTransactions((prev) => prev.filter((tx) => tx.signature !== transaction.signature));
+						setPendingTransactions((prev) => prev.filter((tx) => tx.hash !== transaction.hash));
 					},
 					5 * 60 * 1000,
 				);
 			} catch (error) {
 				console.error("Error monitoring transaction:", error);
-				setPendingTransactions((prev) => prev.filter((tx) => tx.signature !== transaction.signature));
+				setPendingTransactions((prev) => prev.filter((tx) => tx.hash !== transaction.hash));
 			} finally {
-				monitoringRef.current.delete(transaction.signature);
+				monitoringRef.current.delete(transaction.hash);
 			}
 		},
-		[connection, setPendingTransactions, checkTransactionStatus, showTransactionToast, queryClient],
+		[publicClient, setPendingTransactions, showTransactionToast, queryClient],
 	);
 
 	const clearConfirmedTransactions = useCallback(() => {
 		setPendingTransactions((prev) => prev.filter((tx) => !tx.confirmed));
 	}, [setPendingTransactions]);
 
-	// monitor all transaction that haven't shown toast yet
+	// monitor all transactions that haven't shown toast yet
 	useEffect(() => {
-		if (!connection || hasInitialized.current) return;
+		if (!publicClient || hasInitialized.current) return;
 
 		const unprocessedTransactions = pendingTransactions.filter((tx) => !tx.toastShown);
 
@@ -240,14 +184,14 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		}
 
 		hasInitialized.current = true;
-	}, [connection, pendingTransactions, monitorTransaction]);
+	}, [publicClient, pendingTransactions, monitorTransaction]);
 
-	// reset if connection drops or whatever
+	// reset if client changes
 	useEffect(() => {
-		if (connection) {
+		if (publicClient) {
 			hasInitialized.current = false;
 		}
-	}, [connection]);
+	}, [publicClient]);
 
 	const value = {
 		pendingTransactions,

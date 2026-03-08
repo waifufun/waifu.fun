@@ -14,7 +14,6 @@
 	},
 	"dependencies": {
 		"@bprogress/next": "^3.2.12",
-		"@coral-xyz/anchor": "^0.31.1",
 		"@next/third-parties": "^15.3.2",
 		"@noble/ed25519": "^2.2.3",
 		"@noble/hashes": "^1.8.0",
@@ -30,13 +29,9 @@
 		"@radix-ui/react-toggle": "^1.1.9",
 		"@radix-ui/react-toggle-group": "^1.1.10",
 		"@radix-ui/react-tooltip": "^1.2.7",
-		"@solana/spl-token": "^0.4.1",
-		"@solana/wallet-adapter-react": "^0.15.38",
-		"@solana/wallet-adapter-react-ui": "^0.9.38",
-		"@solana/web3.js": "^1.98.2",
-		"@tanstack/react-query": "^5.76.0",
+		"@rainbow-me/rainbowkit": "^2.2.10",
+		"@tanstack/react-query": "^5.77.2",
 		"@waifufun/constants": "workspace:*",
-		"@waifufun/programs": "workspace:*",
 		"bs58": "^6.0.0",
 		"buffer": "^6.0.3",
 		"class-variance-authority": "^0.7.1",
@@ -58,7 +53,8 @@
 		"tailwindcss-animate": "^1.0.7",
 		"tailwindcss-animated": "^2.0.0",
 		"usehooks-ts": "^3.1.1",
-		"viem": "2.30.5"
+		"viem": "2.47.0",
+		"wagmi": "^2.19.5"
 	},
 	"devDependencies": {
 		"@storybook/addon-essentials": "^8.6.13",

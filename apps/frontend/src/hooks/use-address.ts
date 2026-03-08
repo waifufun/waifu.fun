@@ -1,9 +1,9 @@
 "use client";
 
-import type { SolanaAddressLike } from "@waifufun/types";
-import { useWallet } from "@solana/wallet-adapter-react";
+import type { AddressLike } from "@waifufun/types";
+import { useAccount } from "wagmi";
 
 export default function useAddress() {
-	const wallet = useWallet();
-	return wallet.publicKey?.toBase58() as SolanaAddressLike;
+	const { address } = useAccount();
+	return address as AddressLike | undefined;
 }
