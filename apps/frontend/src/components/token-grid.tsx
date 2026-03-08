@@ -19,7 +19,7 @@ function formatMarketCap(mc: number): string {
 }
 
 /** Cinematic hero card component */
-function HeroCard({ token, index }: { token: IToken; index: number }) {
+function HeroCard({ token, index: _index }: { token: IToken; index: number }) {
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
 	const isVerified = Boolean(token?.verified);

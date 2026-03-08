@@ -31,14 +31,14 @@ const MOCK_WALLETS = [
 
 function generateMockTrades(ticker: string): MockTrade[] {
 	return [
-		{ type: "buy", amount: "0.5 SOL", ticker, wallet: MOCK_WALLETS[0], txId: "5Vv6kF3hJ9mN2pQr8sT1uW4xY7zAbC0dEfGhIjK", time: "2m ago" },
-		{ type: "sell", amount: "2.1 SOL", ticker, wallet: MOCK_WALLETS[1], txId: "2AbC3dEfGhI6jKlM9nOpQrStUvWxYz", time: "5m ago" },
-		{ type: "buy", amount: "1.2 SOL", ticker, wallet: MOCK_WALLETS[2], txId: "9pQr2sT4uVwXyZ0aBcDeFgHiJkLmN", time: "8m ago" },
-		{ type: "buy", amount: "0.3 SOL", ticker, wallet: MOCK_WALLETS[3], txId: "7mNk5oPqRsTuVwXyZ2aBcDeFgHiJ", time: "12m ago" },
-		{ type: "sell", amount: "0.8 SOL", ticker, wallet: MOCK_WALLETS[4], txId: "3fGh8jKlMnOpQrStUvWxYz1aBc", time: "15m ago" },
-		{ type: "buy", amount: "3.0 SOL", ticker, wallet: MOCK_WALLETS[5], txId: "1bCd4eFgHiJkLmNoPqRsTuVwXy", time: "22m ago" },
-		{ type: "sell", amount: "1.5 SOL", ticker, wallet: MOCK_WALLETS[6], txId: "6iJk9lMnOpQrStUvWxYzAbCdEf", time: "31m ago" },
-		{ type: "buy", amount: "0.7 SOL", ticker, wallet: MOCK_WALLETS[7], txId: "4eFg7hIjKlMnOpQrStUvWxYz0a", time: "45m ago" },
+		{ type: "buy", amount: "0.5 SOL", ticker, wallet: MOCK_WALLETS[0]!, txId: "5Vv6kF3hJ9mN2pQr8sT1uW4xY7zAbC0dEfGhIjK", time: "2m ago" },
+		{ type: "sell", amount: "2.1 SOL", ticker, wallet: MOCK_WALLETS[1]!, txId: "2AbC3dEfGhI6jKlM9nOpQrStUvWxYz", time: "5m ago" },
+		{ type: "buy", amount: "1.2 SOL", ticker, wallet: MOCK_WALLETS[2]!, txId: "9pQr2sT4uVwXyZ0aBcDeFgHiJkLmN", time: "8m ago" },
+		{ type: "buy", amount: "0.3 SOL", ticker, wallet: MOCK_WALLETS[3]!, txId: "7mNk5oPqRsTuVwXyZ2aBcDeFgHiJ", time: "12m ago" },
+		{ type: "sell", amount: "0.8 SOL", ticker, wallet: MOCK_WALLETS[4]!, txId: "3fGh8jKlMnOpQrStUvWxYz1aBc", time: "15m ago" },
+		{ type: "buy", amount: "3.0 SOL", ticker, wallet: MOCK_WALLETS[5]!, txId: "1bCd4eFgHiJkLmNoPqRsTuVwXy", time: "22m ago" },
+		{ type: "sell", amount: "1.5 SOL", ticker, wallet: MOCK_WALLETS[6]!, txId: "6iJk9lMnOpQrStUvWxYzAbCdEf", time: "31m ago" },
+		{ type: "buy", amount: "0.7 SOL", ticker, wallet: MOCK_WALLETS[7]!, txId: "4eFg7hIjKlMnOpQrStUvWxYz0a", time: "45m ago" },
 	];
 }
 

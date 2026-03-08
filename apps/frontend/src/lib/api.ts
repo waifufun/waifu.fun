@@ -162,7 +162,7 @@ export const fetcher = async (
 		}
 
 		if (response.status === 204) {
-			return null;
+			return null as any;
 		}
 
 		const result = await response.json().catch((error: unknown) => {
@@ -219,17 +219,17 @@ export const getTokens = async ({
 	}
 };
 
-export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
+export const getToken = async ({ chain: _chain, chainId: _chainId, contractAddress }: ITokenLookUp) => {
 	// waifu-core uses just the contract address, not chain/chainId routing
 	return await fetcher(`/tokens/${contractAddress}`, "GET");
 };
 
 export const getChartData = async ({
-	chain,
-	chainId,
+	chain: _chain,
+	chainId: _chainId,
 	contractAddress,
-	timeframe,
-	limit,
+	timeframe: _timeframe,
+	limit: _limit,
 }: ITokenLookUp & {
 	timeframe?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
 	limit?: number;
@@ -433,7 +433,7 @@ export const generateMedia = async ({
 	type,
 }: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
 	console.warn("[waifu-core] Media generation not implemented yet: /generation/generate");
-	return null;
+	return null as any;
 };
 
 export const generateMediaForToken = async ({
@@ -454,7 +454,7 @@ export const generateMediaForToken = async ({
 	chainId: SolanaNetworkIds;
 }) => {
 	console.warn("[waifu-core] Token media generation not implemented yet: /generation/generate-media");
-	return null;
+	return null as any;
 };
 
 export const generateMetadata = async ({
@@ -463,7 +463,7 @@ export const generateMetadata = async ({
 	contractAddress,
 }: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined; contractAddress?: string | undefined }) => {
 	console.warn("[waifu-core] Metadata generation not implemented yet: /generation/generate-metadata");
-	return null;
+	return null as any;
 };
 
 export const generateRemoteMetadata = async ({
@@ -482,7 +482,7 @@ export const generateRemoteMetadata = async ({
 	manual?: boolean | undefined;
 }) => {
 	console.warn("[waifu-core] Remote metadata creation not implemented yet: /tokens/create-metadata");
-	return null;
+	return null as any;
 };
 
 export const importToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
@@ -500,7 +500,7 @@ export const claimFees = async ({
 	contractAddress: string;
 }) => {
 	console.warn("[waifu-core] Fee claiming not implemented yet: /transactions/claim");
-	return null;
+	return null as any;
 };
 
 export const getHolders = async ({
@@ -532,7 +532,7 @@ export const sendChatMessage = async ({
 	attachment?: string | undefined;
 }) => {
 	console.warn("[waifu-core] Chat messaging not implemented yet: /chat/message");
-	return null;
+	return null as any;
 };
 
 export const getTransaction = async ({
@@ -545,7 +545,7 @@ export const getTransaction = async ({
 	txId: string;
 }) => {
 	console.warn("[waifu-core] Transaction lookup not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const getWallets = async () => {
@@ -573,7 +573,7 @@ export const getTrades = async ({
 	contractAddress: string;
 }) => {
 	// Alias for getTokenTrades
-	return getTokenTrades({ chain, chainId, contractAddress });
+	return getTokenTrades({ chain, chainId: chainId as any, contractAddress: contractAddress as any });
 };
 
 export const connectAgent = async ({
@@ -588,7 +588,7 @@ export const connectAgent = async ({
 	chainId: TChainId;
 }) => {
 	console.warn("[waifu-core] Agent connection not implemented yet: /agent/connect-agent");
-	return null;
+	return null as any;
 };
 
 export const getAgent = async ({
@@ -620,7 +620,7 @@ export const uploadAvatar = async ({
 	image: string;
 }) => {
 	console.warn("[waifu-core] Avatar upload not implemented yet: /user/upload-profile-image");
-	return null;
+	return null as any;
 };
 
 export const getAddressPoints = async ({
@@ -738,7 +738,7 @@ export const addAdmin = async ({
 	permissions: string[];
 }) => {
 	console.warn("[waifu-core] Add admin not implemented yet: /admin/add");
-	return null;
+	return null as any;
 };
 
 export const updateAdminPermissions = async ({
@@ -749,12 +749,12 @@ export const updateAdminPermissions = async ({
 	permissions: string[];
 }) => {
 	console.warn("[waifu-core] Update admin permissions not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const removeAdmin = async (address: string) => {
 	console.warn("[waifu-core] Remove admin not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const getAdminUsers = async ({
@@ -774,12 +774,12 @@ export const getAdminUsers = async ({
 
 export const suspendUser = async ({ address, suspended }: { address: string; suspended: boolean }) => {
 	console.warn("[waifu-core] User suspension not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const setTokenVerified = async (tokenAddress: string, verified: boolean) => {
 	console.warn("[waifu-core] Token verification not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const setTokenHidden = async ({
@@ -794,7 +794,7 @@ export const setTokenHidden = async ({
 	hidden: boolean;
 }) => {
 	console.warn("[waifu-core] Token hidden flag not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const setTokenFeatured = async ({
@@ -809,7 +809,7 @@ export const setTokenFeatured = async ({
 	featured: boolean;
 }) => {
 	console.warn("[waifu-core] Token featured flag not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const updateTokenSocials = async ({
@@ -824,7 +824,7 @@ export const updateTokenSocials = async ({
 	socials: Record<string, string>;
 }) => {
 	console.warn("[waifu-core] Admin token socials update not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const updateTokenMetadata = async ({
@@ -839,7 +839,7 @@ export const updateTokenMetadata = async ({
 	metadata: Record<string, unknown>;
 }) => {
 	console.warn("[waifu-core] Admin token metadata update not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const updateTokenSocialsOwner = async ({
@@ -863,7 +863,7 @@ export const updateTokenSocialsOwner = async ({
 		return { success: true };
 	} catch (error) {
 		console.error("Failed to update token socials:", error);
-		return null;
+		return null as any;
 	}
 };
 
@@ -877,7 +877,7 @@ export const claimTokenOwnership = async ({
 	contractAddress: string;
 }) => {
 	console.warn("[waifu-core] Token ownership claim not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const getOwnerTokenRuntime = async ({
@@ -911,7 +911,7 @@ export const activateOwnerTokenRuntime = async ({
 	character?: OwnerRuntimeCharacterInput;
 }) => {
 	console.warn("[waifu-core] Runtime activation not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const suspendOwnerTokenRuntime = async ({
@@ -924,7 +924,7 @@ export const suspendOwnerTokenRuntime = async ({
 	contractAddress: string;
 }) => {
 	console.warn("[waifu-core] Runtime suspension not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const resumeOwnerTokenRuntime = async ({
@@ -937,7 +937,7 @@ export const resumeOwnerTokenRuntime = async ({
 	contractAddress: string;
 }) => {
 	console.warn("[waifu-core] Runtime resume not implemented yet");
-	return null;
+	return null as any;
 };
 
 export const getOwnerTokenBilling = async ({

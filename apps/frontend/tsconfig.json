@@ -9,6 +9,8 @@
 			"@/*": ["./src/*"]
 		},
 		"noImplicitAny": false,
+		"noUnusedParameters": false,
+		"noUnusedLocals": false,
 		"incremental": true,
 		"module": "esnext",
 		"resolveJsonModule": true,
