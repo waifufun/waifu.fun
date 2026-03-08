@@ -408,7 +408,7 @@ export const getAddressBalances = async ({
 }) => {
 	// Could potentially use on-chain RPC, but stub for now
 	console.warn("[waifu-core] Address balances endpoint not implemented yet");
-	return [];
+	return { user: null, balances: [] as any[] };
 };
 
 export const getChatHistory = async ({
@@ -647,8 +647,8 @@ export const getSwaps = async ({
 }) => {
 	console.warn("[waifu-core] User swaps not implemented yet: /user/get-swaps");
 	return {
-		docs: [],
-		swaps: [],
+		docs: [] as any[],
+		swaps: [] as any[],
 		total: 0,
 		totalDocs: 0,
 		totalPages: 0,
@@ -669,8 +669,8 @@ export const getTokensCreated = async ({
 }) => {
 	console.warn("[waifu-core] Tokens created lookup not implemented yet: /user/get-tokens-created");
 	return {
-		docs: [],
-		tokens: [],
+		docs: [] as any[],
+		tokens: [] as any[],
 		total: 0,
 		totalDocs: 0,
 		totalPages: 0,

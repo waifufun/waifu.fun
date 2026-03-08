@@ -143,7 +143,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											tokensCreated.map((token) => (
 												<TokenRow
 													mode="wallet"
-													verified={tokensCreated.verified}
+													verified={false}
 													key={token.contractAddress}
 													data={{
 														chain: "solana",
@@ -164,10 +164,10 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										)}
 										<Pagination
 											pagination={{
-												page: tokensCreatedQuery?.data?.page,
-												totalPages: tokensCreatedQuery?.data?.totalPages,
-												total: tokensCreatedQuery?.data?.totalDocs,
-												hasMore: tokensCreatedQuery?.data?.hasNextPage,
+												page: tokensCreatedQuery?.data?.page ?? 1,
+												totalPages: tokensCreatedQuery?.data?.totalPages ?? 0,
+												total: tokensCreatedQuery?.data?.totalDocs ?? 0,
+												hasMore: tokensCreatedQuery?.data?.hasNextPage ?? false,
 											}}
 											onPageChange={(newPage) => setPaginationOptions((prev) => ({ ...prev, createdPage: newPage }))}
 										/>
@@ -205,10 +205,10 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 										)}
 										<Pagination
 											pagination={{
-												page: query.data?.page,
-												totalPages: query.data?.totalPages,
-												total: query.data?.totalDocs,
-												hasMore: query.data?.hasNextPage,
+												page: query.data?.page ?? 1,
+												totalPages: query.data?.totalPages ?? 0,
+												total: query.data?.totalDocs ?? 0,
+												hasMore: query.data?.hasNextPage ?? false,
 											}}
 											onPageChange={(newPage) =>
 												setPaginationOptions((prev) => ({ ...prev, transactionPage: newPage }))
