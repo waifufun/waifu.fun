@@ -190,6 +190,37 @@ export const fetcher = async (
 
 // ========== WIRED TO WAIFU-CORE ==========
 
+/** Map a waifu-core /tokens API item to the frontend IToken shape. */
+function mapApiTokenToIToken(apiToken: any): IToken {
+	let status = apiToken.status;
+	if (status === "tradable") status = "active";
+	else if (status === "dex") status = "migrated";
+	// "staged" and others pass through as-is
+
+	return {
+		contractAddress: apiToken.address,
+		chain: apiToken.chain || "evm",
+		chainId: apiToken.chainId || 56,
+		name: apiToken.name,
+		ticker: apiToken.symbol,
+		image: apiToken.image || "/waifus/default.png",
+		description: apiToken.description || "",
+		price: parseFloat(apiToken.price) || 0,
+		totalSupply: 0,
+		marketcap: parseFloat(apiToken.marketCap) || 0,
+		volume24h: 0,
+		decimals: 18,
+		holders: 0,
+		status,
+		curveProgress: apiToken.progressPercent || 0,
+		featured: apiToken.featured || false,
+		socials: {},
+		version: 1,
+		creator: apiToken.creatorAddress,
+		createdAt: apiToken.createdAt,
+	} as IToken;
+}
+
 export const getTokens = async ({
 	searchParams,
 }: {
@@ -209,9 +240,15 @@ export const getTokens = async ({
 		if (searchParams?.limit) {
 			queryParams.append("limit", String(searchParams.limit));
 		}
+		if (searchParams?.page) {
+			queryParams.append("page", String(searchParams.page));
+		}
+		if (searchParams?.featured) {
+			queryParams.append("featured", "true");
+		}
 
 		const response = await fetcher(`/tokens?${queryParams.toString()}`, "GET");
-		return response.items || [];
+		return (response.items || []).map(mapApiTokenToIToken);
 	} catch (error) {
 		console.error("Error fetching tokens:", error);
 		return [];

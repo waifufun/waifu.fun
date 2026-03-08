@@ -4,7 +4,7 @@ import Hero from "@/components/landing/hero";
 // How it works section on home page — uncomment to re-enable
 // import HowItWorks from "@/components/landing/how-it-works";
 import ExplorerHeader from "@/components/explorer-header";
-import mockTokens from "@/data/mock-tokens.json";
+import { getTokens } from "@/lib/api";
 import type { IToken } from "@waifufun/types";
 
 export const revalidate = 4;
@@ -27,13 +27,13 @@ export const generateMetadata = async (): Promise<Metadata> => {
 	};
 };
 
-/** Mock tokens only — API is not called. */
-function getTokensForPage(): IToken[] {
-	return mockTokens as IToken[];
-}
-
 export default async function Home() {
-	const tokens = getTokensForPage();
+	let tokens: IToken[] = [];
+	try {
+		tokens = await getTokens({ searchParams: { featured: "true", limit: 20 } });
+	} catch (e) {
+		console.error("Failed to fetch featured tokens:", e);
+	}
 	const noTokens = (tokens?.length || 0) === 0;
 	const topToken =
 		tokens.length > 0 ? ([...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null) : null;

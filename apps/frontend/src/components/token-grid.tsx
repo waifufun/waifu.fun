@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 /** When true, only use the tokens passed from the server (mock); never hit the API. */
-const USE_MOCK_TOKENS_ONLY = true;
+const USE_MOCK_TOKENS_ONLY = false;
 
 function formatMarketCap(mc: number): string {
 	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
@@ -178,7 +178,13 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 			if (USE_MOCK_TOKENS_ONLY) return pageParam === 1 ? tokens : [];
 			const { getTokens } = await import("@/lib/api");
 			const res = await getTokens({
-				searchParams: { page: pageParam, category: category ?? undefined, origin: origin ?? undefined },
+				searchParams: {
+					featured: "true",
+					limit: 50,
+					page: pageParam,
+					category: category ?? undefined,
+					origin: origin ?? undefined,
+				},
 			});
 			return res as IToken[];
 		},
@@ -191,7 +197,7 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 			pages: [tokens],
 			pageParams: [1],
 		},
-		refetchInterval: USE_MOCK_TOKENS_ONLY ? false : 10000,
+		refetchInterval: USE_MOCK_TOKENS_ONLY ? false : 30000,
 		refetchOnMount: !USE_MOCK_TOKENS_ONLY,
 	});
 
