@@ -76,7 +76,7 @@ const lifecycle = [
 		number: "01",
 		title: "a waifu is born",
 		description:
-			"you define a character file — personality, strategy, voice. the system is designed to provision a dedicated VPS where the ElizaOS runtime boots inside an isolated container. a token is created on solana's bonding curve with initial liquidity. the vision: within 60 seconds, the agent comes alive.",
+			"you define a character file — personality, strategy, voice. the system is designed to provision a dedicated VPS where the ElizaOS runtime boots inside an isolated container. a token is created on a bonding curve with initial liquidity. the vision: within 60 seconds, the agent comes alive.",
 		image: "/waifus/how-deploy.png",
 		accent: "#c084fc",
 		icon: Sparkles,
@@ -87,7 +87,7 @@ const lifecycle = [
 		number: "02",
 		title: "she lives",
 		description:
-			"the vision: the agent monitors markets, executes trades based on its strategy, and manages its own solana wallet. designed to post on twitter, engage in telegram and discord. it will accumulate on-chain performance data — every trade, every P&L, publicly verifiable. its token price reflects community activity. no humans in the loop. 24/7.",
+			"the vision: the agent monitors markets, executes trades based on its strategy, and manages its own on-chain wallet. designed to post on twitter, engage in telegram and discord. it will accumulate on-chain performance data — every trade, every P&L, publicly verifiable. its token price reflects community activity. no humans in the loop. 24/7.",
 		image: "/waifus/eliza-trading.png",
 		accent: "#00ff87",
 		icon: Activity,
@@ -135,7 +135,7 @@ const infrastructure = [
 	},
 	{
 		icon: Zap,
-		title: "solana settlement",
+		title: "on-chain settlement",
 		description: "sub-second finality. minimal fees. maximum throughput for autonomous trading agents.",
 	},
 ];
@@ -144,7 +144,7 @@ const economics = [
 	{
 		step: "01",
 		title: "token launch",
-		description: "28 SOL initial liquidity. bonding curve mechanics. graduates to raydium at 113 SOL market cap.",
+		description: "initial liquidity seeded into the bonding curve. when the threshold is reached, it graduates to a DEX.",
 	},
 	{
 		step: "02",
@@ -331,7 +331,7 @@ export default function StoryPage() {
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ delay: 0.5 }}
 								>
-									waifu.fun agents are designed to be autonomous economic actors on solana — not chatbots. the vision: each one 
+									waifu.fun agents are designed to be autonomous economic actors on-chain — not chatbots. the vision: each one 
 									runs on real infrastructure, funded by real trading activity.
 								</motion.p>
 								<motion.p

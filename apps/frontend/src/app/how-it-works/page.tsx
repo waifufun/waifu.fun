@@ -25,9 +25,9 @@ export default function Page() {
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
 										As the name suggests, everything from the description to the ticker and image is generated
 										automatically based on your prompt. If you don't have one, it even generates a punchy prompt for you
-										to begin with which you can launch with a single click. Auto mode uses a bonding curve with 28 SOL
-										initial virtual reserves. When a coin reaches 113 SOL in reserves, it automatically graduates to
-										Meteora with a 6 SOL flat fee.
+										to begin with which you can launch with a single click. Auto mode uses a bonding curve with
+										initial virtual reserves. When reserves hit the graduation threshold, it automatically migrates to
+										a DEX.
 									</p>
 								</div>
 								<div>
@@ -35,7 +35,7 @@ export default function Page() {
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
 										Manual mode unlocks advanced configuration and sniper protection. Projects can choose a larger
 										bonding curve size, delay the tradable start time, limit transaction amounts for the first 8 hours,
-										and select Raydium as the pool after graduation in addition to Meteora.
+										and select which DEX pool to use after graduation.
 									</p>
 								</div>
 								<div>

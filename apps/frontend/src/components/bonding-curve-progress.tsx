@@ -166,7 +166,7 @@ export default function BondingCurveProgress({
 									<span className="text-xs">
 										when the market cap reaches the graduation threshold,
 										<br />
-										the coin&apos;s liquidity will transition to raydium.
+										the coin&apos;s liquidity will migrate to a DEX.
 									</span>
 								</TooltipContent>
 							</Tooltip>
