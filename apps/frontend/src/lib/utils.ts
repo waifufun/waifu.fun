@@ -167,9 +167,6 @@ export function getCoinGeckoChainName<T extends TChain>(
 		if (chainId === EvmChainIds.BaseMainnet) {
 			return "base";
 		}
-		if (chainId === 56) { // BSC Mainnet
-			return "bsc";
-		}
 	}
 	if (chain === "solana") {
 		if (chainId === SolanaNetworkIds.Mainnet) {

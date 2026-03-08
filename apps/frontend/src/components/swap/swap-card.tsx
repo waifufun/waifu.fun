@@ -261,7 +261,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									) : (
 										<Fragment>
 											{minReceivedQuery?.error ? (
-												<span>Error</span>
+												<span className="text-waifufun-text-secondary">Price unavailable</span>
 											) : (
 												<span
 													className="animate-fade animate-once animate-duration-200 animate-ease-linear"
