@@ -285,7 +285,7 @@ const ChatItem = ({ message }: { message: IChatMessage }) => {
 			className="flex items-start gap-3 py-2.5"
 		>
 			<Avatar className="h-8 w-8 border border-[rgba(255,255,255,0.06)] rounded-sm ">
-				<AvatarImage src="/chain-icons/solana.svg" alt={message?.sender ? shortenAddress(message?.sender) : "User"} />
+				<AvatarImage src="/chain-icons/base.svg" alt={message?.sender ? shortenAddress(message?.sender) : "User"} />
 				<AvatarFallback className="bg-gray-700 text-xs text-[#00ff87] rounded-sm">
 					{message?.sender ? shortenAddress(message?.sender).substring(0, 2).toUpperCase() : "U"}
 				</AvatarFallback>

@@ -67,7 +67,7 @@ export default async function Holders({ token }: { token: IToken }) {
 							<TableCell className="text-right">{holder.percentage}%</TableCell>
 							<TableCell>
 								<Link
-									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/${token?.chain === "solana" ? "account" : "address"}/${holder.address}`}
+									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/address/${holder.address}`}
 									target="blank"
 								>
 									<ExternalLink className="ml-auto size-4 text-waifufun-icon-secondary" />
