@@ -820,7 +820,7 @@ export const LaunchButton = ({
 						agentName={launchedTokenInfo.name}
 						ticker={String(watchValue("symbol") || "TOKEN")}
 						tokenAddress={launchedTokenInfo.address}
-						{...(launchedTokenInfo.imageUrl ? { imageUrl: launchedTokenInfo.imageUrl } : {})}
+						imageUrl={launchedTokenInfo.imageUrl}
 						onDeployAgent={handleDeployAgent}
 						onViewToken={handleViewToken}
 					/>
