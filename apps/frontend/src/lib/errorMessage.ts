@@ -73,7 +73,7 @@ export function getErrorMessage(error: unknown): string {
 		return statusMessages[status] ?? (status >= 500 ? "Server error. Please try again later." : `HTTP Error ${status}`);
 	}
 
-	//Solana logs array
+	// Transaction logs array
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	const logs = (error as any).logs;
 	if (Array.isArray(logs)) {

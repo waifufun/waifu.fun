@@ -1,6 +1,6 @@
 import { EvmChainIds, type EvmAddressLike, type TChain, type TSupportProtocol, type FALModels } from "@waifufun/types";
 import { getAddress, type Abi, type Chain } from "viem";
-import { base, baseSepolia, mainnet, sepolia } from "viem/chains";
+import { base, baseSepolia, bsc, mainnet, sepolia } from "viem/chains";
 import { SolanaNetworkIds } from "@waifufun/types";
 import dotenv from "dotenv";
 import type { ClusterUrl } from "@solana/kit";
@@ -18,6 +18,7 @@ export const ABIS: Record<TSupportProtocol, Abi> = {
 
 /** Universal Router */
 export const UNISWAP_V4_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
+	[EvmChainIds.BscMainnet]: getAddress("0x0000000000000000000000000000000000000000"),
 	[EvmChainIds.EthereumMainnet]: getAddress("0x66a9893cc07d91d95644aedd05d03f95e1dba8af"),
 	[EvmChainIds.EthereumSepolia]: getAddress("0x3a9d48ab9751398bbfa63ad67599bb04e4bdf98b"),
 	[EvmChainIds.BaseMainnet]: getAddress("0x6ff5693b99212da76ad316178a184ab56d299b43"),
@@ -25,6 +26,7 @@ export const UNISWAP_V4_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 };
 
 export const WETH_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
+	[EvmChainIds.BscMainnet]: getAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"),
 	[EvmChainIds.EthereumMainnet]: getAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
 	[EvmChainIds.EthereumSepolia]: getAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"),
 	[EvmChainIds.BaseMainnet]: getAddress("0x4200000000000000000000000000000000000006"),
@@ -32,6 +34,7 @@ export const WETH_ADDRESSES: Record<EvmChainIds, EvmAddressLike> = {
 };
 
 export const CHAINID_TO_VIEM_CHAIN: Record<EvmChainIds, Chain> = {
+	[EvmChainIds.BscMainnet]: bsc,
 	[EvmChainIds.EthereumMainnet]: mainnet,
 	[EvmChainIds.EthereumSepolia]: sepolia,
 	[EvmChainIds.BaseMainnet]: base,
@@ -42,6 +45,7 @@ export const alchemyApiKey = process.env.ALCHEMY_API_KEY;
 export const heliusApiKey = process.env.HELIUS_API_KEY;
 
 export const EVM_RPC_URLS: Record<EvmChainIds, string[]> = {
+	[EvmChainIds.BscMainnet]: [...(alchemyApiKey ? [`https://bnb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
 	[EvmChainIds.EthereumMainnet]: [...(alchemyApiKey ? [`https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
 	[EvmChainIds.EthereumSepolia]: [...(alchemyApiKey ? [`https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
 	[EvmChainIds.BaseMainnet]: [...(alchemyApiKey ? [`https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`] : [])],
@@ -57,6 +61,7 @@ export const CHAINID_TO_SYMBOL: {
 	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
 } = {
 	evm: {
+		[EvmChainIds.BscMainnet]: "BNB",
 		[EvmChainIds.EthereumMainnet]: "ETH",
 		[EvmChainIds.EthereumSepolia]: "ETH",
 		[EvmChainIds.BaseMainnet]: "ETH",
@@ -72,6 +77,7 @@ export const CHAIN_TO_BLOCK_EXPLORER_URL: {
 	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
 } = {
 	evm: {
+		[EvmChainIds.BscMainnet]: "https://bscscan.com",
 		[EvmChainIds.EthereumMainnet]: "https://etherscan.io",
 		[EvmChainIds.EthereumSepolia]: "https://sepolia.etherscan.io",
 		[EvmChainIds.BaseMainnet]: "https://basescan.org",
@@ -87,6 +93,7 @@ export const CHAINID_TO_DEXSCREENER_NAME: {
 	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, string | undefined>;
 } = {
 	evm: {
+		[EvmChainIds.BscMainnet]: "bsc",
 		[EvmChainIds.EthereumMainnet]: "ethereum",
 		[EvmChainIds.EthereumSepolia]: undefined,
 		[EvmChainIds.BaseMainnet]: "base",
@@ -102,6 +109,7 @@ export const CHAINID_TO_CODEX_NETWORK_ID: {
 	[K in TChain]: Record<K extends "evm" ? EvmChainIds : SolanaNetworkIds, number | undefined>;
 } = {
 	evm: {
+		[EvmChainIds.BscMainnet]: 56,
 		[EvmChainIds.EthereumMainnet]: 1,
 		[EvmChainIds.EthereumSepolia]: 11155111,
 		[EvmChainIds.BaseMainnet]: 8453,

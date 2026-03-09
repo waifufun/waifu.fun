@@ -40,6 +40,7 @@ export type FALModels = {
 export type TSupportProtocol = "uniswapv2" | "uniswapv3" | "uniswapv4";
 
 export enum EvmChainIds {
+	BscMainnet = 56,
 	BaseMainnet = 8453,
 	BaseSepolia = 84532,
 	EthereumMainnet = 1,

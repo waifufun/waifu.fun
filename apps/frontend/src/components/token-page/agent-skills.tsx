@@ -1,6 +1,6 @@
 "use client";
 
-import { EvmChainIds, SolanaNetworkIds, type IToken } from "@waifufun/types";
+import { EvmChainIds, type IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
 import { CalendarDays, Globe, Link2, Shield, Users, Zap } from "lucide-react";
 import Image from "next/image";

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { EvmChainIds, SolanaNetworkIds, type TChain } from "@waifufun/types";
+import { EvmChainIds, type SolanaNetworkIds, type TChain } from "@waifufun/types";
 import Image from "next/image";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
@@ -16,7 +16,7 @@ export default function ChainIndicator({
 }) {
 	const key = `${chain}_${chainId}`;
 	const chainIcons: Record<string, { name: string; icon: string }> = {
-		[`solana_${SolanaNetworkIds.Mainnet}`]: { name: "Solana", icon: "/chain-icons/solana.svg" },
+		[`evm_${EvmChainIds.BscMainnet}`]: { name: "BNB Chain", icon: "/chain-icons/bsc.svg" },
 		[`evm_${EvmChainIds.BaseMainnet}`]: { name: "Base", icon: "/chain-icons/base.svg" },
 		[`evm_${EvmChainIds.EthereumMainnet}`]: { name: "Ethereum", icon: "/chain-icons/ethereum.svg" },
 	};

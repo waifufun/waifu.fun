@@ -159,7 +159,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 
 	const authenticatedWallets = useMemo(
 		() =>
-			[authQuery.data?.wallets?.solana?.address, authQuery.data?.wallets?.evm?.address].flatMap((wallet) =>
+			[authQuery.data?.wallets?.evm?.address].flatMap((wallet) =>
 				wallet ? [String(wallet)] : [],
 			),
 		[authQuery.data],
