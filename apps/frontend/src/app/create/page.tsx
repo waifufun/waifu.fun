@@ -1,35 +1,16 @@
 "use client";
 
-import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
-import AutoCreateForm from "@/components/ui/create-token/auto-create-form";
+import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
 import { FAQAccordion } from "@/components/ui/create-token/faq-accordion";
-import ImportTokenForm from "@/components/ui/create-token/import-token-form";
-import ManualCreateForm from "@/components/ui/create-token/manual-create-form";
 import { AgentPreviewCard } from "@/components/ui/create-token/agent-preview-card";
-import { StepProgress } from "@/components/ui/create-token/step-progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CreateWizard } from "@/components/ui/create-token/create-wizard";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
 import { useAccount } from "wagmi";
-import { Download, LockKeyhole, RefreshCcw, Settings2, Sparkles, Wand2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { LockKeyhole, RefreshCcw, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const steps = [
-	{ label: "identity", description: "name your agent" },
-	{ label: "configure", description: "set up your agent" },
-	{ label: "deploy", description: "launch on-chain" },
-];
-
 function CreateTokenLauncher() {
-	const [activeTab, setActiveTab] = useState("auto");
-	const { launchSalt, isLaunching, previousImages } = usePrompt();
-
-	const currentStep = useMemo(() => {
-		if (isLaunching) return 2;
-		if (launchSalt || (previousImages && previousImages.length > 0)) return 1;
-		return 0;
-	}, [launchSalt, isLaunching, previousImages]);
-
 	return (
 		<div className="w-full min-h-screen bg-[#08080a]">
 			<div className="w-full max-w-6xl mx-auto px-4 pt-8 pb-4">
@@ -43,55 +24,12 @@ function CreateTokenLauncher() {
 						Deploy an autonomous AI agent with its own token. Intelligent, social, on-chain.
 					</p>
 				</div>
-				<StepProgress steps={steps} currentStep={currentStep} className="max-w-md mx-auto mb-8" />
 			</div>
 
 			<div className="w-full max-w-7xl mx-auto px-4 pb-8">
 				<div className="grid lg:grid-cols-[1fr_280px] gap-6">
 					<div>
-						<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-							<TabsList className="grid w-full grid-cols-3 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm mb-6 p-1">
-								<TabsTrigger
-									value="auto"
-									className="relative text-sm py-3 font-bold uppercase tracking-wider data-[state=active]:bg-transparent data-[state=active]:text-[#00ff87] data-[state=inactive]:text-[#71717a] rounded-sm flex items-center justify-center gap-2"
-								>
-									<Wand2 size={14} />
-									<span>Auto</span>
-									{activeTab === "auto" && (
-										<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-[#00ff87] rounded-full animate-glow-pulse" />
-									)}
-								</TabsTrigger>
-								<TabsTrigger
-									value="manual"
-									className="relative text-sm py-3 font-bold uppercase tracking-wider data-[state=active]:bg-transparent data-[state=active]:text-[#00ff87] data-[state=inactive]:text-[#71717a] rounded-sm flex items-center justify-center gap-2"
-								>
-									<Settings2 size={14} />
-									<span>Manual</span>
-									{activeTab === "manual" && (
-										<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-[#00ff87] rounded-full animate-glow-pulse" />
-									)}
-								</TabsTrigger>
-								<TabsTrigger
-									value="import"
-									className="relative text-sm py-3 font-bold uppercase tracking-wider data-[state=active]:bg-transparent data-[state=active]:text-[#00ff87] data-[state=inactive]:text-[#71717a] rounded-sm flex items-center justify-center gap-2"
-								>
-									<Download size={14} />
-									<span>Import</span>
-									{activeTab === "import" && (
-										<span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-[#00ff87] rounded-full animate-glow-pulse" />
-									)}
-								</TabsTrigger>
-							</TabsList>
-							<TabsContent value="auto" className="mt-0">
-								<AutoCreateForm />
-							</TabsContent>
-							<TabsContent value="manual" className="mt-0">
-								<ManualCreateForm />
-							</TabsContent>
-							<TabsContent value="import" className="mt-0">
-								<ImportTokenForm />
-							</TabsContent>
-						</Tabs>
+						<CreateWizard />
 						<FAQAccordion className="mt-8" />
 					</div>
 
