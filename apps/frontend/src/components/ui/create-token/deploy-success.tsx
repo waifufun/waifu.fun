@@ -8,7 +8,7 @@ interface DeploySuccessProps {
 	agentName: string;
 	ticker: string;
 	tokenAddress: string;
-	imageUrl?: string;
+	imageUrl?: string | undefined;
 	onDeployAgent: () => void;
 	onViewToken: () => void;
 	className?: string;
