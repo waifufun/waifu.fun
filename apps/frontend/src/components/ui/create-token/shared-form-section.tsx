@@ -9,6 +9,8 @@ import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { DeployButton } from "./deploy-button";
 import { DeployAgentModal } from "./deploy-agent-modal";
+import { DeployTerminal, type DeployStage } from "./deploy-terminal";
+import { DeploySuccess } from "./deploy-success";
 import { cn } from "@/lib/utils";
 import {
 	usePrompt,
@@ -569,11 +571,18 @@ export const LaunchButton = ({
 	const { writeContractAsync } = useWriteContract();
 	const [chain, chainId] = ["evm", 56];
 	const [agentModalOpen, setAgentModalOpen] = useState(false);
+	const [showSuccess, setShowSuccess] = useState(false);
 	const [launchedTokenInfo, setLaunchedTokenInfo] = useState<{
 		name: string;
 		description: string;
 		address: string;
+		imageUrl?: string;
 	} | null>(null);
+
+	// Terminal state
+	const [deployStages, setDeployStages] = useState<DeployStage[]>([]);
+	const [showTerminal, setShowTerminal] = useState(false);
+	const [deployProgress, setDeployProgress] = useState(0);
 
 	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt || !isConnected;
 
@@ -583,6 +592,19 @@ export const LaunchButton = ({
 	});
 
 	const balance = balanceQuery?.data || 0;
+	const buyAmount = Number(watchValue("buyAmount") || 0);
+	const estimatedCost = 0.03; // Estimated gas cost in BNB
+
+	// Helper to update stages
+	const updateStage = (index: number, updates: Partial<DeployStage>) => {
+		setDeployStages(prev => {
+			const newStages = [...prev];
+			if (newStages[index]) {
+				newStages[index] = { ...newStages[index], ...updates };
+			}
+			return newStages;
+		});
+	};
 
 	const onSubmit = async () => {
 		if (!formState.isValid) {
@@ -610,6 +632,20 @@ export const LaunchButton = ({
 			return;
 		}
 
+		// Initialize terminal
+		setShowTerminal(true);
+		setShowSuccess(false);
+		setDeployProgress(0);
+		setDeployStages([
+			{ label: "Preparing transaction parameters...", status: "pending" },
+			{ label: "Awaiting wallet signature...", status: "pending" },
+			{ label: "Transaction submitted", status: "pending" },
+			{ label: "Confirming on-chain...", status: "pending" },
+			{ label: "Token deployed", status: "pending" },
+			{ label: "Registering with platform...", status: "pending" },
+			{ label: "Ready to deploy agent", status: "pending" },
+		]);
+
 		setLaunching(true);
 		try {
 			const name = String(watchValue("name") || "Untitled Token");
@@ -617,6 +653,10 @@ export const LaunchButton = ({
 			const description = String(watchValue("description") || "");
 			const buyAmount = Number(watchValue("buyAmount") || 0);
 			const imageUrl = uploadedImage || previousImages?.[0] || "";
+
+			// Stage 0: Preparing parameters
+			updateStage(0, { status: "active" });
+			setDeployProgress(10);
 
 			// Build contract params
 			const params = buildNewTokenV5Params({
@@ -629,8 +669,13 @@ export const LaunchButton = ({
 				buyAmountBnb: String(buyAmount),
 			});
 
-			// Send transaction via wagmi
+			updateStage(0, { status: "success" });
+			setDeployProgress(20);
+
+			// Stage 1: Awaiting wallet signature
+			updateStage(1, { status: "active" });
 			toast.info("Confirm the transaction in your wallet...");
+			
 			const txHash = await writeContractAsync({
 				address: PORTAL_ADDRESS,
 				abi: portalAbi,
@@ -639,7 +684,16 @@ export const LaunchButton = ({
 				value: buyAmount > 0 ? parseEther(String(buyAmount)) : 0n,
 			});
 
+			updateStage(1, { status: "success" });
+			setDeployProgress(40);
+
+			// Stage 2: Transaction submitted
+			updateStage(2, { status: "success", detail: `${txHash.slice(0, 10)}...` });
 			toast.success("Transaction submitted! Waiting for confirmation...");
+			setDeployProgress(50);
+
+			// Stage 3: Confirming on-chain
+			updateStage(3, { status: "active" });
 
 			// Wait for receipt to get the token address
 			const receipt = await waitForTransactionReceipt(wagmiConfig, {
@@ -647,11 +701,20 @@ export const LaunchButton = ({
 				confirmations: 2,
 			});
 
+			updateStage(3, { status: "success", detail: `block ${receipt.blockNumber}` });
+			setDeployProgress(70);
+
 			// Extract the created token address from receipt logs
 			const tokenAddress = extractTokenAddressFromReceipt(receipt.logs);
 
 			if (tokenAddress) {
+				// Stage 4: Token deployed
+				updateStage(4, { status: "success", detail: `${tokenAddress.slice(0, 10)}...${symbol}` });
 				toast.success("Token launched successfully!");
+				setDeployProgress(80);
+
+				// Stage 5: Registering with platform
+				updateStage(5, { status: "active" });
 
 				// Register with backend (non-blocking)
 				createToken({
@@ -667,15 +730,26 @@ export const LaunchButton = ({
 					...(inviteCode ? { inviteCode } : {}),
 				}).catch(() => {});
 
+				updateStage(5, { status: "success" });
+				setDeployProgress(90);
+
+				// Stage 6: Ready to deploy agent
+				updateStage(6, { status: "success" });
+				setDeployProgress(100);
+
 				setLaunchSalt(null);
 
-				// Show deploy agent modal before navigating
-				setLaunchedTokenInfo({
-					name,
-					description,
-					address: tokenAddress,
-				});
-				setAgentModalOpen(true);
+				// Show success screen after a brief delay
+				setTimeout(() => {
+					setShowTerminal(false);
+					setShowSuccess(true);
+					setLaunchedTokenInfo({
+						name,
+						description,
+						address: tokenAddress,
+						imageUrl,
+					});
+				}, 1000);
 			} else {
 				toast.success("Token launched! Transaction confirmed.");
 				setLaunchSalt(null);
@@ -683,6 +757,16 @@ export const LaunchButton = ({
 			}
 		} catch (error: any) {
 			console.error("Error launching token:", error);
+			
+			// Mark current active stage as error
+			const activeIndex = deployStages.findIndex(s => s.status === "active");
+			if (activeIndex !== -1) {
+				updateStage(activeIndex, { 
+					status: "error", 
+					detail: error?.message?.slice(0, 50) || "Failed"
+				});
+			}
+
 			if (error?.code === 4001 || error?.message?.includes("rejected")) {
 				toast.error("Transaction rejected by user.");
 			} else {
@@ -694,33 +778,65 @@ export const LaunchButton = ({
 		}
 	};
 
+	const handleDeployAgent = () => {
+		setAgentModalOpen(true);
+	};
+
+	const handleViewToken = () => {
+		if (launchedTokenInfo) {
+			router.push(`/token/${chain}/${chainId}/${launchedTokenInfo.address}`);
+		}
+	};
+
 	return (
-		<>
+		<div className="w-full">
 			<DeployButton
 				onClick={onSubmit}
 				disabled={shouldDisable || disabled}
 				isLoading={isLaunching}
 				loadingText="LAUNCHING..."
+				balance={balance}
+				estimatedCost={estimatedCost}
+				prebuyAmount={buyAmount}
 			>
-				{!isConnected ? "CONNECT WALLET" : "LAUNCH TOKEN"}
+				{!isConnected ? "CONNECT WALLET" : "DEPLOY AGENT"}
 			</DeployButton>
 
+			{/* Terminal Display */}
+			{showTerminal && (
+				<div className="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+					<DeployTerminal 
+						stages={deployStages} 
+						progress={deployProgress}
+						onDismiss={() => setShowTerminal(false)}
+					/>
+				</div>
+			)}
+
+			{/* Success Screen */}
+			{showSuccess && launchedTokenInfo && (
+				<div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+					<DeploySuccess
+						agentName={launchedTokenInfo.name}
+						ticker={String(watchValue("symbol") || "TOKEN")}
+						tokenAddress={launchedTokenInfo.address}
+						imageUrl={launchedTokenInfo.imageUrl}
+						onDeployAgent={handleDeployAgent}
+						onViewToken={handleViewToken}
+					/>
+				</div>
+			)}
+
+			{/* Deploy Agent Modal */}
 			{launchedTokenInfo && (
 				<DeployAgentModal
 					open={agentModalOpen}
-					onOpenChange={(open) => {
-						setAgentModalOpen(open);
-						if (!open && launchedTokenInfo) {
-							router.push(
-								`/token/${chain}/${chainId}/${launchedTokenInfo.address}`,
-							);
-						}
-					}}
+					onOpenChange={setAgentModalOpen}
 					tokenName={launchedTokenInfo.name}
 					tokenDescription={launchedTokenInfo.description}
 					tokenAddress={launchedTokenInfo.address}
 				/>
 			)}
-		</>
+		</div>
 	);
 };
