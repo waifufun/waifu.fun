@@ -306,7 +306,7 @@ const ImageUploadSection = () => {
 			{!displayImage && previousImages.length === 0 && (
 				<div className="p-2 bg-red-500/10 border border-red-500/30 rounded-sm">
 					<p className="text-xs text-red-400">
-						⚠️ Token image is required. Please upload an image or generate one from the Auto tab.
+						⚠️ Agent avatar is required. Please upload an image or generate one from the Auto tab.
 					</p>
 				</div>
 			)}

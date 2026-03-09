@@ -8,23 +8,23 @@ interface FAQItem {
 }
 const defaultFAQs: FAQItem[] = [
 	{
-		question: "How much does it cost to create a token?",
+		question: "How much does it cost to deploy an agent?",
 		answer:
-			"Creating a token costs approximately 0.02-0.04 BNB in network fees. Pre-buy needs additional BNB (up to 28 BNB max).",
+			"Deploying an agent costs approximately 0.02-0.04 in network fees. Pre-buy needs additional funds (up to 28 max). Your agent gets its own on-chain token for economic autonomy.",
 	},
 	{
 		question: "What is the custom address generator?",
 		answer:
-			"Create a vanity address for your token that ends with custom characters (like 'WAIFU'). Longer suffixes take more time.",
+			"Create a vanity address for your agent's token that ends with custom characters (like 'WAIFU'). Longer suffixes take more time.",
 	},
 	{
 		question: "What's the difference between Auto and Manual?",
 		answer:
-			"Auto uses AI to generate images. Manual lets you upload your own and access advanced options like curve limits and trade limits.",
+			"Auto generates an avatar using AI. Manual lets you upload your own and access advanced token economics.",
 	},
 	{
 		question: "What is the curve limit?",
-		answer: "Determines how much BNB needs to be raised before graduation to PancakeSwap.",
+		answer: "Determines how much needs to be raised before graduation to DEX.",
 	},
 	{
 		question: "What is delayed start?",
@@ -32,7 +32,7 @@ const defaultFAQs: FAQItem[] = [
 	},
 	{
 		question: "What are trade limits?",
-		answer: "Restrict max BNB per transaction for the first 8 hours. Prevents large wallets from immediately dumping.",
+		answer: "Restrict max per transaction for the first 8 hours. Prevents large wallets from immediately dumping.",
 	},
 ];
 export function FAQAccordion({ className, faqs = defaultFAQs }: { className?: string; faqs?: FAQItem[] }) {
