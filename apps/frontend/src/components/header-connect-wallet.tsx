@@ -8,8 +8,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { logOut } from "@/lib/api";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useDisconnect } from "wagmi";
+import { useTranslation } from "@/contexts/locale-context";
 
 export default function HeaderConnectWallet() {
+	const { t } = useTranslation();
 	const isClient = useIsClient();
 	const { address, isConnected } = useAccount();
 	const { disconnect } = useDisconnect();
@@ -31,7 +33,7 @@ export default function HeaderConnectWallet() {
 	if (!isClient) {
 		return (
 			<Button className={greenButtonClass} disabled>
-				Connect Wallet
+				{t("wallet.connectWallet")}
 			</Button>
 		);
 	}
@@ -56,7 +58,7 @@ export default function HeaderConnectWallet() {
 						className="flex w-full items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 transition-colors"
 					>
 						<LogOut className="size-4" />
-						Sign out
+						{t("wallet.signOut")}
 					</button>
 				</PopoverContent>
 			</Popover>
@@ -68,7 +70,7 @@ export default function HeaderConnectWallet() {
 			{({ openConnectModal }) => (
 				<Button className={greenButtonClass} onClick={openConnectModal}>
 					<Wallet className="size-4 mr-2" />
-					Connect Wallet
+					{t("wallet.connectWallet")}
 				</Button>
 			)}
 		</ConnectButton.Custom>

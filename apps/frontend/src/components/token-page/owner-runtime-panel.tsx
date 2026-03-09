@@ -28,27 +28,18 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 
 type ClaimState = NonNullable<IToken["ownerClaimStatus"]> | "unclaimed";
 type BillingMode = NonNullable<OwnerTokenRuntime["billingMode"]>;
 
-const BILLING_MODE_OPTIONS: Array<{ value: BillingMode; label: string; description: string }> = [
-	{
-		value: "owner_credits",
-		label: "owner credits",
-		description: "charge runtime costs directly to the owner's balance",
-	},
-	{
-		value: "hybrid",
-		label: "hybrid",
-		description: "split costs across owner funding and platform subsidy when available",
-	},
-	{
-		value: "waifu_treasury_subsidy",
-		label: "treasury subsidy",
-		description: "request platform subsidy if the backend still allows it",
-	},
-];
+function getBillingModeOptions(t: (key: string) => string): Array<{ value: BillingMode; label: string; description: string }> {
+	return [
+		{ value: "owner_credits", label: t("owner.billingOwnerCredits"), description: t("owner.billingOwnerCreditsDesc") },
+		{ value: "hybrid", label: t("owner.billingHybrid"), description: t("owner.billingHybridDesc") },
+		{ value: "waifu_treasury_subsidy", label: t("owner.billingTreasury"), description: t("owner.billingTreasuryDesc") },
+	];
+}
 
 const claimToneMap: Record<ClaimState, string> = {
 	unclaimed: "border-white/10 bg-white/5 text-[#e4e4e7]",
@@ -104,19 +95,6 @@ function DetailCell({ label, value, mono = false }: { label: string; value: stri
 	);
 }
 
-function formatClaimState(claimState: ClaimState) {
-	switch (claimState) {
-		case "claimed":
-			return "claimed";
-		case "verified":
-			return "verified";
-		case "disputed":
-			return "disputed";
-		default:
-			return "unclaimed";
-	}
-}
-
 function formatRuntimeLabel(value?: string) {
 	if (!value) return "—";
 	return value.replaceAll("_", " ");
@@ -137,6 +115,8 @@ function formatOwnerRouteError(error?: Error) {
 }
 
 export default function OwnerRuntimePanel({ token }: { token: IToken }) {
+	const { t } = useTranslation();
+	const billingModeOptions = useMemo(() => getBillingModeOptions(t), [t]);
 	const queryClient = useQueryClient();
 	const connectedWallet = useAddress();
 	const [billingMode, setBillingMode] = useState<BillingMode>(token.billingMode ?? "owner_credits");
@@ -298,21 +278,22 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 	const showSuspend = runtimeStatus === "running";
 	const showResume = runtimeStatus === "suspended";
 
-	let ownershipMessage = "Connect and authenticate the creator wallet to unlock owner controls.";
+	const creatorShort = creatorAddress ? shortenAddress(creatorAddress) : "";
+	let ownershipMessage = t("owner.connectAuthenticateMessage");
 	if (!creatorAddress) {
-		ownershipMessage = "This token does not expose a creator wallet yet, so owner actions cannot be verified.";
+		ownershipMessage = t("owner.noCreatorMessage");
 	} else if (authQuery.isLoading) {
-		ownershipMessage = "Checking wallet authentication…";
+		ownershipMessage = t("owner.checkingAuth");
 	} else if (!authQuery.data?.authenticated) {
 		ownershipMessage = isConnectedCreator
-			? "Creator wallet connected. Finish wallet authentication to claim owner access."
-			: `Claiming requires the creator wallet ${shortenAddress(creatorAddress)} to be connected and authenticated.`;
+			? t("owner.creatorConnectedAuthMessage")
+			: t("owner.claimRequiresCreator", { address: creatorShort });
 	} else if (!authenticatedCreatorWallet) {
-		ownershipMessage = `Authenticated wallet does not match creator ${shortenAddress(creatorAddress)}.`;
+		ownershipMessage = t("owner.walletMismatch", { address: creatorShort });
 	} else if (isClaimed) {
-		ownershipMessage = "Owner access is linked to your waifu.fun account. Runtime controls use live owner endpoints.";
+		ownershipMessage = t("owner.ownerAccessLinked");
 	} else {
-		ownershipMessage = "Creator wallet verified. Claim owner access to link this token to your waifu.fun account.";
+		ownershipMessage = t("owner.creatorVerifiedClaim");
 	}
 
 	return (
@@ -325,14 +306,13 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 			<div className="flex flex-col gap-4 sm:gap-5 min-w-0">
 				<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 min-w-0">
 					<div className="space-y-1 min-w-0">
-						<SectionLabel>owner console</SectionLabel>
+						<SectionLabel>{t("owner.console")}</SectionLabel>
 						<div className="flex items-center gap-2">
 							<ShieldCheck className="size-4 shrink-0 text-[#00ff87]" />
-							<h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#e4e4e7] truncate">claim + runtime</h3>
+							<h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#e4e4e7] truncate">{t("owner.claimRuntime")}</h3>
 						</div>
 						<p className="max-w-xl text-xs leading-relaxed text-[#71717a] min-w-0">
-							Honest owner access only. No mocked runtime stats — this panel reads the protected owner/control-plane
-							routes when your wallet is eligible.
+							{t("owner.honestAccessNote")}
 						</p>
 					</div>
 
@@ -346,30 +326,30 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 						disabled={anyActionPending}
 					>
 						<RefreshCw className="size-3.5" />
-						refresh
+						{t("owner.refresh")}
 					</Button>
 				</div>
 
 				<div className="grid gap-3 md:grid-cols-2">
-					<DetailCell label="claim state" value={formatClaimState(claimState)} />
-					<DetailCell label="creator wallet" value={creatorAddress ? shortenAddress(creatorAddress) : "—"} mono />
+					<DetailCell label={t("owner.claimState")} value={t(`owner.claimValue_${claimState}`)} />
+					<DetailCell label={t("owner.creatorWallet")} value={creatorAddress ? shortenAddress(creatorAddress) : "—"} mono />
 				</div>
 
 				<div className="space-y-3 rounded-sm border border-white/6 bg-[#0a0a0d] p-3">
 					<div className="flex flex-wrap items-center gap-2">
-						<StatusPill label={formatClaimState(claimState)} toneClassName={claimToneClass} />
+						<StatusPill label={t(`owner.claimValue_${claimState}`)} toneClassName={claimToneClass} />
 						{authenticatedCreatorWallet ? (
 							<StatusPill
-								label="creator authenticated"
+								label={t("owner.creatorAuthenticated")}
 								toneClassName="border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]"
 							/>
 						) : authQuery.data?.authenticated ? (
-							<StatusPill label="wallet mismatch" toneClassName="border-amber-500/30 bg-amber-500/10 text-amber-300" />
+							<StatusPill label={t("owner.walletMismatchPill")} toneClassName="border-amber-500/30 bg-amber-500/10 text-amber-300" />
 						) : (
-							<StatusPill label="auth required" toneClassName="border-white/10 bg-white/5 text-[#e4e4e7]" />
+							<StatusPill label={t("owner.authRequired")} toneClassName="border-white/10 bg-white/5 text-[#e4e4e7]" />
 						)}
 						{isConnectedCreator && !authenticatedCreatorWallet && (
-							<StatusPill label="creator connected" toneClassName="border-sky-500/30 bg-sky-500/10 text-sky-300" />
+							<StatusPill label={t("owner.creatorConnectedPill")} toneClassName="border-sky-500/30 bg-sky-500/10 text-sky-300" />
 						)}
 					</div>
 
@@ -390,13 +370,13 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 								) : (
 									<CheckCircle2 className="size-3.5" />
 								)}
-								claim owner access
+								{t("owner.claimOwnerAccess")}
 							</Button>
 						)}
 
 						{!canAttemptClaim && creatorAddress && (
 							<div className="rounded-sm border border-white/6 bg-white/5 px-3 py-2 text-[11px] text-[#71717a]">
-								Only the creator wallet can claim this token.
+								{t("owner.onlyCreatorCanClaim")}
 							</div>
 						)}
 					</div>
@@ -404,27 +384,26 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 
 				<div className="space-y-3">
 					<div className="flex items-center gap-2">
-						<SectionLabel>runtime status</SectionLabel>
+						<SectionLabel>{t("owner.runtimeStatus")}</SectionLabel>
 						<StatusPill label={formatRuntimeLabel(runtimeStatus)} toneClassName={runtimeToneClass} />
 					</div>
 
 					{!creatorAddress ? (
 						<div className="rounded-sm border border-amber-500/20 bg-amber-500/5 p-3 text-xs leading-relaxed text-amber-200/90">
-							This token has no recorded creator wallet, so runtime controls cannot safely be exposed yet.
+							{t("owner.noCreatorRuntimeMessage")}
 						</div>
 					) : !authenticatedCreatorWallet ? (
 						<div className="rounded-sm border border-white/8 bg-white/5 p-3 text-xs leading-relaxed text-[#a1a1aa]">
-							Authenticate the creator wallet first. Runtime actions stay hidden until owner identity is proven.
+							{t("owner.authFirstMessage")}
 						</div>
 					) : !isClaimed ? (
 						<div className="rounded-sm border border-[#00ff87]/20 bg-[#00ff87]/5 p-3 text-xs leading-relaxed text-[#b6ffd8]">
-							Claim owner access first, then this panel will load live runtime and billing state from the owner
-							endpoints.
+							{t("owner.claimFirstMessage")}
 						</div>
 					) : runtimeQuery.isLoading || billingQuery.isLoading ? (
 						<div className="flex items-center gap-2 rounded-sm border border-white/8 bg-white/5 p-3 text-xs text-[#a1a1aa]">
 							<LoaderCircle className="size-3.5 animate-spin text-[#00ff87]" />
-							Loading runtime control-plane state…
+							{t("owner.loadingRuntime")}
 						</div>
 					) : runtimeQuery.error || billingQuery.error ? (
 						<div className="rounded-sm border border-red-500/20 bg-red-500/5 p-3 text-xs leading-relaxed text-red-200/90">
@@ -440,7 +419,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 											void refreshOwnerState();
 										}}
 									>
-										retry
+										{t("owner.retry")}
 									</Button>
 								</div>
 							</div>
@@ -448,27 +427,27 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 					) : (
 						<div className="space-y-3">
 							<div className="grid gap-3 md:grid-cols-2">
-								<DetailCell label="agent status" value={formatRuntimeLabel(runtimeStatus)} />
+								<DetailCell label={t("owner.agentStatus")} value={formatRuntimeLabel(runtimeStatus)} />
 								<DetailCell
-									label="lifecycle"
+									label={t("owner.lifecycle")}
 									value={formatRuntimeLabel(runtime?.agentLifecycleState || token.agentLifecycleState)}
 								/>
 								<DetailCell
-									label="billing mode"
+									label={t("owner.billingMode")}
 									value={formatRuntimeLabel(billing?.billingMode || runtime?.billingMode || token.billingMode)}
 								/>
 								<DetailCell
-									label="infra reserve"
+									label={t("owner.infraReserve")}
 									value={formatReserveUsd(
 										billing?.infraReserveUsd ?? runtime?.infraReserveUsd ?? token.infraReserveUsd,
 									)}
 								/>
 								<DetailCell
-									label="cloud agent id"
-									value={runtime?.cloudAgentId ? shortenAddress(runtime.cloudAgentId) : "not provisioned"}
+									label={t("owner.cloudAgentId")}
+									value={runtime?.cloudAgentId ? shortenAddress(runtime.cloudAgentId) : t("owner.notProvisioned")}
 									mono
 								/>
-								<DetailCell label="web ui" value={runtime?.webUiUrl ? "available" : "unavailable"} />
+								<DetailCell label={t("owner.webUi")} value={runtime?.webUiUrl ? t("owner.available") : t("owner.unavailable")} />
 							</div>
 
 							<div className="rounded-sm border border-white/6 bg-[#0a0a0d] p-3">
@@ -476,7 +455,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 									className="mb-2 block text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]"
 									htmlFor="owner-runtime-billing-mode"
 								>
-									activation billing mode
+									{t("owner.activationBillingMode")}
 								</label>
 								<select
 									id="owner-runtime-billing-mode"
@@ -485,14 +464,14 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 									className="h-10 w-full rounded-sm border border-white/10 bg-[#08080a] px-3 text-sm text-[#e4e4e7] outline-none transition-colors focus:border-[#00ff87]/40"
 									disabled={anyActionPending}
 								>
-									{BILLING_MODE_OPTIONS.map((option) => (
+									{billingModeOptions.map((option) => (
 										<option key={option.value} value={option.value}>
 											{option.label}
 										</option>
 									))}
 								</select>
 								<p className="mt-2 text-[11px] leading-relaxed text-[#71717a]">
-									{BILLING_MODE_OPTIONS.find((option) => option.value === billingMode)?.description}
+									{billingModeOptions.find((option) => option.value === billingMode)?.description}
 								</p>
 							</div>
 
@@ -504,7 +483,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 									className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.16em] text-[#00ff87] hover:text-[#7dffc1]"
 								>
 									<ExternalLink className="size-3.5" />
-									open runtime ui
+									{t("owner.openRuntimeUi")}
 								</a>
 							)}
 
@@ -520,7 +499,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 										) : (
 											<PlayCircle className="size-3.5" />
 										)}
-										activate runtime
+										{t("owner.activateRuntime")}
 									</Button>
 								)}
 
@@ -536,7 +515,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 										) : (
 											<PauseCircle className="size-3.5" />
 										)}
-										suspend runtime
+										{t("owner.suspendRuntime")}
 									</Button>
 								)}
 
@@ -551,22 +530,20 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 										) : (
 											<RefreshCw className="size-3.5" />
 										)}
-										resume runtime
+										{t("owner.resumeRuntime")}
 									</Button>
 								)}
 							</div>
 
 							{runtimeStatus === "provisioning" && (
 								<div className="rounded-sm border border-sky-500/20 bg-sky-500/5 p-3 text-xs leading-relaxed text-sky-200/90">
-									Provisioning is in progress. This panel will reflect live control-plane state as the backend updates
-									it.
+									{t("owner.provisioningMessage")}
 								</div>
 							)}
 
 							{runtimeStatus === "none" && (
 								<div className="rounded-sm border border-white/8 bg-white/5 p-3 text-xs leading-relaxed text-[#a1a1aa]">
-									No runtime is provisioned yet. Activating sends the existing owner runtime request with the token
-									metadata as the initial character payload.
+									{t("owner.noRuntimeMessage")}
 								</div>
 							)}
 						</div>

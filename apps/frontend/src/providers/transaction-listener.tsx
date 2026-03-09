@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { IToken } from "@waifufun/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
+import { useTranslation } from "@/contexts/locale-context";
 
 export interface PendingTransaction {
 	hash: string;
@@ -33,6 +34,7 @@ interface TransactionListenerContextType {
 const TransactionListenerContext = createContext<TransactionListenerContextType | undefined>(undefined);
 
 export const TransactionListenerProvider = ({ children }: { children: ReactNode }) => {
+	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const [pendingTransactions, setPendingTransactions] = useLocalStorage<PendingTransaction[]>(
 		"waifufun-pending-transactions",
@@ -56,7 +58,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			};
 
 			const toastAction = {
-				label: "View on BscScan",
+				label: t("toast.viewOnBscScan"),
 				onClick: () => {
 					window.open(`https://bscscan.com/tx/${newTransaction.hash}`);
 				},
@@ -71,7 +73,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				outputDecimals === 18 ? 4 : 2,
 			);
 
-			toast.info(`Swapping ${inputFormatted} ${inputSymbol} for ${outputFormatted} ${outputSymbol}`, {
+			toast.info(t("toast.swapping", { input: inputFormatted, inputSymbol, output: outputFormatted, outputSymbol }), {
 				action: toastAction,
 			});
 
@@ -84,7 +86,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				monitorTransaction(newTransaction);
 			}
 		},
-		[setPendingTransactions, publicClient],
+		[setPendingTransactions, publicClient, t],
 	);
 
 	const showTransactionToast = useCallback(
@@ -100,18 +102,18 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			);
 
 			const toastAction = {
-				label: "View on BscScan",
+				label: t("toast.viewOnBscScan"),
 				onClick: () => {
 					window.open(`https://bscscan.com/tx/${transaction.hash}`);
 				},
 			};
 
 			if (success) {
-				toast.success(`Swapped ${inputFormatted} ${inputSymbol} for ${outputFormatted} ${outputSymbol}`, {
+				toast.success(t("toast.swapped", { input: inputFormatted, inputSymbol, output: outputFormatted, outputSymbol }), {
 					action: toastAction,
 				});
 			} else {
-				toast.error(`Swap failed: ${transaction.hash.slice(0, 10)}...`, {
+				toast.error(t("toast.swapFailed", { hash: transaction.hash.slice(0, 10) }), {
 					action: toastAction,
 				});
 			}
@@ -120,7 +122,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				prev.map((tx) => (tx.hash === transaction.hash ? { ...tx, toastShown: true } : tx)),
 			);
 		},
-		[setPendingTransactions],
+		[setPendingTransactions, t],
 	);
 
 	const monitorTransaction = useCallback(
