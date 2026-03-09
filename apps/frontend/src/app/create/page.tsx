@@ -5,7 +5,7 @@ import AutoCreateForm from "@/components/ui/create-token/auto-create-form";
 import { FAQAccordion } from "@/components/ui/create-token/faq-accordion";
 import ImportTokenForm from "@/components/ui/create-token/import-token-form";
 import ManualCreateForm from "@/components/ui/create-token/manual-create-form";
-import { RecentlyCreated } from "@/components/ui/create-token/recently-created";
+import { AgentPreviewCard } from "@/components/ui/create-token/agent-preview-card";
 import { StepProgress } from "@/components/ui/create-token/step-progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
@@ -98,13 +98,9 @@ function CreateTokenLauncher() {
 
 					<aside className="hidden lg:block">
 						<div className="sticky top-4">
-							<RecentlyCreated />
+							<AgentPreviewCard />
 						</div>
 					</aside>
-				</div>
-
-				<div className="lg:hidden mt-8">
-					<RecentlyCreated />
 				</div>
 			</div>
 		</div>
