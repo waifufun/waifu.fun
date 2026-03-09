@@ -6,12 +6,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { formatNumber } from "@/lib/utils";
+import { useTranslation } from "@/contexts/locale-context";
 import { getSwaps, getTokensCreated, getAddressPoints } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/pagination";
 
 // biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
+	const { t } = useTranslation();
 	const [tab, setTab] = useState("wallet");
 	const [paginationOptions, setPaginationOptions] = useState({
 		createdPage: 1,
@@ -79,13 +81,13 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 					<Tabs value={tab} onValueChange={setTab} className="w-full">
 						<TabsList className="grid w-full grid-cols-3">
 							<TabsTrigger value="wallet" className="w-full">
-								Wallet
+								{t("profile.wallet")}
 							</TabsTrigger>
 							<TabsTrigger value="Activity" className="w-full">
-								Activity
+								{t("profile.activity")}
 							</TabsTrigger>
 							<TabsTrigger value="agents" className="w-full">
-								Agents
+								{t("profile.agents")}
 							</TabsTrigger>
 						</TabsList>
 						<TabsContent value="wallet" className="bg-transparent">
@@ -93,7 +95,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 								<div className="w-full max-h-full overflow-y-auto">
 									<div className="border-b border-[rgba(255,255,255,0.06)] w-full">
 										<h1 className="p-4 text-sm text-[#a1a1aa]">
-											Total Value:{" "}
+											{t("profile.totalValue")}{" "}
 											<span className="text-[#00ff87] font-bold">{formatNumber(summedTotalWalletValue, true)}</span>
 										</h1>
 									</div>

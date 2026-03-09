@@ -9,19 +9,21 @@ import { useAccount } from "wagmi";
 import { LockKeyhole, RefreshCcw, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@/contexts/locale-context";
 
 function CreateTokenLauncher() {
+	const { t } = useTranslation();
 	return (
 		<div className="w-full min-h-screen bg-[#08080a]">
 			<div className="w-full max-w-6xl mx-auto px-4 pt-8 pb-4">
 				<div className="text-center mb-8">
 					<div className="inline-flex items-center gap-2 mb-3">
 						<Sparkles className="w-5 h-5 text-[#00ff87]" />
-						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">agent launchpad</span>
+						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">{t("createPage.agentLaunchpad")}</span>
 					</div>
-					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">Deploy Your Agent</h1>
+					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">{t("createPage.deployYourAgent")}</h1>
 					<p className="text-sm text-[#71717a] max-w-md mx-auto">
-						Deploy an autonomous AI agent with its own token. Intelligent, social, on-chain.
+						{t("createPage.deploySubtitle")}
 					</p>
 				</div>
 			</div>
@@ -54,6 +56,7 @@ type LaunchGateCheckResponse = {
 type LaunchGateStatus = "loading" | "allowed" | "denied" | "unavailable";
 
 function CreatePageInner() {
+	const { t } = useTranslation();
 	const { address, isConnected } = useAccount();
 	const walletKey = address;
 	const [inviteCodeInput, setInviteCodeInput] = useState("");
@@ -269,21 +272,21 @@ function CreatePageInner() {
 							<ul className="space-y-3 text-sm text-[#a1a1aa]">
 								<li className="flex items-start gap-3">
 									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
-									<span>Only approved creators can access the full token launch flow right now.</span>
+									<span>{t("createPage.launchNote1")}</span>
 								</li>
 								<li className="flex items-start gap-3">
 									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
-									<span>Connect and sign with your wallet in the header before checking an invite code.</span>
+									<span>{t("createPage.launchNote2")}</span>
 								</li>
 								<li className="flex items-start gap-3">
 									<span className="mt-1 h-2 w-2 rounded-full bg-[#00ff87]" />
-									<span>Need access? Watch for curated launch updates and new creator onboarding windows.</span>
+									<span>{t("createPage.launchNote3")}</span>
 								</li>
 							</ul>
 
 							{!isConnected && (
 								<p className="text-xs text-[#71717a] leading-5">
-									Tip: connect your wallet in the site header first, then enter your invite code here.
+									{t("createPage.connectWalletTip")}
 								</p>
 							)}
 						</div>

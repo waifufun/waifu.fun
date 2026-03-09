@@ -34,7 +34,7 @@ function getNested(obj: Messages, path: string): string | undefined {
 const LocaleContext = createContext<{
 	locale: Locale;
 	setLocale: (locale: Locale) => void;
-	t: (key: string) => string;
+	t: (key: string, params?: Record<string, string>) => string;
 	messages: Messages;
 } | null>(null);
 
@@ -58,12 +58,17 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const t = useCallback(
-		(key: string): string => {
-			const value = getNested(messages, key);
-			if (value !== undefined) return value;
-			const enValue = getNested(enMessagesTyped, key);
-			if (enValue !== undefined) return enValue;
-			return key;
+		(key: string, params?: Record<string, string>): string => {
+			let value = getNested(messages, key);
+			if (value === undefined) value = getNested(enMessagesTyped, key);
+			if (value === undefined) return key;
+			let str = String(value);
+			if (params) {
+				for (const [k, v] of Object.entries(params)) {
+					str = str.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), v);
+				}
+			}
+			return str;
 		},
 		[messages],
 	);

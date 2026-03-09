@@ -33,6 +33,7 @@ import type { AddressLike, TChain } from "@waifufun/types";
 import { curveLimitConst } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errorMessage";
 import { PORTAL_ADDRESS, portalAbi, buildNewTokenV5Params, extractTokenAddressFromReceipt } from "@/lib/portal";
+import { useTranslation } from "@/contexts/locale-context";
 
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
 const NATIVE_DECIMALS = 1e18;
@@ -550,6 +551,7 @@ export const LaunchButton = ({
 	idPrefix?: string;
 	disabled?: boolean;
 }) => {
+	const { t } = useTranslation();
 	const { address: walletAddress, isConnected } = useAccount();
 	const {
 		handleSubmit,
@@ -794,12 +796,12 @@ export const LaunchButton = ({
 				onClick={onSubmit}
 				disabled={shouldDisable || disabled}
 				isLoading={isLaunching}
-				loadingText="LAUNCHING..."
+				loadingText={t("create.launching")}
 				balance={balance}
 				estimatedCost={estimatedCost}
 				prebuyAmount={buyAmount}
 			>
-				{!isConnected ? "CONNECT WALLET" : "DEPLOY AGENT"}
+				{!isConnected ? t("create.connectWalletButton") : t("create.deployAgentButton")}
 			</DeployButton>
 
 			{/* Terminal Display */}

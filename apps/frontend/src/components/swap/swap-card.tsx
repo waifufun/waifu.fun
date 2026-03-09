@@ -23,8 +23,10 @@ import moment from "moment";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import Countdown from "react-countdown";
 import { useTransactionListener } from "@/providers/transaction-listener";
+import { useTranslation } from "@/contexts/locale-context";
 
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
+	const { t } = useTranslation();
 	const [value, setValue] = useState<string>("");
 	const queryClient = useQueryClient();
 	const { isConnected } = useAccount();
@@ -40,16 +42,17 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		address: address,
 	});
 
-	const quickSetButtons = ["Reset", "0.1", "0.5", "1.0"];
-	const quickSetSellButtons = ["Reset", 25, 50, 75, 100];
+	const resetLabel = t("swap.reset");
+	const quickSetButtons = [resetLabel, "0.1", "0.5", "1.0"];
+	const quickSetSellButtons = [resetLabel, 25, 50, 75, 100];
 
 	const handleQuickSet = (val: string) => {
-		const set = val === "Reset" ? "" : String(val);
+		const set = val === resetLabel ? "" : String(val);
 		setValue(set);
 	};
 
 	const handleQuickSetSell = (val: string | number) => {
-		if (val === "Reset") {
+		if (val === resetLabel) {
 			return setValue("");
 		}
 
@@ -218,7 +221,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 								variant="secondary"
 								className={cn([
 									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
-									btn === "Reset" ? "text-waifufun-text-secondary" : "",
+									btn === resetLabel ? "text-waifufun-text-secondary" : "",
 								])}
 								onClick={() => handleQuickSet(btn)}
 							>
@@ -236,11 +239,11 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 										variant="secondary"
 										className={cn([
 											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
-											btn === "Reset" ? "text-waifufun-text-secondary" : "",
+											btn === resetLabel ? "text-waifufun-text-secondary" : "",
 										])}
 										onClick={() => handleQuickSetSell(btn)}
 									>
-										<span className="truncate">{btn === "Reset" ? "Reset" : `${btn}%`}</span>
+										<span className="truncate">{btn === resetLabel ? resetLabel : `${btn}%`}</span>
 									</Button>
 								))}
 							</div>
@@ -250,7 +253,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 
 				<div className="mt-2 space-y-2">
 					<div className="flex font-medium justify-between text-xs text-white">
-						<p>Min Received</p>
+						<p>{t("swap.minReceived")}</p>
 						<div className="flex items-center gap-2">
 							{!value || value === "0" ? (
 								<span>0</span>
@@ -261,7 +264,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									) : (
 										<Fragment>
 											{minReceivedQuery?.error ? (
-												<span className="text-waifufun-text-secondary">Price unavailable</span>
+												<span className="text-waifufun-text-secondary">{t("swap.priceUnavailable")}</span>
 											) : (
 												<span
 													className="animate-fade animate-once animate-duration-200 animate-ease-linear"
@@ -285,7 +288,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 					</div>
 					{priceImpact ? (
 						<div className="flex font-medium justify-between text-white text-xs">
-							<p>Price Impact</p>
+							<p>{t("swap.priceImpact")}</p>
 							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
 						</div>
 					) : null}
@@ -299,7 +302,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						])}
 					>
 						<AlertCircle className="text-waifufun-text-error" />
-						You are trying to buy too much. Max allowed is: {maxBuyAmount} BNB
+						{t("swap.maxBuyWarning", { max: String(maxBuyAmount) })}
 					</div>
 					<div
 						className={cn([
@@ -310,7 +313,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						])}
 					>
 						<AlertCircle className="text-waifufun-text-error" />
-						Insufficient balance to perform trade.
+						{t("swap.insufficientBalanceMessage")}
 					</div>
 					{tradingStarted ? (
 						<Button
@@ -330,16 +333,16 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							className="w-full mt-2 text-base font-medium bg-[#111114] border border-[rgba(255,255,255,0.08)] hover:border-[#00ff87] text-white uppercase"
 						>
 							{token.status === "migrating"
-								? "Token migrating"
+								? t("swap.tokenMigrating")
 								: !address
-									? "Connect"
+									? t("swap.connect")
 									: swapMutation?.isPending
-										? "Loading..."
+										? t("common.loading")
 										: insufficientBalance
-											? "Insufficient balance"
+											? t("swap.insufficientBalance")
 											: tooHighBuyAmount
-												? "Amount too high"
-												: "Swap"}
+												? t("swap.amountTooHigh")
+												: t("token.swap")}
 						</Button>
 					) : (
 						<Tooltip>
@@ -362,7 +365,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									/>
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>Trading starts: {moment(token?.tradingStartsAt)?.format("LLL")}</TooltipContent>
+							<TooltipContent>{t("swap.tradingStarts")}: {moment(token?.tradingStartsAt)?.format("LLL")}</TooltipContent>
 						</Tooltip>
 					)}
 				</div>

@@ -4,12 +4,14 @@ import { getTransaction } from "@/lib/api";
 import type { IRecentTransaction } from "@waifufun/types";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Clock, Cross, ExternalLink } from "lucide-react";
+import { useTranslation } from "@/contexts/locale-context";
 
 export default function RecentTransactionItem({
 	transaction,
 }: {
 	transaction: IRecentTransaction;
 }) {
+	const { t } = useTranslation();
 	const query = useQuery({
 		queryKey: ["recent-transaction", transaction.txId],
 		queryFn: async () => {
@@ -41,12 +43,16 @@ export default function RecentTransactionItem({
 			</div>
 			<div className="flex flex-col gap-1">
 				<div className="flex items-center gap-2">
-					<span className="text-base font-medium">Swap</span>
+					<span className="text-base font-medium">{t("recentTx.swap")}</span>
 					<ExternalLink className="size-4 text-waifufun-text-secondary cursor-pointer" />
 				</div>
 				<span className="text-sm">
-					Swap {parsedTransaction?.input?.amountFormatted} {parsedTransaction?.input?.symbol} for{" "}
-					{parsedTransaction?.output?.amountFormatted} {parsedTransaction?.output?.symbol}{" "}
+					{t("recentTx.swapFor", {
+						input: parsedTransaction?.input?.amountFormatted ?? "",
+						inputSymbol: parsedTransaction?.input?.symbol ?? "",
+						output: parsedTransaction?.output?.amountFormatted ?? "",
+						outputSymbol: parsedTransaction?.output?.symbol ?? "",
+					})}
 				</span>
 				<span className="text-xs text-muted-foreground">{new Date().toLocaleDateString()}</span>
 			</div>
