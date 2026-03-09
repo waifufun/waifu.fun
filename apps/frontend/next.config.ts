@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
 
+const API_ORIGIN = process.env.API_ORIGIN || "http://89.167.63.246";
+
 const nextConfig: NextConfig = {
 	turbopack: {},
+	async rewrites() {
+		return [
+			{
+				source: "/api/v1/:path*",
+				destination: `${API_ORIGIN}/:path*`,
+			},
+		];
+	},
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	webpack: (config: { resolve: { fallback: { [key: string]: any } } }, { isServer }: any) => {
 		if (!isServer) {

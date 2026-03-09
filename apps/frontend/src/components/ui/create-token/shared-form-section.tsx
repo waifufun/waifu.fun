@@ -113,7 +113,7 @@ export const CustomAddressGenerator = ({
 	collapsible = true,
 	defaultOpen = false,
 }: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
-	const [suffix, setSuffix] = useState("FUN");
+	const [suffix, setSuffix] = useState("WAIFU");
 	const { generateAddress, launchSalt, isGeneratingAddress, terminateWorkers, cancelVanityGeneration } = usePrompt();
 
 	const handleGenerate = () => {

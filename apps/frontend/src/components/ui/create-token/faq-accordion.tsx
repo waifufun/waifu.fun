@@ -15,7 +15,7 @@ const defaultFAQs: FAQItem[] = [
 	{
 		question: "What is the custom address generator?",
 		answer:
-			"Create a vanity address for your token that ends with custom characters (like 'FUN'). Longer suffixes take more time.",
+			"Create a vanity address for your token that ends with custom characters (like 'WAIFU'). Longer suffixes take more time.",
 	},
 	{
 		question: "What's the difference between Auto and Manual?",
