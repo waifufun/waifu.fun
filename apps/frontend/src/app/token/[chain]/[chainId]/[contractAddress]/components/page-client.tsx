@@ -8,6 +8,7 @@ import Swap from "@/components/swap";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentPersonalityCard, AgentSkills } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
+import AgentPanel from "@/components/token-page/agent-panel";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,10 @@ export default function PageClient({
 					</motion.div>
 
 					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="min-w-0">
+						<AgentPanel token={token} />
+					</motion.div>
+
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="min-w-0">
 						<OwnerRuntimePanel token={token} />
 					</motion.div>
 
@@ -184,7 +189,7 @@ export default function PageClient({
 							className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors"
 							initial={{ opacity: 0, y: 10 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.3 }}
+							transition={{ delay: 0.35 }}
 						>
 							<HudCorner position="tl" />
 							<HudCorner position="tr" />

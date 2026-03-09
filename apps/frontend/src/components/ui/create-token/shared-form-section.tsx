@@ -8,6 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { DeployButton } from "./deploy-button";
+import { DeployAgentModal } from "./deploy-agent-modal";
 import { cn } from "@/lib/utils";
 import {
 	usePrompt,
@@ -567,6 +568,12 @@ export const LaunchButton = ({
 	const wagmiConfig = useConfig();
 	const { writeContractAsync } = useWriteContract();
 	const [chain, chainId] = ["evm", 56];
+	const [agentModalOpen, setAgentModalOpen] = useState(false);
+	const [launchedTokenInfo, setLaunchedTokenInfo] = useState<{
+		name: string;
+		description: string;
+		address: string;
+	} | null>(null);
 
 	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt || !isConnected;
 
@@ -661,7 +668,14 @@ export const LaunchButton = ({
 				}).catch(() => {});
 
 				setLaunchSalt(null);
-				router.push(`/token/${chain}/${chainId}/${tokenAddress}`);
+
+				// Show deploy agent modal before navigating
+				setLaunchedTokenInfo({
+					name,
+					description,
+					address: tokenAddress,
+				});
+				setAgentModalOpen(true);
 			} else {
 				toast.success("Token launched! Transaction confirmed.");
 				setLaunchSalt(null);
@@ -681,13 +695,32 @@ export const LaunchButton = ({
 	};
 
 	return (
-		<DeployButton
-			onClick={onSubmit}
-			disabled={shouldDisable || disabled}
-			isLoading={isLaunching}
-			loadingText="LAUNCHING..."
-		>
-			{!isConnected ? "CONNECT WALLET" : "LAUNCH TOKEN"}
-		</DeployButton>
+		<>
+			<DeployButton
+				onClick={onSubmit}
+				disabled={shouldDisable || disabled}
+				isLoading={isLaunching}
+				loadingText="LAUNCHING..."
+			>
+				{!isConnected ? "CONNECT WALLET" : "LAUNCH TOKEN"}
+			</DeployButton>
+
+			{launchedTokenInfo && (
+				<DeployAgentModal
+					open={agentModalOpen}
+					onOpenChange={(open) => {
+						setAgentModalOpen(open);
+						if (!open && launchedTokenInfo) {
+							router.push(
+								`/token/${chain}/${chainId}/${launchedTokenInfo.address}`,
+							);
+						}
+					}}
+					tokenName={launchedTokenInfo.name}
+					tokenDescription={launchedTokenInfo.description}
+					tokenAddress={launchedTokenInfo.address}
+				/>
+			)}
+		</>
 	);
 };

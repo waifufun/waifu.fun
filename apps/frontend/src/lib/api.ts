@@ -1043,6 +1043,102 @@ export const getOwnerTokenBilling = async ({
 	};
 };
 
+// ========== AGENT PROVISIONING ==========
+
+export interface AgentAvailability {
+	totalSlots: number;
+	availableSlots: number;
+	nodes: Array<{ id: string; name: string; capacity: number; used: number }>;
+}
+
+export interface AgentCreateInput {
+	agentName: string;
+	agentBio?: string | undefined;
+	tokenAddress?: string | undefined;
+	platforms?: string[] | undefined;
+	config?: Record<string, unknown> | undefined;
+}
+
+export interface AgentCreateResponse {
+	agentId: string;
+	jobId: string;
+}
+
+export interface AgentStatus {
+	agentId: string;
+	agentName: string;
+	status: "queued" | "provisioning" | "running" | "stopped" | "failed" | "deleted";
+	tokenAddress?: string;
+	containerUrl?: string;
+	platforms?: string[];
+	createdAt?: string;
+	updatedAt?: string;
+}
+
+export interface AgentJobStatus {
+	jobId: string;
+	state: "queued" | "provisioning" | "running" | "completed" | "failed";
+	progress?: number;
+	message?: string;
+}
+
+export interface UserAgent {
+	agentId: string;
+	agentName: string;
+	status: "queued" | "provisioning" | "running" | "stopped" | "failed" | "deleted";
+	tokenAddress?: string;
+	containerUrl?: string;
+	platforms?: string[];
+	createdAt?: string;
+}
+
+export const getAgentAvailability = async (): Promise<AgentAvailability> => {
+	const response = await fetcher("/agents/availability", "GET");
+	return response?.data || response;
+};
+
+export const createAgentForToken = async (data: AgentCreateInput): Promise<AgentCreateResponse> => {
+	const response = await fetcher("/agents", "POST", data);
+	return response?.data || response;
+};
+
+export const getAgentStatus = async (agentId: string): Promise<AgentStatus> => {
+	const response = await fetcher(`/agents/${agentId}`, "GET");
+	return response?.data || response;
+};
+
+export const getAgentJobStatus = async (jobId: string): Promise<AgentJobStatus> => {
+	const response = await fetcher(`/agents/jobs/${jobId}`, "GET");
+	return response?.data || response;
+};
+
+export const getUserAgents = async (): Promise<UserAgent[]> => {
+	const response = await fetcher("/agents/mine", "GET");
+	return response?.data?.items || response?.data || response?.items || [];
+};
+
+export const getAgentByToken = async (tokenAddress: string): Promise<AgentStatus | null> => {
+	try {
+		const response = await fetcher(`/agents/by-token/${tokenAddress}`, "GET");
+		return response?.data || response || null;
+	} catch (error) {
+		if (error instanceof ApiError && error.status === 404) return null;
+		throw error;
+	}
+};
+
+export const restartAgent = async (agentId: string): Promise<void> => {
+	await fetcher(`/agents/${agentId}/restart`, "POST");
+};
+
+export const stopAgent = async (agentId: string): Promise<void> => {
+	await fetcher(`/agents/${agentId}/stop`, "POST");
+};
+
+export const deleteAgent = async (agentId: string): Promise<void> => {
+	await fetcher(`/agents/${agentId}`, "DELETE");
+};
+
 // ========== LEGACY EXPORTS (deprecated — Solana RPC removed) ==========
 
 /** @deprecated BSC uses wagmi/viem public client instead */

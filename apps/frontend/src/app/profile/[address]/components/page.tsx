@@ -1,6 +1,7 @@
 "use client";
 import ProfileHeader from "@/components/profile-page/profile-header";
 import TokenRow from "@/components/profile-page/token-row";
+import AgentsTab from "@/components/profile-page/agents-tab";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useParams } from "next/navigation";
@@ -76,12 +77,15 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 				{/* tabs section */}
 				<div className="w-full h-full flex place-self-center">
 					<Tabs value={tab} onValueChange={setTab} className="w-full">
-						<TabsList className="grid w-full grid-cols-2">
+						<TabsList className="grid w-full grid-cols-3">
 							<TabsTrigger value="wallet" className="w-full">
 								Wallet
 							</TabsTrigger>
 							<TabsTrigger value="Activity" className="w-full">
 								Activity
+							</TabsTrigger>
+							<TabsTrigger value="agents" className="w-full">
+								Agents
 							</TabsTrigger>
 						</TabsList>
 						<TabsContent value="wallet" className="bg-transparent">
@@ -217,6 +221,9 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 									</TabsContent>
 								</div>
 							</Tabs>
+						</TabsContent>
+						<TabsContent value="agents" className="bg-transparent">
+							<AgentsTab />
 						</TabsContent>
 					</Tabs>
 				</div>
