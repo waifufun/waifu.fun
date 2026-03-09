@@ -1108,12 +1108,12 @@ export const getAgentStatus = async (agentId: string): Promise<AgentStatus> => {
 };
 
 export const getAgentJobStatus = async (jobId: string): Promise<AgentJobStatus> => {
-	const response = await fetcher(`/agents/jobs/${jobId}`, "GET");
+	const response = await fetcher(`/jobs/${jobId}`, "GET");
 	return response?.data || response;
 };
 
 export const getUserAgents = async (): Promise<UserAgent[]> => {
-	const response = await fetcher("/agents/mine", "GET");
+	const response = await fetcher("/agents", "GET");
 	return response?.data?.items || response?.data || response?.items || [];
 };
 
