@@ -208,7 +208,7 @@ const PromptProviderContent = ({
 				if (typeof data.mediaUrl === "string") {
 					actualMediaUrl = data.mediaUrl;
 				} else if (typeof data.mediaUrl === "object" && data.mediaUrl !== null && "url" in data.mediaUrl) {
-					actualMediaUrl = data.mediaUrl.url;
+					actualMediaUrl = (data.mediaUrl as { url: string }).url;
 				} else {
 					toast.error("Error generating media: Invalid media URL format");
 					setIsGeneratingMedia(false);
@@ -275,8 +275,19 @@ const PromptProviderContent = ({
 			}),
 		onSuccess: (data) => {
 			if (data?.mediaUrl) {
-				const actualMediaUrl = data.mediaUrl.url;
-				const contentType = data.mediaUrl.content_type || "image";
+				let actualMediaUrl: string;
+				let contentType = "image";
+				
+				if (typeof data.mediaUrl === "string") {
+					actualMediaUrl = data.mediaUrl;
+				} else if (typeof data.mediaUrl === "object" && data.mediaUrl !== null && "url" in data.mediaUrl) {
+					actualMediaUrl = (data.mediaUrl as { url: string; content_type?: string }).url;
+					contentType = (data.mediaUrl as { content_type?: string }).content_type || "image";
+				} else {
+					toast.error("Error generating media: Invalid media URL format");
+					setIsGeneratingMedia(false);
+					return;
+				}
 
 				console.log("actualMediaUrl: ", actualMediaUrl);
 				console.log("contentType: ", contentType);
@@ -547,7 +558,7 @@ const PromptProviderContent = ({
 
 		if (!metadataUrl) {
 			toast.error("Failed to generate metadata URL.");
-			console.log("metadata: ", remoteMetadata.data);
+			console.log("metadata: ", remoteMetadata);
 			throw new Error("Metadata URL generation failed");
 		}
 
@@ -555,7 +566,7 @@ const PromptProviderContent = ({
 			name,
 			symbol,
 			description,
-			image: remoteMetadataMutation.data?.imageUrl,
+			image: remoteMetadata?.imageUrl || remoteMetadataMutation.data?.imageUrl || "",
 			launchSalt: salt,
 			buyAmount,
 			metadataUrl,

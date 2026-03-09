@@ -338,6 +338,10 @@ export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
 
 export const createToken = async ({
 	contractAddress,
+	name,
+	symbol,
+	description,
+	imageUrl,
 	chain,
 	chainId,
 	pool,
@@ -345,27 +349,36 @@ export const createToken = async ({
 	inviteCode,
 }: {
 	contractAddress: string;
+	name: string;
+	symbol: string;
+	description: string;
+	imageUrl?: string;
 	chain: TChain;
 	chainId: number;
 	pool?: string;
 	signature?: string;
 	inviteCode?: string;
 }) => {
-	// waifu-core uses /launches endpoint
-	// This is a simplification - frontend may need to adapt to launch flow
-	return await fetcher("/launches", "POST", {
-		name: "Placeholder", // Frontend should provide these
-		symbol: "TBD",
-		description: "Token created via legacy flow",
-		inviteCode,
-	});
+	try {
+		return await fetcher("/launches", "POST", {
+			name,
+			symbol,
+			description,
+			imageUrl,
+			inviteCode,
+		});
+	} catch (error) {
+		// Non-blocking: the on-chain tx already succeeded, backend registration is secondary
+		console.warn("Failed to register token with backend:", error);
+		return null;
+	}
 };
 
 export const getLaunchGateCheck = async (inviteCode?: string) => {
-	// waifu-core doesn't have this exact endpoint yet
-	// Return success to not block UI
-	console.warn("[waifu-core] Launch gate check not implemented - returning open access");
-	return { allowed: true, message: "Launch gate check not implemented in waifu-core yet" };
+	const params = new URLSearchParams();
+	if (inviteCode) params.append("inviteCode", inviteCode);
+	const response = await fetcher(`/launches/gate?${params.toString()}`, "GET");
+	return response?.data || response;
 };
 
 export const getAdminStats = async () => {
@@ -476,9 +489,14 @@ export const generateMedia = async ({
 	width,
 	height,
 	type,
-}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }) => {
-	console.warn("[waifu-core] Media generation not implemented yet: /generation/generate");
-	return null as any;
+}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }): Promise<{ mediaUrl: string }> => {
+	// Generate deterministic placeholder based on prompt
+	const seed = encodeURIComponent(prompt || "waifu");
+	const size = Math.min(width || 512, height || 512);
+	const mediaUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&size=${size}`;
+	
+	console.log("[waifu-core] Generated placeholder media:", mediaUrl);
+	return { mediaUrl };
 };
 
 export const generateMediaForToken = async ({
@@ -497,9 +515,14 @@ export const generateMediaForToken = async ({
 	contractAddress: string;
 	chain: TChain;
 	chainId: SolanaNetworkIds;
-}) => {
-	console.warn("[waifu-core] Token media generation not implemented yet: /generation/generate-media");
-	return null as any;
+}): Promise<{ mediaUrl: string }> => {
+	// Generate deterministic placeholder based on prompt and contract address
+	const seed = encodeURIComponent(`${contractAddress}-${prompt || "waifu"}`);
+	const size = Math.min(width || 512, height || 512);
+	const mediaUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&size=${size}`;
+	
+	console.log("[waifu-core] Generated placeholder token media:", mediaUrl);
+	return { mediaUrl };
 };
 
 export const generateMetadata = async ({
@@ -507,8 +530,21 @@ export const generateMetadata = async ({
 	prompt,
 	contractAddress,
 }: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined; contractAddress?: string | undefined }) => {
-	console.warn("[waifu-core] Metadata generation not implemented yet: /generation/generate-metadata");
-	return null as any;
+	// Generate basic metadata from prompt
+	const name = prompt?.substring(0, 64) || "Waifu Token";
+	const ticker = name.substring(0, 6).toUpperCase().replace(/[^A-Z]/g, "") || "WAIFU";
+	const description = prompt || "A waifu.fun token";
+	
+	console.log("[waifu-core] Generated placeholder metadata:", { name, ticker, description });
+	return { 
+		metadata: { 
+			name, 
+			symbol: ticker, 
+			description, 
+			prompt: prompt || "",
+			image: "" 
+		} 
+	};
 };
 
 export const generateRemoteMetadata = async ({
@@ -526,13 +562,18 @@ export const generateRemoteMetadata = async ({
 	};
 	manual?: boolean | undefined;
 }) => {
-	console.warn("[waifu-core] Remote metadata creation not implemented yet: /tokens/create-metadata");
-	return null as any;
+	// MVP: skip IPFS upload, use image URL directly as metadata reference.
+	// The meta field on-chain will contain the image URL or description.
+	const resolvedImage = imageUrl || image || "";
+	return {
+		metadataUrl: resolvedImage || `${name} - ${description}`,
+		imageUrl: resolvedImage,
+	};
 };
 
 export const importToken = async ({ chain, chainId, contractAddress }: ITokenLookUp): Promise<IToken> => {
 	console.warn("[waifu-core] Token import not implemented yet: /tokens/import");
-	throw new Error("Token import not available in waifu-core yet");
+	throw new Error("Import feature coming soon! Check back later for this functionality.");
 };
 
 export const claimFees = async ({

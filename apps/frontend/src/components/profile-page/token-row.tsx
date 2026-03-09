@@ -5,7 +5,7 @@ import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
 import type { TChain } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
-const LAMPORTS_PER_SOL = 1e18;
+const WEI_PER_UNIT = 1e18;
 import Verified from "../verified";
 
 export default function TokenRow({
@@ -100,12 +100,12 @@ export default function TokenRow({
 										{data.direction === 0 ? (
 											<>
 												{formatAmount(data.amountGotten)} <span className="text-[#a1a1aa]">${data?.ticker}</span> for{" "}
-												{(data.swapAmount ?? 0) / LAMPORTS_PER_SOL} SOL
+												{(data.swapAmount ?? 0) / WEI_PER_UNIT} BNB
 											</>
 										) : (
 											<>
 												{formatAmount(data.swapAmount)} <span className="text-[#a1a1aa]">${data?.ticker}</span> for{" "}
-												{(data.amountGotten ?? 0) / LAMPORTS_PER_SOL} SOL
+												{(data.amountGotten ?? 0) / WEI_PER_UNIT} BNB
 											</>
 										)}
 									</p>
@@ -135,7 +135,7 @@ export default function TokenRow({
 						<div className="flex justify-end items-center text-[#e4e4e7] text-base h-[60px] pl-2 flex-shrink-0">
 							<Link
 								href={
-									mode === "activity" ? `https://solscan.io/tx/${data.signature}` : `/token/${data.contractAddress}`
+									mode === "activity" ? `https://bscscan.com/tx/${data.signature}` : `/token/${data.contractAddress}`
 								}
 								target={mode === "activity" ? "_blank" : undefined}
 							>

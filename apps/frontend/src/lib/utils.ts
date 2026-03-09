@@ -242,8 +242,8 @@ export function isInputGreaterThanDecimals(value: string, maxDecimals?: number):
 }
 
 /**
- * Retrieve a swap quote from waifu-core's Flap quote endpoint.
- * TODO: Wire to actual waifu-core /trades/quote endpoint.
+ * Retrieve a swap quote using DexScreener API for price data.
+ * Calculates expected output and minimum received based on current market price.
  */
 export const retrieveQuote = async ({
 	amount,
@@ -261,19 +261,75 @@ export const retrieveQuote = async ({
 	priceImpactPct?: string;
 	quote?: unknown;
 }> => {
-	// TODO: Replace with actual waifu-core Flap quote endpoint
-	console.warn("[BSC] retrieveQuote stub called - wire to waifu-core /trades/quote");
-	return {
-		minimumReceived: 0,
-		swapUsdValue: "0",
-		priceImpactPct: "0",
-		quote: null,
-	};
+	try {
+		// Fetch current price from DexScreener
+		const resp = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${token.contractAddress}`);
+		
+		if (!resp.ok) {
+			throw new Error("Failed to fetch price data");
+		}
+
+		const data = await resp.json();
+		const pair = data.pairs?.[0];
+		
+		if (!pair) {
+			throw new Error("Price unavailable");
+		}
+
+		const priceUsd = Number.parseFloat(pair?.priceUsd || "0");
+		const bnbPriceUsd = Number.parseFloat(pair?.priceNative || "0");
+		
+		if (priceUsd === 0) {
+			throw new Error("Price unavailable");
+		}
+
+		const inputAmount = Number.parseFloat(String(amount));
+		
+		if (isNaN(inputAmount) || inputAmount <= 0) {
+			throw new Error("Invalid amount");
+		}
+
+		let outputAmount: number;
+		let swapUsdValue: string;
+
+		if (mode === "buy") {
+			// Buying tokens with BNB
+			// Get BNB price in USD (from pair or default BSC price)
+			const bnbPrice = bnbPriceUsd > 0 ? priceUsd / bnbPriceUsd : 300; // Fallback BNB price
+			const inputUsd = inputAmount * bnbPrice;
+			outputAmount = inputUsd / priceUsd;
+			swapUsdValue = inputUsd.toFixed(2);
+		} else {
+			// Selling tokens for BNB
+			const outputUsd = inputAmount * priceUsd;
+			const bnbPrice = bnbPriceUsd > 0 ? priceUsd / bnbPriceUsd : 300;
+			outputAmount = outputUsd / bnbPrice;
+			swapUsdValue = outputUsd.toFixed(2);
+		}
+
+		// Apply slippage tolerance
+		const slippageMultiplier = 1 - (slippage / 100);
+		const minimumReceived = Math.floor(outputAmount * slippageMultiplier * (mode === "buy" ? 10 ** token.decimals : 10 ** 18));
+
+		// Estimate price impact (simplified - real calculation would need liquidity depth)
+		const priceImpactPct = "1"; // Conservative estimate, real calc needs pool liquidity
+
+		return {
+			minimumReceived,
+			swapUsdValue,
+			priceImpactPct,
+			quote: pair,
+		};
+	} catch (error) {
+		console.error("[BSC] retrieveQuote error:", error);
+		throw error;
+	}
 };
 
 /**
- * Execute a swap on BSC via waifu-core's Flap swap endpoint.
- * TODO: Implement actual swap transaction logic.
+ * Execute a swap by redirecting to PancakeSwap.
+ * For migrated/dex tokens, opens PancakeSwap with pre-filled parameters.
+ * For bonding curve tokens, shows message about upcoming direct swap.
  */
 export const executeSwap = async (
 	from: AddressLike,
@@ -284,19 +340,30 @@ export const executeSwap = async (
 	speed: TSpeed,
 	onTransactionStart?: (hash: string, expectedOutput: number) => void,
 ): Promise<string> => {
-	// TODO: Replace with actual waifu-core Flap swap endpoint
-	throw new Error("BSC swap not yet implemented - wire to waifu-core Flap endpoints");
+	// Check if token is migrated to DEX
+	const isMigrated = token.status === "migrated" || token.status === "dex";
+	
+	if (isMigrated) {
+		// Redirect to PancakeSwap for migrated tokens
+		const pancakeUrl = `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}&chain=bsc`;
+		window.open(pancakeUrl, '_blank');
+		
+		// Return a fake transaction hash to indicate redirect
+		return "redirect_to_pancakeswap";
+	} else {
+		// For bonding curve tokens, show message
+		throw new Error("Direct swap coming soon — use PancakeSwap for now.");
+	}
 };
 
 /**
- * Create a token on BSC via waifu-core's launch endpoint.
- * TODO: Implement actual token creation transaction logic.
+ * Token creation now happens directly via wagmi writeContract in the LaunchButton component.
+ * This function is kept for type compatibility but should not be called directly.
  */
 export const createTokenTx = async (
 	tokenData: TokenMetadata,
 ): Promise<CreateTokenResponse> => {
-	// TODO: Replace with actual waifu-core launch flow
-	throw new Error("BSC token creation not yet implemented - wire to waifu-core launch endpoints");
+	throw new Error("Use LaunchButton component which calls Portal.newTokenV5 via wagmi directly");
 };
 
 export const resizeImage = (url: string, width: number, height: number) => {

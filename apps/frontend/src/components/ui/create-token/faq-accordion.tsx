@@ -10,7 +10,7 @@ const defaultFAQs: FAQItem[] = [
 	{
 		question: "How much does it cost to create a token?",
 		answer:
-			"Creating a token costs approximately 0.02-0.04 SOL in network fees. Pre-buy needs additional SOL (up to 28 SOL max).",
+			"Creating a token costs approximately 0.02-0.04 BNB in network fees. Pre-buy needs additional BNB (up to 28 BNB max).",
 	},
 	{
 		question: "What is the custom address generator?",
@@ -24,7 +24,7 @@ const defaultFAQs: FAQItem[] = [
 	},
 	{
 		question: "What is the curve limit?",
-		answer: "Determines how much SOL needs to be raised before graduation to Raydium or Meteora.",
+		answer: "Determines how much BNB needs to be raised before graduation to PancakeSwap.",
 	},
 	{
 		question: "What is delayed start?",
@@ -32,7 +32,7 @@ const defaultFAQs: FAQItem[] = [
 	},
 	{
 		question: "What are trade limits?",
-		answer: "Restrict max SOL per transaction for the first 8 hours. Prevents large wallets from immediately dumping.",
+		answer: "Restrict max BNB per transaction for the first 8 hours. Prevents large wallets from immediately dumping.",
 	},
 ];
 export function FAQAccordion({ className, faqs = defaultFAQs }: { className?: string; faqs?: FAQItem[] }) {

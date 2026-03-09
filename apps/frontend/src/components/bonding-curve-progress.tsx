@@ -6,7 +6,7 @@ import { formatNumber } from "@/lib/utils";
 import { useTranslation } from "@/contexts/locale-context";
 import type { IToken } from "@waifufun/types";
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
-const LAMPORTS_PER_SOL = 1e18;
+const WEI_PER_BNB = 1e18;
 import { motion } from "framer-motion";
 
 const PROGRESS_SEGMENTS = [
@@ -72,9 +72,9 @@ export default function BondingCurveProgress({
 	const curveProgress = token?.curveProgress;
 	if (typeof curveProgress !== "number" || token?.curveCompleted || token?.imported) return null;
 
-	const currentReserveLamports = token?.bondingCurveBalance ? token.bondingCurveBalance * LAMPORTS_PER_SOL : 0;
-	const curveLimitLamports = token?.curveLimit || 113 * LAMPORTS_PER_SOL;
-	const solRequiredForMigration = Math.max(0, (curveLimitLamports - currentReserveLamports) / LAMPORTS_PER_SOL);
+	const currentReserveLamports = token?.bondingCurveBalance ? token.bondingCurveBalance * WEI_PER_BNB : 0;
+	const curveLimitLamports = token?.curveLimit || 113 * WEI_PER_BNB;
+	const solRequiredForMigration = Math.max(0, (curveLimitLamports - currentReserveLamports) / WEI_PER_BNB);
 
 	return (
 		<div className="relative">
@@ -118,11 +118,11 @@ export default function BondingCurveProgress({
 					>
 						<span className="text-[#52525b]">{t("token.reserve")}:</span>
 						<span className="text-[#00ff87]">
-							{formatNumber(Number(currentReserveLamports / LAMPORTS_PER_SOL), false, true)} SOL
+							{formatNumber(Number(currentReserveLamports / WEI_PER_BNB), false, true)} BNB
 						</span>
 						<span className="text-[#3f3f46]">•</span>
 						<span className="text-[#52525b]">{t("token.needed")}:</span>
-						<span className="text-[#c084fc]">{formatNumber(solRequiredForMigration, true, true)} SOL</span>
+						<span className="text-[#c084fc]">{formatNumber(solRequiredForMigration, true, true)} BNB</span>
 					</motion.div>
 				)}
 			</div>

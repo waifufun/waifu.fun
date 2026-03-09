@@ -38,10 +38,6 @@ function formatCreatedAt(
 }
 
 function getChainLabel(token: IToken) {
-	if (token.chain === "solana") {
-		return token.chainId === SolanaNetworkIds.Devnet ? "solana devnet" : "solana";
-	}
-
 	switch (token.chainId) {
 		case EvmChainIds.BaseMainnet:
 			return "base";
