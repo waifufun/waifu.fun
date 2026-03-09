@@ -23,7 +23,7 @@ const MAX_TICKER_LENGTH = 5;
 const BASE58_REGEX = /^[1-9A-HJ-NP-Za-km-z]+$/;
 const MAX_SUFFIX_LENGTH_FOR_SERIOUS_WARNING = 4;
 const MAX_SUFFIX_LENGTH_FOR_HOURS_WARNING = 4;
-const INITIAL_GENERATION_SUFFIX = "FUN";
+const INITIAL_GENERATION_SUFFIX = "WAIFU";
 
 /** BNB has 18 decimals; use 1e18 as the base unit multiplier */
 const NATIVE_DECIMALS = 18;
