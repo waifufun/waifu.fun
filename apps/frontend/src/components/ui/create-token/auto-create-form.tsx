@@ -83,7 +83,7 @@ function AutoCreateForm() {
 						))}
 					</div>
 					<Button className="w-full bg-[#00ff87] text-[#08080a] font-bold text-sm h-12 rounded-sm uppercase" disabled>
-						<RefreshCw size={16} className="mr-2" /> Generate Image
+						<RefreshCw size={16} className="mr-2" /> Generate Avatar
 					</Button>
 				</FormSection>
 				<div className="space-y-6">
@@ -98,9 +98,9 @@ function AutoCreateForm() {
 
 	return (
 		<div className="grid md:grid-cols-2 gap-6 md:items-start">
-			<FormSection title="AI Image Generation" className="space-y-4" collapsible={false}>
+			<FormSection title="Generate Agent Avatar" className="space-y-4" collapsible={false}>
 				<TerminalTextarea
-					placeholder="describe your token's vibe... a mystical forest creature, a cyberpunk robot, a meme-worthy doge..."
+					placeholder="describe your agent's personality... a sharp-witted trader, a meme-savvy degen, a philosophical oracle..."
 					maxLength={3000}
 					{...registerForm("prompt")}
 				/>
@@ -162,12 +162,12 @@ function AutoCreateForm() {
 						</>
 					) : (
 						<>
-							<RefreshCw size={16} className="mr-2" /> Generate Image
+							<RefreshCw size={16} className="mr-2" /> Generate Avatar
 						</>
 					)}
 				</Button>
 				<p className="text-[10px] text-[#52525b] text-center">
-					tip: be specific! "a golden retriever wearing sunglasses on a beach" works better than "dog"
+					tip: be specific! "a cyberpunk anime girl who trades memecoins and posts degen alpha" works better than "cute girl"
 				</p>
 			</FormSection>
 			<div className="space-y-6">

@@ -49,8 +49,8 @@ export default function ImportTokenForm() {
 	return (
 		<div className="max-w-lg mx-auto space-y-6">
 			<FormSection
-				title="Import Existing Token"
-				description="Add an existing BSC token to our platform"
+				title="Import Existing Agent"
+				description="Add an existing agent to our platform"
 				icon={<Search size={16} />}
 			>
 				<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -97,7 +97,7 @@ export default function ImportTokenForm() {
 						isLoading={mutation.isPending}
 						loadingText="IMPORTING..."
 					>
-						IMPORT TOKEN
+						IMPORT AGENT
 					</DeployButton>
 				</form>
 			</FormSection>

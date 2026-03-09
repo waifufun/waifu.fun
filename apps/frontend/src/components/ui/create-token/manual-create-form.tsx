@@ -225,7 +225,7 @@ const ImageUploadSection = () => {
 	};
 
 	return (
-		<FormSection title="Token Image" className="space-y-4" collapsible={false}>
+		<FormSection title="Agent Avatar" className="space-y-4" collapsible={false}>
 			<div
 				className="w-full h-[240px] relative"
 				onDragEnter={handleDragEnter}
@@ -236,7 +236,7 @@ const ImageUploadSection = () => {
 				{!displayImage && <UploadPlaceholder onClick={handlePlaceholderClick} isDragActive={isDragActive} />}
 				{displayImage && (
 					<div className="w-full h-full relative rounded-sm overflow-hidden bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)]">
-						<Image src={displayImage} alt="Token preview" fill className="object-contain p-2" />
+						<Image src={displayImage} alt="Agent preview" fill className="object-contain p-2" />
 						<button
 							type="button"
 							onClick={handleDeleteImage}
@@ -261,7 +261,7 @@ const ImageUploadSection = () => {
 			{displayImage && (
 				<div className="flex items-center justify-between">
 					<p className="text-xs text-[#71717a]">
-						{uploadedImage ? "Manual upload" : "Using generated image"}
+						{uploadedImage ? "Manual upload" : "Using generated avatar"}
 						{isConverting && " (Converting...)"}
 					</p>
 					<div className="flex gap-2">
@@ -306,7 +306,7 @@ const ImageUploadSection = () => {
 			{!displayImage && previousImages.length === 0 && (
 				<div className="p-2 bg-red-500/10 border border-red-500/30 rounded-sm">
 					<p className="text-xs text-red-400">
-						⚠️ Token image is required. Please upload an image or generate one from the Auto tab.
+						⚠️ Agent avatar is required. Please upload an image or generate one from the Auto tab.
 					</p>
 				</div>
 			)}
