@@ -5,7 +5,7 @@ import AutoCreateForm from "@/components/ui/create-token/auto-create-form";
 import { FAQAccordion } from "@/components/ui/create-token/faq-accordion";
 import ImportTokenForm from "@/components/ui/create-token/import-token-form";
 import ManualCreateForm from "@/components/ui/create-token/manual-create-form";
-import { RecentlyCreated } from "@/components/ui/create-token/recently-created";
+import { AgentPreviewCard } from "@/components/ui/create-token/agent-preview-card";
 import { StepProgress } from "@/components/ui/create-token/step-progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
@@ -15,9 +15,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const steps = [
-	{ label: "choose", description: "pick a mode" },
-	{ label: "create", description: "configure token" },
-	{ label: "launch", description: "deploy to chain" },
+	{ label: "identity", description: "name your agent" },
+	{ label: "configure", description: "set up your agent" },
+	{ label: "deploy", description: "launch on-chain" },
 ];
 
 function CreateTokenLauncher() {
@@ -36,12 +36,11 @@ function CreateTokenLauncher() {
 				<div className="text-center mb-8">
 					<div className="inline-flex items-center gap-2 mb-3">
 						<Sparkles className="w-5 h-5 text-[#00ff87]" />
-						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">token launcher</span>
+						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">agent launchpad</span>
 					</div>
-					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">Create Your Token</h1>
+					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">Deploy Your Agent</h1>
 					<p className="text-sm text-[#71717a] max-w-md mx-auto">
-						Launch your token on BSC in minutes. AI-powered image generation, custom vanity addresses, and instant
-						deployment.
+						Deploy an autonomous AI agent with its own token. Intelligent, social, on-chain.
 					</p>
 				</div>
 				<StepProgress steps={steps} currentStep={currentStep} className="max-w-md mx-auto mb-8" />
@@ -98,13 +97,9 @@ function CreateTokenLauncher() {
 
 					<aside className="hidden lg:block">
 						<div className="sticky top-4">
-							<RecentlyCreated />
+							<AgentPreviewCard />
 						</div>
 					</aside>
-				</div>
-
-				<div className="lg:hidden mt-8">
-					<RecentlyCreated />
 				</div>
 			</div>
 		</div>
