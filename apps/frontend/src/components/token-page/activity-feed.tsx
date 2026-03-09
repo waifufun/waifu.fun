@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
+import { useTranslation } from "@/contexts/locale-context";
 
 const PAGE_SIZE = 10;
 
@@ -44,7 +45,17 @@ function generateMockTrades(ticker: string): MockTrade[] {
 
 const DEFAULT_EXPLORER = "https://solscan.io";
 
-function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; token: IToken }) {
+function TradeRow({
+	trade,
+	index,
+	token,
+	labels,
+}: {
+	trade: MockTrade;
+	index: number;
+	token: IToken;
+	labels: { buy: string; sell: string; viewOnSolscan: string; viewOnExplorer: string };
+}) {
 	const isBuy = trade.type === "buy";
 	const chainId = Number(token.chainId);
 	const chain = token.chain ?? "solana";
@@ -55,7 +66,7 @@ function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; to
 		explorerBase.includes("?")
 			? `${explorerBase.split("?")[0]}/tx/${trade.txId}?${explorerBase.split("?")[1]}`
 			: `${explorerBase}/tx/${trade.txId}`;
-	const explorerLabel = chain === "solana" ? "View on Solscan" : "View on explorer";
+	const explorerLabel = chain === "solana" ? labels.viewOnSolscan : labels.viewOnExplorer;
 
 	return (
 		<motion.div
@@ -74,7 +85,7 @@ function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; to
 						isBuy ? "text-[#22c55e] bg-[#22c55e]/10" : "text-red-400 bg-red-500/10",
 					)}
 				>
-					{isBuy ? "buy" : "sell"}
+					{isBuy ? labels.buy : labels.sell}
 				</span>
 			</div>
 			<span className="text-[#e4e4e7] font-medium truncate text-left">{trade.amount}</span>
@@ -106,14 +117,25 @@ function TradeRow({ trade, index, token }: { trade: MockTrade; index: number; to
 }
 
 export default function ActivityFeed({ token }: { token: IToken }) {
+	const { t } = useTranslation();
 	const trades = useMemo(() => generateMockTrades(token.ticker), [token.ticker]);
 	const [page, setPage] = useState(1);
+
+	const labels = useMemo(
+		() => ({
+			buy: t("token.activity.buy"),
+			sell: t("token.activity.sell"),
+			viewOnSolscan: t("common.viewOnSolscan"),
+			viewOnExplorer: t("common.viewOnExplorer"),
+		}),
+		[t],
+	);
 
 	if (!trades || trades.length === 0) {
 		return (
 			<div className="w-full border border-[rgba(255,255,255,0.06)] bg-[#111114]">
 				<div className="flex items-center justify-center py-8 px-4">
-					<p className="text-xs text-[#52525b] font-mono">no recent trades</p>
+					<p className="text-xs text-[#52525b] font-mono">{t("token.activity.noRecentTrades")}</p>
 				</div>
 			</div>
 		);
@@ -134,12 +156,12 @@ export default function ActivityFeed({ token }: { token: IToken }) {
 				className={cn(gridClass, "py-2.5 border-b border-[rgba(255,255,255,0.08)] bg-[#111114] text-[10px] font-mono uppercase tracking-wider text-[#71717a]")}
 				aria-hidden
 			>
-				<span className="w-[4.5rem]">Type</span>
-				<span>Amount</span>
-				<span>Ticker</span>
-				<span>Account</span>
-				<span className="text-right">Date</span>
-				<span className="flex items-center justify-center shrink-0" title="Transaction">Tx</span>
+				<span className="w-[4.5rem]">{t("token.activity.type")}</span>
+				<span>{t("token.activity.amount")}</span>
+				<span>{t("token.activity.ticker")}</span>
+				<span>{t("token.activity.account")}</span>
+				<span className="text-right">{t("token.activity.date")}</span>
+				<span className="flex items-center justify-center shrink-0" title={t("token.activity.txTitle")}>{t("common.tx")}</span>
 			</div>
 			<div className="max-h-[280px] overflow-y-auto overflow-x-auto scrollbar-hide min-w-0">
 				{pageTrades.map((trade, i) => (
@@ -148,6 +170,7 @@ export default function ActivityFeed({ token }: { token: IToken }) {
 						trade={trade}
 						index={start + i}
 						token={token}
+						labels={labels}
 					/>
 				))}
 			</div>
@@ -158,22 +181,22 @@ export default function ActivityFeed({ token }: { token: IToken }) {
 						onClick={() => setPage((p) => Math.max(1, p - 1))}
 						disabled={currentPage <= 1}
 						className="inline-flex items-center gap-1 text-[10px] font-mono text-[#52525b] hover:text-[#00ff87] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-						aria-label="Previous page"
+						aria-label={t("common.prev")}
 					>
 						<ChevronLeft className="size-4" />
-						Prev
+						{t("common.prev")}
 					</button>
 					<span className="text-[10px] font-mono text-[#52525b]">
-						Page {currentPage} of {totalPages}
+						{t("token.activity.page")}{currentPage}{t("token.activity.pageUnit")} {t("token.activity.of")}{totalPages}{t("token.activity.pageUnit")}
 					</span>
 					<button
 						type="button"
 						onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
 						disabled={currentPage >= totalPages}
 						className="inline-flex items-center gap-1 text-[10px] font-mono text-[#52525b] hover:text-[#00ff87] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-						aria-label="Next page"
+						aria-label={t("common.next")}
 					>
-						Next
+						{t("common.next")}
 						<ChevronRight className="size-4" />
 					</button>
 				</div>

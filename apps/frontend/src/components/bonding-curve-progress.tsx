@@ -3,21 +3,11 @@ import { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { formatNumber } from "@/lib/utils";
+import { useTranslation } from "@/contexts/locale-context";
 import type { IToken } from "@waifufun/types";
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
 const LAMPORTS_PER_SOL = 1e18;
 import { motion } from "framer-motion";
-
-function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
-	const base = "absolute w-2 h-2 pointer-events-none";
-	const styles: Record<string, string> = {
-		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/30`,
-		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/30`,
-		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/30`,
-		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/30`,
-	};
-	return <span className={styles[position]} />;
-}
 
 const PROGRESS_SEGMENTS = [
 	"segment-1",
@@ -78,6 +68,7 @@ export default function BondingCurveProgress({
 	title,
 	showTooltip,
 }: { token: IToken; title?: string; showTooltip?: boolean }) {
+	const { t } = useTranslation();
 	const curveProgress = token?.curveProgress;
 	if (typeof curveProgress !== "number" || token?.curveCompleted || token?.imported) return null;
 
@@ -87,16 +78,12 @@ export default function BondingCurveProgress({
 
 	return (
 		<div className="relative">
-			<HudCorner position="tl" />
-			<HudCorner position="tr" />
-			<HudCorner position="bl" />
-			<HudCorner position="br" />
 			<div className="flex flex-col gap-3">
 				<div className="flex items-center gap-4 justify-between">
 					<div className="flex items-center gap-2">
 						<div className="h-2 w-2 rounded-full bg-[#00ff87] animate-pulse shadow-[0_0_8px_rgba(0,255,135,0.5)]" />
 						<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
-							{title ? title : "bonding progress"}
+							{title ?? t("token.bondingProgress")}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
@@ -115,11 +102,7 @@ export default function BondingCurveProgress({
 									<AlertCircle className="text-[#52525b] hover:text-[#a1a1aa] transition-colors" size={14} />
 								</TooltipTrigger>
 								<TooltipContent>
-									<span className="text-xs">
-										when the market cap reaches the graduation threshold,
-										<br />
-										the coin&apos;s liquidity will migrate to a DEX.
-									</span>
+									<span className="text-xs">{t("token.bondingProgressTooltip")}</span>
 								</TooltipContent>
 							</Tooltip>
 						)}
@@ -133,12 +116,12 @@ export default function BondingCurveProgress({
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.5 }}
 					>
-						<span className="text-[#52525b]">reserve:</span>
+						<span className="text-[#52525b]">{t("token.reserve")}:</span>
 						<span className="text-[#00ff87]">
 							{formatNumber(Number(currentReserveLamports / LAMPORTS_PER_SOL), false, true)} SOL
 						</span>
 						<span className="text-[#3f3f46]">•</span>
-						<span className="text-[#52525b]">needed:</span>
+						<span className="text-[#52525b]">{t("token.needed")}:</span>
 						<span className="text-[#c084fc]">{formatNumber(solRequiredForMigration, true, true)} SOL</span>
 					</motion.div>
 				)}

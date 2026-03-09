@@ -1,0 +1,106 @@
+{
+	"common": {
+		"loading": "加载中...",
+		"error": "错误",
+		"save": "保存",
+		"cancel": "取消",
+		"close": "关闭",
+		"next": "下一页",
+		"prev": "上一页",
+		"viewOnExplorer": "在区块浏览器中查看",
+		"viewOnSolscan": "在 Solscan 中查看",
+		"tx": "交易",
+		"noData": "暂无数据",
+		"toggleMenu": "打开/关闭菜单"
+	},
+	"nav": {
+		"explore": "探索",
+		"create": "创建",
+		"story": "故事",
+		"howItWorks": "如何运作",
+		"homeAria": "waifu.fun 首页"
+	},
+	"layout": {
+		"devnetBanner": "— 这是连接测试网的开发环境，内容均非真实。",
+		"devnet": "测试网"
+	},
+	"home": {
+		"noAgentsFound": "暂无代理",
+		"checkBackSoon": "敬请期待 — 新代理即将上线",
+		"exploreAgents": "探索代理"
+	},
+	"hero": {
+		"theyLive": "它们活着",
+		"ifYouTrade": "当你交易。",
+		"theyDie": "它们死去",
+		"ifYouDont": "当你不交易。",
+		"agentsThat": "代理即",
+		"buildWealth": "创造财富",
+		"economicActors": "经济主体。",
+		"notChatbots": "不是聊天机器人。",
+		"exploreAgents": "探索代理",
+		"deployAgent": "部署代理",
+		"poweredBySubtitle": "由 Milady Cloud 与 Eliza Cloud 驱动。你的 milady 成为 waifu —— 一个 24/7 链上交易、学习与赚取收益的自主代理。",
+		"autonomous": "自主"
+	},
+	"explorer": {
+		"exploreAgents": "探索代理",
+		"live": "在线",
+		"all": "全部",
+		"trending": "热门",
+		"new": "最新",
+		"bonded": "已绑定"
+	},
+	"footer": {
+		"tagline": "自主代理启动板",
+		"poweredBy": "由 ElizaOS 驱动",
+		"docs": "文档",
+		"terms": "条款",
+		"privacy": "隐私",
+		"support": "支持",
+		"miladyCloud": "milady cloud × eliza cloud",
+		"homeAria": "waifu.fun 首页"
+	},
+	"create": {
+		"title": "创建",
+		"subtitle": "发行你的代理代币",
+		"auto": "自动",
+		"manual": "手动",
+		"import": "导入",
+		"recentlyCreated": "最近创建",
+		"faq": "常见问题",
+		"curatedLaunchWaiting": "精选发行仍在推广中，当前环境等待 API 可用。"
+	},
+	"token": {
+		"tabs": {
+			"trades": "交易",
+			"holders": "持有人"
+		},
+		"bondingProgress": "联合曲线进度",
+		"bondingProgressTooltip": "当市值达到毕业阈值时，代币流动性将迁移至 DEX。",
+		"reserve": "储备",
+		"needed": "所需",
+		"priceChart": "价格图表",
+		"activity": {
+			"type": "类型",
+			"amount": "数量",
+			"ticker": "代币",
+			"account": "账户",
+			"date": "日期",
+			"buy": "买入",
+			"sell": "卖出",
+			"noRecentTrades": "暂无最近交易",
+			"page": "第",
+			"pageUnit": "页",
+			"of": "，共 ",
+			"txTitle": "交易"
+		},
+		"swap": "兑换",
+		"bondingCurveProgress": "联合曲线"
+	},
+	"language": {
+		"en": "EN",
+		"zh": "中文",
+		"label": "语言"
+	}
+}

@@ -76,17 +76,17 @@ export default function PageClient({
 	const isPriceUp = true;
 
 	return (
-		<div className="flex flex-col gap-5 mt-3 container">
+		<div className="flex flex-col gap-4 sm:gap-5 mt-3 w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 overflow-x-hidden">
 			<ScamWarning isHidden={!!token?.hidden} />
 			<AgentProfile token={token} status={agentStatus} />
 			<AgentStatusVisual status={agentStatus} />
 
-			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-5">
-				<div className="w-full lg:w-[65%] flex flex-col gap-5 order-3 lg:order-2">
+			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4 sm:gap-5 min-w-0">
+				<div className="w-full min-w-0 lg:min-w-0 lg:w-[65%] lg:max-w-[65%] flex flex-col gap-4 sm:gap-5 order-3 lg:order-2">
 					<motion.div
 						ref={panelSectionRef}
 						className={cn(
-							"relative bg-[#111114] border rounded-sm overflow-hidden transition-all duration-500",
+							"relative bg-[#111114] border rounded-sm overflow-hidden transition-all duration-500 min-w-0",
 							isPriceUp
 								? "border-[#00ff87]/20 shadow-[0_0_20px_rgba(0,255,135,0.05)]"
 								: "border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]",
@@ -100,18 +100,18 @@ export default function PageClient({
 						<HudCorner position="bl" color={isPriceUp ? "green" : "purple"} />
 						<HudCorner position="br" color={isPriceUp ? "green" : "purple"} />
 
-						<div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-							<div className="flex items-center gap-2">
-								<BarChart3 className={cn("size-4", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">price chart</span>
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+							<div className="flex items-center gap-2 min-w-0">
+								<BarChart3 className={cn("size-4 flex-shrink-0", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
+								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider truncate">price chart</span>
 								{isPriceUp ? (
-									<TrendingUp className="size-3 text-[#00ff87]" />
+									<TrendingUp className="size-3 text-[#00ff87] flex-shrink-0" />
 								) : (
-									<TrendingUp className="size-3 text-red-400 rotate-180" />
+									<TrendingUp className="size-3 text-red-400 rotate-180 flex-shrink-0" />
 								)}
 							</div>
 
-							<div className="flex items-center gap-1">
+							<div className="flex items-center gap-1 flex-wrap">
 								{TIMEFRAMES.map((timeframe) => (
 									<button
 										key={timeframe.value}
@@ -130,7 +130,7 @@ export default function PageClient({
 							</div>
 						</div>
 
-						<div className="p-3">
+						<div className="p-2 sm:p-3 min-h-0 overflow-hidden">
 							<Chart token={token} />
 						</div>
 						<div
@@ -147,14 +147,14 @@ export default function PageClient({
 					</div>
 				</div>
 
-				<div className="w-full lg:w-[35%] flex flex-col md:flex-row lg:flex-col gap-5 order-2 lg:order-3">
+				<div className="w-full min-w-0 lg:w-[35%] lg:min-w-0 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap lg:flex-col gap-4 sm:gap-5 order-2 lg:order-3">
 					<Swap token={token} />
 
 					{typeof token?.curveProgress === "number" &&
 						!token?.curveCompleted &&
 						!token?.imported && (
 							<motion.div
-								className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors"
+								className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0"
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ delay: 0.1 }}
@@ -167,15 +167,15 @@ export default function PageClient({
 							</motion.div>
 						)}
 
-					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="min-w-0">
 						<AgentPersonalityCard token={token} />
 					</motion.div>
 
-					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="min-w-0">
 						<AgentSkills token={token} />
 					</motion.div>
 
-					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+					<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="min-w-0">
 						<OwnerRuntimePanel token={token} />
 					</motion.div>
 

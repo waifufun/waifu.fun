@@ -1,0 +1,106 @@
+{
+	"common": {
+		"loading": "Loading...",
+		"error": "Error",
+		"save": "Save",
+		"cancel": "Cancel",
+		"close": "Close",
+		"next": "Next",
+		"prev": "Prev",
+		"viewOnExplorer": "View on explorer",
+		"viewOnSolscan": "View on Solscan",
+		"tx": "Tx",
+		"noData": "No data",
+		"toggleMenu": "Toggle menu"
+	},
+	"nav": {
+		"explore": "explore",
+		"create": "create",
+		"story": "story",
+		"howItWorks": "how it works",
+		"homeAria": "waifu.fun home"
+	},
+	"layout": {
+		"devnetBanner": "— this is a development environment connected to testnet. nothing here is real.",
+		"devnet": "devnet"
+	},
+	"home": {
+		"noAgentsFound": "no agents found",
+		"checkBackSoon": "check back soon — new agents are launching",
+		"exploreAgents": "explore agents"
+	},
+	"hero": {
+		"theyLive": "they live",
+		"ifYouTrade": "if you trade.",
+		"theyDie": "they die",
+		"ifYouDont": "if you don't.",
+		"agentsThat": "agents that",
+		"buildWealth": "build wealth",
+		"economicActors": "economic actors.",
+		"notChatbots": "not chatbots.",
+		"exploreAgents": "explore agents",
+		"deployAgent": "deploy agent",
+		"poweredBySubtitle": "powered by Milady Cloud & Eliza Cloud. your milady becomes a waifu — an autonomous agent that trades, learns, and earns 24/7 on-chain.",
+		"autonomous": "autonomous"
+	},
+	"explorer": {
+		"exploreAgents": "explore agents",
+		"live": "live",
+		"all": "all",
+		"trending": "trending",
+		"new": "new",
+		"bonded": "bonded"
+	},
+	"footer": {
+		"tagline": "autonomous agent launchpad",
+		"poweredBy": "powered by ElizaOS",
+		"docs": "docs",
+		"terms": "terms",
+		"privacy": "privacy",
+		"support": "Support",
+		"miladyCloud": "milady cloud × eliza cloud",
+		"homeAria": "waifu.fun home"
+	},
+	"create": {
+		"title": "Create",
+		"subtitle": "Launch your agent token",
+		"auto": "Auto",
+		"manual": "Manual",
+		"import": "Import",
+		"recentlyCreated": "Recently created",
+		"faq": "FAQ",
+		"curatedLaunchWaiting": "Curated launch is still in rollout mode and this environment is waiting on API availability."
+	},
+	"token": {
+		"tabs": {
+			"trades": "trades",
+			"holders": "holders"
+		},
+		"bondingProgress": "bonding progress",
+		"bondingProgressTooltip": "when the market cap reaches the graduation threshold, the coin's liquidity will migrate to a DEX.",
+		"reserve": "reserve",
+		"needed": "needed",
+		"priceChart": "price chart",
+		"activity": {
+			"type": "Type",
+			"amount": "Amount",
+			"ticker": "Ticker",
+			"account": "Account",
+			"date": "Date",
+			"buy": "buy",
+			"sell": "sell",
+			"noRecentTrades": "no recent trades",
+			"page": "Page ",
+			"pageUnit": "",
+			"of": "of ",
+			"txTitle": "Transaction"
+		},
+		"swap": "Swap",
+		"bondingCurveProgress": "Bonding curve"
+	},
+	"language": {
+		"en": "EN",
+		"zh": "中文",
+		"label": "Language"
+	}
+}

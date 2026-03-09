@@ -7,16 +7,19 @@ import { useAccount } from "wagmi";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
 import { HowItWorksModal } from "./how-it-works-modal";
+import LanguageSwitcher from "./language-switcher";
+import { useTranslation } from "@/contexts/locale-context";
 
 const HOW_IT_WORKS_SEEN_KEY = "waifu_how_it_works_seen";
 
 const NAV_LINKS = [
-	{ href: "/#explore", label: "explore" },
-	{ href: "/create", label: "create" },
-	{ href: "/story", label: "story" },
-];
+	{ href: "/#explore", labelKey: "nav.explore" },
+	{ href: "/create", labelKey: "nav.create" },
+	{ href: "/story", labelKey: "nav.story" },
+] as const;
 
 export default function Header() {
+	const { t } = useTranslation();
 	const [logoHover, setLogoHover] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -64,7 +67,7 @@ export default function Header() {
 						}}
 						onMouseEnter={() => setLogoHover(true)}
 						onMouseLeave={() => setLogoHover(false)}
-						aria-label="waifu.fun home"
+						aria-label={t("nav.homeAria")}
 					>
 						WAIFU.FUN
 					</Link>
@@ -83,7 +86,7 @@ export default function Header() {
 							}}
 							onClick={() => setHowItWorksOpen(true)}
 						>
-							how it works
+							{t("nav.howItWorks")}
 						</button>
 						{NAV_LINKS.map((link) => (
 							<Link
@@ -98,7 +101,7 @@ export default function Header() {
 									e.currentTarget.style.color = "#71717a";
 								}}
 							>
-								{link.label}
+								{t(link.labelKey)}
 							</Link>
 						))}
 					</nav>
@@ -106,8 +109,9 @@ export default function Header() {
 
 				<HowItWorksModal open={howItWorksOpen} onOpenChange={setHowItWorksOpen} controlled />
 
-				{/* Right: Search + Wallet + Mobile Menu Button */}
+				{/* Right: Language + Search + Wallet + Mobile Menu Button */}
 				<div className="flex items-center gap-3 shrink-0">
+					<LanguageSwitcher />
 					<SearchMenu />
 					<div className="hidden lg:block">
 						<HeaderConnectWallet />
@@ -117,7 +121,7 @@ export default function Header() {
 						type="button"
 						className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
 						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-						aria-label="Toggle menu"
+						aria-label={t("common.toggleMenu")}
 					>
 						<span
 							className="block w-5 h-0.5 bg-[#e4e4e7] transition-transform duration-200"
@@ -164,7 +168,7 @@ export default function Header() {
 									setMobileMenuOpen(false);
 								}}
 							>
-								how it works
+								{t("nav.howItWorks")}
 							</button>
 							{NAV_LINKS.map((link) => (
 								<Link
@@ -174,7 +178,7 @@ export default function Header() {
 									style={{ color: "#e4e4e7" }}
 									onClick={() => setMobileMenuOpen(false)}
 								>
-									{link.label}
+									{t(link.labelKey)}
 								</Link>
 							))}
 							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)]">

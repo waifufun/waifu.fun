@@ -132,6 +132,22 @@ const statusClassMap: Record<AgentLifecycleState, string> = {
 	imported: "bg-sky-500/15 text-[#60a5fa] border border-sky-500/30",
 };
 
+export type AgentDisplayStatus = "alive" | "asleep" | "dead";
+
+export function getAgentDisplayStatus(token: IToken, status: AgentLifecycleStatus): AgentDisplayStatus {
+	const isFinalized = token?.status === "finalized";
+	const isBondedZeroCap = status.isBonded && (Number(token?.marketcap ?? 0) === 0);
+	if (isFinalized || isBondedZeroCap) return "dead";
+	if (status.state === "active" || status.state === "bonding") return "alive";
+	return "asleep";
+}
+
+const displayStatusClass: Record<AgentDisplayStatus, string> = {
+	alive: "bg-[#00ff87]/15 text-[#00ff87] border-[#00ff87]/40",
+	asleep: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
+	dead: "bg-red-500/15 text-red-400 border-red-500/40",
+};
+
 export default function AgentProfile({
 	token,
 	status,
@@ -153,34 +169,46 @@ export default function AgentProfile({
 		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
 	].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 	const statusClass = statusClassMap[status.state];
+	const displayStatus = getAgentDisplayStatus(token, status);
 
 	return (
-		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-5 md:p-6 overflow-hidden">
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 sm:p-5 md:p-6 overflow-hidden">
 			<div className="absolute -top-20 -left-20 w-40 h-40 bg-[#00ff87]/5 blur-3xl rounded-full pointer-events-none" />
 			<div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#c084fc]/5 blur-3xl rounded-full pointer-events-none" />
+
+			{/* Top-right status: alive / asleep / dead */}
+			<div
+				className={cn(
+					"absolute top-3 right-3 sm:top-4 sm:right-4 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-sm border text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0",
+					displayStatusClass[displayStatus],
+				)}
+				aria-label={`Agent status: ${displayStatus}`}
+			>
+				{displayStatus}
+			</div>
 
 			<HudCorner position="tl" />
 			<HudCorner position="tr" />
 			<HudCorner position="bl" />
 			<HudCorner position="br" />
 
-			<div className="relative flex flex-col md:flex-row gap-5 md:gap-6">
+			<div className="relative flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 min-w-0">
 				<motion.div
-					className="flex-shrink-0 self-start relative"
+					className="flex-shrink-0 self-start relative mx-auto sm:mx-0"
 					whileHover={{ scale: 1.03 }}
 					transition={{ type: "spring", stiffness: 300 }}
 				>
 					<div className="absolute inset-0 bg-gradient-to-br from-[#00ff87]/20 via-transparent to-[#c084fc]/10 blur-xl rounded-sm scale-110 opacity-60" />
-					<div className="relative w-[140px] h-[140px] md:w-[180px] md:h-[180px] rounded-sm overflow-hidden border border-[#00ff87]/30 hover:border-[#00ff87]/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,135,0.2)]">
+					<div className="relative w-[100px] h-[100px] sm:w-[140px] sm:h-[140px] md:w-[180px] md:h-[180px] rounded-sm overflow-hidden border border-[#00ff87]/30 hover:border-[#00ff87]/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,135,0.2)]">
 						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 						<div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/40 via-transparent to-transparent" />
 					</div>
 				</motion.div>
 
-				<div className="flex flex-col gap-3 min-w-0 flex-1">
-					<div className="flex items-center gap-2.5 flex-wrap">
+				<div className="flex flex-col gap-2 sm:gap-3 min-w-0 flex-1 pr-14 sm:pr-16">
+					<div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
 						<Verified isVerified={token?.verified} />
-						<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight">
+						<h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight break-words min-w-0">
 							{token.name}
 						</h1>
 						{status.state === "active" && <LiveDot />}
@@ -191,7 +219,7 @@ export default function AgentProfile({
 					</div>
 
 					{token.description && (
-						<p className="text-sm text-[#a1a1aa] leading-relaxed line-clamp-2 max-w-2xl">{token.description}</p>
+						<p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed line-clamp-2 max-w-2xl min-w-0">{token.description}</p>
 					)}
 
 					<div className="flex items-center gap-2 text-xs">
@@ -206,13 +234,13 @@ export default function AgentProfile({
 					</div>
 
 					<div
-						className="relative flex gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible"
+						className="relative flex gap-1.5 sm:gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible min-w-0 -mx-1 px-1"
 						style={{ WebkitOverflowScrolling: "touch" }}
 					>
 						{stats.map((stat, index) => (
 							<motion.div
 								key={stat.label}
-								className="relative flex-shrink-0 flex flex-col gap-0.5 py-2.5 px-3 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors group"
+								className="relative flex-shrink-0 flex flex-col gap-0.5 py-2 px-2.5 sm:py-2.5 sm:px-3 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors group min-w-0"
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ delay: index * 0.05 }}

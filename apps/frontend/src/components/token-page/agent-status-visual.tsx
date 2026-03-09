@@ -47,20 +47,20 @@ export default function AgentStatusVisual({ status }: { status: AgentLifecycleSt
 
 	return (
 		<div
-			className={cn("flex items-center gap-4 rounded-lg border px-4 py-3", config.className)}
+			className={cn("flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 rounded-lg border px-3 sm:px-4 py-3 min-w-0", config.className)}
 			aria-label={`Agent status: ${config.label}`}
 		>
 			<div
 				className={cn(
-					"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-current/20",
+					"flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg border border-current/20 self-start sm:self-auto",
 					config.iconClassName,
 				)}
 			>
-				<Icon className="h-5 w-5" aria-hidden />
+				<Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
 			</div>
 			<div className="min-w-0 flex-1">
-				<p className="font-semibold uppercase tracking-wider text-sm">{config.label}</p>
-				<p className="text-xs opacity-90 mt-0.5">{description}</p>
+				<p className="font-semibold uppercase tracking-wider text-xs sm:text-sm">{config.label}</p>
+				<p className="text-[11px] sm:text-xs opacity-90 mt-0.5 line-clamp-2 sm:line-clamp-none">{description}</p>
 			</div>
 			{status.state === "active" && (
 				<span className="relative flex h-3 w-3 shrink-0" aria-hidden>

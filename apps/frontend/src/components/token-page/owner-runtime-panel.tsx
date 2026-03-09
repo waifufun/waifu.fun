@@ -316,21 +316,21 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 	}
 
 	return (
-		<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]">
+		<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 sm:p-4 transition-colors hover:border-[rgba(255,255,255,0.12)] min-w-0">
 			<HudCorner position="tl" />
 			<HudCorner position="tr" />
 			<HudCorner position="bl" />
 			<HudCorner position="br" />
 
-			<div className="flex flex-col gap-5">
-				<div className="flex items-start justify-between gap-3">
-					<div className="space-y-1">
+			<div className="flex flex-col gap-4 sm:gap-5 min-w-0">
+				<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 min-w-0">
+					<div className="space-y-1 min-w-0">
 						<SectionLabel>owner console</SectionLabel>
 						<div className="flex items-center gap-2">
-							<ShieldCheck className="size-4 text-[#00ff87]" />
-							<h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#e4e4e7]">claim + runtime</h3>
+							<ShieldCheck className="size-4 shrink-0 text-[#00ff87]" />
+							<h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#e4e4e7] truncate">claim + runtime</h3>
 						</div>
-						<p className="max-w-xl text-xs leading-relaxed text-[#71717a]">
+						<p className="max-w-xl text-xs leading-relaxed text-[#71717a] min-w-0">
 							Honest owner access only. No mocked runtime stats — this panel reads the protected owner/control-plane
 							routes when your wallet is eligible.
 						</p>

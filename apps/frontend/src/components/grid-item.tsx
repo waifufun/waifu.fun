@@ -3,6 +3,7 @@ import type { IToken } from "@waifufun/types";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/contexts/locale-context";
 
 function formatMarketCap(mc: number): string {
 	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
@@ -25,6 +26,7 @@ export const GridItem = ({
 	variant?: "large" | "medium" | "compact";
 	rank?: number;
 }) => {
+	const { t } = useTranslation();
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
 	const isDead = token?.status === "finalized" || (isBonded && token?.marketcap === 0);
@@ -174,7 +176,7 @@ export const GridItem = ({
 					{!isBonded && (
 						<div className="w-full mt-2 pt-2 border-t border-[rgba(255,255,255,0.04)]">
 							<div className="flex items-center justify-between mb-1.5">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">bonding curve</span>
+								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">{t("token.bondingCurveProgress")}</span>
 								<span className="text-[10px] font-mono font-semibold text-[#00ff87]">{curveProgress}%</span>
 							</div>
 							<div className="w-full h-1.5 rounded-sm bg-[rgba(255,255,255,0.06)] overflow-hidden">

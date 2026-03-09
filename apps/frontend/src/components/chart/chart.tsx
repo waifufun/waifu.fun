@@ -15,7 +15,7 @@ export default function Chart({ token }: ChartProps) {
 			<iframe
 				height="100%"
 				width="100%"
-				className="min-h-[580px] h-full mb-[-41px]"
+				className="min-h-[240px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[580px] w-full h-full mb-[-41px]"
 				id="geckoterminal-embed"
 				title="GeckoTerminal Embed"
 				src={`https://www.geckoterminal.com/${getCoinGeckoChainName(token.chain, token.chainId)}/pools/${token.contractAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}

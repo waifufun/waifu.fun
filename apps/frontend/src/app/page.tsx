@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
+import HomeEmptyState from "@/components/home-empty-state";
 // How it works section on home page — uncomment to re-enable
 // import HowItWorks from "@/components/landing/how-it-works";
 import ExplorerHeader from "@/components/explorer-header";
@@ -51,10 +52,7 @@ export default async function Home() {
 				}`}
 			>
 				{noTokens ? (
-					<div className="flex flex-col items-center gap-3">
-						<span className="text-[#00ff87] text-lg font-semibold">no agents found</span>
-						<span className="text-[#52525b] text-sm">check back soon — new agents are launching</span>
-					</div>
+					<HomeEmptyState />
 				) : (
 					<>
 						<ExplorerHeader />
