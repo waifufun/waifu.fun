@@ -8,7 +8,7 @@ import { useState } from "react";
 export default function Swap({ token }: { token: IToken }) {
 	const [mode, setMode] = useState<"buy" | "sell">("buy");
 	return (
-		<div className="flex flex-col overflow-hidden bg-[#111114] border border-[rgba(255,255,255,0.06)] p-3 rounded-sm">
+		<div className="flex flex-col overflow-hidden min-w-0 bg-[#111114] border border-[rgba(255,255,255,0.06)] p-3 rounded-sm">
 			<Tabs defaultValue={mode} value={mode} className="flex flex-col h-full">
 				<TabsList className="grid grid-cols-2 gap-0 w-full h-[51px]">
 					<TabsTrigger value="buy" onClick={() => setMode("buy")}>

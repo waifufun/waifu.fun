@@ -67,12 +67,12 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 	];
 
 	return (
-		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-3 sm:p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0">
 			<HudCorner position="tl" size="md" />
 			<HudCorner position="tr" size="md" />
 			<HudCorner position="bl" size="md" />
 			<HudCorner position="br" size="md" />
-			<div className="flex items-center justify-between mb-3 gap-2">
+			<div className="flex items-center justify-between mb-3 gap-2 min-w-0">
 				<div className="flex items-center gap-2 min-w-0">
 					<Zap className="size-3.5 text-[#00ff87]" />
 					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent personality</span>
@@ -157,13 +157,13 @@ export function AgentSkills({ token }: { token: IToken }) {
 	];
 
 	return (
-		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-3 sm:p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0">
 			<HudCorner position="tl" size="md" />
 			<HudCorner position="tr" size="md" />
 			<HudCorner position="bl" size="md" />
 			<HudCorner position="br" size="md" />
-			<div className="flex items-center gap-2 mb-3">
-				<Shield className="size-3.5 text-[#00ff87]" />
+			<div className="flex items-center gap-2 mb-3 min-w-0">
+				<Shield className="size-3.5 text-[#00ff87] shrink-0" />
 				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent skills</span>
 			</div>
 			<div className="flex flex-col gap-2">

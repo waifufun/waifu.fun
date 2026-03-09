@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslation } from "@/contexts/locale-context";
 
 export default function Footer() {
+	const { t } = useTranslation();
 	const year = new Date().getFullYear();
 
 	return (
@@ -9,26 +13,23 @@ export default function Footer() {
 			style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}
 		>
 			<div className="w-full px-4 sm:px-6 lg:px-8">
-				{/* Main footer row */}
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
-					{/* Left: branding */}
 					<div className="flex flex-col gap-1.5">
 						<Link
 							href="/"
 							className="font-bold text-lg tracking-tight text-[#e4e4e7] hover:text-[#e4e4e7] transition-colors duration-200"
-							aria-label="waifu.fun home"
+							aria-label={t("footer.homeAria")}
 						>
 							waifu.fun
 						</Link>
-						<p className="text-sm font-mono text-[#52525b]">autonomous agent launchpad</p>
+						<p className="text-sm font-mono text-[#52525b]">{t("footer.tagline")}</p>
 						<p className="text-xs font-mono text-[#52525b] flex items-center gap-1.5 mt-1">
 							<span className="inline-block w-1 h-1 rounded-full bg-[#00ff87] opacity-60" />
-							powered by ElizaOS
+							{t("footer.poweredBy")}
 						</p>
 					</div>
 				</div>
 
-				{/* Ecosystem links */}
 				<div
 					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4"
 					style={{ borderTop: "1px solid rgba(255, 255, 255, 0.04)" }}
@@ -56,7 +57,7 @@ export default function Footer() {
 							rel="noopener noreferrer"
 							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
 						>
-							docs
+							{t("footer.docs")}
 						</a>
 						<a
 							href="https://github.com/milady-ai/milady"
@@ -77,11 +78,10 @@ export default function Footer() {
 					</div>
 					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(192,132,252,0.15)] bg-[rgba(192,132,252,0.04)]">
 						<span className="text-[#c084fc] opacity-60">●</span>
-						milady cloud × eliza cloud
+						{t("footer.miladyCloud")}
 					</span>
 				</div>
 
-				{/* Bottom row: copyright + legal */}
 				<div
 					className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-5 text-xs"
 					style={{ borderTop: "1px solid rgba(255, 255, 255, 0.04)" }}
@@ -89,13 +89,13 @@ export default function Footer() {
 					<p className="text-[#52525b] font-mono">&copy; {year} waifu.fun</p>
 					<div className="flex flex-wrap items-center gap-4">
 						<Link href="/privacy-policy" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
-							privacy
+							{t("footer.privacy")}
 						</Link>
 						<Link
 							href="/terms-of-service"
 							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
 						>
-							terms
+							{t("footer.terms")}
 						</Link>
 					</div>
 				</div>

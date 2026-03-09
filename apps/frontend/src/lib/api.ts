@@ -1,6 +1,8 @@
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const rawBaseUrl =
+	process.env.NEXT_PUBLIC_API_URL?.trim() ||
+	(process.env.NODE_ENV === "development" ? "http://localhost:3100" : undefined);
 const BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/+$/, "") : undefined;
 
 export type ApiErrorCode = "CONFIG" | "NETWORK" | "HTTP" | "PARSE";

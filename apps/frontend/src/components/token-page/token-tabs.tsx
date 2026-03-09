@@ -4,8 +4,10 @@ import type { IToken } from "@waifufun/types";
 import { ChartCandlestick, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";
+import { useTranslation } from "@/contexts/locale-context";
 
 export default function TokenTabs({ token }: { token: IToken }) {
+	const { t } = useTranslation();
 	const pathname = usePathname();
 	const router = useRouter();
 	const BASE_URL = `/token/${token.chain}/${token.chainId}/${token.contractAddress}`;
@@ -13,8 +15,8 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
 
 	const tabs = [
-		{ value: "trades", label: "trades", icon: ChartCandlestick, path: BASE_URL },
-		{ value: "holders", label: "holders", icon: Users, path: `${BASE_URL}/holders` },
+		{ value: "trades", label: t("token.tabs.trades"), icon: ChartCandlestick, path: BASE_URL },
+		{ value: "holders", label: t("token.tabs.holders"), icon: Users, path: `${BASE_URL}/holders` },
 	];
 
 	return (

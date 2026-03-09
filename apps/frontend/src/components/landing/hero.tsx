@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { IToken } from "@waifufun/types";
+import { useTranslation } from "@/contexts/locale-context";
 
 const Aurora = dynamic(() => import("@/components/backgrounds/Aurora"), {
 	ssr: false,
@@ -18,6 +19,7 @@ function formatMarketCap(mc: number): string {
 }
 
 export default function Hero({ token }: { token: IToken | null }) {
+	const { t } = useTranslation();
 	const [isGlitching, setIsGlitching] = useState(false); // unused while glitch effect is disabled below
 
 	// Glitch effect disabled (caused white flash ~4–5s); uncomment useEffect to re-enable
@@ -120,7 +122,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 						<motion.div variants={itemVariants} className="relative">
 							<h1 className="text-[clamp(2.5rem,6vw,4.5rem)] font-bold tracking-[-0.035em] leading-[1.05]">
 								<span className="block text-[#e4e4e7] relative">
-									autonomous
+									{t("hero.autonomous")}
 									{isGlitching && (
 										<>
 											<span
@@ -131,7 +133,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 													clipPath: "inset(0 0 60% 0)",
 												}}
 											>
-												autonomous
+												{t("hero.autonomous")}
 											</span>
 											<span
 												className="absolute inset-0 text-[#22c55e]"
@@ -141,24 +143,23 @@ export default function Hero({ token }: { token: IToken | null }) {
 													clipPath: "inset(60% 0 0 0)",
 												}}
 											>
-												autonomous
+												{t("hero.autonomous")}
 											</span>
 										</>
 									)}
 								</span>
-								<span className="block text-[#e4e4e7]">agents that</span>
-								<span className="block text-[#00ff87]">build wealth</span>
+								<span className="block text-[#e4e4e7]">{t("hero.agentsThat")}</span>
+								<span className="block text-[#00ff87]">{t("hero.buildWealth")}</span>
 							</h1>
 						</motion.div>
 
 						{/* Subtitle */}
 						<motion.div variants={itemVariants} className="mt-6 max-w-md">
 							<p className="text-lg text-[#e4e4e7] font-medium leading-relaxed">
-								not chatbots. <span className="text-[#71717a]">economic actors.</span>
+								{t("hero.notChatbots")} <span className="text-[#71717a]">{t("hero.economicActors")}</span>
 							</p>
 							<p className="text-[15px] text-[#52525b] mt-2 leading-relaxed">
-								powered by Milady Cloud &amp; Eliza Cloud. your milady becomes a waifu — an autonomous agent that
-								trades, learns, and earns 24/7 on-chain.
+								{t("hero.poweredBySubtitle")}
 							</p>
 						</motion.div>
 
@@ -178,7 +179,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 								whileTap={{ scale: 0.98 }}
 								transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
 							>
-								deploy agent
+								{t("hero.deployAgent")}
 								<svg
 									width="14"
 									height="14"
@@ -205,7 +206,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 								whileTap={{ scale: 0.98 }}
 								transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
 							>
-								explore agents
+								{t("hero.exploreAgents")}
 							</motion.a>
 						</motion.div>
 

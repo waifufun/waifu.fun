@@ -7,14 +7,16 @@ import { EvmProvider } from "@/providers/evm-provider";
 import { AnimationProvider } from "@/providers/animation-context";
 import { Suspense } from "react";
 import { TransactionListenerProvider } from "@/providers/transaction-listener";
+import { LocaleProvider } from "@/contexts/locale-context";
 
 const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
 	return (
 		<Suspense>
-			<TooltipProvider delayDuration={0}>
-				<ProgressProvider
+			<LocaleProvider>
+				<TooltipProvider delayDuration={0}>
+					<ProgressProvider
 					height="4px"
 					color="#00ff87"
 					options={{
@@ -33,6 +35,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 					</EvmProvider>
 				</ProgressProvider>
 			</TooltipProvider>
+			</LocaleProvider>
 		</Suspense>
 	);
 }

@@ -1,14 +1,16 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/contexts/locale-context";
 
-const filters = ["all", "trending", "new", "bonded"] as const;
+const filterKeys = ["all", "trending", "new", "bonded"] as const;
 
 interface ExplorerHeaderProps {
 	tokenCount?: number;
 }
 
 export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) {
+	const { t } = useTranslation();
 	const [active, setActive] = useState<string>("all");
 
 	return (
@@ -20,7 +22,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 					<div className="flex items-baseline gap-4">
 						<h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
 							<span className="bg-gradient-to-r from-[#e4e4e7] via-[#22c55e] to-[#00ff87] bg-clip-text text-transparent">
-								explore agents
+								{t("explorer.exploreAgents")}
 							</span>
 						</h2>
 
@@ -47,7 +49,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 											ease: "easeInOut",
 										}}
 									/>
-									<span className="text-sm font-mono text-[#71717a]">{tokenCount} live</span>
+									<span className="text-sm font-mono text-[#71717a]">{tokenCount} {t("explorer.live")}</span>
 								</div>
 							</motion.div>
 						</AnimatePresence>
@@ -62,7 +64,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 
 			{/* Filter pills */}
 			<div className="flex items-center gap-3 flex-wrap">
-				{filters.map((filter) => (
+				{filterKeys.map((filter) => (
 					<motion.button
 						key={filter}
 						onClick={() => setActive(filter)}
@@ -90,7 +92,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 								active === filter ? "text-[#00ff87]" : "text-[#52525b] hover:text-[#71717a]"
 							}`}
 						>
-							{filter}
+							{t(`explorer.${filter}`)}
 						</span>
 					</motion.button>
 				))}

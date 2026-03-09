@@ -2,6 +2,7 @@
 import { GridItem } from "./grid-item";
 import type { IToken } from "@waifufun/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useTranslation } from "@/contexts/locale-context";
 import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -20,6 +21,7 @@ function formatMarketCap(mc: number): string {
 
 /** Cinematic hero card component */
 function HeroCard({ token, index: _index }: { token: IToken; index: number }) {
+	const { t } = useTranslation();
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
 	const isBonded = token?.curveCompleted || curveProgress >= 100;
 	const isVerified = Boolean(token?.verified);
@@ -134,7 +136,7 @@ function HeroCard({ token, index: _index }: { token: IToken; index: number }) {
 									<div className="mt-4">
 										<div className="flex items-center justify-between mb-2">
 											<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">
-												bonding progress
+												{t("token.bondingProgress")}
 											</span>
 											<span className="text-xs font-mono text-[#00ff87]">{curveProgress}%</span>
 										</div>
