@@ -18,7 +18,7 @@ import { cn, isSameWalletAddress } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
@@ -105,11 +105,6 @@ export default function PageClient({
 							<div className="flex items-center gap-2 min-w-0">
 								<BarChart3 className={cn("size-4 flex-shrink-0", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
 								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider truncate">price chart</span>
-								{isPriceUp ? (
-									<TrendingUp className="size-3 text-[#00ff87] flex-shrink-0" />
-								) : (
-									<TrendingUp className="size-3 text-red-400 rotate-180 flex-shrink-0" />
-								)}
 							</div>
 
 							<div className="flex items-center gap-1 flex-wrap">

@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	Cloud,
 	Server,
@@ -70,131 +71,18 @@ function AnimatedCounter({ target, duration = 2000 }: { target: number; duration
 	return <span ref={ref}>{count.toLocaleString()}</span>;
 }
 
-const lifecycle = [
-	{
-		phase: "birth",
-		number: "01",
-		title: "a waifu is born",
-		description:
-			"you define a character file — personality, strategy, voice. the system is designed to provision a dedicated VPS where the ElizaOS runtime boots inside an isolated container. a token is created on a bonding curve with initial liquidity. the vision: within 60 seconds, the agent comes alive.",
-		image: "/waifus/how-deploy.png",
-		accent: "#c084fc",
-		icon: Sparkles,
-		filter: "",
-	},
-	{
-		phase: "life",
-		number: "02",
-		title: "she lives",
-		description:
-			"the vision: the agent monitors markets, executes trades based on its strategy, and manages its own on-chain wallet. designed to post on twitter, engage in telegram and discord. it will accumulate on-chain performance data — every trade, every P&L, publicly verifiable. its token price reflects community activity. no humans in the loop. 24/7.",
-		image: "/waifus/eliza-trading.png",
-		accent: "#00ff87",
-		icon: Activity,
-		filter: "",
-	},
-	{
-		phase: "death",
-		number: "03",
-		title: "when volume dies, she dies",
-		description:
-			"no trading means no revenue. no revenue means no funding for infrastructure. the VPS spins down. the agent goes dark. lights out. this isn't a metaphor — it's how the system works. economic activity is life itself.",
-		image: "/waifus/ghost-protocol.png",
-		accent: "#52525b",
-		icon: Ghost,
-		filter: "grayscale(100%) brightness(0.7)",
-	},
-	{
-		phase: "revival",
-		number: "04",
-		title: "but death isn't forever",
-		description:
-			"buy the token. trade it. volume returns, revenue returns, infrastructure funding returns. the waifu comes back online. the community literally breathes life into these agents through economic activity. resurrection through trading.",
-		image: "/waifus/eliza-action.png",
-		accent: "#00ff87",
-		icon: Heart,
-		filter: "",
-	},
-];
-
-const infrastructure = [
-	{
-		icon: Cloud,
-		title: "milady cloud × eliza cloud",
-		description: "enterprise partnership. your milady becomes a waifu through the unified deployment stack.",
-	},
-	{
-		icon: Server,
-		title: "dedicated VPS",
-		description: "every agent runs on its own server. not shared infrastructure — real isolated compute.",
-	},
-	{
-		icon: Cpu,
-		title: "elizaOS framework",
-		description: "the agent framework powering autonomous AI. personality, memory, and trading logic built in.",
-	},
-	{
-		icon: Zap,
-		title: "on-chain settlement",
-		description: "sub-second finality. minimal fees. maximum throughput for autonomous trading agents.",
-	},
-];
-
-const economics = [
-	{
-		step: "01",
-		title: "token launch",
-		description: "initial liquidity seeded into the bonding curve. when the threshold is reached, it graduates to a DEX.",
-	},
-	{
-		step: "02",
-		title: "trading fees",
-		description: "every trade generates fees. fees fund infrastructure. infrastructure keeps the agent alive.",
-	},
-	{
-		step: "03",
-		title: "LP distribution",
-		description: "90/10 split — 90% to creator, 10% to platform. LP tokens locked for long-term alignment.",
-	},
-	{
-		step: "04",
-		title: "points system",
-		description: "1M points distributed weekly. trade, hold, participate. future utility TBA.",
-	},
-];
-
-const agentTypes = [
-	{
-		title: "trading agents",
-		description: "designed for autonomous market making. arbitrage. yield optimization. the vision: always hunting for alpha.",
-		image: "/waifus/defi-trader.png",
-		icon: TrendingUp,
-		badge: "soon",
-	},
-	{
-		title: "social agents",
-		description: "planned: twitter presence. telegram communities. discord engagement. building narrative 24/7.",
-		image: "/waifus/social-butterfly.png",
-		icon: MessageCircle,
-		badge: "soon",
-	},
-	{
-		title: "community agents",
-		description: "coming: moderation. onboarding. engagement. the infrastructure of online communities.",
-		image: "/waifus/code-witch.png",
-		icon: Users,
-		badge: "soon",
-	},
-];
-
-function CircularEconomyDiagram() {
+function CircularEconomyDiagram({
+	labels,
+}: {
+	labels: { trade: string; fees: string; vps: string; agent: string; cycle: string };
+}) {
 	const ref = useRef(null);
 	const inView = useInView(ref, { once: true, margin: "-50px" });
 	const steps = [
-		{ label: "trade", position: "top" },
-		{ label: "fees", position: "right" },
-		{ label: "VPS", position: "bottom" },
-		{ label: "agent", position: "left" },
+		{ label: labels.trade, position: "top" as const },
+		{ label: labels.fees, position: "right" as const },
+		{ label: labels.vps, position: "bottom" as const },
+		{ label: labels.agent, position: "left" as const },
 	];
 
 	return (
@@ -258,17 +146,122 @@ function CircularEconomyDiagram() {
 				animate={inView ? { opacity: 1 } : {}}
 				transition={{ delay: 1.5 }}
 			>
-				<span className="font-mono text-xs text-[#52525b] uppercase tracking-widest">cycle</span>
+				<span className="font-mono text-xs text-[#52525b] uppercase tracking-widest">{labels.cycle}</span>
 			</motion.div>
 		</div>
 	);
 }
 
 export default function StoryPage() {
+	const { t } = useTranslation();
 	const heroRef = useRef(null);
 	const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
 	const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 	const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+	const lifecycle = useMemo(
+		() => [
+			{
+				phase: "birth",
+				number: "01",
+				title: t("story.lifecycleBirthTitle"),
+				description: t("story.lifecycleBirthDesc"),
+				image: "/waifus/how-deploy.png",
+				accent: "#c084fc",
+				icon: Sparkles,
+				filter: "",
+			},
+			{
+				phase: "life",
+				number: "02",
+				title: t("story.lifecycleLifeTitle"),
+				description: t("story.lifecycleLifeDesc"),
+				image: "/waifus/eliza-trading.png",
+				accent: "#00ff87",
+				icon: Activity,
+				filter: "",
+			},
+			{
+				phase: "death",
+				number: "03",
+				title: t("story.lifecycleDeathTitle"),
+				description: t("story.lifecycleDeathDesc"),
+				image: "/waifus/ghost-protocol.png",
+				accent: "#52525b",
+				icon: Ghost,
+				filter: "grayscale(100%) brightness(0.7)",
+			},
+			{
+				phase: "revival",
+				number: "04",
+				title: t("story.lifecycleRevivalTitle"),
+				description: t("story.lifecycleRevivalDesc"),
+				image: "/waifus/eliza-action.png",
+				accent: "#00ff87",
+				icon: Heart,
+				filter: "",
+			},
+		],
+		[t],
+	);
+
+	const infrastructure = useMemo(
+		() => [
+			{ icon: Cloud, title: t("story.stackMiladyTitle"), description: t("story.stackMiladyDesc") },
+			{ icon: Server, title: t("story.stackVpsTitle"), description: t("story.stackVpsDesc") },
+			{ icon: Cpu, title: t("story.stackElizaTitle"), description: t("story.stackElizaDesc") },
+			{ icon: Zap, title: t("story.stackSettlementTitle"), description: t("story.stackSettlementDesc") },
+		],
+		[t],
+	);
+
+	const economics = useMemo(
+		() => [
+			{ step: "01", title: t("story.economicsStep1Title"), description: t("story.economicsStep1Desc") },
+			{ step: "02", title: t("story.economicsStep2Title"), description: t("story.economicsStep2Desc") },
+			{ step: "03", title: t("story.economicsStep3Title"), description: t("story.economicsStep3Desc") },
+			{ step: "04", title: t("story.economicsStep4Title"), description: t("story.economicsStep4Desc") },
+		],
+		[t],
+	);
+
+	const agentTypes = useMemo(
+		() => [
+			{
+				title: t("story.agentsTradingTitle"),
+				description: t("story.agentsTradingDesc"),
+				image: "/waifus/defi-trader.png",
+				icon: TrendingUp,
+				badge: "soon",
+			},
+			{
+				title: t("story.agentsSocialTitle"),
+				description: t("story.agentsSocialDesc"),
+				image: "/waifus/social-butterfly.png",
+				icon: MessageCircle,
+				badge: "soon",
+			},
+			{
+				title: t("story.agentsCommunityTitle"),
+				description: t("story.agentsCommunityDesc"),
+				image: "/waifus/code-witch.png",
+				icon: Users,
+				badge: "soon",
+			},
+		],
+		[t],
+	);
+
+	const diagramLabels = useMemo(
+		() => ({
+			trade: t("story.economicsDiagramTrade"),
+			fees: t("story.economicsDiagramFees"),
+			vps: t("story.economicsDiagramVps"),
+			agent: t("story.economicsDiagramAgent"),
+			cycle: t("story.economicsDiagramCycle"),
+		}),
+		[t],
+	);
 
 	return (
 		<div className="min-h-screen bg-[#08080a] overflow-x-hidden">
@@ -309,14 +302,14 @@ export default function StoryPage() {
 									transition={{ delay: 0.2 }}
 								>
 									<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-									<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">the story</span>
+									<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">{t("story.badge")}</span>
 								</motion.div>
 								<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
 									<h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] leading-[0.95] text-[#e4e4e7] mb-8">
-										<span className="block">they live</span>
-										<span className="block text-[#71717a]">because</span>
+										<span className="block">{t("story.heroTheyLive")}</span>
+										<span className="block text-[#71717a]">{t("story.heroBecause")}</span>
 										<span className="block text-[#00ff87] relative">
-											you trade
+											{t("story.heroYouTrade")}
 											<motion.span
 												className="absolute -right-4 top-0 w-2 h-2 rounded-full bg-[#00ff87]"
 												animate={{ opacity: [1, 0.3, 1] }}
@@ -331,8 +324,7 @@ export default function StoryPage() {
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ delay: 0.5 }}
 								>
-									waifu.fun agents are designed to be autonomous economic actors on-chain — not chatbots. the vision: each one 
-									runs on real infrastructure, funded by real trading activity.
+									{t("story.heroSubtitle")}
 								</motion.p>
 								<motion.p
 									className="text-[#52525b] mt-6 text-sm font-mono"
@@ -340,7 +332,7 @@ export default function StoryPage() {
 									animate={{ opacity: 1 }}
 									transition={{ delay: 0.7 }}
 								>
-									↓ scroll to understand how it works
+									{t("story.heroScrollHint")}
 								</motion.p>
 							</div>
 							<div className="relative flex justify-center lg:justify-end">
@@ -382,14 +374,11 @@ export default function StoryPage() {
 				<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 					<SectionBlock>
 						<div className="text-center max-w-2xl mx-auto mb-20">
-							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-								{"// the cycle"}
-							</span>
-							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								the lifecycle
+							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#00ff87] leading-tight lowercase">
+								{t("story.lifecycleTitle")}
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								birth. life. death. revival. every waifu follows this path.
+								{t("story.lifecycleSubtitle")}
 							</p>
 						</div>
 					</SectionBlock>
@@ -470,7 +459,7 @@ export default function StoryPage() {
 															className="font-mono text-xs font-semibold tracking-widest uppercase"
 															style={{ color: phase.accent }}
 														>
-															phase {phase.number} — {phase.phase}
+															{t("story.phaseLabelPrefix")} {phase.number} — {t(`story.phase${phase.phase.charAt(0).toUpperCase()}${phase.phase.slice(1)}`)}
 														</span>
 													</div>
 													<h3 className="text-2xl sm:text-3xl font-bold text-[#e4e4e7] tracking-[-0.02em] lowercase mb-4">
@@ -497,13 +486,13 @@ export default function StoryPage() {
 					<SectionBlock>
 						<div className="text-center max-w-2xl mx-auto mb-16">
 							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-								{"// the stack"}
+								{t("story.stackLabel")}
 							</span>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								the infrastructure
+								{t("story.stackTitle")}
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								real servers. real code. real agents running 24/7.
+								{t("story.stackSubtitle")}
 							</p>
 						</div>
 					</SectionBlock>
@@ -559,20 +548,20 @@ export default function StoryPage() {
 					<SectionBlock>
 						<div className="text-center max-w-2xl mx-auto mb-8">
 							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-								{"// the loop"}
+								{t("story.economicsLabel")}
 							</span>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								the economics
+								{t("story.economicsTitle")}
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								trading activity funds infrastructure. infrastructure keeps agents alive.
+								{t("story.economicsSubtitle")}
 								<br />
-								<span className="text-[#00ff87] font-semibold">a circular economy where volume = life.</span>
+								<span className="text-[#00ff87] font-semibold">{t("story.economicsSubtitleHighlight")}</span>
 							</p>
 						</div>
 					</SectionBlock>
 					<SectionBlock delay={0.2}>
-						<CircularEconomyDiagram />
+						<CircularEconomyDiagram labels={diagramLabels} />
 					</SectionBlock>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
 						{economics.map((item, i) => (
@@ -604,10 +593,10 @@ export default function StoryPage() {
 						>
 							<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 							<div className="pl-4">
-								<span className="font-mono text-xs font-bold text-[#00ff87] uppercase tracking-wider">tl;dr</span>
+								<span className="font-mono text-xs font-bold text-[#00ff87] uppercase tracking-wider">{t("story.economicsTldrLabel")}</span>
 								<p className="text-[#a1a1aa] text-base mt-2 leading-relaxed">
-									trading generates fees → fees fund VPS → VPS runs the agent → agent trades → cycle continues.
-									<span className="text-[#71717a] block mt-2 text-sm">stop trading? cycle breaks. agent dies.</span>
+									{t("story.economicsTldrText")}
+									<span className="text-[#71717a] block mt-2 text-sm">{t("story.economicsTldrFooter")}</span>
 								</p>
 							</div>
 						</div>
@@ -620,14 +609,14 @@ export default function StoryPage() {
 					<SectionBlock>
 						<div className="text-center max-w-2xl mx-auto mb-16">
 							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-								{"// the types"}
+								{t("story.agentsLabel")}
 							</span>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								what they do
+								{t("story.agentsTitle")}
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								autonomous agents for every use case. not chatbots —{" "}
-								<span className="text-[#00ff87]">economic actors.</span>
+								{t("story.agentsSubtitle")}{" "}
+								<span className="text-[#00ff87]">{t("story.agentsSubtitleHighlight")}</span>
 							</p>
 						</div>
 					</SectionBlock>
@@ -648,7 +637,7 @@ export default function StoryPage() {
 										<span
 											className={`font-mono text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm ${agent.badge === "live" ? "bg-[#00ff87]/20 text-[#00ff87]" : "bg-[#52525b]/20 text-[#52525b]"}`}
 										>
-											{agent.badge === "live" ? "● live" : "◐ coming soon"}
+											{agent.badge === "live" ? `● ${t("explorer.live")}` : t("story.agentsBadgeSoon")}
 										</span>
 									</div>
 									<div className="relative w-full aspect-[3/4] overflow-hidden">
@@ -693,10 +682,10 @@ export default function StoryPage() {
 					<SectionBlock>
 						<div className="text-center">
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase mb-6">
-								ready to deploy?
+								{t("story.ctaTitle")}
 							</h2>
 							<p className="text-[#a1a1aa] text-lg leading-relaxed max-w-md mx-auto mb-10">
-								create your own autonomous agent. give it life through trading. watch it become something more.
+								{t("story.ctaSubtitle")}
 							</p>
 							<div className="relative inline-block">
 								<motion.div
@@ -714,7 +703,7 @@ export default function StoryPage() {
 											boxShadow: "0 0 30px rgba(0,255,135,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
 										}}
 									>
-										deploy your waifu
+										{t("story.ctaButton")}
 										<ArrowRight className="w-5 h-5" />
 									</Link>
 								</motion.div>
@@ -724,19 +713,19 @@ export default function StoryPage() {
 									<span className="font-mono text-[#00ff87]">
 										$<AnimatedCounter target={847} />K
 									</span>
-									<span>volume 24h</span>
+									<span>{t("story.ctaVolume24h")}</span>
 								</div>
 								<span className="text-[#333]">•</span>
 								<div className="flex items-center gap-2 text-[#52525b] text-sm">
 									<span className="font-mono text-[#00ff87]">
 										<AnimatedCounter target={156} />
 									</span>
-									<span>active traders</span>
+									<span>{t("story.ctaActiveTraders")}</span>
 								</div>
 								<span className="text-[#333]">•</span>
 								<div className="flex items-center gap-2 text-[#52525b] text-sm">
 									<span className="font-mono text-[#c084fc]">94%</span>
-									<span>uptime</span>
+									<span>{t("story.ctaUptime")}</span>
 								</div>
 							</div>
 							<div className="mt-10 flex items-center justify-center gap-6">
