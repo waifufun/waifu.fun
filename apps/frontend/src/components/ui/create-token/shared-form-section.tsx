@@ -1,8 +1,20 @@
 "use client";
+
+/**
+ * Shared form field components for the create-token wizard.
+ *
+ * Each export is a self-contained field group that reads/writes form state
+ * through the PromptProvider (usePrompt). The wizard step components import
+ * these and compose them into step layouts.
+ *
+ * FormSection wrapping is intentionally kept on each component so they render
+ * correctly both as standalone sections and inside wizard steps. Pass
+ * collapsible={false} from wizard steps for flat layouts.
+ */
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/create-token/textarea";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
@@ -17,18 +29,16 @@ import {
 } from "@/components/hooks/providers/usePromptContext";
 import { AlertTriangle, Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
-import { createToken } from "@/lib/api";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
-import { createTokenTx } from "@/lib/utils";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Controller, type ControllerRenderProps } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import type { AddressLike, TChain } from "@autofun/types";
 import { curveLimitConst } from "@/lib/utils";
-import { getErrorMessage } from "@/lib/errorMessage";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Textarea } from "@/components/ui/create-token/textarea";
+
+/* ------------------------------------------------------------------ */
+/*  Shared style tokens                                                */
+/* ------------------------------------------------------------------ */
 
 const formElementBaseClass =
 	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
@@ -38,11 +48,15 @@ const sliderThumbClass =
 const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-none bg-black/50 border border-[#03FF24]/50";
 const sliderRangeClass = "absolute h-full bg-[#03FF24]";
 
+/* ------------------------------------------------------------------ */
+/*  CoinInfoFields                                                     */
+/* ------------------------------------------------------------------ */
+
 export const CoinInfoFields = ({
-	idPrefix,
+	idPrefix = "waifu",
 	collapsible = false,
 	defaultOpen = true,
-}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
+}: { idPrefix?: string; collapsible?: boolean; defaultOpen?: boolean }) => {
 	const {
 		registerForm,
 		formState: { errors },
@@ -102,21 +116,17 @@ export const CoinInfoFields = ({
 	);
 };
 
+/* ------------------------------------------------------------------ */
+/*  CustomAddressGenerator                                             */
+/* ------------------------------------------------------------------ */
+
 export const CustomAddressGenerator = ({
-	idPrefix,
+	idPrefix = "waifu",
 	collapsible = true,
 	defaultOpen = false,
-}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
+}: { idPrefix?: string; collapsible?: boolean; defaultOpen?: boolean }) => {
 	const [suffix, setSuffix] = useState("FUN");
-	const { generateAddress, mintKeyPair, isGeneratingAddress, terminateWorkers, cancelVanityGeneration } = usePrompt();
-
-	const handleGenerate = () => {
-		generateAddress(suffix);
-	};
-
-	const handleCancel = () => {
-		cancelVanityGeneration();
-	};
+	const { generateAddress, mintKeyPair, isGeneratingAddress, cancelVanityGeneration } = usePrompt();
 
 	return (
 		<FormSection title="Generate Custom Address" collapsible={collapsible} defaultOpen={defaultOpen}>
@@ -137,7 +147,7 @@ export const CustomAddressGenerator = ({
 				{!isGeneratingAddress ? (
 					<Button
 						type="button"
-						onClick={handleGenerate}
+						onClick={() => generateAddress(suffix)}
 						variant="outline"
 						className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3"
 					>
@@ -146,7 +156,7 @@ export const CustomAddressGenerator = ({
 				) : (
 					<Button
 						type="button"
-						onClick={handleCancel}
+						onClick={cancelVanityGeneration}
 						variant="outline"
 						className="h-10 border-2 border-red-500/70 text-red-400 hover:bg-red-500/20 hover:border-red-500 rounded-none shadow-[3px_3px_0px_rgba(239,68,68,0.3)] font-bold uppercase text-xs px-3"
 					>
@@ -169,6 +179,10 @@ export const CustomAddressGenerator = ({
 	);
 };
 
+/* ------------------------------------------------------------------ */
+/*  CustomCurveSection                                                 */
+/* ------------------------------------------------------------------ */
+
 export const CustomCurveSection = ({
 	collapsible = true,
 	defaultOpen = false,
@@ -177,7 +191,6 @@ export const CustomCurveSection = ({
 		control,
 		formState: { errors },
 	} = usePrompt();
-	console.log(curveLimitConst / LAMPORTS_PER_SOL, "curveLimitConst / LAMPORTS_PER_SOL");
 
 	return (
 		<Controller
@@ -185,11 +198,11 @@ export const CustomCurveSection = ({
 			control={control}
 			rules={{
 				required: "Curve limit is required",
-				min: { value: 0, message: "Must be ≥ 0" },
-				max: { value: 1000, message: "Must be ≤ 1000" },
+				min: { value: 0, message: "Must be >= 0" },
+				max: { value: 1000, message: "Must be <= 1000" },
 			}}
 			render={({ field }) => (
-				<FormSection title="curve-limit" collapsible={collapsible} defaultOpen={defaultOpen}>
+				<FormSection title="Curve Limit" collapsible={collapsible} defaultOpen={defaultOpen}>
 					<div>
 						<div className="flex justify-between items-center mb-1">
 							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
@@ -197,7 +210,6 @@ export const CustomCurveSection = ({
 							</Label>
 							<span className="text-sm font-bold text-[#03FF24]">{field.value} SOL</span>
 						</div>
-
 						<Slider
 							id="curveLimit"
 							min={curveLimitConst / LAMPORTS_PER_SOL}
@@ -218,6 +230,10 @@ export const CustomCurveSection = ({
 	);
 };
 
+/* ------------------------------------------------------------------ */
+/*  DelayedStartSection                                                */
+/* ------------------------------------------------------------------ */
+
 export const DelayedStartSection = ({
 	collapsible = true,
 	defaultOpen = false,
@@ -233,29 +249,17 @@ export const DelayedStartSection = ({
 		{ label: "4 Hours", value: 4 * 60 * 60 },
 	];
 
-	const handleModeChange = (
-		newMode: "preset" | "manual" | "instant" | undefined,
-		// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
-		field: ControllerRenderProps<any, "delayForTrade">,
-	) => {
-		// Prevent unselecting
-		if (!newMode) {
-			return;
-		}
-
+	// biome-ignore lint/suspicious/noExplicitAny: field type
+	const handleModeChange = (newMode: "preset" | "manual" | "instant" | undefined, field: ControllerRenderProps<any, "delayForTrade">) => {
+		if (!newMode) return;
 		setMode(newMode);
-		if (newMode === "instant") {
-			field.onChange(0);
-		} else if (newMode === "preset") {
-			field.onChange(presets[0]?.value ?? 0);
-		}
+		if (newMode === "instant") field.onChange(0);
+		else if (newMode === "preset") field.onChange(presets[0]?.value ?? 0);
 	};
 
-	// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
+	// biome-ignore lint/suspicious/noExplicitAny: field type
 	const handlePresetChange = (presetValue: string | undefined, field: ControllerRenderProps<any, "delayForTrade">) => {
-		if (!presetValue) {
-			return;
-		}
+		if (!presetValue) return;
 		field.onChange(Number(presetValue));
 	};
 
@@ -299,7 +303,7 @@ export const DelayedStartSection = ({
 				<Controller
 					name="delayForTrade"
 					control={control}
-					rules={{ required: "Please choose a delay", min: { value: 0, message: "Delay must be ≥ 0" } }}
+					rules={{ required: "Please choose a delay", min: { value: 0, message: "Delay must be >= 0" } }}
 					defaultValue={0}
 					render={({ field }) =>
 						mode === "preset" ? (
@@ -335,24 +339,9 @@ export const DelayedStartSection = ({
 									onChange={(e) => {
 										const inputValue = e.target.value;
 										if (!inputValue) return;
-
-										const then = new Date(inputValue).getTime();
-										const now = Date.now();
-										const secs = Math.floor((then - now) / 1000);
-
-										const minSecs = 5 * 60;
-										const maxSecs = 24 * 60 * 60;
-
-										if (secs < minSecs) {
-											toast.error("Minimum delay is 5 minutes");
-											return;
-										}
-
-										if (secs > maxSecs) {
-											toast.error("Maximum delay is 24 hours");
-											return;
-										}
-
+										const secs = Math.floor((new Date(inputValue).getTime() - Date.now()) / 1000);
+										if (secs < 5 * 60) { toast.error("Minimum delay is 5 minutes"); return; }
+										if (secs > 24 * 60 * 60) { toast.error("Maximum delay is 24 hours"); return; }
 										field.onChange(secs);
 									}}
 									className={cn(formElementBaseClass, "mt-1 h-10", errors.delayForTrade && "border-red-500")}
@@ -371,13 +360,16 @@ export const DelayedStartSection = ({
 			<div className="flex items-center gap-2 mt-2">
 				<Info size={12} className="text-gray-500" />
 				<p className="text-[10px] text-gray-500">
-					Delayed start is when trading begins - either after the preset time or at the selected date/time in your local
-					timezone.
+					Delayed start is when trading begins - either after the preset time or at the selected date/time.
 				</p>
 			</div>
 		</FormSection>
 	);
 };
+
+/* ------------------------------------------------------------------ */
+/*  TradeLimitSection                                                  */
+/* ------------------------------------------------------------------ */
 
 export const TradeLimitSection = ({
 	collapsible = true,
@@ -416,7 +408,6 @@ export const TradeLimitSection = ({
 							<p className="text-xs text-yellow-400">0 indicates no maximum token limit per trade</p>
 						</div>
 					)}
-
 					{errors.tradeLimitSol && <p className="text-red-500 text-xs mt-1">{errors.tradeLimitSol.message}</p>}
 				</div>
 			</div>
@@ -424,21 +415,22 @@ export const TradeLimitSection = ({
 	);
 };
 
+/* ------------------------------------------------------------------ */
+/*  PreBuySection                                                      */
+/* ------------------------------------------------------------------ */
+
 export const PreBuySection = ({
-	idPrefix,
+	idPrefix = "waifu",
 	collapsible = true,
 	defaultOpen = false,
-}: { idPrefix: string; collapsible?: boolean; defaultOpen?: boolean }) => {
+}: { idPrefix?: string; collapsible?: boolean; defaultOpen?: boolean }) => {
 	const {
 		registerForm,
 		formState: { errors },
 		setValue,
 	} = usePrompt();
 	const address = useAddress();
-	const balanceQuery = useBalance({
-		chain: "solana",
-		address,
-	});
+	const balanceQuery = useBalance({ chain: "solana", address });
 	const balance = balanceQuery?.data || 0;
 
 	const setMaxAmount = () => {
@@ -495,6 +487,10 @@ export const PreBuySection = ({
 	);
 };
 
+/* ------------------------------------------------------------------ */
+/*  PoolSelection                                                      */
+/* ------------------------------------------------------------------ */
+
 export const PoolSelection = ({
 	collapsible = true,
 	defaultOpen = false,
@@ -511,146 +507,23 @@ export const PoolSelection = ({
 			<ToggleGroup
 				type="single"
 				value={pool}
-				onValueChange={(value) => {
-					if (value) {
-						setPool(value);
-					}
-				}}
+				onValueChange={(value) => { if (value) setPool(value); }}
 				className="grid grid-cols-2 gap-3"
 			>
-				{poolData.map((poolItem) => (
+				{poolData.map((p) => (
 					<ToggleGroupItem
-						key={poolItem.value}
-						value={poolItem.value}
-						aria-label={poolItem.name}
+						key={p.value}
+						value={p.value}
+						aria-label={p.name}
 						className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
 					>
 						<div className="flex items-center gap-2">
-							<img src={poolItem.image} alt={poolItem.name} className="w-4 h-4" />
-							{poolItem.name}
+							<img src={p.image} alt={p.name} className="w-4 h-4" />
+							{p.name}
 						</div>
 					</ToggleGroupItem>
 				))}
 			</ToggleGroup>
 		</FormSection>
-	);
-};
-
-export const LaunchButton = ({
-	idPrefix,
-	disabled = false,
-}: {
-	idPrefix?: string;
-	disabled?: boolean;
-}) => {
-	const wallet = useWallet();
-	const { connection } = useConnection();
-	const {
-		handleSubmit,
-		formState,
-		uploadedImage,
-		isGeneratingAddress,
-		isGeneratingMedia,
-		getTokenData,
-		pool,
-		mintKeyPair,
-		setLaunching,
-		setMintKeyPair,
-		isLaunching,
-	} = usePrompt();
-	const router = useRouter();
-	const [chain, chainId] = [
-		"solana",
-		process.env.NEXT_PUBLIC_NETWORK === "devnet" ? 103 : 101,
-	]; /* Malibu - the chain and chainId should be part of the prompt context or passed as props */
-
-	const createTokenMutation = useMutation({
-		mutationFn: createToken,
-		mutationKey: ["createToken"],
-		onSuccess: (tx, variables) => {
-			console.log("Transaction successful:", tx);
-			toast.success("Token created successfully!");
-			router.push(`/token/${chain}/${chainId}/${variables.contractAddress}`);
-			setMintKeyPair(null);
-		},
-		onError: (error) => {
-			console.error("Error creating token:", error);
-			const message = getErrorMessage(error);
-			toast.error(`Error creating token: ${message}`);
-		},
-	});
-
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !mintKeyPair;
-
-	const balanceQuery = useBalance({
-		chain: "solana",
-		address: (wallet?.publicKey?.toString() || "") as AddressLike,
-	});
-
-	const balance = balanceQuery?.data || 0;
-
-	const onSubmit = async () => {
-		if (!formState.isValid) {
-			toast.error("Please fill in all required fields.");
-			return;
-		}
-
-		if (isGeneratingAddress) {
-			toast.error("Please wait for the address to be generated.");
-			return;
-		}
-
-		if (isGeneratingMedia) {
-			toast.error("Please wait for the image to be generated.");
-			return;
-		}
-
-		if (!mintKeyPair) {
-			toast.error("Please generate a custom address first.");
-			return;
-		}
-
-		if (idPrefix === "manual" && !uploadedImage) {
-			toast.error("Please upload an image or use the generated image from the Auto tab.");
-			return;
-		}
-
-		if (balance < 0.04) {
-			toast.error("Insufficient balance. You need at least 0.04 SOL to create a token.");
-			return;
-		}
-
-		setLaunching(true);
-		try {
-			const tokenData = await getTokenData(idPrefix === "manual");
-			console.log("Token Data:", tokenData);
-			const tx = await createTokenTx(tokenData, { connection, wallet });
-			console.log("Transaction:", tx);
-			createTokenMutation.mutate({
-				contractAddress: mintKeyPair?.publicKey.toString() || "",
-				chain: chain as TChain,
-				chainId: chainId,
-				pool: pool,
-				signature: tx?.signature.toString() || "",
-			});
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		} catch (error: any) {
-			console.error("Error creating token:", error);
-			const message = getErrorMessage(error);
-			toast.error(`Error creating token: ${message}`);
-		} finally {
-			setLaunching(false);
-		}
-	};
-
-	return (
-		<Button
-			type="button"
-			onClick={onSubmit}
-			disabled={shouldDisable || disabled}
-			className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
-		>
-			{isLaunching ? "LAUNCHING..." : "LAUNCH TOKEN"}
-		</Button>
 	);
 };

@@ -10,7 +10,6 @@ import {
 	CoinInfoFields,
 	CustomAddressGenerator,
 	PreBuySection,
-	LaunchButton,
 	// CustomCurveSection,
 	// TradeLimitSection,
 	// DelayedStartSection,
@@ -128,7 +127,7 @@ function AutoCreateForm() {
 					<CoinInfoFields idPrefix="auto" />
 					<CustomAddressGenerator idPrefix="auto" />
 					<PreBuySection idPrefix="auto" />
-					<LaunchButton />
+					{/* LaunchButton moved to review-activate-step */}
 				</div>
 			</div>
 		);
@@ -193,7 +192,7 @@ function AutoCreateForm() {
 				<CoinInfoFields idPrefix="auto" />
 				<CustomAddressGenerator idPrefix="auto" />
 				<PreBuySection idPrefix="auto" />
-				<LaunchButton />
+				{/* LaunchButton moved to review-activate-step */}
 			</div>
 		</div>
 	);

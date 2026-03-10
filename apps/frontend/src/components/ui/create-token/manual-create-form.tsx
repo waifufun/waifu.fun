@@ -11,7 +11,6 @@ import {
 	CustomAddressGenerator,
 	PreBuySection,
 	PoolSelection,
-	LaunchButton,
 	CustomCurveSection,
 	DelayedStartSection,
 	TradeLimitSection,
@@ -333,7 +332,7 @@ function ManualCreateForm() {
 				<TradeLimitSection />
 				<PreBuySection idPrefix="manual" />
 				<PoolSelection />
-				<LaunchButton idPrefix="manual" disabled={!hasValidImage} />
+				{/* LaunchButton moved to review-activate-step */}
 			</div>
 		</div>
 	);
