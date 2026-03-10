@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getTokens } from "@/lib/api";
+import { toApiSearchParams } from "@/lib/discovery-params";
 import Image from "next/image";
 import Verified from "./verified";
 import { CopyButton } from "./copy-button";
@@ -35,7 +36,8 @@ export default function SearchMenu() {
 			if (!open) {
 				setOpen(true);
 			}
-			const data = await getTokens({ searchParams: { category: "marketcap", page: 1, limit: 5, search: value } });
+			const apiParams = toApiSearchParams({ sort: "marketCap", page: 1, limit: 5, search: value });
+			const data = await getTokens({ searchParams: apiParams });
 			return data as IToken[];
 		},
 		enabled: !!value,

@@ -4,6 +4,7 @@ import { GridItem } from "./grid-item";
 import type { IToken } from "@autofun/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getTokens } from "@/lib/api";
+import { toApiSearchParams } from "@/lib/discovery-params";
 import { Fragment, useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -13,15 +14,15 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 	const columnKeys = Array.from({ length: columns }, (_, i) => `col${i + 1}`);
 
 	const searchParams = useSearchParams();
-	const category = searchParams.get("category") || null;
+	const sort = searchParams.get("sort") || null;
+	const lifecycle = searchParams.get("lifecycle") || null;
 	const origin = searchParams.get("origin") || null;
 
-	const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-		queryKey: ["main-page-tokens", category, origin],
+	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
+		queryKey: ["main-page-tokens", sort, lifecycle, origin],
 		queryFn: async ({ pageParam = 1 }) => {
-			const res = await getTokens({
-				searchParams: { page: pageParam, category: category ?? undefined, origin: origin ?? undefined },
-			});
+			const apiParams = toApiSearchParams({ sort, lifecycle, origin, page: pageParam });
+			const res = await getTokens({ searchParams: apiParams });
 			return res as IToken[];
 		},
 		getNextPageParam: (lastPage, allPages) => {
@@ -55,6 +56,23 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 			if (loaderRef.current) observer.unobserve(loaderRef.current);
 		};
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+	if (isLoading) {
+		return (
+			<div className="flex w-full items-center justify-center py-20">
+				<LoaderCircle className="h-8 w-8 animate-spin text-[#03FF23]" />
+			</div>
+		);
+	}
+
+	if (allTokens.length === 0) {
+		return (
+			<div className="flex flex-col items-center gap-3 py-20">
+				<span className="text-[#03FF23] text-lg font-semibold uppercase">No tokens found</span>
+				<span className="text-[#52525b] text-sm">Try adjusting your filters or check back soon.</span>
+			</div>
+		);
+	}
 
 	return (
 		<Fragment>

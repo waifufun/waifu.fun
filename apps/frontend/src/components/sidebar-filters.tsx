@@ -8,10 +8,20 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "./ui/select";
 
+/**
+ * Sidebar advanced filters.
+ *
+ * - Token Source  → maps to `origin` (auto-fun | imported)
+ * - Lifecycle     → maps to `lifecycle` (all | bonding | bonded)
+ *
+ * These URL params are translated to the API's `category` field by
+ * `toApiSearchParams` in lib/discovery-params.ts until the backend
+ * exposes sort/lifecycle natively.
+ */
 export default function SideBarFilters() {
 	const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 	const [sourceOpen, setSourceOpen] = useState(false);
-	const [statusOpen, setStatusOpen] = useState(false);
+	const [lifecycleOpen, setLifecycleOpen] = useState(false);
 
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -40,9 +50,9 @@ export default function SideBarFilters() {
 		{ label: "Imported", value: "imported" },
 	];
 
-	const statusOptions = [
+	const lifecycleOptions = [
 		{ label: "All", value: "all" },
-		{ label: "About to bond", value: "about-to-bond" },
+		{ label: "Bonding", value: "bonding" },
 		{ label: "Bonded", value: "bonded" },
 	];
 
@@ -84,6 +94,7 @@ export default function SideBarFilters() {
 				>
 					<div className="border-t border-[#03FF24]/20 mt-2 transition-opacity duration-200" />
 					<div className="p-2 space-y-4 mt-4 text-[11px] uppercase font-semibold text-gray-400">
+						{/* Token Source → origin param */}
 						<div className="w-full">
 							<Label htmlFor="token-source-sidebar" className="text-[10px] mb-2 block transition-colors duration-200">
 								Token Source
@@ -115,19 +126,21 @@ export default function SideBarFilters() {
 								</SelectContent>
 							</Select>
 						</div>
+
+						{/* Lifecycle → lifecycle param */}
 						<div>
-							<Label htmlFor="status-sidebar" className="text-[10px] mb-2 block transition-colors duration-200">
-								Status
+							<Label htmlFor="lifecycle-sidebar" className="text-[10px] mb-2 block transition-colors duration-200">
+								Lifecycle
 							</Label>
-							<Select open={statusOpen} onOpenChange={setStatusOpen}>
+							<Select open={lifecycleOpen} onOpenChange={setLifecycleOpen}>
 								<SelectTrigger
-									id="status-sidebar"
+									id="lifecycle-sidebar"
 									className="w-full bg-black border-2 border-[#03FF24]/80 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] mt-1 h-8 transition-all duration-200 hover:border-[#03FF24] hover:shadow-[4px_4px_0px_rgba(3,255,36,0.6)]"
 								>
-									<SelectValue placeholder={searchParams.get("category") || "Select Status"} />
+									<SelectValue placeholder={searchParams.get("lifecycle") || "Select Lifecycle"} />
 								</SelectTrigger>
 								<SelectContent className="bg-black border-2 border-[#03FF24]/80 text-gray-50 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.45)] uppercase text-[11px] animate-in fade-in-0 zoom-in-95">
-									{statusOptions.map((option) => (
+									{lifecycleOptions.map((option) => (
 										<Link
 											className={cn(
 												"hover:bg-[#03FF24]/30 focus:bg-accent focus:text-accent-foreground",
@@ -137,8 +150,8 @@ export default function SideBarFilters() {
 												"transition-all duration-150 hover:translate-x-1",
 											)}
 											key={option.value}
-											href={`${pathname}?${createQueryString({ category: option.value })}`}
-											onClick={() => setStatusOpen(false)}
+											href={`${pathname}?${createQueryString({ lifecycle: option.value })}`}
+											onClick={() => setLifecycleOpen(false)}
 										>
 											{option.label}
 										</Link>

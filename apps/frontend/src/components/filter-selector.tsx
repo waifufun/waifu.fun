@@ -1,56 +1,36 @@
 "use client";
 import { Fragment, useCallback } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useRouter } from "@bprogress/next/app";
+import { useSearchParams } from "next/navigation";
 import { SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
 import Link from "next/link";
-import { ChartBar, Flame, Hourglass, Sparkles, Star, Zap } from "lucide-react";
+import { ChartBar, Flame, Sparkles, Zap } from "lucide-react";
+import type { DiscoverySort } from "@/lib/discovery-params";
+import { DEFAULT_SORT } from "@/lib/discovery-params";
 
-const items = [
-	{
-		title: "ALL",
-		value: "/",
-		icon: Zap,
-	},
-
-	{
-		title: "FEATURED",
-		value: "featured",
-		icon: Star,
-	},
-	{
-		title: "HOT NOW",
-		value: "trending",
-		icon: Flame,
-	},
-	{
-		title: "NEWEST",
-		value: "new",
-		icon: Sparkles,
-	},
-	{
-		title: "MARKETCAP",
-		value: "marketcap",
-		icon: ChartBar,
-	},
-	{
-		title: "BONDING SOON",
-		value: "about-to-bond",
-		icon: Hourglass,
-	},
+/**
+ * Sort options aligned with the backend discovery contract.
+ *
+ * sort = trending | new | marketCap
+ *
+ * "ALL" resets the sort param (falls back to DEFAULT_SORT on the grid).
+ */
+const items: { title: string; sort: DiscoverySort | null; icon: typeof Zap }[] = [
+	{ title: "ALL", sort: null, icon: Zap },
+	{ title: "TRENDING", sort: "trending", icon: Flame },
+	{ title: "NEWEST", sort: "new", icon: Sparkles },
+	{ title: "MARKET CAP", sort: "marketCap", icon: ChartBar },
 ];
 
 export default function FilterSelector() {
-	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const router = useRouter();
+
 	const createQueryString = useCallback(
-		(params: Record<string, string>) => {
+		(params: Record<string, string | null>) => {
 			const urlParams = new URLSearchParams(searchParams.toString());
 
 			for (const [name, value] of Object.entries(params)) {
 				if (value) {
-					urlParams.set(name, String(value));
+					urlParams.set(name, value);
 				} else {
 					urlParams.delete(name);
 				}
@@ -61,83 +41,34 @@ export default function FilterSelector() {
 		[searchParams],
 	);
 
-	const currentKey = searchParams.get("category");
-	const activeKey = currentKey ? currentKey : "new";
+	const currentSort = searchParams.get("sort");
+	const activeSort = currentSort ?? DEFAULT_SORT;
 
 	return (
 		<Fragment>
-			{items?.map((item) => (
-				<SidebarMenuItem key={item.title}>
-					<SidebarMenuButton
-						asChild
-						isActive={activeKey === item.value}
-						tooltip={item.title}
-						className={
-							activeKey === item.value
-								? "bg-autofun-background-action-highlight/20"
-								: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
-						}
-					>
-						<Link href={item?.value ? `/?${createQueryString({ category: item.value })}` : "/"}>
-							<item.icon className="h-4 w-4" />
-							<span>{item.title}</span>
-						</Link>
-					</SidebarMenuButton>
-				</SidebarMenuItem>
-			))}
-		</Fragment>
-		// <Tabs defaultValue={activeKey} value={activeKey} className="w-full">
-		// 	<TabsList className="flex w-full overflow-x-auto no-scrollbar">
-		// 		<TabsTrigger
-		// 			value="new"
-		// 			onClick={() => {
-		// 				router.push(
-		// 					`${pathname}?${createQueryString({
-		// 						category: "new",
-		// 					})}`,
-		// 				);
-		// 			}}
-		// 		>
-		// 			New
-		// 		</TabsTrigger>
-		// 		<TabsTrigger
-		// 			value="trending"
-		// 			onClick={() => {
-		// 				router.push(
-		// 					`${pathname}?${createQueryString({
-		// 						category: "trending",
-		// 					})}`,
-		// 				);
-		// 			}}
-		// 		>
-		// 			Trending
-		// 		</TabsTrigger>
-		// 		<TabsTrigger
-		// 			value="featured"
-		// 			onClick={() => {
-		// 				router.push(
-		// 					`${pathname}?${createQueryString({
-		// 						category: "featured",
-		// 					})}`,
-		// 				);
-		// 			}}
-		// 		>
-		// 			Featured
-		// 		</TabsTrigger>
-		// 		<TabsTrigger
-		// 			value="marketcap"
-		// 			onClick={() => {
-		// 				router.push(
-		// 					`${pathname}?${createQueryString({
-		// 						category: "marketcap",
-		// 					})}`,
-		// 				);
-		// 			}}
-		// 		>
-		// 			Marketcap
-		// 		</TabsTrigger>
+			{items.map((item) => {
+				const isActive = item.sort === null ? !currentSort || currentSort === DEFAULT_SORT : activeSort === item.sort;
 
-		// 	</TabsList>
-		// </Tabs>
+				return (
+					<SidebarMenuItem key={item.title}>
+						<SidebarMenuButton
+							asChild
+							isActive={isActive}
+							tooltip={item.title}
+							className={
+								isActive
+									? "bg-autofun-background-action-highlight/20"
+									: "text-white hover:bg-[#03FF24]/10 hover:text-[#03FF24]"
+							}
+						>
+							<Link href={item.sort ? `/?${createQueryString({ sort: item.sort })}` : "/"}>
+								<item.icon className="h-4 w-4" />
+								<span>{item.title}</span>
+							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				);
+			})}
+		</Fragment>
 	);
 }
