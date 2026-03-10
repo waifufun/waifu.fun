@@ -53,7 +53,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 								? "border-orange-400/50"
 								: cardAccentTheme === "migrated"
 									? "border-purple-500/50"
-									: "border-[#03FF24]/50",
+									: "border-[#00FF87]/50",
 			])}
 		>
 			<div className="relative">
@@ -61,7 +61,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 					<div className="absolute top-2 left-2 z-10 flex flex-col items-start">
 						<div
 							className={cn(
-								"flex items-center gap-1 bg-black/75 text-gray-200 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-none shadow-[1px_1px_0px_rgba(3,255,36,0.2)] border",
+								"flex items-center gap-1 bg-black/75 text-gray-200 text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-none shadow-[1px_1px_0px_rgba(0,255,135,0.2)] border",
 								cardAccentTheme === "blue"
 									? "border-sky-400/50"
 									: cardAccentTheme === "purple"
@@ -72,7 +72,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 												? "border-orange-400/50"
 												: cardAccentTheme === "migrated"
 													? "border-purple-500/50"
-													: "border-[#03FF24]/50",
+													: "border-[#00FF87]/50",
 							)}
 						>
 							<Timer
@@ -88,7 +88,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 													? "text-orange-400"
 													: cardAccentTheme === "migrated"
 														? "text-purple-500/50"
-														: "text-[#03FF24]",
+														: "text-[#00FF87]",
 								)}
 							/>
 							<span>{fromNow(token?.createdAt, true).toUpperCase()}</span>
@@ -163,7 +163,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 						<Badge
 							className={cn(
 								badgeBaseClasses,
-								"bg-black/80 hover:bg-primary/15 text-[#03FF24] border border-[#03FF24]/50 shadow-[1.5px_1.5px_0px_rgba(3,255,36,0.3)] sm:shadow-[2px_2px_0px_rgba(3,255,36,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
+								"bg-black/80 hover:bg-primary/15 text-[#00FF87] border border-[#00FF87]/50 shadow-[1.5px_1.5px_0px_rgba(0,255,135,0.3)] sm:shadow-[2px_2px_0px_rgba(0,255,135,0.3)] py-0.5 px-1.5 text-[9px] sm:text-[10px]",
 							)}
 						>
 							ACTIVE
@@ -195,7 +195,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 												? "text-orange-400"
 												: cardAccentTheme === "migrated"
 													? "group-hover:text-purple-500/90"
-													: "group-hover:text-[#03FF24]",
+													: "group-hover:text-[#00FF87]",
 							])}
 						>
 							{token?.name}
@@ -215,7 +215,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 											? "text-orange-400/80 group-hover:text-orange-400"
 											: cardAccentTheme === "migrated"
 												? "text-purple-500/50 group-hover:text-purple-500/70"
-												: "text-[#03FF24]/70 group-hover:text-[#03FF24]/90",
+												: "text-[#00FF87]/70 group-hover:text-[#00FF87]/90",
 						])}
 					>
 						${token?.ticker}
@@ -234,7 +234,7 @@ export const GridItem = ({ token }: { token: IToken }) => {
 										? "text-orange-400"
 										: cardAccentTheme === "migrated"
 											? "text-purple-500/50 group-hover:text-purple-500/70"
-											: "text-[#03FF24]",
+											: "text-[#00FF87]",
 					)}
 				>
 					{abbreviateNumber(token.marketcap)}

@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
 	if (!href) {
 		return (
-			<div className="w-full h-full bg-black/50 border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] flex items-center justify-center">
+			<div className="w-full h-full bg-black/50 border-2 border-[#00FF87]/40 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.3)] flex items-center justify-center">
 				<p className="text-gray-500">No Image</p>
 			</div>
 		);
@@ -33,10 +33,10 @@ const AIImageWithPlaceHolder = ({ href }: { href: string | undefined }) => {
 
 const AiImageLoading = () => {
 	return (
-		<div className="w-full h-full bg-black/50 border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] flex items-center justify-center">
+		<div className="w-full h-full bg-black/50 border-2 border-[#00FF87]/40 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.3)] flex items-center justify-center">
 			<div className="flex items-center gap-2">
-				<RefreshCw size={16} className="animate-spin text-[#03FF24]" />
-				<p className="text-[#03FF24]">Generating...</p>
+				<RefreshCw size={16} className="animate-spin text-[#00FF87]" />
+				<p className="text-[#00FF87]">Generating...</p>
 			</div>
 		</div>
 	);
@@ -47,7 +47,7 @@ function AutoCreateForm() {
 	const [isClient, setIsClient] = useState(false);
 
 	const formElementBaseClass =
-		"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
+		"bg-black border-2 border-[#00FF87]/60 placeholder-gray-500 text-sm focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)]";
 
 	const prompt = watchValue("prompt");
 
@@ -110,14 +110,14 @@ function AutoCreateForm() {
 							<div
 								// biome-ignore lint/suspicious: This is a placeholder
 								key={`thumbnail-placeholder-${index}`}
-								className="aspect-square bg-black/50 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] opacity-50"
+								className="aspect-square bg-black/50 border-2 border-[#00FF87]/30 rounded-none shadow-[2px_2px_0px_rgba(0,255,135,0.2)] opacity-50"
 							>
 								<AIImageWithPlaceHolder href={undefined} />
 							</div>
 						))}
 					</div>
 					<Button
-						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider"
+						className="w-full bg-[#00FF87] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider"
 						disabled
 					>
 						<RefreshCw size={16} className="mr-2" /> Generate Image
@@ -163,7 +163,7 @@ function AutoCreateForm() {
 								}
 							}}
 							key={`thumbnail-${image || index}`}
-							className="aspect-square bg-black/50 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] hover:border-[#03FF24] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+							className="aspect-square bg-black/50 border-2 border-[#00FF87]/30 rounded-none shadow-[2px_2px_0px_rgba(0,255,135,0.2)] hover:border-[#00FF87] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 							disabled={!image}
 						>
 							<AIImageWithPlaceHolder href={image} />
@@ -172,7 +172,7 @@ function AutoCreateForm() {
 				</div>
 
 				<Button
-					className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider"
+					className="w-full bg-[#00FF87] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider"
 					onClick={handleGenerateImage}
 					disabled={isGeneratingMedia}
 				>

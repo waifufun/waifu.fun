@@ -225,7 +225,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						onClick={() => setGenerationMode("standard")}
 						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 uppercase ${
 							generationMode === "standard"
-								? "border-[#03FF24] bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
+								? "border-[#00FF87] bg-[#00FF87] text-black hover:bg-[#02e020] hover:text-black"
 								: "border-gray-500 text-gray-300 hover:text-gray-300 hover:bg-gray-500/10"
 						}`}
 					>
@@ -243,7 +243,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						disabled={!hasFastTokens}
 						className={`flex-1 text-sm px-3 py-2 h-auto rounded-none border-2 uppercase ${
 							generationMode === "fast"
-								? "border-[#03FF24] bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
+								? "border-[#00FF87] bg-[#00FF87] text-black hover:bg-[#02e020] hover:text-black"
 								: hasFastTokens
 									? "border-gray-500 text-gray-300 hover:text-gray-300 hover:bg-gray-500/10"
 									: "border-gray-700 text-gray-600 cursor-not-allowed opacity-50"
@@ -284,7 +284,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							<p className="font-medium">Insufficient Token Balance</p>
 							<p className="text-xs mt-1">
 								You need at least {abbreviateNumber(getMinBalance(activeAiTab, "standard"), true)}{" "}
-								<span className="text-[#03FF24] font-bold">{token.ticker}</span> tokens to generate {activeAiTab}s.
+								<span className="text-[#00FF87] font-bold">{token.ticker}</span> tokens to generate {activeAiTab}s.
 							</p>
 						</div>
 					</div>
@@ -299,13 +299,13 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 					<Input
 						type="text"
 						placeholder={`Generate images for ${token.name}...`}
-						className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
+						className="bg-black border-2 border-[#00FF87]/60 placeholder-gray-500 text-sm h-10 focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)] uppercase tracking-wider"
 						{...registerForm("prompt")}
 					/>
 					<Button
 						onClick={() => handleGenerateMedia("image")}
 						disabled={isGeneratingMedia || !hasEnoughTokens}
-						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black hover:text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+						className="w-full bg-[#00FF87] hover:bg-[#02e020] text-black hover:text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{isGeneratingMedia ? (
 							<>
@@ -330,7 +330,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							{previousImages.slice(0, 12).map((img, index) => (
 								<div
 									key={`image-${img}`}
-									className="relative group border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] overflow-hidden"
+									className="relative group border-2 border-[#00FF87]/40 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)] overflow-hidden"
 								>
 									<Image
 										src={img || "/placeholder.svg"}
@@ -344,7 +344,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 											variant="ghost"
 											size="icon"
 											onClick={() => handleFullscreen(img, "image")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none"
+											className="h-6 w-6 p-1 text-gray-300 hover:text-[#00FF87] rounded-none"
 											aria-label="View fullscreen"
 										>
 											<Maximize size={14} />
@@ -353,7 +353,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 											variant="ghost"
 											size="icon"
 											onClick={() => handleDownload(img, index, "image")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none"
+											className="h-6 w-6 p-1 text-gray-300 hover:text-[#00FF87] rounded-none"
 											aria-label="Download image"
 										>
 											<Download size={14} />
@@ -393,13 +393,13 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 					<Input
 						type="text"
 						placeholder={`Generate videos for ${token.name}...`}
-						className="bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm h-10 focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] uppercase tracking-wider"
+						className="bg-black border-2 border-[#00FF87]/60 placeholder-gray-500 text-sm h-10 focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)] uppercase tracking-wider"
 						{...registerForm("prompt")}
 					/>
 					<Button
 						onClick={() => handleGenerateMedia("video")}
 						disabled={isGeneratingMedia || !hasEnoughTokens}
-						className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black hover:text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+						className="w-full bg-[#00FF87] hover:bg-[#02e020] text-black hover:text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
 					>
 						{isGeneratingMedia ? (
 							<>
@@ -424,7 +424,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 							{previousVideos.slice(0, 12).map((video, index) => (
 								<div
 									key={`video-${video}`}
-									className="relative group border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)] overflow-hidden aspect-[4/3]"
+									className="relative group border-2 border-[#00FF87]/40 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)] overflow-hidden aspect-[4/3]"
 								>
 									<video
 										src={video}
@@ -439,7 +439,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 											variant="ghost"
 											size="icon"
 											onClick={() => handleFullscreen(video, "video")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none"
+											className="h-6 w-6 p-1 text-gray-300 hover:text-[#00FF87] rounded-none"
 											aria-label="View fullscreen"
 										>
 											<Maximize size={14} />
@@ -448,7 +448,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 											variant="ghost"
 											size="icon"
 											onClick={() => handleDownload(video, index, "video")}
-											className="h-6 w-6 p-1 text-gray-300 hover:text-[#03FF24] rounded-none"
+											className="h-6 w-6 p-1 text-gray-300 hover:text-[#00FF87] rounded-none"
 											aria-label="Download video"
 										>
 											<Download size={14} />
@@ -486,7 +486,7 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 
 	return (
 		<div className="space-y-4 mx-4 mt-4">
-			<div className="flex gap-1 border-b-2 border-[#03FF24]/30 pb-2">
+			<div className="flex gap-1 border-b-2 border-[#00FF87]/30 pb-2">
 				{["image", "video"].map((tab) => (
 					<Button
 						key={tab}
@@ -494,8 +494,8 @@ const AiCreatePanel = ({ token }: { token: IToken }) => {
 						onClick={() => setActiveAiTab(tab)}
 						className={`capitalize text-sm px-3 py-1.5 h-auto rounded-none border-2 ${
 							activeAiTab === tab
-								? "border-black bg-[#03FF24] text-black hover:bg-[#02e020] hover:text-black"
-								: "border-transparent text-gray-300 hover:text-gray-300 hover:bg-[#03FF24]/10 hover:border-[#03FF24]/50"
+								? "border-black bg-[#00FF87] text-black hover:bg-[#02e020] hover:text-black"
+								: "border-transparent text-gray-300 hover:text-gray-300 hover:bg-[#00FF87]/10 hover:border-[#00FF87]/50"
 						}`}
 					>
 						{tab === "image" && <ImageIcon size={16} className="mr-2" />}

@@ -12,7 +12,7 @@ import { useDraft } from "../draft-context";
 import { cn } from "@/lib/utils";
 
 const formElementBaseClass =
-	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
+	"bg-black border-2 border-[#00FF87]/60 placeholder-gray-500 text-sm focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)]";
 const formLabelBaseClass = "text-xs text-gray-400 uppercase tracking-wider font-semibold";
 
 /* ------------------------------------------------------------------ */
@@ -52,10 +52,10 @@ function ImportAddressInput() {
 
 				{/* TODO: When backend provides token-lookup-by-CA, show resolved token info here */}
 				{isValidSolanaAddress && (
-					<div className="p-3 bg-[#03FF24]/5 border border-[#03FF24]/20 rounded-none">
+					<div className="p-3 bg-[#00FF87]/5 border border-[#00FF87]/20 rounded-none">
 						<p className="text-xs text-gray-400">
 							Address:{" "}
-							<span className="text-[#03FF24] font-mono text-[11px] break-all">
+							<span className="text-[#00FF87] font-mono text-[11px] break-all">
 								{draft.importContractAddress}
 							</span>
 						</p>
@@ -80,7 +80,7 @@ export function TokenProvenanceStep() {
 	return (
 		<div className="space-y-6">
 			<div className="mb-2">
-				<h2 className="text-lg font-bold text-[#03FF24] uppercase tracking-wider">
+				<h2 className="text-lg font-bold text-[#00FF87] uppercase tracking-wider">
 					Token &amp; Provenance
 				</h2>
 				<p className="text-xs text-gray-500 mt-1">

@@ -14,7 +14,7 @@ export function RuntimeStep() {
 	return (
 		<div className="space-y-6">
 			<div className="mb-2">
-				<h2 className="text-lg font-bold text-[#03FF24] uppercase tracking-wider">Runtime</h2>
+				<h2 className="text-lg font-bold text-[#00FF87] uppercase tracking-wider">Runtime</h2>
 				<p className="text-xs text-gray-500 mt-1">
 					{isImport
 						? "Configure runtime settings for your imported token's agent."
@@ -28,7 +28,7 @@ export function RuntimeStep() {
 					    wire agent personality / model / runtime settings here.
 					    For now this is an integration seam. */}
 					<div className="space-y-3">
-						<div className="p-4 bg-[#03FF24]/5 border border-[#03FF24]/20 rounded-none">
+						<div className="p-4 bg-[#00FF87]/5 border border-[#00FF87]/20 rounded-none">
 							<p className="text-xs text-gray-400 leading-relaxed">
 								Runtime configuration for imported tokens is coming soon. After
 								import, you&apos;ll be able to configure your agent&apos;s

@@ -10,7 +10,7 @@ export function EntryStep() {
 	return (
 		<div className="flex flex-col items-center gap-8 py-8">
 			<div className="text-center space-y-2">
-				<h1 className="text-2xl font-bold text-[#03FF24] uppercase tracking-widest">
+				<h1 className="text-2xl font-bold text-[#00FF87] uppercase tracking-widest">
 					Create Your Waifu
 				</h1>
 				<p className="text-sm text-gray-400 max-w-md">
@@ -24,17 +24,17 @@ export function EntryStep() {
 					type="button"
 					onClick={() => setMode("create")}
 					className={cn(
-						"group relative bg-black border-2 border-[#03FF24]/40 rounded-none p-6",
-						"shadow-[4px_4px_0px_rgba(3,255,36,0.3)]",
-						"hover:border-[#03FF24] hover:shadow-[6px_6px_0px_rgba(3,255,36,0.4)]",
-						"hover:bg-[#03FF24]/5 transition-all cursor-pointer",
-						"focus:outline-none focus:ring-2 focus:ring-[#03FF24] focus:ring-offset-2 focus:ring-offset-black",
+						"group relative bg-black border-2 border-[#00FF87]/40 rounded-none p-6",
+						"shadow-[4px_4px_0px_rgba(0,255,135,0.3)]",
+						"hover:border-[#00FF87] hover:shadow-[6px_6px_0px_rgba(0,255,135,0.4)]",
+						"hover:bg-[#00FF87]/5 transition-all cursor-pointer",
+						"focus:outline-none focus:ring-2 focus:ring-[#00FF87] focus:ring-offset-2 focus:ring-offset-black",
 						"text-left",
 					)}
 				>
 					<div className="flex flex-col gap-4">
-						<div className="w-12 h-12 bg-[#03FF24]/10 border border-[#03FF24]/30 rounded-none flex items-center justify-center group-hover:bg-[#03FF24]/20 transition-colors">
-							<Rocket size={24} className="text-[#03FF24]" />
+						<div className="w-12 h-12 bg-[#00FF87]/10 border border-[#00FF87]/30 rounded-none flex items-center justify-center group-hover:bg-[#00FF87]/20 transition-colors">
+							<Rocket size={24} className="text-[#00FF87]" />
 						</div>
 						<div>
 							<h2 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
@@ -45,7 +45,7 @@ export function EntryStep() {
 								configure tokenomics, and launch on-chain.
 							</p>
 						</div>
-						<div className="text-[10px] text-[#03FF24]/60 uppercase tracking-widest font-semibold mt-2">
+						<div className="text-[10px] text-[#00FF87]/60 uppercase tracking-widest font-semibold mt-2">
 							Full wizard &rarr; 6 steps
 						</div>
 					</div>
@@ -56,17 +56,17 @@ export function EntryStep() {
 					type="button"
 					onClick={() => setMode("import")}
 					className={cn(
-						"group relative bg-black border-2 border-[#03FF24]/40 rounded-none p-6",
-						"shadow-[4px_4px_0px_rgba(3,255,36,0.3)]",
-						"hover:border-[#03FF24] hover:shadow-[6px_6px_0px_rgba(3,255,36,0.4)]",
-						"hover:bg-[#03FF24]/5 transition-all cursor-pointer",
-						"focus:outline-none focus:ring-2 focus:ring-[#03FF24] focus:ring-offset-2 focus:ring-offset-black",
+						"group relative bg-black border-2 border-[#00FF87]/40 rounded-none p-6",
+						"shadow-[4px_4px_0px_rgba(0,255,135,0.3)]",
+						"hover:border-[#00FF87] hover:shadow-[6px_6px_0px_rgba(0,255,135,0.4)]",
+						"hover:bg-[#00FF87]/5 transition-all cursor-pointer",
+						"focus:outline-none focus:ring-2 focus:ring-[#00FF87] focus:ring-offset-2 focus:ring-offset-black",
 						"text-left",
 					)}
 				>
 					<div className="flex flex-col gap-4">
-						<div className="w-12 h-12 bg-[#03FF24]/10 border border-[#03FF24]/30 rounded-none flex items-center justify-center group-hover:bg-[#03FF24]/20 transition-colors">
-							<Download size={24} className="text-[#03FF24]" />
+						<div className="w-12 h-12 bg-[#00FF87]/10 border border-[#00FF87]/30 rounded-none flex items-center justify-center group-hover:bg-[#00FF87]/20 transition-colors">
+							<Download size={24} className="text-[#00FF87]" />
 						</div>
 						<div>
 							<h2 className="text-lg font-bold text-white uppercase tracking-wider mb-2">
@@ -77,7 +77,7 @@ export function EntryStep() {
 								an AI agent, runtime, and billing.
 							</p>
 						</div>
-						<div className="text-[10px] text-[#03FF24]/60 uppercase tracking-widest font-semibold mt-2">
+						<div className="text-[10px] text-[#00FF87]/60 uppercase tracking-widest font-semibold mt-2">
 							Quick setup &rarr; Provide CA
 						</div>
 					</div>

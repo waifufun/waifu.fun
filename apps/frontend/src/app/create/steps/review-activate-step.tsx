@@ -205,7 +205,7 @@ function CreateReview() {
 				type="button"
 				onClick={onLaunch}
 				disabled={shouldDisable}
-				className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
+				className="w-full bg-[#00FF87] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
 			>
 				<Rocket size={18} className="mr-2" />
 				{isLaunching ? "LAUNCHING…" : "LAUNCH TOKEN"}
@@ -284,7 +284,7 @@ function ImportReview() {
 				type="button"
 				onClick={onImport}
 				disabled={!isValidCA || mutation.isPending}
-				className="w-full bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
+				className="w-full bg-[#00FF87] hover:bg-[#02e020] text-black font-bold text-lg py-3 h-auto rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0px_#01a718]"
 			>
 				<Download size={18} className="mr-2" />
 				{mutation.isPending ? "IMPORTING…" : "IMPORT TOKEN"}
@@ -303,7 +303,7 @@ export function ReviewActivateStep() {
 	return (
 		<div className="space-y-6">
 			<div className="mb-2">
-				<h2 className="text-lg font-bold text-[#03FF24] uppercase tracking-wider">
+				<h2 className="text-lg font-bold text-[#00FF87] uppercase tracking-wider">
 					Review &amp; Activate
 				</h2>
 				<p className="text-xs text-gray-500 mt-1">

@@ -17,7 +17,7 @@ export function OwnerBillingStep() {
 	return (
 		<div className="space-y-6">
 			<div className="mb-2">
-				<h2 className="text-lg font-bold text-[#03FF24] uppercase tracking-wider">
+				<h2 className="text-lg font-bold text-[#00FF87] uppercase tracking-wider">
 					Owner &amp; Billing
 				</h2>
 				<p className="text-xs text-gray-500 mt-1">
@@ -31,8 +31,8 @@ export function OwnerBillingStep() {
 			<FormSection title="Connected Wallet">
 				<div className="space-y-3">
 					<div className="flex items-center gap-3">
-						<div className="w-10 h-10 bg-[#03FF24]/10 border border-[#03FF24]/30 rounded-none flex items-center justify-center">
-							<Wallet size={18} className="text-[#03FF24]" />
+						<div className="w-10 h-10 bg-[#00FF87]/10 border border-[#00FF87]/30 rounded-none flex items-center justify-center">
+							<Wallet size={18} className="text-[#00FF87]" />
 						</div>
 						<div className="flex-1 min-w-0">
 							<p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Address</p>
@@ -41,9 +41,9 @@ export function OwnerBillingStep() {
 							</p>
 						</div>
 					</div>
-					<div className="flex items-center justify-between p-2 bg-black/40 border border-[#03FF24]/20 rounded-none">
+					<div className="flex items-center justify-between p-2 bg-black/40 border border-[#00FF87]/20 rounded-none">
 						<span className="text-xs text-gray-400">Balance</span>
-						<span className="text-sm font-bold text-[#03FF24]">{balance.toFixed(4)} SOL</span>
+						<span className="text-sm font-bold text-[#00FF87]">{balance.toFixed(4)} SOL</span>
 					</div>
 					{!address && (
 						<p className="text-xs text-yellow-400">
@@ -59,7 +59,7 @@ export function OwnerBillingStep() {
 					    wire fee display and payment method here.
 					    For now this is an integration seam. */}
 					<div className="space-y-3">
-						<div className="p-4 bg-[#03FF24]/5 border border-[#03FF24]/20 rounded-none">
+						<div className="p-4 bg-[#00FF87]/5 border border-[#00FF87]/20 rounded-none">
 							<p className="text-xs text-gray-400 leading-relaxed">
 								Importing a token is free. Future agent services may require a
 								subscription — billing details will appear here when available.

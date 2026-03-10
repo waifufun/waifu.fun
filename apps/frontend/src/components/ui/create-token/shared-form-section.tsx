@@ -41,12 +41,12 @@ import { Textarea } from "@/components/ui/create-token/textarea";
 /* ------------------------------------------------------------------ */
 
 const formElementBaseClass =
-	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
+	"bg-black border-2 border-[#00FF87]/60 placeholder-gray-500 text-sm focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)]";
 const formLabelBaseClass = "text-xs text-gray-400 uppercase tracking-wider font-semibold";
 const sliderThumbClass =
-	"block h-5 w-5 rounded-none bg-[#03FF24] border-2 border-black ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-[2px_2px_0px_black]";
-const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-none bg-black/50 border border-[#03FF24]/50";
-const sliderRangeClass = "absolute h-full bg-[#03FF24]";
+	"block h-5 w-5 rounded-none bg-[#00FF87] border-2 border-black ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-[2px_2px_0px_black]";
+const sliderTrackClass = "relative h-2 w-full grow overflow-hidden rounded-none bg-black/50 border border-[#00FF87]/50";
+const sliderRangeClass = "absolute h-full bg-[#00FF87]";
 
 /* ------------------------------------------------------------------ */
 /*  CoinInfoFields                                                     */
@@ -92,7 +92,7 @@ export const CoinInfoFields = ({
 							)}
 							{...registerForm("symbol", tickerValidation)}
 						/>
-						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">$</span>
+						<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#00FF87] font-bold text-sm">$</span>
 					</div>
 					{errors.symbol && <p className="text-red-500 text-xs mt-1">{errors.symbol.message}</p>}
 				</div>
@@ -149,7 +149,7 @@ export const CustomAddressGenerator = ({
 						type="button"
 						onClick={() => generateAddress(suffix)}
 						variant="outline"
-						className="h-10 border-2 border-[#03FF24]/70 text-[#03FF24] hover:bg-[#03FF24]/20 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] font-bold uppercase text-xs px-3"
+						className="h-10 border-2 border-[#00FF87]/70 text-[#00FF87] hover:bg-[#00FF87]/20 hover:border-[#00FF87] rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.3)] font-bold uppercase text-xs px-3"
 					>
 						GENERATE
 					</Button>
@@ -164,7 +164,7 @@ export const CustomAddressGenerator = ({
 					</Button>
 				)}
 			</div>
-			<p className="text-xs text-[#03FF24] font-mono break-all bg-black/40 p-2 border border-[#03FF24]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
+			<p className="text-xs text-[#00FF87] font-mono break-all bg-black/40 p-2 border border-[#00FF87]/30 rounded-none shadow-inner min-h-[2rem] flex items-center">
 				{mintKeyPair
 					? mintKeyPair.publicKey.toString()
 					: isGeneratingAddress
@@ -208,7 +208,7 @@ export const CustomCurveSection = ({
 							<Label htmlFor="raiseAmount" className={formLabelBaseClass}>
 								Raise Amount
 							</Label>
-							<span className="text-sm font-bold text-[#03FF24]">{field.value} SOL</span>
+							<span className="text-sm font-bold text-[#00FF87]">{field.value} SOL</span>
 						</div>
 						<Slider
 							id="curveLimit"
@@ -279,19 +279,19 @@ export const DelayedStartSection = ({
 						>
 							<ToggleGroupItem
 								value="instant"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#00FF87] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#00FF87]/50 text-gray-300 hover:text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none font-semibold uppercase"
 							>
 								Instant
 							</ToggleGroupItem>
 							<ToggleGroupItem
 								value="preset"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#00FF87] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#00FF87]/50 text-gray-300 hover:text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none font-semibold uppercase"
 							>
 								Preset
 							</ToggleGroupItem>
 							<ToggleGroupItem
 								value="manual"
-								className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+								className="h-10 data-[state=on]:bg-[#00FF87] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#00FF87]/50 text-gray-300 hover:text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none font-semibold uppercase"
 							>
 								Manual
 							</ToggleGroupItem>
@@ -319,7 +319,7 @@ export const DelayedStartSection = ({
 										<ToggleGroupItem
 											key={p.value}
 											value={String(p.value)}
-											className="h-8 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold text-xs"
+											className="h-8 data-[state=on]:bg-[#00FF87] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#00FF87]/50 text-gray-300 hover:text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none font-semibold text-xs"
 										>
 											{p.label}
 										</ToggleGroupItem>
@@ -397,7 +397,7 @@ export const TradeLimitSection = ({
 							step="0.01"
 							className={cn(formElementBaseClass, "h-10 pr-16")}
 						/>
-						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
+						<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00FF87] font-bold text-sm">SOL</span>
 					</div>
 					<p className="text-[10px] text-gray-500 mt-1">
 						Sets the maximum SOL amount per buy/sell transaction for the first 8 hours after launch.
@@ -464,7 +464,7 @@ export const PreBuySection = ({
 							max: { value: Math.min(balance, 28), message: "Amount cannot be greater than your balance or 28" },
 						})}
 					/>
-					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#03FF24] font-bold text-sm">SOL</span>
+					<span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00FF87] font-bold text-sm">SOL</span>
 				</div>
 				{errors.buyAmount && <p className="text-red-500 text-xs mt-1">{errors.buyAmount.message}</p>}
 				<div className="flex justify-between items-center mt-1.5">
@@ -476,7 +476,7 @@ export const PreBuySection = ({
 						type="button"
 						variant="link"
 						onClick={setMaxAmount}
-						className="text-xs text-[#03FF24] hover:text-white p-0 h-auto"
+						className="text-xs text-[#00FF87] hover:text-white p-0 h-auto"
 					>
 						Max
 					</Button>
@@ -515,7 +515,7 @@ export const PoolSelection = ({
 						key={p.value}
 						value={p.value}
 						aria-label={p.name}
-						className="h-10 data-[state=on]:bg-[#03FF24] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#03FF24]/50 text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none font-semibold uppercase"
+						className="h-10 data-[state=on]:bg-[#00FF87] data-[state=on]:text-black data-[state=on]:shadow-[inset_0px_0px_0px_2px_black] border-2 border-[#00FF87]/50 text-gray-300 hover:text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none font-semibold uppercase"
 					>
 						<div className="flex items-center gap-2">
 							<img src={p.image} alt={p.name} className="w-4 h-4" />

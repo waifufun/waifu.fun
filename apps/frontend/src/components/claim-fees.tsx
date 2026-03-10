@@ -32,10 +32,10 @@ export default function ClaimFees({ token }: ClaimFeesProps) {
 	};
 
 	return (
-		<div className="flex flex-col gap-2 p-3 bg-black/20 border border-[#03FF24]/30 rounded-none">
+		<div className="flex flex-col gap-2 p-3 bg-black/20 border border-[#00FF87]/30 rounded-none">
 			<div className="flex items-center gap-2">
-				<Wallet className="w-4 h-4 text-[#03FF24]" />
-				<span className="text-sm font-medium text-[#03FF24] uppercase">Claim Fees</span>
+				<Wallet className="w-4 h-4 text-[#00FF87]" />
+				<span className="text-sm font-medium text-[#00FF87] uppercase">Claim Fees</span>
 			</div>
 			<p className="text-xs text-gray-400">
 				As the token creator, you can claim accumulated fees from trading activity.
@@ -43,7 +43,7 @@ export default function ClaimFees({ token }: ClaimFeesProps) {
 			<Button
 				onClick={handleClaim}
 				disabled={isClaiming}
-				className="w-full bg-[#03FF24]/10 hover:bg-[#03FF24]/20 text-[#03FF24] border border-[#03FF24]/50 rounded-none"
+				className="w-full bg-[#00FF87]/10 hover:bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/50 rounded-none"
 				size="sm"
 			>
 				{isClaiming ? "Claiming..." : "Claim Fees"}

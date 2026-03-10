@@ -95,10 +95,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	if (isLoading) {
 		return (
 			<div className="min-h-screen bg-black flex items-center justify-center">
-				<Card className="bg-black/20 border-[#03FF24]/20 w-96">
+				<Card className="bg-black/20 border-[#00FF87]/20 w-96">
 					<CardContent className="p-6">
 						<div className="flex items-center justify-center">
-							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#03FF24]" />{" "}
+							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF87]" />{" "}
 							<span className="ml-3 text-white">Checking admin access...</span>
 						</div>
 					</CardContent>
@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	if (!isAdmin) {
 		return (
 			<div className="min-h-screen bg-black flex items-center justify-center">
-				<Card className="bg-black/20 border-[#03FF24]/20 w-96">
+				<Card className="bg-black/20 border-[#00FF87]/20 w-96">
 					<CardContent className="p-6 text-center">
 						<Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
 						<h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
@@ -128,21 +128,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	return (
 		<div className="min-h-screen bg-black">
 			{/* Header */}
-			<div className="bg-black/50 border-b border-[#03FF24]/20 p-4">
+			<div className="bg-black/50 border-b border-[#00FF87]/20 p-4">
 				<div className="container mx-auto flex items-center justify-between">
 					<div className="flex items-center gap-2 md:gap-4">
 						<Button
 							variant="ghost"
 							onClick={() => router.push("/")}
-							className="text-[#03FF24] hover:bg-[#03FF24]/10 p-2 md:p-2"
+							className="text-[#00FF87] hover:bg-[#00FF87]/10 p-2 md:p-2"
 						>
 							<ArrowLeft className="w-4 h-4 md:mr-2" />
 							<span className="hidden md:inline">Back to Site</span>
 						</Button>
-						<div className="hidden md:block h-6 w-px bg-[#03FF24]/30" />
+						<div className="hidden md:block h-6 w-px bg-[#00FF87]/30" />
 						<h1 className="text-lg md:text-xl font-bold text-white">Admin Panel</h1>
 						{userRole && (
-							<span className="px-2 py-1 text-xs bg-[#03FF24]/10 text-[#03FF24] border border-[#03FF24]/30 hidden sm:inline">
+							<span className="px-2 py-1 text-xs bg-[#00FF87]/10 text-[#00FF87] border border-[#00FF87]/30 hidden sm:inline">
 								{userRole}
 							</span>
 						)}
@@ -152,7 +152,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 					<Button
 						variant="ghost"
 						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-						className="md:hidden text-[#03FF24] hover:bg-[#03FF24]/10 p-2"
+						className="md:hidden text-[#00FF87] hover:bg-[#00FF87]/10 p-2"
 					>
 						{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
 					</Button>
@@ -161,7 +161,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
 			{/* Mobile Navigation */}
 			{mobileMenuOpen && (
-				<div className="md:hidden bg-black/90 border-b border-[#03FF24]/10">
+				<div className="md:hidden bg-black/90 border-b border-[#00FF87]/10">
 					<nav className="container mx-auto p-4 space-y-2">
 						{adminNavItems.map((item) => {
 							const IconComponent = item.icon;
@@ -171,7 +171,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 									<div
 										className={`flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer ${
 											isActive
-												? "bg-[#03FF24]/20 text-[#03FF24] border border-[#03FF24]/30"
+												? "bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/30"
 												: "text-gray-400 hover:text-white hover:bg-white/5"
 										}`}
 									>
@@ -189,7 +189,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 			)}
 
 			{/* Desktop Navigation */}
-			<div className="hidden md:block bg-black/30 border-b border-[#03FF24]/10 p-4">
+			<div className="hidden md:block bg-black/30 border-b border-[#00FF87]/10 p-4">
 				<div className="container mx-auto">
 					<nav className="flex items-center gap-6">
 						{adminNavItems.map((item) => {
@@ -200,7 +200,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 									<div
 										className={`flex items-center gap-2 px-3 py-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
 											isActive
-												? "bg-[#03FF24]/20 text-[#03FF24] border border-[#03FF24]/30"
+												? "bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/30"
 												: "text-gray-400 hover:text-white hover:bg-white/5"
 										}`}
 									>

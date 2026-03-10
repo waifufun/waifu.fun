@@ -27,10 +27,10 @@ const audiowide = Audiowide({
 
 export const metadata: Metadata = {
 	title: {
-		default: "Auto.Fun",
-		template: "%s | Auto.Fun",
+		default: "waifu.fun",
+		template: "%s | waifu.fun",
 	},
-	description: "Press the fun button.",
+	description: "the agent token launchpad",
 	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST as string),
 };
 

@@ -45,7 +45,7 @@ export default function AdvancedSettings() {
 									className={cn(
 										"flex-1 text-sm max-h-[36px] h-full capitalize bg-gradient-to-b from-[#141414] via-[#131313] to-[#121212] font-medium text-white hover:bg-[#1a1a1a] transition-colors",
 										"border border-transparent",
-										String(speed) === String(label) && "border border-[#03FF24]",
+										String(speed) === String(label) && "border border-[#00FF87]",
 									)}
 								>
 									{String(label)}

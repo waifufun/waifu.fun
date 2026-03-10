@@ -14,7 +14,7 @@ import { CoinInfoFields } from "@/components/ui/create-token/shared-form-section
 import { useDraft } from "../draft-context";
 
 const formElementBaseClass =
-	"bg-black border-2 border-[#03FF24]/60 placeholder-gray-500 text-sm focus:border-[#03FF24] focus:ring-1 focus:ring-[#03FF24] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.25)]";
+	"bg-black border-2 border-[#00FF87]/60 placeholder-gray-500 text-sm focus:border-[#00FF87] focus:ring-1 focus:ring-[#00FF87] text-gray-200 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.25)]";
 
 /* ------------------------------------------------------------------ */
 /*  Image upload + AI generation combo                                 */
@@ -174,9 +174,9 @@ function ImageSection() {
 				onDrop={handleDrop}
 			>
 				{isGeneratingMedia && (
-					<div className="w-full h-full bg-black/50 border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] flex items-center justify-center">
-						<RefreshCw size={16} className="animate-spin text-[#03FF24] mr-2" />
-						<p className="text-[#03FF24]">Generating…</p>
+					<div className="w-full h-full bg-black/50 border-2 border-[#00FF87]/40 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.3)] flex items-center justify-center">
+						<RefreshCw size={16} className="animate-spin text-[#00FF87] mr-2" />
+						<p className="text-[#00FF87]">Generating…</p>
 					</div>
 				)}
 
@@ -185,22 +185,22 @@ function ImageSection() {
 						type="button"
 						onClick={() => fileInputRef.current?.click()}
 						className={cn(
-							"w-full h-full border-2 border-dashed rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all group focus:outline-none focus:ring-2 focus:ring-[#03FF24]",
+							"w-full h-full border-2 border-dashed rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.3)] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all group focus:outline-none focus:ring-2 focus:ring-[#00FF87]",
 							isDragActive
-								? "bg-[#03FF24]/10 border-[#03FF24] scale-[1.02]"
-								: "bg-black/50 border-[#03FF24]/40 hover:border-[#03FF24] hover:bg-black/70",
+								? "bg-[#00FF87]/10 border-[#00FF87] scale-[1.02]"
+								: "bg-black/50 border-[#00FF87]/40 hover:border-[#00FF87] hover:bg-black/70",
 						)}
 					>
-						<UploadCloud size={48} className="mb-2 text-[#03FF24]/70 group-hover:text-[#03FF24] transition-all" />
+						<UploadCloud size={48} className="mb-2 text-[#00FF87]/70 group-hover:text-[#00FF87] transition-all" />
 						<p className="text-sm text-gray-300 group-hover:text-white transition-colors">
-							Drag &amp; drop or <span className="text-[#03FF24] font-semibold">click to upload</span>
+							Drag &amp; drop or <span className="text-[#00FF87] font-semibold">click to upload</span>
 						</p>
 						<p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF, WEBP up to 5MB</p>
 					</button>
 				)}
 
 				{!isGeneratingMedia && displayImage && (
-					<div className="w-full h-full relative rounded-none overflow-hidden bg-black/50 border-2 border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.3)]">
+					<div className="w-full h-full relative rounded-none overflow-hidden bg-black/50 border-2 border-[#00FF87]/40 shadow-[3px_3px_0px_rgba(0,255,135,0.3)]">
 						<Image src={displayImage} alt="Token preview" fill className="object-contain p-2 pixelated-image-render" />
 						<button
 							type="button"
@@ -231,7 +231,7 @@ function ImageSection() {
 						key={idx}
 						onClick={() => img && changeMainImage(idx + 1)}
 						disabled={!img}
-						className="aspect-square bg-black/50 border-2 border-[#03FF24]/30 rounded-none shadow-[2px_2px_0px_rgba(3,255,36,0.2)] hover:border-[#03FF24] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden relative"
+						className="aspect-square bg-black/50 border-2 border-[#00FF87]/30 rounded-none shadow-[2px_2px_0px_rgba(0,255,135,0.2)] hover:border-[#00FF87] cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden relative"
 					>
 						{img ? (
 							<Image src={img} alt="" fill className="object-contain p-1 pixelated-image-render" />
@@ -248,7 +248,7 @@ function ImageSection() {
 					type="button"
 					onClick={handleGenerateImage}
 					disabled={isGeneratingMedia}
-					className="flex-1 bg-[#03FF24] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none uppercase tracking-wider disabled:opacity-50"
+					className="flex-1 bg-[#00FF87] hover:bg-[#02e020] text-black font-bold text-sm h-10 rounded-none shadow-[4px_4px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none uppercase tracking-wider disabled:opacity-50"
 				>
 					{isGeneratingMedia ? (
 						<>
@@ -265,7 +265,7 @@ function ImageSection() {
 					type="button"
 					onClick={() => fileInputRef.current?.click()}
 					variant="outline"
-					className="h-10 border-2 border-[#03FF24]/50 text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.2)] font-bold uppercase text-xs px-4"
+					className="h-10 border-2 border-[#00FF87]/50 text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.2)] font-bold uppercase text-xs px-4"
 				>
 					Upload
 				</Button>
@@ -276,7 +276,7 @@ function ImageSection() {
 						onClick={handleUseGeneratedImage}
 						disabled={isConverting}
 						variant="outline"
-						className="h-10 border-2 border-[#03FF24]/50 text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.2)] font-bold uppercase text-xs px-4 disabled:opacity-50"
+						className="h-10 border-2 border-[#00FF87]/50 text-[#00FF87] hover:bg-[#00FF87]/10 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.2)] font-bold uppercase text-xs px-4 disabled:opacity-50"
 					>
 						{isConverting ? "Converting…" : "Lock Image"}
 					</Button>
@@ -298,10 +298,10 @@ function ImportIdentityPlaceholder() {
 			<div className="space-y-3">
 				<div className="text-xs text-gray-400 leading-relaxed">
 					Importing contract:{" "}
-					<span className="text-[#03FF24] font-mono">{draft.importContractAddress || "—"}</span>
+					<span className="text-[#00FF87] font-mono">{draft.importContractAddress || "—"}</span>
 				</div>
 				{/* TODO: When backend provides token-lookup-by-CA, auto-populate name/symbol/description/image here. */}
-				<div className="p-3 bg-[#03FF24]/5 border border-[#03FF24]/20 rounded-none">
+				<div className="p-3 bg-[#00FF87]/5 border border-[#00FF87]/20 rounded-none">
 					<p className="text-[10px] text-gray-500 uppercase tracking-wider">
 						⏳ Token metadata will be resolved from chain after import. You can set agent identity in later
 						steps.
@@ -359,7 +359,7 @@ export function IdentityStep() {
 function StepHeader({ title, description }: { title: string; description: string }) {
 	return (
 		<div className="mb-2">
-			<h2 className="text-lg font-bold text-[#03FF24] uppercase tracking-wider">{title}</h2>
+			<h2 className="text-lg font-bold text-[#00FF87] uppercase tracking-wider">{title}</h2>
 			<p className="text-xs text-gray-500 mt-1">{description}</p>
 		</div>
 	);
@@ -368,7 +368,7 @@ function StepHeader({ title, description }: { title: string; description: string
 function ImagePlaceholder() {
 	return (
 		<div className="space-y-4">
-			<div className="w-full aspect-[4/3] min-h-[200px] max-h-[360px] bg-black/50 border-2 border-[#03FF24]/40 rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.3)] flex items-center justify-center">
+			<div className="w-full aspect-[4/3] min-h-[200px] max-h-[360px] bg-black/50 border-2 border-[#00FF87]/40 rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.3)] flex items-center justify-center">
 				<p className="text-gray-600 text-sm">Loading…</p>
 			</div>
 		</div>

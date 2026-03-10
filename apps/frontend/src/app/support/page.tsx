@@ -16,7 +16,7 @@ export default function SupportPage() {
 								href="https://twitter.com/autodotfun"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#00FF87] transition-colors"
 							>
 								<Image height={24} width={24} alt="twitter-icon" src="/socials/twitter.svg" />
 								@autodotfun
@@ -25,14 +25,14 @@ export default function SupportPage() {
 								href="https://discord.com/invite/tgCCVF9vEa"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#00FF87] transition-colors"
 							>
 								<Image height={26} width={26} alt="discord-icon" src="/socials/discord.svg" />
 								Join our Discord
 							</Link>
 							<Link
 								href="https://web.telegram.org/k/#@AutoDotFunBot"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#00FF87] transition-colors"
 							>
 								<Image height={26} width={26} alt="discord-icon" src="/socials/telegram.svg" />
 								@AutoDotFunBot
@@ -41,7 +41,7 @@ export default function SupportPage() {
 								href="https://tally.so/r/mOr8DM"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex items-center gap-2 text-white hover:text-[#03FF24] transition-colors"
+								className="flex items-center gap-2 text-white hover:text-[#00FF87] transition-colors"
 							>
 								<Image height={26} width={26} alt="submit-icon" src="/socials/submit.svg" />
 								Submit an issue

@@ -87,9 +87,9 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 							</TabsTrigger>
 						</TabsList>
 						<TabsContent value="wallet" className="bg-transparent">
-							<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
+							<div className="mt-6 h-fit border-2 w-full border-[#00FF87]/40 shadow-[3px_3px_0px_rgba(0,255,135,0.2)] flex flex-col place-self-center overflow-y-auto">
 								<div className="w-full max-h-full overflow-y-auto">
-									<div className="border-b-1 border-[#03FF24]/40 w-full">
+									<div className="border-b-1 border-[#00FF87]/40 w-full">
 										<h1 className="p-4 text-sm text-gray-300">
 											Total Value:{" "}
 											<span className="text-autofun-background-action-highlight font-bold">
@@ -124,18 +124,18 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 						</TabsContent>
 						<TabsContent value="Activity" className="bg-transparent">
 							<Tabs defaultValue="transactions" className="w-full">
-								<div className="mt-6 h-fit border-2 w-full border-[#03FF24]/40 shadow-[3px_3px_0px_rgba(3,255,36,0.2)] flex flex-col place-self-center overflow-y-auto">
-									<div className="border-b-1 border-[#03FF24]/40">
+								<div className="mt-6 h-fit border-2 w-full border-[#00FF87]/40 shadow-[3px_3px_0px_rgba(0,255,135,0.2)] flex flex-col place-self-center overflow-y-auto">
+									<div className="border-b-1 border-[#00FF87]/40">
 										<TabsList shadowed={false} className="border-none space-x-2 p-4">
 											<TabsTrigger
 												value="transactions"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#00FF87] text-gray-300 font-medium"
 											>
 												Transactions
 											</TabsTrigger>
 											<TabsTrigger
 												value="tokens-created"
-												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#03FF24] text-gray-300 font-medium"
+												className="normal-case bg-transparent border-none text-xs px-3 select-none py-1.5 h-auto rounded-none border border-[#00FF87] text-gray-300 font-medium"
 											>
 												Tokens Created
 											</TabsTrigger>
@@ -161,7 +161,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 											))
 										) : (
 											<div className="flex w-full p-4 h-full items-center justify-center">
-												<h1 className="text-[#03FF23] text-base font-semibold uppercase">
+												<h1 className="text-[#00FF87] text-base font-semibold uppercase">
 													No tokens have been created by this user
 												</h1>
 											</div>
@@ -203,7 +203,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 												))}
 											</div>
 										) : (
-											<div className="text-center my-6 text-[#03FF23] text-base font-semibold uppercase">
+											<div className="text-center my-6 text-[#00FF87] text-base font-semibold uppercase">
 												No transactions found
 											</div>
 										)}

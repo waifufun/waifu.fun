@@ -45,7 +45,7 @@ export function WizardShell() {
 						type="button"
 						onClick={back}
 						variant="outline"
-						className="h-10 border-2 border-[#03FF24]/50 text-[#03FF24] hover:bg-[#03FF24]/10 hover:border-[#03FF24] rounded-none shadow-[3px_3px_0px_rgba(3,255,36,0.2)] font-bold uppercase text-xs px-6"
+						className="h-10 border-2 border-[#00FF87]/50 text-[#00FF87] hover:bg-[#00FF87]/10 hover:border-[#00FF87] rounded-none shadow-[3px_3px_0px_rgba(0,255,135,0.2)] font-bold uppercase text-xs px-6"
 					>
 						<ArrowLeft size={14} className="mr-2" />
 						Back
@@ -55,7 +55,7 @@ export function WizardShell() {
 						<Button
 							type="button"
 							onClick={next}
-							className="h-10 bg-[#03FF24] hover:bg-[#02e020] text-black font-bold uppercase text-xs px-6 rounded-none shadow-[3px_3px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none"
+							className="h-10 bg-[#00FF87] hover:bg-[#02e020] text-black font-bold uppercase text-xs px-6 rounded-none shadow-[3px_3px_0px_#01a718] hover:shadow-[2px_2px_0px_#01a718] active:shadow-none"
 						>
 							Next
 							<ArrowRight size={14} className="ml-2" />
