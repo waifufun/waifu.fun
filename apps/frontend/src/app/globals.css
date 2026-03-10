@@ -108,37 +108,37 @@
 }
 
 .dark {
-	--background: oklch(0.141 0.005 285.823);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.21 0.006 285.885);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.21 0.006 285.885);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.92 0.004 286.32);
-	--primary-foreground: oklch(0.21 0.006 285.885);
+	--background: #08080A;
+	--foreground: #FFFFFF;
+	--card: #111114;
+	--card-foreground: #FFFFFF;
+	--popover: #111114;
+	--popover-foreground: #FFFFFF;
+	--primary: #00FF87;
+	--primary-foreground: #08080A;
 	--secondary: oklch(0.274 0.006 286.033);
 	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.274 0.006 286.033);
-	--muted-foreground: oklch(0.705 0.015 286.067);
+	--muted: #A0A0A0;
+	--muted-foreground: #A0A0A0;
 	--accent: oklch(0.274 0.006 286.033);
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
+	--border: rgba(255, 255, 255, 0.06);
 	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.552 0.016 285.938);
+	--ring: #00FF87;
 	--chart-1: oklch(0.488 0.243 264.376);
 	--chart-2: oklch(0.696 0.17 162.48);
 	--chart-3: oklch(0.769 0.188 70.08);
 	--chart-4: oklch(0.627 0.265 303.9);
 	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.21 0.006 285.885);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar: #111114;
+	--sidebar-foreground: #FFFFFF;
+	--sidebar-primary: #00FF87;
+	--sidebar-primary-foreground: #08080A;
 	--sidebar-accent: oklch(0.274 0.006 286.033);
 	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.552 0.016 285.938);
+	--sidebar-border: rgba(255, 255, 255, 0.06);
+	--sidebar-ring: #00FF87;
 }
 
 @layer base {
@@ -178,7 +178,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-	background-color: #03ff24;
+	background-color: #00FF87;
 	border-radius: 0;
 	border: none;
 }
@@ -186,16 +186,16 @@
 /* For Firefox */
 * {
 	scrollbar-width: auto;
-	scrollbar-color: #03ff24 #212121;
+	scrollbar-color: #00FF87 #212121;
 }
 
 input::selection {
 	color: #212121;
-	background-color: #03ff24;
+	background-color: #00FF87;
 }
 
 .flashy-bonding-block {
-	background-color: #03ff24;
+	background-color: #00FF87;
 	animation: pixel-pulse-green 1.5s infinite;
 }
 
@@ -213,4 +213,72 @@ input::selection {
 	/* New purple flashy block */
 	background-color: #a855f7; /* Tailwind purple-500 */
 	animation: pixel-pulse-purple 1.5s infinite;
+}
+
+/* ─── Scanline overlay ─────────────────────────────────────────────────── */
+.scanline-overlay::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 9999;
+	background: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 2px,
+		rgba(0, 255, 135, 0.015) 2px,
+		rgba(0, 255, 135, 0.015) 4px
+	);
+	mix-blend-mode: overlay;
+}
+
+/* ─── Keyframes ────────────────────────────────────────────────────────── */
+@keyframes glitch {
+	0%, 100% {
+		clip-path: inset(0 0 0 0);
+		transform: translate(0);
+	}
+	20% {
+		clip-path: inset(20% 0 60% 0);
+		transform: translate(-2px, 1px);
+	}
+	40% {
+		clip-path: inset(60% 0 10% 0);
+		transform: translate(2px, -1px);
+	}
+	60% {
+		clip-path: inset(40% 0 30% 0);
+		transform: translate(-1px, 2px);
+	}
+	80% {
+		clip-path: inset(10% 0 70% 0);
+		transform: translate(1px, -2px);
+	}
+}
+
+@keyframes scanline {
+	0% {
+		background-position: 0 0;
+	}
+	100% {
+		background-position: 0 100%;
+	}
+}
+
+@keyframes noise {
+	0%, 100% { background-position: 0 0; }
+	10% { background-position: -5% -10%; }
+	30% { background-position: 3% -15%; }
+	50% { background-position: 12% 9%; }
+	70% { background-position: 9% 4%; }
+	90% { background-position: -1% 7%; }
+}
+
+@keyframes pulse-green {
+	0%, 100% {
+		box-shadow: 0 0 5px rgba(0, 255, 135, 0.3);
+	}
+	50% {
+		box-shadow: 0 0 20px rgba(0, 255, 135, 0.6);
+	}
 }

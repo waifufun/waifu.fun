@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
-import { Inter } from "next/font/google";
+import { Inter, Orbitron, Audiowide } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -11,6 +11,18 @@ import { AlertTriangleIcon } from "lucide-react";
 
 const inter = Inter({
 	subsets: ["latin"],
+});
+
+const orbitron = Orbitron({
+	subsets: ["latin"],
+	variable: "--font-orbitron",
+	weight: ["700"],
+});
+
+const audiowide = Audiowide({
+	subsets: ["latin"],
+	variable: "--font-audiowide",
+	weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -30,12 +42,12 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
-			className="dark h-full"
+			className={cn("dark h-full", orbitron.variable, audiowide.variable)}
 			style={{
 				colorScheme: "dark",
 			}}
 		>
-			<body className={cn("h-full bg-[#0a0a0a] font-sans antialiased overflow-hidden", inter.className)}>
+			<body className={cn("h-full bg-[#08080A] font-sans antialiased overflow-hidden", inter.className)}>
 				<Providers>
 					<SidebarProvider>
 						<SidebarInset className="flex flex-col max-h-screen overflow-auto">
