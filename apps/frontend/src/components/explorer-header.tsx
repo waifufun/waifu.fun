@@ -20,8 +20,8 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 				<div className="flex items-end justify-between gap-4 flex-wrap">
 					{/* Title with gradient */}
 					<div className="flex items-baseline gap-4">
-						<h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-							<span className="bg-gradient-to-r from-[#e4e4e7] via-[#22c55e] to-[#00ff87] bg-clip-text text-transparent">
+						<h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+							<span className="text-[#e4e4e7]">
 								{t("explorer.exploreAgents")}
 							</span>
 						</h2>
@@ -37,18 +37,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 							>
 								<span className="text-sm font-mono text-[#52525b]">/</span>
 								<div className="flex items-center gap-1.5">
-									<motion.div
-										className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"
-										animate={{
-											scale: [1, 1.2, 1],
-											opacity: [1, 0.7, 1],
-										}}
-										transition={{
-											duration: 2,
-											repeat: Number.POSITIVE_INFINITY,
-											ease: "easeInOut",
-										}}
-									/>
+									<div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
 									<span className="text-sm font-mono text-[#71717a]">{tokenCount} {t("explorer.live")}</span>
 								</div>
 							</motion.div>
@@ -83,7 +72,7 @@ export default function ExplorerHeader({ tokenCount = 0 }: ExplorerHeaderProps) 
 						{active === filter && (
 							<motion.div
 								layoutId="activeFilterPill"
-								className="absolute inset-0 rounded-full bg-gradient-to-r from-[rgba(0,255,135,0.1)] to-[rgba(192,132,252,0.1)]"
+								className="absolute inset-0 rounded-full bg-[rgba(0,255,135,0.06)]"
 								transition={{ type: "spring", stiffness: 400, damping: 30 }}
 							/>
 						)}

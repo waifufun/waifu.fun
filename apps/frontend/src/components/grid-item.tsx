@@ -50,30 +50,12 @@ export const GridItem = ({
 				className={`relative flex flex-col h-full rounded-sm overflow-hidden border ${cardBg}`}
 				initial={{ opacity: 1, y: 0 }}
 				whileHover={{
-					y: -6,
+					y: -2,
 					boxShadow: "0 0 40px rgba(0,255,135,0.1), 0 12px 40px rgba(0,0,0,0.5)",
 					borderColor: "rgba(0,255,135,0.25)",
 				}}
 				style={{ willChange: "transform" }}
 			>
-				{/* HUD corner accents */}
-				<div className="absolute top-0 left-0 w-10 h-10 pointer-events-none z-10 opacity-40 group-hover:opacity-100 transition-opacity">
-					<div className="absolute top-2 left-2 w-5 h-px bg-gradient-to-r from-[#00ff87] to-transparent" />
-					<div className="absolute top-2 left-2 w-px h-5 bg-gradient-to-b from-[#00ff87] to-transparent" />
-				</div>
-				<div className="absolute top-0 right-0 w-10 h-10 pointer-events-none z-10 opacity-40 group-hover:opacity-100 transition-opacity">
-					<div className="absolute top-2 right-2 w-5 h-px bg-gradient-to-l from-[#00ff87] to-transparent" />
-					<div className="absolute top-2 right-2 w-px h-5 bg-gradient-to-b from-[#00ff87] to-transparent" />
-				</div>
-				<div className="absolute bottom-0 left-0 w-10 h-10 pointer-events-none z-10 opacity-40 group-hover:opacity-100 transition-opacity">
-					<div className="absolute bottom-2 left-2 w-5 h-px bg-gradient-to-r from-[#00ff87] to-transparent" />
-					<div className="absolute bottom-2 left-2 w-px h-5 bg-gradient-to-t from-[#00ff87] to-transparent" />
-				</div>
-				<div className="absolute bottom-0 right-0 w-10 h-10 pointer-events-none z-10 opacity-40 group-hover:opacity-100 transition-opacity">
-					<div className="absolute bottom-2 right-2 w-5 h-px bg-gradient-to-l from-[#00ff87] to-transparent" />
-					<div className="absolute bottom-2 right-2 w-px h-5 bg-gradient-to-t from-[#00ff87] to-transparent" />
-				</div>
-
 				{/* Image area - 70%+ of card */}
 				<div className={`relative w-full overflow-hidden ${imageHeight}`}>
 					<motion.div

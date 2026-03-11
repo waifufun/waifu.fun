@@ -223,37 +223,23 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 		};
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-	// First card = token with highest market cap; rest in grid
+	// Sort by market cap, varied layout without redundant hero card
 	const sortedByMarketCap = [...allTokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0));
-	const featuredToken = sortedByMarketCap[0];
-	const remainingTokens = sortedByMarketCap.slice(1);
 
-	// Split remaining tokens for varied layout
-	const firstRowTokens = remainingTokens.slice(0, 2); // 2 larger cards
-	const secondRowTokens = remainingTokens.slice(2, 5); // 3 medium cards
-	const restTokens = remainingTokens.slice(5); // 3-column grid
+	// Split tokens for varied layout
+	const firstRowTokens = sortedByMarketCap.slice(0, 2); // 2 larger cards
+	const secondRowTokens = sortedByMarketCap.slice(2, 5); // 3 medium cards
+	const restTokens = sortedByMarketCap.slice(5); // 3-column grid
 
 	return (
 		<Fragment>
 			<div className="flex flex-col gap-8 w-full">
-				{/* Hero featured card - full width cinematic */}
-				{featuredToken && <HeroCard token={featuredToken} index={0} />}
-
-				{/* Gradient divider */}
-				{featuredToken && remainingTokens.length > 0 && (
-					<div className="relative py-4">
-						<div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.2)] to-transparent" />
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#00ff87] blur-sm" />
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-[#22c55e]" />
-					</div>
-				)}
-
 				{/* First row - 2 larger cards */}
 				{firstRowTokens.length > 0 && (
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 						{firstRowTokens.map((token, idx) => (
 							<div key={token.contractAddress}>
-								<GridItem token={token} variant="large" rank={idx + 2} />
+								<GridItem token={token} variant="large" rank={idx + 1} />
 							</div>
 						))}
 					</div>
@@ -264,7 +250,7 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 						{secondRowTokens.map((token, idx) => (
 							<div key={token.contractAddress}>
-								<GridItem token={token} variant="medium" rank={firstRowTokens.length + idx + 2} />
+								<GridItem token={token} variant="medium" rank={firstRowTokens.length + idx + 1} />
 							</div>
 						))}
 					</div>
@@ -278,7 +264,7 @@ export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
 								<GridItem
 									token={token}
 									variant="compact"
-									rank={firstRowTokens.length + secondRowTokens.length + idx + 2}
+									rank={firstRowTokens.length + secondRowTokens.length + idx + 1}
 								/>
 							</div>
 						))}

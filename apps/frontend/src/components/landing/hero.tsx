@@ -67,7 +67,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 
 	return (
 		<section
-			className="relative overflow-hidden flex items-center min-h-[85vh] py-16 lg:py-24 isolate"
+			className="relative overflow-hidden flex items-center min-h-[80vh] py-16 lg:py-24 isolate"
 			style={{ backgroundColor: bgDark, transform: "translateZ(0)" }}
 		>
 			{/* Base layer: always present from first paint to prevent any white flash */}
@@ -218,16 +218,16 @@ export default function Hero({ token }: { token: IToken | null }) {
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1.5 text-[#52525b] hover:text-[#c084fc] transition-colors duration-200 text-xs font-mono"
 							>
-								💜 milady cloud
+								milady cloud
 							</a>
-							<span className="text-[#333] text-xs">×</span>
+							<span className="text-[#333] text-xs">·</span>
 							<a
 								href="https://elizaos.ai"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1.5 text-[#52525b] hover:text-[#00ff87] transition-colors duration-200 text-xs font-mono"
 							>
-								⚡ elizaos
+								elizaos
 							</a>
 						</motion.div>
 					</div>

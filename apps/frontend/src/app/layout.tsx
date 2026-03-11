@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
-import { Space_Grotesk } from "next/font/google";
+
 import { cn } from "@/lib/utils";
 import Header from "@/components/header";
 import FooterConditional from "@/components/footer-conditional";
@@ -10,12 +10,6 @@ import FooterConditional from "@/components/footer-conditional";
 import StaticBackground from "@/components/StaticBackground";
 import GrainOverlay from "@/components/grain-overlay";
 import DevnetBanner from "@/components/devnet-banner";
-
-const spaceGrotesk = Space_Grotesk({
-	subsets: ["latin"],
-	weight: ["300", "400", "500", "600", "700"],
-	variable: "--font-space-grotesk",
-});
 
 const socialPreview = "/brand/previews/lockup/lockup_waifufun_1024_dark.png";
 
@@ -66,7 +60,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" className="dark h-full" style={{ colorScheme: "dark" }}>
-			<body className={cn("h-full font-sans antialiased", spaceGrotesk.variable, spaceGrotesk.className)}>
+			<body className={cn("h-full font-sans antialiased")}>
 				<Providers>
 					{/* Static layer prevents white flash when InteractiveBackground is off */}
 					<StaticBackground />

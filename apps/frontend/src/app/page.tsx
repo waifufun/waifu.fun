@@ -50,7 +50,7 @@ export default async function Home() {
 
 			<div
 				id="explore"
-				className={`flex flex-col gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 scroll-mt-20 ${
+				className={`flex flex-col gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 scroll-mt-20 ${
 					noTokens ? "min-h-[50vh] justify-center items-center" : ""
 				}`}
 			>
