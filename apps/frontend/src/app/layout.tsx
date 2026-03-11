@@ -17,6 +17,8 @@ const spaceGrotesk = Space_Grotesk({
 	variable: "--font-space-grotesk",
 });
 
+const socialPreview = "/brand/previews/lockup/lockup_waifufun_1024_dark.png";
+
 export const metadata: Metadata = {
 	title: {
 		default: "waifu.fun",
@@ -26,23 +28,34 @@ export const metadata: Metadata = {
 	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "https://waifufun.vercel.app"),
 	icons: {
 		icon: [
-			{ url: "/favicon.svg", type: "image/svg+xml" },
+			{ url: "/brand/icon/icon_64.png", sizes: "64x64", type: "image/png" },
+			{ url: "/brand/icon/icon_128.png", sizes: "128x128", type: "image/png" },
 			{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
 			{ url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
 			{ url: "/favicon.ico", sizes: "any" },
 		],
-		apple: "/apple-touch-icon.png",
+		shortcut: "/favicon.ico",
+		apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
 	},
 	openGraph: {
 		title: "waifu.fun",
 		description: "they live if you trade. they die if you don't.",
 		siteName: "waifu.fun",
 		type: "website",
+		images: [
+			{
+				url: socialPreview,
+				width: 1024,
+				height: 512,
+				alt: "waifu.fun",
+			},
+		],
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "waifu.fun",
 		description: "they live if you trade. they die if you don't.",
+		images: [socialPreview],
 	},
 };
 

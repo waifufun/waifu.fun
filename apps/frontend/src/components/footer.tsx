@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslation } from "@/contexts/locale-context";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function Footer() {
 	const { t } = useTranslation();
@@ -15,12 +16,15 @@ export default function Footer() {
 			<div className="w-full px-4 sm:px-6 lg:px-8">
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
 					<div className="flex flex-col gap-1.5">
-						<Link
-							href="/"
-							className="font-bold text-lg tracking-tight text-[#e4e4e7] hover:text-[#e4e4e7] transition-colors duration-200"
-							aria-label={t("footer.homeAria")}
-						>
-							waifu.fun
+						<Link href="/" className="inline-flex max-w-full" aria-label={t("footer.homeAria")}>
+							<Image
+								src="/brand/lockup/lockup_waifufun_256.png"
+								alt="waifu.fun"
+								width={256}
+								height={121}
+								className="h-auto w-[164px] max-w-full object-contain"
+								unoptimized
+							/>
 						</Link>
 						<p className="text-sm font-mono text-[#52525b]">{t("footer.tagline")}</p>
 						<p className="text-xs font-mono text-[#52525b] flex items-center gap-1.5 mt-1">

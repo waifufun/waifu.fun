@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
@@ -20,7 +21,6 @@ const NAV_LINKS = [
 
 export default function Header() {
 	const { t } = useTranslation();
-	const [logoHover, setLogoHover] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
@@ -58,18 +58,25 @@ export default function Header() {
 			<div className="w-full h-[60px] flex items-center justify-between gap-4 px-4 sm:px-6">
 				{/* Left: Logo + Nav */}
 				<div className="flex items-center gap-8 min-w-0">
-					<Link
-						href="/"
-						className="shrink-0 font-bold text-xl tracking-tight transition-all duration-200"
-						style={{
-							color: logoHover ? "#22c55e" : "#00ff87",
-							textShadow: logoHover ? "0 0 12px rgba(0, 255, 135, 0.4)" : "none",
-						}}
-						onMouseEnter={() => setLogoHover(true)}
-						onMouseLeave={() => setLogoHover(false)}
-						aria-label={t("nav.homeAria")}
-					>
-						WAIFU.FUN
+					<Link href="/" className="shrink-0 flex items-center" aria-label={t("nav.homeAria")}>
+						<Image
+							src="/brand/icon/icon_128.png"
+							alt="waifu.fun"
+							width={28}
+							height={30}
+							priority
+							className="h-7 w-auto object-contain sm:hidden"
+							unoptimized
+						/>
+						<Image
+							src="/brand/lockup/lockup_waifufun_256.png"
+							alt="waifu.fun"
+							width={256}
+							height={121}
+							priority
+							className="hidden h-auto w-[138px] object-contain sm:block"
+							unoptimized
+						/>
 					</Link>
 
 					{/* Nav links - hidden on mobile */}

@@ -1,9 +1,22 @@
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
-const rawBaseUrl =
-	process.env.NEXT_PUBLIC_API_URL?.trim() ||
-	(process.env.NODE_ENV === "development" ? "http://localhost:3100" : "/api/v1");
-const BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/+$/, "") : "/api/v1";
+const getBaseUrl = () => {
+	const publicUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+	if (publicUrl) return publicUrl.replace(/\/+$/, "");
+
+	if (typeof window === "undefined") {
+		const serverOrigin = process.env.API_ORIGIN?.trim() || "http://89.167.63.246";
+		return serverOrigin.replace(/\/+$/, "");
+	}
+
+	if (process.env.NODE_ENV === "development") {
+		return "http://localhost:3100";
+	}
+
+	return "/api/v1";
+};
+
+const BASE_URL = getBaseUrl();
 
 export type ApiErrorCode = "CONFIG" | "NETWORK" | "HTTP" | "PARSE";
 
