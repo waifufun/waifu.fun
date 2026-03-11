@@ -77,8 +77,9 @@ export default async function Image({
 	const imageResponse = await fetch(token.image);
 	if (!imageResponse.ok) throw new Error(`Failed to load token image: ${imageResponse.statusText}`);
 
-	const chainLogo = `${process.env.NEXT_PUBLIC_HOST}/chain-icons/${token.chain.toLowerCase()}.svg`;
-	const projectLogo = `${process.env.NEXT_PUBLIC_HOST}/logo_wide.svg`;
+	const host = process.env.NEXT_PUBLIC_HOST || "http://localhost:3000";
+	const chainLogo = `${host}/chain-icons/${token.chain.toLowerCase()}.svg`;
+	const projectLogo = `${host}/brand/lockup/lockup_waifufun_1024.png`;
 
 	return new ImageResponse(
 		<div

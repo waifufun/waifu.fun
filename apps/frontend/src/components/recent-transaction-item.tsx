@@ -48,9 +48,9 @@ export default function RecentTransactionItem({
 				</div>
 				<span className="text-sm">
 					{t("recentTx.swapFor", {
-						input: parsedTransaction?.input?.amountFormatted ?? "",
+						input: String(parsedTransaction?.input?.amountFormatted ?? ""),
 						inputSymbol: parsedTransaction?.input?.symbol ?? "",
-						output: parsedTransaction?.output?.amountFormatted ?? "",
+						output: String(parsedTransaction?.output?.amountFormatted ?? ""),
 						outputSymbol: parsedTransaction?.output?.symbol ?? "",
 					})}
 				</span>
