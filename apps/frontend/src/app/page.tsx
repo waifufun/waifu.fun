@@ -50,15 +50,22 @@ export default async function Home() {
 
 			<div
 				id="explore"
-				className={`flex flex-col gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 scroll-mt-20 ${
+				className={`relative z-20 flex flex-col gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pt-24 pb-12 scroll-mt-20 ${
 					noTokens ? "min-h-[50vh] justify-center items-center" : ""
 				}`}
 			>
+				<div
+					className="pointer-events-none absolute inset-x-0 top-0 h-20"
+					style={{
+						background:
+							"linear-gradient(to bottom, rgba(0,255,135,0.05), rgba(8,8,10,0.18) 30%, rgba(8,8,10,0) 100%)",
+					}}
+				/>
 				{noTokens ? (
 					<HomeEmptyState />
 				) : (
 					<>
-						<ExplorerHeader />
+						<ExplorerHeader tokenCount={tokens.length} />
 						<TokenGrid tokens={tokens} />
 					</>
 				)}
