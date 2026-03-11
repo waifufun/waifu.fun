@@ -42,7 +42,7 @@ export const GridItem = ({
 	// Show rank indicator for top 5
 	const showRank = rank !== undefined && rank <= 5;
 
-	const cardBg = isVerified ? "bg-green-900/50 border-green-500/30" : "bg-[#111114] border-[rgba(255,255,255,0.06)]";
+	const cardBg = isVerified ? "bg-green-900/40 border-green-500/20" : "bg-[#0c0c0f] border-[rgba(255,255,255,0.04)]";
 
 	return (
 		<Link href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`} className="block h-full group">
@@ -51,8 +51,8 @@ export const GridItem = ({
 				initial={{ opacity: 1, y: 0 }}
 				whileHover={{
 					y: -2,
-					boxShadow: "0 0 40px rgba(0,255,135,0.1), 0 12px 40px rgba(0,0,0,0.5)",
-					borderColor: "rgba(0,255,135,0.25)",
+					boxShadow: "0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)",
+					borderColor: "rgba(255,255,255,0.08)",
 				}}
 				style={{ willChange: "transform" }}
 			>
@@ -60,47 +60,47 @@ export const GridItem = ({
 				<div className={`relative w-full overflow-hidden ${imageHeight}`}>
 					<motion.div
 						className="absolute inset-0"
-						whileHover={{ scale: 1.08 }}
-						transition={{ duration: 0.6, ease: "easeOut" }}
+						whileHover={{ scale: 1.04 }}
+						transition={{ duration: 0.8, ease: "easeOut" }}
 					>
 						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 					</motion.div>
 
-					{/* Gradient overlay */}
-					<div className="absolute inset-0 bg-gradient-to-t from-[rgba(17,17,20,1)] via-[rgba(17,17,20,0.2)] to-transparent" />
+					{/* Gradient overlay — blends into card surface */}
+					<div className="absolute inset-0 bg-gradient-to-t from-[rgba(12,12,15,1)] via-[rgba(12,12,15,0.15)] to-transparent" />
 
-					{/* Rank badge (trending indicator) */}
+					{/* Rank badge */}
 					{showRank && (
-						<div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[rgba(17,17,20,0.85)] border border-[rgba(0,255,135,0.25)]">
-							<span className="text-[10px] font-mono font-bold text-[#00ff87]">#{rank}</span>
+						<div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[rgba(8,8,10,0.8)] border border-[rgba(255,255,255,0.06)]">
+							<span className="text-[10px] font-mono font-bold text-[#a1a1aa]">#{rank}</span>
 						</div>
 					)}
 
 					{/* Status badges - top right */}
 					<div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
 						{isDead && (
-							<div className="px-2.5 py-1 rounded-full bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)]">
-								<span className="text-[10px] font-mono uppercase tracking-wider text-red-400">inactive</span>
+							<div className="px-2.5 py-1 rounded-full bg-[rgba(8,8,10,0.75)] border border-[rgba(239,68,68,0.2)]">
+								<span className="text-[10px] font-mono uppercase tracking-wider text-red-400/80">inactive</span>
 							</div>
 						)}
 						{isBonded && !isDead && (
-							<div className="px-2.5 py-1 rounded-full bg-[rgba(0,255,135,0.1)] border border-[rgba(0,255,135,0.3)]">
-								<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]">bonded</span>
+							<div className="px-2.5 py-1 rounded-full bg-[rgba(8,8,10,0.75)] border border-[rgba(0,255,135,0.15)]">
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]/80">bonded</span>
 							</div>
 						)}
 						{!isBonded && !isDead && (
-							<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.25)]">
+							<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(8,8,10,0.75)] border border-[rgba(255,255,255,0.06)]">
 								<motion.div
 									className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"
-									animate={{ opacity: [1, 0.5, 1] }}
-									transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
+									animate={{ opacity: [1, 0.4, 1] }}
+									transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
 								/>
-								<span className="text-[10px] font-mono uppercase tracking-wider text-[#22c55e]">active</span>
+								<span className="text-[10px] font-mono uppercase tracking-wider text-[#71717a]">active</span>
 							</div>
 						)}
 						{token.verified && (
-							<div className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[rgba(0,255,135,0.08)] border border-[rgba(0,255,135,0.2)]">
-								<span className="text-[#00ff87] text-xs">✓</span>
+							<div className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[rgba(8,8,10,0.75)] border border-[rgba(0,255,135,0.12)]">
+								<span className="text-[#00ff87]/70 text-xs">✓</span>
 							</div>
 						)}
 					</div>
@@ -118,8 +118,8 @@ export const GridItem = ({
 					</div>
 				</div>
 
-				{/* Content area - compact but data-rich */}
-				<div className="flex flex-col gap-2.5 p-4 flex-1">
+				{/* Content area */}
+				<div className="flex flex-col gap-2 p-4 pt-3 flex-1">
 					{/* Description - only for non-compact */}
 					{!isCompact && token.description && (
 						<p className="text-xs text-[#71717a] leading-relaxed line-clamp-2">
@@ -154,9 +154,9 @@ export const GridItem = ({
 						)}
 					</div>
 
-					{/* Bonding curve progress bar - prominent, full width */}
+					{/* Bonding curve progress */}
 					{!isBonded && (
-						<div className="w-full mt-2 pt-2 border-t border-[rgba(255,255,255,0.04)]">
+						<div className="w-full mt-2 pt-2 border-t border-[rgba(255,255,255,0.03)]">
 							<div className="flex items-center justify-between mb-1.5">
 								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">{t("token.bondingCurveProgress")}</span>
 								<span className="text-[10px] font-mono font-semibold text-[#00ff87]">{curveProgress}%</span>
@@ -174,11 +174,11 @@ export const GridItem = ({
 
 				</div>
 
-				{/* Hover glow overlay */}
-				<motion.div
-					className="absolute inset-0 pointer-events-none rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+				{/* Subtle top-edge highlight on hover */}
+				<div
+					className="absolute inset-x-0 top-0 h-px pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
 					style={{
-						background: "radial-gradient(circle at 50% 50%, rgba(0,255,135,0.05) 0%, transparent 70%)",
+						background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)",
 					}}
 				/>
 			</motion.div>

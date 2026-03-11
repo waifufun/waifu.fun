@@ -4,13 +4,8 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import type { IToken } from "@waifufun/types";
 import { useTranslation } from "@/contexts/locale-context";
-
-const Aurora = dynamic(() => import("@/components/backgrounds/Aurora"), {
-	ssr: false,
-});
 
 function formatMarketCap(mc: number): string {
 	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
@@ -70,15 +65,24 @@ export default function Hero({ token }: { token: IToken | null }) {
 			className="relative overflow-hidden flex items-center min-h-[80vh] py-16 lg:py-24 isolate"
 			style={{ backgroundColor: bgDark, transform: "translateZ(0)" }}
 		>
-			{/* Base layer: always present from first paint to prevent any white flash */}
+			{/* Base layer: solid dark prevents white flash */}
 			<div className="absolute inset-0 z-0" style={{ backgroundColor: bgDark }} aria-hidden />
-			{/* Aurora animated background (client-only; solid bg prevents white flash before mount) */}
-			<div className="absolute inset-0 z-0" style={{ backgroundColor: bgDark }}>
-				<Aurora colorStops={["#00ff87", "#065f46", "#00ff87"]} amplitude={1.5} speed={0.5} blend={0.6} />
+			{/* Hero background image */}
+			<div className="absolute inset-0 z-0">
+				<picture>
+					<source srcSet="/brand/backgrounds/hero-bg.webp" type="image/webp" />
+					<img
+						src="/brand/backgrounds/hero-bg.jpg"
+						alt=""
+						aria-hidden="true"
+						className="absolute inset-0 w-full h-full object-cover opacity-50"
+						loading="eager"
+					/>
+				</picture>
 			</div>
 
 			{/* Dark overlay for text readability */}
-			<div className="absolute inset-0 z-[1] bg-[rgba(8,8,10,0.6)]" />
+			<div className="absolute inset-0 z-[1] bg-[rgba(8,8,10,0.45)]" />
 
 			{/* Bottom gradient fade to page background */}
 			<div
