@@ -8,6 +8,8 @@ import ExplorerHeader from "@/components/explorer-header";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@waifufun/types";
 
+const MILADY_CONTRACT_ADDRESS = "0xc20e45e49e0e79f0fc81e71f05fd2772d6587777";
+
 export const revalidate = 4;
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -37,7 +39,8 @@ export default async function Home() {
 	}
 	const noTokens = (tokens?.length || 0) === 0;
 	const topToken =
-		tokens.length > 0 ? ([...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null) : null;
+		tokens.find((token) => token.contractAddress?.toLowerCase() === MILADY_CONTRACT_ADDRESS.toLowerCase()) ??
+		(tokens.length > 0 ? ([...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null) : null);
 
 	return (
 		<div className="flex flex-col w-full">

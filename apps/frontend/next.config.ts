@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
 		return config;
 	},
 	images: {
-		domains: ["v3.fal.media", "fal.media", "picsum.photos"],
+		domains: ["v3.fal.media", "fal.media", "picsum.photos", "cdn.dexscreener.com", "ipfs.io"],
 	},
 	reactStrictMode: false,
 	env: {
