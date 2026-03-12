@@ -89,22 +89,22 @@ export default function Hero() {
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* L1: Glitch character canvas — subdued */}
-			<div className="absolute inset-0 z-0 opacity-40">
+			{/* L1: Glitch character canvas — dark, muted */}
+			<div className="absolute inset-0 z-0 opacity-25">
 				<GlitchBg
-					glitchColors={["#0a1a12", "#00ff87", "#0d2818", "#061a0e"]}
+					glitchColors={["#060d09", "#0a3d1f", "#081a10", "#040d07"]}
 					glitchSpeed={60}
 					smooth
 					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"
 				/>
 			</div>
 
-			{/* L2: Hero background image — more character */}
-			<div className="absolute inset-0 z-[1] opacity-30 mix-blend-screen">
+			{/* L2: Hero background image — dark textural depth */}
+			<div className="absolute inset-0 z-[1] opacity-20">
 				<picture>
-					<source srcSet="/brand/backgrounds/hero-bg.webp" type="image/webp" />
+					<source srcSet="/brand/backgrounds/hero-bg-v2.webp" type="image/webp" />
 					<img
-						src="/brand/backgrounds/hero-bg.jpg"
+						src="/brand/backgrounds/hero-bg-v2.jpg"
 						alt=""
 						aria-hidden="true"
 						className="h-full w-full object-cover object-center"
@@ -150,7 +150,7 @@ export default function Hero() {
 
 			{/* Content */}
 			<div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-				{/* Brand lockup — icon-dominant variant, sized up */}
+				{/* Brand lockup — transparent, icon-dominant variant, sized up */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -158,12 +158,12 @@ export default function Hero() {
 					className="mb-12"
 				>
 					<Image
-						src="/brand/lockup/lockup_waifu_on_black_1024.png"
+						src="/brand/lockup/lockup_waifu_1024.png"
 						alt="waifu.fun"
 						width={320}
 						height={120}
 						priority
-						className="h-auto w-[220px] sm:w-[280px] lg:w-[320px] object-contain opacity-80"
+						className="h-auto w-[220px] sm:w-[280px] lg:w-[320px] object-contain"
 						unoptimized
 					/>
 				</motion.div>
