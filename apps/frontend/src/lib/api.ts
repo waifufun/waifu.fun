@@ -1,13 +1,10 @@
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
-const DEFAULT_API_ORIGIN = "http://89.167.63.246:3100";
+const DEFAULT_API_ORIGIN = "http://89.167.63.246";
 
 const normalizeApiOrigin = (value?: string | null) => {
 	const trimmed = value?.trim();
 	if (!trimmed) return DEFAULT_API_ORIGIN;
-	if (trimmed === "http://89.167.63.246" || trimmed === "https://89.167.63.246") {
-		return `${trimmed}:3100`;
-	}
 	return trimmed.replace(/\/+$/, "");
 };
 
