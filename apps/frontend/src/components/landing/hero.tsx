@@ -89,10 +89,10 @@ export default function Hero() {
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* L1: Glitch character canvas — dark, muted */}
-			<div className="absolute inset-0 z-0 opacity-25">
+			{/* L1: Glitch character canvas — visible but not glowy */}
+			<div className="absolute inset-0 z-0 opacity-45">
 				<GlitchBg
-					glitchColors={["#060d09", "#0a3d1f", "#081a10", "#040d07"]}
+					glitchColors={["#081a10", "#14532d", "#0a2618", "#061a0e"]}
 					glitchSpeed={60}
 					smooth
 					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"
@@ -150,7 +150,7 @@ export default function Hero() {
 
 			{/* Content */}
 			<div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-				{/* Brand lockup — transparent, icon-dominant variant, sized up */}
+				{/* Brand lockup — transparent waifufun, sized up */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -158,12 +158,12 @@ export default function Hero() {
 					className="mb-12"
 				>
 					<Image
-						src="/brand/lockup/lockup_waifu_1024.png"
+						src="/brand/lockup/lockup_waifufun_1920.png"
 						alt="waifu.fun"
-						width={320}
-						height={120}
+						width={400}
+						height={102}
 						priority
-						className="h-auto w-[220px] sm:w-[280px] lg:w-[320px] object-contain"
+						className="h-auto w-[240px] sm:w-[320px] lg:w-[400px] object-contain"
 						unoptimized
 					/>
 				</motion.div>
