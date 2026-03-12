@@ -1,152 +1,304 @@
 "use client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Users, Coins, Shield, BarChart3 } from "lucide-react";
+
+import {
+	Users,
+	Coins,
+	Shield,
+	Activity,
+	Cpu,
+	Rocket,
+	ArrowUpRight,
+	Clock,
+	CircleDot,
+} from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { getAdminStats } from "@/lib/api";
+import { getAdminStats, getAgentAvailability, getAdminTokens } from "@/lib/api";
 
-export default function AdminPage() {
-	const { data: stats, isLoading } = useQuery({
-		queryKey: ["admin-stats"],
-		queryFn: async () => {
-			return await getAdminStats();
-		},
-		refetchInterval: 30000, // Refresh every 30 seconds
-	});
-
-	const adminSections = [
-		{
-			title: "Users",
-			description: "Manage user accounts, view profiles, and handle user-related issues",
-			icon: Users,
-			href: "/admin/users",
-			color: "text-blue-500",
-			bgColor: "bg-blue-500/10",
-			borderColor: "border-blue-500/20",
-		},
-		{
-			title: "Tokens",
-			description: "Monitor and manage tokens, handle verification, and token-related issues",
-			icon: Coins,
-			href: "/admin/tokens",
-			color: "text-green-500",
-			bgColor: "bg-green-500/10",
-			borderColor: "border-green-500/20",
-		},
-		{
-			title: "Moderators",
-			description: "Manage moderator permissions, assign roles, and oversee moderation team",
-			icon: Shield,
-			href: "/admin/moderators",
-			color: "text-emerald-500",
-			bgColor: "bg-emerald-500/10",
-			borderColor: "border-emerald-500/20",
-		},
-	];
+/* ─── stat card ─── */
+function StatCard({
+	label,
+	value,
+	icon: Icon,
+	accent = "green",
+	loading,
+}: {
+	label: string;
+	value: string | number;
+	icon: React.ComponentType<{ className?: string }>;
+	accent?: "green" | "purple";
+	loading?: boolean;
+}) {
+	const iconCls =
+		accent === "purple"
+			? "w-4 h-4 text-[#c084fc]"
+			: "w-4 h-4 text-[#00ff87]";
+	const bgCls =
+		accent === "purple"
+			? "w-9 h-9 rounded-sm flex items-center justify-center shrink-0 bg-[#c084fc]/10"
+			: "w-9 h-9 rounded-sm flex items-center justify-center shrink-0 bg-[#00ff87]/10";
 
 	return (
-		<div className="container mx-auto p-6 space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-					<p className="text-gray-400 mt-2">Manage platform operations and user activities</p>
+		<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 flex items-center gap-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">
+			<div className={bgCls}>
+				<Icon className={iconCls} />
+			</div>
+			<div className="min-w-0">
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">
+					{label}
+				</p>
+				<p className="text-lg font-mono text-white leading-tight mt-0.5">
+					{loading ? "—" : value}
+				</p>
+			</div>
+		</div>
+	);
+}
+
+/* ─── nav card ─── */
+function NavCard({
+	label,
+	href,
+	icon: Icon,
+	count,
+	loading,
+}: {
+	label: string;
+	href: string;
+	icon: React.ComponentType<{ className?: string }>;
+	count?: number;
+	loading?: boolean;
+}) {
+	return (
+		<Link href={href}>
+			<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 flex items-center justify-between group hover:border-[rgba(255,255,255,0.12)] transition-colors cursor-pointer">
+				<div className="flex items-center gap-3">
+					<Icon className="w-4 h-4 text-[#71717a] group-hover:text-[#00ff87] transition-colors" />
+					<span className="text-sm text-[#a1a1aa] group-hover:text-white transition-colors font-mono lowercase">
+						{label}
+					</span>
+					{!loading && count !== undefined && (
+						<span className="text-[10px] font-mono text-[#52525b] bg-[#1a1a1e] px-1.5 py-0.5 rounded-sm">
+							{count}
+						</span>
+					)}
 				</div>
-				<Badge variant="outline" className="border-[#00ff87]/50 text-[#00ff87]">
-					Admin Panel
-				</Badge>
+				<ArrowUpRight className="w-3.5 h-3.5 text-[#3f3f46] group-hover:text-[#00ff87] transition-colors" />
+			</div>
+		</Link>
+	);
+}
+
+/* ─── activity item ─── */
+function ActivityItem({
+	name,
+	symbol,
+	time,
+	status,
+}: {
+	name: string;
+	symbol?: string | undefined;
+	time?: string | undefined;
+	status?: string | undefined;
+}) {
+	const statusColor =
+		status === "active" || status === "tradable"
+			? "#00ff87"
+			: status === "pending"
+				? "#facc15"
+				: "#71717a";
+
+	return (
+		<div className="flex items-center justify-between py-2.5 border-b border-[rgba(255,255,255,0.04)] last:border-0">
+			<div className="flex items-center gap-3 min-w-0">
+				<CircleDot className="w-3 h-3 shrink-0" style={{ color: statusColor }} />
+				<div className="min-w-0">
+					<p className="text-sm text-[#e4e4e7] font-mono truncate">
+						{name}
+						{symbol && (
+							<span className="text-[#52525b] ml-1.5">${symbol}</span>
+						)}
+					</p>
+				</div>
+			</div>
+			{time && (
+				<div className="flex items-center gap-1 shrink-0 ml-3">
+					<Clock className="w-3 h-3 text-[#3f3f46]" />
+					<span className="text-[10px] text-[#52525b] font-mono">{time}</span>
+				</div>
+			)}
+		</div>
+	);
+}
+
+/* ─── format relative time ─── */
+function relativeTime(dateStr: string): string {
+	const now = Date.now();
+	const then = new Date(dateStr).getTime();
+	if (isNaN(then)) return "";
+	const diffSec = Math.floor((now - then) / 1000);
+	if (diffSec < 60) return "just now";
+	if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+	if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+	return `${Math.floor(diffSec / 86400)}d ago`;
+}
+
+/* ─── main dashboard ─── */
+export default function AdminPage() {
+	const { data: stats, isLoading: statsLoading } = useQuery({
+		queryKey: ["admin-stats"],
+		queryFn: getAdminStats,
+		refetchInterval: 30000,
+	});
+
+	const { data: agents, isLoading: agentsLoading } = useQuery({
+		queryKey: ["admin-agent-availability"],
+		queryFn: getAgentAvailability,
+		retry: 1,
+		refetchInterval: 60000,
+	});
+
+	const { data: launches, isLoading: launchesLoading } = useQuery({
+		queryKey: ["admin-recent-launches"],
+		queryFn: () => getAdminTokens({ limit: 10, page: 1 }),
+		refetchInterval: 30000,
+	});
+
+	const loading = statsLoading;
+	const totalTokens = stats?.totalTokens ?? stats?.tokenCount ?? 0;
+	const totalUsers = stats?.totalUsers ?? stats?.userCount ?? 0;
+	const activeSlots = agents
+		? agents.totalSlots - agents.availableSlots
+		: 0;
+	const pendingLaunches = launches?.total ?? 0;
+
+	const recentItems = (launches?.docs ?? launches?.tokens ?? []).slice(0, 8);
+
+	return (
+		<div className="min-h-screen bg-[#08080a] px-4 py-6 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
+			{/* header */}
+			<div>
+				<h1 className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">
+					admin / overview
+				</h1>
+				<p className="text-white text-lg font-mono mt-1">operations dashboard</p>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<Card className="bg-black/20 border-[#00ff87]/20">
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-gray-400">Total Users</p>
-								<p className="text-2xl font-bold text-white">
-									{isLoading ? "..." : stats?.userCount?.toLocaleString() || "0"}
-								</p>
-							</div>
-							<Users className="w-8 h-8 text-[#00ff87]" />
-						</div>
-					</CardContent>
-				</Card>
+			{/* stats row */}
+			<section>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
+					platform metrics
+				</p>
+				<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+					<StatCard
+						label="total tokens"
+						value={totalTokens.toLocaleString()}
+						icon={Coins}
+						loading={loading}
+					/>
+					<StatCard
+						label="total users"
+						value={totalUsers.toLocaleString()}
+						icon={Users}
+						loading={loading}
+					/>
+					<StatCard
+						label="active agents"
+						value={agentsLoading ? "—" : activeSlots.toLocaleString()}
+						icon={Cpu}
+						accent="purple"
+						loading={agentsLoading}
+					/>
+					<StatCard
+						label="launches"
+						value={launchesLoading ? "—" : pendingLaunches.toLocaleString()}
+						icon={Rocket}
+						accent="purple"
+						loading={launchesLoading}
+					/>
+				</div>
+			</section>
 
-				<Card className="bg-black/20 border-[#00ff87]/20">
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-gray-400">Total Tokens</p>
-								<p className="text-2xl font-bold text-white">
-									{isLoading ? "..." : stats?.tokenCount?.toLocaleString() || "0"}
-								</p>
-							</div>
-							<Coins className="w-8 h-8 text-[#00ff87]" />
-						</div>
-					</CardContent>
-				</Card>
+			{/* nav grid */}
+			<section>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
+					manage
+				</p>
+				<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+					<NavCard
+						label="users"
+						href="/admin/users"
+						icon={Users}
+						count={totalUsers}
+						loading={loading}
+					/>
+					<NavCard
+						label="tokens"
+						href="/admin/tokens"
+						icon={Coins}
+						count={totalTokens}
+						loading={loading}
+					/>
+					<NavCard
+						label="moderators"
+						href="/admin/moderators"
+						icon={Shield}
+					/>
+				</div>
+			</section>
 
-				<Card className="bg-black/20 border-[#00ff87]/20">
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-gray-400">Active Moderators</p>
-								<p className="text-2xl font-bold text-white">
-									{isLoading ? "..." : stats?.activeModerators?.toLocaleString() || "0"}
-								</p>
-							</div>
-							<Shield className="w-8 h-8 text-[#00ff87]" />
+			{/* recent activity */}
+			<section>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
+					recent launches
+				</p>
+				<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm">
+					{launchesLoading ? (
+						<div className="px-4 py-8 text-center">
+							<Activity className="w-4 h-4 text-[#3f3f46] mx-auto animate-pulse" />
+							<p className="text-[11px] text-[#52525b] font-mono mt-2">
+								loading activity...
+							</p>
 						</div>
-					</CardContent>
-				</Card>
-
-				<Card className="bg-black/20 border-[#00ff87]/20">
-					<CardContent className="p-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-sm text-gray-400">24h Volume</p>
-								<p className="text-2xl font-bold text-white">
-									{isLoading ? "..." : `$${stats?.volume24h?.toLocaleString() || "0"}`}
-								</p>
-							</div>
-							<BarChart3 className="w-8 h-8 text-[#00ff87]" />
+					) : recentItems.length === 0 ? (
+						<div className="px-4 py-8 text-center">
+							<Activity className="w-4 h-4 text-[#3f3f46] mx-auto" />
+							<p className="text-[11px] text-[#52525b] font-mono mt-2">
+								no recent activity
+							</p>
 						</div>
-					</CardContent>
-				</Card>
-			</div>
-
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{adminSections.map((section) => {
-					const IconComponent = section.icon;
-					return (
-						<Link key={section.title} href={section.href}>
-							<Card
-								className={`bg-black/20 border ${section.borderColor} hover:border-[#00ff87]/50 transition-all duration-200 cursor-pointer group`}
-							>
-								<CardHeader className="pb-3">
-									<div className="flex items-center gap-3">
-										<div className={`p-2 ${section.bgColor} group-hover:bg-[#00ff87]/10 transition-colors`}>
-											<IconComponent
-												className={`w-6 h-6 ${section.color} group-hover:text-[#00ff87] transition-colors`}
-											/>
-										</div>
-										<div>
-											<CardTitle className="text-white group-hover:text-[#00ff87] transition-colors">
-												{section.title}
-											</CardTitle>
-										</div>
-									</div>
-								</CardHeader>
-								<CardContent>
-									<CardDescription className="text-gray-400 group-hover:text-gray-300 transition-colors">
-										{section.description}
-									</CardDescription>
-								</CardContent>
-							</Card>
-						</Link>
-					);
-				})}
-			</div>
+					) : (
+						<div className="px-4 py-1">
+							{recentItems.map(
+								(
+									item: {
+										address?: string;
+										contractAddress?: string;
+										name?: string;
+										symbol?: string;
+										status?: string;
+										createdAt?: string;
+										launchedAt?: string;
+									},
+									i: number,
+								) => (
+									<ActivityItem
+										key={item.address ?? item.contractAddress ?? i}
+										name={item.name || "unnamed token"}
+										symbol={item.symbol}
+										status={item.status}
+										time={
+											(item.createdAt || item.launchedAt)
+												? relativeTime(item.createdAt || item.launchedAt || "")
+												: undefined
+										}
+									/>
+								),
+							)}
+						</div>
+					)}
+				</div>
+			</section>
 		</div>
 	);
 }
