@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import SwapInput from "@/components/swap/swap-input";
 import Image from "next/image";
@@ -17,7 +17,6 @@ import useSpeed from "@/hooks/use-speed";
 import useSlippage from "@/hooks/use-slippage";
 import { formatUnits } from "viem";
 import useAddress from "@/hooks/use-address";
-import { useAccount } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import moment from "moment";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -25,11 +24,15 @@ import Countdown from "react-countdown";
 import { useTransactionListener } from "@/providers/transaction-listener";
 import { useTranslation } from "@/contexts/locale-context";
 
+function parseNumericInput(value: string) {
+	const parsed = Number.parseFloat(value);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" | "sell" }) {
 	const { t } = useTranslation();
 	const [value, setValue] = useState<string>("");
 	const queryClient = useQueryClient();
-	const { isConnected } = useAccount();
 	const { speed } = useSpeed();
 	const { slippage } = useSlippage();
 	const { openConnectModal } = useConnectModal();
@@ -39,12 +42,16 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const tokenBalance = useTokenBalance({
 		chain: token.chain,
 		contractAddress: token.contractAddress,
-		address: address,
+		address,
 	});
 
 	const resetLabel = t("swap.reset");
 	const quickSetButtons = [resetLabel, "0.1", "0.5", "1.0"];
 	const quickSetSellButtons = [resetLabel, 25, 50, 75, 100];
+	const isDexSwapAvailable = token.status === "migrated" || token.status === "dex";
+	const normalizedSlippage = slippage / 10;
+	const numericValue = parseNumericInput(value);
+	const hasInputAmount = numericValue > 0;
 
 	const handleQuickSet = (val: string) => {
 		const set = val === resetLabel ? "" : String(val);
@@ -53,101 +60,100 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 
 	const handleQuickSetSell = (val: string | number) => {
 		if (val === resetLabel) {
-			return setValue("");
+			setValue("");
+			return;
 		}
 
-		const bal = tokenBalance?.data;
+		const currentBalance = Number(tokenBalance?.data ?? 0);
+		if (!currentBalance) {
+			return;
+		}
+
 		if (val === 100) {
-			return setValue(String(bal));
+			setValue(String(currentBalance));
+			return;
 		}
 
-		const calc = (bal ?? 0) * Number(`0.${val}`);
-		return setValue(String(calc));
+		const calc = currentBalance * (Number(val) / 100);
+		setValue(String(calc));
 	};
 
 	const minReceivedQuery = useQuery({
-		queryKey: ["quote", token.contractAddress, mode, value, slippage],
+		queryKey: ["quote", token.contractAddress, mode, value, normalizedSlippage, isDexSwapAvailable],
 		queryFn: async () => {
 			try {
 				return await retrieveQuote({
 					amount: value,
 					mode,
-					slippage,
+					slippage: normalizedSlippage,
 					token,
 				});
-			} catch (e) {
-				const error = e as { message?: string };
-				console.error(e);
-				if (error?.message !== "Assertion failed") {
-					toast.error(error?.message);
-				}
-				throw e;
+			} catch (error) {
+				console.error("[swap-card] quote retrieval failed", error);
+				throw error;
 			}
 		},
-		enabled: !!value,
+		enabled: hasInputAmount && isDexSwapAvailable,
 		refetchInterval: 7_000,
 	});
 
 	const swapMutation = useMutation({
-		mutationKey: [token.contractAddress, value, slippage, speed],
+		mutationKey: [token.contractAddress, value, normalizedSlippage, speed],
 		mutationFn: async () => {
 			const from = address as AddressLike;
 			if (!from) throw new Error("No wallet connected");
+			if (!isDexSwapAvailable) {
+				throw new Error("Direct bonding curve swaps are not wired up yet.");
+			}
 
-			const inputAmountParsed = Number.parseFloat(value);
-			const inputAmountWei = Math.floor(inputAmountParsed * 10 ** (mode === "buy" ? 18 : token.decimals));
+			const inputAmountWei = Math.floor(numericValue * 10 ** (mode === "buy" ? 18 : token.decimals));
 
-			// TODO: Implement BSC swap execution via Flap
 			return await executeSwap(
 				from,
 				token,
 				value,
 				mode,
-				slippage,
+				normalizedSlippage,
 				speed,
 				(hash: string, expectedOutput: number) => {
 					addTransaction(hash, token, mode, inputAmountWei, expectedOutput);
 				},
 			);
 		},
-		onSuccess: () => {
-			setTimeout(() => {
-				queryClient.invalidateQueries({
-					queryKey: ["balance"],
-				});
-				queryClient.invalidateQueries({
-					queryKey: ["chart"],
-				});
-				queryClient.invalidateQueries({
-					queryKey: ["trades"],
-				});
+		onSuccess: (result) => {
+			if (result === "redirect_to_pancakeswap") {
+				toast.info(mode === "buy" ? "Opening PancakeSwap to buy." : "Opening PancakeSwap to sell.");
+				return;
+			}
 
+			setTimeout(() => {
+				queryClient.invalidateQueries({ queryKey: ["balance"] });
+				queryClient.invalidateQueries({ queryKey: ["chart"] });
+				queryClient.invalidateQueries({ queryKey: ["trades"] });
 				tokenBalance.refetch();
 				balance.refetch();
 			}, 1500);
 		},
-		onError: (e) => {
-			toast.error(e.message);
+		onError: (error) => {
+			toast.error(error.message);
 		},
 	});
 
-	const priceImpact = minReceivedQuery?.data?.priceImpactPct
-		? Number((Number(minReceivedQuery?.data?.priceImpactPct) * 100).toFixed(0))
+	const priceImpact = minReceivedQuery.data?.priceImpactPct
+		? Number((Number(minReceivedQuery.data.priceImpactPct) * 100).toFixed(0))
 		: null;
 
 	useEffect(() => {
-		if (mode) {
-			setValue("");
-		}
+		setValue("");
 	}, [mode]);
 
 	const hasSufficientBalance = () => {
-		if (!value || value === "0") return true;
+		if (!hasInputAmount) return true;
 		if (mode === "buy") {
-			return Number(balance?.data) >= Number(value);
+			return Number(balance?.data ?? 0) >= numericValue;
 		}
 
-		return Number(tokenBalance?.data) >= Number(value);
+		return Number(tokenBalance?.data ?? 0) >= numericValue;
 	};
 
 	const insufficientBalance = !hasSufficientBalance();
@@ -156,73 +162,107 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		moment(token.tradingStartsAt || token.createdAt)
 			.add(8, "hours")
 			.isBefore(moment())
-			? formatUnits(BigInt(token?.maxBuyAmount), 18)
+			? formatUnits(BigInt(token.maxBuyAmount), 18)
 			: false;
 
 	const isTooHighBuyAmount = () => {
-		if (!value || value === "0") return false;
+		if (!hasInputAmount) return false;
 		if (!maxBuyAmount) return false;
 		if (mode === "buy") {
-			return Number(value) > Number(maxBuyAmount);
+			return numericValue > Number(maxBuyAmount);
 		}
 
 		return false;
 	};
 
 	const tooHighBuyAmount = isTooHighBuyAmount();
-	const tradingStarted = token?.tradingStartsAt ? moment(token?.tradingStartsAt).isBefore(moment()) : true;
+	const tradingStarted = token?.tradingStartsAt ? moment(token.tradingStartsAt).isBefore(moment()) : true;
+	const displayedBalance = mode === "buy" ? Number(balance?.data ?? 0) : Number(tokenBalance?.data ?? 0);
+	const minReceivedText = useMemo(() => {
+		if (!isDexSwapAvailable || !minReceivedQuery.data?.minimumReceived) {
+			return null;
+		}
+
+		return formatUnits(
+			BigInt(minReceivedQuery.data.minimumReceived),
+			mode === "sell" ? 18 : token.decimals,
+		);
+	}, [isDexSwapAvailable, minReceivedQuery.data?.minimumReceived, mode, token.decimals]);
+
+	const primaryButtonLabel = token.status === "migrating"
+		? t("swap.tokenMigrating")
+		: !address
+			? t("swap.connect")
+			: !isDexSwapAvailable
+				? "Direct swap soon"
+				: swapMutation.isPending
+					? t("common.loading")
+					: insufficientBalance
+						? t("swap.insufficientBalance")
+						: tooHighBuyAmount
+							? t("swap.amountTooHigh")
+							: mode === "buy"
+								? "Buy on PancakeSwap"
+								: "Sell on PancakeSwap";
 
 	return (
-		<div className="w-full h-full overflow-hidden">
+		<div className="h-full w-full overflow-hidden">
 			<div className="flex flex-col gap-2">
-				<div className="flex items-stretch gap-2 w-full bg-[#08080a] border border-[rgba(255,255,255,0.06)] py-3 px-1.5 rounded-sm">
-					<SwapInput align="left" value={value} onUserInput={setValue} className="w-full" />
-					<div className="flex flex-row gap-x-1 mr-2 justify-end items-center w-1/4">
+				<div className="flex w-full items-stretch gap-2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-1.5 py-3">
+					<SwapInput
+						align="left"
+						value={value}
+						onUserInput={setValue}
+						maxDecimals={mode === "buy" ? 18 : token.decimals}
+						className="w-full"
+					/>
+					<div className="mr-2 flex w-1/4 items-center justify-end gap-1 font-mono">
 						<Image
 							unoptimized
 							priority
-							className="rounded-md size-6"
+							className="size-6 rounded-sm"
 							src={mode === "buy" ? "/chain-icons/bsc.svg" : token.image}
 							alt={token?.ticker || "token"}
 							width={24}
 							height={24}
 						/>
-						<span className="uppercase">{mode === "buy" ? "BNB" : token.ticker}</span>
+						<span className="uppercase text-[#e4e4e7]">{mode === "buy" ? "BNB" : token.ticker}</span>
 					</div>
 				</div>
 				<div
-					className={cn([
-						"flex flex-row gap-x-1 justify-end items-center w-full mr-5 gap-1 text-[#8C8C8C] text-sm font-medium transition-opacity duration-200",
-						!address ? "opacity-0 h-0" : "opacity-100",
-					])}
+					className={cn(
+						"mr-5 flex w-full items-center justify-end gap-1 text-sm font-medium text-[#8C8C8C] transition-opacity duration-200",
+						!address ? "h-0 opacity-0" : "opacity-100",
+					)}
 				>
 					<Wallet size={14} color="#8C8C8C" />
-					{/* biome-ignore lint/a11y/useKeyWithClickEvents: explanation */}
+					{/* biome-ignore lint/a11y/useKeyWithClickEvents: balance row acts as a quick-fill affordance */}
 					<span
-						className="uppercase cursor-pointer"
+						className="cursor-pointer font-mono uppercase"
 						onClick={() => {
-							if (mode === "buy") {
-								setValue(String(balance?.data));
-							} else {
-								setValue(String(tokenBalance?.data));
-							}
+							if (!Number.isFinite(displayedBalance)) return;
+							setValue(String(displayedBalance));
 						}}
 					>
-						{mode === "buy" ? balance?.data : tokenBalance?.data ? abbreviateNumber(tokenBalance.data, true) : "-"}{" "}
+						{mode === "buy"
+							? displayedBalance.toFixed(4)
+							: tokenBalance?.data
+								? abbreviateNumber(Number(tokenBalance.data), true)
+								: "-"}{" "}
 						{mode === "buy" ? "BNB" : token.ticker}
 					</span>
 				</div>
 
 				{mode === "buy" ? (
-					<div className="flex items-center gap-2 justify-between w-full overflow-x-auto whitespace-nowrap">
+					<div className="flex w-full items-center justify-between gap-2 overflow-x-auto whitespace-nowrap">
 						{quickSetButtons.map((btn) => (
 							<Button
 								key={btn}
 								variant="secondary"
-								className={cn([
-									"bg-gradient-to-t from-[#121212] to-[#171717] text-sm grow h-[36px] border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
-									btn === resetLabel ? "text-waifufun-text-secondary" : "",
-								])}
+								className={cn(
+									"h-[36px] grow rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#08080a] font-mono text-sm text-[#e4e4e7] transition-colors duration-200 hover:border-[#00ff87] hover:bg-[#111114]",
+									btn === resetLabel ? "text-[#8C8C8C]" : "",
+								)}
 								onClick={() => handleQuickSet(btn)}
 							>
 								{btn}
@@ -237,10 +277,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									<Button
 										key={btn}
 										variant="secondary"
-										className={cn([
-											"bg-gradient-to-t from-[#121212] to-[#171717] text-xs sm:text-sm h-[36px] px-1 sm:px-2 border border-transparent hover:border-waifufun-background-action-highlight transition-colors duration-200",
-											btn === resetLabel ? "text-waifufun-text-secondary" : "",
-										])}
+										className={cn(
+											"h-[36px] rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#08080a] px-1 font-mono text-xs text-[#e4e4e7] transition-colors duration-200 hover:border-[#ef4444] hover:bg-[#111114] sm:px-2 sm:text-sm",
+											btn === resetLabel ? "text-[#8C8C8C]" : "",
+										)}
 										onClick={() => handleQuickSetSell(btn)}
 									>
 										<span className="truncate">{btn === resetLabel ? resetLabel : `${btn}%`}</span>
@@ -252,67 +292,61 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				)}
 
 				<div className="mt-2 space-y-2">
-					<div className="flex font-medium justify-between text-xs text-white">
+					<div className="flex justify-between text-xs font-medium text-white">
 						<p>{t("swap.minReceived")}</p>
-						<div className="flex items-center gap-2">
-							{!value || value === "0" ? (
+						<div className="flex items-center gap-2 font-mono">
+							{!hasInputAmount ? (
 								<span>0</span>
+							) : !isDexSwapAvailable ? (
+								<span className="text-[#8C8C8C]">—</span>
+							) : minReceivedQuery.isPending ? (
+								<Skeleton />
+							) : minReceivedQuery.error ? (
+								<span className="text-[#8C8C8C]">{t("swap.priceUnavailable")}</span>
 							) : (
-								<Fragment>
-									{minReceivedQuery?.isPending ? (
-										<Skeleton />
-									) : (
-										<Fragment>
-											{minReceivedQuery?.error ? (
-												<span className="text-waifufun-text-secondary">{t("swap.priceUnavailable")}</span>
-											) : (
-												<span
-													className="animate-fade animate-once animate-duration-200 animate-ease-linear"
-													key={minReceivedQuery?.data?.minimumReceived || "0"}
-												>
-													{minReceivedQuery?.data?.minimumReceived
-														? formatUnits(
-																BigInt(minReceivedQuery?.data?.minimumReceived),
-																mode === "sell" ? 18 : token.decimals,
-															)
-														: null}
-												</span>
-											)}
-										</Fragment>
-									)}
-								</Fragment>
+								<span className="animate-fade animate-once animate-duration-200 animate-ease-linear" key={minReceivedText || "0"}>
+									{minReceivedText || "0"}
+								</span>
 							)}
-
 							{mode === "buy" ? token.ticker : "BNB"}
 						</div>
 					</div>
-					{priceImpact ? (
-						<div className="flex font-medium justify-between text-white text-xs">
+					{priceImpact !== null ? (
+						<div className="flex justify-between text-xs font-medium text-white">
 							<p>{t("swap.priceImpact")}</p>
-							<p className={cn([priceImpact > 50 ? "text-red-400" : ""])}>~ {priceImpact}%</p>
+							<p className={cn("font-mono", priceImpact > 50 ? "text-red-400" : "text-[#00ff87]")}>~ {priceImpact}%</p>
 						</div>
 					) : null}
 					<AdvancedSettings />
 					<div
-						className={cn([
+						className={cn(
+							!isDexSwapAvailable ? "inline-flex" : "hidden",
+							"w-full items-center gap-2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-2 text-xs text-[#a1a1aa]",
+						)}
+					>
+						<AlertCircle className="text-[#ef4444]" />
+						Bonding curve swaps are not connected yet. Migrated tokens open on PancakeSwap.
+					</div>
+					<div
+						className={cn(
 							tooHighBuyAmount && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
-						])}
+							"w-full items-center gap-2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-2 text-xs",
+						)}
 					>
-						<AlertCircle className="text-waifufun-text-error" />
+						<AlertCircle className="text-[#ef4444]" />
 						{t("swap.maxBuyWarning", { max: String(maxBuyAmount) })}
 					</div>
 					<div
-						className={cn([
+						className={cn(
 							insufficientBalance && address
 								? "inline-flex animate-fade animate-once animate-duration-200 animate-ease-linear"
 								: "hidden",
-							"p-2 w-full bg-[#111114] text-xs gap-2 items-center transition-all duration-200",
-						])}
+							"w-full items-center gap-2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-2 text-xs",
+						)}
 					>
-						<AlertCircle className="text-waifufun-text-error" />
+						<AlertCircle className="text-[#ef4444]" />
 						{t("swap.insufficientBalanceMessage")}
 					</div>
 					{tradingStarted ? (
@@ -320,42 +354,31 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							disabled={
 								token.status === "migrating" ||
 								(address
-									? swapMutation?.isPending || tooHighBuyAmount || insufficientBalance || !value || value === "0"
+									? swapMutation.isPending || tooHighBuyAmount || insufficientBalance || !hasInputAmount || !isDexSwapAvailable
 									: false)
 							}
 							onClick={() => {
 								if (!address) {
 									openConnectModal?.();
 								} else {
-									swapMutation?.mutate();
+									swapMutation.mutate();
 								}
 							}}
-							className="w-full mt-2 text-base font-medium bg-[#111114] border border-[rgba(255,255,255,0.08)] hover:border-[#00ff87] text-white uppercase"
+							className="mt-2 w-full rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-base font-medium uppercase text-white hover:border-[#00ff87]"
 						>
-							{token.status === "migrating"
-								? t("swap.tokenMigrating")
-								: !address
-									? t("swap.connect")
-									: swapMutation?.isPending
-										? t("common.loading")
-										: insufficientBalance
-											? t("swap.insufficientBalance")
-											: tooHighBuyAmount
-												? t("swap.amountTooHigh")
-												: t("token.swap")}
+							{primaryButtonLabel}
 						</Button>
 					) : (
 						<Tooltip>
 							<TooltipTrigger className="w-full">
 								<Button
 									disabled
-									className="w-full mt-2 text-base font-medium bg-[#111114] border border-[rgba(255,255,255,0.08)] hover:border-[#00ff87] text-white uppercase"
+									className="mt-2 w-full rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-base font-medium uppercase text-white hover:border-[#00ff87]"
 								>
 									<Countdown
 										date={moment(token?.tradingStartsAt).toDate()}
 										intervalDelay={0}
 										onComplete={() => {
-											console.log("Trading has started");
 											setTimeout(() => {
 												queryClient.invalidateQueries({
 													queryKey: ["token", token.chain, token.chainId, token.contractAddress],
@@ -365,7 +388,9 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									/>
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>{t("swap.tradingStarts")}: {moment(token?.tradingStartsAt)?.format("LLL")}</TooltipContent>
+							<TooltipContent>
+								{t("swap.tradingStarts")}: {moment(token?.tradingStartsAt)?.format("LLL")}
+							</TooltipContent>
 						</Tooltip>
 					)}
 				</div>

@@ -5,10 +5,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { formatNumber } from "@/lib/utils";
 import { useTranslation } from "@/contexts/locale-context";
 import type { IToken } from "@waifufun/types";
-/** BNB has 18 decimals; 1 BNB = 1e18 wei */
-const WEI_PER_BNB = 1e18;
 import { motion } from "framer-motion";
 
+const DEFAULT_CURVE_LIMIT_BNB = 113;
 const PROGRESS_SEGMENTS = [
 	"segment-1",
 	"segment-2",
@@ -22,9 +21,22 @@ const PROGRESS_SEGMENTS = [
 	"segment-10",
 ];
 
+function clampProgress(value: number) {
+	return Math.min(100, Math.max(0, value));
+}
+
+function normalizeBnbAmount(value?: number) {
+	if (typeof value !== "number" || Number.isNaN(value) || value <= 0) {
+		return 0;
+	}
+
+	return value > 1_000_000 ? value / 1e18 : value;
+}
+
 function AnimatedProgressBar({ value, max }: { value: number; max: number }) {
 	const [width, setWidth] = useState(0);
 	const percentage = Math.min((value / max) * 100, 100);
+
 	useEffect(() => {
 		const timer = setTimeout(() => setWidth(percentage), 100);
 		return () => clearTimeout(timer);
@@ -32,14 +44,14 @@ function AnimatedProgressBar({ value, max }: { value: number; max: number }) {
 
 	return (
 		<div className="relative">
-			<div className="relative h-5 w-full bg-[rgba(0,255,135,0.06)] rounded-sm overflow-hidden border border-[rgba(255,255,255,0.06)]">
+			<div className="relative h-5 w-full overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(0,255,135,0.06)]">
 				<motion.div
-					className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#065f46] via-[#22c55e] to-[#00ff87] rounded-sm"
+					className="absolute inset-y-0 left-0 rounded-sm bg-gradient-to-r from-[#065f46] via-[#00cc6d] to-[#00ff87]"
 					initial={{ width: 0 }}
 					animate={{ width: `${width}%` }}
 					transition={{ duration: 1, ease: "easeOut" }}
 				>
-					<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+					<div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 				</motion.div>
 				{width > 0 && (
 					<motion.div
@@ -49,7 +61,7 @@ function AnimatedProgressBar({ value, max }: { value: number; max: number }) {
 						animate={{ opacity: 1 }}
 						transition={{ delay: 1 }}
 					>
-						<div className="absolute inset-y-0 right-0 w-3 bg-[#00ff87] blur-md animate-pulse" />
+						<div className="absolute inset-y-0 right-0 w-3 animate-pulse bg-[#00ff87] blur-md" />
 						<div className="absolute inset-y-0 right-0 w-1 bg-[#00ff87]" />
 					</motion.div>
 				)}
@@ -69,26 +81,35 @@ export default function BondingCurveProgress({
 	showTooltip,
 }: { token: IToken; title?: string; showTooltip?: boolean }) {
 	const { t } = useTranslation();
-	const curveProgress = token?.curveProgress;
-	if (typeof curveProgress !== "number" || token?.curveCompleted || token?.imported) return null;
+	const tokenWithProgress = token as IToken & { progressPercent?: number };
+	const rawProgress = token?.curveProgress ?? tokenWithProgress?.progressPercent;
+	const curveProgress = typeof rawProgress === "number" ? clampProgress(rawProgress) : null;
+	const isCurveComplete =
+		token?.imported ||
+		token?.curveCompleted ||
+		curveProgress === null ||
+		curveProgress >= 100 ||
+		["migrated", "locked", "finalized"].includes(token?.status || "");
 
-	const currentReserveLamports = token?.bondingCurveBalance ? token.bondingCurveBalance * WEI_PER_BNB : 0;
-	const curveLimitLamports = token?.curveLimit || 113 * WEI_PER_BNB;
-	const solRequiredForMigration = Math.max(0, (curveLimitLamports - currentReserveLamports) / WEI_PER_BNB);
+	if (isCurveComplete || curveProgress === null) return null;
+
+	const currentReserveBnb = normalizeBnbAmount(token?.bondingCurveBalance);
+	const curveLimitBnb = normalizeBnbAmount(token?.curveLimit) || DEFAULT_CURVE_LIMIT_BNB;
+	const bnbRequiredForMigration = Math.max(0, curveLimitBnb - currentReserveBnb);
 
 	return (
 		<div className="relative">
 			<div className="flex flex-col gap-3">
-				<div className="flex items-center gap-4 justify-between">
+				<div className="flex items-center justify-between gap-4">
 					<div className="flex items-center gap-2">
-						<div className="h-2 w-2 rounded-full bg-[#00ff87] animate-pulse shadow-[0_0_8px_rgba(0,255,135,0.5)]" />
-						<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
+						<div className="h-2 w-2 animate-pulse rounded-full bg-[#00ff87] shadow-[0_0_8px_rgba(0,255,135,0.5)]" />
+						<span className="font-mono text-[10px] uppercase tracking-wider text-[#52525b]">
 							{title ?? t("token.bondingProgress")}
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
 						<motion.span
-							className="text-sm font-bold text-[#00ff87] font-mono"
+							className="font-mono text-sm font-bold text-[#00ff87]"
 							key={curveProgress}
 							initial={{ scale: 1.2, opacity: 0.5 }}
 							animate={{ scale: 1, opacity: 1 }}
@@ -99,7 +120,7 @@ export default function BondingCurveProgress({
 						{showTooltip && (
 							<Tooltip>
 								<TooltipTrigger>
-									<AlertCircle className="text-[#52525b] hover:text-[#a1a1aa] transition-colors" size={14} />
+									<AlertCircle className="text-[#52525b] transition-colors hover:text-[#a1a1aa]" size={14} />
 								</TooltipTrigger>
 								<TooltipContent>
 									<span className="text-xs">{t("token.bondingProgressTooltip")}</span>
@@ -108,25 +129,23 @@ export default function BondingCurveProgress({
 						)}
 					</div>
 				</div>
-				<AnimatedProgressBar max={100} value={Number(curveProgress.toFixed(2))} />
-				{solRequiredForMigration > 0 && (
+				<AnimatedProgressBar max={100} value={curveProgress} />
+				{bnbRequiredForMigration > 0 && (
 					<motion.div
-						className="flex flex-wrap items-center gap-x-1 text-xs text-[#a1a1aa] font-mono"
+						className="flex flex-wrap items-center gap-x-1 font-mono text-xs text-[#a1a1aa]"
 						initial={{ opacity: 0, y: 5 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.5 }}
 					>
 						<span className="text-[#52525b]">{t("token.reserve")}:</span>
-						<span className="text-[#00ff87]">
-							{formatNumber(Number(currentReserveLamports / WEI_PER_BNB), false, true)} BNB
-						</span>
+						<span className="text-[#00ff87]">{formatNumber(currentReserveBnb, true, true)} BNB</span>
 						<span className="text-[#3f3f46]">•</span>
 						<span className="text-[#52525b]">{t("token.needed")}:</span>
-						<span className="text-[#c084fc]">{formatNumber(solRequiredForMigration, true, true)} BNB</span>
+						<span className="text-[#e4e4e7]">{formatNumber(bnbRequiredForMigration, true, true)} BNB</span>
 					</motion.div>
 				)}
 			</div>
-			<div className="h-[1px] w-full bg-[rgba(255,255,255,0.06)] mt-4" />
+			<div className="mt-4 h-[1px] w-full bg-[rgba(255,255,255,0.06)]" />
 		</div>
 	);
 }

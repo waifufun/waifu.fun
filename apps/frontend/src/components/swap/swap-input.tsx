@@ -61,8 +61,9 @@ const SwapInput = forwardRef<HTMLInputElement, InputProps>(
 					maxLength={79}
 					spellCheck={false}
 					className={cn(
-						"outline-none border-none w-full text-4xl text-white truncate text-ellipsis transition-colors duration-300",
-						"placeholder:text-gray-400",
+						"w-full border-none bg-transparent font-mono text-white outline-none transition-colors duration-300 truncate text-ellipsis",
+						fontSize || "text-4xl",
+						"placeholder:text-[#52525b]",
 						align === "right" ? "text-right" : "text-left",
 						error ? "text-red-400" : "",
 						className,
