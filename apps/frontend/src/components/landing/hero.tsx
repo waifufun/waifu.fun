@@ -1,13 +1,14 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import Image from "next/image";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
+import dynamic from "next/dynamic";
+import { useTranslation } from "@/contexts/locale-context";
 
-/* ─── animation config ─── */
-const LINE_STAGGER = 0.12;
-const REVEAL_DURATION = 0.8;
-const EASE = [0.22, 1, 0.36, 1] as const; // custom ease-out expo
+const GlitchBg = dynamic(() => import("./glitch-bg"), { ssr: false });
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 function RevealLine({
 	children,
@@ -23,7 +24,7 @@ function RevealLine({
 			<motion.div
 				initial={{ y: "110%" }}
 				animate={{ y: "0%" }}
-				transition={{ duration: REVEAL_DURATION, ease: EASE, delay }}
+				transition={{ duration: 0.8, ease: EASE, delay }}
 			>
 				{children}
 			</motion.div>
@@ -50,10 +51,8 @@ function MagneticButton({
 		const el = ref.current;
 		if (!el) return;
 		const rect = el.getBoundingClientRect();
-		const cx = rect.left + rect.width / 2;
-		const cy = rect.top + rect.height / 2;
-		x.set((e.clientX - cx) * 0.15);
-		y.set((e.clientY - cy) * 0.15);
+		x.set((e.clientX - (rect.left + rect.width / 2)) * 0.15);
+		y.set((e.clientY - (rect.top + rect.height / 2)) * 0.15);
 	};
 
 	const reset = () => {
@@ -83,64 +82,54 @@ function MagneticButton({
 }
 
 export default function Hero() {
-	const sectionRef = useRef<HTMLElement>(null);
-	const mouseX = useMotionValue(0.5);
-	const mouseY = useMotionValue(0.5);
-
-	// subtle parallax on the gradient accent
-	const gradX = useTransform(mouseX, [0, 1], ["42%", "58%"]);
-	const gradY = useTransform(mouseY, [0, 1], ["30%", "50%"]);
-	const springGradX = useSpring(gradX, { stiffness: 60, damping: 30 });
-	const springGradY = useSpring(gradY, { stiffness: 60, damping: 30 });
-
-	useEffect(() => {
-		const handleMove = (e: MouseEvent) => {
-			if (!sectionRef.current) return;
-			const rect = sectionRef.current.getBoundingClientRect();
-			mouseX.set((e.clientX - rect.left) / rect.width);
-			mouseY.set((e.clientY - rect.top) / rect.height);
-		};
-		const el = sectionRef.current;
-		el?.addEventListener("mousemove", handleMove);
-		return () => el?.removeEventListener("mousemove", handleMove);
-	}, [mouseX, mouseY]);
+	const { t } = useTranslation();
 
 	return (
 		<section
-			ref={sectionRef}
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* Subtle cursor-reactive gradient accent */}
-			<motion.div
-				className="absolute inset-0 z-0 pointer-events-none"
-				style={{
-					background: useTransform(
-						[springGradX, springGradY],
-						([gx, gy]) =>
-							`radial-gradient(ellipse 50% 40% at ${gx} ${gy}, rgba(0,255,135,0.04), transparent 70%)`
-					),
-				}}
-			/>
+			{/* Glitch character background */}
+			<div className="absolute inset-0 z-0 opacity-40">
+				<GlitchBg
+					glitchColors={["#0a1a12", "#00ff87", "#0d2818", "#061a0e"]}
+					glitchSpeed={60}
+					smooth
+					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"
+				/>
+			</div>
 
-			{/* Noise texture overlay */}
+			{/* Hero background image — low opacity, adds depth */}
+			<div className="absolute inset-0 z-[1]">
+				<picture>
+					<source srcSet="/brand/backgrounds/hero-bg.webp" type="image/webp" />
+					<img
+						src="/brand/backgrounds/hero-bg.jpg"
+						alt=""
+						aria-hidden="true"
+						className="absolute inset-0 h-full w-full object-cover object-center opacity-15 mix-blend-screen"
+						loading="eager"
+					/>
+				</picture>
+			</div>
+
+			{/* Dark overlay for text contrast */}
 			<div
-				className="absolute inset-0 z-[1] pointer-events-none opacity-[0.03]"
+				className="absolute inset-0 z-[2]"
 				style={{
-					backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-					backgroundRepeat: "repeat",
-					backgroundSize: "128px 128px",
+					background:
+						"radial-gradient(ellipse 70% 60% at 50% 50%, rgba(8,8,10,0.4), rgba(8,8,10,0.85) 100%)",
 				}}
 			/>
 
 			{/* Content */}
 			<div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-				{/* Brand lockup — small, above headline */}
+				{/* Brand lockup */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
 					transition={{ duration: 0.6, ease: EASE }}
-					className="mb-10"
+					className="mb-12"
 				>
 					<Image
 						src="/brand/lockup/lockup_waifufun_512.png"
@@ -148,71 +137,59 @@ export default function Hero() {
 						width={140}
 						height={66}
 						priority
-						className="h-auto w-[120px] sm:w-[140px] object-contain opacity-60"
+						className="h-auto w-[120px] sm:w-[140px] object-contain opacity-50"
 						unoptimized
 					/>
 				</motion.div>
 
-				{/* Headline — large, centered, punchy */}
-				<div className="flex flex-col items-center gap-1">
-					<RevealLine delay={0.2}>
-						<h1 className="text-[clamp(2.8rem,8vw,7rem)] font-bold tracking-[-0.05em] leading-[0.92] text-[#f4f4f5]">
-							they{" "}
-							<span className="text-[#00ff87]">live</span>
+				{/* Headline — consistent sizing, punchy copy */}
+				<div className="flex flex-col items-center gap-2">
+					<RevealLine delay={0.15}>
+						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
+							{t("hero.theyLive")}{" "}
+							<span className="text-[#a1a1aa] font-light">{t("hero.ifYouTrade")}</span>
 						</h1>
 					</RevealLine>
 
-					<RevealLine delay={0.2 + LINE_STAGGER}>
-						<p className="text-[clamp(1.1rem,2.4vw,1.8rem)] font-light tracking-[-0.01em] text-[#52525b]">
-							if you trade.
-						</p>
-					</RevealLine>
-
-					<div className="h-2 sm:h-3" />
-
-					<RevealLine delay={0.2 + LINE_STAGGER * 2}>
-						<h1 className="text-[clamp(2.8rem,8vw,7rem)] font-bold tracking-[-0.05em] leading-[0.92] text-[#f4f4f5]">
-							they{" "}
-							<span className="text-[#ef4444]">die</span>
+					<RevealLine delay={0.3}>
+						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
+							{t("hero.theyDie")}{" "}
+							<span className="text-[#a1a1aa] font-light">{t("hero.ifYouDont")}</span>
 						</h1>
-					</RevealLine>
-
-					<RevealLine delay={0.2 + LINE_STAGGER * 3}>
-						<p className="text-[clamp(1.1rem,2.4vw,1.8rem)] font-light tracking-[-0.01em] text-[#52525b]">
-							if you don&apos;t.
-						</p>
 					</RevealLine>
 				</div>
 
-				{/* Breathing line separator */}
-				<motion.div
-					className="mt-10 mb-8 h-px w-16 bg-[rgba(255,255,255,0.1)]"
-					initial={{ scaleX: 0, opacity: 0 }}
-					animate={{ scaleX: 1, opacity: 1 }}
-					transition={{ duration: 1, delay: 0.8, ease: EASE }}
-				/>
+				{/* Subtitle */}
+				<motion.p
+					className="mt-8 text-lg text-[#71717a] max-w-md leading-relaxed"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
+				>
+					{t("hero.notChatbots")} <span className="text-[#a1a1aa]">{t("hero.economicActors")}</span>
+				</motion.p>
 
 				{/* CTAs */}
 				<motion.div
-					className="flex flex-col sm:flex-row items-center gap-3"
+					className="mt-8 flex flex-col sm:flex-row items-center gap-3"
 					initial={{ opacity: 0, y: 16 }}
 					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6, delay: 0.9, ease: EASE }}
+					transition={{ duration: 0.6, delay: 0.75, ease: EASE }}
 				>
 					<MagneticButton href="/create" variant="primary">
-						Deploy Agent
+						{t("hero.deployAgent")}
 					</MagneticButton>
 					<MagneticButton href="#explore" variant="ghost">
-						Explore
+						{t("hero.exploreAgents")}
 					</MagneticButton>
 				</motion.div>
 
-				{/* Powered by — tiny, quiet */}
+				{/* Partner rail */}
 				<motion.div
 					className="mt-8 flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.25em] text-[#3f3f46]"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
-					transition={{ duration: 0.8, delay: 1.2 }}
+					transition={{ duration: 0.8, delay: 1.0 }}
 				>
 					<a
 						href="https://milady.ai"
@@ -239,7 +216,7 @@ export default function Hero() {
 				className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
-				transition={{ delay: 1.5, duration: 0.6 }}
+				transition={{ delay: 1.3, duration: 0.6 }}
 			>
 				<motion.div
 					className="w-px h-8 bg-gradient-to-b from-transparent to-[rgba(255,255,255,0.15)]"
