@@ -1,12 +1,12 @@
 "use client";
+
 import type { IToken } from "@waifufun/types";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { useTranslation } from "@/contexts/locale-context";
 
 function formatMarketCap(mc: number): string {
-	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(2)}m`;
+	if (mc >= 1_000_000) return `$${(mc / 1_000_000).toFixed(1)}m`;
 	if (mc >= 1_000) return `$${(mc / 1_000).toFixed(1)}k`;
 	return `$${mc}`;
 }
@@ -19,167 +19,63 @@ function truncateDescription(desc: string | undefined, maxLen: number): string {
 
 export const GridItem = ({
 	token,
-	variant = "medium",
-	rank,
+	variant = "large",
 }: {
 	token: IToken;
 	variant?: "large" | "medium" | "compact";
-	rank?: number;
 }) => {
-	const { t } = useTranslation();
-	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
-	const isBonded = token?.curveCompleted || curveProgress >= 100;
-	const isDead = token?.status === "finalized" || (isBonded && token?.marketcap === 0);
-
 	const isLarge = variant === "large";
-	const isCompact = variant === "compact";
-	const isVerified = Boolean(token?.verified);
-
-	// Image heights by variant
-	const imageHeight = isLarge ? "h-[300px] sm:h-[360px]" : isCompact ? "h-[200px]" : "h-[240px] sm:h-[280px]";
-	const descMaxLen = isLarge ? 100 : isCompact ? 50 : 72;
-
-	// Show rank indicator for top 5
-	const showRank = rank !== undefined && rank <= 5;
-
-	const cardBg = isVerified ? "bg-green-900/40 border-green-500/20" : "bg-[#0c0c0f] border-[rgba(255,255,255,0.04)]";
+	const imageHeight = isLarge ? "h-[360px] sm:h-[420px]" : "h-[280px]";
+	const description = truncateDescription(token.description, isLarge ? 96 : 72);
 
 	return (
 		<Link href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`} className="block h-full group">
 			<motion.div
-				className={`relative flex flex-col h-full rounded-sm overflow-hidden border ${cardBg}`}
+				className="relative flex h-full flex-col overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(12,12,15,0.78)]"
 				initial={{ opacity: 1, y: 0 }}
 				whileHover={{
-					y: -2,
-					boxShadow: "0 4px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)",
-					borderColor: "rgba(255,255,255,0.08)",
+					boxShadow: "0 18px 48px rgba(0,0,0,0.42)",
+					borderColor: "rgba(255,255,255,0.1)",
 				}}
 				style={{ willChange: "transform" }}
 			>
-				{/* Image area - 70%+ of card */}
 				<div className={`relative w-full overflow-hidden ${imageHeight}`}>
-					<motion.div
-						className="absolute inset-0"
-						whileHover={{ scale: 1.04 }}
-						transition={{ duration: 0.8, ease: "easeOut" }}
-					>
+					<motion.div className="absolute inset-0" whileHover={{ scale: 1.025 }} transition={{ duration: 0.7, ease: "easeOut" }}>
 						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 					</motion.div>
-
-					{/* Gradient overlay — blends into card surface */}
-					<div className="absolute inset-0 bg-gradient-to-t from-[rgba(12,12,15,1)] via-[rgba(12,12,15,0.15)] to-transparent" />
-
-					{/* Rank badge */}
-					{showRank && (
-						<div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[rgba(8,8,10,0.8)] border border-[rgba(255,255,255,0.06)]">
-							<span className="text-[10px] font-mono font-bold text-[#a1a1aa]">#{rank}</span>
-						</div>
-					)}
-
-					{/* Status badges - top right */}
-					<div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
-						{isDead && (
-							<div className="px-2.5 py-1 rounded-full bg-[rgba(8,8,10,0.75)] border border-[rgba(239,68,68,0.2)]">
-								<span className="text-[10px] font-mono uppercase tracking-wider text-red-400/80">inactive</span>
-							</div>
-						)}
-						{isBonded && !isDead && (
-							<div className="px-2.5 py-1 rounded-full bg-[rgba(8,8,10,0.75)] border border-[rgba(0,255,135,0.15)]">
-								<span className="text-[10px] font-mono uppercase tracking-wider text-[#00ff87]/80">bonded</span>
-							</div>
-						)}
-						{!isBonded && !isDead && (
-							<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(8,8,10,0.75)] border border-[rgba(255,255,255,0.06)]">
-								<motion.div
-									className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"
-									animate={{ opacity: [1, 0.4, 1] }}
-									transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-								/>
-								<span className="text-[10px] font-mono uppercase tracking-wider text-[#71717a]">active</span>
-							</div>
-						)}
-						{token.verified && (
-							<div className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[rgba(8,8,10,0.75)] border border-[rgba(0,255,135,0.12)]">
-								<span className="text-[#00ff87]/70 text-xs">✓</span>
-							</div>
-						)}
+					<div className="absolute inset-0 bg-gradient-to-t from-[rgba(12,12,15,1)] via-[rgba(12,12,15,0.22)] to-transparent" />
+					<div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(8,8,10,0.72)] px-3 py-1">
+						<div className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
+						<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#a1a1aa]">live</span>
 					</div>
-
-					{/* Name overlay at bottom of image */}
-					<div className="absolute bottom-0 inset-x-0 p-4 pb-3">
-						<h3
-							className={`font-bold text-[#e4e4e7] leading-tight ${
-								isLarge ? "text-2xl sm:text-3xl" : isCompact ? "text-lg" : "text-xl sm:text-2xl"
-							}`}
-						>
-							{token.name}
-						</h3>
-						<span className={`font-mono text-[#00ff87] ${isLarge ? "text-base" : "text-sm"}`}>${token.ticker}</span>
+					<div className="absolute bottom-0 inset-x-0 p-5 pb-4">
+						<h3 className="text-3xl font-semibold leading-none tracking-tight text-[#f4f4f5]">{token.name}</h3>
+						<span className="mt-2 inline-block font-mono text-sm text-[#00ff87]">${token.ticker}</span>
 					</div>
 				</div>
 
-				{/* Content area */}
-				<div className="flex flex-col gap-2 p-4 pt-3 flex-1">
-					{/* Description - only for non-compact */}
-					{!isCompact && token.description && (
-						<p className="text-xs text-[#71717a] leading-relaxed line-clamp-2">
-							{truncateDescription(token.description, descMaxLen)}
-						</p>
-					)}
+				<div className="flex flex-1 flex-col gap-4 p-5">
+					{description ? <p className="max-w-[44ch] text-sm leading-6 text-[#8f8f97]">{description}</p> : null}
 
-					{/* Stats row */}
-					<div className="flex items-center gap-4 mt-auto">
-						{token.marketcap > 0 && (
-							<div className="flex flex-col">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">mcap</span>
-								<span className={`font-semibold text-[#e4e4e7] ${isCompact ? "text-sm" : "text-base"}`}>
-									{formatMarketCap(token.marketcap)}
-								</span>
-							</div>
-						)}
-						{token.holders > 0 && (
-							<div className="flex flex-col">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">holders</span>
-								<span className={`font-semibold text-[#e4e4e7] ${isCompact ? "text-sm" : "text-base"}`}>
-									{token.holders.toLocaleString()}
-								</span>
-							</div>
-						)}
-						{/* Price - right aligned */}
-						{token.price && (
-							<div className="ml-auto text-right">
-								<span className="text-[9px] font-mono text-[#52525b] block">price</span>
-								<span className="text-xs font-mono text-[#71717a]">${Number(token.price).toFixed(6)}</span>
-							</div>
-						)}
-					</div>
-
-					{/* Bonding curve progress */}
-					{!isBonded && (
-						<div className="w-full mt-2 pt-2 border-t border-[rgba(255,255,255,0.03)]">
-							<div className="flex items-center justify-between mb-1.5">
-								<span className="text-[9px] font-mono uppercase tracking-wider text-[#52525b]">{t("token.bondingCurveProgress")}</span>
-								<span className="text-[10px] font-mono font-semibold text-[#00ff87]">{curveProgress}%</span>
-							</div>
-							<div className="w-full h-1.5 rounded-sm bg-[rgba(255,255,255,0.06)] overflow-hidden">
-								<motion.div
-									className="h-full rounded-sm bg-gradient-to-r from-[#065f46] via-[#22c55e] to-[#00ff87]"
-									initial={{ width: 0 }}
-									animate={{ width: `${curveProgress}%` }}
-									transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-								/>
+					<div className="mt-auto grid grid-cols-2 gap-4 border-t border-[rgba(255,255,255,0.05)] pt-4">
+						<div>
+							<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">market cap</div>
+							<div className="mt-1 text-3xl font-semibold tracking-tight text-[#f4f4f5]">
+								{formatMarketCap(token.marketcap ?? 0)}
 							</div>
 						</div>
-					)}
-
+						<div>
+							<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">holders</div>
+							<div className="mt-1 text-3xl font-semibold tracking-tight text-[#f4f4f5]">
+								{(token.holders ?? 0).toLocaleString()}
+							</div>
+						</div>
+					</div>
 				</div>
 
-				{/* Subtle top-edge highlight on hover */}
 				<div
-					className="absolute inset-x-0 top-0 h-px pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-					style={{
-						background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)",
-					}}
+					className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+					style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }}
 				/>
 			</motion.div>
 		</Link>

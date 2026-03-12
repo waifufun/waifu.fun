@@ -9,6 +9,9 @@ import { getTokens } from "@/lib/api";
 import type { IToken } from "@waifufun/types";
 
 const MILADY_CONTRACT_ADDRESS = "0xc20e45e49e0e79f0fc81e71f05fd2772d6587777";
+const ELIZA_CONTRACT_ADDRESS = "0xea17Df5Cf6D172224892B5477A16ACb111182478";
+
+const CURATED_HOME_CONTRACTS = [MILADY_CONTRACT_ADDRESS.toLowerCase(), ELIZA_CONTRACT_ADDRESS.toLowerCase()];
 
 export const revalidate = 4;
 
@@ -37,10 +40,14 @@ export default async function Home() {
 	} catch (e) {
 		console.error("Failed to fetch featured tokens:", e);
 	}
-	const noTokens = (tokens?.length || 0) === 0;
+	const curatedTokens = CURATED_HOME_CONTRACTS.map((address) =>
+		tokens.find((token) => token.contractAddress?.toLowerCase() === address),
+	).filter(Boolean) as IToken[];
+	const noTokens = curatedTokens.length === 0;
 	const topToken =
-		tokens.find((token) => token.contractAddress?.toLowerCase() === MILADY_CONTRACT_ADDRESS.toLowerCase()) ??
-		(tokens.length > 0 ? ([...tokens].sort((a, b) => (b.marketcap ?? 0) - (a.marketcap ?? 0))[0] ?? null) : null);
+		curatedTokens.find((token) => token.contractAddress?.toLowerCase() === MILADY_CONTRACT_ADDRESS.toLowerCase()) ??
+		curatedTokens[0] ??
+		null;
 
 	return (
 		<div className="flex flex-col w-full">
@@ -50,23 +57,17 @@ export default async function Home() {
 
 			<div
 				id="explore"
-				className={`relative z-20 flex flex-col gap-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pt-24 pb-12 scroll-mt-20 ${
+				className={`relative z-20 flex flex-col gap-6 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-14 pt-20 pb-12 scroll-mt-20 ${
 					noTokens ? "min-h-[50vh] justify-center items-center" : ""
 				}`}
 			>
-				<div
-					className="pointer-events-none absolute inset-x-0 top-0 h-20"
-					style={{
-						background:
-							"linear-gradient(to bottom, rgba(0,255,135,0.05), rgba(8,8,10,0.18) 30%, rgba(8,8,10,0) 100%)",
-					}}
-				/>
+				<div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[rgba(255,255,255,0.05)]" />
 				{noTokens ? (
 					<HomeEmptyState />
 				) : (
 					<>
-						<ExplorerHeader tokenCount={tokens.length} />
-						<TokenGrid tokens={tokens} />
+						<ExplorerHeader tokenCount={curatedTokens.length} />
+						<TokenGrid tokens={curatedTokens} />
 					</>
 				)}
 			</div>

@@ -56,7 +56,7 @@ export default function Hero({ token }: { token: IToken | null }) {
 						src="/brand/backgrounds/hero-bg.jpg"
 						alt=""
 						aria-hidden="true"
-						className="absolute inset-0 h-full w-full object-cover object-center opacity-75"
+						className="absolute inset-0 h-full w-full object-cover object-center opacity-48"
 						loading="eager"
 					/>
 				</picture>
@@ -67,10 +67,9 @@ export default function Hero({ token }: { token: IToken | null }) {
 				className="absolute inset-0 z-[1]"
 				style={{
 					background: [
-						"radial-gradient(circle at 22% 44%, rgba(0,255,135,0.18), transparent 30%)",
-						"radial-gradient(circle at 78% 38%, rgba(140,160,255,0.08), transparent 24%)",
-						"linear-gradient(90deg, rgba(8,8,10,0.18) 0%, rgba(8,8,10,0.28) 32%, rgba(8,8,10,0.64) 100%)",
-						"linear-gradient(180deg, rgba(8,8,10,0.1) 0%, rgba(8,8,10,0.02) 46%, rgba(8,8,10,0.72) 100%)",
+						"radial-gradient(circle at 19% 42%, rgba(0,255,135,0.14), transparent 26%)",
+						"linear-gradient(90deg, rgba(8,8,10,0.26) 0%, rgba(8,8,10,0.34) 34%, rgba(8,8,10,0.58) 100%)",
+						"linear-gradient(180deg, rgba(8,8,10,0.08) 0%, rgba(8,8,10,0.02) 48%, rgba(8,8,10,0.72) 100%)",
 					].join(", "),
 				}}
 			/>
@@ -84,28 +83,16 @@ export default function Hero({ token }: { token: IToken | null }) {
 			{/* Background elements */}
 			<div className="absolute inset-0 z-[3]">
 				<div
-					className="absolute inset-0 opacity-70"
-					style={{
-						backgroundImage: [
-							"repeating-linear-gradient(0deg, transparent, transparent 55px, rgba(255,255,255,0.018) 55px, rgba(255,255,255,0.018) 56px)",
-							"repeating-linear-gradient(90deg, transparent, transparent 55px, rgba(255,255,255,0.018) 55px, rgba(255,255,255,0.018) 56px)",
-							"linear-gradient(118deg, transparent 0%, transparent 44%, rgba(255,255,255,0.04) 44.2%, transparent 44.5%, transparent 100%)",
-						].join(", "),
-					}}
-				/>
-				<div
-					className="absolute inset-y-0 left-0 w-[58%] opacity-80"
+					className="absolute inset-0 opacity-35"
 					style={{
 						backgroundImage:
-							"repeating-linear-gradient(118deg, transparent 0 18px, rgba(255,255,255,0.028) 18px 19px, transparent 19px 44px)",
-						maskImage: "linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.08), transparent)",
-						WebkitMaskImage: "linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.08), transparent)",
+							"repeating-linear-gradient(0deg, transparent, transparent 58px, rgba(255,255,255,0.012) 58px, rgba(255,255,255,0.012) 59px)",
 					}}
 				/>
 				<div
 					className="absolute inset-0"
 					style={{
-						background: `radial-gradient(ellipse at 26% 46%, transparent 0%, transparent 42%, ${bgDark} 86%)`,
+						background: `radial-gradient(ellipse at 24% 46%, transparent 0%, transparent 44%, ${bgDark} 84%)`,
 					}}
 				/>
 			</div>
@@ -249,11 +236,12 @@ export default function Hero({ token }: { token: IToken | null }) {
 									<div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.18)] to-transparent" />
 									<div className="relative aspect-[4/5] w-full overflow-hidden" style={{ backgroundColor: bgDark }}>
 										<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(255,255,255,0.08),transparent_36%)] z-[1] pointer-events-none" />
+										<div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0)_35%,rgba(8,8,10,0.1)_100%)] z-[1] pointer-events-none" />
 										<Image
 											src={token.image}
 											alt={token.name}
 											fill
-											className="object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+											className="object-contain object-center p-4 transition-transform duration-300 group-hover:scale-[1.02]"
 											sizes="(max-width: 1024px) 380px, 440px"
 											priority
 										/>
