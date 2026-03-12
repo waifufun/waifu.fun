@@ -8,31 +8,31 @@ interface FAQItem {
 }
 const defaultFAQs: FAQItem[] = [
 	{
-		question: "How much does it cost to deploy an agent?",
+		question: "How much does it cost to deploy an agent on waifu.fun?",
 		answer:
-			"Deploying an agent costs approximately 0.02-0.04 in network fees. Pre-buy needs additional funds (up to 28 max). Your agent gets its own on-chain token for economic autonomy.",
+			"Deploying an agent costs approximately 0.02-0.04 BNB in network fees. Pre-buy needs additional funds (up to 28 BNB max). Your agent gets its own on-chain token for economic autonomy.",
 	},
 	{
 		question: "What is the custom address generator?",
 		answer:
-			"Create a vanity address for your agent's token that ends with custom characters (like 'WAIFU'). Longer suffixes take more time.",
+			"Create a vanity address for your agent's token that ends with custom characters (like 'WAIFU'). Longer suffixes take more time to generate.",
 	},
 	{
-		question: "What's the difference between Auto and Manual?",
+		question: "Can I upload my own image or generate one with AI?",
 		answer:
-			"Auto generates an avatar using AI. Manual lets you upload your own and access advanced token economics.",
+			"You can either upload your own image (PNG, JPG, GIF, WEBP up to 5MB) or use AI to generate one. AI generation uses your agent description to create a unique avatar.",
 	},
 	{
 		question: "What is the curve limit?",
-		answer: "Determines how much needs to be raised before graduation to DEX.",
+		answer: "Determines how much market cap needs to be reached before your token graduates from the bonding curve to DEX liquidity.",
 	},
 	{
 		question: "What is delayed start?",
-		answer: "Schedule when trading begins. Choose preset times or set a custom date/time.",
+		answer: "Schedule when trading begins after deployment. Choose preset times or set a custom date/time to coordinate your token launch.",
 	},
 	{
 		question: "What are trade limits?",
-		answer: "Restrict max per transaction for the first 8 hours. Prevents large wallets from immediately dumping.",
+		answer: "Restrict maximum amount per transaction for the first 8 hours. Prevents large wallets from immediately dumping and helps ensure fairer distribution.",
 	},
 ];
 export function FAQAccordion({ className, faqs = defaultFAQs }: { className?: string; faqs?: FAQItem[] }) {

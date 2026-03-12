@@ -6,7 +6,7 @@ import { AgentPreviewCard } from "@/components/ui/create-token/agent-preview-car
 import { CreateWizard } from "@/components/ui/create-token/create-wizard";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
 import { useAccount } from "wagmi";
-import { LockKeyhole, RefreshCcw, Sparkles } from "lucide-react";
+import { LockKeyhole, RefreshCcw, Rocket } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/contexts/locale-context";
@@ -18,7 +18,7 @@ function CreateTokenLauncher() {
 			<div className="w-full max-w-6xl mx-auto px-4 pt-8 pb-4">
 				<div className="text-center mb-8">
 					<div className="inline-flex items-center gap-2 mb-3">
-						<Sparkles className="w-5 h-5 text-[#00ff87]" />
+						<Rocket className="w-5 h-5 text-[#00ff87]" />
 						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">{t("createPage.agentLaunchpad")}</span>
 					</div>
 					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">{t("createPage.deployYourAgent")}</h1>

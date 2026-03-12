@@ -23,7 +23,6 @@ import { FormSection } from "./form-section";
 import {
 	ChevronLeft,
 	ChevronRight,
-	Sparkles,
 	UploadCloud,
 	X,
 	RefreshCw,
@@ -34,6 +33,8 @@ import {
 	DollarSign,
 	Rocket,
 	MessageSquare,
+	Twitter,
+	Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,9 +43,9 @@ const formElementBaseClass =
 const formLabelBaseClass = "text-xs text-[#71717a] uppercase tracking-wider font-medium";
 
 const PLATFORMS = [
-	{ id: "twitter", label: "Twitter", icon: "𝕏" },
-	{ id: "discord", label: "Discord", icon: "💬" },
-	{ id: "telegram", label: "Telegram", icon: "✈️" },
+	{ id: "twitter", label: "Twitter", icon: Twitter },
+	{ id: "discord", label: "Discord", icon: MessageSquare },
+	{ id: "telegram", label: "Telegram", icon: Send },
 ] as const;
 
 const WIZARD_STEPS = [
@@ -348,7 +349,7 @@ function Step2AgentAppearance() {
 							: "bg-[#111114] border border-[rgba(255,255,255,0.08)] text-[#71717a] hover:text-[#e4e4e7] hover:border-[rgba(255,255,255,0.15)]",
 					)}
 				>
-					<Sparkles size={14} className="inline mr-2" />
+					<ImageIcon size={14} className="inline mr-2" />
 					Generate with AI
 				</button>
 			</div>
@@ -439,7 +440,7 @@ function Step2AgentAppearance() {
 								</div>
 							) : (
 								<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex flex-col items-center justify-center">
-									<Sparkles size={24} className="text-[#52525b]" />
+									<ImageIcon size={24} className="text-[#52525b]" />
 									<p className="text-[#52525b] text-sm font-mono mt-2">no image</p>
 								</div>
 							)}
@@ -530,6 +531,7 @@ function Step3AgentConfiguration() {
 					<div className="grid grid-cols-3 gap-4">
 						{PLATFORMS.map((platform) => {
 							const selected = selectedPlatforms.includes(platform.id);
+							const Icon = platform.icon;
 							return (
 								<button
 									key={platform.id}
@@ -542,7 +544,7 @@ function Step3AgentConfiguration() {
 											: "border-white/8 bg-white/3 text-[#71717a] hover:border-white/15 hover:text-[#a1a1aa]",
 									)}
 								>
-									<span className="text-2xl">{platform.icon}</span>
+									<Icon size={24} />
 									<span className="text-xs">{platform.label}</span>
 								</button>
 							);
@@ -550,7 +552,7 @@ function Step3AgentConfiguration() {
 					</div>
 					<div className="bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.15)] rounded-sm p-3 mt-4">
 						<p className="text-xs text-[#a1a1aa] leading-relaxed">
-							💡 <span className="text-[#00ff87] font-semibold">Optional:</span> You can skip this step and configure your agent's platforms
+							<span className="text-[#00ff87] font-semibold">Optional:</span> You can skip this step and configure your agent's platforms
 							later from your token dashboard.
 						</p>
 					</div>

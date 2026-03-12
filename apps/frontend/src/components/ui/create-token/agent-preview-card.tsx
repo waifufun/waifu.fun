@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrompt } from "@/components/hooks/providers/usePromptContext";
-import { User } from "lucide-react";
+import { User, Hash, TrendingUp, Activity } from "lucide-react";
 import { useMemo } from "react";
 
 export function AgentPreviewCard() {
@@ -92,17 +92,26 @@ export function AgentPreviewCard() {
 			{/* Stats */}
 			<div className="space-y-2">
 				<div className="flex items-center justify-between">
-					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider">⬡ Token Address</span>
+					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider flex items-center gap-1">
+						<Hash size={12} />
+						Token Address
+					</span>
 					<span className="text-xs text-[#a1a1aa] font-mono transition-all duration-200">
 						{tokenAddressDisplay}
 					</span>
 				</div>
 				<div className="flex items-center justify-between">
-					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider">📊 Market Cap</span>
+					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider flex items-center gap-1">
+						<TrendingUp size={12} />
+						Market Cap
+					</span>
 					<span className="text-xs text-[#a1a1aa] font-mono">TBD</span>
 				</div>
 				<div className="flex items-center justify-between">
-					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider">🤖 Status</span>
+					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider flex items-center gap-1">
+						<Activity size={12} />
+						Status
+					</span>
 					<span className="text-xs text-[#00ff87] font-mono">Ready to deploy</span>
 				</div>
 			</div>

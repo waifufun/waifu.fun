@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Copy, Share2, ExternalLink, Sparkles } from "lucide-react";
+import { CheckCircle2, Copy, Share2, ExternalLink, Rocket } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -33,7 +33,7 @@ export function DeploySuccess({
 	};
 
 	const handleShare = () => {
-		const shareText = `I just deployed $${ticker} on @waifufun 🚀`;
+		const shareText = `I just deployed $${ticker} on @waifufun`;
 		const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
 		window.open(twitterUrl, "_blank", "noopener,noreferrer");
 	};
@@ -100,7 +100,7 @@ export function DeploySuccess({
 					className="col-span-1 sm:col-span-3 h-14 bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] font-bold uppercase tracking-wider rounded-sm transition-all duration-300 flex items-center justify-center gap-2 group"
 					style={{ boxShadow: "0 0 20px rgba(0,255,135,0.3)" }}
 				>
-					<Sparkles size={18} className="group-hover:animate-pulse" />
+					<Rocket size={18} className="group-hover:animate-pulse" />
 					Deploy AI Agent
 				</button>
 				
