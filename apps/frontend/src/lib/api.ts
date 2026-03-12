@@ -1,12 +1,22 @@
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
 
+const DEFAULT_API_ORIGIN = "http://89.167.63.246:3100";
+
+const normalizeApiOrigin = (value?: string | null) => {
+	const trimmed = value?.trim();
+	if (!trimmed) return DEFAULT_API_ORIGIN;
+	if (trimmed === "http://89.167.63.246" || trimmed === "https://89.167.63.246") {
+		return `${trimmed}:3100`;
+	}
+	return trimmed.replace(/\/+$/, "");
+};
+
 const getBaseUrl = () => {
 	const publicUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-	if (publicUrl) return publicUrl.replace(/\/+$/, "");
+	if (publicUrl) return normalizeApiOrigin(publicUrl);
 
 	if (typeof window === "undefined") {
-		const serverOrigin = process.env.API_ORIGIN?.trim() || "http://89.167.63.246";
-		return serverOrigin.replace(/\/+$/, "");
+		return normalizeApiOrigin(process.env.API_ORIGIN);
 	}
 
 	if (process.env.NODE_ENV === "development") {
@@ -92,6 +102,43 @@ const getApiUrl = (endpoint: string) => {
 	return `${BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 };
 
+const toNumber = (value: unknown, fallback = 0) => {
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const unwrapApiData = <T = any>(payload: any): T => {
+	if (payload && typeof payload === "object" && "data" in payload) {
+		return payload.data as T;
+	}
+	return payload as T;
+};
+
+const getApiItems = (payload: any): any[] => {
+	const data = unwrapApiData<any>(payload);
+	if (Array.isArray(data)) return data;
+	if (Array.isArray(data?.items)) return data.items;
+	if (Array.isArray(payload?.items)) return payload.items;
+	return [];
+};
+
+const getApiErrorMessage = (payload: any, fallback: string) => {
+	const nestedError = payload?.error;
+	if (typeof nestedError?.message === "string" && nestedError.message.length > 0) return nestedError.message;
+	if (typeof payload?.message === "string" && payload.message.length > 0) return payload.message;
+	if (typeof nestedError === "string" && nestedError.length > 0) return nestedError;
+	return fallback;
+};
+
+const normalizeWalletAddress = (value: unknown) => {
+	if (!value) return null;
+	if (typeof value === "string") return { address: value as AddressLike };
+	if (typeof value === "object" && typeof (value as { address?: unknown }).address === "string") {
+		return { address: (value as { address: AddressLike }).address };
+	}
+	return null;
+};
+
 export const isApiUnavailableError = (error: unknown) =>
 	error instanceof ApiError &&
 	(error.code === "CONFIG" || error.code === "NETWORK" || (error.code === "HTTP" && (error.status ?? 0) >= 500));
@@ -154,41 +201,62 @@ export const fetcher = async (
 			credentials: "include",
 		});
 
-		if (!response.ok) {
-			if (response.status === 401) {
-				console.warn(`Authentication required for ${endpoint}`);
-				throw createApiError({
-					message: "Authentication required. Please sign in to access this data.",
-					code: "HTTP",
-					endpoint,
-					status: response.status,
-				});
-			}
-
-			const errorBody = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
-			throw createApiError({
-				message: errorBody?.message || errorBody?.error || `Request failed with status ${response.status}`,
-				code: "HTTP",
-				endpoint,
-				status: response.status,
-				details: errorBody,
-			});
-		}
-
 		if (response.status === 204) {
 			return null as any;
 		}
 
-		const result = await response.json().catch((error: unknown) => {
+		let rawBody = "";
+		let parsedBody: any = null;
+		try {
+			rawBody = await response.text();
+			if (rawBody) {
+				parsedBody = JSON.parse(rawBody);
+			}
+		} catch (error: unknown) {
+			if (response.ok) {
+				throw createApiError({
+					message: "API returned an invalid response.",
+					code: "PARSE",
+					endpoint,
+					status: response.status,
+					cause: error,
+				});
+			}
+			parsedBody = rawBody ? { message: rawBody } : null;
+		}
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				console.warn(`Authentication required for ${endpoint}`);
+				throw createApiError({
+					message: getApiErrorMessage(parsedBody, "Authentication required. Please sign in to access this data."),
+					code: "HTTP",
+					endpoint,
+					status: response.status,
+					details: parsedBody,
+				});
+			}
+
 			throw createApiError({
-				message: "API returned an invalid response.",
-				code: "PARSE",
+				message: getApiErrorMessage(parsedBody, `Request failed with status ${response.status}`),
+				code: "HTTP",
 				endpoint,
 				status: response.status,
-				cause: error,
+				details: parsedBody,
 			});
-		});
-		return result;
+		}
+
+		if (parsedBody?.ok === false) {
+			throw createApiError({
+				message: getApiErrorMessage(parsedBody, "API request failed."),
+				code: "HTTP",
+				endpoint,
+				status: response.status || 500,
+				details: parsedBody,
+			});
+		}
+
+		return parsedBody;
 	} catch (error: unknown) {
 		console.error(`API Request Failed: ${endpoint}`, error);
 		if (error instanceof ApiError) {
@@ -207,34 +275,48 @@ export const fetcher = async (
 
 /** Map a waifu-core /tokens API item to the frontend IToken shape. */
 function mapApiTokenToIToken(apiToken: any): IToken {
-	let status = apiToken.status;
+	const source = unwrapApiData<any>(apiToken) ?? {};
+	let status = source.status;
 	if (status === "tradable") status = "active";
 	else if (status === "dex") status = "migrated";
-	// "staged" and others pass through as-is
 
 	return {
-		contractAddress: apiToken.address,
-		chain: apiToken.chain || "evm",
-		chainId: apiToken.chainId || 56,
-		name: apiToken.name,
-		ticker: apiToken.symbol,
-		image: apiToken.image || "/waifus/default.png",
-		description: apiToken.description || "",
-		price: parseFloat(apiToken.price) || 0,
-		totalSupply: 0,
-		marketcap: parseFloat(apiToken.marketCap) || 0,
-		volume24h: parseFloat(apiToken.volume24h) || 0,
-		decimals: 18,
-		holders: apiToken.holders || 0,
+		contractAddress: source.address || source.contractAddress || source.mint,
+		chain: source.chain || "evm",
+		chainId: toNumber(source.chainId, 56),
+		name: source.name || "",
+		ticker: source.symbol || source.ticker || "",
+		image: source.image || source.imageUrl || source.logo || "/waifus/default.png",
+		description: source.description || "",
+		price: toNumber(source.price ?? source.priceUsd ?? source.currentPrice),
+		totalSupply: toNumber(source.totalSupply),
+		marketcap: toNumber(source.marketCap ?? source.marketcap),
+		volume24h: toNumber(source.volume24h ?? source.volume24 ?? source.volume24H),
+		decimals: toNumber(source.decimals, 18),
+		holders: toNumber(source.holders),
 		status,
-		curveProgress: apiToken.progressPercent || 0,
-		featured: apiToken.featured || false,
-		socials: {},
-		version: 1,
-		creator: apiToken.creatorAddress,
-		createdAt: apiToken.createdAt,
+		curveProgress: toNumber(source.progressPercent ?? source.curveProgress),
+		featured: Boolean(source.featured),
+		socials: source.socials || {},
+		version: toNumber(source.version, 1),
+		creator: source.creatorAddress || source.creator || source.creatorWallet,
+		createdAt: source.createdAt || source.launchDate || source.launchedAt,
+		hidden: Boolean(source.hidden),
+		verified: Boolean(source.verified),
+		pool: source.pool,
+		metadataUrl: source.metadataUrl,
+		curveCompleted: source.curveCompleted,
+		agentStatus: source.agentStatus,
+		agentLifecycleState: source.agentLifecycleState,
+		cloudAgentId: source.cloudAgentId,
+		webUiUrl: source.webUiUrl,
+		billingMode: source.billingMode,
+		infraReserveUsd: toNumber(source.infraReserveUsd),
+		hasAgent: Boolean(source.hasAgent),
 	} as IToken;
 }
+
+const normalizeAddress = (value: unknown) => String(value ?? "").trim().toLowerCase();
 
 export const getTokens = async ({
 	searchParams,
@@ -245,7 +327,7 @@ export const getTokens = async ({
 }) => {
 	try {
 		const queryParams = new URLSearchParams();
-		
+
 		if (searchParams?.search) {
 			queryParams.append("search", String(searchParams.search));
 		}
@@ -262,21 +344,44 @@ export const getTokens = async ({
 			queryParams.append("featured", "true");
 		}
 
-		const response = await fetcher(`/tokens?${queryParams.toString()}`, "GET");
-		// waifu-core wraps in { ok, data: { items, total, limit } }
-		const items = response?.data?.items || response?.items || [];
-		return items.map(mapApiTokenToIToken);
+		const endpoint = queryParams.size > 0 ? `/tokens?${queryParams.toString()}` : "/tokens";
+		const response = await fetcher(endpoint, "GET");
+		return getApiItems(response).map(mapApiTokenToIToken);
 	} catch (error) {
 		console.error("Error fetching tokens:", error);
 		return [];
 	}
 };
 
-export const getToken = async ({ chain: _chain, chainId: _chainId, contractAddress }: ITokenLookUp) => {
-	// waifu-core uses just the contract address, not chain/chainId routing
-	const response = await fetcher(`/tokens/${contractAddress}`, "GET");
-	const raw = response?.data || response;
-	return mapApiTokenToIToken(raw);
+export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
+	const searchParams = new URLSearchParams({
+		search: String(contractAddress),
+		limit: "20",
+	});
+	const endpoint = `/tokens?${searchParams.toString()}`;
+	const response = await fetcher(endpoint, "GET");
+	const items = getApiItems(response);
+	const lookupAddress = normalizeAddress(contractAddress);
+	const matchedToken =
+		items.find((item) => {
+			const itemAddress = normalizeAddress(item?.address || item?.contractAddress || item?.mint);
+			if (itemAddress !== lookupAddress) return false;
+			if (chain && item?.chain && item.chain !== chain) return false;
+			if (chainId && item?.chainId && toNumber(item.chainId) !== toNumber(chainId)) return false;
+			return true;
+		}) || items.find((item) => normalizeAddress(item?.address || item?.contractAddress || item?.mint) === lookupAddress);
+
+	if (!matchedToken) {
+		throw createApiError({
+			message: `Token ${contractAddress} not found.`,
+			code: "HTTP",
+			endpoint,
+			status: 404,
+			details: response,
+		});
+	}
+
+	return mapApiTokenToIToken(matchedToken);
 };
 
 export const getChartData = async ({
@@ -311,35 +416,41 @@ export const getChartData = async ({
 
 export const getTokenTrades = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
 	const response = await fetcher(`/tokens/${contractAddress}/trades`, "GET");
-	return response?.data?.items || response?.items || [];
+	return getApiItems(response);
 };
 
-export const authenticate = async (address: AddressLike, signature: string, chain: TChain) => {
-	// waifu-core uses SIWE endpoint
-	return await fetcher("/auth/siwe", "POST", {
+export const authenticate = async (
+	address: AddressLike,
+	signature: string,
+	chain: TChain,
+	message?: string,
+) => {
+	return await fetcher("/auth/verify", "POST", {
 		address,
 		signature,
-		message: `Sign in to waifu.fun with ${address}`, // Placeholder SIWE message
+		chain,
+		...(message ? { message } : {}),
 	});
 };
 
 export const generateNonce = async (address: AddressLike) => {
-	// waifu-core SIWE flow doesn't have separate nonce generation
-	// Frontend should generate nonce client-side or use the combined SIWE flow
-	console.warn("[waifu-core] Nonce generation is client-side in SIWE flow");
-	return { nonce: `waifu-${Date.now()}-${Math.random().toString(36).slice(2)}` };
+	const response = await fetcher("/auth/nonce", "POST", { address });
+	return unwrapApiData(response);
 };
 
 export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
 	try {
 		const response = await fetcher("/auth/me", "GET");
-		// Map waifu-core response to expected shape
+		const data = unwrapApiData<any>(response) ?? {};
+		const wallets = {
+			solana: normalizeWalletAddress(data?.wallets?.solana),
+			evm: normalizeWalletAddress(data?.wallets?.evm || data?.auth?.address || data?.address),
+		};
 		return {
-			authenticated: !!response.auth,
-			wallets: {
-				solana: null,
-				evm: response.auth ? { address: response.auth.address } : null,
-			},
+			authenticated:
+				typeof data?.authenticated === "boolean" ? data.authenticated : Boolean(data?.auth || wallets.solana || wallets.evm),
+			wallets,
+			message: data?.message,
 		};
 	} catch (error) {
 		return {
@@ -440,7 +551,7 @@ export const getAdminTokens = async (params: {
 		const limit = params.limit || 20;
 		const page = params.page || 1;
 		const totalPages = Math.ceil(total / limit);
-		
+
 		return {
 			docs: items,
 			tokens: items,
@@ -507,7 +618,7 @@ export const generateMedia = async ({
 	const seed = encodeURIComponent(prompt || "waifu");
 	const size = Math.min(width || 512, height || 512);
 	const mediaUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&size=${size}`;
-	
+
 	console.log("[waifu-core] Generated placeholder media:", mediaUrl);
 	return { mediaUrl };
 };
@@ -533,7 +644,7 @@ export const generateMediaForToken = async ({
 	const seed = encodeURIComponent(`${contractAddress}-${prompt || "waifu"}`);
 	const size = Math.min(width || 512, height || 512);
 	const mediaUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&size=${size}`;
-	
+
 	console.log("[waifu-core] Generated placeholder token media:", mediaUrl);
 	return { mediaUrl };
 };
@@ -547,16 +658,16 @@ export const generateMetadata = async ({
 	const name = prompt?.substring(0, 64) || "Waifu Token";
 	const ticker = name.substring(0, 6).toUpperCase().replace(/[^A-Z]/g, "") || "WAIFU";
 	const description = prompt || "A waifu.fun token";
-	
+
 	console.log("[waifu-core] Generated placeholder metadata:", { name, ticker, description });
-	return { 
-		metadata: { 
-			name, 
-			symbol: ticker, 
-			description, 
+	return {
+		metadata: {
+			name,
+			symbol: ticker,
+			description,
 			prompt: prompt || "",
-			image: "" 
-		} 
+			image: ""
+		}
 	};
 };
 
@@ -783,12 +894,13 @@ export const getTokensCreated = async ({
 
 export const getAdminStatus = async () => {
 	try {
-		const response = await fetcher("/auth/me", "GET");
-		const isAdmin = response.auth?.role === "admin" || response.auth?.role === "superadmin";
+		const response = await fetcher("/admin/status", "GET");
+		const data = unwrapApiData<any>(response) ?? {};
+		const isAdmin = Boolean(data?.isAdmin);
 		return {
-			success: true,
+			success: data?.success ?? true,
 			isAdmin,
-			adminInfo: isAdmin ? { role: response.auth.role } : undefined,
+			adminInfo: isAdmin ? data?.adminInfo : undefined,
 		};
 	} catch (error) {
 		return {
