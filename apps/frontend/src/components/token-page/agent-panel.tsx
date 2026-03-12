@@ -2,17 +2,11 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-	getAgentByToken,
-	restartAgent,
-	stopAgent,
-	type AgentStatus,
-} from "@/lib/api";
+import { getAgentByToken, restartAgent, stopAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import {
 	Bot,
-	ExternalLink,
 	RefreshCw,
 	Square,
 	Loader2,
@@ -23,77 +17,55 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DeployAgentModal } from "@/components/ui/create-token/deploy-agent-modal";
 
-const statusConfig: Record<
-	string,
-	{ label: string; toneClass: string; dotClass: string }
-> = {
-	queued: {
-		label: "Queued",
-		toneClass: "border-sky-500/30 bg-sky-500/10 text-sky-300",
-		dotClass: "bg-sky-400",
-	},
-	provisioning: {
-		label: "Provisioning",
-		toneClass: "border-sky-500/30 bg-sky-500/10 text-sky-300",
-		dotClass: "bg-sky-400 animate-pulse",
-	},
-	running: {
-		label: "Running",
-		toneClass: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]",
-		dotClass: "bg-[#00ff87]",
-	},
-	stopped: {
-		label: "Stopped",
-		toneClass: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-		dotClass: "bg-amber-400",
-	},
-	failed: {
-		label: "Failed",
-		toneClass: "border-red-500/30 bg-red-500/10 text-red-300",
-		dotClass: "bg-red-400",
-	},
-	deleted: {
-		label: "Deleted",
-		toneClass: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
-		dotClass: "bg-zinc-400",
-	},
+/* ── status config ── */
+const STATUS_CFG: Record<string, { label: string; dot: string; tone: string }> = {
+	queued:        { label: "queued",        dot: "bg-sky-400",    tone: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
+	provisioning:  { label: "provisioning",  dot: "bg-sky-400 animate-pulse", tone: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
+	running:       { label: "running",       dot: "bg-[#00ff87]",  tone: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]" },
+	stopped:       { label: "stopped",       dot: "bg-amber-400",  tone: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
+	failed:        { label: "failed",        dot: "bg-red-400",    tone: "border-red-500/30 bg-red-500/10 text-red-300" },
+	deleted:       { label: "deleted",       dot: "bg-zinc-400",   tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
+};
+const DEFAULT_CFG = { label: "unknown", dot: "bg-zinc-400", tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" };
+
+/* ── platform icons (SVG inline, tiny) ── */
+const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string }> = {
+	twitter:   { label: "Twitter",   icon: <svg viewBox="0 0 24 24" className="size-3.5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+	discord:   { label: "Discord",   icon: <svg viewBox="0 0 24 24" className="size-3.5 fill-current"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg> },
+	telegram:  { label: "Telegram",  icon: <svg viewBox="0 0 24 24" className="size-3.5 fill-current"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg> },
+	farcaster: { label: "Farcaster", icon: <svg viewBox="0 0 24 24" className="size-3.5 fill-current"><path d="M5.322 3h13.356v2.3l1.09.767H4.232l1.09-.768V3zm13.356 18H5.322v-2.3l-1.09-.767h15.536l-1.09.768V21zM18.678 7.615H5.322L4.232 9.23h15.536l-1.09-1.615zm0 2.77H5.322v5.23h13.356v-5.23z"/></svg> },
 };
 
-function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
-	const base = "absolute h-2.5 w-2.5 pointer-events-none";
-	const styles: Record<typeof position, string> = {
-		tl: `${base} left-0 top-0 border-l border-t border-[#00ff87]/35`,
-		tr: `${base} right-0 top-0 border-r border-t border-[#00ff87]/35`,
-		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/35`,
-		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/35`,
-	};
-	return <span className={styles[position]} />;
-}
-
-const defaultStatusConfig = {
-	label: "Unknown",
-	toneClass: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
-	dotClass: "bg-zinc-400",
-};
-
-function StatusPill({ status }: { status: string }) {
-	const config = statusConfig[status] ?? defaultStatusConfig;
+function StatusBadge({ status }: { status: string }) {
+	const cfg = STATUS_CFG[status] ?? DEFAULT_CFG;
 	return (
-		<span
-			className={cn(
-				"inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[10px] font-mono uppercase tracking-[0.18em]",
-				config.toneClass,
-			)}
-		>
-			<span
-				className={cn("size-1.5 rounded-full", config.dotClass)}
-			/>
-			{config.label}
+		<span className={cn("inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em]", cfg.tone)}>
+			<span className={cn("size-1.5 rounded-full", cfg.dot)} />
+			{cfg.label}
 		</span>
 	);
 }
 
-export default function AgentPanel({ token }: { token: IToken }) {
+function PlatformRow({ platforms }: { platforms?: string[] | undefined }) {
+	const all = Object.keys(PLATFORM_ICONS);
+	return (
+		<div className="flex items-center gap-2">
+			{all.map((p) => {
+				const active = platforms?.includes(p);
+				const info = PLATFORM_ICONS[p];
+				if (!info) return null;
+				return (
+					<span key={p} title={info.label} className={cn("flex items-center gap-1", active ? "text-[#e4e4e7]" : "text-[#3f3f46]")}>
+						{info.icon}
+						{active && <span className="size-1.5 rounded-full bg-[#00ff87]" />}
+					</span>
+				);
+			})}
+		</div>
+	);
+}
+
+export default function AgentPanel({ token, isCreator = false }: { token: IToken; isCreator?: boolean }) {
 	const queryClient = useQueryClient();
 	const [deployModalOpen, setDeployModalOpen] = useState(false);
 
@@ -101,282 +73,121 @@ export default function AgentPanel({ token }: { token: IToken }) {
 		queryKey: ["agent-by-token", token.contractAddress],
 		queryFn: () => getAgentByToken(token.contractAddress),
 		refetchInterval: (query) => {
-			const data = query.state.data;
-			if (
-				data?.status === "queued" ||
-				data?.status === "provisioning"
-			) {
-				return 5_000;
-			}
-			return 30_000;
+			const s = query.state.data?.status;
+			return s === "queued" || s === "provisioning" ? 5_000 : 30_000;
 		},
 		retry: 1,
 	});
 
 	const agent = agentQuery.data;
+	const refresh = () => queryClient.invalidateQueries({ queryKey: ["agent-by-token", token.contractAddress] });
 
-	const refreshAgent = () => {
-		queryClient.invalidateQueries({
-			queryKey: ["agent-by-token", token.contractAddress],
-		});
-	};
-
-	const restartMutation = useMutation({
-		mutationFn: () => {
-			if (!agent?.agentId) throw new Error("No agent ID");
-			return restartAgent(agent.agentId);
-		},
-		onSuccess: () => {
-			toast.success("Agent restart requested");
-			refreshAgent();
-		},
-		onError: (error: Error) => {
-			toast.error(error.message || "Failed to restart agent");
-		},
+	const restartMut = useMutation({
+		mutationFn: () => { if (!agent?.agentId) throw new Error("No agent ID"); return restartAgent(agent.agentId); },
+		onSuccess: () => { toast.success("Agent restart requested"); refresh(); },
+		onError: (e: Error) => toast.error(e.message || "Failed to restart"),
 	});
 
-	const stopMutation = useMutation({
-		mutationFn: () => {
-			if (!agent?.agentId) throw new Error("No agent ID");
-			return stopAgent(agent.agentId);
-		},
-		onSuccess: () => {
-			toast.success("Agent stopped");
-			refreshAgent();
-		},
-		onError: (error: Error) => {
-			toast.error(error.message || "Failed to stop agent");
-		},
+	const stopMut = useMutation({
+		mutationFn: () => { if (!agent?.agentId) throw new Error("No agent ID"); return stopAgent(agent.agentId); },
+		onSuccess: () => { toast.success("Agent stopped"); refresh(); },
+		onError: (e: Error) => toast.error(e.message || "Failed to stop"),
 	});
 
-	const anyPending =
-		restartMutation.isPending || stopMutation.isPending;
+	const busy = restartMut.isPending || stopMut.isPending;
 
-	// Loading state
+	/* ── loading ── */
 	if (agentQuery.isLoading) {
 		return (
-			<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
 				<div className="flex items-center gap-2 text-xs text-[#71717a]">
 					<Loader2 className="size-3.5 animate-spin text-[#00ff87]" />
-					<span className="font-mono uppercase tracking-wider">
-						Checking agent status…
-					</span>
+					<span className="font-mono uppercase tracking-wider">checking agent…</span>
 				</div>
 			</div>
 		);
 	}
 
-	// Error state
+	/* ── error ── */
 	if (agentQuery.error && !agent) {
 		return (
-			<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4">
+			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
 				<div className="flex items-center gap-2 text-xs text-[#71717a]">
 					<AlertCircle className="size-3.5 text-red-400" />
-					<span>Could not check agent status.</span>
-					<button
-						type="button"
-						onClick={refreshAgent}
-						className="text-[#00ff87] hover:underline font-mono uppercase text-[10px]"
-					>
-						Retry
-					</button>
+					<span>could not check agent status.</span>
+					<button type="button" onClick={refresh} className="text-[#00ff87] hover:underline font-mono uppercase text-[10px]">retry</button>
 				</div>
 			</div>
 		);
 	}
 
-	// No agent — show deploy prompt
+	/* ── no agent: deploy prompt (creator) or nothing ── */
 	if (!agent) {
+		if (!isCreator) return null;
 		return (
 			<>
-				<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]">
-					<HudCorner position="tl" />
-					<HudCorner position="tr" />
-					<HudCorner position="bl" />
-					<HudCorner position="br" />
-
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-						<div className="space-y-1">
-							<div className="flex items-center gap-2">
-								<Bot className="size-4 text-[#00ff87]" />
-								<h3 className="text-xs font-mono uppercase tracking-[0.18em] text-[#e4e4e7]">
-									AI Agent
-								</h3>
-							</div>
-							<p className="text-xs text-[#71717a]">
-								No agent is linked to this token yet. Deploy
-								one to engage your community automatically.
-							</p>
-						</div>
-						<Button
-							onClick={() => setDeployModalOpen(true)}
-							className="h-9 px-4 text-[11px] font-mono uppercase shrink-0"
-						>
-							<Sparkles className="size-3.5" />
-							Deploy Agent
-						</Button>
+				<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex items-center justify-between gap-3">
+					<div className="flex items-center gap-2">
+						<Bot className="size-4 text-[#00ff87]" />
+						<span className="text-xs text-[#71717a]">no agent deployed</span>
 					</div>
+					<Button onClick={() => setDeployModalOpen(true)} className="h-7 px-3 text-[10px] font-mono uppercase shrink-0">
+						<Sparkles className="size-3" />deploy
+					</Button>
 				</div>
-
 				<DeployAgentModal
 					open={deployModalOpen}
-					onOpenChange={(v) => {
-						setDeployModalOpen(v);
-						if (!v) refreshAgent();
-					}}
-					tokenName={token.name}
-					tokenDescription={token.description}
-					tokenAddress={token.contractAddress}
+					onOpenChange={(v) => { setDeployModalOpen(v); if (!v) refresh(); }}
+					tokenName={token.name} tokenDescription={token.description} tokenAddress={token.contractAddress}
 				/>
 			</>
 		);
 	}
 
-	// Agent exists — show management panel
+	/* ── non-owner summary: just badge + platforms ── */
+	if (!isCreator) {
+		return (
+			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex items-center gap-3 flex-wrap">
+				<Bot className="size-4 text-[#00ff87]" />
+				<StatusBadge status={agent.status} />
+				<PlatformRow platforms={agent.platforms} />
+			</div>
+		);
+	}
+
+	/* ── owner management row ── */
+	const canRestart = agent.status === "running" || agent.status === "stopped" || agent.status === "failed";
+	const canStop = agent.status === "running";
+	const isProvisioning = agent.status === "queued" || agent.status === "provisioning";
+
 	return (
 		<>
-			<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 sm:p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]">
-				<HudCorner position="tl" />
-				<HudCorner position="tr" />
-				<HudCorner position="bl" />
-				<HudCorner position="br" />
+			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex flex-col gap-3">
+				{/* control row */}
+				<div className="flex items-center gap-2 flex-wrap">
+					<Bot className="size-4 shrink-0 text-[#00ff87]" />
+					<StatusBadge status={agent.status} />
+					<PlatformRow platforms={agent.platforms} />
 
-				<div className="flex flex-col gap-3">
-					{/* Header row */}
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-						<div className="flex items-center gap-2 min-w-0">
-							<Bot className="size-4 shrink-0 text-[#00ff87]" />
-							<h3 className="text-xs font-mono uppercase tracking-[0.18em] text-[#e4e4e7] truncate">
-								{agent.agentName || "AI Agent"}
-							</h3>
-							<StatusPill status={agent.status} />
-						</div>
-						<Button
-							variant="outline"
-							size="sm"
-							className="h-7 px-2 text-[10px] font-mono uppercase text-[#a1a1aa] hover:text-[#00ff87]"
-							onClick={refreshAgent}
-							disabled={anyPending}
-						>
-							<RefreshCw className="size-3" />
-							Refresh
-						</Button>
-					</div>
-
-					{/* Agent details */}
-					<div className="grid gap-2 md:grid-cols-2">
-						<div className="rounded-sm border border-white/6 bg-[#08080a] px-3 py-2">
-							<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">
-								Agent ID
-							</p>
-							<p className="mt-0.5 text-xs font-mono text-[#e4e4e7] truncate">
-								{agent.agentId}
-							</p>
-						</div>
-						<div className="rounded-sm border border-white/6 bg-[#08080a] px-3 py-2">
-							<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">
-								Status
-							</p>
-							<p className="mt-0.5 text-xs text-[#e4e4e7] capitalize">
-								{agent.status}
-							</p>
-						</div>
-					</div>
-
-					{/* Platforms */}
-					{agent.platforms && agent.platforms.length > 0 && (
-						<div className="flex items-center gap-2">
-							<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">
-								Platforms:
-							</span>
-							{agent.platforms.map((p) => (
-								<span
-									key={p}
-									className="inline-flex items-center rounded-sm border border-white/8 bg-white/3 px-2 py-0.5 text-[10px] font-mono uppercase text-[#a1a1aa]"
-								>
-									{p}
-								</span>
-							))}
-						</div>
-					)}
-
-					{/* Web UI link */}
-					{agent.containerUrl && (
-						<a
-							href={agent.containerUrl}
-							target="_blank"
-							rel="noreferrer"
-							className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.16em] text-[#00ff87] hover:text-[#7dffc1] transition-colors"
-						>
-							<ExternalLink className="size-3.5" />
-							Open Agent UI
-						</a>
-					)}
-
-					{/* Actions */}
-					<div className="flex flex-wrap gap-2 pt-1">
-						{agent.status === "running" && (
-							<>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() =>
-										restartMutation.mutate()
-									}
-									disabled={anyPending}
-									className="h-8 px-3 text-[10px] font-mono uppercase text-[#a1a1aa] hover:text-[#00ff87]"
-								>
-									{restartMutation.isPending ? (
-										<Loader2 className="size-3 animate-spin" />
-									) : (
-										<RefreshCw className="size-3" />
-									)}
-									Restart
-								</Button>
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() =>
-										stopMutation.mutate()
-									}
-									disabled={anyPending}
-									className="h-8 px-3 text-[10px] font-mono uppercase text-amber-300 hover:text-amber-200 border-amber-500/20"
-								>
-									{stopMutation.isPending ? (
-										<Loader2 className="size-3 animate-spin" />
-									) : (
-										<Square className="size-3" />
-									)}
-									Stop
-								</Button>
-							</>
-						)}
-
-						{(agent.status === "stopped" ||
-							agent.status === "failed") && (
-							<Button
-								size="sm"
-								onClick={() =>
-									restartMutation.mutate()
-								}
-								disabled={anyPending}
-								className="h-8 px-3 text-[10px] font-mono uppercase"
-							>
-								{restartMutation.isPending ? (
-									<Loader2 className="size-3 animate-spin" />
-								) : (
-									<RefreshCw className="size-3" />
-								)}
-								Restart Agent
+					<div className="ml-auto flex items-center gap-1.5">
+						{canRestart && (
+							<Button variant="outline" size="sm" onClick={() => restartMut.mutate()} disabled={busy}
+								className="h-7 px-2 text-[10px] font-mono uppercase text-[#a1a1aa] hover:text-[#00ff87]">
+								{restartMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+								restart
 							</Button>
 						)}
-
-						{(agent.status === "queued" ||
-							agent.status === "provisioning") && (
-							<div className="flex items-center gap-2 rounded-sm border border-sky-500/20 bg-sky-500/5 px-3 py-2 text-xs text-sky-200/90">
-								<Loader2 className="size-3 animate-spin" />
-								Agent is being provisioned…
-							</div>
+						{canStop && (
+							<Button variant="outline" size="sm" onClick={() => stopMut.mutate()} disabled={busy}
+								className="h-7 px-2 text-[10px] font-mono uppercase text-amber-300 hover:text-amber-200 border-amber-500/20">
+								{stopMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <Square className="size-3" />}
+								stop
+							</Button>
+						)}
+						{isProvisioning && (
+							<span className="flex items-center gap-1.5 text-[10px] font-mono text-sky-300">
+								<Loader2 className="size-3 animate-spin" />provisioning…
+							</span>
 						)}
 					</div>
 				</div>
@@ -384,13 +195,8 @@ export default function AgentPanel({ token }: { token: IToken }) {
 
 			<DeployAgentModal
 				open={deployModalOpen}
-				onOpenChange={(v) => {
-					setDeployModalOpen(v);
-					if (!v) refreshAgent();
-				}}
-				tokenName={token.name}
-				tokenDescription={token.description}
-				tokenAddress={token.contractAddress}
+				onOpenChange={(v) => { setDeployModalOpen(v); if (!v) refresh(); }}
+				tokenName={token.name} tokenDescription={token.description} tokenAddress={token.contractAddress}
 			/>
 		</>
 	);

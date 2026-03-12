@@ -101,7 +101,7 @@ export default function PageClient({
 					<div className="flex flex-col gap-4">
 						<SectionHeader>agent controls</SectionHeader>
 						<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="min-w-0">
-							<AgentPanel token={token} />
+							<AgentPanel token={token} isCreator={isCreator} />
 						</motion.div>
 					</div>
 
