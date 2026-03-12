@@ -4,7 +4,10 @@ import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useTranslation } from "@/contexts/locale-context";
+
+const GlitchBg = dynamic(() => import("@/components/landing/glitch-bg"), { ssr: false });
 import {
 	Cloud,
 	Server,
@@ -265,24 +268,37 @@ export default function StoryPage() {
 
 	return (
 		<div className="min-h-screen bg-[#08080a] overflow-x-hidden">
+			{/* Fixed glitch canvas background */}
+			<div className="fixed inset-0 z-0 opacity-30 pointer-events-none">
+				<GlitchBg
+					glitchColors={["#0a1a12", "#00ff87", "#0d2818", "#061a0e"]}
+					glitchSpeed={80}
+					smooth
+					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"
+				/>
+			</div>
+
+			{/* Fixed scanlines */}
 			<div
-				className="fixed inset-0 pointer-events-none z-50 opacity-[0.015]"
+				className="fixed inset-0 pointer-events-none z-[51] opacity-[0.03]"
 				style={{
 					backgroundImage:
 						"repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)",
 				}}
 			/>
+			{/* Fixed noise grain */}
 			<div
-				className="fixed inset-0 pointer-events-none z-40 opacity-[0.03]"
+				className="fixed inset-0 pointer-events-none z-[52] opacity-[0.04]"
 				style={{
 					backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
 				}}
 			/>
 
 			<section ref={heroRef} className="relative py-28 sm:py-40 overflow-hidden min-h-[90vh] flex items-center">
+				{/* Hero-specific stronger glitch glow */}
 				<div
 					className="absolute inset-0"
-					style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(0,255,135,0.08) 0%, transparent 50%)" }}
+					style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(0,255,135,0.12) 0%, transparent 50%)" }}
 				/>
 				<div
 					className="absolute inset-0"

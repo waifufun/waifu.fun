@@ -89,8 +89,8 @@ export default function Hero() {
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* Glitch character background */}
-			<div className="absolute inset-0 z-0 opacity-40">
+			{/* L1: Glitch character canvas — prominent */}
+			<div className="absolute inset-0 z-0 opacity-60">
 				<GlitchBg
 					glitchColors={["#0a1a12", "#00ff87", "#0d2818", "#061a0e"]}
 					glitchSpeed={60}
@@ -99,26 +99,52 @@ export default function Hero() {
 				/>
 			</div>
 
-			{/* Hero background image — low opacity, adds depth */}
-			<div className="absolute inset-0 z-[1]">
+			{/* L2: Hero background image */}
+			<div className="absolute inset-0 z-[1] opacity-20 mix-blend-screen">
 				<picture>
 					<source srcSet="/brand/backgrounds/hero-bg.webp" type="image/webp" />
 					<img
 						src="/brand/backgrounds/hero-bg.jpg"
 						alt=""
 						aria-hidden="true"
-						className="absolute inset-0 h-full w-full object-cover object-center opacity-15 mix-blend-screen"
+						className="h-full w-full object-cover object-center"
 						loading="eager"
 					/>
 				</picture>
 			</div>
 
-			{/* Dark overlay for text contrast */}
+			{/* L3: Scanlines */}
 			<div
-				className="absolute inset-0 z-[2]"
+				className="absolute inset-0 z-[2] pointer-events-none opacity-[0.04]"
+				style={{
+					backgroundImage:
+						"repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)",
+				}}
+			/>
+
+			{/* L4: Noise grain */}
+			<div
+				className="absolute inset-0 z-[3] pointer-events-none opacity-[0.04]"
+				style={{
+					backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+				}}
+			/>
+
+			{/* L5: Center vignette for text readability */}
+			<div
+				className="absolute inset-0 z-[4] pointer-events-none"
 				style={{
 					background:
-						"radial-gradient(ellipse 70% 60% at 50% 50%, rgba(8,8,10,0.4), rgba(8,8,10,0.85) 100%)",
+						"radial-gradient(ellipse 60% 50% at 50% 50%, rgba(8,8,10,0.65), transparent 100%)",
+				}}
+			/>
+
+			{/* L6: Edge vignette */}
+			<div
+				className="absolute inset-0 z-[5] pointer-events-none"
+				style={{
+					background:
+						"radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(8,8,10,0.9) 100%)",
 				}}
 			/>
 
@@ -137,12 +163,12 @@ export default function Hero() {
 						width={140}
 						height={66}
 						priority
-						className="h-auto w-[120px] sm:w-[140px] object-contain opacity-50"
+						className="h-auto w-[120px] sm:w-[140px] object-contain opacity-60"
 						unoptimized
 					/>
 				</motion.div>
 
-				{/* Headline — consistent sizing, punchy copy */}
+				{/* Headline */}
 				<div className="flex flex-col items-center gap-2">
 					<RevealLine delay={0.15}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
@@ -191,23 +217,9 @@ export default function Hero() {
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.8, delay: 1.0 }}
 				>
-					<a
-						href="https://milady.ai"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="transition-colors duration-200 hover:text-[#71717a]"
-					>
-						Milady
-					</a>
+					<a href="https://milady.ai" target="_blank" rel="noopener noreferrer" className="transition-colors duration-200 hover:text-[#71717a]">Milady</a>
 					<span>×</span>
-					<a
-						href="https://elizaos.ai"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="transition-colors duration-200 hover:text-[#71717a]"
-					>
-						ElizaOS
-					</a>
+					<a href="https://elizaos.ai" target="_blank" rel="noopener noreferrer" className="transition-colors duration-200 hover:text-[#71717a]">ElizaOS</a>
 				</motion.div>
 			</div>
 
