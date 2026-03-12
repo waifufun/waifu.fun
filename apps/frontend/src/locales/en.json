@@ -45,6 +45,7 @@
 	},
 	"explorer": {
 		"exploreAgents": "explore agents",
+		"featured": "featured",
 		"live": "live",
 		"all": "all",
 		"trending": "trending",
