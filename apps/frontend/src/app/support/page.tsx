@@ -7,14 +7,14 @@ export default function SupportPage() {
 			<div className="w-full max-w-5xl mx-auto px-4 py-12">
 				{/* Page Header */}
 				<div className="mb-10">
-					<h1 className="text-3xl font-bold text-[#e4e4e7] tracking-tight mb-2">Support</h1>
+					<h1 className="text-3xl font-bold text-[#00ff87] tracking-tight mb-2">Support</h1>
 					<p className="text-sm text-[#71717a]">Get help, ask questions, or report issues</p>
 				</div>
 
 				<div className="space-y-8">
 					{/* Contact Section */}
 					<section className="bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6">
-						<h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">Contact Us</h2>
+						<h2 className="text-xl font-semibold text-[#00ff87] mb-4">Contact Us</h2>
 						<div className="space-y-4">
 							<Link
 								href="https://twitter.com/waifufun"
@@ -57,7 +57,7 @@ export default function SupportPage() {
 
 					{/* FAQ Section */}
 					<section className="bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6">
-						<h2 className="text-xl font-semibold text-[#e4e4e7] mb-6">How it Works</h2>
+						<h2 className="text-xl font-semibold text-[#00ff87] mb-6">How it Works</h2>
 						<div className="space-y-6">
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-base font-semibold text-[#e4e4e7]">Coin Launch Options</h3>

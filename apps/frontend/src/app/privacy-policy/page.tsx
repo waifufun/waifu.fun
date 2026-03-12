@@ -147,7 +147,7 @@ const PrivacyPolicy = () => {
 			<div className="w-full max-w-5xl mx-auto px-4 py-12">
 				{/* Page Header */}
 				<div className="mb-10">
-					<h1 className="text-2xl font-bold text-[#e4e4e7] tracking-tight">Privacy Policy</h1>
+					<h1 className="text-2xl font-bold text-[#00ff87] tracking-tight">Privacy Policy</h1>
 					<p className="text-lg font-medium text-[#a1a1aa] mt-2">Last Modified April 1st, 2025</p>
 				</div>
 
@@ -160,7 +160,7 @@ const PrivacyPolicy = () => {
 								item.header ? "bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6" : ""
 							}
 						>
-							{item.header && <h2 className="text-xl font-semibold text-[#e4e4e7] mb-4">{item.header}</h2>}
+							{item.header && <h2 className="text-xl font-semibold text-[#00ff87] mb-4">{item.header}</h2>}
 							{item.subheader && <h3 className="text-base font-medium text-[#a1a1aa] mb-3">{item.subheader}</h3>}
 							<div className="text-sm text-[#a1a1aa] leading-relaxed">
 								{typeof item.content === "string" ? (
