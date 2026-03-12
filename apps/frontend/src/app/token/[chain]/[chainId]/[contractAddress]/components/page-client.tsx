@@ -24,7 +24,7 @@ import UpdateSocialsModal from "./UpdateSocialsModal";
 
 function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl" | "br"; color?: "green" | "purple" }) {
 	const base = "absolute w-2.5 h-2.5 pointer-events-none";
-	const borderColor = color === "green" ? "border-[#00ff87]/30" : "border-[#c084fc]/30";
+	const borderColor = color === "green" ? "border-[#00ff87]/20" : "border-[#c084fc]/20";
 	const styles: Record<string, string> = {
 		tl: `${base} top-0 left-0 border-t border-l ${borderColor}`,
 		tr: `${base} top-0 right-0 border-t border-r ${borderColor}`,
@@ -104,7 +104,7 @@ export default function PageClient({
 						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
 							<div className="flex items-center gap-2 min-w-0">
 								<BarChart3 className={cn("size-4 flex-shrink-0", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider truncate">price chart</span>
+								<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider truncate">price chart</span>
 							</div>
 
 							<div className="flex items-center gap-1 flex-wrap">
@@ -117,7 +117,7 @@ export default function PageClient({
 											"px-2 py-1 text-[10px] font-mono uppercase rounded-sm transition-all duration-200",
 											selectedTimeframe === timeframe.value
 												? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/30"
-												: "text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] border border-transparent",
+												: "text-[#71717a] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] border border-transparent",
 										)}
 									>
 										{timeframe.label}

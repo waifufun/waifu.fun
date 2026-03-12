@@ -13,10 +13,10 @@ function HudCorner({ position, size = "sm" }: { position: "tl" | "tr" | "bl" | "
 	const sizeClass = size === "md" ? "w-3 h-3" : "w-2.5 h-2.5";
 	const base = `absolute ${sizeClass} pointer-events-none`;
 	const styles: Record<string, string> = {
-		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/30`,
-		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/30`,
-		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/30`,
-		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/30`,
+		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/20`,
+		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/20`,
+		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/20`,
+		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/20`,
 	};
 	return <span className={styles[position]} />;
 }
@@ -75,7 +75,7 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 			<div className="flex items-center justify-between mb-3 gap-2 min-w-0">
 				<div className="flex items-center gap-2 min-w-0">
 					<Zap className="size-3.5 text-[#00ff87]" />
-					<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent personality</span>
+					<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">agent personality</span>
 				</div>
 				<div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#08080a] border border-[#00ff87]/20 rounded-sm shrink-0">
 					<span className="h-1.5 w-1.5 rounded-full bg-[#00ff87]" />
@@ -114,7 +114,7 @@ export function AgentPersonalityCard({ token }: { token: IToken }) {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: index * 0.08 }}
 					>
-						<div className="text-[9px] text-[#52525b] font-mono uppercase">{stat.label}</div>
+						<div className="text-[9px] text-[#71717a] font-mono uppercase">{stat.label}</div>
 						<div className="text-xs text-[#e4e4e7] font-mono lowercase">{stat.value}</div>
 					</motion.div>
 				))}
@@ -164,7 +164,7 @@ export function AgentSkills({ token }: { token: IToken }) {
 			<HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3 min-w-0">
 				<Shield className="size-3.5 text-[#00ff87] shrink-0" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">agent skills</span>
+				<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">agent skills</span>
 			</div>
 			<div className="flex flex-col gap-2">
 				{infoItems.map((item, index) => (
@@ -211,7 +211,7 @@ export function SidebarSocials({ token }: { token: IToken }) {
 			<HudCorner position="br" size="md" />
 			<div className="flex items-center gap-2 mb-3">
 				<Globe className="size-3.5 text-[#a1a1aa]" />
-				<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">links</span>
+				<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">links</span>
 			</div>
 			<div className="flex items-center gap-2">
 				{socials.map((social, i) => {
@@ -250,7 +250,7 @@ export function SidebarSocials({ token }: { token: IToken }) {
 				})}
 			</div>
 			<div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-				<div className="text-[9px] text-[#52525b] font-mono uppercase tracking-wider mb-1.5">contract</div>
+				<div className="text-[9px] text-[#71717a] font-mono uppercase tracking-wider mb-1.5">contract</div>
 				<div className="flex items-center justify-between bg-[#08080a] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors group">
 					<span className="text-xs text-[#a1a1aa] font-mono truncate group-hover:text-[#e4e4e7] transition-colors">
 						{shortenAddress(token.contractAddress)}

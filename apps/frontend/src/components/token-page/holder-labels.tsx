@@ -9,7 +9,7 @@ export default function HolderLabels({
 	const burnAddresses = ["0x000000000000000000000000000000000000dead", "0x0000000000000000000000000000000000000000"];
 	return (
 		<div className="flex items-center gap-2">
-			{burnAddresses?.includes(address.toLowerCase()) ? <Badge>🔥 Burn</Badge> : null}
+			{burnAddresses?.includes(address.toLowerCase()) ? <Badge>Burn</Badge> : null}
 			{isCreator ? <Badge>Creator</Badge> : null}
 			{isBondingCurve ? <Badge>Bonding Curve</Badge> : null}
 		</div>

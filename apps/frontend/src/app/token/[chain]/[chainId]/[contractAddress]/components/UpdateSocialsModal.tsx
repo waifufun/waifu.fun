@@ -67,19 +67,23 @@ export default function UpdateSocialsModal({ open, onClose, token, onSuccess }: 
 			}}
 		>
 			<div
-				className="bg-zinc-900 border border-[rgba(255,255,255,0.06)] shadow-lg w-full max-w-md p-6 relative"
+				className="relative bg-[#0e0e12] border border-[rgba(255,255,255,0.06)] shadow-lg w-full max-w-md p-6 rounded-sm"
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e) => e.stopPropagation()}
 			>
+				<span className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-[#00ff87]/20 pointer-events-none" />
+				<span className="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-[#00ff87]/20 pointer-events-none" />
+				<span className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-[#00ff87]/20 pointer-events-none" />
+				<span className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-[#00ff87]/20 pointer-events-none" />
 				<button
-					className="absolute top-2 right-2 text-gray-400 hover:text-white text-xl"
+					className="absolute top-3 right-3 text-[#71717a] hover:text-[#e4e4e7] text-xl transition-colors"
 					onClick={onClose}
 					type="button"
 					aria-label="Close"
 				>
 					×
 				</button>
-				<h2 className="text-lg font-bold mb-4 text-[#00ff87]">Update Token Socials</h2>
+				<h2 className="text-lg font-bold mb-4 text-[#00ff87] font-mono lowercase">update token socials</h2>
 				<form onSubmit={handleSubmit} className="space-y-3">
 					<Input name="twitter" placeholder="Twitter URL" value={form.twitter} onChange={handleChange} autoFocus />
 					<Input name="telegram" placeholder="Telegram URL" value={form.telegram} onChange={handleChange} />

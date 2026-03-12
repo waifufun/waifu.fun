@@ -47,12 +47,12 @@ export default function AgentStatusVisual({ status }: { status: AgentLifecycleSt
 
 	return (
 		<div
-			className={cn("flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 rounded-lg border px-3 sm:px-4 py-3 min-w-0", config.className)}
+			className={cn("flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 rounded-sm border px-3 sm:px-4 py-3 min-w-0", config.className)}
 			aria-label={`Agent status: ${config.label}`}
 		>
 			<div
 				className={cn(
-					"flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg border border-current/20 self-start sm:self-auto",
+					"flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-sm border border-current/20 self-start sm:self-auto",
 					config.iconClassName,
 				)}
 			>

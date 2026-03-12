@@ -43,7 +43,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 
 	if (!data || data?.length === 0) {
 		return (
-			<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
+			<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
 				There are currently no trades.
 			</div>
 		);
@@ -70,7 +70,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								: "",
 						])}
 					>
-						<TableCell className="hover:text-waifufun-background-action-highlight font-medium">
+						<TableCell className="hover:text-[#00ff87] font-medium">
 							<Link href={`/profile/${trade.traderAddress}`}>
 								{trade.traderAddress ? shortenAddress(trade.traderAddress) : "-"}
 							</Link>
@@ -92,16 +92,16 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId] ?? ""}/tx/${trade.txHash}`}
 								target="_blank"
 							>
-								<ExternalLink className="ml-auto size-4 text-waifufun-background-action-highlight" />
+								<ExternalLink className="ml-auto size-4 text-[#00ff87]" />
 							</Link>
 						</TableCell>
 					</TableRow>
 				))}
 			</TableBody>
-			<TableFooter className="border-t-2 border-waifufun-background-action-highlight/25">
+			<TableFooter className="border-t-2 border-[#00ff87]/25">
 				<TableRow>
 					<TableCell colSpan={5}>
-						<div className="text-gray-500 text-xs uppercase text-center mx-auto w-full">
+						<div className="text-[#71717a] text-xs uppercase text-center mx-auto w-full">
 							Live Feed - Showing last {data?.length || 0} trades
 						</div>
 					</TableCell>

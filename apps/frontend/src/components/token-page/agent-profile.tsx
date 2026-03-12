@@ -25,10 +25,10 @@ const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
 function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
 	const base = "absolute w-3 h-3 pointer-events-none";
 	const styles: Record<string, string> = {
-		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/40`,
-		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/40`,
-		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/40`,
-		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/40`,
+		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/20`,
+		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/20`,
+		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/20`,
+		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/20`,
 	};
 	return <span className={styles[position]} />;
 }
@@ -223,7 +223,7 @@ export default function AgentProfile({
 					)}
 
 					<div className="flex items-center gap-2 text-xs">
-						<span className="text-[#52525b] font-mono uppercase">created by</span>
+						<span className="text-[#71717a] font-mono uppercase">created by</span>
 						<Link
 							href={`/profile/${token.creator}`}
 							className="text-[#a1a1aa] hover:text-[#00ff87] font-mono transition-colors"
@@ -249,7 +249,7 @@ export default function AgentProfile({
 								<span className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
 								<span className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
 								<span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-								<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider inline-flex items-center gap-1">
+								<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider inline-flex items-center gap-1">
 									{stat.live && <span className="h-1 w-1 rounded-full bg-[#00ff87] animate-pulse" />}
 									{stat.label}
 								</span>

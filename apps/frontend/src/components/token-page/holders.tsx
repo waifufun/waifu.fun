@@ -19,7 +19,7 @@ export default async function Holders({ token }: { token: IToken }) {
 
 		if (!data || data?.length === 0) {
 			return (
-				<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
+				<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
 					There are currently no holders.
 				</div>
 			);
@@ -39,7 +39,7 @@ export default async function Holders({ token }: { token: IToken }) {
 				<TableBody>
 					{data.map((holder: IHolder, rank: number) => (
 						<TableRow key={holder.address}>
-							<TableCell className="text-waifufun-text-secondary font-medium">#{rank + 1}</TableCell>
+							<TableCell className="text-[#a1a1aa] font-medium">#{rank + 1}</TableCell>
 							<TableCell>
 								<div className="flex items-center gap-2 font-medium">
 									{shortenAddress(holder.address)}{" "}
@@ -70,7 +70,7 @@ export default async function Holders({ token }: { token: IToken }) {
 									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/address/${holder.address}`}
 									target="blank"
 								>
-									<ExternalLink className="ml-auto size-4 text-waifufun-icon-secondary" />
+									<ExternalLink className="ml-auto size-4 text-[#a1a1aa]" />
 								</Link>
 							</TableCell>
 						</TableRow>
@@ -80,7 +80,7 @@ export default async function Holders({ token }: { token: IToken }) {
 		);
 	} catch (error) {
 		return (
-			<div className="p-4 py-8 text-center w-full text-sm text-waifufun-text-secondary">
+			<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
 				Unable to load holder data at this time.
 			</div>
 		);

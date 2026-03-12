@@ -27,7 +27,7 @@ export default function TokenTabs({ token }: { token: IToken }) {
 						key={tab.value}
 						value={tab.value}
 						filled={false}
-						className="inline-flex items-center justify-center gap-1.5 py-2.5 text-xs font-mono lowercase tracking-wider text-[#52525b] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] rounded-sm transition-all duration-200 data-[state=active]:text-[#00ff87] data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#00ff87] data-[state=active]:shadow-none"
+						className="inline-flex items-center justify-center gap-1.5 py-2.5 text-xs font-mono lowercase tracking-wider text-[#71717a] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] rounded-sm transition-all duration-200 data-[state=active]:text-[#00ff87] data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#00ff87] data-[state=active]:shadow-none"
 						onClick={() => router.push(tab.path)}
 					>
 						<tab.icon className="size-4" />
