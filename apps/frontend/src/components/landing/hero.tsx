@@ -89,8 +89,8 @@ export default function Hero() {
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* L1: Glitch character canvas — prominent */}
-			<div className="absolute inset-0 z-0 opacity-60">
+			{/* L1: Glitch character canvas — subdued */}
+			<div className="absolute inset-0 z-0 opacity-40">
 				<GlitchBg
 					glitchColors={["#0a1a12", "#00ff87", "#0d2818", "#061a0e"]}
 					glitchSpeed={60}
@@ -99,8 +99,8 @@ export default function Hero() {
 				/>
 			</div>
 
-			{/* L2: Hero background image */}
-			<div className="absolute inset-0 z-[1] opacity-20 mix-blend-screen">
+			{/* L2: Hero background image — more character */}
+			<div className="absolute inset-0 z-[1] opacity-30 mix-blend-screen">
 				<picture>
 					<source srcSet="/brand/backgrounds/hero-bg.webp" type="image/webp" />
 					<img
@@ -130,27 +130,27 @@ export default function Hero() {
 				}}
 			/>
 
-			{/* L5: Center vignette for text readability */}
+			{/* L5: Center vignette for text readability — heavier for darker feel */}
 			<div
 				className="absolute inset-0 z-[4] pointer-events-none"
 				style={{
 					background:
-						"radial-gradient(ellipse 60% 50% at 50% 50%, rgba(8,8,10,0.65), transparent 100%)",
+						"radial-gradient(ellipse 60% 50% at 50% 50%, rgba(8,8,10,0.75), transparent 100%)",
 				}}
 			/>
 
-			{/* L6: Edge vignette */}
+			{/* L6: Edge vignette — stronger */}
 			<div
 				className="absolute inset-0 z-[5] pointer-events-none"
 				style={{
 					background:
-						"radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(8,8,10,0.9) 100%)",
+						"radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(8,8,10,0.95) 100%)",
 				}}
 			/>
 
 			{/* Content */}
 			<div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-				{/* Brand lockup */}
+				{/* Brand lockup — icon-dominant variant, sized up */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -158,12 +158,12 @@ export default function Hero() {
 					className="mb-12"
 				>
 					<Image
-						src="/brand/lockup/lockup_waifufun_512.png"
+						src="/brand/lockup/lockup_waifu_on_black_1024.png"
 						alt="waifu.fun"
-						width={140}
-						height={66}
+						width={320}
+						height={120}
 						priority
-						className="h-auto w-[120px] sm:w-[140px] object-contain opacity-60"
+						className="h-auto w-[220px] sm:w-[280px] lg:w-[320px] object-contain opacity-80"
 						unoptimized
 					/>
 				</motion.div>
