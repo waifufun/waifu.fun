@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
 import HomeEmptyState from "@/components/home-empty-state";
-// How it works section on home page — uncomment to re-enable
-// import HowItWorks from "@/components/landing/how-it-works";
 import ExplorerHeader from "@/components/explorer-header";
 import { getTokens } from "@/lib/api";
 import type { IToken } from "@waifufun/types";
@@ -44,20 +42,14 @@ export default async function Home() {
 		tokens.find((token) => token.contractAddress?.toLowerCase() === address),
 	).filter(Boolean) as IToken[];
 	const noTokens = curatedTokens.length === 0;
-	const topToken =
-		curatedTokens.find((token) => token.contractAddress?.toLowerCase() === MILADY_CONTRACT_ADDRESS.toLowerCase()) ??
-		curatedTokens[0] ??
-		null;
 
 	return (
 		<div className="flex flex-col w-full">
-			<Hero token={topToken} />
-			{/* How it works section — uncomment to re-enable */}
-			{/* <HowItWorks /> */}
+			<Hero />
 
 			<div
 				id="explore"
-				className={`relative z-20 flex flex-col gap-6 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-14 pt-20 pb-12 scroll-mt-20 ${
+				className={`relative z-20 flex flex-col gap-6 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 scroll-mt-20 ${
 					noTokens ? "min-h-[50vh] justify-center items-center" : ""
 				}`}
 			>
