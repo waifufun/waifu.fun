@@ -3,10 +3,11 @@
 import { createContext, useContext, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useLocalStorage } from "usehooks-ts";
 import { toast } from "sonner";
-import type { IToken } from "@waifufun/types";
+import { EvmChainIds, type IToken } from "@waifufun/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
 import { useTranslation } from "@/contexts/locale-context";
+import { DEFAULT_EVM_CHAIN_ID } from "@/providers/evm-provider";
 
 export interface PendingTransaction {
 	hash: string;
@@ -33,6 +34,39 @@ interface TransactionListenerContextType {
 
 const TransactionListenerContext = createContext<TransactionListenerContextType | undefined>(undefined);
 
+const EXPLORER_BY_CHAIN_ID: Record<EvmChainIds, string> = {
+	[EvmChainIds.BscMainnet]: "https://bscscan.com",
+	[EvmChainIds.BaseMainnet]: "https://basescan.org",
+	[EvmChainIds.BaseSepolia]: "https://sepolia.basescan.org",
+	[EvmChainIds.EthereumMainnet]: "https://etherscan.io",
+	[EvmChainIds.EthereumSepolia]: "https://sepolia.etherscan.io",
+};
+
+const NATIVE_SYMBOL_BY_CHAIN_ID: Record<EvmChainIds, string> = {
+	[EvmChainIds.BscMainnet]: "BNB",
+	[EvmChainIds.BaseMainnet]: "ETH",
+	[EvmChainIds.BaseSepolia]: "ETH",
+	[EvmChainIds.EthereumMainnet]: "ETH",
+	[EvmChainIds.EthereumSepolia]: "ETH",
+};
+
+const resolveEvmChainId = (chainId?: number): EvmChainIds => {
+	if (chainId && chainId in EXPLORER_BY_CHAIN_ID) {
+		return chainId as EvmChainIds;
+	}
+
+	return DEFAULT_EVM_CHAIN_ID;
+};
+
+const getExplorerTxUrl = (hash: string, chainId?: number) => {
+	const explorerBaseUrl = EXPLORER_BY_CHAIN_ID[resolveEvmChainId(chainId)] || EXPLORER_BY_CHAIN_ID[DEFAULT_EVM_CHAIN_ID];
+	return `${explorerBaseUrl}/tx/${hash}`;
+};
+
+const getNativeSymbol = (chainId?: number) => {
+	return NATIVE_SYMBOL_BY_CHAIN_ID[resolveEvmChainId(chainId)] || NATIVE_SYMBOL_BY_CHAIN_ID[DEFAULT_EVM_CHAIN_ID];
+};
+
 export const TransactionListenerProvider = ({ children }: { children: ReactNode }) => {
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
@@ -40,9 +74,11 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		"waifufun-pending-transactions",
 		[],
 	);
-	const publicClient = usePublicClient();
+	const publicClient = usePublicClient({ chainId: DEFAULT_EVM_CHAIN_ID });
 	const monitoringRef = useRef<Set<string>>(new Set());
 	const hasInitialized = useRef(false);
+	const activeChainId = publicClient?.chain?.id ?? DEFAULT_EVM_CHAIN_ID;
+	const nativeSymbol = getNativeSymbol(activeChainId);
 
 	const addTransaction = useCallback(
 		(hash: string, token: IToken, mode: "buy" | "sell", inputAmount: number, expectedOutput: number) => {
@@ -60,12 +96,12 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			const toastAction = {
 				label: t("toast.viewOnBscScan"),
 				onClick: () => {
-					window.open(`https://bscscan.com/tx/${newTransaction.hash}`);
+					window.open(getExplorerTxUrl(newTransaction.hash, activeChainId), "_blank", "noopener,noreferrer");
 				},
 			};
 
-			const inputSymbol = newTransaction.mode === "buy" ? "BNB" : newTransaction.token.ticker;
-			const outputSymbol = newTransaction.mode === "buy" ? newTransaction.token.ticker : "BNB";
+			const inputSymbol = newTransaction.mode === "buy" ? nativeSymbol : newTransaction.token.ticker;
+			const outputSymbol = newTransaction.mode === "buy" ? newTransaction.token.ticker : nativeSymbol;
 			const inputDecimals = newTransaction.mode === "buy" ? 18 : newTransaction.token.decimals;
 			const outputDecimals = newTransaction.mode === "buy" ? newTransaction.token.decimals : 18;
 			const inputFormatted = (newTransaction.inputAmount / 10 ** inputDecimals).toFixed(inputDecimals === 18 ? 4 : 2);
@@ -86,13 +122,13 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				monitorTransaction(newTransaction);
 			}
 		},
-		[setPendingTransactions, publicClient, t],
+		[activeChainId, setPendingTransactions, publicClient, t, nativeSymbol],
 	);
 
 	const showTransactionToast = useCallback(
 		(transaction: PendingTransaction, success: boolean) => {
-			const inputSymbol = transaction.mode === "buy" ? "BNB" : transaction.token.ticker;
-			const outputSymbol = transaction.mode === "buy" ? transaction.token.ticker : "BNB";
+			const inputSymbol = transaction.mode === "buy" ? nativeSymbol : transaction.token.ticker;
+			const outputSymbol = transaction.mode === "buy" ? transaction.token.ticker : nativeSymbol;
 			const inputDecimals = transaction.mode === "buy" ? 18 : transaction.token.decimals;
 			const outputDecimals = transaction.mode === "buy" ? transaction.token.decimals : 18;
 
@@ -104,7 +140,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			const toastAction = {
 				label: t("toast.viewOnBscScan"),
 				onClick: () => {
-					window.open(`https://bscscan.com/tx/${transaction.hash}`);
+					window.open(getExplorerTxUrl(transaction.hash, activeChainId), "_blank", "noopener,noreferrer");
 				},
 			};
 
@@ -122,7 +158,7 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 				prev.map((tx) => (tx.hash === transaction.hash ? { ...tx, toastShown: true } : tx)),
 			);
 		},
-		[setPendingTransactions, t],
+		[activeChainId, setPendingTransactions, t, nativeSymbol],
 	);
 
 	const monitorTransaction = useCallback(
@@ -151,7 +187,6 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 					showTransactionToast(transaction, success);
 				}
 
-				// cleanup after 5 minutes
 				setTimeout(
 					() => {
 						setPendingTransactions((prev) => prev.filter((tx) => tx.hash !== transaction.hash));
@@ -172,7 +207,6 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		setPendingTransactions((prev) => prev.filter((tx) => !tx.confirmed));
 	}, [setPendingTransactions]);
 
-	// monitor all transactions that haven't shown toast yet
 	useEffect(() => {
 		if (!publicClient || hasInitialized.current) return;
 
@@ -188,7 +222,6 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 		hasInitialized.current = true;
 	}, [publicClient, pendingTransactions, monitorTransaction]);
 
-	// reset if client changes
 	useEffect(() => {
 		if (publicClient) {
 			hasInitialized.current = false;

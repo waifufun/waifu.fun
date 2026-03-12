@@ -1,9 +1,19 @@
 "use client";
 
 import type { AddressLike } from "@waifufun/types";
+import { getAddress } from "viem";
 import { useAccount } from "wagmi";
 
 export default function useAddress() {
 	const { address } = useAccount();
-	return address as AddressLike | undefined;
+
+	if (!address) {
+		return undefined;
+	}
+
+	try {
+		return getAddress(address) as AddressLike;
+	} catch {
+		return undefined;
+	}
 }
