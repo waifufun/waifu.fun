@@ -6,7 +6,7 @@ import ClaimFees from "@/components/claim-fees";
 import ScamWarning from "@/components/scam-notice";
 import Swap from "@/components/swap";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
-import { AgentPersonalityCard, AgentSkills } from "@/components/token-page/agent-skills";
+import { AgentInfo } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
 import AgentPanel from "@/components/token-page/agent-panel";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
@@ -109,15 +109,10 @@ export default function PageClient({
 
 					{/* Agent Personality & Skills */}
 					<div className="flex flex-col gap-4">
-						<SectionHeader>agent profile</SectionHeader>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="min-w-0">
-								<AgentPersonalityCard token={token} />
-							</motion.div>
-							<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="min-w-0">
-								<AgentSkills token={token} />
-							</motion.div>
-						</div>
+						<SectionHeader>agent info</SectionHeader>
+						<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="min-w-0">
+							<AgentInfo token={token} />
+						</motion.div>
 					</div>
 
 					{/* Owner Runtime Panel */}

@@ -6,29 +6,29 @@ import { cn } from "@/lib/utils";
 
 const stateConfig = {
 	bonding: {
-		label: "Bonding",
-		description: "Still on the bonding curve — graduation hasn’t happened yet.",
+		label: "bonding",
+		description: "on the bonding curve. trade volume moves it toward graduation.",
 		icon: Clock,
 		className: "bg-amber-500/10 border-amber-500/30 text-amber-200",
 		iconClassName: "text-amber-400",
 	},
 	active: {
-		label: "Active",
-		description: "Graduated and showing recent market activity.",
+		label: "active",
+		description: "graduated and alive. recent trading activity detected.",
 		icon: Activity,
 		className: "bg-[#00ff87]/10 border-[#00ff87]/30 text-emerald-100",
 		iconClassName: "text-[#00ff87]",
 	},
 	dormant: {
-		label: "Dormant",
-		description: "Graduated, but currently showing little to no meaningful activity.",
+		label: "dormant",
+		description: "graduated but quiet. no meaningful activity recently.",
 		icon: Moon,
 		className: "bg-zinc-500/10 border-zinc-500/30 text-zinc-200",
 		iconClassName: "text-zinc-400",
 	},
 	imported: {
-		label: "Imported",
-		description: "Imported token discovered on waifu.fun.",
+		label: "imported",
+		description: "external token tracked on waifu.fun.",
 		icon: Download,
 		className: "bg-sky-500/10 border-sky-500/30 text-sky-100",
 		iconClassName: "text-[#60a5fa]",
@@ -41,8 +41,8 @@ export default function AgentStatusVisual({ status }: { status: AgentLifecycleSt
 	const description =
 		status.state === "imported"
 			? status.hasRecentActivity
-				? "Imported token with current market activity on waifu.fun."
-				: "Imported token with limited recent activity on waifu.fun."
+				? "external token with current market activity on waifu.fun."
+				: "external token tracked on waifu.fun."
 			: config.description;
 
 	return (
@@ -54,12 +54,13 @@ export default function AgentStatusVisual({ status }: { status: AgentLifecycleSt
 				className={cn(
 					"flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-sm border border-current/20 self-start sm:self-auto",
 					config.iconClassName,
+					status.state === "active" && "animate-pulse",
 				)}
 			>
 				<Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
 			</div>
 			<div className="min-w-0 flex-1">
-				<p className="font-semibold uppercase tracking-wider text-xs sm:text-sm">{config.label}</p>
+				<p className="font-semibold lowercase tracking-wider text-xs sm:text-sm">{config.label}</p>
 				<p className="text-[11px] sm:text-xs opacity-90 mt-0.5 line-clamp-2 sm:line-clamp-none">{description}</p>
 			</div>
 			{status.state === "active" && (

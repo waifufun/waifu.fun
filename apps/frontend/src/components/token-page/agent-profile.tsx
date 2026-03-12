@@ -2,13 +2,12 @@
 
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
-import { BarChart2, Clock, Users } from "lucide-react";
+import { BarChart2, DollarSign, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import Verified from "@/components/verified";
-import { abbreviateNumber, cn, formatNumberSubscript, fromNow, shortenAddress } from "@/lib/utils";
+import { abbreviateNumber, cn, formatNumberSubscript, shortenAddress } from "@/lib/utils";
 
 export type AgentLifecycleState = "bonding" | "active" | "dormant" | "imported";
 
@@ -21,17 +20,6 @@ export interface AgentLifecycleStatus {
 }
 
 const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
-
-function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
-	const base = "absolute w-3 h-3 pointer-events-none";
-	const styles: Record<string, string> = {
-		tl: `${base} top-0 left-0 border-t border-l border-[#00ff87]/20`,
-		tr: `${base} top-0 right-0 border-t border-r border-[#00ff87]/20`,
-		bl: `${base} bottom-0 left-0 border-b border-l border-[#00ff87]/20`,
-		br: `${base} bottom-0 right-0 border-b border-r border-[#00ff87]/20`,
-	};
-	return <span className={styles[position]} />;
-}
 
 function isImportedToken(token: IToken) {
 	const tokenWithOrigin = token as IToken & { origin?: string };
@@ -48,72 +36,18 @@ export function deriveAgentLifecycleStatus(token: IToken): AgentLifecycleStatus 
 	const hasRecentActivity = volume24h > 0 || marketcap >= ACTIVE_MARKETCAP_THRESHOLD;
 
 	if (isImported) {
-		return {
-			state: "imported",
-			label: "imported",
-			isBonded,
-			isImported,
-			hasRecentActivity,
-		};
+		return { state: "imported", label: "imported", isBonded, isImported, hasRecentActivity };
 	}
-
 	if (isFinalized) {
-		return {
-			state: "dormant",
-			label: "dormant",
-			isBonded,
-			isImported,
-			hasRecentActivity: false,
-		};
+		return { state: "dormant", label: "dormant", isBonded, isImported, hasRecentActivity: false };
 	}
-
 	if (!isBonded) {
-		return {
-			state: "bonding",
-			label: "bonding",
-			isBonded,
-			isImported,
-			hasRecentActivity,
-		};
+		return { state: "bonding", label: "bonding", isBonded, isImported, hasRecentActivity };
 	}
-
 	if (hasRecentActivity) {
-		return {
-			state: "active",
-			label: "active",
-			isBonded,
-			isImported,
-			hasRecentActivity,
-		};
+		return { state: "active", label: "active", isBonded, isImported, hasRecentActivity };
 	}
-
-	return {
-		state: "dormant",
-		label: "dormant",
-		isBonded,
-		isImported,
-		hasRecentActivity,
-	};
-}
-
-function AnimatedCounter({ value }: { value: string }) {
-	const [displayed, setDisplayed] = useState(value);
-
-	useEffect(() => {
-		setDisplayed(value);
-	}, [value]);
-
-	return (
-		<motion.span
-			key={value}
-			initial={{ opacity: 0.5, y: 2 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.3 }}
-			className="inline-flex"
-		>
-			{displayed}
-		</motion.span>
-	);
+	return { state: "dormant", label: "dormant", isBonded, isImported, hasRecentActivity };
 }
 
 function LiveDot() {
@@ -148,6 +82,8 @@ const displayStatusClass: Record<AgentDisplayStatus, string> = {
 	dead: "bg-red-500/15 text-red-400 border-red-500/40",
 };
 
+const statIcons = { price: DollarSign, "mkt cap": TrendingUp, "24h vol": BarChart2, holders: Users };
+
 export default function AgentProfile({
 	token,
 	status,
@@ -155,19 +91,20 @@ export default function AgentProfile({
 	token: IToken;
 	status: AgentLifecycleStatus;
 }) {
-	const stats = [
-		{ label: "mkt cap", value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—", live: true },
-		{ label: "24h vol", value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—", icon: BarChart2 },
-		{ label: "holders", value: token?.holders ? abbreviateNumber(token.holders, true) : "—", icon: Users },
+	const stats: { label: string; value: string; live?: boolean }[] = [
 		{ label: "price", value: formatNumberSubscript(token?.price), live: true },
-		{ label: "age", value: token?.createdAt ? fromNow(token.createdAt, true) : "—", icon: Clock },
+		{ label: "mkt cap", value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—", live: true },
+		{ label: "24h vol", value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—" },
+		{ label: "holders", value: token?.holders ? abbreviateNumber(token.holders, true) : "—" },
 	];
+
 	const socialsWithLinks = [
 		{ title: "website", href: token?.socials?.website, icon: "/socials/website.svg" },
 		{ title: "twitter", href: token?.socials?.twitter, icon: "/socials/twitter.svg" },
 		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
 		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
 	].filter((s): s is typeof s & { href: string } => Boolean(s.href));
+
 	const statusClass = statusClassMap[status.state];
 	const displayStatus = getAgentDisplayStatus(token, status);
 
@@ -186,11 +123,6 @@ export default function AgentProfile({
 			>
 				{displayStatus}
 			</div>
-
-			<HudCorner position="tl" />
-			<HudCorner position="tr" />
-			<HudCorner position="bl" />
-			<HudCorner position="br" />
 
 			<div className="relative flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 min-w-0">
 				<motion.div
@@ -234,56 +166,46 @@ export default function AgentProfile({
 					</div>
 
 					<div
-						className="relative flex gap-1.5 sm:gap-2 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible min-w-0 -mx-1 px-1"
+						className="relative flex gap-1.5 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible min-w-0 -mx-1 px-1"
 						style={{ WebkitOverflowScrolling: "touch" }}
 					>
-						{stats.map((stat, index) => (
-							<motion.div
-								key={stat.label}
-								className="relative flex-shrink-0 flex flex-col gap-0.5 py-2 px-2.5 sm:py-2.5 sm:px-3 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors group min-w-0"
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: index * 0.05 }}
-							>
-								<span className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-								<span className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-								<span className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-								<span className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-[#00ff87]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-								<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider inline-flex items-center gap-1">
-									{stat.live && <span className="h-1 w-1 rounded-full bg-[#00ff87] animate-pulse" />}
-									{stat.label}
-								</span>
-								<span className="text-sm text-[#e4e4e7] font-mono font-medium inline-flex items-center gap-1">
-									{stat.icon && <stat.icon className="size-3 text-[#00ff87]/60" />}
-									<AnimatedCounter value={stat.value} />
-								</span>
-							</motion.div>
-						))}
+						{stats.map((stat) => {
+							const Icon = statIcons[stat.label as keyof typeof statIcons];
+							return (
+								<div
+									key={stat.label}
+									className="relative flex-shrink-0 flex flex-col gap-0.5 py-1.5 px-2 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0"
+								>
+									<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider inline-flex items-center gap-1">
+										{stat.live && <span className="h-1 w-1 rounded-full bg-[#00ff87] animate-pulse" />}
+										{stat.label}
+									</span>
+									<span className="text-sm text-[#e4e4e7] font-mono font-medium inline-flex items-center gap-1">
+										{Icon && <Icon className="size-3 text-[#00ff87]/60" />}
+										{stat.value}
+									</span>
+								</div>
+							);
+						})}
 					</div>
 
 					{socialsWithLinks.length > 0 && (
 						<div className="flex items-center gap-2 mt-1 flex-wrap">
-							{socialsWithLinks.map((social, index) => (
+							{socialsWithLinks.map((social) => (
 								<Link
 									key={social.title}
 									href={social.href}
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									<motion.div
-										initial={{ opacity: 0, scale: 0.8 }}
-										animate={{ opacity: 1, scale: 1 }}
-										transition={{ delay: 0.2 + index * 0.05 }}
-									>
-										<Image
-											src={social.icon}
-											className="inline-flex items-center justify-center h-7 w-7 p-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] opacity-60 hover:opacity-100 cursor-pointer hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
-											unoptimized
-											width={24}
-											height={24}
-											alt={social.title}
-										/>
-									</motion.div>
+									<Image
+										src={social.icon}
+										className="inline-flex items-center justify-center h-7 w-7 p-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] opacity-60 hover:opacity-100 cursor-pointer hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
+										unoptimized
+										width={24}
+										height={24}
+										alt={social.title}
+									/>
 								</Link>
 							))}
 						</div>
