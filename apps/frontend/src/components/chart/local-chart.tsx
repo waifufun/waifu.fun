@@ -223,7 +223,7 @@ export default function LocalChart({ token }: { token: IToken }) {
 			)}
 			{showEmptyState && (
 				<div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114]/90 px-3 py-2 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-[#71717a]">
-					Awaiting first candles • local price placeholder active
+					Chart unavailable during bonding curve phase
 				</div>
 			)}
 		</div>

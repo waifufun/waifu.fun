@@ -23,6 +23,8 @@ interface ApiTrade {
 	timestamp: string;
 }
 
+const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
+
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export default function TradesClient({ token, initialData }: { token: IToken; initialData: any }) {
 	const nonAnimatedTrades = Array.from(new Set<string>(initialData?.map((a: ApiTrade) => a.txHash)));
@@ -53,50 +55,65 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 		<Table id="trades">
 			<TableHeader>
 				<TableRow>
-					<TableHead className="w-[100px]">Account</TableHead>
-					<TableHead className="text-center">Type</TableHead>
-					<TableHead>Amount</TableHead>
-					<TableHead className="w-12 text-right">Date</TableHead>
+					<TableHead className={cn(headerClass, "w-[100px]")}>account</TableHead>
+					<TableHead className={cn(headerClass, "text-center")}>type</TableHead>
+					<TableHead className={headerClass}>amount</TableHead>
+					<TableHead className={cn(headerClass, "w-12 text-right")}>date</TableHead>
 					<TableHead className="w-5 text-right" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{data.map((trade: ApiTrade) => (
-					<TableRow
-						key={trade.txHash}
-						className={cn([
-							!nonAnimatedTrades.includes(trade.txHash)
-								? "animate-shake animate-once animate-duration-200 animate-ease-linear"
-								: "",
-						])}
-					>
-						<TableCell className="hover:text-[#00ff87] font-medium">
-							<Link href={`/profile/${trade.traderAddress}`}>
-								{trade.traderAddress ? shortenAddress(trade.traderAddress) : "-"}
-							</Link>
-						</TableCell>
-						<TableCell>
-							<Triangle direction={trade?.side === "buy" ? "up" : "down"} />
-						</TableCell>
-						<TableCell>
-							<div className="flex items-center gap-2">
-								{new Intl.NumberFormat("en-US", {
-									maximumFractionDigits: 2,
-								}).format(Number(trade.amountIn))}{" "}
-								{token.ticker}
-							</div>
-						</TableCell>
-						<TableCell className="text-right">{trade?.timestamp ? <TimeAgo date={trade?.timestamp} /> : "-"}</TableCell>
-						<TableCell>
-							<Link
-								href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId] ?? ""}/tx/${trade.txHash}`}
-								target="_blank"
-							>
-								<ExternalLink className="ml-auto size-4 text-[#00ff87]" />
-							</Link>
-						</TableCell>
-					</TableRow>
-				))}
+				{data.map((trade: ApiTrade) => {
+					const isBuy = trade.side === "buy";
+					const tokenAmount = isBuy ? trade.amountOut : trade.amountIn;
+					const nativeAmount = isBuy ? trade.amountIn : trade.amountOut;
+
+					return (
+						<TableRow
+							key={trade.txHash}
+							className={cn(
+								isBuy ? "bg-[#00ff87]/[0.02]" : "bg-[#ef4444]/[0.02]",
+								!nonAnimatedTrades.includes(trade.txHash)
+									? "animate-shake animate-once animate-duration-200 animate-ease-linear"
+									: "",
+							)}
+						>
+							<TableCell className="hover:text-[#00ff87] font-medium">
+								<Link href={`/profile/${trade.traderAddress}`}>
+									{trade.traderAddress ? shortenAddress(trade.traderAddress) : "-"}
+								</Link>
+							</TableCell>
+							<TableCell>
+								<Triangle direction={isBuy ? "up" : "down"} />
+							</TableCell>
+							<TableCell>
+								<div className="flex flex-col gap-0.5">
+									<span className="font-mono text-sm text-[#e4e4e7]">
+										{new Intl.NumberFormat("en-US", {
+											maximumFractionDigits: 2,
+										}).format(Number(tokenAmount))}{" "}
+										{token.ticker}
+									</span>
+									<span className="font-mono text-[10px] text-[#71717a]">
+										{new Intl.NumberFormat("en-US", {
+											maximumFractionDigits: 4,
+										}).format(Number(nativeAmount))}{" "}
+										BNB
+									</span>
+								</div>
+							</TableCell>
+							<TableCell className="text-right">{trade?.timestamp ? <TimeAgo date={trade?.timestamp} /> : "-"}</TableCell>
+							<TableCell>
+								<Link
+									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain]?.[token.chainId] ?? ""}/tx/${trade.txHash}`}
+									target="_blank"
+								>
+									<ExternalLink className="ml-auto size-4 text-[#00ff87]" />
+								</Link>
+							</TableCell>
+						</TableRow>
+					);
+				})}
 			</TableBody>
 			<TableFooter className="border-t-2 border-[#00ff87]/25">
 				<TableRow>

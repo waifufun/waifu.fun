@@ -4,10 +4,11 @@ import type { IHolder, IToken } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
 import HolderLabels from "./holder-labels";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
-import { formatUnits } from "viem";
-import Progressbar from "../progressbar";
 import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
 
 export default async function Holders({ token }: { token: IToken }) {
 	try {
@@ -29,20 +30,26 @@ export default async function Holders({ token }: { token: IToken }) {
 			<Table id="holders">
 				<TableHeader>
 					<TableRow>
-						<TableHead className="w-[25px]">Rank</TableHead>
-						<TableHead className="w-[100px]">Account</TableHead>
-						<TableHead className="text-center">Amount</TableHead>
-						<TableHead className="w-[250px] text-right">Percentage</TableHead>
+						<TableHead className={cn(headerClass, "w-[25px]")}>#</TableHead>
+						<TableHead className={cn(headerClass, "w-[100px]")}>address</TableHead>
+						<TableHead className={cn(headerClass, "text-right")}>amount</TableHead>
+						<TableHead className={cn(headerClass, "w-[200px] text-right")}>share</TableHead>
 						<TableHead className="w-5 text-right" />
 					</TableRow>
 				</TableHeader>
 				<TableBody>
 					{data.map((holder: IHolder, rank: number) => (
 						<TableRow key={holder.address}>
-							<TableCell className="text-[#a1a1aa] font-medium">#{rank + 1}</TableCell>
+							<TableCell className="text-[#71717a] font-mono text-xs">{rank + 1}</TableCell>
 							<TableCell>
 								<div className="flex items-center gap-2 font-medium">
-									{shortenAddress(holder.address)}{" "}
+									<Link
+										href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/address/${holder.address}`}
+										target="_blank"
+										className="hover:text-[#00ff87] transition-colors"
+									>
+										{shortenAddress(holder.address)}
+									</Link>
 									<HolderLabels
 										address={holder.address}
 										isBondingCurve={holder.isBondingCurve || false}
@@ -50,25 +57,26 @@ export default async function Holders({ token }: { token: IToken }) {
 									/>
 								</div>
 							</TableCell>
-							<TableCell className="text-center">
-								<div className="flex items-center justify-center gap-2 w-full mx-auto">
-									<div className="w-16 text-right">{abbreviateNumber(Number(holder.balanceFormatted), true)}</div>
-									<div className="w-32 lg:w-full">
-										<Progressbar
-											value={Number(holder.balanceFormatted)}
-											max={Number(formatUnits(BigInt(token.totalSupply), token.decimals))}
+							<TableCell className="text-right font-mono text-sm">
+								{abbreviateNumber(Number(holder.balanceFormatted), true)}
+							</TableCell>
+							<TableCell className="text-right">
+								<div className="flex items-center justify-end gap-2">
+									<div className="h-1.5 w-16 overflow-hidden rounded-full bg-[#1f1f23]">
+										<div
+											className="h-full rounded-full bg-[#00ff87]"
+											style={{ width: `${Math.min(Number(holder.percentage), 100)}%` }}
 										/>
 									</div>
-									<div className="w-16 text-left">
-										{abbreviateNumber(Number(formatUnits(BigInt(token.totalSupply), token.decimals)), true)}
-									</div>
+									<span className="font-mono text-xs text-[#a1a1aa] w-12 text-right">
+										{holder.percentage}%
+									</span>
 								</div>
 							</TableCell>
-							<TableCell className="text-right">{holder.percentage}%</TableCell>
 							<TableCell>
 								<Link
 									href={`${CHAIN_TO_BLOCK_EXPLORER_URL[token.chain][token.chainId]}/address/${holder.address}`}
-									target="blank"
+									target="_blank"
 								>
 									<ExternalLink className="ml-auto size-4 text-[#a1a1aa]" />
 								</Link>

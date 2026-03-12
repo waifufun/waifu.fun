@@ -24,6 +24,18 @@ import Countdown from "react-countdown";
 import { useTransactionListener } from "@/providers/transaction-listener";
 import { useTranslation } from "@/contexts/locale-context";
 
+const CHAIN_NATIVE: Record<number, { symbol: string; icon: string; dex: string }> = {
+	56: { symbol: "BNB", icon: "/chain-icons/bsc.svg", dex: "PancakeSwap" },
+	8453: { symbol: "ETH", icon: "/chain-icons/base.svg", dex: "Uniswap" },
+	1: { symbol: "ETH", icon: "/chain-icons/eth.svg", dex: "Uniswap" },
+	84532: { symbol: "ETH", icon: "/chain-icons/base.svg", dex: "Uniswap" },
+	11155111: { symbol: "ETH", icon: "/chain-icons/eth.svg", dex: "Uniswap" },
+};
+
+function getChainNative(chainId: number) {
+	return CHAIN_NATIVE[chainId] ?? { symbol: "ETH", icon: "/chain-icons/eth.svg", dex: "DEX" };
+}
+
 function parseNumericInput(value: string) {
 	const parsed = Number.parseFloat(value);
 	return Number.isFinite(parsed) ? parsed : 0;
@@ -45,9 +57,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		address,
 	});
 
+	const chainNative = getChainNative(Number(token.chainId));
 	const resetLabel = t("swap.reset");
 	const quickSetButtons = [resetLabel, "0.1", "0.5", "1.0"];
-	const quickSetSellButtons = [resetLabel, 25, 50, 75, 100];
+	const quickSetSellButtons = [resetLabel, 25, 50, 75];
 	const isDexSwapAvailable = token.status === "migrated" || token.status === "dex";
 	const normalizedSlippage = slippage / 10;
 	const numericValue = parseNumericInput(value);
@@ -122,7 +135,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		},
 		onSuccess: (result) => {
 			if (result === "redirect_to_pancakeswap") {
-				toast.info(mode === "buy" ? "Opening PancakeSwap to buy." : "Opening PancakeSwap to sell.");
+				toast.info(mode === "buy" ? `Opening ${chainNative.dex} to buy.` : `Opening ${chainNative.dex} to sell.`);
 				return;
 			}
 
@@ -202,8 +215,8 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						: tooHighBuyAmount
 							? t("swap.amountTooHigh")
 							: mode === "buy"
-								? "Buy on PancakeSwap"
-								: "Sell on PancakeSwap";
+								? `Buy on ${chainNative.dex}`
+								: `Sell on ${chainNative.dex}`;
 
 	return (
 		<div className="h-full w-full overflow-hidden">
@@ -221,12 +234,12 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							unoptimized
 							priority
 							className="size-6 rounded-sm"
-							src={mode === "buy" ? "/chain-icons/bsc.svg" : token.image}
+							src={mode === "buy" ? chainNative.icon : token.image}
 							alt={token?.ticker || "token"}
 							width={24}
 							height={24}
 						/>
-						<span className="uppercase text-[#e4e4e7]">{mode === "buy" ? "BNB" : token.ticker}</span>
+						<span className="uppercase text-[#e4e4e7]">{mode === "buy" ? chainNative.symbol : token.ticker}</span>
 					</div>
 				</div>
 				<div
@@ -249,7 +262,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							: tokenBalance?.data
 								? abbreviateNumber(Number(tokenBalance.data), true)
 								: "-"}{" "}
-						{mode === "buy" ? "BNB" : token.ticker}
+						{mode === "buy" ? chainNative.symbol : token.ticker}
 					</span>
 				</div>
 
@@ -272,7 +285,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 				) : (
 					<Fragment>
 						{address && tokenBalance?.data ? (
-							<div className="grid grid-cols-5 gap-1">
+							<div className="grid grid-cols-4 gap-1">
 								{quickSetSellButtons.map((btn) => (
 									<Button
 										key={btn}
@@ -308,7 +321,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 									{minReceivedText || "0"}
 								</span>
 							)}
-							{mode === "buy" ? token.ticker : "BNB"}
+							{mode === "buy" ? token.ticker : chainNative.symbol}
 						</div>
 					</div>
 					{priceImpact !== null ? (
