@@ -1,26 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import type { ChartTimeframe } from "@/lib/api";
+import type { IToken } from "@waifufun/types";
+import { useEffect, useMemo, useState } from "react";
 import LocalChart from "./local-chart";
 import { getCoinGeckoChainName } from "../../lib/utils";
-import type { IToken } from "@waifufun/types";
 
 interface ChartProps {
 	token: IToken;
+	timeframe?: ChartTimeframe;
 }
 
-export default function Chart({ token }: ChartProps) {
+const getGeckoResolution = (timeframe: ChartTimeframe = "1d") => {
+	switch (timeframe) {
+		case "1m":
+		case "5m":
+		case "15m":
+			return timeframe;
+		case "1h":
+			return "5m";
+		case "4h":
+			return "15m";
+		case "1d":
+			return "1h";
+		case "1w":
+			return "4h";
+		case "all":
+			return "1d";
+		default:
+			return "1h";
+	}
+};
+
+export default function Chart({ token, timeframe = "1d" }: ChartProps) {
 	const tokenWithPool = token as IToken & { pool?: string };
-	const isMigrated = token?.status === "migrated" || token?.status === "locked" || token?.status === "finalized";
-	const curveCompleted = (token?.curveCompleted && isMigrated) || token?.imported;
+	const isMigrated = token?.status === "migrated" || token?.status === "dex" || token?.status === "locked" || token?.status === "finalized";
 	const geckoChainName =
 		token.chain === "evm" && Number(token.chainId) === 56
 			? "bsc"
 			: getCoinGeckoChainName(token.chain, token.chainId);
 	const geckoPoolAddress = tokenWithPool?.pool;
-	const canRenderGeckoTerminal = Boolean(curveCompleted && geckoChainName && geckoPoolAddress);
+	const canRenderGeckoTerminal = Boolean(geckoChainName && geckoPoolAddress && (isMigrated || token?.imported || token?.curveCompleted));
+	const geckoResolution = getGeckoResolution(timeframe);
+	const geckoSrc = useMemo(
+		() =>
+			`https://www.geckoterminal.com/${geckoChainName}/pools/${geckoPoolAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=${geckoResolution}`,
+		[geckoChainName, geckoPoolAddress, geckoResolution],
+	);
 
 	const [iframeLoaded, setIframeLoaded] = useState(false);
+
+	useEffect(() => {
+		setIframeLoaded(false);
+	}, [geckoSrc]);
 
 	if (canRenderGeckoTerminal) {
 		return (
@@ -41,7 +73,7 @@ export default function Chart({ token }: ChartProps) {
 					className="min-h-[240px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[580px] w-full h-full mb-[-41px] rounded-sm"
 					id="geckoterminal-embed"
 					title="GeckoTerminal Embed"
-					src={`https://www.geckoterminal.com/${geckoChainName}/pools/${geckoPoolAddress}?embed=1&info=0&swaps=0&grayscale=1&light_chart=0&chart_type=price&resolution=1m`}
+					src={geckoSrc}
 					allow="clipboard-write"
 					allowFullScreen
 					loading="lazy"
@@ -51,5 +83,5 @@ export default function Chart({ token }: ChartProps) {
 		);
 	}
 
-	return <LocalChart token={token} />;
+	return <LocalChart token={token} timeframe={timeframe} />;
 }

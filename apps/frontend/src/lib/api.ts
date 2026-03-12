@@ -300,7 +300,7 @@ function mapApiTokenToIToken(apiToken: any): IToken {
 		createdAt: source.createdAt || source.launchDate || source.launchedAt,
 		hidden: Boolean(source.hidden),
 		verified: Boolean(source.verified),
-		pool: source.pool,
+		pool: source.poolAddress || source.pool,
 		metadataUrl: source.metadataUrl,
 		curveCompleted: source.curveCompleted,
 		agentStatus: source.agentStatus,
@@ -314,6 +314,84 @@ function mapApiTokenToIToken(apiToken: any): IToken {
 }
 
 const normalizeAddress = (value: unknown) => String(value ?? "").trim().toLowerCase();
+
+export type ChartTimeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w" | "all";
+
+const getChartInterval = (timeframe: ChartTimeframe = "1d") => {
+	switch (timeframe) {
+		case "1m":
+		case "5m":
+		case "15m":
+			return timeframe;
+		case "1h":
+			return "5m";
+		case "4h":
+			return "15m";
+		case "1d":
+			return "1h";
+		case "1w":
+			return "4h";
+		case "all":
+			return "1d";
+		default:
+			return "1h";
+	}
+};
+
+const getChartFrom = ({
+	timeframe = "1d",
+	createdAt,
+}: {
+	timeframe?: ChartTimeframe;
+	createdAt?: string | Date;
+}) => {
+	const now = Date.now();
+	const createdAtMs = createdAt ? new Date(createdAt).getTime() : Number.NaN;
+
+	switch (timeframe) {
+		case "1m":
+			return new Date(now - 60 * 60 * 1000).toISOString();
+		case "5m":
+			return new Date(now - 6 * 60 * 60 * 1000).toISOString();
+		case "15m":
+			return new Date(now - 24 * 60 * 60 * 1000).toISOString();
+		case "1h":
+			return new Date(now - 60 * 60 * 1000).toISOString();
+		case "4h":
+			return new Date(now - 4 * 60 * 60 * 1000).toISOString();
+		case "1d":
+			return new Date(now - 24 * 60 * 60 * 1000).toISOString();
+		case "1w":
+			return new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+		case "all":
+			if (Number.isFinite(createdAtMs) && createdAtMs > 0) {
+				return new Date(createdAtMs).toISOString();
+			}
+			return new Date(now - 365 * 24 * 60 * 60 * 1000).toISOString();
+		default:
+			return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+	}
+};
+
+const getChartTimestamp = (value: unknown) => {
+	if (typeof value === "number") return value;
+	if (typeof value === "string") {
+		const asNumber = Number(value);
+		if (Number.isFinite(asNumber)) return asNumber;
+		const asDate = Date.parse(value);
+		if (Number.isFinite(asDate)) return asDate;
+	}
+	if (value instanceof Date) return value.getTime();
+	return Number.NaN;
+};
+
+const getChartCandles = (payload: any): any[] => {
+	const data = unwrapApiData<any>(payload);
+	if (Array.isArray(data)) return data;
+	if (Array.isArray(data?.candles)) return data.candles;
+	if (Array.isArray(payload?.candles)) return payload.candles;
+	return [];
+};
 
 export const getTokens = async ({
 	searchParams,
@@ -351,12 +429,23 @@ export const getTokens = async ({
 };
 
 export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp) => {
+	const directEndpoint = `/tokens/${contractAddress}`;
+
+	try {
+		const response = await fetcher(directEndpoint, "GET");
+		return mapApiTokenToIToken(unwrapApiData(response));
+	} catch (error) {
+		if (!(error instanceof ApiError) || error.status !== 404) {
+			throw error;
+		}
+	}
+
 	const searchParams = new URLSearchParams({
 		search: String(contractAddress),
 		limit: "20",
 	});
-	const endpoint = `/tokens?${searchParams.toString()}`;
-	const response = await fetcher(endpoint, "GET");
+	const searchEndpoint = `/tokens?${searchParams.toString()}`;
+	const response = await fetcher(searchEndpoint, "GET");
 	const items = getApiItems(response);
 	const lookupAddress = normalizeAddress(contractAddress);
 	const matchedToken =
@@ -372,7 +461,7 @@ export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp
 		throw createApiError({
 			message: `Token ${contractAddress} not found.`,
 			code: "HTTP",
-			endpoint,
+			endpoint: searchEndpoint,
 			status: 404,
 			details: response,
 		});
@@ -385,11 +474,13 @@ export const getChartData = async ({
 	chain: _chain,
 	chainId: _chainId,
 	contractAddress,
-	timeframe: _timeframe,
-	limit: _limit,
+	timeframe = "1d",
+	limit,
+	createdAt,
 }: ITokenLookUp & {
-	timeframe?: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+	timeframe?: ChartTimeframe;
 	limit?: number;
+	createdAt?: string | Date;
 }): Promise<
 	Array<{
 		timestamp: number;
@@ -401,12 +492,34 @@ export const getChartData = async ({
 		volumeUSD: number;
 	}>
 > => {
-	// waifu-core placeholder - returns empty for now
 	try {
-		const response = await fetcher(`/tokens/${contractAddress}/chart`, "GET");
-		return response?.data || response || [];
+		const queryParams = new URLSearchParams({
+			interval: getChartInterval(timeframe),
+			from: getChartFrom({
+				timeframe,
+				...(createdAt ? { createdAt } : {}),
+			}),
+		});
+
+		if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+			queryParams.set("limit", String(limit));
+		}
+
+		const response = await fetcher(`/tokens/${contractAddress}/chart?${queryParams.toString()}`, "GET");
+
+		return getChartCandles(response)
+			.map((candle) => ({
+				timestamp: getChartTimestamp(candle?.timestamp ?? candle?.time ?? candle?.openTime ?? candle?.bucket),
+				open: toNumber(candle?.open),
+				high: toNumber(candle?.high),
+				low: toNumber(candle?.low),
+				close: toNumber(candle?.close),
+				volume: toNumber(candle?.volume),
+				volumeUSD: toNumber(candle?.volumeUSD ?? candle?.volumeUsd ?? candle?.volume_usd),
+			}))
+			.filter((candle) => Number.isFinite(candle.timestamp));
 	} catch (error) {
-		console.warn("[waifu-core] Chart endpoint not fully implemented yet");
+		console.warn("[waifu-core] Chart endpoint not fully implemented yet", error);
 		return [];
 	}
 };

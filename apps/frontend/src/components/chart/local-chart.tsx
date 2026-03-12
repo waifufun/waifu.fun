@@ -9,7 +9,7 @@ import {
 	type DeepPartial,
 	type ChartOptions as LightweightChartOptions,
 } from "lightweight-charts";
-import { getChartData } from "@/lib/api";
+import { getChartData, type ChartTimeframe } from "@/lib/api";
 
 type LocalChartData = {
 	candles: Array<{
@@ -22,6 +22,8 @@ type LocalChartData = {
 	}>;
 	hasRemoteData: boolean;
 };
+
+const toUnixSeconds = (timestamp: number) => Math.floor(timestamp > 1_000_000_000_000 ? timestamp / 1000 : timestamp);
 
 function buildFallbackCandles(price?: number): LocalChartData {
 	const fallbackPrice = Number(price);
@@ -48,7 +50,7 @@ function buildFallbackCandles(price?: number): LocalChartData {
 	};
 }
 
-export default function LocalChart({ token }: { token: IToken }) {
+export default function LocalChart({ token, timeframe = "1d" }: { token: IToken; timeframe?: ChartTimeframe }) {
 	const chartContainerRef = useRef<HTMLDivElement>(null);
 	// biome-ignore lint/suspicious/noExplicitAny: lightweight-charts instance typing here is noisy and stable enough.
 	const candlestickSeriesRef = useRef<any>(null);
@@ -56,14 +58,18 @@ export default function LocalChart({ token }: { token: IToken }) {
 	const chartRef = useRef<any>(null);
 
 	const query = useQuery<LocalChartData>({
-		queryKey: ["chart", token.contractAddress],
+		queryKey: ["chart", token.contractAddress, timeframe],
 		queryFn: async () => {
 			try {
 				const data = await getChartData({
 					// biome-ignore lint/suspicious/noExplicitAny: frontend token chain typing is broader than the endpoint today.
 					chain: token.chain as any,
-					chainId: token.chainId,
-					contractAddress: token.contractAddress,
+					// biome-ignore lint/suspicious/noExplicitAny: frontend token lookup typing is broader than the endpoint today.
+					chainId: token.chainId as any,
+					// biome-ignore lint/suspicious/noExplicitAny: frontend token lookup typing is broader than the endpoint today.
+					contractAddress: token.contractAddress as any,
+					timeframe,
+					...(token.createdAt ? { createdAt: token.createdAt } : {}),
 				});
 
 				if (!data || data.length === 0) {
@@ -73,15 +79,15 @@ export default function LocalChart({ token }: { token: IToken }) {
 				const candles = data
 					.filter(
 						(candle) =>
-							!Number.isNaN(Number(candle.volume)) &&
-							!Number.isNaN(Number(candle.close)) &&
-							!Number.isNaN(Number(candle.high)) &&
-							!Number.isNaN(Number(candle.low)) &&
-							!Number.isNaN(Number(candle.open)) &&
-							!Number.isNaN(Number(candle.timestamp)),
+							Number.isFinite(Number(candle.volume)) &&
+							Number.isFinite(Number(candle.close)) &&
+							Number.isFinite(Number(candle.high)) &&
+							Number.isFinite(Number(candle.low)) &&
+							Number.isFinite(Number(candle.open)) &&
+							Number.isFinite(Number(candle.timestamp)),
 					)
 					.map((candle) => ({
-						time: Math.floor(candle.timestamp / 1000),
+						time: toUnixSeconds(Number(candle.timestamp)),
 						open: Number(candle.open),
 						high: Number(candle.high),
 						low: Number(candle.low),

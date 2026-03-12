@@ -13,12 +13,12 @@ import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
 import { Button } from "@/components/ui/button";
 import useAddress from "@/hooks/use-address";
-import { getToken } from "@/lib/api";
+import { getToken, type ChartTimeframe } from "@/lib/api";
 import { cn, isSameWalletAddress } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import { motion } from "framer-motion";
-import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, ChevronDown } from "lucide-react";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
@@ -46,7 +46,7 @@ function SectionDivider() {
 	return <div className="h-px bg-[rgba(255,255,255,0.06)] my-5" />;
 }
 
-const TIMEFRAMES = [
+const TIMEFRAMES: Array<{ label: string; value: ChartTimeframe }> = [
 	{ label: "1h", value: "1h" },
 	{ label: "4h", value: "4h" },
 	{ label: "1d", value: "1d" },
@@ -83,7 +83,7 @@ export default function PageClient({
 		}
 		return false;
 	}, [currentAddress, token?.creator]);
-	const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
+	const [selectedTimeframe, setSelectedTimeframe] = useState<ChartTimeframe>("1d");
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 	const [marketDataExpanded, setMarketDataExpanded] = useState(true);
 	const panelSectionRef = useRef<HTMLDivElement | null>(null);
@@ -201,7 +201,7 @@ export default function PageClient({
 								</div>
 
 								<div className="p-2 sm:p-3 min-h-0 overflow-hidden">
-									<Chart token={token} />
+									<Chart token={token} timeframe={selectedTimeframe} />
 								</div>
 								<div
 									className={cn(
