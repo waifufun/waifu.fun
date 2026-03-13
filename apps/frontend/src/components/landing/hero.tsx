@@ -9,6 +9,7 @@ import { useTranslation } from "@/contexts/locale-context";
 const GlitchBg = dynamic(() => import("./glitch-bg"), { ssr: false });
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+const HERO_BG_URL = "https://v3b.fal.media/files/b/0a91f165/dlsuBOYlw9O1cKC41uNA-_hero_v4_s40.png";
 
 function RevealLine({
 	children,
@@ -99,18 +100,15 @@ export default function Hero() {
 				/>
 			</div>
 
-			{/* L2: Hero background image — dark textural depth */}
-			<div className="absolute inset-0 z-[1] opacity-20">
-				<picture>
-					<source srcSet="/brand/backgrounds/hero-bg-v2.webp" type="image/webp" />
-					<img
-						src="/brand/backgrounds/hero-bg-v2.jpg"
-						alt=""
-						aria-hidden="true"
-						className="h-full w-full object-cover object-center"
-						loading="eager"
-					/>
-				</picture>
+			{/* L2: Hero background image — Vera hero v4 from fal CDN */}
+			<div className="absolute inset-0 z-[1] opacity-40">
+				<img
+					src={HERO_BG_URL}
+					alt=""
+					aria-hidden="true"
+					className="h-full w-full object-cover object-center"
+					loading="eager"
+				/>
 			</div>
 
 			{/* L3: Scanlines */}
