@@ -294,6 +294,7 @@ function mapApiTokenToIToken(apiToken: any): IToken {
 		status,
 		curveProgress: toNumber(source.progressPercent ?? source.curveProgress),
 		featured: Boolean(source.featured),
+		imported: Boolean(source.imported),
 		socials: source.socials || {},
 		version: toNumber(source.version, 1),
 		creator: source.creatorAddress || source.creator || source.creatorWallet,

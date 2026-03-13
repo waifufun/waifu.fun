@@ -12,6 +12,7 @@ import AgentStatusVisual from "@/components/token-page/agent-status-visual";
 import { isHolderDataIndexed } from "@/components/token-page/holder-data-state";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
+import { useLiveMarketToken } from "@/components/token-page/use-live-market-token";
 import { Button } from "@/components/ui/button";
 import useAddress from "@/hooks/use-address";
 import { type ChartTimeframe, getToken } from "@/lib/api";
@@ -73,8 +74,12 @@ export default function PageClient({
 
 	const currentAddress = useAddress();
 	const token = query.data ?? initialData;
-	const displayToken = useMemo(() => (isHolderDataIndexed(token) ? token : { ...token, holders: 0 }), [token]);
-	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(token), [token]);
+	const { token: liveMarketToken, marketDataSource } = useLiveMarketToken(token);
+	const displayToken = useMemo(
+		() => (isHolderDataIndexed(token) ? liveMarketToken : { ...liveMarketToken, holders: 0 }),
+		[liveMarketToken, token],
+	);
+	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(displayToken), [displayToken]);
 	const isCreator = useMemo(() => {
 		if (currentAddress && token?.creator) {
 			return isSameWalletAddress(currentAddress, token.creator);
@@ -90,7 +95,7 @@ export default function PageClient({
 	return (
 		<div className="flex flex-col gap-4 sm:gap-5 mt-3 w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 overflow-x-hidden">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<AgentProfile token={displayToken} status={agentStatus} />
+			<AgentProfile token={displayToken} status={agentStatus} marketDataSource={marketDataSource} />
 
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4 sm:gap-5 min-w-0">
 				{/* LEFT COLUMN - Agent Dashboard */}

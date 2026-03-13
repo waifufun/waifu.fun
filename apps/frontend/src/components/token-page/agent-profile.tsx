@@ -1,25 +1,27 @@
 "use client";
 
+import { CopyButton } from "@/components/copy-button";
+import Verified from "@/components/verified";
+import { abbreviateNumber, cn, formatNumberSubscript, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
 import { BarChart2, DollarSign, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { CopyButton } from "@/components/copy-button";
-import Verified from "@/components/verified";
-import { abbreviateNumber, cn, formatNumberSubscript, shortenAddress } from "@/lib/utils";
 
-export type AgentLifecycleState = "bonding" | "active" | "dormant" | "imported";
+export type AgentLifecycleState = "bonding" | "active" | "dormant" | "imported" | "migrated";
 
 export interface AgentLifecycleStatus {
 	state: AgentLifecycleState;
 	label: AgentLifecycleState;
 	isBonded: boolean;
 	isImported: boolean;
+	isExternalMarket: boolean;
 	hasRecentActivity: boolean;
 }
 
 const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
+const externalMarketStatuses = new Set(["migrated", "dex", "locked"]);
 
 function isImportedToken(token: IToken) {
 	const tokenWithOrigin = token as IToken & { origin?: string };
@@ -28,26 +30,34 @@ function isImportedToken(token: IToken) {
 
 export function deriveAgentLifecycleStatus(token: IToken): AgentLifecycleStatus {
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
-	const isBonded = Boolean(token?.curveCompleted) || curveProgress >= 100;
 	const isImported = isImportedToken(token);
+	const normalizedStatus = String(token?.status ?? "")
+		.trim()
+		.toLowerCase();
+	const isMigrated = externalMarketStatuses.has(normalizedStatus);
+	const isBonded = Boolean(token?.curveCompleted) || curveProgress >= 100 || isMigrated;
 	const volume24h = Number(token?.volume24h ?? 0);
 	const marketcap = Number(token?.marketcap ?? 0);
-	const isFinalized = token?.status === "finalized";
+	const isFinalized = normalizedStatus === "finalized";
 	const hasRecentActivity = volume24h > 0 || marketcap >= ACTIVE_MARKETCAP_THRESHOLD;
+	const isExternalMarket = isImported || isMigrated;
 
 	if (isImported) {
-		return { state: "imported", label: "imported", isBonded, isImported, hasRecentActivity };
+		return { state: "imported", label: "imported", isBonded: true, isImported, isExternalMarket, hasRecentActivity };
+	}
+	if (isMigrated) {
+		return { state: "migrated", label: "migrated", isBonded: true, isImported, isExternalMarket, hasRecentActivity };
 	}
 	if (isFinalized) {
-		return { state: "dormant", label: "dormant", isBonded, isImported, hasRecentActivity: false };
+		return { state: "dormant", label: "dormant", isBonded, isImported, isExternalMarket, hasRecentActivity: false };
 	}
 	if (!isBonded) {
-		return { state: "bonding", label: "bonding", isBonded, isImported, hasRecentActivity };
+		return { state: "bonding", label: "bonding", isBonded, isImported, isExternalMarket, hasRecentActivity };
 	}
 	if (hasRecentActivity) {
-		return { state: "active", label: "active", isBonded, isImported, hasRecentActivity };
+		return { state: "active", label: "active", isBonded, isImported, isExternalMarket, hasRecentActivity };
 	}
-	return { state: "dormant", label: "dormant", isBonded, isImported, hasRecentActivity };
+	return { state: "dormant", label: "dormant", isBonded, isImported, isExternalMarket, hasRecentActivity };
 }
 
 function LiveDot() {
@@ -64,15 +74,20 @@ const statusClassMap: Record<AgentLifecycleState, string> = {
 	active: "bg-[#00ff87]/15 text-[#00ff87] border border-[#00ff87]/30",
 	dormant: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/30",
 	imported: "bg-sky-500/15 text-[#60a5fa] border border-sky-500/30",
+	migrated: "bg-violet-500/15 text-violet-300 border border-violet-500/30",
 };
 
 export type AgentDisplayStatus = "alive" | "asleep" | "dead";
 
 export function getAgentDisplayStatus(token: IToken, status: AgentLifecycleStatus): AgentDisplayStatus {
-	const isFinalized = token?.status === "finalized";
-	const isBondedZeroCap = status.isBonded && (Number(token?.marketcap ?? 0) === 0);
+	const isFinalized =
+		String(token?.status ?? "")
+			.trim()
+			.toLowerCase() === "finalized";
+	const isBondedZeroCap = status.isBonded && !status.isExternalMarket && Number(token?.marketcap ?? 0) === 0;
 	if (isFinalized || isBondedZeroCap) return "dead";
-	if (status.state === "active" || status.state === "bonding") return "alive";
+	if (status.state === "bonding" || status.state === "active") return "alive";
+	if (status.isExternalMarket && status.hasRecentActivity) return "alive";
 	return "asleep";
 }
 
@@ -87,14 +102,29 @@ const statIcons = { price: DollarSign, "mkt cap": TrendingUp, "24h vol": BarChar
 export default function AgentProfile({
 	token,
 	status,
+	marketDataSource,
 }: {
 	token: IToken;
 	status: AgentLifecycleStatus;
+	marketDataSource?: "dexscreener" | null;
 }) {
+	const hasLiveExternalMarketData = marketDataSource === "dexscreener";
 	const stats: { label: string; value: string; live?: boolean }[] = [
-		{ label: "price", value: formatNumberSubscript(token?.price), live: true },
-		{ label: "mkt cap", value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—", live: true },
-		{ label: "24h vol", value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—" },
+		{
+			label: "price",
+			value: formatNumberSubscript(token?.price),
+			live: hasLiveExternalMarketData || !status.isExternalMarket,
+		},
+		{
+			label: "mkt cap",
+			value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—",
+			live: hasLiveExternalMarketData || !status.isExternalMarket,
+		},
+		{
+			label: "24h vol",
+			value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—",
+			live: hasLiveExternalMarketData,
+		},
 		{ label: "holders", value: token?.holders ? abbreviateNumber(token.holders, true) : "—" },
 	];
 
@@ -143,7 +173,7 @@ export default function AgentProfile({
 						<h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight break-words min-w-0">
 							{token.name}
 						</h1>
-						{status.state === "active" && <LiveDot />}
+						{(status.state === "active" || (status.isExternalMarket && status.hasRecentActivity)) && <LiveDot />}
 						<span className="text-lg md:text-xl text-[#00ff87] font-mono font-semibold">${token.ticker}</span>
 						<span className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}>
 							{status.label}
@@ -151,7 +181,9 @@ export default function AgentProfile({
 					</div>
 
 					{token.description && (
-						<p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed line-clamp-2 max-w-2xl min-w-0">{token.description}</p>
+						<p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed line-clamp-2 max-w-2xl min-w-0">
+							{token.description}
+						</p>
 					)}
 
 					<div className="flex items-center gap-2 text-xs">
@@ -192,12 +224,7 @@ export default function AgentProfile({
 					{socialsWithLinks.length > 0 && (
 						<div className="flex items-center gap-2 mt-1 flex-wrap">
 							{socialsWithLinks.map((social) => (
-								<Link
-									key={social.title}
-									href={social.href}
-									target="_blank"
-									rel="noopener noreferrer"
-								>
+								<Link key={social.title} href={social.href} target="_blank" rel="noopener noreferrer">
 									<Image
 										src={social.icon}
 										className="inline-flex items-center justify-center h-7 w-7 p-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] opacity-60 hover:opacity-100 cursor-pointer hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
