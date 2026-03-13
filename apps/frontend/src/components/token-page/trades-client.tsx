@@ -221,6 +221,42 @@ const getQuoteAmount = (trade: ApiTrade, token: IToken) => {
 	return getRenderableAmount(trade.quoteAmount, getQuoteTokenDecimals(trade, token));
 };
 
+const getTradeSemantics = (trade: ApiTrade) => {
+	if (trade.side === "buy") {
+		return {
+			tokenLabel: "received",
+			quoteLabel: "quote paid",
+		};
+	}
+
+	return {
+		tokenLabel: "sold",
+		quoteLabel: "quote received",
+	};
+};
+
+const getUnavailableQuoteLabel = (trade: ApiTrade) => {
+	if (trade.stale) return "stale row";
+	if (isBackfillTrade(trade)) return "historical row";
+	if (isExternalTrade(trade)) return "external row";
+	return "quote unavailable";
+};
+
+const getDerivedPrice = (trade: ApiTrade, token: IToken) => {
+	if (!hasVerifiedQuoteAmount(trade, token)) return null;
+
+	const tokenAmount = getTokenAmount(trade, token);
+	const quoteAmount = getQuoteAmount(trade, token);
+	if (!tokenAmount || !quoteAmount) return null;
+
+	const parsedTokenAmount = Number(tokenAmount);
+	const parsedQuoteAmount = Number(quoteAmount);
+	if (!Number.isFinite(parsedTokenAmount) || !Number.isFinite(parsedQuoteAmount)) return null;
+	if (parsedTokenAmount <= 0 || parsedQuoteAmount <= 0) return null;
+
+	return parsedQuoteAmount / parsedTokenAmount;
+};
+
 const getExternalMarketUrl = (token: IToken) => {
 	const tokenWithPool = token as IToken & { pool?: string };
 	const isMigrated = migratedStatuses.has(token.status);
@@ -310,7 +346,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 						badge: "partial",
 						title: "trade history",
 						description:
-							"Some rows are historical or incomplete. Token amounts stay visible, while counter-asset values only appear when the quote side is verified.",
+							"Some rows are historical or incomplete. Token amounts stay visible, while quote-side values only appear when the quote side is verified.",
 						footer: `Mixed verified history · showing ${data.length} recent rows`,
 						icon: History,
 					}
@@ -412,7 +448,8 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								<TableHead className={cn(headerClass, "w-[100px]")}>account</TableHead>
 								<TableHead className={cn(headerClass, "text-center")}>type</TableHead>
 								<TableHead className={headerClass}>token amount</TableHead>
-								<TableHead className={headerClass}>counter amount</TableHead>
+								<TableHead className={headerClass}>quote side</TableHead>
+								<TableHead className={headerClass}>price</TableHead>
 								<TableHead className={cn(headerClass, "w-12 text-right")}>date</TableHead>
 								<TableHead className="w-5 text-right" />
 							</TableRow>
@@ -425,6 +462,9 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								const quoteTokenSymbol = normalizeText(trade.quoteTokenSymbol);
 								const usdValue = normalizeText(trade.usdValue);
 								const showQuoteAmount = hasVerifiedQuoteAmount(trade, token);
+								const derivedPrice = getDerivedPrice(trade, token);
+								const semantics = getTradeSemantics(trade);
+								const unavailableQuoteLabel = getUnavailableQuoteLabel(trade);
 
 								return (
 									<TableRow
@@ -448,13 +488,18 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 											</div>
 										</TableCell>
 										<TableCell>
-											{tokenAmount ? (
-												<span className="font-mono text-sm text-[#e4e4e7]">
-													{formatAmount(tokenAmount)} {token.ticker}
+											<div className="flex flex-col">
+												{tokenAmount ? (
+													<span className="font-mono text-sm text-[#e4e4e7]">
+														{formatAmount(tokenAmount)} {token.ticker}
+													</span>
+												) : (
+													<span className="font-mono text-sm text-[#71717a]">-</span>
+												)}
+												<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+													token {semantics.tokenLabel}
 												</span>
-											) : (
-												<span className="font-mono text-sm text-[#71717a]">-</span>
-											)}
+											</div>
 										</TableCell>
 										<TableCell>
 											<div className="flex flex-col">
@@ -469,9 +514,38 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 																≈ ${formatAmount(usdValue)}
 															</span>
 														) : null}
+														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+															{semantics.quoteLabel}
+														</span>
 													</>
 												) : (
-													<span className="font-mono text-sm text-[#71717a]">-</span>
+													<>
+														<span className="font-mono text-sm text-[#71717a]">unavailable</span>
+														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+															{unavailableQuoteLabel}
+														</span>
+													</>
+												)}
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-col">
+												{derivedPrice && quoteTokenSymbol ? (
+													<>
+														<span className="font-mono text-sm text-[#a1a1aa]">
+															{formatAmount(derivedPrice, derivedPrice >= 1 ? 6 : 8)} {quoteTokenSymbol}
+														</span>
+														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+															per {token.ticker}
+														</span>
+													</>
+												) : (
+													<>
+														<span className="font-mono text-sm text-[#71717a]">unavailable</span>
+														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+															not derived
+														</span>
+													</>
 												)}
 											</div>
 										</TableCell>

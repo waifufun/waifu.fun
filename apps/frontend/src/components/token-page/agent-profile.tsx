@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { BarChart2, DollarSign, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 export type AgentLifecycleState = "bonding" | "active" | "dormant" | "imported" | "migrated";
 
@@ -201,10 +202,12 @@ export default function AgentProfile({
 	token,
 	status,
 	marketDataSource,
+	headerAccessory,
 }: {
 	token: IToken;
 	status: AgentLifecycleStatus;
 	marketDataSource?: "dexscreener" | null;
+	headerAccessory?: ReactNode;
 }) {
 	const hasLiveExternalMarketData = marketDataSource === "dexscreener";
 	const stats: { label: string; value: string; live?: boolean }[] = [
@@ -266,16 +269,22 @@ export default function AgentProfile({
 				</motion.div>
 
 				<div className="flex flex-col gap-2 sm:gap-3 min-w-0 flex-1 pr-14 sm:pr-16">
-					<div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-						<Verified isVerified={token?.verified} />
-						<h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight break-words min-w-0">
-							{token.name}
-						</h1>
-						{(status.state === "active" || (status.isExternalMarket && status.hasRecentActivity)) && <LiveDot />}
-						<span className="text-lg md:text-xl text-[#00ff87] font-mono font-semibold">${token.ticker}</span>
-						<span className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}>
-							{status.label}
-						</span>
+					<div className="flex flex-col gap-2">
+						<div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+							<Verified isVerified={token?.verified} />
+							<h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight break-words min-w-0">
+								{token.name}
+							</h1>
+							{(status.state === "active" || (status.isExternalMarket && status.hasRecentActivity)) && <LiveDot />}
+							<span className="text-lg md:text-xl text-[#00ff87] font-mono font-semibold">${token.ticker}</span>
+							<span
+								className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}
+							>
+								{status.label}
+							</span>
+						</div>
+
+						{headerAccessory && <div className="flex flex-wrap items-center gap-2">{headerAccessory}</div>}
 					</div>
 
 					{token.description && (
