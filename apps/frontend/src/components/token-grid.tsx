@@ -15,44 +15,58 @@ const containerVariants = {
 };
 
 const itemVariants = {
-	hidden: { opacity: 0, y: 12 },
+	hidden: { opacity: 0, y: 14 },
 	visible: {
 		opacity: 1,
 		y: 0,
 		transition: {
-			duration: 0.5,
+			duration: 0.55,
 			ease: "easeOut" as const,
 		},
 	},
 };
 
-export default function TokenGrid({ tokens }: { tokens: IToken[] }) {
-	const featuredToken = tokens[0];
+export default function TokenGrid({
+	tokens,
+	imageOverrides = {},
+}: {
+	tokens: IToken[];
+	imageOverrides?: Record<string, string>;
+}) {
+	const [featuredToken, supportingToken] = tokens;
 	if (!featuredToken) return null;
 
-	const secondaryTokens = tokens.slice(1);
+	const getImageOverride = (token: IToken) => {
+		const contractAddress = token.contractAddress?.toLowerCase();
+		return contractAddress ? imageOverrides[contractAddress] : undefined;
+	};
+
+	const featuredImageOverride = getImageOverride(featuredToken);
+	const supportingImageOverride = supportingToken ? getImageOverride(supportingToken) : undefined;
 
 	return (
 		<motion.div
-			className="flex flex-col gap-8 w-full"
+			className="grid grid-cols-1 gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]"
 			variants={containerVariants}
 			initial="hidden"
 			animate="visible"
 		>
-			{/* Featured card: first token, full width */}
-			<motion.div variants={itemVariants}>
-				<GridItem token={featuredToken} variant="featured" />
+			<motion.div variants={itemVariants} className="min-w-0">
+				<GridItem
+					token={featuredToken}
+					variant="hero"
+					{...(featuredImageOverride ? { imageSrc: featuredImageOverride } : {})}
+				/>
 			</motion.div>
 
-			{/* Secondary cards: remaining tokens in grid */}
-			{secondaryTokens.length > 0 && (
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-					{secondaryTokens.map((token) => (
-						<motion.div key={token.contractAddress} variants={itemVariants}>
-							<GridItem token={token} variant="standard" />
-						</motion.div>
-					))}
-				</div>
+			{supportingToken && (
+				<motion.div variants={itemVariants} className="min-w-0">
+					<GridItem
+						token={supportingToken}
+						variant="portrait"
+						{...(supportingImageOverride ? { imageSrc: supportingImageOverride } : {})}
+					/>
+				</motion.div>
 			)}
 		</motion.div>
 	);
