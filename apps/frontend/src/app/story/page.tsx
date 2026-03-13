@@ -1,24 +1,24 @@
 "use client";
 
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import { useRef, useState, useEffect, useMemo } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useTranslation } from "@/contexts/locale-context";
+import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import {
-	Cloud,
-	Server,
-	Cpu,
-	Zap,
-	TrendingUp,
-	Users,
-	MessageCircle,
-	ArrowRight,
-	Sparkles,
 	Activity,
+	ArrowRight,
+	Cloud,
+	Cpu,
 	Ghost,
 	Heart,
+	MessageCircle,
+	Server,
+	Sparkles,
+	TrendingUp,
+	Users,
+	Zap,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function SectionBlock({
 	children,
@@ -304,7 +304,9 @@ export default function StoryPage() {
 									transition={{ delay: 0.2 }}
 								>
 									<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-									<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">{t("story.badge")}</span>
+									<span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#71717a]">
+										{t("story.badge")}
+									</span>
 								</motion.div>
 								<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
 									<h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] leading-[0.95] text-[#e4e4e7] mb-8">
@@ -379,9 +381,7 @@ export default function StoryPage() {
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#00ff87] leading-tight lowercase">
 								{t("story.lifecycleTitle")}
 							</h2>
-							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								{t("story.lifecycleSubtitle")}
-							</p>
+							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">{t("story.lifecycleSubtitle")}</p>
 						</div>
 					</SectionBlock>
 					<div className="relative">
@@ -404,9 +404,7 @@ export default function StoryPage() {
 													{phase.number}
 												</span>
 											</motion.div>
-											<div
-												className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center ${!imageLeft ? "lg:flex-row-reverse" : ""}`}
-											>
+											<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 												<div className={`${!imageLeft ? "lg:order-2" : ""}`}>
 													<motion.div
 														className="relative overflow-hidden rounded-sm aspect-[4/5] max-w-[400px] mx-auto"
@@ -461,13 +459,18 @@ export default function StoryPage() {
 															className="font-mono text-xs font-semibold tracking-widest uppercase"
 															style={{ color: phase.accent }}
 														>
-															{t("story.phaseLabelPrefix")} {phase.number} — {t(`story.phase${phase.phase.charAt(0).toUpperCase()}${phase.phase.slice(1)}`)}
+															{t("story.phaseLabelPrefix")} {phase.number} —{" "}
+															{t(`story.phase${phase.phase.charAt(0).toUpperCase()}${phase.phase.slice(1)}`)}
 														</span>
 													</div>
 													<h3 className="text-2xl sm:text-3xl font-bold text-[#e4e4e7] tracking-[-0.02em] lowercase mb-4">
 														{phase.title}
 													</h3>
-													<p className="text-[#a1a1aa] text-base leading-relaxed max-w-md">{phase.description}</p>
+													<p
+														className={`text-[#a1a1aa] text-base leading-relaxed max-w-md ${!imageLeft ? "lg:ml-auto" : ""}`}
+													>
+														{phase.description}
+													</p>
 												</div>
 											</div>
 										</div>
@@ -493,9 +496,7 @@ export default function StoryPage() {
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
 								{t("story.stackTitle")}
 							</h2>
-							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								{t("story.stackSubtitle")}
-							</p>
+							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">{t("story.stackSubtitle")}</p>
 						</div>
 					</SectionBlock>
 					<div className="hidden lg:flex items-center justify-center gap-2 mb-12">
@@ -595,7 +596,9 @@ export default function StoryPage() {
 						>
 							<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 							<div className="pl-4">
-								<span className="font-mono text-xs font-bold text-[#00ff87] uppercase tracking-wider">{t("story.economicsTldrLabel")}</span>
+								<span className="font-mono text-xs font-bold text-[#00ff87] uppercase tracking-wider">
+									{t("story.economicsTldrLabel")}
+								</span>
 								<p className="text-[#a1a1aa] text-base mt-2 leading-relaxed">
 									{t("story.economicsTldrText")}
 									<span className="text-[#71717a] block mt-2 text-sm">{t("story.economicsTldrFooter")}</span>
@@ -617,8 +620,7 @@ export default function StoryPage() {
 								{t("story.agentsTitle")}
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								{t("story.agentsSubtitle")}{" "}
-								<span className="text-[#00ff87]">{t("story.agentsSubtitleHighlight")}</span>
+								{t("story.agentsSubtitle")} <span className="text-[#00ff87]">{t("story.agentsSubtitleHighlight")}</span>
 							</p>
 						</div>
 					</SectionBlock>
@@ -686,9 +688,7 @@ export default function StoryPage() {
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase mb-6">
 								{t("story.ctaTitle")}
 							</h2>
-							<p className="text-[#a1a1aa] text-lg leading-relaxed max-w-md mx-auto mb-10">
-								{t("story.ctaSubtitle")}
-							</p>
+							<p className="text-[#a1a1aa] text-lg leading-relaxed max-w-md mx-auto mb-10">{t("story.ctaSubtitle")}</p>
 							<div className="relative inline-block">
 								<motion.div
 									className="absolute inset-0 rounded-sm blur-xl"

@@ -1,18 +1,18 @@
 "use client";
 
-import { Input } from "./ui/input";
-import { useEffect, useMemo, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import Image from "next/image";
-import { CopyButton } from "./copy-button";
+import mockTokens from "@/data/mock-tokens.json";
 import { abbreviateNumber, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
+import { Command, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Command } from "lucide-react";
-import mockTokens from "@/data/mock-tokens.json";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CopyButton } from "./copy-button";
+import { Input } from "./ui/input";
 
-const PLACEHOLDER = "Search DAOs & Agents by name, symbol, or CA...";
+const PLACEHOLDER = "Search waifus by name, symbol, or contract...";
 
 const TOKENS = mockTokens as IToken[];
 
@@ -24,8 +24,7 @@ function searchTokens(query: string, limit: number): IToken[] {
 			t.name?.toLowerCase().includes(q) ||
 			t.ticker?.toLowerCase().includes(q) ||
 			t.contractAddress?.toLowerCase().includes(q),
-	)
-		.slice(0, limit);
+	).slice(0, limit);
 }
 
 export default function SearchMenu() {
@@ -57,10 +56,7 @@ export default function SearchMenu() {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
 
-	const results = useMemo(
-		() => (open && value.trim().length > 0 ? searchTokens(value, 10) : []),
-		[open, value],
-	);
+	const results = useMemo(() => (open && value.trim().length > 0 ? searchTokens(value, 10) : []), [open, value]);
 	const showResults = value.trim().length > 0;
 
 	return (
@@ -135,7 +131,7 @@ export default function SearchMenu() {
 				<div className="min-h-[280px] max-h-[60vh] overflow-y-auto p-4">
 					{!showResults && (
 						<p className="text-center text-sm py-12" style={{ color: "#52525b" }}>
-							Start typing to search DAOs & Agents...
+							Start typing to search waifus...
 						</p>
 					)}
 					{showResults && results.length === 0 && (
