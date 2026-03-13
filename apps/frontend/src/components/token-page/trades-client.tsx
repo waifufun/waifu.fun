@@ -34,7 +34,7 @@ interface ApiTrade {
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
 const migratedStatuses = new Set(["completed", "dex", "migrated", "locked", "finalized"]);
 const staleFeedMs = 1000 * 60 * 60 * 12;
-const QUOTE_TOKEN_DECIMALS: Record<string, number> = {
+const QUOTE_TOKEN_DECIMALS = {
 	BNB: 18,
 	WBNB: 18,
 	ETH: 18,
@@ -43,7 +43,9 @@ const QUOTE_TOKEN_DECIMALS: Record<string, number> = {
 	WSOL: 9,
 	USDC: 6,
 	USDT: 6,
-};
+} as const;
+
+type QuoteTokenSymbol = keyof typeof QUOTE_TOKEN_DECIMALS;
 
 const formatAmount = (value: string | number, maximumFractionDigits?: number) => {
 	const parsed = typeof value === "number" ? value : Number(value);
@@ -67,6 +69,19 @@ const parseTradeDate = (value?: string | null) => {
 const normalizeText = (value?: string | number | null) => {
 	if (value === null || value === undefined) return "";
 	return String(value).trim();
+};
+
+const isNumericAmount = (value: string | number | null | undefined) => {
+	const normalizedValue = normalizeText(value);
+	if (!normalizedValue) return false;
+	if (/^-?\d+$/.test(normalizedValue)) return true;
+
+	const parsed = Number(normalizedValue);
+	return Number.isFinite(parsed);
+};
+
+const isKnownQuoteTokenSymbol = (value: string): value is QuoteTokenSymbol => {
+	return value in QUOTE_TOKEN_DECIMALS;
 };
 
 const getTradeSourceLabel = (source?: string | null) => {
@@ -103,8 +118,8 @@ const getTradeNotice = (trade: ApiTrade) => {
 	return null;
 };
 
-const hasVerifiedQuoteAmount = (trade: ApiTrade) => {
-	return Boolean(normalizeText(trade.quoteAmount)) && !trade.stale && !isBackfillTrade(trade);
+const hasVerifiedQuoteAmount = (trade: ApiTrade, token: IToken) => {
+	return Boolean(getQuoteAmount(trade, token)) && !trade.stale && !isBackfillTrade(trade);
 };
 
 const toDisplayAmount = (value: string | number | null | undefined, decimals: number) => {
@@ -120,9 +135,9 @@ const toDisplayAmount = (value: string | number | null | undefined, decimals: nu
 	}
 };
 
-const getQuoteTokenDecimals = (trade: ApiTrade, token: IToken) => {
+const getQuoteTokenDecimals = (trade: ApiTrade, token: IToken): number => {
 	const normalizedSymbol = normalizeText(trade.quoteTokenSymbol).toUpperCase();
-	if (normalizedSymbol && normalizedSymbol in QUOTE_TOKEN_DECIMALS) {
+	if (normalizedSymbol && isKnownQuoteTokenSymbol(normalizedSymbol)) {
 		return QUOTE_TOKEN_DECIMALS[normalizedSymbol];
 	}
 
@@ -130,13 +145,18 @@ const getQuoteTokenDecimals = (trade: ApiTrade, token: IToken) => {
 	return 18;
 };
 
+const getRenderableAmount = (value: string | number | null | undefined, decimals: number) => {
+	const displayAmount = toDisplayAmount(value, decimals);
+	return isNumericAmount(displayAmount) ? displayAmount : null;
+};
+
 const getTokenAmount = (trade: ApiTrade, token: IToken) => {
 	const fallbackAmount = trade.side === "buy" ? trade.amountOut : trade.amountIn;
-	return toDisplayAmount(normalizeText(trade.tokenAmount) || fallbackAmount, token.decimals);
+	return getRenderableAmount(normalizeText(trade.tokenAmount) || fallbackAmount, token.decimals);
 };
 
 const getQuoteAmount = (trade: ApiTrade, token: IToken) => {
-	return toDisplayAmount(trade.quoteAmount, getQuoteTokenDecimals(trade, token));
+	return getRenderableAmount(trade.quoteAmount, getQuoteTokenDecimals(trade, token));
 };
 
 const getExternalMarketUrl = (token: IToken) => {
@@ -285,7 +305,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 						const quoteTokenSymbol = normalizeText(trade.quoteTokenSymbol);
 						const usdValue = normalizeText(trade.usdValue);
 						const tradeNotice = getTradeNotice(trade);
-						const showQuoteAmount = hasVerifiedQuoteAmount(trade);
+						const showQuoteAmount = hasVerifiedQuoteAmount(trade, token);
 
 						return (
 							<TableRow
@@ -309,13 +329,17 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 									</div>
 								</TableCell>
 								<TableCell>
-									<span className="font-mono text-sm text-[#e4e4e7]">
-										{formatAmount(tokenAmount)} {token.ticker}
-									</span>
+									{tokenAmount ? (
+										<span className="font-mono text-sm text-[#e4e4e7]">
+											{formatAmount(tokenAmount)} {token.ticker}
+										</span>
+									) : (
+										<span className="font-mono text-sm text-[#71717a]">—</span>
+									)}
 								</TableCell>
 								<TableCell>
 									<div className="flex flex-col">
-										{showQuoteAmount ? (
+										{showQuoteAmount && quoteAmount ? (
 											<>
 												<span className="font-mono text-sm text-[#e4e4e7]">
 													{formatAmount(quoteAmount)}
@@ -324,6 +348,11 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 												{usdValue ? (
 													<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
 														≈ ${formatAmount(usdValue)}
+													</span>
+												) : null}
+												{tradeNotice ? (
+													<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+														{tradeNotice}
 													</span>
 												) : null}
 											</>
