@@ -21,6 +21,13 @@ interface ApiTrade {
 	txHash: string;
 	blockNumber: number;
 	timestamp: string;
+	source?: string | null;
+	stale?: boolean | null;
+	tokenAmount?: string | number | null;
+	quoteAmount?: string | number | null;
+	quoteTokenSymbol?: string | null;
+	usdValue?: string | number | null;
+	note?: string | null;
 }
 
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
@@ -40,6 +47,54 @@ const parseTradeDate = (value?: string | null) => {
 	if (!value) return null;
 	const parsed = new Date(value);
 	return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const normalizeText = (value?: string | number | null) => {
+	if (value === null || value === undefined) return "";
+	return String(value).trim();
+};
+
+const getTradeSourceLabel = (source?: string | null) => {
+	const normalizedSource = normalizeText(source).toLowerCase();
+	if (!normalizedSource) return null;
+	if (normalizedSource === "portal") return "portal";
+	if (normalizedSource === "dex") return "external market";
+	return normalizedSource.replace(/[-_]+/g, " ");
+};
+
+const isBackfillTrade = (trade: ApiTrade) => {
+	const normalizedNote = normalizeText(trade.note).toLowerCase();
+	const normalizedSource = normalizeText(trade.source).toLowerCase();
+
+	return (
+		normalizedSource === "backfill" ||
+		normalizedNote.includes("backfill") ||
+		normalizedNote.includes("historical") ||
+		normalizedNote.includes("stale") ||
+		normalizedNote.includes("migrated")
+	);
+};
+
+const getTradeNotice = (trade: ApiTrade) => {
+	if (trade.stale || isBackfillTrade(trade)) {
+		return "historical / backfill";
+	}
+
+	const sourceLabel = getTradeSourceLabel(trade.source);
+	if (sourceLabel && sourceLabel !== "portal") {
+		return sourceLabel;
+	}
+
+	return null;
+};
+
+const hasVerifiedQuoteAmount = (trade: ApiTrade) => {
+	return Boolean(normalizeText(trade.quoteAmount)) && !trade.stale && !isBackfillTrade(trade);
+};
+
+const getTokenAmount = (trade: ApiTrade) => {
+	const fallbackAmount = trade.side === "buy" ? trade.amountOut : trade.amountIn;
+	return normalizeText(trade.tokenAmount) || fallbackAmount;
 };
 
 const getExternalMarketUrl = (token: IToken) => {
@@ -119,12 +174,15 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 	const externalMarketUrl = getExternalMarketUrl(token);
 	const hasExternalMarket = Boolean(token.imported || tokenWithPool.pool || (token.curveCompleted && isMigratedToken));
 	const latestTradeDate = parseTradeDate(data[0]?.timestamp);
+	const hasHistoricalOrExternalRows = data.some((trade) => Boolean(getTradeNotice(trade)));
 	const isStaleExternalFeed = Boolean(
 		hasExternalMarket && latestTradeDate && Date.now() - latestTradeDate.getTime() > staleFeedMs,
 	);
 	const footerLabel = isStaleExternalFeed
 		? `Historical portal feed · latest trade ${fromNow(latestTradeDate as Date)} · showing last ${data.length} trades`
-		: `Portal feed · showing last ${data.length} trades`;
+		: hasHistoricalOrExternalRows
+			? `Mixed portal / external history · showing last ${data.length} trades`
+			: `Portal feed · showing last ${data.length} trades`;
 
 	if (!data.length) {
 		if (hasExternalMarket) {
@@ -157,10 +215,14 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 				/>
 			) : null}
 
-			<FeedNotice
-				title="Token-side amounts only"
-				description="Counter-asset amounts are hidden on this tab for now because the current trades payload does not reliably identify them yet."
-			/>
+			{hasHistoricalOrExternalRows ? (
+				<FeedNotice
+					title="Historical / external rows"
+					description="Some migrated or external-market rows are backfilled. Token amounts are shown when known, and counter-asset amounts only appear when the payload includes a verified quote amount."
+					link={externalMarketUrl}
+					linkLabel="view live market"
+				/>
+			) : null}
 
 			<Table id="trades">
 				<TableHeader>
@@ -168,6 +230,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 						<TableHead className={cn(headerClass, "w-[100px]")}>account</TableHead>
 						<TableHead className={cn(headerClass, "text-center")}>type</TableHead>
 						<TableHead className={headerClass}>token amount</TableHead>
+						<TableHead className={headerClass}>counter amount</TableHead>
 						<TableHead className={cn(headerClass, "w-12 text-right")}>date</TableHead>
 						<TableHead className="w-5 text-right" />
 					</TableRow>
@@ -175,7 +238,12 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 				<TableBody>
 					{data.map((trade: ApiTrade) => {
 						const isBuy = trade.side === "buy";
-						const tokenAmount = isBuy ? trade.amountOut : trade.amountIn;
+						const tokenAmount = getTokenAmount(trade);
+						const quoteAmount = normalizeText(trade.quoteAmount);
+						const quoteTokenSymbol = normalizeText(trade.quoteTokenSymbol);
+						const usdValue = normalizeText(trade.usdValue);
+						const tradeNotice = getTradeNotice(trade);
+						const showQuoteAmount = hasVerifiedQuoteAmount(trade);
 
 						return (
 							<TableRow
@@ -203,6 +271,32 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 										{formatAmount(tokenAmount)} {token.ticker}
 									</span>
 								</TableCell>
+								<TableCell>
+									<div className="flex flex-col">
+										{showQuoteAmount ? (
+											<>
+												<span className="font-mono text-sm text-[#e4e4e7]">
+													{formatAmount(quoteAmount)}
+													{quoteTokenSymbol ? ` ${quoteTokenSymbol}` : ""}
+												</span>
+												{usdValue ? (
+													<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+														≈ ${formatAmount(usdValue)}
+													</span>
+												) : null}
+											</>
+										) : (
+											<>
+												<span className="font-mono text-sm text-[#71717a]">—</span>
+												{tradeNotice ? (
+													<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
+														{tradeNotice}
+													</span>
+												) : null}
+											</>
+										)}
+									</div>
+								</TableCell>
 								<TableCell className="text-right">
 									{trade.timestamp ? <TimeAgo date={trade.timestamp} /> : "-"}
 								</TableCell>
@@ -220,7 +314,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 				</TableBody>
 				<TableFooter className="border-t-2 border-[#00ff87]/25">
 					<TableRow>
-						<TableCell colSpan={5}>
+						<TableCell colSpan={6}>
 							<div className="mx-auto w-full text-center text-xs uppercase text-[#71717a]">{footerLabel}</div>
 						</TableCell>
 					</TableRow>
