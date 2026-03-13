@@ -71,6 +71,11 @@ const normalizeAddress = (value: unknown) =>
 		.trim()
 		.toLowerCase();
 
+const isExternalPoolAddress = (value: unknown) => {
+	const normalizedValue = String(value ?? "").trim();
+	return /^0x[a-fA-F0-9]{40}$/.test(normalizedValue) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(normalizedValue);
+};
+
 const shouldUseDexScreenerMarket = (token: IToken) => {
 	const tokenWithOrigin = token as IToken & { origin?: string };
 	const normalizedStatus = String(token?.status ?? "")
@@ -86,7 +91,7 @@ const mapDexPairToMarket = (pair: DexPair): DexMarketData => ({
 	price: toFiniteNumber(pair.priceUsd),
 	volume24h: toFiniteNumber(pair.volume?.h24),
 	marketcap: toFiniteNumber(pair.marketCap) ?? toFiniteNumber(pair.fdv),
-	pool: typeof pair.pairAddress === "string" && pair.pairAddress.length > 0 ? pair.pairAddress : null,
+	pool: isExternalPoolAddress(pair.pairAddress) ? String(pair.pairAddress).trim() : null,
 });
 
 const fetchDexScreenerJson = async (url: string): Promise<DexPairResponse | null> => {
@@ -170,14 +175,15 @@ const fetchDexScreenerTokenMarket = async ({
 export function useLiveMarketToken(token: IToken) {
 	const dexChain = getDexScreenerChainName(token);
 	const shouldFetchDexMarket = Boolean(dexChain) && shouldUseDexScreenerMarket(token);
+	const normalizedPool = isExternalPoolAddress(token.pool) ? String(token.pool).trim() : null;
 
 	const query = useQuery({
-		queryKey: ["token-live-market", token.chain, token.chainId, token.contractAddress, token.pool, dexChain],
+		queryKey: ["token-live-market", token.chain, token.chainId, token.contractAddress, normalizedPool, dexChain],
 		queryFn: async () => {
 			if (!dexChain || !token.contractAddress) return null;
 
-			if (token.pool) {
-				const marketByPool = await fetchDexScreenerPair({ chain: dexChain, pool: token.pool });
+			if (normalizedPool) {
+				const marketByPool = await fetchDexScreenerPair({ chain: dexChain, pool: normalizedPool });
 				if (marketByPool) {
 					return marketByPool;
 				}
@@ -194,18 +200,21 @@ export function useLiveMarketToken(token: IToken) {
 		retry: 1,
 	});
 
-	const liveMarketToken = useMemo(() => {
+	const liveMarketToken = useMemo<IToken>(() => {
 		const market = query.data;
 		if (!market) return token;
 
+		const { pool: _pool, ...tokenWithoutPool } = token;
+		const resolvedPool = market.pool ?? normalizedPool;
+
 		return {
-			...token,
+			...tokenWithoutPool,
 			price: market.price && market.price > 0 ? market.price : token.price,
 			volume24h: market.volume24h !== null && market.volume24h >= 0 ? market.volume24h : token.volume24h,
 			marketcap: market.marketcap && market.marketcap > 0 ? market.marketcap : token.marketcap,
-			...((market.pool ?? token.pool) ? { pool: market.pool ?? token.pool } : {}),
-		} satisfies IToken;
-	}, [query.data, token]);
+			...(resolvedPool ? { pool: resolvedPool } : {}),
+		};
+	}, [normalizedPool, query.data, token]);
 
 	return {
 		token: liveMarketToken,

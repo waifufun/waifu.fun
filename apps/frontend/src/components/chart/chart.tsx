@@ -3,8 +3,8 @@
 import type { ChartTimeframe } from "@/lib/api";
 import type { IToken } from "@waifufun/types";
 import { useEffect, useMemo, useState } from "react";
-import LocalChart from "./local-chart";
 import { getCoinGeckoChainName } from "../../lib/utils";
+import LocalChart from "./local-chart";
 
 interface ChartProps {
 	token: IToken;
@@ -32,15 +32,24 @@ const getGeckoResolution = (timeframe: ChartTimeframe = "1d") => {
 	}
 };
 
+const isExternalPoolAddress = (value: unknown) => {
+	const normalizedValue = String(value ?? "").trim();
+	return /^0x[a-fA-F0-9]{40}$/.test(normalizedValue) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(normalizedValue);
+};
+
 export default function Chart({ token, timeframe = "1d" }: ChartProps) {
 	const tokenWithPool = token as IToken & { pool?: string };
-	const isMigrated = token?.status === "migrated" || token?.status === "dex" || token?.status === "locked" || token?.status === "finalized";
+	const isMigrated =
+		token?.status === "migrated" ||
+		token?.status === "dex" ||
+		token?.status === "locked" ||
+		token?.status === "finalized";
 	const geckoChainName =
-		token.chain === "evm" && Number(token.chainId) === 56
-			? "bsc"
-			: getCoinGeckoChainName(token.chain, token.chainId);
-	const geckoPoolAddress = tokenWithPool?.pool;
-	const canRenderGeckoTerminal = Boolean(geckoChainName && geckoPoolAddress && (isMigrated || token?.imported || token?.curveCompleted));
+		token.chain === "evm" && Number(token.chainId) === 56 ? "bsc" : getCoinGeckoChainName(token.chain, token.chainId);
+	const geckoPoolAddress = isExternalPoolAddress(tokenWithPool?.pool) ? String(tokenWithPool.pool).trim() : null;
+	const canRenderGeckoTerminal = Boolean(
+		geckoChainName && geckoPoolAddress && (isMigrated || token?.imported || token?.curveCompleted),
+	);
 	const geckoResolution = getGeckoResolution(timeframe);
 	const geckoSrc = useMemo(
 		() =>
@@ -48,10 +57,11 @@ export default function Chart({ token, timeframe = "1d" }: ChartProps) {
 		[geckoChainName, geckoPoolAddress, geckoResolution],
 	);
 
-	const [iframeLoaded, setIframeLoaded] = useState(false);
+	const [loadedGeckoSrc, setLoadedGeckoSrc] = useState<string | null>(null);
+	const iframeLoaded = loadedGeckoSrc === geckoSrc;
 
 	useEffect(() => {
-		setIframeLoaded(false);
+		setLoadedGeckoSrc((currentLoadedSrc) => (currentLoadedSrc === geckoSrc ? currentLoadedSrc : null));
 	}, [geckoSrc]);
 
 	if (canRenderGeckoTerminal) {
@@ -61,13 +71,12 @@ export default function Chart({ token, timeframe = "1d" }: ChartProps) {
 					<div className="absolute inset-0 flex items-center justify-center rounded-sm bg-[#08080a] border border-[rgba(255,255,255,0.06)]">
 						<div className="flex flex-col items-center gap-3">
 							<div className="h-5 w-5 animate-spin rounded-full border-2 border-[#71717a] border-t-[#00ff87]" />
-							<span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#71717a]">
-								loading chart
-							</span>
+							<span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#71717a]">loading chart</span>
 						</div>
 					</div>
 				)}
 				<iframe
+					key={geckoSrc}
 					height="100%"
 					width="100%"
 					className="min-h-[240px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[580px] w-full h-full mb-[-41px] rounded-sm"
@@ -77,7 +86,7 @@ export default function Chart({ token, timeframe = "1d" }: ChartProps) {
 					allow="clipboard-write"
 					allowFullScreen
 					loading="lazy"
-					onLoad={() => setIframeLoaded(true)}
+					onLoad={() => setLoadedGeckoSrc(geckoSrc)}
 				/>
 			</div>
 		);
