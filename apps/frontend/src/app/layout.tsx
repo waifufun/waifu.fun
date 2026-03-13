@@ -1,15 +1,16 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
 import Providers from "./providers";
 
-import { cn } from "@/lib/utils";
-import Header from "@/components/header";
-import FooterConditional from "@/components/footer-conditional";
 // Moving gradient background (performance-heavy) — uncomment to re-enable
 // import InteractiveBackground from "@/components/InteractiveBackground";
 import StaticBackground from "@/components/StaticBackground";
-import GrainOverlay from "@/components/grain-overlay";
 import DevnetBanner from "@/components/devnet-banner";
+import FooterConditional from "@/components/footer-conditional";
+import GrainOverlay from "@/components/grain-overlay";
+import Header from "@/components/header";
+import { cn } from "@/lib/utils";
 
 const socialPreview = "/brand/previews/waifu-fun-og.png";
 
@@ -70,13 +71,12 @@ export default function RootLayout({
 					<div className="relative z-10 flex flex-col min-h-screen">
 						<Header />
 						<main className="flex-1 flex flex-col" data-sidebar="inset">
-							{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? (
-								<DevnetBanner />
-							) : null}
+							{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? <DevnetBanner /> : null}
 							{children}
 							<FooterConditional />
 						</main>
 					</div>
+					<Analytics />
 				</Providers>
 			</body>
 		</html>
