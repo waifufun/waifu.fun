@@ -8,6 +8,7 @@ import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
 import type { IToken } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { formatUnits } from "viem";
 import TimeAgo from "../time-ago";
 import Triangle from "../triangle";
 
@@ -33,13 +34,27 @@ interface ApiTrade {
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
 const migratedStatuses = new Set(["completed", "dex", "migrated", "locked", "finalized"]);
 const staleFeedMs = 1000 * 60 * 60 * 12;
+const QUOTE_TOKEN_DECIMALS: Record<string, number> = {
+	BNB: 18,
+	WBNB: 18,
+	ETH: 18,
+	WETH: 18,
+	SOL: 9,
+	WSOL: 9,
+	USDC: 6,
+	USDT: 6,
+};
 
-const formatAmount = (value: string | number, maximumFractionDigits = 2) => {
+const formatAmount = (value: string | number, maximumFractionDigits?: number) => {
 	const parsed = typeof value === "number" ? value : Number(value);
 	if (!Number.isFinite(parsed)) return "-";
 
+	const absoluteValue = Math.abs(parsed);
+	const resolvedFractionDigits =
+		maximumFractionDigits ?? (absoluteValue >= 1000 ? 2 : absoluteValue >= 1 ? 4 : absoluteValue >= 0.01 ? 6 : 8);
+
 	return new Intl.NumberFormat("en-US", {
-		maximumFractionDigits,
+		maximumFractionDigits: resolvedFractionDigits,
 	}).format(parsed);
 };
 
@@ -92,9 +107,36 @@ const hasVerifiedQuoteAmount = (trade: ApiTrade) => {
 	return Boolean(normalizeText(trade.quoteAmount)) && !trade.stale && !isBackfillTrade(trade);
 };
 
-const getTokenAmount = (trade: ApiTrade) => {
+const toDisplayAmount = (value: string | number | null | undefined, decimals: number) => {
+	const normalizedValue = normalizeText(value);
+	if (!normalizedValue) return "";
+	if (normalizedValue.includes(".") || normalizedValue.toLowerCase().includes("e")) return normalizedValue;
+	if (!/^-?\d+$/.test(normalizedValue)) return normalizedValue;
+
+	try {
+		return formatUnits(BigInt(normalizedValue), decimals);
+	} catch {
+		return normalizedValue;
+	}
+};
+
+const getQuoteTokenDecimals = (trade: ApiTrade, token: IToken) => {
+	const normalizedSymbol = normalizeText(trade.quoteTokenSymbol).toUpperCase();
+	if (normalizedSymbol && normalizedSymbol in QUOTE_TOKEN_DECIMALS) {
+		return QUOTE_TOKEN_DECIMALS[normalizedSymbol];
+	}
+
+	if (token.chain === "solana") return 9;
+	return 18;
+};
+
+const getTokenAmount = (trade: ApiTrade, token: IToken) => {
 	const fallbackAmount = trade.side === "buy" ? trade.amountOut : trade.amountIn;
-	return normalizeText(trade.tokenAmount) || fallbackAmount;
+	return toDisplayAmount(normalizeText(trade.tokenAmount) || fallbackAmount, token.decimals);
+};
+
+const getQuoteAmount = (trade: ApiTrade, token: IToken) => {
+	return toDisplayAmount(trade.quoteAmount, getQuoteTokenDecimals(trade, token));
 };
 
 const getExternalMarketUrl = (token: IToken) => {
@@ -238,8 +280,8 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 				<TableBody>
 					{data.map((trade: ApiTrade) => {
 						const isBuy = trade.side === "buy";
-						const tokenAmount = getTokenAmount(trade);
-						const quoteAmount = normalizeText(trade.quoteAmount);
+						const tokenAmount = getTokenAmount(trade, token);
+						const quoteAmount = getQuoteAmount(trade, token);
 						const quoteTokenSymbol = normalizeText(trade.quoteTokenSymbol);
 						const usdValue = normalizeText(trade.usdValue);
 						const tradeNotice = getTradeNotice(trade);

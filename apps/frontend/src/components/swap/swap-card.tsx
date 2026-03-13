@@ -25,15 +25,15 @@ import { useTransactionListener } from "@/providers/transaction-listener";
 import { useTranslation } from "@/contexts/locale-context";
 
 const CHAIN_NATIVE: Record<number, { symbol: string; icon: string; dex: string }> = {
-	56: { symbol: "BNB", icon: "/chain-icons/bsc.svg", dex: "PancakeSwap" },
+	56: { symbol: "BNB", icon: "/chain-icons/bnb.svg", dex: "PancakeSwap" },
 	8453: { symbol: "ETH", icon: "/chain-icons/base.svg", dex: "Uniswap" },
-	1: { symbol: "ETH", icon: "/chain-icons/eth.svg", dex: "Uniswap" },
+	1: { symbol: "ETH", icon: "/chain-icons/ethereum.svg", dex: "Uniswap" },
 	84532: { symbol: "ETH", icon: "/chain-icons/base.svg", dex: "Uniswap" },
-	11155111: { symbol: "ETH", icon: "/chain-icons/eth.svg", dex: "Uniswap" },
+	11155111: { symbol: "ETH", icon: "/chain-icons/ethereum.svg", dex: "Uniswap" },
 };
 
 function getChainNative(chainId: number) {
-	return CHAIN_NATIVE[chainId] ?? { symbol: "ETH", icon: "/chain-icons/eth.svg", dex: "DEX" };
+	return CHAIN_NATIVE[chainId] ?? { symbol: "ETH", icon: "/chain-icons/ethereum.svg", dex: "DEX" };
 }
 
 function parseNumericInput(value: string) {
@@ -196,27 +196,25 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 			return null;
 		}
 
-		return formatUnits(
-			BigInt(minReceivedQuery.data.minimumReceived),
-			mode === "sell" ? 18 : token.decimals,
-		);
+		return formatUnits(BigInt(minReceivedQuery.data.minimumReceived), mode === "sell" ? 18 : token.decimals);
 	}, [isDexSwapAvailable, minReceivedQuery.data?.minimumReceived, mode, token.decimals]);
 
-	const primaryButtonLabel = token.status === "migrating"
-		? t("swap.tokenMigrating")
-		: !address
-			? t("swap.connect")
-			: !isDexSwapAvailable
-				? "Direct swap soon"
-				: swapMutation.isPending
-					? t("common.loading")
-					: insufficientBalance
-						? t("swap.insufficientBalance")
-						: tooHighBuyAmount
-							? t("swap.amountTooHigh")
-							: mode === "buy"
-								? `Buy on ${chainNative.dex}`
-								: `Sell on ${chainNative.dex}`;
+	const primaryButtonLabel =
+		token.status === "migrating"
+			? t("swap.tokenMigrating")
+			: !address
+				? t("swap.connect")
+				: !isDexSwapAvailable
+					? "Direct swap soon"
+					: swapMutation.isPending
+						? t("common.loading")
+						: insufficientBalance
+							? t("swap.insufficientBalance")
+							: tooHighBuyAmount
+								? t("swap.amountTooHigh")
+								: mode === "buy"
+									? `Buy on ${chainNative.dex}`
+									: `Sell on ${chainNative.dex}`;
 
 	return (
 		<div className="h-full w-full overflow-hidden">
@@ -317,7 +315,10 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							) : minReceivedQuery.error ? (
 								<span className="text-[#8C8C8C]">{t("swap.priceUnavailable")}</span>
 							) : (
-								<span className="animate-fade animate-once animate-duration-200 animate-ease-linear" key={minReceivedText || "0"}>
+								<span
+									className="animate-fade animate-once animate-duration-200 animate-ease-linear"
+									key={minReceivedText || "0"}
+								>
 									{minReceivedText || "0"}
 								</span>
 							)}
@@ -367,7 +368,11 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							disabled={
 								token.status === "migrating" ||
 								(address
-									? swapMutation.isPending || tooHighBuyAmount || insufficientBalance || !hasInputAmount || !isDexSwapAvailable
+									? swapMutation.isPending ||
+										tooHighBuyAmount ||
+										insufficientBalance ||
+										!hasInputAmount ||
+										!isDexSwapAvailable
 									: false)
 							}
 							onClick={() => {
