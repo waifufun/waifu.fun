@@ -1,15 +1,15 @@
 "use client";
+import { type ChartTimeframe, getChartData } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken } from "@waifufun/types";
-import { useEffect, useRef } from "react";
 import {
 	CandlestickSeries,
 	ColorType,
-	createChart,
 	type DeepPartial,
 	type ChartOptions as LightweightChartOptions,
+	createChart,
 } from "lightweight-charts";
-import { getChartData, type ChartTimeframe } from "@/lib/api";
+import { useEffect, useMemo, useRef } from "react";
 
 type LocalChartData = {
 	candles: Array<{
@@ -21,34 +21,54 @@ type LocalChartData = {
 		volume: number;
 	}>;
 	hasRemoteData: boolean;
+	resolvedTimeframe: ChartTimeframe | null;
 };
+
+const migratedStatuses = new Set(["dex", "migrated", "locked", "finalized"]);
 
 const toUnixSeconds = (timestamp: number) => Math.floor(timestamp > 1_000_000_000_000 ? timestamp / 1000 : timestamp);
 
-function buildFallbackCandles(price?: number): LocalChartData {
-	const fallbackPrice = Number(price);
-
-	if (!Number.isFinite(fallbackPrice) || fallbackPrice <= 0) {
-		return {
-			candles: [],
-			hasRemoteData: false,
-		};
+const getChartTimeframeCandidates = (timeframe: ChartTimeframe): ChartTimeframe[] => {
+	switch (timeframe) {
+		case "1m":
+			return ["1m", "5m", "15m", "1h", "4h", "1d", "1w", "all"];
+		case "5m":
+			return ["5m", "15m", "1h", "4h", "1d", "1w", "all"];
+		case "15m":
+			return ["15m", "1h", "4h", "1d", "1w", "all"];
+		case "1h":
+			return ["1h", "4h", "1d", "1w", "all"];
+		case "4h":
+			return ["4h", "1d", "1w", "all"];
+		case "1d":
+			return ["1d", "1w", "all"];
+		case "1w":
+			return ["1w", "all"];
+		default:
+			return ["all"];
 	}
+};
 
-	return {
-		candles: [
-			{
-				time: Math.floor(Date.now() / 1000),
-				open: fallbackPrice,
-				high: fallbackPrice,
-				low: fallbackPrice,
-				close: fallbackPrice,
-				volume: 0,
-			},
-		],
-		hasRemoteData: false,
-	};
-}
+const normalizeCandles = (data: Awaited<ReturnType<typeof getChartData>>) =>
+	data
+		.filter(
+			(candle) =>
+				Number.isFinite(Number(candle.volume)) &&
+				Number.isFinite(Number(candle.close)) &&
+				Number.isFinite(Number(candle.high)) &&
+				Number.isFinite(Number(candle.low)) &&
+				Number.isFinite(Number(candle.open)) &&
+				Number.isFinite(Number(candle.timestamp)),
+		)
+		.map((candle) => ({
+			time: toUnixSeconds(Number(candle.timestamp)),
+			open: Number(candle.open),
+			high: Number(candle.high),
+			low: Number(candle.low),
+			close: Number(candle.close),
+			volume: Number(candle.volume),
+		}))
+		.sort((a, b) => a.time - b.time);
 
 export default function LocalChart({ token, timeframe = "1d" }: { token: IToken; timeframe?: ChartTimeframe }) {
 	const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -56,11 +76,17 @@ export default function LocalChart({ token, timeframe = "1d" }: { token: IToken;
 	const candlestickSeriesRef = useRef<any>(null);
 	// biome-ignore lint/suspicious/noExplicitAny: lightweight-charts instance typing here is noisy and stable enough.
 	const chartRef = useRef<any>(null);
+	const isExternalMarketToken = useMemo(() => {
+		const normalizedStatus = String(token?.status ?? "")
+			.trim()
+			.toLowerCase();
+		return Boolean(token?.imported || token?.curveCompleted || migratedStatuses.has(normalizedStatus));
+	}, [token?.curveCompleted, token?.imported, token?.status]);
 
 	const query = useQuery<LocalChartData>({
-		queryKey: ["chart", token.contractAddress, timeframe],
+		queryKey: ["chart", token.chain, token.chainId, token.contractAddress, timeframe],
 		queryFn: async () => {
-			try {
+			for (const candidateTimeframe of getChartTimeframeCandidates(timeframe)) {
 				const data = await getChartData({
 					// biome-ignore lint/suspicious/noExplicitAny: frontend token chain typing is broader than the endpoint today.
 					chain: token.chain as any,
@@ -68,46 +94,25 @@ export default function LocalChart({ token, timeframe = "1d" }: { token: IToken;
 					chainId: token.chainId as any,
 					// biome-ignore lint/suspicious/noExplicitAny: frontend token lookup typing is broader than the endpoint today.
 					contractAddress: token.contractAddress as any,
-					timeframe,
+					timeframe: candidateTimeframe,
 					...(token.createdAt ? { createdAt: token.createdAt } : {}),
 				});
+				const candles = normalizeCandles(data);
 
-				if (!data || data.length === 0) {
-					return buildFallbackCandles(token?.price);
+				if (candles.length > 0) {
+					return {
+						candles,
+						hasRemoteData: true,
+						resolvedTimeframe: candidateTimeframe,
+					};
 				}
-
-				const candles = data
-					.filter(
-						(candle) =>
-							Number.isFinite(Number(candle.volume)) &&
-							Number.isFinite(Number(candle.close)) &&
-							Number.isFinite(Number(candle.high)) &&
-							Number.isFinite(Number(candle.low)) &&
-							Number.isFinite(Number(candle.open)) &&
-							Number.isFinite(Number(candle.timestamp)),
-					)
-					.map((candle) => ({
-						time: toUnixSeconds(Number(candle.timestamp)),
-						open: Number(candle.open),
-						high: Number(candle.high),
-						low: Number(candle.low),
-						close: Number(candle.close),
-						volume: Number(candle.volume),
-					}))
-					.sort((a, b) => a.time - b.time);
-
-				if (candles.length === 0) {
-					return buildFallbackCandles(token?.price);
-				}
-
-				return {
-					candles,
-					hasRemoteData: true,
-				};
-			} catch (error) {
-				console.warn("[waifu-core] Falling back to local chart placeholder", error);
-				return buildFallbackCandles(token?.price);
 			}
+
+			return {
+				candles: [],
+				hasRemoteData: false,
+				resolvedTimeframe: null,
+			};
 		},
 		staleTime: 60 * 1000,
 		refetchInterval: 3_500,
@@ -118,7 +123,9 @@ export default function LocalChart({ token, timeframe = "1d" }: { token: IToken;
 
 	const chartData = query.data?.candles ?? [];
 	const hasRemoteData = query.data?.hasRemoteData ?? false;
+	const resolvedTimeframe = query.data?.resolvedTimeframe ?? null;
 	const showEmptyState = !query.isPending && !hasRemoteData;
+	const showingFallbackWindow = Boolean(hasRemoteData && resolvedTimeframe && resolvedTimeframe !== timeframe);
 
 	useEffect(() => {
 		const chartElement = chartContainerRef.current;
@@ -227,9 +234,16 @@ export default function LocalChart({ token, timeframe = "1d" }: { token: IToken;
 					Loading chart data
 				</div>
 			)}
+			{showingFallbackWindow && resolvedTimeframe ? (
+				<div className="pointer-events-none absolute inset-x-4 top-4 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114]/90 px-3 py-2 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-[#71717a]">
+					Showing {resolvedTimeframe} candles because {timeframe} is empty right now
+				</div>
+			) : null}
 			{showEmptyState && (
 				<div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114]/90 px-3 py-2 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-[#71717a]">
-					Chart unavailable during bonding curve phase
+					{isExternalMarketToken
+						? "No indexed candles are available for this token yet"
+						: "Chart unavailable during bonding curve phase"}
 				</div>
 			)}
 		</div>

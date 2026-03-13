@@ -71,10 +71,18 @@ export default function PageClient({
 	const currentAddress = useAddress();
 	const token = query.data ?? initialData;
 	const { token: liveMarketToken, marketDataSource } = useLiveMarketToken(token);
-	const displayToken = useMemo(
-		() => (isHolderDataIndexed(token) ? liveMarketToken : { ...liveMarketToken, holders: 0 }),
-		[liveMarketToken, token],
-	);
+	const displayToken = useMemo<IToken>(() => {
+		if (isHolderDataIndexed(token)) {
+			return liveMarketToken;
+		}
+
+		const { pool: _pool, ...tokenWithoutPool } = liveMarketToken;
+		return {
+			...tokenWithoutPool,
+			holders: 0,
+			...(liveMarketToken.pool ? { pool: liveMarketToken.pool } : {}),
+		};
+	}, [liveMarketToken, token]);
 	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(displayToken), [displayToken]);
 	const isCreator = useMemo(() => {
 		if (currentAddress && token?.creator) {
@@ -155,7 +163,7 @@ export default function PageClient({
 							</div>
 
 							<div className="min-h-0 overflow-hidden p-2 sm:p-3">
-								<Chart token={token} timeframe={selectedTimeframe} />
+								<Chart token={liveMarketToken} timeframe={selectedTimeframe} />
 							</div>
 
 							<div
@@ -178,7 +186,7 @@ export default function PageClient({
 						<SectionHeader>trading</SectionHeader>
 						<Swap token={token} />
 
-						{typeof token?.curveProgress === "number" && !token?.curveCompleted && !token?.imported && (
+						{agentStatus.state === "bonding" && typeof displayToken?.curveProgress === "number" && (
 							<motion.div
 								className="relative min-w-0 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]"
 								initial={{ opacity: 0, y: 10 }}
@@ -189,7 +197,7 @@ export default function PageClient({
 								<HudCorner position="tr" />
 								<HudCorner position="bl" />
 								<HudCorner position="br" />
-								<BondingCurveProgress token={token} />
+								<BondingCurveProgress token={displayToken} />
 							</motion.div>
 						)}
 					</div>
