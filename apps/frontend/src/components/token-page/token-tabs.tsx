@@ -6,13 +6,14 @@ import { useRouter } from "@bprogress/next/app";
 import type { IToken } from "@waifufun/types";
 import { ChartCandlestick, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { isHolderDataIndexed } from "./holder-data-state";
+import { hasAggregateHolderCount, isHolderDataIndexed } from "./holder-data-state";
 
 export default function TokenTabs({ token }: { token: IToken }) {
 	const { t } = useTranslation();
 	const pathname = usePathname();
 	const router = useRouter();
 	const holdersIndexed = isHolderDataIndexed(token);
+	const hasAggregateHolders = hasAggregateHolderCount(token);
 	const BASE_URL = `/token/${token.chain}/${token.chainId}/${token.contractAddress}`;
 	const splitted = pathname?.split("/") || [];
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
@@ -27,7 +28,9 @@ export default function TokenTabs({ token }: { token: IToken }) {
 			<div className="flex items-center justify-between gap-3 px-1">
 				<div className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">token activity</div>
 				{!holdersIndexed && (
-					<div className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">holders offline</div>
+					<div className="text-right text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
+						{hasAggregateHolders ? "aggregate holders only" : "wallet leaderboard offline"}
+					</div>
 				)}
 			</div>
 			<Tabs value={currentTab}>
@@ -47,7 +50,7 @@ export default function TokenTabs({ token }: { token: IToken }) {
 								<span className="truncate">{tab.label}</span>
 								{isUnavailableHoldersTab && (
 									<span className="rounded-sm border border-[rgba(255,255,255,0.08)] px-1 py-0.5 text-[9px] leading-none text-[#71717a]">
-										offline
+										unavailable
 									</span>
 								)}
 							</TabsTrigger>

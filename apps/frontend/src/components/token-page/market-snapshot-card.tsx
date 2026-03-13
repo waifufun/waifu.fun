@@ -1,7 +1,7 @@
 "use client";
 
 import { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
-import { isHolderDataIndexed } from "@/components/token-page/holder-data-state";
+import { hasAggregateHolderCount, isHolderDataIndexed } from "@/components/token-page/holder-data-state";
 import { abbreviateNumber, formatNumberSubscript } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { Activity, BarChart3, Database, Users } from "lucide-react";
@@ -38,15 +38,19 @@ export default function MarketSnapshotCard({
 }) {
 	const status = deriveAgentLifecycleStatus(token);
 	const holdersIndexed = isHolderDataIndexed(token);
+	const hasAggregateHolders = hasAggregateHolderCount(token);
 	const marketFeed = status.isExternalMarket
 		? marketDataSource === "dexscreener"
 			? "live external market"
 			: "indexed fallback"
 		: "waifu.fun market";
-	const volumeHelper = status.isExternalMarket && marketDataSource !== "dexscreener"
-		? "Live external feed not connected."
-		: null;
-	const holdersHelper = holdersIndexed ? null : "Holder indexing is not available for this market yet.";
+	const volumeHelper =
+		status.isExternalMarket && marketDataSource !== "dexscreener" ? "Live external feed not connected." : null;
+	const holdersHelper = holdersIndexed
+		? null
+		: hasAggregateHolders
+			? "Aggregate holder total only. Wallet leaderboard is not indexed for this market yet."
+			: "Holder totals are not exposed, and the wallet leaderboard is not indexed for this market yet.";
 
 	return (
 		<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 sm:p-5">
@@ -54,8 +58,11 @@ export default function MarketSnapshotCard({
 				<div>
 					<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#71717a]">market snapshot</p>
 					<h3 className="mt-1 text-sm font-semibold lowercase tracking-wide text-[#f4f4f5]">
-						Current trading context without leaving agent view.
+						what the market is doing now
 					</h3>
+					<p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[#71717a]">
+						Pricing, activity, and holder coverage without switching away from the agent workspace.
+					</p>
 				</div>
 				<span className="rounded-sm border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.16em] text-[#a1a1aa]">
 					{marketFeed}
@@ -77,7 +84,7 @@ export default function MarketSnapshotCard({
 				/>
 				<SnapshotItem
 					label="holders"
-					value={holdersIndexed ? abbreviateNumber(token.holders, true) : "offline"}
+					value={hasAggregateHolders ? abbreviateNumber(token.holders, true) : "unavailable"}
 					icon={Users}
 					{...(holdersHelper ? { helper: holdersHelper } : {})}
 				/>

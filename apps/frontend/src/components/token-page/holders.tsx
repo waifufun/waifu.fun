@@ -8,20 +8,24 @@ import Link from "next/link";
 import {
 	HOLDER_DATA_UNAVAILABLE_DESCRIPTION,
 	HOLDER_DATA_UNAVAILABLE_TITLE,
+	getHolderCountDisplay,
+	hasAggregateHolderCount,
 	isHolderDataIndexed,
 } from "./holder-data-state";
 import HolderLabels from "./holder-labels";
 
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
 
-function HoldersUnavailableState() {
+function HoldersUnavailableState({ token }: { token: IToken }) {
+	const hasAggregateHolders = hasAggregateHolderCount(token);
+
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 sm:p-5">
 			<div className="flex items-center gap-2 mb-3 min-w-0">
 				<Users className="size-4 text-[#71717a] shrink-0" />
 				<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">holders</span>
 				<span className="rounded-sm border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-[#71717a]">
-					offline
+					leaderboard unavailable
 				</span>
 			</div>
 			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] p-4">
@@ -30,6 +34,12 @@ function HoldersUnavailableState() {
 					<span>{HOLDER_DATA_UNAVAILABLE_TITLE}</span>
 				</div>
 				<p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">{HOLDER_DATA_UNAVAILABLE_DESCRIPTION}</p>
+				{hasAggregateHolders ? (
+					<div className="mt-4 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] px-3 py-2.5">
+						<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">aggregate holders</div>
+						<div className="mt-1 font-mono text-sm text-[#e4e4e7]">{getHolderCountDisplay(token)}</div>
+					</div>
+				) : null}
 			</div>
 		</div>
 	);
@@ -37,7 +47,7 @@ function HoldersUnavailableState() {
 
 export default async function Holders({ token }: { token: IToken }) {
 	if (!isHolderDataIndexed(token)) {
-		return <HoldersUnavailableState />;
+		return <HoldersUnavailableState token={token} />;
 	}
 
 	try {

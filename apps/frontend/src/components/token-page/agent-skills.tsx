@@ -7,7 +7,7 @@ import { CalendarDays, Globe, Info, Link2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
-import { getHolderCountDisplay, isHolderDataIndexed } from "./holder-data-state";
+import { getHolderCountDisplay, hasAggregateHolderCount, isHolderDataIndexed } from "./holder-data-state";
 
 function formatCreatedAt(
 	createdAt?: string,
@@ -42,6 +42,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 	const chainLabel = getChainLabel(token);
 	const linkedSocials = getLinkedSocialsCount(token);
 	const holdersIndexed = isHolderDataIndexed(token);
+	const hasAggregateHolders = hasAggregateHolderCount(token);
 
 	const infoItems = [
 		{
@@ -73,7 +74,8 @@ export function AgentInfo({ token }: { token: IToken }) {
 			label: "holders",
 			value: getHolderCountDisplay(token),
 			icon: Users,
-			accent: holdersIndexed ? "text-[#00ff87]" : "text-[#71717a]",
+			accent: hasAggregateHolders ? "text-[#00ff87]" : "text-[#71717a]",
+			helper: holdersIndexed ? "wallet-level indexed" : hasAggregateHolders ? "aggregate total only" : "not exposed",
 		},
 	];
 
@@ -83,20 +85,25 @@ export function AgentInfo({ token }: { token: IToken }) {
 				<Info className="size-3.5 text-[#00ff87] shrink-0" />
 				<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">agent info</span>
 			</div>
-			<div className="flex flex-col gap-2">
+			<div className="grid gap-2 sm:grid-cols-2">
 				{infoItems.map((item) => (
 					<div
 						key={item.label}
-						className="relative flex items-center justify-between gap-3 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm p-2.5 hover:border-[rgba(255,255,255,0.12)] transition-all duration-200 overflow-hidden"
+						className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] p-2.5 transition-all duration-200 hover:border-[rgba(255,255,255,0.12)]"
 					>
-						<div className="relative flex items-center gap-2 min-w-0">
-							<item.icon className={cn("size-3.5 flex-shrink-0", item.accent)} />
-							<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">{item.label}</span>
-						</div>
-						<div className="relative flex items-center gap-1.5 min-w-0">
-							<span className="relative text-[11px] text-[#e4e4e7] font-mono lowercase text-right truncate">
-								{item.value}
-							</span>
+						<div className="relative flex items-start justify-between gap-3">
+							<div className="min-w-0">
+								<div className="flex items-center gap-2">
+									<item.icon className={cn("size-3.5 flex-shrink-0", item.accent)} />
+									<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">{item.label}</span>
+								</div>
+								<span className="mt-2 block truncate text-[11px] font-mono lowercase text-[#e4e4e7]">{item.value}</span>
+								{"helper" in item && item.helper ? (
+									<span className="mt-1 block text-[10px] font-mono uppercase tracking-[0.14em] text-[#71717a]">
+										{item.helper}
+									</span>
+								) : null}
+							</div>
 							{item.copyValue && <CopyButton textToCopy={item.copyValue} />}
 						</div>
 					</div>

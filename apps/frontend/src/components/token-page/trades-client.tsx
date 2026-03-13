@@ -58,6 +58,7 @@ const QUOTE_TOKEN_DECIMALS = {
 } as const;
 
 type QuoteTokenSymbol = keyof typeof QUOTE_TOKEN_DECIMALS;
+type TokenWithQuoteSymbol = IToken & { quoteTokenSymbol?: string | null };
 
 const formatAmount = (value: string | number, maximumFractionDigits?: number) => {
 	const parsed = typeof value === "number" ? value : Number(value);
@@ -198,7 +199,7 @@ const toDisplayAmount = (value: string | number | null | undefined, decimals: nu
 };
 
 const getQuoteTokenDecimals = (trade: ApiTrade, token: IToken): number => {
-	const normalizedSymbol = normalizeText(trade.quoteTokenSymbol).toUpperCase();
+	const normalizedSymbol = getQuoteTokenSymbol(trade, token).toUpperCase();
 	if (normalizedSymbol && isKnownQuoteTokenSymbol(normalizedSymbol)) {
 		return QUOTE_TOKEN_DECIMALS[normalizedSymbol];
 	}
@@ -217,8 +218,29 @@ const getTokenAmount = (trade: ApiTrade, token: IToken) => {
 	return getRenderableAmount(normalizeText(trade.tokenAmount) || fallbackAmount, token.decimals);
 };
 
+const canInferLiveExternalQuote = (trade: ApiTrade) => {
+	return isExternalTrade(trade) && !trade.stale && !isBackfillTrade(trade);
+};
+
+const getInferredQuoteAmount = (trade: ApiTrade, token: IToken) => {
+	if (!canInferLiveExternalQuote(trade)) return null;
+
+	const fallbackAmount = trade.side === "buy" ? trade.amountIn : trade.amountOut;
+	return getRenderableAmount(fallbackAmount, getQuoteTokenDecimals(trade, token));
+};
+
 const getQuoteAmount = (trade: ApiTrade, token: IToken) => {
-	return getRenderableAmount(trade.quoteAmount, getQuoteTokenDecimals(trade, token));
+	return (
+		getRenderableAmount(trade.quoteAmount, getQuoteTokenDecimals(trade, token)) ?? getInferredQuoteAmount(trade, token)
+	);
+};
+
+const getQuoteTokenSymbol = (trade: ApiTrade, token: IToken) => {
+	const rowLevelSymbol = normalizeText(trade.quoteTokenSymbol).toUpperCase();
+	if (rowLevelSymbol) return rowLevelSymbol;
+
+	const tokenLevelSymbol = normalizeText((token as TokenWithQuoteSymbol).quoteTokenSymbol).toUpperCase();
+	return tokenLevelSymbol;
 };
 
 const getTradeSemantics = (trade: ApiTrade) => {
@@ -238,7 +260,7 @@ const getTradeSemantics = (trade: ApiTrade) => {
 const getUnavailableQuoteLabel = (trade: ApiTrade) => {
 	if (trade.stale) return "stale row";
 	if (isBackfillTrade(trade)) return "historical row";
-	if (isExternalTrade(trade)) return "external row";
+	if (isExternalTrade(trade)) return "quote side missing";
 	return "quote unavailable";
 };
 
@@ -459,7 +481,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								const isBuy = trade.side === "buy";
 								const tokenAmount = getTokenAmount(trade, token);
 								const quoteAmount = getQuoteAmount(trade, token);
-								const quoteTokenSymbol = normalizeText(trade.quoteTokenSymbol);
+								const quoteTokenSymbol = getQuoteTokenSymbol(trade, token);
 								const usdValue = normalizeText(trade.usdValue);
 								const showQuoteAmount = hasVerifiedQuoteAmount(trade, token);
 								const derivedPrice = getDerivedPrice(trade, token);

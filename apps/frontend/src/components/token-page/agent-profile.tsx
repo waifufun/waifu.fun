@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
+import { hasAggregateHolderCount, isHolderDataIndexed } from "@/components/token-page/holder-data-state";
 import Verified from "@/components/verified";
 import { abbreviateNumber, cn, formatNumberSubscript, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
@@ -210,23 +211,51 @@ export default function AgentProfile({
 	headerAccessory?: ReactNode;
 }) {
 	const hasLiveExternalMarketData = marketDataSource === "dexscreener";
-	const stats: { label: string; value: string; live?: boolean }[] = [
+	const holdersIndexed = isHolderDataIndexed(token);
+	const hasAggregateHolders = hasAggregateHolderCount(token);
+	const stats: { label: string; value: string; live?: boolean; helper: string }[] = [
 		{
 			label: "price",
 			value: formatNumberSubscript(token?.price),
 			live: hasLiveExternalMarketData || !status.isExternalMarket,
+			helper: hasLiveExternalMarketData || !status.isExternalMarket ? "current feed" : "waiting on live feed",
 		},
 		{
 			label: "mkt cap",
 			value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—",
 			live: hasLiveExternalMarketData || !status.isExternalMarket,
+			helper: "fully diluted estimate",
 		},
 		{
 			label: "24h vol",
 			value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—",
 			live: hasLiveExternalMarketData,
+			helper: hasLiveExternalMarketData ? "external market flow" : "not live on this feed",
 		},
-		{ label: "holders", value: token?.holders ? abbreviateNumber(token.holders, true) : "—" },
+		{
+			label: "holders",
+			value: hasAggregateHolders ? abbreviateNumber(token.holders, true) : "—",
+			helper: holdersIndexed
+				? "wallet leaderboard ready"
+				: hasAggregateHolders
+					? "aggregate total only"
+					: "not exposed",
+		},
+	];
+	const quickFacts = [
+		{
+			label: "created by",
+			value: token?.creator ? shortenAddress(token.creator) : "—",
+			copyValue: token.creator,
+		},
+		{
+			label: "market mode",
+			value: status.isExternalMarket ? "external pool" : "waifu.fun bonding",
+		},
+		{
+			label: "coverage",
+			value: hasLiveExternalMarketData || !status.isExternalMarket ? "live pricing" : "indexed fallback",
+		},
 	];
 
 	const socialsWithLinks = [
@@ -240,7 +269,7 @@ export default function AgentProfile({
 	const displayStatus = getAgentDisplayStatus(token, status);
 
 	return (
-		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 sm:p-5 md:p-6 overflow-hidden">
+		<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 sm:p-5 md:p-6">
 			<div className="absolute -top-20 -left-20 w-40 h-40 bg-[#00ff87]/5 blur-3xl rounded-full pointer-events-none" />
 			<div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#c084fc]/5 blur-3xl rounded-full pointer-events-none" />
 
@@ -255,20 +284,20 @@ export default function AgentProfile({
 				{displayStatus}
 			</div>
 
-			<div className="relative flex flex-col sm:flex-row gap-4 sm:gap-5 md:gap-6 min-w-0">
+			<div className="relative flex min-w-0 flex-col gap-4 sm:gap-5 md:gap-6 lg:flex-row">
 				<motion.div
-					className="flex-shrink-0 self-start relative mx-auto sm:mx-0"
+					className="relative mx-auto flex-shrink-0 self-start sm:mx-0"
 					whileHover={{ scale: 1.03 }}
 					transition={{ type: "spring", stiffness: 300 }}
 				>
 					<div className="absolute inset-0 bg-gradient-to-br from-[#00ff87]/20 via-transparent to-[#c084fc]/10 blur-xl rounded-sm scale-110 opacity-60" />
-					<div className="relative w-[100px] h-[100px] sm:w-[140px] sm:h-[140px] md:w-[180px] md:h-[180px] rounded-sm overflow-hidden border border-[#00ff87]/30 hover:border-[#00ff87]/60 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,135,0.2)]">
+					<div className="relative h-[104px] w-[104px] overflow-hidden rounded-sm border border-[#00ff87]/30 transition-all duration-300 hover:border-[#00ff87]/60 hover:shadow-[0_0_30px_rgba(0,255,135,0.2)] sm:h-[136px] sm:w-[136px] md:h-[164px] md:w-[164px]">
 						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
 						<div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/40 via-transparent to-transparent" />
 					</div>
 				</motion.div>
 
-				<div className="flex flex-col gap-2 sm:gap-3 min-w-0 flex-1 pr-14 sm:pr-16">
+				<div className="flex min-w-0 flex-1 flex-col gap-3 pr-14 sm:pr-16">
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
 							<Verified isVerified={token?.verified} />
@@ -284,28 +313,64 @@ export default function AgentProfile({
 							</span>
 						</div>
 
+						<p className="max-w-2xl text-[11px] font-mono uppercase tracking-[0.16em] text-[#71717a]">
+							agent workspace first. market context stays visible but secondary.
+						</p>
 						{headerAccessory && <div className="flex flex-wrap items-center gap-2">{headerAccessory}</div>}
 					</div>
 
 					{token.description && (
-						<p className="text-xs sm:text-sm text-[#a1a1aa] leading-relaxed line-clamp-2 max-w-2xl min-w-0">
-							{token.description}
-						</p>
+						<p className="max-w-3xl min-w-0 text-xs leading-relaxed text-[#a1a1aa] sm:text-sm">{token.description}</p>
 					)}
 
-					<div className="flex items-center gap-2 text-xs">
-						<span className="text-[#71717a] font-mono uppercase">created by</span>
-						<Link
-							href={`/profile/${token.creator}`}
-							className="text-[#a1a1aa] hover:text-[#00ff87] font-mono transition-colors"
-						>
-							{token?.creator ? shortenAddress(token.creator) : "—"}
-						</Link>
-						{token?.creator && <CopyButton textToCopy={token.creator} />}
+					<div className="grid gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+						<div className="grid gap-2 sm:grid-cols-3">
+							{quickFacts.map((fact) => (
+								<div
+									key={fact.label}
+									className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-3 py-2"
+								>
+									<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">{fact.label}</div>
+									<div className="mt-1 flex items-center gap-1.5 text-[11px] font-mono text-[#e4e4e7]">
+										{fact.copyValue && token?.creator ? (
+											<Link
+												href={`/profile/${token.creator}`}
+												className="truncate hover:text-[#00ff87] transition-colors"
+											>
+												{fact.value}
+											</Link>
+										) : (
+											<span className="truncate">{fact.value}</span>
+										)}
+										{fact.copyValue ? <CopyButton textToCopy={fact.copyValue} /> : null}
+									</div>
+								</div>
+							))}
+						</div>
+
+						{socialsWithLinks.length > 0 ? (
+							<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-3 py-2">
+								<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">linked socials</div>
+								<div className="mt-2 flex flex-wrap items-center gap-2">
+									{socialsWithLinks.map((social) => (
+										<Link key={social.title} href={social.href} target="_blank" rel="noopener noreferrer">
+											<Image
+												src={social.icon}
+												className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-1.5 opacity-60 transition-all duration-200 hover:border-[#00ff87] hover:bg-[#00ff87]/10 hover:opacity-100 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
+												unoptimized
+												width={24}
+												height={24}
+												alt={social.title}
+											/>
+										</Link>
+									))}
+								</div>
+							</div>
+						) : null}
 					</div>
 
 					<div
-						className="relative flex gap-1.5 mt-1 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible min-w-0 -mx-1 px-1"
+						className="relative -mx-1 mt-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-hide md:grid md:grid-cols-4 md:overflow-visible"
 						style={{ WebkitOverflowScrolling: "touch" }}
 					>
 						{stats.map((stat) => {
@@ -313,7 +378,7 @@ export default function AgentProfile({
 							return (
 								<div
 									key={stat.label}
-									className="relative flex-shrink-0 flex flex-col gap-0.5 py-1.5 px-2 bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0"
+									className="relative flex min-w-[132px] flex-shrink-0 flex-col gap-0.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-2.5 py-2 transition-colors hover:border-[rgba(255,255,255,0.12)] md:min-w-0"
 								>
 									<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider inline-flex items-center gap-1">
 										{stat.live && <span className="h-1 w-1 rounded-full bg-[#00ff87] animate-pulse" />}
@@ -323,27 +388,13 @@ export default function AgentProfile({
 										{Icon && <Icon className="size-3 text-[#00ff87]/60" />}
 										{stat.value}
 									</span>
+									<span className="mt-1 text-[10px] font-mono uppercase tracking-[0.14em] text-[#71717a]">
+										{stat.helper}
+									</span>
 								</div>
 							);
 						})}
 					</div>
-
-					{socialsWithLinks.length > 0 && (
-						<div className="flex items-center gap-2 mt-1 flex-wrap">
-							{socialsWithLinks.map((social) => (
-								<Link key={social.title} href={social.href} target="_blank" rel="noopener noreferrer">
-									<Image
-										src={social.icon}
-										className="inline-flex items-center justify-center h-7 w-7 p-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] opacity-60 hover:opacity-100 cursor-pointer hover:border-[#00ff87] hover:bg-[#00ff87]/10 transition-all duration-200 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
-										unoptimized
-										width={24}
-										height={24}
-										alt={social.title}
-									/>
-								</Link>
-							))}
-						</div>
-					)}
 				</div>
 			</div>
 		</div>

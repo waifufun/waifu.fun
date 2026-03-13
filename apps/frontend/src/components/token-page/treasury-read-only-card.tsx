@@ -57,8 +57,12 @@ export default function TreasuryReadOnlyCard({ token }: { token: IToken }) {
 				<div>
 					<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#71717a]">treasury</p>
 					<h3 className="mt-1 text-sm font-semibold lowercase tracking-wide text-[#f4f4f5]">
-						Read-only treasury and operator metadata.
+						runtime funds and operator footprint
 					</h3>
+					<p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[#71717a]">
+						Only the fields exposed on the public token payload are shown here. No hidden balances or transfers are
+						implied.
+					</p>
 				</div>
 				<span className="rounded-sm border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.16em] text-[#a1a1aa]">
 					partial data

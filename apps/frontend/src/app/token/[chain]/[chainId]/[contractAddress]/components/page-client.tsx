@@ -9,7 +9,6 @@ import AgentPanel from "@/components/token-page/agent-panel";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentInfo } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
-import { isHolderDataIndexed } from "@/components/token-page/holder-data-state";
 import MarketSnapshotCard from "@/components/token-page/market-snapshot-card";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
@@ -74,18 +73,7 @@ export default function PageClient({
 	const currentAddress = useAddress();
 	const token = query.data ?? initialData;
 	const { token: liveMarketToken, marketDataSource } = useLiveMarketToken(token);
-	const displayToken = useMemo<IToken>(() => {
-		if (isHolderDataIndexed(token)) {
-			return liveMarketToken;
-		}
-
-		const { pool: _pool, ...tokenWithoutPool } = liveMarketToken;
-		return {
-			...tokenWithoutPool,
-			holders: 0,
-			...(liveMarketToken.pool ? { pool: liveMarketToken.pool } : {}),
-		};
-	}, [liveMarketToken, token]);
+	const displayToken = useMemo<IToken>(() => liveMarketToken, [liveMarketToken]);
 	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(displayToken), [displayToken]);
 	const isCreator = useMemo(() => {
 		if (currentAddress && token?.creator) {
@@ -115,7 +103,7 @@ export default function PageClient({
 
 			{viewMode === "agent" ? (
 				<>
-					<div className="grid items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+					<div className="grid items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.28fr)_minmax(320px,0.72fr)]">
 						<div className="flex min-w-0 flex-col gap-4 sm:gap-5">
 							<div className="flex min-w-0 flex-col gap-3">
 								<div className="flex min-w-0 items-center justify-between gap-3">
@@ -134,24 +122,26 @@ export default function PageClient({
 									<AgentStatusVisual token={displayToken} status={agentStatus} marketDataSource={marketDataSource} />
 								</motion.div>
 
-								<motion.div
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.12 }}
-									className="min-w-0"
-								>
-									<AgentInfo token={displayToken} />
-								</motion.div>
-							</div>
+								<div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
+									<motion.div
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ delay: 0.12 }}
+										className="min-w-0"
+									>
+										<AgentInfo token={displayToken} />
+									</motion.div>
 
-							<motion.div
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 0.16 }}
-								className="min-w-0"
-							>
-								<MarketSnapshotCard token={displayToken} marketDataSource={marketDataSource} />
-							</motion.div>
+									<motion.div
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ delay: 0.16 }}
+										className="min-w-0"
+									>
+										<MarketSnapshotCard token={displayToken} marketDataSource={marketDataSource} />
+									</motion.div>
+								</div>
+							</div>
 
 							<motion.div
 								initial={{ opacity: 0, y: 10 }}
