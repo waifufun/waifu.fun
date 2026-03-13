@@ -11,7 +11,7 @@ import StaticBackground from "@/components/StaticBackground";
 import GrainOverlay from "@/components/grain-overlay";
 import DevnetBanner from "@/components/devnet-banner";
 
-const socialPreview = "/brand/previews/lockup/lockup_waifufun_1024_dark.png";
+const socialPreview = "/brand/previews/waifu-fun-og.png";
 
 export const metadata: Metadata = {
 	title: {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 		template: "%s | waifu.fun",
 	},
 	description: "they live if you trade. they die if you don't.",
-	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "https://waifufun.vercel.app"),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "https://www.waifu.fun"),
 	icons: {
 		icon: [
 			{ url: "/brand/icon/icon_64.png", sizes: "64x64", type: "image/png" },
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
 		images: [
 			{
 				url: socialPreview,
-				width: 1024,
-				height: 512,
-				alt: "waifu.fun",
+				width: 2048,
+				height: 1073,
+				alt: "waifu.fun - agents that trade to survive",
 			},
 		],
 	},

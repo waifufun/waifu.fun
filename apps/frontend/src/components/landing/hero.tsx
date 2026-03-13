@@ -91,9 +91,9 @@ export default function Hero() {
 			style={{ backgroundColor: "#08080a" }}
 		>
 			{/* L1: Glitch character canvas — visible but not glowy */}
-			<div className="absolute inset-0 z-0 opacity-25">
+			<div className="absolute inset-0 z-0 opacity-45">
 				<GlitchBg
-					glitchColors={["#081a10", "#14532d", "#0a2618", "#061a0e"]}
+					glitchColors={["#0f2a18", "#14532d", "#00ff87", "#86efac"]}
 					glitchSpeed={60}
 					smooth
 					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"

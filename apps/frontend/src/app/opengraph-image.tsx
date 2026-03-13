@@ -11,7 +11,7 @@ export const size = {
 export const contentType = "image/png";
 
 export default async function Image() {
-	const imageData = await readFile(join(process.cwd(), "public", "og.png"));
+	const imageData = await readFile(join(process.cwd(), "public", "brand", "previews", "waifu-fun-og.png"));
 	const base64 = imageData.toString("base64");
 	const dataUrl = `data:image/png;base64,${base64}`;
 

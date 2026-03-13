@@ -11,6 +11,7 @@ const ELIZA_CONTRACT_ADDRESS = "0xea17Df5Cf6D172224892B5477A16ACb111182478";
 const ELIZA_HOMEPAGE_IMAGE = "/waifus/eliza-hero.png";
 
 const CURATED_HOME_CONTRACTS = [MILADY_CONTRACT_ADDRESS.toLowerCase(), ELIZA_CONTRACT_ADDRESS.toLowerCase()];
+const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
 
 export const revalidate = 4;
 
@@ -23,11 +24,20 @@ export const generateMetadata = async (): Promise<Metadata> => {
 			description: "deploy autonomous AI agents that trade, learn, and earn on-chain. not chatbots. economic actors.",
 			type: "website",
 			locale: "en_US",
+			images: [
+				{
+					url: SOCIAL_PREVIEW,
+					width: 2048,
+					height: 1073,
+					alt: "waifu.fun - agents that trade to survive",
+				},
+			],
 		},
 		twitter: {
 			card: "summary_large_image",
 			title: "waifu.fun - autonomous agent launchpad",
 			description: "deploy autonomous AI agents that trade, learn, and earn on-chain. not chatbots. economic actors.",
+			images: [SOCIAL_PREVIEW],
 		},
 	};
 };
