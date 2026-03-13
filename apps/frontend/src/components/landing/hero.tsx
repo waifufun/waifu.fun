@@ -9,7 +9,7 @@ import { useTranslation } from "@/contexts/locale-context";
 const GlitchBg = dynamic(() => import("./glitch-bg"), { ssr: false });
 
 const EASE = [0.22, 1, 0.36, 1] as const;
-const HERO_BG_URL = "https://v3b.fal.media/files/b/0a91f165/dlsuBOYlw9O1cKC41uNA-_hero_v4_s40.png";
+const HERO_BG_PATH = "/brand/backgrounds/hero-bg.webp";
 
 function RevealLine({
 	children,
@@ -100,10 +100,10 @@ export default function Hero() {
 				/>
 			</div>
 
-			{/* L2: Hero background image — Vera hero v4 from fal CDN */}
+			{/* L2: Hero background image — compressed local webp */}
 			<div className="absolute inset-0 z-[1] opacity-40">
 				<img
-					src={HERO_BG_URL}
+					src={HERO_BG_PATH}
 					alt=""
 					aria-hidden="true"
 					className="h-full w-full object-cover object-center"
