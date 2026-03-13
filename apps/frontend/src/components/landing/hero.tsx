@@ -90,24 +90,24 @@ export default function Hero() {
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* L1: Hero background image — compressed local webp */}
-			<div className="absolute inset-0 z-0 opacity-50">
+			{/* L1: Glitch character canvas — visible but not glowy */}
+			<div className="absolute inset-0 z-0 opacity-25">
+				<GlitchBg
+					glitchColors={["#081a10", "#14532d", "#0a2618", "#061a0e"]}
+					glitchSpeed={60}
+					smooth
+					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"
+				/>
+			</div>
+
+			{/* L2: Hero background image — compressed local webp */}
+			<div className="absolute inset-0 z-[1] opacity-80">
 				<img
 					src={HERO_BG_PATH}
 					alt=""
 					aria-hidden="true"
 					className="h-full w-full object-cover object-center"
 					loading="eager"
-				/>
-			</div>
-
-			{/* L2: Glitch character canvas — layered above the image */}
-			<div className="absolute inset-0 z-[1] opacity-25">
-				<GlitchBg
-					glitchColors={["#081a10", "#14532d", "#0a2618", "#061a0e"]}
-					glitchSpeed={60}
-					smooth
-					characters="アイウエオカキクケコサシスセソタチツテトワヲン♀♂∞§¶×÷01"
 				/>
 			</div>
 
