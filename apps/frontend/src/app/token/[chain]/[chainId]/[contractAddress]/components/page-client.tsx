@@ -20,8 +20,8 @@ import { cn, isSameWalletAddress } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import { motion } from "framer-motion";
-import { BarChart3, ChevronDown } from "lucide-react";
-import { type ReactNode, useMemo, useRef, useState } from "react";
+import { BarChart3 } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
 function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl" | "br"; color?: "green" | "purple" }) {
@@ -37,11 +37,7 @@ function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl"
 }
 
 function SectionHeader({ children }: { children: string }) {
-	return <div className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">{children}</div>;
-}
-
-function SectionDivider() {
-	return <div className="h-px bg-[rgba(255,255,255,0.06)] my-5" />;
+	return <div className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">{children}</div>;
 }
 
 const TIMEFRAMES: Array<{ label: string; value: ChartTimeframe }> = [
@@ -88,171 +84,106 @@ export default function PageClient({
 	}, [currentAddress, token?.creator]);
 	const [selectedTimeframe, setSelectedTimeframe] = useState<ChartTimeframe>("1d");
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
-	const [marketDataExpanded, setMarketDataExpanded] = useState(true);
-	const panelSectionRef = useRef<HTMLDivElement | null>(null);
 	const isPriceUp = true;
+	const chartSourceLabel = agentStatus.isExternalMarket
+		? marketDataSource === "dexscreener"
+			? "live external market"
+			: "indexed fallback"
+		: "waifu.fun market";
 
 	return (
-		<div className="flex flex-col gap-4 sm:gap-5 mt-3 w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 overflow-x-hidden">
+		<div className="mx-auto mt-3 flex w-full max-w-[1600px] min-w-0 flex-col gap-5 overflow-x-hidden px-3 pb-6 sm:gap-6 sm:px-4 md:px-6">
 			<ScamWarning isHidden={!!token?.hidden} />
 			<AgentProfile token={displayToken} status={agentStatus} marketDataSource={marketDataSource} />
 
-			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4 sm:gap-5 min-w-0">
-				{/* LEFT COLUMN - Agent Dashboard */}
-				<div className="w-full min-w-0 lg:min-w-0 lg:w-[60%] lg:max-w-[60%] flex flex-col gap-4 sm:gap-5 order-2">
-					{/* Agent Controls */}
-					<div className="flex flex-col gap-4">
-						<SectionHeader>agent controls</SectionHeader>
-						<motion.div
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.05 }}
-							className="min-w-0"
-						>
-							<AgentPanel token={token} isCreator={isCreator} />
-						</motion.div>
-					</div>
-
-					<SectionDivider />
-
-					{/* Agent Personality & Skills */}
-					<div className="flex flex-col gap-4">
-						<SectionHeader>agent info</SectionHeader>
-						<motion.div
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.1 }}
-							className="min-w-0"
-						>
-							<AgentInfo token={displayToken} />
-						</motion.div>
-					</div>
-
-					{/* Owner Runtime Panel */}
-					{isCreator && (
-						<>
-							<SectionDivider />
-							<div className="flex flex-col gap-4">
-								<SectionHeader>runtime controls</SectionHeader>
-								<motion.div
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.2 }}
-									className="min-w-0"
-								>
-									<OwnerRuntimePanel token={token} />
-								</motion.div>
-							</div>
-						</>
-					)}
-
-					<SectionDivider />
-
-					{/* Market Data - Collapsible Chart Section */}
-					<div className="flex flex-col gap-4">
-						<button
-							type="button"
-							onClick={() => setMarketDataExpanded(!marketDataExpanded)}
-							className="flex items-center justify-between group cursor-pointer"
-						>
+			<div className="grid items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.95fr)]">
+				<div className="flex min-w-0 flex-col gap-4 sm:gap-5">
+					<div className="flex min-w-0 flex-col gap-3">
+						<div className="flex min-w-0 items-center justify-between gap-3">
 							<SectionHeader>market data</SectionHeader>
-							<motion.div
-								initial={false}
-								animate={{ rotate: marketDataExpanded ? 180 : 0 }}
-								transition={{ duration: 0.2 }}
-								className="text-[#71717a] group-hover:text-[#a1a1aa] transition-colors"
-							>
-								<ChevronDown className="size-4" />
-							</motion.div>
-						</button>
+							<span className="text-right font-mono text-[10px] uppercase tracking-wider text-[#52525b]">
+								{chartSourceLabel}
+							</span>
+						</div>
 
 						<motion.div
-							initial={false}
-							animate={{
-								height: marketDataExpanded ? "auto" : 0,
-								opacity: marketDataExpanded ? 1 : 0,
-								marginBottom: marketDataExpanded ? 0 : -16,
-							}}
-							transition={{ duration: 0.3, ease: "easeInOut" }}
-							className="overflow-hidden"
+							className={cn(
+								"relative min-w-0 overflow-hidden rounded-sm border bg-[#111114] transition-all duration-500",
+								isPriceUp
+									? "border-[#00ff87]/20 shadow-[0_0_20px_rgba(0,255,135,0.05)]"
+									: "border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]",
+							)}
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.3 }}
 						>
-							<motion.div
-								ref={panelSectionRef}
-								className={cn(
-									"relative bg-[#111114] border rounded-sm overflow-hidden transition-all duration-500 min-w-0",
-									isPriceUp
-										? "border-[#00ff87]/20 shadow-[0_0_20px_rgba(0,255,135,0.05)]"
-										: "border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]",
-								)}
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 0.25, duration: 0.3 }}
-							>
-								<HudCorner position="tl" color={isPriceUp ? "green" : "purple"} />
-								<HudCorner position="tr" color={isPriceUp ? "green" : "purple"} />
-								<HudCorner position="bl" color={isPriceUp ? "green" : "purple"} />
-								<HudCorner position="br" color={isPriceUp ? "green" : "purple"} />
+							<HudCorner position="tl" color={isPriceUp ? "green" : "purple"} />
+							<HudCorner position="tr" color={isPriceUp ? "green" : "purple"} />
+							<HudCorner position="bl" color={isPriceUp ? "green" : "purple"} />
+							<HudCorner position="br" color={isPriceUp ? "green" : "purple"} />
 
-								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-									<div className="flex items-center gap-2 min-w-0">
-										<BarChart3 className={cn("size-4 flex-shrink-0", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-										<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider truncate">
+							<div className="flex flex-col gap-3 border-b border-[rgba(255,255,255,0.06)] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+								<div className="flex min-w-0 items-center gap-2">
+									<BarChart3 className={cn("size-4 shrink-0", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
+									<div className="min-w-0">
+										<p className="truncate font-mono text-[10px] uppercase tracking-wider text-[#71717a]">
 											price chart
-										</span>
-									</div>
-
-									<div className="flex items-center gap-1 flex-wrap">
-										{TIMEFRAMES.map((timeframe) => (
-											<button
-												key={timeframe.value}
-												type="button"
-												onClick={() => setSelectedTimeframe(timeframe.value)}
-												className={cn(
-													"px-2 py-1 text-[10px] font-mono uppercase rounded-sm transition-all duration-200",
-													selectedTimeframe === timeframe.value
-														? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/30"
-														: "text-[#71717a] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] border border-transparent",
-												)}
-											>
-												{timeframe.label}
-											</button>
-										))}
+										</p>
+										<p className="mt-0.5 truncate text-[11px] leading-tight text-[#52525b]">
+											Back at the top where market context belongs.
+										</p>
 									</div>
 								</div>
 
-								<div className="p-2 sm:p-3 min-h-0 overflow-hidden">
-									<Chart token={token} timeframe={selectedTimeframe} />
+								<div className="flex flex-wrap items-center gap-1">
+									{TIMEFRAMES.map((timeframe) => (
+										<button
+											key={timeframe.value}
+											type="button"
+											onClick={() => setSelectedTimeframe(timeframe.value)}
+											className={cn(
+												"rounded-sm border px-2 py-1 font-mono text-[10px] uppercase transition-all duration-200",
+												selectedTimeframe === timeframe.value
+													? "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]"
+													: "border-transparent text-[#71717a] hover:bg-[rgba(255,255,255,0.03)] hover:text-[#a1a1aa]",
+											)}
+										>
+											{timeframe.label}
+										</button>
+									))}
 								</div>
-								<div
-									className={cn(
-										"absolute bottom-0 left-0 right-0 h-1 blur-sm",
-										isPriceUp ? "bg-[#00ff87]/20" : "bg-red-500/20",
-									)}
-								/>
-							</motion.div>
+							</div>
+
+							<div className="min-h-0 overflow-hidden p-2 sm:p-3">
+								<Chart token={token} timeframe={selectedTimeframe} />
+							</div>
+
+							<div
+								className={cn(
+									"absolute bottom-0 left-0 right-0 h-1 blur-sm",
+									isPriceUp ? "bg-[#00ff87]/20" : "bg-red-500/20",
+								)}
+							/>
 						</motion.div>
 					</div>
 
-					{/* Token Tabs */}
-					<div className="flex flex-col gap-4">
+					<div className="flex min-w-0 flex-col gap-3">
 						<TokenTabs token={displayToken} />
 						{children}
 					</div>
 				</div>
 
-				{/* RIGHT COLUMN - Trading & Status */}
-				<div className="w-full min-w-0 lg:w-[40%] lg:min-w-0 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap lg:flex-col gap-4 sm:gap-5 order-3">
-					{/* Trading Section */}
-					<div className="flex flex-col gap-4 w-full">
+				<div className="flex min-w-0 flex-col gap-4 sm:gap-5">
+					<div className="flex w-full min-w-0 flex-col gap-3">
 						<SectionHeader>trading</SectionHeader>
 						<Swap token={token} />
 
 						{typeof token?.curveProgress === "number" && !token?.curveCompleted && !token?.imported && (
 							<motion.div
-								className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0"
+								className="relative min-w-0 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]"
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 0.1 }}
+								transition={{ delay: 0.08 }}
 							>
 								<HudCorner position="tl" />
 								<HudCorner position="tr" />
@@ -263,63 +194,101 @@ export default function PageClient({
 						)}
 					</div>
 
-					<SectionDivider />
+					<div className="flex min-w-0 flex-col gap-3">
+						<div className="flex min-w-0 items-center justify-between gap-3">
+							<SectionHeader>agent overview</SectionHeader>
+							<span className="text-right font-mono text-[10px] uppercase tracking-wider text-[#52525b]">
+								{agentStatus.label}
+							</span>
+						</div>
 
-					{/* Agent Status */}
-					<div className="flex flex-col gap-4 w-full">
-						<SectionHeader>agent status</SectionHeader>
 						<motion.div
 							initial={{ opacity: 0, y: 10 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ delay: 0.15 }}
+							transition={{ delay: 0.12 }}
 							className="min-w-0"
 						>
-							<AgentStatusVisual status={agentStatus} />
+							<AgentStatusVisual token={displayToken} status={agentStatus} marketDataSource={marketDataSource} />
+						</motion.div>
+
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ delay: 0.16 }}
+							className="min-w-0"
+						>
+							<AgentInfo token={displayToken} />
 						</motion.div>
 					</div>
-
-					{/* Update Socials */}
-					{isCreator && (
-						<>
-							<SectionDivider />
-							<div className="flex flex-col gap-4 w-full">
-								<SectionHeader>settings</SectionHeader>
-								<motion.div
-									className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors"
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.2 }}
-								>
-									<HudCorner position="tl" />
-									<HudCorner position="tr" />
-									<HudCorner position="bl" />
-									<HudCorner position="br" />
-									<Button
-										variant="outline"
-										className="w-full text-xs font-mono lowercase"
-										onClick={() => setSocialsModalOpen(true)}
-									>
-										update socials
-									</Button>
-									<UpdateSocialsModal
-										open={socialsModalOpen}
-										onClose={() => setSocialsModalOpen(false)}
-										token={{
-											chain: token.chain,
-											chainId: String(token.chainId),
-											contractAddress: token.contractAddress,
-											socials: token.socials,
-										}}
-										onSuccess={() => {
-											setSocialsModalOpen(false);
-											query.refetch();
-										}}
-									/>
-								</motion.div>
-							</div>
-						</>
-					)}
 				</div>
+			</div>
+
+			<div
+				className={cn("grid items-start gap-4 sm:gap-5", isCreator && "xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]")}
+			>
+				<div className="flex min-w-0 flex-col gap-3">
+					<SectionHeader>agent controls</SectionHeader>
+					<motion.div
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.2 }}
+						className="min-w-0"
+					>
+						<AgentPanel token={token} isCreator={isCreator} />
+					</motion.div>
+				</div>
+
+				{isCreator && (
+					<div className="flex min-w-0 flex-col gap-4 sm:gap-5">
+						<div className="flex min-w-0 flex-col gap-3">
+							<SectionHeader>runtime controls</SectionHeader>
+							<motion.div
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.24 }}
+								className="min-w-0"
+							>
+								<OwnerRuntimePanel token={token} />
+							</motion.div>
+						</div>
+
+						<div className="flex min-w-0 flex-col gap-3">
+							<SectionHeader>settings</SectionHeader>
+							<motion.div
+								className="relative rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]"
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.28 }}
+							>
+								<HudCorner position="tl" />
+								<HudCorner position="tr" />
+								<HudCorner position="bl" />
+								<HudCorner position="br" />
+								<Button
+									variant="outline"
+									className="w-full font-mono text-xs lowercase"
+									onClick={() => setSocialsModalOpen(true)}
+								>
+									update socials
+								</Button>
+								<UpdateSocialsModal
+									open={socialsModalOpen}
+									onClose={() => setSocialsModalOpen(false)}
+									token={{
+										chain: token.chain,
+										chainId: String(token.chainId),
+										contractAddress: token.contractAddress,
+										socials: token.socials,
+									}}
+									onSuccess={() => {
+										setSocialsModalOpen(false);
+										query.refetch();
+									}}
+								/>
+							</motion.div>
+						</div>
+					</div>
+				)}
 			</div>
 
 			{isCreator && !token?.imported && token?.status !== "active" && <ClaimFees token={token} />}
