@@ -23,7 +23,7 @@ interface ApiTrade {
 	txHash: string;
 	blockNumber: number;
 	timestamp: string;
-	source?: string | null;
+	source?: TradeSource;
 	stale?: boolean | null;
 	tokenAmount?: string | number | null;
 	quoteAmount?: string | number | null;
@@ -31,6 +31,16 @@ interface ApiTrade {
 	usdValue?: string | number | null;
 	note?: string | null;
 }
+
+interface TradeSourceMetadata {
+	kind?: "indexed" | "external" | string | null;
+	provider?: "waifu-indexer" | "geckoterminal" | string | null;
+	network?: string | null;
+	poolAddress?: string | null;
+	fetchedAt?: string | null;
+}
+
+type TradeSource = string | TradeSourceMetadata | null;
 
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
 const migratedStatuses = new Set(["completed", "dex", "migrated", "locked", "finalized"]);
@@ -86,28 +96,82 @@ const isKnownQuoteTokenSymbol = (value: string): value is QuoteTokenSymbol => {
 	return value in QUOTE_TOKEN_DECIMALS;
 };
 
-const getTradeSourceLabel = (source?: string | null) => {
-	const normalizedSource = normalizeText(source).toLowerCase();
-	if (!normalizedSource) return null;
-	if (normalizedSource === "portal") return "portal";
-	if (normalizedSource === "dex") return "external market";
-	return normalizedSource.replace(/[-_]+/g, " ");
+const getTradeSourceMetadata = (source?: TradeSource) => {
+	if (!source || typeof source === "string") return null;
+	return source;
+};
+
+const getTradeSourceText = (source?: TradeSource) => {
+	if (typeof source === "string") return normalizeText(source).toLowerCase();
+	return "";
+};
+
+const getTradeSourceKind = (source?: TradeSource) => {
+	const metadata = getTradeSourceMetadata(source);
+	const kind = normalizeText(metadata?.kind).toLowerCase();
+	if (kind) return kind;
+
+	const sourceText = getTradeSourceText(source);
+	if (sourceText === "dex" || sourceText === "external" || sourceText === "geckoterminal") {
+		return "external";
+	}
+	if (sourceText) return "indexed";
+
+	return "";
+};
+
+const getTradeSourceProvider = (source?: TradeSource) => {
+	const metadata = getTradeSourceMetadata(source);
+	const provider = normalizeText(metadata?.provider).toLowerCase();
+	if (provider) return provider;
+
+	const sourceText = getTradeSourceText(source);
+	if (sourceText === "dex") return "external-market";
+
+	return sourceText;
+};
+
+const getTradeSourceLabel = (source?: TradeSource) => {
+	const kind = getTradeSourceKind(source);
+	const provider = getTradeSourceProvider(source);
+	const sourceText = getTradeSourceText(source);
+
+	if (provider === "geckoterminal") return "geckoterminal";
+	if (kind === "external") return "external market";
+	if (sourceText === "portal") return "portal";
+	if (sourceText) return sourceText.replace(/[-_]+/g, " ");
+
+	return null;
+};
+
+const isExternalTrade = (trade: ApiTrade) => {
+	const kind = getTradeSourceKind(trade.source);
+	const provider = getTradeSourceProvider(trade.source);
+	const note = normalizeText(trade.note).toLowerCase();
+
+	return kind === "external" || provider === "geckoterminal" || note.includes("geckoterminal");
 };
 
 const isBackfillTrade = (trade: ApiTrade) => {
 	const normalizedNote = normalizeText(trade.note).toLowerCase();
-	const normalizedSource = normalizeText(trade.source).toLowerCase();
+	const normalizedSource = getTradeSourceText(trade.source);
+	const sourceKind = getTradeSourceKind(trade.source);
 
 	return (
-		normalizedSource === "backfill" ||
-		normalizedNote.includes("backfill") ||
-		normalizedNote.includes("historical") ||
-		normalizedNote.includes("stale") ||
-		normalizedNote.includes("migrated")
+		sourceKind === "indexed" &&
+		(normalizedSource === "backfill" ||
+			normalizedNote.includes("backfill") ||
+			normalizedNote.includes("historical") ||
+			normalizedNote.includes("stale") ||
+			normalizedNote.includes("migrated"))
 	);
 };
 
 const hasHistoricalContext = (trade: ApiTrade) => {
+	if (isExternalTrade(trade)) {
+		return false;
+	}
+
 	if (trade.stale || isBackfillTrade(trade)) {
 		return true;
 	}
@@ -202,10 +266,11 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 	const hasExternalMarket = Boolean(token.imported || tokenWithPool.pool || (token.curveCompleted && isMigratedToken));
 	const latestTradeDate = parseTradeDate(data[0]?.timestamp);
 	const hasHistoricalRows = data.some((trade) => hasHistoricalContext(trade));
+	const hasExternalRows = data.some((trade) => isExternalTrade(trade));
 	const isStaleExternalFeed = Boolean(
 		hasExternalMarket && latestTradeDate && Date.now() - latestTradeDate.getTime() > staleFeedMs,
 	);
-	const shouldCollapseByDefault = isStaleExternalFeed || hasHistoricalRows;
+	const shouldCollapseByDefault = isStaleExternalFeed || hasHistoricalRows || hasExternalRows;
 	const [isExpanded, setIsExpanded] = useState(!shouldCollapseByDefault);
 	const [showAllRows, setShowAllRows] = useState(false);
 
@@ -228,22 +293,34 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					: "Verified portal history only",
 				icon: History,
 			}
-		: hasHistoricalRows
+		: hasExternalRows
 			? {
-					badge: "partial",
-					title: "trade history",
-					description:
-						"Some rows are historical or incomplete. Token amounts stay visible, while counter-asset values only appear when the quote side is verified.",
-					footer: `Mixed verified history · showing ${data.length} recent rows`,
-					icon: History,
-				}
-			: {
-					badge: "live",
-					title: "trade history",
-					description: "Recent verified trading activity on waifu.fun. Refreshes automatically.",
-					footer: `Live portal feed · showing ${data.length} recent trades`,
+					badge: "external",
+					title: "trade activity",
+					description: latestTradeDate
+						? `Live external activity is flowing in from GeckoTerminal. It stays tucked away here so the page remains focused, latest trade ${fromNow(latestTradeDate)}.`
+						: "Live external activity is flowing in from GeckoTerminal. It stays tucked away here so the page remains focused.",
+					footer: latestTradeDate
+						? `Live external feed · latest trade ${fromNow(latestTradeDate)}`
+						: `Live external feed · showing ${data.length} recent trades`,
 					icon: Radio,
-				};
+				}
+			: hasHistoricalRows
+				? {
+						badge: "partial",
+						title: "trade history",
+						description:
+							"Some rows are historical or incomplete. Token amounts stay visible, while counter-asset values only appear when the quote side is verified.",
+						footer: `Mixed verified history · showing ${data.length} recent rows`,
+						icon: History,
+					}
+				: {
+						badge: "live",
+						title: "trade history",
+						description: "Recent verified trading activity on waifu.fun. Refreshes automatically.",
+						footer: `Live portal feed · showing ${data.length} recent trades`,
+						icon: Radio,
+					};
 
 	if (!data.length) {
 		if (hasExternalMarket) {
