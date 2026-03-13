@@ -1,16 +1,45 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getHolders } from "@/lib/api";
-import type { IHolder, IToken } from "@waifufun/types";
-import { ExternalLink } from "lucide-react";
-import HolderLabels from "./holder-labels";
-import { abbreviateNumber, shortenAddress } from "@/lib/utils";
+import { abbreviateNumber, cn, shortenAddress } from "@/lib/utils";
 import { CHAIN_TO_BLOCK_EXPLORER_URL } from "@waifufun/constants";
+import type { IHolder, IToken } from "@waifufun/types";
+import { ExternalLink, Info, Users } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import {
+	HOLDER_DATA_UNAVAILABLE_DESCRIPTION,
+	HOLDER_DATA_UNAVAILABLE_TITLE,
+	isHolderDataIndexed,
+} from "./holder-data-state";
+import HolderLabels from "./holder-labels";
 
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
 
+function HoldersUnavailableState() {
+	return (
+		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 sm:p-5">
+			<div className="flex items-center gap-2 mb-3 min-w-0">
+				<Users className="size-4 text-[#71717a] shrink-0" />
+				<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">holders</span>
+				<span className="rounded-sm border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-[#71717a]">
+					offline
+				</span>
+			</div>
+			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] p-4">
+				<div className="flex items-center gap-2 text-[#e4e4e7] font-mono lowercase">
+					<Info className="size-4 text-[#00ff87] shrink-0" />
+					<span>{HOLDER_DATA_UNAVAILABLE_TITLE}</span>
+				</div>
+				<p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">{HOLDER_DATA_UNAVAILABLE_DESCRIPTION}</p>
+			</div>
+		</div>
+	);
+}
+
 export default async function Holders({ token }: { token: IToken }) {
+	if (!isHolderDataIndexed(token)) {
+		return <HoldersUnavailableState />;
+	}
+
 	try {
 		const data = await getHolders({
 			chain: token.chain,
@@ -18,12 +47,8 @@ export default async function Holders({ token }: { token: IToken }) {
 			contractAddress: token.contractAddress,
 		});
 
-		if (!data || data?.length === 0) {
-			return (
-				<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
-					There are currently no holders.
-				</div>
-			);
+		if (!data || data.length === 0) {
+			return <div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">No indexed holders found yet.</div>;
 		}
 
 		return (
@@ -68,9 +93,7 @@ export default async function Holders({ token }: { token: IToken }) {
 											style={{ width: `${Math.min(Number(holder.percentage), 100)}%` }}
 										/>
 									</div>
-									<span className="font-mono text-xs text-[#a1a1aa] w-12 text-right">
-										{holder.percentage}%
-									</span>
+									<span className="font-mono text-xs text-[#a1a1aa] w-12 text-right">{holder.percentage}%</span>
 								</div>
 							</TableCell>
 							<TableCell>
@@ -86,10 +109,10 @@ export default async function Holders({ token }: { token: IToken }) {
 				</TableBody>
 			</Table>
 		);
-	} catch (error) {
+	} catch (_error) {
 		return (
 			<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
-				Unable to load holder data at this time.
+				Holder indexing is temporarily unavailable.
 			</div>
 		);
 	}

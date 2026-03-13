@@ -5,15 +5,16 @@ import Chart from "@/components/chart/chart";
 import ClaimFees from "@/components/claim-fees";
 import ScamWarning from "@/components/scam-notice";
 import Swap from "@/components/swap";
+import AgentPanel from "@/components/token-page/agent-panel";
 import AgentProfile, { deriveAgentLifecycleStatus } from "@/components/token-page/agent-profile";
 import { AgentInfo } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
-import AgentPanel from "@/components/token-page/agent-panel";
+import { isHolderDataIndexed } from "@/components/token-page/holder-data-state";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
 import TokenTabs from "@/components/token-page/token-tabs";
 import { Button } from "@/components/ui/button";
 import useAddress from "@/hooks/use-address";
-import { getToken, type ChartTimeframe } from "@/lib/api";
+import { type ChartTimeframe, getToken } from "@/lib/api";
 import { cn, isSameWalletAddress } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
@@ -35,11 +36,7 @@ function HudCorner({ position, color = "green" }: { position: "tl" | "tr" | "bl"
 }
 
 function SectionHeader({ children }: { children: string }) {
-	return (
-		<div className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
-			{children}
-		</div>
-	);
+	return <div className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">{children}</div>;
 }
 
 function SectionDivider() {
@@ -76,6 +73,7 @@ export default function PageClient({
 
 	const currentAddress = useAddress();
 	const token = query.data ?? initialData;
+	const displayToken = useMemo(() => (isHolderDataIndexed(token) ? token : { ...token, holders: 0 }), [token]);
 	const agentStatus = useMemo(() => deriveAgentLifecycleStatus(token), [token]);
 	const isCreator = useMemo(() => {
 		if (currentAddress && token?.creator) {
@@ -92,7 +90,7 @@ export default function PageClient({
 	return (
 		<div className="flex flex-col gap-4 sm:gap-5 mt-3 w-full min-w-0 max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 overflow-x-hidden">
 			<ScamWarning isHidden={!!token?.hidden} />
-			<AgentProfile token={token} status={agentStatus} />
+			<AgentProfile token={displayToken} status={agentStatus} />
 
 			<div className="flex flex-col lg:flex-row lg:flex-nowrap gap-4 sm:gap-5 min-w-0">
 				{/* LEFT COLUMN - Agent Dashboard */}
@@ -100,7 +98,12 @@ export default function PageClient({
 					{/* Agent Controls */}
 					<div className="flex flex-col gap-4">
 						<SectionHeader>agent controls</SectionHeader>
-						<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="min-w-0">
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ delay: 0.05 }}
+							className="min-w-0"
+						>
 							<AgentPanel token={token} isCreator={isCreator} />
 						</motion.div>
 					</div>
@@ -110,8 +113,13 @@ export default function PageClient({
 					{/* Agent Personality & Skills */}
 					<div className="flex flex-col gap-4">
 						<SectionHeader>agent info</SectionHeader>
-						<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="min-w-0">
-							<AgentInfo token={token} />
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ delay: 0.1 }}
+							className="min-w-0"
+						>
+							<AgentInfo token={displayToken} />
 						</motion.div>
 					</div>
 
@@ -121,7 +129,12 @@ export default function PageClient({
 							<SectionDivider />
 							<div className="flex flex-col gap-4">
 								<SectionHeader>runtime controls</SectionHeader>
-								<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="min-w-0">
+								<motion.div
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ delay: 0.2 }}
+									className="min-w-0"
+								>
 									<OwnerRuntimePanel token={token} />
 								</motion.div>
 							</div>
@@ -178,7 +191,9 @@ export default function PageClient({
 								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
 									<div className="flex items-center gap-2 min-w-0">
 										<BarChart3 className={cn("size-4 flex-shrink-0", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-										<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider truncate">price chart</span>
+										<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider truncate">
+											price chart
+										</span>
 									</div>
 
 									<div className="flex items-center gap-1 flex-wrap">
@@ -215,7 +230,7 @@ export default function PageClient({
 
 					{/* Token Tabs */}
 					<div className="flex flex-col gap-4">
-						<TokenTabs token={token} />
+						<TokenTabs token={displayToken} />
 						{children}
 					</div>
 				</div>
@@ -227,22 +242,20 @@ export default function PageClient({
 						<SectionHeader>trading</SectionHeader>
 						<Swap token={token} />
 
-						{typeof token?.curveProgress === "number" &&
-							!token?.curveCompleted &&
-							!token?.imported && (
-								<motion.div
-									className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0"
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.1 }}
-								>
-									<HudCorner position="tl" />
-									<HudCorner position="tr" />
-									<HudCorner position="bl" />
-									<HudCorner position="br" />
-									<BondingCurveProgress token={token} />
-								</motion.div>
-							)}
+						{typeof token?.curveProgress === "number" && !token?.curveCompleted && !token?.imported && (
+							<motion.div
+								className="relative bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 hover:border-[rgba(255,255,255,0.12)] transition-colors min-w-0"
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ delay: 0.1 }}
+							>
+								<HudCorner position="tl" />
+								<HudCorner position="tr" />
+								<HudCorner position="bl" />
+								<HudCorner position="br" />
+								<BondingCurveProgress token={token} />
+							</motion.div>
+						)}
 					</div>
 
 					<SectionDivider />
@@ -250,7 +263,12 @@ export default function PageClient({
 					{/* Agent Status */}
 					<div className="flex flex-col gap-4 w-full">
 						<SectionHeader>agent status</SectionHeader>
-						<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="min-w-0">
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ delay: 0.15 }}
+							className="min-w-0"
+						>
 							<AgentStatusVisual status={agentStatus} />
 						</motion.div>
 					</div>

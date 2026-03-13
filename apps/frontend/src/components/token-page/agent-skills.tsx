@@ -1,12 +1,13 @@
 "use client";
 
+import { CopyButton } from "@/components/copy-button";
+import { cn, shortenAddress } from "@/lib/utils";
 import { EvmChainIds, type IToken } from "@waifufun/types";
 import { CalendarDays, Globe, Info, Link2, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
-import { CopyButton } from "@/components/copy-button";
-import { cn, shortenAddress } from "@/lib/utils";
+import { getHolderCountDisplay, isHolderDataIndexed } from "./holder-data-state";
 
 function formatCreatedAt(
 	createdAt?: string,
@@ -40,6 +41,7 @@ function getLinkedSocialsCount(token: IToken) {
 export function AgentInfo({ token }: { token: IToken }) {
 	const chainLabel = getChainLabel(token);
 	const linkedSocials = getLinkedSocialsCount(token);
+	const holdersIndexed = isHolderDataIndexed(token);
 
 	const infoItems = [
 		{
@@ -69,9 +71,9 @@ export function AgentInfo({ token }: { token: IToken }) {
 		},
 		{
 			label: "holders",
-			value: (token.holders ?? 0).toLocaleString(),
+			value: getHolderCountDisplay(token),
 			icon: Users,
-			accent: "text-[#00ff87]",
+			accent: holdersIndexed ? "text-[#00ff87]" : "text-[#71717a]",
 		},
 	];
 
@@ -92,7 +94,9 @@ export function AgentInfo({ token }: { token: IToken }) {
 							<span className="text-[11px] text-[#a1a1aa] font-mono lowercase">{item.label}</span>
 						</div>
 						<div className="relative flex items-center gap-1.5 min-w-0">
-							<span className="relative text-[11px] text-[#e4e4e7] font-mono lowercase text-right truncate">{item.value}</span>
+							<span className="relative text-[11px] text-[#e4e4e7] font-mono lowercase text-right truncate">
+								{item.value}
+							</span>
 							{item.copyValue && <CopyButton textToCopy={item.copyValue} />}
 						</div>
 					</div>
