@@ -8,7 +8,7 @@ import type { IToken } from "@waifufun/types";
 
 const MILADY_CONTRACT_ADDRESS = "0xc20e45e49e0e79f0fc81e71f05fd2772d6587777";
 const ELIZA_CONTRACT_ADDRESS = "0xea17Df5Cf6D172224892B5477A16ACb111182478";
-const ELIZA_HOMEPAGE_IMAGE = "/waifus/eliza-elegant.png";
+const ELIZA_HOMEPAGE_IMAGE = "/waifus/eliza-hero.png";
 
 const CURATED_HOME_CONTRACTS = [MILADY_CONTRACT_ADDRESS.toLowerCase(), ELIZA_CONTRACT_ADDRESS.toLowerCase()];
 
