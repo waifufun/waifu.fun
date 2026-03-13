@@ -17,47 +17,145 @@ export interface AgentLifecycleStatus {
 	isBonded: boolean;
 	isImported: boolean;
 	isExternalMarket: boolean;
+	isStatusExternalMarket: boolean;
+	hasExternalPool: boolean;
+	hasCompletedBondingCurve: boolean;
 	hasRecentActivity: boolean;
 }
 
 const ACTIVE_MARKETCAP_THRESHOLD = 1_000;
 const externalMarketStatuses = new Set(["migrated", "dex", "locked"]);
 
+type TokenLifecycleHints = IToken & { origin?: string; pool?: string | null };
+
 function isImportedToken(token: IToken) {
-	const tokenWithOrigin = token as IToken & { origin?: string };
+	const tokenWithOrigin = token as TokenLifecycleHints;
 	return Boolean(token?.imported) || tokenWithOrigin?.origin === "imported";
 }
 
-export function deriveAgentLifecycleStatus(token: IToken): AgentLifecycleStatus {
+function hasExternalPoolAddress(pool: string | null | undefined) {
+	if (!pool) return false;
+	const normalizedPool = pool.trim();
+	return /^0x[a-fA-F0-9]{40}$/.test(normalizedPool) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(normalizedPool);
+}
+
+function getLifecycleSignals(token: IToken) {
+	const tokenWithHints = token as TokenLifecycleHints;
 	const curveProgress = Math.min(100, Math.max(0, Number(token?.curveProgress ?? 0)));
-	const isImported = isImportedToken(token);
 	const normalizedStatus = String(token?.status ?? "")
 		.trim()
 		.toLowerCase();
-	const isMigrated = externalMarketStatuses.has(normalizedStatus);
-	const isBonded = Boolean(token?.curveCompleted) || curveProgress >= 100 || isMigrated;
+	const isImported = isImportedToken(token);
+	const isStatusExternalMarket = externalMarketStatuses.has(normalizedStatus);
+	const hasExternalPool = hasExternalPoolAddress(tokenWithHints?.pool);
+	const hasCompletedBondingCurve = Boolean(token?.curveCompleted) || curveProgress >= 100;
 	const volume24h = Number(token?.volume24h ?? 0);
 	const marketcap = Number(token?.marketcap ?? 0);
 	const isFinalized = normalizedStatus === "finalized";
 	const hasRecentActivity = volume24h > 0 || marketcap >= ACTIVE_MARKETCAP_THRESHOLD;
-	const isExternalMarket = isImported || isMigrated;
+	const isExternalMarket = isImported || isStatusExternalMarket || hasExternalPool;
+	const isBonded = hasCompletedBondingCurve || isExternalMarket;
+
+	return {
+		isImported,
+		isStatusExternalMarket,
+		hasExternalPool,
+		hasCompletedBondingCurve,
+		hasRecentActivity,
+		isExternalMarket,
+		isBonded,
+		isFinalized,
+	};
+}
+
+export function deriveAgentLifecycleStatus(token: IToken): AgentLifecycleStatus {
+	const {
+		isImported,
+		isStatusExternalMarket,
+		hasExternalPool,
+		hasCompletedBondingCurve,
+		hasRecentActivity,
+		isExternalMarket,
+		isBonded,
+		isFinalized,
+	} = getLifecycleSignals(token);
 
 	if (isImported) {
-		return { state: "imported", label: "imported", isBonded: true, isImported, isExternalMarket, hasRecentActivity };
+		return {
+			state: "imported",
+			label: "imported",
+			isBonded: true,
+			isImported,
+			isExternalMarket,
+			isStatusExternalMarket,
+			hasExternalPool,
+			hasCompletedBondingCurve,
+			hasRecentActivity,
+		};
 	}
-	if (isMigrated) {
-		return { state: "migrated", label: "migrated", isBonded: true, isImported, isExternalMarket, hasRecentActivity };
+	if (isStatusExternalMarket) {
+		return {
+			state: "migrated",
+			label: "migrated",
+			isBonded: true,
+			isImported,
+			isExternalMarket,
+			isStatusExternalMarket,
+			hasExternalPool,
+			hasCompletedBondingCurve,
+			hasRecentActivity,
+		};
 	}
 	if (isFinalized) {
-		return { state: "dormant", label: "dormant", isBonded, isImported, isExternalMarket, hasRecentActivity: false };
+		return {
+			state: "dormant",
+			label: "dormant",
+			isBonded,
+			isImported,
+			isExternalMarket,
+			isStatusExternalMarket,
+			hasExternalPool,
+			hasCompletedBondingCurve,
+			hasRecentActivity: false,
+		};
 	}
 	if (!isBonded) {
-		return { state: "bonding", label: "bonding", isBonded, isImported, isExternalMarket, hasRecentActivity };
+		return {
+			state: "bonding",
+			label: "bonding",
+			isBonded,
+			isImported,
+			isExternalMarket,
+			isStatusExternalMarket,
+			hasExternalPool,
+			hasCompletedBondingCurve,
+			hasRecentActivity,
+		};
 	}
 	if (hasRecentActivity) {
-		return { state: "active", label: "active", isBonded, isImported, isExternalMarket, hasRecentActivity };
+		return {
+			state: "active",
+			label: "active",
+			isBonded,
+			isImported,
+			isExternalMarket,
+			isStatusExternalMarket,
+			hasExternalPool,
+			hasCompletedBondingCurve,
+			hasRecentActivity,
+		};
 	}
-	return { state: "dormant", label: "dormant", isBonded, isImported, isExternalMarket, hasRecentActivity };
+	return {
+		state: "dormant",
+		label: "dormant",
+		isBonded,
+		isImported,
+		isExternalMarket,
+		isStatusExternalMarket,
+		hasExternalPool,
+		hasCompletedBondingCurve,
+		hasRecentActivity,
+	};
 }
 
 function LiveDot() {

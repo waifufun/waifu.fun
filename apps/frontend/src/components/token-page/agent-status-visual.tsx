@@ -92,14 +92,14 @@ export default function AgentStatusVisual({
 		? hasLiveExternalMarketData
 			? "Live external market feed connected."
 			: "Using indexed fallback data until the live external market feed is available."
-		: status.isBonded
+		: status.hasCompletedBondingCurve
 			? "Using waifu.fun lifecycle data after curve completion."
 			: `Using bonding-curve state (${Math.round(curveProgress)}% complete).`;
 	const liquiditySummary = status.isImported
 		? "Imported listing — not launched from this bonding curve."
-		: status.state === "migrated"
+		: status.state === "migrated" || (status.isExternalMarket && !status.hasCompletedBondingCurve)
 			? "Liquidity has moved to an external pool."
-			: status.isBonded
+			: status.hasCompletedBondingCurve
 				? "Bonding curve completed."
 				: `${Math.round(curveProgress)}% of the bonding curve completed.`;
 	const helperCopy =
