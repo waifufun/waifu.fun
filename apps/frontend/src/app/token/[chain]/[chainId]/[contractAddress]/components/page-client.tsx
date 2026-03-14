@@ -31,9 +31,9 @@ import UpdateSocialsModal from "./UpdateSocialsModal";
 function SectionLabel({ children }: { children: string }) {
 	return (
 		<div className="flex items-center gap-1.5 mb-2">
-			<div className="h-px flex-1 bg-gradient-to-r from-white/[0.06] to-transparent" />
-			<span className="text-[10px] text-[#3f3f46] font-mono uppercase tracking-[0.16em] shrink-0">{children}</span>
-			<div className="h-px flex-1 bg-gradient-to-l from-white/[0.06] to-transparent" />
+			<div className="h-px flex-1 bg-gradient-to-r from-white/[0.04] to-transparent" />
+			<span className="text-[9px] text-zinc-800 font-mono uppercase tracking-[0.18em] shrink-0">{children}</span>
+			<div className="h-px flex-1 bg-gradient-to-l from-white/[0.04] to-transparent" />
 		</div>
 	);
 }
@@ -110,7 +110,7 @@ export default function PageClient({
 	};
 
 	return (
-		<div className="mx-auto mt-4 flex w-full max-w-[1400px] min-w-0 flex-col gap-6 overflow-x-hidden px-4 pb-8 sm:px-6 md:px-8">
+		<div className="mx-auto mt-6 flex w-full max-w-[1400px] min-w-0 flex-col gap-6 overflow-x-hidden px-4 pb-8 sm:px-6 md:px-8">
 			<ScamWarning isHidden={!!token?.hidden} />
 
 			{viewMode === "agent" ? (
@@ -123,30 +123,27 @@ export default function PageClient({
 						headerAccessory={<ViewModeToggle value={viewMode} onChange={handleViewModeChange} />}
 					/>
 
-					{/* Market Ribbon - compact secondary metrics */}
+					{/* Market Ribbon — quiet secondary metrics */}
 					<MarketRibbon token={displayToken} marketDataSource={marketDataSource} />
 
-					{/* Main content grid */}
-					<div className="grid gap-6 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px]">
+					{/* Main content grid — wider left, narrower sidebar */}
+					<div className="grid gap-8 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_340px]">
 						{/* Left: Agent context */}
-						<div className="flex flex-col gap-5 min-w-0">
-							{/* Status visual */}
-							<AgentStatusVisual token={displayToken} status={agentStatus} marketDataSource={marketDataSource} />
-
-							{/* Agent info / skills */}
+						<div className="flex flex-col gap-8 min-w-0">
+							{/* Agent info / personality */}
 							<motion.div
 								initial={{ opacity: 0, y: 8 }}
 								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 0.12, duration: 0.3 }}
+								transition={{ delay: 0.08, duration: 0.3 }}
 							>
 								<AgentInfo token={displayToken} />
 							</motion.div>
 
-							{/* Runtime economics if present */}
+							{/* Runtime economics — only renders if data exists */}
 							<RuntimeEconomicsCard token={displayToken} />
 
 							{/* Activity tabs */}
-							<div className="flex flex-col gap-3 pt-2">
+							<div className="flex flex-col gap-3">
 								<SectionLabel>activity</SectionLabel>
 								<TokenTabs token={displayToken} />
 								{children}
@@ -154,12 +151,12 @@ export default function PageClient({
 						</div>
 
 						{/* Right: Controls sidebar */}
-						<div className="flex flex-col gap-5">
+						<div className="flex flex-col gap-6">
 							{/* Agent controls */}
 							<motion.div
 								initial={{ opacity: 0, y: 8 }}
 								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 0.16, duration: 0.3 }}
+								transition={{ delay: 0.12, duration: 0.3 }}
 								className="flex flex-col gap-2"
 							>
 								<SectionLabel>controls</SectionLabel>
@@ -171,32 +168,31 @@ export default function PageClient({
 								<motion.div
 									initial={{ opacity: 0, y: 8 }}
 									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.2, duration: 0.3 }}
+									transition={{ delay: 0.16, duration: 0.3 }}
 									className="flex flex-col gap-2"
 								>
 									<SectionLabel>bonding curve</SectionLabel>
-									<div className="rounded-sm border border-white/6 bg-[#111114]/60 p-4">
+									<div className="rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4">
 										<BondingCurveProgress token={displayToken} />
 									</div>
 								</motion.div>
 							)}
 
-							{/* Owner runtime panel */}
+							{/* Operations panel — creator only */}
 							{isCreator && (
 								<motion.div
 									initial={{ opacity: 0, y: 8 }}
 									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.24, duration: 0.3 }}
+									transition={{ delay: 0.2, duration: 0.3 }}
 									className="flex flex-col gap-2"
 								>
-									<SectionLabel>operator</SectionLabel>
+									<SectionLabel>operations</SectionLabel>
 									<OwnerRuntimePanel token={token} />
 
-									{/* Settings */}
-									<div className="rounded-sm border border-white/6 bg-[#111114]/60 p-4 mt-2">
+									<div className="rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4 mt-2">
 										<Button
 											variant="outline"
-											className="w-full h-8 font-mono text-[10px] uppercase tracking-wider text-[#71717a] hover:text-[#a1a1aa]"
+											className="w-full h-8 font-mono text-[10px] uppercase tracking-wider text-zinc-600 hover:text-zinc-400"
 											onClick={() => setSocialsModalOpen(true)}
 										>
 											update socials
@@ -231,16 +227,16 @@ export default function PageClient({
 						headerAccessory={<ViewModeToggle value={viewMode} onChange={handleViewModeChange} />}
 					/>
 
-					<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.95fr)]">
-						<div className="flex min-w-0 flex-col gap-5">
+					<div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.95fr)]">
+						<div className="flex min-w-0 flex-col gap-6">
 							{/* Chart */}
 							<div className="flex min-w-0 flex-col gap-3">
 								<div className="flex items-center justify-between gap-3">
 									<div className="flex items-center gap-2">
-										<BarChart3 className={cn("size-4", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
-										<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">price chart</span>
+										<BarChart3 className={cn("size-3.5", isPriceUp ? "text-[#00ff87]" : "text-red-400")} />
+										<span className="text-[9px] font-mono uppercase tracking-wider text-zinc-700">price chart</span>
 									</div>
-									<span className="text-[10px] font-mono uppercase tracking-wider text-[#3f3f46]">
+									<span className="text-[9px] font-mono uppercase tracking-wider text-zinc-800">
 										{chartSourceLabel}
 									</span>
 								</div>
@@ -248,23 +244,23 @@ export default function PageClient({
 								<motion.div
 									className={cn(
 										"relative overflow-hidden rounded-sm border bg-[#111114]",
-										isPriceUp ? "border-[#00ff87]/15" : "border-red-500/15",
+										isPriceUp ? "border-[#00ff87]/10" : "border-red-500/10",
 									)}
 									initial={{ opacity: 0, y: 10 }}
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ duration: 0.3 }}
 								>
-									<div className="flex items-center justify-end gap-1 border-b border-white/[0.04] px-3 py-2">
+									<div className="flex items-center justify-end gap-0.5 border-b border-white/[0.03] px-2 py-1.5">
 										{TIMEFRAMES.map((timeframe) => (
 											<button
 												key={timeframe.value}
 												type="button"
 												onClick={() => setSelectedTimeframe(timeframe.value)}
 												className={cn(
-													"rounded-sm border px-2 py-1 font-mono text-[10px] uppercase transition-colors",
+													"rounded-sm border px-1.5 py-0.5 font-mono text-[9px] uppercase transition-colors",
 													selectedTimeframe === timeframe.value
-														? "border-[#00ff87]/25 bg-[#00ff87]/[0.06] text-[#00ff87]"
-														: "border-transparent text-[#52525b] hover:bg-white/[0.02] hover:text-[#a1a1aa]",
+														? "border-[#00ff87]/20 bg-[#00ff87]/[0.04] text-[#00ff87]"
+														: "border-transparent text-zinc-700 hover:bg-white/[0.02] hover:text-zinc-500",
 												)}
 											>
 												{timeframe.label}
@@ -287,13 +283,13 @@ export default function PageClient({
 						</div>
 
 						{/* Trading sidebar */}
-						<div className="flex min-w-0 flex-col gap-5">
+						<div className="flex min-w-0 flex-col gap-6">
 							<div className="flex flex-col gap-2">
 								<SectionLabel>trading</SectionLabel>
 								<Swap token={token} />
 
 								{agentStatus.state === "bonding" && typeof displayToken?.curveProgress === "number" && (
-									<div className="rounded-sm border border-white/6 bg-[#111114]/60 p-4 mt-2">
+									<div className="rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4 mt-2">
 										<BondingCurveProgress token={displayToken} />
 									</div>
 								)}
@@ -312,12 +308,12 @@ export default function PageClient({
 
 							{isCreator && (
 								<div className="flex flex-col gap-2">
-									<SectionLabel>operator</SectionLabel>
+									<SectionLabel>operations</SectionLabel>
 									<OwnerRuntimePanel token={token} />
-									<div className="rounded-sm border border-white/6 bg-[#111114]/60 p-4 mt-2">
+									<div className="rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4 mt-2">
 										<Button
 											variant="outline"
-											className="w-full h-8 font-mono text-[10px] uppercase tracking-wider text-[#71717a] hover:text-[#a1a1aa]"
+											className="w-full h-8 font-mono text-[10px] uppercase tracking-wider text-zinc-600 hover:text-zinc-400"
 											onClick={() => setSocialsModalOpen(true)}
 										>
 											update socials

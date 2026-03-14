@@ -55,12 +55,12 @@ function MetricTile({
 	muted?: boolean;
 }) {
 	return (
-		<div className={cn("flex items-center gap-2.5 py-2", muted && "opacity-50")}>
-			<Icon className="size-3.5 text-[#52525b] shrink-0" />
-			<div className="flex items-baseline gap-1.5 min-w-0 flex-1">
-				<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b] shrink-0">{label}</span>
-				<span className="text-xs font-mono text-[#e4e4e7] truncate">{value}</span>
+		<div className={cn("flex items-baseline justify-between gap-2 py-1.5", muted && "opacity-40")}>
+			<div className="flex items-center gap-2">
+				<Icon className="size-3 text-zinc-700 shrink-0" />
+				<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700">{label}</span>
 			</div>
+			<span className="text-[11px] font-mono text-zinc-400 truncate">{value}</span>
 		</div>
 	);
 }
@@ -68,10 +68,8 @@ function MetricTile({
 export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 	const runtimeToken = token as RuntimeToken;
 
-	// Collect available metrics
 	const metrics: Array<{ label: string; value: string; icon: typeof Zap; muted?: boolean }> = [];
 
-	// Runtime status
 	if (token.agentStatus) {
 		metrics.push({
 			label: "runtime",
@@ -80,7 +78,6 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		});
 	}
 
-	// Heartbeat
 	if (runtimeToken.lastHeartbeatAt) {
 		metrics.push({
 			label: "heartbeat",
@@ -89,7 +86,6 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		});
 	}
 
-	// Claim status
 	if (token.ownerClaimStatus) {
 		metrics.push({
 			label: "ownership",
@@ -98,7 +94,6 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		});
 	}
 
-	// Funding
 	if (token.billingMode) {
 		metrics.push({
 			label: "funding",
@@ -107,7 +102,6 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		});
 	}
 
-	// Reserve (if present)
 	if (typeof token.infraReserveUsd === "number" && Number.isFinite(token.infraReserveUsd)) {
 		metrics.push({
 			label: "reserve",
@@ -116,7 +110,7 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		});
 	}
 
-	// Nothing to show
+	// Nothing to show — render nothing
 	if (metrics.length === 0) {
 		return null;
 	}
@@ -126,14 +120,14 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ delay: 0.16, duration: 0.3 }}
-			className="rounded-sm border border-white/6 bg-[#111114]/60 p-4"
+			className="rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4"
 		>
 			<div className="flex items-center gap-2 mb-2">
-				<Gauge className="size-3.5 text-[#00ff87]/60" />
-				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b]">runtime</span>
+				<Gauge className="size-3 text-zinc-700" />
+				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-700">runtime</span>
 			</div>
 
-			<div className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3 divide-y divide-white/[0.03] sm:divide-y-0">
+			<div className="divide-y divide-white/[0.03]">
 				{metrics.map((metric) => (
 					<MetricTile key={metric.label} {...metric} />
 				))}

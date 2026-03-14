@@ -20,11 +20,11 @@ function MetricChip({
 	live?: boolean;
 }) {
 	return (
-		<div className="flex items-center gap-1.5 px-2 py-1.5 rounded-sm bg-white/[0.02] border border-white/[0.04]">
-			<Icon className="size-3 text-[#52525b]" />
-			<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b]">{label}</span>
-			<span className="text-[11px] font-mono text-[#e4e4e7]">{value}</span>
-			{live && <span className="h-1 w-1 rounded-full bg-[#00ff87] animate-pulse" />}
+		<div className="flex items-center gap-1 px-1.5 py-1">
+			<Icon className="size-2.5 text-zinc-700" />
+			<span className="text-[9px] font-mono uppercase tracking-wider text-zinc-700">{label}</span>
+			<span className="text-[9px] font-mono text-zinc-500">{value}</span>
+			{live && <span className="h-1 w-1 rounded-full bg-[#00ff87]/60" />}
 		</div>
 	);
 }
@@ -49,16 +49,16 @@ export default function MarketRibbon({
 
 	return (
 		<motion.div
-			initial={{ opacity: 0, y: 6 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ delay: 0.12, duration: 0.3 }}
-			className="flex items-center justify-between gap-3 py-3 border-y border-white/[0.04]"
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={{ delay: 0.15, duration: 0.4 }}
+			className="flex items-center justify-between gap-3 py-2 border-t border-white/[0.03]"
 		>
-			<div className="flex flex-wrap items-center gap-2">
+			<div className="flex flex-wrap items-center gap-1">
 				<MetricChip label="price" value={formatNumberSubscript(token.price)} icon={TrendingUp} live={isLive} />
 				<MetricChip
 					label="mcap"
-					value={token.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—"}
+					value={token.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "\u2014"}
 					icon={BarChart3}
 					live={isLive}
 				/>
@@ -72,10 +72,10 @@ export default function MarketRibbon({
 
 			<Link
 				href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}?view=market`}
-				className="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-[#52525b] hover:text-[#a1a1aa] transition-colors shrink-0"
+				className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-zinc-700 hover:text-zinc-500 transition-colors shrink-0"
 			>
 				<span>{marketFeed} market</span>
-				<ArrowUpRight className="size-3" />
+				<ArrowUpRight className="size-2.5" />
 			</Link>
 		</motion.div>
 	);
