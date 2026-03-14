@@ -156,12 +156,20 @@ export interface OwnerRuntimeCharacterInput {
 }
 
 export interface OwnerTokenRuntime {
+	mint?: string;
+	chain?: TChain;
+	chainId?: TChainId;
+	claimStatus?: "unclaimed" | "claimed" | "verified" | "disputed";
+	claimedAt?: string | null;
+	creatorWallet?: AddressLike | null;
 	cloudAgentId?: string;
 	agentStatus?: "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
 	agentLifecycleState?: "birth" | "live" | "dormant" | "reviving";
 	webUiUrl?: string;
 	billingMode?: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
 	infraReserveUsd?: number;
+	lastHeartbeatAt?: string | null;
+	suspendedReason?: string | null;
 	hasAgent?: boolean;
 }
 
@@ -177,7 +185,9 @@ export interface OwnerTokenBillingResponse {
 	billingMode?: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
 	infraReserveUsd?: number;
 	agentStatus?: "none" | "provisioning" | "running" | "suspended" | "failed" | "deleted";
-	estimatedDailyBurn?: number;
+	estimatedDailyBurnUsd?: number;
+	currentPeriodCostUsd?: number | null;
+	fundingSource?: string | null;
 	message?: string;
 	error?: string;
 }
@@ -314,7 +324,10 @@ function mapApiTokenToIToken(apiToken: any): IToken {
 	} as IToken;
 }
 
-const normalizeAddress = (value: unknown) => String(value ?? "").trim().toLowerCase();
+const normalizeAddress = (value: unknown) =>
+	String(value ?? "")
+		.trim()
+		.toLowerCase();
 
 export type ChartTimeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w" | "all";
 
@@ -456,7 +469,8 @@ export const getToken = async ({ chain, chainId, contractAddress }: ITokenLookUp
 			if (chain && item?.chain && item.chain !== chain) return false;
 			if (chainId && item?.chainId && toNumber(item.chainId) !== toNumber(chainId)) return false;
 			return true;
-		}) || items.find((item) => normalizeAddress(item?.address || item?.contractAddress || item?.mint) === lookupAddress);
+		}) ||
+		items.find((item) => normalizeAddress(item?.address || item?.contractAddress || item?.mint) === lookupAddress);
 
 	if (!matchedToken) {
 		throw createApiError({
@@ -530,12 +544,7 @@ export const getTokenTrades = async ({ chain, chainId, contractAddress }: IToken
 	return getApiItems(response);
 };
 
-export const authenticate = async (
-	address: AddressLike,
-	signature: string,
-	chain: TChain,
-	message?: string,
-) => {
+export const authenticate = async (address: AddressLike, signature: string, chain: TChain, message?: string) => {
 	return await fetcher("/auth/verify", "POST", {
 		address,
 		signature,
@@ -559,7 +568,9 @@ export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
 		};
 		return {
 			authenticated:
-				typeof data?.authenticated === "boolean" ? data.authenticated : Boolean(data?.auth || wallets.solana || wallets.evm),
+				typeof data?.authenticated === "boolean"
+					? data.authenticated
+					: Boolean(data?.auth || wallets.solana || wallets.evm),
 			wallets,
 			message: data?.message,
 		};
@@ -724,7 +735,13 @@ export const generateMedia = async ({
 	width,
 	height,
 	type,
-}: { prompt: string; width: number; height: number; type: "audio" | "video" | "image"; contractAddress?: string }): Promise<{ mediaUrl: string }> => {
+}: {
+	prompt: string;
+	width: number;
+	height: number;
+	type: "audio" | "video" | "image";
+	contractAddress?: string;
+}): Promise<{ mediaUrl: string }> => {
 	// Generate deterministic placeholder based on prompt
 	const seed = encodeURIComponent(prompt || "waifu");
 	const size = Math.min(width || 512, height || 512);
@@ -767,7 +784,11 @@ export const generateMetadata = async ({
 }: { mediaType: "image" | "audio" | "video"; prompt?: string | undefined; contractAddress?: string | undefined }) => {
 	// Generate basic metadata from prompt
 	const name = prompt?.substring(0, 64) || "Waifu Token";
-	const ticker = name.substring(0, 6).toUpperCase().replace(/[^A-Z]/g, "") || "WAIFU";
+	const ticker =
+		name
+			.substring(0, 6)
+			.toUpperCase()
+			.replace(/[^A-Z]/g, "") || "WAIFU";
 	const description = prompt || "A waifu.fun token";
 
 	console.log("[waifu-core] Generated placeholder metadata:", { name, ticker, description });
@@ -777,8 +798,8 @@ export const generateMetadata = async ({
 			symbol: ticker,
 			description,
 			prompt: prompt || "",
-			image: ""
-		}
+			image: "",
+		},
 	};
 };
 
@@ -1199,8 +1220,7 @@ export const claimTokenOwnership = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	console.warn("[waifu-core] Token ownership claim not implemented yet");
-	return null as any;
+	return fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/claim`, "POST");
 };
 
 export const getOwnerTokenRuntime = async ({
@@ -1212,11 +1232,33 @@ export const getOwnerTokenRuntime = async ({
 	chainId: string | number;
 	contractAddress: string;
 }): Promise<OwnerTokenRuntimeResponse> => {
-	console.warn("[waifu-core] Owner token runtime not implemented yet");
+	const response = await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime`, "GET");
+	const data = unwrapApiData<any>(response) ?? response ?? {};
+	const runtimeSource = unwrapApiData<any>(data?.runtime) ?? data?.runtime ?? {};
 	return {
-		success: false,
-		runtime: {},
-		message: "Runtime management not available in waifu-core yet",
+		success: data?.success !== false,
+		runtime: {
+			mint: runtimeSource?.mint,
+			chain: runtimeSource?.chain,
+			chainId: runtimeSource?.chainId,
+			claimStatus: runtimeSource?.claimStatus,
+			claimedAt: runtimeSource?.claimedAt ?? null,
+			creatorWallet: runtimeSource?.creatorWallet ?? null,
+			cloudAgentId: runtimeSource?.cloudAgentId,
+			agentStatus: runtimeSource?.agentStatus,
+			agentLifecycleState: runtimeSource?.agentLifecycleState,
+			webUiUrl: runtimeSource?.webUiUrl,
+			billingMode: runtimeSource?.billingMode,
+			infraReserveUsd:
+				typeof runtimeSource?.infraReserveUsd === "number"
+					? runtimeSource.infraReserveUsd
+					: toNumber(runtimeSource?.infraReserveUsd, Number.NaN),
+			lastHeartbeatAt: runtimeSource?.lastHeartbeatAt ?? null,
+			suspendedReason: runtimeSource?.suspendedReason ?? null,
+			hasAgent: Boolean(runtimeSource?.hasAgent ?? runtimeSource?.cloudAgentId),
+		},
+		message: data?.message,
+		error: data?.error,
 	};
 };
 
@@ -1233,8 +1275,10 @@ export const activateOwnerTokenRuntime = async ({
 	billingMode?: OwnerTokenRuntime["billingMode"];
 	character?: OwnerRuntimeCharacterInput;
 }) => {
-	console.warn("[waifu-core] Runtime activation not implemented yet");
-	return null as any;
+	return fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/activate`, "POST", {
+		...(billingMode ? { billingMode } : {}),
+		...(character ? { character } : {}),
+	});
 };
 
 export const suspendOwnerTokenRuntime = async ({
@@ -1246,8 +1290,7 @@ export const suspendOwnerTokenRuntime = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	console.warn("[waifu-core] Runtime suspension not implemented yet");
-	return null as any;
+	return fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/suspend`, "POST");
 };
 
 export const resumeOwnerTokenRuntime = async ({
@@ -1259,8 +1302,7 @@ export const resumeOwnerTokenRuntime = async ({
 	chainId: string | number;
 	contractAddress: string;
 }) => {
-	console.warn("[waifu-core] Runtime resume not implemented yet");
-	return null as any;
+	return fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/runtime/resume`, "POST");
 };
 
 export const getOwnerTokenBilling = async ({
@@ -1272,10 +1314,26 @@ export const getOwnerTokenBilling = async ({
 	chainId: string | number;
 	contractAddress: string;
 }): Promise<OwnerTokenBillingResponse> => {
-	console.warn("[waifu-core] Owner token billing not implemented yet");
+	const response = await fetcher(`/owner/tokens/${chain}/${chainId}/${contractAddress}/billing`, "GET");
+	const data = unwrapApiData<any>(response) ?? response ?? {};
+	const estimatedDailyBurnUsd =
+		typeof data?.estimatedDailyBurnUsd === "number"
+			? data.estimatedDailyBurnUsd
+			: typeof data?.estimatedDailyBurn === "number"
+				? data.estimatedDailyBurn
+				: undefined;
 	return {
-		success: false,
-		message: "Billing info not available in waifu-core yet",
+		success: data?.success !== false,
+		billingMode: data?.billingMode,
+		infraReserveUsd:
+			typeof data?.infraReserveUsd === "number" ? data.infraReserveUsd : toNumber(data?.infraReserveUsd, Number.NaN),
+		agentStatus: data?.agentStatus,
+		estimatedDailyBurnUsd,
+		currentPeriodCostUsd:
+			typeof data?.currentPeriodCostUsd === "number" ? data.currentPeriodCostUsd : (data?.currentPeriodCostUsd ?? null),
+		fundingSource: typeof data?.fundingSource === "string" ? data.fundingSource : null,
+		message: data?.message,
+		error: data?.error,
 	};
 };
 
@@ -1379,4 +1437,3 @@ export const deleteAgent = async (agentId: string): Promise<void> => {
 
 /** @deprecated BSC uses wagmi/viem public client instead */
 export const HELIUS_RPC_URL = "";
-
