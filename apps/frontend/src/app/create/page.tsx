@@ -4,14 +4,63 @@ import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
 import { FAQAccordion } from "@/components/ui/create-token/faq-accordion";
 import { AgentPreviewCard } from "@/components/ui/create-token/agent-preview-card";
 import { CreateWizard } from "@/components/ui/create-token/create-wizard";
+import { ConversationalCreate } from "@/components/ui/create-token/conversational-create";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
 import { useAccount } from "wagmi";
-import { LockKeyhole, RefreshCcw, Rocket } from "lucide-react";
+import { LockKeyhole, RefreshCcw, Rocket, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "@/contexts/locale-context";
 
-function CreateTokenLauncher() {
+// ---------------------------------------------------------------------------
+// Mode toggle: Conversational vs Manual
+// ---------------------------------------------------------------------------
+function CreateModeToggle({
+	mode,
+	onModeChange,
+}: {
+	mode: "conversational" | "manual";
+	onModeChange: (m: "conversational" | "manual") => void;
+}) {
+	return (
+		<div className="flex items-center justify-end gap-1 max-w-7xl mx-auto px-4 pt-4">
+			<div className="flex items-center gap-0 border border-[rgba(255,255,255,0.06)] rounded-sm overflow-hidden">
+				<button
+					type="button"
+					onClick={() => onModeChange("conversational")}
+					className={cn(
+						"flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
+						mode === "conversational"
+							? "bg-[#00ff87]/10 text-[#00ff87] border-r border-[rgba(255,255,255,0.06)]"
+							: "bg-transparent text-[#52525b] hover:text-[#71717a] border-r border-[rgba(255,255,255,0.06)]"
+					)}
+				>
+					<MessageSquare className="w-3 h-3" />
+					chat
+				</button>
+				<button
+					type="button"
+					onClick={() => onModeChange("manual")}
+					className={cn(
+						"flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
+						mode === "manual"
+							? "bg-[#00ff87]/10 text-[#00ff87]"
+							: "bg-transparent text-[#52525b] hover:text-[#71717a]"
+					)}
+				>
+					<SlidersHorizontal className="w-3 h-3" />
+					manual
+				</button>
+			</div>
+		</div>
+	);
+}
+
+// ---------------------------------------------------------------------------
+// Manual create (original wizard layout)
+// ---------------------------------------------------------------------------
+function ManualCreateLauncher() {
 	const { t } = useTranslation();
 	return (
 		<div className="w-full min-h-[100dvh] bg-[#08080a]">
@@ -46,6 +95,28 @@ function CreateTokenLauncher() {
 	);
 }
 
+// ---------------------------------------------------------------------------
+// Launcher wrapper (mode switch)
+// ---------------------------------------------------------------------------
+function CreateTokenLauncher() {
+	const [mode, setMode] = useState<"conversational" | "manual">("conversational");
+
+	return (
+		<div className="w-full min-h-screen bg-[#08080a]">
+			<CreateModeToggle mode={mode} onModeChange={setMode} />
+
+			{mode === "conversational" ? (
+				<ConversationalCreate />
+			) : (
+				<ManualCreateLauncher />
+			)}
+		</div>
+	);
+}
+
+// ---------------------------------------------------------------------------
+// Launch gate (unchanged)
+// ---------------------------------------------------------------------------
 type LaunchGateCheckResponse = {
 	allowed: boolean;
 	reason?: string;
