@@ -604,17 +604,29 @@ export const createToken = async ({
 	pool?: string;
 	signature?: string;
 	inviteCode?: string;
-}) => {
+}): Promise<{ launchId: string } | null> => {
 	try {
-		return await fetcher("/launches", "POST", {
+		const response = await fetcher("/launches", "POST", {
 			name,
 			symbol,
 			description,
 			imageUrl,
 			inviteCode,
 		});
+		const data = unwrapApiData<any>(response) ?? response ?? {};
+		const launchId =
+			typeof data?.id === "string"
+				? data.id
+				: typeof data?.launchId === "string"
+					? data.launchId
+					: typeof data?.launch?.id === "string"
+						? data.launch.id
+						: typeof data?.record?.id === "string"
+							? data.record.id
+							: null;
+		return launchId ? { launchId } : null;
 	} catch (error) {
-		// Non-blocking: the on-chain tx already succeeded, backend registration is secondary
+		// Surface registration failure to the caller so launch completion UX stays truthful.
 		console.warn("Failed to register token with backend:", error);
 		return null;
 	}

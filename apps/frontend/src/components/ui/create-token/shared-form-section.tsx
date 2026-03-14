@@ -821,8 +821,7 @@ export const LaunchButton = ({
 				// Stage 5: Registering with platform
 				updateStage(5, { status: "active" });
 
-				// Register with backend (non-blocking)
-				createToken({
+				const launchRecord = await createToken({
 					contractAddress: tokenAddress,
 					name,
 					symbol,
@@ -833,9 +832,13 @@ export const LaunchButton = ({
 					pool,
 					signature: txHash,
 					...(inviteCode ? { inviteCode } : {}),
-				}).catch(() => {});
+				});
 
-				updateStage(5, { status: "success" });
+				if (!launchRecord?.launchId) {
+					throw new Error("launch registration did not return a launch id");
+				}
+
+				updateStage(5, { status: "success", detail: launchRecord.launchId.slice(0, 10) });
 				setDeployProgress(90);
 
 				// Stage 6: Done
@@ -854,7 +857,7 @@ export const LaunchButton = ({
 						description,
 						address: tokenAddress,
 						imageUrl,
-						launchId: txHash,
+						launchId: launchRecord.launchId,
 					});
 				}, 1000);
 			} else {
