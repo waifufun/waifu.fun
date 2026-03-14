@@ -1353,6 +1353,46 @@ export interface AgentCreateInput {
 	config?: Record<string, unknown> | undefined;
 }
 
+export type ProvisioningJobState =
+	| "queued"
+	| "requested"
+	| "provisioning"
+	| "running"
+	| "completed"
+	| "failed";
+
+export interface AgentProvisionRequest {
+	tokenAddress: string;
+	agentName: string;
+	chain?: TChain;
+	chainId?: number;
+	tokenName?: string;
+	tokenTicker?: string;
+	launchId?: string;
+	agentConfig?: {
+		bio?: string;
+		avatar?: string;
+		config?: Record<string, unknown>;
+	};
+}
+
+export interface AgentProvisionResponse {
+	jobId: string;
+	status: ProvisioningJobState;
+	cloudAgentId?: string;
+	message?: string;
+	webUiUrl?: string;
+}
+
+export interface AgentProvisionStatusResponse {
+	jobId: string;
+	status: ProvisioningJobState;
+	cloudAgentId?: string;
+	progress?: number;
+	message?: string;
+	webUiUrl?: string;
+}
+
 export interface AgentCreateResponse {
 	agentId: string;
 	jobId: string;
@@ -1388,6 +1428,16 @@ export interface UserAgent {
 
 export const getAgentAvailability = async (): Promise<AgentAvailability> => {
 	const response = await fetcher("/agents/availability", "GET");
+	return response?.data || response;
+};
+
+export const provisionAgent = async (data: AgentProvisionRequest): Promise<AgentProvisionResponse> => {
+	const response = await fetcher("/agents/provision", "POST", data);
+	return response?.data || response;
+};
+
+export const getProvisioningStatus = async (jobId: string): Promise<AgentProvisionStatusResponse> => {
+	const response = await fetcher(`/agents/provision-status/${encodeURIComponent(jobId)}`, "GET");
 	return response?.data || response;
 };
 
