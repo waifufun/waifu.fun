@@ -195,7 +195,7 @@ export function DeployAgentModal({
 
 	const handleDeploy = async () => {
 		if (!agentName.trim()) {
-			toast.error("Agent name is required.");
+			toast.error("agent name required.");
 			return;
 		}
 
@@ -241,25 +241,23 @@ export function DeployAgentModal({
 			>
 				{/* Header */}
 				<div className="relative border-b border-white/6 px-5 pt-5 pb-4">
-					<div className="absolute top-0 left-0 h-2.5 w-2.5 border-l border-t border-[#00ff87]/35" />
-					<div className="absolute top-0 right-0 h-2.5 w-2.5 border-r border-t border-[#00ff87]/35" />
 
 					<DialogHeader>
 						<div className="flex items-center gap-2">
 							<Bot className="size-5 text-[#00ff87]" />
 							<DialogTitle className="text-sm font-mono uppercase tracking-[0.18em] text-[#e4e4e7]">
-								Deploy AI Agent
+								deploy agent
 							</DialogTitle>
 						</div>
 						<DialogDescription className="text-xs text-[#71717a] mt-1">
 							{stage === "form" &&
-								"Set up an AI agent for your token. It can engage on social platforms automatically."}
+								"configure an agent for this token. it will engage on social platforms automatically."}
 							{stage === "deploying" &&
-								"Your agent is being deployed..."}
+								"deploying agent..."}
 							{stage === "success" &&
-								"Your agent is live and ready to go!"}
+								"agent is live."}
 							{stage === "error" &&
-								"Something went wrong during deployment."}
+								"deployment failed."}
 						</DialogDescription>
 					</DialogHeader>
 
@@ -501,8 +499,6 @@ export function DeployAgentModal({
 					)}
 				</div>
 
-				<div className="absolute bottom-0 left-0 h-2.5 w-2.5 border-l border-b border-[#00ff87]/35" />
-				<div className="absolute bottom-0 right-0 h-2.5 w-2.5 border-r border-b border-[#00ff87]/35" />
 			</DialogContent>
 		</Dialog>
 	);

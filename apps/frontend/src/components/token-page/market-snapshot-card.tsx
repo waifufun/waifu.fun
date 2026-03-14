@@ -58,11 +58,8 @@ export default function MarketSnapshotCard({
 				<div>
 					<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#71717a]">market snapshot</p>
 					<h3 className="mt-1 text-sm font-semibold lowercase tracking-wide text-[#f4f4f5]">
-						what the market is doing now
+						market overview
 					</h3>
-					<p className="mt-1 max-w-xl text-[11px] leading-relaxed text-[#71717a]">
-						Pricing, activity, and holder coverage without switching away from the agent workspace.
-					</p>
 				</div>
 				<span className="rounded-sm border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.16em] text-[#a1a1aa]">
 					{marketFeed}

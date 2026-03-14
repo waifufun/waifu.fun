@@ -58,7 +58,7 @@ export default async function Holders({ token }: { token: IToken }) {
 		});
 
 		if (!data || data.length === 0) {
-			return <div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">No indexed holders found yet.</div>;
+			return <div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">no indexed holders yet.</div>;
 		}
 
 		return (
@@ -122,7 +122,7 @@ export default async function Holders({ token }: { token: IToken }) {
 	} catch (_error) {
 		return (
 			<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
-				Holder indexing is temporarily unavailable.
+				holder indexing temporarily unavailable.
 			</div>
 		);
 	}

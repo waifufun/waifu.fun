@@ -68,8 +68,7 @@ export function DeployTerminal({ stages, progress = 0, onDismiss, className }: D
 			{/* Header with dismiss button */}
 			<div className="flex items-center justify-between mb-3 pb-2 border-b border-[rgba(255,255,255,0.06)]">
 				<div className="flex items-center gap-2">
-					<span className="text-[#00ff87] text-xs">┌─</span>
-					<span className="text-[#a1a1aa] text-xs uppercase tracking-wider">DEPLOY LOG</span>
+					<span className="text-[#a1a1aa] text-xs uppercase tracking-wider">deploy log</span>
 				</div>
 				{onDismiss && (
 					<button

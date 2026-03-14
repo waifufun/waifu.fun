@@ -14,7 +14,7 @@ import { useTranslation } from "@/contexts/locale-context";
 function CreateTokenLauncher() {
 	const { t } = useTranslation();
 	return (
-		<div className="w-full min-h-screen bg-[#08080a]">
+		<div className="w-full min-h-[100dvh] bg-[#08080a]">
 			<div className="w-full max-w-6xl mx-auto px-4 pt-8 pb-4">
 				<div className="text-center mb-8">
 					<div className="inline-flex items-center gap-2 mb-3">
@@ -129,7 +129,7 @@ function CreatePageInner() {
 
 	if (launchGate.status === "loading") {
 		return (
-			<div className="min-h-screen bg-[#08080a] flex items-center justify-center px-4">
+			<div className="min-h-[100dvh] bg-[#08080a] flex items-center justify-center px-4">
 				<div className="w-full max-w-lg border border-[rgba(255,255,255,0.08)] bg-[#111114] rounded-sm p-8 text-center">
 					<div className="inline-flex items-center gap-2 px-3 py-1 rounded-sm border border-[rgba(0,255,135,0.2)] bg-[rgba(0,255,135,0.06)] text-[#00ff87] font-mono text-xs uppercase tracking-[0.25em]">
 						<LockKeyhole size={14} />
@@ -148,7 +148,7 @@ function CreatePageInner() {
 
 	if (launchGate.status === "unavailable") {
 		return (
-			<div className="min-h-screen bg-[#08080a] px-4 py-10 flex items-center justify-center">
+			<div className="min-h-[100dvh] bg-[#08080a] px-4 py-10 flex items-center justify-center">
 				<div className="w-full max-w-3xl border border-[rgba(255,255,255,0.08)] bg-[#111114] rounded-sm overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.4)]">
 					<div className="border-b border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(0,255,135,0.08),rgba(0,255,135,0.02))] px-6 py-5">
 						<div className="inline-flex items-center gap-2 text-[#00ff87] font-mono text-xs uppercase tracking-[0.28em]">
@@ -212,7 +212,7 @@ function CreatePageInner() {
 
 	if (launchGate.status === "denied") {
 		return (
-			<div className="min-h-screen bg-[#08080a] px-4 py-10 flex items-center justify-center">
+			<div className="min-h-[100dvh] bg-[#08080a] px-4 py-10 flex items-center justify-center">
 				<div className="w-full max-w-3xl border border-[rgba(255,255,255,0.08)] bg-[#111114] rounded-sm overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.4)]">
 					<div className="border-b border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(0,255,135,0.08),rgba(0,255,135,0.02))] px-6 py-5">
 						<div className="inline-flex items-center gap-2 text-[#00ff87] font-mono text-xs uppercase tracking-[0.28em]">

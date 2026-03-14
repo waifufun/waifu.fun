@@ -43,7 +43,7 @@ export default function Footer() {
 							href="https://milady.ai"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-[#52525b] hover:text-[#c084fc] transition-colors duration-200"
+							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
 						>
 							milady.ai
 						</a>
@@ -80,8 +80,8 @@ export default function Footer() {
 							x
 						</a>
 					</div>
-					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(192,132,252,0.15)] bg-[rgba(192,132,252,0.04)]">
-						<span className="text-[#c084fc] opacity-60">●</span>
+					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
+						<span className="text-[#71717a] opacity-60">●</span>
 						{t("footer.miladyCloud")}
 					</span>
 				</div>

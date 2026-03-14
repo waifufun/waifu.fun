@@ -29,14 +29,8 @@ function StatCard({
 	accent?: "green" | "purple";
 	loading?: boolean;
 }) {
-	const iconCls =
-		accent === "purple"
-			? "w-4 h-4 text-[#c084fc]"
-			: "w-4 h-4 text-[#00ff87]";
-	const bgCls =
-		accent === "purple"
-			? "w-9 h-9 rounded-sm flex items-center justify-center shrink-0 bg-[#c084fc]/10"
-			: "w-9 h-9 rounded-sm flex items-center justify-center shrink-0 bg-[#00ff87]/10";
+	const iconCls = "w-4 h-4 text-[#00ff87]";
+	const bgCls = "w-9 h-9 rounded-sm flex items-center justify-center shrink-0 bg-[#00ff87]/10";
 
 	return (
 		<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-4 flex items-center gap-4 hover:border-[rgba(255,255,255,0.12)] transition-colors">

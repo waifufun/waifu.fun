@@ -41,15 +41,7 @@ function SectionBlock({
 	);
 }
 
-function HudCorner({ position }: { position: "tl" | "tr" | "bl" | "br" }) {
-	const styles: Record<string, string> = {
-		tl: "top-0 left-0 border-t border-l",
-		tr: "top-0 right-0 border-t border-r",
-		bl: "bottom-0 left-0 border-b border-l",
-		br: "bottom-0 right-0 border-b border-r",
-	};
-	return <span className={`absolute w-3 h-3 ${styles[position]} border-[#00ff87]/20 pointer-events-none`} />;
-}
+/* HudCorner removed — violates "no HUD brackets/targeting lines" design rule */
 
 function AnimatedCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
 	const [count, setCount] = useState(0);
@@ -167,7 +159,7 @@ export default function StoryPage() {
 				title: t("story.lifecycleBirthTitle"),
 				description: t("story.lifecycleBirthDesc"),
 				image: "/waifus/how-deploy.png",
-				accent: "#c084fc",
+				accent: "#22c55e",
 				icon: Sparkles,
 				filter: "",
 			},
@@ -264,7 +256,7 @@ export default function StoryPage() {
 	);
 
 	return (
-		<div className="min-h-screen bg-[#08080a] overflow-x-hidden">
+		<div className="min-h-[100dvh] bg-[#08080a] overflow-x-hidden">
 			{/* Fixed scanlines */}
 			<div
 				className="fixed inset-0 pointer-events-none z-50 opacity-[0.015]"
@@ -288,7 +280,7 @@ export default function StoryPage() {
 				/>
 				<div
 					className="absolute inset-0"
-					style={{ background: "radial-gradient(ellipse at 80% 50%, rgba(192,132,252,0.05) 0%, transparent 40%)" }}
+					style={{ background: "radial-gradient(ellipse at 80% 50%, rgba(0,255,135,0.03) 0%, transparent 40%)" }}
 				/>
 				<motion.div
 					className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
@@ -386,7 +378,7 @@ export default function StoryPage() {
 					</SectionBlock>
 					<div className="relative">
 						<div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
-							<div className="absolute inset-0 bg-gradient-to-b from-[#c084fc]/30 via-[#00ff87]/30 via-50% to-[#00ff87]/30" />
+							<div className="absolute inset-0 bg-gradient-to-b from-[#00ff87]/20 via-[#00ff87]/30 via-50% to-[#00ff87]/20" />
 						</div>
 						<div className="space-y-8 lg:space-y-0">
 							{lifecycle.map((phase, i) => {
@@ -525,13 +517,9 @@ export default function StoryPage() {
 								<motion.div
 									className="relative p-6 rounded-sm bg-[#111114] h-full group cursor-default"
 									style={{ border: "1px solid rgba(255,255,255,0.06)" }}
-									whileHover={{ borderColor: "rgba(0,255,135,0.3)", boxShadow: "0 0 30px rgba(0,255,135,0.1)" }}
+									whileHover={{ borderColor: "rgba(0,255,135,0.2)" }}
 									transition={{ duration: 0.3 }}
 								>
-									<HudCorner position="tl" />
-									<HudCorner position="tr" />
-									<HudCorner position="bl" />
-									<HudCorner position="br" />
 									<div className="mb-4 relative">
 										<item.icon className="w-7 h-7 text-[#00ff87]" strokeWidth={1.5} />
 									</div>
@@ -631,9 +619,9 @@ export default function StoryPage() {
 									className="relative rounded-sm bg-[#111114] overflow-hidden h-full group"
 									style={{ border: "1px solid rgba(255,255,255,0.06)" }}
 									whileHover={{
-										y: -8,
-										borderColor: "rgba(0,255,135,0.4)",
-										boxShadow: "0 20px 40px rgba(0,0,0,0.3), 0 0 30px rgba(0,255,135,0.1)",
+										y: -2,
+										borderColor: "rgba(0,255,135,0.2)",
+										boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
 									}}
 									transition={{ type: "spring", stiffness: 300, damping: 20 }}
 								>
@@ -680,7 +668,7 @@ export default function StoryPage() {
 				/>
 				<div
 					className="absolute inset-0"
-					style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(192,132,252,0.03) 0%, transparent 40%)" }}
+					style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(0,255,135,0.02) 0%, transparent 40%)" }}
 				/>
 				<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 					<SectionBlock>
@@ -693,8 +681,8 @@ export default function StoryPage() {
 								<motion.div
 									className="absolute inset-0 rounded-sm blur-xl"
 									style={{ background: "#00ff87" }}
-									animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
-									transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+									animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.02, 1] }}
+									transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 								/>
 								<motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }} className="relative">
 									<Link
@@ -702,7 +690,7 @@ export default function StoryPage() {
 										className="relative inline-flex items-center gap-3 px-10 py-5 rounded-sm font-bold text-[#08080a] text-lg"
 										style={{
 											background: "#00ff87",
-											boxShadow: "0 0 30px rgba(0,255,135,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+											boxShadow: "0 0 12px rgba(0,255,135,0.15)",
 										}}
 									>
 										{t("story.ctaButton")}
@@ -726,7 +714,7 @@ export default function StoryPage() {
 								</div>
 								<span className="text-[#333]">•</span>
 								<div className="flex items-center gap-2 text-[#52525b] text-sm">
-									<span className="font-mono text-[#c084fc]">94%</span>
+									<span className="font-mono text-[#a1a1aa]">94%</span>
 									<span>{t("story.ctaUptime")}</span>
 								</div>
 							</div>
@@ -735,18 +723,18 @@ export default function StoryPage() {
 									href="https://milady.ai"
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center gap-2 text-[#52525b] hover:text-[#c084fc] transition-colors duration-200 text-xs font-mono group"
+									className="inline-flex items-center gap-2 text-[#52525b] hover:text-[#a1a1aa] transition-colors duration-200 text-xs font-mono"
 								>
-									<span className="group-hover:scale-110 transition-transform">💜</span> milady cloud
+									milady cloud
 								</a>
 								<span className="text-[#333] text-xs">×</span>
 								<a
 									href="https://elizaos.ai"
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center gap-2 text-[#52525b] hover:text-[#00ff87] transition-colors duration-200 text-xs font-mono group"
+									className="inline-flex items-center gap-2 text-[#52525b] hover:text-[#00ff87] transition-colors duration-200 text-xs font-mono"
 								>
-									<span className="group-hover:scale-110 transition-transform">⚡</span> elizaos
+									elizaos
 								</a>
 							</div>
 						</div>

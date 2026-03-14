@@ -210,10 +210,10 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 			return restartAgent(agent.agentId);
 		},
 		onSuccess: () => {
-			toast.success("Agent restart requested");
+			toast.success("restart requested");
 			refresh();
 		},
-		onError: (e: Error) => toast.error(e.message || "Failed to restart"),
+		onError: (e: Error) => toast.error(e.message || "restart failed"),
 	});
 
 	const stopMut = useMutation({
@@ -222,10 +222,10 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 			return stopAgent(agent.agentId);
 		},
 		onSuccess: () => {
-			toast.success("Agent stopped");
+			toast.success("agent stopped");
 			refresh();
 		},
-		onError: (e: Error) => toast.error(e.message || "Failed to stop"),
+		onError: (e: Error) => toast.error(e.message || "stop failed"),
 	});
 
 	const busy = restartMut.isPending || stopMut.isPending;

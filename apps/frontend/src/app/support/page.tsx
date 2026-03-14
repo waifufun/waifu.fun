@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function SupportPage() {
 	return (
-		<div className="flex flex-col flex-1 min-h-[100vh]">
+		<div className="flex flex-col flex-1 min-h-[100dvh]">
 			<div className="w-full max-w-5xl mx-auto px-4 py-12">
 				{/* Page Header */}
 				<div className="mb-10">

@@ -49,14 +49,14 @@ export function AgentInfo({ token }: { token: IToken }) {
 			label: "contract",
 			value: shortenAddress(token.contractAddress),
 			icon: Link2,
-			accent: "text-[#c084fc]",
+			accent: "text-[#a1a1aa]",
 			copyValue: token.contractAddress,
 		},
 		{
 			label: "chain",
 			value: chainLabel,
 			icon: Globe,
-			accent: "text-[#c084fc]",
+			accent: "text-[#a1a1aa]",
 		},
 		{
 			label: "created",
@@ -68,7 +68,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 			label: "linked socials",
 			value: linkedSocials.toString(),
 			icon: Link2,
-			accent: "text-[#c084fc]",
+			accent: "text-[#a1a1aa]",
 		},
 		{
 			label: "holders",

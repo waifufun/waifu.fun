@@ -412,7 +412,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 			);
 		}
 
-		return <div className="w-full p-4 py-8 text-center text-sm text-[#a1a1aa]">There are currently no trades.</div>;
+		return <div className="w-full p-4 py-8 text-center text-sm text-[#a1a1aa]">no trades yet.</div>;
 	}
 
 	const SummaryIcon = summary.icon;

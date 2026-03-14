@@ -137,7 +137,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		mutationFn: () =>
 			claimTokenOwnership({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
 		onSuccess: async () => {
-			toast.success("Owner access claimed");
+			toast.success("owner access claimed");
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -157,7 +157,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 				},
 			}),
 		onSuccess: async () => {
-			toast.success("Runtime activation requested");
+			toast.success("activation requested");
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -167,7 +167,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		mutationFn: () =>
 			suspendOwnerTokenRuntime({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
 		onSuccess: async () => {
-			toast.success("Runtime suspended");
+			toast.success("runtime suspended");
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -177,7 +177,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		mutationFn: () =>
 			resumeOwnerTokenRuntime({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
 		onSuccess: async () => {
-			toast.success("Runtime resumed");
+			toast.success("runtime resumed");
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),

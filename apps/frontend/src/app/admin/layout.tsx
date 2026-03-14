@@ -94,7 +94,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
 	if (isLoading) {
 		return (
-			<div className="min-h-screen bg-black flex items-center justify-center">
+			<div className="min-h-[100dvh] bg-[#08080a] flex items-center justify-center">
 				<Card className="bg-black/20 border-[#00ff87]/20 w-96">
 					<CardContent className="p-6">
 						<div className="flex items-center justify-center">
@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
 	if (!isAdmin) {
 		return (
-			<div className="min-h-screen bg-black flex items-center justify-center">
+			<div className="min-h-[100dvh] bg-[#08080a] flex items-center justify-center">
 				<Card className="bg-black/20 border-[#00ff87]/20 w-96">
 					<CardContent className="p-6 text-center">
 						<Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -126,7 +126,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	}
 
 	return (
-		<div className="min-h-screen bg-black">
+		<div className="min-h-[100dvh] bg-[#08080a]">
 			{/* Header */}
 			<div className="bg-black/50 border-b border-[#00ff87]/20 p-4">
 				<div className="container mx-auto flex items-center justify-between">

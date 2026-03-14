@@ -62,11 +62,11 @@ export function DeployButton({
 				)}
 				{...props}
 			>
-				{/* Glow effect on hover */}
+				{/* Subtle hover highlight */}
 				{!isDisabled && !isLoading && (
 					<div
 						className="absolute inset-0 rounded-sm transition-opacity duration-300 opacity-0 group-hover:opacity-100"
-						style={{ boxShadow: "0 0 30px rgba(0,255,135,0.3)" }}
+						style={{ boxShadow: "0 0 12px rgba(0,255,135,0.12)" }}
 					/>
 				)}
 

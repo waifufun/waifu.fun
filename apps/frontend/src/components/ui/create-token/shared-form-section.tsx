@@ -191,7 +191,6 @@ export const CustomCurveSection = ({
 		control,
 		formState: { errors },
 	} = usePrompt();
-	console.log(curveLimitConst / NATIVE_DECIMALS, "curveLimitConst / NATIVE_DECIMALS");
 
 	return (
 		<Controller

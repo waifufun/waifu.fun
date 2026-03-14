@@ -36,11 +36,6 @@ export function AgentPreviewCard() {
 
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.08)] rounded-sm p-6 overflow-hidden">
-			{/* Corner brackets */}
-			<div className="absolute top-0 left-0 w-4 h-4 border-l border-t border-[#00ff87]/35" />
-			<div className="absolute top-0 right-0 w-4 h-4 border-r border-t border-[#00ff87]/35" />
-			<div className="absolute bottom-0 left-0 w-4 h-4 border-l border-b border-[#00ff87]/35" />
-			<div className="absolute bottom-0 right-0 w-4 h-4 border-r border-b border-[#00ff87]/35" />
 
 			{/* Header */}
 			<div className="mb-4">

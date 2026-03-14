@@ -96,8 +96,8 @@ export function DeploySuccess({
 								className="absolute inset-0 rounded-full animate-pulse"
 								style={{
 									boxShadow: isProvisioningFinished
-										? "0 0 60px rgba(0,255,135,0.5), 0 0 100px rgba(0,255,135,0.3)"
-										: "0 0 40px rgba(0,255,135,0.3)",
+										? "0 0 24px rgba(0,255,135,0.2)"
+										: "0 0 16px rgba(0,255,135,0.1)",
 								}}
 							/>
 							<CheckCircle2

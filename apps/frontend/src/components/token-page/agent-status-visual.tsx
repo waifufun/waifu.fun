@@ -43,9 +43,9 @@ const presenceConfig = {
 	migrated: {
 		label: "graduated",
 		description: "trading on external pool",
-		className: "border-violet-500/20 bg-violet-500/[0.04]",
-		iconClassName: "text-violet-400",
-		accentColor: "violet",
+		className: "border-emerald-500/20 bg-emerald-500/[0.04]",
+		iconClassName: "text-emerald-400",
+		accentColor: "green",
 	},
 } as const;
 
@@ -55,7 +55,6 @@ function PresenceSignal({ active, color }: { active: boolean; color: string }) {
 		amber: "bg-amber-400",
 		zinc: "bg-zinc-400",
 		sky: "bg-sky-400",
-		violet: "bg-violet-400",
 	};
 
 	return (

@@ -60,15 +60,15 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" className="dark h-full" style={{ colorScheme: "dark" }}>
-			<body className={cn("h-full font-sans antialiased")}>
+		<html lang="en" className="dark" style={{ colorScheme: "dark" }}>
+			<body className={cn("min-h-[100dvh] font-sans antialiased")}>
 				<Providers>
 					{/* Static layer prevents white flash when InteractiveBackground is off */}
 					<StaticBackground />
 					{/* Moving gradient background — uncomment to re-enable */}
 					{/* <InteractiveBackground /> */}
 					<GrainOverlay />
-					<div className="relative z-10 flex flex-col min-h-screen">
+					<div className="relative z-10 flex flex-col min-h-[100dvh]">
 						<Header />
 						<main className="flex-1 flex flex-col" data-sidebar="inset">
 							{process.env.NEXT_PUBLIC_NETWORK === "devnet" ? <DevnetBanner /> : null}
