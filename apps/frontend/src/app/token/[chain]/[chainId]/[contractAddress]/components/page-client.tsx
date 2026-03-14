@@ -11,8 +11,8 @@ import { AgentInfo } from "@/components/token-page/agent-skills";
 import AgentStatusVisual from "@/components/token-page/agent-status-visual";
 import MarketSnapshotCard from "@/components/token-page/market-snapshot-card";
 import OwnerRuntimePanel from "@/components/token-page/owner-runtime-panel";
+import RuntimeEconomicsCard from "@/components/token-page/runtime-economics-card";
 import TokenTabs from "@/components/token-page/token-tabs";
-import TreasuryReadOnlyCard from "@/components/token-page/treasury-read-only-card";
 import { useLiveMarketToken } from "@/components/token-page/use-live-market-token";
 import ViewModeToggle, { type TokenDetailViewMode } from "@/components/token-page/view-mode-toggle";
 import { Button } from "@/components/ui/button";
@@ -149,7 +149,7 @@ export default function PageClient({
 								transition={{ delay: 0.2 }}
 								className="min-w-0"
 							>
-								<TreasuryReadOnlyCard token={displayToken} />
+								<RuntimeEconomicsCard token={displayToken} />
 							</motion.div>
 						</div>
 
