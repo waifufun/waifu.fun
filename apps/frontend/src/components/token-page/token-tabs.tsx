@@ -2,13 +2,14 @@
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/contexts/locale-context";
+import { cn } from "@/lib/utils";
 import { useRouter } from "@bprogress/next/app";
 import type { IToken } from "@waifufun/types";
-import { ChartCandlestick, Users } from "lucide-react";
+import { Activity, ChartCandlestick, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { hasAggregateHolderCount, isHolderDataIndexed } from "./holder-data-state";
 
-export default function TokenTabs({ token }: { token: IToken }) {
+export default function TokenTabs({ token, compact = false }: { token: IToken; compact?: boolean }) {
 	const { t } = useTranslation();
 	const pathname = usePathname();
 	const router = useRouter();
@@ -19,38 +20,68 @@ export default function TokenTabs({ token }: { token: IToken }) {
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
 
 	const tabs = [
-		{ value: "trades", label: t("token.tabs.trades"), icon: ChartCandlestick, path: BASE_URL },
-		{ value: "holders", label: t("token.tabs.holders"), icon: Users, path: `${BASE_URL}/holders` },
+		{
+			value: "trades",
+			label: t("token.tabs.trades"),
+			icon: ChartCandlestick,
+			path: BASE_URL,
+			disabled: false,
+		},
+		{
+			value: "holders",
+			label: t("token.tabs.holders"),
+			icon: Users,
+			path: `${BASE_URL}/holders`,
+			disabled: !holdersIndexed,
+			hint: !holdersIndexed ? (hasAggregateHolders ? "aggregate only" : "offline") : undefined,
+		},
 	];
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div className="flex items-center justify-between gap-3 px-1">
-				<div className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">token activity</div>
-				{!holdersIndexed && (
-					<div className="text-right text-[10px] text-[#52525b] font-mono uppercase tracking-wider">
-						{hasAggregateHolders ? "aggregate holders only" : "wallet leaderboard offline"}
+			{!compact && (
+				<div className="flex items-center justify-between gap-3 px-0.5">
+					<div className="flex items-center gap-1.5">
+						<Activity className="size-3 text-[#52525b]" />
+						<span className="text-[10px] text-[#52525b] font-mono uppercase tracking-wider">activity</span>
 					</div>
-				)}
-			</div>
+					{!holdersIndexed && (
+						<span className="text-right text-[10px] text-[#3f3f46] font-mono uppercase tracking-wider">
+							{hasAggregateHolders ? "aggregate holders only" : "wallet leaderboard offline"}
+						</span>
+					)}
+				</div>
+			)}
 			<Tabs value={currentTab}>
-				<TabsList className="grid w-full grid-cols-2 bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm p-1 gap-1 h-auto">
+				<TabsList
+					className={cn(
+						"grid w-full bg-[#0a0a0d] border border-white/[0.04] rounded-sm p-0.5 gap-0.5 h-auto",
+						tabs.length === 2 && "grid-cols-2",
+						tabs.length === 3 && "grid-cols-3",
+					)}
+				>
 					{tabs.map((tab) => {
-						const isUnavailableHoldersTab = tab.value === "holders" && !holdersIndexed;
-
 						return (
 							<TabsTrigger
 								key={tab.value}
 								value={tab.value}
 								filled={false}
-								className="inline-flex min-h-[42px] items-center justify-center gap-2 px-3 py-2.5 text-xs font-mono lowercase tracking-wider text-[#71717a] hover:text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] rounded-sm border border-transparent transition-all duration-200 data-[state=active]:text-[#00ff87] data-[state=active]:bg-[#00ff87]/8 data-[state=active]:border-[#00ff87]/20 data-[state=active]:shadow-none"
-								onClick={() => router.push(tab.path)}
+								disabled={tab.disabled}
+								className={cn(
+									"inline-flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-mono lowercase tracking-wider",
+									"text-[#52525b] rounded-sm border border-transparent transition-all duration-200",
+									"hover:text-[#a1a1aa] hover:bg-white/[0.02]",
+									"data-[state=active]:text-[#00ff87] data-[state=active]:bg-[#00ff87]/[0.06] data-[state=active]:border-[#00ff87]/15",
+									"disabled:opacity-40 disabled:cursor-not-allowed",
+									compact ? "min-h-[36px]" : "min-h-[40px]",
+								)}
+								onClick={() => !tab.disabled && router.push(tab.path)}
 							>
-								<tab.icon className="size-4 shrink-0" />
+								<tab.icon className="size-3.5 shrink-0" />
 								<span className="truncate">{tab.label}</span>
-								{isUnavailableHoldersTab && (
-									<span className="rounded-sm border border-[rgba(255,255,255,0.08)] px-1 py-0.5 text-[9px] leading-none text-[#71717a]">
-										unavailable
+								{tab.hint && (
+									<span className="rounded-sm border border-white/6 px-1 py-0.5 text-[9px] leading-none text-[#52525b]">
+										{tab.hint}
 									</span>
 								)}
 							</TabsTrigger>

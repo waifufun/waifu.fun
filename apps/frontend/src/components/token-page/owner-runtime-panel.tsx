@@ -19,28 +19,27 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 
-/* ── helpers ── */
 type ClaimState = NonNullable<IToken["ownerClaimStatus"]> | "unclaimed";
 
-const TONE: Record<string, string> = {
-	unclaimed: "border-white/10 bg-white/5 text-[#e4e4e7]",
-	claimed: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]",
-	verified: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]",
-	disputed: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-	none: "border-white/10 bg-white/5 text-[#e4e4e7]",
-	provisioning: "border-sky-500/30 bg-sky-500/10 text-sky-300",
-	running: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]",
-	suspended: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-	failed: "border-red-500/30 bg-red-500/10 text-red-300",
-	deleted: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
+const toneMap: Record<string, string> = {
+	unclaimed: "border-white/8 bg-white/[0.02] text-[#a1a1aa]",
+	claimed: "border-[#00ff87]/20 bg-[#00ff87]/[0.04] text-[#00ff87]",
+	verified: "border-[#00ff87]/20 bg-[#00ff87]/[0.04] text-[#00ff87]",
+	disputed: "border-amber-500/20 bg-amber-500/[0.04] text-amber-300",
+	none: "border-white/8 bg-white/[0.02] text-[#a1a1aa]",
+	provisioning: "border-sky-500/20 bg-sky-500/[0.04] text-sky-300",
+	running: "border-[#00ff87]/20 bg-[#00ff87]/[0.04] text-[#00ff87]",
+	suspended: "border-amber-500/20 bg-amber-500/[0.04] text-amber-300",
+	failed: "border-red-500/20 bg-red-500/[0.04] text-red-300",
+	deleted: "border-zinc-500/20 bg-zinc-500/[0.04] text-zinc-300",
 };
 
 function StatusPill({ label, tone }: { label: string; tone?: string | undefined }) {
 	return (
 		<span
 			className={cn(
-				"inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em]",
-				tone ?? TONE.none,
+				"inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.16em]",
+				tone ?? toneMap.none,
 			)}
 		>
 			{label}
@@ -91,7 +90,6 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 	const isClaimed = claimState === "claimed" || claimState === "verified";
 	const isConnectedCreator = isSameWalletAddress(connectedWallet, creatorAddress ?? null);
 
-	/* ── auth ── */
 	const authQuery = useQuery({ queryKey: authQK, queryFn: getAuthStatus, staleTime: 60_000, retry: false });
 
 	const authCreatorWallet = useMemo(() => {
@@ -110,7 +108,6 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		return () => window.clearTimeout(t);
 	}, [authQuery.refetch, canClaim, isConnectedCreator]);
 
-	/* ── runtime ── */
 	const rtQuery = useQuery({
 		queryKey: rtQK,
 		queryFn: () =>
@@ -136,7 +133,6 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		]);
 	};
 
-	/* ── mutations ── */
 	const claimMut = useMutation({
 		mutationFn: () =>
 			claimTokenOwnership({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
@@ -223,96 +219,90 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		runwayEstimate ? { key: "runway", value: runwayEstimate } : null,
 	].filter((row): row is { key: string; value: string } => Boolean(row));
 
-	/* ── render ── */
 	return (
-		<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 sm:p-4 transition-colors hover:border-[rgba(255,255,255,0.12)]">
+		<div className="rounded-sm border border-white/6 bg-[#111114]/60 p-4 transition-colors hover:border-white/8">
 			<div className="flex flex-col gap-3">
-				{/* header */}
+				{/* Header */}
 				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
-						<ShieldCheck className="size-4 text-[#00ff87]" />
-						<span className="text-[10px] font-mono uppercase tracking-wider text-[#71717a]">owner console</span>
+						<ShieldCheck className="size-3.5 text-[#00ff87]/70" />
+						<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b]">operator</span>
 					</div>
 					<Button
-						variant="outline"
+						variant="ghost"
 						size="sm"
-						onClick={() => {
-							void refreshAll();
-						}}
+						onClick={() => void refreshAll()}
 						disabled={anyPending}
-						className="h-7 px-2 text-[10px] font-mono uppercase text-[#a1a1aa] hover:text-[#00ff87]"
+						className="h-6 px-1.5 text-[10px] font-mono text-[#52525b] hover:text-[#a1a1aa]"
 					>
 						<RefreshCw className="size-3" />
-						refresh
 					</Button>
 				</div>
 
-				{/* claim section — single button if unclaimed */}
+				{/* Unclaimed state */}
 				{!isClaimed && (
-					<div className="flex items-center gap-2 flex-wrap rounded-sm border border-white/6 bg-[#0a0a0d] p-2.5">
-						<StatusPill label={claimState} tone={TONE[claimState]} />
+					<div className="flex items-center gap-2 flex-wrap">
+						<StatusPill label={claimState} tone={toneMap[claimState]} />
 						{creatorAddress && (
-							<span className="text-[10px] font-mono text-[#52525b]">{shortenAddress(creatorAddress)}</span>
+							<span className="text-[10px] font-mono text-[#3f3f46]">{shortenAddress(creatorAddress)}</span>
 						)}
 						{canClaim ? (
 							<Button
 								onClick={() => claimMut.mutate()}
 								disabled={claimMut.isPending || !creatorAddress}
-								className="ml-auto h-7 px-3 text-[10px] font-mono uppercase"
+								className="ml-auto h-6 px-2 text-[10px] font-mono uppercase"
 							>
 								{claimMut.isPending ? (
 									<LoaderCircle className="size-3 animate-spin" />
 								) : (
 									<CheckCircle2 className="size-3" />
 								)}
-								claim owner access
+								claim
 							</Button>
 						) : (
-							<span className="ml-auto text-[10px] text-[#52525b] font-mono">
+							<span className="ml-auto text-[10px] text-[#3f3f46] font-mono">
 								{authQuery.isLoading
-									? "checking auth…"
+									? "checking..."
 									: isConnectedCreator
-										? "finish wallet auth to claim"
+										? "finish auth to claim"
 										: "connect creator wallet"}
 							</span>
 						)}
 					</div>
 				)}
 
-				{/* runtime — only after claimed */}
+				{/* Claimed state */}
 				{isClaimed && (
 					<>
-						{/* status + reserve row */}
 						<div className="flex items-center gap-2 flex-wrap">
-							<StatusPill label={runtimeStatus.replace(/_/g, " ")} tone={TONE[runtimeStatus]} />
+							<StatusPill label={runtimeStatus.replace(/_/g, " ")} tone={toneMap[runtimeStatus]} />
 							{typeof reserveUsd === "number" && !Number.isNaN(reserveUsd) && (
-								<span className="text-[10px] font-mono text-[#52525b]">reserve: {formatNumber(reserveUsd, true)}</span>
+								<span className="text-[10px] font-mono text-[#52525b]">{formatNumber(reserveUsd, true)}</span>
 							)}
 						</div>
 
-						{/* loading/error */}
 						{rtQuery.isLoading && (
-							<div className="flex items-center gap-2 text-xs text-[#71717a]">
-								<LoaderCircle className="size-3.5 animate-spin text-[#00ff87]" />
-								<span className="font-mono text-[10px] uppercase">loading runtime…</span>
+							<div className="flex items-center gap-2 text-[10px] text-[#52525b]">
+								<LoaderCircle className="size-3 animate-spin text-[#00ff87]/60" />
+								<span className="font-mono uppercase">loading...</span>
 							</div>
 						)}
+
 						{rtQuery.error && (
-							<div className="flex items-center gap-2 text-xs text-red-300">
-								<AlertCircle className="size-3.5" />
+							<div className="flex items-center gap-2 text-[10px] text-red-300/80">
+								<AlertCircle className="size-3" />
 								<span>{fmtErr(rtQuery.error)}</span>
 							</div>
 						)}
 
-						{/* action row */}
 						{!rtQuery.isLoading && !rtQuery.error && (
 							<>
-								<div className="flex items-center gap-2 flex-wrap">
+								<div className="flex items-center gap-1.5 flex-wrap">
 									{(runtimeStatus === "none" || runtimeStatus === "failed" || runtimeStatus === "deleted") && (
 										<Button
 											onClick={() => activateMut.mutate()}
 											disabled={activateMut.isPending}
-											className="h-7 px-3 text-[10px] font-mono uppercase"
+											className="h-6 px-2 text-[10px] font-mono uppercase"
 										>
 											{activateMut.isPending ? (
 												<LoaderCircle className="size-3 animate-spin" />
@@ -327,21 +317,21 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 											variant="outline"
 											onClick={() => suspendMut.mutate()}
 											disabled={suspendMut.isPending}
-											className="h-7 px-3 text-[10px] font-mono uppercase text-amber-300 hover:text-amber-200"
+											className="h-6 px-2 text-[10px] font-mono uppercase text-amber-300/80 hover:text-amber-200 border-amber-500/15"
 										>
 											{suspendMut.isPending ? (
 												<LoaderCircle className="size-3 animate-spin" />
 											) : (
 												<PauseCircle className="size-3" />
 											)}
-											suspend
+											pause
 										</Button>
 									)}
 									{runtimeStatus === "suspended" && (
 										<Button
 											onClick={() => resumeMut.mutate()}
 											disabled={resumeMut.isPending}
-											className="h-7 px-3 text-[10px] font-mono uppercase"
+											className="h-6 px-2 text-[10px] font-mono uppercase"
 										>
 											{resumeMut.isPending ? (
 												<LoaderCircle className="size-3 animate-spin" />
@@ -352,25 +342,21 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 										</Button>
 									)}
 									{runtimeStatus === "provisioning" && (
-										<span className="flex items-center gap-1.5 text-[10px] font-mono text-sky-300">
+										<span className="flex items-center gap-1 text-[10px] font-mono text-sky-300/80">
 											<LoaderCircle className="size-3 animate-spin" />
-											provisioning…
+											provisioning
 										</span>
 									)}
-
-									<span className="ml-auto text-[10px] font-mono text-[#3f3f46]">
-										billing: {(runtime?.billingMode ?? token.billingMode ?? "not configured").replace(/_/g, " ")}
-									</span>
 								</div>
 
 								{economicsRows.length > 0 && (
-									<div className="grid gap-2 sm:grid-cols-2">
+									<div className="grid gap-x-4 gap-y-1 sm:grid-cols-2 pt-1 border-t border-white/[0.03]">
 										{economicsRows.map((row) => (
-											<div key={row.key} className="rounded-sm border border-white/6 bg-[#0a0a0d] px-3 py-2.5">
-												<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b]">
+											<div key={row.key} className="flex items-baseline justify-between gap-2 py-1">
+												<span className="text-[10px] font-mono uppercase tracking-wider text-[#3f3f46]">
 													{row.key}
-												</div>
-												<div className="mt-1 text-sm font-mono text-[#f4f4f5]">{row.value}</div>
+												</span>
+												<span className="text-[11px] font-mono text-[#a1a1aa]">{row.value}</span>
 											</div>
 										))}
 									</div>

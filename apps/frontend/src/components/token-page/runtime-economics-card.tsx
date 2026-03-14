@@ -1,8 +1,9 @@
 "use client";
 
-import { formatNumber, fromNow } from "@/lib/utils";
+import { cn, formatNumber, fromNow } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
-import { Activity, Banknote, ShieldCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { Banknote, Clock, Gauge, Zap } from "lucide-react";
 
 type RuntimeStatus = NonNullable<IToken["agentStatus"]>;
 type ClaimStatus = NonNullable<IToken["ownerClaimStatus"]>;
@@ -11,39 +12,6 @@ type BillingMode = NonNullable<IToken["billingMode"]>;
 type RuntimeToken = IToken & {
 	lastHeartbeatAt?: string | Date | null;
 };
-
-function Section({
-	label,
-	icon: Icon,
-	rows,
-}: {
-	label: string;
-	icon: typeof Activity;
-	rows: Array<{ key: string; value: string }>;
-}) {
-	if (!rows.length) return null;
-
-	return (
-		<section className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-3 py-3">
-			<div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">
-				<Icon className="size-3 text-[#52525b]" />
-				<span>{label}</span>
-			</div>
-
-			<div className="mt-3 space-y-2">
-				{rows.map((row) => (
-					<div
-						key={row.key}
-						className="flex items-baseline justify-between gap-3 border-b border-white/5 pb-2 last:border-b-0 last:pb-0"
-					>
-						<span className="text-[11px] uppercase tracking-[0.14em] text-[#71717a]">{row.key}</span>
-						<span className="text-right text-sm font-mono text-[#f4f4f5]">{row.value}</span>
-					</div>
-				))}
-			</div>
-		</section>
-	);
-}
 
 function formatRuntimeStatus(status: RuntimeStatus) {
 	return status.replace(/_/g, " ");
@@ -69,79 +37,107 @@ function formatFundingMode(mode: BillingMode) {
 		case "owner_credits":
 			return "creator-funded";
 		case "waifu_treasury_subsidy":
-			return "platform-subsidized";
+			return "platform";
 		case "hybrid":
 			return "shared";
 	}
 }
 
-function getOperationalRows(token: RuntimeToken) {
-	const rows: Array<{ key: string; value: string }> = [];
-
-	if (token.agentStatus) {
-		rows.push({ key: "status", value: formatRuntimeStatus(token.agentStatus) });
-	}
-
-	if (token.lastHeartbeatAt) {
-		rows.push({ key: "heartbeat", value: fromNow(token.lastHeartbeatAt) });
-	}
-
-	if (token.ownerClaimStatus) {
-		rows.push({ key: "claim", value: formatClaimStatus(token.ownerClaimStatus) });
-	}
-
-	if (token.reviveAt) {
-		rows.push({ key: "resumed", value: new Date(token.reviveAt).toLocaleString("en-US") });
-	} else if (token.suspendAt) {
-		rows.push({ key: "suspended", value: new Date(token.suspendAt).toLocaleString("en-US") });
-	}
-
-	return rows;
-}
-
-function getFundingRows(token: IToken) {
-	const rows: Array<{ key: string; value: string }> = [];
-
-	if (typeof token.infraReserveUsd === "number" && Number.isFinite(token.infraReserveUsd)) {
-		rows.push({ key: "reserve", value: formatNumber(token.infraReserveUsd, true) });
-	}
-
-	if (token.billingMode) {
-		rows.push({ key: "funding", value: formatFundingMode(token.billingMode) });
-	}
-
-	return rows;
+function MetricTile({
+	label,
+	value,
+	icon: Icon,
+	muted = false,
+}: {
+	label: string;
+	value: string;
+	icon: typeof Zap;
+	muted?: boolean;
+}) {
+	return (
+		<div className={cn("flex items-center gap-2.5 py-2", muted && "opacity-50")}>
+			<Icon className="size-3.5 text-[#52525b] shrink-0" />
+			<div className="flex items-baseline gap-1.5 min-w-0 flex-1">
+				<span className="text-[10px] font-mono uppercase tracking-wider text-[#52525b] shrink-0">{label}</span>
+				<span className="text-xs font-mono text-[#e4e4e7] truncate">{value}</span>
+			</div>
+		</div>
+	);
 }
 
 export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 	const runtimeToken = token as RuntimeToken;
-	const operationalRows = getOperationalRows(runtimeToken);
-	const fundingRows = getFundingRows(token);
-	const hasData = operationalRows.length > 0 || fundingRows.length > 0;
+
+	// Collect available metrics
+	const metrics: Array<{ label: string; value: string; icon: typeof Zap; muted?: boolean }> = [];
+
+	// Runtime status
+	if (token.agentStatus) {
+		metrics.push({
+			label: "runtime",
+			value: formatRuntimeStatus(token.agentStatus),
+			icon: Gauge,
+		});
+	}
+
+	// Heartbeat
+	if (runtimeToken.lastHeartbeatAt) {
+		metrics.push({
+			label: "heartbeat",
+			value: fromNow(runtimeToken.lastHeartbeatAt),
+			icon: Clock,
+		});
+	}
+
+	// Claim status
+	if (token.ownerClaimStatus) {
+		metrics.push({
+			label: "ownership",
+			value: formatClaimStatus(token.ownerClaimStatus),
+			icon: Zap,
+		});
+	}
+
+	// Funding
+	if (token.billingMode) {
+		metrics.push({
+			label: "funding",
+			value: formatFundingMode(token.billingMode),
+			icon: Banknote,
+		});
+	}
+
+	// Reserve (if present)
+	if (typeof token.infraReserveUsd === "number" && Number.isFinite(token.infraReserveUsd)) {
+		metrics.push({
+			label: "reserve",
+			value: formatNumber(token.infraReserveUsd, true),
+			icon: Banknote,
+		});
+	}
+
+	// Nothing to show
+	if (metrics.length === 0) {
+		return null;
+	}
 
 	return (
-		<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 sm:p-5">
-			<div>
-				<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#71717a]">economics</p>
-				<h3 className="mt-1 text-sm font-semibold lowercase tracking-wide text-[#f4f4f5]">runtime economics</h3>
+		<motion.div
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ delay: 0.16, duration: 0.3 }}
+			className="rounded-sm border border-white/6 bg-[#111114]/60 p-4"
+		>
+			<div className="flex items-center gap-2 mb-2">
+				<Gauge className="size-3.5 text-[#00ff87]/60" />
+				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b]">runtime</span>
 			</div>
 
-			{hasData ? (
-				<div className="mt-4 grid gap-2 sm:grid-cols-2">
-					<Section label="runtime status" icon={Activity} rows={operationalRows} />
-					<Section label="funding" icon={Banknote} rows={fundingRows} />
-				</div>
-			) : (
-				<div className="mt-4 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-3 py-3">
-					<div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">
-						<ShieldCheck className="size-3 text-[#52525b]" />
-						<span>runtime status</span>
-					</div>
-					<p className="mt-2 text-xs leading-relaxed text-[#71717a]">
-						No public runtime economics data is exposed on this token yet.
-					</p>
-				</div>
-			)}
-		</div>
+			<div className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3 divide-y divide-white/[0.03] sm:divide-y-0">
+				{metrics.map((metric) => (
+					<MetricTile key={metric.label} {...metric} />
+				))}
+			</div>
+		</motion.div>
 	);
 }

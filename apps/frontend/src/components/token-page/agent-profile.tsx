@@ -1,12 +1,11 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
-import { hasAggregateHolderCount, isHolderDataIndexed } from "@/components/token-page/holder-data-state";
 import Verified from "@/components/verified";
-import { abbreviateNumber, cn, formatNumberSubscript, shortenAddress } from "@/lib/utils";
+import { cn, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
-import { BarChart2, DollarSign, TrendingUp, Users } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -160,23 +159,6 @@ export function deriveAgentLifecycleStatus(token: IToken): AgentLifecycleStatus 
 	};
 }
 
-function LiveDot() {
-	return (
-		<span className="relative flex h-2 w-2">
-			<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00ff87] opacity-75" />
-			<span className="relative inline-flex rounded-full h-2 w-2 bg-[#00ff87] shadow-[0_0_8px_rgba(0,255,135,0.6)]" />
-		</span>
-	);
-}
-
-const statusClassMap: Record<AgentLifecycleState, string> = {
-	bonding: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
-	active: "bg-[#00ff87]/15 text-[#00ff87] border border-[#00ff87]/30",
-	dormant: "bg-zinc-500/15 text-zinc-300 border border-zinc-500/30",
-	imported: "bg-sky-500/15 text-[#60a5fa] border border-sky-500/30",
-	migrated: "bg-violet-500/15 text-violet-300 border border-violet-500/30",
-};
-
 export type AgentDisplayStatus = "alive" | "asleep" | "dead";
 
 export function getAgentDisplayStatus(token: IToken, status: AgentLifecycleStatus): AgentDisplayStatus {
@@ -191,18 +173,22 @@ export function getAgentDisplayStatus(token: IToken, status: AgentLifecycleStatu
 	return "asleep";
 }
 
-const displayStatusClass: Record<AgentDisplayStatus, string> = {
-	alive: "bg-[#00ff87]/15 text-[#00ff87] border-[#00ff87]/40",
-	asleep: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
-	dead: "bg-red-500/15 text-red-400 border-red-500/40",
+const displayStatusConfig: Record<AgentDisplayStatus, { className: string; pulse: boolean }> = {
+	alive: { className: "bg-[#00ff87] shadow-[0_0_12px_rgba(0,255,135,0.4)]", pulse: true },
+	asleep: { className: "bg-zinc-500", pulse: false },
+	dead: { className: "bg-red-500/60", pulse: false },
 };
 
-const statIcons = { price: DollarSign, "mkt cap": TrendingUp, "24h vol": BarChart2, holders: Users };
+const socialsConfig = [
+	{ key: "website", icon: "/socials/website.svg" },
+	{ key: "twitter", icon: "/socials/twitter.svg" },
+	{ key: "telegram", icon: "/socials/telegram.svg" },
+	{ key: "discord", icon: "/socials/discord.svg" },
+] as const;
 
 export default function AgentProfile({
 	token,
 	status,
-	marketDataSource,
 	headerAccessory,
 }: {
 	token: IToken;
@@ -210,193 +196,157 @@ export default function AgentProfile({
 	marketDataSource?: "dexscreener" | null;
 	headerAccessory?: ReactNode;
 }) {
-	const hasLiveExternalMarketData = marketDataSource === "dexscreener";
-	const holdersIndexed = isHolderDataIndexed(token);
-	const hasAggregateHolders = hasAggregateHolderCount(token);
-	const stats: { label: string; value: string; live?: boolean; helper: string }[] = [
-		{
-			label: "price",
-			value: formatNumberSubscript(token?.price),
-			live: hasLiveExternalMarketData || !status.isExternalMarket,
-			helper: hasLiveExternalMarketData || !status.isExternalMarket ? "current feed" : "waiting on live feed",
-		},
-		{
-			label: "mkt cap",
-			value: token?.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—",
-			live: hasLiveExternalMarketData || !status.isExternalMarket,
-			helper: "fully diluted estimate",
-		},
-		{
-			label: "24h vol",
-			value: token?.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—",
-			live: hasLiveExternalMarketData,
-			helper: hasLiveExternalMarketData ? "external market flow" : "not live on this feed",
-		},
-		{
-			label: "holders",
-			value: hasAggregateHolders ? abbreviateNumber(token.holders, true) : "—",
-			helper: holdersIndexed
-				? "wallet leaderboard ready"
-				: hasAggregateHolders
-					? "aggregate total only"
-					: "not exposed",
-		},
-	];
-	const quickFacts = [
-		{
-			label: "created by",
-			value: token?.creator ? shortenAddress(token.creator) : "—",
-			copyValue: token.creator,
-		},
-		{
-			label: "market mode",
-			value: status.isExternalMarket ? "external pool" : "waifu.fun bonding",
-		},
-		{
-			label: "coverage",
-			value: hasLiveExternalMarketData || !status.isExternalMarket ? "live pricing" : "indexed fallback",
-		},
-	];
-
-	const socialsWithLinks = [
-		{ title: "website", href: token?.socials?.website, icon: "/socials/website.svg" },
-		{ title: "twitter", href: token?.socials?.twitter, icon: "/socials/twitter.svg" },
-		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
-		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
-	].filter((s): s is typeof s & { href: string } => Boolean(s.href));
-
-	const statusClass = statusClassMap[status.state];
 	const displayStatus = getAgentDisplayStatus(token, status);
+	const statusConfig = displayStatusConfig[displayStatus];
+	const isLive = status.state === "active" || (status.isExternalMarket && status.hasRecentActivity);
+
+	const socialsWithLinks = socialsConfig
+		.map((s) => ({
+			...s,
+			href: token?.socials?.[s.key as keyof typeof token.socials] as string | undefined,
+		}))
+		.filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
 	return (
-		<div className="relative overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 sm:p-5 md:p-6">
-			<div className="absolute -top-20 -left-20 w-40 h-40 bg-[#00ff87]/5 blur-3xl rounded-full pointer-events-none" />
-			<div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[#c084fc]/5 blur-3xl rounded-full pointer-events-none" />
+		<div className="relative">
+			{/* Ambient glow behind the card */}
+			<div className="absolute -inset-4 bg-gradient-to-br from-[#00ff87]/[0.02] via-transparent to-[#c084fc]/[0.02] blur-2xl pointer-events-none" />
 
-			{/* Top-right status: alive / asleep / dead */}
-			<div
-				className={cn(
-					"absolute top-3 right-3 sm:top-4 sm:right-4 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-sm border text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0",
-					displayStatusClass[displayStatus],
-				)}
-				aria-label={`Agent status: ${displayStatus}`}
+			<motion.div
+				initial={{ opacity: 0, y: 12 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+				className="relative"
 			>
-				{displayStatus}
-			</div>
-
-			<div className="relative flex min-w-0 flex-col gap-4 sm:gap-5 md:gap-6 lg:flex-row">
-				<motion.div
-					className="relative mx-auto flex-shrink-0 self-start sm:mx-0"
-					whileHover={{ scale: 1.03 }}
-					transition={{ type: "spring", stiffness: 300 }}
-				>
-					<div className="absolute inset-0 bg-gradient-to-br from-[#00ff87]/20 via-transparent to-[#c084fc]/10 blur-xl rounded-sm scale-110 opacity-60" />
-					<div className="relative h-[104px] w-[104px] overflow-hidden rounded-sm border border-[#00ff87]/30 transition-all duration-300 hover:border-[#00ff87]/60 hover:shadow-[0_0_30px_rgba(0,255,135,0.2)] sm:h-[136px] sm:w-[136px] md:h-[164px] md:w-[164px]">
-						<Image src={token.image} fill unoptimized alt={token.name} className="object-cover object-top" />
-						<div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/40 via-transparent to-transparent" />
-					</div>
-				</motion.div>
-
-				<div className="flex min-w-0 flex-1 flex-col gap-3 pr-14 sm:pr-16">
-					<div className="flex flex-col gap-2">
-						<div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-							<Verified isVerified={token?.verified} />
-							<h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#e4e4e7] lowercase tracking-wide leading-tight break-words min-w-0">
-								{token.name}
-							</h1>
-							{(status.state === "active" || (status.isExternalMarket && status.hasRecentActivity)) && <LiveDot />}
-							<span className="text-lg md:text-xl text-[#00ff87] font-mono font-semibold">${token.ticker}</span>
-							<span
-								className={cn("px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider", statusClass)}
-							>
-								{status.label}
-							</span>
-						</div>
-
-						<p className="max-w-2xl text-[11px] font-mono uppercase tracking-[0.16em] text-[#71717a]">
-							agent workspace first. market context stays visible but secondary.
-						</p>
-						{headerAccessory && <div className="flex flex-wrap items-center gap-2">{headerAccessory}</div>}
-					</div>
-
-					{token.description && (
-						<p className="max-w-3xl min-w-0 text-xs leading-relaxed text-[#a1a1aa] sm:text-sm">{token.description}</p>
-					)}
-
-					<div className="grid gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-						<div className="grid gap-2 sm:grid-cols-3">
-							{quickFacts.map((fact) => (
-								<div
-									key={fact.label}
-									className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-3 py-2"
-								>
-									<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">{fact.label}</div>
-									<div className="mt-1 flex items-center gap-1.5 text-[11px] font-mono text-[#e4e4e7]">
-										{fact.copyValue && token?.creator ? (
-											<Link
-												href={`/profile/${token.creator}`}
-												className="truncate hover:text-[#00ff87] transition-colors"
-											>
-												{fact.value}
-											</Link>
-										) : (
-											<span className="truncate">{fact.value}</span>
-										)}
-										{fact.copyValue ? <CopyButton textToCopy={fact.copyValue} /> : null}
+				{/* Main hero container */}
+				<div className="grid gap-6 lg:grid-cols-[auto_1fr] lg:gap-8">
+					{/* Agent portrait - gallery style */}
+					<div className="relative mx-auto lg:mx-0">
+						<motion.div
+							className="relative"
+							whileHover={{ scale: 1.02 }}
+							transition={{ type: "spring", stiffness: 400, damping: 25 }}
+						>
+							{/* Portrait frame */}
+							<div className="relative h-[200px] w-[200px] sm:h-[240px] sm:w-[240px] lg:h-[280px] lg:w-[280px] overflow-hidden rounded-sm">
+								{/* Subtle gradient border effect */}
+								<div className="absolute inset-0 rounded-sm bg-gradient-to-br from-[#00ff87]/20 via-transparent to-[#c084fc]/10 p-px">
+									<div className="h-full w-full rounded-sm bg-[#08080a] overflow-hidden">
+										<Image
+											src={token.image}
+											fill
+											unoptimized
+											alt={token.name}
+											className="object-cover object-top"
+											priority
+										/>
+										{/* Vignette overlay */}
+										<div className="absolute inset-0 bg-gradient-to-t from-[#08080a]/60 via-transparent to-transparent" />
 									</div>
 								</div>
-							))}
+
+								{/* Status indicator - positioned at bottom right */}
+								<div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-sm bg-[#08080a]/80 backdrop-blur-sm px-2.5 py-1.5 border border-white/5">
+									<span className="relative flex h-2.5 w-2.5">
+										{statusConfig.pulse && (
+											<span
+												className={cn(
+													"absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping",
+													statusConfig.className,
+												)}
+											/>
+										)}
+										<span className={cn("relative inline-flex h-2.5 w-2.5 rounded-full", statusConfig.className)} />
+									</span>
+									<span className="text-[10px] font-mono uppercase tracking-wider text-[#e4e4e7]">{displayStatus}</span>
+								</div>
+							</div>
+						</motion.div>
+					</div>
+
+					{/* Identity and meta */}
+					<div className="flex flex-col gap-4 min-w-0">
+						{/* Name row */}
+						<div className="flex flex-col gap-2">
+							<div className="flex items-start gap-3 flex-wrap">
+								<div className="flex items-center gap-2 min-w-0">
+									<Verified isVerified={token?.verified} />
+									<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#f4f4f5] lowercase tracking-tight leading-none break-words">
+										{token.name}
+									</h1>
+								</div>
+								<div className="flex items-center gap-2">
+									<span className="text-lg sm:text-xl lg:text-2xl text-[#00ff87] font-mono font-semibold">
+										${token.ticker}
+									</span>
+									{isLive && (
+										<span className="h-1.5 w-1.5 rounded-full bg-[#00ff87] animate-pulse shadow-[0_0_6px_rgba(0,255,135,0.5)]" />
+									)}
+								</div>
+							</div>
+
+							{/* Tagline / description */}
+							{token.description && (
+								<p className="max-w-2xl text-sm leading-relaxed text-[#a1a1aa] mt-1">{token.description}</p>
+							)}
 						</div>
 
-						{socialsWithLinks.length > 0 ? (
-							<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-3 py-2">
-								<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#71717a]">linked socials</div>
-								<div className="mt-2 flex flex-wrap items-center gap-2">
+						{/* Creator and socials row */}
+						<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px]">
+							{token?.creator && (
+								<div className="flex items-center gap-1.5">
+									<span className="font-mono uppercase tracking-wider text-[#52525b]">by</span>
+									<Link
+										href={`/profile/${token.creator}`}
+										className="font-mono text-[#a1a1aa] hover:text-[#00ff87] transition-colors"
+									>
+										{shortenAddress(token.creator)}
+									</Link>
+									<CopyButton textToCopy={token.creator} />
+								</div>
+							)}
+
+							{socialsWithLinks.length > 0 && (
+								<div className="flex items-center gap-2">
 									{socialsWithLinks.map((social) => (
-										<Link key={social.title} href={social.href} target="_blank" rel="noopener noreferrer">
+										<Link
+											key={social.key}
+											href={social.href}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="flex h-7 w-7 items-center justify-center rounded-sm border border-white/6 bg-white/[0.02] opacity-60 transition-all duration-200 hover:border-[#00ff87]/30 hover:bg-[#00ff87]/5 hover:opacity-100"
+										>
 											<Image
 												src={social.icon}
-												className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-1.5 opacity-60 transition-all duration-200 hover:border-[#00ff87] hover:bg-[#00ff87]/10 hover:opacity-100 hover:shadow-[0_0_12px_rgba(0,255,135,0.15)]"
 												unoptimized
-												width={24}
-												height={24}
-												alt={social.title}
+												width={14}
+												height={14}
+												alt={social.key}
+												className="opacity-80"
 											/>
 										</Link>
 									))}
 								</div>
-							</div>
-						) : null}
-					</div>
+							)}
 
-					<div
-						className="relative -mx-1 mt-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 pb-1 scrollbar-hide md:grid md:grid-cols-4 md:overflow-visible"
-						style={{ WebkitOverflowScrolling: "touch" }}
-					>
-						{stats.map((stat) => {
-							const Icon = statIcons[stat.label as keyof typeof statIcons];
-							return (
-								<div
-									key={stat.label}
-									className="relative flex min-w-[132px] flex-shrink-0 flex-col gap-0.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#08080a] px-2.5 py-2 transition-colors hover:border-[rgba(255,255,255,0.12)] md:min-w-0"
+							{token?.contractAddress && (
+								<Link
+									href={`https://basescan.org/address/${token.contractAddress}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-1 font-mono text-[#52525b] hover:text-[#a1a1aa] transition-colors"
 								>
-									<span className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider inline-flex items-center gap-1">
-										{stat.live && <span className="h-1 w-1 rounded-full bg-[#00ff87] animate-pulse" />}
-										{stat.label}
-									</span>
-									<span className="text-sm text-[#e4e4e7] font-mono font-medium inline-flex items-center gap-1">
-										{Icon && <Icon className="size-3 text-[#00ff87]/60" />}
-										{stat.value}
-									</span>
-									<span className="mt-1 text-[10px] font-mono uppercase tracking-[0.14em] text-[#71717a]">
-										{stat.helper}
-									</span>
-								</div>
-							);
-						})}
+									<span>{shortenAddress(token.contractAddress)}</span>
+									<ExternalLink className="size-3" />
+								</Link>
+							)}
+						</div>
+
+						{/* View mode toggle - placed here in the identity area */}
+						{headerAccessory && <div className="mt-auto pt-2">{headerAccessory}</div>}
 					</div>
 				</div>
-			</div>
+			</motion.div>
 		</div>
 	);
 }
