@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
+import { getExplorerAddressUrl } from "@/lib/explorer";
 import Verified from "@/components/verified";
 import { cn, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
@@ -331,7 +332,7 @@ export default function AgentProfile({
 
 							{token?.contractAddress && (
 								<Link
-									href={`https://basescan.org/address/${token.contractAddress}`}
+									href={getExplorerAddressUrl(token.contractAddress, token.chainId)}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="flex items-center gap-1 font-mono text-[#52525b] hover:text-[#a1a1aa] transition-colors"

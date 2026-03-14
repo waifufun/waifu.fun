@@ -24,7 +24,8 @@ import { useQuery } from "@tanstack/react-query";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import { motion } from "framer-motion";
 import { BarChart3 } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import UpdateSocialsModal from "./UpdateSocialsModal";
 
 function SectionLabel({ children }: { children: string }) {
@@ -50,6 +51,9 @@ export default function PageClient({
 	tokenParams,
 	children,
 }: { initialData: IToken; children: ReactNode; tokenParams: ITokenLookUp }) {
+	const pathname = usePathname();
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const query = useQuery({
 		queryKey: ["token", initialData.chain, initialData.chainId, initialData.contractAddress],
 		queryFn: async () => {
@@ -77,7 +81,8 @@ export default function PageClient({
 		return false;
 	}, [currentAddress, token?.creator]);
 	const [selectedTimeframe, setSelectedTimeframe] = useState<ChartTimeframe>("1d");
-	const [viewMode, setViewMode] = useState<TokenDetailViewMode>("agent");
+	const searchParamViewMode: TokenDetailViewMode = searchParams.get("view") === "market" ? "market" : "agent";
+	const [viewMode, setViewMode] = useState<TokenDetailViewMode>(searchParamViewMode);
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 	const isPriceUp = true;
 	const chartSourceLabel = agentStatus.isExternalMarket
@@ -85,6 +90,24 @@ export default function PageClient({
 			? "live external market"
 			: "indexed fallback"
 		: "waifu.fun market";
+
+	useEffect(() => {
+		setViewMode(searchParamViewMode);
+	}, [searchParamViewMode]);
+
+	const handleViewModeChange = (nextViewMode: TokenDetailViewMode) => {
+		setViewMode(nextViewMode);
+
+		const nextSearchParams = new URLSearchParams(searchParams.toString());
+		if (nextViewMode === "market") {
+			nextSearchParams.set("view", "market");
+		} else {
+			nextSearchParams.delete("view");
+		}
+
+		const nextQuery = nextSearchParams.toString();
+		router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+	};
 
 	return (
 		<div className="mx-auto mt-4 flex w-full max-w-[1400px] min-w-0 flex-col gap-6 overflow-x-hidden px-4 pb-8 sm:px-6 md:px-8">
@@ -97,7 +120,7 @@ export default function PageClient({
 						token={displayToken}
 						status={agentStatus}
 						marketDataSource={marketDataSource}
-						headerAccessory={<ViewModeToggle value={viewMode} onChange={setViewMode} />}
+						headerAccessory={<ViewModeToggle value={viewMode} onChange={handleViewModeChange} />}
 					/>
 
 					{/* Market Ribbon - compact secondary metrics */}
@@ -205,7 +228,7 @@ export default function PageClient({
 						token={displayToken}
 						status={agentStatus}
 						marketDataSource={marketDataSource}
-						headerAccessory={<ViewModeToggle value={viewMode} onChange={setViewMode} />}
+						headerAccessory={<ViewModeToggle value={viewMode} onChange={handleViewModeChange} />}
 					/>
 
 					<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.95fr)]">

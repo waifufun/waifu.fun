@@ -7,6 +7,7 @@ import { EvmChainIds, type IToken } from "@waifufun/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
 import { useTranslation } from "@/contexts/locale-context";
+import { EXPLORER_BY_CHAIN_ID, getExplorerTxUrl, resolveEvmChainId } from "@/lib/explorer";
 import { DEFAULT_EVM_CHAIN_ID } from "@/providers/evm-provider";
 
 export interface PendingTransaction {
@@ -34,33 +35,12 @@ interface TransactionListenerContextType {
 
 const TransactionListenerContext = createContext<TransactionListenerContextType | undefined>(undefined);
 
-const EXPLORER_BY_CHAIN_ID: Record<EvmChainIds, string> = {
-	[EvmChainIds.BscMainnet]: "https://bscscan.com",
-	[EvmChainIds.BaseMainnet]: "https://basescan.org",
-	[EvmChainIds.BaseSepolia]: "https://sepolia.basescan.org",
-	[EvmChainIds.EthereumMainnet]: "https://etherscan.io",
-	[EvmChainIds.EthereumSepolia]: "https://sepolia.etherscan.io",
-};
-
 const NATIVE_SYMBOL_BY_CHAIN_ID: Record<EvmChainIds, string> = {
 	[EvmChainIds.BscMainnet]: "BNB",
 	[EvmChainIds.BaseMainnet]: "ETH",
 	[EvmChainIds.BaseSepolia]: "ETH",
 	[EvmChainIds.EthereumMainnet]: "ETH",
 	[EvmChainIds.EthereumSepolia]: "ETH",
-};
-
-const resolveEvmChainId = (chainId?: number): EvmChainIds => {
-	if (chainId && chainId in EXPLORER_BY_CHAIN_ID) {
-		return chainId as EvmChainIds;
-	}
-
-	return DEFAULT_EVM_CHAIN_ID;
-};
-
-const getExplorerTxUrl = (hash: string, chainId?: number) => {
-	const explorerBaseUrl = EXPLORER_BY_CHAIN_ID[resolveEvmChainId(chainId)] || EXPLORER_BY_CHAIN_ID[DEFAULT_EVM_CHAIN_ID];
-	return `${explorerBaseUrl}/tx/${hash}`;
 };
 
 const getNativeSymbol = (chainId?: number) => {

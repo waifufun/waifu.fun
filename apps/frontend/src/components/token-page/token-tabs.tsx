@@ -15,6 +15,7 @@ export default function TokenTabs({ token, compact = false }: { token: IToken; c
 	const router = useRouter();
 	const holdersIndexed = isHolderDataIndexed(token);
 	const hasAggregateHolders = hasAggregateHolderCount(token);
+	const holdersTabAvailable = holdersIndexed || hasAggregateHolders;
 	const BASE_URL = `/token/${token.chain}/${token.chainId}/${token.contractAddress}`;
 	const splitted = pathname?.split("/") || [];
 	const currentTab = !splitted || splitted.length < 6 ? "trades" : splitted[splitted.length - 1] || "trades";
@@ -32,7 +33,7 @@ export default function TokenTabs({ token, compact = false }: { token: IToken; c
 			label: t("token.tabs.holders"),
 			icon: Users,
 			path: `${BASE_URL}/holders`,
-			disabled: !holdersIndexed,
+			disabled: !holdersTabAvailable,
 			hint: !holdersIndexed ? (hasAggregateHolders ? "aggregate only" : "offline") : undefined,
 		},
 	];
