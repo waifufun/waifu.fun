@@ -1,13 +1,20 @@
 "use client";
+import dynamic from "next/dynamic";
 import { ProgressProvider } from "@bprogress/next/app";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { EvmProvider } from "@/providers/evm-provider";
 import { AnimationProvider } from "@/providers/animation-context";
 import { Suspense } from "react";
 import { TransactionListenerProvider } from "@/providers/transaction-listener";
 import { LocaleProvider } from "@/contexts/locale-context";
+
+// Dynamic import prevents idb-keyval (via @wagmi/connectors → @base-org/account)
+// from accessing `indexedDB` during SSR/static generation
+const EvmProvider = dynamic(
+	() => import("@/providers/evm-provider").then((mod) => mod.EvmProvider),
+	{ ssr: false },
+);
 
 const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
