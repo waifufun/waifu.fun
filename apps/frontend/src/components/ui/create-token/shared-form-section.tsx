@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/create-token/textarea";
@@ -8,9 +8,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/create-token/slider";
 import { FormSection } from "./form-section";
 import { DeployButton } from "./deploy-button";
-import { DeployAgentModal } from "./deploy-agent-modal";
 import { DeployTerminal, type DeployStage } from "./deploy-terminal";
-import { DeploySuccess } from "./deploy-success";
+import { DeploySuccess, type ProvisioningUiState } from "./deploy-success";
 import { cn } from "@/lib/utils";
 import {
 	usePrompt,
@@ -21,7 +20,13 @@ import {
 } from "@/components/hooks/providers/usePromptContext";
 import { AlertTriangle, Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { createToken } from "@/lib/api";
+import {
+	createToken,
+	provisionAgent,
+	getProvisioningStatus,
+	type AgentProvisionStatusResponse,
+	type ProvisioningJobState,
+} from "@/lib/api";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { useAccount, useWriteContract, useConfig } from "wagmi";
@@ -572,14 +577,16 @@ export const LaunchButton = ({
 	const wagmiConfig = useConfig();
 	const { writeContractAsync } = useWriteContract();
 	const [chain, chainId] = ["evm", 56];
-	const [agentModalOpen, setAgentModalOpen] = useState(false);
 	const [showSuccess, setShowSuccess] = useState(false);
 	const [launchedTokenInfo, setLaunchedTokenInfo] = useState<{
 		name: string;
+		ticker: string;
 		description: string;
 		address: string;
 		imageUrl?: string;
+		launchId?: string;
 	} | null>(null);
+	const [provisioningState, setProvisioningState] = useState<ProvisioningUiState>({ status: "idle" });
 
 	// Terminal state
 	const [deployStages, setDeployStages] = useState<DeployStage[]>([]);
@@ -608,29 +615,125 @@ export const LaunchButton = ({
 		});
 	};
 
+	// Reset provisioning state when success screen is dismissed
+	useEffect(() => {
+		if (!showSuccess) {
+			setProvisioningState({ status: "idle" });
+		}
+	}, [showSuccess]);
+
+	// Poll for provisioning status updates
+	useEffect(() => {
+		if (
+			provisioningState.status !== "requested" &&
+			provisioningState.status !== "provisioning"
+		) {
+			return;
+		}
+
+		let cancelled = false;
+		let attempts = 0;
+		let timeoutId: number | undefined;
+		const maxAttempts = 60;
+		const intervalMs = 3000;
+
+		const applyStatus = (status: AgentProvisionStatusResponse) => {
+			if (status.status === "failed") {
+				setProvisioningState({
+					status: "failed",
+					jobId: status.jobId,
+					message: status.message || "provisioning failed.",
+				});
+				return true;
+			}
+
+			if (status.status === "running" || status.status === "completed") {
+				setProvisioningState({
+					status: status.status,
+					jobId: status.jobId,
+					provisioningStatus: status.status,
+					...(status.progress !== undefined ? { progress: status.progress } : {}),
+					...(status.message ? { message: status.message } : {}),
+					...(status.webUiUrl ? { webUiUrl: status.webUiUrl } : {}),
+				});
+				return true;
+			}
+
+			setProvisioningState({
+				status: status.status === "provisioning" ? "provisioning" : "requested",
+				jobId: status.jobId,
+				provisioningStatus: status.status,
+				...(status.progress !== undefined ? { progress: status.progress } : {}),
+				...(status.message ? { message: status.message } : {}),
+				...(status.webUiUrl ? { webUiUrl: status.webUiUrl } : {}),
+			});
+			return false;
+		};
+
+		const poll = async () => {
+			try {
+				const nextStatus = await getProvisioningStatus(provisioningState.jobId);
+				if (cancelled) {
+					return;
+				}
+
+				const finished = applyStatus(nextStatus);
+				if (finished) {
+					return;
+				}
+			} catch {
+				if (cancelled) {
+					return;
+				}
+			}
+
+			if (!cancelled) {
+				attempts += 1;
+				if (attempts < maxAttempts) {
+					timeoutId = window.setTimeout(poll, intervalMs);
+					return;
+				}
+				setProvisioningState({
+					status: "failed",
+					jobId: provisioningState.jobId,
+					message: "polling timed out. check the token page for status.",
+				});
+			}
+		};
+
+		timeoutId = window.setTimeout(poll, intervalMs);
+
+		return () => {
+			cancelled = true;
+			if (timeoutId !== undefined) {
+				window.clearTimeout(timeoutId);
+			}
+		};
+	}, [provisioningState]);
+
 	const onSubmit = async () => {
 		if (!formState.isValid) {
-			toast.error("Please fill in all required fields.");
+			toast.error("fill in all required fields.");
 			return;
 		}
 
 		if (!isConnected || !walletAddress) {
-			toast.error("Please connect your wallet first.");
+			toast.error("connect your wallet first.");
 			return;
 		}
 
 		if (isGeneratingAddress) {
-			toast.error("Please wait for the address to be generated.");
+			toast.error("wait for address generation.");
 			return;
 		}
 
 		if (!launchSalt) {
-			toast.error("Please generate a launch salt first.");
+			toast.error("generate a launch salt first.");
 			return;
 		}
 
 		if (balance < 0.01) {
-			toast.error("Insufficient balance. You need at least 0.01 BNB to create a token.");
+			toast.error("insufficient balance. need at least 0.01 BNB.");
 			return;
 		}
 
@@ -639,13 +742,13 @@ export const LaunchButton = ({
 		setShowSuccess(false);
 		setDeployProgress(0);
 		setDeployStages([
-			{ label: "Preparing transaction parameters...", status: "pending" },
-			{ label: "Awaiting wallet signature...", status: "pending" },
-			{ label: "Transaction submitted", status: "pending" },
-			{ label: "Confirming on-chain...", status: "pending" },
-			{ label: "Token deployed", status: "pending" },
-			{ label: "Registering with platform...", status: "pending" },
-			{ label: "Ready to deploy agent", status: "pending" },
+			{ label: "preparing parameters", status: "pending" },
+			{ label: "awaiting signature", status: "pending" },
+			{ label: "submitted", status: "pending" },
+			{ label: "confirming", status: "pending" },
+			{ label: "deployed", status: "pending" },
+			{ label: "registering", status: "pending" },
+			{ label: "done", status: "pending" },
 		]);
 
 		setLaunching(true);
@@ -676,7 +779,7 @@ export const LaunchButton = ({
 
 			// Stage 1: Awaiting wallet signature
 			updateStage(1, { status: "active" });
-			toast.info("Confirm the transaction in your wallet...");
+			toast.info("confirm in wallet");
 			
 			const txHash = await writeContractAsync({
 				address: PORTAL_ADDRESS,
@@ -691,7 +794,7 @@ export const LaunchButton = ({
 
 			// Stage 2: Transaction submitted
 			updateStage(2, { status: "success", detail: `${txHash.slice(0, 10)}...` });
-			toast.success("Transaction submitted! Waiting for confirmation...");
+			toast.success("submitted");
 			setDeployProgress(50);
 
 			// Stage 3: Confirming on-chain
@@ -711,8 +814,8 @@ export const LaunchButton = ({
 
 			if (tokenAddress) {
 				// Stage 4: Token deployed
-				updateStage(4, { status: "success", detail: `${tokenAddress.slice(0, 10)}...${symbol}` });
-				toast.success("Token launched successfully!");
+				updateStage(4, { status: "success", detail: `${tokenAddress.slice(0, 10)}...` });
+				toast.success("deployed");
 				setDeployProgress(80);
 
 				// Stage 5: Registering with platform
@@ -735,7 +838,7 @@ export const LaunchButton = ({
 				updateStage(5, { status: "success" });
 				setDeployProgress(90);
 
-				// Stage 6: Ready to deploy agent
+				// Stage 6: Done
 				updateStage(6, { status: "success" });
 				setDeployProgress(100);
 
@@ -747,17 +850,19 @@ export const LaunchButton = ({
 					setShowSuccess(true);
 					setLaunchedTokenInfo({
 						name,
+						ticker: symbol,
 						description,
 						address: tokenAddress,
 						imageUrl,
+						launchId: txHash,
 					});
 				}, 1000);
 			} else {
-				toast.success("Token launched! Transaction confirmed.");
+				toast.success("deployed");
 				setLaunchSalt(null);
 				router.push(`/token/${chain}/${chainId}/${txHash}`);
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Error launching token:", error);
 			
 			// Mark current active stage as error
@@ -765,23 +870,67 @@ export const LaunchButton = ({
 			if (activeIndex !== -1) {
 				updateStage(activeIndex, { 
 					status: "error", 
-					detail: error?.message?.slice(0, 50) || "Failed"
+					detail: (error as Error)?.message?.slice(0, 50) || "failed"
 				});
 			}
 
-			if (error?.code === 4001 || error?.message?.includes("rejected")) {
-				toast.error("Transaction rejected by user.");
+			const errCode = (error as { code?: number })?.code;
+			const errMessage = (error as Error)?.message;
+
+			if (errCode === 4001 || errMessage?.includes("rejected")) {
+				toast.error("rejected by user.");
 			} else {
 				const message = getErrorMessage(error);
-				toast.error(`Error launching token: ${message}`);
+				toast.error(`error: ${message}`);
 			}
 		} finally {
 			setLaunching(false);
 		}
 	};
 
-	const handleDeployAgent = () => {
-		setAgentModalOpen(true);
+	const handleProvisionAgent = async () => {
+		if (!launchedTokenInfo) {
+			return;
+		}
+
+		setProvisioningState({ status: "requesting" });
+
+		try {
+			const result = await provisionAgent({
+				tokenAddress: launchedTokenInfo.address,
+				agentName: launchedTokenInfo.name,
+				tokenName: launchedTokenInfo.name,
+				tokenTicker: launchedTokenInfo.ticker,
+				chain: chain as TChain,
+				chainId,
+				...(launchedTokenInfo.launchId ? { launchId: launchedTokenInfo.launchId } : {}),
+				agentConfig: {
+					...(launchedTokenInfo.description ? { bio: launchedTokenInfo.description } : {}),
+					...(launchedTokenInfo.imageUrl ? { avatar: launchedTokenInfo.imageUrl } : {}),
+				},
+			});
+
+			setProvisioningState({
+				status:
+					result.status === "provisioning"
+						? "provisioning"
+						: result.status === "running" || result.status === "completed"
+							? result.status
+							: "requested",
+				jobId: result.jobId,
+				provisioningStatus: result.status,
+				...(result.message ? { message: result.message } : {}),
+				...(result.webUiUrl ? { webUiUrl: result.webUiUrl } : {}),
+			});
+			toast.success("provisioning requested.");
+		} catch (error) {
+			const message = getErrorMessage(error);
+			setProvisioningState({
+				status: "failed",
+				message,
+			});
+			toast.error(`provisioning failed: ${message}`);
+		}
 	};
 
 	const handleViewToken = () => {
@@ -820,24 +969,14 @@ export const LaunchButton = ({
 				<div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 					<DeploySuccess
 						agentName={launchedTokenInfo.name}
-						ticker={String(watchValue("symbol") || "TOKEN")}
+						ticker={launchedTokenInfo.ticker}
 						tokenAddress={launchedTokenInfo.address}
 						imageUrl={launchedTokenInfo.imageUrl}
-						onDeployAgent={handleDeployAgent}
+						onProvisionAgent={handleProvisionAgent}
 						onViewToken={handleViewToken}
+						provisioningState={provisioningState}
 					/>
 				</div>
-			)}
-
-			{/* Deploy Agent Modal */}
-			{launchedTokenInfo && (
-				<DeployAgentModal
-					open={agentModalOpen}
-					onOpenChange={setAgentModalOpen}
-					tokenName={launchedTokenInfo.name}
-					tokenDescription={launchedTokenInfo.description}
-					tokenAddress={launchedTokenInfo.address}
-				/>
 			)}
 		</div>
 	);
