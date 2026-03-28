@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import VisualAsset from "@/components/litepaper/visual-asset";
 
 const steps = [
 	{ id: "01", label: "someone launches a waifu token" },
@@ -106,8 +107,14 @@ export default function TheLoop() {
 					className="mt-16 lg:col-span-7 lg:mt-0"
 				>
 					<div className="relative overflow-hidden rounded-[2.3rem] border border-white/10 bg-[#0A0A0C] p-4 shadow-crt lg:p-6">
-						<div className="relative min-h-[38rem] rounded-[2rem] border border-white/8 bg-[#0D0D10] lg:min-h-[48rem]">
-							<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,135,0.06),transparent_40%)]" />
+						<VisualAsset
+							src="/litepaper/economy.webp"
+							alt="The waifu.fun training flywheel"
+							className="relative min-h-[38rem] rounded-[2rem] border border-white/8 bg-[#0D0D10] lg:min-h-[48rem]"
+							imageClassName="object-cover object-center opacity-[0.18]"
+							fallbackClassName="bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,135,0.06),transparent_40%)]"
+							sizes="(min-width: 1024px) 48vw, 100vw"
+						>
 							<div className="absolute inset-0 p-5 sm:p-8">
 								<div className="flex items-center justify-between">
 									<div className="rounded-full border border-white/10 bg-black/35 px-4 py-2 backdrop-blur-md">
@@ -178,7 +185,7 @@ export default function TheLoop() {
 									</div>
 								</div>
 							</div>
-						</div>
+						</VisualAsset>
 					</div>
 				</motion.div>
 			</div>
