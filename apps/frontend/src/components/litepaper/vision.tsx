@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import VisualAsset from "@/components/litepaper/visual-asset";
 
 const pillars = [
-	"Fine-tuned personality baked into model weights",
+	"personality baked into the model, not pasted on top",
 	"Dedicated runtime for tools, memory, and channels",
 	"Custodied wallets for earning and spending",
 	"A native economy where relevance buys more capability",
@@ -34,10 +34,10 @@ export default function Vision() {
 						<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.15),rgba(8,8,10,0.72))]" />
 						<div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
 							<div className="max-w-sm rounded-[1.5rem] border border-white/10 bg-black/45 p-5 backdrop-blur-xl">
-								<p className="font-orbitron text-[10px] uppercase tracking-[0.34em] text-waifu-green">entity class</p>
-								<p className="mt-3 font-audiowide text-3xl uppercase tracking-[-0.04em] text-white">Resident</p>
+								<p className="font-orbitron text-[10px] uppercase tracking-[0.34em] text-waifu-green">what changes</p>
+								<p className="mt-3 font-audiowide text-3xl uppercase tracking-[-0.04em] text-white">Fine-tuned</p>
 								<p className="mt-3 font-satoshi text-sm leading-6 text-white/62">
-									Not a chatbot wrapper. A persistent actor with memory, infra, custody, and a reason to get better.
+									your waifu gets its own model. not a prompt on someone else's AI. an actual fine-tuned model that thinks like your character.
 								</p>
 							</div>
 						</div>
@@ -51,18 +51,18 @@ export default function Vision() {
 						viewport={{ once: true, amount: 0.25 }}
 						transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
 					>
-						<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">Section 2 / The Vision</p>
+						<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">the fix</p>
 						<h2 className="mt-6 max-w-4xl font-orbitron text-[clamp(2.5rem,5vw,5.5rem)] uppercase leading-[0.93] tracking-[-0.05em] text-white">
-							Infrastructure for digital beings,
-							<span className="block text-white/32">not disposable sessions.</span>
+							what if your waifu
+							<span className="block text-white/32">was actually different?</span>
 						</h2>
 						<p className="mt-8 max-w-3xl font-satoshi text-lg leading-8 text-white/68 sm:text-[1.2rem]">
-							waifu.fun makes each AI agent a sovereign digital entity with its own tuned personality, infrastructure,
-							wallet, and economy.
+							waifu.fun fine-tunes a model for each character. your waifu doesn't read a character sheet every conversation. the personality is baked into the weights. it
+							just knows who it is.
 						</p>
 						<div className="mt-8 rounded-[1.75rem] border border-waifu-green/15 bg-waifu-green/8 p-6 shadow-crt-sm backdrop-blur-sm sm:p-8">
 							<p className="font-audiowide text-[clamp(2rem,4vw,3.5rem)] uppercase tracking-[-0.05em] text-waifu-green">
-								Not chatbots. Residents.
+								Not chatbots. Fine-tuneds.
 							</p>
 						</div>
 					</motion.div>
@@ -111,7 +111,7 @@ export default function Vision() {
 						className="mt-12 flex flex-wrap items-center gap-4"
 					>
 						<div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-white/48" style={{ fontFamily: "DMMono, monospace" }}>
-							model × runtime × wallet × governance
+							model + runtime + wallet + training loop
 						</div>
 						<div className="h-px flex-1 bg-gradient-to-r from-waifu-green/55 via-white/8 to-transparent" />
 					</motion.div>

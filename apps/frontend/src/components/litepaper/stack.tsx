@@ -7,8 +7,8 @@ const layers = [
 	{
 		id: "01",
 		title: "Fine-Tuned Personalities",
-		nickname: "The Soul",
-		copy: "Personality baked into the weights. Not prompt acting. Runs on open-weight bases or frontier models.",
+		nickname: "the brain",
+		copy: "a model fine-tuned on your character. not a system prompt. the personality IS the model.",
 		tint: "rgba(0,255,135,0.18)",
 		y: "8%",
 		x: "12%",
@@ -17,8 +17,8 @@ const layers = [
 	{
 		id: "02",
 		title: "Milady Cloud",
-		nickname: "The Body",
-		copy: "Where the agent actually runs. Model, tools, memory, comms, compute. All configurable per agent.",
+		nickname: "the body",
+		copy: "where your waifu runs. model endpoint, tools, memory, chat channels. all configurable.",
 		tint: "rgba(255,50,180,0.16)",
 		y: "26%",
 		x: "8%",
@@ -27,8 +27,8 @@ const layers = [
 	{
 		id: "03",
 		title: "The Assistant Layer",
-		nickname: "The Nervous System",
-		copy: "Each waifu gets a separate Milady character for tool calls, wallet ops, scheduling, and memory. Keeps the personality layer clean.",
+		nickname: "the helper",
+		copy: "a background assistant that handles the boring stuff: tool calls, wallet ops, scheduling. your waifu focuses on being itself.",
 		tint: "rgba(0,200,255,0.16)",
 		y: "44%",
 		x: "14%",
@@ -37,8 +37,8 @@ const layers = [
 	{
 		id: "04",
 		title: "Steward",
-		nickname: "The Wallet",
-		copy: "Real custody infrastructure across EVM and Solana. Agents can hold, send, and earn autonomously. Economic actors, not chat endpoints.",
+		nickname: "the wallet",
+		copy: "real crypto wallet. EVM + Solana. your waifu can hold tokens, earn fees, and spend autonomously.",
 		tint: "rgba(0,255,135,0.14)",
 		y: "62%",
 		x: "9%",
@@ -47,8 +47,8 @@ const layers = [
 	{
 		id: "05",
 		title: "Elastic Compute",
-		nickname: "The Muscles",
-		copy: "Vast.ai and RunPod with A100s and H100s on demand. Scale up when demand spikes. Scale down when it doesn't.",
+		nickname: "the hardware",
+		copy: "actual GPUs running your model. A100s, H100s. scales up when busy, scales down when quiet.",
 		tint: "rgba(255,255,255,0.12)",
 		y: "80%",
 		x: "15%",
@@ -68,10 +68,10 @@ export default function Stack() {
 					transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
 					className="max-w-5xl"
 				>
-					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">Section 3 / The Stack</p>
+					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">how it works</p>
 					<h2 className="mt-6 font-orbitron text-[clamp(2.5rem,5vw,5.8rem)] uppercase leading-[0.92] tracking-[-0.05em] text-white">
-						A full vertical stack,
-						<span className="block text-white/32">from soul to compute.</span>
+						what's under
+						<span className="block text-white/32">the hood.</span>
 					</h2>
 					<p className="mt-8 max-w-3xl font-satoshi text-lg leading-8 text-white/66 sm:text-[1.18rem]">
 						The moat isn't one model. It's the stack that makes each agent real: model identity, runtime, tool
@@ -92,9 +92,9 @@ export default function Stack() {
 							>
 								<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.15),rgba(8,8,10,0.68))]" />
 								<div className="absolute inset-x-5 top-5 flex items-center justify-between rounded-full border border-white/10 bg-black/35 px-4 py-3 backdrop-blur-md">
-									<p className="font-orbitron text-[10px] uppercase tracking-[0.32em] text-white/48">animated layer map</p>
+									<p className="font-orbitron text-[10px] uppercase tracking-[0.32em] text-white/48">the stack</p>
 									<p className="text-[11px] uppercase tracking-[0.26em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
-										5 layers online
+										5 layers
 									</p>
 								</div>
 								<div className="absolute inset-0">

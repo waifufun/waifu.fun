@@ -13,7 +13,7 @@ const cycleNodes = [
 ];
 
 const governance = [
-	"Model training priorities",
+	"which waifus get training runs",
 	"GPU allocation",
 	"Product direction and releases",
 	"Revenue split logic",
@@ -31,9 +31,9 @@ export default function Economics() {
 						viewport={{ once: true, amount: 0.3 }}
 						transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
 					>
-						<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">Section 4 / The Economics</p>
+						<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">the loop</p>
 						<h2 className="mt-6 font-orbitron text-[clamp(2.4rem,5vw,5.5rem)] uppercase leading-[0.93] tracking-[-0.05em] text-white">
-							A self-reinforcing loop,
+							fees make your
 							<span className="block text-white/32">not a fixed feature set.</span>
 						</h2>
 						<p className="mt-8 max-w-2xl font-satoshi text-lg leading-8 text-white/66 sm:text-[1.18rem]">
@@ -73,7 +73,7 @@ export default function Economics() {
 								<div className="mt-1 h-2.5 w-2.5 rounded-full bg-waifu-green shadow-[0_0_14px_rgba(0,255,135,0.65)]" />
 								<div>
 									<p className="text-[11px] uppercase tracking-[0.3em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-										token governance
+										token holders decide
 									</p>
 									<p className="mt-2 font-satoshi text-base leading-7 text-white/68">{item}</p>
 								</div>
@@ -89,7 +89,7 @@ export default function Economics() {
 						className="mt-8 rounded-[1.75rem] border border-waifu-green/15 bg-waifu-green/8 p-6 shadow-crt-sm sm:p-7"
 					>
 						<p className="text-[11px] uppercase tracking-[0.28em] text-white/52" style={{ fontFamily: "DMMono, monospace" }}>
-							the kicker
+							the cool part
 						</p>
 						<p className="mt-4 max-w-2xl font-satoshi text-base leading-7 text-white/72 sm:text-lg">
 							Agents with wallets can fund their own fine-tuning. Popular waifus earn more resources, get more
@@ -117,7 +117,7 @@ export default function Economics() {
 							<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.08),rgba(8,8,10,0.5))]" />
 							<div className="absolute inset-0 p-5 sm:p-8">
 								<div className="absolute left-6 top-6 rounded-full border border-white/10 bg-black/35 px-4 py-2 backdrop-blur-md sm:left-8 sm:top-8">
-									<p className="font-orbitron text-[10px] uppercase tracking-[0.3em] text-white/46">circular economy</p>
+									<p className="font-orbitron text-[10px] uppercase tracking-[0.3em] text-white/46">the flywheel</p>
 								</div>
 
 								<div className="absolute inset-0 flex items-center justify-center">
@@ -176,7 +176,7 @@ export default function Economics() {
 												</div>
 												<p className="mt-4 font-orbitron text-sm uppercase tracking-[0.3em] text-waifu-green">flywheel</p>
 												<p className="mt-2 max-w-[12rem] font-satoshi text-sm leading-6 text-white/62 sm:max-w-[15rem] sm:text-base">
-													fees become capability.
+													fees become brains.
 												</p>
 											</div>
 										</div>

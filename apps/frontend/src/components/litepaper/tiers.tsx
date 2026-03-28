@@ -5,32 +5,32 @@ import { motion } from "framer-motion";
 const tiers = [
 	{
 		name: "Free",
-		tag: "entry layer",
-		description: "Base model plus system prompt on shared API. Fast to launch. No ownership of the intelligence layer.",
+		tag: "free",
+		description: "regular AI model with a character prompt. works fine. same brain as everyone else though.",
 		spec: "Base model + system prompt",
 		infra: "Shared API",
 		highlight: false,
 	},
 	{
 		name: "Pro",
-		tag: "personalized",
-		description: "Fine-tuned on an open-weight base with a shared GPU pool. Identity moves from prompt theater into the model.",
+		tag: "pro",
+		description: "your waifu gets its own fine-tuned model on open-weight base. personality is in the weights now, not just a prompt.",
 		spec: "Fine-tuned open-weight base",
 		infra: "Shared GPU pool",
 		highlight: false,
 	},
 	{
 		name: "Ultra",
-		tag: "premium compute",
-		description: "Fine-tuned on a frontier model with dedicated GPU access. Better latency. More capability. More control.",
+		tag: "ultra",
+		description: "fine-tuned on a frontier model with its own GPU. faster, smarter, more capable.",
 		spec: "Fine-tuned frontier model",
 		infra: "Dedicated GPU",
 		highlight: false,
 	},
 	{
 		name: "Sovereign",
-		tag: "full-stack entity",
-		description: "Custom training, owned hardware, and token-gated access. Not just personalized. Different infrastructure.",
+		tag: "sovereign",
+		description: "Custom training, owned hardware, and token-gated access. Not just pro. Different hardware.",
 		spec: "Custom training runs",
 		infra: "Own hardware + token-gated",
 		highlight: true,
@@ -49,19 +49,19 @@ export default function Tiers() {
 					transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
 					className="lg:col-span-4"
 				>
-					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">Section 5 / Product Tiers</p>
+					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">tiers</p>
 					<h2 className="mt-6 font-orbitron text-[clamp(2.4rem,4.6vw,5rem)] uppercase leading-[0.93] tracking-[-0.05em] text-white">
-						Graduated sovereignty.
+						pick your level.
 					</h2>
 					<p className="mt-8 max-w-xl font-satoshi text-lg leading-8 text-white/66">
 						These tiers aren't cosmetic. Each one upgrades identity, infra control, and dedicated resources.
 					</p>
 					<div className="mt-10 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-6 backdrop-blur-sm">
 						<p className="text-[11px] uppercase tracking-[0.28em] text-white/42" style={{ fontFamily: "DMMono, monospace" }}>
-							escalation path
+							the ladder
 						</p>
 						<p className="mt-4 font-satoshi text-base leading-7 text-white/66">
-							Prompt wrapper → tuned identity → dedicated capability → sovereign entity.
+							system prompt → fine-tuned model → dedicated GPU → fully custom.
 						</p>
 					</div>
 				</motion.div>
@@ -104,14 +104,14 @@ export default function Tiers() {
 											<div className="grid shrink-0 gap-3 rounded-[1.5rem] border border-white/10 bg-black/30 p-4 text-sm text-white/60 lg:min-w-[18rem]">
 												<div>
 													<p className="text-[10px] uppercase tracking-[0.24em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-														identity layer
+														model
 													</p>
 													<p className="mt-2 font-satoshi text-sm leading-6 text-white/72">{tier.spec}</p>
 												</div>
 												<div className="h-px bg-white/8" />
 												<div>
 													<p className="text-[10px] uppercase tracking-[0.24em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-														infrastructure
+														hardware
 													</p>
 													<p className="mt-2 font-satoshi text-sm leading-6 text-white/72">{tier.infra}</p>
 												</div>

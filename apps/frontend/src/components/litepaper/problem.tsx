@@ -4,16 +4,16 @@ import { motion } from "framer-motion";
 
 const failureModes = [
 	{
-		title: "Stateless by design",
-		copy: "Character continuity resets into a fresh API call. Nothing compounds. Nothing persists. There is no self to deepen over time.",
+		title: "No memory",
+		copy: "Every conversation starts from zero. Your waifu forgets you existed. Nothing it learns sticks.",
 	},
 	{
-		title: "Owned by the model vendor",
-		copy: "App layer gets the looks. Model vendors get the money and power.",
+		title: "Same brain everywhere",
+		copy: "Character.ai, Chai, Janitor — they all run on the same few models underneath. The wrapper is different. The intelligence is identical.",
 	},
 	{
-		title: "Differentiation collapses",
-		copy: "When the core intelligence is rented and identical, differentiation shrinks to prompt tricks, voice wrappers, and costume changes.",
+		title: "Can't actually be unique",
+		copy: "If every character runs on the same model with a different system prompt, none of them are really different. It's cosplay, not personality.",
 	},
 ];
 
@@ -47,28 +47,28 @@ export default function Problem() {
 					transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
 					className="lg:col-span-5 lg:pr-10"
 				>
-					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">Section 1 / The Problem</p>
+					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">the problem</p>
 					<h2 className="mt-6 max-w-xl font-audiowide text-[clamp(2.4rem,5vw,4.9rem)] uppercase leading-[0.94] tracking-[-0.05em] text-white">
-						Same brain.
-						<span className="mt-2 block text-white/28">Different costume.</span>
+						Every AI companion
+						<span className="mt-2 block text-white/28">is the same thing.</span>
 					</h2>
 					<p className="mt-8 max-w-lg font-satoshi text-lg leading-8 text-white/68">
-						Most companion AI platforms are the same thing: a system prompt on top of Claude or GPT. You talk to a
+						Right now, every AI companion app works the same way: take GPT or Claude, slap a character description on top, and
 						character, but underneath it's a stateless API call in costume.
 					</p>
 					<div className="mt-10 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-7 backdrop-blur-sm">
 						<p className="text-[11px] uppercase tracking-[0.3em] text-waifu-magenta/80" style={{ fontFamily: "DMMono, monospace" }}>
-							market structure
+							the result
 						</p>
 						<p className="mt-4 max-w-md font-satoshi text-base leading-7 text-white/62">
-							So it becomes a race to the bottom on personality prompts, while OpenAI and Anthropic keep the value,
+							a race to the bottom on prompt engineering while OpenAI and Anthropic keep all the
 							the infra, and the compounding intelligence layer.
 						</p>
 						<div className="mt-7 h-px w-full bg-gradient-to-r from-waifu-magenta/0 via-waifu-magenta/50 to-waifu-magenta/0" />
 						<div className="mt-6 flex flex-wrap gap-4 text-sm text-white/50" style={{ fontFamily: "DMMono, monospace" }}>
-							<span>memory = 0</span>
-							<span>ownership = 0</span>
-							<span>differentiation = decaying</span>
+							<span>memory = none</span>
+							<span>uniqueness = none</span>
+							<span>moat = none</span>
 						</div>
 					</div>
 				</motion.div>
@@ -98,7 +98,7 @@ export default function Problem() {
 										</div>
 									</div>
 									<div>
-										<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-white/40">failure mode</p>
+										<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-white/40">problem</p>
 										<h3 className="mt-4 font-orbitron text-2xl uppercase tracking-[-0.04em] text-white transition-colors duration-500 group-hover:text-waifu-green sm:text-[2rem]">
 											{mode.title}
 										</h3>
@@ -106,8 +106,8 @@ export default function Problem() {
 											{mode.copy}
 										</p>
 										<div className="mt-6 flex flex-wrap gap-3 text-[11px] uppercase tracking-[0.26em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-											<span className="rounded-full border border-white/10 px-3 py-1">wrapped intelligence</span>
-											<span className="rounded-full border border-white/10 px-3 py-1">vendor dependency</span>
+											<span className="rounded-full border border-white/10 px-3 py-1">same model</span>
+											<span className="rounded-full border border-white/10 px-3 py-1">rented brain</span>
 										</div>
 									</div>
 								</div>

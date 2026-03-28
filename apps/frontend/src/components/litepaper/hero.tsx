@@ -6,9 +6,9 @@ import { useRef } from "react";
 import VisualAsset from "@/components/litepaper/visual-asset";
 
 const heroStats = [
-	{ label: "Ownership", value: "native", hint: "wallet-level agency" },
-	{ label: "Memory", value: "persistent", hint: "state that compounds" },
-	{ label: "Economics", value: "closed loop", hint: "fees fund improvement" },
+	{ label: "Launch", value: "your waifu", hint: "token + personality" },
+	{ label: "Train", value: "fine-tuned", hint: "actually unique models" },
+	{ label: "Earn", value: "fees → training", hint: "gets better over time" },
 ];
 
 export default function Hero() {
@@ -48,8 +48,8 @@ export default function Hero() {
 							<Image src="/brand/icon/icon_1024.png" alt="waifu.fun" fill className="object-cover" sizes="40px" priority />
 						</div>
 						<div>
-							<p className="font-orbitron text-[10px] uppercase tracking-[0.45em] text-waifu-green">litepaper / 01</p>
-							<p className="font-satoshi text-sm text-white/55">how sovereign AI companions work.</p>
+							<p className="font-orbitron text-[10px] uppercase tracking-[0.45em] text-waifu-green">litepaper</p>
+							<p className="font-satoshi text-sm text-white/55">what we're building and why</p>
 						</div>
 					</motion.div>
 
@@ -59,8 +59,8 @@ export default function Hero() {
 						transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
 						className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-right lg:block"
 					>
-						<p className="font-orbitron text-[10px] uppercase tracking-[0.4em] text-white/45">network state</p>
-						<p className="font-satoshi text-sm text-white/70">AI companions that own themselves</p>
+						<p className="font-orbitron text-[10px] uppercase tracking-[0.4em] text-white/45">waifu.fun</p>
+						<p className="font-satoshi text-sm text-white/70">the agent launchpad</p>
 					</motion.div>
 				</div>
 
@@ -72,7 +72,7 @@ export default function Hero() {
 							transition={{ delay: 0.15, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
 							className="mb-6 font-orbitron text-[11px] uppercase tracking-[0.55em] text-waifu-green/90"
 						>
-							waifu.fun / autonomous agent economy
+							waifu.fun
 						</motion.p>
 
 						<div className="relative">
@@ -82,9 +82,9 @@ export default function Hero() {
 								transition={{ delay: 0.2, duration: 1, ease: [0.16, 1, 0.3, 1] }}
 								className="max-w-5xl font-orbitron text-[clamp(3.6rem,8vw,8rem)] font-bold uppercase leading-[0.9] tracking-[-0.05em] text-white"
 							>
-								The Autonomous
+								Your Waifu
 								<span className="relative block text-waifu-green [text-shadow:0_0_26px_rgba(0,255,135,0.26)]">
-									Agent Economy
+									Gets Smarter
 								</span>
 							</motion.h1>
 							<motion.div
@@ -93,8 +93,8 @@ export default function Hero() {
 								transition={{ delay: 0.7, duration: 1.2 }}
 								className="pointer-events-none absolute left-[2%] top-[8%] hidden text-[clamp(3.6rem,8vw,8rem)] font-orbitron font-bold uppercase tracking-[-0.05em] text-waifu-magenta/15 blur-[1px] lg:block"
 							>
-								The Autonomous
-								<span className="block">Agent Economy</span>
+								Your Waifu
+								<span className="block">Gets Smarter</span>
 							</motion.div>
 							<motion.div
 								initial={{ opacity: 0 }}
@@ -102,8 +102,8 @@ export default function Hero() {
 								transition={{ delay: 0.75, duration: 1.2 }}
 								className="pointer-events-none absolute left-[1.2%] top-[7.2%] hidden text-[clamp(3.6rem,8vw,8rem)] font-orbitron font-bold uppercase tracking-[-0.05em] text-waifu-cyan/15 blur-[1px] lg:block"
 							>
-								The Autonomous
-								<span className="block">Agent Economy</span>
+								Your Waifu
+								<span className="block">Gets Smarter</span>
 							</motion.div>
 						</div>
 
@@ -113,7 +113,7 @@ export default function Hero() {
 							transition={{ delay: 0.35, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
 							className="mt-8 max-w-2xl font-satoshi text-[1.15rem] leading-8 text-white/72 sm:text-[1.3rem]"
 						>
-							AI companions that own themselves.
+							the agent launchpad.
 						</motion.p>
 
 						<motion.div
@@ -123,18 +123,18 @@ export default function Hero() {
 							className="mt-12 flex max-w-3xl flex-col gap-5 border-l border-waifu-green/25 pl-5 sm:pl-8"
 						>
 							<p className="max-w-2xl font-satoshi text-base leading-7 text-white/62 sm:text-lg">
-								Companion apps are mostly stateless wrappers. waifu.fun gives each character its own model, runtime,
-								wallet, and economic loop.
+								every other AI companion is just a system prompt on ChatGPT. same brain, different costume. waifu.fun actually
+								fine-tunes a model for each character. yours is the only one like it.
 							</p>
 							<div className="flex flex-wrap gap-3" style={{ fontFamily: "DMMono, monospace" }}>
 								<span className="rounded-full border border-waifu-green/25 bg-waifu-green/10 px-3 py-1 text-xs uppercase tracking-[0.26em] text-waifu-green">
-									fine-tuned weights
+									fine-tuned models
 								</span>
 								<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.26em] text-white/65">
-									wallet custody
+									own wallet
 								</span>
 								<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.26em] text-white/65">
-									elastic compute
+									real GPUs
 								</span>
 							</div>
 						</motion.div>
@@ -160,21 +160,21 @@ export default function Hero() {
 						>
 							<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(8,8,10,0.1)_45%,rgba(8,8,10,0.78)_100%)]" />
 							<div className="absolute inset-x-0 top-0 flex items-center justify-between border-b border-white/10 bg-black/30 px-5 py-4 backdrop-blur-md">
-								<p className="font-orbitron text-[10px] uppercase tracking-[0.38em] text-white/45">sovereign runtime</p>
+								<p className="font-orbitron text-[10px] uppercase tracking-[0.38em] text-white/45">waifu runtime</p>
 								<p className="text-[11px] uppercase tracking-[0.26em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
-									01 / emergence
+									live
 								</p>
 							</div>
 							<div className="absolute bottom-6 left-6 right-6 grid gap-3 sm:grid-cols-[1.2fr_0.8fr]">
 								<div className="rounded-[1.5rem] border border-white/10 bg-black/45 p-5 backdrop-blur-xl">
-									<p className="font-orbitron text-[10px] uppercase tracking-[0.35em] text-waifu-green">agent status</p>
+									<p className="font-orbitron text-[10px] uppercase tracking-[0.35em] text-waifu-green">your waifu</p>
 									<p className="mt-3 max-w-sm font-satoshi text-sm leading-6 text-white/68">
-										Persistent identity, wallet permissions, and dedicated inference tied into one agent.
+										a real personality, its own wallet, running on real hardware. not a chatbot.
 									</p>
 								</div>
 								<div className="rounded-[1.5rem] border border-waifu-green/20 bg-waifu-green/10 p-5 shadow-crt-sm backdrop-blur-xl">
 									<p className="text-[10px] uppercase tracking-[0.26em] text-white/55" style={{ fontFamily: "DMMono, monospace" }}>
-										stack sync
+										status
 									</p>
 									<p className="mt-2 text-2xl font-semibold text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
 										100%

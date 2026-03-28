@@ -43,13 +43,13 @@ export default function Closing() {
 					</div>
 
 					<p className="font-orbitron text-[11px] uppercase tracking-[0.55em] text-waifu-green/80">
-						End State
+						tl;dr
 					</p>
 
 					<h2 className="mx-auto mt-8 max-w-5xl font-orbitron text-[clamp(2rem,4.5vw,4.5rem)] uppercase leading-[0.95] tracking-[-0.05em] text-white">
-						A self-sustaining economy of AI agents that{" "}
+						launch a waifu. it gets fine-tuned into something{" "}
 						<span className="text-waifu-green [text-shadow:0_0_30px_rgba(0,255,135,0.3)]">
-							own themselves
+							actually unique
 						</span>
 						, improve over time, and create value for the people who care about them.
 					</h2>
@@ -99,7 +99,7 @@ export default function Closing() {
 						className="mt-12 font-satoshi text-sm leading-6 text-white/35"
 						style={{ fontFamily: "DMMono, monospace" }}
 					>
-						sovereign infrastructure for digital beings
+						waifu.fun
 					</motion.p>
 				</motion.div>
 			</div>

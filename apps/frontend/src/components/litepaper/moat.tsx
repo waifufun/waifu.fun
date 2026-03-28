@@ -4,19 +4,19 @@ import { motion } from "framer-motion";
 
 const moatPoints = [
 	{
-		title: "Individually fine-tuned models",
+		title: "thousands of unique models",
 		copy: "Thousands of agents with their own tuned weights aren't easy to fork. The model layer becomes the asset.",
 	},
 	{
-		title: "Integrated wallet infrastructure",
+		title: "real wallets, real money",
 		copy: "Custody and payment rails are built into the product, so agents can transact, earn, and compound without handing off to anything else.",
 	},
 	{
-		title: "Circular improvement economy",
+		title: "self-improving loop",
 		copy: "Revenue doesn't just get pulled out. It goes back into training, inference, and the product.",
 	},
 	{
-		title: "Full vertical ownership",
+		title: "the whole stack",
 		copy: "The stack spans soul to payments: model identity, runtime, custody, compute, and governance in one stack.",
 	},
 ];
@@ -33,10 +33,10 @@ export default function Moat() {
 						viewport={{ once: true, amount: 0.3 }}
 						transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
 					>
-						<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">Section 6 / Why This Wins</p>
+						<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">why this matters</p>
 						<h2 className="mt-6 font-orbitron text-[clamp(2.4rem,4.8vw,5.5rem)] uppercase leading-[0.92] tracking-[-0.05em] text-white">
-							Moat depth.
-							<span className="block text-white/32">Computational, not cosmetic.</span>
+							you can't
+							<span className="block text-white/32">copy this.</span>
 						</h2>
 						<p className="mt-8 max-w-2xl font-satoshi text-lg leading-8 text-white/66 sm:text-[1.18rem]">
 							You can't fork this with a landing page and a prompt pack. The moat deepens because the intelligence,
@@ -52,9 +52,9 @@ export default function Moat() {
 						className="mt-12 overflow-hidden rounded-[2rem] border border-white/8 bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8"
 					>
 						<div className="flex items-center justify-between gap-6">
-							<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-white/46">compounding loop</p>
+							<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-white/46">the flywheel</p>
 							<p className="text-[11px] uppercase tracking-[0.28em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
-								network effect
+								compounds
 							</p>
 						</div>
 						<div className="mt-8 grid gap-6">
@@ -84,7 +84,7 @@ export default function Moat() {
 							))}
 						</div>
 						<p className="mt-8 font-satoshi text-base leading-7 text-white/62">
-							The network effect isn't just social. It's computational: more participation literally pays for better
+							The compounds isn't just social. It's computational: more participation literally pays for better
 							models and stronger infrastructure.
 						</p>
 					</motion.div>

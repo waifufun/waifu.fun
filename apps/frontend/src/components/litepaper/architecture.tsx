@@ -7,7 +7,7 @@ const archLayers = [
 	{
 		id: "01",
 		label: "waifu.fun",
-		sublabel: "Consumer Layer",
+		sublabel: "your waifus",
 		detail: "Fine-tuned companions",
 		color: "rgba(0,255,135,0.22)",
 		borderColor: "border-waifu-green/30",
@@ -17,7 +17,7 @@ const archLayers = [
 	{
 		id: "02",
 		label: "Milady Cloud",
-		sublabel: "Orchestration",
+		sublabel: "runs everything",
 		detail: "Runtimes \u00b7 Routing \u00b7 Scaling",
 		color: "rgba(255,50,180,0.16)",
 		borderColor: "border-waifu-magenta/25",
@@ -27,20 +27,20 @@ const archLayers = [
 	{
 		id: "03",
 		label: "Character + Steward",
-		sublabel: "Intelligence + Custody",
+		sublabel: "brains + money",
 		detail: "Assistant Layer \u00b7 EVM + Solana Wallets",
 		color: "rgba(0,200,255,0.16)",
 		borderColor: "border-waifu-cyan/25",
 		textColor: "text-waifu-cyan",
 		width: "w-[84%]",
 		split: true,
-		splitLeft: { label: "Milady Character", sub: "The Nervous System" },
-		splitRight: { label: "Steward", sub: "Wallet / Custody" },
+		splitLeft: { label: "Milady Character", sub: "tool handler" },
+		splitRight: { label: "Steward", sub: "crypto wallet" },
 	},
 	{
 		id: "04",
 		label: "Compute",
-		sublabel: "Infrastructure",
+		sublabel: "GPUs",
 		detail: "Vast \u00b7 RunPod \u00b7 A100 \u00b7 H100 \u00b7 On demand",
 		color: "rgba(255,255,255,0.1)",
 		borderColor: "border-white/15",
@@ -50,7 +50,7 @@ const archLayers = [
 	{
 		id: "05",
 		label: "Token Economy",
-		sublabel: "Governance",
+		sublabel: "community",
 		detail: "Fees \u00b7 Training \u00b7 Allocation",
 		color: "rgba(0,255,135,0.14)",
 		borderColor: "border-waifu-green/20",
@@ -84,10 +84,10 @@ export default function Architecture() {
 					className="text-center"
 				>
 					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">
-						Section 7 / Architecture
+						the stack
 					</p>
 					<h2 className="mx-auto mt-6 max-w-4xl font-orbitron text-[clamp(2.4rem,5vw,5.5rem)] uppercase leading-[0.93] tracking-[-0.05em] text-white">
-						The full vertical.
+						how it fits together.
 					</h2>
 					<p className="mx-auto mt-8 max-w-2xl font-satoshi text-lg leading-8 text-white/66">
 						From personality weights at the top to token governance at the base. Each layer has a job. The stack
@@ -220,7 +220,7 @@ export default function Architecture() {
 							className="text-[11px] uppercase tracking-[0.3em] text-white/45"
 							style={{ fontFamily: "DMMono, monospace" }}
 						>
-							soul to payments in one stack
+							that's the whole thing
 						</p>
 					</motion.div>
 				</div>
