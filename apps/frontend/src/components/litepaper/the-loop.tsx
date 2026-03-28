@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import VisualAsset from "@/components/litepaper/visual-asset";
 
 const steps = [
 	{ id: "01", label: "someone launches a waifu token" },
@@ -106,68 +105,80 @@ export default function TheLoop() {
 					transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
 					className="mt-16 lg:col-span-7 lg:mt-0"
 				>
-					<div className="relative overflow-hidden rounded-[2.3rem] border border-white/10 bg-white/[0.03] p-4 shadow-crt lg:p-6">
-						<VisualAsset
-							src="/litepaper/economy.webp"
-							alt="The waifu.fun training flywheel"
-							className="relative min-h-[38rem] rounded-[2rem] border border-white/8 bg-waifu-surface lg:min-h-[48rem]"
-							imageClassName="object-cover object-center opacity-35"
-							fallbackClassName="bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,135,0.12),transparent_18%)]"
-							sizes="(min-width: 1024px) 48vw, 100vw"
-						>
-							<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.08),rgba(8,8,10,0.5))]" />
+					<div className="relative overflow-hidden rounded-[2.3rem] border border-white/10 bg-[#0A0A0C] p-4 shadow-crt lg:p-6">
+						<div className="relative min-h-[38rem] rounded-[2rem] border border-white/8 bg-[#0D0D10] lg:min-h-[48rem]">
+							<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,135,0.06),transparent_40%)]" />
 							<div className="absolute inset-0 p-5 sm:p-8">
-								<div className="absolute left-6 top-6 rounded-full border border-white/10 bg-black/35 px-4 py-2 backdrop-blur-md sm:left-8 sm:top-8">
-									<p className="font-orbitron text-[10px] uppercase tracking-[0.3em] text-white/46">the flywheel</p>
+								<div className="flex items-center justify-between">
+									<div className="rounded-full border border-white/10 bg-black/35 px-4 py-2 backdrop-blur-md">
+										<p className="font-orbitron text-[10px] uppercase tracking-[0.3em] text-white/46">the flywheel</p>
+									</div>
+									<div className="relative h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-white/5">
+										<Image src="/brand/icon/icon_1024.png" alt="waifu.fun" fill className="object-cover" sizes="32px" />
+									</div>
 								</div>
 
-								{/* Animated rings */}
+								{/* Clean animated rings */}
 								<div className="absolute inset-0 flex items-center justify-center">
-									<div className="relative h-[26rem] w-[26rem] sm:h-[34rem] sm:w-[34rem]">
+									<div className="relative h-[22rem] w-[22rem] sm:h-[30rem] sm:w-[30rem]">
 										<motion.div
 											animate={{ rotate: 360 }}
-											transition={{ duration: 24, repeat: Number.POSITIVE_INFINITY, ease: [0.65, 0, 0.35, 1] }}
-											className="absolute inset-0 rounded-full border border-waifu-green/20"
+											transition={{ duration: 30, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+											className="absolute inset-0 rounded-full border border-waifu-green/15"
 										/>
 										<motion.div
 											animate={{ rotate: -360 }}
-											transition={{ duration: 18, repeat: Number.POSITIVE_INFINITY, ease: [0.65, 0, 0.35, 1] }}
-											className="absolute inset-[8%] rounded-full border border-white/10"
+											transition={{ duration: 22, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+											className="absolute inset-[12%] rounded-full border border-waifu-green/10"
 										/>
-										<div className="absolute inset-[16%] rounded-full border border-white/8" />
+										<div className="absolute inset-[24%] rounded-full border border-white/6" />
 
-										{/* Orbiting particles */}
-										{[0, 1, 2, 3, 4].map((i) => (
+										{/* 3 orbiting dots */}
+										{[0, 1, 2].map((i) => (
 											<motion.div
 												key={i}
 												animate={{ rotate: 360 }}
 												transition={{
-													duration: 10 + i * 2.5,
+													duration: 12 + i * 4,
 													repeat: Number.POSITIVE_INFINITY,
-													ease: [0.65, 0, 0.35, 1],
-													delay: i * 0.3,
+													ease: "linear",
+													delay: i * 1.5,
 												}}
-												className="absolute inset-[10%]"
+												className="absolute inset-[6%]"
 											>
-												<div className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-waifu-green shadow-[0_0_18px_rgba(0,255,135,0.9)]" />
+												<div className="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 rounded-full bg-waifu-green shadow-[0_0_14px_rgba(0,255,135,0.8)]" />
 											</motion.div>
 										))}
 
-										{/* Center */}
-										<div className="absolute inset-[28%] flex items-center justify-center rounded-full border border-waifu-green/20 bg-black/55 shadow-crt backdrop-blur-xl">
+										{/* Center hub */}
+										<div className="absolute inset-[30%] flex items-center justify-center rounded-full border border-waifu-green/20 bg-[#0A0A0C] shadow-crt">
 											<div className="text-center px-4">
-												<div className="relative mx-auto h-12 w-12 overflow-hidden rounded-full border border-white/10 bg-white/5">
-													<Image src="/brand/icon/icon_1024.png" alt="waifu.fun" fill className="object-cover" sizes="48px" />
+												<div className="relative mx-auto h-14 w-14 overflow-hidden rounded-full border border-waifu-green/25 bg-waifu-green/10">
+													<Image src="/brand/icon/icon_1024.png" alt="waifu.fun" fill className="object-cover" sizes="56px" />
 												</div>
-												<p className="mt-3 font-orbitron text-xs uppercase tracking-[0.3em] text-waifu-green">trade</p>
-												<p className="mt-1 font-orbitron text-xs uppercase tracking-[0.3em] text-white/50">train</p>
-												<p className="mt-1 font-orbitron text-xs uppercase tracking-[0.3em] text-waifu-green">repeat</p>
+												<p className="mt-4 font-orbitron text-sm uppercase tracking-[0.2em] text-waifu-green">trade</p>
+												<p className="mt-1 font-orbitron text-sm uppercase tracking-[0.2em] text-white/40">train</p>
+												<p className="mt-1 font-orbitron text-sm uppercase tracking-[0.2em] text-waifu-green">repeat</p>
 											</div>
+										</div>
+
+										{/* Labels around the circle */}
+										<div className="absolute left-1/2 top-[2%] -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+											<p className="text-[10px] uppercase tracking-[0.2em] text-white/60" style={{ fontFamily: "DMMono, monospace" }}>people trade</p>
+										</div>
+										<div className="absolute right-[2%] top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+											<p className="text-[10px] uppercase tracking-[0.2em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>fees accrue</p>
+										</div>
+										<div className="absolute bottom-[2%] left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+											<p className="text-[10px] uppercase tracking-[0.2em] text-white/60" style={{ fontFamily: "DMMono, monospace" }}>model trains</p>
+										</div>
+										<div className="absolute left-[2%] top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+											<p className="text-[10px] uppercase tracking-[0.2em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>waifu improves</p>
 										</div>
 									</div>
 								</div>
 							</div>
-						</VisualAsset>
+						</div>
 					</div>
 				</motion.div>
 			</div>

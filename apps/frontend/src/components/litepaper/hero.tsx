@@ -134,9 +134,9 @@ export default function Hero() {
 					className="grid gap-4 border-t border-white/8 pt-8 sm:grid-cols-3"
 				>
 					{[
-						{ label: "Launch", value: "your token", hint: "bonding curve + agent" },
-						{ label: "Trade", value: "fees collected", hint: "goes to training" },
-						{ label: "Train", value: "fine-tuned model", hint: "actually unique waifu" },
+						{ step: "01", label: "Launch", desc: "deploy your token with an AI agent attached" },
+						{ step: "02", label: "Trade", desc: "trading fees accumulate from bonding curve activity" },
+						{ step: "03", label: "Train", desc: "fees fund fine-tuning, your waifu gets its own model" },
 					].map((stat, index) => (
 						<motion.div
 							key={stat.label}
@@ -145,15 +145,13 @@ export default function Hero() {
 							transition={{ delay: 0.7 + index * 0.1, duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
 							className="group rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-5 backdrop-blur-sm"
 						>
-							<p className="font-orbitron text-[10px] uppercase tracking-[0.35em] text-white/45">{stat.label}</p>
-							<div className="mt-4 flex items-end justify-between gap-4">
-								<p className="font-orbitron text-xl uppercase tracking-[-0.03em] text-white group-hover:text-waifu-green">
-									{stat.value}
-								</p>
-								<p className="text-right text-[11px] uppercase tracking-[0.24em] text-white/36" style={{ fontFamily: "DMMono, monospace" }}>
-									{stat.hint}
-								</p>
+							<div className="flex items-center gap-3">
+								<span className="text-xs text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>{stat.step}</span>
+								<p className="font-orbitron text-[10px] uppercase tracking-[0.35em] text-white/45">{stat.label}</p>
 							</div>
+							<p className="mt-3 font-satoshi text-sm leading-6 text-white/60">
+								{stat.desc}
+							</p>
 						</motion.div>
 					))}
 				</motion.div>
