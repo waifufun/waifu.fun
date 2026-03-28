@@ -20,8 +20,6 @@ export default function Closing() {
 			ref={sectionRef}
 			className="relative overflow-hidden px-6 py-32 sm:px-8 lg:px-12 lg:py-48 xl:px-16"
 		>
-			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(0,255,135,0.06),transparent_28%)]" />
-
 			<motion.div
 				style={{ opacity: glowOpacity }}
 				className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,135,0.2),transparent_35%)]"
@@ -46,19 +44,28 @@ export default function Closing() {
 						tl;dr
 					</p>
 
-					<h2 className="mx-auto mt-8 max-w-5xl font-orbitron text-[clamp(2rem,4.5vw,4.5rem)] uppercase leading-[0.95] tracking-[-0.05em] text-white">
-						launch a waifu. it gets fine-tuned into something{" "}
+					<h2 className="mx-auto mt-8 max-w-4xl font-orbitron text-[clamp(1.8rem,4vw,4rem)] uppercase leading-[0.95] tracking-[-0.05em] text-white">
+						launch a token. attach an AI agent. trading fees fine-tune the model.{" "}
 						<span className="text-waifu-green [text-shadow:0_0_30px_rgba(0,255,135,0.3)]">
-							actually unique
+							your waifu gets smarter the more people trade it.
 						</span>
-						, improve over time, and create value for the people who care about them.
 					</h2>
+
+					<motion.p
+						initial={{ opacity: 0, y: 16 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+						className="mx-auto mt-8 max-w-2xl font-satoshi text-lg leading-8 text-white/55"
+					>
+						built on ElizaOS. hosted on Milady Cloud. wallets by Steward. open source all the way down.
+					</motion.p>
 
 					<motion.div
 						initial={{ scaleX: 0, opacity: 0 }}
 						whileInView={{ scaleX: 1, opacity: 1 }}
 						viewport={{ once: true }}
-						transition={{ delay: 0.3, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+						transition={{ delay: 0.4, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
 						className="mt-14 h-px w-full max-w-md origin-center bg-gradient-to-r from-transparent via-waifu-green/40 to-transparent"
 					/>
 
@@ -80,6 +87,13 @@ export default function Closing() {
 							className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white/50"
 							style={{ fontFamily: "DMMono, monospace" }}
 						>
+							elizaOS
+						</span>
+						<span className="text-white/20">/</span>
+						<span
+							className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white/50"
+							style={{ fontFamily: "DMMono, monospace" }}
+						>
 							milady cloud
 						</span>
 						<span className="text-white/20">/</span>
@@ -90,17 +104,6 @@ export default function Closing() {
 							steward
 						</span>
 					</motion.div>
-
-					<motion.p
-						initial={{ opacity: 0 }}
-						whileInView={{ opacity: 1 }}
-						viewport={{ once: true }}
-						transition={{ delay: 0.7, duration: 0.8 }}
-						className="mt-12 font-satoshi text-sm leading-6 text-white/35"
-						style={{ fontFamily: "DMMono, monospace" }}
-					>
-						waifu.fun
-					</motion.p>
 				</motion.div>
 			</div>
 		</section>

@@ -1,24 +1,20 @@
-import Architecture from "@/components/litepaper/architecture";
-import Closing from "@/components/litepaper/closing";
-import Economics from "@/components/litepaper/economics";
 import Hero from "@/components/litepaper/hero";
-import Moat from "@/components/litepaper/moat";
-import Problem from "@/components/litepaper/problem";
-import Stack from "@/components/litepaper/stack";
+import Trenches from "@/components/litepaper/trenches";
+import Different from "@/components/litepaper/different";
+import TheStack from "@/components/litepaper/the-stack";
+import TheLoop from "@/components/litepaper/the-loop";
 import Tiers from "@/components/litepaper/tiers";
-import Vision from "@/components/litepaper/vision";
+import Closing from "@/components/litepaper/closing";
 
 export default function LitepaperPage() {
 	return (
 		<div className="relative isolate">
 			<Hero />
-			<Problem />
-			<Vision />
-			<Stack />
-			<Economics />
+			<Trenches />
+			<Different />
+			<TheStack />
+			<TheLoop />
 			<Tiers />
-			<Moat />
-			<Architecture />
 			<Closing />
 		</div>
 	);
