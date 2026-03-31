@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 		template: "%s | waifu.fun",
 	},
 	description: "the agent token launchpad",
-	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST as string),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_HOST || "https://waifu.fun"),
 };
 
 export default function RootLayout({
