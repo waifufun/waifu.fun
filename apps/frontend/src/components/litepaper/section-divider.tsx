@@ -3,7 +3,23 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-export default function SectionDivider() {
+interface SectionDividerProps {
+	variant?: "default" | "subtle";
+}
+
+export default function SectionDivider({ variant = "default" }: SectionDividerProps) {
+	if (variant === "subtle") {
+		return (
+			<motion.div
+				initial={{ opacity: 0, scaleX: 0 }}
+				whileInView={{ opacity: 1, scaleX: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+				className="mx-auto my-2 h-px w-full max-w-[120px] origin-center bg-gradient-to-r from-transparent via-waifu-green/25 to-transparent"
+			/>
+		);
+	}
+
 	return (
 		<motion.div
 			initial={{ opacity: 0 }}

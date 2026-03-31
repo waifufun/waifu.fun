@@ -10,7 +10,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function AppShell({ children }: { children: ReactNode }) {
 	const pathname = usePathname();
-	const isLitepaper = pathname === "/litepaper" || pathname.startsWith("/litepaper/");
+	const isLitepaper = pathname === "/" || pathname === "/litepaper" || pathname.startsWith("/litepaper/");
 
 	if (isLitepaper) {
 		return <div className="max-h-[100dvh] overflow-x-hidden overflow-y-auto">{children}</div>;

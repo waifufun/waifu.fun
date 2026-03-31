@@ -13,15 +13,15 @@ export default function LitepaperPage() {
 			<Hero />
 			<SectionDivider />
 			<Trenches />
-			<SectionDivider />
+			<SectionDivider variant="subtle" />
 			<Different />
 			<SectionDivider />
 			<TheStack />
-			<SectionDivider />
+			<SectionDivider variant="subtle" />
 			<TheLoop />
 			<SectionDivider />
 			<Tiers />
-			<SectionDivider />
+			<SectionDivider variant="subtle" />
 			<Closing />
 		</div>
 	);

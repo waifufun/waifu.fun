@@ -1,49 +1,51 @@
-import { getTokens } from "@/lib/api";
 import type { Metadata } from "next";
-import ListView from "@/components/list-view";
-import TokenGrid from "@/components/token-grid";
+import Hero from "@/components/litepaper/hero";
+import Trenches from "@/components/litepaper/trenches";
+import Different from "@/components/litepaper/different";
+import TheStack from "@/components/litepaper/the-stack";
+import TheLoop from "@/components/litepaper/the-loop";
+import Tiers from "@/components/litepaper/tiers";
+import Closing from "@/components/litepaper/closing";
+import SectionDivider from "@/components/litepaper/section-divider";
+import LitepaperShell from "@/components/litepaper/litepaper-shell";
 
-export const revalidate = 4;
-
-export const generateMetadata = async (): Promise<Metadata> => {
-	return {
-		title: "waifu.fun - the agent token launchpad",
+export const metadata: Metadata = {
+	title: "waifu.fun — the agent launchpad that learns",
+	description:
+		"Launch tokens with AI agents. Trading fees fine-tune the model. Your waifu gets smarter the more people trade it.",
+	openGraph: {
+		title: "waifu.fun — the agent launchpad that learns",
 		description:
-			"Launch your waifu token on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
-		openGraph: {
-			title: "waifu.fun - the agent token launchpad",
-			description:
-				"Launch your waifu token on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
-			type: "website",
-			locale: "en_US",
-		},
-		twitter: {
-			card: "summary_large_image",
-			title: "waifu.fun - the agent token launchpad",
-			description:
-				"Launch your waifu token on Solana, Ethereum, and Base. Trade tokens with real-time analytics and comprehensive market data on waifu.fun.",
-		},
-	};
+			"Launch tokens with AI agents. Trading fees fine-tune the model. Your waifu gets smarter the more people trade it.",
+		type: "website",
+		locale: "en_US",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "waifu.fun — the agent launchpad that learns",
+		description:
+			"Launch tokens with AI agents. Trading fees fine-tune the model. Your waifu gets smarter the more people trade it.",
+	},
 };
 
-export default async function Home({
-	searchParams,
-}: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-	const currentSearchParams = await searchParams;
-	const tokens = await getTokens({ searchParams: currentSearchParams });
-	const view = currentSearchParams?.view || "grid";
-	const noTokens = (tokens?.length || 0) === 0;
+export default function Home() {
 	return (
-		<div className={`flex flex-col gap-4 container ${noTokens ? "h-screen justify-center items-center" : ""}`}>
-			<div className="flex flex-col items-center w-full">
-				{noTokens ? (
-					<h1 className="text-waifu-green text-lg font-semibold uppercase">No tokens found</h1>
-				) : view === "grid" ? (
-					<TokenGrid tokens={tokens} />
-				) : (
-					<ListView tokens={tokens} />
-				)}
+		<LitepaperShell>
+			<div className="relative isolate">
+				<Hero />
+				<SectionDivider />
+				<Trenches />
+				<SectionDivider variant="subtle" />
+				<Different />
+				<SectionDivider />
+				<TheStack />
+				<SectionDivider variant="subtle" />
+				<TheLoop />
+				<SectionDivider />
+				<Tiers />
+				<SectionDivider variant="subtle" />
+				<Closing />
 			</div>
-		</div>
+		</LitepaperShell>
 	);
 }
