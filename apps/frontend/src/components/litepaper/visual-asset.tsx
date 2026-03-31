@@ -10,7 +10,6 @@ type VisualAssetProps = {
 	className?: string;
 	imageClassName?: string;
 	fallbackClassName?: string;
-	overlayClassName?: string;
 	sizes?: string;
 	priority?: boolean;
 	children?: React.ReactNode;
@@ -22,7 +21,6 @@ export default function VisualAsset({
 	className,
 	imageClassName,
 	fallbackClassName,
-	overlayClassName,
 	sizes,
 	priority,
 	children,
@@ -33,7 +31,7 @@ export default function VisualAsset({
 		<div className={cn("relative overflow-hidden", className)}>
 			<div
 				className={cn(
-					"absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,255,135,0.2),transparent_35%),radial-gradient(circle_at_80%_30%,rgba(255,50,180,0.14),transparent_28%),radial-gradient(circle_at_50%_100%,rgba(0,200,255,0.12),transparent_32%),linear-gradient(180deg,#111114_0%,#08080A_100%)]",
+					"absolute inset-0 bg-gradient-to-b from-[#111114] to-[#08080a]",
 					fallbackClassName,
 				)}
 			/>
@@ -48,12 +46,6 @@ export default function VisualAsset({
 					className={cn("object-cover object-center", imageClassName)}
 				/>
 			) : null}
-			<div
-				className={cn(
-					"pointer-events-none absolute inset-0 bg-[url('/textures/noise.png')] bg-[length:280px_280px] opacity-[0.08] mix-blend-screen",
-					overlayClassName,
-				)}
-			/>
 			{children}
 		</div>
 	);

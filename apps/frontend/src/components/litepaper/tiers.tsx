@@ -1,10 +1,34 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
+
+const EASE = [0.25, 0.46, 0.45, 0.94] as const;
+
+function SectionBlock({
+	children,
+	delay = 0,
+}: {
+	children: React.ReactNode;
+	delay?: number;
+}) {
+	const ref = useRef(null);
+	const inView = useInView(ref, { once: true, margin: "-80px" });
+	return (
+		<motion.div
+			ref={ref}
+			initial={{ opacity: 0, y: 32 }}
+			animate={inView ? { opacity: 1, y: 0 } : {}}
+			transition={{ duration: 0.6, delay, ease: EASE }}
+		>
+			{children}
+		</motion.div>
+	);
+}
 
 const tiers = [
 	{
-		name: "Free",
+		name: "free",
 		tag: "start here",
 		description: "base model with a system prompt. works like every other platform. good enough to launch and see if people like your character.",
 		model: "shared model + prompt",
@@ -12,7 +36,7 @@ const tiers = [
 		highlight: false,
 	},
 	{
-		name: "Pro",
+		name: "pro",
 		tag: "fine-tuned",
 		description: "your waifu gets its own fine-tuned model. personality is in the weights, not a prompt. this is where it stops being a chatbot and starts being a character.",
 		model: "fine-tuned open-weight",
@@ -20,7 +44,7 @@ const tiers = [
 		highlight: false,
 	},
 	{
-		name: "Ultra",
+		name: "ultra",
 		tag: "dedicated",
 		description: "fine-tuned on a frontier model with its own GPU. faster responses, smarter conversations, more capable across the board.",
 		model: "fine-tuned frontier",
@@ -28,7 +52,7 @@ const tiers = [
 		highlight: false,
 	},
 	{
-		name: "Sovereign",
+		name: "sovereign",
 		tag: "fully custom",
 		description: "custom training runs on your own hardware. token-gated access. this waifu is a different species.",
 		model: "custom training runs",
@@ -39,85 +63,91 @@ const tiers = [
 
 export default function Tiers() {
 	return (
-		<section className="relative overflow-hidden px-6 py-24 sm:px-8 lg:px-12 lg:py-32 xl:px-16">
-			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(0,255,135,0.06),transparent_22%)]" />
-			<div className="relative mx-auto max-w-[1600px] lg:grid lg:grid-cols-12 lg:gap-10">
-				<motion.div
-					initial={{ opacity: 0, y: 28 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true, amount: 0.3 }}
-					transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-					className="lg:col-span-4"
-				>
-					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">tiers</p>
-					<h2 className="mt-6 font-orbitron text-[clamp(2.4rem,4.6vw,5rem)] uppercase leading-[0.93] tracking-[-0.05em] text-white">
-						pick your level.
-					</h2>
-					<p className="mt-8 max-w-xl font-satoshi text-lg leading-8 text-white/66">
-						start free. upgrade as your token grows. each tier gives your waifu a better brain and better hardware.
-					</p>
-					<div className="mt-10 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-6 backdrop-blur-sm">
-						<p className="text-[11px] uppercase tracking-[0.28em] text-white/42" style={{ fontFamily: "DMMono, monospace" }}>
-							how it scales
-						</p>
-						<p className="mt-4 font-satoshi text-base leading-7 text-white/66">
-							system prompt &rarr; fine-tuned &rarr; dedicated GPU &rarr; fully custom
-						</p>
-					</div>
-				</motion.div>
+		<section className="relative py-24 sm:py-32 overflow-hidden">
+			<div
+				className="absolute inset-0"
+				style={{ background: "radial-gradient(ellipse at 18% 20%, rgba(0,255,135,0.03) 0%, transparent 40%)" }}
+			/>
 
-				<div className="mt-14 lg:col-span-8 lg:mt-0">
-					<div className="grid gap-5">
-						{tiers.map((tier, index) => (
-							<motion.article
-								key={tier.name}
-								initial={{ opacity: 0, x: 36, y: 24 }}
-								whileInView={{ opacity: 1, x: 0, y: 0 }}
-								viewport={{ once: true, amount: 0.25 }}
-								transition={{ delay: index * 0.08, type: "spring" as const, stiffness: 95, damping: 18 }}
-								className={`relative overflow-hidden rounded-[2rem] border p-1 ${
-									tier.highlight
-										? "border-waifu-green/30 bg-waifu-green/10 shadow-crt"
-										: "border-white/8 bg-white/[0.03]"
-								}`}
-							>
-								<div
-									className={`relative rounded-[1.7rem] border p-6 backdrop-blur-sm sm:p-7 ${
-										tier.highlight ? "border-waifu-green/20 bg-black/50" : "border-white/6 bg-black/28"
-									}`}
-								>
-									<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-										<div className="max-w-3xl">
-											<div className="flex flex-wrap items-center gap-3">
-												<p className="font-orbitron text-[11px] uppercase tracking-[0.35em] text-waifu-green">{tier.tag}</p>
-												<p className="text-[11px] uppercase tracking-[0.26em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-													{String(index + 1).padStart(2, "0")}
-												</p>
+			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+					{/* Left — header */}
+					<div className="lg:col-span-4">
+						<SectionBlock>
+							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
+								tiers
+							</span>
+							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
+								pick your level.
+							</h2>
+							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
+								start free. upgrade as your token grows. each tier gives your waifu a better brain and better hardware.
+							</p>
+							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
+									how it scales
+								</span>
+								<p className="mt-4 text-base leading-7 text-[#a1a1aa]">
+									system prompt &rarr; fine-tuned &rarr; dedicated GPU &rarr; fully custom
+								</p>
+							</div>
+						</SectionBlock>
+					</div>
+
+					{/* Right — tier cards */}
+					<div className="lg:col-span-8">
+						<div className="grid gap-5">
+							{tiers.map((tier, index) => (
+								<SectionBlock key={tier.name} delay={index * 0.08}>
+									<motion.article
+										className={`relative rounded-sm border p-6 sm:p-7 transition-colors duration-300 ${
+											tier.highlight
+												? "border-[rgba(0,255,135,0.2)] bg-[rgba(0,255,135,0.03)]"
+												: "border-[rgba(255,255,255,0.06)] bg-[#111114] hover:border-[rgba(0,255,135,0.2)]"
+										}`}
+									>
+										{tier.highlight && (
+											<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
+										)}
+										<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+											<div className="max-w-xl">
+												<div className="flex flex-wrap items-center gap-3">
+													<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60">
+														{tier.tag}
+													</span>
+													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+														{String(index + 1).padStart(2, "0")}
+													</span>
+												</div>
+												<h3 className={`mt-4 text-2xl sm:text-3xl font-bold tracking-[-0.02em] lowercase ${
+													tier.highlight ? "text-[#00ff87]" : "text-[#e4e4e7]"
+												}`}>
+													{tier.name}
+												</h3>
+												<p className="mt-4 text-base leading-7 text-[#a1a1aa]">{tier.description}</p>
 											</div>
-											<h3 className={`mt-4 font-orbitron text-[1.8rem] uppercase tracking-[-0.04em] sm:text-[2.4rem] ${tier.highlight ? "text-waifu-green" : "text-white"}`}>
-												{tier.name}
-											</h3>
-											<p className="mt-4 font-satoshi text-base leading-7 text-white/66 sm:text-lg">{tier.description}</p>
+
+											{/* Specs sidebar */}
+											<div className="shrink-0 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] p-4 lg:min-w-[14rem]">
+												<div>
+													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+														model
+													</span>
+													<p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{tier.model}</p>
+												</div>
+												<div className="h-px bg-[rgba(255,255,255,0.04)] my-3" />
+												<div>
+													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+														hardware
+													</span>
+													<p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{tier.infra}</p>
+												</div>
+											</div>
 										</div>
-										<div className="grid shrink-0 gap-3 rounded-[1.5rem] border border-white/10 bg-black/30 p-4 text-sm text-white/60 lg:min-w-[16rem]">
-											<div>
-												<p className="text-[10px] uppercase tracking-[0.24em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-													model
-												</p>
-												<p className="mt-2 font-satoshi text-sm leading-6 text-white/72">{tier.model}</p>
-											</div>
-											<div className="h-px bg-white/8" />
-											<div>
-												<p className="text-[10px] uppercase tracking-[0.24em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
-													hardware
-												</p>
-												<p className="mt-2 font-satoshi text-sm leading-6 text-white/72">{tier.infra}</p>
-											</div>
-										</div>
-									</div>
-								</div>
-							</motion.article>
-						))}
+									</motion.article>
+								</SectionBlock>
+							))}
+						</div>
 					</div>
 				</div>
 			</div>
