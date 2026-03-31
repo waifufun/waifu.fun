@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import { useAccount } from "wagmi";
 import SearchMenu from "./search-menu";
@@ -21,15 +22,20 @@ const NAV_LINKS = [
 
 export default function Header() {
 	const { t } = useTranslation();
+	const pathname = usePathname();
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 	const { scrollY } = useScroll();
 	const { isConnected } = useAccount();
 
+	const isLitepaper = pathname === "/litepaper" || pathname?.startsWith("/litepaper/");
+
 	useMotionValueEvent(scrollY, "change", (latest) => {
 		setScrolled(latest > 20);
 	});
+
+	if (isLitepaper) return null;
 
 	// Show "how it works" modal automatically on first login
 	useEffect(() => {

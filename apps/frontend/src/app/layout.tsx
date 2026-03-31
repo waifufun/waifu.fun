@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
+import { Orbitron, Audiowide } from "next/font/google";
 import Providers from "./providers";
 
 // Moving gradient background (performance-heavy) — uncomment to re-enable
@@ -11,6 +12,18 @@ import FooterConditional from "@/components/footer-conditional";
 import GrainOverlay from "@/components/grain-overlay";
 import Header from "@/components/header";
 import { cn } from "@/lib/utils";
+
+const orbitron = Orbitron({
+	subsets: ["latin"],
+	variable: "--font-orbitron",
+	weight: ["700"],
+});
+
+const audiowide = Audiowide({
+	subsets: ["latin"],
+	variable: "--font-audiowide",
+	weight: ["400"],
+});
 
 const socialPreview = "/brand/previews/waifu-fun-og.png";
 
@@ -60,7 +73,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" className="dark" style={{ colorScheme: "dark" }}>
+		<html lang="en" className={cn("dark", orbitron.variable, audiowide.variable)} style={{ colorScheme: "dark" }}>
 			<body className={cn("min-h-[100dvh] font-sans antialiased")}>
 				<Providers>
 					{/* Static layer prevents white flash when InteractiveBackground is off */}

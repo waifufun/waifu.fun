@@ -12,6 +12,8 @@ module.exports = {
 			fontFamily: {
 				satoshi: ["Satoshi", "sans-serif"],
 				mono: ["JetBrains Mono", "DM Mono", "DMMono", "monospace"],
+				orbitron: ["var(--font-orbitron)", "system-ui"],
+				audiowide: ["var(--font-audiowide)", "system-ui"],
 			},
 			colors: {
 				border: "hsl(var(--border))",
@@ -57,6 +59,15 @@ module.exports = {
 					border: "hsl(var(--sidebar-border))",
 					ring: "hsl(var(--sidebar-ring))",
 				},
+				waifu: {
+					green: "#00FF87",
+					"green-dim": "#00CC6A",
+					black: "#08080A",
+					surface: "#111114",
+					gray: "#A0A0A0",
+					magenta: "#FF32B4",
+					cyan: "#00C8FF",
+				},
 				waifufun: {
 					background: {
 						primary: "#08080a",
@@ -88,6 +99,11 @@ module.exports = {
 						border: "rgba(255, 255, 255, 0.08)",
 					},
 				},
+			},
+			boxShadow: {
+				crt: "0 0 20px rgba(0,255,135,0.15), inset 0 0 20px rgba(0,255,135,0.05)",
+				"crt-sm": "0 0 10px rgba(0,255,135,0.1)",
+				"crt-lg": "0 0 40px rgba(0,255,135,0.2)",
 			},
 			keyframes: {
 				"fade-in": {

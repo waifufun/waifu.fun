@@ -3,10 +3,11 @@
 import { usePathname } from "next/navigation";
 import Footer from "./footer";
 
-/** Renders Footer on all routes except token pages (e.g. /token/...). */
+/** Renders Footer on all routes except token pages and litepaper. */
 export default function FooterConditional() {
 	const pathname = usePathname();
 	const isTokenPage = pathname?.startsWith("/token/");
-	if (isTokenPage) return null;
+	const isLitepaper = pathname === "/litepaper" || pathname?.startsWith("/litepaper/");
+	if (isTokenPage || isLitepaper) return null;
 	return <Footer />;
 }
