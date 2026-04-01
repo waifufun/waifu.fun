@@ -35,16 +35,18 @@ export default function Header() {
 		setScrolled(latest > 20);
 	});
 
-	if (isLitepaper) return null;
-
 	// Show "how it works" modal automatically on first login
+	// NOTE: this useEffect MUST stay above any early returns to avoid React hooks order violation
 	useEffect(() => {
+		if (isLitepaper) return;
 		if (!isConnected || typeof window === "undefined") return;
 		const seen = localStorage.getItem(HOW_IT_WORKS_SEEN_KEY);
 		if (seen) return;
 		localStorage.setItem(HOW_IT_WORKS_SEEN_KEY, "true");
 		setHowItWorksOpen(true);
-	}, [isConnected]);
+	}, [isConnected, isLitepaper]);
+
+	if (isLitepaper) return null;
 
 	return (
 		<motion.header
