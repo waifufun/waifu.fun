@@ -2,6 +2,7 @@
 
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
 import VisualAsset from "@/components/litepaper/visual-asset";
@@ -87,6 +88,24 @@ export default function HeroV2() {
 				<div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
 					{/* Text column — left heavy */}
 					<div className="lg:col-span-7">
+						{/* Brand lockup */}
+						<motion.div
+							initial={{ opacity: 0, scale: 0.92 }}
+							animate={{ opacity: 1, scale: 1 }}
+							transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
+							className="mb-8"
+						>
+							<Image
+								src="/brand/lockup/lockup_waifufun_1920.png"
+								alt="waifu.fun"
+								width={400}
+								height={102}
+								priority
+								className="h-auto w-[200px] sm:w-[280px] lg:w-[340px] object-contain"
+								unoptimized
+							/>
+						</motion.div>
+
 						<motion.div
 							className="inline-flex items-center gap-2.5 px-4 py-2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.6)] mb-10"
 							initial={{ opacity: 0, x: -24 }}

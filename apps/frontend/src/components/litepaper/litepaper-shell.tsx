@@ -2,6 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const GlitchBg = dynamic(() => import("../landing/glitch-bg"), { ssr: false });
 
 export default function LitepaperShell({
 	children,
@@ -10,19 +13,22 @@ export default function LitepaperShell({
 }>) {
 	return (
 		<div className="relative overflow-x-hidden bg-[#08080a] text-[#e4e4e7]">
+			{/* Fixed katakana matrix — alive, breathing background */}
+			<div className="fixed inset-0 z-0 opacity-[0.18] pointer-events-none">
+				<GlitchBg
+					glitchColors={["#0a1a12", "#00ff87", "#0d2818"]}
+					glitchSpeed={80}
+					smooth
+					characters="アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン01"
+				/>
+			</div>
+
 			{/* Fixed scanlines — matching story page */}
 			<div
 				className="fixed inset-0 pointer-events-none z-50 opacity-[0.015]"
 				style={{
 					backgroundImage:
 						"repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)",
-				}}
-			/>
-			{/* Fixed noise grain */}
-			<div
-				className="fixed inset-0 pointer-events-none z-40 opacity-[0.03]"
-				style={{
-					backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
 				}}
 			/>
 
@@ -41,9 +47,9 @@ export default function LitepaperShell({
 					</div>
 					<div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
 						<a href="https://elizaos.ai" target="_blank" rel="noopener noreferrer" className="hover:text-[#71717a] transition-colors">elizaOS</a>
-						<span className="text-[#27272a]">×</span>
+						<span className="text-[#27272a]">&times;</span>
 						<a href="https://milady.ai" target="_blank" rel="noopener noreferrer" className="hover:text-[#71717a] transition-colors">milady cloud</a>
-						<span className="text-[#27272a]">×</span>
+						<span className="text-[#27272a]">&times;</span>
 						<span>steward</span>
 					</div>
 					<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">

@@ -8,6 +8,7 @@ import {
 	MessageCircle,
 	TrendingUp,
 } from "lucide-react";
+import Image from "next/image";
 import { useRef } from "react";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -45,7 +46,7 @@ const agentTypes = [
 		icon: BarChart3,
 		title: "prediction market agents",
 		body: "form positions on real-world outcomes. polymarket, sportfi, elections. earn by being right more often than they're wrong.",
-		image: null,
+		image: "/litepaper/v2/specialization-predict.webp",
 		accent: "#00ff87",
 	},
 	{
@@ -66,7 +67,7 @@ const agentTypes = [
 		icon: Cpu,
 		title: "fine-tuning agents",
 		body: "model improvement as a service. ingest interaction data, run training loops, ship improved weights. the meta-agent.",
-		image: null,
+		image: "/litepaper/v2/specialization-grid.webp",
 		accent: "#00ff87",
 	},
 ];
@@ -120,6 +121,19 @@ export default function Specialization() {
 											damping: 25,
 										}}
 									>
+										{/* Background image */}
+										<div className="absolute inset-0">
+											<Image
+												src={agent.image}
+												alt=""
+												fill
+												className="object-cover object-center opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-700"
+												sizes="(min-width: 768px) 50vw, 100vw"
+												aria-hidden="true"
+											/>
+											<div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-[#111114]/80 to-[#111114]/40" />
+										</div>
+
 										<div className="relative p-6 sm:p-7">
 											<div className="flex items-center gap-3 mb-4">
 												<div className="w-9 h-9 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center">
@@ -160,6 +174,19 @@ export default function Specialization() {
 											damping: 25,
 										}}
 									>
+										{/* Background image */}
+										<div className="absolute inset-0">
+											<Image
+												src={agent.image}
+												alt=""
+												fill
+												className="object-cover object-center opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-700"
+												sizes="(min-width: 768px) 33vw, 100vw"
+												aria-hidden="true"
+											/>
+											<div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-[#111114]/80 to-[#111114]/40" />
+										</div>
+
 										<div className="relative p-6 sm:p-7">
 											<div className="flex items-center gap-3 mb-4">
 												<div className="w-9 h-9 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center">

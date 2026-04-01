@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
+import Image from "next/image";
 import { useRef } from "react";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -154,12 +155,19 @@ export default function TheLoopV2() {
 									ref={diagramRef}
 									className="relative rounded-sm border border-[rgba(255,255,255,0.04)] bg-[#0e0e11] min-h-[32rem] lg:min-h-[42rem] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)] overflow-hidden"
 								>
-									{/* Background texture */}
-									<div className="absolute inset-0 opacity-[0.03]"
-										style={{
-											backgroundImage: `radial-gradient(circle at 50% 50%, rgba(0,255,135,0.15) 0%, transparent 60%)`,
-										}}
-									/>
+									{/* Flywheel background image */}
+									<div className="absolute inset-0">
+										<Image
+											src="/litepaper/v2/flywheel-economy.webp"
+											alt=""
+											fill
+											className="object-cover object-center opacity-[0.15]"
+											sizes="(min-width: 1024px) 58vw, 100vw"
+											aria-hidden="true"
+										/>
+										<div className="absolute inset-0 bg-gradient-to-t from-[#0e0e11] via-[#0e0e11]/60 to-[#0e0e11]/30" />
+										<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_30%,#0e0e11_100%)]" />
+									</div>
 
 									{/* Spinning orbit rings */}
 									<div className="absolute inset-0 flex items-center justify-center">

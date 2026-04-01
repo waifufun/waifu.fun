@@ -86,8 +86,11 @@ export default function ProblemV2() {
 									are locked to one framework with no room to evolve. every
 									&ldquo;AI agent&rdquo; is a skin over the same API call.
 								</p>
-								<p className="text-[#f87171]/80 text-base sm:text-lg leading-relaxed font-medium">
+								<p className="text-[#f87171] text-base sm:text-lg leading-relaxed font-medium">
 									this is extraction, not infrastructure.
+								</p>
+								<p className="mt-3 font-mono text-[11px] tracking-[0.1em] text-[#f87171]/40">
+									they take. nothing comes back.
 								</p>
 							</div>
 						</RevealBlock>

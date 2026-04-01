@@ -12,17 +12,17 @@ export default function LitepaperPage() {
 	return (
 		<div className="relative isolate">
 			<HeroV2 />
-			<SectionDivider />
+			<SectionDivider variant="glitch" />
 			<ProblemV2 />
 			<SectionDivider variant="subtle" />
 			<TheFixV2 />
-			<SectionDivider />
+			<SectionDivider variant="glitch" />
 			<Specialization />
 			<SectionDivider variant="subtle" />
 			<TheStackV2 />
 			<SectionDivider />
 			<TheLoopV2 />
-			<SectionDivider variant="subtle" />
+			<SectionDivider variant="glitch" />
 			<EconomicsV2 />
 			<SectionDivider />
 			<ClosingV2 />

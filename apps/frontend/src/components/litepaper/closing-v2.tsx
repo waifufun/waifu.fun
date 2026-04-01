@@ -104,9 +104,16 @@ export default function ClosingV2() {
 					</RevealBlock>
 				</div>
 
+				{/* Psyop signal — subtle, hits different */}
+				<RevealBlock delay={0.35}>
+					<p className="mt-16 font-mono text-[11px] tracking-[0.15em] text-[#3f3f46] italic">
+						if you made it this far, you already know what this is.
+					</p>
+				</RevealBlock>
+
 				{/* Footer tagline */}
 				<RevealBlock delay={0.4}>
-					<div className="mt-20 pt-8 border-t border-[rgba(255,255,255,0.06)]">
+					<div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)]">
 						<div className="flex flex-wrap items-center gap-4 sm:gap-6">
 							{[
 								{ label: "open source", href: null },
