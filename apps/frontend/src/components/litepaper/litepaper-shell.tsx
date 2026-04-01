@@ -13,8 +13,8 @@ export default function LitepaperShell({
 }>) {
 	return (
 		<div className="relative overflow-x-hidden bg-[#08080a] text-[#e4e4e7]">
-			{/* Fixed katakana matrix — alive, breathing background */}
-			<div className="fixed inset-0 z-0 opacity-[0.18] pointer-events-none">
+			{/* Fixed katakana matrix — subtle, breathing background */}
+			<div className="fixed inset-0 z-0 opacity-[0.08] pointer-events-none">
 				<GlitchBg
 					glitchColors={["#0a1a12", "#00ff87", "#0d2818"]}
 					glitchSpeed={80}
@@ -22,6 +22,8 @@ export default function LitepaperShell({
 					characters="アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン01"
 				/>
 			</div>
+			{/* Blur veil over matrix to soften it */}
+			<div className="fixed inset-0 z-[1] pointer-events-none backdrop-blur-[1px]" />
 
 			{/* Fixed scanlines — matching story page */}
 			<div
