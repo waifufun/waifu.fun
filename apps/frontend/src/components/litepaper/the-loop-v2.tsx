@@ -86,9 +86,9 @@ export default function TheLoopV2() {
 
 						<RevealBlock delay={0.1}>
 							<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-								the old flywheel was simple: trade, collect fees, fine-tune,
-								repeat. that&apos;s one agent getting marginally better. the new
-								flywheel is a network effect.
+								most platforms have a linear model: launch token, collect
+								fees, done. waifu.fun has a flywheel. and it&apos;s not just one
+								agent getting better. it&apos;s a network effect.
 							</p>
 						</RevealBlock>
 
