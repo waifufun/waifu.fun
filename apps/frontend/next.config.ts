@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const API_ORIGIN = process.env.API_ORIGIN || "http://89.167.63.246";
 
 const nextConfig: NextConfig = {
+	transpilePackages: ["@waifufun/types"],
 	turbopack: {},
 	async rewrites() {
 		return [
