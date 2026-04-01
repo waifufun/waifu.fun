@@ -125,41 +125,34 @@ export default function ProblemV2() {
 					</div>
 				</div>
 
-				{/* Problem cards — asymmetric bento: 5+4+3 */}
-				<div className="mt-16 grid grid-cols-1 md:grid-cols-12 gap-4">
+				{/* Problem cards — equal 3-col */}
+				<div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-4">
 					{problems.map((problem, i) => {
 						const Icon = problem.icon;
-						const colSpans = [
-							"md:col-span-5",
-							"md:col-span-4",
-							"md:col-span-3",
-						];
 						return (
-							<div key={problem.title} className={colSpans[i]}>
-								<RevealBlock delay={0.15 + i * 0.08}>
-									<motion.div
-										className="h-full rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-[rgba(248,113,113,0.15)]"
-									>
-										<div className="flex items-center gap-3 mb-4">
-											<div className="w-9 h-9 rounded-sm bg-[rgba(248,113,113,0.08)] flex items-center justify-center">
-												<Icon
-													className="w-4 h-4 text-[#f87171]"
-													strokeWidth={1.5}
-												/>
-											</div>
-											<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
-												{String(i + 1).padStart(2, "0")}
-											</span>
+							<RevealBlock key={problem.title} delay={0.15 + i * 0.08}>
+								<motion.div
+									className="h-full rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-[rgba(248,113,113,0.15)]"
+								>
+									<div className="flex items-center gap-3 mb-4">
+										<div className="w-9 h-9 rounded-sm bg-[rgba(248,113,113,0.08)] flex items-center justify-center">
+											<Icon
+												className="w-4 h-4 text-[#f87171]"
+												strokeWidth={1.5}
+											/>
 										</div>
-										<h3 className="font-satoshi text-lg font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-3">
-											{problem.title}
-										</h3>
-										<p className="text-sm leading-6 text-[#a1a1aa]">
-											{problem.body}
-										</p>
-									</motion.div>
-								</RevealBlock>
-							</div>
+										<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+											{String(i + 1).padStart(2, "0")}
+										</span>
+									</div>
+									<h3 className="font-satoshi text-lg font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-3">
+										{problem.title}
+									</h3>
+									<p className="text-sm leading-6 text-[#a1a1aa]">
+										{problem.body}
+									</p>
+								</motion.div>
+							</RevealBlock>
 						);
 					})}
 				</div>

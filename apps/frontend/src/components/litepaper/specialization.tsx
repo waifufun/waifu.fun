@@ -8,7 +8,6 @@ import {
 	MessageCircle,
 	TrendingUp,
 } from "lucide-react";
-import Image from "next/image";
 import { useRef } from "react";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -104,15 +103,14 @@ export default function Specialization() {
 					</p>
 				</RevealBlock>
 
-				{/* Agent type bento grid — asymmetric: row1 = 7+5, row2 = 4+4+4, fitting 5 cards */}
-				<div className="mt-16 grid grid-cols-1 md:grid-cols-12 gap-4">
-					{/* First row: 2 cards, 7+5 */}
-					{agentTypes.slice(0, 2).map((agent, i) => {
-						const Icon = agent.icon;
-						const colSpan = i === 0 ? "md:col-span-7" : "md:col-span-5";
-						return (
-							<div key={agent.title} className={colSpan}>
-								<RevealBlock delay={0.15 + i * 0.08}>
+				{/* Agent type grid — clean 2-col top, 3-col bottom */}
+				<div className="mt-16 space-y-4">
+					{/* First row: 2 equal cards */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						{agentTypes.slice(0, 2).map((agent, i) => {
+							const Icon = agent.icon;
+							return (
+								<RevealBlock key={agent.title} delay={0.15 + i * 0.08}>
 									<motion.div
 										className="relative rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] overflow-hidden h-full group transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-[rgba(0,255,135,0.15)]"
 										whileHover={{ y: -2 }}
@@ -122,17 +120,6 @@ export default function Specialization() {
 											damping: 25,
 										}}
 									>
-										{agent.image && (
-											<div className="absolute inset-0">
-												<Image
-													src={agent.image}
-													alt=""
-													fill
-													className="object-cover object-top opacity-[0.08] group-hover:opacity-[0.12] transition-opacity duration-700"
-													sizes="(min-width: 768px) 60vw, 100vw"
-												/>
-											</div>
-										)}
 										<div className="relative p-6 sm:p-7">
 											<div className="flex items-center gap-3 mb-4">
 												<div className="w-9 h-9 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center">
@@ -154,16 +141,16 @@ export default function Specialization() {
 										</div>
 									</motion.div>
 								</RevealBlock>
-							</div>
-						);
-					})}
+							);
+						})}
+					</div>
 
-					{/* Second row: 3 cards, 4+4+4 */}
-					{agentTypes.slice(2).map((agent, i) => {
-						const Icon = agent.icon;
-						return (
-							<div key={agent.title} className="md:col-span-4">
-								<RevealBlock delay={0.3 + i * 0.08}>
+					{/* Second row: 3 equal cards */}
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						{agentTypes.slice(2).map((agent, i) => {
+							const Icon = agent.icon;
+							return (
+								<RevealBlock key={agent.title} delay={0.3 + i * 0.08}>
 									<motion.div
 										className="relative rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] overflow-hidden h-full group transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-[rgba(0,255,135,0.15)]"
 										whileHover={{ y: -2 }}
@@ -173,17 +160,6 @@ export default function Specialization() {
 											damping: 25,
 										}}
 									>
-										{agent.image && (
-											<div className="absolute inset-0">
-												<Image
-													src={agent.image}
-													alt=""
-													fill
-													className="object-cover object-top opacity-[0.08] group-hover:opacity-[0.12] transition-opacity duration-700"
-													sizes="(min-width: 768px) 33vw, 100vw"
-												/>
-											</div>
-										)}
 										<div className="relative p-6 sm:p-7">
 											<div className="flex items-center gap-3 mb-4">
 												<div className="w-9 h-9 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center">
@@ -205,9 +181,9 @@ export default function Specialization() {
 										</div>
 									</motion.div>
 								</RevealBlock>
-							</div>
-						);
-					})}
+							);
+						})}
+					</div>
 				</div>
 
 				{/* Callout */}
