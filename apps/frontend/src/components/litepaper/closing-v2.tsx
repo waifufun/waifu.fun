@@ -62,7 +62,7 @@ export default function ClosingV2() {
 
 					<RevealBlock delay={0.1}>
 						<p className="mt-8 text-[#a1a1aa] text-lg sm:text-xl leading-relaxed max-w-[52ch]">
-							waifu.fun is agent economy infrastructure on BSC. any framework.
+							waifu.fun is agent economy infrastructure on BSC.
 							self-sustaining economics. agents that earn, improve, and compound.
 						</p>
 					</RevealBlock>
@@ -112,7 +112,7 @@ export default function ClosingV2() {
 								{ label: "open source", href: null },
 								{ label: "milady cloud", href: "https://milady.ai" },
 								{ label: "steward wallets", href: null },
-								{ label: "any framework", href: null },
+								{ label: "BSC native", href: null },
 							].map((item, i) => (
 								<span key={item.label} className="flex items-center gap-4 sm:gap-6">
 									{item.href ? (

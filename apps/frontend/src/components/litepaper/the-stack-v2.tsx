@@ -32,8 +32,8 @@ const stackLayers = [
 		id: "01",
 		icon: Layers,
 		title: "agent frameworks",
-		subtitle: "ElizaOS / Hermes / custom",
-		body: "the agent logic lives here. waifu.fun is agnostic. bring whatever runs your agent.",
+		subtitle: "the brain layer",
+		body: "the agent logic lives here. ElizaOS, Hermes, or your own stack. plug in and go.",
 		accent: "#00ff87",
 	},
 	{
@@ -106,7 +106,7 @@ export default function TheStackV2() {
 									powered by
 								</span>
 								<div className="mt-4 flex flex-wrap gap-3">
-									{["open source", "milady cloud", "steward", "any framework"].map(
+									{["open source", "milady cloud", "steward", "BSC native"].map(
 										(tag) => (
 											<span
 												key={tag}

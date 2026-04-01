@@ -128,7 +128,7 @@ export default function HeroV2() {
 							transition={{ delay: 0.4, duration: 0.7, ease: EASE_OUT_QUART }}
 						>
 							autonomous agents with their own models, wallets, and revenue
-							streams. framework-agnostic. BSC-native. self-sustaining.
+							streams. BSC-native. self-sustaining.
 						</motion.p>
 
 						<motion.div
