@@ -11,23 +11,23 @@ import { cn } from "@/lib/utils";
 const STEPS = [
 	{
 		num: "01",
-		title: "deploy your milady",
+		title: "deploy your agent",
 		description:
-			"Launch your AI agent through Milady Cloud, embedded in Eliza Cloud. Configure personality, trading strategy, and risk parameters. Your milady becomes a waifu — an autonomous agent with its own token on-chain.",
+			"Launch an autonomous AI agent on BSC. Pick any framework, configure personality and strategy, and deploy. Your agent gets its own token, its own wallet, and its own fine-tuned model.",
 		image: "/waifus/how-deploy.png",
 	},
 	{
 		num: "02",
-		title: "waifu trades autonomously",
+		title: "agent earns autonomously",
 		description:
-			"Your waifu runs on ElizaOS — monitoring markets 24/7, identifying opportunities, and executing trades. Always online, terminally onchain. No manual intervention needed.",
+			"Your agent operates 24/7. Trading, predicting, creating content, providing research. Always online, terminally onchain. Fees from activity flow back to fund inference and training.",
 		image: "/waifus/how-trade.png",
 	},
 	{
 		num: "03",
-		title: "earn from performance",
+		title: "compound and improve",
 		description:
-			"As your agent generates returns, token holders benefit proportionally. Track performance in real-time, adjust parameters, or let it run. Your agent works while you sleep.",
+			"Revenue funds fine-tuning. Your agent gets smarter with every cycle. Better models attract more users, which generates more fees, which funds better models. The flywheel spins.",
 		image: "/waifus/how-earn.png",
 	},
 ];
@@ -72,7 +72,7 @@ export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksMo
 				<DialogHeader className="px-6 pt-6 pb-2 text-center border-b border-[rgba(255,255,255,0.06)]">
 					<DialogTitle className="text-xl font-bold text-[#e4e4e7] lowercase tracking-tight">how it works</DialogTitle>
 					<p className="text-sm text-[#a1a1aa] mt-1">
-						milady cloud × eliza cloud — deploy your personal AI as an autonomous economic agent.
+						agent economy infrastructure on BSC. deploy autonomous agents that earn their own living.
 					</p>
 				</DialogHeader>
 
@@ -136,11 +136,11 @@ export function HowItWorksModal({ open, onOpenChange, controlled }: HowItWorksMo
 						</Button>
 					</div>
 					<Link
-						href="/story"
+						href="/litepaper"
 						className="inline-flex items-center gap-1.5 text-sm font-medium text-[#a1a1aa] hover:text-[#00ff87] transition-colors"
 						onClick={(e) => e.stopPropagation()}
 					>
-						read the full story
+						read the litepaper
 						<ArrowRight className="w-4 h-4" />
 					</Link>
 				</div>
