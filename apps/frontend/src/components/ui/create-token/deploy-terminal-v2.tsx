@@ -102,7 +102,7 @@ function TypewriterLine({
 }: {
 	text: string;
 	type: TerminalLine["type"];
-	onComplete?: () => void;
+	onComplete?: (() => void) | undefined;
 }) {
 	const [displayed, setDisplayed] = useState("");
 	const [done, setDone] = useState(false);
@@ -199,7 +199,9 @@ export function DeployTerminalV2({
 		if (visibleCount >= lines.length) return;
 
 		const nextLine = lines[visibleCount];
-		const prevDelay = visibleCount > 0 ? lines[visibleCount - 1].delay : 0;
+		if (!nextLine) return;
+		const prevLine = visibleCount > 0 ? lines[visibleCount - 1] : null;
+		const prevDelay = prevLine ? prevLine.delay : 0;
 		const wait = nextLine.delay - prevDelay;
 
 		const timer = setTimeout(() => {
@@ -279,11 +281,10 @@ export function DeployTerminalV2({
 							<TypewriterLine
 								text={line.text}
 								type={line.type}
-								onComplete={
-									i === visibleCount - 1
-										? () => setCurrentLineComplete(true)
-										: undefined
-								}
+								{...(i === visibleCount - 1
+									? { onComplete: () => setCurrentLineComplete(true) }
+									: {}
+								)}
 							/>
 						</motion.div>
 					))}

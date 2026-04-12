@@ -115,16 +115,8 @@ function StepIndicator({
 										!active &&
 										"bg-[#111114] border border-[rgba(255,255,255,0.08)] text-[#52525b]",
 								)}
-								whileHover={
-									step.id <= currentStep
-										? { scale: 1.08 }
-										: undefined
-								}
-								whileTap={
-									step.id <= currentStep
-										? { scale: 0.95 }
-										: undefined
-								}
+								whileHover={{ scale: step.id <= currentStep ? 1.08 : 1 }}
+								whileTap={{ scale: step.id <= currentStep ? 0.95 : 1 }}
 								transition={{ type: "spring", stiffness: 400, damping: 20 }}
 							>
 								{done ? (
@@ -525,12 +517,12 @@ function StepDeploy({
 					whileHover={
 						config.name && config.symbol
 							? { scale: 1.01 }
-							: undefined
+							: {}
 					}
 					whileTap={
 						config.name && config.symbol
 							? { scale: 0.98 }
-							: undefined
+							: {}
 					}
 					transition={{ type: "spring", stiffness: 400, damping: 20 }}
 					style={
@@ -539,7 +531,7 @@ function StepDeploy({
 									boxShadow:
 										"0 0 24px rgba(0,255,135,0.25), 0 0 48px rgba(0,255,135,0.1)",
 								}
-							: undefined
+							: {}
 					}
 				>
 					<Rocket size={16} className="inline mr-2 -mt-0.5" />
@@ -728,7 +720,7 @@ export function CreateWizardV2() {
 								? "border-[rgba(255,255,255,0.04)] text-[#3f3f46] cursor-not-allowed"
 								: "border-[rgba(255,255,255,0.08)] text-[#71717a] hover:text-[#e4e4e7] hover:border-[rgba(255,255,255,0.15)] cursor-pointer",
 						)}
-						whileTap={step > 1 ? { scale: 0.98 } : undefined}
+						whileTap={{ scale: step > 1 ? 0.98 : 1 }}
 						transition={{ type: "spring", stiffness: 400, damping: 20 }}
 					>
 						<ChevronLeft size={14} className="inline mr-1 -mt-px" />
@@ -744,8 +736,8 @@ export function CreateWizardV2() {
 								? "bg-[#00ff87] text-[#08080a] hover:bg-[#22c55e] cursor-pointer"
 								: "bg-[#1a1a1f] text-[#52525b] cursor-not-allowed",
 						)}
-						whileHover={canProceed(step) ? { scale: 1.01 } : undefined}
-						whileTap={canProceed(step) ? { scale: 0.98 } : undefined}
+						whileHover={{ scale: canProceed(step) ? 1.01 : 1 }}
+						whileTap={{ scale: canProceed(step) ? 0.98 : 1 }}
 						transition={{ type: "spring", stiffness: 400, damping: 20 }}
 					>
 						Next

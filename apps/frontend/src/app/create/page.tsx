@@ -4,10 +4,11 @@ import { PromptProvider } from "@/components/hooks/providers/usePromptContext";
 import { FAQAccordion } from "@/components/ui/create-token/faq-accordion";
 import { AgentPreviewCard } from "@/components/ui/create-token/agent-preview-card";
 import { CreateWizard } from "@/components/ui/create-token/create-wizard";
+import { CreateWizardV2 } from "@/components/ui/create-token/create-wizard-v2";
 import { ConversationalCreate } from "@/components/ui/create-token/conversational-create";
 import { getLaunchGateCheck, isApiUnavailableError } from "@/lib/api";
 import { useAccount } from "wagmi";
-import { LockKeyhole, RefreshCcw, Rocket, MessageSquare, SlidersHorizontal } from "lucide-react";
+import { LockKeyhole, RefreshCcw, Rocket, MessageSquare, SlidersHorizontal, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -16,42 +17,45 @@ import { useTranslation } from "@/contexts/locale-context";
 // ---------------------------------------------------------------------------
 // Mode toggle: Conversational vs Manual
 // ---------------------------------------------------------------------------
+type CreateMode = "conversational" | "manual" | "v2";
+
 function CreateModeToggle({
 	mode,
 	onModeChange,
 }: {
-	mode: "conversational" | "manual";
-	onModeChange: (m: "conversational" | "manual") => void;
+	mode: CreateMode;
+	onModeChange: (m: CreateMode) => void;
 }) {
+	const modes: { id: CreateMode; label: string; icon: typeof MessageSquare }[] = [
+		{ id: "conversational", label: "chat", icon: MessageSquare },
+		{ id: "manual", label: "manual", icon: SlidersHorizontal },
+		{ id: "v2", label: "v2", icon: Zap },
+	];
+
 	return (
 		<div className="flex items-center justify-end gap-1 max-w-7xl mx-auto px-4 pt-4">
 			<div className="flex items-center gap-0 border border-[rgba(255,255,255,0.06)] rounded-sm overflow-hidden">
-				<button
-					type="button"
-					onClick={() => onModeChange("conversational")}
-					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
-						mode === "conversational"
-							? "bg-[#00ff87]/10 text-[#00ff87] border-r border-[rgba(255,255,255,0.06)]"
-							: "bg-transparent text-[#52525b] hover:text-[#71717a] border-r border-[rgba(255,255,255,0.06)]"
-					)}
-				>
-					<MessageSquare className="w-3 h-3" />
-					chat
-				</button>
-				<button
-					type="button"
-					onClick={() => onModeChange("manual")}
-					className={cn(
-						"flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
-						mode === "manual"
-							? "bg-[#00ff87]/10 text-[#00ff87]"
-							: "bg-transparent text-[#52525b] hover:text-[#71717a]"
-					)}
-				>
-					<SlidersHorizontal className="w-3 h-3" />
-					manual
-				</button>
+				{modes.map((m, i) => {
+					const Icon = m.icon;
+					const isLast = i === modes.length - 1;
+					return (
+						<button
+							key={m.id}
+							type="button"
+							onClick={() => onModeChange(m.id)}
+							className={cn(
+								"flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
+								mode === m.id
+									? "bg-[#00ff87]/10 text-[#00ff87]"
+									: "bg-transparent text-[#52525b] hover:text-[#71717a]",
+								!isLast && "border-r border-[rgba(255,255,255,0.06)]"
+							)}
+						>
+							<Icon className="w-3 h-3" />
+							{m.label}
+						</button>
+					);
+				})}
 			</div>
 		</div>
 	);
@@ -98,18 +102,38 @@ function ManualCreateLauncher() {
 // ---------------------------------------------------------------------------
 // Launcher wrapper (mode switch)
 // ---------------------------------------------------------------------------
+function V2CreateLauncher() {
+	return (
+		<div className="w-full min-h-[100dvh] bg-[#08080a]">
+			<div className="w-full max-w-6xl mx-auto px-4 pt-8 pb-4">
+				<div className="text-center mb-8">
+					<div className="inline-flex items-center gap-2 mb-3">
+						<Zap className="w-5 h-5 text-[#00ff87]" />
+						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">agent factory v2</span>
+					</div>
+					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">Deploy your agent</h1>
+					<p className="text-sm text-[#71717a] max-w-md mx-auto">
+						80/10/10 split. bonding curve. agent treasury. all automatic.
+					</p>
+				</div>
+			</div>
+			<div className="w-full max-w-7xl mx-auto px-4 pb-8">
+				<CreateWizardV2 />
+			</div>
+		</div>
+	);
+}
+
 function CreateTokenLauncher() {
-	const [mode, setMode] = useState<"conversational" | "manual">("conversational");
+	const [mode, setMode] = useState<CreateMode>("conversational");
 
 	return (
 		<div className="w-full min-h-screen bg-[#08080a]">
 			<CreateModeToggle mode={mode} onModeChange={setMode} />
 
-			{mode === "conversational" ? (
-				<ConversationalCreate />
-			) : (
-				<ManualCreateLauncher />
-			)}
+			{mode === "conversational" && <ConversationalCreate />}
+			{mode === "manual" && <ManualCreateLauncher />}
+			{mode === "v2" && <V2CreateLauncher />}
 		</div>
 	);
 }
