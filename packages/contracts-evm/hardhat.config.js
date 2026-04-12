@@ -14,7 +14,7 @@ module.exports = {
 	networks: {
 		hardhat: {
 			forking: process.env.FORK_BSC === "true" ? {
-				url: "https://bsc-dataseed1.binance.org/",
+				url: process.env.FORK_BSC_URL || "https://bsc-dataseed1.binance.org/",
 			} : undefined,
 			chainId: 31337,
 		},

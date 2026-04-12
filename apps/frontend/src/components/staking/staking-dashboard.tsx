@@ -22,10 +22,10 @@ function RevealBlock({ children, delay = 0 }: { children: React.ReactNode; delay
 }
 
 const STATS = [
-	{ label: "total staked", value: "42.8M", sub: "WAIFU", icon: Lock },
-	{ label: "staking APY", value: "12.5%", sub: "estimated", icon: TrendingUp },
-	{ label: "total distributed", value: "1.2M", sub: "WAIFU in fees", icon: Zap },
-	{ label: "your veWAIFU", value: "0", sub: "connect wallet", icon: Wallet },
+	{ label: "total staked", value: "--", sub: "WAIFU", icon: Lock },
+	{ label: "staking APY", value: "--", sub: "estimated", icon: TrendingUp },
+	{ label: "total distributed", value: "--", sub: "WAIFU in fees", icon: Zap },
+	{ label: "your veWAIFU", value: "--", sub: "live soon", icon: Wallet },
 ];
 
 export default function StakingDashboard() {

@@ -97,25 +97,25 @@ const WAIFU_STATS = [
 	{
 		icon: <TrendingUp className="h-3.5 w-3.5" />,
 		label: "WAIFU Price",
-		value: "$0.0042",
+		value: "--",
 		pulse: true,
 		accent: true,
 	},
 	{
 		icon: <Coins className="h-3.5 w-3.5" />,
 		label: "Market Cap",
-		value: "$4.2M",
+		value: "--",
 	},
 	{
 		icon: <Lock className="h-3.5 w-3.5" />,
 		label: "Total Staked",
-		value: "42%",
+		value: "--",
 		sub: "of circulating supply",
 	},
 	{
 		icon: <Percent className="h-3.5 w-3.5" />,
 		label: "Staking APY",
-		value: "12.5%",
+		value: "--",
 		accent: true,
 	},
 ] as const;
@@ -124,7 +124,7 @@ const AGENT_STATS = [
 	{
 		icon: <Bot className="h-3.5 w-3.5" />,
 		label: "Active Agents",
-		value: "7",
+		value: "--",
 		pulse: true,
 	},
 	{
