@@ -17,6 +17,7 @@ const HOW_IT_WORKS_SEEN_KEY = "waifu_how_it_works_seen";
 const NAV_LINKS = [
 	{ href: "/#explore", labelKey: "nav.explore" },
 	{ href: "/create", labelKey: "nav.create" },
+	{ href: "/stake", labelKey: "nav.stake" },
 	{ href: "/litepaper", labelKey: "nav.story" },
 ] as const;
 
