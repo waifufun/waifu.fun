@@ -125,7 +125,7 @@ function V2CreateLauncher() {
 }
 
 function CreateTokenLauncher() {
-	const [mode, setMode] = useState<CreateMode>("conversational");
+	const [mode, setMode] = useState<CreateMode>("v2");
 
 	return (
 		<div className="w-full min-h-screen bg-[#08080a]">
