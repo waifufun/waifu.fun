@@ -123,7 +123,8 @@ contract FeeRouter is IFeeRouter, Ownable, ReentrancyGuard {
     function setAgentTreasury(
         address agentToken,
         address treasury
-    ) external override onlyOwner {
+    ) external override {
+        require(msg.sender == owner() || authorizedCallers[msg.sender], "NOT_AUTHORIZED");
         if (agentToken == address(0)) revert ZeroAddress();
         if (treasury == address(0)) revert ZeroAddress();
 
