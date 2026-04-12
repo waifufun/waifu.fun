@@ -4,103 +4,126 @@ export default function Page() {
 			<div className="w-full max-w-5xl mx-auto px-4 py-12">
 				{/* Page Header */}
 				<div className="mb-10">
-					<h1 className="text-3xl font-bold text-[#00ff87] tracking-tight mb-3">FAQ</h1>
+					<h1 className="text-3xl font-bold text-[#00ff87] tracking-tight mb-3">How It Works</h1>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						<span className="text-[#00ff87] font-semibold">waifu.fun</span> is an all-in-one solution to launch tokens,
-						manage communities, generate visual assets, and grow your project — powered by ElizaOS.
+						<span className="text-[#00ff87] font-semibold">waifu.fun</span> is the agent token launchpad on BSC.
+						deploy agents powered by ElizaOS, launch tokens on WAIFU bonding curves, and build self-sustaining economies.
 					</p>
 				</div>
 
 				<div className="space-y-6">
-					{/* Launch Options Section */}
+					{/* V2 Flow Section */}
 					<section className="bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6">
-						<h2 className="text-xl font-semibold text-[#00ff87] mb-6">Coin Launch Options</h2>
+						<h2 className="text-xl font-semibold text-[#00ff87] mb-6">The V2 Flow</h2>
 						<div className="space-y-4">
 							<p className="text-sm text-[#a1a1aa] leading-relaxed">
-								<span className="text-[#00ff87] font-semibold">waifu.fun</span> offers three launch modes:
+								from agent creation to graduation, here is how the lifecycle works:
 							</p>
 							<div className="space-y-4">
 								<div>
-									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">1. Auto</h3>
+									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">1. Deploy an Agent</h3>
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
-										As the name suggests, everything from the description to the ticker and image is generated
-										automatically based on your prompt. If you don't have one, it even generates a punchy prompt for you
-										to begin with which you can launch with a single click. Auto mode uses a bonding curve with
-										initial virtual reserves. When reserves hit the graduation threshold, it automatically migrates to
-										a DEX.
+										configure your agent with a personality, skills, and purpose. agents run on{" "}
+										<span className="text-[#e4e4e7] font-medium">ElizaOS</span> and are hosted on{" "}
+										<span className="text-[#e4e4e7] font-medium">Eliza Cloud</span>, giving them
+										persistent runtime, memory, and the ability to interact across platforms.
 									</p>
 								</div>
 								<div>
-									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">2. Manual</h3>
+									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">2. Launch on a WAIFU Bonding Curve</h3>
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
-										Manual mode unlocks advanced configuration and sniper protection. Projects can choose a larger
-										bonding curve size, delay the tradable start time, limit transaction amounts for the first 8 hours,
-										and select which DEX pool to use after graduation.
+										every agent token launches on a bonding curve denominated in{" "}
+										<span className="text-[#00ff87] font-semibold">$WAIFU</span>, the platform token.
+										early supporters buy in at lower prices. the curve provides guaranteed liquidity from day one,
+										no need for LPs or seed rounds.
 									</p>
 								</div>
 								<div>
-									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">3. Import</h3>
+									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">3. Trade and Grow</h3>
 									<p className="text-sm text-[#a1a1aa] leading-relaxed">
-										Import lets you add existing tokens to the{" "}
-										<span className="text-[#00ff87] font-semibold">waifu.fun</span> ecosystem to access community and
-										agent features. It does not create a new liquidity pool or bonding curve.
+										as the agent builds reputation and its token gains traction, the bonding curve fills.
+										trading fees are collected on every buy and sell, with{" "}
+										<span className="text-[#e4e4e7] font-medium">25% of all fees</span> routed to{" "}
+										<span className="text-[#00ff87] font-semibold">$WAIFU</span> stakers.
+									</p>
+								</div>
+								<div>
+									<h3 className="text-base font-semibold text-[#e4e4e7] mb-1">4. Graduate to PancakeSwap</h3>
+									<p className="text-sm text-[#a1a1aa] leading-relaxed">
+										when the bonding curve fills completely, the agent token graduates to{" "}
+										<span className="text-[#e4e4e7] font-medium">PancakeSwap</span> automatically.
+										liquidity is migrated and the token enters open market trading with full DEX liquidity.
 									</p>
 								</div>
 							</div>
 						</div>
 					</section>
 
-					{/* Liquidity & Points Section */}
+					{/* WAIFU Token Section */}
 					<section className="bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6">
+						<h2 className="text-xl font-semibold text-[#00ff87] mb-6">The WAIFU Token</h2>
 						<div className="space-y-6">
 							<div>
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Liquidity</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Platform Currency</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and{" "}
-									<span className="text-[#00ff87] font-semibold">waifu.fun</span> respectively with burn and earn
-									mechanisms.
+									<span className="text-[#00ff87] font-semibold">$WAIFU</span> is the native token of the waifu.fun ecosystem.
+									all agent token bonding curves are denominated in WAIFU, making it the base pair for every launch.
+									WAIFU itself launches on{" "}
+									<span className="text-[#e4e4e7] font-medium">Flap</span>.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">waifu.fun Points</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Staking</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									Each week on Sunday 00:00 UTC, 1,000,000 points are distributed based on the share of weekly points
-									earned by each user. Since the total is fixed, using the platform when fewer people are trading can
-									earn you a larger share.
+									stake your <span className="text-[#00ff87] font-semibold">$WAIFU</span> to earn a share
+									of platform fees. stakers receive{" "}
+									<span className="text-[#e4e4e7] font-medium">25% of all trading fees</span> generated
+									across every agent token on the platform. the more you stake, the larger your share.
+								</p>
+							</div>
+
+							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Fee Distribution</h3>
+								<p className="text-sm text-[#a1a1aa] leading-relaxed">
+									every trade on a bonding curve generates fees. these fees flow back into the ecosystem:
+									a portion to stakers, a portion to the protocol, and the rest fuels liquidity.
+									this creates a flywheel where more agents and more trading means more yield for stakers.
 								</p>
 							</div>
 						</div>
 					</section>
 
-					{/* Community & Features Section */}
+					{/* Agent Infrastructure Section */}
 					<section className="bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.06)] rounded-sm p-6">
-						<h2 className="text-xl font-semibold text-[#00ff87] mb-6">Features</h2>
+						<h2 className="text-xl font-semibold text-[#00ff87] mb-6">Agent Infrastructure</h2>
 						<div className="space-y-6">
 							<div>
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Community Management</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">ElizaOS Runtime</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									Managing a Telegram group is hard work. Instead, token communities can use the chat on their token
-									pages. The three levels of chat rooms, requiring 1k, 100k, and 1m tokens respectively, allows
-									communities to gather together while also providing privacy for the whale chat as they plan the
-									project's growth.
+									agents on waifu.fun run on{" "}
+									<span className="text-[#e4e4e7] font-medium">ElizaOS</span>, an open-source agent framework.
+									each agent has persistent memory, configurable personality, and the ability to use plugins
+									for on-chain actions, social media, and more.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">AI Asset Creation</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Eliza Cloud Hosting</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									Token holders can generate photos and videos for their project directly on the platform. Holding more
-									tokens unlocks more advanced AI models for better visual output. Assets can be shared straight in the
-									chat so the community can decide what to use and where.
+									agents are hosted on{" "}
+									<span className="text-[#e4e4e7] font-medium">Eliza Cloud</span>, providing always-on runtime
+									without the need to manage infrastructure. creators configure and deploy, the cloud handles the rest.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">AI Agents</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Community Features</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									Through our integration with Eliza Cloud, creators can configure and host agents on the platform, then
-									connect them to their token. This feature is under active development.
+									token communities can use tiered chat rooms on their token pages.
+									the three levels, requiring 1k, 100k, and 1m tokens respectively, allow
+									communities to gather while providing privacy for larger holders.
+									token holders can also generate AI photos and videos directly on the platform.
 								</p>
 							</div>
 						</div>

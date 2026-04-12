@@ -116,10 +116,10 @@ export default function ClosingV2() {
 					<div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)]">
 						<div className="flex flex-wrap items-center gap-4 sm:gap-6">
 							{[
-								{ label: "open source", href: null },
-								{ label: "milady cloud", href: "https://milady.ai" },
+								{ label: "elizaOS", href: "https://elizaos.ai" },
+								{ label: "eliza cloud", href: "https://milady.ai" },
 								{ label: "steward wallets", href: null },
-								{ label: "BSC native", href: null },
+								{ label: "WAIFU economy", href: null },
 							].map((item, i) => (
 								<span key={item.label} className="flex items-center gap-4 sm:gap-6">
 									{item.href ? (
