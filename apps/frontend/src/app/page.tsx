@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import TokenGrid from "@/components/token-grid";
 import Hero from "@/components/landing/hero";
+import WaifuHub from "@/components/landing/waifu-hub";
 import HomeEmptyState from "@/components/home-empty-state";
 import ExplorerHeader from "@/components/explorer-header";
 import { getTokens } from "@/lib/api";
@@ -59,6 +60,7 @@ export default async function Home() {
 	return (
 		<div className="flex flex-col w-full">
 			<Hero />
+			<WaifuHub />
 
 			<div id="explore" className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 scroll-mt-20">
 				{noTokens ? (
