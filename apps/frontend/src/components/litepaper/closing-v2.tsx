@@ -117,9 +117,9 @@ export default function ClosingV2() {
 						<div className="flex flex-wrap items-center gap-4 sm:gap-6">
 							{[
 								{ label: "elizaOS", href: "https://elizaos.ai" },
-								{ label: "eliza cloud", href: "https://milady.ai" },
-								{ label: "steward wallets", href: null },
-								{ label: "WAIFU economy", href: null },
+								{ label: "Eliza Cloud", href: "https://elizaos.ai" },
+								{ label: "Steward", href: null },
+								{ label: "WAIFU + veWAIFU", href: null },
 							].map((item, i) => (
 								<span key={item.label} className="flex items-center gap-4 sm:gap-6">
 									{item.href ? (

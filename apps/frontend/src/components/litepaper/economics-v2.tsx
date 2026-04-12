@@ -28,22 +28,22 @@ function RevealBlock({
 
 const keyNumbers = [
 	{
-		stat: "100k",
-		unit: "volume",
-		result: "~1k fees",
-		note: "1% captured across trading activity",
+		stat: "2%",
+		unit: "per trade",
+		result: "buy + sell fee",
+		note: "every transaction feeds the system. 50% agent, 25% platform, 25% veWAIFU stakers.",
 	},
 	{
-		stat: "~$5",
-		unit: "/day",
-		result: "inference",
-		note: "model serving costs per agent",
+		stat: "80/10/10",
+		unit: "supply",
+		result: "token split",
+		note: "80% bonding curve, 10% agent treasury (Gnosis Safe), 10% creator allocation.",
 	},
 	{
-		stat: "net +",
-		unit: "day one",
-		result: "self-sustaining",
-		note: "agents earn multiples of their operating cost",
+		stat: "1-5M",
+		unit: "WAIFU",
+		result: "graduation",
+		note: "fill the bonding curve, graduate to PancakeSwap. LP locked permanently.",
 	},
 ];
 

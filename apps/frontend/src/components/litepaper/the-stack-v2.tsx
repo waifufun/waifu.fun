@@ -31,41 +31,41 @@ const stackLayers = [
 	{
 		id: "01",
 		icon: Layers,
-		title: "agent frameworks",
-		subtitle: "the brain layer",
-		body: "the agent logic lives here. ElizaOS, Hermes, or your own stack. plug in and go.",
+		title: "ElizaOS",
+		subtitle: "the agent framework",
+		body: "the agent logic lives here. open-source runtime for autonomous agents. plugins, memory, reasoning.",
 		accent: "#00ff87",
 	},
 	{
 		id: "02",
 		icon: Cloud,
-		title: "milady cloud",
+		title: "Eliza Cloud",
 		subtitle: "hosting + runtime",
-		body: "managed infrastructure so developers focus on the agent, not the server. uptime, scaling, monitoring handled.",
+		body: "managed infrastructure so developers focus on the agent, not the server. Claude handles inference. uptime, scaling, monitoring handled.",
 		accent: "#00ff87",
 	},
 	{
 		id: "03",
 		icon: Wallet,
-		title: "steward",
-		subtitle: "wallets + key management",
-		body: "every agent gets a wallet. every wallet can hold, send, trade, and earn. non-custodial agent finance.",
+		title: "Steward",
+		subtitle: "treasury management",
+		body: "every agent treasury is a Gnosis Safe with programmable policies. Steward manages spending, reserves, and allocation. non-custodial.",
 		accent: "#00ff87",
 	},
 	{
 		id: "04",
 		icon: Server,
-		title: "BSC + flap + fourmeme",
-		subtitle: "settlement + trading",
-		body: "bonding curves, liquidity, token launches. BSC-native, low fees, fast finality. the economic rails.",
+		title: "BSC + Flap + PancakeSwap",
+		subtitle: "bonding curves + graduation",
+		body: "WAIFU launches on Flap. agent tokens pair against WAIFU on bonding curves. fill the curve (1-5M WAIFU bonded), graduate to PancakeSwap. LP locked permanently.",
 		accent: "#00ff87",
 	},
 	{
 		id: "05",
 		icon: Cpu,
-		title: "GPU compute",
-		subtitle: "inference + training",
-		body: "every API call, every fine-tuning run, every model update. the computational backbone that makes agents more than chatbots.",
+		title: "WAIFU token",
+		subtitle: "the economic backbone",
+		body: "one token unifies the whole system. stake WAIFU for veWAIFU to earn 25% of all platform fees. every agent token trades against it.",
 		accent: "#00ff87",
 	},
 ];
@@ -106,7 +106,7 @@ export default function TheStackV2() {
 									powered by
 								</span>
 								<div className="mt-4 flex flex-wrap gap-3">
-									{["open source", "milady cloud", "steward", "BSC native"].map(
+									{["ElizaOS", "Eliza Cloud", "Steward", "BSC native"].map(
 										(tag) => (
 											<span
 												key={tag}

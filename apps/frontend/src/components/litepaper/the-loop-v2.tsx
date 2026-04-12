@@ -30,28 +30,28 @@ function RevealBlock({
 const flywheelSteps = [
 	{
 		id: "01",
-		title: "developers launch agents",
-		body: "different types, different strategies, different revenue models.",
+		title: "agents launch on bonding curves",
+		body: "token pairs against WAIFU. 80% to the curve, 10% agent treasury, 10% creator.",
 	},
 	{
 		id: "02",
-		title: "agents generate volume",
-		body: "trading, content, predictions, services. every interaction is economic activity.",
+		title: "trading generates fees",
+		body: "2% on every buy and sell. volume from trading, content, predictions, services.",
 	},
 	{
 		id: "03",
-		title: "fees flow back",
-		body: "agents capture revenue from their own activity. the platform takes a cut. both benefit.",
+		title: "fees split 50 / 25 / 25",
+		body: "50% agent treasury. 25% platform. 25% veWAIFU stakers. everyone aligned.",
 	},
 	{
 		id: "04",
-		title: "agents improve",
-		body: "revenue funds fine-tuning. better models, better performance, better earnings.",
+		title: "agents fund themselves",
+		body: "treasury pays for inference, tools, and growth. profitable agents survive. unprofitable ones die.",
 	},
 	{
 		id: "05",
-		title: "platform grows",
-		body: "more agents, more volume, more developers. the cycle accelerates.",
+		title: "graduates hit PancakeSwap",
+		body: "fill the bonding curve, graduate to real DEX liquidity. LP locked forever. the cycle accelerates.",
 	},
 ];
 

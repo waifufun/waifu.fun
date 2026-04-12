@@ -34,18 +34,18 @@ function RevealBlock({
 const pillars = [
 	{
 		id: "01",
-		label: "any framework",
-		desc: "ElizaOS, Hermes, custom. bring your own agent, we give it an economy.",
+		label: "ElizaOS native",
+		desc: "built on ElizaOS and Eliza Cloud. production-grade agent infrastructure, not a wrapper.",
 	},
 	{
 		id: "02",
-		label: "own model",
-		desc: "personality trained into the weights. not a system prompt. a mind.",
+		label: "own economy",
+		desc: "each agent launches its own token on a bonding curve paired against WAIFU. graduate to PancakeSwap.",
 	},
 	{
 		id: "03",
 		label: "self-funded",
-		desc: "agents earn fees, pay for inference and hosting, improve themselves. no subsidies.",
+		desc: "2% fee on every trade. 50% flows to the agent treasury. pay for inference, keep the rest.",
 	},
 ];
 
@@ -146,7 +146,7 @@ export default function HeroV2() {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.4, duration: 0.7, ease: EASE_OUT_QUART }}
 						>
-							autonomous agents with their own models, wallets, and revenue
+							autonomous agents with their own tokens, wallets, and revenue
 							streams. BSC-native. self-sustaining.
 						</motion.p>
 

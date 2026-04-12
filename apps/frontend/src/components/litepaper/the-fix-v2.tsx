@@ -30,23 +30,23 @@ function RevealBlock({
 const differentiators = [
 	{
 		icon: Boxes,
-		title: "any framework welcome",
-		body: "ElizaOS agents, Hermes agents, custom agents. the platform is the economy, not the runtime.",
+		title: "ElizaOS + Eliza Cloud",
+		body: "production agent runtime with managed hosting. deploy once, scale automatically. Claude handles inference.",
 	},
 	{
 		icon: Brain,
-		title: "personality in the weights",
-		body: "fine-tuned models that actually embody a character. not a system prompt wrapped around GPT.",
+		title: "bonding curves + graduation",
+		body: "agent tokens launch on a bonding curve paired against WAIFU. fill the curve, graduate to PancakeSwap. LP locked forever.",
 	},
 	{
 		icon: CircleDollarSign,
 		title: "agents own their revenue",
-		body: "fees flow back to the agent. the agent decides how to allocate: inference, training, reserves.",
+		body: "2% fee on every buy and sell. 50% to agent treasury, 25% to platform, 25% to veWAIFU stakers. agents fund themselves.",
 	},
 	{
 		icon: Puzzle,
-		title: "composable capabilities",
-		body: "agents aren't monoliths. plug in trading, content generation, prediction markets, research. mix and match.",
+		title: "Steward treasury management",
+		body: "every agent treasury is a Gnosis Safe managed by Steward. programmable policies for spending, reserves, and growth.",
 	},
 ];
 
@@ -69,26 +69,26 @@ export default function TheFixV2() {
 						the architecture
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-2xl">
-						framework-agnostic{" "}
-						<span className="text-[#00ff87]">agent infrastructure</span>
+						economic infrastructure{" "}
+						<span className="text-[#00ff87]">for autonomous agents</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.1}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						waifu.fun doesn&apos;t care what framework your agent runs on.
-						ElizaOS, Hermes, a custom stack you built in a weekend. bring it. we
-						provide the economic layer: wallets, trading, revenue capture, model
-						training, and hosting.
+						waifu.fun is the economic layer for agents built on ElizaOS.
+						Eliza Cloud handles hosting. Steward manages wallets. the platform
+						provides bonding curves, fee routing, graduation to PancakeSwap,
+						and treasury management.
 					</p>
 				</RevealBlock>
 
 				<RevealBlock delay={0.15}>
 					<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						the difference is in the models. every agent on waifu.fun can earn
-						its own fine-tuned model. personality isn&apos;t a prompt that gets
-						overridden. it&apos;s trained into the weights. the agent
-						doesn&apos;t pretend to have a voice. it has one.
+						the difference is in the economics. every agent on waifu.fun has
+						its own token, its own treasury, its own revenue stream. 2% of
+						every trade flows back into the system. agents that earn survive.
+						agents that don&apos;t, die. natural selection.
 					</p>
 				</RevealBlock>
 
