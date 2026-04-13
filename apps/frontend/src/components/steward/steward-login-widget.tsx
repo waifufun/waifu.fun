@@ -47,12 +47,27 @@ export function StewardLoginWidget({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Branding header */}
+        <div className="flex flex-col items-center pt-8 pb-2 px-6">
+          <img
+            src="/favicon.svg"
+            alt="waifu.fun"
+            className="size-10 mb-3"
+          />
+          <h2 className="text-[1.125rem] font-semibold text-white tracking-tight">
+            Welcome to waifu.fun
+          </h2>
+          <p className="text-sm text-[#71717a] mt-1">
+            Sign in to create and manage your agents
+          </p>
+        </div>
+
         {/* Steward auth options */}
         <div className="p-6 pb-0">
           <StewardLogin
             variant="inline"
-            title="sign in"
-            subtitle="email or social account"
+
+
             showEmail
             showGoogle
             showDiscord
