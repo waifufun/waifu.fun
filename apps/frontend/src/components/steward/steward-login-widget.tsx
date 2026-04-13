@@ -50,9 +50,9 @@ export function StewardLoginWidget({
         {/* Branding header */}
         <div className="flex flex-col items-center pt-8 pb-2 px-6">
           <img
-            src="/favicon.svg"
+            src="/icon-512.png"
             alt="waifu.fun"
-            className="size-10 mb-3"
+            className="size-12 mb-3 rounded-xl"
           />
           <h2 className="text-[1.125rem] font-semibold text-white tracking-tight">
             Welcome to waifu.fun
