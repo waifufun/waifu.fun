@@ -56,7 +56,7 @@ export function StewardLoginWidget({
             showEmail
             showGoogle
             showDiscord
-            showPasskey={false}
+            showPasskey
             onSuccess={handleSuccess}
             onError={(err) => console.error("[steward-login]", err)}
           />
