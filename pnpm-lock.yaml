@@ -177,6 +177,12 @@ importers:
       '@rainbow-me/rainbowkit':
         specifier: ^2.2.10
         version: 2.2.10(@tanstack/react-query@5.77.2(react@19.1.0))(@types/react@19.1.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)(viem@2.47.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(wagmi@2.19.5(@react-native-async-storage/async-storage@1.24.0(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10)))(@tanstack/query-core@5.77.2)(@tanstack/react-query@5.77.2(react@19.1.0))(@types/react@19.1.6)(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(ioredis@5.6.1)(react-native@0.79.2(@babel/core@7.27.3)(@types/react@19.1.6)(bufferutil@4.0.9)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.47.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76))
+      '@stwd/react':
+        specifier: 0.6.4
+        version: 0.6.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@stwd/sdk':
+        specifier: 0.7.2
+        version: 0.7.2
       '@tanstack/react-query':
         specifier: ^5.77.2
         version: 5.77.2(react@19.1.0)
@@ -2529,9 +2535,11 @@ packages:
 
   '@metamask/sdk-analytics@0.0.5':
     resolution: {integrity: sha512-fDah+keS1RjSUlC8GmYXvx6Y26s3Ax1U9hGpWb6GSY5SAdmTSIqp2CvYy6yW0WgLhnYhW+6xERuD0eVqV63QIQ==}
+    deprecated: No longer maintained, superseded by @metamask/connect-analytics
 
   '@metamask/sdk-communication-layer@0.33.1':
     resolution: {integrity: sha512-0bI9hkysxcfbZ/lk0T2+aKVo1j0ynQVTuB3sJ5ssPWlz+Z3VwveCkP1O7EVu1tsVVCb0YV5WxK9zmURu2FIiaA==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
     peerDependencies:
       cross-fetch: ^4.0.0
       eciesjs: '*'
@@ -2541,9 +2549,11 @@ packages:
 
   '@metamask/sdk-install-modal-web@0.32.1':
     resolution: {integrity: sha512-MGmAo6qSjf1tuYXhCu2EZLftq+DSt5Z7fsIKr2P+lDgdTPWgLfZB1tJKzNcwKKOdf6q9Qmmxn7lJuI/gq5LrKw==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/sdk@0.33.1':
     resolution: {integrity: sha512-1mcOQVGr9rSrVcbKPNVzbZ8eCl1K0FATsYH3WJ/MH4WcZDWGECWrXJPNMZoEAkLxWiMe8jOQBumg2pmcDa9zpQ==}
+    deprecated: No longer maintained, superseded by https://docs.metamask.io/metamask-connect
 
   '@metamask/superstruct@3.2.1':
     resolution: {integrity: sha512-fLgJnDOXFmuVlB38rUN5SmU7hAFQcCjrg3Vrxz67KTY7YHFnSNEKvX4avmEBdOI0yTCxZjwMCFEqsC8k2+Wd3g==}
@@ -4841,6 +4851,15 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  '@stwd/react@0.6.4':
+    resolution: {integrity: sha512-DWDpDVDTwFLzOqbTRgigjGHUfpeUvAesMa6yG7c5Uc0dPQciUqmKhzxcEw9id8aMYTiMnn6A0zIv4hpQYZlFSg==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
+  '@stwd/sdk@0.7.2':
+    resolution: {integrity: sha512-qu1gyULCZ7YKAWGYQ8wkVDrvsxDJsn/ffVYjhR6HNCoBEoK29LW4Gwekxr2PprBMeAXsEtxhkDkyTj/5ly/W/Q==}
 
   '@supabase/auth-js@2.98.0':
     resolution: {integrity: sha512-GBH361T0peHU91AQNzOlIrjUZw9TZbB9YDRiyFgk/3Kvr3/Z1NWUZ2athWTfHhwNNi8IrW00foyFxQD9IO/Trg==}
@@ -18207,6 +18226,14 @@ snapshots:
       storybook: 9.0.4(@testing-library/dom@10.4.0)(bufferutil@4.0.9)(prettier@2.8.8)(utf-8-validate@5.0.10)
     optionalDependencies:
       typescript: 5.8.3
+
+  '@stwd/react@0.6.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@stwd/sdk': 0.7.2
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+
+  '@stwd/sdk@0.7.2': {}
 
   '@supabase/auth-js@2.98.0':
     dependencies:

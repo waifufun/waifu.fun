@@ -102,6 +102,7 @@
   },
   "wallet": {
     "connectWallet": "Connect Wallet",
+    "signIn": "Sign In",
     "signOut": "Sign out"
   },
   "swap": {

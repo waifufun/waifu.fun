@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@stwd/react/styles.css";
 @config "../../tailwind.config.js";
 
 @custom-variant dark (&:is(.dark *));

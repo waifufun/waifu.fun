@@ -8,6 +8,7 @@ import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-
 import { useAccount } from "wagmi";
 import SearchMenu from "./search-menu";
 import HeaderConnectWallet from "./header-connect-wallet";
+import HeaderSignIn from "./header-sign-in";
 import { HowItWorksModal } from "./how-it-works-modal";
 import LanguageSwitcher from "./language-switcher";
 import { useTranslation } from "@/contexts/locale-context";
@@ -129,7 +130,8 @@ export default function Header() {
 				<div className="flex items-center gap-3 shrink-0">
 					<LanguageSwitcher />
 					<SearchMenu />
-					<div className="hidden lg:block">
+					<div className="hidden lg:flex items-center gap-2">
+						<HeaderSignIn />
 						<HeaderConnectWallet />
 					</div>
 					{/* Mobile hamburger button */}
@@ -197,7 +199,8 @@ export default function Header() {
 									{t(link.labelKey)}
 								</Link>
 							))}
-							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)]">
+							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)] flex flex-col gap-2">
+								<HeaderSignIn />
 								<HeaderConnectWallet />
 							</div>
 						</nav>

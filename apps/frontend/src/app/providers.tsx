@@ -9,6 +9,11 @@ import { Suspense } from "react";
 import { TransactionListenerProvider } from "@/providers/transaction-listener";
 import { LocaleProvider } from "@/contexts/locale-context";
 
+const StewardProviderLazy = dynamic(
+	() => import("@/providers/steward-provider").then((mod) => mod.WaifuStewardProvider),
+	{ ssr: false },
+);
+
 // Dynamic import prevents idb-keyval (via @wagmi/connectors → @base-org/account)
 // from accessing `indexedDB` during SSR/static generation
 const EvmProvider = dynamic(
@@ -34,11 +39,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 					shouldCompareComplexProps
 				>
 					<EvmProvider>
+						<StewardProviderLazy>
 						<AnimationProvider>
 							<TransactionListenerProvider>{children}</TransactionListenerProvider>
 							<Toaster />
 							<GoogleAnalytics gaId={googleTagID} />
 						</AnimationProvider>
+						</StewardProviderLazy>
 					</EvmProvider>
 				</ProgressProvider>
 			</TooltipProvider>
