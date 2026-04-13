@@ -9,6 +9,7 @@ import { Suspense } from "react";
 import { TransactionListenerProvider } from "@/providers/transaction-listener";
 import { LocaleProvider } from "@/contexts/locale-context";
 
+import { ApiAuthSync } from "@/components/steward/api-auth-sync";
 const StewardProviderLazy = dynamic(
 	() => import("@/providers/steward-provider").then((mod) => mod.WaifuStewardProvider),
 	{ ssr: false },
@@ -40,6 +41,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				>
 					<EvmProvider>
 						<StewardProviderLazy>
+						<ApiAuthSync />
 						<AnimationProvider>
 							<TransactionListenerProvider>{children}</TransactionListenerProvider>
 							<Toaster />

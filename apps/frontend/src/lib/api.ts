@@ -1,4 +1,5 @@
 import type { AddressLike, IToken, ITokenLookUp, SolanaNetworkIds, TChain, TChainId } from "@waifufun/types";
+import { getApiToken } from "./api-auth";
 
 const DEFAULT_API_ORIGIN = "http://89.167.63.246";
 
@@ -198,12 +199,21 @@ export const fetcher = async (
 	body?: object | undefined,
 ) => {
 	try {
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+			Accept: "application/json",
+		};
+
+		// Inject Steward JWT if the user is authenticated via Steward.
+		// Falls back to cookie-based auth (credentials: "include") when no token is set.
+		const token = getApiToken();
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
+		}
+
 		const response = await fetch(getApiUrl(endpoint), {
 			method,
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-			},
+			headers,
 			body: body ? JSON.stringify(body) : null,
 			credentials: "include",
 		});
