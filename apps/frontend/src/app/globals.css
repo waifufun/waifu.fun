@@ -457,6 +457,122 @@ input::selection {
 	animation: heartbeat-scroll 1.4s linear infinite;
 }
 
-.animate-heartbeat-scroll-slow {
+.animate-hb_signal-scroll-slow {
 	animation: heartbeat-scroll-slow 2.8s linear infinite;
+}
+
+/* ─── Steward Auth Widget Overrides ─── */
+
+/* Match waifu.fun border-radius (4px from theme) */
+.stwd-login {
+	font-family: "Satoshi", system-ui, sans-serif;
+}
+
+/* Passkey button: use waifu green */
+.stwd-login__btn--passkey {
+	background: #00ff87 !important;
+	color: #08080a !important;
+	border-radius: 4px !important;
+}
+.stwd-login__btn--passkey:hover:not(:disabled) {
+	background: #00e67a !important;
+}
+
+/* Email button: match dark surface */
+.stwd-login__btn--email {
+	background: rgba(255, 255, 255, 0.06) !important;
+	border: 1px solid rgba(255, 255, 255, 0.1) !important;
+	border-radius: 4px !important;
+	color: #e4e4e7 !important;
+}
+.stwd-login__btn--email:hover:not(:disabled) {
+	background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Google button */
+.stwd-login__btn--google {
+	border-radius: 4px !important;
+}
+
+/* Discord button */
+.stwd-login__btn--discord {
+	border-radius: 4px !important;
+}
+
+/* SIWE button */
+.stwd-login__btn--siwe {
+	border-radius: 4px !important;
+}
+
+/* Input field */
+.stwd-login__input {
+	border-radius: 4px !important;
+	background: rgba(255, 255, 255, 0.04) !important;
+	border: 1px solid rgba(255, 255, 255, 0.1) !important;
+	font-family: "Satoshi", system-ui, sans-serif !important;
+}
+.stwd-login__input:focus {
+	border-color: #00ff87 !important;
+	box-shadow: 0 0 0 1px rgba(0, 255, 135, 0.2) !important;
+}
+
+/* Title and subtitle */
+.stwd-login__title {
+	font-family: "Satoshi", system-ui, sans-serif !important;
+	color: #e4e4e7 !important;
+	font-size: 1.25rem !important;
+}
+.stwd-login__subtitle {
+	color: #71717a !important;
+}
+
+/* Divider */
+.stwd-login__divider {
+	color: #52525b !important;
+}
+.stwd-login__divider::before,
+.stwd-login__divider::after {
+	background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* User button: match header style */
+.stwd-user-button__trigger {
+	background: rgba(0, 255, 135, 0.06) !important;
+	border: 1px solid rgba(0, 255, 135, 0.15) !important;
+	border-radius: 4px !important;
+	padding: 0.375rem 0.75rem !important;
+	height: 38px !important;
+	font-family: "Satoshi", system-ui, sans-serif !important;
+	font-size: 0.875rem !important;
+	color: #e4e4e7 !important;
+}
+.stwd-user-button__trigger:hover {
+	background: rgba(0, 255, 135, 0.1) !important;
+}
+
+/* User button avatar: green tint */
+.stwd-user-button__avatar--initials {
+	background: #00ff87 !important;
+	color: #08080a !important;
+	font-size: 0.75rem !important;
+}
+
+/* User button dropdown */
+.stwd-user-button__dropdown {
+	background: #111114 !important;
+	border: 1px solid rgba(255, 255, 255, 0.1) !important;
+	border-radius: 6px !important;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+	font-family: "Satoshi", system-ui, sans-serif !important;
+}
+.stwd-user-button__dropdown-item:hover {
+	background: rgba(255, 255, 255, 0.06) !important;
+}
+.stwd-user-button__dropdown-item--signout {
+	color: #f87171 !important;
+}
+
+/* Error text */
+.stwd-login__error {
+	color: #f87171 !important;
 }

@@ -7,8 +7,7 @@ import { usePathname } from "next/navigation";
 import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
 import { useAccount } from "wagmi";
 import SearchMenu from "./search-menu";
-import HeaderConnectWallet from "./header-connect-wallet";
-import HeaderSignIn from "./header-sign-in";
+import HeaderAuth from "./header-auth";
 import { HowItWorksModal } from "./how-it-works-modal";
 import LanguageSwitcher from "./language-switcher";
 import { useTranslation } from "@/contexts/locale-context";
@@ -131,8 +130,7 @@ export default function Header() {
 					<LanguageSwitcher />
 					<SearchMenu />
 					<div className="hidden lg:flex items-center gap-2">
-						<HeaderSignIn />
-						<HeaderConnectWallet />
+						<HeaderAuth />
 					</div>
 					{/* Mobile hamburger button */}
 					<button
@@ -200,8 +198,7 @@ export default function Header() {
 								</Link>
 							))}
 							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)] flex flex-col gap-2">
-								<HeaderSignIn />
-								<HeaderConnectWallet />
+								<HeaderAuth />
 							</div>
 						</nav>
 					</motion.div>
