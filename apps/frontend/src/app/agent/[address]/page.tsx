@@ -171,12 +171,35 @@ export async function generateMetadata({
 	const { address } = await params;
 	const agent = await fetchAgent(address);
 	if (!agent) return { title: "agent not found" };
+
+	const host = process.env.NEXT_PUBLIC_HOST || "https://waifu.fun";
+	const title = `${agent.name} ($${agent.ticker}) · waifu.fun`;
+	const description =
+		agent.description ?? `autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.`;
+	const ogUrl = `${host}/agent/${agent.tokenAddress}/opengraph-image`;
+
 	return {
-		title: `${agent.name} / ${agent.ticker} — waifu.fun`,
-		description: agent.description ?? `${agent.name} on waifu.fun`,
+		title,
+		description,
 		openGraph: {
-			title: `${agent.name} (${agent.ticker})`,
-			description: agent.description ?? "",
+			title,
+			description,
+			type: "website",
+			url: `${host}/agent/${agent.tokenAddress}`,
+			images: [
+				{
+					url: ogUrl,
+					width: 1200,
+					height: 630,
+					alt: `${agent.name} on waifu.fun`,
+				},
+			],
+		},
+		twitter: {
+			card: "summary_large_image",
+			title,
+			description,
+			images: [ogUrl],
 		},
 	};
 }
