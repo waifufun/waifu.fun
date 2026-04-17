@@ -28,11 +28,7 @@ async function fetchAgentForOG(address: string): Promise<AgentForOG | null> {
 		const d = (await res.json()) as Record<string, unknown>;
 		const identity = (d.identity ?? null) as Record<string, unknown> | null;
 		const status =
-			d.status === "graduated"
-				? "graduated"
-				: d.status === "pending" || d.status === "failed"
-					? "pending"
-					: "active";
+			d.status === "graduated" ? "graduated" : d.status === "pending" || d.status === "failed" ? "pending" : "active";
 		const result: AgentForOG = {
 			name: typeof d.name === "string" ? d.name : "agent",
 			ticker: typeof d.ticker === "string" ? d.ticker : typeof d.symbol === "string" ? (d.symbol as string) : "",
@@ -194,7 +190,7 @@ export default async function Image({
 									fontSize: 22,
 									color: GREEN,
 									fontFamily: "monospace",
-									border: `1px solid rgba(34,197,94,0.3)`,
+									border: "1px solid rgba(34,197,94,0.3)",
 									background: "rgba(34,197,94,0.05)",
 									padding: "6px 12px",
 									letterSpacing: "0.05em",
