@@ -11,9 +11,6 @@
 	},
 	"ignoreDependencies": ["@biomejs/biome", "@semantic-release/github"],
 	"workspaces": {
-		"apps/backend": {
-			"entry": ["src/services/milady-cloud.test.ts"]
-		},
 		"apps/frontend": {
 			"ignoreDependencies": ["buffer"]
 		},

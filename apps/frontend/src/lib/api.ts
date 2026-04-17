@@ -554,20 +554,6 @@ export const getTokenTrades = async ({ chain, chainId, contractAddress }: IToken
 	return getApiItems(response);
 };
 
-export const authenticate = async (address: AddressLike, signature: string, chain: TChain, message?: string) => {
-	return await fetcher("/auth/verify", "POST", {
-		address,
-		signature,
-		chain,
-		...(message ? { message } : {}),
-	});
-};
-
-export const generateNonce = async (address: AddressLike) => {
-	const response = await fetcher("/auth/nonce", "POST", { address });
-	return unwrapApiData(response);
-};
-
 export const getAuthStatus = async (): Promise<AuthStatusResponse> => {
 	try {
 		const response = await fetcher("/auth/me", "GET");
@@ -912,19 +898,9 @@ export const getTransaction = async ({
 	return null as any;
 };
 
-export const getWallets = async () => {
-	console.warn("[waifu-core] Wallet list not implemented yet: /auth/getWallets");
-	return { wallets: [] };
-};
-
 export const getPrices = async () => {
 	console.warn("[waifu-core] Price feed not implemented yet: /prices");
 	return {};
-};
-
-export const logOut = async (chain: TChain) => {
-	console.warn("[waifu-core] Logout not implemented yet: /auth/logout");
-	return { success: true };
 };
 
 export const getTrades = async ({
@@ -1375,13 +1351,7 @@ export interface AgentCreateInput {
 	config?: Record<string, unknown> | undefined;
 }
 
-export type ProvisioningJobState =
-	| "queued"
-	| "requested"
-	| "provisioning"
-	| "running"
-	| "completed"
-	| "failed";
+export type ProvisioningJobState = "queued" | "requested" | "provisioning" | "running" | "completed" | "failed";
 
 export interface AgentProvisionRequest {
 	tokenAddress: string;

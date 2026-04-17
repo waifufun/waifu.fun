@@ -55,7 +55,7 @@
 	},
 	"scripts": {
 		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
-		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/frontend' --filter '!@waifufun/backend' --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
+		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/frontend' --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
 		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/indexer' --parallel run dev",
 		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter !@waifufun/indexer --parallel run dev",
 		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
