@@ -601,7 +601,7 @@ function StepIdentity({
 						value={state.name}
 						maxLength={50}
 						onChange={(e) => update("name", e.target.value)}
-						placeholder="e.g. sol"
+						placeholder="e.g. eliza"
 					/>
 				</div>
 				<div>
@@ -610,7 +610,7 @@ function StepIdentity({
 						value={state.symbol}
 						maxLength={10}
 						onChange={(e) => update("symbol", sanitizeTicker(e.target.value))}
-						placeholder="e.g. SOL"
+						placeholder="e.g. ELIZA"
 						mono
 					/>
 				</div>
