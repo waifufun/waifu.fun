@@ -1,7 +1,6 @@
 import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
-import FeaturedReference from "@/components/landing/featured-reference";
 import Hero from "@/components/landing/hero";
 import HowItWorks from "@/components/landing/how-it-works";
 import { fetchAgents } from "@/lib/agents-api";
@@ -54,8 +53,6 @@ export default async function Home() {
 			<ActivityStrip />
 
 			<HowItWorks />
-
-			<FeaturedReference />
 
 			{/* agents grid */}
 			<section id="explore" className="relative z-20 w-full max-w-6xl mx-auto px-5 md:px-8 pt-12 pb-20 scroll-mt-20">
