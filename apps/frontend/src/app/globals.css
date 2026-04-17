@@ -214,3 +214,13 @@ input::selection {
 	background-color: #a855f7; /* Tailwind purple-500 */
 	animation: pixel-pulse-purple 1.5s infinite;
 }
+
+/* waifu.fun landing — marquee + shimmer */
+@keyframes waifu-marquee {
+	0% { transform: translateX(0); }
+	100% { transform: translateX(-50%); }
+}
+
+@keyframes shimmer {
+	100% { transform: translateX(100%); }
+}
