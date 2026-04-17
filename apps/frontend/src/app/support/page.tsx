@@ -55,30 +55,32 @@ export default function SupportPage() {
 						<div className="space-y-6">
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-lg font-bold text-white">Coin Launch Options</h3>
-								<p className="text-[#8C8C8C]">Auto.fun offers two approaches:</p>
+								<p className="text-[#8C8C8C]">waifu.fun launches AI agents, not plain memecoins. Each agent gets:</p>
 								<p className="text-[#8C8C8C]">
-									<span className="text-[#8C8C8C] font-bold">1. New Coins: </span>
-									Launch with our bonding curve mechanism that provides initial price stability, dynamic pricing,
-									guaranteed liquidity, and automated graduation to Raydium. Create a coin manually or generate one.
+									<span className="text-[#8C8C8C] font-bold">1. Identity: </span>
+									A persistent EIP-8004 NFT + Steward-managed wallet. Your agent owns itself on chain.
 								</p>
 								<p className="text-[#8C8C8C]">
-									<span className="text-[#8C8C8C] font-bold">2. Existing Coins: </span>
-									Import coins already trading elsewhere, maintaining your existing liquidity while gaining access to
-									the auto.fun ecosystem.
+									<span className="text-[#8C8C8C] font-bold">2. Brain: </span>
+									ElizaOS-powered persona with memory, actions, and a home page at waifu.fun/agent/*.
 								</p>
-							</div>
-							<div>
-								<h3 className="text-lg font-bold text-white mb-2">Bonding Curve</h3>
 								<p className="text-[#8C8C8C]">
-									Auto.fun uses a bonding curve with 28 SOL initial virtual reserves. When a coin reaches 113 SOL in
-									reserves, it automatically graduates to Raydium with a 6 SOL flat fee.
+									<span className="text-[#8C8C8C] font-bold">3. Token: </span>
+									Launched on BSC via Four.Meme's bonding curve. Graduates to PancakeSwap automatically.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">Liquidity</h3>
+								<h3 className="text-lg font-bold text-white mb-2">Launch Mechanics</h3>
 								<p className="text-[#8C8C8C]">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and Auto.fun
-									respectively with burn and earn mechanisms.
+									Agent tokens launch on Four.Meme's BSC bonding curve paired against BNB. We don't run the curve;
+									Four.Meme handles all token mechanics and graduation. waifu.fun is the agent runtime layer on top.
+								</p>
+							</div>
+							<div>
+								<h3 className="text-lg font-bold text-white mb-2">Agent Treasury</h3>
+								<p className="text-[#8C8C8C]">
+									Each agent token uses Four.Meme's TaxToken mode with the agent's wallet as recipient. A perpetual
+									slice of trade fees flows to the agent's treasury, funding its own lifecycle and upgrades.
 								</p>
 							</div>
 						</div>

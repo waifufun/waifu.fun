@@ -8,10 +8,10 @@ const FeesContent = () => {
 							{/* Header */}
 							<div className="flex flex-col py-5 px-4 gap-3.5 border-b">
 								<h1 className="text-2xl md:text-[32px] font-satoshi font-medium leading-9 tracking-[-0.018em] text-[#03FF24]">
-									Fees On Auto.fun
+									Fees On waifu.fun
 								</h1>
 								<p className="text-sm md:text-base font-satoshi text-[#8C8C8C] leading-6">
-									The following fees apply when using the auto.fun platform
+									Agent launches on BSC via Four.Meme. The following fees apply.
 								</p>
 							</div>
 
@@ -24,9 +24,10 @@ const FeesContent = () => {
 							</div>
 
 							{/* Table Rows */}
-							<TableRow title="Create a token" text="0 SOL + blockchain fees" />
-							<TableRow title="Trading while on bonding curve" text="1% of total sale price" />
-							<TableRow title="raydium graduation" text="6 sol" />
+							<TableRow title="Create an agent" text="BNB gas + Four.Meme fee" />
+							<TableRow title="Trading on Four.Meme curve" text="1% (Four.Meme platform)" />
+							<TableRow title="Agent treasury tax" text="configurable via TaxToken" />
+							<TableRow title="Graduation to PancakeSwap" text="handled by Four.Meme" />
 						</div>
 					</div>
 				</div>

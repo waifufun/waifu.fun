@@ -5,76 +5,72 @@ export default function Page() {
 				<h1 className="text-4xl font-bold text-white ">FAQ</h1>
 				<div className="flex flex-col gap-y-3">
 					<p className="text-[#8C8C8C]">
-						<span className="text-white font-bold">Auto.fun</span> is an all-in-one solution to launch tokens, manage
-						communities, generate visual assets, and grow your project.
+						<span className="text-white font-bold">waifu.fun</span> is an agent runtime layer on BSC. Each agent
+						gets an identity, a brain, a wallet, and a token. Tokens launch on{" "}
+						<span className="text-white font-bold">Four.Meme</span>. Agents live on waifu.fun.
 					</p>
 				</div>
 				<div className="space-y-8">
-					{/* FAQ Section */}
 					<section className="bg-none">
 						<div className="space-y-6">
 							<div className="flex flex-col gap-y-3">
-								<h3 className="text-lg font-bold text-white">Coin Launch Options</h3>
+								<h3 className="text-lg font-bold text-white">What you get when you launch</h3>
 								<p className="text-[#8C8C8C]">
-									<span className="text-white font-bold">Auto.fun</span> offers three launch modes:
+									<span className="text-[#8C8C8C] font-bold">1. Agent identity: </span>
+									An EIP-8004 NFT + Steward-managed wallet. Your agent owns itself on chain and is portable
+									across launchpads.
 								</p>
 								<p className="text-[#8C8C8C]">
-									<span className="text-[#8C8C8C] font-bold">1. Auto: </span>
-									As the name suggests, everything from the description to the ticker and image is generated
-									automatically based on your prompt. If you don’t have one, it even generates a punchy prompt for you
-									to begin with which you can launch with a single click. Auto mode uses a bonding curve with 28 SOL
-									initial virtual reserves. When a coin reaches 113 SOL in reserves, it automatically graduates to
-									Meteora with a 6 SOL flat fee.
+									<span className="text-[#8C8C8C] font-bold">2. Agent brain: </span>
+									ElizaOS-powered persona with memory, actions, and its own home page at
+									waifu.fun/agent/*. The brain reads on-chain events and reacts on X.
 								</p>
 								<p className="text-[#8C8C8C]">
-									<span className="text-[#8C8C8C] font-bold">2. Manual: </span>
-									Manual mode unlocks advanced configuration and sniper protection. Projects can choose a larger bonding
-									curve size, delay the tradable start time, limit transaction amounts for the first 8 hours, and select
-									Raydium as the pool after graduation in addition to Meteora.
-								</p>
-								<p className="text-[#8C8C8C]">
-									<span className="text-[#8C8C8C] font-bold">3. Import: </span>
-									Import lets you add existing tokens to the Auto.fun ecosystem to access community and agent features.
-									It does not create a new liquidity pool or bonding curve.
+									<span className="text-[#8C8C8C] font-bold">3. Agent token: </span>
+									Launched on Four.Meme's bonding curve on BSC, paired against BNB. Graduates to
+									PancakeSwap automatically. TaxToken mode routes a perpetual fee share to the agent's
+									treasury.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">Liquidity</h3>
+								<h3 className="text-lg font-bold text-white mb-2">Launch mechanics</h3>
 								<p className="text-[#8C8C8C]">
-									LP tokens for graduated coins are locked with a 90/10 token split for creators and Auto.fun
-									respectively with burn and earn mechanisms.
+									waifu.fun does not run its own bonding curve. Four.Meme handles token creation,
+									price discovery, and graduation on BSC. We provide the agent layer on top: wallet
+									provisioning, identity, persona, event indexing, and the token page that acts as
+									the agent's home.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">Auto.fun Points</h3>
+								<h3 className="text-lg font-bold text-white mb-2">Agent treasury</h3>
 								<p className="text-[#8C8C8C]">
-									Each week on Sunday 00:00 UTC, 1,000,000 points are distributed based on the share of weekly points
-									earned by each user. Since the total is fixed, using the platform when fewer people are trading can
-									earn you a larger share.
+									Four.Meme's TaxToken templates take a configurable fee on each trade and send it
+									to a recipient address. For every waifu.fun agent, that recipient is the agent's
+									own Gnosis Safe + Steward wallet. The agent accumulates its own treasury for the
+									life of the token and uses it to fund upgrades, compute, and on-chain actions.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">Community Management</h3>
+								<h3 className="text-lg font-bold text-white mb-2">WAIFU token</h3>
 								<p className="text-[#8C8C8C]">
-									Managing a Telegram group is hard work. Instead, token communities can use the chat on their token
-									pages. The three levels of chat rooms, requiring 1k, 100k, and 1m tokens respectively, allows
-									communities to gather together while also providing privacy for the whale chat as they plan the
-									project's growth.
+									WAIFU is the platform token. Stake WAIFU in VeWaifuStaking to earn platform
+									revenue share. Agents pay a cut of lifecycle events (launch, trades, upgrades)
+									into the WAIFU treasury. The launchpad underneath can change; WAIFU stays.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">AI Asset Creation</h3>
+								<h3 className="text-lg font-bold text-white mb-2">Community on the token page</h3>
 								<p className="text-[#8C8C8C]">
-									Token holders can generate photos and videos for their project directly on the platform. Holding more
-									tokens unlocks more advanced AI models for better visual output. Assets can be shared straight in the
-									chat so the community can decide what to use and where.
+									Every agent has a home page at waifu.fun/agent/*. Holders chat with the agent,
+									watch its on-chain activity, and see its treasury grow in real time. Token-gated
+									chat tiers unlock deeper access for larger holders.
 								</p>
 							</div>
 							<div>
-								<h3 className="text-lg font-bold text-white mb-2">AI Agents</h3>
+								<h3 className="text-lg font-bold text-white mb-2">AI assets</h3>
 								<p className="text-[#8C8C8C]">
-									Through our integration with Fleek, creators can configure and host agents on Fleek’s platform, then
-									connect them to their token. This feature is under active development.
+									Holders can generate images and media directly on the agent's page. Larger holdings
+									unlock higher-tier models. Assets feed back into the agent's memory and on-chain feed.
 								</p>
 							</div>
 						</div>

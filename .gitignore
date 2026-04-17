@@ -10,9 +10,13 @@ logs
 # environment
 **/.env
 .env
-.env.production
-.env.development
+.env.*
+!.env.example
 !.env.sample
+!.env.ci
+
+# vercel
+.vercel/
 
 # secrets
 *.pem

@@ -25,7 +25,7 @@ export default function BondingCurveProgress({
 			<div className="flex flex-col gap-2">
 				<div className="flex items-center gap-4 justify-between">
 					<div className="text-sm font-bold text-gray-200 uppercase tracking-wider inline-flex gap-2">
-						{title ? title : "Bonding curve progress:"}
+						{title ? title : "Four.Meme bonding curve progress:"}
 						<span className="text-autofun-background-action-highlight">{curveProgress.toFixed(2)}%</span>
 					</div>
 					{showTooltip ? (
@@ -37,7 +37,7 @@ export default function BondingCurveProgress({
 								<span>
 									When the market cap reaches the graduation threshold,
 									<br />
-									the coin's liquidity will transition to Raydium.
+									the token graduates to PancakeSwap (Four.Meme handles migration).
 								</span>
 							</TooltipContent>
 						</Tooltip>
