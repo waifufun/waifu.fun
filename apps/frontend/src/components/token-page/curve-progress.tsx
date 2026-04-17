@@ -2,7 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { ArrowUpRight, CheckCircle2, Flame } from "lucide-react";
-import { useRef, useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 interface CurveProgressProps {
 	waifuBonded: string;

@@ -1,10 +1,10 @@
 "use client";
 
-import { getTransaction } from "@/lib/api";
-import type { IRecentTransaction } from "@waifufun/types";
-import { useQuery } from "@tanstack/react-query";
-import { Check, Clock, Cross, ExternalLink } from "lucide-react";
 import { useTranslation } from "@/contexts/locale-context";
+import { getTransaction } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import type { IRecentTransaction } from "@waifufun/types";
+import { Check, Clock, Cross, ExternalLink } from "lucide-react";
 
 export default function RecentTransactionItem({
 	transaction,

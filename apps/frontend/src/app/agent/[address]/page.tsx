@@ -1,16 +1,86 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
 import AgentHome from "@/components/agent-home/agent-home";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+const FOURMEME_BASE = "https://four.meme/token";
+
+/**
+ * Backend shape (AgentDetail) doesn't match AgentData; do the same kind of
+ * mapping we do in agents-api.ts for list items, but with the extra fields
+ * only the detail returns (system prompt, traits, curve).
+ */
+function mapAgentDetail(raw: unknown): AgentData | null {
+	if (!raw || typeof raw !== "object") return null;
+	const r = raw as Record<string, unknown>;
+	const tokenAddress =
+		typeof r.tokenAddress === "string" ? r.tokenAddress : typeof r.token_address === "string" ? r.token_address : "";
+	if (!tokenAddress) return null;
+	const name = typeof r.name === "string" ? r.name : "unknown";
+	const ticker = typeof r.ticker === "string" ? r.ticker : typeof r.symbol === "string" ? r.symbol : "";
+	const rawStatus = r.status;
+	const status: AgentData["status"] =
+		rawStatus === "graduated" ? "graduated" : rawStatus === "pending" || rawStatus === "failed" ? "pending" : "active";
+
+	const shaped: AgentData = {
+		tokenAddress,
+		name,
+		ticker,
+		status,
+		fourMemeUrl: `${FOURMEME_BASE}/${tokenAddress}`,
+	};
+	const image = typeof r.image === "string" ? r.image : typeof r.avatarUrl === "string" ? r.avatarUrl : undefined;
+	if (image) shaped.image = image;
+	if (typeof r.description === "string") shaped.description = r.description;
+	if (typeof r.walletAddress === "string") shaped.walletAddress = r.walletAddress;
+	if (typeof r.treasuryAddress === "string") shaped.treasuryAddress = r.treasuryAddress;
+	if (typeof r.preset === "string") shaped.preset = r.preset;
+	if (typeof r.systemPrompt === "string") shaped.systemPrompt = r.systemPrompt;
+	if (typeof r.twitterHandle === "string") shaped.twitterHandle = r.twitterHandle;
+	if (Array.isArray(r.traits)) shaped.traits = r.traits.filter((t): t is string => typeof t === "string");
+
+	const curve = r.curve as Record<string, unknown> | null | undefined;
+	if (curve) {
+		const bonded = curve.waifuBonded;
+		const limit = curve.curveLimit;
+		if (typeof bonded === "string" || typeof bonded === "number") shaped.waifuBonded = Number(bonded);
+		if (typeof limit === "string" || typeof limit === "number") shaped.curveLimit = Number(limit);
+		if (shaped.waifuBonded !== undefined && shaped.curveLimit !== undefined && shaped.curveLimit > 0) {
+			shaped.curveProgress = Math.min(100, (shaped.waifuBonded / shaped.curveLimit) * 100);
+		}
+		if (typeof curve.raisedToken === "string") shaped.raisedToken = curve.raisedToken;
+		if (typeof curve.pancakeswapPair === "string") {
+			shaped.pancakeSwapUrl = `https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}&chain=bsc`;
+		}
+	}
+
+	const identity = r.identity as Record<string, unknown> | null | undefined;
+	if (identity) {
+		const tid = identity.eip8004TokenId;
+		if (typeof tid === "string" || typeof tid === "number") shaped.eip8004TokenId = tid;
+	}
+
+	if (typeof r.framework === "string") shaped.framework = r.framework;
+	if (typeof r.model === "string") shaped.model = r.model;
+	if (r.lastActionAt) {
+		const t = typeof r.lastActionAt === "string" ? Date.parse(r.lastActionAt) : Number(r.lastActionAt);
+		if (Number.isFinite(t)) shaped.lastActionAt = t;
+	}
+	if (typeof r.lastActionType === "string") shaped.lastActionType = r.lastActionType;
+
+	return shaped;
+}
 
 async function fetchAgent(address: string): Promise<AgentData | null> {
 	try {
 		const res = await fetch(`${API_BASE}/v2/agents/${address}`, {
 			next: { revalidate: 30 },
 		});
-		if (res.ok) return (await res.json()) as AgentData;
+		if (res.ok) {
+			const mapped = mapAgentDetail(await res.json());
+			if (mapped) return mapped;
+		}
 	} catch (e) {
 		console.error("agent fetch failed", e);
 	}

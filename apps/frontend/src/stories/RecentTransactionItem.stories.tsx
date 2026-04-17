@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import RecentTransactionItem from "@/components/recent-transaction-item";
-import type { IRecentTransaction } from "@waifufun/types";
+import type { Meta, StoryObj } from "@storybook/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { IRecentTransaction } from "@waifufun/types";
 
 const queryClient = new QueryClient();
 

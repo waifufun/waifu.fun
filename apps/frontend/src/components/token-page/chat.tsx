@@ -1,22 +1,22 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Image as ImageIcon, Send, XIcon, Lock } from "lucide-react";
-import { abbreviateNumber, fileToBase64, fromNow, shortenAddress } from "@/lib/utils";
-import Image from "next/image";
-import { useForm, useWatch, type SubmitHandler } from "react-hook-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { getChatHistory, sendChatMessage } from "@/lib/api";
-import type { IChatMessage, IToken, TChatRooms } from "@waifufun/types";
-import { toast } from "sonner";
-import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
+import { getChatHistory, sendChatMessage } from "@/lib/api";
+import { abbreviateNumber, fileToBase64, fromNow, shortenAddress } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { IChatMessage, IToken, TChatRooms } from "@waifufun/types";
+import { AnimatePresence, motion } from "framer-motion";
+import { Image as ImageIcon, Lock, Send, XIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { type SubmitHandler, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 
 type Inputs = {
 	message: string;

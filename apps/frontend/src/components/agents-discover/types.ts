@@ -13,6 +13,12 @@ export interface AgentListItem extends Partial<AgentData> {
 	createdAt?: number;
 	volume24h?: number;
 	marketCap?: number;
+	// runtime metadata (from AgentData, surfaced on cards)
+	eip8004TokenId?: string | number;
+	framework?: string;
+	model?: string;
+	lastActionAt?: number;
+	lastActionType?: string;
 }
 
 export interface AgentListResponse {

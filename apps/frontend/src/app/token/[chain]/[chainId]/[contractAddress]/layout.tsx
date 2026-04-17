@@ -1,9 +1,9 @@
 import { getToken } from "@/lib/api";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
-import { notFound, redirect } from "next/navigation";
 
 export const revalidate = 4;
 

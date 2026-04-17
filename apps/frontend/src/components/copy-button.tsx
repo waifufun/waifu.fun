@@ -1,9 +1,9 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect } from "react";
-import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Check, Copy } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 interface CopyButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	textToCopy: string;

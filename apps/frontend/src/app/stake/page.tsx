@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import StakingDashboard from "@/components/staking/staking-dashboard";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "stake | waifu.fun",

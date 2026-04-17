@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
-import { Orbitron, Audiowide } from "next/font/google";
+import { Audiowide, Orbitron } from "next/font/google";
 import Providers from "./providers";
 
 // Moving gradient background (performance-heavy) — uncomment to re-enable

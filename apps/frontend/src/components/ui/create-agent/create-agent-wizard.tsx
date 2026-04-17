@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	ArrowLeft,
@@ -11,12 +10,13 @@ import {
 	Link as LinkIcon,
 	Loader2,
 	Rocket,
+	Sparkles,
+	Twitter,
 	Upload,
 	X,
-	Twitter,
-	Sparkles,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 /* ----------------------------------------------------------------------------
    constants / types
@@ -380,14 +380,11 @@ export default function CreateAgentWizard() {
 				agentId: data.agentId,
 			});
 
-			// redirect preference: /agent/{tokenAddress} if present
-			const token = data.tokenAddress as string | undefined;
-			if (token) {
-				// small pause so the done state is visible
-				setTimeout(() => {
-					router.push(`/token/bsc/56/${token}`);
-				}, 900);
-			}
+			// do NOT auto-redirect — let the user read the success screen,
+			// then click through via the CTA. this is the "wow" moment, don't
+			// flash past it.
+			const _token = data.tokenAddress as string | undefined;
+			// (previously auto-redirected to /token/bsc/56/{token} after 900ms)
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "something went wrong";
 			setDeployError(message);
@@ -864,6 +861,13 @@ function StepDeploy({
 	}, [state.preset]);
 
 	if (launchResult) {
+		const tokenHref = launchResult.tokenAddress ? `/agent/${launchResult.tokenAddress}` : null;
+		const shareText = `just launched ${state.name} (\$${state.symbol}) on waifu.fun\n\nautonomous agent. identity + brain + wallet + treasury.\nlive on four.meme / bsc.`;
+		const shareUrl = launchResult.tokenAddress
+			? `https://waifu.fun/agent/${launchResult.tokenAddress}`
+			: "https://waifu.fun";
+		const twitterIntent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+
 		return (
 			<div className="space-y-6">
 				<SectionTitle index="03" title="launched" subtitle="your agent is live" />
@@ -873,8 +877,8 @@ function StepDeploy({
 							<Check className="w-4 h-4 text-[#22c55e]" />
 						</div>
 						<div>
-							<div className="text-sm">agent is online</div>
-							<div className="text-[11px] font-mono text-white/40">redirecting to its home...</div>
+							<div className="text-sm">{state.name || "your agent"} is online</div>
+							<div className="text-[11px] font-mono text-white/40">identity minted. brain running. wallet funded.</div>
 						</div>
 					</div>
 					{launchResult.tokenAddress && (
@@ -883,6 +887,27 @@ function StepDeploy({
 							{launchResult.agentId && <MetaRow k="agent id" v={launchResult.agentId} mono />}
 						</div>
 					)}
+
+					<div className="mt-5 pt-5 border-t border-[#22c55e]/15 flex flex-wrap items-center gap-2">
+						{tokenHref && (
+							<a
+								href={tokenHref}
+								className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-sm bg-[#22c55e] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#22c55e]/90 transition-colors"
+							>
+								view agent home
+								<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
+							</a>
+						)}
+						<a
+							href={twitterIntent}
+							target="_blank"
+							rel="noreferrer"
+							className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-sm border border-white/15 text-white/70 hover:text-white hover:border-white/30 text-[11px] font-mono uppercase tracking-[0.18em] transition-colors"
+						>
+							<Twitter className="w-3.5 h-3.5" strokeWidth={1.8} />
+							tweet about it
+						</a>
+					</div>
 				</div>
 			</div>
 		);

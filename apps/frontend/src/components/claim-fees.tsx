@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "./ui/button";
 import { claimFees } from "@/lib/api";
-import { useState } from "react";
-import { Wallet } from "lucide-react";
 import type { IToken } from "@waifufun/types";
+import { Wallet } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "./ui/button";
 
 interface ClaimFeesProps {
 	token: IToken;

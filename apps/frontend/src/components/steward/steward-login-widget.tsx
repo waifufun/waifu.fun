@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback } from "react";
-import { StewardLogin, useAuth } from "@stwd/react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { StewardLogin, useAuth } from "@stwd/react";
 import { Wallet } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useCallback } from "react";
 
 interface StewardLoginWidgetProps {
 	open: boolean;

@@ -1,11 +1,11 @@
-import Image from "next/image";
-import { uploadAvatar } from "@/lib/api";
-import type { AddressLike } from "@waifufun/types";
-import { useRef, useState } from "react";
-import { Check } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import useAddress from "@/hooks/use-address";
+import { uploadAvatar } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { AddressLike } from "@waifufun/types";
+import { Check } from "lucide-react";
+import Image from "next/image";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 export default function AvatarImage({ address, image }: { address: AddressLike; image: string }) {
 	const [imageFile, setImageFile] = useState<File | null>(null);

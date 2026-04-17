@@ -1,12 +1,12 @@
+import ClosingV2 from "@/components/litepaper/closing-v2";
+import EconomicsV2 from "@/components/litepaper/economics-v2";
 import HeroV2 from "@/components/litepaper/hero-v2";
 import ProblemV2 from "@/components/litepaper/problem-v2";
-import TheFixV2 from "@/components/litepaper/the-fix-v2";
-import Specialization from "@/components/litepaper/specialization";
-import TheStackV2 from "@/components/litepaper/the-stack-v2";
-import TheLoopV2 from "@/components/litepaper/the-loop-v2";
-import EconomicsV2 from "@/components/litepaper/economics-v2";
-import ClosingV2 from "@/components/litepaper/closing-v2";
 import SectionDivider from "@/components/litepaper/section-divider";
+import Specialization from "@/components/litepaper/specialization";
+import TheFixV2 from "@/components/litepaper/the-fix-v2";
+import TheLoopV2 from "@/components/litepaper/the-loop-v2";
+import TheStackV2 from "@/components/litepaper/the-stack-v2";
 
 export default function LitepaperPage() {
 	return (

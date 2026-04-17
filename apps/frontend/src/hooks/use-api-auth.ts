@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAuth } from "@stwd/react";
 import { setApiTokenGetter } from "@/lib/api-auth";
+import { useAuth } from "@stwd/react";
+import { useEffect } from "react";
 
 /**
  * Syncs the Steward auth token into the API client's module-level store.

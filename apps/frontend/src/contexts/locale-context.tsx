@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import enMessages from "@/locales/en.json";
 import zhMessagesImport from "@/locales/zh.json";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const LOCALE_STORAGE_KEY = "waifu_locale";
 

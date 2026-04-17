@@ -1,9 +1,9 @@
-import Image from "next/image";
-import { CopyButton } from "../copy-button";
-import Link from "next/link";
 import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
 import type { TChain } from "@waifufun/types";
 import { ExternalLink } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { CopyButton } from "../copy-button";
 /** BNB has 18 decimals; 1 BNB = 1e18 wei */
 const WEI_PER_UNIT = 1e18;
 import Verified from "../verified";

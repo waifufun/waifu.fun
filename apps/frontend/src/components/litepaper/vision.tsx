@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
 import VisualAsset from "@/components/litepaper/visual-asset";
+import { motion } from "framer-motion";
 
 const pillars = [
 	"personality baked into the model, not pasted on top",

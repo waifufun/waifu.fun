@@ -1,8 +1,8 @@
 "use client";
 
+import VisualAsset from "@/components/litepaper/visual-asset";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import VisualAsset from "@/components/litepaper/visual-asset";
 
 const cycleNodes = [
 	{ label: "Users interact", short: "01", position: "top-[9%] left-1/2 -translate-x-1/2" },

@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
-import { AlertCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { formatNumber } from "@/lib/utils";
 import { useTranslation } from "@/contexts/locale-context";
+import { formatNumber } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const DEFAULT_CURVE_LIMIT_BNB = 113;
 const PROGRESS_SEGMENTS = [

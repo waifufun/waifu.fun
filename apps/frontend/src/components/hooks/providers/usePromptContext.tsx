@@ -1,21 +1,21 @@
 "use client";
-import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
-import type { ReactNode } from "react";
-import { toast } from "sonner";
-import UseTokenMedia from "../hook/UseTokenMedia";
+import { generateMedia, generateMediaForToken, generateMetadata, generateRemoteMetadata } from "@/lib/api";
+import { curveLimitConst } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
-import { generateMedia, generateMetadata, generateRemoteMetadata, generateMediaForToken } from "@/lib/api";
+import type { TChain, TChainId } from "@waifufun/types";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import {
-	useForm,
-	type UseFormHandleSubmit,
-	type UseFormRegister,
+	type Control,
 	type FormState,
 	type RegisterOptions,
+	type UseFormHandleSubmit,
+	type UseFormRegister,
 	type UseFormSetValue,
-	type Control,
+	useForm,
 } from "react-hook-form";
-import { curveLimitConst } from "@/lib/utils";
-import type { TChain, TChainId } from "@waifufun/types";
+import { toast } from "sonner";
+import UseTokenMedia from "../hook/UseTokenMedia";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;

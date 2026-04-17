@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 
 const GlitchBg = dynamic(() => import("../landing/glitch-bg"), { ssr: false });
 

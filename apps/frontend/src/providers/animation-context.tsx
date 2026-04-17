@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export type AnimationLevel = 0 | 1 | 2; // 0: Off, 1: Subtle, 2: All On
 

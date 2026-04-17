@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import ChainIndicator from "@/components/chain-indicator";
+import type { Meta, StoryObj } from "@storybook/react";
 import { EvmChainIds, SolanaNetworkIds, type TChain } from "@waifufun/types";
 
 const meta: Meta<typeof ChainIndicator> = {
