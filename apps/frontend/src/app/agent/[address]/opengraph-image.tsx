@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const contentType = "image/png";
 export const alt = "waifu.fun — autonomous agent";
 export const size = {
@@ -13,18 +13,10 @@ const GREEN = "#22c55e";
 const GREEN_GLOW = "#00ff87";
 
 /**
- * Convert ArrayBuffer to base64 in a way that works in edge runtime
- * (no Node Buffer). Chunks to stay under the String.fromCharCode arg limit.
+ * ArrayBuffer → base64. Node runtime: Buffer is fine.
  */
 function arrayBufferToBase64(buf: ArrayBuffer): string {
-	const bytes = new Uint8Array(buf);
-	let binary = "";
-	const chunkSize = 0x8000;
-	for (let i = 0; i < bytes.length; i += chunkSize) {
-		const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-		binary += String.fromCharCode.apply(null, Array.from(slice));
-	}
-	return btoa(binary);
+	return Buffer.from(buf).toString("base64");
 }
 
 type AgentForOG = {
@@ -75,18 +67,24 @@ export default async function Image({
 
 	const host = process.env.NEXT_PUBLIC_HOST || "https://waifu.fun";
 
-	// load assets in parallel
-	const [fontResp, bgResp, logoResp] = await Promise.all([
-		fetch(new URL("/fonts/Satoshi-Regular.otf", host)),
-		fetch(new URL("/brand/backgrounds/hero-bg.webp", host)),
-		fetch(new URL("/brand/lockup/lockup_waifufun_on_black_1024.png", host)),
+	// load assets in parallel; each is wrapped so a single failure doesn't
+	// blow up the whole OG render (we fall back to gradient-only).
+	async function safeFetch(url: string): Promise<ArrayBuffer | null> {
+		try {
+			const r = await fetch(url);
+			if (!r.ok) return null;
+			return await r.arrayBuffer();
+		} catch {
+			return null;
+		}
+	}
+
+	const [satoshi, bgBuf, logoBuf] = await Promise.all([
+		safeFetch(`${host}/fonts/Satoshi-Regular.otf`),
+		safeFetch(`${host}/brand/backgrounds/hero-bg.webp`),
+		safeFetch(`${host}/brand/lockup/lockup_waifufun_on_black_1024.png`),
 	]);
 
-	const satoshi = fontResp.ok ? await fontResp.arrayBuffer() : null;
-	const bgBuf = bgResp.ok ? await bgResp.arrayBuffer() : null;
-	const logoBuf = logoResp.ok ? await logoResp.arrayBuffer() : null;
-	// Edge runtime has no Node Buffer; use btoa on a binary string built from
-	// the ArrayBuffer. Chunked to avoid stack overflow on large images.
 	const bgDataUrl = bgBuf ? `data:image/webp;base64,${arrayBufferToBase64(bgBuf)}` : null;
 	const logoDataUrl = logoBuf ? `data:image/png;base64,${arrayBufferToBase64(logoBuf)}` : null;
 
