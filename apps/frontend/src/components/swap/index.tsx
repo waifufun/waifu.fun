@@ -1,9 +1,9 @@
 "use client";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SwapCard from "./swap-card";
 import type { IToken } from "@waifufun/types";
 import { useState } from "react";
+import SwapCard from "./swap-card";
 
 export default function Swap({ token }: { token: IToken }) {
 	const [mode, setMode] = useState<"buy" | "sell">("buy");

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDownUp, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ArrowDownUp, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import type { AgentData } from "./types";
 
 export default function SwapStub({ agent }: { agent: AgentData }) {

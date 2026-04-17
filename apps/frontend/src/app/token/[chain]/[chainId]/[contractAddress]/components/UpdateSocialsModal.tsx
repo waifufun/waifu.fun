@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { updateTokenSocialsOwner } from "@/lib/api";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface UpdateSocialsModalProps {
 	open: boolean;

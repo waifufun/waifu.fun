@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import LitepaperShell from "@/components/litepaper/litepaper-shell";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "litepaper | waifu.fun",

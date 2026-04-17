@@ -1,10 +1,10 @@
 "use client";
 
-import { CopyButton } from "../copy-button";
-import type { AddressLike, TChain } from "@waifufun/types";
-import type { SolanaNetworkIds, EvmChainIds } from "@waifufun/types";
-import AvatarImage from "./avatar-image";
 import { formatNumber } from "@/lib/utils";
+import type { AddressLike, TChain } from "@waifufun/types";
+import type { EvmChainIds, SolanaNetworkIds } from "@waifufun/types";
+import { CopyButton } from "../copy-button";
+import AvatarImage from "./avatar-image";
 
 export default function ProfileHeader({
 	data,

@@ -371,3 +371,36 @@ export const resizeImage = (url: string, width: number, height: number) => {
 	}
 	return `https://waifu.fun/cdn-cgi/image/width=${width},height=${height},format=png/${url}`;
 };
+
+/**
+ * Format a unix timestamp (ms) as a short relative time string:
+ * "just now" | "2m ago" | "3h ago" | "2d ago" | "6w ago" | "3mo ago" | "1y ago"
+ */
+export function timeAgo(ts: number | undefined | null): string {
+	if (!ts || !Number.isFinite(ts)) return "—";
+	const diff = Math.max(0, Date.now() - ts);
+	const s = Math.floor(diff / 1000);
+	if (s < 30) return "just now";
+	if (s < 60) return `${s}s ago`;
+	const m = Math.floor(s / 60);
+	if (m < 60) return `${m}m ago`;
+	const h = Math.floor(m / 60);
+	if (h < 24) return `${h}h ago`;
+	const d = Math.floor(h / 24);
+	if (d < 7) return `${d}d ago`;
+	const w = Math.floor(d / 7);
+	if (w < 5) return `${w}w ago`;
+	const mo = Math.floor(d / 30);
+	if (mo < 12) return `${mo}mo ago`;
+	const y = Math.floor(d / 365);
+	return `${y}y ago`;
+}
+
+/**
+ * Shorten an Ethereum-style address like 0x1234…abcd.
+ */
+export function shortAddress(addr: string | undefined | null, chars = 4): string {
+	if (!addr) return "—";
+	if (addr.length <= chars * 2 + 2) return addr;
+	return `${addr.slice(0, 2 + chars)}…${addr.slice(-chars)}`;
+}

@@ -1,7 +1,7 @@
 "use client";
 import type { IAgent, IToken } from "@waifufun/types";
-import FleekAgent from "../fleek-agent";
 import ConnectToFleek from "../connect-fleek";
+import FleekAgent from "../fleek-agent";
 
 export default function Agents({ agents, token }: { agents: IAgent[]; token: IToken }) {
 	return (

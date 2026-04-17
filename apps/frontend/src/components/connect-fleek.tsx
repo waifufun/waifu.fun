@@ -1,13 +1,13 @@
 "use client";
-import Image from "next/image";
-import { Button } from "./ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { connectAgent } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Input } from "./ui/input";
-import { toast } from "sonner";
 import type { IToken, TChainId } from "@waifufun/types";
-import { useTranslation } from "@/contexts/locale-context";
+import Image from "next/image";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 export default function ConnectToFleek({ token }: { token: IToken }) {
 	const { t } = useTranslation();

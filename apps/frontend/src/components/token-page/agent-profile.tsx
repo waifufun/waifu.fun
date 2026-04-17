@@ -1,8 +1,8 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
-import { getExplorerAddressUrl } from "@/lib/explorer";
 import Verified from "@/components/verified";
+import { getExplorerAddressUrl } from "@/lib/explorer";
 import { cn, fromNow, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";

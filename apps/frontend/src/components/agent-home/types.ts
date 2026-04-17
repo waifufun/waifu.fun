@@ -17,6 +17,12 @@ export interface AgentData {
 	raisedToken?: string;
 	pancakeSwapUrl?: string;
 	fourMemeUrl?: string;
+	// runtime metadata
+	eip8004TokenId?: string | number;
+	framework?: string; // e.g. "ElizaOS"
+	model?: string; // e.g. "Claude Haiku"
+	lastActionAt?: number; // unix ms of last autonomous output (trade, call, post, etc)
+	lastActionType?: "trade" | "call" | "post" | "ship" | "decide" | string;
 }
 
 export interface AgentTrade {

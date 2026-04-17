@@ -1,9 +1,9 @@
 "use client";
 
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
-import { ArrowRight } from "lucide-react";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
 

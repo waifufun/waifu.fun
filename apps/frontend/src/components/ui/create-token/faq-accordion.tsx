@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { HelpCircle, ChevronDown } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 import { useState } from "react";
 interface FAQItem {
 	question: string;

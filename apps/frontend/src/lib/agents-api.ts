@@ -8,6 +8,88 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
+/**
+ * Backend returns { agentId, name, symbol, avatarUrl, ... } (see
+ * packages/db/src/queries/agents.ts `AgentSummary`). Frontend consumes
+ * { tokenAddress, name, ticker, image, ... } (see AgentListItem).
+ * Normalize once at the boundary so no component needs to know about both.
+ */
+function mapAgentSummary(raw: unknown): AgentListItem {
+	const r = (raw ?? {}) as Record<string, unknown>;
+	const curve = (r.curve ?? null) as null | Record<string, unknown>;
+	const identity = (r.identity ?? null) as null | Record<string, unknown>;
+	const status = normalizeStatus(r.status);
+	const item: AgentListItem = {
+		tokenAddress: String(r.tokenAddress ?? r.token_address ?? ""),
+		name: String(r.name ?? "unknown"),
+		ticker: String(r.ticker ?? r.symbol ?? ""),
+		status,
+	};
+	const description = typeof r.description === "string" ? (r.description as string) : undefined;
+	if (description) item.description = description;
+	const avatar =
+		typeof r.image === "string"
+			? (r.image as string)
+			: typeof r.avatarUrl === "string"
+				? (r.avatarUrl as string)
+				: undefined;
+	if (avatar) item.image = avatar;
+	const walletAddress = typeof r.walletAddress === "string" ? (r.walletAddress as string) : undefined;
+	if (walletAddress) item.walletAddress = walletAddress;
+	const treasuryAddress = typeof r.treasuryAddress === "string" ? (r.treasuryAddress as string) : undefined;
+	if (treasuryAddress) item.treasuryAddress = treasuryAddress;
+	const preset = typeof r.preset === "string" ? (r.preset as string) : undefined;
+	if (preset) item.preset = preset;
+	const twitterHandle = typeof r.twitterHandle === "string" ? (r.twitterHandle as string) : undefined;
+	if (twitterHandle) item.twitterHandle = twitterHandle;
+
+	if (identity) {
+		const tokenId = identity.eip8004TokenId;
+		if (typeof tokenId === "string" || typeof tokenId === "number") {
+			item.eip8004TokenId = tokenId;
+		}
+	}
+	const framework = typeof r.framework === "string" ? (r.framework as string) : undefined;
+	if (framework) item.framework = framework;
+	const model = typeof r.model === "string" ? (r.model as string) : undefined;
+	if (model) item.model = model;
+	const lastActionRaw = r.lastActionAt;
+	if (lastActionRaw) {
+		const t = typeof lastActionRaw === "string" ? Date.parse(lastActionRaw) : Number(lastActionRaw);
+		if (Number.isFinite(t)) item.lastActionAt = t;
+	}
+	const lastActionType = typeof r.lastActionType === "string" ? (r.lastActionType as string) : undefined;
+	if (lastActionType) item.lastActionType = lastActionType;
+
+	if (curve) {
+		const bondedRaw = curve.waifuBonded;
+		const limitRaw = curve.curveLimit;
+		if (typeof bondedRaw === "string" || typeof bondedRaw === "number") {
+			item.waifuBonded = Number(bondedRaw);
+		}
+		if (typeof limitRaw === "string" || typeof limitRaw === "number") {
+			item.curveLimit = Number(limitRaw);
+			if (item.waifuBonded !== undefined && item.curveLimit > 0) {
+				item.curveProgress = Math.min(100, (item.waifuBonded / item.curveLimit) * 100);
+			}
+		}
+	}
+
+	const createdRaw = r.createdAt;
+	if (createdRaw) {
+		const t = typeof createdRaw === "string" ? Date.parse(createdRaw) : Number(createdRaw);
+		if (Number.isFinite(t)) item.createdAt = t;
+	}
+
+	return item;
+}
+
+function normalizeStatus(s: unknown): "active" | "graduated" | "pending" {
+	if (s === "graduated") return "graduated";
+	if (s === "pending" || s === "failed") return "pending";
+	return "active";
+}
+
 export interface FetchAgentsParams {
 	limit?: number;
 	offset?: number;
@@ -44,7 +126,7 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 		// v2 shape: { agents: [...], total, stats }
 		if (Array.isArray(data.agents)) {
 			return {
-				agents: data.agents as AgentListItem[],
+				agents: data.agents.map(mapAgentSummary),
 				total: Number(data.total ?? data.agents.length),
 				stats: data.stats,
 			};
@@ -52,7 +134,7 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 		// alt shape: { docs: [...], total }
 		if (Array.isArray(data.docs)) {
 			return {
-				agents: data.docs as AgentListItem[],
+				agents: data.docs.map(mapAgentSummary),
 				total: Number(data.total ?? data.docs.length),
 				stats: data.stats,
 			};
@@ -60,8 +142,8 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 		// direct array
 		if (Array.isArray(data)) {
 			return {
-				agents: data as AgentListItem[],
-				total: (data as AgentListItem[]).length,
+				agents: data.map(mapAgentSummary),
+				total: (data as unknown[]).length,
 			};
 		}
 		return { agents: [], total: 0 };

@@ -1,13 +1,13 @@
 "use client";
-import { useState } from "react";
-import { AlertCircle, HelpCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { Switch } from "../switch-button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import useSlippage from "@/hooks/use-slippage";
-import { Button } from "../ui/button";
 import useSpeed, { type TSpeed } from "@/hooks/use-speed";
+import { cn } from "@/lib/utils";
+import { AlertCircle, HelpCircle } from "lucide-react";
+import { useState } from "react";
+import { Switch } from "../switch-button";
+import { Button } from "../ui/button";
 
 export default function AdvancedSettings() {
 	const [open, setOpen] = useState(false);

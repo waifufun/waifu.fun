@@ -1,15 +1,15 @@
 "use client";
+import Pagination from "@/components/pagination";
+import AgentsTab from "@/components/profile-page/agents-tab";
 import ProfileHeader from "@/components/profile-page/profile-header";
 import TokenRow from "@/components/profile-page/token-row";
-import AgentsTab from "@/components/profile-page/agents-tab";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import { formatNumber } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/contexts/locale-context";
-import { getSwaps, getTokensCreated, getAddressPoints } from "@/lib/api";
+import { getAddressPoints, getSwaps, getTokensCreated } from "@/lib/api";
+import { formatNumber } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import Pagination from "@/components/pagination";
+import { useParams } from "next/navigation";
+import { useState } from "react";
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
 	const { t } = useTranslation();
 	const [tab, setTab] = useState("wallet");

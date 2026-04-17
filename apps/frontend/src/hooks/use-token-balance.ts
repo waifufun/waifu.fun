@@ -1,9 +1,9 @@
 "use client";
 
 import type { AddressLike, TChain } from "@waifufun/types";
+import { type Address, erc20Abi, formatUnits } from "viem";
 import { useReadContracts } from "wagmi";
 import { bsc } from "wagmi/chains";
-import { erc20Abi, formatUnits, type Address } from "viem";
 
 export default function useTokenBalance({
 	chain: _chain,

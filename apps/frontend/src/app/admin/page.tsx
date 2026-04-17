@@ -1,9 +1,9 @@
 "use client";
 
-import { Users, Coins, Shield, Activity, Cpu, Rocket, ArrowUpRight, Clock, CircleDot } from "lucide-react";
-import Link from "next/link";
+import { getAdminStats, getAdminTokens, getAgentAvailability } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
-import { getAdminStats, getAgentAvailability, getAdminTokens } from "@/lib/api";
+import { Activity, ArrowUpRight, CircleDot, Clock, Coins, Cpu, Rocket, Shield, Users } from "lucide-react";
+import Link from "next/link";
 
 /* ─── stat card ─── */
 function StatCard({

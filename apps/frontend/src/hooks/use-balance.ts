@@ -1,9 +1,9 @@
 "use client";
 
-import type { AddressLike, TChain } from "@waifufun/types";
-import { useBalance as useWagmiBalance } from "wagmi";
-import { formatEther, type Address } from "viem";
 import { DEFAULT_EVM_CHAIN_ID } from "@/providers/evm-provider";
+import type { AddressLike, TChain } from "@waifufun/types";
+import { type Address, formatEther } from "viem";
+import { useBalance as useWagmiBalance } from "wagmi";
 
 export default function useBalance({ chain, address }: { chain: TChain; address: AddressLike | undefined }) {
 	const isEvmBalanceQuery = chain === "evm" && !!address;

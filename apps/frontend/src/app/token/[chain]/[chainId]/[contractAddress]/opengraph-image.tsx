@@ -1,6 +1,6 @@
-import { ImageResponse } from "next/og";
-import type { ITokenLookUp } from "@waifufun/types";
 import { getToken } from "@/lib/api";
+import type { ITokenLookUp } from "@waifufun/types";
+import { ImageResponse } from "next/og";
 
 const toSubscript = (num: number): string => {
 	const subDigits: { [key: string]: string } = {

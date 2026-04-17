@@ -1,13 +1,15 @@
+import { cn, timeAgo } from "@/lib/utils";
+import { ArrowLeft, Brain, ExternalLink, Fingerprint } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { AgentData, AgentTrade } from "./types";
 import AddressRow from "./address-row";
-import CurveProgress from "./curve-progress";
-import SwapStub from "./swap-stub";
-import RecentActivity from "./recent-activity";
 import AgentVoice from "./agent-voice";
+import CurveProgress from "./curve-progress";
+import RecentActivity from "./recent-activity";
+import SwapStub from "./swap-stub";
 import SystemPromptReveal from "./system-prompt-reveal";
+import type { AgentData, AgentTrade } from "./types";
+
+const EIP8004_CONTRACT = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
 export default function AgentHome({
 	agent,
@@ -83,8 +85,8 @@ export default function AgentHome({
 					<RecentActivity trades={trades} />
 				</Section>
 
-				{/* 6. agent's voice */}
-				<Section title="agent's voice">
+				{/* 6. agent output / work */}
+				<Section title="output">
 					<AgentVoice {...(agent.twitterHandle ? { twitterHandle: agent.twitterHandle } : {})} />
 				</Section>
 
@@ -144,6 +146,39 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 					{agent.description && (
 						<p className="text-xs md:text-sm text-white/55 leading-relaxed mt-2 line-clamp-3">{agent.description}</p>
 					)}
+
+					{/* runtime microcopy row — identity + brain + activity */}
+					<div className="mt-3 flex items-center gap-3 flex-wrap text-[10px] font-mono uppercase tracking-[0.16em]">
+						{agent.eip8004TokenId !== undefined && (
+							<a
+								href={`https://bscscan.com/token/${EIP8004_CONTRACT}?a=${agent.eip8004TokenId}`}
+								target="_blank"
+								rel="noreferrer"
+								className="inline-flex items-center gap-1.5 text-white/45 hover:text-[#22c55e] transition-colors"
+								title="EIP-8004 onchain identity"
+							>
+								<Fingerprint className="w-3 h-3" strokeWidth={1.5} />
+								EIP-8004 #{agent.eip8004TokenId}
+							</a>
+						)}
+						<span className="inline-flex items-center gap-1.5 text-white/45">
+							<Brain className="w-3 h-3" strokeWidth={1.5} />
+							brain: {agent.framework || "ElizaOS"} + {agent.model || "Claude"}
+						</span>
+						{agent.lastActionAt ? (
+							<span className="inline-flex items-center gap-1.5 text-[#22c55e]">
+								<span className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
+								last {agent.lastActionType || "action"}: {timeAgo(agent.lastActionAt)}
+							</span>
+						) : (
+							!graduated && (
+								<span className="inline-flex items-center gap-1.5 text-white/30">
+									<span className="w-1 h-1 rounded-full bg-white/30" />
+									warming up
+								</span>
+							)
+						)}
+					</div>
 
 					{(agent.preset || (agent.traits && agent.traits.length > 0)) && (
 						<div className="mt-4 flex items-center gap-2 flex-wrap">

@@ -1,13 +1,13 @@
 "use client";
-import dynamic from "next/dynamic";
-import { ProgressProvider } from "@bprogress/next/app";
-import { Toaster } from "sonner";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AnimationProvider } from "@/providers/animation-context";
-import { Suspense } from "react";
-import { TransactionListenerProvider } from "@/providers/transaction-listener";
 import { LocaleProvider } from "@/contexts/locale-context";
+import { AnimationProvider } from "@/providers/animation-context";
+import { TransactionListenerProvider } from "@/providers/transaction-listener";
+import { ProgressProvider } from "@bprogress/next/app";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+import { Toaster } from "sonner";
 
 import { ApiAuthSync } from "@/components/steward/api-auth-sync";
 const StewardProviderLazy = dynamic(

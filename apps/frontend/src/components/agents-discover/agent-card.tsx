@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
-import { ArrowUpRight, ImageOff } from "lucide-react";
+import { cn, timeAgo } from "@/lib/utils";
+import { ArrowUpRight, Brain, ImageOff } from "lucide-react";
 import Link from "next/link";
 import type { AgentListItem } from "./types";
 
@@ -49,6 +49,24 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 				<p className="text-[11px] leading-relaxed text-white/50 line-clamp-2 min-h-[2.2rem]">
 					{agent.description || "no description."}
 				</p>
+
+				{/* runtime microcopy — brain + last action */}
+				<div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase tracking-[0.14em] text-white/30">
+					<span className="inline-flex items-center gap-1 min-w-0 truncate">
+						<Brain className="w-2.5 h-2.5 shrink-0" strokeWidth={1.5} />
+						<span className="truncate">{agent.framework || "ElizaOS"}</span>
+					</span>
+					{agent.lastActionAt ? (
+						<span className="inline-flex items-center gap-1 shrink-0">
+							<span className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
+							<span>
+								{agent.lastActionType || "action"} · {timeAgo(agent.lastActionAt)}
+							</span>
+						</span>
+					) : (
+						<span className="text-white/20">warming up</span>
+					)}
+				</div>
 
 				<div className="flex items-center justify-between pt-2 mt-1 border-t border-white/5">
 					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">

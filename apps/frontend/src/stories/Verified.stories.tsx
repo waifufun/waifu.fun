@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
 import Verified from "@/components/verified";
+import type { Meta, StoryObj } from "@storybook/react";
 
 const meta: Meta<typeof Verified> = {
 	title: "Components/Verified",

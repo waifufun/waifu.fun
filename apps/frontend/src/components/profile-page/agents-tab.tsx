@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUserAgents, restartAgent, stopAgent, deleteAgent, type UserAgent } from "@/lib/api";
-import { cn, shortenAddress } from "@/lib/utils";
-import { Bot, ExternalLink, RefreshCw, Square, Trash2, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { DeployAgentModal } from "@/components/ui/create-token/deploy-agent-modal";
+import { type UserAgent, deleteAgent, getUserAgents, restartAgent, stopAgent } from "@/lib/api";
+import { cn, shortenAddress } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, Bot, ExternalLink, Loader2, RefreshCw, Sparkles, Square, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; toneClass: string; dotClass: string }> = {
 	queued: {

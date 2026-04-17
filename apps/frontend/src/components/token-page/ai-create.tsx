@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { ImageIcon, Video, AlertTriangle, Download, Trash2, RefreshCw, Zap, Crown, Maximize } from "lucide-react";
-import type { IToken, MediaType, TChainId } from "@waifufun/types";
 import { PromptProvider, usePrompt } from "@/components/hooks/providers/usePromptContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import useAddress from "@/hooks/use-address";
 import useTokenBalance from "@/hooks/use-token-balance";
 import { abbreviateNumber } from "@/lib/utils";
+import type { IToken, MediaType, TChainId } from "@waifufun/types";
+import { AlertTriangle, Crown, Download, ImageIcon, Maximize, RefreshCw, Trash2, Video, Zap } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const AiCreatePanel = ({ token }: { token: IToken }) => {

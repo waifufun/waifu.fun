@@ -1,11 +1,11 @@
 "use client";
 
+import VisualAsset from "@/components/litepaper/visual-asset";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
-import VisualAsset from "@/components/litepaper/visual-asset";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 const EASE_OUT_QUART = [0.25, 1, 0.5, 1] as const;

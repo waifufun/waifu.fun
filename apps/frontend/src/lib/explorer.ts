@@ -1,5 +1,5 @@
-import { EvmChainIds } from "@waifufun/types";
 import { DEFAULT_EVM_CHAIN_ID } from "@/providers/evm-provider";
+import { EvmChainIds } from "@waifufun/types";
 
 export const EXPLORER_BY_CHAIN_ID: Record<EvmChainIds, string> = {
 	[EvmChainIds.BscMainnet]: "https://bscscan.com",

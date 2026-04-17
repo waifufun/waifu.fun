@@ -1,9 +1,9 @@
 "use client";
 
+import VisualAsset from "@/components/litepaper/visual-asset";
 import { motion, useInView } from "framer-motion";
 import { Copy, Lock, TrendingDown } from "lucide-react";
 import { useRef } from "react";
-import VisualAsset from "@/components/litepaper/visual-asset";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 

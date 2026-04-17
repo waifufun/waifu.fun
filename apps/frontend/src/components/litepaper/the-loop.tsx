@@ -1,8 +1,8 @@
 "use client";
 
+import VisualAsset from "@/components/litepaper/visual-asset";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import VisualAsset from "@/components/litepaper/visual-asset";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
 

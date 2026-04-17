@@ -2,7 +2,7 @@
  * Flap Portal contract helpers for BSC token launching.
  * Minimal ABI + param builder for newTokenV5.
  */
-import { zeroAddress, zeroHash, parseEther, decodeEventLog, type Log } from "viem";
+import { type Log, decodeEventLog, parseEther, zeroAddress, zeroHash } from "viem";
 
 export const PORTAL_ADDRESS = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0" as const;
 

@@ -1,11 +1,11 @@
 "use client";
 
-import type { FC, ReactNode } from "react";
+import { RainbowKitProvider, darkTheme, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { coinbaseWallet, injectedWallet, metaMaskWallet, walletConnectWallet } from "@rainbow-me/rainbowkit/wallets";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { EvmChainIds } from "@waifufun/types";
-import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
-import { coinbaseWallet, injectedWallet, metaMaskWallet, walletConnectWallet } from "@rainbow-me/rainbowkit/wallets";
-import { WagmiProvider, http } from "wagmi";
+import type { FC, ReactNode } from "react";
+import { http, WagmiProvider } from "wagmi";
 import { bsc } from "wagmi/chains";
 import "@rainbow-me/rainbowkit/styles.css";
 
