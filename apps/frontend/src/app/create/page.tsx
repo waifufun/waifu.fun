@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ManualCreateForm from "@/components/ui/create-token/manual-create-form";
 import AutoCreateForm from "@/components/ui/create-token/auto-create-form";
 import ImportTokenForm from "@/components/ui/create-token/import-token-form";
+import CreateAgentWizard from "@/components/ui/create-agent/create-agent-wizard";
 
 const PromptComponent = () => {
 	const { registerForm, generateToken, watchValue } = usePrompt();
@@ -129,49 +130,85 @@ const GeneratedImages = () => {
 	);
 };
 
+type Mode = "agent" | "legacy";
+
 function CreateTokenPageContent() {
+	const [mode, setMode] = useState<Mode>("agent");
+
 	return (
 		<>
-			<div className="w-full max-w-6xl mx-auto px-4 py-8">
-				<Tabs defaultValue="auto" className="w-full">
-					<TabsList className="grid w-full grid-cols-3 bg-black border-2 border-[#03FF24]/50 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] mb-6">
-						<TabsTrigger
-							value="auto"
-							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
+			{/* mode toggle — agent (default) vs legacy token flow */}
+			<div className="w-full max-w-3xl mx-auto px-4 pt-8">
+				<div className="inline-flex items-center gap-0 border border-white/10 rounded-sm bg-[#08080a] p-1">
+					<button
+						type="button"
+						onClick={() => setMode("agent")}
+						className={`h-8 px-4 text-[11px] font-mono uppercase tracking-[0.18em] rounded-sm transition-colors ${
+							mode === "agent"
+								? "bg-[#22c55e] text-black"
+								: "text-white/50 hover:text-white"
+						}`}
+					>
+						agent
+					</button>
+					<button
+						type="button"
+						onClick={() => setMode("legacy")}
+						className={`h-8 px-4 text-[11px] font-mono uppercase tracking-[0.18em] rounded-sm transition-colors ${
+							mode === "legacy"
+								? "bg-white text-black"
+								: "text-white/50 hover:text-white"
+						}`}
+					>
+						legacy token
+					</button>
+				</div>
+			</div>
+
+			{mode === "agent" ? (
+				<CreateAgentWizard />
+			) : (
+				<div className="w-full max-w-6xl mx-auto px-4 py-8">
+					<Tabs defaultValue="auto" className="w-full">
+						<TabsList className="grid w-full grid-cols-3 bg-black border-2 border-[#03FF24]/50 rounded-none shadow-[4px_4px_0px_rgba(3,255,36,0.3)] mb-6">
+							<TabsTrigger
+								value="auto"
+								className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
                      text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider
                      border-r border-[#03FF24]/50 data-[state=active]:border-r-[#01a718]"
-						>
-							Auto
-						</TabsTrigger>
-						<TabsTrigger
-							value="manual"
-							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
+							>
+								Auto
+							</TabsTrigger>
+							<TabsTrigger
+								value="manual"
+								className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
                      text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider
                      border-x border-transparent data-[state=active]:border-x-[#01a718]"
-						>
-							Manual
-						</TabsTrigger>
-						<TabsTrigger
-							value="import"
-							className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
+							>
+								Manual
+							</TabsTrigger>
+							<TabsTrigger
+								value="import"
+								className="text-sm data-[state=active]:bg-[#03FF24] data-[state=active]:text-black data-[state=active]:shadow-[inset_0px_0px_0px_2px_black] 
                      text-gray-300 hover:text-[#03FF24] hover:bg-[#03FF24]/10 rounded-none py-3 font-bold uppercase tracking-wider
                      border-l border-[#03FF24]/50 data-[state=active]:border-l-[#01a718]"
-						>
-							Import
-						</TabsTrigger>
-					</TabsList>
+							>
+								Import
+							</TabsTrigger>
+						</TabsList>
 
-					<TabsContent value="auto">
-						<AutoCreateForm />
-					</TabsContent>
-					<TabsContent value="manual">
-						<ManualCreateForm />
-					</TabsContent>
-					<TabsContent value="import">
-						<ImportTokenForm />
-					</TabsContent>
-				</Tabs>
-			</div>
+						<TabsContent value="auto">
+							<AutoCreateForm />
+						</TabsContent>
+						<TabsContent value="manual">
+							<ManualCreateForm />
+						</TabsContent>
+						<TabsContent value="import">
+							<ImportTokenForm />
+						</TabsContent>
+					</Tabs>
+				</div>
+			)}
 		</>
 	);
 }
