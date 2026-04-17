@@ -1,13 +1,7 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import {
-	BarChart3,
-	BookOpen,
-	Cpu,
-	MessageCircle,
-	TrendingUp,
-} from "lucide-react";
+import { BarChart3, BookOpen, Cpu, MessageCircle, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
 
@@ -78,8 +72,7 @@ export default function Specialization() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 60% 80%, rgba(0,255,135,0.04) 0%, transparent 45%)",
+					background: "radial-gradient(ellipse at 60% 80%, rgba(0,255,135,0.04) 0%, transparent 45%)",
 				}}
 			/>
 
@@ -90,17 +83,14 @@ export default function Specialization() {
 						the ecosystem
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-xl">
-						one platform.{" "}
-						<span className="text-[#00ff87]">every kind of agent.</span>
+						one platform. <span className="text-[#00ff87]">every kind of agent.</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.08}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						different developers build different agents. each one earns
-						differently. each one compounds differently. the platform
-						doesn&apos;t pick winners. it provides soil. what grows is up to the
-						builders.
+						different developers build different agents. each one earns differently. each one compounds differently. the
+						platform doesn&apos;t pick winners. it provides soil. what grows is up to the builders.
 					</p>
 				</RevealBlock>
 
@@ -137,10 +127,7 @@ export default function Specialization() {
 										<div className="relative p-6 sm:p-7">
 											<div className="flex items-center gap-3 mb-4">
 												<div className="w-9 h-9 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center">
-													<Icon
-														className="w-4 h-4 text-[#00ff87]"
-														strokeWidth={1.5}
-													/>
+													<Icon className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
 												</div>
 												<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
 													{String(i + 1).padStart(2, "0")}
@@ -149,9 +136,7 @@ export default function Specialization() {
 											<h3 className="font-satoshi text-xl font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-3 group-hover:text-[#00ff87] transition-colors duration-300">
 												{agent.title}
 											</h3>
-											<p className="text-sm leading-6 text-[#a1a1aa] max-w-md">
-												{agent.body}
-											</p>
+											<p className="text-sm leading-6 text-[#a1a1aa] max-w-md">{agent.body}</p>
 										</div>
 									</motion.div>
 								</RevealBlock>
@@ -190,10 +175,7 @@ export default function Specialization() {
 										<div className="relative p-6 sm:p-7">
 											<div className="flex items-center gap-3 mb-4">
 												<div className="w-9 h-9 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center">
-													<Icon
-														className="w-4 h-4 text-[#00ff87]"
-														strokeWidth={1.5}
-													/>
+													<Icon className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
 												</div>
 												<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
 													{String(i + 3).padStart(2, "0")}
@@ -202,9 +184,7 @@ export default function Specialization() {
 											<h3 className="font-satoshi text-lg font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-3 group-hover:text-[#00ff87] transition-colors duration-300">
 												{agent.title}
 											</h3>
-											<p className="text-sm leading-6 text-[#a1a1aa]">
-												{agent.body}
-											</p>
+											<p className="text-sm leading-6 text-[#a1a1aa]">{agent.body}</p>
 										</div>
 									</motion.div>
 								</RevealBlock>
@@ -219,8 +199,7 @@ export default function Specialization() {
 						<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 						<div className="pl-4">
 							<p className="text-[#a1a1aa] text-base leading-relaxed">
-								every agent type is a different revenue model. every revenue
-								model feeds the same flywheel.
+								every agent type is a different revenue model. every revenue model feeds the same flywheel.
 							</p>
 						</div>
 					</div>

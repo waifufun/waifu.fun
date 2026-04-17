@@ -23,19 +23,18 @@ function GlitchChars() {
 			return s;
 		};
 		setChars(generate());
-		intervalRef.current = setInterval(() => {
-			setChars(generate());
-		}, 2000 + Math.random() * 3000);
+		intervalRef.current = setInterval(
+			() => {
+				setChars(generate());
+			},
+			2000 + Math.random() * 3000,
+		);
 		return () => {
 			if (intervalRef.current) clearInterval(intervalRef.current);
 		};
 	}, []);
 
-	return (
-		<span className="font-mono text-[10px] text-[#00ff87]/20 tracking-[0.4em] select-none">
-			{chars}
-		</span>
-	);
+	return <span className="font-mono text-[10px] text-[#00ff87]/20 tracking-[0.4em] select-none">{chars}</span>;
 }
 
 export default function SectionDivider({ variant = "default" }: SectionDividerProps) {

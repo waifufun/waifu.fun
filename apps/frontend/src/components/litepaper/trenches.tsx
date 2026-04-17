@@ -33,7 +33,7 @@ const problems = [
 	},
 	{
 		title: "agents are all the same",
-		copy: "the AI agent meta added characters to tokens. but every single one runs on the same model with a different system prompt. your \"unique AI agent\" is literally ChatGPT in a costume. so is everyone else's.",
+		copy: 'the AI agent meta added characters to tokens. but every single one runs on the same model with a different system prompt. your "unique AI agent" is literally ChatGPT in a costume. so is everyone else\'s.',
 	},
 	{
 		title: "nothing compounds",
@@ -58,14 +58,15 @@ export default function Trenches() {
 								the problem
 							</span>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								launchpads extract.{" "}
-								<span className="text-[#52525b]">they don't build.</span>
+								launchpads extract. <span className="text-[#52525b]">they don't build.</span>
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								you know how this works. token launches on a bonding curve. people trade. platform takes fees. devs take profit. token dies. next.
+								you know how this works. token launches on a bonding curve. people trade. platform takes fees. devs take
+								profit. token dies. next.
 							</p>
 							<p className="mt-4 text-[#a1a1aa] text-lg leading-relaxed">
-								the AI agent wave added a new spin: now your token has a chatbot. but it's the same chatbot as every other token, running on the same rented model. the "AI" part is a gimmick, not a product.
+								the AI agent wave added a new spin: now your token has a chatbot. but it's the same chatbot as every
+								other token, running on the same rented model. the "AI" part is a gimmick, not a product.
 							</p>
 
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
@@ -86,22 +87,16 @@ export default function Trenches() {
 						<div className="grid gap-5">
 							{problems.map((problem, index) => (
 								<SectionBlock key={problem.title} delay={index * 0.1}>
-									<motion.article
-										className="group relative rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7 hover:border-[rgba(0,255,135,0.2)] transition-colors duration-300"
-									>
+									<motion.article className="group relative rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7 hover:border-[rgba(0,255,135,0.2)] transition-colors duration-300">
 										<div className="flex items-start gap-5">
 											<div className="flex-shrink-0 w-12 h-12 rounded-sm bg-[rgba(0,255,135,0.05)] border border-[rgba(255,255,255,0.06)] flex items-center justify-center">
-												<span className="font-mono text-sm text-[#52525b]">
-													{String(index + 1).padStart(2, "0")}
-												</span>
+												<span className="font-mono text-sm text-[#52525b]">{String(index + 1).padStart(2, "0")}</span>
 											</div>
 											<div>
 												<h3 className="text-xl sm:text-2xl font-bold text-[#e4e4e7] tracking-[-0.02em] lowercase group-hover:text-[#00ff87] transition-colors duration-300">
 													{problem.title}
 												</h3>
-												<p className="mt-3 text-base leading-7 text-[#a1a1aa]">
-													{problem.copy}
-												</p>
+												<p className="mt-3 text-base leading-7 text-[#a1a1aa]">{problem.copy}</p>
 											</div>
 										</div>
 									</motion.article>

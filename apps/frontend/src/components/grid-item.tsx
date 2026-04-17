@@ -114,7 +114,9 @@ export const GridItem = ({
 								<StatusPills isBonded={isBonded} isDead={isDead} isVerified={Boolean(token.verified)} />
 
 								<div className="flex flex-col gap-2">
-									<div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#7f7f86]">curated explorer</div>
+									<div className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#7f7f86]">
+										curated explorer
+									</div>
 									<div>
 										<h3 className="text-3xl font-semibold leading-none tracking-tight text-[#f4f4f5] sm:text-4xl">
 											{token.name}
@@ -142,7 +144,9 @@ export const GridItem = ({
 								{!isBonded && (
 									<div className="space-y-2">
 										<div className="flex items-center justify-between gap-3">
-											<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#5f5f66]">{progressLabel}</span>
+											<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#5f5f66]">
+												{progressLabel}
+											</span>
 											<span className="text-[11px] font-mono text-[#8df7c0]">{curveProgress}%</span>
 										</div>
 										<div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
@@ -213,7 +217,9 @@ export const GridItem = ({
 					{!isBonded && (
 						<div className="space-y-2 pt-1">
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#5f5f66]">{progressLabel}</span>
+								<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#5f5f66]">
+									{progressLabel}
+								</span>
 								<span className="text-[11px] font-mono text-[#8df7c0]">{curveProgress}%</span>
 							</div>
 							<div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">

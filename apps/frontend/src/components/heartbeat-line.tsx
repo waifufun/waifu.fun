@@ -34,34 +34,16 @@ export function HeartbeatLine({
 			>
 				<title>Heartbeat indicator</title>
 				<defs>
-					<linearGradient
-						id="heartbeat-gradient-alive"
-						x1="0%"
-						y1="0%"
-						x2="100%"
-						y2="0%"
-					>
+					<linearGradient id="heartbeat-gradient-alive" x1="0%" y1="0%" x2="100%" y2="0%">
 						<stop offset="0%" stopColor="#00ff87" stopOpacity="0.3" />
 						<stop offset="50%" stopColor="#00ff87" stopOpacity="1" />
 						<stop offset="100%" stopColor="#00ff87" stopOpacity="0.3" />
 					</linearGradient>
-					<linearGradient
-						id="heartbeat-gradient-dead"
-						x1="0%"
-						y1="0%"
-						x2="100%"
-						y2="0%"
-					>
+					<linearGradient id="heartbeat-gradient-dead" x1="0%" y1="0%" x2="100%" y2="0%">
 						<stop offset="0%" stopColor="#ef4444" />
 						<stop offset="100%" stopColor="#ef4444" />
 					</linearGradient>
-					<linearGradient
-						id="heartbeat-gradient-sleeping"
-						x1="0%"
-						y1="0%"
-						x2="100%"
-						y2="0%"
-					>
+					<linearGradient id="heartbeat-gradient-sleeping" x1="0%" y1="0%" x2="100%" y2="0%">
 						<stop offset="0%" stopColor="#71717a" stopOpacity="0.6" />
 						<stop offset="50%" stopColor="#71717a" stopOpacity="1" />
 						<stop offset="100%" stopColor="#71717a" stopOpacity="0.6" />
@@ -82,11 +64,7 @@ export function HeartbeatLine({
 					<path
 						d={path}
 						fill="none"
-						stroke={
-							status === "alive"
-								? "url(#heartbeat-gradient-alive)"
-								: "url(#heartbeat-gradient-sleeping)"
-						}
+						stroke={status === "alive" ? "url(#heartbeat-gradient-alive)" : "url(#heartbeat-gradient-sleeping)"}
 						strokeWidth="1.5"
 						strokeLinecap="round"
 						strokeLinejoin="round"
@@ -96,11 +74,7 @@ export function HeartbeatLine({
 							isAnimated && status === "alive" && "animate-heartbeat-scroll",
 							isAnimated && status === "sleeping" && "animate-heartbeat-scroll-slow",
 						)}
-						style={
-							isAnimated
-								? undefined
-								: { strokeDashoffset: 0 }
-						}
+						style={isAnimated ? undefined : { strokeDashoffset: 0 }}
 					/>
 				)}
 			</svg>

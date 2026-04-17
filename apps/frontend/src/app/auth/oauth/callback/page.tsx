@@ -5,23 +5,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 function OAuthCallbackInner() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const provider = params.get("provider") ?? "google";
+	const router = useRouter();
+	const params = useSearchParams();
+	const provider = params.get("provider") ?? "google";
 
-  return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <StewardOAuthCallback
-        provider={provider}
-        onSuccess={() => router.push("/")}
-        onError={(err) => {
-          console.error("[oauth-callback]", err);
-          router.push("/");
-        }}
-        redirectTo="/"
-      />
-    </div>
-  );
+	return (
+		<div className="flex min-h-[60vh] items-center justify-center">
+			<StewardOAuthCallback
+				provider={provider}
+				onSuccess={() => router.push("/")}
+				onError={(err) => {
+					console.error("[oauth-callback]", err);
+					router.push("/");
+				}}
+				redirectTo="/"
+			/>
+		</div>
+	);
 }
 
 /**
@@ -29,9 +29,11 @@ function OAuthCallbackInner() {
  * Handles Google, Discord, etc. redirects from Steward.
  */
 export default function OAuthCallbackPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center text-[#71717a]">Verifying...</div>}>
-      <OAuthCallbackInner />
-    </Suspense>
-  );
+	return (
+		<Suspense
+			fallback={<div className="flex min-h-[60vh] items-center justify-center text-[#71717a]">Verifying...</div>}
+		>
+			<OAuthCallbackInner />
+		</Suspense>
+	);
 }

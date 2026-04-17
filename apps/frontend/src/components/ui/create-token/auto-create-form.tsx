@@ -167,7 +167,8 @@ function AutoCreateForm() {
 					)}
 				</Button>
 				<p className="text-[10px] text-[#52525b] text-center">
-					tip: be specific! "a cyberpunk anime girl who trades memecoins and posts degen alpha" works better than "cute girl"
+					tip: be specific! "a cyberpunk anime girl who trades memecoins and posts degen alpha" works better than "cute
+					girl"
 				</p>
 			</FormSection>
 			<div className="space-y-6">

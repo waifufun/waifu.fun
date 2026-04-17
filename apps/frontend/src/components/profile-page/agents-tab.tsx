@@ -2,33 +2,15 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-	getUserAgents,
-	restartAgent,
-	stopAgent,
-	deleteAgent,
-	type UserAgent,
-} from "@/lib/api";
+import { getUserAgents, restartAgent, stopAgent, deleteAgent, type UserAgent } from "@/lib/api";
 import { cn, shortenAddress } from "@/lib/utils";
-import {
-	Bot,
-	ExternalLink,
-	RefreshCw,
-	Square,
-	Trash2,
-	Loader2,
-	AlertCircle,
-	Sparkles,
-} from "lucide-react";
+import { Bot, ExternalLink, RefreshCw, Square, Trash2, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DeployAgentModal } from "@/components/ui/create-token/deploy-agent-modal";
 import Link from "next/link";
 
-const statusConfig: Record<
-	string,
-	{ label: string; toneClass: string; dotClass: string }
-> = {
+const statusConfig: Record<string, { label: string; toneClass: string; dotClass: string }> = {
 	queued: {
 		label: "Queued",
 		toneClass: "border-sky-500/30 bg-sky-500/10 text-sky-300",
@@ -113,8 +95,7 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 		onError: (e: Error) => toast.error(e.message || "Failed to delete"),
 	});
 
-	const anyPending =
-		restartMut.isPending || stopMut.isPending || deleteMut.isPending;
+	const anyPending = restartMut.isPending || stopMut.isPending || deleteMut.isPending;
 
 	return (
 		<div className="border-b border-[rgba(255,255,255,0.06)] last:border-b-0 p-4 hover:bg-[rgba(255,255,255,0.02)] transition-colors">
@@ -126,9 +107,7 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 					</div>
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
-							<p className="text-sm font-semibold text-[#e4e4e7] truncate">
-								{agent.agentName}
-							</p>
+							<p className="text-sm font-semibold text-[#e4e4e7] truncate">{agent.agentName}</p>
 							<StatusPill status={agent.status} />
 						</div>
 						<div className="flex items-center gap-3 mt-0.5">
@@ -140,9 +119,7 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 									Token: {shortenAddress(agent.tokenAddress)}
 								</Link>
 							)}
-							<span className="text-[10px] font-mono text-[#52525b]">
-								ID: {shortenAddress(agent.agentId)}
-							</span>
+							<span className="text-[10px] font-mono text-[#52525b]">ID: {shortenAddress(agent.agentId)}</span>
 						</div>
 						{agent.platforms && agent.platforms.length > 0 && (
 							<div className="flex items-center gap-1 mt-1">
@@ -181,11 +158,7 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 								disabled={anyPending}
 								className="h-7 px-2 text-[9px] font-mono uppercase text-[#a1a1aa] hover:text-[#00ff87]"
 							>
-								{restartMut.isPending ? (
-									<Loader2 className="size-3 animate-spin" />
-								) : (
-									<RefreshCw className="size-3" />
-								)}
+								{restartMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
 							</Button>
 							<Button
 								variant="outline"
@@ -194,84 +167,61 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 								disabled={anyPending}
 								className="h-7 px-2 text-[9px] font-mono uppercase text-amber-300 hover:text-amber-200 border-amber-500/20"
 							>
-								{stopMut.isPending ? (
-									<Loader2 className="size-3 animate-spin" />
-								) : (
-									<Square className="size-3" />
-								)}
+								{stopMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <Square className="size-3" />}
 							</Button>
 						</>
 					)}
 
-					{(agent.status === "stopped" ||
-						agent.status === "failed") && (
+					{(agent.status === "stopped" || agent.status === "failed") && (
 						<Button
 							size="sm"
 							onClick={() => restartMut.mutate()}
 							disabled={anyPending}
 							className="h-7 px-2 text-[9px] font-mono uppercase"
 						>
-							{restartMut.isPending ? (
-								<Loader2 className="size-3 animate-spin" />
-							) : (
-								<RefreshCw className="size-3" />
-							)}
+							{restartMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
 							Restart
 						</Button>
 					)}
 
-					{(agent.status === "queued" ||
-						agent.status === "provisioning") && (
+					{(agent.status === "queued" || agent.status === "provisioning") && (
 						<span className="flex items-center gap-1 text-[10px] text-sky-300">
 							<Loader2 className="size-3 animate-spin" />
 						</span>
 					)}
 
 					{/* Delete */}
-					{agent.status !== "deleted" && (
-						<>
-							{confirmDelete ? (
-								<div className="flex items-center gap-1">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() =>
-											deleteMut.mutate()
-										}
-										disabled={anyPending}
-										className="h-7 px-2 text-[9px] font-mono uppercase text-red-400 hover:text-red-300 border-red-500/20"
-									>
-										{deleteMut.isPending ? (
-											<Loader2 className="size-3 animate-spin" />
-										) : (
-											"Confirm"
-										)}
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() =>
-											setConfirmDelete(false)
-										}
-										className="h-7 px-2 text-[9px] font-mono uppercase text-[#71717a]"
-									>
-										Cancel
-									</Button>
-								</div>
-							) : (
-								<button
-									type="button"
-									onClick={() =>
-										setConfirmDelete(true)
-									}
+					{agent.status !== "deleted" &&
+						(confirmDelete ? (
+							<div className="flex items-center gap-1">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => deleteMut.mutate()}
 									disabled={anyPending}
-									className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-white/8 text-[#52525b] hover:text-red-400 hover:border-red-500/30 transition-colors disabled:opacity-50"
+									className="h-7 px-2 text-[9px] font-mono uppercase text-red-400 hover:text-red-300 border-red-500/20"
 								>
-									<Trash2 className="size-3" />
-								</button>
-							)}
-						</>
-					)}
+									{deleteMut.isPending ? <Loader2 className="size-3 animate-spin" /> : "Confirm"}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setConfirmDelete(false)}
+									className="h-7 px-2 text-[9px] font-mono uppercase text-[#71717a]"
+								>
+									Cancel
+								</Button>
+							</div>
+						) : (
+							<button
+								type="button"
+								onClick={() => setConfirmDelete(true)}
+								disabled={anyPending}
+								className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-white/8 text-[#52525b] hover:text-red-400 hover:border-red-500/30 transition-colors disabled:opacity-50"
+							>
+								<Trash2 className="size-3" />
+							</button>
+						))}
 				</div>
 			</div>
 		</div>
@@ -297,19 +247,14 @@ export default function AgentsTab() {
 				<div className="flex items-center justify-between p-4 border-b border-[rgba(255,255,255,0.06)]">
 					<div className="flex items-center gap-2">
 						<Bot className="size-4 text-[#00ff87]" />
-						<h2 className="text-sm text-[#a1a1aa] font-semibold uppercase tracking-wider">
-							Your Agents
-						</h2>
+						<h2 className="text-sm text-[#a1a1aa] font-semibold uppercase tracking-wider">Your Agents</h2>
 						{agents.length > 0 && (
 							<span className="text-[10px] font-mono text-[#52525b] bg-white/5 px-1.5 py-0.5 rounded-sm">
 								{agents.length}
 							</span>
 						)}
 					</div>
-					<Button
-						onClick={() => setDeployModalOpen(true)}
-						className="h-8 px-3 text-[10px] font-mono uppercase"
-					>
+					<Button onClick={() => setDeployModalOpen(true)} className="h-8 px-3 text-[10px] font-mono uppercase">
 						<Sparkles className="size-3" />
 						Deploy New Agent
 					</Button>
@@ -336,17 +281,11 @@ export default function AgentsTab() {
 				) : agents.length === 0 ? (
 					<div className="flex flex-col items-center gap-3 p-8">
 						<Bot className="size-8 text-[#52525b]" />
-						<p className="text-sm text-[#71717a] text-center">
-							You haven't deployed any agents yet.
-						</p>
+						<p className="text-sm text-[#71717a] text-center">You haven't deployed any agents yet.</p>
 						<p className="text-xs text-[#52525b] text-center max-w-sm">
-							Deploy an AI agent to engage with your community
-							automatically across social platforms.
+							Deploy an AI agent to engage with your community automatically across social platforms.
 						</p>
-						<Button
-							onClick={() => setDeployModalOpen(true)}
-							className="h-9 px-4 text-[11px] font-mono uppercase mt-2"
-						>
+						<Button onClick={() => setDeployModalOpen(true)} className="h-9 px-4 text-[11px] font-mono uppercase mt-2">
 							<Sparkles className="size-3.5" />
 							Deploy Your First Agent
 						</Button>
@@ -354,10 +293,7 @@ export default function AgentsTab() {
 				) : (
 					<div>
 						{agents.map((agent) => (
-							<AgentRow
-								key={agent.agentId}
-								agent={agent}
-							/>
+							<AgentRow key={agent.agentId} agent={agent} />
 						))}
 					</div>
 				)}

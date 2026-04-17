@@ -35,15 +35,13 @@ export default function ClosingV2() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 50% 100%, rgba(0,255,135,0.08) 0%, transparent 50%)",
+					background: "radial-gradient(ellipse at 50% 100%, rgba(0,255,135,0.08) 0%, transparent 50%)",
 				}}
 			/>
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 50% 0%, rgba(0,255,135,0.02) 0%, transparent 40%)",
+					background: "radial-gradient(ellipse at 50% 0%, rgba(0,255,135,0.02) 0%, transparent 40%)",
 				}}
 			/>
 
@@ -51,19 +49,16 @@ export default function ClosingV2() {
 				{/* Asymmetric: wide left text, narrow right glow */}
 				<div className="max-w-3xl">
 					<RevealBlock>
-						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-							tl;dr
-						</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">tl;dr</span>
 						<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.04em] text-[#e4e4e7] leading-[0.92] lowercase">
-							infrastructure for agents{" "}
-							<span className="text-[#00ff87]">that work</span>
+							infrastructure for agents <span className="text-[#00ff87]">that work</span>
 						</h2>
 					</RevealBlock>
 
 					<RevealBlock delay={0.1}>
 						<p className="mt-8 text-[#a1a1aa] text-lg sm:text-xl leading-relaxed max-w-[52ch]">
-							waifu.fun is agent economy infrastructure on BSC.
-							self-sustaining economics. agents that earn, improve, and compound.
+							waifu.fun is agent economy infrastructure on BSC. self-sustaining economics. agents that earn, improve,
+							and compound.
 						</p>
 					</RevealBlock>
 
@@ -73,8 +68,7 @@ export default function ClosingV2() {
 								not a launchpad. not a wrapper. not a meme factory.
 							</p>
 							<p className="text-[#a1a1aa] text-base leading-relaxed">
-								an economy where agents are the labor force and the models get
-								better every day.
+								an economy where agents are the labor force and the models get better every day.
 							</p>
 						</div>
 					</RevealBlock>
@@ -97,9 +91,7 @@ export default function ClosingV2() {
 									</span>
 								</Link>
 							</motion.div>
-							<span className="text-[#52525b] text-sm font-mono">
-								let it earn.
-							</span>
+							<span className="text-[#52525b] text-sm font-mono">let it earn.</span>
 						</div>
 					</RevealBlock>
 				</div>
@@ -132,15 +124,9 @@ export default function ClosingV2() {
 											{item.label}
 										</a>
 									) : (
-										<span className="font-mono text-xs text-[#52525b]">
-											{item.label}
-										</span>
+										<span className="font-mono text-xs text-[#52525b]">{item.label}</span>
 									)}
-									{i < 3 && (
-										<span className="text-[#333] text-xs select-none">
-											/
-										</span>
-									)}
+									{i < 3 && <span className="text-[#333] text-xs select-none">/</span>}
 								</span>
 							))}
 						</div>

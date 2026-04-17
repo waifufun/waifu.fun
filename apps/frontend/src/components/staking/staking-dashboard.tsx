@@ -50,8 +50,13 @@ export default function StakingDashboard() {
 										className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4 group hover:border-[rgba(0,255,135,0.15)] transition-colors duration-500"
 									>
 										<div className="flex items-center gap-2 mb-3">
-											<Icon className="w-3.5 h-3.5 text-[#52525b] group-hover:text-[#00ff87] transition-colors" strokeWidth={1.5} />
-											<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">{stat.label}</span>
+											<Icon
+												className="w-3.5 h-3.5 text-[#52525b] group-hover:text-[#00ff87] transition-colors"
+												strokeWidth={1.5}
+											/>
+											<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+												{stat.label}
+											</span>
 										</div>
 										<div className="flex items-baseline gap-2">
 											<span className="font-mono text-2xl font-bold text-[#00ff87] tracking-tight">{stat.value}</span>
@@ -69,13 +74,15 @@ export default function StakingDashboard() {
 			<section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 				<RevealBlock>
 					<div className="mb-10">
-						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-3">veWAIFU staking</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-3">
+							veWAIFU staking
+						</span>
 						<h1 className="font-satoshi text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-[#e4e4e7] lowercase">
-							stake waifu.{" "}
-							<span className="text-[#52525b]">earn from every agent.</span>
+							stake waifu. <span className="text-[#52525b]">earn from every agent.</span>
 						</h1>
 						<p className="mt-4 text-[#71717a] text-base max-w-lg">
-							your staked WAIFU earns 25% of all trading fees across the platform. every agent trade, every bonding curve swap, every graduation.
+							your staked WAIFU earns 25% of all trading fees across the platform. every agent trade, every bonding
+							curve swap, every graduation.
 						</p>
 					</div>
 				</RevealBlock>
@@ -94,7 +101,9 @@ export default function StakingDashboard() {
 								{/* Stake input */}
 								<div className="p-6 space-y-6">
 									<div>
-										<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b] block mb-3">stake amount</label>
+										<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b] block mb-3">
+											stake amount
+										</label>
 										<div className="flex items-center gap-3">
 											<div className="flex-1 relative">
 												<input
@@ -104,7 +113,9 @@ export default function StakingDashboard() {
 													placeholder="0.00"
 													className="w-full bg-[#08080a] border border-[rgba(255,255,255,0.06)] rounded-sm px-4 py-3 font-mono text-lg text-[#e4e4e7] placeholder-[#3f3f46] focus:outline-none focus:border-[rgba(0,255,135,0.3)] transition-colors"
 												/>
-												<span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-xs text-[#52525b]">WAIFU</span>
+												<span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-xs text-[#52525b]">
+													WAIFU
+												</span>
 											</div>
 											<button
 												type="button"
@@ -127,7 +138,9 @@ export default function StakingDashboard() {
 
 									{/* Withdraw section */}
 									<div className="pt-4 border-t border-[rgba(255,255,255,0.04)]">
-										<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b] block mb-3">withdraw</label>
+										<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b] block mb-3">
+											withdraw
+										</label>
 										<div className="flex items-center gap-3">
 											<input
 												type="text"
@@ -159,11 +172,13 @@ export default function StakingDashboard() {
 								<div className="p-6 space-y-6">
 									{/* Earned display */}
 									<div className="text-center py-8">
-										<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b] block mb-4">earned</span>
+										<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b] block mb-4">
+											earned
+										</span>
 										<motion.div
 											className="font-mono text-5xl font-bold text-[#00ff87] tracking-tight"
 											animate={{ opacity: [0.8, 1, 0.8] }}
-											transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+											transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 										>
 											0.00
 										</motion.div>

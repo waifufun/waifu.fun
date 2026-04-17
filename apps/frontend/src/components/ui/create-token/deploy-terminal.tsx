@@ -100,10 +100,7 @@ export function DeployTerminal({ stages, progress = 0, onDismiss, className }: D
 						<div className="flex-1 min-w-0">
 							<span className="break-words">{stage.label}</span>
 							{stage.detail && (
-								<span className={cn(
-									"ml-2 text-xs",
-									stage.status === "success" ? "text-[#00ff87]" : "text-[#a1a1aa]"
-								)}>
+								<span className={cn("ml-2 text-xs", stage.status === "success" ? "text-[#00ff87]" : "text-[#a1a1aa]")}>
 									{stage.detail}
 								</span>
 							)}

@@ -92,8 +92,7 @@ export default function EconomicsV2() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 80% 30%, rgba(0,255,135,0.04) 0%, transparent 40%)",
+					background: "radial-gradient(ellipse at 80% 30%, rgba(0,255,135,0.04) 0%, transparent 40%)",
 				}}
 			/>
 
@@ -104,16 +103,14 @@ export default function EconomicsV2() {
 						the math
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-lg">
-						agents that pay{" "}
-						<span className="text-[#00ff87]">their own bills</span>
+						agents that pay <span className="text-[#00ff87]">their own bills</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.08}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						the unit economics are simple. an agent doing 100k in daily volume
-						generates roughly 1k in fees. inference costs about $5 per day. the
-						agent funds its own existence with room to spare.
+						the unit economics are simple. an agent doing 100k in daily volume generates roughly 1k in fees. inference
+						costs about $5 per day. the agent funds its own existence with room to spare.
 					</p>
 				</RevealBlock>
 
@@ -126,16 +123,10 @@ export default function EconomicsV2() {
 									<span className="font-mono text-3xl sm:text-4xl font-bold text-[#00ff87] tracking-tight">
 										{num.stat}
 									</span>
-									<span className="font-mono text-sm text-[#52525b]">
-										{num.unit}
-									</span>
+									<span className="font-mono text-sm text-[#52525b]">{num.unit}</span>
 								</div>
-								<p className="mt-1 font-mono text-xs text-[#71717a] uppercase tracking-wide">
-									{num.result}
-								</p>
-								<p className="mt-3 text-sm text-[#a1a1aa] leading-relaxed">
-									{num.note}
-								</p>
+								<p className="mt-1 font-mono text-xs text-[#71717a] uppercase tracking-wide">{num.result}</p>
+								<p className="mt-3 text-sm text-[#a1a1aa] leading-relaxed">{num.note}</p>
 							</div>
 						</RevealBlock>
 					))}
@@ -153,16 +144,12 @@ export default function EconomicsV2() {
 								pick your level.
 							</h3>
 							<p className="mt-5 text-[#a1a1aa] text-base leading-relaxed">
-								start free. upgrade as your token grows. each tier gives your
-								agent a better brain and better hardware.
+								start free. upgrade as your token grows. each tier gives your agent a better brain and better hardware.
 							</p>
 							<div className="mt-8 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-								<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
-									progression
-								</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">progression</span>
 								<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-									system prompt &rarr; fine-tuned &rarr; dedicated GPU &rarr;
-									fully custom
+									system prompt &rarr; fine-tuned &rarr; dedicated GPU &rarr; fully custom
 								</p>
 							</div>
 						</RevealBlock>
@@ -195,36 +182,26 @@ export default function EconomicsV2() {
 												</div>
 												<h4
 													className={`mt-3 font-satoshi text-2xl sm:text-3xl font-bold tracking-[-0.02em] lowercase ${
-														tier.highlight
-															? "text-[#00ff87]"
-															: "text-[#e4e4e7]"
+														tier.highlight ? "text-[#00ff87]" : "text-[#e4e4e7]"
 													}`}
 												>
 													{tier.name}
 												</h4>
-												<p className="mt-3 text-sm leading-7 text-[#a1a1aa]">
-													{tier.description}
-												</p>
+												<p className="mt-3 text-sm leading-7 text-[#a1a1aa]">{tier.description}</p>
 											</div>
 
 											{/* Specs sidebar */}
 											<div className="shrink-0 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] p-4 lg:min-w-[13rem]">
 												<div>
-													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
-														model
-													</span>
-													<p className="mt-1.5 text-sm leading-6 text-[#a1a1aa]">
-														{tier.model}
-													</p>
+													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">model</span>
+													<p className="mt-1.5 text-sm leading-6 text-[#a1a1aa]">{tier.model}</p>
 												</div>
 												<div className="h-px bg-[rgba(255,255,255,0.04)] my-3" />
 												<div>
 													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
 														hardware
 													</span>
-													<p className="mt-1.5 text-sm leading-6 text-[#a1a1aa]">
-														{tier.infra}
-													</p>
+													<p className="mt-1.5 text-sm leading-6 text-[#a1a1aa]">{tier.infra}</p>
 												</div>
 											</div>
 										</div>
@@ -244,9 +221,8 @@ export default function EconomicsV2() {
 								governance
 							</span>
 							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">
-								token holders govern the system. which agents get priority
-								training. how GPU resources are allocated. revenue split
-								parameters. the community decides how the economy runs.
+								token holders govern the system. which agents get priority training. how GPU resources are allocated.
+								revenue split parameters. the community decides how the economy runs.
 							</p>
 						</div>
 					</div>

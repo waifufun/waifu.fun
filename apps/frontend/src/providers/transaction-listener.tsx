@@ -7,7 +7,7 @@ import { EvmChainIds, type IToken } from "@waifufun/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
 import { useTranslation } from "@/contexts/locale-context";
-import { EXPLORER_BY_CHAIN_ID, getExplorerTxUrl, resolveEvmChainId } from "@/lib/explorer";
+import { getExplorerTxUrl, resolveEvmChainId } from "@/lib/explorer";
 import { DEFAULT_EVM_CHAIN_ID } from "@/providers/evm-provider";
 
 export interface PendingTransaction {
@@ -125,9 +125,12 @@ export const TransactionListenerProvider = ({ children }: { children: ReactNode 
 			};
 
 			if (success) {
-				toast.success(t("toast.swapped", { input: inputFormatted, inputSymbol, output: outputFormatted, outputSymbol }), {
-					action: toastAction,
-				});
+				toast.success(
+					t("toast.swapped", { input: inputFormatted, inputSymbol, output: outputFormatted, outputSymbol }),
+					{
+						action: toastAction,
+					},
+				);
 			} else {
 				toast.error(t("toast.swapFailed", { hash: transaction.hash.slice(0, 10) }), {
 					action: toastAction,

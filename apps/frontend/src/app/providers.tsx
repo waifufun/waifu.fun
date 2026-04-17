@@ -17,10 +17,7 @@ const StewardProviderLazy = dynamic(
 
 // Dynamic import prevents idb-keyval (via @wagmi/connectors → @base-org/account)
 // from accessing `indexedDB` during SSR/static generation
-const EvmProvider = dynamic(
-	() => import("@/providers/evm-provider").then((mod) => mod.EvmProvider),
-	{ ssr: false },
-);
+const EvmProvider = dynamic(() => import("@/providers/evm-provider").then((mod) => mod.EvmProvider), { ssr: false });
 
 const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
@@ -30,27 +27,27 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 			<LocaleProvider>
 				<TooltipProvider delayDuration={0}>
 					<ProgressProvider
-					height="4px"
-					color="#00ff87"
-					options={{
-						showSpinner: false,
-					}}
-					disableSameURL={false}
-					shallowRouting={true}
-					shouldCompareComplexProps
-				>
-					<EvmProvider>
-						<StewardProviderLazy>
-						<ApiAuthSync />
-						<AnimationProvider>
-							<TransactionListenerProvider>{children}</TransactionListenerProvider>
-							<Toaster />
-							<GoogleAnalytics gaId={googleTagID} />
-						</AnimationProvider>
-						</StewardProviderLazy>
-					</EvmProvider>
-				</ProgressProvider>
-			</TooltipProvider>
+						height="4px"
+						color="#00ff87"
+						options={{
+							showSpinner: false,
+						}}
+						disableSameURL={false}
+						shallowRouting={true}
+						shouldCompareComplexProps
+					>
+						<EvmProvider>
+							<StewardProviderLazy>
+								<ApiAuthSync />
+								<AnimationProvider>
+									<TransactionListenerProvider>{children}</TransactionListenerProvider>
+									<Toaster />
+									<GoogleAnalytics gaId={googleTagID} />
+								</AnimationProvider>
+							</StewardProviderLazy>
+						</EvmProvider>
+					</ProgressProvider>
+				</TooltipProvider>
 			</LocaleProvider>
 		</Suspense>
 	);

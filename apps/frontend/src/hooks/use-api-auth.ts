@@ -16,17 +16,17 @@ import { setApiTokenGetter } from "@/lib/api-auth";
  * existing cookie/wallet-based auth continues to work.
  */
 export function useApiAuth() {
-  const { getToken, isAuthenticated } = useAuth();
+	const { getToken, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      setApiTokenGetter(getToken);
-    } else {
-      setApiTokenGetter(null);
-    }
+	useEffect(() => {
+		if (isAuthenticated) {
+			setApiTokenGetter(getToken);
+		} else {
+			setApiTokenGetter(null);
+		}
 
-    return () => {
-      setApiTokenGetter(null);
-    };
-  }, [isAuthenticated, getToken]);
+		return () => {
+			setApiTokenGetter(null);
+		};
+	}, [isAuthenticated, getToken]);
 }

@@ -38,14 +38,8 @@ export default function Closing() {
 	const glowOpacity = useTransform(scrollYProgress, [0.3, 0.9], [0, 0.2]);
 
 	return (
-		<section
-			ref={sectionRef}
-			className="relative py-28 sm:py-40 overflow-hidden"
-		>
-			<motion.div
-				style={{ opacity: glowOpacity }}
-				className="absolute inset-0"
-			>
+		<section ref={sectionRef} className="relative py-28 sm:py-40 overflow-hidden">
+			<motion.div style={{ opacity: glowOpacity }} className="absolute inset-0">
 				<div
 					className="absolute inset-0"
 					style={{ background: "radial-gradient(ellipse at 50% 100%, rgba(0,255,135,0.1) 0%, transparent 50%)" }}
@@ -55,15 +49,11 @@ export default function Closing() {
 			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 				<SectionBlock>
 					<div className="text-center">
-						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-8">
-							tl;dr
-						</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-8">tl;dr</span>
 
 						<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase max-w-4xl mx-auto mb-6">
 							launch a token. attach an AI agent. trading fees fine-tune the model.{" "}
-							<span className="text-[#00ff87]">
-								your waifu gets smarter the more people trade it.
-							</span>
+							<span className="text-[#00ff87]">your waifu gets smarter the more people trade it.</span>
 						</h2>
 
 						<p className="text-[#a1a1aa] text-lg leading-relaxed max-w-2xl mx-auto">
@@ -110,9 +100,23 @@ export default function Closing() {
 					<div className="mt-10 flex items-center justify-center gap-4 font-mono text-[10px] uppercase tracking-[0.25em] text-[#3f3f46]">
 						<span className="text-[#00ff87]/60">waifu.fun</span>
 						<span className="text-[#27272a]">×</span>
-						<a href="https://elizaos.ai" target="_blank" rel="noopener noreferrer" className="hover:text-[#71717a] transition-colors">elizaOS</a>
+						<a
+							href="https://elizaos.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hover:text-[#71717a] transition-colors"
+						>
+							elizaOS
+						</a>
 						<span className="text-[#27272a]">×</span>
-						<a href="https://milady.ai" target="_blank" rel="noopener noreferrer" className="hover:text-[#71717a] transition-colors">milady cloud</a>
+						<a
+							href="https://milady.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hover:text-[#71717a] transition-colors"
+						>
+							milady cloud
+						</a>
 						<span className="text-[#27272a]">×</span>
 						<span>steward</span>
 					</div>

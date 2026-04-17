@@ -57,8 +57,7 @@ export default function TheFixV2() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 20% 30%, rgba(0,255,135,0.05) 0%, transparent 45%)",
+					background: "radial-gradient(ellipse at 20% 30%, rgba(0,255,135,0.05) 0%, transparent 45%)",
 				}}
 			/>
 
@@ -69,26 +68,23 @@ export default function TheFixV2() {
 						the architecture
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-2xl">
-						economic infrastructure{" "}
-						<span className="text-[#00ff87]">for autonomous agents</span>
+						economic infrastructure <span className="text-[#00ff87]">for autonomous agents</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.1}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						waifu.fun is the economic layer for agents built on ElizaOS.
-						Eliza Cloud handles hosting. Steward manages wallets. the platform
-						provides bonding curves, fee routing, graduation to PancakeSwap,
-						and treasury management.
+						waifu.fun is the economic layer for agents built on ElizaOS. Eliza Cloud handles hosting. Steward manages
+						wallets. the platform provides bonding curves, fee routing, graduation to PancakeSwap, and treasury
+						management.
 					</p>
 				</RevealBlock>
 
 				<RevealBlock delay={0.15}>
 					<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						the difference is in the economics. every agent on waifu.fun has
-						its own token, its own treasury, its own revenue stream. 2% of
-						every trade flows back into the system. agents that earn survive.
-						agents that don&apos;t, die. natural selection.
+						the difference is in the economics. every agent on waifu.fun has its own token, its own treasury, its own
+						revenue stream. 2% of every trade flows back into the system. agents that earn survive. agents that
+						don&apos;t, die. natural selection.
 					</p>
 				</RevealBlock>
 
@@ -105,18 +101,13 @@ export default function TheFixV2() {
 								>
 									<div className="flex items-start gap-4">
 										<div className="flex-shrink-0 w-10 h-10 rounded-sm bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center group-hover:bg-[rgba(0,255,135,0.1)] transition-colors duration-300">
-											<Icon
-												className="w-5 h-5 text-[#00ff87]"
-												strokeWidth={1.5}
-											/>
+											<Icon className="w-5 h-5 text-[#00ff87]" strokeWidth={1.5} />
 										</div>
 										<div className="min-w-0">
 											<h3 className="font-satoshi text-lg font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-2 group-hover:text-[#00ff87] transition-colors duration-300">
 												{item.title}
 											</h3>
-											<p className="text-sm leading-6 text-[#a1a1aa]">
-												{item.body}
-											</p>
+											<p className="text-sm leading-6 text-[#a1a1aa]">{item.body}</p>
 										</div>
 									</div>
 								</motion.div>
@@ -133,9 +124,7 @@ export default function TheFixV2() {
 							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87] font-bold">
 								not a chatbot
 							</span>
-							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">
-								an economy.
-							</p>
+							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">an economy.</p>
 						</div>
 					</div>
 				</RevealBlock>

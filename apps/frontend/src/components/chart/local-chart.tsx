@@ -72,9 +72,7 @@ const normalizeCandles = (data: Awaited<ReturnType<typeof getChartData>>) =>
 
 export default function LocalChart({ token, timeframe = "1d" }: { token: IToken; timeframe?: ChartTimeframe }) {
 	const chartContainerRef = useRef<HTMLDivElement>(null);
-	// biome-ignore lint/suspicious/noExplicitAny: lightweight-charts instance typing here is noisy and stable enough.
 	const candlestickSeriesRef = useRef<any>(null);
-	// biome-ignore lint/suspicious/noExplicitAny: lightweight-charts instance typing here is noisy and stable enough.
 	const chartRef = useRef<any>(null);
 	const isExternalMarketToken = useMemo(() => {
 		const normalizedStatus = String(token?.status ?? "")
@@ -88,11 +86,8 @@ export default function LocalChart({ token, timeframe = "1d" }: { token: IToken;
 		queryFn: async () => {
 			for (const candidateTimeframe of getChartTimeframeCandidates(timeframe)) {
 				const data = await getChartData({
-					// biome-ignore lint/suspicious/noExplicitAny: frontend token chain typing is broader than the endpoint today.
 					chain: token.chain as any,
-					// biome-ignore lint/suspicious/noExplicitAny: frontend token lookup typing is broader than the endpoint today.
 					chainId: token.chainId as any,
-					// biome-ignore lint/suspicious/noExplicitAny: frontend token lookup typing is broader than the endpoint today.
 					contractAddress: token.contractAddress as any,
 					timeframe: candidateTimeframe,
 					...(token.createdAt ? { createdAt: token.createdAt } : {}),

@@ -328,11 +328,7 @@ export default function AgentProfile({
 					</div>
 
 					{/* Bio / description — prominent, first content */}
-					{token.description && (
-						<p className="max-w-xl text-sm leading-relaxed text-zinc-400">
-							{token.description}
-						</p>
-					)}
+					{token.description && <p className="max-w-xl text-sm leading-relaxed text-zinc-400">{token.description}</p>}
 
 					{/* Creator + socials + contract — metadata row */}
 					<div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] mt-auto">
@@ -359,13 +355,7 @@ export default function AgentProfile({
 										rel="noopener noreferrer"
 										className="flex h-6 w-6 items-center justify-center rounded-sm opacity-40 transition-all duration-200 hover:opacity-90 hover:bg-white/[0.04]"
 									>
-										<Image
-											src={social.icon}
-											unoptimized
-											width={13}
-											height={13}
-											alt={social.key}
-										/>
+										<Image src={social.icon} unoptimized width={13} height={13} alt={social.key} />
 									</Link>
 								))}
 							</div>

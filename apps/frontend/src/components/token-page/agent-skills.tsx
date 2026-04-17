@@ -3,11 +3,11 @@
 import { CopyButton } from "@/components/copy-button";
 import { cn, shortenAddress } from "@/lib/utils";
 import { EvmChainIds, type IToken } from "@waifufun/types";
-import { CalendarDays, Globe, Link2, Users } from "lucide-react";
+import { Globe } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
-import { getHolderCountDisplay, hasAggregateHolderCount, isHolderDataIndexed } from "./holder-data-state";
+import { getHolderCountDisplay, hasAggregateHolderCount } from "./holder-data-state";
 
 function formatCreatedAt(
 	createdAt?: string,
@@ -114,9 +114,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 
 					{hasStyle && (
 						<div>
-							<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 block mb-2">
-								voice
-							</span>
+							<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 block mb-2">voice</span>
 							<p className="text-[11px] leading-relaxed text-zinc-500 max-w-md">
 								{character.style!.all!.slice(0, 3).join(". ")}.
 							</p>
@@ -131,9 +129,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 			<div className="divide-y divide-white/[0.03]">
 				<InfoRow label="chain" value={chainLabel} />
 				<InfoRow label="created" value={formatCreatedAt(token.createdAt)} />
-				{hasAggregateHolders && (
-					<InfoRow label="holders" value={getHolderCountDisplay(token)} />
-				)}
+				{hasAggregateHolders && <InfoRow label="holders" value={getHolderCountDisplay(token)} />}
 				<div className="flex items-center justify-between gap-3 py-1.5">
 					<span className="text-[10px] font-mono uppercase tracking-wider text-zinc-700 shrink-0">contract</span>
 					<div className="flex items-center gap-1.5">

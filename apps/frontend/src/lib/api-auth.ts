@@ -17,7 +17,7 @@ let _tokenGetter: TokenGetter | null = null;
  * Called by useApiAuth to wire the Steward session into API requests.
  */
 export function setApiTokenGetter(getter: TokenGetter | null) {
-  _tokenGetter = getter;
+	_tokenGetter = getter;
 }
 
 /**
@@ -25,5 +25,5 @@ export function setApiTokenGetter(getter: TokenGetter | null) {
  * Used by the fetcher to build Authorization headers.
  */
 export function getApiToken(): string | null {
-  return _tokenGetter?.() ?? null;
+	return _tokenGetter?.() ?? null;
 }

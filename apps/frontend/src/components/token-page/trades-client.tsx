@@ -294,8 +294,6 @@ const getExternalMarketUrl = (token: IToken) => {
 
 	return `https://www.geckoterminal.com/${geckoChainName}/pools/${tokenWithPool.pool}`;
 };
-
-// biome-ignore lint/suspicious/noExplicitAny: server component passes unknown initial response shape
 export default function TradesClient({ token, initialData }: { token: IToken; initialData: any }) {
 	const nonAnimatedTrades = Array.from(new Set<string>((initialData ?? []).map((trade: ApiTrade) => trade.txHash)));
 	const query = useQuery({

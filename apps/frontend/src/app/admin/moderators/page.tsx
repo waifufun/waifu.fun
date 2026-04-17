@@ -31,7 +31,6 @@ export default function ModeratorsPage() {
 			setShowAdd(false);
 			queryClient.invalidateQueries({ queryKey: ["admins"] });
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		onError: (e: any) => toast.error(e.message),
 	});
 
@@ -43,7 +42,6 @@ export default function ModeratorsPage() {
 			setShowEdit(null);
 			queryClient.invalidateQueries({ queryKey: ["admins"] });
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		onError: (e: any) => toast.error(e.message),
 	});
 
@@ -55,7 +53,6 @@ export default function ModeratorsPage() {
 			setShowRemove(null);
 			queryClient.invalidateQueries({ queryKey: ["admins"] });
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		onError: (e: any) => toast.error(e.message),
 	});
 
@@ -76,7 +73,6 @@ export default function ModeratorsPage() {
 						<div>Loading...</div>
 					) : (
 						<div className="space-y-4">
-							{/* biome-ignore lint/suspicious/noExplicitAny: <explanation> */}
 							{admins?.map((admin: any) => (
 								<div key={admin.address} className="flex items-center justify-between border-b py-3">
 									<div>

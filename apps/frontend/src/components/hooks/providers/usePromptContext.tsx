@@ -16,7 +16,6 @@ import {
 } from "react-hook-form";
 import { curveLimitConst } from "@/lib/utils";
 import type { TChain, TChainId } from "@waifufun/types";
-import { parseEther } from "viem";
 
 const DEFAULT_MAIN_IMAGE = "/create/test-img.png";
 const MAX_TICKER_LENGTH = 5;
@@ -184,7 +183,6 @@ const PromptProviderContent = ({
 				...(contractAddress && { contractAddress }),
 			});
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: Explicit any is used here for error handling
 		onError: (error: any) => {
 			console.error("Error generating metadata:", error);
 			toast.error("Error generating metadata: ", error?.message || "Unknown error");
@@ -238,7 +236,6 @@ const PromptProviderContent = ({
 				setIsGeneratingMedia(false);
 			}
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: <reason>
 		onError: (error: any) => {
 			toast.error(error?.message || "Error generating media");
 			setIsGeneratingMedia(false);
@@ -277,7 +274,7 @@ const PromptProviderContent = ({
 			if (data?.mediaUrl) {
 				let actualMediaUrl: string;
 				let contentType = "image";
-				
+
 				if (typeof data.mediaUrl === "string") {
 					actualMediaUrl = data.mediaUrl;
 				} else if (typeof data.mediaUrl === "object" && data.mediaUrl !== null && "url" in data.mediaUrl) {
@@ -316,7 +313,6 @@ const PromptProviderContent = ({
 				setIsGeneratingMedia(false);
 			}
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: Explicit any is used here for error handling
 		onError: (error: any) => {
 			toast.error(error?.message || "Error generating media");
 			setIsGeneratingMedia(false);
@@ -345,8 +341,6 @@ const PromptProviderContent = ({
 		}
 		workerRefs.current = [];
 	}, []);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: yes
 	const cancelVanityGeneration = useCallback(() => {
 		if (isGeneratingAddressRef.current) {
 			setIsGeneratingAddress(false);
@@ -355,8 +349,6 @@ const PromptProviderContent = ({
 			terminateWorkers();
 		}
 	}, [terminateWorkers]);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	const initializeAndStartWorkers = useCallback(
 		(suffix: string) => {
 			if (typeof Worker === "undefined") {
@@ -385,10 +377,18 @@ const PromptProviderContent = ({
 					switch (type) {
 						case "progress":
 							// Store the derived salt from the vanity generation
-							setLaunchSalt(`0x${Array.from(new Uint8Array(keypair.privateKey)).map((b: number) => b.toString(16).padStart(2, "0")).join("")}`);
+							setLaunchSalt(
+								`0x${Array.from(new Uint8Array(keypair.privateKey))
+									.map((b: number) => b.toString(16).padStart(2, "0"))
+									.join("")}`,
+							);
 							break;
 						case "done":
-							setLaunchSalt(`0x${Array.from(new Uint8Array(keypair.privateKey)).map((b: number) => b.toString(16).padStart(2, "0")).join("")}`);
+							setLaunchSalt(
+								`0x${Array.from(new Uint8Array(keypair.privateKey))
+									.map((b: number) => b.toString(16).padStart(2, "0"))
+									.join("")}`,
+							);
 							setIsGeneratingAddress(false);
 							activeSuffixRef.current = "";
 							if (workerRefs?.current) {
@@ -446,8 +446,6 @@ const PromptProviderContent = ({
 		},
 		[terminateWorkers],
 	);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	const generateAddress = useCallback(
 		(newSuffix: string) => {
 			if (!newSuffix || newSuffix.trim() === "") {
@@ -575,8 +573,6 @@ const PromptProviderContent = ({
 			tradeLimitSol: Number(tradeLimitSol),
 		};
 	};
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	useEffect(() => {
 		generateAddress(INITIAL_GENERATION_SUFFIX);
 		generateToken({
@@ -584,8 +580,6 @@ const PromptProviderContent = ({
 			prompt: "",
 		});
 	}, []);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	useEffect(() => {
 		return () => {
 			terminateWorkers();

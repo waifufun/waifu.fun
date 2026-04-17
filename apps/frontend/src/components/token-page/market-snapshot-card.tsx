@@ -57,9 +57,7 @@ export default function MarketSnapshotCard({
 			<div className="flex items-start justify-between gap-3">
 				<div>
 					<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#71717a]">market snapshot</p>
-					<h3 className="mt-1 text-sm font-semibold lowercase tracking-wide text-[#f4f4f5]">
-						market overview
-					</h3>
+					<h3 className="mt-1 text-sm font-semibold lowercase tracking-wide text-[#f4f4f5]">market overview</h3>
 				</div>
 				<span className="rounded-sm border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.16em] text-[#a1a1aa]">
 					{marketFeed}

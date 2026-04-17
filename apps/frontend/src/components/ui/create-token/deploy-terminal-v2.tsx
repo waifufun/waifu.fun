@@ -31,9 +31,7 @@ function buildLines(
 	deployedAddr: string | null,
 	complete: boolean,
 ): TerminalLine[] {
-	const fakeTx = deployedAddr
-		? `0x${deployedAddr.slice(2, 10)}...${deployedAddr.slice(-8)}`
-		: "0x...";
+	const fakeTx = deployedAddr ? `0x${deployedAddr.slice(2, 10)}...${deployedAddr.slice(-8)}` : "0x...";
 
 	const lines: TerminalLine[] = [
 		{
@@ -143,9 +141,7 @@ function TypewriterLine({
 			<span className="text-[#00ff87] select-none shrink-0">{">"}</span>
 			<span className={cn("break-all", colorClass)}>
 				{displayed}
-				{!done && (
-					<span className="inline-block w-[6px] h-[14px] bg-[#00ff87] ml-px animate-pulse align-middle" />
-				)}
+				{!done && <span className="inline-block w-[6px] h-[14px] bg-[#00ff87] ml-px animate-pulse align-middle" />}
 			</span>
 		</div>
 	);
@@ -183,13 +179,7 @@ export function DeployTerminalV2({
 	deployedAddress,
 	isComplete,
 }: DeployTerminalV2Props) {
-	const lines = buildLines(
-		agentName,
-		agentSymbol,
-		treasuryAddress,
-		deployedAddress,
-		isComplete,
-	);
+	const lines = buildLines(agentName, agentSymbol, treasuryAddress, deployedAddress, isComplete);
 	const [visibleCount, setVisibleCount] = useState(0);
 	const [currentLineComplete, setCurrentLineComplete] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -204,10 +194,13 @@ export function DeployTerminalV2({
 		const prevDelay = prevLine ? prevLine.delay : 0;
 		const wait = nextLine.delay - prevDelay;
 
-		const timer = setTimeout(() => {
-			setCurrentLineComplete(false);
-			setVisibleCount((c) => c + 1);
-		}, Math.max(wait, 200));
+		const timer = setTimeout(
+			() => {
+				setCurrentLineComplete(false);
+				setVisibleCount((c) => c + 1);
+			},
+			Math.max(wait, 200),
+		);
 
 		return () => clearTimeout(timer);
 	}, [visibleCount, lines, currentLineComplete]);
@@ -240,9 +233,7 @@ export function DeployTerminalV2({
 					<span className="w-2 h-2 rounded-full bg-[#eab308]/60" />
 					<span className="w-2 h-2 rounded-full bg-[#00ff87]/60" />
 				</div>
-				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b] ml-2">
-					deploy.log
-				</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b] ml-2">deploy.log</span>
 				{!allDone && visibleCount > 0 && (
 					<motion.span
 						className="ml-auto text-[10px] font-mono uppercase tracking-[0.12em] text-[#eab308]"
@@ -256,17 +247,12 @@ export function DeployTerminalV2({
 					</motion.span>
 				)}
 				{allDone && (
-					<span className="ml-auto text-[10px] font-mono uppercase tracking-[0.12em] text-[#00ff87]">
-						complete
-					</span>
+					<span className="ml-auto text-[10px] font-mono uppercase tracking-[0.12em] text-[#00ff87]">complete</span>
 				)}
 			</div>
 
 			{/* terminal body */}
-			<div
-				ref={containerRef}
-				className="p-4 font-mono text-sm space-y-1.5 min-h-[180px] max-h-[320px] overflow-y-auto"
-			>
+			<div ref={containerRef} className="p-4 font-mono text-sm space-y-1.5 min-h-[180px] max-h-[320px] overflow-y-auto">
 				<AnimatePresence mode="popLayout">
 					{lines.slice(0, visibleCount).map((line, i) => (
 						<motion.div
@@ -281,10 +267,7 @@ export function DeployTerminalV2({
 							<TypewriterLine
 								text={line.text}
 								type={line.type}
-								{...(i === visibleCount - 1
-									? { onComplete: () => setCurrentLineComplete(true) }
-									: {}
-								)}
+								{...(i === visibleCount - 1 ? { onComplete: () => setCurrentLineComplete(true) } : {})}
 							/>
 						</motion.div>
 					))}
@@ -298,8 +281,7 @@ export function DeployTerminalV2({
 				<motion.div
 					className="h-px w-full"
 					style={{
-						background:
-							"linear-gradient(90deg, transparent, #00ff87, transparent)",
+						background: "linear-gradient(90deg, transparent, #00ff87, transparent)",
 					}}
 					animate={{ opacity: [0.3, 0.8, 0.3] }}
 					transition={{

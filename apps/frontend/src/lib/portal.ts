@@ -92,7 +92,7 @@ export function buildNewTokenV5Params({
 		taxRate,
 		migratorType: taxRate > 0 ? 1 : 0,
 		quoteToken: zeroAddress,
-		quoteAmt: buyAmountBnb && parseFloat(buyAmountBnb) > 0 ? parseEther(buyAmountBnb) : 0n,
+		quoteAmt: buyAmountBnb && Number.parseFloat(buyAmountBnb) > 0 ? parseEther(buyAmountBnb) : 0n,
 		beneficiary,
 		permitData: "0x" as `0x${string}`,
 		extensionID: zeroHash,

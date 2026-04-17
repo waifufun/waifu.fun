@@ -11,12 +11,7 @@ interface CurveProgressProps {
 	pancakeswapPair?: string;
 }
 
-export default function CurveProgress({
-	waifuBonded,
-	curveLimit,
-	isGraduated,
-	pancakeswapPair,
-}: CurveProgressProps) {
+export default function CurveProgress({ waifuBonded, curveLimit, isGraduated, pancakeswapPair }: CurveProgressProps) {
 	const ref = useRef(null);
 	const inView = useInView(ref, { once: true, margin: "-40px" });
 
@@ -65,9 +60,7 @@ export default function CurveProgress({
 				<motion.div
 					className="absolute inset-y-0 left-0 rounded-full"
 					style={{
-						background: isGraduated
-							? "#00ff87"
-							: "linear-gradient(90deg, #00ff87, #22c55e)",
+						background: isGraduated ? "#00ff87" : "linear-gradient(90deg, #00ff87, #22c55e)",
 					}}
 					initial={{ width: "0%" }}
 					animate={inView ? { width: `${progress}%` } : {}}
@@ -77,7 +70,7 @@ export default function CurveProgress({
 					<motion.div
 						className="absolute inset-y-0 rounded-full bg-[#00ff87]/20"
 						animate={{ opacity: [0.3, 0.6, 0.3] }}
-						transition={{ duration: 2, repeat: Infinity }}
+						transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
 						style={{ width: `${progress}%` }}
 					/>
 				)}
@@ -86,12 +79,8 @@ export default function CurveProgress({
 			{/* Numbers */}
 			<div className="flex items-center justify-between">
 				<div>
-					<span className="font-mono text-lg font-bold text-[#e4e4e7]">
-						{formatNumber(waifuBonded)}
-					</span>
-					<span className="font-mono text-xs text-[#3f3f46] ml-1">
-						/ {formatNumber(curveLimit)} WAIFU
-					</span>
+					<span className="font-mono text-lg font-bold text-[#e4e4e7]">{formatNumber(waifuBonded)}</span>
+					<span className="font-mono text-xs text-[#3f3f46] ml-1">/ {formatNumber(curveLimit)} WAIFU</span>
 				</div>
 				<span className={`font-mono text-sm font-bold ${isGraduated ? "text-[#00ff87]" : "text-[#a1a1aa]"}`}>
 					{isGraduated ? "100%" : `${progress.toFixed(1)}%`}

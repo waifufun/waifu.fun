@@ -1,16 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-	TrendingUp,
-	Lock,
-	Percent,
-	Bot,
-	Activity,
-	Coins,
-	Rocket,
-	ArrowRight,
-} from "lucide-react";
+import { TrendingUp, Lock, Percent, Bot, Activity, Coins, Rocket, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -35,12 +26,8 @@ function StatCell({ icon, label, value, sub, accent, pulse, delay = 0 }: StatCel
 			transition={{ duration: 0.5, ease: EASE, delay }}
 		>
 			<div className="flex items-center gap-2">
-				<span className="text-[#52525b] transition-colors duration-200 group-hover:text-[#71717a]">
-					{icon}
-				</span>
-				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#52525b]">
-					{label}
-				</span>
+				<span className="text-[#52525b] transition-colors duration-200 group-hover:text-[#71717a]">{icon}</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#52525b]">{label}</span>
 			</div>
 
 			<div className="flex items-baseline gap-2">
@@ -59,9 +46,7 @@ function StatCell({ icon, label, value, sub, accent, pulse, delay = 0 }: StatCel
 				)}
 			</div>
 
-			{sub && (
-				<span className="text-[11px] font-mono text-[#3f3f46]">{sub}</span>
-			)}
+			{sub && <span className="text-[11px] font-mono text-[#3f3f46]">{sub}</span>}
 		</motion.div>
 	);
 }
@@ -160,9 +145,7 @@ export default function WaifuHub() {
 					{/* Row 1: WAIFU token */}
 					<div className="px-4 pt-4 pb-2 sm:px-6 sm:pt-5">
 						<div className="mb-3 flex items-center justify-between">
-							<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#3f3f46]">
-								WAIFU Token
-							</span>
+							<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#3f3f46]">WAIFU Token</span>
 							<HubLink href="/stake" delay={0.3}>
 								View Staking
 							</HubLink>
@@ -170,11 +153,7 @@ export default function WaifuHub() {
 
 						<div className="grid grid-cols-2 gap-px sm:grid-cols-4">
 							{WAIFU_STATS.map((stat, i) => (
-								<StatCell
-									key={stat.label}
-									{...stat}
-									delay={0.08 * i}
-								/>
+								<StatCell key={stat.label} {...stat} delay={0.08 * i} />
 							))}
 						</div>
 					</div>
@@ -187,9 +166,7 @@ export default function WaifuHub() {
 					{/* Row 2: Agent economy */}
 					<div className="px-4 pb-4 pt-2 sm:px-6 sm:pb-5">
 						<div className="mb-3 flex items-center justify-between">
-							<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#3f3f46]">
-								Agent Economy
-							</span>
+							<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#3f3f46]">Agent Economy</span>
 							<HubLink href="/create" delay={0.5}>
 								Launch Agent
 							</HubLink>
@@ -197,11 +174,7 @@ export default function WaifuHub() {
 
 						<div className="grid grid-cols-2 gap-px sm:grid-cols-4">
 							{AGENT_STATS.map((stat, i) => (
-								<StatCell
-									key={stat.label}
-									{...stat}
-									delay={0.25 + 0.08 * i}
-								/>
+								<StatCell key={stat.label} {...stat} delay={0.25 + 0.08 * i} />
 							))}
 						</div>
 					</div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
 import VisualAsset from "@/components/litepaper/visual-asset";
@@ -40,10 +39,7 @@ export default function Hero() {
 	const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
 	return (
-		<section
-			ref={sectionRef}
-			className="relative min-h-[90vh] flex items-center py-28 sm:py-40 overflow-hidden"
-		>
+		<section ref={sectionRef} className="relative min-h-[90vh] flex items-center py-28 sm:py-40 overflow-hidden">
 			{/* Subtle radial glow */}
 			<div
 				className="absolute inset-0"
@@ -69,9 +65,7 @@ export default function Hero() {
 								transition={{ delay: 0.2, ease: EASE }}
 							>
 								<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#71717a]">
-									litepaper
-								</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#71717a]">litepaper</span>
 							</motion.div>
 
 							<motion.div
@@ -98,7 +92,8 @@ export default function Hero() {
 								animate={{ opacity: 1, y: 0 }}
 								transition={{ delay: 0.5, ease: EASE }}
 							>
-								launch tokens with AI agents. trading fees fine-tune the model. your waifu gets smarter the more people trade it.
+								launch tokens with AI agents. trading fees fine-tune the model. your waifu gets smarter the more people
+								trade it.
 							</motion.p>
 
 							<motion.div
@@ -153,7 +148,8 @@ export default function Hero() {
 											how it works
 										</span>
 										<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-											trade fees go to fine-tuning. your agent gets its own model. not a chatbot. an actual trained personality.
+											trade fees go to fine-tuning. your agent gets its own model. not a chatbot. an actual trained
+											personality.
 										</p>
 									</div>
 								</div>
@@ -185,9 +181,7 @@ export default function Hero() {
 								<span className="font-mono text-xs text-[#00ff87]">{stat.step}</span>
 								<p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">{stat.label}</p>
 							</div>
-							<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-								{stat.desc}
-							</p>
+							<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">{stat.desc}</p>
 						</motion.div>
 					))}
 				</motion.div>

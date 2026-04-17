@@ -76,8 +76,7 @@ export default function TheStackV2() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 15% 50%, rgba(0,255,135,0.04) 0%, transparent 40%)",
+					background: "radial-gradient(ellipse at 15% 50%, rgba(0,255,135,0.04) 0%, transparent 40%)",
 				}}
 			/>
 
@@ -94,28 +93,23 @@ export default function TheStackV2() {
 								the infrastructure layer
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								five layers. each one does its job. none of them care what
-								framework your agent uses.
+								five layers. each one does its job. none of them care what framework your agent uses.
 							</p>
 						</RevealBlock>
 
 						{/* Powered-by callout */}
 						<RevealBlock delay={0.15}>
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-									powered by
-								</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">powered by</span>
 								<div className="mt-4 flex flex-wrap gap-3">
-									{["ElizaOS", "Eliza Cloud", "Steward", "BSC native"].map(
-										(tag) => (
-											<span
-												key={tag}
-												className="inline-flex px-3 py-1.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] font-mono text-[10px] uppercase tracking-[0.15em] text-[#71717a]"
-											>
-												{tag}
-											</span>
-										),
-									)}
+									{["ElizaOS", "Eliza Cloud", "Steward", "BSC native"].map((tag) => (
+										<span
+											key={tag}
+											className="inline-flex px-3 py-1.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] font-mono text-[10px] uppercase tracking-[0.15em] text-[#71717a]"
+										>
+											{tag}
+										</span>
+									))}
 								</div>
 							</div>
 						</RevealBlock>
@@ -145,10 +139,7 @@ export default function TheStackV2() {
 											<div className="flex items-start gap-5">
 												<div className="flex-shrink-0">
 													<div className="w-12 h-12 rounded-sm bg-[rgba(0,255,135,0.05)] border border-[rgba(0,255,135,0.08)] flex items-center justify-center group-hover:bg-[rgba(0,255,135,0.1)] transition-colors duration-300">
-														<Icon
-															className="w-5 h-5 text-[#00ff87]"
-															strokeWidth={1.5}
-														/>
+														<Icon className="w-5 h-5 text-[#00ff87]" strokeWidth={1.5} />
 													</div>
 												</div>
 												<div className="min-w-0 flex-1">
@@ -160,12 +151,8 @@ export default function TheStackV2() {
 															{layer.title}
 														</h3>
 													</div>
-													<p className="mt-1 font-mono text-[11px] text-[#52525b] tracking-wide">
-														{layer.subtitle}
-													</p>
-													<p className="mt-2.5 text-sm leading-6 text-[#a1a1aa]">
-														{layer.body}
-													</p>
+													<p className="mt-1 font-mono text-[11px] text-[#52525b] tracking-wide">{layer.subtitle}</p>
+													<p className="mt-2.5 text-sm leading-6 text-[#a1a1aa]">{layer.body}</p>
 												</div>
 											</div>
 										</motion.div>

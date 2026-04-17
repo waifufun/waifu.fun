@@ -24,15 +24,18 @@ const defaultFAQs: FAQItem[] = [
 	},
 	{
 		question: "What is the curve limit?",
-		answer: "Determines how much market cap needs to be reached before your token graduates from the bonding curve to DEX liquidity.",
+		answer:
+			"Determines how much market cap needs to be reached before your token graduates from the bonding curve to DEX liquidity.",
 	},
 	{
 		question: "What is delayed start?",
-		answer: "Schedule when trading begins after deployment. Choose preset times or set a custom date/time to coordinate your token launch.",
+		answer:
+			"Schedule when trading begins after deployment. Choose preset times or set a custom date/time to coordinate your token launch.",
 	},
 	{
 		question: "What are trade limits?",
-		answer: "Restrict maximum amount per transaction for the first 8 hours. Prevents large wallets from immediately dumping and helps ensure fairer distribution.",
+		answer:
+			"Restrict maximum amount per transaction for the first 8 hours. Prevents large wallets from immediately dumping and helps ensure fairer distribution.",
 	},
 ];
 export function FAQAccordion({ className, faqs = defaultFAQs }: { className?: string; faqs?: FAQItem[] }) {

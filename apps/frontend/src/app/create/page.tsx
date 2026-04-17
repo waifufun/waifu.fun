@@ -45,10 +45,8 @@ function CreateModeToggle({
 							onClick={() => onModeChange(m.id)}
 							className={cn(
 								"flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors",
-								mode === m.id
-									? "bg-[#00ff87]/10 text-[#00ff87]"
-									: "bg-transparent text-[#52525b] hover:text-[#71717a]",
-								!isLast && "border-r border-[rgba(255,255,255,0.06)]"
+								mode === m.id ? "bg-[#00ff87]/10 text-[#00ff87]" : "bg-transparent text-[#52525b] hover:text-[#71717a]",
+								!isLast && "border-r border-[rgba(255,255,255,0.06)]",
 							)}
 						>
 							<Icon className="w-3 h-3" />
@@ -72,12 +70,12 @@ function ManualCreateLauncher() {
 				<div className="text-center mb-8">
 					<div className="inline-flex items-center gap-2 mb-3">
 						<Rocket className="w-5 h-5 text-[#00ff87]" />
-						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">{t("createPage.agentLaunchpad")}</span>
+						<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">
+							{t("createPage.agentLaunchpad")}
+						</span>
 					</div>
 					<h1 className="text-2xl md:text-3xl font-bold text-[#e4e4e7] mb-2">{t("createPage.deployYourAgent")}</h1>
-					<p className="text-sm text-[#71717a] max-w-md mx-auto">
-						{t("createPage.deploySubtitle")}
-					</p>
+					<p className="text-sm text-[#71717a] max-w-md mx-auto">{t("createPage.deploySubtitle")}</p>
 				</div>
 			</div>
 
@@ -251,9 +249,7 @@ function CreatePageInner() {
 							curated launch
 						</div>
 						<h1 className="mt-4 text-3xl md:text-4xl font-bold text-[#e4e4e7]">Create is being staged</h1>
-						<p className="mt-3 max-w-2xl text-sm md:text-base text-[#a1a1aa] leading-7">
-							{launchGate.reason}
-						</p>
+						<p className="mt-3 max-w-2xl text-sm md:text-base text-[#a1a1aa] leading-7">{launchGate.reason}</p>
 					</div>
 
 					<div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] p-6 md:p-8">
@@ -379,11 +375,7 @@ function CreatePageInner() {
 								</li>
 							</ul>
 
-							{!isConnected && (
-								<p className="text-xs text-[#71717a] leading-5">
-									{t("createPage.connectWalletTip")}
-								</p>
-							)}
+							{!isConnected && <p className="text-xs text-[#71717a] leading-5">{t("createPage.connectWalletTip")}</p>}
 						</div>
 					</div>
 				</div>

@@ -8,7 +8,7 @@ import { useForm, type RegisterOptions } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { importToken } from "@/lib/api";
-import { type AddressLike, type ITokenLookUp } from "@waifufun/types";
+import type { AddressLike, ITokenLookUp } from "@waifufun/types";
 import { useRouter } from "next/navigation";
 import { Search, ExternalLink, AlertCircle } from "lucide-react";
 type TokenForm = { contractAddress: string };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/create-token/textarea";
 import { TerminalTextarea } from "@/components/ui/create-token/terminal-textarea";
 import { cn } from "@/lib/utils";
-import { usePrompt, nameValidation, tickerValidation, descriptionValidation } from "@/components/hooks/providers/usePromptContext";
+import {
+	usePrompt,
+	nameValidation,
+	tickerValidation,
+	descriptionValidation,
+} from "@/components/hooks/providers/usePromptContext";
 import {
 	CustomAddressGenerator,
 	PreBuySection,
@@ -19,7 +24,6 @@ import {
 	DelayedStartSection,
 	TradeLimitSection,
 } from "./shared-form-section";
-import { FormSection } from "./form-section";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -29,7 +33,6 @@ import {
 	Check,
 	User,
 	Image as ImageIcon,
-	Settings,
 	DollarSign,
 	Rocket,
 	MessageSquare,
@@ -57,7 +60,10 @@ const WIZARD_STEPS = [
 ];
 
 // Step Indicator Component
-function WizardStepIndicator({ currentStep, onStepClick }: { currentStep: number; onStepClick: (step: number) => void }) {
+function WizardStepIndicator({
+	currentStep,
+	onStepClick,
+}: { currentStep: number; onStepClick: (step: number) => void }) {
 	return (
 		<div className="w-full max-w-3xl mx-auto mb-8">
 			<div className="flex items-center justify-between relative px-4">
@@ -96,7 +102,8 @@ function WizardStepIndicator({ currentStep, onStepClick }: { currentStep: number
 							<div
 								className={cn(
 									"w-10 h-10 rounded-sm flex items-center justify-center text-xs font-mono font-bold uppercase transition-all",
-									completed && "bg-[#00ff87] text-[#08080a] shadow-[0_0_12px_rgba(0,255,135,0.4)] group-hover:scale-110",
+									completed &&
+										"bg-[#00ff87] text-[#08080a] shadow-[0_0_12px_rgba(0,255,135,0.4)] group-hover:scale-110",
 									current &&
 										"bg-[#00ff87] text-[#08080a] shadow-[0_0_16px_rgba(0,255,135,0.6)] ring-2 ring-[#00ff87]/30 ring-offset-2 ring-offset-[#08080a]",
 									pending && "bg-[#111114] border border-[rgba(255,255,255,0.1)] text-[#52525b]",
@@ -138,7 +145,9 @@ function Step1AgentIdentity() {
 					<span className="text-xs font-mono text-[#00ff87] uppercase tracking-widest">step 1</span>
 				</div>
 				<h2 className="text-2xl font-bold text-[#e4e4e7] mb-2">Who is your agent?</h2>
-				<p className="text-sm text-[#71717a]">Give your agent a name and identity. This becomes the token name on-chain.</p>
+				<p className="text-sm text-[#71717a]">
+					Give your agent a name and identity. This becomes the token name on-chain.
+				</p>
 			</div>
 
 			{/* Card with corner brackets */}
@@ -171,7 +180,11 @@ function Step1AgentIdentity() {
 									type="text"
 									id="wizardTicker"
 									placeholder="AGENT"
-									className={cn(formElementBaseClass, "mt-1 h-10 pl-6", errors.symbol && "border-red-500 focus:border-red-500")}
+									className={cn(
+										formElementBaseClass,
+										"mt-1 h-10 pl-6",
+										errors.symbol && "border-red-500 focus:border-red-500",
+									)}
 									{...registerForm("symbol", tickerValidation)}
 								/>
 								<span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#00ff87] font-bold text-sm">$</span>
@@ -188,7 +201,11 @@ function Step1AgentIdentity() {
 						<Textarea
 							id="wizardDescription"
 							placeholder="Describe what your agent does..."
-							className={cn(formElementBaseClass, "mt-1 min-h-[80px]", errors.description && "border-red-500 focus:border-red-500")}
+							className={cn(
+								formElementBaseClass,
+								"mt-1 min-h-[80px]",
+								errors.description && "border-red-500 focus:border-red-500",
+							)}
 							{...registerForm("description", descriptionValidation)}
 						/>
 						{errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
@@ -218,14 +235,23 @@ function Step1AgentIdentity() {
 
 // Step 2: Agent Appearance
 function Step2AgentAppearance() {
-	const { uploadedImage, setUploadedImage, previousImages, registerForm, generateToken, watchValue, isGeneratingMedia, changeMainImage } =
-		usePrompt();
+	const {
+		uploadedImage,
+		setUploadedImage,
+		previousImages,
+		registerForm,
+		generateToken,
+		watchValue,
+		isGeneratingMedia,
+		changeMainImage,
+	} = usePrompt();
 	const [imageMode, setImageMode] = useState<"upload" | "generate">("generate");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isDragActive, setIsDragActive] = useState(false);
 	const prompt = watchValue("prompt");
 
-	const displayImage = uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
+	const displayImage =
+		uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
 
 	const validateFile = (file: File): boolean => {
 		const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
@@ -381,9 +407,17 @@ function Step2AgentAppearance() {
 								>
 									<UploadCloud
 										size={48}
-										className={cn("mb-2 transition-colors", isDragActive ? "text-[#00ff87]" : "text-[#00ff87]/70 group-hover:text-[#00ff87]")}
+										className={cn(
+											"mb-2 transition-colors",
+											isDragActive ? "text-[#00ff87]" : "text-[#00ff87]/70 group-hover:text-[#00ff87]",
+										)}
 									/>
-									<p className={cn("text-sm transition-colors", isDragActive ? "text-[#e4e4e7]" : "text-[#a1a1aa] group-hover:text-[#e4e4e7]")}>
+									<p
+										className={cn(
+											"text-sm transition-colors",
+											isDragActive ? "text-[#e4e4e7]" : "text-[#a1a1aa] group-hover:text-[#e4e4e7]",
+										)}
+									>
 										{isDragActive ? (
 											"Drop your image here"
 										) : (
@@ -407,7 +441,13 @@ function Step2AgentAppearance() {
 									</button>
 								</div>
 							)}
-							<input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/gif, image/webp" style={{ display: "none" }} />
+							<input
+								type="file"
+								ref={fileInputRef}
+								onChange={handleFileChange}
+								accept="image/png, image/jpeg, image/gif, image/webp"
+								style={{ display: "none" }}
+							/>
 						</div>
 					</div>
 				) : (
@@ -422,11 +462,22 @@ function Step2AgentAppearance() {
 								<div className="w-full h-full bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm flex flex-col items-center justify-center relative overflow-hidden">
 									<div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.05)] to-transparent animate-shimmer" />
 									<div className="relative">
-										<p className="text-[#00ff87] font-mono text-sm uppercase tracking-widest animate-glitch">generating</p>
+										<p className="text-[#00ff87] font-mono text-sm uppercase tracking-widest animate-glitch">
+											generating
+										</p>
 										<div className="flex gap-1 mt-2 justify-center">
-											<span className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-											<span className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-											<span className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+											<span
+												className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce"
+												style={{ animationDelay: "0ms" }}
+											/>
+											<span
+												className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce"
+												style={{ animationDelay: "150ms" }}
+											/>
+											<span
+												className="w-1.5 h-1.5 bg-[#00ff87] rounded-full animate-bounce"
+												style={{ animationDelay: "300ms" }}
+											/>
 										</div>
 									</div>
 								</div>
@@ -454,19 +505,28 @@ function Step2AgentAppearance() {
 									disabled={!slot.image}
 									className={cn(
 										"aspect-square relative rounded-sm overflow-hidden transition-all",
-										slot.image ? "cursor-pointer hover:scale-105 hover:shadow-[0_0_20px_rgba(0,255,135,0.2)]" : "cursor-not-allowed",
+										slot.image
+											? "cursor-pointer hover:scale-105 hover:shadow-[0_0_20px_rgba(0,255,135,0.2)]"
+											: "cursor-not-allowed",
 									)}
 								>
 									{slot.image ? (
 										<div className="w-full h-full relative bg-[rgba(17,17,20,0.7)] border border-[rgba(255,255,255,0.06)] rounded-sm hover:border-[rgba(0,255,135,0.3)]">
-											<Image alt={`Thumbnail ${slot.imageIndex}`} src={slot.image} fill className="object-contain p-1" />
+											<Image
+												alt={`Thumbnail ${slot.imageIndex}`}
+												src={slot.image}
+												fill
+												className="object-contain p-1"
+											/>
 											<div className="absolute inset-0 bg-[#00ff87]/0 hover:bg-[#00ff87]/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
 												<span className="text-xs font-bold text-[#00ff87] uppercase">select</span>
 											</div>
 										</div>
 									) : (
 										<div className="w-full h-full bg-[rgba(17,17,20,0.5)] border border-[rgba(255,255,255,0.04)] rounded-sm flex items-center justify-center relative overflow-hidden">
-											{isGeneratingMedia && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.03)] to-transparent animate-shimmer" />}
+											{isGeneratingMedia && (
+												<div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(0,255,135,0.03)] to-transparent animate-shimmer" />
+											)}
 										</div>
 									)}
 								</button>
@@ -475,7 +535,9 @@ function Step2AgentAppearance() {
 						<Button
 							className={cn(
 								"w-full font-bold text-sm h-12 rounded-sm uppercase transition-all",
-								isGeneratingMedia ? "bg-[#1a1a1f] text-[#52525b]" : "bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] shadow-[0_0_20px_rgba(0,255,135,0.2)]",
+								isGeneratingMedia
+									? "bg-[#1a1a1f] text-[#52525b]"
+									: "bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] shadow-[0_0_20px_rgba(0,255,135,0.2)]",
 							)}
 							onClick={handleGenerateImage}
 							disabled={isGeneratingMedia}
@@ -490,7 +552,9 @@ function Step2AgentAppearance() {
 								</>
 							)}
 						</Button>
-						<p className="text-[10px] text-[#52525b] text-center">tip: be specific! "a golden retriever wearing sunglasses on a beach" works better than "dog"</p>
+						<p className="text-[10px] text-[#52525b] text-center">
+							tip: be specific! "a golden retriever wearing sunglasses on a beach" works better than "dog"
+						</p>
 					</div>
 				)}
 
@@ -552,8 +616,8 @@ function Step3AgentConfiguration() {
 					</div>
 					<div className="bg-[rgba(0,255,135,0.06)] border border-[rgba(0,255,135,0.15)] rounded-sm p-3 mt-4">
 						<p className="text-xs text-[#a1a1aa] leading-relaxed">
-							<span className="text-[#00ff87] font-semibold">Optional:</span> You can skip this step and configure your agent's platforms
-							later from your token dashboard.
+							<span className="text-[#00ff87] font-semibold">Optional:</span> You can skip this step and configure your
+							agent's platforms later from your token dashboard.
 						</p>
 					</div>
 				</div>
@@ -627,7 +691,8 @@ function Step5ReviewDeploy() {
 	const symbol = watchValue("symbol") || "TOKEN";
 	const description = watchValue("description") || "";
 	const buyAmount = watchValue("buyAmount") || 0;
-	const displayImage = uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
+	const displayImage =
+		uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
 
 	return (
 		<div className="space-y-6">
@@ -690,8 +755,8 @@ function Step5ReviewDeploy() {
 					{/* Warning */}
 					<div className="bg-yellow-500/10 border border-yellow-500/30 rounded-sm p-3">
 						<p className="text-xs text-yellow-400 leading-relaxed">
-							⚠️ <span className="font-semibold">Final check:</span> Once deployed, your token is on-chain and immutable. Make sure everything is
-							correct!
+							⚠️ <span className="font-semibold">Final check:</span> Once deployed, your token is on-chain and immutable.
+							Make sure everything is correct!
 						</p>
 					</div>
 
@@ -726,7 +791,8 @@ export function CreateWizard() {
 	};
 
 	const canProceedStep2 = () => {
-		const displayImage = uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
+		const displayImage =
+			uploadedImage === null ? undefined : uploadedImage || (previousImages.length > 0 ? previousImages[0] : undefined);
 		return !!displayImage;
 	};
 
@@ -788,7 +854,11 @@ export function CreateWizard() {
 						<ChevronLeft size={16} className="mr-2" />
 						Back
 					</Button>
-					<Button onClick={handleNext} disabled={isLaunching} className="flex-1 h-12 text-sm font-mono uppercase bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a]">
+					<Button
+						onClick={handleNext}
+						disabled={isLaunching}
+						className="flex-1 h-12 text-sm font-mono uppercase bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a]"
+					>
 						Next
 						<ChevronRight size={16} className="ml-2" />
 					</Button>

@@ -60,23 +60,18 @@ export default function HeroV2() {
 	const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
 	return (
-		<section
-			ref={sectionRef}
-			className="relative min-h-[100dvh] flex items-center py-28 sm:py-40 overflow-hidden"
-		>
+		<section ref={sectionRef} className="relative min-h-[100dvh] flex items-center py-28 sm:py-40 overflow-hidden">
 			{/* Radial glow — top left asymmetric */}
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 30% -10%, rgba(0,255,135,0.07) 0%, transparent 50%)",
+					background: "radial-gradient(ellipse at 30% -10%, rgba(0,255,135,0.07) 0%, transparent 50%)",
 				}}
 			/>
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 85% 60%, rgba(0,255,135,0.03) 0%, transparent 35%)",
+					background: "radial-gradient(ellipse at 85% 60%, rgba(0,255,135,0.03) 0%, transparent 35%)",
 				}}
 			/>
 
@@ -113,9 +108,7 @@ export default function HeroV2() {
 							transition={{ delay: 0.15, duration: 0.6, ease: EASE_OUT_EXPO }}
 						>
 							<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#71717a]">
-								the agent economy
-							</span>
+							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#71717a]">the agent economy</span>
 						</motion.div>
 
 						<motion.div
@@ -146,8 +139,7 @@ export default function HeroV2() {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.4, duration: 0.7, ease: EASE_OUT_QUART }}
 						>
-							autonomous agents with their own tokens, wallets, and revenue
-							streams. BSC-native. self-sustaining.
+							autonomous agents with their own tokens, wallets, and revenue streams. BSC-native. self-sustaining.
 						</motion.p>
 
 						<motion.div
@@ -203,8 +195,7 @@ export default function HeroV2() {
 											the difference
 										</span>
 										<p className="mt-2.5 text-sm leading-6 text-[#a1a1aa]">
-											this isn&apos;t a chatbot with a token. this is an agent
-											that works for a living.
+											this isn&apos;t a chatbot with a token. this is an agent that works for a living.
 										</p>
 									</div>
 								</div>
@@ -233,16 +224,10 @@ export default function HeroV2() {
 							className="group rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5 hover:border-[rgba(0,255,135,0.15)] transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
 						>
 							<div className="flex items-center gap-3">
-								<span className="font-mono text-xs text-[#00ff87]">
-									{pillar.id}
-								</span>
-								<p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-									{pillar.label}
-								</p>
+								<span className="font-mono text-xs text-[#00ff87]">{pillar.id}</span>
+								<p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">{pillar.label}</p>
 							</div>
-							<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-								{pillar.desc}
-							</p>
+							<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">{pillar.desc}</p>
 						</motion.div>
 					))}
 				</motion.div>

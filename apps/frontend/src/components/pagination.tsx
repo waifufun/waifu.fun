@@ -56,7 +56,6 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 						const isActive = item === page;
 						return (
 							<button
-								// biome-ignore lint/suspicious/noArrayIndexKey: noArrayIndexKey
 								key={index}
 								type="button"
 								tabIndex={0}
@@ -74,7 +73,6 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 					return (
 						<button
 							type="button"
-							// biome-ignore lint/suspicious/noArrayIndexKey: noArrayIndexKey
 							key={`ellipsis-${index}`}
 							tabIndex={0}
 							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-[#71717a] text-base font-normal font-dm-mono leading-normal hover:text-[#e4e4e7] transition-colors"

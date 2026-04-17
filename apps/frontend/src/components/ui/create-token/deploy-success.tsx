@@ -66,8 +66,7 @@ export function DeploySuccess({
 		provisioningState.status === "requesting" ||
 		provisioningState.status === "requested" ||
 		provisioningState.status === "provisioning";
-	const isProvisioningFinished =
-		provisioningState.status === "running" || provisioningState.status === "completed";
+	const isProvisioningFinished = provisioningState.status === "running" || provisioningState.status === "completed";
 	const canRetry = provisioningState.status === "failed";
 
 	// Derive headline and subtext based on true state
@@ -95,16 +94,14 @@ export function DeploySuccess({
 							<div
 								className="absolute inset-0 rounded-full animate-pulse"
 								style={{
-									boxShadow: isProvisioningFinished
-										? "0 0 24px rgba(0,255,135,0.2)"
-										: "0 0 16px rgba(0,255,135,0.1)",
+									boxShadow: isProvisioningFinished ? "0 0 24px rgba(0,255,135,0.2)" : "0 0 16px rgba(0,255,135,0.1)",
 								}}
 							/>
 							<CheckCircle2
 								size={64}
 								className={cn(
 									"animate-in zoom-in duration-500",
-									isProvisioningFinished ? "text-[#00ff87]" : "text-[#00ff87]/70"
+									isProvisioningFinished ? "text-[#00ff87]" : "text-[#00ff87]/70",
 								)}
 							/>
 						</>
@@ -158,14 +155,13 @@ export function DeploySuccess({
 							provisioningState.status === "failed" && "text-red-400 bg-red-400/10",
 							isProvisioningBusy && "text-[#00ff87] bg-[#00ff87]/10",
 							isProvisioningFinished && "text-[#00ff87] bg-[#00ff87]/10",
-							provisioningState.status === "idle" && "text-[#71717a] bg-white/5"
+							provisioningState.status === "idle" && "text-[#71717a] bg-white/5",
 						)}
 					>
 						{provisioningState.status === "idle" && "not started"}
 						{provisioningState.status === "requesting" && "requesting"}
 						{(provisioningState.status === "requested" || provisioningState.status === "provisioning") &&
-							(provisioningState.provisioningStatus === "queued" ||
-							provisioningState.provisioningStatus === "requested"
+							(provisioningState.provisioningStatus === "queued" || provisioningState.provisioningStatus === "requested"
 								? "queued"
 								: "provisioning")}
 						{isProvisioningFinished && "running"}
@@ -173,13 +169,11 @@ export function DeploySuccess({
 					</span>
 				</div>
 				<p className="text-sm text-[#a1a1aa]">
-					{provisioningState.status === "idle" &&
-						"token deployed. click below to provision a cloud agent."}
+					{provisioningState.status === "idle" && "token deployed. click below to provision a cloud agent."}
 					{provisioningState.status === "requesting" && "submitting provisioning request."}
 					{(provisioningState.status === "requested" || provisioningState.status === "provisioning") &&
 						(provisioningState.message || "provisioning in progress.")}
-					{isProvisioningFinished &&
-						(provisioningState.message || "agent is running.")}
+					{isProvisioningFinished && (provisioningState.message || "agent is running.")}
 					{provisioningState.status === "failed" && (provisioningState.message || "provisioning failed.")}
 				</p>
 				{"jobId" in provisioningState && provisioningState.jobId && (
@@ -226,14 +220,10 @@ export function DeploySuccess({
 							? "bg-[#0f3a24] text-[#9af7c8] cursor-default border border-[#00ff87]/20"
 							: canRetry
 								? "bg-[#111114] text-[#e4e4e7] border border-[rgba(255,255,255,0.08)] hover:border-[#00ff87] hover:bg-[rgba(0,255,135,0.08)]"
-								: "bg-[#00ff87] text-[#08080a] hover:bg-[#22c55e]"
+								: "bg-[#00ff87] text-[#08080a] hover:bg-[#22c55e]",
 					)}
 				>
-					{isProvisioningBusy ? (
-						<Loader2 size={16} className="animate-spin" />
-					) : (
-						<Zap size={16} />
-					)}
+					{isProvisioningBusy ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
 					{provisioningState.status === "idle" && "provision agent"}
 					{provisioningState.status === "requesting" && "requesting..."}
 					{(provisioningState.status === "requested" || provisioningState.status === "provisioning") &&
@@ -263,9 +253,7 @@ export function DeploySuccess({
 
 			{/* What's Next Section */}
 			<div className="bg-[#0a0a0c] border border-[rgba(255,255,255,0.06)] rounded-sm p-5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
-				<h3 className="text-xs font-mono text-[#71717a] uppercase tracking-wider mb-4">
-					next steps
-				</h3>
+				<h3 className="text-xs font-mono text-[#71717a] uppercase tracking-wider mb-4">next steps</h3>
 				<ul className="space-y-3 text-sm text-[#a1a1aa]">
 					{!isProvisioningFinished && (
 						<li className="flex items-start gap-3">

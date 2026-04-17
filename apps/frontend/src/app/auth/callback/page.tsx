@@ -8,18 +8,18 @@ import { useRouter } from "next/navigation";
  * Steward redirects here with ?token=...&email=... after the user clicks the link.
  */
 export default function EmailCallbackPage() {
-  const router = useRouter();
+	const router = useRouter();
 
-  return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <StewardEmailCallback
-        onSuccess={() => router.push("/")}
-        onError={(err) => {
-          console.error("[email-callback]", err);
-          router.push("/");
-        }}
-        redirectTo="/"
-      />
-    </div>
-  );
+	return (
+		<div className="flex min-h-[60vh] items-center justify-center">
+			<StewardEmailCallback
+				onSuccess={() => router.push("/")}
+				onError={(err) => {
+					console.error("[email-callback]", err);
+					router.push("/");
+				}}
+				redirectTo="/"
+			/>
+		</div>
+	);
 }

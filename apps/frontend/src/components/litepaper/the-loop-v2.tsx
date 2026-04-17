@@ -64,8 +64,7 @@ export default function TheLoopV2() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 22% 25%, rgba(0,255,135,0.04) 0%, transparent 40%)",
+					background: "radial-gradient(ellipse at 22% 25%, rgba(0,255,135,0.04) 0%, transparent 40%)",
 				}}
 			/>
 
@@ -78,50 +77,38 @@ export default function TheLoopV2() {
 								the flywheel
 							</span>
 							<h2 className="font-satoshi text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase">
-								agents earn.{" "}
-								<span className="text-[#00ff87]">agents improve.</span>{" "}
+								agents earn. <span className="text-[#00ff87]">agents improve.</span>{" "}
 								<span className="text-[#52525b]">repeat.</span>
 							</h2>
 						</RevealBlock>
 
 						<RevealBlock delay={0.1}>
 							<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-								most platforms have a linear model: launch token, collect
-								fees, done. waifu.fun has a flywheel. and it&apos;s not just one
-								agent getting better. it&apos;s a network effect.
+								most platforms have a linear model: launch token, collect fees, done. waifu.fun has a flywheel. and
+								it&apos;s not just one agent getting better. it&apos;s a network effect.
 							</p>
 						</RevealBlock>
 
 						<RevealBlock delay={0.15}>
 							<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-								this compounds in two dimensions. computational: agents get
-								smarter with each training cycle. economic: the platform
-								generates more revenue with each new agent. both loops reinforce
-								each other.
+								this compounds in two dimensions. computational: agents get smarter with each training cycle. economic:
+								the platform generates more revenue with each new agent. both loops reinforce each other.
 							</p>
 						</RevealBlock>
 
 						{/* Flywheel steps */}
 						<RevealBlock delay={0.2}>
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7">
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-									the cycle
-								</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">the cycle</span>
 								<div className="mt-6 space-y-3">
 									{flywheelSteps.map((step, index) => (
 										<div key={step.id} className="flex items-start gap-4">
 											<div className="flex-shrink-0 w-8 h-8 rounded-sm bg-[rgba(0,255,135,0.05)] border border-[rgba(255,255,255,0.06)] flex items-center justify-center">
-												<span className="font-mono text-[10px] text-[#52525b]">
-													{step.id}
-												</span>
+												<span className="font-mono text-[10px] text-[#52525b]">{step.id}</span>
 											</div>
 											<div className="flex-1 rounded-sm border border-[rgba(255,255,255,0.04)] bg-[rgba(8,8,10,0.5)] px-4 py-3">
-												<p className="text-sm font-medium text-[#e4e4e7] lowercase">
-													{step.title}
-												</p>
-												<p className="mt-1 text-xs text-[#71717a] leading-relaxed">
-													{step.body}
-												</p>
+												<p className="text-sm font-medium text-[#e4e4e7] lowercase">{step.title}</p>
+												<p className="mt-1 text-xs text-[#71717a] leading-relaxed">{step.body}</p>
 												{index < flywheelSteps.length - 1 && (
 													<motion.div
 														animate={{
@@ -215,15 +202,9 @@ export default function TheLoopV2() {
 											{/* Center hub */}
 											<div className="absolute inset-[34%] flex items-center justify-center rounded-full border border-[rgba(0,255,135,0.12)] bg-[#0e0e11]">
 												<div className="text-center px-3">
-													<p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">
-														earn
-													</p>
-													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#52525b]">
-														improve
-													</p>
-													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">
-														compound
-													</p>
+													<p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">earn</p>
+													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#52525b]">improve</p>
+													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">compound</p>
 												</div>
 											</div>
 
@@ -253,11 +234,7 @@ export default function TheLoopV2() {
 												<motion.div
 													key={label.text}
 													initial={{ opacity: 0, scale: 0.8 }}
-													animate={
-														diagramInView
-															? { opacity: 1, scale: 1 }
-															: {}
-													}
+													animate={diagramInView ? { opacity: 1, scale: 1 } : {}}
 													transition={{
 														delay: label.delay,
 														type: "spring",
@@ -292,9 +269,8 @@ export default function TheLoopV2() {
 								<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 								<div className="pl-4">
 									<p className="text-[#a1a1aa] text-sm leading-relaxed">
-										the compounding is computational AND economic. agents
-										don&apos;t just get smarter. they get richer. and richer
-										agents can afford to get smarter.
+										the compounding is computational AND economic. agents don&apos;t just get smarter. they get richer.
+										and richer agents can afford to get smarter.
 									</p>
 								</div>
 							</div>

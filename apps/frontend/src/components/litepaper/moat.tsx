@@ -53,19 +53,20 @@ export default function Moat() {
 					>
 						<div className="flex items-center justify-between gap-6">
 							<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-white/46">the flywheel</p>
-							<p className="text-[11px] uppercase tracking-[0.28em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
+							<p
+								className="text-[11px] uppercase tracking-[0.28em] text-waifu-green"
+								style={{ fontFamily: "DMMono, monospace" }}
+							>
 								compounds
 							</p>
 						</div>
 						<div className="mt-8 grid gap-6">
-							{[
-								"More users",
-								"More fees",
-								"Better models",
-								"More users",
-							].map((step, index) => (
+							{["More users", "More fees", "Better models", "More users"].map((step, index) => (
 								<div key={`${step}-${index}`} className="flex items-center gap-4">
-									<div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/25 text-white/58" style={{ fontFamily: "DMMono, monospace" }}>
+									<div
+										className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/25 text-white/58"
+										style={{ fontFamily: "DMMono, monospace" }}
+									>
 										{String(index + 1).padStart(2, "0")}
 									</div>
 									<div className="flex-1 rounded-full border border-white/8 bg-black/20 px-5 py-3">
@@ -74,7 +75,12 @@ export default function Moat() {
 											{index < 3 ? (
 												<motion.div
 													animate={{ x: [0, 12, 0], opacity: [0.35, 1, 0.35] }}
-													transition={{ duration: 2.6, repeat: Number.POSITIVE_INFINITY, ease: [0.45, 0, 0.55, 1], delay: index * 0.15 }}
+													transition={{
+														duration: 2.6,
+														repeat: Number.POSITIVE_INFINITY,
+														ease: [0.45, 0, 0.55, 1],
+														delay: index * 0.15,
+													}}
 													className="h-px flex-1 bg-gradient-to-r from-waifu-green/0 via-waifu-green/70 to-waifu-green/0"
 												/>
 											) : null}
@@ -84,8 +90,8 @@ export default function Moat() {
 							))}
 						</div>
 						<p className="mt-8 font-satoshi text-base leading-7 text-white/62">
-							The compounds isn't just social. It's computational: more participation literally pays for better
-							models and stronger infrastructure.
+							The compounds isn't just social. It's computational: more participation literally pays for better models
+							and stronger infrastructure.
 						</p>
 					</motion.div>
 				</div>
@@ -122,10 +128,15 @@ export default function Moat() {
 							>
 								<div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 									<div className="sm:max-w-3xl">
-										<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-waifu-green">{point.title}</p>
+										<p className="font-orbitron text-[11px] uppercase tracking-[0.34em] text-waifu-green">
+											{point.title}
+										</p>
 										<p className="mt-4 font-satoshi text-base leading-7 text-white/66 sm:text-lg">{point.copy}</p>
 									</div>
-									<div className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
+									<div
+										className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-white/38"
+										style={{ fontFamily: "DMMono, monospace" }}
+									>
 										0{index + 1}
 									</div>
 								</div>

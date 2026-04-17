@@ -22,11 +22,7 @@ function RevealLine({
 }) {
 	return (
 		<div className={`overflow-hidden ${className}`}>
-			<motion.div
-				initial={{ y: "110%" }}
-				animate={{ y: "0%" }}
-				transition={{ duration: 0.8, ease: EASE, delay }}
-			>
+			<motion.div initial={{ y: "110%" }} animate={{ y: "0%" }} transition={{ duration: 0.8, ease: EASE, delay }}>
 				{children}
 			</motion.div>
 		</div>
@@ -132,8 +128,7 @@ export default function Hero() {
 			<div
 				className="absolute inset-0 z-[4] pointer-events-none"
 				style={{
-					background:
-						"radial-gradient(ellipse 60% 50% at 50% 50%, rgba(8,8,10,0.75), transparent 100%)",
+					background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(8,8,10,0.75), transparent 100%)",
 				}}
 			/>
 
@@ -141,8 +136,7 @@ export default function Hero() {
 			<div
 				className="absolute inset-0 z-[5] pointer-events-none"
 				style={{
-					background:
-						"radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(8,8,10,0.95) 100%)",
+					background: "radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(8,8,10,0.95) 100%)",
 				}}
 			/>
 
@@ -170,15 +164,13 @@ export default function Hero() {
 				<div className="flex flex-col items-center gap-2">
 					<RevealLine delay={0.15}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							{t("hero.theyLive")}{" "}
-							<span className="text-[#a1a1aa] font-light">{t("hero.ifYouTrade")}</span>
+							{t("hero.theyLive")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouTrade")}</span>
 						</h1>
 					</RevealLine>
 
 					<RevealLine delay={0.3}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							{t("hero.theyDie")}{" "}
-							<span className="text-[#a1a1aa] font-light">{t("hero.ifYouDont")}</span>
+							{t("hero.theyDie")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouDont")}</span>
 						</h1>
 					</RevealLine>
 				</div>
@@ -215,9 +207,23 @@ export default function Hero() {
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.8, delay: 1.0 }}
 				>
-					<a href="https://milady.ai" target="_blank" rel="noopener noreferrer" className="transition-colors duration-200 hover:text-[#71717a]">Milady</a>
+					<a
+						href="https://milady.ai"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="transition-colors duration-200 hover:text-[#71717a]"
+					>
+						Milady
+					</a>
 					<span>×</span>
-					<a href="https://elizaos.ai" target="_blank" rel="noopener noreferrer" className="transition-colors duration-200 hover:text-[#71717a]">ElizaOS</a>
+					<a
+						href="https://elizaos.ai"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="transition-colors duration-200 hover:text-[#71717a]"
+					>
+						ElizaOS
+					</a>
 				</motion.div>
 			</div>
 
@@ -231,7 +237,7 @@ export default function Hero() {
 				<motion.div
 					className="w-px h-8 bg-gradient-to-b from-transparent to-[rgba(255,255,255,0.15)]"
 					animate={{ scaleY: [0.5, 1, 0.5] }}
-					transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+					transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 				/>
 			</motion.div>
 		</section>

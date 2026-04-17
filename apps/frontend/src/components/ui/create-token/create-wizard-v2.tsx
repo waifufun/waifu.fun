@@ -1,19 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { DeployTerminalV2 } from "./deploy-terminal-v2";
-import {
-	ChevronLeft,
-	ChevronRight,
-	User,
-	Wallet,
-	Rocket,
-	Check,
-	Copy,
-	ExternalLink,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, User, Wallet, Rocket, Check, Copy, ExternalLink } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Design tokens (matching existing waifufun palette)                 */
@@ -33,8 +24,7 @@ const COLOR = {
 	greenGhost: "rgba(0,255,135,0.06)",
 } as const;
 
-const labelClass =
-	"text-[10px] font-mono uppercase tracking-[0.14em] text-[#71717a]";
+const labelClass = "text-[10px] font-mono uppercase tracking-[0.14em] text-[#71717a]";
 const inputClass =
 	"w-full bg-[#0e0e12] border border-[rgba(255,255,255,0.08)] text-sm text-[#e4e4e7] placeholder-[#3f3f46] font-mono px-3 py-2.5 rounded-sm outline-none transition-colors focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87]/20";
 
@@ -99,31 +89,21 @@ function StepIndicator({
 							disabled={step.id > currentStep}
 							className={cn(
 								"relative z-10 flex flex-col items-center gap-2 transition-all",
-								step.id <= currentStep
-									? "cursor-pointer"
-									: "cursor-not-allowed opacity-40",
+								step.id <= currentStep ? "cursor-pointer" : "cursor-not-allowed opacity-40",
 							)}
 						>
 							<motion.div
 								className={cn(
 									"w-10 h-10 rounded-sm flex items-center justify-center font-mono text-xs transition-colors",
-									done &&
-										"bg-[#00ff87] text-[#08080a]",
-									active &&
-										"bg-[#00ff87] text-[#08080a] ring-2 ring-[#00ff87]/30 ring-offset-2 ring-offset-[#08080a]",
-									!done &&
-										!active &&
-										"bg-[#111114] border border-[rgba(255,255,255,0.08)] text-[#52525b]",
+									done && "bg-[#00ff87] text-[#08080a]",
+									active && "bg-[#00ff87] text-[#08080a] ring-2 ring-[#00ff87]/30 ring-offset-2 ring-offset-[#08080a]",
+									!done && !active && "bg-[#111114] border border-[rgba(255,255,255,0.08)] text-[#52525b]",
 								)}
 								whileHover={{ scale: step.id <= currentStep ? 1.08 : 1 }}
 								whileTap={{ scale: step.id <= currentStep ? 0.95 : 1 }}
 								transition={{ type: "spring", stiffness: 400, damping: 20 }}
 							>
-								{done ? (
-									<Check size={14} strokeWidth={3} />
-								) : (
-									<Icon size={14} />
-								)}
+								{done ? <Check size={14} strokeWidth={3} /> : <Icon size={14} />}
 							</motion.div>
 							<span
 								className={cn(
@@ -159,9 +139,7 @@ function SupplySplitBar({ totalSupply }: { totalSupply: number }) {
 		<div className="space-y-3">
 			<div className="flex items-center justify-between">
 				<span className={labelClass}>Supply allocation</span>
-				<span className="text-[10px] font-mono text-[#52525b]">
-					{formatted} tokens
-				</span>
+				<span className="text-[10px] font-mono text-[#52525b]">{formatted} tokens</span>
 			</div>
 
 			{/* bar */}
@@ -186,10 +164,7 @@ function SupplySplitBar({ totalSupply }: { totalSupply: number }) {
 			<div className="flex gap-4">
 				{segments.map((seg) => (
 					<div key={seg.label} className="flex items-center gap-1.5">
-						<div
-							className="w-2 h-2 rounded-sm"
-							style={{ backgroundColor: seg.color }}
-						/>
+						<div className="w-2 h-2 rounded-sm" style={{ backgroundColor: seg.color }} />
 						<span className="text-[10px] font-mono text-[#a1a1aa]">
 							{seg.pct}% {seg.label}
 						</span>
@@ -277,20 +252,13 @@ function StepIdentity({
 							id="v2-desc"
 							placeholder="what does this agent do?"
 							value={config.description}
-							onChange={(e) =>
-								onChange({ description: e.target.value })
-							}
+							onChange={(e) => onChange({ description: e.target.value })}
 							rows={3}
-							className={cn(
-								inputClass,
-								"resize-none min-h-[80px]",
-							)}
+							className={cn(inputClass, "resize-none min-h-[80px]")}
 							maxLength={500}
 						/>
 						<div className="flex justify-end">
-							<span className="text-[10px] font-mono text-[#3f3f46]">
-								{config.description.length}/500
-							</span>
+							<span className="text-[10px] font-mono text-[#3f3f46]">{config.description.length}/500</span>
 						</div>
 					</div>
 
@@ -298,14 +266,9 @@ function StepIdentity({
 					<div className="space-y-1.5">
 						<span className={labelClass}>Avatar</span>
 						<div className="w-20 h-20 rounded-sm border border-dashed border-[rgba(255,255,255,0.1)] bg-[#0e0e12] flex items-center justify-center">
-							<User
-								size={24}
-								className="text-[#3f3f46]"
-							/>
+							<User size={24} className="text-[#3f3f46]" />
 						</div>
-						<p className="text-[10px] font-mono text-[#3f3f46]">
-							image upload coming soon
-						</p>
+						<p className="text-[10px] font-mono text-[#3f3f46]">image upload coming soon</p>
 					</div>
 				</div>
 			</div>
@@ -353,9 +316,7 @@ function StepEconomics({
 							id="v2-supply"
 							type="text"
 							inputMode="numeric"
-							value={new Intl.NumberFormat("en-US").format(
-								config.totalSupply,
-							)}
+							value={new Intl.NumberFormat("en-US").format(config.totalSupply)}
 							onChange={(e) => {
 								const raw = e.target.value.replace(/[^0-9]/g, "");
 								const num = Number.parseInt(raw, 10);
@@ -366,9 +327,7 @@ function StepEconomics({
 							className={cn(inputClass, "tabular-nums")}
 							autoComplete="off"
 						/>
-						<p className="text-[10px] font-mono text-[#3f3f46]">
-							default: 1,000,000,000
-						</p>
+						<p className="text-[10px] font-mono text-[#3f3f46]">default: 1,000,000,000</p>
 					</div>
 
 					{/* treasury address */}
@@ -398,17 +357,12 @@ function StepEconomics({
 									className="px-3 border border-[rgba(255,255,255,0.08)] rounded-sm text-[#71717a] hover:text-[#e4e4e7] hover:border-[rgba(255,255,255,0.15)] transition-colors"
 									aria-label="Copy address"
 								>
-									{copied ? (
-										<Check size={14} className="text-[#00ff87]" />
-									) : (
-										<Copy size={14} />
-									)}
+									{copied ? <Check size={14} className="text-[#00ff87]" /> : <Copy size={14} />}
 								</button>
 							)}
 						</div>
 						<p className="text-[10px] font-mono text-[#3f3f46]">
-							10% of supply goes here. use a Gnosis Safe for
-							agent-controlled treasury.
+							10% of supply goes here. use a Gnosis Safe for agent-controlled treasury.
 						</p>
 					</div>
 
@@ -438,9 +392,7 @@ function StepDeploy({
 	deployedAddress: string | null;
 	onDeploy: () => void;
 }) {
-	const formattedSupply = new Intl.NumberFormat("en-US").format(
-		config.totalSupply,
-	);
+	const formattedSupply = new Intl.NumberFormat("en-US").format(config.totalSupply);
 	const truncatedTreasury = config.treasuryAddress
 		? `${config.treasuryAddress.slice(0, 6)}...${config.treasuryAddress.slice(-4)}`
 		: "not set";
@@ -463,35 +415,15 @@ function StepDeploy({
 
 						<div className="grid grid-cols-2 gap-x-6 gap-y-3 mt-3">
 							<ReviewRow label="Name" value={config.name || "---"} />
-							<ReviewRow
-								label="Symbol"
-								value={
-									config.symbol
-										? `$${config.symbol}`
-										: "---"
-								}
-								mono
-							/>
-							<ReviewRow
-								label="Total supply"
-								value={formattedSupply}
-								mono
-							/>
-							<ReviewRow
-								label="Treasury"
-								value={truncatedTreasury}
-								mono
-							/>
+							<ReviewRow label="Symbol" value={config.symbol ? `$${config.symbol}` : "---"} mono />
+							<ReviewRow label="Total supply" value={formattedSupply} mono />
+							<ReviewRow label="Treasury" value={truncatedTreasury} mono />
 						</div>
 
 						{config.description && (
 							<div className="pt-3 border-t border-[rgba(255,255,255,0.06)]">
-								<p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#52525b] mb-1">
-									Description
-								</p>
-								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									{config.description}
-								</p>
+								<p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#52525b] mb-1">Description</p>
+								<p className="text-sm text-[#a1a1aa] leading-relaxed">{config.description}</p>
 							</div>
 						)}
 
@@ -514,22 +446,13 @@ function StepDeploy({
 							? "bg-[#00ff87] text-[#08080a] hover:bg-[#22c55e] cursor-pointer"
 							: "bg-[#1a1a1f] text-[#52525b] cursor-not-allowed",
 					)}
-					whileHover={
-						config.name && config.symbol
-							? { scale: 1.01 }
-							: {}
-					}
-					whileTap={
-						config.name && config.symbol
-							? { scale: 0.98 }
-							: {}
-					}
+					whileHover={config.name && config.symbol ? { scale: 1.01 } : {}}
+					whileTap={config.name && config.symbol ? { scale: 0.98 } : {}}
 					transition={{ type: "spring", stiffness: 400, damping: 20 }}
 					style={
 						config.name && config.symbol
 							? {
-									boxShadow:
-										"0 0 24px rgba(0,255,135,0.25), 0 0 48px rgba(0,255,135,0.1)",
+									boxShadow: "0 0 24px rgba(0,255,135,0.25), 0 0 48px rgba(0,255,135,0.1)",
 								}
 							: {}
 					}
@@ -578,17 +501,8 @@ function ReviewRow({
 }) {
 	return (
 		<div>
-			<p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#52525b]">
-				{label}
-			</p>
-			<p
-				className={cn(
-					"text-sm text-[#e4e4e7] mt-0.5",
-					mono && "font-mono tabular-nums",
-				)}
-			>
-				{value}
-			</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#52525b]">{label}</p>
+			<p className={cn("text-sm text-[#e4e4e7] mt-0.5", mono && "font-mono tabular-nums")}>{value}</p>
 		</div>
 	);
 }
@@ -618,9 +532,7 @@ const DEFAULT_CONFIG: AgentConfig = {
 async function simulateDeploy(): Promise<string> {
 	// Simulates contract deployment with a fake address
 	await new Promise((r) => setTimeout(r, 6000));
-	const hex = Array.from({ length: 40 }, () =>
-		Math.floor(Math.random() * 16).toString(16),
-	).join("");
+	const hex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
 	return `0x${hex}`;
 }
 
@@ -634,11 +546,7 @@ export function CreateWizardV2() {
 	const [isDeployed, setIsDeployed] = useState(false);
 	const [deployedAddress, setDeployedAddress] = useState<string | null>(null);
 
-	const updateConfig = useCallback(
-		(patch: Partial<AgentConfig>) =>
-			setConfig((prev) => ({ ...prev, ...patch })),
-		[],
-	);
+	const updateConfig = useCallback((patch: Partial<AgentConfig>) => setConfig((prev) => ({ ...prev, ...patch })), []);
 
 	const canProceed = useCallback(
 		(s: number): boolean => {
@@ -681,20 +589,8 @@ export function CreateWizardV2() {
 			<StepIndicator currentStep={step} onStepClick={setStep} />
 
 			<AnimatePresence mode="wait">
-				{step === 1 && (
-					<StepIdentity
-						key="identity"
-						config={config}
-						onChange={updateConfig}
-					/>
-				)}
-				{step === 2 && (
-					<StepEconomics
-						key="economics"
-						config={config}
-						onChange={updateConfig}
-					/>
-				)}
+				{step === 1 && <StepIdentity key="identity" config={config} onChange={updateConfig} />}
+				{step === 2 && <StepEconomics key="economics" config={config} onChange={updateConfig} />}
 				{step === 3 && (
 					<StepDeploy
 						key="deploy"
@@ -741,10 +637,7 @@ export function CreateWizardV2() {
 						transition={{ type: "spring", stiffness: 400, damping: 20 }}
 					>
 						Next
-						<ChevronRight
-							size={14}
-							className="inline ml-1 -mt-px"
-						/>
+						<ChevronRight size={14} className="inline ml-1 -mt-px" />
 					</motion.button>
 				</div>
 			)}

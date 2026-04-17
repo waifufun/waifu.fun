@@ -43,14 +43,31 @@ export default function LitepaperShell({
 						<div className="relative h-7 w-7 overflow-hidden rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114]">
 							<Image src="/brand/icon/icon_1024.png" alt="waifu.fun" fill className="object-cover" sizes="28px" />
 						</div>
-						<Link href="/" className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b] hover:text-[#a1a1aa] transition-colors">
+						<Link
+							href="/"
+							className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b] hover:text-[#a1a1aa] transition-colors"
+						>
 							waifu.fun
 						</Link>
 					</div>
 					<div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
-						<a href="https://elizaos.ai" target="_blank" rel="noopener noreferrer" className="hover:text-[#71717a] transition-colors">elizaOS</a>
+						<a
+							href="https://elizaos.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hover:text-[#71717a] transition-colors"
+						>
+							elizaOS
+						</a>
 						<span className="text-[#27272a]">&times;</span>
-						<a href="https://milady.ai" target="_blank" rel="noopener noreferrer" className="hover:text-[#71717a] transition-colors">milady cloud</a>
+						<a
+							href="https://milady.ai"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hover:text-[#71717a] transition-colors"
+						>
+							milady cloud
+						</a>
 						<span className="text-[#27272a]">&times;</span>
 						<span>steward</span>
 					</div>

@@ -1,16 +1,6 @@
 "use client";
 
-import {
-	Users,
-	Coins,
-	Shield,
-	Activity,
-	Cpu,
-	Rocket,
-	ArrowUpRight,
-	Clock,
-	CircleDot,
-} from "lucide-react";
+import { Users, Coins, Shield, Activity, Cpu, Rocket, ArrowUpRight, Clock, CircleDot } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getAdminStats, getAgentAvailability, getAdminTokens } from "@/lib/api";
@@ -38,12 +28,8 @@ function StatCard({
 				<Icon className={iconCls} />
 			</div>
 			<div className="min-w-0">
-				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">
-					{label}
-				</p>
-				<p className="text-lg font-mono text-white leading-tight mt-0.5">
-					{loading ? "—" : value}
-				</p>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">{label}</p>
+				<p className="text-lg font-mono text-white leading-tight mt-0.5">{loading ? "—" : value}</p>
 			</div>
 		</div>
 	);
@@ -72,9 +58,7 @@ function NavCard({
 						{label}
 					</span>
 					{!loading && count !== undefined && (
-						<span className="text-[10px] font-mono text-[#52525b] bg-[#1a1a1e] px-1.5 py-0.5 rounded-sm">
-							{count}
-						</span>
+						<span className="text-[10px] font-mono text-[#52525b] bg-[#1a1a1e] px-1.5 py-0.5 rounded-sm">{count}</span>
 					)}
 				</div>
 				<ArrowUpRight className="w-3.5 h-3.5 text-[#3f3f46] group-hover:text-[#00ff87] transition-colors" />
@@ -96,11 +80,7 @@ function ActivityItem({
 	status?: string | undefined;
 }) {
 	const statusColor =
-		status === "active" || status === "tradable"
-			? "#00ff87"
-			: status === "pending"
-				? "#facc15"
-				: "#71717a";
+		status === "active" || status === "tradable" ? "#00ff87" : status === "pending" ? "#facc15" : "#71717a";
 
 	return (
 		<div className="flex items-center justify-between py-2.5 border-b border-[rgba(255,255,255,0.04)] last:border-0">
@@ -109,9 +89,7 @@ function ActivityItem({
 				<div className="min-w-0">
 					<p className="text-sm text-[#e4e4e7] font-mono truncate">
 						{name}
-						{symbol && (
-							<span className="text-[#52525b] ml-1.5">${symbol}</span>
-						)}
+						{symbol && <span className="text-[#52525b] ml-1.5">${symbol}</span>}
 					</p>
 				</div>
 			</div>
@@ -129,7 +107,7 @@ function ActivityItem({
 function relativeTime(dateStr: string): string {
 	const now = Date.now();
 	const then = new Date(dateStr).getTime();
-	if (isNaN(then)) return "";
+	if (Number.isNaN(then)) return "";
 	const diffSec = Math.floor((now - then) / 1000);
 	if (diffSec < 60) return "just now";
 	if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
@@ -161,9 +139,7 @@ export default function AdminPage() {
 	const loading = statsLoading;
 	const totalTokens = stats?.totalTokens ?? stats?.tokenCount ?? 0;
 	const totalUsers = stats?.totalUsers ?? stats?.userCount ?? 0;
-	const activeSlots = agents
-		? agents.totalSlots - agents.availableSlots
-		: 0;
+	const activeSlots = agents ? agents.totalSlots - agents.availableSlots : 0;
 	const pendingLaunches = launches?.total ?? 0;
 
 	const recentItems = (launches?.docs ?? launches?.tokens ?? []).slice(0, 8);
@@ -172,30 +148,16 @@ export default function AdminPage() {
 		<div className="min-h-screen bg-[#08080a] px-4 py-6 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
 			{/* header */}
 			<div>
-				<h1 className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">
-					admin / overview
-				</h1>
+				<h1 className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">admin / overview</h1>
 				<p className="text-white text-lg font-mono mt-1">operations dashboard</p>
 			</div>
 
 			{/* stats row */}
 			<section>
-				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
-					platform metrics
-				</p>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">platform metrics</p>
 				<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-					<StatCard
-						label="total tokens"
-						value={totalTokens.toLocaleString()}
-						icon={Coins}
-						loading={loading}
-					/>
-					<StatCard
-						label="total users"
-						value={totalUsers.toLocaleString()}
-						icon={Users}
-						loading={loading}
-					/>
+					<StatCard label="total tokens" value={totalTokens.toLocaleString()} icon={Coins} loading={loading} />
+					<StatCard label="total users" value={totalUsers.toLocaleString()} icon={Users} loading={loading} />
 					<StatCard
 						label="active agents"
 						value={agentsLoading ? "—" : activeSlots.toLocaleString()}
@@ -215,51 +177,27 @@ export default function AdminPage() {
 
 			{/* nav grid */}
 			<section>
-				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
-					manage
-				</p>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">manage</p>
 				<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-					<NavCard
-						label="users"
-						href="/admin/users"
-						icon={Users}
-						count={totalUsers}
-						loading={loading}
-					/>
-					<NavCard
-						label="tokens"
-						href="/admin/tokens"
-						icon={Coins}
-						count={totalTokens}
-						loading={loading}
-					/>
-					<NavCard
-						label="moderators"
-						href="/admin/moderators"
-						icon={Shield}
-					/>
+					<NavCard label="users" href="/admin/users" icon={Users} count={totalUsers} loading={loading} />
+					<NavCard label="tokens" href="/admin/tokens" icon={Coins} count={totalTokens} loading={loading} />
+					<NavCard label="moderators" href="/admin/moderators" icon={Shield} />
 				</div>
 			</section>
 
 			{/* recent activity */}
 			<section>
-				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">
-					recent launches
-				</p>
+				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider mb-3">recent launches</p>
 				<div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-sm">
 					{launchesLoading ? (
 						<div className="px-4 py-8 text-center">
 							<Activity className="w-4 h-4 text-[#3f3f46] mx-auto animate-pulse" />
-							<p className="text-[11px] text-[#52525b] font-mono mt-2">
-								loading activity...
-							</p>
+							<p className="text-[11px] text-[#52525b] font-mono mt-2">loading activity...</p>
 						</div>
 					) : recentItems.length === 0 ? (
 						<div className="px-4 py-8 text-center">
 							<Activity className="w-4 h-4 text-[#3f3f46] mx-auto" />
-							<p className="text-[11px] text-[#52525b] font-mono mt-2">
-								no recent activity
-							</p>
+							<p className="text-[11px] text-[#52525b] font-mono mt-2">no recent activity</p>
 						</div>
 					) : (
 						<div className="px-4 py-1">
@@ -282,7 +220,7 @@ export default function AdminPage() {
 										symbol={item.symbol}
 										status={item.status}
 										time={
-											(item.createdAt || item.launchedAt)
+											item.createdAt || item.launchedAt
 												? relativeTime(item.createdAt || item.launchedAt || "")
 												: undefined
 										}

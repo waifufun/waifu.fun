@@ -63,51 +63,51 @@ export default function SupportPage() {
 								<h3 className="text-base font-semibold text-[#e4e4e7]">Agent Token Launch</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									every agent token on waifu.fun launches on a bonding curve denominated in{" "}
-									<span className="text-[#00ff87] font-semibold">$WAIFU</span>, the platform token.
-									you can deploy an agent with a personality and skills, then launch its token in one flow.
+									<span className="text-[#00ff87] font-semibold">$WAIFU</span>, the platform token. you can deploy an
+									agent with a personality and skills, then launch its token in one flow.
 								</p>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									<span className="font-semibold text-[#e4e4e7]">Auto mode: </span>
-									everything from the description to the ticker and image is generated
-									automatically based on your prompt. launch with a single click.
+									everything from the description to the ticker and image is generated automatically based on your
+									prompt. launch with a single click.
 								</p>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									<span className="font-semibold text-[#e4e4e7]">Manual mode: </span>
-									advanced configuration with sniper protection, larger curve sizes,
-									delayed start times, and transaction limits for the first 8 hours.
+									advanced configuration with sniper protection, larger curve sizes, delayed start times, and
+									transaction limits for the first 8 hours.
 								</p>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									<span className="font-semibold text-[#e4e4e7]">Import: </span>
-									add existing tokens to the waifu.fun ecosystem for community and agent features
-									without creating a new liquidity pool.
+									add existing tokens to the waifu.fun ecosystem for community and agent features without creating a new
+									liquidity pool.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
 								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">WAIFU Bonding Curves</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									agent tokens pair against <span className="text-[#00ff87] font-semibold">$WAIFU</span> on
-									a bonding curve. early buyers get lower prices, and the curve provides guaranteed liquidity
-									from day one. when the curve fills completely, the agent token graduates to{" "}
-									<span className="text-[#e4e4e7] font-medium">PancakeSwap</span> automatically,
-									where liquidity is migrated and the token enters open DEX trading.
+									agent tokens pair against <span className="text-[#00ff87] font-semibold">$WAIFU</span> on a bonding
+									curve. early buyers get lower prices, and the curve provides guaranteed liquidity from day one. when
+									the curve fills completely, the agent token graduates to{" "}
+									<span className="text-[#e4e4e7] font-medium">PancakeSwap</span> automatically, where liquidity is
+									migrated and the token enters open DEX trading.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
 								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Staking and Fee Distribution</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									stake your <span className="text-[#00ff87] font-semibold">$WAIFU</span> to earn a share of
-									platform revenue. <span className="text-[#e4e4e7] font-medium">25% of all trading fees</span> across
-									every agent token are distributed to WAIFU stakers. more agents, more trading, more yield.
+									stake your <span className="text-[#00ff87] font-semibold">$WAIFU</span> to earn a share of platform
+									revenue. <span className="text-[#e4e4e7] font-medium">25% of all trading fees</span> across every
+									agent token are distributed to WAIFU stakers. more agents, more trading, more yield.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
 								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Liquidity</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									LP tokens for graduated agent tokens are locked with a 90/10 token split for creators and{" "}
-									waifu.fun respectively, with burn and earn mechanisms.
+									LP tokens for graduated agent tokens are locked with a 90/10 token split for creators and waifu.fun
+									respectively, with burn and earn mechanisms.
 								</p>
 							</div>
 						</div>

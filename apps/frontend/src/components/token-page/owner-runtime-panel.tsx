@@ -353,9 +353,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 									<div className="grid gap-x-4 gap-y-1 sm:grid-cols-2 pt-1 border-t border-white/[0.03]">
 										{economicsRows.map((row) => (
 											<div key={row.key} className="flex items-baseline justify-between gap-2 py-1">
-												<span className="text-[10px] font-mono uppercase tracking-wider text-[#3f3f46]">
-													{row.key}
-												</span>
+												<span className="text-[10px] font-mono uppercase tracking-wider text-[#3f3f46]">{row.key}</span>
 												<span className="text-[11px] font-mono text-[#a1a1aa]">{row.value}</span>
 											</div>
 										))}

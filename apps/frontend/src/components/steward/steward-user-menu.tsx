@@ -3,7 +3,7 @@
 import { StewardUserButton, useAuth } from "@stwd/react";
 
 interface StewardUserMenuProps {
-  className?: string;
+	className?: string;
 }
 
 /**
@@ -11,17 +11,17 @@ interface StewardUserMenuProps {
  * Returns null when user is not authenticated via Steward.
  */
 export function StewardUserMenu({ className }: StewardUserMenuProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+	const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
+	if (isLoading || !isAuthenticated) {
+		return null;
+	}
 
-  const props = {
-    showWallet: false as const,
-    avatarSize: 28,
-    ...(className ? { className } : {}),
-  };
+	const props = {
+		showWallet: false as const,
+		avatarSize: 28,
+		...(className ? { className } : {}),
+	};
 
-  return <StewardUserButton {...props} />;
+	return <StewardUserButton {...props} />;
 }

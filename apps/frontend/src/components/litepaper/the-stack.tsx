@@ -77,11 +77,11 @@ export default function TheStack() {
 							the stack
 						</span>
 						<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-							what's under{" "}
-							<span className="text-[#52525b]">the hood.</span>
+							what's under <span className="text-[#52525b]">the hood.</span>
 						</h2>
 						<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-							waifu.fun isn't a wrapper on someone else's API. it's a full stack built on open-source infrastructure that the community owns.
+							waifu.fun isn't a wrapper on someone else's API. it's a full stack built on open-source infrastructure
+							that the community owns.
 						</p>
 					</div>
 				</SectionBlock>
@@ -122,12 +122,8 @@ export default function TheStack() {
 							>
 								<div className="absolute inset-0 bg-gradient-to-t from-[#08080a] via-transparent to-transparent" />
 								<div className="absolute top-5 left-5 right-5 flex items-center justify-between">
-									<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-										open source
-									</span>
-									<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60">
-										5 layers
-									</span>
+									<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">open source</span>
+									<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60">5 layers</span>
 								</div>
 							</VisualAsset>
 						</SectionBlock>

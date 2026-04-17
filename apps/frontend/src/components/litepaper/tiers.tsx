@@ -30,7 +30,8 @@ const tiers = [
 	{
 		name: "free",
 		tag: "start here",
-		description: "base model with a system prompt. works like every other platform. good enough to launch and see if people like your character.",
+		description:
+			"base model with a system prompt. works like every other platform. good enough to launch and see if people like your character.",
 		model: "shared model + prompt",
 		infra: "shared API",
 		highlight: false,
@@ -38,7 +39,8 @@ const tiers = [
 	{
 		name: "pro",
 		tag: "fine-tuned",
-		description: "your waifu gets its own fine-tuned model. personality is in the weights, not a prompt. this is where it stops being a chatbot and starts being a character.",
+		description:
+			"your waifu gets its own fine-tuned model. personality is in the weights, not a prompt. this is where it stops being a chatbot and starts being a character.",
 		model: "fine-tuned open-weight",
 		infra: "shared GPU pool",
 		highlight: false,
@@ -46,7 +48,8 @@ const tiers = [
 	{
 		name: "ultra",
 		tag: "dedicated",
-		description: "fine-tuned on a frontier model with its own GPU. faster responses, smarter conversations, more capable across the board.",
+		description:
+			"fine-tuned on a frontier model with its own GPU. faster responses, smarter conversations, more capable across the board.",
 		model: "fine-tuned frontier",
 		infra: "dedicated GPU",
 		highlight: false,
@@ -84,9 +87,7 @@ export default function Tiers() {
 								start free. upgrade as your token grows. each tier gives your waifu a better brain and better hardware.
 							</p>
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-									how it scales
-								</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">how it scales</span>
 								<p className="mt-4 text-base leading-7 text-[#a1a1aa]">
 									system prompt &rarr; fine-tuned &rarr; dedicated GPU &rarr; fully custom
 								</p>
@@ -119,9 +120,11 @@ export default function Tiers() {
 														{String(index + 1).padStart(2, "0")}
 													</span>
 												</div>
-												<h3 className={`mt-4 text-2xl sm:text-3xl font-bold tracking-[-0.02em] lowercase ${
-													tier.highlight ? "text-[#00ff87]" : "text-[#e4e4e7]"
-												}`}>
+												<h3
+													className={`mt-4 text-2xl sm:text-3xl font-bold tracking-[-0.02em] lowercase ${
+														tier.highlight ? "text-[#00ff87]" : "text-[#e4e4e7]"
+													}`}
+												>
 													{tier.name}
 												</h3>
 												<p className="mt-4 text-base leading-7 text-[#a1a1aa]">{tier.description}</p>
@@ -130,9 +133,7 @@ export default function Tiers() {
 											{/* Specs sidebar */}
 											<div className="shrink-0 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] p-4 lg:min-w-[14rem]">
 												<div>
-													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
-														model
-													</span>
+													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">model</span>
 													<p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{tier.model}</p>
 												</div>
 												<div className="h-px bg-[rgba(255,255,255,0.04)] my-3" />

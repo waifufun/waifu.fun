@@ -53,8 +53,7 @@ export default function ProblemV2() {
 			<div
 				className="absolute inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse at 75% 20%, rgba(248,113,113,0.04) 0%, transparent 45%)",
+					background: "radial-gradient(ellipse at 75% 20%, rgba(248,113,113,0.04) 0%, transparent 45%)",
 				}}
 			/>
 
@@ -68,23 +67,20 @@ export default function ProblemV2() {
 								the trenches
 							</span>
 							<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase">
-								launchpads extract.{" "}
-								<span className="text-[#52525b]">agents flatline.</span>
+								launchpads extract. <span className="text-[#52525b]">agents flatline.</span>
 							</h2>
 						</RevealBlock>
 
 						<RevealBlock delay={0.1}>
 							<div className="mt-8 space-y-5 max-w-[58ch]">
 								<p className="text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-									the current agent token meta is a factory line. same wrapper,
-									same prompt template, same bonding curve, same chart. launch,
-									pump, dump, next. nothing learns. nothing compounds. nothing
-									survives past the first week.
+									the current agent token meta is a factory line. same wrapper, same prompt template, same bonding
+									curve, same chart. launch, pump, dump, next. nothing learns. nothing compounds. nothing survives past
+									the first week.
 								</p>
 								<p className="text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-									fees leave the system the moment they&apos;re collected. agents
-									are locked to one framework with no room to evolve. every
-									&ldquo;AI agent&rdquo; is a skin over the same API call.
+									fees leave the system the moment they&apos;re collected. agents are locked to one framework with no
+									room to evolve. every &ldquo;AI agent&rdquo; is a skin over the same API call.
 								</p>
 								<p className="text-[#f87171] text-base sm:text-lg leading-relaxed font-medium">
 									this is extraction, not infrastructure.
@@ -114,12 +110,8 @@ export default function ProblemV2() {
 											typical agent lifespan
 										</div>
 										<div className="mt-2 flex items-baseline gap-2">
-											<span className="font-mono text-3xl font-bold text-[#f87171]">
-												~7
-											</span>
-											<span className="font-mono text-sm text-[#52525b]">
-												days
-											</span>
+											<span className="font-mono text-3xl font-bold text-[#f87171]">~7</span>
+											<span className="font-mono text-sm text-[#52525b]">days</span>
 										</div>
 									</div>
 								</VisualAsset>
@@ -134,15 +126,10 @@ export default function ProblemV2() {
 						const Icon = problem.icon;
 						return (
 							<RevealBlock key={problem.title} delay={0.15 + i * 0.08}>
-								<motion.div
-									className="h-full rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-[rgba(248,113,113,0.15)]"
-								>
+								<motion.div className="h-full rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7 transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:border-[rgba(248,113,113,0.15)]">
 									<div className="flex items-center gap-3 mb-4">
 										<div className="w-9 h-9 rounded-sm bg-[rgba(248,113,113,0.08)] flex items-center justify-center">
-											<Icon
-												className="w-4 h-4 text-[#f87171]"
-												strokeWidth={1.5}
-											/>
+											<Icon className="w-4 h-4 text-[#f87171]" strokeWidth={1.5} />
 										</div>
 										<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
 											{String(i + 1).padStart(2, "0")}
@@ -151,9 +138,7 @@ export default function ProblemV2() {
 									<h3 className="font-satoshi text-lg font-bold text-[#e4e4e7] tracking-[-0.01em] lowercase mb-3">
 										{problem.title}
 									</h3>
-									<p className="text-sm leading-6 text-[#a1a1aa]">
-										{problem.body}
-									</p>
+									<p className="text-sm leading-6 text-[#a1a1aa]">{problem.body}</p>
 								</motion.div>
 							</RevealBlock>
 						);

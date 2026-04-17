@@ -63,20 +63,18 @@ export default function TheLoop() {
 								the loop
 							</span>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								trade more,{" "}
-								<span className="text-[#00ff87]">learn more.</span>
+								trade more, <span className="text-[#00ff87]">learn more.</span>
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								this is the part that matters. trading fees don't go to a team wallet. they go to GPU time. every trade makes the agent a little smarter.
+								this is the part that matters. trading fees don't go to a team wallet. they go to GPU time. every trade
+								makes the agent a little smarter.
 							</p>
 						</SectionBlock>
 
 						{/* The cycle — step list */}
 						<SectionBlock delay={0.1}>
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7">
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-									the cycle
-								</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">the cycle</span>
 								<div className="mt-6 grid gap-3">
 									{steps.map((step, index) => (
 										<div key={step.id} className="flex items-center gap-4">
@@ -88,7 +86,12 @@ export default function TheLoop() {
 												{index < steps.length - 1 && (
 													<motion.div
 														animate={{ x: [0, 6, 0], opacity: [0.2, 0.6, 0.2] }}
-														transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: index * 0.1 }}
+														transition={{
+															duration: 2,
+															repeat: Number.POSITIVE_INFINITY,
+															ease: "easeInOut",
+															delay: index * 0.1,
+														}}
 														className="ml-auto h-px w-6 bg-gradient-to-r from-transparent via-[#00ff87]/40 to-transparent"
 													/>
 												)}
@@ -187,7 +190,9 @@ export default function TheLoop() {
 													transition={{ delay: 0.3, type: "spring" }}
 													className="absolute left-1/2 top-[2%] -translate-x-1/2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] px-3 py-1.5"
 												>
-													<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa]">people trade</p>
+													<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa]">
+														people trade
+													</p>
 												</motion.div>
 												<motion.div
 													initial={{ opacity: 0, scale: 0 }}
@@ -203,7 +208,9 @@ export default function TheLoop() {
 													transition={{ delay: 0.7, type: "spring" }}
 													className="absolute bottom-[2%] left-1/2 -translate-x-1/2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] px-3 py-1.5"
 												>
-													<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa]">model trains</p>
+													<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa]">
+														model trains
+													</p>
 												</motion.div>
 												<motion.div
 													initial={{ opacity: 0, scale: 0 }}
@@ -211,7 +218,9 @@ export default function TheLoop() {
 													transition={{ delay: 0.9, type: "spring" }}
 													className="absolute left-[2%] top-1/2 -translate-y-1/2 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] px-3 py-1.5"
 												>
-													<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">waifu improves</p>
+													<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">
+														waifu improves
+													</p>
 												</motion.div>
 											</div>
 										</div>

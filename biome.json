@@ -22,7 +22,20 @@
 		"rules": {
 			"recommended": true,
 			"correctness": {
-				"noUnusedImports": "error"
+				"noUnusedImports": "error",
+				"useExhaustiveDependencies": "warn"
+			},
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noArrayIndexKey": "warn"
+			},
+			"style": {
+				"noNonNullAssertion": "off",
+				"useNumberNamespace": "warn"
+			},
+			"a11y": {
+				"useSemanticElements": "warn",
+				"noLabelWithoutControl": "warn"
 			},
 			"performance": {
 				"noDelete": "off"

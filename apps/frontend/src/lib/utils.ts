@@ -3,7 +3,6 @@ import { type AddressLike, EvmChainIds, type IToken, SolanaNetworkIds, type TCha
 import { type ClassValue, clsx } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
-import { parseUnits } from "viem";
 
 import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
 
@@ -264,28 +263,28 @@ export const retrieveQuote = async ({
 	try {
 		// Fetch current price from DexScreener
 		const resp = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${token.contractAddress}`);
-		
+
 		if (!resp.ok) {
 			throw new Error("Failed to fetch price data");
 		}
 
 		const data = await resp.json();
 		const pair = data.pairs?.[0];
-		
+
 		if (!pair) {
 			throw new Error("Price unavailable");
 		}
 
 		const priceUsd = Number.parseFloat(pair?.priceUsd || "0");
 		const bnbPriceUsd = Number.parseFloat(pair?.priceNative || "0");
-		
+
 		if (priceUsd === 0) {
 			throw new Error("Price unavailable");
 		}
 
 		const inputAmount = Number.parseFloat(String(amount));
-		
-		if (isNaN(inputAmount) || inputAmount <= 0) {
+
+		if (Number.isNaN(inputAmount) || inputAmount <= 0) {
 			throw new Error("Invalid amount");
 		}
 
@@ -308,8 +307,10 @@ export const retrieveQuote = async ({
 		}
 
 		// Apply slippage tolerance
-		const slippageMultiplier = 1 - (slippage / 100);
-		const minimumReceived = Math.floor(outputAmount * slippageMultiplier * (mode === "buy" ? 10 ** token.decimals : 10 ** 18));
+		const slippageMultiplier = 1 - slippage / 100;
+		const minimumReceived = Math.floor(
+			outputAmount * slippageMultiplier * (mode === "buy" ? 10 ** token.decimals : 10 ** 18),
+		);
 
 		// Estimate price impact (simplified - real calculation would need liquidity depth)
 		const priceImpactPct = "1"; // Conservative estimate, real calc needs pool liquidity
@@ -342,27 +343,24 @@ export const executeSwap = async (
 ): Promise<string> => {
 	// Check if token is migrated to DEX
 	const isMigrated = token.status === "migrated" || token.status === "dex";
-	
+
 	if (isMigrated) {
 		// Redirect to PancakeSwap for migrated tokens
 		const pancakeUrl = `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}&chain=bsc`;
-		window.open(pancakeUrl, '_blank');
-		
+		window.open(pancakeUrl, "_blank");
+
 		// Return a fake transaction hash to indicate redirect
 		return "redirect_to_pancakeswap";
-	} else {
-		// For bonding curve tokens, show message
-		throw new Error("Direct swap coming soon — use PancakeSwap for now.");
 	}
+	// For bonding curve tokens, show message
+	throw new Error("Direct swap coming soon — use PancakeSwap for now.");
 };
 
 /**
  * Token creation now happens directly via wagmi writeContract in the LaunchButton component.
  * This function is kept for type compatibility but should not be called directly.
  */
-export const createTokenTx = async (
-	tokenData: TokenMetadata,
-): Promise<CreateTokenResponse> => {
+export const createTokenTx = async (tokenData: TokenMetadata): Promise<CreateTokenResponse> => {
 	throw new Error("Use LaunchButton component which calls Portal.newTokenV5 via wagmi directly");
 };
 

@@ -1,14 +1,6 @@
 "use client";
 
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-	type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import enMessages from "@/locales/en.json";
 import zhMessagesImport from "@/locales/zh.json";
 
@@ -73,10 +65,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 		[messages],
 	);
 
-	const value = useMemo(
-		() => ({ locale, setLocale, t, messages }),
-		[locale, setLocale, t, messages],
-	);
+	const value = useMemo(() => ({ locale, setLocale, t, messages }), [locale, setLocale, t, messages]);
 
 	return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

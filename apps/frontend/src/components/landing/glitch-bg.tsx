@@ -19,9 +19,7 @@ export default function GlitchBg({
 }: GlitchBgProps) {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const animationRef = useRef<number | null>(null);
-	const letters = useRef<
-		{ char: string; color: string; targetColor: string; colorProgress: number }[]
-	>([]);
+	const letters = useRef<{ char: string; color: string; targetColor: string; colorProgress: number }[]>([]);
 	const grid = useRef({ columns: 0, rows: 0 });
 	const context = useRef<CanvasRenderingContext2D | null>(null);
 	const lastGlitchTime = useRef(Date.now());
@@ -42,17 +40,21 @@ export default function GlitchBg({
 
 		const hexToRgb = (hex: string) => {
 			const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
-				hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (_, r, g, b) => r + r + g + g + b + b)
+				hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (_, r, g, b) => r + r + g + g + b + b),
 			);
 			return match
-				? { r: parseInt(match[1] ?? "0", 16), g: parseInt(match[2] ?? "0", 16), b: parseInt(match[3] ?? "0", 16) }
+				? {
+						r: Number.parseInt(match[1] ?? "0", 16),
+						g: Number.parseInt(match[2] ?? "0", 16),
+						b: Number.parseInt(match[3] ?? "0", 16),
+					}
 				: null;
 		};
 
 		const interpolateColor = (
 			s: { r: number; g: number; b: number },
 			e: { r: number; g: number; b: number },
-			f: number
+			f: number,
 		) => {
 			const r = Math.round(s.r + (e.r - s.r) * f);
 			const g = Math.round(s.g + (e.g - s.g) * f);
@@ -172,7 +174,8 @@ export default function GlitchBg({
 			<div
 				className="absolute inset-0 pointer-events-none"
 				style={{
-					background: "linear-gradient(180deg, rgba(8,8,10,0.6) 0%, rgba(8,8,10,0.2) 30%, rgba(8,8,10,0.2) 70%, rgba(8,8,10,0.8) 100%)",
+					background:
+						"linear-gradient(180deg, rgba(8,8,10,0.6) 0%, rgba(8,8,10,0.2) 30%, rgba(8,8,10,0.2) 70%, rgba(8,8,10,0.8) 100%)",
 				}}
 			/>
 		</div>

@@ -7,9 +7,9 @@ import { useMemo } from "react";
 export function AgentPreviewCard() {
 	const { watchValue, previousImages, uploadedImage, launchSalt, isGeneratingAddress } = usePrompt();
 
-	const name = watchValue("name") as string || "";
-	const symbol = watchValue("symbol") as string || "";
-	const description = watchValue("description") as string || "";
+	const name = (watchValue("name") as string) || "";
+	const symbol = (watchValue("symbol") as string) || "";
+	const description = (watchValue("description") as string) || "";
 
 	// Generate sample tweet based on name
 	const sampleTweet = useMemo(() => {
@@ -36,7 +36,6 @@ export function AgentPreviewCard() {
 
 	return (
 		<div className="relative bg-[#111114] border border-[rgba(255,255,255,0.08)] rounded-sm p-6 overflow-hidden">
-
 			{/* Header */}
 			<div className="mb-4">
 				<div className="flex items-center gap-3 mb-2">
@@ -76,9 +75,7 @@ export function AgentPreviewCard() {
 							<p className="text-xs text-[#71717a] font-medium mb-1 truncate">
 								{name || "Agent"} • <span className="text-[#52525b]">just now</span>
 							</p>
-							<p className="text-sm text-[#a1a1aa] leading-relaxed transition-all duration-200">
-								{sampleTweet}
-							</p>
+							<p className="text-sm text-[#a1a1aa] leading-relaxed transition-all duration-200">{sampleTweet}</p>
 						</div>
 					</div>
 				</div>
@@ -91,9 +88,7 @@ export function AgentPreviewCard() {
 						<Hash size={12} />
 						Token Address
 					</span>
-					<span className="text-xs text-[#a1a1aa] font-mono transition-all duration-200">
-						{tokenAddressDisplay}
-					</span>
+					<span className="text-xs text-[#a1a1aa] font-mono transition-all duration-200">{tokenAddressDisplay}</span>
 				</div>
 				<div className="flex items-center justify-between">
 					<span className="text-xs text-[#71717a] font-mono uppercase tracking-wider flex items-center gap-1">

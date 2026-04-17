@@ -24,7 +24,7 @@ export function DeployButton({
 }: DeployButtonProps) {
 	const isDisabled = disabled || isLoading;
 	const totalCost = estimatedCost + prebuyAmount;
-	
+
 	return (
 		<div className="w-full">
 			{/* Cost Estimate */}
@@ -39,10 +39,7 @@ export function DeployButton({
 					</div>
 					<div className="flex items-center justify-between text-xs">
 						<span className="text-[#a1a1aa]">Your balance:</span>
-						<span className={cn(
-							"font-mono",
-							balance < totalCost ? "text-[#ef4444]" : "text-[#00ff87]"
-						)}>
+						<span className={cn("font-mono", balance < totalCost ? "text-[#ef4444]" : "text-[#00ff87]")}>
 							{balance.toFixed(4)} BNB
 						</span>
 					</div>

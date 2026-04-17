@@ -83,15 +83,13 @@ export default function Architecture() {
 					transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
 					className="text-center"
 				>
-					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">
-						the stack
-					</p>
+					<p className="font-orbitron text-[11px] uppercase tracking-[0.45em] text-waifu-green">the stack</p>
 					<h2 className="mx-auto mt-6 max-w-4xl font-orbitron text-[clamp(2.4rem,5vw,5.5rem)] uppercase leading-[0.93] tracking-[-0.05em] text-white">
 						how it fits together.
 					</h2>
 					<p className="mx-auto mt-8 max-w-2xl font-satoshi text-lg leading-8 text-white/66">
-						From personality weights at the top to token governance at the base. Each layer has a job. The stack
-						works because they all connect.
+						From personality weights at the top to token governance at the base. Each layer has a job. The stack works
+						because they all connect.
 					</p>
 				</motion.div>
 
@@ -136,9 +134,7 @@ export default function Architecture() {
 													<p className="mt-3 font-orbitron text-lg uppercase tracking-[-0.02em] text-white sm:text-xl">
 														{layer.splitLeft?.label}
 													</p>
-													<p className="mt-2 font-satoshi text-sm leading-6 text-white/55">
-														{layer.splitLeft?.sub}
-													</p>
+													<p className="mt-2 font-satoshi text-sm leading-6 text-white/55">{layer.splitLeft?.sub}</p>
 												</div>
 												<div className="border-t border-white/6 p-5 sm:border-l sm:border-t-0 sm:p-6">
 													<div className="flex items-center gap-3">
@@ -153,9 +149,7 @@ export default function Architecture() {
 													<p className="mt-3 font-orbitron text-lg uppercase tracking-[-0.02em] text-white sm:text-xl">
 														{layer.splitRight?.label}
 													</p>
-													<p className="mt-2 font-satoshi text-sm leading-6 text-white/55">
-														{layer.splitRight?.sub}
-													</p>
+													<p className="mt-2 font-satoshi text-sm leading-6 text-white/55">{layer.splitRight?.sub}</p>
 												</div>
 											</div>
 										) : (
@@ -208,13 +202,7 @@ export default function Architecture() {
 						className="mt-8 flex items-center gap-4"
 					>
 						<div className="relative h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-white/5">
-							<Image
-								src="/brand/icon/icon_1024.png"
-								alt="waifu.fun"
-								fill
-								className="object-cover"
-								sizes="32px"
-							/>
+							<Image src="/brand/icon/icon_1024.png" alt="waifu.fun" fill className="object-cover" sizes="32px" />
 						</div>
 						<p
 							className="text-[11px] uppercase tracking-[0.3em] text-white/45"

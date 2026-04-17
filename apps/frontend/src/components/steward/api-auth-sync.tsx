@@ -8,6 +8,6 @@ import { useApiAuth } from "@/hooks/use-api-auth";
  * Mount inside StewardProvider. Renders nothing — just runs the hook.
  */
 export function ApiAuthSync() {
-  useApiAuth();
-  return null;
+	useApiAuth();
+	return null;
 }

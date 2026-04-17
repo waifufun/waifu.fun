@@ -72,7 +72,10 @@ export default function Economics() {
 							>
 								<div className="mt-1 h-2.5 w-2.5 rounded-full bg-waifu-green shadow-[0_0_14px_rgba(0,255,135,0.65)]" />
 								<div>
-									<p className="text-[11px] uppercase tracking-[0.3em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
+									<p
+										className="text-[11px] uppercase tracking-[0.3em] text-white/38"
+										style={{ fontFamily: "DMMono, monospace" }}
+									>
 										token holders decide
 									</p>
 									<p className="mt-2 font-satoshi text-base leading-7 text-white/68">{item}</p>
@@ -88,12 +91,15 @@ export default function Economics() {
 						transition={{ delay: 0.12, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
 						className="mt-8 rounded-[1.75rem] border border-waifu-green/15 bg-waifu-green/8 p-6 shadow-crt-sm sm:p-7"
 					>
-						<p className="text-[11px] uppercase tracking-[0.28em] text-white/52" style={{ fontFamily: "DMMono, monospace" }}>
+						<p
+							className="text-[11px] uppercase tracking-[0.28em] text-white/52"
+							style={{ fontFamily: "DMMono, monospace" }}
+						>
 							the cool part
 						</p>
 						<p className="mt-4 max-w-2xl font-satoshi text-base leading-7 text-white/72 sm:text-lg">
-							Agents with wallets can fund their own fine-tuning. Popular waifus earn more resources, get more
-							training, and get better. Natural selection for AI personalities.
+							Agents with wallets can fund their own fine-tuning. Popular waifus earn more resources, get more training,
+							and get better. Natural selection for AI personalities.
 						</p>
 					</motion.div>
 				</div>
@@ -161,7 +167,10 @@ export default function Economics() {
 												className={`absolute ${node.position}`}
 											>
 												<div className="min-w-[9rem] rounded-[1.25rem] border border-white/10 bg-black/45 px-4 py-3 backdrop-blur-xl shadow-[0_12px_28px_rgba(0,0,0,0.32)]">
-													<p className="text-[10px] uppercase tracking-[0.24em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
+													<p
+														className="text-[10px] uppercase tracking-[0.24em] text-waifu-green"
+														style={{ fontFamily: "DMMono, monospace" }}
+													>
 														{node.short}
 													</p>
 													<p className="mt-2 font-satoshi text-sm leading-5 text-white/70 sm:text-base">{node.label}</p>
@@ -172,9 +181,17 @@ export default function Economics() {
 										<div className="absolute inset-[31%] flex items-center justify-center rounded-full border border-waifu-green/20 bg-black/55 shadow-crt backdrop-blur-xl">
 											<div className="text-center">
 												<div className="relative mx-auto h-14 w-14 overflow-hidden rounded-full border border-white/10 bg-white/5">
-													<Image src="/brand/icon/icon_1024.png" alt="waifu.fun icon" fill className="object-cover" sizes="56px" />
+													<Image
+														src="/brand/icon/icon_1024.png"
+														alt="waifu.fun icon"
+														fill
+														className="object-cover"
+														sizes="56px"
+													/>
 												</div>
-												<p className="mt-4 font-orbitron text-sm uppercase tracking-[0.3em] text-waifu-green">flywheel</p>
+												<p className="mt-4 font-orbitron text-sm uppercase tracking-[0.3em] text-waifu-green">
+													flywheel
+												</p>
 												<p className="mt-2 max-w-[12rem] font-satoshi text-sm leading-6 text-white/62 sm:max-w-[15rem] sm:text-base">
 													fees become brains.
 												</p>

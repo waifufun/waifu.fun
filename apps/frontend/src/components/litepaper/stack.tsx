@@ -93,7 +93,10 @@ export default function Stack() {
 								<div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.15),rgba(8,8,10,0.68))]" />
 								<div className="absolute inset-x-5 top-5 flex items-center justify-between rounded-full border border-white/10 bg-black/35 px-4 py-3 backdrop-blur-md">
 									<p className="font-orbitron text-[10px] uppercase tracking-[0.32em] text-white/48">the stack</p>
-									<p className="text-[11px] uppercase tracking-[0.26em] text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
+									<p
+										className="text-[11px] uppercase tracking-[0.26em] text-waifu-green"
+										style={{ fontFamily: "DMMono, monospace" }}
+									>
 										5 layers
 									</p>
 								</div>
@@ -110,11 +113,18 @@ export default function Stack() {
 										>
 											<div className="rounded-[1.4rem] border border-white/10 bg-black/35 p-4 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
 												<div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent" />
-												<div className="absolute inset-y-0 left-0 w-full rounded-[1.4rem]" style={{ boxShadow: `0 0 40px ${layer.tint}` }} />
+												<div
+													className="absolute inset-y-0 left-0 w-full rounded-[1.4rem]"
+													style={{ boxShadow: `0 0 40px ${layer.tint}` }}
+												/>
 												<div className="relative flex items-center justify-between gap-4">
 													<div>
-														<p className="font-orbitron text-[10px] uppercase tracking-[0.32em] text-white/40">{layer.nickname}</p>
-														<p className="mt-2 font-orbitron text-sm uppercase tracking-[0.02em] text-white sm:text-base">{layer.title}</p>
+														<p className="font-orbitron text-[10px] uppercase tracking-[0.32em] text-white/40">
+															{layer.nickname}
+														</p>
+														<p className="mt-2 font-orbitron text-sm uppercase tracking-[0.02em] text-white sm:text-base">
+															{layer.title}
+														</p>
 													</div>
 													<p className="text-sm text-waifu-green" style={{ fontFamily: "DMMono, monospace" }}>
 														{layer.id}
@@ -162,9 +172,14 @@ export default function Stack() {
 									<div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 										<div className="sm:max-w-3xl">
 											<div className="flex flex-wrap items-center gap-3">
-												<p className="font-orbitron text-[11px] uppercase tracking-[0.35em] text-waifu-green">{layer.nickname}</p>
+												<p className="font-orbitron text-[11px] uppercase tracking-[0.35em] text-waifu-green">
+													{layer.nickname}
+												</p>
 												<div className="h-px w-10 bg-white/10" />
-												<p className="text-[11px] uppercase tracking-[0.28em] text-white/40" style={{ fontFamily: "DMMono, monospace" }}>
+												<p
+													className="text-[11px] uppercase tracking-[0.28em] text-white/40"
+													style={{ fontFamily: "DMMono, monospace" }}
+												>
 													layer {layer.id}
 												</p>
 											</div>
@@ -173,7 +188,10 @@ export default function Stack() {
 											</h3>
 											<p className="mt-4 font-satoshi text-base leading-7 text-white/64 sm:text-lg">{layer.copy}</p>
 										</div>
-										<div className="flex shrink-0 items-center gap-3 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm text-white/55" style={{ fontFamily: "DMMono, monospace" }}>
+										<div
+											className="flex shrink-0 items-center gap-3 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm text-white/55"
+											style={{ fontFamily: "DMMono, monospace" }}
+										>
 											<span>{layer.id}</span>
 											<span className="h-1.5 w-1.5 rounded-full bg-waifu-green shadow-[0_0_12px_rgba(0,255,135,0.65)]" />
 											<span>online</span>

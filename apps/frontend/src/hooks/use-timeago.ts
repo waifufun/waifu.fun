@@ -17,8 +17,6 @@ export default function useTimeAgo({ date }: { date: Date | string | number }) {
 
 		return setTimeAgo(`${diffSecs}s`);
 	};
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Exhaustive deps
 	useEffect(() => {
 		const int = setInterval(() => {
 			formatTime();

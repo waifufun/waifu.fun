@@ -17,9 +17,7 @@ export default function LanguageSwitcher() {
 				onClick={() => setLocale("en")}
 				className={cn(
 					"px-2.5 py-1.5 text-xs font-mono transition-colors",
-					locale === "en"
-						? "bg-[#00ff87] text-black rounded-sm"
-						: "text-[#71717a] hover:text-[#e4e4e7]",
+					locale === "en" ? "bg-[#00ff87] text-black rounded-sm" : "text-[#71717a] hover:text-[#e4e4e7]",
 				)}
 				aria-pressed={locale === "en"}
 			>
@@ -30,9 +28,7 @@ export default function LanguageSwitcher() {
 				onClick={() => setLocale("zh")}
 				className={cn(
 					"px-2.5 py-1.5 text-xs font-mono transition-colors",
-					locale === "zh"
-						? "bg-[#00ff87] text-black rounded-sm"
-						: "text-[#71717a] hover:text-[#e4e4e7]",
+					locale === "zh" ? "bg-[#00ff87] text-black rounded-sm" : "text-[#71717a] hover:text-[#e4e4e7]",
 				)}
 				aria-pressed={locale === "zh"}
 			>

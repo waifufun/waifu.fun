@@ -20,13 +20,7 @@ import {
 } from "@/components/hooks/providers/usePromptContext";
 import { AlertTriangle, Info, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import {
-	createToken,
-	provisionAgent,
-	getProvisioningStatus,
-	type AgentProvisionStatusResponse,
-	type ProvisioningJobState,
-} from "@/lib/api";
+import { createToken, provisionAgent, getProvisioningStatus, type AgentProvisionStatusResponse } from "@/lib/api";
 import useBalance from "@/hooks/use-balance";
 import useAddress from "@/hooks/use-address";
 import { useAccount, useWriteContract, useConfig } from "wagmi";
@@ -169,11 +163,7 @@ export const CustomAddressGenerator = ({
 				)}
 			</div>
 			<p className="text-xs text-[#00ff87] font-mono break-all bg-[rgba(17,17,20,0.7)] p-2 border border-[rgba(255,255,255,0.06)] rounded-sm min-h-[2rem] flex items-center">
-				{launchSalt
-					? launchSalt
-					: isGeneratingAddress
-						? "GENERATING..."
-						: "Generate a salt to see it here"}
+				{launchSalt ? launchSalt : isGeneratingAddress ? "GENERATING..." : "Generate a salt to see it here"}
 			</p>
 			<div className="flex items-center gap-2">
 				<Info size={12} className="text-gray-500" />
@@ -248,7 +238,6 @@ export const DelayedStartSection = ({
 
 	const handleModeChange = (
 		newMode: "preset" | "manual" | "instant" | undefined,
-		// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
 		field: ControllerRenderProps<any, "delayForTrade">,
 	) => {
 		// Prevent unselecting
@@ -263,8 +252,6 @@ export const DelayedStartSection = ({
 			field.onChange(presets[0]?.value ?? 0);
 		}
 	};
-
-	// biome-ignore lint/suspicious/noExplicitAny: We need to use any here for the field type
 	const handlePresetChange = (presetValue: string | undefined, field: ControllerRenderProps<any, "delayForTrade">) => {
 		if (!presetValue) {
 			return;
@@ -514,9 +501,7 @@ export const PoolSelection = ({
 }: { collapsible?: boolean; defaultOpen?: boolean }) => {
 	const { pool, setPool } = usePrompt();
 
-	const poolData = [
-		{ name: "PancakeSwap", value: "pancakeswap", image: "/pools/pancakeswap.svg" },
-	];
+	const poolData = [{ name: "PancakeSwap", value: "pancakeswap", image: "/pools/pancakeswap.svg" }];
 
 	return (
 		<FormSection title="Choose Pool" collapsible={collapsible} defaultOpen={defaultOpen}>
@@ -592,7 +577,8 @@ export const LaunchButton = ({
 	const [showTerminal, setShowTerminal] = useState(false);
 	const [deployProgress, setDeployProgress] = useState(0);
 
-	const shouldDisable = !formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt || !isConnected;
+	const shouldDisable =
+		!formState.isValid || isGeneratingAddress || isGeneratingMedia || isLaunching || !launchSalt || !isConnected;
 
 	const balanceQuery = useBalance({
 		chain: "evm",
@@ -605,7 +591,7 @@ export const LaunchButton = ({
 
 	// Helper to update stages
 	const updateStage = (index: number, updates: Partial<DeployStage>) => {
-		setDeployStages(prev => {
+		setDeployStages((prev) => {
 			const newStages = [...prev];
 			if (newStages[index]) {
 				newStages[index] = { ...newStages[index], ...updates };
@@ -623,10 +609,7 @@ export const LaunchButton = ({
 
 	// Poll for provisioning status updates
 	useEffect(() => {
-		if (
-			provisioningState.status !== "requested" &&
-			provisioningState.status !== "provisioning"
-		) {
+		if (provisioningState.status !== "requested" && provisioningState.status !== "provisioning") {
 			return;
 		}
 
@@ -779,7 +762,7 @@ export const LaunchButton = ({
 			// Stage 1: Awaiting wallet signature
 			updateStage(1, { status: "active" });
 			toast.info("confirm in wallet");
-			
+
 			const txHash = await writeContractAsync({
 				address: PORTAL_ADDRESS,
 				abi: portalAbi,
@@ -866,13 +849,13 @@ export const LaunchButton = ({
 			}
 		} catch (error: unknown) {
 			console.error("Error launching token:", error);
-			
+
 			// Mark current active stage as error
-			const activeIndex = deployStages.findIndex(s => s.status === "active");
+			const activeIndex = deployStages.findIndex((s) => s.status === "active");
 			if (activeIndex !== -1) {
-				updateStage(activeIndex, { 
-					status: "error", 
-					detail: (error as Error)?.message?.slice(0, 50) || "failed"
+				updateStage(activeIndex, {
+					status: "error",
+					detail: (error as Error)?.message?.slice(0, 50) || "failed",
 				});
 			}
 
@@ -958,11 +941,7 @@ export const LaunchButton = ({
 			{/* Terminal Display */}
 			{showTerminal && (
 				<div className="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-					<DeployTerminal 
-						stages={deployStages} 
-						progress={deployProgress}
-						onDismiss={() => setShowTerminal(false)}
-					/>
+					<DeployTerminal stages={deployStages} progress={deployProgress} onDismiss={() => setShowTerminal(false)} />
 				</div>
 			)}
 

@@ -36,7 +36,6 @@ export default function AdminUsersPage() {
 			toast.success("User status updated");
 			queryClient.invalidateQueries({ queryKey: ["admin-users"] });
 		},
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		onError: (e: any) => toast.error(e.message),
 	});
 

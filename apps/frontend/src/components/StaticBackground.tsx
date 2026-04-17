@@ -5,10 +5,7 @@
  */
 export default function StaticBackground() {
 	return (
-		<div
-			className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
-			aria-hidden
-		>
+		<div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden>
 			{/* Base: solid dark */}
 			<div className="absolute inset-0" style={{ backgroundColor: "#08080a" }} />
 

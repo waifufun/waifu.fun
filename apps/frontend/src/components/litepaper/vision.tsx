@@ -37,7 +37,8 @@ export default function Vision() {
 								<p className="font-orbitron text-[10px] uppercase tracking-[0.34em] text-waifu-green">what changes</p>
 								<p className="mt-3 font-audiowide text-3xl uppercase tracking-[-0.04em] text-white">Fine-tuned</p>
 								<p className="mt-3 font-satoshi text-sm leading-6 text-white/62">
-									your waifu gets its own model. not a prompt on someone else's AI. an actual fine-tuned model that thinks like your character.
+									your waifu gets its own model. not a prompt on someone else's AI. an actual fine-tuned model that
+									thinks like your character.
 								</p>
 							</div>
 						</div>
@@ -57,8 +58,8 @@ export default function Vision() {
 							<span className="block text-white/32">was actually different?</span>
 						</h2>
 						<p className="mt-8 max-w-3xl font-satoshi text-lg leading-8 text-white/68 sm:text-[1.2rem]">
-							waifu.fun fine-tunes a model for each character. your waifu doesn't read a character sheet every conversation. the personality is baked into the weights. it
-							just knows who it is.
+							waifu.fun fine-tunes a model for each character. your waifu doesn't read a character sheet every
+							conversation. the personality is baked into the weights. it just knows who it is.
 						</p>
 						<div className="mt-8 rounded-[1.75rem] border border-waifu-green/15 bg-waifu-green/8 p-6 shadow-crt-sm backdrop-blur-sm sm:p-8">
 							<p className="font-audiowide text-[clamp(2rem,4vw,3.5rem)] uppercase tracking-[-0.05em] text-waifu-green">
@@ -110,7 +111,10 @@ export default function Vision() {
 						transition={{ delay: 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
 						className="mt-12 flex flex-wrap items-center gap-4"
 					>
-						<div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-white/48" style={{ fontFamily: "DMMono, monospace" }}>
+						<div
+							className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-white/48"
+							style={{ fontFamily: "DMMono, monospace" }}
+						>
 							model + runtime + wallet + training loop
 						</div>
 						<div className="h-px flex-1 bg-gradient-to-r from-waifu-green/55 via-white/8 to-transparent" />

@@ -53,19 +53,25 @@ export default function Problem() {
 						<span className="mt-2 block text-white/28">is the same thing.</span>
 					</h2>
 					<p className="mt-8 max-w-lg font-satoshi text-lg leading-8 text-white/68">
-						Right now, every AI companion app works the same way: take GPT or Claude, slap a character description on top, and
-						character, but underneath it's a stateless API call in costume.
+						Right now, every AI companion app works the same way: take GPT or Claude, slap a character description on
+						top, and character, but underneath it's a stateless API call in costume.
 					</p>
 					<div className="mt-10 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-7 backdrop-blur-sm">
-						<p className="text-[11px] uppercase tracking-[0.3em] text-waifu-magenta/80" style={{ fontFamily: "DMMono, monospace" }}>
+						<p
+							className="text-[11px] uppercase tracking-[0.3em] text-waifu-magenta/80"
+							style={{ fontFamily: "DMMono, monospace" }}
+						>
 							the result
 						</p>
 						<p className="mt-4 max-w-md font-satoshi text-base leading-7 text-white/62">
-							a race to the bottom on prompt engineering while OpenAI and Anthropic keep all the
-							the infra, and the compounding intelligence layer.
+							a race to the bottom on prompt engineering while OpenAI and Anthropic keep all the the infra, and the
+							compounding intelligence layer.
 						</p>
 						<div className="mt-7 h-px w-full bg-gradient-to-r from-waifu-magenta/0 via-waifu-magenta/50 to-waifu-magenta/0" />
-						<div className="mt-6 flex flex-wrap gap-4 text-sm text-white/50" style={{ fontFamily: "DMMono, monospace" }}>
+						<div
+							className="mt-6 flex flex-wrap gap-4 text-sm text-white/50"
+							style={{ fontFamily: "DMMono, monospace" }}
+						>
 							<span>memory = none</span>
 							<span>uniqueness = none</span>
 							<span>moat = none</span>
@@ -105,7 +111,10 @@ export default function Problem() {
 										<p className="mt-4 max-w-2xl font-satoshi text-base leading-7 text-white/62 sm:text-lg">
 											{mode.copy}
 										</p>
-										<div className="mt-6 flex flex-wrap gap-3 text-[11px] uppercase tracking-[0.26em] text-white/38" style={{ fontFamily: "DMMono, monospace" }}>
+										<div
+											className="mt-6 flex flex-wrap gap-3 text-[11px] uppercase tracking-[0.26em] text-white/38"
+											style={{ fontFamily: "DMMono, monospace" }}
+										>
 											<span className="rounded-full border border-white/10 px-3 py-1">same model</span>
 											<span className="rounded-full border border-white/10 px-3 py-1">rented brain</span>
 										</div>

@@ -29,12 +29,7 @@ export default function VisualAsset({
 
 	return (
 		<div className={cn("relative overflow-hidden", className)}>
-			<div
-				className={cn(
-					"absolute inset-0 bg-gradient-to-b from-[#111114] to-[#08080a]",
-					fallbackClassName,
-				)}
-			/>
+			<div className={cn("absolute inset-0 bg-gradient-to-b from-[#111114] to-[#08080a]", fallbackClassName)} />
 			{!hasError ? (
 				<Image
 					src={src}

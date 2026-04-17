@@ -121,9 +121,7 @@ export default async function Holders({ token }: { token: IToken }) {
 		);
 	} catch (_error) {
 		return (
-			<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">
-				holder indexing temporarily unavailable.
-			</div>
+			<div className="p-4 py-8 text-center w-full text-sm text-[#a1a1aa]">holder indexing temporarily unavailable.</div>
 		);
 	}
 }

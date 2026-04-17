@@ -62,7 +62,10 @@ export default async function Home() {
 			<Hero />
 			<WaifuHub />
 
-			<div id="explore" className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 scroll-mt-20">
+			<div
+				id="explore"
+				className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 scroll-mt-20"
+			>
 				{noTokens ? (
 					<div className="flex min-h-[50vh] items-center justify-center">
 						<HomeEmptyState />

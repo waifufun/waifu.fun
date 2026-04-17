@@ -10,8 +10,6 @@ import { useTranslation } from "@/contexts/locale-context";
 import { getSwaps, getTokensCreated, getAddressPoints } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import Pagination from "@/components/pagination";
-
-// biome-ignore lint/suspicious/noExplicitAny: replace with types later
 export default function Page({ balances }: { balances: { user: any; balances: any[] } }) {
 	const { t } = useTranslation();
 	const [tab, setTab] = useState("wallet");

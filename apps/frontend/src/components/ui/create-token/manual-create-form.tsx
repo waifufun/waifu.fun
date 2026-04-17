@@ -306,9 +306,7 @@ const ImageUploadSection = () => {
 			{!displayImage && previousImages.length === 0 && (
 				<div className="p-2 bg-red-500/10 border border-red-500/30 rounded-sm flex items-center gap-2">
 					<AlertTriangle className="size-3.5 text-red-400 shrink-0" />
-					<p className="text-xs text-red-400">
-						avatar required. upload an image or generate one from the auto tab.
-					</p>
+					<p className="text-xs text-red-400">avatar required. upload an image or generate one from the auto tab.</p>
 				</div>
 			)}
 		</FormSection>

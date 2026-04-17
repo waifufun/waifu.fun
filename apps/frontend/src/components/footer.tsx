@@ -9,10 +9,7 @@ export default function Footer() {
 	const year = new Date().getFullYear();
 
 	return (
-		<footer
-			className="w-full shrink-0 mt-auto py-10"
-			style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}
-		>
+		<footer className="w-full shrink-0 mt-auto py-10" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.06)" }}>
 			<div className="w-full px-4 sm:px-6 lg:px-8">
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
 					<div className="flex flex-col gap-1.5">

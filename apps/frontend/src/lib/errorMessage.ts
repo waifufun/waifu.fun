@@ -4,12 +4,9 @@ const statusMessages: Record<number, string> = {
 	404: "Resource not found.",
 	429: "Too many requests. Please try again later.",
 };
-
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function pluck<T = any>(obj: any, paths: string[]): T | undefined {
 	for (const path of paths) {
 		const parts = path.split(".");
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		let val: any = obj;
 		for (const key of parts) {
 			if (val == null) break;
@@ -67,14 +64,12 @@ export function getErrorMessage(error: unknown): string {
 	}
 
 	// HTTP-like status code
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	const status = (error as any).status;
 	if (typeof status === "number") {
 		return statusMessages[status] ?? (status >= 500 ? "Server error. Please try again later." : `HTTP Error ${status}`);
 	}
 
 	// Transaction logs array
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	const logs = (error as any).logs;
 	if (Array.isArray(logs)) {
 		const found = logs.find((log: string) => /error|failed|rejected/i.test(log));

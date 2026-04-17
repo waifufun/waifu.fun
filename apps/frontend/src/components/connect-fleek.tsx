@@ -36,7 +36,8 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 		<div className="bg-black ƒlex place-self-center w-[408px]">
 			<div className="p-4 flex flex-col text-center transition-all duration-300 ease-in-out">
 				<h1 className="font-semibold text-white text-2xl">
-					{t("connectFleek.title")} <span className="text-waifufun-background-action-highlight">{t("connectFleek.titleAgent")}</span>
+					{t("connectFleek.title")}{" "}
+					<span className="text-waifufun-background-action-highlight">{t("connectFleek.titleAgent")}</span>
 				</h1>
 				<p className="text-white text-lg mt-4">{t("connectFleek.launchWithEliza")}</p>
 				<Image alt="fleek-logo" src="/fleek/fleek-logo.svg" height={50} width={70} className="mt-1 self-center" />
@@ -64,7 +65,9 @@ export default function ConnectToFleek({ token }: { token: IToken }) {
 								placeholder={t("connectFleek.placeholderAgentId")}
 								className="text-white bg-transparent border-white/20"
 							/>
-							{connectAgentMutation.isError && <p className="text-red-500 text-sm">{t("connectFleek.somethingWrong")}</p>}
+							{connectAgentMutation.isError && (
+								<p className="text-red-500 text-sm">{t("connectFleek.somethingWrong")}</p>
+							)}
 							<Button
 								onClick={() => connectAgentMutation.mutate({ agentId, contractAddress, chain, chainId })}
 								className="mt-2 bg-waifufun-background-action-highlight text-black hover:bg-opacity-90"

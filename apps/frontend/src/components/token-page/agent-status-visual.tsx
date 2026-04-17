@@ -84,7 +84,9 @@ function ActivityIndicator({
 		<div className="flex items-center gap-2">
 			<Icon className={cn("size-3.5 shrink-0", muted ? "text-[#3f3f46]" : "text-[#52525b]")} />
 			<div className="flex items-baseline gap-1.5 min-w-0">
-				<span className={cn("text-[10px] font-mono uppercase tracking-wider", muted ? "text-[#3f3f46]" : "text-[#52525b]")}>
+				<span
+					className={cn("text-[10px] font-mono uppercase tracking-wider", muted ? "text-[#3f3f46]" : "text-[#52525b]")}
+				>
 					{label}
 				</span>
 				<span className={cn("text-xs font-mono truncate", muted ? "text-[#52525b]" : "text-[#a1a1aa]")}>{value}</span>
@@ -120,7 +122,11 @@ export default function AgentStatusVisual({
 
 	// Curve status for bonding state
 	const curveStatus =
-		status.state === "bonding" ? `${Math.round(curveProgress)}% complete` : status.hasCompletedBondingCurve ? "graduated" : null;
+		status.state === "bonding"
+			? `${Math.round(curveProgress)}% complete`
+			: status.hasCompletedBondingCurve
+				? "graduated"
+				: null;
 
 	return (
 		<motion.div

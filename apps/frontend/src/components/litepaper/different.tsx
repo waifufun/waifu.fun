@@ -54,7 +54,8 @@ export default function Different() {
 											fine-tuning
 										</span>
 										<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-											take a base model. train it on your character's personality, knowledge, and style. now it doesn't need instructions. it just IS that character.
+											take a base model. train it on your character's personality, knowledge, and style. now it doesn't
+											need instructions. it just IS that character.
 										</p>
 									</div>
 								</div>
@@ -69,14 +70,16 @@ export default function Different() {
 								what's different
 							</span>
 							<h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-tight lowercase">
-								fees fund{" "}
-								<span className="text-[#00ff87]">fine-tuning.</span>
+								fees fund <span className="text-[#00ff87]">fine-tuning.</span>
 							</h2>
 							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								on waifu.fun, trading fees don't just disappear into a treasury. they pay for training runs that make your agent's model better.
+								on waifu.fun, trading fees don't just disappear into a treasury. they pay for training runs that make
+								your agent's model better.
 							</p>
 							<p className="mt-4 text-[#a1a1aa] text-lg leading-relaxed">
-								here's the difference: a system prompt tells a model "you are a cat girl named luna." fine-tuning actually rewires the model so it thinks like luna, talks like luna, remembers like luna. the personality isn't a mask. it's baked in.
+								here's the difference: a system prompt tells a model "you are a cat girl named luna." fine-tuning
+								actually rewires the model so it thinks like luna, talks like luna, remembers like luna. the personality
+								isn't a mask. it's baked in.
 							</p>
 						</SectionBlock>
 
@@ -88,7 +91,8 @@ export default function Different() {
 									not prompted. trained.
 								</p>
 								<p className="mt-4 text-base leading-7 text-[#a1a1aa]">
-									a system prompt reads the character sheet every conversation and forgets between sessions. a fine-tuned model doesn't need the character sheet. it already knows who it is.
+									a system prompt reads the character sheet every conversation and forgets between sessions. a
+									fine-tuned model doesn't need the character sheet. it already knows who it is.
 								</p>
 							</div>
 						</SectionBlock>
