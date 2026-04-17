@@ -7,8 +7,10 @@ import { notFound, redirect } from "next/navigation";
 
 export const revalidate = 4;
 
-export async function generateMetadata({ params }: { params: Promise<ITokenLookUp> }): Promise<Metadata> {
-	const tokenParams = await params;
+type RawTokenParams = { chain: string; chainId: string; contractAddress: string };
+
+export async function generateMetadata({ params }: { params: Promise<RawTokenParams> }): Promise<Metadata> {
+	const tokenParams = (await params) as unknown as ITokenLookUp;
 	// bsc tokens are agents, metadata handled by /agent route
 	if (
 		String(tokenParams.chain).toLowerCase() === "bsc" &&
@@ -33,8 +35,8 @@ export async function generateMetadata({ params }: { params: Promise<ITokenLookU
 	};
 }
 
-export default async function Page({ params, children }: { params: Promise<ITokenLookUp>; children: ReactNode }) {
-	const tokenParams = await params;
+export default async function Page({ params, children }: { params: Promise<RawTokenParams>; children: ReactNode }) {
+	const tokenParams = (await params) as unknown as ITokenLookUp;
 
 	// bsc tokens now live as agents — redirect to the agent home
 	if (
