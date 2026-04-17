@@ -93,7 +93,11 @@ export default function AgentHome({
 
 				{/* 6. agent's voice */}
 				<Section title="agent's voice">
-					<AgentVoice twitterHandle={agent.twitterHandle} />
+					<AgentVoice
+						{...(agent.twitterHandle
+							? { twitterHandle: agent.twitterHandle }
+							: {})}
+					/>
 				</Section>
 
 				{/* 7. system prompt */}

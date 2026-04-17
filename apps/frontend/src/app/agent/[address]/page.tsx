@@ -24,28 +24,35 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 		const token = await res.json();
 		const shaped: AgentData = {
 			tokenAddress: token.contractAddress,
-			walletAddress: token.creator,
-			treasuryAddress: token.bondingCurveAddress,
 			name: token.name,
 			ticker: token.ticker,
-			image: token.image,
-			description: token.description,
 			status:
 				token.status === "migrated" || token.status === "locked"
 					? "graduated"
 					: "active",
-			curveProgress: token.curveProgress,
-			curveLimit: token.curveLimit,
-			waifuBonded: token.reserveAmount,
 			raisedToken: "BNB",
-			twitterHandle: token.socials?.twitter
-				? token.socials.twitter.split("/").pop()?.replace("@", "")
-				: undefined,
-			pancakeSwapUrl: token.pool
-				? `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}`
-				: undefined,
 			fourMemeUrl: `https://four.meme/token/${token.contractAddress}`,
 		};
+		if (token.creator) shaped.walletAddress = token.creator;
+		if (token.bondingCurveAddress)
+			shaped.treasuryAddress = token.bondingCurveAddress;
+		if (token.image) shaped.image = token.image;
+		if (token.description) shaped.description = token.description;
+		if (token.curveProgress !== undefined)
+			shaped.curveProgress = token.curveProgress;
+		if (token.curveLimit !== undefined) shaped.curveLimit = token.curveLimit;
+		if (token.reserveAmount !== undefined)
+			shaped.waifuBonded = token.reserveAmount;
+		if (token.socials?.twitter) {
+			const handle = token.socials.twitter
+				.split("/")
+				.pop()
+				?.replace("@", "");
+			if (handle) shaped.twitterHandle = handle;
+		}
+		if (token.pool) {
+			shaped.pancakeSwapUrl = `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}`;
+		}
 		return shaped;
 	} catch (e) {
 		console.error("fallback token fetch failed", e);
