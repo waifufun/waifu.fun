@@ -3,7 +3,7 @@ import type { IToken, ITokenLookUp } from "@waifufun/types";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const revalidate = 4;
 
@@ -16,10 +16,21 @@ async function fetchTokenWithFallback(tokenParams: ITokenLookUp): Promise<IToken
 	}
 }
 
+function isBscAgent(tokenParams: { chain?: string; chainId?: string }): boolean {
+	return (
+		String(tokenParams.chain).toLowerCase() === "bsc" &&
+		String(tokenParams.chainId) === "56"
+	);
+}
+
 export async function generateMetadata({
 	params,
 }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }): Promise<Metadata> {
-	const tokenParams = (await params) as unknown as ITokenLookUp;
+	const rawParams = await params;
+	// bsc tokens are agents; metadata handled by /agent route
+	if (isBscAgent(rawParams)) return {};
+
+	const tokenParams = rawParams as unknown as ITokenLookUp;
 	const token = await fetchTokenWithFallback(tokenParams);
 
 	if (!token) {
@@ -48,7 +59,13 @@ export default async function Page({
 	params,
 	children,
 }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }>; children: ReactNode }) {
-	const tokenParams = (await params) as unknown as ITokenLookUp;
+	const rawParams = await params;
+	// bsc tokens now live as agents -- redirect to the agent home
+	if (isBscAgent(rawParams)) {
+		redirect(`/agent/${rawParams.contractAddress}`);
+	}
+
+	const tokenParams = rawParams as unknown as ITokenLookUp;
 	const token = await fetchTokenWithFallback(tokenParams);
 
 	if (!token) notFound();
