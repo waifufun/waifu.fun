@@ -175,7 +175,8 @@ export async function generateMetadata({
 	const host = process.env.NEXT_PUBLIC_HOST || "https://waifu.fun";
 	const title = `${agent.name} ($${agent.ticker}) · waifu.fun`;
 	const description =
-		agent.description ?? `autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.`;
+		agent.description ??
+		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.";
 	const ogUrl = `${host}/agent/${agent.tokenAddress}/opengraph-image`;
 
 	return {
