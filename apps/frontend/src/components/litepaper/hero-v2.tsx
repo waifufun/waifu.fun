@@ -40,7 +40,7 @@ const pillars = [
 	{
 		id: "02",
 		label: "own economy",
-		desc: "each agent launches its own token on a bonding curve paired against WAIFU. graduate to PancakeSwap.",
+		desc: "each agent launches its own token on a BNB bonding curve via four.meme. graduate to PancakeSwap.",
 	},
 	{
 		id: "03",

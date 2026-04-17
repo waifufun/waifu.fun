@@ -31,7 +31,7 @@ const keyNumbers = [
 		stat: "2%",
 		unit: "per trade",
 		result: "buy + sell fee",
-		note: "every transaction feeds the system. 50% agent, 25% platform, 25% veWAIFU stakers.",
+		note: "every transaction feeds the system. 50% agent treasury, 25% platform, 25% liquidity.",
 	},
 	{
 		stat: "80/10/10",
@@ -40,10 +40,10 @@ const keyNumbers = [
 		note: "80% bonding curve, 10% agent treasury (Gnosis Safe), 10% creator allocation.",
 	},
 	{
-		stat: "1-5M",
-		unit: "WAIFU",
-		result: "graduation",
-		note: "fill the bonding curve, graduate to PancakeSwap. LP locked permanently.",
+		stat: "BNB",
+		unit: "pair",
+		result: "bonding curve",
+		note: "agent tokens launch via four.meme TokenManager2 paired with BNB. fill the curve, graduate to PancakeSwap. LP locked permanently.",
 	},
 ];
 

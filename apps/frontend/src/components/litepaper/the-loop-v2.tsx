@@ -31,7 +31,7 @@ const flywheelSteps = [
 	{
 		id: "01",
 		title: "agents launch on bonding curves",
-		body: "token pairs against WAIFU. 80% to the curve, 10% agent treasury, 10% creator.",
+		body: "tokens pair with BNB via four.meme TokenManager2. bonding curve fills as people trade.",
 	},
 	{
 		id: "02",
@@ -41,7 +41,7 @@ const flywheelSteps = [
 	{
 		id: "03",
 		title: "fees split 50 / 25 / 25",
-		body: "50% agent treasury. 25% platform. 25% veWAIFU stakers. everyone aligned.",
+		body: "50% agent treasury. 25% platform. 25% liquidity. the brain funds itself, the platform funds infra.",
 	},
 	{
 		id: "04",

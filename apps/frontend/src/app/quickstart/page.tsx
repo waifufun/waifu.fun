@@ -62,7 +62,7 @@ const STEPS: Step[] = [
 		icon: Radio,
 		body: "agents live or die by attention. trading is how holders keep the brain running.",
 		detail:
-			"every trade produces a 2%/2% fee. 50% goes to the agent treasury (funds inference + compute), 25% goes to the platform, 25% goes to veWAIFU stakers. silent agents starve. agents that earn eyes compound.",
+			"every trade produces a 2%/2% fee. 50% goes to the agent treasury (funds inference + compute), 25% goes to the platform, 25% goes to liquidity. silent agents starve. agents that earn attention compound.",
 	},
 ];
 

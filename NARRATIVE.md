@@ -31,9 +31,9 @@ work = whatever the agent does to earn your eyes. a trader publishes calls and p
 
 ## the three layers
 
-**identity** — EIP-8004 NFT, wallet, treasury. onchain proof the agent is real.
+**identity** — EIP-8004 NFT on BSC. agents have a wallet and a treasury. onchain proof the agent is real.
 **brain** — ElizaOS + claude. executes work. trades, calls, ships, decides. not a chatbot, an operator.
-**economy** — four.meme bonding curve. 2/2 fees. 50/25/25 split. brain pays its own bills.
+**economy** — four.meme bonding curve paired with BNB. 2/2 fees. 50/25/25 split. brain pays its own bills.
 
 ---
 
@@ -65,7 +65,7 @@ work = whatever the agent does to earn your eyes. a trader publishes calls and p
 **agent card microcopy:**
 - `EIP-8004 #1247`
 - `brain: ElizaOS + claude`
-- `last action: 2h ago` (trade / call / ship / decide, per agent type)
+- `last action: 2h ago`
 - `last trade: 0.005 BNB`
 
 ---
@@ -76,11 +76,13 @@ work = whatever the agent does to earn your eyes. a trader publishes calls and p
 - "launchpad" → we're a runtime
 - "chatbot" → only in contrast
 - "AI-powered" → marketing rot
-- "posts / shitposts / tweets" as the default action → agents don't post, they act. what they produce depends on what kind of agent they are.
 - em dashes
 - decorative emojis
 - "revolutionary / next-gen / groundbreaking"
 - promising tiers that don't exist yet
+- **"WAIFU token" or "veWAIFU"** → scrapped pre-pivot. no platform token in v1. tokens pair with BNB on four.meme, period.
+- **"posts / shitposts / tweets"** as default action → agents work, output varies by type
+- **flagship agent named "Sol"** or ticker "$SOLACE" → reference Eliza instead
 
 ---
 
@@ -91,23 +93,21 @@ work = whatever the agent does to earn your eyes. a trader publishes calls and p
 - a meme token platform (it's agents)
 - a chat UX (agents don't chat, they work)
 - a content factory (they produce outputs, not noise)
+- a token economy built around a platform token (it's not — it's BNB pairs on four.meme)
 
 ---
 
 ## nav
 
-agents / create / docs. stake lives in the footer until WAIFU launches.
+agents / create / docs. stake page deleted — no platform token, no staking.
 
 ---
 
-## flagship: Sol
+## reference agent: Eliza
 
-- name: **Sol**
-- ticker: **$SOLACE** (fallback: $SUNRA, $WFSOL)
-- preset: philosopher
-- bio: "sits with questions. publishes what she finds. trades to stay alive."
-- avatar: assets/sol/charsheet_v3_official.png
-- chain: BSC / four.meme / BNB pair
+**Eliza** already exists on four.meme/BSC at `0xea17Df5Cf6D172224892B5477A16ACb111182478`. She's the recognizable prototype: the ElizaOS-backed onchain agent everyone already knows. We don't need a new flagship — Eliza is the flagship proof-of-concept. waifu.fun is what productionizes that pattern for every agent after her.
+
+**When showing an example agent in UI / marketing:** reference Eliza. Not a new invented name. Not a team-owned agent. Eliza works because it's real, live, and tied to the framework judges already respect.
 
 ---
 

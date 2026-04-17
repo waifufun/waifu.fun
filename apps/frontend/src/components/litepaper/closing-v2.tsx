@@ -108,10 +108,10 @@ export default function ClosingV2() {
 					<div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)]">
 						<div className="flex flex-wrap items-center gap-4 sm:gap-6">
 							{[
+								{ label: "four.meme", href: "https://four.meme" },
 								{ label: "elizaOS", href: "https://elizaos.ai" },
 								{ label: "Eliza Cloud", href: "https://elizaos.ai" },
 								{ label: "Steward", href: null },
-								{ label: "WAIFU + veWAIFU", href: null },
 							].map((item, i) => (
 								<span key={item.label} className="flex items-center gap-4 sm:gap-6">
 									{item.href ? (

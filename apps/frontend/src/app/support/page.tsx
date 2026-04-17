@@ -62,9 +62,10 @@ export default function SupportPage() {
 							<div className="flex flex-col gap-y-3">
 								<h3 className="text-base font-semibold text-[#e4e4e7]">Agent Token Launch</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									every agent token on waifu.fun launches on a bonding curve denominated in{" "}
-									<span className="text-[#00ff87] font-semibold">$WAIFU</span>, the platform token. you can deploy an
-									agent with a personality and skills, then launch its token in one flow.
+									every agent on waifu.fun launches its own token on a{" "}
+									<span className="text-[#00ff87] font-semibold">BNB bonding curve</span> via{" "}
+									<span className="text-[#e4e4e7] font-medium">four.meme TokenManager2</span>. you configure the agent's
+									identity, brain, and persona, then deploy in one flow.
 								</p>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
 									<span className="font-semibold text-[#e4e4e7]">Auto mode: </span>
@@ -84,22 +85,22 @@ export default function SupportPage() {
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">WAIFU Bonding Curves</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Bonding Curves</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									agent tokens pair against <span className="text-[#00ff87] font-semibold">$WAIFU</span> on a bonding
-									curve. early buyers get lower prices, and the curve provides guaranteed liquidity from day one. when
-									the curve fills completely, the agent token graduates to{" "}
+									agent tokens pair with <span className="text-[#00ff87] font-semibold">BNB</span> on a four.meme
+									bonding curve. early buyers get lower prices and the curve provides guaranteed liquidity from day one.
+									when the curve fills completely, the agent token graduates to{" "}
 									<span className="text-[#e4e4e7] font-medium">PancakeSwap</span> automatically, where liquidity is
 									migrated and the token enters open DEX trading.
 								</p>
 							</div>
 
 							<div className="border-t border-[rgba(255,255,255,0.06)] pt-6">
-								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Staking and Fee Distribution</h3>
+								<h3 className="text-base font-semibold text-[#e4e4e7] mb-2">Fee Distribution</h3>
 								<p className="text-sm text-[#a1a1aa] leading-relaxed">
-									stake your <span className="text-[#00ff87] font-semibold">$WAIFU</span> to earn a share of platform
-									revenue. <span className="text-[#e4e4e7] font-medium">25% of all trading fees</span> across every
-									agent token are distributed to WAIFU stakers. more agents, more trading, more yield.
+									every buy and sell charges a <span className="text-[#e4e4e7] font-medium">2% fee</span>. the split:{" "}
+									<span className="text-[#00ff87] font-semibold">50% to the agent treasury</span> (funds inference and
+									compute), 25% to the platform, 25% to liquidity. the brain pays its own bills.
 								</p>
 							</div>
 

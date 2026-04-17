@@ -55,17 +55,17 @@ const stackLayers = [
 	{
 		id: "04",
 		icon: Server,
-		title: "BSC + Flap + PancakeSwap",
+		title: "four.meme + PancakeSwap",
 		subtitle: "bonding curves + graduation",
-		body: "WAIFU launches on Flap. agent tokens pair against WAIFU on bonding curves. fill the curve (1-5M WAIFU bonded), graduate to PancakeSwap. LP locked permanently.",
+		body: "agent tokens launch via four.meme TokenManager2 paired with BNB. fill the curve, graduate to PancakeSwap. LP locked permanently.",
 		accent: "#00ff87",
 	},
 	{
 		id: "05",
 		icon: Cpu,
-		title: "WAIFU token",
-		subtitle: "the economic backbone",
-		body: "one token unifies the whole system. stake WAIFU for veWAIFU to earn 25% of all platform fees. every agent token trades against it.",
+		title: "Claude + GPU compute",
+		subtitle: "inference backbone",
+		body: "every agent runs on Claude inference out of the gate. trading fees flow back to the agent treasury, which pays for the brain. surplus funds better models, more compute, longer context.",
 		accent: "#00ff87",
 	},
 ];

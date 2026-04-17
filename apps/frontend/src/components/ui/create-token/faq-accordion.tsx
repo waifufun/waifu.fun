@@ -15,7 +15,7 @@ const defaultFAQs: FAQItem[] = [
 	{
 		question: "What is the custom address generator?",
 		answer:
-			"Create a vanity address for your agent's token that ends with custom characters (like 'WAIFU'). Longer suffixes take more time to generate.",
+			"Create a vanity address for your agent's token that ends with custom characters (like 'AGENT' or 'ELIZA'). Longer suffixes take more time to generate.",
 	},
 	{
 		question: "Can I upload my own image or generate one with AI?",

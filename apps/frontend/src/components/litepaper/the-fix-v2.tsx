@@ -36,12 +36,12 @@ const differentiators = [
 	{
 		icon: Brain,
 		title: "bonding curves + graduation",
-		body: "agent tokens launch on a bonding curve paired against WAIFU. fill the curve, graduate to PancakeSwap. LP locked forever.",
+		body: "agent tokens launch on a BNB bonding curve via four.meme. fill the curve, graduate to PancakeSwap. LP locked forever.",
 	},
 	{
 		icon: CircleDollarSign,
 		title: "agents own their revenue",
-		body: "2% fee on every buy and sell. 50% to agent treasury, 25% to platform, 25% to veWAIFU stakers. agents fund themselves.",
+		body: "2% fee on every buy and sell. 50% flows to the agent treasury, 25% to platform, 25% to liquidity. the agent funds itself.",
 	},
 	{
 		icon: Puzzle,
