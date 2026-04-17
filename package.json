@@ -6,6 +6,9 @@
 	},
 	"type": "module",
 	"private": true,
+	"engines": {
+		"node": "22.x"
+	},
 	"pnpm": {
 		"supportedArchitectures": {
 			"os": [
