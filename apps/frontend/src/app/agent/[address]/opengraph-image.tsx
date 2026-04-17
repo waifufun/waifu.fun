@@ -9,6 +9,8 @@ export const size = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+const GREEN = "#22c55e";
+const GREEN_GLOW = "#00ff87";
 
 type AgentForOG = {
 	name: string;
@@ -57,21 +59,29 @@ export default async function Image({
 	const agent = await fetchAgentForOG(address);
 
 	const host = process.env.NEXT_PUBLIC_HOST || "https://waifu.fun";
-	const fontResponse = await fetch(new URL("/fonts/Satoshi-Regular.otf", host));
-	const satoshi = fontResponse.ok ? await fontResponse.arrayBuffer() : null;
 
-	// Fallback if we can't load the agent (e.g. network hiccup). Keep OG reasonable.
+	// load assets in parallel
+	const [fontResp, bgResp, logoResp] = await Promise.all([
+		fetch(new URL("/fonts/Satoshi-Regular.otf", host)),
+		fetch(new URL("/brand/backgrounds/hero-bg.webp", host)),
+		fetch(new URL("/brand/lockup/lockup_waifufun_on_black_1024.png", host)),
+	]);
+
+	const satoshi = fontResp.ok ? await fontResp.arrayBuffer() : null;
+	const bgBuf = bgResp.ok ? await bgResp.arrayBuffer() : null;
+	const logoBuf = logoResp.ok ? await logoResp.arrayBuffer() : null;
+	const bgDataUrl = bgBuf ? `data:image/webp;base64,${Buffer.from(bgBuf).toString("base64")}` : null;
+	const logoDataUrl = logoBuf ? `data:image/png;base64,${Buffer.from(logoBuf).toString("base64")}` : null;
+
+	// Fallback if we can't load the agent. Keep OG reasonable.
 	const name = agent?.name ?? "agent";
 	const ticker = agent?.ticker ? `$${agent.ticker}` : "";
-	const description = agent?.description?.slice(0, 180) ?? "autonomous agent on waifu.fun";
+	const description =
+		agent?.description?.slice(0, 160) ??
+		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.";
 	const status = agent?.status ?? "active";
 	const image = agent?.image;
 	const eip = agent?.eip8004TokenId;
-
-	const GREEN = "#22c55e";
-	const DIM = "rgba(255,255,255,0.45)";
-	const DIMMER = "rgba(255,255,255,0.28)";
-	const BORDER = "rgba(255,255,255,0.1)";
 
 	return new ImageResponse(
 		<div
@@ -81,164 +91,296 @@ export default async function Image({
 				display: "flex",
 				flexDirection: "column",
 				background: "#000",
-				padding: 56,
 				fontFamily: "Satoshi",
 				color: "#fff",
 				position: "relative",
+				overflow: "hidden",
 			}}
 		>
-			{/* ambient glow */}
+			{/* L1: aesthetic bg image */}
+			{bgDataUrl && (
+				<img
+					src={bgDataUrl}
+					alt=""
+					width={1200}
+					height={630}
+					style={{
+						position: "absolute",
+						inset: 0,
+						width: "100%",
+						height: "100%",
+						objectFit: "cover",
+						opacity: 0.55,
+					}}
+				/>
+			)}
+
+			{/* L2: dark overlay for readability */}
 			<div
 				style={{
 					position: "absolute",
-					top: -200,
-					right: -200,
-					width: 600,
-					height: 600,
-					background: "radial-gradient(circle, rgba(34,197,94,0.14), transparent 70%)",
+					inset: 0,
+					background: "radial-gradient(ellipse 65% 55% at 50% 55%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.88) 100%)",
 					display: "flex",
 				}}
 			/>
 
-			{/* top bar: brand + status pill */}
+			{/* L3: ambient green glow top-right */}
 			<div
 				style={{
+					position: "absolute",
+					top: -240,
+					right: -240,
+					width: 700,
+					height: 700,
+					background: `radial-gradient(circle, ${GREEN_GLOW}26 0%, transparent 65%)`,
 					display: "flex",
-					justifyContent: "space-between",
-					alignItems: "center",
-					marginBottom: 44,
+				}}
+			/>
+
+			{/* L4: ambient purple glow bottom-left for depth */}
+			<div
+				style={{
+					position: "absolute",
+					bottom: -280,
+					left: -200,
+					width: 600,
+					height: 600,
+					background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 65%)",
+					display: "flex",
+				}}
+			/>
+
+			{/* L5: scanlines (subtle) */}
+			<div
+				style={{
+					position: "absolute",
+					inset: 0,
+					backgroundImage:
+						"repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255,255,255,0.03) 3px, rgba(255,255,255,0.03) 4px)",
+					display: "flex",
+				}}
+			/>
+
+			{/* content wrapper */}
+			<div
+				style={{
 					position: "relative",
+					zIndex: 10,
+					width: "100%",
+					height: "100%",
+					display: "flex",
+					flexDirection: "column",
+					padding: 56,
 				}}
 			>
+				{/* top bar: logo + status pill */}
 				<div
 					style={{
 						display: "flex",
-						gap: 14,
-						fontSize: 18,
-						fontFamily: "monospace",
-						letterSpacing: "0.28em",
-						textTransform: "uppercase",
-						color: DIM,
-					}}
-				>
-					<span>waifu.fun</span>
-					<span style={{ color: DIMMER }}>/</span>
-					<span style={{ color: GREEN }}>agent</span>
-				</div>
-				<div
-					style={{
-						display: "flex",
+						justifyContent: "space-between",
 						alignItems: "center",
-						gap: 10,
-						border: `1px solid ${status === "graduated" ? BORDER : "rgba(34,197,94,0.4)"}`,
-						color: status === "graduated" ? DIM : GREEN,
-						padding: "8px 14px",
-						fontSize: 16,
-						fontFamily: "monospace",
-						textTransform: "uppercase",
-						letterSpacing: "0.2em",
 					}}
 				>
-					<span
-						style={{
-							width: 8,
-							height: 8,
-							borderRadius: 99,
-							background: status === "graduated" ? "rgba(255,255,255,0.5)" : GREEN,
-						}}
-					/>
-					{status}
-				</div>
-			</div>
-
-			{/* hero row */}
-			<div style={{ display: "flex", gap: 40, alignItems: "center" }}>
-				<div
-					style={{
-						width: 220,
-						height: 220,
-						border: `1px solid ${BORDER}`,
-						background: "#08080a",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						overflow: "hidden",
-						flexShrink: 0,
-					}}
-				>
-					{image ? (
-						<img src={image} alt={name} width={220} height={220} style={{ objectFit: "cover" }} />
+					{logoDataUrl ? (
+						<img
+							src={logoDataUrl}
+							alt="waifu.fun"
+							height={36}
+							style={{ height: 36, width: "auto", objectFit: "contain" }}
+						/>
 					) : (
 						<span
 							style={{
+								fontSize: 22,
 								fontFamily: "monospace",
-								color: DIMMER,
-								fontSize: 14,
-								letterSpacing: "0.2em",
+								letterSpacing: "0.3em",
+								textTransform: "uppercase",
+								color: "rgba(255,255,255,0.7)",
 							}}
 						>
-							NO IMAGE
+							waifu.fun
 						</span>
 					)}
-				</div>
-				<div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-					<div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 12 }}>
-						<span style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1 }}>{name}</span>
-						{ticker && (
-							<span
-								style={{
-									fontSize: 22,
-									color: GREEN,
-									fontFamily: "monospace",
-									border: "1px solid rgba(34,197,94,0.3)",
-									background: "rgba(34,197,94,0.05)",
-									padding: "6px 12px",
-									letterSpacing: "0.05em",
-								}}
-							>
-								{ticker}
-							</span>
-						)}
-					</div>
-					<p
+					<div
 						style={{
-							fontSize: 22,
-							color: "rgba(255,255,255,0.65)",
-							lineHeight: 1.4,
-							margin: 0,
-							maxWidth: 720,
-							display: "-webkit-box",
-							WebkitLineClamp: 3,
-							WebkitBoxOrient: "vertical",
-							overflow: "hidden",
+							display: "flex",
+							alignItems: "center",
+							gap: 10,
+							border: status === "graduated" ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(34,197,94,0.4)",
+							background: status === "graduated" ? "rgba(255,255,255,0.03)" : "rgba(34,197,94,0.08)",
+							color: status === "graduated" ? "rgba(255,255,255,0.7)" : GREEN,
+							padding: "8px 16px",
+							fontSize: 16,
+							fontFamily: "monospace",
+							textTransform: "uppercase",
+							letterSpacing: "0.22em",
+							backdropFilter: "blur(8px)",
 						}}
 					>
-						{description}
-					</p>
+						<span
+							style={{
+								width: 8,
+								height: 8,
+								borderRadius: 99,
+								background: status === "graduated" ? "rgba(255,255,255,0.5)" : GREEN_GLOW,
+								boxShadow: status === "graduated" ? "none" : `0 0 12px ${GREEN_GLOW}`,
+							}}
+						/>
+						{status}
+					</div>
 				</div>
-			</div>
 
-			{/* spacer */}
-			<div style={{ flex: 1, display: "flex" }} />
+				{/* spacer */}
+				<div style={{ flex: 1, display: "flex" }} />
 
-			{/* bottom metadata row */}
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					gap: 32,
-					paddingTop: 24,
-					borderTop: `1px solid ${BORDER}`,
-					fontSize: 18,
-					fontFamily: "monospace",
-					color: DIM,
-					letterSpacing: "0.18em",
-					textTransform: "uppercase",
-				}}
-			>
-				{eip !== undefined && <span>EIP-8004 #{eip}</span>}
-				<span>brain: ElizaOS + claude</span>
-				<span style={{ marginLeft: "auto", color: GREEN }}>they live if you trade</span>
+				{/* hero row */}
+				<div style={{ display: "flex", gap: 36, alignItems: "center" }}>
+					{/* avatar with glow ring */}
+					<div
+						style={{
+							position: "relative",
+							width: 200,
+							height: 200,
+							flexShrink: 0,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+						}}
+					>
+						{/* ring glow */}
+						<div
+							style={{
+								position: "absolute",
+								inset: -8,
+								borderRadius: 4,
+								background: `linear-gradient(135deg, ${GREEN_GLOW}44, transparent 50%, rgba(139,92,246,0.35))`,
+								filter: "blur(12px)",
+								display: "flex",
+							}}
+						/>
+						{/* avatar frame */}
+						<div
+							style={{
+								position: "relative",
+								width: 200,
+								height: 200,
+								border: "1px solid rgba(255,255,255,0.14)",
+								background: "#08080a",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								overflow: "hidden",
+							}}
+						>
+							{image ? (
+								<img src={image} alt={name} width={200} height={200} style={{ objectFit: "cover" }} />
+							) : (
+								<span
+									style={{
+										fontFamily: "monospace",
+										color: "rgba(255,255,255,0.28)",
+										fontSize: 13,
+										letterSpacing: "0.2em",
+									}}
+								>
+									NO IMAGE
+								</span>
+							)}
+						</div>
+					</div>
+
+					<div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+						<div style={{ display: "flex", alignItems: "baseline", gap: 18, marginBottom: 14 }}>
+							<span
+								style={{
+									fontSize: 72,
+									fontWeight: 700,
+									letterSpacing: "-0.03em",
+									lineHeight: 0.95,
+									textShadow: "0 2px 24px rgba(0,0,0,0.8)",
+								}}
+							>
+								{name}
+							</span>
+							{ticker && (
+								<span
+									style={{
+										fontSize: 22,
+										color: GREEN,
+										fontFamily: "monospace",
+										border: "1px solid rgba(34,197,94,0.35)",
+										background: "rgba(34,197,94,0.06)",
+										padding: "7px 14px",
+										letterSpacing: "0.05em",
+										backdropFilter: "blur(6px)",
+									}}
+								>
+									{ticker}
+								</span>
+							)}
+						</div>
+						<p
+							style={{
+								fontSize: 22,
+								color: "rgba(255,255,255,0.72)",
+								lineHeight: 1.4,
+								margin: 0,
+								maxWidth: 760,
+								display: "-webkit-box",
+								WebkitLineClamp: 2,
+								WebkitBoxOrient: "vertical",
+								overflow: "hidden",
+								textShadow: "0 1px 12px rgba(0,0,0,0.8)",
+							}}
+						>
+							{description}
+						</p>
+					</div>
+				</div>
+
+				{/* spacer */}
+				<div style={{ flex: 1, display: "flex" }} />
+
+				{/* bottom metadata row */}
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						gap: 28,
+						paddingTop: 20,
+						borderTop: "1px solid rgba(255,255,255,0.08)",
+						fontSize: 16,
+						fontFamily: "monospace",
+						color: "rgba(255,255,255,0.5)",
+						letterSpacing: "0.2em",
+						textTransform: "uppercase",
+					}}
+				>
+					{eip !== undefined && (
+						<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+							<span style={{ color: GREEN_GLOW }}>◆</span>
+							EIP-8004 #{eip}
+						</span>
+					)}
+					<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+						<span style={{ color: GREEN_GLOW }}>◆</span>
+						ElizaOS + claude
+					</span>
+					<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+						<span style={{ color: GREEN_GLOW }}>◆</span>
+						four.meme · BNB
+					</span>
+					<span
+						style={{
+							marginLeft: "auto",
+							color: GREEN,
+							textShadow: `0 0 16px ${GREEN_GLOW}66`,
+						}}
+					>
+						they live if you trade
+					</span>
+				</div>
 			</div>
 		</div>,
 		{
