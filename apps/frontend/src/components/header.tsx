@@ -1,24 +1,19 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { motion, useMotionValueEvent, useScroll, AnimatePresence } from "framer-motion";
-import { useAccount } from "wagmi";
-import SearchMenu from "./search-menu";
+import { useState } from "react";
 import HeaderAuth from "./header-auth";
-import { HowItWorksModal } from "./how-it-works-modal";
 import LanguageSwitcher from "./language-switcher";
-import { useTranslation } from "@/contexts/locale-context";
-
-const HOW_IT_WORKS_SEEN_KEY = "waifu_how_it_works_seen";
+import SearchMenu from "./search-menu";
 
 const NAV_LINKS = [
-	{ href: "/#explore", labelKey: "nav.explore" },
+	{ href: "/agents", labelKey: "nav.agents" },
 	{ href: "/create", labelKey: "nav.create" },
-	{ href: "/stake", labelKey: "nav.stake" },
-	{ href: "/litepaper", labelKey: "nav.story" },
+	{ href: "/litepaper", labelKey: "nav.docs" },
 ] as const;
 
 export default function Header() {
@@ -26,26 +21,13 @@ export default function Header() {
 	const pathname = usePathname();
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 	const { scrollY } = useScroll();
-	const { isConnected } = useAccount();
 
 	const isLitepaper = pathname === "/litepaper" || pathname?.startsWith("/litepaper/");
 
 	useMotionValueEvent(scrollY, "change", (latest) => {
 		setScrolled(latest > 20);
 	});
-
-	// Show "how it works" modal automatically on first login
-	// NOTE: this useEffect MUST stay above any early returns to avoid React hooks order violation
-	useEffect(() => {
-		if (isLitepaper) return;
-		if (!isConnected || typeof window === "undefined") return;
-		const seen = localStorage.getItem(HOW_IT_WORKS_SEEN_KEY);
-		if (seen) return;
-		localStorage.setItem(HOW_IT_WORKS_SEEN_KEY, "true");
-		setHowItWorksOpen(true);
-	}, [isConnected, isLitepaper]);
 
 	if (isLitepaper) return null;
 
@@ -90,20 +72,6 @@ export default function Header() {
 
 					{/* Nav links - hidden on mobile */}
 					<nav className="hidden lg:flex items-center gap-6">
-						<button
-							type="button"
-							className="text-sm font-medium transition-colors duration-200"
-							style={{ color: "#71717a" }}
-							onMouseEnter={(e) => {
-								e.currentTarget.style.color = "#e4e4e7";
-							}}
-							onMouseLeave={(e) => {
-								e.currentTarget.style.color = "#71717a";
-							}}
-							onClick={() => setHowItWorksOpen(true)}
-						>
-							{t("nav.howItWorks")}
-						</button>
 						{NAV_LINKS.map((link) => (
 							<Link
 								key={link.href}
@@ -122,8 +90,6 @@ export default function Header() {
 						))}
 					</nav>
 				</div>
-
-				<HowItWorksModal open={howItWorksOpen} onOpenChange={setHowItWorksOpen} controlled />
 
 				{/* Right: Language + Search + Wallet + Mobile Menu Button */}
 				<div className="flex items-center gap-3 shrink-0">
@@ -175,17 +141,6 @@ export default function Header() {
 						}}
 					>
 						<nav className="flex flex-col p-4 gap-2">
-							<button
-								type="button"
-								className="text-sm font-medium py-3 px-4 rounded-sm transition-colors duration-200 hover:bg-[rgba(0,255,135,0.08)] text-left"
-								style={{ color: "#e4e4e7" }}
-								onClick={() => {
-									setHowItWorksOpen(true);
-									setMobileMenuOpen(false);
-								}}
-							>
-								{t("nav.howItWorks")}
-							</button>
 							{NAV_LINKS.map((link) => (
 								<Link
 									key={link.href}

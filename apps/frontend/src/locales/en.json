@@ -19,7 +19,9 @@
 		"story": "story",
 		"howItWorks": "how it works",
 		"homeAria": "waifu.fun home",
-		"stake": "stake"
+		"stake": "stake",
+		"agents": "agents",
+		"docs": "docs"
 	},
 	"layout": {
 		"devnetBanner": "— this is a development environment connected to testnet. nothing here is real.",
