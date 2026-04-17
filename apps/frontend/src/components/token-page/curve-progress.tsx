@@ -80,7 +80,7 @@ export default function CurveProgress({ waifuBonded, curveLimit, isGraduated, pa
 			<div className="flex items-center justify-between">
 				<div>
 					<span className="font-mono text-lg font-bold text-[#e4e4e7]">{formatNumber(waifuBonded)}</span>
-					<span className="font-mono text-xs text-[#3f3f46] ml-1">/ {formatNumber(curveLimit)} WAIFU</span>
+					<span className="font-mono text-xs text-[#3f3f46] ml-1">/ {formatNumber(curveLimit)} BNB</span>
 				</div>
 				<span className={`font-mono text-sm font-bold ${isGraduated ? "text-[#00ff87]" : "text-[#a1a1aa]"}`}>
 					{isGraduated ? "100%" : `${progress.toFixed(1)}%`}

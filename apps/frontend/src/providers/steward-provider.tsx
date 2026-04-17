@@ -20,7 +20,7 @@ const REFRESH_CHECK_INTERVAL_MS = 60_000;
 const REFRESH_AHEAD_SECS = 120;
 
 // Match waifu.fun's design tokens
-const WAIFU_THEME = {
+const BRAND_THEME = {
 	primaryColor: "#00ff87",
 	accentColor: "#00ff87",
 	backgroundColor: "#08080a",
@@ -97,7 +97,7 @@ export const WaifuStewardProvider: FC<WaifuStewardProviderProps> = ({ children }
 			agentId={STEWARD_AGENT_ID}
 			auth={{ baseUrl: STEWARD_API_URL }}
 			tenantId={STEWARD_TENANT_ID}
-			theme={WAIFU_THEME}
+			theme={BRAND_THEME}
 			features={{
 				showFundingQR: false,
 				showTransactionHistory: false,
