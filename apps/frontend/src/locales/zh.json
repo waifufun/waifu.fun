@@ -19,7 +19,9 @@
 		"story": "故事",
 		"howItWorks": "如何运作",
 		"homeAria": "waifu.fun 首页",
-		"stake": "stake"
+		"stake": "stake",
+		"agents": "代理",
+		"docs": "文档"
 	},
 	"layout": {
 		"devnetBanner": "— 这是连接测试网的开发环境，内容均非真实。",

@@ -1,10 +1,10 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useMotionValue, useSpring } from "framer-motion";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRef } from "react";
-import dynamic from "next/dynamic";
-import { useTranslation } from "@/contexts/locale-context";
 
 const GlitchBg = dynamic(() => import("./glitch-bg"), { ssr: false });
 
@@ -208,12 +208,12 @@ export default function Hero() {
 					transition={{ duration: 0.8, delay: 1.0 }}
 				>
 					<a
-						href="https://milady.ai"
+						href="https://four.meme"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="transition-colors duration-200 hover:text-[#71717a]"
 					>
-						Milady
+						four.meme
 					</a>
 					<span>×</span>
 					<a
@@ -223,6 +223,15 @@ export default function Hero() {
 						className="transition-colors duration-200 hover:text-[#71717a]"
 					>
 						ElizaOS
+					</a>
+					<span>×</span>
+					<a
+						href="https://milady.cloud"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="transition-colors duration-200 hover:text-[#71717a]"
+					>
+						Milady
 					</a>
 				</motion.div>
 			</div>
