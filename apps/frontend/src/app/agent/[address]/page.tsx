@@ -177,7 +177,11 @@ export async function generateMetadata({
 	const description =
 		agent.description ??
 		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.";
-	const ogUrl = `${host}/agent/${agent.tokenAddress}/opengraph-image`;
+	// Per-agent OG image disabled — the nested /agent/[address]/opengraph-image
+	// route inherits the wagmi/viem module graph from the app layout and 500s
+	// with 'indexedDB is not defined'. Falls back to the root /opengraph-image
+	// which works and still renders the brand card for shared agent pages.
+	const ogUrl = `${host}/opengraph-image`;
 
 	return {
 		title,
