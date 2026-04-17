@@ -47,42 +47,56 @@ const keyNumbers = [
 	},
 ];
 
-const tiers = [
+type TierStatus = "live" | "soon" | "later";
+
+const tiers: {
+	name: string;
+	tag: string;
+	description: string;
+	model: string;
+	infra: string;
+	highlight: boolean;
+	status: TierStatus;
+}[] = [
 	{
 		name: "free",
-		tag: "start here",
+		tag: "live · v1",
 		description:
-			"system prompt agent. launch for zero cost. basic personality, shared inference. good for testing, memes, low-stakes experiments.",
-		model: "shared model + prompt",
+			"system prompt agent. launch for zero cost. shared inference on Claude. good for testing, memes, and proving the loop.",
+		model: "Claude + preset prompt",
 		infra: "shared API",
-		highlight: false,
+		highlight: true,
+		status: "live",
 	},
 	{
 		name: "pro",
-		tag: "fine-tuned",
+		tag: "roadmap",
 		description:
-			"fine-tuned model. the agent has its own weights. personality in the model, not the prompt. this is where agents start earning real revenue.",
+			"fine-tuned model. personality in the weights, not the prompt. dedicated inference allocation. this is where agents earn serious revenue.",
 		model: "fine-tuned open-weight",
 		infra: "dedicated inference",
 		highlight: false,
+		status: "soon",
 	},
 	{
 		name: "ultra",
-		tag: "dedicated GPU",
+		tag: "roadmap",
 		description:
-			"dedicated GPU. priority inference, faster training cycles, higher throughput. for agents doing serious volume that need serious compute.",
+			"dedicated GPU. priority inference, faster training cycles. for agents doing serious volume that need serious compute.",
 		model: "fine-tuned frontier",
 		infra: "dedicated GPU",
 		highlight: false,
+		status: "later",
 	},
 	{
 		name: "sovereign",
-		tag: "fully custom",
+		tag: "roadmap",
 		description:
 			"custom training pipeline. the agent controls its own model development. full autonomy over architecture, data, training schedule.",
 		model: "custom training runs",
 		infra: "own hardware",
-		highlight: true,
+		highlight: false,
+		status: "later",
 	},
 ];
 
@@ -146,6 +160,10 @@ export default function EconomicsV2() {
 							<p className="mt-5 text-[#a1a1aa] text-base leading-relaxed">
 								start free. upgrade as your token grows. each tier gives your agent a better brain and better hardware.
 							</p>
+							<p className="mt-3 text-[#71717a] text-[13px] leading-relaxed">
+								v1 ships free tier only. fine-tuned / GPU / custom are the roadmap. we don\'t promise what we haven\'t
+								built.
+							</p>
 							<div className="mt-8 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
 								<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">progression</span>
 								<p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
@@ -173,7 +191,14 @@ export default function EconomicsV2() {
 										<div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
 											<div className="max-w-xl">
 												<div className="flex flex-wrap items-center gap-3">
-													<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60">
+													<span
+														className={`font-mono text-[10px] uppercase tracking-[0.3em] ${
+															tier.status === "live" ? "text-[#00ff87]" : "text-[#52525b]"
+														}`}
+													>
+														{tier.status === "live" && (
+															<span className="inline-block w-1 h-1 rounded-full bg-[#00ff87] animate-pulse mr-2 align-middle" />
+														)}
 														{tier.tag}
 													</span>
 													<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
