@@ -6,9 +6,7 @@ export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
 		return (
 			<div className="border border-white/10 bg-[#08080a] rounded-sm p-8 text-center">
 				<div className="text-sm text-white/40">no trades yet</div>
-				<div className="text-[11px] font-mono text-white/25 mt-1.5">
-					this agent is waiting for its first move
-				</div>
+				<div className="text-[11px] font-mono text-white/25 mt-1.5">this agent is waiting for its first move</div>
 			</div>
 		);
 	}
@@ -18,11 +16,7 @@ export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
 			{trades.slice(0, 20).map((trade, idx) => (
 				<a
 					key={`${trade.txId || idx}-${trade.timestamp}`}
-					href={
-						trade.txId
-							? `https://bscscan.com/tx/${trade.txId}`
-							: undefined
-					}
+					href={trade.txId ? `https://bscscan.com/tx/${trade.txId}` : undefined}
 					target="_blank"
 					rel="noreferrer"
 					className={cn(
@@ -41,17 +35,11 @@ export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
 						{trade.type}
 					</span>
 
-					<span className="text-white/60 w-24 truncate">
-						{shortenAddr(trade.address)}
-					</span>
+					<span className="text-white/60 w-24 truncate">{shortenAddr(trade.address)}</span>
 
-					<span className="flex-1 text-white/80 truncate text-right">
-						{formatAmount(trade.amount)}
-					</span>
+					<span className="flex-1 text-white/80 truncate text-right">{formatAmount(trade.amount)}</span>
 
-					<span className="text-white/30 w-16 text-right shrink-0">
-						{timeAgo(trade.timestamp)}
-					</span>
+					<span className="text-white/30 w-16 text-right shrink-0">{timeAgo(trade.timestamp)}</span>
 				</a>
 			))}
 		</div>

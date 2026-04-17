@@ -26,28 +26,19 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 			tokenAddress: token.contractAddress,
 			name: token.name,
 			ticker: token.ticker,
-			status:
-				token.status === "migrated" || token.status === "locked"
-					? "graduated"
-					: "active",
+			status: token.status === "migrated" || token.status === "locked" ? "graduated" : "active",
 			raisedToken: "BNB",
 			fourMemeUrl: `https://four.meme/token/${token.contractAddress}`,
 		};
 		if (token.creator) shaped.walletAddress = token.creator;
-		if (token.bondingCurveAddress)
-			shaped.treasuryAddress = token.bondingCurveAddress;
+		if (token.bondingCurveAddress) shaped.treasuryAddress = token.bondingCurveAddress;
 		if (token.image) shaped.image = token.image;
 		if (token.description) shaped.description = token.description;
-		if (token.curveProgress !== undefined)
-			shaped.curveProgress = token.curveProgress;
+		if (token.curveProgress !== undefined) shaped.curveProgress = token.curveProgress;
 		if (token.curveLimit !== undefined) shaped.curveLimit = token.curveLimit;
-		if (token.reserveAmount !== undefined)
-			shaped.waifuBonded = token.reserveAmount;
+		if (token.reserveAmount !== undefined) shaped.waifuBonded = token.reserveAmount;
 		if (token.socials?.twitter) {
-			const handle = token.socials.twitter
-				.split("/")
-				.pop()
-				?.replace("@", "");
+			const handle = token.socials.twitter.split("/").pop()?.replace("@", "");
 			if (handle) shaped.twitterHandle = handle;
 		}
 		if (token.pool) {
@@ -127,10 +118,7 @@ export default async function AgentPage({
 }) {
 	const { address } = await params;
 
-	const [agent, trades] = await Promise.all([
-		fetchAgent(address),
-		fetchTrades(address),
-	]);
+	const [agent, trades] = await Promise.all([fetchAgent(address), fetchTrades(address)]);
 
 	if (!agent) {
 		notFound();

@@ -151,7 +151,12 @@ function FieldBase({
 	className?: string;
 }) {
 	return (
-		<div className={cn("group relative border border-white/10 bg-[#08080a] rounded-sm focus-within:border-[#22c55e]/70 transition-colors", className)}>
+		<div
+			className={cn(
+				"group relative border border-white/10 bg-[#08080a] rounded-sm focus-within:border-[#22c55e]/70 transition-colors",
+				className,
+			)}
+		>
 			{children}
 		</div>
 	);
@@ -248,20 +253,17 @@ export default function CreateAgentWizard() {
 
 	/* ------------------------ image handling ------------------------ */
 
-	const onFile = useCallback(
-		async (f: File) => {
-			if (!f.type.startsWith("image/")) return;
-			const { base64, mimeType, filename } = await fileToBase64(f);
-			setState((s) => ({
-				...s,
-				imageBase64: base64,
-				imageMimeType: mimeType,
-				imageFilename: filename,
-				imagePreview: `data:${mimeType};base64,${base64}`,
-			}));
-		},
-		[],
-	);
+	const onFile = useCallback(async (f: File) => {
+		if (!f.type.startsWith("image/")) return;
+		const { base64, mimeType, filename } = await fileToBase64(f);
+		setState((s) => ({
+			...s,
+			imageBase64: base64,
+			imageMimeType: mimeType,
+			imageFilename: filename,
+			imagePreview: `data:${mimeType};base64,${base64}`,
+		}));
+	}, []);
 
 	const onUrlLoad = useCallback(async () => {
 		if (!state.imageUrlInput) return;
@@ -292,23 +294,18 @@ export default function CreateAgentWizard() {
 
 	/* ------------------------ preset switching ------------------------ */
 
-	const selectPreset = useCallback(
-		(key: PresetKey) => {
-			const preset = PRESETS.find((p) => p.key === key);
-			setState((s) => ({
-				...s,
-				preset: key,
-				// only overwrite system prompt if user hasn't edited it meaningfully
-				systemPrompt:
-					s.systemPrompt === "" ||
-					PRESETS.some((p) => p.systemPrompt === s.systemPrompt) ||
-					key === "custom"
-						? preset?.systemPrompt ?? ""
-						: s.systemPrompt,
-			}));
-		},
-		[],
-	);
+	const selectPreset = useCallback((key: PresetKey) => {
+		const preset = PRESETS.find((p) => p.key === key);
+		setState((s) => ({
+			...s,
+			preset: key,
+			// only overwrite system prompt if user hasn't edited it meaningfully
+			systemPrompt:
+				s.systemPrompt === "" || PRESETS.some((p) => p.systemPrompt === s.systemPrompt) || key === "custom"
+					? (preset?.systemPrompt ?? "")
+					: s.systemPrompt,
+		}));
+	}, []);
 
 	/* ------------------------ validation ------------------------ */
 
@@ -318,8 +315,7 @@ export default function CreateAgentWizard() {
 		state.description.trim().length > 0 &&
 		state.imageBase64.length > 0;
 
-	const personaValid =
-		state.preset === "custom" ? state.systemPrompt.trim().length > 0 : true;
+	const personaValid = state.preset === "custom" ? state.systemPrompt.trim().length > 0 : true;
 
 	/* ------------------------ nav ------------------------ */
 
@@ -485,10 +481,7 @@ export default function CreateAgentWizard() {
 							<button
 								type="button"
 								onClick={goNext}
-								disabled={
-									(step === "identity" && !identityValid) ||
-									(step === "persona" && !personaValid)
-								}
+								disabled={(step === "identity" && !identityValid) || (step === "persona" && !personaValid)}
 								className={cn(
 									"inline-flex items-center gap-2 h-10 px-5 rounded-sm text-xs uppercase tracking-[0.18em] font-mono",
 									"bg-[#22c55e] text-black hover:bg-[#22c55e]/90",
@@ -527,12 +520,8 @@ export default function CreateAgentWizard() {
 function Header() {
 	return (
 		<div className="mb-10">
-			<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#22c55e] mb-3">
-				waifu.fun / new
-			</div>
-			<h1 className="text-3xl md:text-4xl leading-tight tracking-tight">
-				launch an agent, not a token.
-			</h1>
+			<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#22c55e] mb-3">waifu.fun / new</div>
+			<h1 className="text-3xl md:text-4xl leading-tight tracking-tight">launch an agent, not a token.</h1>
 			<p className="text-sm text-white/50 mt-3 max-w-xl leading-relaxed">
 				every agent gets a wallet, a brain, and a home on chain. the token is how it eats.
 			</p>
@@ -569,14 +558,7 @@ function StepRail({ current }: { current: StepKey }) {
 							</span>
 							<span className="text-[11px] uppercase tracking-[0.2em] font-mono">{s.label}</span>
 						</div>
-						{i < STEPS.length - 1 && (
-							<div
-								className={cn(
-									"flex-1 h-px",
-									done ? "bg-white/25" : "bg-white/10",
-								)}
-							/>
-						)}
+						{i < STEPS.length - 1 && <div className={cn("flex-1 h-px", done ? "bg-white/25" : "bg-white/10")} />}
 					</div>
 				);
 			})}
@@ -660,13 +642,9 @@ function StepIdentity({
 							className="w-20 h-20 object-cover rounded-sm border border-white/10"
 						/>
 						<div className="flex-1 min-w-0">
-							<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/40 mb-1">
-								loaded
-							</div>
+							<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/40 mb-1">loaded</div>
 							<div className="text-sm truncate">{state.imageFilename || "image"}</div>
-							<div className="text-[11px] font-mono text-white/30 mt-0.5">
-								{state.imageMimeType}
-							</div>
+							<div className="text-[11px] font-mono text-white/30 mt-0.5">{state.imageMimeType}</div>
 						</div>
 						<button
 							type="button"
@@ -699,9 +677,7 @@ function StepIdentity({
 								</div>
 								<div>
 									<div className="text-sm">drop image here, or click to upload</div>
-									<div className="text-[11px] font-mono text-white/40 mt-1">
-										png / jpg / webp / gif
-									</div>
+									<div className="text-[11px] font-mono text-white/40 mt-1">png / jpg / webp / gif</div>
 								</div>
 							</div>
 							<input
@@ -718,9 +694,7 @@ function StepIdentity({
 
 						<div className="flex items-center gap-3">
 							<div className="flex-1 h-px bg-white/10" />
-							<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">
-								or paste url
-							</span>
+							<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">or paste url</span>
 							<div className="flex-1 h-px bg-white/10" />
 						</div>
 
@@ -840,12 +814,7 @@ function StepPersona({
 										: "border-white/10 text-white/60 hover:border-white/30 hover:text-white",
 								)}
 							>
-								<span
-									className={cn(
-										"w-1.5 h-1.5 rounded-full",
-										active ? "bg-[#22c55e]" : "bg-white/20",
-									)}
-								/>
+								<span className={cn("w-1.5 h-1.5 rounded-full", active ? "bg-[#22c55e]" : "bg-white/20")} />
 								{t}
 							</button>
 						);
@@ -860,9 +829,7 @@ function StepPersona({
 						<Twitter className="w-4 h-4 text-white/30 ml-3" />
 						<input
 							value={state.twitterHandle}
-							onChange={(e) =>
-								update("twitterHandle", e.target.value.replace(/^@+/, "").trim())
-							}
+							onChange={(e) => update("twitterHandle", e.target.value.replace(/^@+/, "").trim())}
 							placeholder="handle (no @)"
 							className="w-full bg-transparent px-3 h-11 text-sm text-white placeholder:text-white/25 outline-none font-mono"
 						/>
@@ -907,9 +874,7 @@ function StepDeploy({
 						</div>
 						<div>
 							<div className="text-sm">agent is online</div>
-							<div className="text-[11px] font-mono text-white/40">
-								redirecting to its home...
-							</div>
+							<div className="text-[11px] font-mono text-white/40">redirecting to its home...</div>
 						</div>
 					</div>
 					{launchResult.tokenAddress && (
@@ -975,9 +940,7 @@ function StepDeploy({
 			<div className="space-y-6">
 				<SectionTitle index="03" title="launch failed" subtitle="something broke mid-flight" />
 				<div className="border border-red-500/40 rounded-sm bg-red-500/5 p-5">
-					<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-red-400/80 mb-2">
-						error
-					</div>
+					<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-red-400/80 mb-2">error</div>
 					<div className="text-sm text-white/80 break-words font-mono">{deployError}</div>
 				</div>
 				<button
@@ -1019,37 +982,28 @@ function StepDeploy({
 								</span>
 							)}
 						</div>
-						<p className="text-xs text-white/50 mt-1 line-clamp-2">
-							{state.description || "no description yet"}
-						</p>
+						<p className="text-xs text-white/50 mt-1 line-clamp-2">{state.description || "no description yet"}</p>
 					</div>
 				</div>
 
 				<div className="p-5 space-y-2.5">
 					<MetaRow k="preset" v={presetLabel} />
-					<MetaRow
-						k="traits"
-						v={state.traits.length > 0 ? state.traits.join(", ") : "none"}
-					/>
+					<MetaRow k="traits" v={state.traits.length > 0 ? state.traits.join(", ") : "none"} />
 					{state.twitterHandle && <MetaRow k="twitter" v={`@${state.twitterHandle}`} />}
 					<MetaRow k="chain" v="bsc / four.meme" mono />
 				</div>
 
 				{state.systemPrompt && (
 					<div className="p-5 border-t border-white/10">
-						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-2">
-							system prompt
-						</div>
-						<p className="text-xs text-white/60 leading-relaxed whitespace-pre-wrap">
-							{state.systemPrompt}
-						</p>
+						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-2">system prompt</div>
+						<p className="text-xs text-white/60 leading-relaxed whitespace-pre-wrap">{state.systemPrompt}</p>
 					</div>
 				)}
 			</div>
 
 			<div className="border-l-2 border-[#22c55e]/60 pl-4 text-xs text-white/50 leading-relaxed">
-				hitting launch provisions a steward wallet, registers the agent onchain, creates the token on
-				four.meme, and boots the brain. this costs gas. no takebacks.
+				hitting launch provisions a steward wallet, registers the agent onchain, creates the token on four.meme, and
+				boots the brain. this costs gas. no takebacks.
 			</div>
 		</div>
 	);
@@ -1082,18 +1036,8 @@ function SectionTitle({
 function MetaRow({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
 	return (
 		<div className="flex items-baseline gap-4 text-xs">
-			<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 w-24 shrink-0">
-				{k}
-			</span>
-			<span
-				className={cn(
-					"text-white/80 break-all",
-					mono && "font-mono tracking-wider text-white/70",
-				)}
-			>
-				{v}
-			</span>
+			<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 w-24 shrink-0">{k}</span>
+			<span className={cn("text-white/80 break-all", mono && "font-mono tracking-wider text-white/70")}>{v}</span>
 		</div>
 	);
 }
-

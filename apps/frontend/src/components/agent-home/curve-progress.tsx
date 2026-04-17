@@ -9,12 +9,8 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 			<div className="border border-white/10 bg-[#08080a] rounded-sm p-5">
 				<div className="flex items-center justify-between gap-4 flex-wrap">
 					<div>
-						<div className="text-sm text-white/80">
-							graduated to pancakeswap
-						</div>
-						<div className="text-[11px] font-mono text-white/40 mt-1">
-							curve filled. liquidity live.
-						</div>
+						<div className="text-sm text-white/80">graduated to pancakeswap</div>
+						<div className="text-[11px] font-mono text-white/40 mt-1">curve filled. liquidity live.</div>
 					</div>
 					{agent.pancakeSwapUrl && (
 						<a
@@ -44,9 +40,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 	return (
 		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5">
 			<div className="flex items-baseline justify-between gap-3 mb-3">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
-					bonded
-				</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">bonded</div>
 				<div className="font-mono text-sm text-white">
 					<span className="text-white">{formatNum(bonded)}</span>
 					<span className="text-white/30"> / </span>
@@ -56,10 +50,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 			</div>
 
 			<div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-				<div
-					className="h-full bg-[#22c55e] rounded-full transition-all duration-500"
-					style={{ width: `${pct}%` }}
-				/>
+				<div className="h-full bg-[#22c55e] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
 			</div>
 
 			<div className="flex items-center justify-between mt-2.5 text-[10px] font-mono text-white/30">

@@ -17,10 +17,7 @@ async function fetchTokenWithFallback(tokenParams: ITokenLookUp): Promise<IToken
 }
 
 function isBscAgent(tokenParams: { chain?: string; chainId?: string }): boolean {
-	return (
-		String(tokenParams.chain).toLowerCase() === "bsc" &&
-		String(tokenParams.chainId) === "56"
-	);
+	return String(tokenParams.chain).toLowerCase() === "bsc" && String(tokenParams.chainId) === "56";
 }
 
 export async function generateMetadata({

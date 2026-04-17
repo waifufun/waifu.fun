@@ -18,15 +18,8 @@ export default function SystemPromptReveal({
 				onClick={() => setOpen((v) => !v)}
 				className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/[0.02] transition-colors"
 			>
-				<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/60">
-					view system prompt
-				</span>
-				<ChevronDown
-					className={cn(
-						"w-4 h-4 text-white/40 transition-transform duration-200",
-						open && "rotate-180",
-					)}
-				/>
+				<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/60">view system prompt</span>
+				<ChevronDown className={cn("w-4 h-4 text-white/40 transition-transform duration-200", open && "rotate-180")} />
 			</button>
 			{open && (
 				<div className="px-4 pb-5 pt-1 border-t border-white/5">

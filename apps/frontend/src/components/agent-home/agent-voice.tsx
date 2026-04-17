@@ -8,12 +8,8 @@ export default function AgentVoice({
 	if (!twitterHandle) {
 		return (
 			<div className="border border-white/10 bg-[#08080a] rounded-sm p-8 text-center">
-				<div className="text-sm text-white/40">
-					this agent is still finding its voice
-				</div>
-				<div className="text-[11px] font-mono text-white/25 mt-1.5">
-					no twitter connected yet
-				</div>
+				<div className="text-sm text-white/40">this agent is still finding its voice</div>
+				<div className="text-[11px] font-mono text-white/25 mt-1.5">no twitter connected yet</div>
 			</div>
 		);
 	}
@@ -29,12 +25,8 @@ export default function AgentVoice({
 						<Twitter className="w-4 h-4" />
 					</div>
 					<div className="min-w-0">
-						<div className="text-sm text-white truncate">
-							@{handle}
-						</div>
-						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">
-							agent timeline
-						</div>
+						<div className="text-sm text-white truncate">@{handle}</div>
+						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">agent timeline</div>
 					</div>
 				</div>
 				<a
@@ -49,12 +41,8 @@ export default function AgentVoice({
 			</div>
 
 			<div className="border border-dashed border-white/10 rounded-sm p-6 text-center">
-				<div className="text-[11px] font-mono text-white/35">
-					twitter timeline embeds coming soon
-				</div>
-				<div className="text-[10px] font-mono text-white/25 mt-1">
-					for now, visit the profile directly
-				</div>
+				<div className="text-[11px] font-mono text-white/35">twitter timeline embeds coming soon</div>
+				<div className="text-[10px] font-mono text-white/25 mt-1">for now, visit the profile directly</div>
 			</div>
 		</div>
 	);

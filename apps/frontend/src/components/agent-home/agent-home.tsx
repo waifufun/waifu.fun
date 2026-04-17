@@ -29,9 +29,7 @@ export default function AgentHome({
 						<ArrowLeft className="w-3 h-3" />
 						waifu.fun
 					</Link>
-					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30">
-						agent home
-					</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30">agent home</div>
 				</div>
 
 				{/* 1. header */}
@@ -40,17 +38,11 @@ export default function AgentHome({
 				{/* 2. addresses */}
 				<Section title="addresses">
 					<div className="border border-white/10 bg-[#08080a] rounded-sm divide-y divide-white/10">
-						{agent.walletAddress && (
-							<AddressRow label="wallet" address={agent.walletAddress} />
-						)}
+						{agent.walletAddress && <AddressRow label="wallet" address={agent.walletAddress} />}
 						<AddressRow label="token" address={agent.tokenAddress} />
-						{agent.treasuryAddress &&
-							agent.treasuryAddress !== agent.walletAddress && (
-								<AddressRow
-									label="treasury"
-									address={agent.treasuryAddress}
-								/>
-							)}
+						{agent.treasuryAddress && agent.treasuryAddress !== agent.walletAddress && (
+							<AddressRow label="treasury" address={agent.treasuryAddress} />
+						)}
 					</div>
 					<div className="mt-3 flex items-center gap-3">
 						{agent.fourMemeUrl && (
@@ -93,11 +85,7 @@ export default function AgentHome({
 
 				{/* 6. agent's voice */}
 				<Section title="agent's voice">
-					<AgentVoice
-						{...(agent.twitterHandle
-							? { twitterHandle: agent.twitterHandle }
-							: {})}
-					/>
+					<AgentVoice {...(agent.twitterHandle ? { twitterHandle: agent.twitterHandle } : {})} />
 				</Section>
 
 				{/* 7. system prompt */}
@@ -120,9 +108,7 @@ function Section({
 }) {
 	return (
 		<section className="mt-10">
-			<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30 mb-3">
-				{title}
-			</div>
+			<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30 mb-3">{title}</div>
 			{children}
 		</section>
 	);
@@ -148,9 +134,7 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
-						<span className="text-lg md:text-xl tracking-tight truncate">
-							{agent.name}
-						</span>
+						<span className="text-lg md:text-xl tracking-tight truncate">{agent.name}</span>
 						<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono tracking-wider text-[#22c55e] border border-[#22c55e]/30 bg-[#22c55e]/5">
 							${agent.ticker}
 						</span>
@@ -158,13 +142,10 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 					</div>
 
 					{agent.description && (
-						<p className="text-xs md:text-sm text-white/55 leading-relaxed mt-2 line-clamp-3">
-							{agent.description}
-						</p>
+						<p className="text-xs md:text-sm text-white/55 leading-relaxed mt-2 line-clamp-3">{agent.description}</p>
 					)}
 
-					{(agent.preset ||
-						(agent.traits && agent.traits.length > 0)) && (
+					{(agent.preset || (agent.traits && agent.traits.length > 0)) && (
 						<div className="mt-4 flex items-center gap-2 flex-wrap">
 							{agent.preset && (
 								<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em] text-white/70 border border-white/15">
@@ -193,17 +174,10 @@ function StatusBadge({ graduated }: { graduated: boolean }) {
 		<span
 			className={cn(
 				"inline-flex items-center gap-1.5 h-6 px-2 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em]",
-				graduated
-					? "border border-white/20 text-white/60"
-					: "border border-[#22c55e]/30 text-[#22c55e] bg-[#22c55e]/5",
+				graduated ? "border border-white/20 text-white/60" : "border border-[#22c55e]/30 text-[#22c55e] bg-[#22c55e]/5",
 			)}
 		>
-			<span
-				className={cn(
-					"w-1.5 h-1.5 rounded-full",
-					graduated ? "bg-white/40" : "bg-[#22c55e] animate-pulse",
-				)}
-			/>
+			<span className={cn("w-1.5 h-1.5 rounded-full", graduated ? "bg-white/40" : "bg-[#22c55e] animate-pulse")} />
 			{graduated ? "graduated" : "active"}
 		</span>
 	);
