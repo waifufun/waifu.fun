@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "nodejs";
+// Edge runtime isolates this route from the wagmi/viem module graph.
+// The nodejs runtime was crashing with 'ReferenceError: indexedDB is not
+// defined' because the route somehow resolves those browser-only deps.
+export const runtime = "edge";
 export const contentType = "image/png";
 export const alt = "waifu.fun — autonomous agent";
 export const size = {
