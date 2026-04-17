@@ -12,6 +12,21 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 const GREEN = "#22c55e";
 const GREEN_GLOW = "#00ff87";
 
+/**
+ * Convert ArrayBuffer to base64 in a way that works in edge runtime
+ * (no Node Buffer). Chunks to stay under the String.fromCharCode arg limit.
+ */
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+	const bytes = new Uint8Array(buf);
+	let binary = "";
+	const chunkSize = 0x8000;
+	for (let i = 0; i < bytes.length; i += chunkSize) {
+		const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+		binary += String.fromCharCode.apply(null, Array.from(slice));
+	}
+	return btoa(binary);
+}
+
 type AgentForOG = {
 	name: string;
 	ticker: string;
@@ -70,8 +85,10 @@ export default async function Image({
 	const satoshi = fontResp.ok ? await fontResp.arrayBuffer() : null;
 	const bgBuf = bgResp.ok ? await bgResp.arrayBuffer() : null;
 	const logoBuf = logoResp.ok ? await logoResp.arrayBuffer() : null;
-	const bgDataUrl = bgBuf ? `data:image/webp;base64,${Buffer.from(bgBuf).toString("base64")}` : null;
-	const logoDataUrl = logoBuf ? `data:image/png;base64,${Buffer.from(logoBuf).toString("base64")}` : null;
+	// Edge runtime has no Node Buffer; use btoa on a binary string built from
+	// the ArrayBuffer. Chunked to avoid stack overflow on large images.
+	const bgDataUrl = bgBuf ? `data:image/webp;base64,${arrayBufferToBase64(bgBuf)}` : null;
+	const logoDataUrl = logoBuf ? `data:image/png;base64,${arrayBufferToBase64(logoBuf)}` : null;
 
 	// Fallback if we can't load the agent. Keep OG reasonable.
 	const name = agent?.name ?? "agent";
