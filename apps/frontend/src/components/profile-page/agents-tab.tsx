@@ -1,11 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { DeployAgentModal } from "@/components/ui/create-token/deploy-agent-modal";
 import { type UserAgent, deleteAgent, getUserAgents, restartAgent, stopAgent } from "@/lib/api";
 import { cn, shortenAddress } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Bot, ExternalLink, Loader2, RefreshCw, Sparkles, Square, Trash2 } from "lucide-react";
+import { AlertCircle, Bot, ExternalLink, Loader2, RefreshCw, Square, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -229,7 +228,6 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 }
 
 export default function AgentsTab() {
-	const [deployModalOpen, setDeployModalOpen] = useState(false);
 	const queryClient = useQueryClient();
 
 	const agentsQuery = useQuery({
@@ -254,10 +252,7 @@ export default function AgentsTab() {
 							</span>
 						)}
 					</div>
-					<Button onClick={() => setDeployModalOpen(true)} className="h-8 px-3 text-[10px] font-mono uppercase">
-						<Sparkles className="size-3" />
-						Deploy New Agent
-					</Button>
+					{/* TODO(pivot-v2): create flow removed */}
 				</div>
 
 				{/* Content */}
@@ -285,10 +280,6 @@ export default function AgentsTab() {
 						<p className="text-xs text-[#52525b] text-center max-w-sm">
 							Deploy an AI agent to engage with your community automatically across social platforms.
 						</p>
-						<Button onClick={() => setDeployModalOpen(true)} className="h-9 px-4 text-[11px] font-mono uppercase mt-2">
-							<Sparkles className="size-3.5" />
-							Deploy Your First Agent
-						</Button>
 					</div>
 				) : (
 					<div>
@@ -298,18 +289,6 @@ export default function AgentsTab() {
 					</div>
 				)}
 			</div>
-
-			<DeployAgentModal
-				open={deployModalOpen}
-				onOpenChange={(v) => {
-					setDeployModalOpen(v);
-					if (!v) {
-						queryClient.invalidateQueries({
-							queryKey: ["user-agents"],
-						});
-					}
-				}}
-			/>
 		</>
 	);
 }

@@ -1,13 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { DeployAgentModal } from "@/components/ui/create-token/deploy-agent-modal";
 import { ApiError, getAgentByToken, restartAgent, stopAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { IToken } from "@waifufun/types";
-import { AlertCircle, Bot, Loader2, Lock, RefreshCw, Sparkles, Square } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertCircle, Bot, Loader2, Lock, RefreshCw, Square } from "lucide-react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 /* ── status config ── */
@@ -183,7 +182,6 @@ function ReadOnlyAgentPanel({
 
 export default function AgentPanel({ token, isCreator = false }: { token: IToken; isCreator?: boolean }) {
 	const queryClient = useQueryClient();
-	const [deployModalOpen, setDeployModalOpen] = useState(false);
 	const publicAgent = useMemo(() => getPublicAgentSnapshot(token), [token]);
 
 	const agentQuery = useQuery({
@@ -269,31 +267,10 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 	/* ── no agent: deploy prompt (creator) ── */
 	if (!agent) {
 		return (
-			<>
-				<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex items-center justify-between gap-3">
-					<div className="flex items-center gap-2">
-						<Bot className="size-4 text-[#00ff87]" />
-						<span className="text-xs text-[#71717a]">no agent deployed</span>
-					</div>
-					<Button
-						onClick={() => setDeployModalOpen(true)}
-						className="h-7 px-3 text-[10px] font-mono uppercase shrink-0"
-					>
-						<Sparkles className="size-3" />
-						deploy
-					</Button>
-				</div>
-				<DeployAgentModal
-					open={deployModalOpen}
-					onOpenChange={(v) => {
-						setDeployModalOpen(v);
-						if (!v) refresh();
-					}}
-					tokenName={token.name}
-					tokenDescription={token.description}
-					tokenAddress={token.contractAddress}
-				/>
-			</>
+			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex items-center gap-3">
+				<Bot className="size-4 text-[#00ff87] shrink-0" />
+				<span className="text-xs text-[#71717a]">no agent running. agents launch themselves via the api.</span>
+			</div>
 		);
 	}
 
@@ -345,17 +322,6 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 					</div>
 				</div>
 			</div>
-
-			<DeployAgentModal
-				open={deployModalOpen}
-				onOpenChange={(v) => {
-					setDeployModalOpen(v);
-					if (!v) refresh();
-				}}
-				tokenName={token.name}
-				tokenDescription={token.description}
-				tokenAddress={token.contractAddress}
-			/>
 		</>
 	);
 }

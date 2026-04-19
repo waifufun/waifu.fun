@@ -1,11 +1,7 @@
-"use client";
-
-import CreateAgentWizard from "@/components/ui/create-agent/create-agent-wizard";
+import { redirect } from "next/navigation";
 
 export default function CreatePage() {
-	return (
-		<div className="min-h-[100dvh] bg-[#08080a]">
-			<CreateAgentWizard />
-		</div>
-	);
+	// /create is dead — agents launch themselves via the API.
+	// See /for-agents for the spec.
+	redirect("/");
 }

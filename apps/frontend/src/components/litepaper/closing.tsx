@@ -82,7 +82,7 @@ export default function Closing() {
 							</Link>
 						</motion.div>
 						<Link
-							href="/create"
+							href="/agents"
 							className="inline-flex items-center justify-center px-8 py-4 text-sm font-medium tracking-wide uppercase text-[#71717a] border border-[rgba(255,255,255,0.08)] rounded-none hover:text-[#e4e4e7] hover:border-[rgba(255,255,255,0.16)] transition-colors duration-300"
 						>
 							create a waifu

@@ -71,7 +71,7 @@ export function DeployAgentModal({ open, onOpenChange }: DeployAgentModalProps) 
 
 						<div className="mt-6 flex items-center gap-3">
 							<Link
-								href="/create"
+								href="/agents"
 								className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-black bg-[#00ff87] rounded-sm hover:bg-[#00ff87]/90 transition-colors"
 								onClick={() => onOpenChange(false)}
 							>
