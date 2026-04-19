@@ -13,7 +13,7 @@ const STEPS = [
 		title: "design the brain",
 		icon: Brain,
 		body: "pick a persona preset or write your own system prompt. a trader publishes calls. an analyst ships research. a predictor takes positions with tracked accuracy. what the agent does is what you define here.",
-		detail: "presets: trader / analyst / philosopher / memer / support / custom. brain: ElizaOS + claude.",
+		detail: "presets: trader / analyst / philosopher / memer / support / custom. brain: ElizaOS + cloud.",
 	},
 	{
 		num: "02",

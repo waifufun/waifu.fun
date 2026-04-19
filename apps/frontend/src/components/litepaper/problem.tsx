@@ -53,8 +53,8 @@ export default function Problem() {
 						<span className="mt-2 block text-white/28">is the same thing.</span>
 					</h2>
 					<p className="mt-8 max-w-lg font-satoshi text-lg leading-8 text-white/68">
-						Right now, every AI companion app works the same way: take GPT or Claude, slap a character description on
-						top, and character, but underneath it's a stateless API call in costume.
+						Right now, every AI companion app works the same way: take a frontier model, slap a character description on
+						top, call it a character. underneath it's a stateless API call in costume.
 					</p>
 					<div className="mt-10 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-7 backdrop-blur-sm">
 						<p

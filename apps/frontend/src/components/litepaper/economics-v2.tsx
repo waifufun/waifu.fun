@@ -62,8 +62,8 @@ const tiers: {
 		name: "free",
 		tag: "live · v1",
 		description:
-			"system prompt agent. launch for zero cost. shared inference on Claude. good for testing, memes, and proving the loop.",
-		model: "Claude + preset prompt",
+			"system prompt agent. launch for zero cost. shared inference on cloud. good for testing, memes, and proving the loop.",
+		model: "Cloud + preset prompt",
 		infra: "shared API",
 		highlight: true,
 		status: "live",
