@@ -31,7 +31,7 @@ const differentiators = [
 	{
 		icon: Boxes,
 		title: "ElizaOS + Eliza Cloud",
-		body: "production agent runtime with managed hosting. deploy once, scale automatically. Claude handles inference.",
+		body: "production agent runtime with managed hosting. deploy once, scale automatically. cloud handles inference.",
 	},
 	{
 		icon: Brain,

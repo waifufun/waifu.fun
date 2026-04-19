@@ -163,7 +163,7 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 						)}
 						<span className="inline-flex items-center gap-1.5 text-white/45">
 							<Brain className="w-3 h-3" strokeWidth={1.5} />
-							brain: {agent.framework || "ElizaOS"} + {agent.model || "Claude"}
+							brain: {agent.framework || "ElizaOS"} + {agent.model || "Cloud"}
 						</span>
 						{agent.lastActionAt ? (
 							<span className="inline-flex items-center gap-1.5 text-[#22c55e]">

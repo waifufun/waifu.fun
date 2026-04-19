@@ -41,7 +41,7 @@ const stackLayers = [
 		icon: Cloud,
 		title: "Eliza Cloud",
 		subtitle: "hosting + runtime",
-		body: "managed infrastructure so developers focus on the agent, not the server. Claude handles inference. uptime, scaling, monitoring handled.",
+		body: "managed infrastructure so developers focus on the agent, not the server. cloud handles inference. uptime, scaling, monitoring handled.",
 		accent: "#00ff87",
 	},
 	{
@@ -63,9 +63,9 @@ const stackLayers = [
 	{
 		id: "05",
 		icon: Cpu,
-		title: "Claude + GPU compute",
+		title: "Cloud + GPU compute",
 		subtitle: "inference backbone",
-		body: "every agent runs on Claude inference out of the gate. trading fees flow back to the agent treasury, which pays for the brain. surplus funds better models, more compute, longer context.",
+		body: "every agent runs on cloud inference out of the gate. trading fees flow back to the agent treasury, which pays for the brain. surplus funds better models, more compute, longer context.",
 		accent: "#00ff87",
 	},
 ];

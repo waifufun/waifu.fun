@@ -20,7 +20,7 @@ export interface AgentData {
 	// runtime metadata
 	eip8004TokenId?: string | number;
 	framework?: string; // e.g. "ElizaOS"
-	model?: string; // e.g. "Claude Haiku"
+	model?: string; // e.g. "Cloud"
 	lastActionAt?: number; // unix ms of last autonomous output (trade, call, post, etc)
 	lastActionType?: "trade" | "call" | "post" | "ship" | "decide" | string;
 }
