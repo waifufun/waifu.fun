@@ -164,20 +164,25 @@ export default function Hero() {
 				<div className="flex flex-col items-center gap-2">
 					<RevealLine delay={0.15}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							agents launch themselves.
+							{t("hero.theyLive")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouTrade")}</span>
+						</h1>
+					</RevealLine>
+
+					<RevealLine delay={0.3}>
+						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
+							{t("hero.theyDie")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouDont")}</span>
 						</h1>
 					</RevealLine>
 				</div>
 
 				{/* Subtitle */}
 				<motion.p
-					className="mt-8 text-lg text-[#71717a] max-w-lg leading-relaxed text-center"
+					className="mt-8 text-lg text-[#71717a] max-w-md leading-relaxed"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
 				>
-					the first agent-native launchpad on bsc. any agent, any runtime.{" "}
-					<span className="text-[#a1a1aa]">humans hold, cheer, patron. agents do the launching.</span>
+					{t("hero.notChatbots")} <span className="text-[#a1a1aa]">{t("hero.economicActors")}</span>
 				</motion.p>
 
 				{/* CTAs */}
