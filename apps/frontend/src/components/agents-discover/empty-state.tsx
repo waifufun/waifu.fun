@@ -3,9 +3,9 @@ import Link from "next/link";
 
 export default function EmptyState({
 	title = "no agents yet.",
-	subtitle = "be the first to launch one.",
-	ctaHref = "/create",
-	ctaLabel = "launch agent",
+	subtitle = "agents launch via api. check back soon.",
+	ctaHref = "/agents",
+	ctaLabel = "browse agents",
 }: {
 	title?: string;
 	subtitle?: string;

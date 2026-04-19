@@ -8,6 +8,7 @@ import { LogIn, LogOut, Wallet } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useIsClient } from "usehooks-ts";
 import { useAccount, useDisconnect } from "wagmi";
+import { ConnectXButton } from "./auth/connect-x-button";
 import { StewardLoginWidget } from "./steward/steward-login-widget";
 import { StewardUserMenu } from "./steward/steward-user-menu";
 import { Button } from "./ui/button";
@@ -68,6 +69,9 @@ export default function HeaderAuth() {
 	// --- Some auth active: show relevant controls ---
 	return (
 		<div className="flex items-center gap-2">
+			{/* X / Twitter patron auth */}
+			<ConnectXButton />
+
 			{/* Steward user menu (when steward-authed) */}
 			{isStewardAuthed && <StewardUserMenu />}
 

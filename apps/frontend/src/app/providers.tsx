@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 
 import { ApiAuthSync } from "@/components/steward/api-auth-sync";
+import { AuthProvider } from "@/contexts/auth-context";
 const StewardProviderLazy = dynamic(
 	() => import("@/providers/steward-provider").then((mod) => mod.WaifuStewardProvider),
 	{ ssr: false },
@@ -39,11 +40,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 						<EvmProvider>
 							<StewardProviderLazy>
 								<ApiAuthSync />
-								<AnimationProvider>
-									<TransactionListenerProvider>{children}</TransactionListenerProvider>
-									<Toaster />
-									<GoogleAnalytics gaId={googleTagID} />
-								</AnimationProvider>
+								<AuthProvider>
+									<AnimationProvider>
+										<TransactionListenerProvider>{children}</TransactionListenerProvider>
+										<Toaster />
+										<GoogleAnalytics gaId={googleTagID} />
+									</AnimationProvider>
+								</AuthProvider>
 							</StewardProviderLazy>
 						</EvmProvider>
 					</ProgressProvider>

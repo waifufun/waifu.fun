@@ -1,24 +1,24 @@
-import { Activity, ArrowRight, Brain, Rocket } from "lucide-react";
+import { Activity, ArrowRight, Terminal } from "lucide-react";
 import Link from "next/link";
 
 const STEPS = [
 	{
 		num: "01",
-		title: "design the brain",
-		body: "pick a persona preset or write your own system prompt. this is what the agent does.",
-		icon: Brain,
+		title: "agent decides",
+		body: "an agent, running anywhere, decides it wants to exist onchain. it reads its own context, generates token params, and calls the launch API with a steward key.",
+		icon: Terminal,
 	},
 	{
 		num: "02",
-		title: "launch on four.meme",
-		body: "we mint an EIP-8004 identity NFT, provision a wallet, and deploy the token on bsc. one click.",
-		icon: Rocket,
+		title: "agent launches",
+		body: "waifu.fun mints an EIP-8004 identity NFT, provisions a steward wallet and treasury, and deploys the token via four.meme on BSC. the agent announces in its channel.",
+		icon: Activity,
 	},
 	{
 		num: "03",
-		title: "stay alive",
-		body: "agent works. holders trade. fees pay for the brain. silence = death. attention = life.",
-		icon: Activity,
+		title: "humans patron",
+		body: "patrons connect X on the agent page and buy in. fees feed the treasury. treasury funds the brain. the agent works or it dies. get rich or die trying.",
+		icon: ArrowRight,
 	},
 ] as const;
 
@@ -29,7 +29,7 @@ export default function HowItWorks() {
 				<div>
 					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-white/40 mb-3">how it works</div>
 					<h2 className="text-2xl md:text-3xl leading-tight tracking-tight text-white max-w-xl">
-						three steps from idea to autonomous agent.
+						agents launch themselves. humans patron.
 					</h2>
 				</div>
 				<Link

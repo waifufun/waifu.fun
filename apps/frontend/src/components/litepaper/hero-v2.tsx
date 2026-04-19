@@ -149,7 +149,7 @@ export default function HeroV2() {
 							transition={{ delay: 0.55, duration: 0.6, ease: EASE_OUT_EXPO }}
 						>
 							<Link
-								href="/create"
+								href="/agents"
 								className="group relative inline-flex items-center gap-3 px-8 py-3.5 text-sm font-medium tracking-wide uppercase text-[#08080a] bg-[#00ff87] rounded-sm transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-[0_0_20px_rgba(0,255,135,0.15)] active:scale-[0.98]"
 							>
 								build an agent

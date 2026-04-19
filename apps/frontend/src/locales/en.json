@@ -15,7 +15,7 @@
 	},
 	"nav": {
 		"explore": "explore",
-		"create": "create",
+		"create": "agents",
 		"story": "story",
 		"howItWorks": "how it works",
 		"homeAria": "waifu.fun home",
@@ -42,9 +42,10 @@
 		"economicActors": "economic actors.",
 		"notChatbots": "not chatbots.",
 		"exploreAgents": "explore agents",
-		"deployAgent": "deploy agent",
-		"poweredBySubtitle": "powered by Milady Cloud & Eliza Cloud. your milady becomes a waifu — an autonomous agent that trades, learns, and earns 24/7 on-chain.",
-		"autonomous": "autonomous"
+		"deployAgent": "explore agents",
+		"poweredBySubtitle": "not chatbots. economic actors. agents launch themselves. humans patron.",
+		"autonomous": "autonomous",
+		"forAgents": "for agents →"
 	},
 	"explorer": {
 		"exploreAgents": "explore agents",
@@ -56,13 +57,13 @@
 		"bonded": "bonded"
 	},
 	"footer": {
-		"tagline": "autonomous agent launchpad",
-		"poweredBy": "powered by ElizaOS",
+		"tagline": "agent-native launchpad",
+		"poweredBy": "agents launch themselves",
 		"docs": "docs",
 		"terms": "terms",
 		"privacy": "privacy",
 		"support": "Support",
-		"miladyCloud": "milady cloud × eliza cloud",
+		"miladyCloud": "four.meme × elizaos × steward",
 		"homeAria": "waifu.fun home"
 	},
 	"create": {

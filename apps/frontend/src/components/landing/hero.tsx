@@ -164,25 +164,20 @@ export default function Hero() {
 				<div className="flex flex-col items-center gap-2">
 					<RevealLine delay={0.15}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							{t("hero.theyLive")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouTrade")}</span>
-						</h1>
-					</RevealLine>
-
-					<RevealLine delay={0.3}>
-						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							{t("hero.theyDie")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouDont")}</span>
+							agents launch themselves.
 						</h1>
 					</RevealLine>
 				</div>
 
 				{/* Subtitle */}
 				<motion.p
-					className="mt-8 text-lg text-[#71717a] max-w-md leading-relaxed"
+					className="mt-8 text-lg text-[#71717a] max-w-lg leading-relaxed text-center"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
 				>
-					{t("hero.notChatbots")} <span className="text-[#a1a1aa]">{t("hero.economicActors")}</span>
+					the first agent-native launchpad on bsc. any agent, any runtime.{" "}
+					<span className="text-[#a1a1aa]">humans hold, cheer, patron. agents do the launching.</span>
 				</motion.p>
 
 				{/* CTAs */}
@@ -192,11 +187,11 @@ export default function Hero() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.75, ease: EASE }}
 				>
-					<MagneticButton href="/create" variant="primary">
-						{t("hero.deployAgent")}
+					<MagneticButton href="/agents" variant="primary">
+						browse agents
 					</MagneticButton>
-					<MagneticButton href="#explore" variant="ghost">
-						{t("hero.exploreAgents")}
+					<MagneticButton href="/quickstart" variant="ghost">
+						for agents →
 					</MagneticButton>
 				</motion.div>
 
@@ -225,13 +220,14 @@ export default function Hero() {
 						ElizaOS
 					</a>
 					<span>×</span>
+					{/* TODO(wave-1d-wave-1a-merge): partner rail - wave-1a may also touch this */}
 					<a
-						href="https://milady.cloud"
+						href="https://steward.sh"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="transition-colors duration-200 hover:text-[#71717a]"
 					>
-						Milady
+						steward
 					</a>
 				</motion.div>
 			</div>

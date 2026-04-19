@@ -82,7 +82,7 @@ export default function ClosingV2() {
 								transition={{ type: "spring", stiffness: 400, damping: 20 }}
 							>
 								<Link
-									href="/create"
+									href="/agents"
 									className="group relative inline-flex items-center gap-3 px-10 py-4 text-base font-medium tracking-wide uppercase text-[#08080a] bg-[#00ff87] rounded-sm transition-shadow duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-[0_0_24px_rgba(0,255,135,0.2)]"
 								>
 									build an agent
