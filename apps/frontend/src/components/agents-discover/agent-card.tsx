@@ -1,5 +1,5 @@
 import { cn, timeAgo } from "@/lib/utils";
-import { ArrowUpRight, Brain, ImageOff } from "lucide-react";
+import { ArrowUpRight, Brain } from "lucide-react";
 import Link from "next/link";
 import type { AgentListItem } from "./types";
 
@@ -17,19 +17,13 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 		>
 			{/* image */}
 			<div className="relative aspect-square w-full bg-black/40 border-b border-white/5 overflow-hidden">
-				{agent.image ? (
-					// eslint-disable-next-line @next/next/no-img-element
-					<img
-						src={agent.image}
-						alt={agent.name}
-						loading="lazy"
-						className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-					/>
-				) : (
-					<div className="w-full h-full flex items-center justify-center text-white/15">
-						<ImageOff className="w-6 h-6" strokeWidth={1.5} />
-					</div>
-				)}
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img
+					src={agent.image ?? "/brand/icon/icon_on_black_512.png"}
+					alt={agent.name}
+					loading="lazy"
+					className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+				/>
 
 				{/* top-right status pill */}
 				<div className="absolute top-2 right-2">
