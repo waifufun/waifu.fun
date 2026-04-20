@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ArrowRight, Check, Loader2, Wallet } from "lucide-react";
+import { AlertCircle, ArrowRight, Check, Loader2, Pencil, Wallet, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 import { ConnectXButton } from "@/components/auth/connect-x-button";
 import { Button } from "@/components/ui/button";
 import { usePatronAuth } from "@/contexts/auth-context";
-import { type ClaimInfo, claimAgent, fetchClaimInfo, launchClaimed } from "@/lib/claim-api";
+import { type ClaimInfo, claimAgent, editClaim, fetchClaimInfo, launchClaimed } from "@/lib/claim-api";
 
 type Step = "needs-x" | "claiming" | "needs-fund" | "funding" | "launching" | "done" | "error";
 
@@ -88,9 +88,27 @@ export default function ClaimFlow({
 		}, 1200);
 	}
 
+	const canEdit = step === "needs-fund";
+
+	async function onEditSave(next: {
+		name: string;
+		symbol: string;
+		description: string;
+		imageUrl: string;
+	}) {
+		const res = await editClaim(claimToken, next);
+		if (!res.ok) {
+			toast.error(res.error ?? "edit failed");
+			return;
+		}
+		const refreshed = await fetchClaimInfo(claimToken);
+		if (refreshed.info) setInfo(refreshed.info);
+		toast.success("updated.");
+	}
+
 	return (
 		<div className="space-y-5">
-			<AgentCard agent={info.agent} tax={info.tax} />
+			<AgentCard agent={info.agent} tax={info.tax} editable={canEdit} onSave={onEditSave} />
 
 			{step === "needs-x" && !patronUser && <NeedsXSection />}
 
@@ -149,12 +167,163 @@ export default function ClaimFlow({
 function AgentCard({
 	agent,
 	tax,
+	editable,
+	onSave,
 }: {
 	agent: ClaimInfo["agent"];
 	tax: ClaimInfo["tax"];
+	editable: boolean;
+	onSave: (next: {
+		name: string;
+		symbol: string;
+		description: string;
+		imageUrl: string;
+	}) => Promise<void>;
 }) {
+	const [editMode, setEditMode] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [draftName, setDraftName] = useState(agent.name);
+	const [draftSymbol, setDraftSymbol] = useState(agent.ticker ?? "");
+	const [draftBio, setDraftBio] = useState(agent.bio ?? "");
+	const [draftImage, setDraftImage] = useState(agent.imageUrl ?? "");
+
+	useEffect(() => {
+		if (!editMode) {
+			setDraftName(agent.name);
+			setDraftSymbol(agent.ticker ?? "");
+			setDraftBio(agent.bio ?? "");
+			setDraftImage(agent.imageUrl ?? "");
+		}
+	}, [agent.name, agent.ticker, agent.bio, agent.imageUrl, editMode]);
+
+	async function onSaveClick() {
+		setSaving(true);
+		try {
+			await onSave({
+				name: draftName,
+				symbol: draftSymbol,
+				description: draftBio,
+				imageUrl: draftImage,
+			});
+			setEditMode(false);
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	if (editMode) {
+		return (
+			<div className="border border-[#22c55e]/30 bg-[#08080a] rounded-sm p-5 md:p-6 space-y-4">
+				<div className="flex items-center justify-between">
+					<div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#22c55e]">editing</div>
+					<button
+						type="button"
+						onClick={() => setEditMode(false)}
+						className="text-white/40 hover:text-white/80"
+						disabled={saving}
+						aria-label="cancel edit"
+					>
+						<X className="w-4 h-4" strokeWidth={1.5} />
+					</button>
+				</div>
+
+				<div className="flex items-start gap-4">
+					{/* eslint-disable-next-line @next/next/no-img-element */}
+					<img
+						src={draftImage || "/brand/icon/icon_on_black_512.png"}
+						alt="preview"
+						className="w-20 h-20 shrink-0 object-cover rounded-sm border border-white/10 bg-black/40"
+					/>
+					<div className="flex-1 min-w-0">
+						<input
+							type="url"
+							value={draftImage}
+							onChange={(e) => setDraftImage(e.target.value)}
+							placeholder="https://example.com/image.png"
+							className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+							disabled={saving}
+						/>
+					</div>
+				</div>
+
+				<div className="flex items-center gap-2">
+					<input
+						type="text"
+						value={draftName}
+						onChange={(e) => setDraftName(e.target.value)}
+						placeholder="name"
+						className="flex-1 h-10 px-3 rounded-sm bg-black/40 border border-white/10 text-base focus:outline-none focus:border-[#22c55e]/40"
+						maxLength={80}
+						disabled={saving}
+					/>
+					<input
+						type="text"
+						value={draftSymbol}
+						onChange={(e) => setDraftSymbol(e.target.value.toUpperCase())}
+						placeholder="TICKER"
+						className="w-28 h-10 px-3 rounded-sm bg-black/40 border border-[#22c55e]/30 text-sm font-mono tracking-wider text-[#22c55e] focus:outline-none focus:border-[#22c55e]"
+						maxLength={10}
+						disabled={saving}
+					/>
+				</div>
+
+				<textarea
+					value={draftBio}
+					onChange={(e) => setDraftBio(e.target.value)}
+					placeholder="bio"
+					rows={3}
+					maxLength={500}
+					className="w-full px-3 py-2 rounded-sm bg-black/40 border border-white/10 text-sm leading-relaxed focus:outline-none focus:border-[#22c55e]/40 resize-none"
+					disabled={saving}
+				/>
+
+				<div className="flex items-center gap-3">
+					<Button
+						onClick={onSaveClick}
+						disabled={saving}
+						className="flex-1 bg-[#22c55e] text-black hover:bg-[#22c55e]/90 rounded-sm"
+					>
+						{saving ? (
+							<>
+								<Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+								saving...
+							</>
+						) : (
+							<>
+								<Check className="w-4 h-4 mr-1.5" />
+								save
+							</>
+						)}
+					</Button>
+					<Button
+						onClick={() => setEditMode(false)}
+						disabled={saving}
+						variant="outline"
+						className="rounded-sm border-white/10 text-white/70 hover:text-white"
+					>
+						cancel
+					</Button>
+				</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/40">
+					saving re-signs the launch with four.meme. takes a few seconds.
+				</div>
+			</div>
+		);
+	}
+
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5 md:p-6">
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5 md:p-6 relative">
+			{editable && (
+				<button
+					type="button"
+					onClick={() => setEditMode(true)}
+					className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em] text-white/50 hover:text-[#22c55e] hover:bg-[#22c55e]/5 transition-colors"
+					aria-label="edit agent"
+				>
+					<Pencil className="w-3 h-3" strokeWidth={1.5} />
+					edit
+				</button>
+			)}
 			<div className="flex items-start gap-5">
 				{/* eslint-disable-next-line @next/next/no-img-element */}
 				<img
