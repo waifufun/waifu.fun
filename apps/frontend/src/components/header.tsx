@@ -95,13 +95,6 @@ export default function Header() {
 					<LanguageSwitcher />
 					<SearchMenu />
 					<div className="hidden lg:flex items-center gap-2">
-						<button
-							type="button"
-							onClick={() => alert("twitter login coming soon")}
-							className="inline-flex items-center gap-2 h-9 px-4 rounded-sm border border-white/15 text-[11px] font-mono uppercase tracking-[0.18em] text-white/70 hover:text-white hover:border-white/30 transition-colors"
-						>
-							connect x
-						</button>
 						<HeaderAuth />
 					</div>
 					{/* Mobile hamburger button */}
