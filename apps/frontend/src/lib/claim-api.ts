@@ -60,6 +60,32 @@ export async function claimAgent(token: string): Promise<{ ok: boolean; error?: 
 	}
 }
 
+export interface EditClaimInput {
+	name?: string;
+	symbol?: string;
+	description?: string;
+	imageUrl?: string;
+}
+
+/** Edit a claimed (but not yet launched) agent's name/ticker/bio/image. */
+export async function editClaim(token: string, input: EditClaimInput): Promise<{ ok: boolean; error?: string }> {
+	try {
+		const res = await fetch(`${API}/v2/agents/claim/${encodeURIComponent(token)}`, {
+			method: "PATCH",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(input),
+		});
+		if (!res.ok) {
+			const json = await res.json().catch(() => null);
+			return { ok: false, error: json?.detail || json?.error || `HTTP ${res.status}` };
+		}
+		return { ok: true };
+	} catch (err) {
+		return { ok: false, error: err instanceof Error ? err.message : "unknown error" };
+	}
+}
+
 /** Broadcast the cached launch tx. Returns the live token address on success. */
 export async function launchClaimed(
 	token: string,
