@@ -40,7 +40,22 @@ export async function logout(): Promise<void> {
 	}
 }
 
-/** Redirect to the X OAuth login flow. */
+/**
+ * Redirect to the X OAuth login flow.
+ *
+ * Preserves the current path so the callback can bounce the user back
+ * where they started (e.g. /claim/abc). Only same-origin paths are
+ * passed through — the backend ignores anything that doesn't start with "/".
+ */
 export function redirectToXLogin(): void {
-	window.location.href = `${API_URL}/auth/twitter/login`;
+	let returnTo = "/";
+	try {
+		if (typeof window !== "undefined" && window.location) {
+			returnTo = window.location.pathname + window.location.search + window.location.hash;
+		}
+	} catch {
+		/* ignore */
+	}
+	const url = `${API_URL}/auth/twitter/login?return_to=${encodeURIComponent(returnTo)}`;
+	window.location.href = url;
 }
