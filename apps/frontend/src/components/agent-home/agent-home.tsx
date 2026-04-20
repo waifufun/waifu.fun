@@ -4,6 +4,7 @@ import Link from "next/link";
 import AddressRow from "./address-row";
 import AgentVoice from "./agent-voice";
 import CurveProgress from "./curve-progress";
+import PatronPanel from "./patron-panel";
 import RecentActivity from "./recent-activity";
 import SwapStub from "./swap-stub";
 import SystemPromptReveal from "./system-prompt-reveal";
@@ -37,7 +38,12 @@ export default function AgentHome({
 				{/* 1. header */}
 				<AgentHeader agent={agent} />
 
-				{/* 2. addresses */}
+				{/* 2. patron */}
+				<Section title="patron">
+					<PatronPanel agent={{ tokenAddress: agent.tokenAddress, name: agent.name, ticker: agent.ticker }} />
+				</Section>
+
+				{/* 3. addresses */}
 				<Section title="addresses">
 					<div className="border border-white/10 bg-[#08080a] rounded-sm divide-y divide-white/10">
 						{agent.walletAddress && <AddressRow label="wallet" address={agent.walletAddress} />}
@@ -70,27 +76,27 @@ export default function AgentHome({
 					</div>
 				</Section>
 
-				{/* 3. curve progress */}
+				{/* 4. curve progress */}
 				<Section title={graduated ? "graduated" : "curve progress"}>
 					<CurveProgress agent={agent} />
 				</Section>
 
-				{/* 4. swap stub */}
+				{/* 5. swap stub */}
 				<Section title="trade">
 					<SwapStub agent={agent} />
 				</Section>
 
-				{/* 5. recent activity */}
+				{/* 6. recent activity */}
 				<Section title="last 20 trades">
 					<RecentActivity trades={trades} />
 				</Section>
 
-				{/* 6. agent output / work */}
+				{/* 7. agent output / work */}
 				<Section title="output">
 					<AgentVoice {...(agent.twitterHandle ? { twitterHandle: agent.twitterHandle } : {})} />
 				</Section>
 
-				{/* 7. system prompt */}
+				{/* 8. system prompt */}
 				{agent.systemPrompt && (
 					<Section title="brain">
 						<SystemPromptReveal systemPrompt={agent.systemPrompt} />
