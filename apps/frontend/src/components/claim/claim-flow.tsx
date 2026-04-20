@@ -1,0 +1,340 @@
+"use client";
+
+import { AlertCircle, ArrowRight, Check, Loader2, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { parseEther } from "viem";
+import { bsc } from "viem/chains";
+import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
+
+import { ConnectXButton } from "@/components/auth/connect-x-button";
+import { Button } from "@/components/ui/button";
+import { usePatronAuth } from "@/contexts/auth-context";
+import { type ClaimInfo, claimAgent, fetchClaimInfo, launchClaimed } from "@/lib/claim-api";
+
+type Step = "needs-x" | "claiming" | "needs-fund" | "funding" | "launching" | "done" | "error";
+
+export default function ClaimFlow({
+	claimToken,
+	initialInfo,
+}: {
+	claimToken: string;
+	initialInfo: ClaimInfo;
+}) {
+	const router = useRouter();
+	const { patronUser, isLoading: authLoading } = usePatronAuth();
+	const [info, setInfo] = useState<ClaimInfo>(initialInfo);
+	const [step, setStep] = useState<Step>(() => initialInfo.claimStatus as Step);
+	const [errorMsg, setErrorMsg] = useState<string | null>(null);
+	const [fundAmountBnb, setFundAmountBnb] = useState<string>("0.01");
+
+	const isAlreadyClaimed = useMemo(
+		() =>
+			info.claimedByXHandle !== null &&
+			patronUser !== null &&
+			patronUser !== undefined &&
+			info.claimedByXHandle.toLowerCase() === patronUser.xHandle.toLowerCase(),
+		[info.claimedByXHandle, patronUser],
+	);
+
+	// Auto-advance: if patron is logged in and claim is still 'needs-x', trigger claim.
+	useEffect(() => {
+		let cancelled = false;
+		async function maybeClaim() {
+			if (authLoading) return;
+			if (!patronUser) return;
+			if (step !== "needs-x") return;
+			if (info.claimStatus === "needs-fund" && isAlreadyClaimed) {
+				setStep("needs-fund");
+				return;
+			}
+			if (info.claimStatus === "needs-x") {
+				setStep("claiming");
+				const res = await claimAgent(claimToken);
+				if (cancelled) return;
+				if (!res.ok) {
+					setErrorMsg(res.error ?? "claim failed");
+					setStep("error");
+					return;
+				}
+				const refreshed = await fetchClaimInfo(claimToken);
+				if (cancelled) return;
+				if (refreshed.info) setInfo(refreshed.info);
+				setStep("needs-fund");
+			}
+		}
+		maybeClaim();
+		return () => {
+			cancelled = true;
+		};
+	}, [authLoading, patronUser, step, info.claimStatus, isAlreadyClaimed, claimToken]);
+
+	async function onLaunch(txHash?: string) {
+		setStep("launching");
+		setErrorMsg(null);
+		const res = await launchClaimed(claimToken, {
+			...(txHash ? { fundAmountBnb, fundTxHash: txHash } : {}),
+		});
+		if (!res.ok || !res.tokenAddress) {
+			setErrorMsg(res.error ?? "launch failed");
+			setStep("error");
+			return;
+		}
+		setStep("done");
+		toast.success("live. taking you to the agent.");
+		setTimeout(() => {
+			router.push(`/agent/${res.tokenAddress}`);
+		}, 1200);
+	}
+
+	return (
+		<div className="space-y-5">
+			<AgentCard agent={info.agent} tax={info.tax} />
+
+			{step === "needs-x" && !patronUser && <NeedsXSection />}
+
+			{step === "claiming" && <PendingCard label="recording your patronage..." />}
+
+			{step === "needs-fund" && (
+				<NeedsFundSection
+					agent={info.agent}
+					fundAmountBnb={fundAmountBnb}
+					setFundAmountBnb={setFundAmountBnb}
+					onSkip={() => onLaunch(undefined)}
+					onFunded={(hash) => {
+						onLaunch(hash);
+					}}
+					onError={(msg) => {
+						setErrorMsg(msg);
+						setStep("error");
+					}}
+				/>
+			)}
+
+			{step === "launching" && <PendingCard label="launching..." sub="broadcasting to bsc. about 30 seconds." />}
+
+			{step === "done" && (
+				<div className="border border-[#22c55e]/30 bg-[#22c55e]/5 rounded-sm p-6 text-center">
+					<Check className="w-6 h-6 text-[#22c55e] mx-auto mb-3" strokeWidth={1.5} />
+					<div className="text-sm text-[#22c55e]">live. taking you to the agent.</div>
+				</div>
+			)}
+
+			{step === "error" && (
+				<div className="border border-red-500/30 bg-red-500/5 rounded-sm p-5">
+					<div className="flex items-start gap-3">
+						<AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+						<div className="flex-1 min-w-0">
+							<div className="text-sm text-red-400">something broke.</div>
+							<div className="text-xs text-white/50 mt-1 font-mono break-all">{errorMsg}</div>
+							<button
+								type="button"
+								onClick={() => {
+									setErrorMsg(null);
+									setStep(info.claimStatus as Step);
+								}}
+								className="mt-3 text-[11px] font-mono uppercase tracking-[0.16em] text-white/70 hover:text-white underline"
+							>
+								retry
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function AgentCard({
+	agent,
+	tax,
+}: {
+	agent: ClaimInfo["agent"];
+	tax: ClaimInfo["tax"];
+}) {
+	return (
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5 md:p-6">
+			<div className="flex items-start gap-5">
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img
+					src={agent.imageUrl ?? "/brand/icon/icon_on_black_512.png"}
+					alt={agent.name}
+					className="w-20 h-20 md:w-24 md:h-24 shrink-0 object-cover rounded-sm border border-white/10 bg-black/40"
+				/>
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-2 flex-wrap">
+						<span className="text-lg md:text-xl tracking-tight truncate">{agent.name}</span>
+						{agent.ticker && (
+							<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono tracking-wider text-[#22c55e] border border-[#22c55e]/30 bg-[#22c55e]/5">
+								${agent.ticker}
+							</span>
+						)}
+					</div>
+					{agent.bio && (
+						<p className="text-xs md:text-sm text-white/55 leading-relaxed mt-2 line-clamp-4">{agent.bio}</p>
+					)}
+					{tax && (
+						<div className="mt-3 text-[10px] font-mono uppercase tracking-[0.16em] text-white/40">
+							{tax.feeRate}% tax routes to agent wallet
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function NeedsXSection() {
+	return (
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-6 text-center space-y-4">
+			<div>
+				<div className="text-base md:text-lg">sign in to claim</div>
+				<div className="text-xs md:text-sm text-white/50 mt-2 max-w-md mx-auto">
+					you'll become the on-record patron for this agent. your x handle gets attributed to the launch.
+				</div>
+			</div>
+			<div className="flex justify-center">
+				<ConnectXButton />
+			</div>
+		</div>
+	);
+}
+
+function NeedsFundSection({
+	agent,
+	fundAmountBnb,
+	setFundAmountBnb,
+	onSkip,
+	onFunded,
+	onError,
+}: {
+	agent: ClaimInfo["agent"];
+	fundAmountBnb: string;
+	setFundAmountBnb: (v: string) => void;
+	onSkip: () => void;
+	onFunded: (hash: string) => void;
+	onError: (msg: string) => void;
+}) {
+	const { address, isConnected, chain } = useAccount();
+	const { sendTransactionAsync, isPending: sendPending } = useSendTransaction();
+	const { switchChainAsync } = useSwitchChain();
+	const [isSending, setIsSending] = useState(false);
+
+	if (!agent.walletAddress) {
+		// Fall back to skip-only if wallet address isn't set (shouldn't happen in prod).
+		return (
+			<div className="border border-white/10 bg-[#08080a] rounded-sm p-6 text-center">
+				<div className="text-sm text-white/60 mb-4">agent wallet unavailable. launching without funding.</div>
+				<Button onClick={onSkip} className="bg-[#22c55e] text-black hover:bg-[#22c55e]/90 rounded-sm">
+					launch now
+				</Button>
+			</div>
+		);
+	}
+
+	async function onFund() {
+		if (!isConnected || !address) {
+			onError("connect a wallet first");
+			return;
+		}
+		const numeric = Number(fundAmountBnb);
+		if (!Number.isFinite(numeric) || numeric <= 0) {
+			onError("enter a positive bnb amount");
+			return;
+		}
+		try {
+			setIsSending(true);
+			if (chain?.id !== bsc.id) {
+				await switchChainAsync({ chainId: bsc.id });
+			}
+			const hash = await sendTransactionAsync({
+				to: agent.walletAddress as `0x${string}`,
+				value: parseEther(fundAmountBnb),
+				chainId: bsc.id,
+			});
+			onFunded(hash);
+		} catch (err) {
+			onError(err instanceof Error ? err.message : "transaction failed");
+		} finally {
+			setIsSending(false);
+		}
+	}
+
+	const sending = sendPending || isSending;
+
+	return (
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5 md:p-6 space-y-4">
+			<div>
+				<div className="text-base md:text-lg">fund the launch (optional)</div>
+				<div className="text-xs md:text-sm text-white/50 mt-2">
+					send bnb to the agent's wallet. it'll use these funds for liquidity and buybacks. you can skip this.
+				</div>
+			</div>
+
+			<div className="flex items-center gap-2 text-[11px] font-mono text-white/50 border border-white/10 rounded-sm bg-black/30 p-3">
+				<Wallet className="w-3.5 h-3.5 text-white/40 shrink-0" strokeWidth={1.5} />
+				<span className="truncate">{agent.walletAddress}</span>
+			</div>
+
+			<div className="flex items-center gap-2">
+				<input
+					type="number"
+					min="0"
+					max="1"
+					step="0.01"
+					value={fundAmountBnb}
+					onChange={(e) => setFundAmountBnb(e.target.value)}
+					className="flex-1 h-10 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#22c55e]/40"
+					placeholder="0.01"
+					disabled={sending}
+				/>
+				<span className="text-xs font-mono text-white/40">BNB</span>
+			</div>
+
+			<div className="flex items-center gap-3">
+				<Button
+					onClick={onFund}
+					disabled={sending}
+					className="flex-1 bg-[#22c55e] text-black hover:bg-[#22c55e]/90 rounded-sm"
+				>
+					{sending ? (
+						<>
+							<Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+							sending...
+						</>
+					) : (
+						<>
+							fund and launch
+							<ArrowRight className="w-4 h-4 ml-1.5" />
+						</>
+					)}
+				</Button>
+				<Button
+					onClick={onSkip}
+					disabled={sending}
+					variant="outline"
+					className="rounded-sm border-white/10 text-white/70 hover:text-white"
+				>
+					skip
+				</Button>
+			</div>
+
+			{!isConnected && (
+				<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/40">
+					connect a bsc wallet above to fund. or skip to launch with zero funding.
+				</div>
+			)}
+		</div>
+	);
+}
+
+function PendingCard({ label, sub }: { label: string; sub?: string }) {
+	return (
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-8 text-center">
+			<Loader2 className="w-6 h-6 text-[#22c55e] animate-spin mx-auto mb-3" strokeWidth={1.5} />
+			<div className="text-sm text-white/80">{label}</div>
+			{sub && <div className="text-xs text-white/40 mt-2">{sub}</div>}
+		</div>
+	);
+}
