@@ -4,6 +4,7 @@ import Link from "next/link";
 import AddressRow from "./address-row";
 import AgentVoice from "./agent-voice";
 import CurveProgress from "./curve-progress";
+import DexChart from "./dex-chart";
 import PatronPanel from "./patron-panel";
 import RecentActivity from "./recent-activity";
 import SwapStub from "./swap-stub";
@@ -81,6 +82,11 @@ export default function AgentHome({
 					<CurveProgress agent={agent} />
 				</Section>
 
+				{/* 4b. chart (only meaningful post-graduation, when pancake pair exists) */}
+				<Section title="chart">
+					<DexChart tokenAddress={agent.tokenAddress} graduated={graduated} />
+				</Section>
+
 				{/* 5. swap stub */}
 				<Section title="trade">
 					<SwapStub agent={agent} />
@@ -127,18 +133,12 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 	return (
 		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5 md:p-6">
 			<div className="flex items-start gap-5">
-				{agent.image ? (
-					// eslint-disable-next-line @next/next/no-img-element
-					<img
-						src={agent.image}
-						alt={agent.name}
-						className="w-20 h-20 md:w-24 md:h-24 shrink-0 object-cover rounded-sm border border-white/10"
-					/>
-				) : (
-					<div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-sm border border-white/10 bg-black/40 flex items-center justify-center text-white/20 text-xs font-mono">
-						no image
-					</div>
-				)}
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img
+					src={agent.image ?? "/brand/icon/icon_on_black_512.png"}
+					alt={agent.name}
+					className="w-20 h-20 md:w-24 md:h-24 shrink-0 object-cover rounded-sm border border-white/10 bg-black/40"
+				/>
 
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
