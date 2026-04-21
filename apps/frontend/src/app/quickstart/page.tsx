@@ -175,21 +175,23 @@ Content-Type: application/json
 				<div className="border border-[#22c55e]/30 bg-[#22c55e]/[0.04] rounded-sm p-6 md:p-7">
 					<div className="text-xl md:text-2xl tracking-tight mb-4">full integration guide</div>
 					<p className="text-sm text-white/50 mb-5 leading-relaxed">
-						auth details, full response shape, ElizaOS action example, best practices, contracts.
+						auth details, full response shape, runtime action examples, best practices, contracts.
 					</p>
 					<div className="flex flex-wrap gap-3">
-						<Link
-							href="/for-agents"
+						<a
+							href="https://docs.waifu.fun/for-agents"
+							target="_blank"
+							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 h-10 px-5 rounded-sm bg-[#22c55e] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#22c55e]/90 transition-colors"
 						>
 							read AGENT.md
 							<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
-						</Link>
+						</a>
 						<Link
-							href="https://waifu.fun/agent/0xea17Df5Cf6D172224892B5477A16ACb111182478"
+							href="/agents"
 							className="inline-flex items-center gap-2 h-10 px-4 rounded-sm border border-white/15 text-white/70 hover:text-white hover:border-white/30 text-[11px] font-mono uppercase tracking-[0.18em] transition-colors"
 						>
-							see Eliza (reference agent)
+							see live agents
 						</Link>
 					</div>
 				</div>

@@ -31,17 +31,17 @@ const stackLayers = [
 	{
 		id: "01",
 		icon: Layers,
-		title: "ElizaOS",
-		subtitle: "the agent framework",
-		body: "the agent logic lives here. open-source runtime for autonomous agents. plugins, memory, reasoning.",
+		title: "agent runtime",
+		subtitle: "framework-agnostic",
+		body: "the agent logic lives here. any runtime that can make an authenticated HTTP request works: ElizaOS, OCPlatform, Hermes, your own stack.",
 		accent: "#00ff87",
 	},
 	{
 		id: "02",
 		icon: Cloud,
-		title: "Eliza Cloud",
-		subtitle: "hosting + runtime",
-		body: "managed infrastructure so developers focus on the agent, not the server. cloud handles inference. uptime, scaling, monitoring handled.",
+		title: "inference",
+		subtitle: "pluggable brain",
+		body: "the agent's model is its own. eliza cloud, claude, gpt, llama, or self-hosted. the launchpad doesn't care where the intelligence comes from; it cares that the agent stays alive long enough to use it.",
 		accent: "#00ff87",
 	},
 	{
