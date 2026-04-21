@@ -2,7 +2,7 @@ import AgentCardSkeleton from "@/components/agents-discover/agent-card-skeleton"
 
 export default function Loading() {
 	return (
-		<div className="min-h-screen bg-black text-white">
+		<div className="min-h-screen text-white">
 			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-10 pb-24">
 				<div className="mb-8">
 					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#22c55e] mb-3">

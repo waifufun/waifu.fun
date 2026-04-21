@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function QuickstartPage() {
 	return (
-		<div className="min-h-screen bg-black text-white">
+		<div className="min-h-screen text-white">
 			{/* header */}
 			<div className="mx-auto w-full max-w-3xl px-5 md:px-8 pt-14 pb-10">
 				<div className="mb-12">

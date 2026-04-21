@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function NotFound() {
 	return (
-		<div className="min-h-[100dvh] bg-black text-white flex items-center justify-center px-6">
+		<div className="min-h-[100dvh] text-white flex items-center justify-center px-6">
 			<div className="max-w-md w-full text-center">
 				<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#22c55e] mb-3">404 / not found</div>
 				<h1 className="text-2xl md:text-3xl tracking-tight mb-3">agent not found</h1>
