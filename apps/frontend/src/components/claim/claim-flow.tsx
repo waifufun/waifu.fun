@@ -95,6 +95,9 @@ export default function ClaimFlow({
 		symbol: string;
 		description: string;
 		imageUrl: string;
+		webUrl: string;
+		twitterUrl: string;
+		telegramUrl: string;
 		tax: {
 			feeRate: 1 | 3 | 5 | 10;
 			recipient: "agent" | "patron";
@@ -106,6 +109,9 @@ export default function ClaimFlow({
 			symbol: next.symbol,
 			description: next.description,
 			imageUrl: next.imageUrl,
+			webUrl: next.webUrl,
+			twitterUrl: next.twitterUrl,
+			telegramUrl: next.telegramUrl,
 			tax: {
 				feeRate: next.tax.feeRate,
 				recipient: next.tax.recipient,
@@ -196,6 +202,9 @@ function AgentCard({
 		symbol: string;
 		description: string;
 		imageUrl: string;
+		webUrl: string;
+		twitterUrl: string;
+		telegramUrl: string;
 		tax: {
 			feeRate: 1 | 3 | 5 | 10;
 			recipient: "agent" | "patron";
@@ -208,6 +217,9 @@ function AgentCard({
 	const [draftSymbol, setDraftSymbol] = useState(agent.ticker ?? "");
 	const [draftBio, setDraftBio] = useState(agent.bio ?? "");
 	const [draftImage, setDraftImage] = useState(agent.imageUrl ?? "");
+	const [draftWebUrl, setDraftWebUrl] = useState(agent.webUrl ?? "https://waifu.fun");
+	const [draftTwitterUrl, setDraftTwitterUrl] = useState(agent.twitterUrl ?? "https://x.com/waifudotfun");
+	const [draftTelegramUrl, setDraftTelegramUrl] = useState(agent.telegramUrl ?? "");
 	const [draftFeeRate, setDraftFeeRate] = useState<1 | 3 | 5 | 10>((tax?.feeRate as 1 | 3 | 5 | 10) ?? 5);
 	const [draftRecipient, setDraftRecipient] = useState<"agent" | "patron">("agent");
 
@@ -217,9 +229,22 @@ function AgentCard({
 			setDraftSymbol(agent.ticker ?? "");
 			setDraftBio(agent.bio ?? "");
 			setDraftImage(agent.imageUrl ?? "");
+			setDraftWebUrl(agent.webUrl ?? "https://waifu.fun");
+			setDraftTwitterUrl(agent.twitterUrl ?? "https://x.com/waifudotfun");
+			setDraftTelegramUrl(agent.telegramUrl ?? "");
 			setDraftFeeRate((tax?.feeRate as 1 | 3 | 5 | 10) ?? 5);
 		}
-	}, [agent.name, agent.ticker, agent.bio, agent.imageUrl, tax?.feeRate, editMode]);
+	}, [
+		agent.name,
+		agent.ticker,
+		agent.bio,
+		agent.imageUrl,
+		agent.webUrl,
+		agent.twitterUrl,
+		agent.telegramUrl,
+		tax?.feeRate,
+		editMode,
+	]);
 
 	async function onSaveClick() {
 		setSaving(true);
@@ -229,6 +254,9 @@ function AgentCard({
 				symbol: draftSymbol,
 				description: draftBio,
 				imageUrl: draftImage,
+				webUrl: draftWebUrl,
+				twitterUrl: draftTwitterUrl,
+				telegramUrl: draftTelegramUrl,
 				tax: { feeRate: draftFeeRate, recipient: draftRecipient },
 			});
 			setEditMode(false);
@@ -302,6 +330,35 @@ function AgentCard({
 					className="w-full px-3 py-2 rounded-sm bg-black/40 border border-white/10 text-sm leading-relaxed focus:outline-none focus:border-[#22c55e]/40 resize-none"
 					disabled={saving}
 				/>
+
+				{/* social + web links */}
+				<div className="border-t border-white/5 pt-4 space-y-2">
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">links</div>
+					<input
+						type="url"
+						value={draftWebUrl}
+						onChange={(e) => setDraftWebUrl(e.target.value)}
+						placeholder="website (https://...)"
+						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+						disabled={saving}
+					/>
+					<input
+						type="url"
+						value={draftTwitterUrl}
+						onChange={(e) => setDraftTwitterUrl(e.target.value)}
+						placeholder="x / twitter url"
+						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+						disabled={saving}
+					/>
+					<input
+						type="url"
+						value={draftTelegramUrl}
+						onChange={(e) => setDraftTelegramUrl(e.target.value)}
+						placeholder="telegram url (optional)"
+						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+						disabled={saving}
+					/>
+				</div>
 
 				{/* tax config */}
 				<div className="border-t border-white/5 pt-4 space-y-2">

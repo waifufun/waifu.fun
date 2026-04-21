@@ -14,6 +14,9 @@ export interface ClaimAgent {
 	imageUrl: string | null;
 	ticker: string | null;
 	walletAddress: string | null;
+	webUrl?: string | null;
+	twitterUrl?: string | null;
+	telegramUrl?: string | null;
 }
 
 export interface ClaimInfo {
@@ -65,6 +68,9 @@ export interface EditClaimInput {
 	symbol?: string;
 	description?: string;
 	imageUrl?: string;
+	webUrl?: string;
+	twitterUrl?: string;
+	telegramUrl?: string;
 	tax?: {
 		feeRate?: 1 | 3 | 5 | 10;
 		recipient?: "agent" | "patron" | "custom";
