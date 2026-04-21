@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import ClaimFlow from "@/components/claim/claim-flow";
+import ClaimHeader from "@/components/claim/claim-header";
 import { fetchClaimInfo } from "@/lib/claim-api";
 
 // Don't cache — claim status can flip server-side between renders.
@@ -23,21 +24,9 @@ export default async function ClaimPage({
 	}
 
 	return (
-		<div className="min-h-screen bg-black text-white">
-			<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
-				<div className="mb-8 flex items-center justify-between">
-					<Link
-						href="/"
-						className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-white/70 transition-colors"
-					>
-						<ArrowLeft className="w-3 h-3" />
-						waifu.fun
-					</Link>
-					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30">claim</div>
-				</div>
-
-				<ClaimFlow claimToken={token} initialInfo={info} />
-			</div>
+		<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
+			<ClaimHeader />
+			<ClaimFlow claimToken={token} initialInfo={info} />
 		</div>
 	);
 }
@@ -52,21 +41,19 @@ function NotFound() {
 
 function CenteredMessage({ title, sub }: { title: string; sub: string }) {
 	return (
-		<div className="min-h-screen bg-black text-white">
-			<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
-				<div className="mb-8">
-					<Link
-						href="/"
-						className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-white/70 transition-colors"
-					>
-						<ArrowLeft className="w-3 h-3" />
-						waifu.fun
-					</Link>
-				</div>
-				<div className="border border-white/10 bg-[#08080a] rounded-sm p-8 text-center">
-					<div className="text-lg md:text-xl">{title}</div>
-					<div className="text-sm text-white/50 mt-3">{sub}</div>
-				</div>
+		<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
+			<div className="mb-8">
+				<Link
+					href="/"
+					className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-white/70 transition-colors"
+				>
+					<ArrowLeft className="w-3 h-3" />
+					waifu.fun
+				</Link>
+			</div>
+			<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-8 text-center">
+				<div className="text-lg md:text-xl">{title}</div>
+				<div className="text-sm text-white/50 mt-3">{sub}</div>
 			</div>
 		</div>
 	);
