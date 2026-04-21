@@ -48,7 +48,7 @@ export default async function AgentsPage({
 	});
 
 	return (
-		<div className="min-h-screen bg-black text-white">
+		<div className="min-h-screen text-white">
 			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-10 pb-24">
 				{/* header */}
 				<div className="mb-8">
