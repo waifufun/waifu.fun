@@ -1,7 +1,9 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import ClaimBackground from "@/components/claim/claim-background";
 import ClaimFlow from "@/components/claim/claim-flow";
+import ClaimHeader from "@/components/claim/claim-header";
 import { fetchClaimInfo } from "@/lib/claim-api";
 
 // Don't cache — claim status can flip server-side between renders.
@@ -23,19 +25,10 @@ export default async function ClaimPage({
 	}
 
 	return (
-		<div className="min-h-screen bg-black text-white">
-			<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
-				<div className="mb-8 flex items-center justify-between">
-					<Link
-						href="/"
-						className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-white/70 transition-colors"
-					>
-						<ArrowLeft className="w-3 h-3" />
-						waifu.fun
-					</Link>
-					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30">claim</div>
-				</div>
-
+		<div className="relative min-h-screen bg-black text-white">
+			<ClaimBackground />
+			<div className="relative z-10 mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
+				<ClaimHeader />
 				<ClaimFlow claimToken={token} initialInfo={info} />
 			</div>
 		</div>
