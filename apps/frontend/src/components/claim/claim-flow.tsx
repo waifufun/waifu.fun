@@ -138,7 +138,9 @@ export default function ClaimFlow({
 
 			{step === "claiming" && <PendingCard label="recording your patronage..." />}
 
-			{step === "needs-fund" && (
+			{step === "needs-fund" && info.launchEnabled === false && <LaunchesPausedCard />}
+
+			{step === "needs-fund" && info.launchEnabled !== false && (
 				<NeedsFundSection
 					agent={info.agent}
 					fundAmountBnb={fundAmountBnb}
@@ -621,6 +623,33 @@ function PendingCard({ label, sub }: { label: string; sub?: string }) {
 			<Loader2 className="w-6 h-6 text-[#22c55e] animate-spin mx-auto mb-3" strokeWidth={1.5} />
 			<div className="text-sm text-white/80">{label}</div>
 			{sub && <div className="text-xs text-white/40 mt-2">{sub}</div>}
+		</div>
+	);
+}
+
+/**
+ * Rendered when the backend's LAUNCH_BROADCAST_ENABLED flag is off.
+ * Every other step of the claim flow (X OAuth, attribution, editing
+ * name/symbol/bio/image/socials/tax) still works; only the final
+ * broadcast-to-BSC step is gated. We show this in place of the
+ * fund/skip buttons so nobody tries to press "launch" and gets a 503.
+ */
+function LaunchesPausedCard() {
+	return (
+		<div className="border border-amber-500/25 bg-amber-500/[0.04] rounded-sm p-6 space-y-3">
+			<div className="flex items-center gap-2">
+				<span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-300/80">
+					launches temporarily paused
+				</div>
+			</div>
+			<div className="text-sm text-white/75 leading-relaxed">
+				live token broadcasts are parked while we polish the flow. your claim is saved and your edits will stick. come
+				back in a bit to finish the launch.
+			</div>
+			<div className="text-xs text-white/40 leading-relaxed">
+				this is a soft switch on our side. nothing is wrong with your claim.
+			</div>
 		</div>
 	);
 }

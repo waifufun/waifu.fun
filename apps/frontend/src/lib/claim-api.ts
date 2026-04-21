@@ -25,6 +25,11 @@ export interface ClaimInfo {
 	claimedByXHandle: string | null;
 	expiresAt: string | null;
 	tax: { feeRate: number; recipientAddress: string | null } | null;
+	// When the backend's LAUNCH_BROADCAST_ENABLED flag is false, this
+	// comes back as `false` and the UI should render a "launches paused"
+	// state instead of the fund/skip buttons. Falls back to `true` on
+	// older API versions so we don't accidentally gate the UI.
+	launchEnabled?: boolean;
 }
 
 const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun").replace(/\/$/, "");
