@@ -65,6 +65,11 @@ export interface EditClaimInput {
 	symbol?: string;
 	description?: string;
 	imageUrl?: string;
+	tax?: {
+		feeRate?: 1 | 3 | 5 | 10;
+		recipient?: "agent" | "patron" | "custom";
+		recipientAddress?: string;
+	};
 }
 
 /** Edit a claimed (but not yet launched) agent's name/ticker/bio/image. */

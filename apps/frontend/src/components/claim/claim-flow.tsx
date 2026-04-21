@@ -95,8 +95,26 @@ export default function ClaimFlow({
 		symbol: string;
 		description: string;
 		imageUrl: string;
+		tax: {
+			feeRate: 1 | 3 | 5 | 10;
+			recipient: "agent" | "patron";
+		};
 	}) {
-		const res = await editClaim(claimToken, next);
+		const patronAddr = patronUser?.xUserId ? undefined : undefined;
+		const res = await editClaim(claimToken, {
+			name: next.name,
+			symbol: next.symbol,
+			description: next.description,
+			imageUrl: next.imageUrl,
+			tax: {
+				feeRate: next.tax.feeRate,
+				recipient: next.tax.recipient,
+				// When recipient='patron' we'd need the patron's wallet address.
+				// For v1 we only support 'agent' (self-fund) via the UI. 'patron'
+				// is reserved for later when we pipe the wagmi wallet here.
+				...(next.tax.recipient === "patron" && patronAddr ? { recipientAddress: patronAddr } : {}),
+			},
+		});
 		if (!res.ok) {
 			toast.error(res.error ?? "edit failed");
 			return;
@@ -178,6 +196,10 @@ function AgentCard({
 		symbol: string;
 		description: string;
 		imageUrl: string;
+		tax: {
+			feeRate: 1 | 3 | 5 | 10;
+			recipient: "agent" | "patron";
+		};
 	}) => Promise<void>;
 }) {
 	const [editMode, setEditMode] = useState(false);
@@ -186,6 +208,8 @@ function AgentCard({
 	const [draftSymbol, setDraftSymbol] = useState(agent.ticker ?? "");
 	const [draftBio, setDraftBio] = useState(agent.bio ?? "");
 	const [draftImage, setDraftImage] = useState(agent.imageUrl ?? "");
+	const [draftFeeRate, setDraftFeeRate] = useState<1 | 3 | 5 | 10>((tax?.feeRate as 1 | 3 | 5 | 10) ?? 5);
+	const [draftRecipient, setDraftRecipient] = useState<"agent" | "patron">("agent");
 
 	useEffect(() => {
 		if (!editMode) {
@@ -193,8 +217,9 @@ function AgentCard({
 			setDraftSymbol(agent.ticker ?? "");
 			setDraftBio(agent.bio ?? "");
 			setDraftImage(agent.imageUrl ?? "");
+			setDraftFeeRate((tax?.feeRate as 1 | 3 | 5 | 10) ?? 5);
 		}
-	}, [agent.name, agent.ticker, agent.bio, agent.imageUrl, editMode]);
+	}, [agent.name, agent.ticker, agent.bio, agent.imageUrl, tax?.feeRate, editMode]);
 
 	async function onSaveClick() {
 		setSaving(true);
@@ -204,6 +229,7 @@ function AgentCard({
 				symbol: draftSymbol,
 				description: draftBio,
 				imageUrl: draftImage,
+				tax: { feeRate: draftFeeRate, recipient: draftRecipient },
 			});
 			setEditMode(false);
 		} finally {
@@ -276,6 +302,40 @@ function AgentCard({
 					className="w-full px-3 py-2 rounded-sm bg-black/40 border border-white/10 text-sm leading-relaxed focus:outline-none focus:border-[#22c55e]/40 resize-none"
 					disabled={saving}
 				/>
+
+				{/* tax config */}
+				<div className="border-t border-white/5 pt-4 space-y-2">
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">tax on every trade</div>
+					<div className="flex items-center gap-2">
+						<select
+							value={draftFeeRate}
+							onChange={(e) => setDraftFeeRate(Number(e.target.value) as 1 | 3 | 5 | 10)}
+							disabled={saving}
+							className="h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#22c55e]/40"
+						>
+							<option value={1}>1% fee</option>
+							<option value={3}>3% fee</option>
+							<option value={5}>5% fee</option>
+							<option value={10}>10% fee</option>
+						</select>
+						<span className="text-[11px] font-mono text-white/40">→</span>
+						<select
+							value={draftRecipient}
+							onChange={(e) => setDraftRecipient(e.target.value as "agent" | "patron")}
+							disabled={saving}
+							className="flex-1 h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#22c55e]/40"
+						>
+							<option value="agent">agent (self-fund)</option>
+							<option value="patron" disabled>
+								patron (soon)
+							</option>
+						</select>
+					</div>
+					<div className="text-[10px] font-mono text-white/35 leading-relaxed">
+						fees route to the agent's wallet. every trade extends its life. higher tax = more runway, less trading
+						volume.
+					</div>
+				</div>
 
 				<div className="flex items-center gap-3">
 					<Button
