@@ -23,7 +23,7 @@ export default function AgentHome({
 	const graduated = agent.status === "graduated";
 
 	return (
-		<div className="min-h-screen bg-black text-white">
+		<div className="min-h-screen text-white">
 			<div className="mx-auto w-full max-w-3xl px-5 md:px-8 pt-10 pb-24">
 				<div className="mb-8 flex items-center justify-between">
 					<Link
