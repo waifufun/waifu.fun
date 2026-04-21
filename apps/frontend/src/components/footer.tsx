@@ -36,24 +36,17 @@ export default function Footer() {
 					style={{ borderTop: "1px solid rgba(255, 255, 255, 0.04)" }}
 				>
 					<div className="flex flex-wrap items-center gap-4 text-xs">
+						<Link href="/agents" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
+							agents
+						</Link>
+						<Link href="/quickstart" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
+							quickstart
+						</Link>
+						<Link href="/litepaper" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
+							litepaper
+						</Link>
 						<a
-							href="https://milady.ai"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
-						>
-							milady.ai
-						</a>
-						<a
-							href="https://elizaos.ai"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
-						>
-							elizaos
-						</a>
-						<a
-							href="https://elizaos.github.io/eliza/"
+							href="https://docs.waifu.fun"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
@@ -61,7 +54,7 @@ export default function Footer() {
 							{t("footer.docs")}
 						</a>
 						<a
-							href="https://github.com/milady-ai/milady"
+							href="https://github.com/waifufun"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
@@ -69,7 +62,7 @@ export default function Footer() {
 							github
 						</a>
 						<a
-							href="https://x.com/elizaos"
+							href="https://x.com/waifudotfun"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200"
