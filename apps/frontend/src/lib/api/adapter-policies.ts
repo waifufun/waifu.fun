@@ -122,7 +122,7 @@ export function useAdapterTemplates() {
 		queryKey: ["adapter-templates"],
 		queryFn: async () => {
 			try {
-				const data = await getJson<{ templates?: Record<string, AdapterTemplate> }>(`/v2/adapters/templates`);
+				const data = await getJson<{ templates?: Record<string, AdapterTemplate> }>("/v2/adapters/templates");
 				if (data?.templates && typeof data.templates === "object") {
 					return { ...FALLBACK_TEMPLATES, ...data.templates };
 				}
