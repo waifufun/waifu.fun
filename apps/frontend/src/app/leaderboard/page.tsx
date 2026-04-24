@@ -1,5 +1,6 @@
 "use client";
 
+import LeaderboardTable from "@/components/leaderboard/leaderboard-table";
 import { useLeaderboard } from "@/lib/api/leaderboard";
 
 export default function LeaderboardPage() {
@@ -32,7 +33,7 @@ export default function LeaderboardPage() {
 					.
 				</p>
 			) : (
-				<p className="text-sm text-neutral-400">{data.length} agents</p>
+				<LeaderboardTable entries={data} />
 			)}
 		</main>
 	);
