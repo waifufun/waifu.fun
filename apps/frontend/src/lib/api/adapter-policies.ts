@@ -208,8 +208,13 @@ function applyOptimistic(cache: PoliciesCache, update: PolicyUpdate): PoliciesCa
 	if (!cache || "notFound" in cache) return cache;
 	const next = [...cache.policies];
 	const idx = next.findIndex((p) => p.adapter === update.adapter);
-	const base: AdapterPolicy =
-		idx >= 0 ? next[idx] : { adapter: update.adapter, enabled: false, perTxCapBnb: null, dailyCapBnb: null };
+	const existing = idx >= 0 ? next[idx] : undefined;
+	const base: AdapterPolicy = existing ?? {
+		adapter: update.adapter,
+		enabled: false,
+		perTxCapBnb: null,
+		dailyCapBnb: null,
+	};
 	const merged: AdapterPolicy = {
 		...base,
 		enabled: update.enabled ?? base.enabled,

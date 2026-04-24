@@ -165,67 +165,63 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 				grayedOut && "opacity-80",
 			)}
 		>
-			<button
-				type="button"
-				onClick={onToggleExpand}
-				onKeyDown={(e) => {
-					if (e.key === "Enter") {
-						e.preventDefault();
-						onToggleExpand();
-					}
-				}}
-				aria-expanded={expanded}
-				aria-controls={`policy-panel-${slug}`}
-				className={cn(
-					"w-full flex items-center gap-3 px-4 py-3 text-left",
-					"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22c55e]/40 rounded-md",
-				)}
-			>
+			<div className="flex items-center gap-3 px-3 sm:px-4 py-3">
 				<span
 					aria-hidden="true"
 					className="h-2.5 w-2.5 rounded-full shrink-0"
 					style={{ backgroundColor: state.enabled ? accent : "#3a3a3a" }}
 				/>
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2">
-						<span className={cn("text-sm font-medium", state.enabled ? "text-white" : "text-neutral-400")}>
-							{template.name}
-						</span>
-						{savedRecently ? (
-							<span
-								aria-live="polite"
-								className="text-[10px] uppercase tracking-wide text-[#22c55e] flex items-center gap-1"
-							>
-								<CheckIcon className="h-3 w-3" /> saved
+				<button
+					type="button"
+					onClick={onToggleExpand}
+					aria-expanded={expanded}
+					aria-controls={`policy-panel-${slug}`}
+					className={cn(
+						"flex-1 min-w-0 flex items-center gap-2 text-left",
+						"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22c55e]/40 rounded-sm",
+					)}
+				>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2">
+							<span className={cn("text-sm font-medium", state.enabled ? "text-white" : "text-neutral-400")}>
+								{template.name}
 							</span>
+							{savedRecently ? (
+								<span
+									aria-live="polite"
+									className="text-[10px] uppercase tracking-wide text-[#22c55e] flex items-center gap-1"
+								>
+									<CheckIcon className="h-3 w-3" /> saved
+								</span>
+							) : null}
+						</div>
+						{template.description ? (
+							<p className="text-xs text-neutral-500 mt-0.5 truncate">{template.description}</p>
 						) : null}
 					</div>
-					{template.description ? (
-						<p className="text-xs text-neutral-500 mt-0.5 truncate">{template.description}</p>
-					) : null}
-				</div>
+					<ChevronDownIcon
+						className={cn("h-4 w-4 text-neutral-500 transition-transform shrink-0", expanded && "rotate-180")}
+						aria-hidden="true"
+					/>
+				</button>
 				<Switch
 					checked={state.enabled}
 					disabled={saving}
 					onChange={handleToggleEnabled}
 					label={`${template.name} ${state.enabled ? "enabled" : "disabled"}`}
 				/>
-				<ChevronDownIcon
-					className={cn("h-4 w-4 text-neutral-500 transition-transform shrink-0", expanded && "rotate-180")}
-					aria-hidden="true"
-				/>
-			</button>
+			</div>
 
 			{expanded ? (
 				<div
 					id={`policy-panel-${slug}`}
 					className={cn(
-						"px-4 pb-4 pt-1 border-t border-autofun-background-action-highlight/20",
+						"px-3 sm:px-4 pb-4 pt-3 border-t border-autofun-background-action-highlight/20",
 						!state.enabled && "opacity-60",
 					)}
 				>
 					<p className="text-xs text-neutral-500 mb-3">{formatDefaultsLine(template)}</p>
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
 						<CapField
 							id={`per-tx-${slug}`}
 							label="Per-tx cap"
@@ -243,10 +239,10 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 					</div>
 					{error ? (
 						<p role="alert" className="mt-3 text-xs text-red-400">
-							Failed to save — retry. <span className="text-red-500/70">{error}</span>
+							Failed to save, retry. <span className="text-red-500/70">{error}</span>
 						</p>
 					) : null}
-					<div className="mt-3 flex items-center justify-end gap-2">
+					<div className="mt-3 flex items-center justify-end gap-2 flex-wrap">
 						<button
 							type="button"
 							onClick={handleSaveCaps}
@@ -341,17 +337,20 @@ export default function PolicyEditor({ agentId }: Props) {
 	const rows = useMemo(() => {
 		const templateMap = templates ?? FALLBACK_TEMPLATES;
 		const slugs = new Set<string>([...ADAPTER_ORDER, ...Object.keys(templateMap)]);
-		return [...slugs]
-			.filter((slug) => templateMap[slug])
-			.sort((a, b) => {
-				const ai = ADAPTER_ORDER.indexOf(a);
-				const bi = ADAPTER_ORDER.indexOf(b);
-				if (ai === -1 && bi === -1) return a.localeCompare(b);
-				if (ai === -1) return 1;
-				if (bi === -1) return -1;
-				return ai - bi;
-			})
-			.map((slug) => ({ slug, template: templateMap[slug] }));
+		const out: { slug: string; template: AdapterTemplate }[] = [];
+		const ordered = [...slugs].sort((a, b) => {
+			const ai = ADAPTER_ORDER.indexOf(a);
+			const bi = ADAPTER_ORDER.indexOf(b);
+			if (ai === -1 && bi === -1) return a.localeCompare(b);
+			if (ai === -1) return 1;
+			if (bi === -1) return -1;
+			return ai - bi;
+		});
+		for (const slug of ordered) {
+			const template = templateMap[slug];
+			if (template) out.push({ slug, template });
+		}
+		return out;
 	}, [templates]);
 
 	return (
