@@ -1,0 +1,55 @@
+"use client";
+
+import { use } from "react";
+import PatronHeader from "@/components/patron/patron-header";
+import AgentHero from "@/components/patron/agent-hero";
+import TreasuryCard from "@/components/patron/treasury-card";
+import ActivityFeed from "@/components/patron/activity-feed";
+import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
+
+type Params = { agentId: string };
+
+export default function PatronAgentDetailPage({
+	params,
+}: {
+	params: Promise<Params>;
+}) {
+	const { agentId } = use(params);
+	const { data: agent, isLoading, error } = useAgentDetail(agentId);
+	const {
+		data: events,
+		isLoading: eventsLoading,
+		error: eventsError,
+	} = useAgentEvents(agentId);
+
+	return (
+		<main className="py-6">
+			<PatronHeader
+				title={agent?.name ?? "Agent"}
+				subtitle={agent ? `Manage ${agent.ticker} and review recent activity.` : undefined}
+				backHref="/patron"
+			/>
+
+			{error ? (
+				<div
+					role="alert"
+					className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300"
+				>
+					Couldn't load agent. {(error as Error).message}
+				</div>
+			) : (
+				<div className="space-y-6">
+					<AgentHero agent={agent} isLoading={isLoading} />
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+						<TreasuryCard agent={agent} isLoading={isLoading} />
+						<ActivityFeed
+							events={events}
+							isLoading={eventsLoading}
+							error={eventsError as Error | null}
+						/>
+					</div>
+				</div>
+			)}
+		</main>
+	);
+}
