@@ -217,15 +217,14 @@ export default function Hero() {
 					</a>
 					<span>×</span>
 					<a
-						href="https://elizaos.ai"
+						href="https://pancakeswap.finance"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="transition-colors duration-200 hover:text-[#71717a]"
 					>
-						ElizaOS
+						pancakeswap
 					</a>
 					<span>×</span>
-					{/* TODO(wave-1d-wave-1a-merge): partner rail - wave-1a may also touch this */}
 					<a
 						href="https://steward.sh"
 						target="_blank"

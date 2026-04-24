@@ -44,7 +44,7 @@ export default function StaticBackground() {
 					WebkitMaskImage: "radial-gradient(ellipse at 50% 40%, black 0%, black 35%, transparent 80%)",
 				}}
 			>
-				<GlitchBg glitchColors={["#0a1a12", "#14532d", "#22c55e"]} glitchSpeed={120} smooth />
+				<GlitchBg glitchColors={["#0a1a12", "#14532d", "#00ff87"]} glitchSpeed={120} smooth />
 			</div>
 
 			{/* layer 2: hero image echo for grain + warmth */}

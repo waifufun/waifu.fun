@@ -72,7 +72,7 @@ function ConnectedXPill({
 				/>
 			</span>
 			<span className="flex items-center gap-1.5">
-				<span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] shadow-[0_0_6px_#22c55e]" />
+				<span className="h-1.5 w-1.5 rounded-full bg-[#00ff87] shadow-[0_0_6px_#00ff87]" />
 				<span className="tracking-tight">@{user.xHandle}</span>
 			</span>
 		</a>

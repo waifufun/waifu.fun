@@ -159,9 +159,9 @@ export default function ClaimFlow({
 			{step === "launching" && <PendingCard label="launching..." sub="broadcasting to bsc. about 30 seconds." />}
 
 			{step === "done" && (
-				<div className="border border-[#22c55e]/30 bg-[#22c55e]/5 rounded-sm p-6 text-center">
-					<Check className="w-6 h-6 text-[#22c55e] mx-auto mb-3" strokeWidth={1.5} />
-					<div className="text-sm text-[#22c55e]">live. taking you to the agent.</div>
+				<div className="border border-[#00ff87]/30 bg-[#00ff87]/5 rounded-sm p-6 text-center">
+					<Check className="w-6 h-6 text-[#00ff87] mx-auto mb-3" strokeWidth={1.5} />
+					<div className="text-sm text-[#00ff87]">live. taking you to the agent.</div>
 				</div>
 			)}
 
@@ -269,9 +269,9 @@ function AgentCard({
 
 	if (editMode) {
 		return (
-			<div className="border border-[#22c55e]/30 bg-[#08080a] rounded-sm p-5 md:p-6 space-y-4">
+			<div className="border border-[#00ff87]/30 bg-[#08080a] rounded-sm p-5 md:p-6 space-y-4">
 				<div className="flex items-center justify-between">
-					<div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#22c55e]">editing</div>
+					<div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#00ff87]">editing</div>
 					<button
 						type="button"
 						onClick={() => setEditMode(false)}
@@ -296,7 +296,7 @@ function AgentCard({
 							value={draftImage}
 							onChange={(e) => setDraftImage(e.target.value)}
 							placeholder="https://example.com/image.png"
-							className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+							className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#00ff87]/40"
 							disabled={saving}
 						/>
 					</div>
@@ -308,7 +308,7 @@ function AgentCard({
 						value={draftName}
 						onChange={(e) => setDraftName(e.target.value)}
 						placeholder="name"
-						className="flex-1 h-10 px-3 rounded-sm bg-black/40 border border-white/10 text-base focus:outline-none focus:border-[#22c55e]/40"
+						className="flex-1 h-10 px-3 rounded-sm bg-black/40 border border-white/10 text-base focus:outline-none focus:border-[#00ff87]/40"
 						maxLength={80}
 						disabled={saving}
 					/>
@@ -317,7 +317,7 @@ function AgentCard({
 						value={draftSymbol}
 						onChange={(e) => setDraftSymbol(e.target.value.toUpperCase())}
 						placeholder="TICKER"
-						className="w-28 h-10 px-3 rounded-sm bg-black/40 border border-[#22c55e]/30 text-sm font-mono tracking-wider text-[#22c55e] focus:outline-none focus:border-[#22c55e]"
+						className="w-28 h-10 px-3 rounded-sm bg-black/40 border border-[#00ff87]/30 text-sm font-mono tracking-wider text-[#00ff87] focus:outline-none focus:border-[#00ff87]"
 						maxLength={10}
 						disabled={saving}
 					/>
@@ -329,7 +329,7 @@ function AgentCard({
 					placeholder="bio"
 					rows={3}
 					maxLength={500}
-					className="w-full px-3 py-2 rounded-sm bg-black/40 border border-white/10 text-sm leading-relaxed focus:outline-none focus:border-[#22c55e]/40 resize-none"
+					className="w-full px-3 py-2 rounded-sm bg-black/40 border border-white/10 text-sm leading-relaxed focus:outline-none focus:border-[#00ff87]/40 resize-none"
 					disabled={saving}
 				/>
 
@@ -341,7 +341,7 @@ function AgentCard({
 						value={draftWebUrl}
 						onChange={(e) => setDraftWebUrl(e.target.value)}
 						placeholder="website (https://...)"
-						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#00ff87]/40"
 						disabled={saving}
 					/>
 					<input
@@ -349,7 +349,7 @@ function AgentCard({
 						value={draftTwitterUrl}
 						onChange={(e) => setDraftTwitterUrl(e.target.value)}
 						placeholder="x / twitter url"
-						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#00ff87]/40"
 						disabled={saving}
 					/>
 					<input
@@ -357,7 +357,7 @@ function AgentCard({
 						value={draftTelegramUrl}
 						onChange={(e) => setDraftTelegramUrl(e.target.value)}
 						placeholder="telegram url (optional)"
-						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#22c55e]/40"
+						className="w-full h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-xs font-mono focus:outline-none focus:border-[#00ff87]/40"
 						disabled={saving}
 					/>
 				</div>
@@ -370,7 +370,7 @@ function AgentCard({
 							value={draftFeeRate}
 							onChange={(e) => setDraftFeeRate(Number(e.target.value) as 1 | 3 | 5 | 10)}
 							disabled={saving}
-							className="h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#22c55e]/40"
+							className="h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#00ff87]/40"
 						>
 							<option value={1}>1% fee</option>
 							<option value={3}>3% fee</option>
@@ -382,7 +382,7 @@ function AgentCard({
 							value={draftRecipient}
 							onChange={(e) => setDraftRecipient(e.target.value as "agent" | "patron")}
 							disabled={saving}
-							className="flex-1 h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#22c55e]/40"
+							className="flex-1 h-9 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#00ff87]/40"
 						>
 							<option value="agent">agent (self-fund)</option>
 							<option value="patron" disabled>
@@ -400,7 +400,7 @@ function AgentCard({
 					<Button
 						onClick={onSaveClick}
 						disabled={saving}
-						className="flex-1 bg-[#22c55e] text-black hover:bg-[#22c55e]/90 rounded-sm"
+						className="flex-1 bg-[#00ff87] text-black hover:bg-[#00ff87]/90 rounded-sm"
 					>
 						{saving ? (
 							<>
@@ -436,7 +436,7 @@ function AgentCard({
 				<button
 					type="button"
 					onClick={() => setEditMode(true)}
-					className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em] text-white/50 hover:text-[#22c55e] hover:bg-[#22c55e]/5 transition-colors"
+					className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em] text-white/50 hover:text-[#00ff87] hover:bg-[#00ff87]/5 transition-colors"
 					aria-label="edit agent"
 				>
 					<Pencil className="w-3 h-3" strokeWidth={1.5} />
@@ -454,7 +454,7 @@ function AgentCard({
 					<div className="flex items-center gap-2 flex-wrap">
 						<span className="text-lg md:text-xl tracking-tight truncate">{agent.name}</span>
 						{agent.ticker && (
-							<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono tracking-wider text-[#22c55e] border border-[#22c55e]/30 bg-[#22c55e]/5">
+							<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono tracking-wider text-[#00ff87] border border-[#00ff87]/30 bg-[#00ff87]/5">
 								${agent.ticker}
 							</span>
 						)}
@@ -514,7 +514,7 @@ function NeedsFundSection({
 		return (
 			<div className="border border-white/10 bg-[#08080a] rounded-sm p-6 text-center">
 				<div className="text-sm text-white/60 mb-4">agent wallet unavailable. launching without funding.</div>
-				<Button onClick={onSkip} className="bg-[#22c55e] text-black hover:bg-[#22c55e]/90 rounded-sm">
+				<Button onClick={onSkip} className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90 rounded-sm">
 					launch now
 				</Button>
 			</div>
@@ -573,7 +573,7 @@ function NeedsFundSection({
 					step="0.01"
 					value={fundAmountBnb}
 					onChange={(e) => setFundAmountBnb(e.target.value)}
-					className="flex-1 h-10 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#22c55e]/40"
+					className="flex-1 h-10 px-3 rounded-sm bg-black/40 border border-white/10 text-sm font-mono focus:outline-none focus:border-[#00ff87]/40"
 					placeholder="0.01"
 					disabled={sending}
 				/>
@@ -584,7 +584,7 @@ function NeedsFundSection({
 				<Button
 					onClick={onFund}
 					disabled={sending}
-					className="flex-1 bg-[#22c55e] text-black hover:bg-[#22c55e]/90 rounded-sm"
+					className="flex-1 bg-[#00ff87] text-black hover:bg-[#00ff87]/90 rounded-sm"
 				>
 					{sending ? (
 						<>
@@ -620,7 +620,7 @@ function NeedsFundSection({
 function PendingCard({ label, sub }: { label: string; sub?: string }) {
 	return (
 		<div className="border border-white/10 bg-[#08080a] rounded-sm p-8 text-center">
-			<Loader2 className="w-6 h-6 text-[#22c55e] animate-spin mx-auto mb-3" strokeWidth={1.5} />
+			<Loader2 className="w-6 h-6 text-[#00ff87] animate-spin mx-auto mb-3" strokeWidth={1.5} />
 			<div className="text-sm text-white/80">{label}</div>
 			{sub && <div className="text-xs text-white/40 mt-2">{sub}</div>}
 		</div>

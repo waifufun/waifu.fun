@@ -349,7 +349,7 @@ export const executeSwap = async (
 		const pancakeUrl = `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}&chain=bsc`;
 		window.open(pancakeUrl, "_blank");
 
-		// Return a fake transaction hash to indicate redirect
+		// Sentinel value: the caller checks for this to distinguish a DEX redirect from a real swap
 		return "redirect_to_pancakeswap";
 	}
 	// For bonding curve tokens, show message

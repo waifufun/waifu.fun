@@ -43,9 +43,9 @@ export default function ActivityMarquee({ trades }: { trades: TradeItem[] }) {
 				{items.map((t, i) => (
 					<div key={`${t.agentTicker}-${t.timestamp}-${i}`} className="flex items-center gap-2 text-[11px] font-mono">
 						<span
-							className={cn("inline-flex items-center gap-1.5", t.type === "buy" ? "text-[#22c55e]" : "text-white/60")}
+							className={cn("inline-flex items-center gap-1.5", t.type === "buy" ? "text-[#00ff87]" : "text-white/60")}
 						>
-							<span className={cn("w-1 h-1 rounded-full", t.type === "buy" ? "bg-[#22c55e]" : "bg-white/40")} />
+							<span className={cn("w-1 h-1 rounded-full", t.type === "buy" ? "bg-[#00ff87]" : "bg-white/40")} />
 							<span className="uppercase tracking-[0.18em]">${t.agentTicker || t.agentName.slice(0, 4)}</span>
 						</span>
 						<span className="text-white/50">

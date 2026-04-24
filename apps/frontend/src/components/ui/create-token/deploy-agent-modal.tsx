@@ -54,11 +54,11 @@ export function DeployAgentModal({ open, onOpenChange }: DeployAgentModalProps) 
 						</button>
 
 						<div className="mb-5 flex items-center gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#22c55e]/30 bg-[#22c55e]/5">
-								<Rocket className="h-5 w-5 text-[#22c55e]" />
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/5">
+								<Rocket className="h-5 w-5 text-[#00ff87]" />
 							</div>
 							<div>
-								<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">
+								<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
 									waifu.fun / agent runtime
 								</div>
 								<div className="text-lg tracking-tight text-white">deploy an agent</div>

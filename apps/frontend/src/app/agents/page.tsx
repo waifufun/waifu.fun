@@ -52,7 +52,7 @@ export default async function AgentsPage({
 			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-10 pb-24">
 				{/* header */}
 				<div className="mb-8">
-					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#22c55e] mb-3">
+					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-3">
 						waifu.fun / agents
 					</div>
 					<div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">

@@ -38,7 +38,7 @@ export function StewardLoginWidget({ open, onOpenChange }: StewardLoginWidgetPro
 
 				{/* Branding header */}
 				<div className="flex flex-col items-center pt-8 pb-2 px-6">
-					<img src="/icon-512.png" alt="waifu.fun" className="size-12 mb-3 rounded-xl" />
+					<img src="/icon-512.png" alt="waifu.fun" className="size-12 mb-3 rounded-sm" />
 					<h2 className="text-[1.125rem] font-semibold text-white tracking-tight">Welcome to waifu.fun</h2>
 					<p className="text-sm text-[#71717a] mt-1">Sign in to create and manage your agents</p>
 				</div>

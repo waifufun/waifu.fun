@@ -58,7 +58,7 @@ export default function FilterBar({
 							onClick={() => updateParam("status", tab.key === "all" ? null : tab.key)}
 							className={cn(
 								"h-7 px-3 text-[11px] font-mono uppercase tracking-[0.18em] rounded-sm transition-colors",
-								active ? "bg-[#22c55e] text-black" : "text-white/50 hover:text-white",
+								active ? "bg-[#00ff87] text-black" : "text-white/50 hover:text-white",
 							)}
 						>
 							{tab.label}
@@ -129,7 +129,7 @@ function SortDropdown({
 								className={cn(
 									"w-full flex items-center justify-between gap-3 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.18em]",
 									"transition-colors",
-									active ? "text-[#22c55e]" : "text-white/60 hover:text-white hover:bg-white/[0.03]",
+									active ? "text-[#00ff87]" : "text-white/60 hover:text-white hover:bg-white/[0.03]",
 								)}
 							>
 								<span>{s.label}</span>

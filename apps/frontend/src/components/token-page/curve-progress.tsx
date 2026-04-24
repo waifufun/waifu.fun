@@ -60,7 +60,7 @@ export default function CurveProgress({ waifuBonded, curveLimit, isGraduated, pa
 				<motion.div
 					className="absolute inset-y-0 left-0 rounded-full"
 					style={{
-						background: isGraduated ? "#00ff87" : "linear-gradient(90deg, #00ff87, #22c55e)",
+						background: isGraduated ? "#00ff87" : "linear-gradient(90deg, #00ff87, #00ff87)",
 					}}
 					initial={{ width: "0%" }}
 					animate={inView ? { width: `${progress}%` } : {}}
