@@ -1,0 +1,38 @@
+"use client";
+
+import useAddress from "@/hooks/use-address";
+import PatronHeader from "@/components/patron/patron-header";
+import EmptyState from "@/components/patron/empty-state";
+import AggregateStrip from "@/components/patron/aggregate-strip";
+import AgentGrid from "@/components/patron/agent-grid";
+import { usePatronAgents } from "@/lib/api/patron";
+
+export default function PatronPage() {
+	const address = useAddress();
+	const { data: agents, isLoading, error } = usePatronAgents(address);
+
+	return (
+		<main className="py-6">
+			<PatronHeader title="Your Agents" subtitle="Overview of the agents you've launched and their treasury state." />
+
+			{!address ? (
+				<EmptyState
+					title="Connect a wallet"
+					body="Sign in with your Solana wallet to see the agents you've launched and their treasury state."
+					ctaHref={null}
+				/>
+			) : (
+				<>
+					{agents && agents.length > 0 ? <AggregateStrip agents={agents} /> : null}
+					<AgentGrid agents={agents} isLoading={isLoading} error={error as Error | null} />
+					{!isLoading && !error && (!agents || agents.length === 0) ? (
+						<EmptyState
+							title="No agents yet"
+							body="You haven't launched an agent with this wallet. Start one and it'll show up here."
+						/>
+					) : null}
+				</>
+			)}
+		</main>
+	);
+}
