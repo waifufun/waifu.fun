@@ -5,6 +5,8 @@ import PatronHeader from "@/components/patron/patron-header";
 import AgentHero from "@/components/patron/agent-hero";
 import TreasuryCard from "@/components/patron/treasury-card";
 import ActivityFeed from "@/components/patron/activity-feed";
+import AdapterPermissions from "@/components/patron/adapter-permissions";
+import EmergencyControls from "@/components/patron/emergency-controls";
 import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
 
 type Params = { agentId: string };
@@ -48,6 +50,8 @@ export default function PatronAgentDetailPage({
 							error={eventsError as Error | null}
 						/>
 					</div>
+					<AdapterPermissions agent={agent} isLoading={isLoading} />
+					<EmergencyControls />
 				</div>
 			)}
 		</main>

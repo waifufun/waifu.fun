@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 
 type Props = {
 	title: string;
-	subtitle?: string;
-	backHref?: string;
+	subtitle?: string | undefined;
+	backHref?: string | undefined;
 };
 
 export default function PatronHeader({ title, subtitle, backHref }: Props) {
