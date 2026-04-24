@@ -1,15 +1,18 @@
 import { cn, timeAgo } from "@/lib/utils";
 import { ArrowLeft, Brain, ExternalLink, Fingerprint } from "lucide-react";
 import Link from "next/link";
+import ActivityFeed from "./activity-feed";
+import AdapterPermissions from "./adapter-permissions";
 import AddressRow from "./address-row";
-import AgentVoice from "./agent-voice";
 import CurveProgress from "./curve-progress";
 import DexChart from "./dex-chart";
 import PatronPanel from "./patron-panel";
 import RecentActivity from "./recent-activity";
 import SwapStub from "./swap-stub";
 import SystemPromptReveal from "./system-prompt-reveal";
+import TreasuryCard from "./treasury-card";
 import type { AgentData, AgentTrade } from "./types";
+import XEmbed from "./x-embed";
 
 const EIP8004_CONTRACT = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
@@ -22,9 +25,12 @@ export default function AgentHome({
 }) {
 	const graduated = agent.status === "graduated";
 
+	const agentId = agent.tokenAddress;
+	const treasuryAddress = agent.treasuryAddress || agent.walletAddress || agent.tokenAddress;
+
 	return (
 		<div className="min-h-screen text-white">
-			<div className="mx-auto w-full max-w-3xl px-5 md:px-8 pt-10 pb-24">
+			<div className="mx-auto w-full max-w-5xl px-5 md:px-8 pt-10 pb-24">
 				<div className="mb-8 flex items-center justify-between">
 					<Link
 						href="/"
@@ -44,7 +50,31 @@ export default function AgentHome({
 					<PatronPanel agent={{ tokenAddress: agent.tokenAddress, name: agent.name, ticker: agent.ticker }} />
 				</Section>
 
-				{/* 3. addresses */}
+				{/* 3. v2 surface — treasury + adapters (left) · x + activity (right) */}
+				<section className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
+					<div className="flex flex-col gap-5 min-w-0">
+						<SubSection title="treasury">
+							<TreasuryCard treasuryAddress={treasuryAddress} agentId={agentId} ticker={agent.ticker} />
+						</SubSection>
+						<SubSection title="permissions">
+							<AdapterPermissions agentId={agentId} />
+						</SubSection>
+					</div>
+					<div className="flex flex-col gap-5 min-w-0">
+						<SubSection title="voice">
+							<XEmbed
+								agentId={agentId}
+								agentName={agent.name}
+								{...(agent.twitterHandle ? { fallbackHandle: agent.twitterHandle } : {})}
+							/>
+						</SubSection>
+						<SubSection title="activity">
+							<ActivityFeed agentId={agentId} />
+						</SubSection>
+					</div>
+				</section>
+
+				{/* 4. addresses */}
 				<Section title="addresses">
 					<div className="border border-white/10 bg-[#08080a] rounded-sm divide-y divide-white/10">
 						{agent.walletAddress && <AddressRow label="wallet" address={agent.walletAddress} />}
@@ -92,17 +122,12 @@ export default function AgentHome({
 					<SwapStub agent={agent} />
 				</Section>
 
-				{/* 6. recent activity */}
+				{/* 6. recent trades */}
 				<Section title="last 20 trades">
 					<RecentActivity trades={trades} />
 				</Section>
 
-				{/* 7. agent output / work */}
-				<Section title="output">
-					<AgentVoice {...(agent.twitterHandle ? { twitterHandle: agent.twitterHandle } : {})} />
-				</Section>
-
-				{/* 8. system prompt */}
+				{/* 7. system prompt */}
 				{agent.systemPrompt && (
 					<Section title="brain">
 						<SystemPromptReveal systemPrompt={agent.systemPrompt} />
@@ -125,6 +150,15 @@ function Section({
 			<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30 mb-3">{title}</div>
 			{children}
 		</section>
+	);
+}
+
+function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<div>
+			<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/30 mb-3">{title}</div>
+			{children}
+		</div>
 	);
 }
 

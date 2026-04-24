@@ -32,3 +32,22 @@ export interface AgentTrade {
 	amount: string | number;
 	timestamp: number;
 }
+
+/**
+ * AgentEvent mirrors the backend event feed (W1.7). Until the shared types
+ * package ships a single source of truth we duplicate here; see README.md in
+ * this directory for the graceful-degrade contract.
+ */
+export interface AgentEvent {
+	id: string;
+	agentId: string;
+	eventType: string; // e.g. "token.purchased", "tax.received", "x.posted"
+	data: Record<string, unknown>;
+	txHash?: string;
+	createdAt: number; // unix ms
+}
+
+export interface AgentEventPage {
+	events: AgentEvent[];
+	nextCursor: string | null;
+}
