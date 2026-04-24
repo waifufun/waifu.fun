@@ -1,31 +1,12 @@
 "use client";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import mockTokens from "@/data/mock-tokens.json";
-import { abbreviateNumber, shortenAddress } from "@/lib/utils";
-import type { IToken } from "@waifufun/types";
 import { Command, Search } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CopyButton } from "./copy-button";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 
-const PLACEHOLDER = "Search waifus by name, symbol, or contract...";
-
-const TOKENS = mockTokens as IToken[];
-
-function searchTokens(query: string, limit: number): IToken[] {
-	const q = query.trim().toLowerCase();
-	if (!q) return [];
-	return TOKENS.filter(
-		(t) =>
-			t.name?.toLowerCase().includes(q) ||
-			t.ticker?.toLowerCase().includes(q) ||
-			t.contractAddress?.toLowerCase().includes(q),
-	).slice(0, limit);
-}
+const PLACEHOLDER = "search agents by name, ticker, or contract...";
 
 export default function SearchMenu() {
 	const [open, setOpen] = useState(false);
@@ -55,9 +36,6 @@ export default function SearchMenu() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
-
-	const results = useMemo(() => (open && value.trim().length > 0 ? searchTokens(value, 10) : []), [open, value]);
-	const showResults = value.trim().length > 0;
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -108,7 +86,8 @@ export default function SearchMenu() {
 						placeholder={PLACEHOLDER}
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
-						className="flex-1 h-10 rounded-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
+						disabled
+						className="flex-1 h-10 rounded-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0 opacity-60"
 						style={{
 							background: "#0e0e12",
 							border: "1px solid rgba(255, 255, 255, 0.06)",
@@ -117,7 +96,7 @@ export default function SearchMenu() {
 						autoComplete="off"
 					/>
 					<span
-						className="hidden sm:inline-flex items-center gap-0.5 rounded px-1.5 py-1 text-xs font-medium"
+						className="hidden sm:inline-flex items-center gap-0.5 rounded-sm px-1.5 py-1 text-xs font-medium"
 						style={{
 							background: "rgba(255, 255, 255, 0.06)",
 							color: "#52525b",
@@ -127,72 +106,22 @@ export default function SearchMenu() {
 					</span>
 				</div>
 
-				{/* Body */}
-				<div className="min-h-[280px] max-h-[60vh] overflow-y-auto p-4">
-					{!showResults && (
-						<p className="text-center text-sm py-12" style={{ color: "#52525b" }}>
-							Start typing to search waifus...
-						</p>
-					)}
-					{showResults && results.length === 0 && (
-						<p className="text-center text-sm py-12" style={{ color: "#52525b" }}>
-							No results found.
-						</p>
-					)}
-					{showResults && results.length > 0 && (
-						<div className="flex flex-col gap-1">
-							{results.map((token) => (
-								<Link
-									href={`/token/${token.chain}/${token.chainId}/${token.contractAddress}`}
-									key={token.contractAddress}
-									onClick={() => setOpen(false)}
-									className="rounded-sm p-3 transition-colors flex items-center gap-4 justify-between"
-									style={{ background: "transparent" }}
-									onMouseEnter={(e) => {
-										e.currentTarget.style.background = "#18181c";
-									}}
-									onMouseLeave={(e) => {
-										e.currentTarget.style.background = "transparent";
-									}}
-								>
-									<div className="flex items-center gap-3 min-w-0">
-										<Image
-											src={token.image}
-											width={48}
-											height={48}
-											unoptimized
-											alt=""
-											className="size-12 aspect-square rounded-sm object-cover shrink-0"
-										/>
-										<div className="flex flex-col gap-0.5 min-w-0">
-											<div className="flex items-center gap-2 flex-wrap">
-												<span className="text-sm font-medium truncate" style={{ color: "#e4e4e7" }}>
-													{token.name}
-												</span>
-												<span className="text-sm font-medium truncate" style={{ color: "#71717a" }}>
-													{token.ticker}
-												</span>
-											</div>
-											<div className="flex items-center gap-2">
-												<CopyButton textToCopy={token.contractAddress} />
-												<span className="text-xs font-medium truncate" style={{ color: "#52525b" }}>
-													{shortenAddress(token.contractAddress)}
-												</span>
-											</div>
-										</div>
-									</div>
-									<div className="flex flex-col items-end shrink-0">
-										<span className="text-xs font-medium" style={{ color: "#52525b" }}>
-											Mcap
-										</span>
-										<span className="text-sm font-medium" style={{ color: "#e4e4e7" }}>
-											{abbreviateNumber(token?.marketcap)}
-										</span>
-									</div>
-								</Link>
-							))}
-						</div>
-					)}
+				{/* Body: honest "coming soon" */}
+				<div className="min-h-[240px] px-6 py-10 flex flex-col items-center justify-center text-center gap-3">
+					<span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm border border-[rgba(0,255,135,0.18)] bg-[rgba(0,255,135,0.04)] font-mono text-[10px] uppercase tracking-[0.24em] text-[#00ff87]">
+						<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
+						coming soon
+					</span>
+					<p className="text-sm text-[#a1a1aa] max-w-sm leading-relaxed">
+						agent search is wiring up. for now, browse the directory.
+					</p>
+					<a
+						href="/agents"
+						className="mt-2 inline-flex items-center gap-2 h-9 px-4 rounded-sm text-[11px] font-mono uppercase tracking-[0.18em] bg-[#00ff87] text-[#08080a] hover:bg-[#00ff87]/90 transition-colors"
+						onClick={() => setOpen(false)}
+					>
+						browse agents
+					</a>
 				</div>
 			</PopoverContent>
 		</Popover>
