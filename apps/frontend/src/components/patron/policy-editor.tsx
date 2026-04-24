@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -117,7 +117,14 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 		setState(rowFromPolicy(policy, template));
 	}
 
-	const savedRecently = savedAt != null && Date.now() - savedAt < 2000;
+	const savedRecently = savedAt != null;
+
+	// Auto-clear the "saved" flash ~2s after the last success.
+	useEffect(() => {
+		if (savedAt == null) return;
+		const t = window.setTimeout(() => setSavedAt(null), 2000);
+		return () => window.clearTimeout(t);
+	}, [savedAt]);
 
 	async function commit(next: RowState) {
 		const perTx = parseCap(next.perTxCapBnb);
@@ -129,8 +136,6 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 		try {
 			await onSave({ enabled: next.enabled, perTxCapBnb: perTx, dailyCapBnb: daily });
 			setSavedAt(Date.now());
-			// Flash the saved checkmark for ~2s
-			window.setTimeout(() => setSavedAt((t) => (t && Date.now() - t >= 1900 ? null : t)), 2100);
 		} catch (e) {
 			setState(prev);
 			setError((e as Error).message || "Failed to save");

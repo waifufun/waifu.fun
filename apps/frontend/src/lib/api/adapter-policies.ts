@@ -202,13 +202,34 @@ export type PolicyUpdate = {
 	dailyCapBnb?: number | null;
 };
 
+type PoliciesCache = { policies: AdapterPolicy[] } | { notFound: true } | undefined;
+
+function applyOptimistic(cache: PoliciesCache, update: PolicyUpdate): PoliciesCache {
+	if (!cache || "notFound" in cache) return cache;
+	const next = [...cache.policies];
+	const idx = next.findIndex((p) => p.adapter === update.adapter);
+	const base: AdapterPolicy =
+		idx >= 0 ? next[idx] : { adapter: update.adapter, enabled: false, perTxCapBnb: null, dailyCapBnb: null };
+	const merged: AdapterPolicy = {
+		...base,
+		enabled: update.enabled ?? base.enabled,
+		perTxCapBnb: update.perTxCapBnb !== undefined ? update.perTxCapBnb : base.perTxCapBnb,
+		dailyCapBnb: update.dailyCapBnb !== undefined ? update.dailyCapBnb : base.dailyCapBnb,
+	};
+	if (idx >= 0) next[idx] = merged;
+	else next.push(merged);
+	return { policies: next };
+}
+
 /**
- * Upserts a single adapter policy. Returns the mutation result so callers
- * can orchestrate optimistic updates + rollback + success flashes.
+ * Upserts a single adapter policy. Applies an optimistic cache update on
+ * mutate, rolls back on error, and refetches on settle to reconcile with
+ * whatever the backend decided to persist.
  */
 export function useUpdateAdapterPolicy(agentId?: string) {
 	const qc = useQueryClient();
-	return useMutation<AdapterPolicy, Error, PolicyUpdate, { previous?: AdapterPolicy[] }>({
+	const queryKey = ["adapter-policies", agentId ?? null] as const;
+	return useMutation<AdapterPolicy, Error, PolicyUpdate, { previous: PoliciesCache }>({
 		mutationFn: async (update) => {
 			if (!agentId) throw new Error("missing agentId");
 			const res = await putJson<{ policy?: AdapterPolicy } | AdapterPolicy>(
@@ -221,7 +242,7 @@ export function useUpdateAdapterPolicy(agentId?: string) {
 			if (res && typeof res === "object" && "adapter" in (res as AdapterPolicy)) {
 				return res as AdapterPolicy;
 			}
-			// Server gave us something weird but 200'd; synthesize from update.
+			// Server 200'd with an unexpected shape; synthesize from the update.
 			return {
 				adapter: update.adapter,
 				enabled: update.enabled ?? false,
@@ -229,8 +250,19 @@ export function useUpdateAdapterPolicy(agentId?: string) {
 				dailyCapBnb: update.dailyCapBnb ?? null,
 			};
 		},
-		onSuccess: () => {
-			if (agentId) qc.invalidateQueries({ queryKey: ["adapter-policies", agentId] });
+		onMutate: async (update) => {
+			if (!agentId) return { previous: undefined };
+			await qc.cancelQueries({ queryKey });
+			const previous = qc.getQueryData<PoliciesCache>(queryKey);
+			qc.setQueryData<PoliciesCache>(queryKey, applyOptimistic(previous, update));
+			return { previous };
+		},
+		onError: (_err, _update, ctx) => {
+			if (!agentId || !ctx) return;
+			qc.setQueryData<PoliciesCache>(queryKey, ctx.previous);
+		},
+		onSettled: () => {
+			if (agentId) qc.invalidateQueries({ queryKey });
 		},
 	});
 }
