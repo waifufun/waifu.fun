@@ -33,7 +33,7 @@ export default function AgentVoice({
 					href={url}
 					target="_blank"
 					rel="noreferrer"
-					className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/50 hover:text-[#22c55e] transition-colors"
+					className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/50 hover:text-[#00ff87] transition-colors"
 				>
 					open
 					<ExternalLink className="w-3 h-3" />

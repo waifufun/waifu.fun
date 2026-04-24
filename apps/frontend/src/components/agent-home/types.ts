@@ -19,8 +19,8 @@ export interface AgentData {
 	fourMemeUrl?: string;
 	// runtime metadata
 	eip8004TokenId?: string | number;
-	framework?: string; // e.g. "ElizaOS"
-	model?: string; // e.g. "Cloud"
+	framework?: string; // agent runtime label, if the backend attaches one
+	model?: string; // inference model label, if the backend attaches one
 	lastActionAt?: number; // unix ms of last autonomous output (trade, call, post, etc)
 	lastActionType?: "trade" | "call" | "post" | "ship" | "decide" | string;
 }

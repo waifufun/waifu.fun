@@ -24,7 +24,7 @@ export default function NotFound() {
 						<Link href="/">
 							<button
 								type="button"
-								className="px-6 py-3 bg-[#00ff87] hover:bg-[#22c55e] text-[#08080a] font-semibold rounded-sm transition-colors"
+								className="px-6 py-3 bg-[#00ff87] hover:bg-[#00ff87] text-[#08080a] font-semibold rounded-sm transition-colors"
 							>
 								Back to Trading
 							</button>

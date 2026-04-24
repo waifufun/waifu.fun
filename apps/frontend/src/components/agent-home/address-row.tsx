@@ -39,7 +39,7 @@ export default function AddressRow({
 					className={cn(
 						"inline-flex items-center justify-center w-7 h-7 rounded-sm border transition-colors shrink-0",
 						copied
-							? "border-[#22c55e]/60 text-[#22c55e]"
+							? "border-[#00ff87]/60 text-[#00ff87]"
 							: "border-white/10 text-white/30 group-hover:border-white/25 group-hover:text-white/70",
 					)}
 				>

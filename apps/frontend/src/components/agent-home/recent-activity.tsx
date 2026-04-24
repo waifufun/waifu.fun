@@ -28,7 +28,7 @@ export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
 						className={cn(
 							"inline-flex items-center justify-center h-5 px-1.5 rounded-sm text-[9px] uppercase tracking-[0.18em] shrink-0 w-10",
 							trade.type === "buy"
-								? "bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30"
+								? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/30"
 								: "bg-red-500/10 text-red-400 border border-red-500/30",
 						)}
 					>

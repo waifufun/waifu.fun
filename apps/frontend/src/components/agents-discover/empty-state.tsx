@@ -21,7 +21,7 @@ export default function EmptyState({
 			<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/40 mt-2">{subtitle}</div>
 			<Link
 				href={ctaHref}
-				className="mt-6 inline-flex items-center gap-2 h-10 px-5 rounded-sm text-xs uppercase tracking-[0.18em] font-mono bg-[#22c55e] text-black hover:bg-[#22c55e]/90 transition-colors"
+				className="mt-6 inline-flex items-center gap-2 h-10 px-5 rounded-sm text-xs uppercase tracking-[0.18em] font-mono bg-[#00ff87] text-black hover:bg-[#00ff87]/90 transition-colors"
 			>
 				{ctaLabel}
 				<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />

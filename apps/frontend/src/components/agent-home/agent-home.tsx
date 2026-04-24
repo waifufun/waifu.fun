@@ -59,7 +59,7 @@ export default function AgentHome({
 								href={agent.fourMemeUrl}
 								target="_blank"
 								rel="noreferrer"
-								className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/60 hover:text-[#22c55e] transition-colors"
+								className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/60 hover:text-[#00ff87] transition-colors"
 							>
 								open on four.meme
 								<ExternalLink className="w-3 h-3" />
@@ -69,7 +69,7 @@ export default function AgentHome({
 							href={`https://bscscan.com/address/${agent.tokenAddress}`}
 							target="_blank"
 							rel="noreferrer"
-							className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/60 hover:text-[#22c55e] transition-colors"
+							className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/60 hover:text-[#00ff87] transition-colors"
 						>
 							bscscan
 							<ExternalLink className="w-3 h-3" />
@@ -143,7 +143,7 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
 						<span className="text-lg md:text-xl tracking-tight truncate">{agent.name}</span>
-						<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono tracking-wider text-[#22c55e] border border-[#22c55e]/30 bg-[#22c55e]/5">
+						<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono tracking-wider text-[#00ff87] border border-[#00ff87]/30 bg-[#00ff87]/5">
 							${agent.ticker}
 						</span>
 						<StatusBadge graduated={graduated} />
@@ -160,20 +160,22 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 								href={`https://bscscan.com/token/${EIP8004_CONTRACT}?a=${agent.eip8004TokenId}`}
 								target="_blank"
 								rel="noreferrer"
-								className="inline-flex items-center gap-1.5 text-white/45 hover:text-[#22c55e] transition-colors"
+								className="inline-flex items-center gap-1.5 text-white/45 hover:text-[#00ff87] transition-colors"
 								title="EIP-8004 onchain identity"
 							>
 								<Fingerprint className="w-3 h-3" strokeWidth={1.5} />
 								EIP-8004 #{agent.eip8004TokenId}
 							</a>
 						)}
-						<span className="inline-flex items-center gap-1.5 text-white/45">
-							<Brain className="w-3 h-3" strokeWidth={1.5} />
-							brain: {agent.framework || "ElizaOS"} + {agent.model || "Cloud"}
-						</span>
+						{agent.framework && agent.model && (
+							<span className="inline-flex items-center gap-1.5 text-white/45">
+								<Brain className="w-3 h-3" strokeWidth={1.5} />
+								brain: {agent.framework} + {agent.model}
+							</span>
+						)}
 						{agent.lastActionAt ? (
-							<span className="inline-flex items-center gap-1.5 text-[#22c55e]">
-								<span className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
+							<span className="inline-flex items-center gap-1.5 text-[#00ff87]">
+								<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
 								last {agent.lastActionType || "action"}: {timeAgo(agent.lastActionAt)}
 							</span>
 						) : (
@@ -215,10 +217,10 @@ function StatusBadge({ graduated }: { graduated: boolean }) {
 		<span
 			className={cn(
 				"inline-flex items-center gap-1.5 h-6 px-2 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em]",
-				graduated ? "border border-white/20 text-white/60" : "border border-[#22c55e]/30 text-[#22c55e] bg-[#22c55e]/5",
+				graduated ? "border border-white/20 text-white/60" : "border border-[#00ff87]/30 text-[#00ff87] bg-[#00ff87]/5",
 			)}
 		>
-			<span className={cn("w-1.5 h-1.5 rounded-full", graduated ? "bg-white/40" : "bg-[#22c55e] animate-pulse")} />
+			<span className={cn("w-1.5 h-1.5 rounded-full", graduated ? "bg-white/40" : "bg-[#00ff87] animate-pulse")} />
 			{graduated ? "graduated" : "active"}
 		</span>
 	);

@@ -34,7 +34,7 @@ export default function HowItWorks() {
 				</div>
 				<Link
 					href="/quickstart"
-					className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-[#22c55e] transition-colors"
+					className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-[#00ff87] transition-colors"
 				>
 					read the quickstart
 					<ArrowRight className="w-3 h-3" strokeWidth={2} />
@@ -47,7 +47,7 @@ export default function HowItWorks() {
 					return (
 						<div key={s.num} className="bg-[#08080a] p-7 md:p-8 flex flex-col gap-4">
 							<div className="flex items-center justify-between">
-								<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">[{s.num}]</span>
+								<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">[{s.num}]</span>
 								<div className="w-8 h-8 rounded-sm border border-white/10 flex items-center justify-center text-white/50">
 									<Icon className="w-4 h-4" strokeWidth={1.5} />
 								</div>

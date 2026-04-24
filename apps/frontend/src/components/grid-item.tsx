@@ -48,7 +48,7 @@ function StatusPills({
 				</span>
 			) : (
 				<span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(34,197,94,0.22)] bg-[rgba(34,197,94,0.1)] px-3 py-1 text-[10px] font-mono uppercase tracking-[0.18em] text-[#9ae6b4]">
-					<span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
+					<span className="h-1.5 w-1.5 rounded-full bg-[#00ff87]" />
 					active
 				</span>
 			)}
@@ -151,7 +151,7 @@ export const GridItem = ({
 										</div>
 										<div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
 											<motion.div
-												className="h-full rounded-full bg-gradient-to-r from-[#0f5132] via-[#22c55e] to-[#7fffbf]"
+												className="h-full rounded-full bg-gradient-to-r from-[#0f5132] via-[#00ff87] to-[#7fffbf]"
 												initial={{ width: 0 }}
 												animate={{ width: `${curveProgress}%` }}
 												transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
@@ -224,7 +224,7 @@ export const GridItem = ({
 							</div>
 							<div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
 								<motion.div
-									className="h-full rounded-full bg-gradient-to-r from-[#0f5132] via-[#22c55e] to-[#7fffbf]"
+									className="h-full rounded-full bg-gradient-to-r from-[#0f5132] via-[#00ff87] to-[#7fffbf]"
 									initial={{ width: 0 }}
 									animate={{ width: `${curveProgress}%` }}
 									transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}

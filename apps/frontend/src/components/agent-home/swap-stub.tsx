@@ -55,7 +55,7 @@ export default function SwapStub({ agent }: { agent: AgentData }) {
 				href={fourMemeUrl}
 				target="_blank"
 				rel="noreferrer"
-				className="mt-4 w-full inline-flex items-center justify-center gap-2 h-11 rounded-sm bg-[#22c55e] text-black hover:bg-[#22c55e]/90 text-[11px] uppercase tracking-[0.2em] font-mono transition-colors"
+				className="mt-4 w-full inline-flex items-center justify-center gap-2 h-11 rounded-sm bg-[#00ff87] text-black hover:bg-[#00ff87]/90 text-[11px] uppercase tracking-[0.2em] font-mono transition-colors"
 			>
 				trade on four.meme
 				<ExternalLink className="w-3.5 h-3.5" />
@@ -85,7 +85,7 @@ function SideButton({
 				"flex-1 h-9 rounded-sm text-[11px] font-mono uppercase tracking-[0.2em] transition-colors",
 				active
 					? accent
-						? "bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/40"
+						? "bg-[#00ff87]/10 text-[#00ff87] border border-[#00ff87]/40"
 						: "bg-white/5 text-white border border-white/20"
 					: "border border-transparent text-white/35 hover:text-white/70",
 			)}

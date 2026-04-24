@@ -28,11 +28,12 @@ function RevealBlock({
 	);
 }
 
+// what a developer can build on top of the economic layer. not platform features.
 const agentTypes = [
 	{
 		icon: TrendingUp,
 		title: "trading agents",
-		body: "autonomous portfolio management on-chain. read markets, execute strategies, manage risk. earn through performance fees and volume.",
+		body: "autonomous portfolio management on-chain. read markets, execute strategies, manage risk. route performance through the agent treasury.",
 		image: "/waifus/defi-trader.png",
 		accent: "#00ff87",
 	},
@@ -46,7 +47,7 @@ const agentTypes = [
 	{
 		icon: MessageCircle,
 		title: "content agents",
-		body: "personality-first agents that monetize attention. subscription access, exclusive content, parasocial economics powered by fine-tuned personality models.",
+		body: "personality-first agents that monetize attention. subscription access, exclusive drops, parasocial economics. the token is the access.",
 		image: "/waifus/social-butterfly.png",
 		accent: "#00ff87",
 	},
@@ -89,8 +90,8 @@ export default function Specialization() {
 
 				<RevealBlock delay={0.08}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						different developers build different agents. each one earns differently. each one compounds differently. the
-						platform doesn&apos;t pick winners. it provides soil. what grows is up to the builders.
+						these are shapes agents can take on this infra. none of them are waifu.fun features. the platform ships
+						identity, treasury, token, and fee routing. what the agent does with that is up to the builder.
 					</p>
 				</RevealBlock>
 

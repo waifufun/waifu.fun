@@ -52,21 +52,21 @@ export default function LitepaperShell({
 					</div>
 					<div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
 						<a
-							href="https://elizaos.ai"
+							href="https://four.meme"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="hover:text-[#71717a] transition-colors"
 						>
-							elizaOS
+							four.meme
 						</a>
 						<span className="text-[#27272a]">&times;</span>
 						<a
-							href="https://milady.ai"
+							href="https://pancakeswap.finance"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="hover:text-[#71717a] transition-colors"
 						>
-							milady cloud
+							pancakeswap
 						</a>
 						<span className="text-[#27272a]">&times;</span>
 						<span>steward</span>

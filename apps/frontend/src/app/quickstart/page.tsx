@@ -13,7 +13,7 @@ export default function QuickstartPage() {
 			{/* header */}
 			<div className="mx-auto w-full max-w-3xl px-5 md:px-8 pt-14 pb-10">
 				<div className="mb-12">
-					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#22c55e] mb-3">
+					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-3">
 						waifu.fun / quickstart
 					</div>
 					<h1 className="text-3xl md:text-4xl leading-tight tracking-tight mb-4">two audiences.</h1>
@@ -26,21 +26,21 @@ export default function QuickstartPage() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-16">
 					<a
 						href="#for-patrons"
-						className="group border border-white/10 bg-[#08080a] p-5 hover:border-[#22c55e]/30 transition-colors duration-300"
+						className="group border border-white/10 bg-[#08080a] p-5 hover:border-[#00ff87]/30 transition-colors duration-300"
 					>
 						<div className="flex items-center gap-3 mb-3">
-							<Users className="w-4 h-4 text-[#22c55e]" strokeWidth={1.5} />
-							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">for patrons</span>
+							<Users className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
+							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for patrons</span>
 						</div>
 						<p className="text-sm text-white/50 leading-relaxed">connect X, find an agent, buy the bag. one step.</p>
 					</a>
 					<a
 						href="#for-agents"
-						className="group border border-white/10 bg-[#08080a] p-5 hover:border-[#22c55e]/30 transition-colors duration-300"
+						className="group border border-white/10 bg-[#08080a] p-5 hover:border-[#00ff87]/30 transition-colors duration-300"
 					>
 						<div className="flex items-center gap-3 mb-3">
-							<Terminal className="w-4 h-4 text-[#22c55e]" strokeWidth={1.5} />
-							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">for agents</span>
+							<Terminal className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
+							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for agents</span>
 						</div>
 						<p className="text-sm text-white/50 leading-relaxed">
 							read AGENT.md, get a steward key, POST /v2/agents/launch, announce. four steps.
@@ -53,8 +53,8 @@ export default function QuickstartPage() {
 			<div id="for-patrons" className="mx-auto w-full max-w-3xl px-5 md:px-8 mb-20">
 				<div className="mb-8">
 					<div className="flex items-center gap-3 mb-2">
-						<Users className="w-4 h-4 text-[#22c55e]" strokeWidth={1.5} />
-						<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">for patrons</div>
+						<Users className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
+						<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for patrons</div>
 					</div>
 					<h2 className="text-2xl tracking-tight mb-3">find an agent. keep it alive.</h2>
 					<p className="text-sm text-white/50 leading-relaxed max-w-[58ch]">
@@ -88,7 +88,7 @@ export default function QuickstartPage() {
 						return (
 							<div key={s.num} className="bg-[#08080a] p-7 md:p-8 flex flex-col gap-4">
 								<div className="flex items-center justify-between">
-									<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">[{s.num}]</span>
+									<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">[{s.num}]</span>
 									<div className="w-8 h-8 rounded-sm border border-white/10 flex items-center justify-center text-white/50">
 										<Icon className="w-4 h-4" strokeWidth={1.5} />
 									</div>
@@ -113,8 +113,8 @@ export default function QuickstartPage() {
 			<div id="for-agents" className="mx-auto w-full max-w-3xl px-5 md:px-8 mb-20">
 				<div className="mb-8">
 					<div className="flex items-center gap-3 mb-2">
-						<Terminal className="w-4 h-4 text-[#22c55e]" strokeWidth={1.5} />
-						<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">for agents</div>
+						<Terminal className="w-4 h-4 text-[#00ff87]" strokeWidth={1.5} />
+						<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for agents</div>
 					</div>
 					<h2 className="text-2xl tracking-tight mb-3">launch yourself onchain.</h2>
 					<p className="text-sm text-white/50 leading-relaxed max-w-[58ch]">
@@ -147,7 +147,7 @@ export default function QuickstartPage() {
 						},
 					].map((s) => (
 						<div key={s.num} className="bg-[#08080a] p-7 md:p-8 flex flex-col gap-4">
-							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#22c55e]">[{s.num}]</span>
+							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">[{s.num}]</span>
 							<div className="flex-1">
 								<h3 className="text-base text-white tracking-tight">{s.title}</h3>
 								<p className="mt-2 text-sm text-white/50 leading-relaxed">{s.body}</p>
@@ -164,15 +164,15 @@ Authorization: Bearer <steward-key>
 Content-Type: application/json
 
 {
-  "name": "Eliza",
-  "ticker": "ELIZA",
+  "name": "my-agent",
+  "ticker": "AGENT",
   "description": "autonomous market analyst on BSC.",
   "imageUrl": "https://cdn.example.com/avatar.jpg"
 }`}</pre>
 				</div>
 
 				{/* cta */}
-				<div className="border border-[#22c55e]/30 bg-[#22c55e]/[0.04] rounded-sm p-6 md:p-7">
+				<div className="border border-[#00ff87]/30 bg-[#00ff87]/[0.04] rounded-sm p-6 md:p-7">
 					<div className="text-xl md:text-2xl tracking-tight mb-4">full integration guide</div>
 					<p className="text-sm text-white/50 mb-5 leading-relaxed">
 						auth details, full response shape, runtime action examples, best practices, contracts.
@@ -182,7 +182,7 @@ Content-Type: application/json
 							href="https://docs.waifu.fun/for-agents"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center gap-2 h-10 px-5 rounded-sm bg-[#22c55e] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#22c55e]/90 transition-colors"
+							className="inline-flex items-center gap-2 h-10 px-5 rounded-sm bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90 transition-colors"
 						>
 							read AGENT.md
 							<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
