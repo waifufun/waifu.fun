@@ -7,6 +7,7 @@ import TreasuryCard from "@/components/patron/treasury-card";
 import ActivityFeed from "@/components/patron/activity-feed";
 import AdapterPermissions from "@/components/patron/adapter-permissions";
 import EmergencyControls from "@/components/patron/emergency-controls";
+import XConnectionPanel from "@/components/patron/x-connection";
 import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
 
 type Params = { agentId: string };
@@ -35,6 +36,7 @@ export default function PatronAgentDetailPage({
 			) : (
 				<div className="space-y-6">
 					<AgentHero agent={agent} isLoading={isLoading} />
+					<XConnectionPanel agentId={agentId} />
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 						<TreasuryCard agent={agent} isLoading={isLoading} />
 						<ActivityFeed events={events} isLoading={eventsLoading} error={eventsError as Error | null} />

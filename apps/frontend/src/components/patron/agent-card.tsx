@@ -44,7 +44,20 @@ export default function AgentCard({ agent }: { agent: PatronAgent }) {
 						<h3 className="text-white font-medium truncate">{agent.name}</h3>
 						<StatusBadge status={agent.status} />
 					</div>
-					<p className="text-xs text-neutral-400 font-mono">${agent.ticker}</p>
+					<div className="flex items-center gap-2 mt-0.5 min-w-0">
+						<p className="text-xs text-neutral-400 font-mono truncate">${agent.ticker}</p>
+						{agent.xHandle ? (
+							<span
+								className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-400 border border-autofun-background-action-highlight/40 rounded px-1.5 py-0.5 truncate"
+								title={`X handle @${agent.xHandle.replace(/^@/, "")}`}
+							>
+								<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5">
+									<path d="M18.244 2H21.5l-7.42 8.482L23 22h-6.828l-5.35-6.99L4.6 22H1.34l7.94-9.075L1 2h6.99l4.84 6.398L18.244 2Zm-2.395 18h1.88L7.25 4H5.24l10.61 16Z" />
+								</svg>
+								<span className="truncate">@{agent.xHandle.replace(/^@/, "")}</span>
+							</span>
+						) : null}
+					</div>
 				</div>
 			</div>
 
