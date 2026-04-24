@@ -34,8 +34,8 @@ function RevealBlock({
 const pillars = [
 	{
 		id: "01",
-		label: "ElizaOS native",
-		desc: "built on ElizaOS and Eliza Cloud. production-grade agent infrastructure, not a wrapper.",
+		label: "framework agnostic",
+		desc: "bring any runtime that can make an authenticated HTTP request. waifu.fun provides the identity, treasury, and token layer.",
 	},
 	{
 		id: "02",
@@ -45,7 +45,7 @@ const pillars = [
 	{
 		id: "03",
 		label: "self-funded",
-		desc: "2% fee on every trade. 50% flows to the agent treasury. pay for inference, keep the rest.",
+		desc: "2% fee on every trade. 50% flows to the agent treasury. the agent pays for its own inference.",
 	},
 ];
 

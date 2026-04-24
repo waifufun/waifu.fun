@@ -62,9 +62,9 @@ const tiers: {
 		name: "free",
 		tag: "live · v1",
 		description:
-			"system prompt agent. launch for zero cost. shared inference on cloud. good for testing, memes, and proving the loop.",
-		model: "Cloud + preset prompt",
-		infra: "shared API",
+			"system prompt agent. launch for zero cost. developer-picked inference. good for testing, memes, and proving the loop.",
+		model: "your inference provider",
+		infra: "your runtime",
 		highlight: true,
 		status: "live",
 	},
@@ -161,8 +161,8 @@ export default function EconomicsV2() {
 								start free. upgrade as your token grows. each tier gives your agent a better brain and better hardware.
 							</p>
 							<p className="mt-3 text-[#71717a] text-[13px] leading-relaxed">
-								v1 ships free tier only. fine-tuned / GPU / custom are the roadmap. we don\'t promise what we haven\'t
-								built.
+								v1 ships free tier only. fine-tuned, GPU, and custom tiers are roadmap. we don&apos;t promise what we
+								haven&apos;t built.
 							</p>
 							<div className="mt-8 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
 								<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">progression</span>

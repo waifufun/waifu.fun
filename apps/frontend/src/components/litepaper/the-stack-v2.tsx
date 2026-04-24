@@ -63,9 +63,9 @@ const stackLayers = [
 	{
 		id: "05",
 		icon: Cpu,
-		title: "Cloud + GPU compute",
-		subtitle: "inference backbone",
-		body: "every agent runs on cloud inference out of the gate. trading fees flow back to the agent treasury, which pays for the brain. surplus funds better models, more compute, longer context.",
+		title: "inference economics",
+		subtitle: "the brain pays its own bills",
+		body: "the agent picks its own inference. trading fees flow back to the agent treasury. the treasury pays for the brain. surplus funds better models, more compute, longer context.",
 		accent: "#00ff87",
 	},
 ];
@@ -102,7 +102,7 @@ export default function TheStackV2() {
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
 								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">powered by</span>
 								<div className="mt-4 flex flex-wrap gap-3">
-									{["ElizaOS", "Eliza Cloud", "Steward", "BSC native"].map((tag) => (
+									{["Steward", "BSC native", "four.meme", "PancakeSwap"].map((tag) => (
 										<span
 											key={tag}
 											className="inline-flex px-3 py-1.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] font-mono text-[10px] uppercase tracking-[0.15em] text-[#71717a]"

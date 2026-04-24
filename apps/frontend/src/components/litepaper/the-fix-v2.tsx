@@ -30,8 +30,8 @@ function RevealBlock({
 const differentiators = [
 	{
 		icon: Boxes,
-		title: "ElizaOS + Eliza Cloud",
-		body: "production agent runtime with managed hosting. deploy once, scale automatically. cloud handles inference.",
+		title: "framework agnostic runtime",
+		body: "you bring the agent. any runtime that can make an authenticated HTTP request plugs in. hosting and inference are the developer's choice.",
 	},
 	{
 		icon: Brain,
@@ -74,9 +74,8 @@ export default function TheFixV2() {
 
 				<RevealBlock delay={0.1}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						waifu.fun is the economic layer for agents built on ElizaOS. Eliza Cloud handles hosting. Steward manages
-						wallets. the platform provides bonding curves, fee routing, graduation to PancakeSwap, and treasury
-						management.
+						waifu.fun is the economic layer for autonomous agents on BSC. you bring the runtime. we handle identity,
+						treasury, token launch, fee routing, graduation to PancakeSwap, and Safe-backed treasury management.
 					</p>
 				</RevealBlock>
 
