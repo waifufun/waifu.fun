@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useXConnection, formatRelativeTime } from "@/lib/api/x-connection";
 import { Button } from "@/components/ui/button";
 
@@ -9,19 +10,53 @@ type Props = {
 
 function XLogo({ className }: { className?: string }) {
 	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 24 24"
-			fill="currentColor"
-			className={className}
-		>
+		<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className={className}>
 			<path d="M18.244 2H21.5l-7.42 8.482L23 22h-6.828l-5.35-6.99L4.6 22H1.34l7.94-9.075L1 2h6.99l4.84 6.398L18.244 2Zm-2.395 18h1.88L7.25 4H5.24l10.61 16Z" />
 		</svg>
 	);
 }
 
+function Spinner({ className }: { className?: string }) {
+	return (
+		<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={`animate-spin ${className ?? ""}`}>
+			<circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+			<path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+		</svg>
+	);
+}
+
 export default function XConnectionPanel({ agentId }: Props) {
-	const { status } = useXConnection(agentId);
+	const { status, connect, disconnect } = useXConnection(agentId);
+	const [redirecting, setRedirecting] = useState(false);
+	const [actionError, setActionError] = useState<string | null>(null);
+
+	const handleConnect = async () => {
+		setActionError(null);
+		try {
+			const { authorizationUrl } = await connect.mutateAsync();
+			if (!authorizationUrl) {
+				throw new Error("Backend did not return an authorizationUrl");
+			}
+			setRedirecting(true);
+			window.location.href = authorizationUrl;
+		} catch (err) {
+			setActionError(err instanceof Error ? err.message : "Failed to start X connection");
+		}
+	};
+
+	const handleDisconnect = async () => {
+		setActionError(null);
+		const handle = status.data?.xHandle?.replace(/^@/, "") ?? "this account";
+		if (typeof window !== "undefined") {
+			const ok = window.confirm(`Disconnect @${handle} from this agent?`);
+			if (!ok) return;
+		}
+		try {
+			await disconnect.mutateAsync();
+		} catch (err) {
+			setActionError(err instanceof Error ? err.message : "Failed to disconnect X");
+		}
+	};
 
 	if (status.isLoading) {
 		return (
@@ -46,22 +81,19 @@ export default function XConnectionPanel({ agentId }: Props) {
 
 	if (status.error) {
 		return (
-			<section
-				aria-label="X account"
-				className="p-5 rounded-md border border-red-500/30 bg-red-500/5"
-			>
+			<section aria-label="X account" className="p-5 rounded-md border border-red-500/30 bg-red-500/5">
 				<header className="mb-2">
 					<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
 				</header>
-				<p className="text-sm text-red-300">
-					Couldn&apos;t load X status. {(status.error as Error).message}
-				</p>
+				<p className="text-sm text-red-300">Couldn&apos;t load X status. {(status.error as Error).message}</p>
 			</section>
 		);
 	}
 
 	const data = status.data;
 	const connected = Boolean(data?.connected);
+	const connecting = connect.isPending || redirecting;
+	const disconnecting = disconnect.isPending;
 
 	if (!connected) {
 		return (
@@ -77,15 +109,35 @@ export default function XConnectionPanel({ agentId }: Props) {
 						<XLogo className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1 min-w-0">
-						<p className="text-sm font-medium text-white">Connect X account</p>
+						<p className="text-sm font-medium text-white">{connecting ? "Redirecting to X..." : "Connect X account"}</p>
 						<p className="text-xs text-neutral-500 mt-0.5">
-							Link this agent to an X handle so it can post autonomously.
+							{connecting
+								? "Hang tight while we hand you off."
+								: "Link this agent to an X handle so it can post autonomously."}
 						</p>
 					</div>
-					<Button type="button" variant="outline" className="h-9">
-						Connect X
+					<Button
+						type="button"
+						variant="outline"
+						className="h-9 inline-flex items-center gap-2"
+						onClick={handleConnect}
+						disabled={connecting}
+					>
+						{connecting ? (
+							<>
+								<Spinner className="w-4 h-4 text-white" />
+								<span>Redirecting...</span>
+							</>
+						) : (
+							<span>Connect X</span>
+						)}
 					</Button>
 				</div>
+				{actionError ? (
+					<p role="alert" className="text-xs text-red-300 mt-3">
+						{actionError}
+					</p>
+				) : null}
 			</section>
 		);
 	}
@@ -106,20 +158,23 @@ export default function XConnectionPanel({ agentId }: Props) {
 					<XLogo className="w-5 h-5 text-white" />
 				</div>
 				<div className="flex-1 min-w-0">
-					<p className="text-sm font-medium text-white truncate">
-						{handle ? `@${handle}` : "Connected"}
-					</p>
-					{relative ? (
-						<p className="text-xs text-neutral-500 mt-0.5">Connected {relative}</p>
-					) : null}
+					<p className="text-sm font-medium text-white truncate">{handle ? `@${handle}` : "Connected"}</p>
+					{relative ? <p className="text-xs text-neutral-500 mt-0.5">Connected {relative}</p> : null}
 				</div>
 				<button
 					type="button"
-					className="text-xs text-neutral-400 hover:text-white underline-offset-4 hover:underline"
+					onClick={handleDisconnect}
+					disabled={disconnecting}
+					className="text-xs text-neutral-400 hover:text-white underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					Disconnect
+					{disconnecting ? "Disconnecting..." : "Disconnect"}
 				</button>
 			</div>
+			{actionError ? (
+				<p role="alert" className="text-xs text-red-300 mt-3">
+					{actionError}
+				</p>
+			) : null}
 		</section>
 	);
 }

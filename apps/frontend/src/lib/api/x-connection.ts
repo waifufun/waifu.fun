@@ -76,9 +76,7 @@ export function useXConnection(agentId?: string) {
 	const connect = useMutation<{ authorizationUrl: string }, Error, void>({
 		mutationFn: async () => {
 			if (!agentId) throw new Error("missing agentId");
-			return postJson<{ authorizationUrl: string }>(
-				`/v2/agents/${encodeURIComponent(agentId)}/x/connect`,
-			);
+			return postJson<{ authorizationUrl: string }>(`/v2/agents/${encodeURIComponent(agentId)}/x/connect`);
 		},
 	});
 
