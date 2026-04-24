@@ -52,10 +52,7 @@ export default function AgentHero({ agent, isLoading }: Props) {
 				<p className="text-sm text-neutral-400 font-mono mt-1">${agent.ticker}</p>
 				<div className="flex items-center gap-3 mt-2 text-sm">
 					{publicUrl ? (
-						<Link
-							href={publicUrl}
-							className="text-neutral-400 hover:text-white underline-offset-4 hover:underline"
-						>
+						<Link href={publicUrl} className="text-neutral-400 hover:text-white underline-offset-4 hover:underline">
 							Public page
 						</Link>
 					) : null}

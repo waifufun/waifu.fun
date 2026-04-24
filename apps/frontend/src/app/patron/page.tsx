@@ -13,26 +13,18 @@ export default function PatronPage() {
 
 	return (
 		<main className="py-6">
-			<PatronHeader
-				title="Your Agents"
-				subtitle="Overview of the agents you've launched and their treasury state."
-			/>
+			<PatronHeader title="Your Agents" subtitle="Overview of the agents you've launched and their treasury state." />
 
 			{!address ? (
 				<EmptyState
 					title="Connect a wallet"
 					body="Sign in with your Solana wallet to see the agents you've launched and their treasury state."
-					ctaLabel="Open wallet menu"
-					ctaHref="#"
+					ctaHref={null}
 				/>
 			) : (
 				<>
 					{agents && agents.length > 0 ? <AggregateStrip agents={agents} /> : null}
-					<AgentGrid
-						agents={agents}
-						isLoading={isLoading}
-						error={error as Error | null}
-					/>
+					<AgentGrid agents={agents} isLoading={isLoading} error={error as Error | null} />
 					{!isLoading && !error && (!agents || agents.length === 0) ? (
 						<EmptyState
 							title="No agents yet"

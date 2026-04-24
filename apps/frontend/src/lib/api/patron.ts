@@ -107,9 +107,7 @@ export function useAgentEvents(agentId?: string, limit = 30) {
 		enabled: Boolean(agentId),
 		queryFn: async () => {
 			if (!agentId) return [];
-			const data = await getJson<unknown>(
-				`/v2/agents/${encodeURIComponent(agentId)}/events?limit=${limit}`,
-			);
+			const data = await getJson<unknown>(`/v2/agents/${encodeURIComponent(agentId)}/events?limit=${limit}`);
 			if (Array.isArray(data)) return data as AgentEvent[];
 			if (data && typeof data === "object" && Array.isArray((data as { events?: unknown }).events)) {
 				return (data as { events: AgentEvent[] }).events;

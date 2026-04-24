@@ -24,11 +24,7 @@ export default function StatusBadge({ status }: { status: PatronAgentStatus }) {
 			<span
 				className={cn(
 					"w-1.5 h-1.5 rounded-full",
-					status === "active"
-						? "bg-green-400"
-						: status === "killed"
-							? "bg-red-400"
-							: "bg-amber-400",
+					status === "active" ? "bg-green-400" : status === "killed" ? "bg-red-400" : "bg-amber-400",
 				)}
 				aria-hidden
 			/>

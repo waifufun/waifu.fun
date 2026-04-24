@@ -14,10 +14,7 @@ export default function PatronHeader({ title, subtitle, backHref }: Props) {
 		<header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6 pb-4 border-b border-autofun-background-action-highlight/40">
 			<div className="flex flex-col gap-1">
 				{backHref ? (
-					<Link
-						href={backHref}
-						className="text-xs uppercase tracking-wide text-neutral-400 hover:text-white w-fit"
-					>
+					<Link href={backHref} className="text-xs uppercase tracking-wide text-neutral-400 hover:text-white w-fit">
 						&larr; Back
 					</Link>
 				) : null}

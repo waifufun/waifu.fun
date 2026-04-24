@@ -37,8 +37,7 @@ const TONE: Record<Control["tone"], string> = {
 	red: "border-red-500/30 text-red-300",
 };
 
-const TOOLTIP_COPY =
-	"Coming in v2. Will route through a patron-scoped endpoint instead of the admin token.";
+const TOOLTIP_COPY = "Coming in v2. Will route through a patron-scoped endpoint instead of the admin token.";
 
 export default function EmergencyControls() {
 	return (

@@ -69,23 +69,14 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 						const s = styleFor(event.type);
 						return (
 							<li key={event.id} className="py-3 flex items-start gap-3">
-								<span
-									className={cn("mt-1.5 w-2 h-2 rounded-full shrink-0", s.dot)}
-									aria-hidden
-								/>
+								<span className={cn("mt-1.5 w-2 h-2 rounded-full shrink-0", s.dot)} aria-hidden />
 								<div className="flex-1 min-w-0">
 									<div className="flex items-baseline justify-between gap-3">
-										<span className="text-sm font-medium text-white uppercase tracking-wide">
-											{s.label}
-										</span>
-										<span className="text-xs text-neutral-500 shrink-0">
-											{formatTime(event.ts)}
-										</span>
+										<span className="text-sm font-medium text-white uppercase tracking-wide">{s.label}</span>
+										<span className="text-xs text-neutral-500 shrink-0">{formatTime(event.ts)}</span>
 									</div>
 									{event.summary ? (
-										<p className="text-sm text-neutral-300 mt-0.5 break-words">
-											{event.summary}
-										</p>
+										<p className="text-sm text-neutral-300 mt-0.5 break-words">{event.summary}</p>
 									) : null}
 								</div>
 							</li>

@@ -62,18 +62,11 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>
 					<h2 className="text-xs uppercase tracking-wide text-neutral-500">Treasury</h2>
-					<div className="text-3xl font-medium text-white mt-1">
-						{isLoading ? "..." : formatUsd(treasury)}
-					</div>
+					<div className="text-3xl font-medium text-white mt-1">{isLoading ? "..." : formatUsd(treasury)}</div>
 				</div>
 				<div className="text-right">
 					<div className="text-xs uppercase tracking-wide text-neutral-500">7d delta</div>
-					<div
-						className={cn(
-							"text-lg font-medium mt-1",
-							deltaPositive ? "text-green-400" : "text-red-400",
-						)}
-					>
+					<div className={cn("text-lg font-medium mt-1", deltaPositive ? "text-green-400" : "text-red-400")}>
 						{isLoading ? "..." : `${deltaPositive ? "+" : ""}${formatUsd(delta)}`}
 					</div>
 				</div>
@@ -92,9 +85,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 				</div>
 				<div>
 					<div className="text-xs uppercase tracking-wide text-neutral-500">Daily burn</div>
-					<div className="text-white font-medium mt-1">
-						{isLoading ? "..." : formatUsd(agent?.dailyBurnUsd ?? 0)}
-					</div>
+					<div className="text-white font-medium mt-1">{isLoading ? "..." : formatUsd(agent?.dailyBurnUsd ?? 0)}</div>
 				</div>
 			</div>
 		</section>

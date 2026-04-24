@@ -18,11 +18,7 @@ export default function PatronAgentDetailPage({
 }) {
 	const { agentId } = use(params);
 	const { data: agent, isLoading, error } = useAgentDetail(agentId);
-	const {
-		data: events,
-		isLoading: eventsLoading,
-		error: eventsError,
-	} = useAgentEvents(agentId);
+	const { data: events, isLoading: eventsLoading, error: eventsError } = useAgentEvents(agentId);
 
 	return (
 		<main className="py-6">
@@ -33,10 +29,7 @@ export default function PatronAgentDetailPage({
 			/>
 
 			{error ? (
-				<div
-					role="alert"
-					className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300"
-				>
+				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
 					Couldn't load agent. {(error as Error).message}
 				</div>
 			) : (
@@ -44,11 +37,7 @@ export default function PatronAgentDetailPage({
 					<AgentHero agent={agent} isLoading={isLoading} />
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 						<TreasuryCard agent={agent} isLoading={isLoading} />
-						<ActivityFeed
-							events={events}
-							isLoading={eventsLoading}
-							error={eventsError as Error | null}
-						/>
+						<ActivityFeed events={events} isLoading={eventsLoading} error={eventsError as Error | null} />
 					</div>
 					<AdapterPermissions agent={agent} isLoading={isLoading} />
 					<EmergencyControls />
