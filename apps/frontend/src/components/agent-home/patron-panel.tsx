@@ -60,7 +60,7 @@ export default function PatronPanel({ agent }: Props) {
 			{/* header: count + pulse */}
 			<div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
 				<div className="flex items-center gap-2">
-					<Radio className="w-3 h-3 text-[#22c55e]" strokeWidth={1.5} />
+					<Radio className="w-3 h-3 text-[#00ff87]" strokeWidth={1.5} />
 					<span className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/70">
 						{loading ? "..." : patrons ? `${patrons.total} patrons` : "patron data unavailable"}
 					</span>
@@ -108,7 +108,7 @@ export default function PatronPanel({ agent }: Props) {
 
 				{patronUser && status?.isPatron && (
 					<div className="flex flex-col gap-3">
-						<div className="flex items-center gap-2 text-[#22c55e]">
+						<div className="flex items-center gap-2 text-[#00ff87]">
 							<Check className="w-3 h-3" strokeWidth={2} />
 							<span className="text-[11px] font-mono uppercase tracking-[0.18em]">you're a patron</span>
 						</div>
@@ -143,7 +143,7 @@ export default function PatronPanel({ agent }: Props) {
 					href={fourMemeUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-flex items-center justify-center gap-2 w-full h-10 px-4 rounded-sm bg-[#22c55e] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#22c55e]/90 transition-colors"
+					className="inline-flex items-center justify-center gap-2 w-full h-10 px-4 rounded-sm bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90 transition-colors"
 				>
 					buy ${agent.ticker || "TOKEN"} on four.meme
 					<ArrowUpRight className="w-3 h-3" />
@@ -159,7 +159,7 @@ export default function PatronPanel({ agent }: Props) {
 
 			{/* toast */}
 			{toast && (
-				<div className="fixed bottom-4 right-4 border border-[#22c55e]/40 bg-black/90 text-[#22c55e] text-[11px] font-mono px-4 py-2 rounded-sm shadow-lg z-50">
+				<div className="fixed bottom-4 right-4 border border-[#00ff87]/40 bg-black/90 text-[#00ff87] text-[11px] font-mono px-4 py-2 rounded-sm shadow-lg z-50">
 					{toast}
 				</div>
 			)}

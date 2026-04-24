@@ -12,7 +12,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 			href={`/agent/${agent.tokenAddress}`}
 			className={cn(
 				"group relative flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden",
-				"transition-colors duration-200 hover:border-[#22c55e]/40",
+				"transition-colors duration-200 hover:border-[#00ff87]/40",
 			)}
 		>
 			{/* image */}
@@ -35,7 +35,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 			<div className="flex flex-col gap-2 p-4">
 				<div className="flex items-baseline gap-2 min-w-0">
 					<span className="text-sm text-white truncate">{agent.name}</span>
-					<span className="inline-flex items-center h-5 px-1.5 rounded-sm text-[10px] font-mono tracking-wider text-[#22c55e] border border-[#22c55e]/30 bg-[#22c55e]/5 shrink-0">
+					<span className="inline-flex items-center h-5 px-1.5 rounded-sm text-[10px] font-mono tracking-wider text-[#00ff87] border border-[#00ff87]/30 bg-[#00ff87]/5 shrink-0">
 						${agent.ticker}
 					</span>
 				</div>
@@ -48,11 +48,11 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 				<div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase tracking-[0.14em] text-white/30">
 					<span className="inline-flex items-center gap-1 min-w-0 truncate">
 						<Brain className="w-2.5 h-2.5 shrink-0" strokeWidth={1.5} />
-						<span className="truncate">{agent.framework || "ElizaOS"}</span>
+						<span className="truncate">{agent.framework ?? "—"}</span>
 					</span>
 					{agent.lastActionAt ? (
 						<span className="inline-flex items-center gap-1 shrink-0">
-							<span className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
+							<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
 							<span>
 								{agent.lastActionType || "action"} · {timeAgo(agent.lastActionAt)}
 							</span>
@@ -66,7 +66,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">
 						{pending ? "pending" : graduated ? "on pancakeswap" : "on curve"}
 					</div>
-					<div className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 group-hover:text-[#22c55e] transition-colors">
+					<div className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 group-hover:text-[#00ff87] transition-colors">
 						view
 						<ArrowUpRight
 							className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]"
@@ -97,8 +97,8 @@ function StatusBadge({ status }: { status: AgentListItem["status"] }) {
 		);
 	}
 	return (
-		<span className="inline-flex items-center gap-1.5 h-5 px-1.5 rounded-sm text-[9px] font-mono uppercase tracking-[0.16em] bg-black/70 backdrop-blur-sm border border-[#22c55e]/40 text-[#22c55e]">
-			<span className="w-1 h-1 rounded-full bg-[#22c55e] animate-pulse" />
+		<span className="inline-flex items-center gap-1.5 h-5 px-1.5 rounded-sm text-[9px] font-mono uppercase tracking-[0.16em] bg-black/70 backdrop-blur-sm border border-[#00ff87]/40 text-[#00ff87]">
+			<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
 			active
 		</span>
 	);

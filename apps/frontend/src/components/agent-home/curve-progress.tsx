@@ -17,7 +17,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 							href={agent.pancakeSwapUrl}
 							target="_blank"
 							rel="noreferrer"
-							className="inline-flex items-center gap-2 h-9 px-4 rounded-sm border border-[#22c55e]/40 text-[#22c55e] hover:bg-[#22c55e]/5 text-[11px] font-mono uppercase tracking-[0.18em] transition-colors"
+							className="inline-flex items-center gap-2 h-9 px-4 rounded-sm border border-[#00ff87]/40 text-[#00ff87] hover:bg-[#00ff87]/5 text-[11px] font-mono uppercase tracking-[0.18em] transition-colors"
 						>
 							trade on pancakeswap
 							<ExternalLink className="w-3 h-3" />
@@ -50,12 +50,12 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 			</div>
 
 			<div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
-				<div className="h-full bg-[#22c55e] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+				<div className="h-full bg-[#00ff87] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
 			</div>
 
 			<div className="flex items-center justify-between mt-2.5 text-[10px] font-mono text-white/30">
 				<span>graduates to pancakeswap at 100%</span>
-				<span className="text-[#22c55e]/70">{pct.toFixed(1)}%</span>
+				<span className="text-[#00ff87]/70">{pct.toFixed(1)}%</span>
 			</div>
 		</div>
 	);
