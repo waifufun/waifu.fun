@@ -22,7 +22,13 @@ export default function PatronHeader({ title, subtitle, backHref }: Props) {
 				<h1 className="text-2xl md:text-3xl font-medium text-white leading-tight">{title}</h1>
 				{subtitle ? <p className="text-sm text-neutral-400">{subtitle}</p> : null}
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex items-center gap-3">
+				<Link
+					href="/patron/wallets"
+					className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#a1a1aa] hover:text-[#e4e4e7] transition-colors"
+				>
+					wallets
+				</Link>
 				<StewardConnectBadge />
 				<Link href="/create/wizard">
 					<Button variant="outline" className="h-9 px-4">
