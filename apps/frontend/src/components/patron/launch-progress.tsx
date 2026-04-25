@@ -29,24 +29,24 @@ const STAGE_ORDER: Stage[] = ["authorizing", "submitting", "confirming", "live"]
 
 const STAGE_COPY: Record<Stage, { title: string; subtitle: string }> = {
 	authorizing: {
-		title: "Authorizing launch",
-		subtitle: "Verifying your signature and locking the launch parameters.",
+		title: "authorizing launch",
+		subtitle: "verifying your signature",
 	},
 	submitting: {
-		title: "Submitting four.meme transaction",
-		subtitle: "The agent's Safe is signing the create-token call.",
+		title: "submitting four.meme transaction",
+		subtitle: "the agent's safe is signing the create-token call",
 	},
 	confirming: {
-		title: "Waiting for confirmation",
-		subtitle: "Block producers are picking up the transaction.",
+		title: "waiting for confirmation",
+		subtitle: "block producers are picking up the transaction",
 	},
 	live: {
-		title: "Token alive on bonding curve",
-		subtitle: "Your agent is born. Redirecting to its public page.",
+		title: "live on the curve.",
+		subtitle: "your agent is born. taking you home.",
 	},
 	failed: {
-		title: "Launch failed",
-		subtitle: "Something went wrong on the way to the curve.",
+		title: "launch failed.",
+		subtitle: "something went wrong on the way to the curve.",
 	},
 };
 
@@ -243,7 +243,7 @@ export default function LaunchProgress({
 									<span className="font-mono">${(ticker ?? "token").replace(/^\$/, "")}</span>
 									<span className="text-accent"> is alive.</span>
 								</h2>
-								<p className="text-sm text-neutral-400 mt-6">Redirecting to the public page…</p>
+								<p className="text-sm text-neutral-400 mt-6">taking you home…</p>
 							</motion.div>
 						) : (
 							<motion.div
@@ -267,11 +267,11 @@ export default function LaunchProgress({
 								/>
 
 								<header className="relative px-6 pt-7 pb-4 border-b border-stroke">
-									<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">
-										{errorMessage ? "Launch interrupted" : "Launching"}
+									<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">
+										{errorMessage ? "[interrupted]" : "[launching]"}
 									</p>
 									<h2 className="mt-1 text-lg text-white tracking-tight">
-										{errorMessage ? "We hit a snag" : STAGE_COPY[stage].title}
+										{errorMessage ? "we hit a snag." : STAGE_COPY[stage].title}
 									</h2>
 								</header>
 
@@ -293,7 +293,7 @@ export default function LaunchProgress({
 													onClick={onRetry}
 													className="h-9 bg-red-500/10 hover:bg-red-500/20 text-red-200 border border-red-500/40"
 												>
-													Try again
+													try again
 												</Button>
 											) : null}
 											<button
@@ -301,13 +301,13 @@ export default function LaunchProgress({
 												onClick={onClose}
 												className="text-xs text-neutral-400 hover:text-white underline-offset-4 hover:underline"
 											>
-												Close
+												close
 											</button>
 										</div>
 									</div>
 								) : pollError ? (
 									<div className="relative px-6 py-3 text-[11px] text-[#a1a1aa] border-t border-stroke">
-										Network blip while polling. Retrying…
+										network blip while polling. retrying…
 									</div>
 								) : null}
 							</motion.div>

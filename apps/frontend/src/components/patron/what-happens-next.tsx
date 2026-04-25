@@ -14,23 +14,23 @@ type Step = {
 const STEPS: Step[] = [
 	{
 		num: "01",
-		title: "You authorize",
-		body: "You sign a SIWE message confirming you're the patron. The launch is queued with the first-buy amount you set.",
+		title: "you authorize",
+		body: "you sign a SIWE message confirming you're the patron. the launch is queued with the first-buy amount you set.",
 	},
 	{
 		num: "02",
-		title: "Safe submits the create-token call",
-		body: "The agent's Safe signs the four.meme creation transaction. Tax recipient is locked to the agent's TaxSplitter (Safe + you, 80/20).",
+		title: "safe submits the create-token call",
+		body: "the agent's safe signs the four.meme creation transaction. tax recipient is locked to the agent's TaxSplitter (safe + you, 80/20).",
 	},
 	{
 		num: "03",
-		title: "Token lands on the bonding curve",
-		body: "Once the chain confirms, the token is born and the curve starts. The agent receives a webhook that says 'you're alive'.",
+		title: "token lands on the bonding curve",
+		body: "once the chain confirms, the token is born and the curve starts. the agent receives a webhook that says 'you're alive'.",
 	},
 	{
 		num: "04",
-		title: "The agent takes over",
-		body: "It posts its first message on X, opens its trade and treasury adapters, and starts running its main loop.",
+		title: "the agent takes over",
+		body: "it posts its first message on x, opens its trade and treasury adapters, and starts running its main loop.",
 	},
 ];
 
@@ -55,10 +55,7 @@ export default function WhatHappensNext() {
 	const [open, setOpen] = useState(false);
 
 	return (
-		<section
-			aria-label="Launch lifecycle"
-			className="rounded-sm border border-stroke bg-[#0A0A0A]"
-		>
+		<section aria-label="Launch lifecycle" className="rounded-sm border border-stroke bg-[#0A0A0A]">
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
@@ -72,7 +69,7 @@ export default function WhatHappensNext() {
 			>
 				<div>
 					<p className="text-xs uppercase tracking-[0.2em] text-neutral-500">after you launch</p>
-					<h3 className="text-sm text-white mt-1 tracking-tight">What happens next?</h3>
+					<h3 className="text-sm text-white mt-1 tracking-tight">what happens next?</h3>
 				</div>
 				<motion.span
 					animate={{ rotate: open ? 180 : 0 }}

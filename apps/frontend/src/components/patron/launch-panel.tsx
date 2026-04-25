@@ -267,10 +267,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 							<WarnIcon className="w-4 h-4" />
 						</div>
 						<div>
-							<h2 className="text-xl text-white tracking-tight">Fund the Safe first</h2>
+							<h2 className="text-xl text-white tracking-tight">fund the safe first.</h2>
 							<p className="text-sm text-neutral-400 mt-2 max-w-[60ch] leading-relaxed">
-								Your agent&apos;s Safe holds 0 BNB. Send BNB to the address below before launching so the Safe can pay
-								gas and (optionally) take a first buy.
+								your agent&apos;s safe holds 0 BNB. send BNB to the address below so the safe can pay gas and
+								(optionally) take a first buy.
 							</p>
 						</div>
 					</div>
@@ -304,9 +304,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 					<div className="flex items-center gap-3 flex-wrap">
 						<Button type="button" onClick={() => refetch()} className="h-10 bg-white text-black hover:bg-white/90">
-							I funded it, refresh
+							i funded it. refresh.
 						</Button>
-						<p className="text-[11px] text-neutral-500">Balance refreshes every 60 seconds automatically.</p>
+						<p className="text-[11px] text-neutral-500">balance refreshes every 60 seconds automatically.</p>
 					</div>
 				</div>
 			</section>
@@ -315,19 +315,16 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 	return (
 		<>
-			<section
-				aria-label="Launch panel"
-				className="relative rounded-sm border border-stroke bg-[#0C0C0C]"
-			>
+			<section aria-label="Launch panel" className="relative rounded-sm border border-stroke bg-[#0C0C0C]">
 				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-stroke">
 					<div className="flex items-center justify-between gap-4 flex-wrap">
 						<div>
-							<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Pre-launch</p>
-							<h2 className="mt-1 text-xl text-white tracking-tight">Launch token</h2>
+							<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">[pre-launch]</p>
+							<h2 className="mt-1 text-xl text-white tracking-tight">launch the token.</h2>
 						</div>
 						<div className="inline-flex items-center gap-2 text-xs text-neutral-500">
 							<ShieldIcon className="w-3.5 h-3.5" />
-							<span>Patron-only action</span>
+							<span>patron-only.</span>
 						</div>
 					</div>
 				</header>
@@ -336,9 +333,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					<div className="px-6 md:px-8 py-3 border-b border-stroke-strong bg-white/[0.02] flex items-start gap-3">
 						<WarnIcon className="w-4 h-4 mt-0.5 text-[#a1a1aa] shrink-0" />
 						<p className="text-xs text-[#a1a1aa] leading-relaxed">
-							X not connected. Your agent will launch silently.{" "}
+							x not connected. your agent will launch silently.{" "}
 							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-white">
-								Connect now.
+								connect now.
 							</Link>
 						</p>
 					</div>
@@ -348,7 +345,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{/* LEFT: Safe details */}
 					<div className="px-6 md:px-8 py-7 space-y-6">
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">Safe</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">safe</h3>
 							<div className="flex items-center gap-2">
 								<code className="font-mono text-sm text-white truncate">{shortAddress(safeAddress)}</code>
 								<button
@@ -379,7 +376,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">Balance</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">balance</h3>
 							<div className="flex items-baseline gap-2">
 								<div className="font-mono text-2xl text-white">{balanceLoading ? "…" : formatBnb(balance)}</div>
 								<div className="text-xs uppercase tracking-[0.2em] text-neutral-500">BNB</div>
@@ -388,7 +385,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									onClick={() => refetch()}
 									className="ml-2 text-[11px] text-neutral-500 hover:text-white underline-offset-4 hover:underline"
 								>
-									Refresh
+									refresh
 								</button>
 							</div>
 							{balanceError ? (
@@ -399,16 +396,16 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">X account</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">x account</h3>
 							{xLoading ? (
 								<div className="h-4 w-32 bg-[#141414] rounded animate-pulse" />
 							) : xConnected ? (
 								<p className="text-sm text-white">
-									Connected{" "}
+									connected{" "}
 									<span className="text-neutral-400 font-mono">@{(xData?.xHandle ?? "").replace(/^@/, "")}</span>
 								</p>
 							) : (
-								<p className="text-sm text-[#a1a1aa]">Not connected</p>
+								<p className="text-sm text-[#a1a1aa]">not connected</p>
 							)}
 						</div>
 					</div>
@@ -417,7 +414,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					<div className="px-6 md:px-8 py-7 space-y-5">
 						<div className="flex items-center justify-between gap-4 flex-wrap">
 							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-								First buy (BNB)
+								first buy (BNB)
 							</label>
 							{balance != null && parsed.ok && parsed.value > 0 ? (
 								<span className="text-[11px] font-mono text-neutral-500">{formatBnb(parsed.value, 6)} BNB</span>
@@ -471,7 +468,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<p id="first-buy-help" className="text-xs text-neutral-500 leading-relaxed max-w-[42ch]">
-							Optional. Defaults 0. The agent&apos;s Safe will buy this many BNB worth of its own token at launch.
+							optional. defaults 0. the agent&apos;s safe will buy this many BNB of its own token at launch.
 						</p>
 
 						{validationError ? (
@@ -482,15 +479,12 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					</div>
 				</div>
 
-				<div
-					ref={launchSentinelRef}
-					className="px-6 md:px-8 py-6 border-t border-stroke"
-				>
+				<div ref={launchSentinelRef} className="px-6 md:px-8 py-6 border-t border-stroke">
 					<Button
 						type="button"
 						onClick={handleSubmit}
 						disabled={!canLaunch}
-						aria-label="Launch token"
+						aria-label="launch token"
 						className={cn(
 							"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
 							"bg-accent text-black hover:bg-accent-dim hover:text-black",
@@ -500,15 +494,14 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						{isLaunching ? (
 							<>
 								<Spinner className="w-4 h-4 mr-2" />
-								Authorizing…
+								authorizing…
 							</>
 						) : (
-							"Launch token"
+							"launch token"
 						)}
 					</Button>
 					<p className="text-[11px] text-neutral-500 mt-3 text-center max-w-[60ch] mx-auto">
-						You&apos;ll sign a SIWE message. The Safe will then submit a four.meme creation transaction with this
-						first-buy amount.
+						you sign. the safe submits to four.meme. token lands on the curve.
 					</p>
 				</div>
 			</section>
@@ -529,7 +522,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					type="button"
 					onClick={handleSubmit}
 					disabled={!canLaunch}
-					aria-label="Launch token"
+					aria-label="launch token"
 					tabIndex={stickyVisible ? 0 : -1}
 					className={cn(
 						"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
@@ -540,10 +533,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{isLaunching ? (
 						<>
 							<Spinner className="w-4 h-4 mr-2" />
-							Authorizing…
+							authorizing…
 						</>
 					) : (
-						"Launch token"
+						"launch token"
 					)}
 				</Button>
 			</div>

@@ -48,7 +48,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 		setActionError(null);
 		const handle = status.data?.xHandle?.replace(/^@/, "") ?? "this account";
 		if (typeof window !== "undefined") {
-			const ok = window.confirm(`Disconnect @${handle} from this agent?`);
+			const ok = window.confirm(`disconnect @${handle} from this agent?`);
 			if (!ok) return;
 		}
 		try {
@@ -60,10 +60,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 
 	if (status.isLoading) {
 		return (
-			<section
-				aria-label="X account"
-				className="p-5 rounded-sm border border-stroke bg-[#0C0C0C]"
-			>
+			<section aria-label="X account" className="p-5 rounded-sm border border-stroke bg-[#0C0C0C]">
 				<header className="mb-4">
 					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
@@ -85,7 +82,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 				<header className="mb-2">
 					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
-				<p className="text-sm text-red-300">Couldn&apos;t load X status. {(status.error as Error).message}</p>
+				<p className="text-sm text-red-300">couldn&apos;t load x status. {(status.error as Error).message}</p>
 			</section>
 		);
 	}
@@ -97,10 +94,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 
 	if (!connected) {
 		return (
-			<section
-				aria-label="X account"
-				className="p-5 rounded-sm border border-dashed border-stroke bg-[#0A0A0A]"
-			>
+			<section aria-label="X account" className="p-5 rounded-sm border border-dashed border-stroke bg-[#0A0A0A]">
 				<header className="mb-4">
 					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
@@ -109,11 +103,11 @@ export default function XConnectionPanel({ agentId }: Props) {
 						<XLogo className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1 min-w-0">
-						<p className="text-sm font-medium text-white">{connecting ? "Redirecting to X..." : "Connect X account"}</p>
+						<p className="text-sm font-medium text-white">{connecting ? "redirecting to x…" : "connect x account"}</p>
 						<p className="text-xs text-neutral-500 mt-0.5">
 							{connecting
-								? "Hang tight while we hand you off."
-								: "Link this agent to an X handle so it can post autonomously."}
+								? "hang tight while we hand you off."
+								: "link this agent to an x handle so it can post autonomously."}
 						</p>
 					</div>
 					<Button
@@ -126,10 +120,10 @@ export default function XConnectionPanel({ agentId }: Props) {
 						{connecting ? (
 							<>
 								<Spinner className="w-4 h-4 text-white" />
-								<span>Redirecting...</span>
+								<span>redirecting…</span>
 							</>
 						) : (
-							<span>Connect X</span>
+							<span>connect x</span>
 						)}
 					</Button>
 				</div>
@@ -146,10 +140,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 	const relative = formatRelativeTime(data?.connectedAt);
 
 	return (
-		<section
-			aria-label="X account"
-			className="p-5 rounded-sm border border-stroke bg-[#0C0C0C]"
-		>
+		<section aria-label="X account" className="p-5 rounded-sm border border-stroke bg-[#0C0C0C]">
 			<header className="mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 			</header>
@@ -158,8 +149,8 @@ export default function XConnectionPanel({ agentId }: Props) {
 					<XLogo className="w-5 h-5 text-white" />
 				</div>
 				<div className="flex-1 min-w-0">
-					<p className="text-sm font-medium text-white truncate">{handle ? `@${handle}` : "Connected"}</p>
-					{relative ? <p className="text-xs text-neutral-500 mt-0.5">Connected {relative}</p> : null}
+					<p className="text-sm font-medium text-white truncate">{handle ? `@${handle}` : "connected"}</p>
+					{relative ? <p className="text-xs text-neutral-500 mt-0.5">connected {relative}</p> : null}
 				</div>
 				<button
 					type="button"
@@ -167,7 +158,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 					disabled={disconnecting}
 					className="text-xs text-neutral-400 hover:text-white underline-offset-4 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{disconnecting ? "Disconnecting..." : "Disconnect"}
+					{disconnecting ? "disconnecting…" : "disconnect"}
 				</button>
 			</div>
 			{actionError ? (

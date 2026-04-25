@@ -76,15 +76,14 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-3 flex-wrap">
 							<ReadyPill />
-							<span className="text-xs uppercase tracking-[0.2em] text-neutral-500">Stage 3 / 5</span>
 						</div>
-						<h1 className="mt-4 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
+						<h1 className="mt-4 text-3xl md:text-4xl font-bold text-white tracking-tight leading-[1.05]">
 							{agent.name}
 						</h1>
 						<p className="text-sm text-neutral-400 font-mono mt-1">${agent.ticker}</p>
 						{bio ? <p className="mt-5 max-w-[60ch] text-[15px] leading-relaxed text-neutral-300">{bio}</p> : null}
 						<p className="mt-6 max-w-[60ch] text-sm leading-relaxed text-neutral-400">
-							Your agent is alive but the token isn&apos;t on the curve yet. You decide when to launch.
+							your agent is alive. the token isn&apos;t on the curve yet. you decide when.
 						</p>
 					</div>
 				</div>
