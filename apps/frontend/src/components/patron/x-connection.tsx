@@ -62,13 +62,13 @@ export default function XConnectionPanel({ agentId }: Props) {
 		return (
 			<section
 				aria-label="X account"
-				className="p-5 rounded-md border border-stroke bg-[#0C0C0C]"
+				className="p-5 rounded-sm border border-stroke bg-[#0C0C0C]"
 			>
 				<header className="mb-4">
-					<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
+					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
 				<div className="flex items-center gap-4 animate-pulse">
-					<div className="w-10 h-10 rounded-md bg-[#141414]" />
+					<div className="w-10 h-10 rounded-sm bg-[#141414]" />
 					<div className="flex-1 space-y-2">
 						<div className="h-4 w-40 bg-[#141414] rounded" />
 						<div className="h-3 w-24 bg-[#141414] rounded" />
@@ -81,9 +81,9 @@ export default function XConnectionPanel({ agentId }: Props) {
 
 	if (status.error) {
 		return (
-			<section aria-label="X account" className="p-5 rounded-md border border-red-500/30 bg-red-500/5">
+			<section aria-label="X account" className="p-5 rounded-sm border border-red-500/30 bg-red-500/5">
 				<header className="mb-2">
-					<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
+					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
 				<p className="text-sm text-red-300">Couldn&apos;t load X status. {(status.error as Error).message}</p>
 			</section>
@@ -99,13 +99,13 @@ export default function XConnectionPanel({ agentId }: Props) {
 		return (
 			<section
 				aria-label="X account"
-				className="p-5 rounded-md border border-dashed border-stroke bg-[#0A0A0A]"
+				className="p-5 rounded-sm border border-dashed border-stroke bg-[#0A0A0A]"
 			>
 				<header className="mb-4">
-					<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
+					<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 				</header>
 				<div className="flex items-center gap-4 flex-wrap">
-					<div className="w-10 h-10 rounded-md bg-[#141414] border border-stroke flex items-center justify-center shrink-0">
+					<div className="w-10 h-10 rounded-sm bg-[#141414] border border-stroke flex items-center justify-center shrink-0">
 						<XLogo className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1 min-w-0">
@@ -148,13 +148,13 @@ export default function XConnectionPanel({ agentId }: Props) {
 	return (
 		<section
 			aria-label="X account"
-			className="p-5 rounded-md border border-stroke bg-[#0C0C0C]"
+			className="p-5 rounded-sm border border-stroke bg-[#0C0C0C]"
 		>
 			<header className="mb-4">
-				<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
+				<h2 className="text-sm font-medium text-white uppercase tracking-[0.2em]">x account</h2>
 			</header>
 			<div className="flex items-center gap-4 flex-wrap">
-				<div className="w-10 h-10 rounded-md bg-[#141414] border border-stroke flex items-center justify-center shrink-0">
+				<div className="w-10 h-10 rounded-sm bg-[#141414] border border-stroke flex items-center justify-center shrink-0">
 					<XLogo className="w-5 h-5 text-white" />
 				</div>
 				<div className="flex-1 min-w-0">

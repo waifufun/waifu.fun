@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLaunchState, type LaunchStatus } from "@/lib/api/launches";
+import { EASE_HERO, EASE_OUT_EXPO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -216,7 +217,7 @@ export default function LaunchProgress({
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
-					transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+					transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
 				>
 					<motion.div
 						aria-hidden="true"
@@ -235,7 +236,7 @@ export default function LaunchProgress({
 								initial={{ opacity: 0, scale: 0.96 }}
 								animate={{ opacity: 1, scale: 1 }}
 								exit={{ opacity: 0 }}
-								transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+								transition={{ duration: 0.6, ease: EASE_HERO }}
 							>
 								<p className="text-xs uppercase tracking-[0.3em] text-accent mb-4">live</p>
 								<h2 className="text-5xl md:text-7xl text-white tracking-tight font-medium leading-[1.05]">
@@ -248,13 +249,13 @@ export default function LaunchProgress({
 							<motion.div
 								key="progress-card"
 								className={cn(
-									"relative z-10 w-full max-w-md rounded-md border bg-[#0A0A0A] overflow-hidden",
+									"relative z-10 w-full max-w-md rounded-sm border bg-[#0A0A0A] overflow-hidden",
 									errorMessage ? "border-red-500/40" : "border-stroke",
 								)}
 								initial={{ y: 12, opacity: 0 }}
 								animate={{ y: 0, opacity: 1 }}
 								exit={{ y: -8, opacity: 0 }}
-								transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+								transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
 							>
 								{/* Subtle ambient — no neon */}
 								<div

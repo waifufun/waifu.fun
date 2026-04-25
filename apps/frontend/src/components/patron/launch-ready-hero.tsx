@@ -26,7 +26,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 	if (isLoading || !agent) {
 		return (
 			<div className="flex items-start gap-5 animate-pulse">
-				<div className="w-20 h-20 rounded-md bg-[#141414]" />
+				<div className="w-20 h-20 rounded-sm bg-[#141414]" />
 				<div className="flex-1 space-y-3 pt-2">
 					<div className="h-6 w-56 bg-[#141414] rounded" />
 					<div className="h-4 w-32 bg-[#141414] rounded" />
@@ -41,7 +41,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 	return (
 		<section
 			aria-label="Agent ready to launch"
-			className="relative overflow-hidden rounded-md border border-stroke bg-[#0A0A0A]"
+			className="relative overflow-hidden rounded-sm border border-stroke bg-[#0A0A0A]"
 		>
 			{/* subtle ambient glow — calm, not neon */}
 			<div
@@ -53,7 +53,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 				<div className="flex items-start gap-6 flex-wrap">
 					<div
 						className={cn(
-							"w-20 h-20 md:w-24 md:h-24 rounded-md overflow-hidden bg-[#141414] border border-stroke shrink-0",
+							"w-20 h-20 md:w-24 md:h-24 rounded-sm overflow-hidden bg-[#141414] border border-stroke shrink-0",
 							"ring-1 ring-accent/20",
 						)}
 					>
@@ -95,34 +95,19 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 
 function ReadyPill() {
 	return (
-		<>
-			<style jsx>{`
-				@keyframes ready-pulse {
-					0%, 100% { transform: scale(1); opacity: 1; }
-					50% { transform: scale(1.04); opacity: 0.92; }
-				}
-				.ready-pulse {
-					animation: ready-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-					transform-origin: left center;
-				}
-				@media (prefers-reduced-motion: reduce) {
-					.ready-pulse { animation: none; }
-				}
-			`}</style>
-			<span
-				className="ready-pulse inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] rounded border bg-accent/10 text-accent border-accent/30"
-				role="status"
-				aria-label="Agent status: ready to launch"
-			>
-				<span className="relative inline-flex w-1.5 h-1.5">
-					<span
-						aria-hidden="true"
-						className="absolute inset-0 rounded-full bg-accent/60 animate-ping motion-reduce:hidden"
-					/>
-					<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-accent" />
-				</span>
-				Ready to launch
+		<span
+			className="inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] rounded-sm border bg-accent/10 text-accent border-accent/30 animate-pulse motion-reduce:animate-none"
+			role="status"
+			aria-label="Agent status: ready to launch"
+		>
+			<span className="relative inline-flex w-1.5 h-1.5">
+				<span
+					aria-hidden="true"
+					className="absolute inset-0 rounded-full bg-accent/60 animate-ping motion-reduce:hidden"
+				/>
+				<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-accent" />
 			</span>
-		</>
+			ready to launch
+		</span>
 	);
 }

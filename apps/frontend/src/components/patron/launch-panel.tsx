@@ -260,7 +260,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 	// Empty Safe — render a focused funding state instead of the form.
 	if (isEmptySafe) {
 		return (
-			<section aria-label="Fund Safe" className="relative rounded-md border border-stroke-strong bg-[#0C0C0C]">
+			<section aria-label="Fund Safe" className="relative rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 				<div className="px-6 md:px-8 py-12 space-y-6">
 					<div className="flex items-start gap-3">
 						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] text-[#a1a1aa]">
@@ -317,7 +317,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 		<>
 			<section
 				aria-label="Launch panel"
-				className="relative rounded-md border border-stroke bg-[#0C0C0C]"
+				className="relative rounded-sm border border-stroke bg-[#0C0C0C]"
 			>
 				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-stroke">
 					<div className="flex items-center justify-between gap-4 flex-wrap">
@@ -348,7 +348,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{/* LEFT: Safe details */}
 					<div className="px-6 md:px-8 py-7 space-y-6">
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-3">Safe</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">Safe</h3>
 							<div className="flex items-center gap-2">
 								<code className="font-mono text-sm text-white truncate">{shortAddress(safeAddress)}</code>
 								<button
@@ -379,10 +379,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">Balance</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">Balance</h3>
 							<div className="flex items-baseline gap-2">
 								<div className="font-mono text-2xl text-white">{balanceLoading ? "…" : formatBnb(balance)}</div>
-								<div className="text-xs uppercase tracking-wider text-neutral-500">BNB</div>
+								<div className="text-xs uppercase tracking-[0.2em] text-neutral-500">BNB</div>
 								<button
 									type="button"
 									onClick={() => refetch()}
@@ -399,7 +399,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">X account</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">X account</h3>
 							{xLoading ? (
 								<div className="h-4 w-32 bg-[#141414] rounded animate-pulse" />
 							) : xConnected ? (
@@ -416,7 +416,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{/* RIGHT: First buy */}
 					<div className="px-6 md:px-8 py-7 space-y-5">
 						<div className="flex items-center justify-between gap-4 flex-wrap">
-							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.16em] text-neutral-500">
+							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.2em] text-neutral-500">
 								First buy (BNB)
 							</label>
 							{balance != null && parsed.ok && parsed.value > 0 ? (
@@ -443,7 +443,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 								)}
 								placeholder="0"
 							/>
-							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-wider text-neutral-500 font-mono">
+							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-[0.2em] text-neutral-500 font-mono">
 								BNB
 							</span>
 						</div>
@@ -519,7 +519,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 				className={cn(
 					"md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pb-4 pt-3",
 					"bg-gradient-to-t from-black via-black/95 to-black/0",
-					"transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+					"transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]", // EASE_OUT_EXPO (matches lib/motion)
 					stickyVisible
 						? "translate-y-0 opacity-100 pointer-events-auto"
 						: "translate-y-4 opacity-0 pointer-events-none",
