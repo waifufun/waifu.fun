@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { motion } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Copy, Mail, ShieldCheck, UserPlus, X } from "lucide-react";
 import { buildStewardAuthUrl, defaultStewardRedirectUri } from "@/lib/api/steward";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 type Props = {
 	open: boolean;
@@ -45,11 +47,13 @@ function PathCard({
 	loading: boolean;
 }) {
 	return (
-		<button
+		<motion.button
 			type="button"
 			onClick={onClick}
 			disabled={loading}
-			className="group relative flex flex-col items-start gap-4 rounded-sm border border-white/10 bg-[#0b0b0d] p-5 text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
+			whileHover={{ y: -2 }}
+			transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+			className="group relative flex flex-col items-start gap-4 rounded-sm border border-white/10 bg-[#0b0b0d] p-5 text-left transition-colors duration-300 hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
 		>
 			<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87] transition-colors group-hover:border-[#00ff87]/30">
 				{icon}
@@ -69,7 +73,7 @@ function PathCard({
 					aria-hidden="true"
 				/>
 			</span>
-		</button>
+		</motion.button>
 	);
 }
 
@@ -252,15 +256,19 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 								<span className="text-sm font-medium text-white">What's Steward?</span>
 							</span>
 							<ChevronDown
-								className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${infoOpen ? "rotate-180" : "rotate-0"}`}
+								className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ${infoOpen ? "rotate-180" : "rotate-0"}`}
+								style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
 								strokeWidth={1.75}
 								aria-hidden="true"
 							/>
 						</button>
 						<div
 							id="steward-info-panel"
-							className="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-							style={{ gridTemplateRows: infoOpen ? "1fr" : "0fr" }}
+							className="grid transition-[grid-template-rows] duration-300"
+							style={{
+								gridTemplateRows: infoOpen ? "1fr" : "0fr",
+								transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+							}}
 						>
 							<div className="overflow-hidden">
 								<ul className="flex flex-col gap-3 px-4 pb-4 pt-1">

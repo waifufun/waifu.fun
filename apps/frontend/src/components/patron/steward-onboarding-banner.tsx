@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
 import { useStewardStatus } from "@/lib/api/steward";
 import StewardConnectModal from "./steward-connect-modal";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 const DISMISS_KEY = "waifu-steward-onboarding-dismissed";
 
@@ -72,13 +74,15 @@ export default function StewardOnboardingBanner({ hasAgents }: Props) {
 						</div>
 					</div>
 					<div className="flex items-center gap-2 sm:shrink-0">
-						<button
+						<motion.button
 							type="button"
 							onClick={() => setModalOpen(true)}
-							className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[1px] hover:bg-[#00ff87]/20 active:scale-[0.98]"
+							whileHover={{ y: -2 }}
+							transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+							className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] transition-colors duration-300 hover:bg-[#00ff87]/20 active:scale-[0.98]"
 						>
 							Connect Steward
-						</button>
+						</motion.button>
 						<button
 							type="button"
 							onClick={handleDismiss}

@@ -15,7 +15,7 @@ function StatusDot({ tone }: { tone: "ok" | "warn" | "idle" }) {
 		tone === "ok"
 			? "bg-[#00ff87] shadow-[0_0_6px_rgba(0,255,135,0.55)]"
 			: tone === "warn"
-				? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.45)]"
+				? "bg-[#71717a]"
 				: "bg-neutral-500";
 	return (
 		<span aria-hidden="true" className={`relative inline-flex h-1.5 w-1.5 rounded-full ${color}`}>
@@ -50,11 +50,11 @@ export default function StewardConnectBadge({ className }: Props) {
 	if (status.isLoading) {
 		return (
 			<div
-				className={`${baseClass} border-white/10 bg-[#0c0c0e] text-neutral-500 ${className ?? ""}`}
+				className={`${baseClass} border-stroke bg-[#0c0c0e] text-neutral-500 ${className ?? ""}`}
 				aria-label="Loading Steward connection status"
 			>
 				<span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-600 animate-pulse" />
-				<span className="font-mono uppercase tracking-[0.18em] text-[10px]">Steward</span>
+				<span className="font-mono uppercase tracking-[0.2em] text-[10px]">[steward]</span>
 				<span className="h-3 w-16 rounded bg-neutral-800 animate-pulse" />
 			</div>
 		);
@@ -69,12 +69,12 @@ export default function StewardConnectBadge({ className }: Props) {
 				<button
 					type="button"
 					onClick={() => setModalOpen(true)}
-					className={`${baseClass} border-amber-400/30 bg-amber-400/[0.06] text-amber-200 hover:border-amber-400/50 hover:bg-amber-400/[0.10] active:scale-[0.98] ${className ?? ""}`}
+					className={`${baseClass} border-stroke bg-[rgba(255,255,255,0.02)] text-[#a1a1aa] hover:border-stroke-strong hover:bg-[rgba(255,255,255,0.04)] active:scale-[0.98] ${className ?? ""}`}
 					aria-label="Steward not connected. Open connect dialog."
 				>
 					<StatusDot tone="warn" />
-					<span className="font-mono uppercase tracking-[0.18em] text-[10px]">Steward</span>
-					<span className="text-amber-100/90">not connected</span>
+					<span className="font-mono uppercase tracking-[0.2em] text-[10px] text-[#71717a]">[steward]</span>
+					<span className="text-[#a1a1aa]">not connected</span>
 				</button>
 				<StewardConnectModal open={modalOpen} onOpenChange={setModalOpen} />
 			</>
