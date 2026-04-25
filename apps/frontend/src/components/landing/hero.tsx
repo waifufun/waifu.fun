@@ -1,14 +1,16 @@
 "use client";
 
 import { useTranslation } from "@/contexts/locale-context";
+import { EASE_HERO } from "@/lib/motion";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRef } from "react";
+import RotatingVerb from "./rotating-verb";
 
 const GlitchBg = dynamic(() => import("./glitch-bg"), { ssr: false });
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = EASE_HERO;
 const HERO_BG_PATH = "/brand/backgrounds/hero-bg.webp";
 
 function RevealLine({
@@ -164,13 +166,19 @@ export default function Hero() {
 				<div className="flex flex-col items-center gap-2">
 					<RevealLine delay={0.15}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							{t("hero.theyLive")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouTrade")}</span>
+							{t("hero.theyLive")}{" "}
+							<span className="text-[#a1a1aa] font-light">
+								{t("hero.ifTheyPrefix")}{" "}
+								<span className="font-medium text-[#d4d4d8]">
+									<RotatingVerb />
+								</span>
+							</span>
 						</h1>
 					</RevealLine>
 
 					<RevealLine delay={0.3}>
 						<h1 className="text-[clamp(2.4rem,6vw,5.5rem)] font-bold tracking-[-0.04em] leading-[1.05] text-[#f4f4f5]">
-							{t("hero.theyDie")} <span className="text-[#a1a1aa] font-light">{t("hero.ifYouDont")}</span>
+							{t("hero.theyDie")} <span className="text-[#a1a1aa] font-light">{t("hero.ifTheyDont")}</span>
 						</h1>
 					</RevealLine>
 				</div>

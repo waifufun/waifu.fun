@@ -29,6 +29,11 @@ function pickLongest(words: readonly string[]): string {
 	return longest;
 }
 
+// The trailing period rides with the verb so it stays glued to the word
+// regardless of how wide the locked width container is. Visually constant,
+// just rendered inside the animated unit.
+const TAIL = ".";
+
 /**
  * RotatingVerb
  *
@@ -80,8 +85,12 @@ function RotatingVerbInner() {
 			<span className="relative inline-block align-baseline">
 				<span aria-hidden="true" className="invisible whitespace-nowrap">
 					{longest}
+					{TAIL}
 				</span>
-				<span className="absolute left-0 top-0 right-0 whitespace-nowrap text-center">{verbs[0]}</span>
+				<span className="absolute inset-y-0 left-0 whitespace-nowrap">
+					{verbs[0]}
+					{TAIL}
+				</span>
 			</span>
 		);
 	}
@@ -97,10 +106,11 @@ function RotatingVerbInner() {
 			{/* Invisible longest-word placeholder locks width so swaps don't shift layout. */}
 			<span aria-hidden="true" className="invisible whitespace-nowrap">
 				{longest}
+				{TAIL}
 			</span>
-			{/* Live region: announce the current verb for screen readers, but only the verb. */}
+			{/* Live region: announce the current verb for screen readers. */}
 			<span
-				className="absolute left-0 top-0 right-0 overflow-hidden whitespace-nowrap text-center"
+				className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap"
 				aria-live="polite"
 				aria-atomic="true"
 			>
@@ -114,6 +124,7 @@ function RotatingVerbInner() {
 						transition={{ duration: 0.45, ease: EASE_HERO }}
 					>
 						{current}
+						{TAIL}
 					</motion.span>
 				</AnimatePresence>
 			</span>
