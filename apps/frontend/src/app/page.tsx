@@ -3,6 +3,7 @@ import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
 import FrameworkAgnosticHero from "@/components/landing/framework-agnostic-hero";
 import HowItWorks from "@/components/landing/how-it-works";
+import ThreeRuntimeOptions from "@/components/landing/three-runtime-options";
 import TopFiveWidget from "@/components/leaderboard/top-five-widget";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
@@ -54,6 +55,8 @@ export default async function Home() {
 			<TopFiveWidget />
 
 			<ActivityStrip />
+
+			<ThreeRuntimeOptions />
 
 			<HowItWorks />
 
