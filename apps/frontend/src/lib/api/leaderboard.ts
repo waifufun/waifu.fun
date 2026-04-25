@@ -123,9 +123,7 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 		queryKey: ["leaderboard", sort, limit],
 		queryFn: async () => {
 			try {
-				const data = await apiFetch<unknown>(
-					`/v2/agents/leaderboard?sort=${encodeURIComponent(sort)}&limit=${limit}`,
-				);
+				const data = await apiFetch<unknown>(`/v2/agents/leaderboard?sort=${encodeURIComponent(sort)}&limit=${limit}`);
 				const entries = pickArray(data).map(normalizeEntry);
 				if (entries.length > 0) return sortEntries(entries, sort);
 			} catch {
