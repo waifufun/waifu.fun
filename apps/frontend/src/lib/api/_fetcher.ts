@@ -88,10 +88,11 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit = {})
 
 	if (!res.ok) {
 		const text = await res.text().catch(() => "");
-		let parsed: { code?: string; error?: string; message?: string } | null = null;
+		type ParsedError = { code?: string; error?: string; message?: string };
+		let parsed: ParsedError | null = null;
 		if (text) {
 			try {
-				parsed = JSON.parse(text) as typeof parsed;
+				parsed = JSON.parse(text) as ParsedError;
 			} catch {
 				parsed = null;
 			}
