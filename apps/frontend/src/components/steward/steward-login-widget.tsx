@@ -16,6 +16,13 @@ interface StewardLoginWidgetProps {
  *
  * Shows email, Google, and Discord sign-in options,
  * plus a wallet connect option via RainbowKit.
+ *
+ * @deprecated W9.9 retired this in favor of the standalone /auth/connect
+ * picker page (apps/frontend/src/components/auth/oauth-connect-panel.tsx),
+ * which renders all six providers reliably and matches Wave 8a aesthetic
+ * (sharp corners, lowercase mono labels). Header sign-in now navigates to
+ * /auth/connect?return_to=... instead of opening this modal. Kept for any
+ * remaining consumers; do not add new ones.
  */
 export function StewardLoginWidget({ open, onOpenChange }: StewardLoginWidgetProps) {
 	const { isAuthenticated } = useAuth();
