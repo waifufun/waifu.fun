@@ -109,8 +109,8 @@
 		"label": "Language"
 	},
 	"wallet": {
-		"connectWallet": "Connect Wallet",
-		"signIn": "Sign In",
+		"connectWallet": "connect wallet",
+		"signIn": "sign in",
 		"signOut": "Sign out"
 	},
 	"swap": {

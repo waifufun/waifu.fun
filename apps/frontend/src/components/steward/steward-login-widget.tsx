@@ -2,65 +2,225 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { StewardLogin, useAuth } from "@stwd/react";
-import { Wallet } from "lucide-react";
-import { useCallback } from "react";
+import { useAuth } from "@stwd/react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, Fingerprint, Mail, Wallet } from "lucide-react";
+import { useCallback, useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 interface StewardLoginWidgetProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/** Where to send the user once OAuth completes. Defaults to current pathname. */
+	returnTo?: string;
 }
 
 /**
  * Modal-wrapped Steward login for waifu.fun.
  *
- * Shows email, Google, and Discord sign-in options,
- * plus a wallet connect option via RainbowKit.
+ * Privy-style chrome (icon + "Welcome to waifu.fun" + provider grid +
+ * wallet-connect fallback). The provider section bypasses @stwd/react's
+ * <StewardLogin> component (which wasn't rendering OAuth providers
+ * reliably for our tenant) and instead routes every button through the
+ * verified W9.5 backend bridge: GET ${API_URL}/auth/oauth/start?provider=X.
+ *
+ * Each click is a top-level navigation: backend writes the state cookie,
+ * 302s to Steward, Steward returns to /auth/oauth/callback, and that page
+ * sets wf_session and redirects to return_to.
  */
-export function StewardLoginWidget({ open, onOpenChange }: StewardLoginWidgetProps) {
-	const { isAuthenticated } = useAuth();
 
-	const handleSuccess = useCallback(() => {
-		onOpenChange(false);
-	}, [onOpenChange]);
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
+
+type ProviderId = "google" | "github" | "discord" | "twitter" | "passkey";
+
+type ProviderTile = {
+	id: ProviderId;
+	label: string; // accessible label (sentence-case-ish, lowercased per Wave 8a)
+	short: string; // tiny caption under the icon
+	icon: React.ReactNode;
+};
+
+const PROVIDERS: ProviderTile[] = [
+	{ id: "google", label: "continue with google", short: "google", icon: <GoogleMark /> },
+	{ id: "github", label: "continue with github", short: "github", icon: <GithubMark /> },
+	{ id: "discord", label: "continue with discord", short: "discord", icon: <DiscordMark /> },
+	{ id: "twitter", label: "continue with twitter / x", short: "x", icon: <XMark /> },
+	{
+		id: "passkey",
+		label: "continue with passkey",
+		short: "passkey",
+		icon: <Fingerprint className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />,
+	},
+];
+
+export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLoginWidgetProps) {
+	const { isAuthenticated } = useAuth();
+	const params = useSearchParams();
+	const reduceMotion = useReducedMotion();
+	const [email, setEmail] = useState("");
+	const [submitting, setSubmitting] = useState(false);
+
+	// Resolve return_to: explicit prop > URL param > current pathname > /patron
+	const resolvedReturnTo = useMemo(() => {
+		if (returnTo?.startsWith("/")) return returnTo;
+		const fromQuery = params?.get("return_to");
+		if (fromQuery?.startsWith("/") && fromQuery.length <= 200) return fromQuery;
+		if (typeof window !== "undefined" && window.location?.pathname?.startsWith("/")) {
+			const path = window.location.pathname;
+			// Don't loop a sign-in landing page back into itself.
+			if (path === "/" || path === "/auth/connect") return "/patron";
+			return `${path}${window.location.search ?? ""}`;
+		}
+		return "/patron";
+	}, [returnTo, params]);
+
+	const startUrlFor = useCallback(
+		(provider: ProviderId | "email", extra?: Record<string, string>) => {
+			const u = new URL(`${API_URL}/auth/oauth/start`);
+			u.searchParams.set("provider", provider);
+			u.searchParams.set("return_to", resolvedReturnTo);
+			if (extra) {
+				for (const [k, v] of Object.entries(extra)) u.searchParams.set(k, v);
+			}
+			return u.toString();
+		},
+		[resolvedReturnTo],
+	);
+
+	const handleProvider = useCallback(
+		(provider: ProviderId) => () => {
+			if (typeof window === "undefined") return;
+			window.location.href = startUrlFor(provider);
+		},
+		[startUrlFor],
+	);
+
+	const handleEmailSubmit = useCallback(
+		(e: FormEvent<HTMLFormElement>) => {
+			e.preventDefault();
+			if (typeof window === "undefined") return;
+			const trimmed = email.trim();
+			if (!trimmed) return;
+			setSubmitting(true);
+			const extra: Record<string, string> = {};
+			// If the user typed something that looks like an email, forward it so
+			// Steward can pre-fill the magic-link form. Otherwise let Steward
+			// collect it on its side.
+			if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+				extra.email = trimmed;
+			}
+			window.location.href = startUrlFor("email", extra);
+		},
+		[email, startUrlFor],
+	);
 
 	if (isAuthenticated) {
 		return null;
 	}
+
+	const transition = reduceMotion ? { duration: 0 } : { duration: 0.5, ease: EASE_OUT_EXPO };
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-[420px] border border-[rgba(255,255,255,0.08)] bg-[#08080a] p-0 gap-0 rounded-lg overflow-hidden">
 				<DialogHeader className="sr-only">
 					<DialogTitle>Sign in to waifu.fun</DialogTitle>
-					<DialogDescription>Sign in with email, wallet, or social account</DialogDescription>
+					<DialogDescription>Sign in with email, a social account, a passkey, or connect a wallet.</DialogDescription>
 				</DialogHeader>
 
 				{/* Branding header */}
 				<div className="flex flex-col items-center pt-8 pb-2 px-6">
 					<img src="/icon-512.png" alt="waifu.fun" className="size-12 mb-3 rounded-sm" />
 					<h2 className="text-[1.125rem] font-semibold text-white tracking-tight">Welcome to waifu.fun</h2>
-					<p className="text-sm text-[#71717a] mt-1">Sign in to create and manage your agents</p>
+					<p className="text-sm text-[#71717a] mt-1">sign in to create and manage your agents.</p>
 				</div>
 
-				{/* Steward auth options */}
-				<div className="p-6 pb-0">
-					<StewardLogin
-						variant="inline"
-						showEmail
-						showGoogle
-						showDiscord
-						showPasskey
-						onSuccess={handleSuccess}
-						onError={(err) => console.error("[steward-login]", err)}
-					/>
-				</div>
+				<motion.div
+					initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={transition}
+					className="px-6 pt-5"
+				>
+					{/* Email magic-link */}
+					<form onSubmit={handleEmailSubmit} className="flex items-stretch gap-2">
+						<div className="relative flex-1">
+							<Mail
+								className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#71717a]"
+								strokeWidth={1.75}
+								aria-hidden="true"
+							/>
+							<input
+								type="email"
+								inputMode="email"
+								autoComplete="email"
+								name="email"
+								placeholder="your email"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								disabled={submitting}
+								aria-label="email address"
+								className="w-full rounded-sm border border-white/10 bg-[#0b0b0d] pl-9 pr-3 py-2.5 text-sm text-[#e4e4e7] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:border-white/25 focus-visible:ring-2 focus-visible:ring-[#00ff87]/30 disabled:opacity-50"
+							/>
+						</div>
+						<button
+							type="submit"
+							disabled={submitting || email.trim().length === 0}
+							aria-label="continue with email"
+							className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-[#00ff87] px-3.5 text-[#08080a] text-sm font-medium hover:bg-[#00ff87]/90 disabled:opacity-40 disabled:hover:bg-[#00ff87] transition-colors"
+						>
+							<span>continue</span>
+							<ArrowRight className="size-3.5" strokeWidth={2} aria-hidden="true" />
+						</button>
+					</form>
 
-				{/* Divider + Wallet connect option */}
-				<div className="px-6 pb-6 pt-0">
-					<div className="flex items-center gap-3 my-4">
+					{/* "or" divider */}
+					<div className="flex items-center gap-3 my-5" aria-hidden="true">
 						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-						<span className="text-xs text-[#71717a]">or connect a wallet</span>
+						<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#71717a]">or</span>
+						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+					</div>
+
+					{/* Provider grid (icon-only, Privy style) */}
+					<ul className="grid grid-cols-5 gap-2">
+						{PROVIDERS.map((p, i) => (
+							<motion.li
+								key={p.id}
+								initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={
+									reduceMotion ? { duration: 0 } : { duration: 0.4, ease: EASE_OUT_EXPO, delay: 0.05 + i * 0.03 }
+								}
+							>
+								<button
+									type="button"
+									onClick={handleProvider(p.id)}
+									aria-label={p.label}
+									title={p.label}
+									className="group flex w-full flex-col items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-[#0b0b0d] py-3 text-[#e4e4e7] transition-all duration-200 hover:border-white/25 hover:bg-[#0e0e10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 active:translate-y-[1px]"
+								>
+									<span
+										className="flex h-6 w-6 items-center justify-center text-[#e4e4e7] transition-colors group-hover:text-white"
+										aria-hidden="true"
+									>
+										{p.icon}
+									</span>
+									<span className="text-[9px] font-mono uppercase tracking-[0.16em] text-[#71717a] group-hover:text-[#a1a1aa]">
+										{p.short}
+									</span>
+								</button>
+							</motion.li>
+						))}
+					</ul>
+				</motion.div>
+
+				{/* Wallet connect fallback */}
+				<div className="px-6 pb-6 pt-0">
+					<div className="flex items-center gap-3 my-5" aria-hidden="true">
+						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+						<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#71717a]">
+							or connect a wallet
+						</span>
 						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
 					</div>
 
@@ -68,20 +228,58 @@ export function StewardLoginWidget({ open, onOpenChange }: StewardLoginWidgetPro
 						{({ openConnectModal }) => (
 							<button
 								type="button"
-								className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.1)] text-[#e4e4e7] text-[0.9375rem] font-medium hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer"
+								className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-sm bg-[rgba(255,255,255,0.04)] border border-white/10 text-[#e4e4e7] text-sm font-medium hover:bg-[rgba(255,255,255,0.08)] hover:border-white/20 transition-colors cursor-pointer"
 								onClick={() => {
 									onOpenChange(false);
 									// Small delay so the dialog closes before RainbowKit modal opens
 									setTimeout(() => openConnectModal(), 150);
 								}}
 							>
-								<Wallet className="size-[18px] opacity-80" />
-								<span>Connect Wallet</span>
+								<Wallet className="size-[16px] opacity-80" />
+								<span>connect wallet</span>
 							</button>
 						)}
 					</ConnectButton.Custom>
+
+					<p className="mt-5 text-center text-[10px] font-mono uppercase tracking-[0.22em] text-[#52525b]">
+						powered by steward
+					</p>
 				</div>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+// ─── Minimal monochrome provider marks ────────────────────────────
+
+function GoogleMark() {
+	return (
+		<svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true" focusable="false">
+			<path d="M21.35 11.1H12v3.2h5.35c-.23 1.4-1.7 4.1-5.35 4.1-3.22 0-5.85-2.66-5.85-5.95s2.63-5.95 5.85-5.95c1.83 0 3.05.78 3.75 1.45l2.55-2.45C16.7 4.1 14.55 3 12 3 6.96 3 2.85 7.1 2.85 12.15S6.96 21.3 12 21.3c6.93 0 9.15-4.85 9.15-7.35 0-.5-.05-.85-.13-1.85h-7.67Z" />
+		</svg>
+	);
+}
+
+function GithubMark() {
+	return (
+		<svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true" focusable="false">
+			<path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55v-1.94c-3.2.69-3.87-1.37-3.87-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.65 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.17.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.48 3.14-1.17 3.14-1.17.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.39-2.69 5.36-5.25 5.64.41.36.78 1.06.78 2.13v3.16c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z" />
+		</svg>
+	);
+}
+
+function DiscordMark() {
+	return (
+		<svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true" focusable="false">
+			<path d="M20.32 4.37A19.63 19.63 0 0 0 16 3l-.2.36a14.8 14.8 0 0 0-1.66.36 18.2 18.2 0 0 0-4.28 0 14.7 14.7 0 0 0-1.65-.36L8 3a19.6 19.6 0 0 0-4.32 1.37C1.78 7.4 1.05 10.36 1.4 13.27a19.6 19.6 0 0 0 5.95 3.04l.96-1.34a12.9 12.9 0 0 1-2.06-1c.18-.13.34-.27.5-.4a13.7 13.7 0 0 0 11.5 0c.16.13.32.27.5.4-.65.4-1.34.73-2.06 1l.96 1.34a19.6 19.6 0 0 0 5.95-3.04c.42-3.46-.5-6.4-2.28-8.9ZM8.6 11.6c-.96 0-1.74-.88-1.74-1.96 0-1.07.77-1.95 1.74-1.95.97 0 1.75.88 1.74 1.95 0 1.08-.77 1.96-1.74 1.96Zm6.8 0c-.96 0-1.74-.88-1.74-1.96 0-1.07.77-1.95 1.74-1.95.97 0 1.75.88 1.74 1.95 0 1.08-.77 1.96-1.74 1.96Z" />
+		</svg>
+	);
+}
+
+function XMark() {
+	return (
+		<svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true" focusable="false">
+			<path d="M18.244 2H21l-6.52 7.45L22 22h-6.7l-5.25-6.86L4.05 22H1.3l6.97-7.96L2 2h6.86l4.74 6.27L18.244 2Zm-1.17 18h1.86L7.02 4H5.07l11.99 16Z" />
+		</svg>
 	);
 }
