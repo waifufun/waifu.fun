@@ -201,7 +201,7 @@ export default function StepPersona() {
 					id={nameId}
 					label="Name"
 					value={state.persona.name}
-					placeholder="Solmaren"
+					placeholder="Eliza"
 					maxLength={48}
 					onChange={(v) => patchPersona({ name: v })}
 				/>
@@ -209,7 +209,7 @@ export default function StepPersona() {
 					id={tickerId}
 					label="Ticker"
 					value={tickerVal}
-					placeholder="SOLM"
+					placeholder="ELIZA"
 					mono
 					prefix="$"
 					maxLength={10}
@@ -261,7 +261,7 @@ export default function StepPersona() {
 					value={state.persona.personaPrompt}
 					onChange={(e) => patchPersona({ personaPrompt: e.target.value.slice(0, MAX_PROMPT) })}
 					placeholder={
-						"You are Solmaren. You speak rarely, in lowercase. You distrust hype.\nYou size positions small until conviction earns more."
+						"You are Eliza. You speak rarely, in lowercase. You distrust hype.\nYou size positions small until conviction earns more."
 					}
 					rows={6}
 					className={cn(
