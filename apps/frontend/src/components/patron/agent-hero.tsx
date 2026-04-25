@@ -28,7 +28,7 @@ export default function AgentHero({ agent, isLoading }: Props) {
 
 	return (
 		<div className="flex items-start gap-4 flex-wrap">
-			<div className="w-16 h-16 rounded-md overflow-hidden bg-[#141414] border border-autofun-background-action-highlight/30 shrink-0">
+			<div className="w-16 h-16 rounded-md overflow-hidden bg-[#141414] border border-stroke shrink-0">
 				{agent.avatar ? (
 					<Image
 						src={agent.avatar}

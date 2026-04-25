@@ -51,7 +51,7 @@ export default function AdapterPermissions({ agent, isLoading }: Props) {
 	return (
 		<section
 			aria-label="Adapter permissions"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapters</h2>
@@ -59,7 +59,7 @@ export default function AdapterPermissions({ agent, isLoading }: Props) {
 			</header>
 
 			{isLoading ? (
-				<ul className="divide-y divide-autofun-background-action-highlight/20">
+				<ul className="divide-y divide-stroke">
 					{[0, 1, 2].map((i) => (
 						<li key={i} className="py-3 flex items-center justify-between gap-3">
 							<div className="flex-1 space-y-2">
@@ -73,7 +73,7 @@ export default function AdapterPermissions({ agent, isLoading }: Props) {
 			) : adapters.length === 0 ? (
 				<p className="text-sm text-neutral-500">No adapters configured.</p>
 			) : (
-				<ul className="divide-y divide-autofun-background-action-highlight/20">
+				<ul className="divide-y divide-stroke">
 					{adapters.map((adapter) => (
 						<AdapterRow key={adapter.id} adapter={adapter} />
 					))}

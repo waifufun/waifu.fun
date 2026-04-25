@@ -42,7 +42,7 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 	return (
 		<section
 			aria-label="Activity feed"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Activity</h2>
@@ -64,7 +64,7 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 			) : !events || events.length === 0 ? (
 				<p className="text-sm text-neutral-500">No activity yet.</p>
 			) : (
-				<ul className="divide-y divide-autofun-background-action-highlight/20">
+				<ul className="divide-y divide-stroke">
 					{events.map((event) => {
 						const s = styleFor(event.type);
 						return (

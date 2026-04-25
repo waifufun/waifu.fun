@@ -43,7 +43,7 @@ export default function EmergencyControls() {
 	return (
 		<section
 			aria-label="Emergency controls"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<header className="flex items-center justify-between mb-1">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Emergency</h2>

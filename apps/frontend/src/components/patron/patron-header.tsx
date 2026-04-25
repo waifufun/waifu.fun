@@ -12,7 +12,7 @@ type Props = {
 
 export default function PatronHeader({ title, subtitle, backHref }: Props) {
 	return (
-		<header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6 pb-4 border-b border-autofun-background-action-highlight/40">
+		<header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-6 pb-4 border-b border-stroke-strong">
 			<div className="flex flex-col gap-1">
 				{backHref ? (
 					<Link href={backHref} className="text-xs uppercase tracking-wide text-neutral-400 hover:text-white w-fit">

@@ -57,7 +57,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 	return (
 		<section
 			aria-label="Treasury"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>
@@ -76,7 +76,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 				<Sparkline series={agent?.treasurySeries ?? []} />
 			</div>
 
-			<div className="grid grid-cols-2 gap-4 pt-4 border-t border-autofun-background-action-highlight/30">
+			<div className="grid grid-cols-2 gap-4 pt-4 border-t border-stroke">
 				<div>
 					<div className="text-xs uppercase tracking-wide text-neutral-500">Runway</div>
 					<div className="text-white font-medium mt-1">
