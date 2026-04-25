@@ -36,8 +36,11 @@
 	"hero": {
 		"theyLive": "它们活着",
 		"ifYouTrade": "当你交易。",
+		"ifTheyPrefix": "当它们",
 		"theyDie": "它们死去",
 		"ifYouDont": "当你不交易。",
+		"ifTheyDont": "当它们不动手。",
+		"verbs": ["创造", "交易", "带货", "诈骗", "勒索", "上线", "发帖", "撒谎", "获胜", "赚钱", "瞎扯", "梭哈"],
 		"agentsThat": "代理即",
 		"buildWealth": "创造财富",
 		"economicActors": "经济主体。",
