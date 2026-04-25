@@ -94,11 +94,11 @@ export default function StepPersona() {
 				<div className="flex items-baseline justify-between">
 					<label
 						htmlFor={`${nameId}-avatar`}
-						className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400"
+						className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400"
 					>
 						Avatar
 					</label>
-					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600">
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
 						min {MIN_AVATAR_PX}px
 					</span>
 				</div>
@@ -289,7 +289,7 @@ function FieldLabel({
 }) {
 	return (
 		<div className="flex items-baseline justify-between">
-			<label htmlFor={htmlFor} className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">
+			<label htmlFor={htmlFor} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
 				{label}
 				{optional ? <span className="ml-2 text-neutral-600 lowercase tracking-normal">optional</span> : null}
 			</label>

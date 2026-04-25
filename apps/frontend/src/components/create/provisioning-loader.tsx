@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useEffect, useState } from "react";
+import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "./wizard-icons";
 
@@ -34,7 +35,7 @@ const STAGES: { id: Exclude<ProvisioningStage, "done">; label: string; sublabel:
 	},
 ];
 
-const TRANSITION = { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const };
+const TRANSITION = { duration: 0.45, ease: EASE_HERO };
 
 type Props = {
 	/** Called once all stages plus the success hold complete. */
@@ -113,7 +114,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 						<motion.span
 							initial={false}
 							animate={{ scaleX: allDone ? 1 : totalProgress }}
-							transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+							transition={{ duration: 0.6, ease: EASE_HERO }}
 							className="absolute inset-0 origin-left bg-accent"
 						/>
 					</div>
@@ -153,7 +154,7 @@ const Stage = memo(function Stage({
 							initial={{ scale: 0.6, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.6, opacity: 0 }}
-							transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+							transition={{ duration: 0.3, ease: EASE_HERO }}
 							className="inline-flex items-center justify-center h-5 w-5 border border-accent/40 text-accent"
 						>
 							<CheckIcon className="h-3 w-3" />

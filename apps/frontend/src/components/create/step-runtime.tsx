@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useId, useState } from "react";
+import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CheckIcon, CloudIcon, CopyIcon, PullIcon, WebhookIcon } from "./wizard-icons";
 import { type RuntimeKind, useWizard } from "./wizard-state";
@@ -42,7 +43,7 @@ const OPTIONS: Option[] = [
 	},
 ];
 
-const TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const };
+const TRANSITION = { duration: 0.28, ease: EASE_HERO };
 
 export default function StepRuntime() {
 	const { state, patchRuntime } = useWizard();
@@ -136,7 +137,7 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 
 			<div>
 				<h3 className="text-base text-white tracking-tight">{opt.title}</h3>
-				<p className="text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-500 mt-0.5">{opt.tagline}</p>
+				<p className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500 mt-0.5">{opt.tagline}</p>
 			</div>
 
 			<p className="text-xs text-neutral-400 leading-relaxed">{opt.description}</p>
@@ -188,7 +189,7 @@ function WebhookConfig() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5 flex flex-col gap-4">
 			<div>
-				<label htmlFor={urlId} className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">
+				<label htmlFor={urlId} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
 					Webhook URL
 				</label>
 				<div
@@ -218,10 +219,10 @@ function WebhookConfig() {
 
 			<div>
 				<div className="flex items-baseline justify-between">
-					<label htmlFor={secretId} className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">
+					<label htmlFor={secretId} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
 						HMAC secret
 					</label>
-					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600">auto-generated</span>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">auto-generated</span>
 				</div>
 				<div className="mt-2 flex items-center bg-black/40 border border-white/10 h-11 pl-3 pr-1">
 					<input
@@ -237,7 +238,7 @@ function WebhookConfig() {
 						onClick={copy}
 						aria-label="Copy secret"
 						className={cn(
-							"inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-mono uppercase tracking-[0.16em]",
+							"inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-mono uppercase tracking-[0.2em]",
 							"border border-white/10 text-neutral-300 transition-colors duration-200",
 							"hover:border-white/30 hover:text-white",
 						)}

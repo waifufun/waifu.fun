@@ -72,7 +72,7 @@ export default function StepReview() {
 								{state.persona.name || <span className="text-neutral-600">unnamed</span>}
 							</h3>
 							{state.persona.ticker ? (
-								<span className="text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-400 border border-white/10 px-1.5 py-0.5">
+								<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-400 border border-white/10 px-1.5 py-0.5">
 									${state.persona.ticker}
 								</span>
 							) : null}
@@ -102,7 +102,7 @@ export default function StepReview() {
 						<span className="text-neutral-600 mx-2">+</span>
 						<span className="text-neutral-500">steward</span>
 					</p>
-					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-500">1 of 2</p>
+					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">1 of 2</p>
 				</Row>
 
 				{/* Tax */}
@@ -123,7 +123,7 @@ export default function StepReview() {
 							{adapters.map((slug) => (
 								<span
 									key={slug}
-									className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent border border-accent/30 px-2 py-1"
+									className="text-[11px] font-mono uppercase tracking-[0.24em] text-accent border border-accent/30 px-2 py-1"
 								>
 									{slug}
 								</span>
@@ -159,7 +159,7 @@ export default function StepReview() {
 function Row({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
 	return (
 		<div className="grid grid-cols-[120px_1fr] gap-4 p-5 items-start">
-			<dt className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500 pt-0.5">{label}</dt>
+			<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 pt-0.5">{label}</dt>
 			<dd>
 				{value ? <p className="text-sm text-neutral-200">{value}</p> : null}
 				{children}

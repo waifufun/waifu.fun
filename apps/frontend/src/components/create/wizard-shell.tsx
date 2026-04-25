@@ -3,11 +3,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
+import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from "./wizard-icons";
 import { STEP_LABELS, useStepValid, useWizard, WIZARD_STEPS, type WizardStep } from "./wizard-state";
 
-const TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const };
+const TRANSITION = { duration: 0.32, ease: EASE_HERO };
 
 export function useWizardStep(): {
 	step: WizardStep;
@@ -157,14 +158,14 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 													scaleX: isComplete ? 1 : isCurrent ? 1 : 0,
 													backgroundColor: isComplete || isCurrent ? "#00ff87" : "rgba(255,255,255,0.1)",
 												}}
-												transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+												transition={{ duration: 0.5, ease: EASE_HERO }}
 												className="absolute inset-0 origin-left"
 											/>
 										</div>
 										<div className="flex items-center gap-1.5">
 											<span
 												className={cn(
-													"font-mono text-[10px] tabular-nums tracking-[0.18em] uppercase",
+													"font-mono text-[10px] tabular-nums tracking-[0.2em] uppercase",
 													isCurrent ? "text-white" : "text-neutral-500",
 												)}
 											>
@@ -217,7 +218,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 
 					<div className="flex items-center gap-3 min-h-[20px]">
 						{!valid && reason ? (
-							<p className="text-xs text-neutral-500 font-mono uppercase tracking-wider hidden sm:block">{reason}</p>
+							<p className="text-xs text-neutral-500 font-mono uppercase tracking-[0.2em] hidden sm:block">{reason}</p>
 						) : null}
 						<button
 							type="button"

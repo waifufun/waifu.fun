@@ -42,8 +42,8 @@ export default function StepSafe() {
 			{/* Safe preview */}
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
-					<h2 className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">Safe (1-of-2)</h2>
-					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600">
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">Safe (1-of-2)</h2>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
 						deploys at provision
 					</span>
 				</header>
@@ -66,11 +66,11 @@ export default function StepSafe() {
 
 					<dl className="mt-5 divide-y divide-white/5 border-t border-white/5">
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">Patron wallet</dt>
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Patron wallet</dt>
 							<dd className="text-sm font-mono text-neutral-200 tabular-nums">{shortAddr(address)}</dd>
 						</div>
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">Agent steward</dt>
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Agent steward</dt>
 							<dd className="flex items-center gap-2">
 								<span className="text-sm font-mono text-neutral-500">[generated at provision]</span>
 								<span className="inline-flex items-center text-[9px] font-mono uppercase tracking-[0.2em] text-accent border border-accent/30 px-1.5 py-0.5">
@@ -79,7 +79,7 @@ export default function StepSafe() {
 							</dd>
 						</div>
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">Threshold</dt>
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Threshold</dt>
 							<dd className="text-sm font-mono text-neutral-200">1 of 2</dd>
 						</div>
 					</dl>
@@ -89,18 +89,18 @@ export default function StepSafe() {
 			{/* Tax split */}
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
-					<h2 className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">Tax routing</h2>
-					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600">v1 default</span>
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">Tax routing</h2>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">v1 default</span>
 				</header>
 
 				<div className="border border-white/8 bg-white/[0.012] p-5">
 					<div className="flex items-end gap-2 mb-3">
 						<div className="flex-1 min-w-0">
-							<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">Agent treasury</p>
+							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Agent treasury</p>
 							<p className="mt-1 text-2xl font-medium text-white tabular-nums">{agentPct}%</p>
 						</div>
 						<div className="text-right">
-							<p className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">Patron</p>
+							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Patron</p>
 							<p className="mt-1 text-2xl font-medium text-neutral-300 tabular-nums">{patronPct}%</p>
 						</div>
 					</div>
@@ -123,8 +123,8 @@ export default function StepSafe() {
 			{/* Adapters */}
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
-					<h2 className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">Adapters</h2>
-					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600">
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">Adapters</h2>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
 						enabled at provision
 					</span>
 				</header>
@@ -137,18 +137,18 @@ export default function StepSafe() {
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center gap-2">
 										<h3 className="text-sm text-white tracking-tight">{a.name}</h3>
-										<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-neutral-500 border border-white/10 px-1.5 py-0.5">
+										<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 border border-white/10 px-1.5 py-0.5">
 											{a.role}
 										</span>
 									</div>
 									<p className="mt-1.5 text-xs text-neutral-400 leading-relaxed">{a.blurb}</p>
-									<p className="mt-2 text-[10px] font-mono uppercase tracking-[0.16em] text-neutral-500">
+									<p className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">
 										default cap: {a.defaults}
 									</p>
 								</div>
 								<span
 									className={cn(
-										"shrink-0 text-[10px] font-mono uppercase tracking-[0.18em] px-2 py-1 border",
+										"shrink-0 text-[10px] font-mono uppercase tracking-[0.2em] px-2 py-1 border",
 										enabled ? "text-accent border-accent/30" : "text-neutral-500 border-white/10",
 									)}
 								>
