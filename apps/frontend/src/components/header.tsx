@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import AdminNavLink from "./admin/admin-nav-link";
 import HeaderAuth from "./header-auth";
 import LanguageSwitcher from "./language-switcher";
 import SearchMenu from "./search-menu";
@@ -88,6 +89,7 @@ export default function Header() {
 								{t(link.labelKey)}
 							</Link>
 						))}
+						<AdminNavLink />
 					</nav>
 				</div>
 
@@ -152,6 +154,10 @@ export default function Header() {
 									{t(link.labelKey)}
 								</Link>
 							))}
+							<AdminNavLink
+								className="text-sm font-mono uppercase tracking-wider py-3 px-4 rounded-sm text-red-300 hover:bg-red-500/10"
+								onNavigate={() => setMobileMenuOpen(false)}
+							/>
 							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)] flex flex-col gap-2">
 								<HeaderAuth />
 							</div>

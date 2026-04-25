@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAdminAgents, type AdminAgent, combinedStatus } from "@/lib/api/admin";
 import { useAdminTokenState } from "@/components/admin/ops-token-gate";
+import AgentActionBar from "@/components/admin/agent-action-bar";
 import StatusPill from "@/components/admin/agent-status-pill";
 
 function formatTs(iso: string | null | undefined): string {
@@ -108,7 +109,7 @@ export default function AdminOpsAgentsPage() {
 								</td>
 							</tr>
 						) : (
-							filtered.map((agent) => <AgentRow key={agent.id} agent={agent} />)
+							filtered.map((agent) => <AgentRow key={agent.id} agent={agent} token={token} />)
 						)}
 					</tbody>
 				</table>
