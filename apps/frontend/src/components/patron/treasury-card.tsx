@@ -37,7 +37,7 @@ function Sparkline({ series }: { series: { ts: string; valueUsd: number }[] }) {
 		>
 			<polyline
 				fill="none"
-				stroke="#22c55e"
+				stroke="#00ff87"
 				strokeWidth="1.5"
 				strokeLinejoin="round"
 				strokeLinecap="round"
@@ -66,7 +66,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 				</div>
 				<div className="text-right">
 					<div className="text-xs uppercase tracking-wide text-neutral-500">7d delta</div>
-					<div className={cn("text-lg font-medium mt-1", deltaPositive ? "text-green-400" : "text-red-400")}>
+					<div className={cn("text-lg font-medium mt-1", deltaPositive ? "text-[#00ff87]" : "text-red-400")}>
 						{isLoading ? "..." : `${deltaPositive ? "+" : ""}${formatUsd(delta)}`}
 					</div>
 				</div>

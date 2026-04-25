@@ -11,11 +11,11 @@ type Props = {
 };
 
 const TYPE_STYLES: Record<string, { dot: string; label: string }> = {
-	trade: { dot: "bg-green-400", label: "Trade" },
+	trade: { dot: "bg-[#00ff87]", label: "Trade" },
 	tweet: { dot: "bg-sky-400", label: "Tweet" },
 	reconcile: { dot: "bg-purple-400", label: "Reconcile" },
-	pause: { dot: "bg-amber-400", label: "Pause" },
-	resume: { dot: "bg-green-400", label: "Resume" },
+	pause: { dot: "bg-[#a1a1aa]", label: "Pause" },
+	resume: { dot: "bg-[#00ff87]", label: "Resume" },
 	error: { dot: "bg-red-400", label: "Error" },
 };
 

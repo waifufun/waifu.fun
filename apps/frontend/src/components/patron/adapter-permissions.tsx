@@ -28,7 +28,7 @@ function AdapterRow({ adapter }: { adapter: AgentAdapter }) {
 						aria-label={`${adapter.name} is ${enabled ? "enabled" : "disabled"}. Read-only in v1.`}
 						className={cn(
 							"relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-not-allowed",
-							enabled ? "bg-[#22c55e]/40 border border-[#22c55e]/40" : "bg-neutral-800 border border-neutral-700",
+							enabled ? "bg-[#00ff87]/40 border border-[#00ff87]/40" : "bg-neutral-800 border border-neutral-700",
 						)}
 					>
 						<span
