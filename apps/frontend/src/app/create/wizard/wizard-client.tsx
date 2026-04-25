@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
 import StepPersona from "@/components/create/step-persona";
 import StepReview from "@/components/create/step-review";
@@ -10,6 +11,7 @@ import StepRuntime from "@/components/create/step-runtime";
 import StepSafe from "@/components/create/step-safe";
 import WizardShell from "@/components/create/wizard-shell";
 import { STORAGE_KEY, useWizard, WizardStateProvider } from "@/components/create/wizard-state";
+import { useAuthRequired } from "@/hooks/use-auth-required";
 import { buildProvisionPayload, provisionAgent, type ProvisionResult } from "@/lib/api/agent-provision";
 
 function WizardInner() {
@@ -89,11 +91,20 @@ function WizardInner() {
 	);
 }
 
+function WizardGated() {
+	const { isLoading, isAuthenticated } = useAuthRequired();
+	if (isLoading) return <AuthGateLoader />;
+	// useAuthRequired has already issued router.replace(); render nothing while
+	// the navigation resolves so we don't flash wizard chrome at an anon user.
+	if (!isAuthenticated) return <AuthGateLoader label="redirecting to sign in" />;
+	return <WizardInner />;
+}
+
 export default function WizardClient() {
 	return (
 		<WizardStateProvider>
 			<Suspense fallback={<div className="min-h-[100dvh]" />}>
-				<WizardInner />
+				<WizardGated />
 			</Suspense>
 		</WizardStateProvider>
 	);
