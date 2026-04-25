@@ -123,14 +123,14 @@ function StewardCallbackInner() {
 					</Link>
 				</div>
 
-				<div className="rounded-xl border border-white/10 bg-[#0a0a0c] p-7 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.7)]">
+				<div className="rounded-sm border border-white/10 bg-[#0a0a0c] p-7 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.7)]">
 					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-4">
 						waifu.fun / steward / callback
 					</div>
 
 					{phase === "linking" || phase === "idle" ? (
 						<div className="flex flex-col items-start gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-black/40 text-[#00ff87]">
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87]">
 								<Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} aria-hidden="true" />
 							</div>
 							<h1 className="text-xl font-medium text-white tracking-tight">Linking your Steward account</h1>
@@ -142,7 +142,7 @@ function StewardCallbackInner() {
 
 					{phase === "success" ? (
 						<div className="flex flex-col items-start gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-md border border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]">
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]">
 								<CheckCircle2 className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
 							<h1 className="text-xl font-medium text-white tracking-tight">Steward connected</h1>
@@ -170,7 +170,7 @@ function StewardCallbackInner() {
 
 					{phase === "error" ? (
 						<div className="flex flex-col items-start gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-md border border-rose-400/30 bg-rose-400/10 text-rose-300">
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-rose-400/30 bg-rose-400/10 text-rose-300">
 								<AlertTriangle className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
 							<h1 className="text-xl font-medium text-white tracking-tight">Steward connect failed</h1>
@@ -181,14 +181,14 @@ function StewardCallbackInner() {
 								<button
 									type="button"
 									onClick={retry}
-									className="inline-flex items-center justify-center gap-1.5 rounded-md border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] hover:bg-[#00ff87]/15 transition-colors"
+									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] hover:bg-[#00ff87]/15 transition-colors"
 								>
 									<RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
 									Try again
 								</button>
 								<Link
 									href="/patron"
-									className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
+									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
 								>
 									Back to patron
 								</Link>

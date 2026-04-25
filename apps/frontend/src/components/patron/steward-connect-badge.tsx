@@ -45,7 +45,7 @@ export default function StewardConnectBadge({ className }: Props) {
 	}, [status]);
 
 	const baseClass =
-		"inline-flex items-center gap-2 h-8 px-2.5 rounded-md border text-xs leading-none transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]";
+		"inline-flex items-center gap-2 h-8 px-2.5 rounded-sm border text-xs leading-none transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]";
 
 	if (status.isLoading) {
 		return (
@@ -101,7 +101,7 @@ export default function StewardConnectBadge({ className }: Props) {
 				<PopoverContent
 					align="end"
 					sideOffset={8}
-					className="w-64 rounded-md border-white/10 bg-[#0a0a0c] p-2 text-sm text-neutral-200 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.6)]"
+					className="w-64 rounded-sm border-white/10 bg-[#0a0a0c] p-2 text-sm text-neutral-200 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.6)]"
 				>
 					<div className="px-2 py-2 border-b border-white/5">
 						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Steward account</div>

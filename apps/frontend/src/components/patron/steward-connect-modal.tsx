@@ -49,9 +49,9 @@ function PathCard({
 			type="button"
 			onClick={onClick}
 			disabled={loading}
-			className="group relative flex flex-col items-start gap-4 rounded-lg border border-white/10 bg-[#0b0b0d] p-5 text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
+			className="group relative flex flex-col items-start gap-4 rounded-sm border border-white/10 bg-[#0b0b0d] p-5 text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
 		>
-			<div className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-black/40 text-[#00ff87] transition-colors group-hover:border-[#00ff87]/30">
+			<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87] transition-colors group-hover:border-[#00ff87]/30">
 				{icon}
 			</div>
 			<div className="flex flex-col gap-1">
@@ -165,7 +165,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 				<Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
 				<Dialog.Content
 					aria-describedby="steward-connect-description"
-					className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-[#08080a] p-6 sm:p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
+					className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white/10 bg-[#08080a] p-6 sm:p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
 				>
 					<div className="flex items-start justify-between gap-4 mb-6">
 						<div className="flex flex-col gap-2">
@@ -183,7 +183,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 							</Dialog.Description>
 						</div>
 						<Dialog.Close
-							className="-mr-2 -mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-white hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+							className="-mr-2 -mt-2 inline-flex h-8 w-8 items-center justify-center rounded-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
 							aria-label="Close dialog"
 						>
 							<X className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
@@ -212,38 +212,38 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					</div>
 
 					{popupBlocked && manualUrl ? (
-						<div className="mt-4 rounded-lg border border-amber-400/30 bg-amber-400/[0.05] p-4">
-							<div className="text-xs font-mono uppercase tracking-[0.18em] text-amber-200 mb-2">Popup blocked</div>
-							<p className="text-sm text-amber-100/90 leading-relaxed mb-3">
-								Your browser blocked the Steward popup. Open the link manually, then come back here once you're done.
+						<div className="mt-4 rounded-sm border border-stroke bg-[rgba(255,255,255,0.02)] p-4">
+							<div className="text-xs font-mono uppercase tracking-[0.2em] text-[#a1a1aa] mb-2">popup blocked</div>
+							<p className="text-sm text-[#a1a1aa] leading-relaxed mb-3">
+								your browser blocked the steward popup. open the link manually, then come back here when you're done.
 							</p>
 							<div className="flex flex-col sm:flex-row items-stretch gap-2">
 								<a
 									href={manualUrl}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-100 hover:bg-amber-400/20 transition-colors"
+									className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-sm border border-stroke-strong bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs font-medium text-[#e4e4e7] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
 								>
-									Open Steward
+									open steward
 									<ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
 								</a>
 								<button
 									type="button"
 									onClick={handleCopy}
-									className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
+									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-black/30 px-3 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
 								>
 									<Copy className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-									{copied ? "Copied" : "Copy link"}
+									{copied ? "copied" : "copy link"}
 								</button>
 							</div>
 						</div>
 					) : null}
 
-					<div className="mt-6 rounded-lg border border-white/10 bg-[#0b0b0d]">
+					<div className="mt-6 rounded-sm border border-white/10 bg-[#0b0b0d]">
 						<button
 							type="button"
 							onClick={() => setInfoOpen((v) => !v)}
-							className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded-lg"
+							className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded-sm"
 							aria-expanded={infoOpen}
 							aria-controls="steward-info-panel"
 						>

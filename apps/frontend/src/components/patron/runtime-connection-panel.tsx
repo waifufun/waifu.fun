@@ -11,7 +11,7 @@ type Props = {
 	isLoading: boolean;
 };
 
-const PANEL_BASE = "p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]";
+const PANEL_BASE = "p-5 rounded-sm border border-stroke bg-[#0C0C0C]";
 const CARD_INNER = "rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#0A0A0A]";
 
 function formatRelative(iso: string | null | undefined): string {
