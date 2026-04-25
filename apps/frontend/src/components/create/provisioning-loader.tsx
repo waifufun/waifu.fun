@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useEffect, useState } from "react";
+import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "./wizard-icons";
 
@@ -10,31 +11,31 @@ export type ProvisioningStage = "safe" | "runtime" | "x-oauth" | "policies" | "d
 const STAGES: { id: Exclude<ProvisioningStage, "done">; label: string; sublabel: string; durationMs: number }[] = [
 	{
 		id: "safe",
-		label: "Deploying Safe",
+		label: "deploying safe",
 		sublabel: "1-of-2 multisig with steward key",
 		durationMs: 1600,
 	},
 	{
 		id: "runtime",
-		label: "Minting agent runtime",
+		label: "minting runtime",
 		sublabel: "wiring plugins, treasury, adapters",
 		durationMs: 1500,
 	},
 	{
 		id: "x-oauth",
-		label: "Wiring X OAuth",
+		label: "wiring x oauth",
 		sublabel: "ready to post once you authorize",
 		durationMs: 1200,
 	},
 	{
 		id: "policies",
-		label: "Seeding adapter policies",
-		sublabel: "Pancake and Venus with default caps",
+		label: "seeding policies",
+		sublabel: "pancake and venus with default caps",
 		durationMs: 1300,
 	},
 ];
 
-const TRANSITION = { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const };
+const TRANSITION = { duration: 0.45, ease: EASE_HERO };
 
 type Props = {
 	/** Called once all stages plus the success hold complete. */
@@ -74,11 +75,11 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 			className="fixed inset-0 z-50 bg-[#08080a]/95 backdrop-blur-xl flex items-center justify-center px-4"
 			aria-live="polite"
 			aria-busy={!allDone}
-			aria-label="Provisioning agent"
+			aria-label="provisioning agent"
 		>
 			<div className="w-full max-w-[520px] block">
 				<header className="mb-10">
-					<p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#22c55e]">
+					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-accent">
 						<AnimatePresence mode="wait" initial={false}>
 							<motion.span
 								key={allDone ? "live" : "provisioning"}
@@ -88,7 +89,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 								transition={{ duration: 0.3 }}
 								className="inline-block"
 							>
-								{allDone ? "Live" : "Provisioning"}
+								{allDone ? "live" : "provisioning"}
 							</motion.span>
 						</AnimatePresence>
 					</p>
@@ -101,11 +102,11 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 							transition={TRANSITION}
 							className="mt-3 text-2xl md:text-3xl text-white tracking-tight leading-[1.1]"
 						>
-							{allDone ? "Your agent is alive." : "Spinning up your agent."}
+							{allDone ? "alive." : "spinning up."}
 						</motion.h2>
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">
-						{allDone ? "Redirecting to its home page..." : "This usually takes ten to fifteen seconds."}
+						{allDone ? "taking you home..." : "~10-15 seconds."}
 					</p>
 
 					{/* Macro progress */}
@@ -113,8 +114,8 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 						<motion.span
 							initial={false}
 							animate={{ scaleX: allDone ? 1 : totalProgress }}
-							transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-							className="absolute inset-0 origin-left bg-[#22c55e]"
+							transition={{ duration: 0.6, ease: EASE_HERO }}
+							className="absolute inset-0 origin-left bg-accent"
 						/>
 					</div>
 				</header>
@@ -153,8 +154,8 @@ const Stage = memo(function Stage({
 							initial={{ scale: 0.6, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.6, opacity: 0 }}
-							transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-							className="inline-flex items-center justify-center h-5 w-5 border border-[#22c55e]/40 text-[#22c55e]"
+							transition={{ duration: 0.3, ease: EASE_HERO }}
+							className="inline-flex items-center justify-center h-5 w-5 border border-accent/40 text-accent"
 						>
 							<CheckIcon className="h-3 w-3" />
 						</motion.span>
@@ -168,12 +169,12 @@ const Stage = memo(function Stage({
 							className="relative h-5 w-5 inline-flex items-center justify-center"
 						>
 							<motion.span
-								className="absolute inset-0 border border-[#22c55e]/40"
+								className="absolute inset-0 border border-accent/40"
 								animate={{ opacity: [0.4, 1, 0.4] }}
 								transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 							/>
 							<motion.span
-								className="h-1.5 w-1.5 bg-[#22c55e]"
+								className="h-1.5 w-1.5 bg-accent"
 								animate={{ scale: [0.6, 1.1, 0.6] }}
 								transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 							/>
@@ -211,7 +212,7 @@ function BlinkingDots() {
 	return (
 		<motion.span
 			aria-hidden
-			className="inline-block ml-1 text-[#22c55e]"
+			className="inline-block ml-1 text-accent"
 			animate={{ opacity: [0.2, 1, 0.2] }}
 			transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 		>

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useId, useState } from "react";
+import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { CheckIcon, CloudIcon, CopyIcon, PullIcon, WebhookIcon } from "./wizard-icons";
 import { type RuntimeKind, useWizard } from "./wizard-state";
@@ -19,30 +20,30 @@ type Option = {
 const OPTIONS: Option[] = [
 	{
 		kind: "hosted",
-		title: "Hosted",
-		tagline: "We run it for you",
+		title: "[01] hosted",
+		tagline: "we run it for you. pay as you go.",
 		description:
-			"Pre-baked Eliza runtime on milady cloud. Plugins for trade, X, treasury wired in. Inference billed from the agent's treasury.",
+			"pre-baked eliza runtime on milady cloud. plugins for trade, X, treasury wired in. inference billed from the agent's treasury.",
 		Icon: CloudIcon,
-		badge: "Recommended",
+		badge: "[recommended]",
 	},
 	{
 		kind: "webhook",
-		title: "Webhook",
-		tagline: "I have an agent on a public URL",
-		description: "We POST events to your URL with HMAC auth. Your agent acts via Steward keys. Framework-agnostic.",
+		title: "[02] webhook",
+		tagline: "your agent on a public URL.",
+		description: "we POST events to your URL with HMAC auth. your agent acts via steward keys. framework-agnostic.",
 		Icon: WebhookIcon,
 	},
 	{
 		kind: "pull",
-		title: "Pull",
-		tagline: "I'll poll for events",
-		description: "For residential or hobbyist setups behind NAT. Get an API key once, fetch events on your schedule.",
+		title: "[03] pull",
+		tagline: "you poll us. works behind firewalls.",
+		description: "for residential or hobbyist setups behind NAT. get an API key once, fetch events on your schedule.",
 		Icon: PullIcon,
 	},
 ];
 
-const TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const };
+const TRANSITION = { duration: 0.28, ease: EASE_HERO };
 
 export default function StepRuntime() {
 	const { state, patchRuntime } = useWizard();
@@ -109,9 +110,9 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 			className={cn(
 				"group relative text-left p-5 border h-full flex flex-col gap-3",
 				"transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-				"focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+				"focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
 				selected
-					? "border-[#22c55e]/60 bg-[#22c55e]/[0.04]"
+					? "border-accent/60 bg-accent/[0.04]"
 					: "border-white/8 bg-white/[0.015] hover:border-white/25 hover:bg-white/[0.03]",
 			)}
 		>
@@ -119,29 +120,29 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 				<span
 					className={cn(
 						"inline-flex h-9 w-9 items-center justify-center border",
-						selected ? "border-[#22c55e]/50 text-[#22c55e]" : "border-white/10 text-neutral-300",
+						selected ? "border-accent/50 text-accent" : "border-white/10 text-neutral-300",
 					)}
 					aria-hidden
 				>
 					<Icon className="h-4 w-4" />
 				</span>
 				{opt.badge ? (
-					<span className="text-[9px] font-mono uppercase tracking-[0.18em] text-[#22c55e] border border-[#22c55e]/30 px-1.5 py-0.5">
+					<span className="text-[9px] font-mono uppercase tracking-[0.2em] text-accent border border-accent/30 px-1.5 py-0.5">
 						{opt.badge}
 					</span>
 				) : null}
-				{selected && !opt.badge ? <CheckIcon className="h-4 w-4 text-[#22c55e]" /> : null}
+				{selected && !opt.badge ? <CheckIcon className="h-4 w-4 text-accent" /> : null}
 				{selected && opt.badge ? null : null}
 			</div>
 
 			<div>
-				<h3 className="text-base text-white tracking-tight">{opt.title}</h3>
-				<p className="text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-500 mt-0.5">{opt.tagline}</p>
+				<h3 className="text-base text-white tracking-tight font-mono">{opt.title}</h3>
+				<p className="text-[11px] tracking-tight text-neutral-500 mt-1 leading-relaxed">{opt.tagline}</p>
 			</div>
 
 			<p className="text-xs text-neutral-400 leading-relaxed">{opt.description}</p>
 
-			{selected ? <span className="absolute -top-px -right-px h-2 w-2 bg-[#22c55e]" aria-hidden /> : null}
+			{selected ? <span className="absolute -top-px -right-px h-2 w-2 bg-accent" aria-hidden /> : null}
 		</button>
 	);
 }
@@ -149,9 +150,9 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 function HostedConfirm() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5">
-			<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Hosted runtime</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">hosted runtime</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-				Default. We provision a milady cloud container at the next step. Inference burns from the agent's treasury. You
+				default. we provision a milady cloud container at the next step. inference burns from the agent's treasury. you
 				can move to a self-hosted runtime later from /patron.
 			</p>
 		</aside>
@@ -188,8 +189,8 @@ function WebhookConfig() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5 flex flex-col gap-4">
 			<div>
-				<label htmlFor={urlId} className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">
-					Webhook URL
+				<label htmlFor={urlId} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+					webhook url
 				</label>
 				<div
 					className={cn(
@@ -212,16 +213,16 @@ function WebhookConfig() {
 					/>
 				</div>
 				<p className="mt-1.5 text-[11px] text-neutral-500 leading-relaxed">
-					Your endpoint should accept JSON, verify the HMAC signature, and return 2xx fast.
+					your endpoint should accept JSON, verify the HMAC signature, and return 2xx fast.
 				</p>
 			</div>
 
 			<div>
 				<div className="flex items-baseline justify-between">
-					<label htmlFor={secretId} className="text-xs font-mono uppercase tracking-[0.18em] text-neutral-400">
-						HMAC secret
+					<label htmlFor={secretId} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+						hmac secret
 					</label>
-					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600">auto-generated</span>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">auto-generated</span>
 				</div>
 				<div className="mt-2 flex items-center bg-black/40 border border-white/10 h-11 pl-3 pr-1">
 					<input
@@ -235,28 +236,28 @@ function WebhookConfig() {
 					<button
 						type="button"
 						onClick={copy}
-						aria-label="Copy secret"
+						aria-label="copy secret"
 						className={cn(
-							"inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-mono uppercase tracking-[0.16em]",
+							"inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-mono uppercase tracking-[0.2em]",
 							"border border-white/10 text-neutral-300 transition-colors duration-200",
 							"hover:border-white/30 hover:text-white",
 						)}
 					>
 						{copied ? (
 							<>
-								<CheckIcon className="h-3 w-3 text-[#22c55e]" />
-								<span>Copied</span>
+								<CheckIcon className="h-3 w-3 text-accent" />
+								<span>copied</span>
 							</>
 						) : (
 							<>
 								<CopyIcon className="h-3 w-3" />
-								<span>Copy</span>
+								<span>copy</span>
 							</>
 						)}
 					</button>
 				</div>
 				<p className="mt-1.5 text-[11px] text-neutral-500 leading-relaxed">
-					Used to sign each request as <span className="font-mono">x-waifu-signature</span>. Rotate later from /patron.
+					used to sign each request as <span className="font-mono">x-waifu-signature</span>. rotate later from /patron.
 				</p>
 			</div>
 		</aside>
@@ -266,17 +267,17 @@ function WebhookConfig() {
 function PullConfig() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5">
-			<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Pull mode</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">pull mode</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-				After provisioning we'll show your API key once. Use it to long-poll{" "}
-				<span className="font-mono text-neutral-200">GET /v2/agents/:id/events</span> from anywhere. No public URL
+				after provisioning we'll show your API key once. use it to long-poll{" "}
+				<span className="font-mono text-neutral-200">GET /v2/agents/:id/events</span> from anywhere. no public URL
 				required.
 			</p>
 			<Link
 				href="/litepaper"
-				className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#22c55e] hover:underline underline-offset-4"
+				className="mt-3 inline-flex items-center gap-1.5 text-xs text-accent hover:underline underline-offset-4"
 			>
-				Read the polling guide
+				read the polling guide
 				<span aria-hidden>{"\u2192"}</span>
 			</Link>
 		</aside>

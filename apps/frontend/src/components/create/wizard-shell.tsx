@@ -3,11 +3,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
+import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from "./wizard-icons";
 import { STEP_LABELS, useStepValid, useWizard, WIZARD_STEPS, type WizardStep } from "./wizard-state";
 
-const TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const };
+const TRANSITION = { duration: 0.32, ease: EASE_HERO };
 
 export function useWizardStep(): {
 	step: WizardStep;
@@ -109,30 +110,28 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 		<div className="w-full min-h-[100dvh] px-4 py-12 md:py-16">
 			<div className="mx-auto w-full max-w-[640px]">
 				<header className="mb-10">
-					<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500">
-						Provisioning {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
+					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-neutral-500">
+						provisioning {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
-						{step === "persona" ? "Who are they?" : null}
-						{step === "runtime" ? "Where do they live?" : null}
-						{step === "safe" ? "How do they spend?" : null}
-						{step === "review" ? "Ready to wake them up?" : null}
+						{step === "persona" ? "who are they?" : null}
+						{step === "runtime" ? "where do they live?" : null}
+						{step === "safe" ? "how do they spend?" : null}
+						{step === "review" ? "ready to wake them up?" : null}
 					</h1>
 					<p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-[52ch]">
-						{step === "persona"
-							? "Pick a name, ticker, and a one-line bio. The agent inherits this identity from launch."
-							: null}
+						{step === "persona" ? "pick a name, ticker, a one-line bio. they inherit this from launch." : null}
 						{step === "runtime"
-							? "Run on our hosted cloud, or wire up an agent you already have. You can change this later."
+							? "run on our hosted cloud, or wire up an agent you already have. you can change this later."
 							: null}
 						{step === "safe"
-							? "Treasury rules and adapters. Defaults are sane. Tweak any of this later from /patron."
+							? "treasury rules and adapters. defaults are sane. tweak any of this later from /patron."
 							: null}
-						{step === "review" ? "Last look. Provisioning costs gas plus a small one-time setup fee." : null}
+						{step === "review" ? "last look. costs gas + a one-time $5 setup." : null}
 					</p>
 				</header>
 
-				<nav className="mb-10" aria-label="Wizard steps">
+				<nav className="mb-10" aria-label="wizard steps">
 					<ol className="grid grid-cols-4 gap-2">
 						{WIZARD_STEPS.map((s, i) => {
 							const isComplete = i < stepIndex;
@@ -143,7 +142,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 										type="button"
 										onClick={() => handleStepClick(s)}
 										aria-current={isCurrent ? "step" : undefined}
-										aria-label={`Step ${i + 1}: ${STEP_LABELS[s]}`}
+										aria-label={`step ${i + 1}: ${STEP_LABELS[s]}`}
 										className={cn(
 											"group w-full text-left flex flex-col gap-2 py-1 transition-opacity duration-300",
 											provisioning && "pointer-events-none opacity-60",
@@ -155,25 +154,30 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 												initial={false}
 												animate={{
 													scaleX: isComplete ? 1 : isCurrent ? 1 : 0,
-													backgroundColor: isComplete || isCurrent ? "#22c55e" : "rgba(255,255,255,0.1)",
+													backgroundColor: isComplete || isCurrent ? "#00ff87" : "rgba(255,255,255,0.1)",
 												}}
-												transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+												transition={{ duration: 0.5, ease: EASE_HERO }}
 												className="absolute inset-0 origin-left"
 											/>
 										</div>
 										<div className="flex items-center gap-1.5">
 											<span
 												className={cn(
-													"font-mono text-[10px] tabular-nums tracking-[0.18em] uppercase",
+													"font-mono text-[10px] tabular-nums tracking-[0.2em] uppercase",
 													isCurrent ? "text-white" : "text-neutral-500",
 												)}
 											>
 												{String(i + 1).padStart(2, "0")}
 											</span>
-											<span className={cn("text-[11px] tracking-tight", isCurrent ? "text-white" : "text-neutral-500")}>
+											<span
+												className={cn(
+													"text-[11px] tracking-tight lowercase",
+													isCurrent ? "text-white" : "text-neutral-500",
+												)}
+											>
 												{STEP_LABELS[s]}
 											</span>
-											{isComplete ? <CheckIcon className="h-3 w-3 text-[#22c55e]" /> : null}
+											{isComplete ? <CheckIcon className="h-3 w-3 text-accent" /> : null}
 										</div>
 									</button>
 								</li>
@@ -212,12 +216,12 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 						)}
 					>
 						<ArrowLeftIcon className="h-3.5 w-3.5" />
-						Back
+						back
 					</button>
 
 					<div className="flex items-center gap-3 min-h-[20px]">
 						{!valid && reason ? (
-							<p className="text-xs text-neutral-500 font-mono uppercase tracking-wider hidden sm:block">{reason}</p>
+							<p className="text-xs text-neutral-500 font-mono uppercase tracking-[0.2em] hidden sm:block">{reason}</p>
 						) : null}
 						<button
 							type="button"
@@ -225,13 +229,13 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 							disabled={!valid || provisioning}
 							className={cn(
 								"group inline-flex items-center gap-3 h-10 pl-5 pr-2 text-sm font-medium tracking-tight",
-								"bg-[#22c55e] text-black",
+								"bg-accent text-black",
 								"transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-								"hover:bg-[#16a34a] active:translate-y-[1px]",
+								"hover:bg-accent-dim active:translate-y-[1px]",
 								"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 							)}
 						>
-							<span>{isLast ? "Provision agent" : "Continue"}</span>
+							<span>{isLast ? "provision." : "next"}</span>
 							<span
 								className={cn(
 									"inline-flex items-center justify-center h-7 w-7 bg-black/15",
@@ -256,20 +260,20 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 	switch (step) {
 		case "persona": {
 			const { name, ticker, bio } = state.persona;
-			if (!name.trim()) return "Pick a name";
-			if (name.length > 48) return "Name too long";
-			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "Ticker: 2-10 uppercase letters or digits";
-			if (bio.length > 240) return "Bio too long";
+			if (!name.trim()) return "pick a name";
+			if (name.length > 48) return "name too long";
+			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
+			if (bio.length > 240) return "bio too long";
 			return null;
 		}
 		case "runtime": {
 			if (state.runtime.kind === "webhook") {
 				const url = state.runtime.webhookUrl.trim();
-				if (!url) return "Webhook URL required";
+				if (!url) return "webhook url required";
 				try {
 					new URL(url);
 				} catch {
-					return "Invalid URL";
+					return "invalid url";
 				}
 			}
 			return null;

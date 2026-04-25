@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 import { useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
-	hosted: "Hosted (milady cloud)",
-	webhook: "Webhook",
-	pull: "Pull",
+	hosted: "hosted (milady cloud)",
+	webhook: "webhook",
+	pull: "pull",
 } as const;
 
 function shortAddr(addr?: string | null): string {
@@ -58,7 +58,7 @@ export default function StepReview() {
 						{state.persona.avatarDataUrl ? (
 							<Image
 								src={state.persona.avatarDataUrl}
-								alt="Agent avatar"
+								alt="agent avatar"
 								width={56}
 								height={56}
 								className="object-cover w-full h-full"
@@ -72,7 +72,7 @@ export default function StepReview() {
 								{state.persona.name || <span className="text-neutral-600">unnamed</span>}
 							</h3>
 							{state.persona.ticker ? (
-								<span className="text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-400 border border-white/10 px-1.5 py-0.5">
+								<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-400 border border-white/10 px-1.5 py-0.5">
 									${state.persona.ticker}
 								</span>
 							) : null}
@@ -86,7 +86,7 @@ export default function StepReview() {
 				</div>
 
 				{/* Runtime */}
-				<Row label="Runtime" value={RUNTIME_LABEL[state.runtime.kind]}>
+				<Row label="runtime" value={RUNTIME_LABEL[state.runtime.kind]}>
 					{state.runtime.kind === "webhook" && state.runtime.webhookUrl ? (
 						<p className="mt-1 text-[11px] font-mono text-neutral-500 truncate">{shortUrl(state.runtime.webhookUrl)}</p>
 					) : null}
@@ -96,17 +96,17 @@ export default function StepReview() {
 				</Row>
 
 				{/* Safe */}
-				<Row label="Safe">
+				<Row label="safe">
 					<p className="text-sm text-neutral-200 font-mono tabular-nums">
 						{shortAddr(address)}
 						<span className="text-neutral-600 mx-2">+</span>
 						<span className="text-neutral-500">steward</span>
 					</p>
-					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.16em] text-neutral-500">1 of 2</p>
+					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">1 of 2</p>
 				</Row>
 
 				{/* Tax */}
-				<Row label="Tax split">
+				<Row label="tax split">
 					<p className="text-sm text-neutral-200 font-mono tabular-nums">
 						{state.safe.taxAgentBps / 100}% agent
 						<span className="text-neutral-600 mx-2">/</span>
@@ -115,7 +115,7 @@ export default function StepReview() {
 				</Row>
 
 				{/* Adapters */}
-				<Row label="Adapters">
+				<Row label="adapters">
 					{adapters.length === 0 ? (
 						<p className="text-sm text-neutral-600">none enabled</p>
 					) : (
@@ -123,7 +123,7 @@ export default function StepReview() {
 							{adapters.map((slug) => (
 								<span
 									key={slug}
-									className="text-[11px] font-mono uppercase tracking-[0.16em] text-[#22c55e] border border-[#22c55e]/30 px-2 py-1"
+									className="text-[11px] font-mono uppercase tracking-[0.24em] text-accent border border-accent/30 px-2 py-1"
 								>
 									{slug}
 								</span>
@@ -133,22 +133,22 @@ export default function StepReview() {
 				</Row>
 
 				{/* Cost */}
-				<Row label="Cost">
+				<Row label="cost">
 					<p className="text-sm font-mono tabular-nums text-neutral-200">
 						gas <span className="text-neutral-500">+</span> $5.00 setup
 					</p>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
-						Pulled from your wallet at provision. Token launch is a separate step from the agent's home page once the
-						Safe has BNB.
+						pulled from your wallet at provision. token launch is a separate step from the agent's home page once the
+						safe has BNB.
 					</p>
 				</Row>
 			</section>
 
-			<aside className="border border-[#22c55e]/20 bg-[#22c55e]/[0.03] p-4">
-				<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#22c55e]">After provision</p>
+			<aside className="border border-accent/20 bg-accent/[0.03] p-4">
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">after provision</p>
 				<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-					You'll land on <span className="text-white">/patron/[id]</span> in the{" "}
-					<span className="font-mono text-white">ready_to_launch</span> state. From there: fund the Safe, pick a
+					you'll land on <span className="text-white">/patron/[id]</span> in the{" "}
+					<span className="font-mono text-white">ready_to_launch</span> state. from there: fund the safe, pick a
 					first-buy size, and launch the token whenever you're ready.
 				</p>
 			</aside>
@@ -159,7 +159,7 @@ export default function StepReview() {
 function Row({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
 	return (
 		<div className="grid grid-cols-[120px_1fr] gap-4 p-5 items-start">
-			<dt className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500 pt-0.5">{label}</dt>
+			<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 pt-0.5">{label}</dt>
 			<dd>
 				{value ? <p className="text-sm text-neutral-200">{value}</p> : null}
 				{children}
