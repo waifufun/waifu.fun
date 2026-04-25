@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 /**
  * Per-agent X (Twitter) OAuth connection state.
@@ -14,44 +15,15 @@ export type XConnectionStatus = {
 	connectedAt?: string | null;
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-async function getJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "GET",
-		headers: { Accept: "application/json" },
-		credentials: "include",
-	});
-	if (!res.ok) {
-		throw new Error(`Request failed ${res.status}: ${path}`);
-	}
-	return (await res.json()) as T;
-}
-
 async function postJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "POST",
-		headers: { Accept: "application/json", "Content-Type": "application/json" },
-		credentials: "include",
-	});
-	if (!res.ok) {
-		let message = `Request failed ${res.status}`;
-		try {
-			const body = (await res.json()) as { message?: string; error?: string };
-			if (body?.message) message = body.message;
-			else if (body?.error) message = body.error;
-		} catch {
-			// non-JSON body, ignore
-		}
-		throw new Error(message);
-	}
-	// 204 or empty body is fine
-	const text = await res.text();
-	if (!text) return {} as T;
 	try {
-		return JSON.parse(text) as T;
-	} catch {
-		return {} as T;
+		const result = await apiFetch<T>(path, { method: "POST" });
+		return (result ?? ({} as T)) as T;
+	} catch (err) {
+		if (isApiError(err)) {
+			throw new Error((err as ApiError).message);
+		}
+		throw err;
 	}
 }
 
@@ -67,7 +39,7 @@ export function useXConnection(agentId?: string) {
 		enabled: Boolean(agentId),
 		queryFn: async () => {
 			if (!agentId) throw new Error("missing agentId");
-			return getJson<XConnectionStatus>(`/v2/agents/${encodeURIComponent(agentId)}/x/status`);
+			return apiFetch<XConnectionStatus>(`/v2/agents/${encodeURIComponent(agentId)}/x/status`);
 		},
 		refetchInterval: 60_000,
 		retry: 1,

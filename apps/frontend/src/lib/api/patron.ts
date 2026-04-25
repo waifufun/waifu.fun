@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "./_fetcher";
 
 /**
  * Patron-facing agent summary. Shape mirrors what the v2 API is expected
@@ -73,22 +74,6 @@ export type AgentAdapter = {
 	description?: string;
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-async function getJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "GET",
-		headers: {
-			Accept: "application/json",
-		},
-		credentials: "include",
-	});
-	if (!res.ok) {
-		throw new Error(`Request failed ${res.status}: ${path}`);
-	}
-	return (await res.json()) as T;
-}
-
 /**
  * Fetch the agents owned by a patron wallet.
  *
@@ -102,7 +87,7 @@ export function usePatronAgents(owner?: string) {
 		enabled: Boolean(owner),
 		queryFn: async () => {
 			if (!owner) return [];
-			const data = await getJson<unknown>(`/v2/agents?owner=${encodeURIComponent(owner)}`);
+			const data = await apiFetch<unknown>(`/v2/agents?owner=${encodeURIComponent(owner)}`);
 			// Accept either a bare array or `{ agents: [...] }` shape.
 			if (Array.isArray(data)) return data as PatronAgent[];
 			if (data && typeof data === "object" && Array.isArray((data as { agents?: unknown }).agents)) {
@@ -121,7 +106,7 @@ export function useAgentDetail(agentId?: string) {
 		enabled: Boolean(agentId),
 		queryFn: async () => {
 			if (!agentId) throw new Error("missing agentId");
-			return getJson<AgentDetail>(`/v2/agents/${encodeURIComponent(agentId)}`);
+			return apiFetch<AgentDetail>(`/v2/agents/${encodeURIComponent(agentId)}`);
 		},
 		refetchInterval: 30_000,
 		retry: 1,
@@ -134,7 +119,7 @@ export function useAgentEvents(agentId?: string, limit = 30) {
 		enabled: Boolean(agentId),
 		queryFn: async () => {
 			if (!agentId) return [];
-			const data = await getJson<unknown>(`/v2/agents/${encodeURIComponent(agentId)}/events?limit=${limit}`);
+			const data = await apiFetch<unknown>(`/v2/agents/${encodeURIComponent(agentId)}/events?limit=${limit}`);
 			if (Array.isArray(data)) return data as AgentEvent[];
 			if (data && typeof data === "object" && Array.isArray((data as { events?: unknown }).events)) {
 				return (data as { events: AgentEvent[] }).events;

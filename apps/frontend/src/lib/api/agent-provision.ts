@@ -8,8 +8,7 @@
  */
 
 import type { WizardState } from "@/components/create/wizard-state";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 export type ProvisionRequest = {
 	persona: {
@@ -75,43 +74,27 @@ export function buildProvisionPayload(state: WizardState): ProvisionRequest {
 }
 
 export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSignal): Promise<ProvisionResult> {
-	let res: Response;
+	let data: unknown;
 	try {
 		const init: RequestInit = {
 			method: "POST",
-			headers: {
-				"content-type": "application/json",
-				accept: "application/json",
-			},
-			credentials: "include",
 			body: JSON.stringify(payload),
 		};
 		if (signal) init.signal = signal;
-		res = await fetch(`${BASE_URL}/v2/agents/provision`, init);
+		data = await apiFetch<unknown>("/v2/agents/provision", init);
 	} catch (err) {
+		if (isApiError(err)) {
+			const apiErr = err as ApiError;
+			if (apiErr.status === 404) {
+				return { ok: false, reason: "not_wired", message: "Provision endpoint not deployed yet" };
+			}
+			if (apiErr.status === 400 || apiErr.status === 422) {
+				return { ok: false, reason: "validation", message: apiErr.message || `validation failed (${apiErr.status})` };
+			}
+			return { ok: false, reason: "server", message: apiErr.message || `server error (${apiErr.status})` };
+		}
 		const message = err instanceof Error ? err.message : "network error";
 		return { ok: false, reason: "network", message };
-	}
-
-	if (res.status === 404) {
-		return { ok: false, reason: "not_wired", message: "Provision endpoint not deployed yet" };
-	}
-
-	if (res.status === 422 || res.status === 400) {
-		const text = await res.text().catch(() => "");
-		return { ok: false, reason: "validation", message: text || `validation failed (${res.status})` };
-	}
-
-	if (!res.ok) {
-		const text = await res.text().catch(() => "");
-		return { ok: false, reason: "server", message: text || `server error (${res.status})` };
-	}
-
-	let data: unknown;
-	try {
-		data = await res.json();
-	} catch {
-		return { ok: false, reason: "server", message: "invalid JSON response" };
 	}
 
 	if (typeof data !== "object" || data === null) {
