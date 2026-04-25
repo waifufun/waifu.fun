@@ -118,7 +118,7 @@ export default function StepPersona() {
 							"border border-dashed flex items-center justify-center overflow-hidden",
 							"transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
 							dragOver
-								? "border-[#22c55e] bg-[#22c55e]/[0.04]"
+								? "border-accent bg-accent/[0.04]"
 								: state.persona.avatarDataUrl
 									? "border-white/15 bg-black"
 									: "border-white/10 bg-white/[0.015] hover:border-white/25 hover:bg-white/[0.025]",
@@ -171,7 +171,7 @@ export default function StepPersona() {
 										className={cn(
 											"group relative aspect-square overflow-hidden border",
 											"transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-											selected ? "border-[#22c55e]" : "border-white/10 hover:border-white/30",
+											selected ? "border-accent" : "border-white/10 hover:border-white/30",
 										)}
 										style={{ background: t.gradient }}
 										title={`${t.label} (${t.tone})`}
@@ -179,7 +179,7 @@ export default function StepPersona() {
 										<span className="sr-only">{t.label}</span>
 										{selected ? (
 											<span className="absolute inset-0 flex items-center justify-center bg-black/30">
-												<CheckIcon className="h-4 w-4 text-[#22c55e]" />
+												<CheckIcon className="h-4 w-4 text-accent" />
 											</span>
 										) : null}
 									</button>

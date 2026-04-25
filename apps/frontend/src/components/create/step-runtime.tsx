@@ -109,9 +109,9 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 			className={cn(
 				"group relative text-left p-5 border h-full flex flex-col gap-3",
 				"transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-				"focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+				"focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
 				selected
-					? "border-[#22c55e]/60 bg-[#22c55e]/[0.04]"
+					? "border-accent/60 bg-accent/[0.04]"
 					: "border-white/8 bg-white/[0.015] hover:border-white/25 hover:bg-white/[0.03]",
 			)}
 		>
@@ -119,18 +119,18 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 				<span
 					className={cn(
 						"inline-flex h-9 w-9 items-center justify-center border",
-						selected ? "border-[#22c55e]/50 text-[#22c55e]" : "border-white/10 text-neutral-300",
+						selected ? "border-accent/50 text-accent" : "border-white/10 text-neutral-300",
 					)}
 					aria-hidden
 				>
 					<Icon className="h-4 w-4" />
 				</span>
 				{opt.badge ? (
-					<span className="text-[9px] font-mono uppercase tracking-[0.18em] text-[#22c55e] border border-[#22c55e]/30 px-1.5 py-0.5">
+					<span className="text-[9px] font-mono uppercase tracking-[0.2em] text-accent border border-accent/30 px-1.5 py-0.5">
 						{opt.badge}
 					</span>
 				) : null}
-				{selected && !opt.badge ? <CheckIcon className="h-4 w-4 text-[#22c55e]" /> : null}
+				{selected && !opt.badge ? <CheckIcon className="h-4 w-4 text-accent" /> : null}
 				{selected && opt.badge ? null : null}
 			</div>
 
@@ -141,7 +141,7 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 
 			<p className="text-xs text-neutral-400 leading-relaxed">{opt.description}</p>
 
-			{selected ? <span className="absolute -top-px -right-px h-2 w-2 bg-[#22c55e]" aria-hidden /> : null}
+			{selected ? <span className="absolute -top-px -right-px h-2 w-2 bg-accent" aria-hidden /> : null}
 		</button>
 	);
 }
@@ -244,7 +244,7 @@ function WebhookConfig() {
 					>
 						{copied ? (
 							<>
-								<CheckIcon className="h-3 w-3 text-[#22c55e]" />
+								<CheckIcon className="h-3 w-3 text-accent" />
 								<span>Copied</span>
 							</>
 						) : (
@@ -274,7 +274,7 @@ function PullConfig() {
 			</p>
 			<Link
 				href="/litepaper"
-				className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#22c55e] hover:underline underline-offset-4"
+				className="mt-3 inline-flex items-center gap-1.5 text-xs text-accent hover:underline underline-offset-4"
 			>
 				Read the polling guide
 				<span aria-hidden>{"\u2192"}</span>

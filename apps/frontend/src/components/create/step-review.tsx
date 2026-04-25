@@ -123,7 +123,7 @@ export default function StepReview() {
 							{adapters.map((slug) => (
 								<span
 									key={slug}
-									className="text-[11px] font-mono uppercase tracking-[0.16em] text-[#22c55e] border border-[#22c55e]/30 px-2 py-1"
+									className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent border border-accent/30 px-2 py-1"
 								>
 									{slug}
 								</span>
@@ -144,8 +144,8 @@ export default function StepReview() {
 				</Row>
 			</section>
 
-			<aside className="border border-[#22c55e]/20 bg-[#22c55e]/[0.03] p-4">
-				<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#22c55e]">After provision</p>
+			<aside className="border border-accent/20 bg-accent/[0.03] p-4">
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-accent">after provision</p>
 				<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
 					You'll land on <span className="text-white">/patron/[id]</span> in the{" "}
 					<span className="font-mono text-white">ready_to_launch</span> state. From there: fund the Safe, pick a

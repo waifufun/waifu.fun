@@ -73,7 +73,7 @@ export default function StepSafe() {
 							<dt className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">Agent steward</dt>
 							<dd className="flex items-center gap-2">
 								<span className="text-sm font-mono text-neutral-500">[generated at provision]</span>
-								<span className="inline-flex items-center text-[9px] font-mono uppercase tracking-[0.16em] text-[#22c55e] border border-[#22c55e]/30 px-1.5 py-0.5">
+								<span className="inline-flex items-center text-[9px] font-mono uppercase tracking-[0.2em] text-accent border border-accent/30 px-1.5 py-0.5">
 									Steward key
 								</span>
 							</dd>
@@ -110,7 +110,7 @@ export default function StepSafe() {
 						role="img"
 						aria-label={`Tax split: ${agentPct}% to agent, ${patronPct}% to patron`}
 					>
-						<div className="absolute inset-y-0 left-0 bg-[#22c55e]" style={{ width: `${agentPct}%` }} />
+						<div className="absolute inset-y-0 left-0 bg-accent" style={{ width: `${agentPct}%` }} />
 						<div className="absolute inset-y-0 bg-white/30" style={{ left: `${agentPct}%`, width: `${patronPct}%` }} />
 					</div>
 
@@ -149,7 +149,7 @@ export default function StepSafe() {
 								<span
 									className={cn(
 										"shrink-0 text-[10px] font-mono uppercase tracking-[0.18em] px-2 py-1 border",
-										enabled ? "text-[#22c55e] border-[#22c55e]/30" : "text-neutral-500 border-white/10",
+										enabled ? "text-accent border-accent/30" : "text-neutral-500 border-white/10",
 									)}
 								>
 									{enabled ? "On" : "Off"}

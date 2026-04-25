@@ -155,7 +155,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 												initial={false}
 												animate={{
 													scaleX: isComplete ? 1 : isCurrent ? 1 : 0,
-													backgroundColor: isComplete || isCurrent ? "#22c55e" : "rgba(255,255,255,0.1)",
+													backgroundColor: isComplete || isCurrent ? "#00ff87" : "rgba(255,255,255,0.1)",
 												}}
 												transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
 												className="absolute inset-0 origin-left"
@@ -173,7 +173,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 											<span className={cn("text-[11px] tracking-tight", isCurrent ? "text-white" : "text-neutral-500")}>
 												{STEP_LABELS[s]}
 											</span>
-											{isComplete ? <CheckIcon className="h-3 w-3 text-[#22c55e]" /> : null}
+											{isComplete ? <CheckIcon className="h-3 w-3 text-accent" /> : null}
 										</div>
 									</button>
 								</li>
@@ -225,9 +225,9 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 							disabled={!valid || provisioning}
 							className={cn(
 								"group inline-flex items-center gap-3 h-10 pl-5 pr-2 text-sm font-medium tracking-tight",
-								"bg-[#22c55e] text-black",
+								"bg-accent text-black",
 								"transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-								"hover:bg-[#16a34a] active:translate-y-[1px]",
+								"hover:bg-accent-dim active:translate-y-[1px]",
 								"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 							)}
 						>

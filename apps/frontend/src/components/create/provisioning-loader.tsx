@@ -78,7 +78,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 		>
 			<div className="w-full max-w-[520px] block">
 				<header className="mb-10">
-					<p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#22c55e]">
+					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-accent">
 						<AnimatePresence mode="wait" initial={false}>
 							<motion.span
 								key={allDone ? "live" : "provisioning"}
@@ -114,7 +114,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 							initial={false}
 							animate={{ scaleX: allDone ? 1 : totalProgress }}
 							transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-							className="absolute inset-0 origin-left bg-[#22c55e]"
+							className="absolute inset-0 origin-left bg-accent"
 						/>
 					</div>
 				</header>
@@ -154,7 +154,7 @@ const Stage = memo(function Stage({
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.6, opacity: 0 }}
 							transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-							className="inline-flex items-center justify-center h-5 w-5 border border-[#22c55e]/40 text-[#22c55e]"
+							className="inline-flex items-center justify-center h-5 w-5 border border-accent/40 text-accent"
 						>
 							<CheckIcon className="h-3 w-3" />
 						</motion.span>
@@ -168,12 +168,12 @@ const Stage = memo(function Stage({
 							className="relative h-5 w-5 inline-flex items-center justify-center"
 						>
 							<motion.span
-								className="absolute inset-0 border border-[#22c55e]/40"
+								className="absolute inset-0 border border-accent/40"
 								animate={{ opacity: [0.4, 1, 0.4] }}
 								transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 							/>
 							<motion.span
-								className="h-1.5 w-1.5 bg-[#22c55e]"
+								className="h-1.5 w-1.5 bg-accent"
 								animate={{ scale: [0.6, 1.1, 0.6] }}
 								transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 							/>
@@ -211,7 +211,7 @@ function BlinkingDots() {
 	return (
 		<motion.span
 			aria-hidden
-			className="inline-block ml-1 text-[#22c55e]"
+			className="inline-block ml-1 text-accent"
 			animate={{ opacity: [0.2, 1, 0.2] }}
 			transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 		>
