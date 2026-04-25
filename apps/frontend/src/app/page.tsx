@@ -1,7 +1,7 @@
 import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
-import FrameworkAgnosticHero from "@/components/landing/framework-agnostic-hero";
+import Hero from "@/components/landing/hero";
 import HowItWorks from "@/components/landing/how-it-works";
 import ThreeRuntimeOptions from "@/components/landing/three-runtime-options";
 import TopFiveWidget from "@/components/leaderboard/top-five-widget";
@@ -51,7 +51,7 @@ export default async function Home() {
 
 	return (
 		<div className="flex flex-col w-full">
-			<FrameworkAgnosticHero />
+			<Hero />
 
 			<TopFiveWidget />
 
