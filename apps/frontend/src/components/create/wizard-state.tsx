@@ -134,7 +134,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 				dispatch({ type: "hydrate", state: merged });
 			}
 		} catch {
-			// corrupt draft — ignore
+			// corrupt draft (ignore)
 		}
 		hydrated.current = true;
 	}, []);
@@ -144,7 +144,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 		if (!hydrated.current) return;
 		if (typeof window === "undefined") return;
 		try {
-			// Avatar data URLs can be huge — cap by stripping if too large.
+			// Avatar data URLs can be huge. Strip if oversized to stay within quota.
 			const safeState: WizardState = {
 				...state,
 				persona: {
@@ -157,7 +157,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 			};
 			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
 		} catch {
-			// quota — best effort
+			// quota (best effort)
 		}
 	}, [state]);
 

@@ -73,7 +73,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 				goTo(target);
 				return;
 			}
-			// Walk forward — every previous step must be valid.
+			// Walk forward. Every previous step must be valid.
 			for (let i = 0; i < targetIdx; i++) {
 				const s = WIZARD_STEPS[i] as WizardStep;
 				const reasonForStep = useStepValidStatic(s, state);
