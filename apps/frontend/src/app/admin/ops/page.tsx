@@ -115,13 +115,13 @@ export default function AdminOpsAgentsPage() {
 			</div>
 
 			<p className="text-[10px] font-mono text-neutral-600">
-				Action bar lands in next commit. Status fields source from <code>GET /v2/admin/agents/:id/status</code>.
+				Status fields source from <code>GET /v2/admin/agents/:id/status</code>; refresh after every mutation.
 			</p>
 		</div>
 	);
 }
 
-function AgentRow({ agent }: { agent: AdminAgent }) {
+function AgentRow({ agent, token }: { agent: AdminAgent; token: string | null }) {
 	const status = combinedStatus(agent);
 	return (
 		<tr className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
@@ -141,12 +141,15 @@ function AgentRow({ agent }: { agent: AdminAgent }) {
 			</td>
 			<td className="px-3 py-2 align-top text-[11px] font-mono text-neutral-400">{formatTs(agent.killedAt)}</td>
 			<td className="px-3 py-2 align-top text-right">
-				<Link
-					href={`/admin/ops/audit?agentId=${encodeURIComponent(agent.id)}`}
-					className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 hover:text-white border border-white/10 hover:border-white/30 rounded-sm px-2 py-1"
-				>
-					audit
-				</Link>
+				<div className="flex flex-col items-end gap-2">
+					<AgentActionBar agent={agent} token={token} />
+					<Link
+						href={`/admin/ops/audit?agentId=${encodeURIComponent(agent.id)}`}
+						className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 hover:text-white"
+					>
+						view audit →
+					</Link>
+				</div>
 			</td>
 		</tr>
 	);
