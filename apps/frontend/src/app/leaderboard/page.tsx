@@ -51,9 +51,9 @@ function LeaderboardContent() {
 				</div>
 			) : !data || data.length === 0 ? (
 				<p className="text-sm text-neutral-400">
-					No agents launched yet —{" "}
-					<a className="text-[#00ff87] hover:underline" href="/create">
-						be the first
+					No agents launched yet.{" "}
+					<a className="text-[#00ff87] hover:underline" href="/create/wizard">
+						Be the first
 					</a>
 					.
 				</p>
