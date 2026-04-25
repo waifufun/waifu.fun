@@ -7,7 +7,7 @@ type Control = {
 	id: string;
 	label: string;
 	description: string;
-	tone: "amber" | "orange" | "red";
+	tone: "neutral" | "warn" | "destructive";
 };
 
 const CONTROLS: Control[] = [
@@ -15,26 +15,26 @@ const CONTROLS: Control[] = [
 		id: "pause",
 		label: "Pause brain",
 		description: "Halt new actions. Positions stay open, adapters keep data flowing.",
-		tone: "amber",
+		tone: "neutral",
 	},
 	{
 		id: "freeze",
 		label: "Freeze withdrawals",
 		description: "Block treasury outflows while you investigate.",
-		tone: "orange",
+		tone: "warn",
 	},
 	{
 		id: "kill",
 		label: "Kill agent",
 		description: "Full stop. Signals permanent shutdown. Irreversible.",
-		tone: "red",
+		tone: "destructive",
 	},
 ];
 
 const TONE: Record<Control["tone"], string> = {
-	amber: "border-amber-500/30 text-amber-300",
-	orange: "border-orange-500/30 text-orange-300",
-	red: "border-red-500/30 text-red-300",
+	neutral: "border-stroke-strong text-[#a1a1aa]",
+	warn: "border-stroke-strong text-[#71717a]",
+	destructive: "border-red-500/30 text-red-300",
 };
 
 const TOOLTIP_COPY = "Coming in v2. Will route through a patron-scoped endpoint instead of the admin token.";
