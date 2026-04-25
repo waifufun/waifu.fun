@@ -68,7 +68,7 @@ function CopyButton({ value, label, className }: { value: string; label?: string
 			type="button"
 			onClick={handle}
 			className={cn(
-				"inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#a1a1aa] transition-colors duration-200 hover:border-[#00ff87]/40 hover:text-[#00ff87]",
+				"inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] transition-colors duration-200 hover:border-[#00ff87]/40 hover:text-[#00ff87]",
 				className,
 			)}
 			aria-label={label ?? "Copy to clipboard"}
@@ -223,7 +223,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 					<div className="mb-1.5 flex items-center justify-between">
 						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">signing secret</span>
 						{raw ? (
-							<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00ff87]">
+							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">
 								shown once. save it now.
 							</span>
 						) : null}
@@ -235,7 +235,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 								<button
 									type="button"
 									onClick={() => setRevealed((r) => !r)}
-									className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
+									className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
 									aria-label={revealed ? "Hide secret" : "Reveal secret"}
 								>
 									{revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
@@ -407,7 +407,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 							<button
 								type="button"
 								onClick={() => setRevealed((r) => !r)}
-								className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
+								className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
 								aria-label={revealed ? "Hide key" : "Reveal key"}
 							>
 								{revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

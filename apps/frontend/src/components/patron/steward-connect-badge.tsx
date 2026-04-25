@@ -95,6 +95,7 @@ export default function StewardConnectBadge({ className }: Props) {
 					>
 						<StatusDot tone="ok" />
 						<Check className="h-3 w-3 text-[#00ff87]" strokeWidth={2} aria-hidden="true" />
+						<span className="font-mono text-[11px] text-[#71717a] uppercase tracking-[0.18em] mr-0.5">[steward]</span>
 						<span className="font-mono text-[11px] text-[#bff7d6] truncate max-w-[180px]">{displayEmail}</span>
 					</button>
 				</PopoverTrigger>
@@ -104,7 +105,7 @@ export default function StewardConnectBadge({ className }: Props) {
 					className="w-64 rounded-sm border-white/10 bg-[#0a0a0c] p-2 text-sm text-neutral-200 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.6)]"
 				>
 					<div className="px-2 py-2 border-b border-white/5">
-						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Steward account</div>
+						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">[steward]</div>
 						<div className="mt-1 text-xs font-mono text-neutral-200 truncate">{displayEmail}</div>
 					</div>
 					<a
@@ -113,7 +114,7 @@ export default function StewardConnectBadge({ className }: Props) {
 						rel="noopener noreferrer"
 						className="mt-1 flex items-center justify-between gap-2 rounded-sm px-2 py-2 text-xs text-neutral-200 hover:bg-white/5 transition-colors"
 					>
-						<span>Manage in Steward</span>
+						<span>manage in steward</span>
 						<ExternalLink className="h-3.5 w-3.5 text-neutral-500" strokeWidth={1.5} aria-hidden="true" />
 					</a>
 					<button
@@ -126,7 +127,7 @@ export default function StewardConnectBadge({ className }: Props) {
 						}}
 						className="mt-0.5 flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-xs text-rose-200/90 hover:bg-rose-500/10 transition-colors"
 					>
-						<span>Disconnect</span>
+						<span>disconnect</span>
 						<LogOut className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
 					</button>
 				</PopoverContent>

@@ -65,11 +65,10 @@ export default function StewardOnboardingBanner({ hasAgents }: Props) {
 								<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#00ff87]">one-time setup</span>
 							</div>
 							<h2 className="text-base sm:text-lg font-medium text-white tracking-tight leading-tight">
-								Connect Steward to unlock multi-agent management
+								connect steward. one login owns all your agents.
 							</h2>
 							<p className="text-sm text-neutral-400 leading-relaxed max-w-[60ch]">
-								Steward links your wallet to a single account that owns all your agents. Email recovery, shared keys,
-								one login.
+								links your wallet to a single account. email recovery, shared keys, one login.
 							</p>
 						</div>
 					</div>
@@ -81,7 +80,7 @@ export default function StewardOnboardingBanner({ hasAgents }: Props) {
 							transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
 							className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] transition-colors duration-300 hover:bg-[#00ff87]/20 active:scale-[0.98]"
 						>
-							Connect Steward
+							connect steward
 						</motion.button>
 						<button
 							type="button"

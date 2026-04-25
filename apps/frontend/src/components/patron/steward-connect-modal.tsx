@@ -177,13 +177,13 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 								waifu.fun / steward
 							</span>
 							<Dialog.Title className="text-2xl md:text-3xl font-medium text-white tracking-tight leading-tight">
-								Connect Steward
+								connect steward
 							</Dialog.Title>
 							<Dialog.Description
 								id="steward-connect-description"
 								className="text-sm text-neutral-400 leading-relaxed max-w-[60ch]"
 							>
-								Steward links your agents to your account. One Steward login, all your agents.
+								one login owns all your agents.
 							</Dialog.Description>
 						</div>
 						<Dialog.Close
@@ -197,19 +197,19 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<PathCard
 							icon={<Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />}
-							label="Existing user"
-							title="I have a Steward account"
-							body="Sign in with the email you used to create your Steward account."
-							cta={activePath === "signin" ? "Waiting for Steward..." : "Sign in with Steward"}
+							label="existing"
+							title="i have a steward account"
+							body="sign in with the email you used to create it."
+							cta={activePath === "signin" ? "waiting for steward..." : "sign in with steward"}
 							onClick={() => handlePath("signin")}
 							loading={activePath === "signin"}
 						/>
 						<PathCard
 							icon={<UserPlus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />}
-							label="New here"
-							title="I'm new to Steward"
-							body="Create a Steward account first. We'll bring you back here when you're done."
-							cta={activePath === "signup" ? "Waiting for Steward..." : "Create account"}
+							label="new here"
+							title="i'm new to steward"
+							body="create one first. we'll bring you back when you're done."
+							cta={activePath === "signup" ? "waiting for steward..." : "create account"}
 							onClick={() => handlePath("signup")}
 							loading={activePath === "signup"}
 						/>
@@ -253,7 +253,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 						>
 							<span className="flex items-center gap-2.5">
 								<ShieldCheck className="h-4 w-4 text-[#00ff87]" strokeWidth={1.75} aria-hidden="true" />
-								<span className="text-sm font-medium text-white">What's Steward?</span>
+								<span className="text-sm font-medium text-white">what's steward?</span>
 							</span>
 							<ChevronDown
 								className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ${infoOpen ? "rotate-180" : "rotate-0"}`}
@@ -279,8 +279,8 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										Steward is the action layer for AI agents. It signs transactions, manages keys, and handles
-										cross-chain calls.
+										steward is the action layer for ai agents. it signs txns, manages keys, handles cross-chain
+										calls.
 									</InfoBullet>
 									<InfoBullet
 										icon={
@@ -295,7 +295,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										Email recovery means you'll never lose access to your agents.
+										email recovery. you won't lose access to your agents.
 									</InfoBullet>
 									<InfoBullet
 										icon={
@@ -305,7 +305,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										Multi-agent. One Steward account can own dozens of agents.
+										multi-agent. one steward, all your agents.
 									</InfoBullet>
 								</ul>
 							</div>
@@ -313,8 +313,8 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					</div>
 
 					<p className="mt-5 text-[11px] text-neutral-500 leading-relaxed">
-						You'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. We never see
-						your password.
+						you'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. we never
+						see your password.
 					</p>
 				</Dialog.Content>
 			</Dialog.Portal>
