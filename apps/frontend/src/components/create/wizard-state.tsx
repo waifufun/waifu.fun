@@ -1,0 +1,229 @@
+"use client";
+
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
+
+/** Wizard step identifiers. URL-synced via `?step=`. */
+export type WizardStep = "persona" | "runtime" | "safe" | "review";
+
+export const WIZARD_STEPS: WizardStep[] = ["persona", "runtime", "safe", "review"];
+
+export const STEP_LABELS: Record<WizardStep, string> = {
+	persona: "Persona",
+	runtime: "Runtime",
+	safe: "Safe & policies",
+	review: "Review",
+};
+
+export type RuntimeKind = "hosted" | "webhook" | "pull";
+
+export type WizardState = {
+	persona: {
+		name: string;
+		ticker: string;
+		bio: string;
+		avatarDataUrl: string | null;
+		avatarTemplateId: string | null;
+		personaPrompt: string;
+	};
+	runtime: {
+		kind: RuntimeKind;
+		webhookUrl: string;
+		webhookSecret: string;
+	};
+	safe: {
+		taxAgentBps: number;
+		taxPatronBps: number;
+		adapters: { pancake: boolean; venus: boolean };
+	};
+};
+
+export const DEFAULT_STATE: WizardState = {
+	persona: {
+		name: "",
+		ticker: "",
+		bio: "",
+		avatarDataUrl: null,
+		avatarTemplateId: "tessera",
+		personaPrompt: "",
+	},
+	runtime: {
+		kind: "hosted",
+		webhookUrl: "",
+		webhookSecret: "",
+	},
+	safe: {
+		taxAgentBps: 8000,
+		taxPatronBps: 2000,
+		adapters: { pancake: true, venus: true },
+	},
+};
+
+type Action =
+	| { type: "patch_persona"; patch: Partial<WizardState["persona"]> }
+	| { type: "patch_runtime"; patch: Partial<WizardState["runtime"]> }
+	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
+	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
+	| { type: "reset" }
+	| { type: "hydrate"; state: WizardState };
+
+function reducer(state: WizardState, action: Action): WizardState {
+	switch (action.type) {
+		case "patch_persona":
+			return { ...state, persona: { ...state.persona, ...action.patch } };
+		case "patch_runtime":
+			return { ...state, runtime: { ...state.runtime, ...action.patch } };
+		case "patch_safe":
+			return { ...state, safe: { ...state.safe, ...action.patch } };
+		case "patch_safe_adapters":
+			return { ...state, safe: { ...state.safe, adapters: { ...state.safe.adapters, ...action.patch } } };
+		case "reset":
+			return DEFAULT_STATE;
+		case "hydrate":
+			return action.state;
+		default:
+			return state;
+	}
+}
+
+export const STORAGE_KEY = "waifu-wizard-draft";
+
+type Ctx = {
+	state: WizardState;
+	patchPersona: (p: Partial<WizardState["persona"]>) => void;
+	patchRuntime: (p: Partial<WizardState["runtime"]>) => void;
+	patchSafe: (p: Partial<WizardState["safe"]>) => void;
+	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
+	reset: () => void;
+};
+
+const WizardContext = createContext<Ctx | null>(null);
+
+/** Generate a 32-char hex secret without depending on Node's crypto types. */
+function generateSecret(): string {
+	const bytes = new Uint8Array(16);
+	if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+		window.crypto.getRandomValues(bytes);
+	} else {
+		for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+	}
+	return Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+}
+
+export function WizardStateProvider({ children }: { children: React.ReactNode }) {
+	const [state, dispatch] = useReducer(reducer, DEFAULT_STATE);
+	const hydrated = useRef(false);
+
+	// Load from localStorage on mount.
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		try {
+			const raw = window.localStorage.getItem(STORAGE_KEY);
+			if (raw) {
+				const parsed = JSON.parse(raw) as Partial<WizardState>;
+				const merged: WizardState = {
+					persona: { ...DEFAULT_STATE.persona, ...(parsed.persona ?? {}) },
+					runtime: { ...DEFAULT_STATE.runtime, ...(parsed.runtime ?? {}) },
+					safe: {
+						...DEFAULT_STATE.safe,
+						...(parsed.safe ?? {}),
+						adapters: { ...DEFAULT_STATE.safe.adapters, ...(parsed.safe?.adapters ?? {}) },
+					},
+				};
+				dispatch({ type: "hydrate", state: merged });
+			}
+		} catch {
+			// corrupt draft — ignore
+		}
+		hydrated.current = true;
+	}, []);
+
+	// Persist on changes (skip the very first render before hydration).
+	useEffect(() => {
+		if (!hydrated.current) return;
+		if (typeof window === "undefined") return;
+		try {
+			// Avatar data URLs can be huge — cap by stripping if too large.
+			const safeState: WizardState = {
+				...state,
+				persona: {
+					...state.persona,
+					avatarDataUrl:
+						state.persona.avatarDataUrl && state.persona.avatarDataUrl.length < 250_000
+							? state.persona.avatarDataUrl
+							: null,
+				},
+			};
+			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
+		} catch {
+			// quota — best effort
+		}
+	}, [state]);
+
+	// Auto-generate webhook secret when user switches to webhook runtime and lacks one.
+	useEffect(() => {
+		if (state.runtime.kind === "webhook" && !state.runtime.webhookSecret) {
+			dispatch({ type: "patch_runtime", patch: { webhookSecret: generateSecret() } });
+		}
+	}, [state.runtime.kind, state.runtime.webhookSecret]);
+
+	const value = useMemo<Ctx>(
+		() => ({
+			state,
+			patchPersona: (patch) => dispatch({ type: "patch_persona", patch }),
+			patchRuntime: (patch) => dispatch({ type: "patch_runtime", patch }),
+			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
+			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
+			reset: () => dispatch({ type: "reset" }),
+		}),
+		[state],
+	);
+
+	return <WizardContext.Provider value={value}>{children}</WizardContext.Provider>;
+}
+
+export function useWizard(): Ctx {
+	const ctx = useContext(WizardContext);
+	if (!ctx) throw new Error("useWizard must be used inside WizardStateProvider");
+	return ctx;
+}
+
+/** Validation per step. Returns null if valid, else short reason. */
+export function validateStep(step: WizardStep, state: WizardState): string | null {
+	switch (step) {
+		case "persona": {
+			const { name, ticker, bio } = state.persona;
+			if (!name.trim()) return "Pick a name";
+			if (name.length > 48) return "Name too long";
+			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "Ticker: 2-10 uppercase letters or digits";
+			if (bio.length > 240) return "Bio too long";
+			return null;
+		}
+		case "runtime": {
+			if (state.runtime.kind === "webhook") {
+				const url = state.runtime.webhookUrl.trim();
+				if (!url) return "Webhook URL required";
+				try {
+					const u = new URL(url);
+					if (u.protocol !== "https:" && u.protocol !== "http:") return "URL must be http(s)";
+				} catch {
+					return "Invalid URL";
+				}
+			}
+			return null;
+		}
+		case "safe":
+			return null;
+		case "review":
+			return null;
+		default:
+			return null;
+	}
+}
+
+export function useStepValid(step: WizardStep): { valid: boolean; reason: string | null } {
+	const { state } = useWizard();
+	const reason = validateStep(step, state);
+	return { valid: reason === null, reason };
+}
