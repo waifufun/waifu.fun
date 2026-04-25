@@ -103,7 +103,7 @@ function StageRow({
 	state,
 }: {
 	stage: Stage;
-	state: "pending" | "active" | "done" | "failed";
+	state: "pending" | "active" | "done" | "failed" | "live";
 }) {
 	const copy = STAGE_COPY[stage];
 	return (
@@ -181,6 +181,7 @@ export default function LaunchProgress({
 			}, 2000);
 			return () => clearTimeout(t);
 		}
+		return undefined;
 	}, [stage, celebrated, onLive, launch?.tokenAddress, open]);
 
 	const errorMessage = errorOverride ?? (stage === "failed" ? (launch?.error ?? "Launch did not complete.") : null);

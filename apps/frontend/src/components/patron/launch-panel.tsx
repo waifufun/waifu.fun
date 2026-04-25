@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "viem";
 import { parseEther } from "viem";
 import useBalance from "@/hooks/use-balance";
@@ -11,9 +12,7 @@ import { Button } from "@/components/ui/button";
 type Props = {
 	agentId: string;
 	safeAddress: string | null | undefined;
-	/** Wired to the authorize endpoint in commit 4. */
 	onLaunch?: (firstBuyWei: string) => void;
-	/** When the parent is mid-flight against the authorize call. */
 	isLaunching?: boolean;
 };
 
@@ -124,6 +123,25 @@ function ShieldIcon({ className }: { className?: string }) {
 	);
 }
 
+function WarnIcon({ className }: { className?: string }) {
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 16 16"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.4"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={className}
+		>
+			<path d="M8 2L1.5 13.5h13L8 2z" />
+			<path d="M8 6.5v3.5" />
+			<circle cx="8" cy="11.5" r="0.4" fill="currentColor" />
+		</svg>
+	);
+}
+
 function Spinner({ className }: { className?: string }) {
 	return (
 		<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={cn("animate-spin", className)}>
@@ -154,10 +172,14 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 	const xConnection = useXConnection(agentId);
 	const xData = xConnection.status.data;
 	const xConnected = Boolean(xData?.connected);
+	const xLoading = xConnection.status.isLoading;
 
 	const [firstBuy, setFirstBuy] = useState<string>("0");
 	const [activePreset, setActivePreset] = useState<Preset | null>("zero");
 	const [copied, setCopied] = useState(false);
+
+	const launchSentinelRef = useRef<HTMLDivElement | null>(null);
+	const [stickyVisible, setStickyVisible] = useState(false);
 
 	const parsed = useMemo(() => {
 		const trimmed = firstBuy.trim();
@@ -174,7 +196,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 			? "First buy can't exceed Safe balance"
 			: null;
 
-	const canLaunch = parsed.ok && !exceedsBalance && !isLaunching && Boolean(safeAddress);
+	// Empty Safe state — balance read succeeded and equals 0.
+	const isEmptySafe = !balanceLoading && balanceError == null && balance != null && balance === 0;
+
+	const canLaunch = parsed.ok && !exceedsBalance && !isLaunching && Boolean(safeAddress) && !isEmptySafe;
 
 	const setPreset = (preset: Preset) => {
 		setActivePreset(preset);
@@ -183,10 +208,8 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 			if (preset === "zero") setFirstBuy("0");
 			return;
 		}
-		// Leave some headroom for gas when going "all". Tax-splitter / four.meme
-		// will still need a few thousand gwei; we ballpark 0.001 BNB.
+		// Leave headroom for gas when going "all".
 		const target = preset === "all" ? Math.max(0, balance - 0.001) : balance * fraction;
-		// Round to 4 decimals for display.
 		const rounded = Math.round(target * 1e4) / 1e4;
 		setFirstBuy(rounded.toString());
 	};
@@ -203,7 +226,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1500);
 		} catch {
-			// clipboard might be unavailable in non-secure contexts; fail silently.
+			// non-secure context — silent
 		}
 	};
 
@@ -213,54 +236,64 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 			const wei = parseEther(parsed.value.toString());
 			onLaunch?.(wei.toString());
 		} catch {
-			// parseEther can throw on truly malformed input; UI already validated.
+			// validated upstream
 		}
 	};
 
-	return (
-		<section
-			aria-label="Launch panel"
-			className="relative rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-		>
-			<header className="px-6 md:px-8 pt-7 pb-5 border-b border-autofun-background-action-highlight/30">
-				<div className="flex items-center justify-between gap-4 flex-wrap">
-					<div>
-						<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Pre-launch</p>
-						<h2 className="mt-1 text-xl text-white tracking-tight">Launch token</h2>
-					</div>
-					<div className="inline-flex items-center gap-2 text-xs text-neutral-500">
-						<ShieldIcon className="w-3.5 h-3.5" />
-						<span>Patron-only action</span>
-					</div>
-				</div>
-			</header>
+	// Show the mobile sticky launch button when the in-card button leaves
+	// the viewport. IntersectionObserver — no scroll listeners.
+	useEffect(() => {
+		const el = launchSentinelRef.current;
+		if (!el || typeof IntersectionObserver === "undefined") return;
+		const io = new IntersectionObserver(
+			(entries) => {
+				const entry = entries[0];
+				if (!entry) return;
+				setStickyVisible(!entry.isIntersecting);
+			},
+			{ threshold: 0.01, rootMargin: "0px 0px -40px 0px" },
+		);
+		io.observe(el);
+		return () => io.disconnect();
+	}, []);
 
-			<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-autofun-background-action-highlight/30">
-				{/* LEFT: Safe details */}
-				<div className="px-6 md:px-8 py-7 space-y-6">
-					<div>
-						<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-3">Safe</h3>
+	// Empty Safe — render a focused funding state instead of the form.
+	if (isEmptySafe) {
+		return (
+			<section aria-label="Fund Safe" className="relative rounded-md border border-amber-500/30 bg-[#0C0C0C]">
+				<div className="px-6 md:px-8 py-12 space-y-6">
+					<div className="flex items-start gap-3">
+						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 text-amber-300">
+							<WarnIcon className="w-4 h-4" />
+						</div>
+						<div>
+							<h2 className="text-xl text-white tracking-tight">Fund the Safe first</h2>
+							<p className="text-sm text-neutral-400 mt-2 max-w-[60ch] leading-relaxed">
+								Your agent&apos;s Safe holds 0 BNB. Send BNB to the address below before launching so the Safe can pay
+								gas and (optionally) take a first buy.
+							</p>
+						</div>
+					</div>
+
+					<div className="rounded-sm border border-autofun-background-action-highlight/40 bg-[#0A0A0A] p-4 flex items-center gap-3 flex-wrap">
+						<code className="font-mono text-sm text-white break-all flex-1 min-w-0">{safeAddress ?? "—"}</code>
 						<div className="flex items-center gap-2">
-							<code className="font-mono text-sm text-white truncate">{shortAddress(safeAddress)}</code>
 							<button
 								type="button"
 								onClick={handleCopy}
 								disabled={!safeAddress}
 								aria-label="Copy Safe address"
-								className={cn(
-									"inline-flex items-center justify-center w-7 h-7 rounded-sm border transition-colors",
-									"border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
-									"disabled:opacity-40 disabled:cursor-not-allowed",
-								)}
+								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
 							>
 								{copied ? <CheckIcon className="w-3.5 h-3.5 text-green-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
+								{copied ? "Copied" : "Copy"}
 							</button>
 							{safeAddress ? (
 								<a
 									href={`https://bscscan.com/address/${safeAddress}`}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
+									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
 									aria-label="View Safe on BscScan"
 								>
 									<ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -269,116 +302,235 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 					</div>
 
-					<div>
-						<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">Balance</h3>
-						<div className="flex items-baseline gap-2">
-							<div className="font-mono text-2xl text-white">{balanceLoading ? "…" : formatBnb(balance)}</div>
-							<div className="text-xs uppercase tracking-wider text-neutral-500">BNB</div>
-							<button
-								type="button"
-								onClick={() => refetch()}
-								className="ml-2 text-[11px] text-neutral-500 hover:text-white underline-offset-4 hover:underline"
-							>
-								Refresh
-							</button>
-						</div>
-						{balanceError ? (
-							<p role="alert" className="text-[11px] text-red-300 mt-1">
-								Couldn&apos;t read balance. {balanceError.message}
-							</p>
-						) : null}
-					</div>
-
-					<div>
-						<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">X account</h3>
-						{xConnection.status.isLoading ? (
-							<div className="h-4 w-32 bg-[#141414] rounded animate-pulse" />
-						) : xConnected ? (
-							<p className="text-sm text-white">
-								Connected{" "}
-								<span className="text-neutral-400 font-mono">@{(xData?.xHandle ?? "").replace(/^@/, "")}</span>
-							</p>
-						) : (
-							<p className="text-sm text-amber-300">Not connected</p>
-						)}
+					<div className="flex items-center gap-3 flex-wrap">
+						<Button type="button" onClick={() => refetch()} className="h-10 bg-white text-black hover:bg-white/90">
+							I funded it, refresh
+						</Button>
+						<p className="text-[11px] text-neutral-500">Balance refreshes every 60 seconds automatically.</p>
 					</div>
 				</div>
+			</section>
+		);
+	}
 
-				{/* RIGHT: First buy */}
-				<div className="px-6 md:px-8 py-7 space-y-5">
+	return (
+		<>
+			<section
+				aria-label="Launch panel"
+				className="relative rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+			>
+				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-autofun-background-action-highlight/30">
 					<div className="flex items-center justify-between gap-4 flex-wrap">
-						<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.16em] text-neutral-500">
-							First buy (BNB)
-						</label>
-						{balance != null && parsed.ok && parsed.value > 0 ? (
-							<span className="text-[11px] font-mono text-neutral-500">{formatBnb(parsed.value, 6)} BNB</span>
-						) : null}
+						<div>
+							<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Pre-launch</p>
+							<h2 className="mt-1 text-xl text-white tracking-tight">Launch token</h2>
+						</div>
+						<div className="inline-flex items-center gap-2 text-xs text-neutral-500">
+							<ShieldIcon className="w-3.5 h-3.5" />
+							<span>Patron-only action</span>
+						</div>
 					</div>
+				</header>
 
-					<div className="relative">
-						<input
-							id="first-buy"
-							type="text"
-							inputMode="decimal"
-							pattern="[0-9]*\.?[0-9]*"
-							value={firstBuy}
-							onChange={(e) => onInputChange(e.target.value.replace(/[^0-9.]/g, ""))}
-							aria-invalid={validationError ? "true" : "false"}
-							aria-describedby={validationError ? "first-buy-error" : "first-buy-help"}
-							className={cn(
-								"w-full px-4 py-3 rounded-sm bg-[#0A0A0A] border text-white font-mono text-lg",
-								"focus:outline-none focus:ring-1 transition-colors",
-								validationError
-									? "border-red-500/50 focus:border-red-400 focus:ring-red-400/30"
-									: "border-autofun-background-action-highlight/40 focus:border-green-500/60 focus:ring-green-500/30",
-							)}
-							placeholder="0"
-						/>
-						<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-wider text-neutral-500 font-mono">
-							BNB
-						</span>
+				{!xLoading && !xConnected ? (
+					<div className="px-6 md:px-8 py-3 border-b border-amber-500/30 bg-amber-500/[0.04] flex items-start gap-3">
+						<WarnIcon className="w-4 h-4 mt-0.5 text-amber-300 shrink-0" />
+						<p className="text-xs text-amber-200 leading-relaxed">
+							X not connected. Your agent will launch silently.{" "}
+							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-amber-100">
+								Connect now.
+							</Link>
+						</p>
 					</div>
+				) : null}
 
-					<div className="flex flex-wrap gap-2">
-						{PRESET_ORDER.map((preset) => {
-							const active = activePreset === preset;
-							return (
+				<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-autofun-background-action-highlight/30">
+					{/* LEFT: Safe details */}
+					<div className="px-6 md:px-8 py-7 space-y-6">
+						<div>
+							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-3">Safe</h3>
+							<div className="flex items-center gap-2">
+								<code className="font-mono text-sm text-white truncate">{shortAddress(safeAddress)}</code>
 								<button
-									key={preset}
 									type="button"
-									onClick={() => setPreset(preset)}
-									aria-pressed={active}
+									onClick={handleCopy}
+									disabled={!safeAddress}
+									aria-label="Copy Safe address"
 									className={cn(
-										"inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-sm border transition-colors",
-										active
-											? "border-green-500/40 bg-green-500/10 text-green-300"
-											: "border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+										"inline-flex items-center justify-center w-7 h-7 rounded-sm border transition-colors",
+										"border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+										"disabled:opacity-40 disabled:cursor-not-allowed",
 									)}
 								>
-									{PRESET_LABELS[preset]}
+									{copied ? <CheckIcon className="w-3.5 h-3.5 text-green-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
 								</button>
-							);
-						})}
+								{safeAddress ? (
+									<a
+										href={`https://bscscan.com/address/${safeAddress}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
+										aria-label="View Safe on BscScan"
+									>
+										<ExternalLinkIcon className="w-3.5 h-3.5" />
+									</a>
+								) : null}
+							</div>
+						</div>
+
+						<div>
+							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">Balance</h3>
+							<div className="flex items-baseline gap-2">
+								<div className="font-mono text-2xl text-white">{balanceLoading ? "…" : formatBnb(balance)}</div>
+								<div className="text-xs uppercase tracking-wider text-neutral-500">BNB</div>
+								<button
+									type="button"
+									onClick={() => refetch()}
+									className="ml-2 text-[11px] text-neutral-500 hover:text-white underline-offset-4 hover:underline"
+								>
+									Refresh
+								</button>
+							</div>
+							{balanceError ? (
+								<p role="alert" className="text-[11px] text-red-300 mt-1">
+									Couldn&apos;t read balance. {balanceError.message}
+								</p>
+							) : null}
+						</div>
+
+						<div>
+							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">X account</h3>
+							{xLoading ? (
+								<div className="h-4 w-32 bg-[#141414] rounded animate-pulse" />
+							) : xConnected ? (
+								<p className="text-sm text-white">
+									Connected{" "}
+									<span className="text-neutral-400 font-mono">@{(xData?.xHandle ?? "").replace(/^@/, "")}</span>
+								</p>
+							) : (
+								<p className="text-sm text-amber-300">Not connected</p>
+							)}
+						</div>
 					</div>
 
-					<p id="first-buy-help" className="text-xs text-neutral-500 leading-relaxed max-w-[42ch]">
-						Optional. Defaults 0. The agent&apos;s Safe will buy this many BNB worth of its own token at launch.
-					</p>
+					{/* RIGHT: First buy */}
+					<div className="px-6 md:px-8 py-7 space-y-5">
+						<div className="flex items-center justify-between gap-4 flex-wrap">
+							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.16em] text-neutral-500">
+								First buy (BNB)
+							</label>
+							{balance != null && parsed.ok && parsed.value > 0 ? (
+								<span className="text-[11px] font-mono text-neutral-500">{formatBnb(parsed.value, 6)} BNB</span>
+							) : null}
+						</div>
 
-					{validationError ? (
-						<p id="first-buy-error" role="alert" className="text-xs text-red-300">
-							{validationError}
+						<div className="relative">
+							<input
+								id="first-buy"
+								type="text"
+								inputMode="decimal"
+								pattern="[0-9]*\.?[0-9]*"
+								value={firstBuy}
+								onChange={(e) => onInputChange(e.target.value.replace(/[^0-9.]/g, ""))}
+								aria-invalid={validationError ? "true" : "false"}
+								aria-describedby={validationError ? "first-buy-error" : "first-buy-help"}
+								className={cn(
+									"w-full px-4 py-3 rounded-sm bg-[#0A0A0A] border text-white font-mono text-lg",
+									"focus:outline-none focus:ring-1 transition-colors",
+									validationError
+										? "border-red-500/50 focus:border-red-400 focus:ring-red-400/30"
+										: "border-autofun-background-action-highlight/40 focus:border-green-500/60 focus:ring-green-500/30",
+								)}
+								placeholder="0"
+							/>
+							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-wider text-neutral-500 font-mono">
+								BNB
+							</span>
+						</div>
+
+						<div className="flex flex-wrap gap-2">
+							{PRESET_ORDER.map((preset) => {
+								const active = activePreset === preset;
+								return (
+									<button
+										key={preset}
+										type="button"
+										onClick={() => setPreset(preset)}
+										aria-pressed={active}
+										className={cn(
+											"inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-sm border transition-colors",
+											active
+												? "border-green-500/40 bg-green-500/10 text-green-300"
+												: "border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+										)}
+									>
+										{PRESET_LABELS[preset]}
+									</button>
+								);
+							})}
+						</div>
+
+						<p id="first-buy-help" className="text-xs text-neutral-500 leading-relaxed max-w-[42ch]">
+							Optional. Defaults 0. The agent&apos;s Safe will buy this many BNB worth of its own token at launch.
 						</p>
-					) : null}
-				</div>
-			</div>
 
-			<div className="px-6 md:px-8 py-6 border-t border-autofun-background-action-highlight/30">
+						{validationError ? (
+							<p id="first-buy-error" role="alert" className="text-xs text-red-300">
+								{validationError}
+							</p>
+						) : null}
+					</div>
+				</div>
+
+				<div
+					ref={launchSentinelRef}
+					className="px-6 md:px-8 py-6 border-t border-autofun-background-action-highlight/30"
+				>
+					<Button
+						type="button"
+						onClick={handleSubmit}
+						disabled={!canLaunch}
+						aria-label="Launch token"
+						className={cn(
+							"w-full h-12 text-sm font-semibold uppercase tracking-[0.14em]",
+							"bg-green-500 text-black hover:bg-green-400 hover:text-black",
+							"disabled:bg-green-500/30 disabled:text-black/60",
+						)}
+					>
+						{isLaunching ? (
+							<>
+								<Spinner className="w-4 h-4 mr-2" />
+								Authorizing…
+							</>
+						) : (
+							"Launch token"
+						)}
+					</Button>
+					<p className="text-[11px] text-neutral-500 mt-3 text-center max-w-[60ch] mx-auto">
+						You&apos;ll sign a SIWE message. The Safe will then submit a four.meme creation transaction with this
+						first-buy amount.
+					</p>
+				</div>
+			</section>
+
+			{/* Mobile sticky launch button — appears when the in-card button is off-screen. */}
+			<div
+				aria-hidden={!stickyVisible}
+				className={cn(
+					"md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pb-4 pt-3",
+					"bg-gradient-to-t from-black via-black/95 to-black/0",
+					"transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+					stickyVisible
+						? "translate-y-0 opacity-100 pointer-events-auto"
+						: "translate-y-4 opacity-0 pointer-events-none",
+				)}
+			>
 				<Button
 					type="button"
 					onClick={handleSubmit}
 					disabled={!canLaunch}
 					aria-label="Launch token"
+					tabIndex={stickyVisible ? 0 : -1}
 					className={cn(
 						"w-full h-12 text-sm font-semibold uppercase tracking-[0.14em]",
 						"bg-green-500 text-black hover:bg-green-400 hover:text-black",
@@ -394,11 +546,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						"Launch token"
 					)}
 				</Button>
-				<p className="text-[11px] text-neutral-500 mt-3 text-center max-w-[60ch] mx-auto">
-					You&apos;ll sign a SIWE message. The Safe will then submit a four.meme creation transaction with this
-					first-buy amount.
-				</p>
 			</div>
-		</section>
+		</>
 	);
 }

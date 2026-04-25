@@ -7,6 +7,7 @@ import AgentHero from "@/components/patron/agent-hero";
 import LaunchReadyHero from "@/components/patron/launch-ready-hero";
 import LaunchPanel from "@/components/patron/launch-panel";
 import LaunchProgress from "@/components/patron/launch-progress";
+import WhatHappensNext from "@/components/patron/what-happens-next";
 import TreasuryCard from "@/components/patron/treasury-card";
 import ActivityFeed from "@/components/patron/activity-feed";
 import PolicyEditor from "@/components/patron/policy-editor";
@@ -103,7 +104,7 @@ export default function PatronAgentDetailPage({
 					Couldn't load agent. {(error as Error).message}
 				</div>
 			) : isLaunchReady ? (
-				<div className="space-y-6">
+				<div className="space-y-6 pb-24 md:pb-0">
 					<LaunchReadyHero agent={agent} isLoading={isLoading} />
 					<LaunchPanel
 						agentId={agentId}
@@ -111,7 +112,10 @@ export default function PatronAgentDetailPage({
 						onLaunch={triggerLaunch}
 						isLaunching={authorize.isPending}
 					/>
-					<XConnectionPanel agentId={agentId} />
+					<WhatHappensNext />
+					<div id="x-account" className="scroll-mt-6">
+						<XConnectionPanel agentId={agentId} />
+					</div>
 
 					<LaunchProgress
 						open={progressOpen}
