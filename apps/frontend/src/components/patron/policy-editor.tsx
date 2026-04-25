@@ -158,7 +158,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 	return (
 		<li
 			className={cn(
-				"rounded-md border transition-colors",
+				"rounded-sm border transition-colors",
 				state.enabled
 					? "border-stroke-strong bg-[#0E0E0E]"
 					: "border-stroke bg-[#0A0A0A]",
@@ -248,7 +248,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 							onClick={handleSaveCaps}
 							disabled={saving || !state.enabled}
 							className={cn(
-								"inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+								"inline-flex items-center gap-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors",
 								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40",
 								saving || !state.enabled
 									? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
@@ -356,7 +356,7 @@ export default function PolicyEditor({ agentId }: Props) {
 	return (
 		<section
 			aria-label="Adapter permissions"
-			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapter Permissions</h2>
@@ -399,7 +399,7 @@ export default function PolicyEditor({ agentId }: Props) {
 
 function EmptyState() {
 	return (
-		<div className="rounded-md border border-dashed border-stroke-strong bg-[#0A0A0A] px-4 py-8 text-center">
+		<div className="rounded-sm border border-dashed border-stroke-strong bg-[#0A0A0A] px-4 py-8 text-center">
 			<p className="text-sm text-neutral-300">Adapter controls coming soon</p>
 			<p className="text-xs text-neutral-500 mt-1">
 				Patron-side toggles and caps will ship once the policy API is live.
@@ -414,7 +414,7 @@ function LoadingSkeleton() {
 			{[0, 1, 2, 3, 4].map((i) => (
 				<li
 					key={i}
-					className="rounded-md border border-stroke bg-[#0A0A0A] px-4 py-3 flex items-center gap-3"
+					className="rounded-sm border border-stroke bg-[#0A0A0A] px-4 py-3 flex items-center gap-3"
 				>
 					<div className="h-2.5 w-2.5 rounded-full bg-[#141414] animate-pulse" />
 					<div className="flex-1 space-y-2">

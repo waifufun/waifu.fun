@@ -43,7 +43,7 @@ export default function EmergencyControls() {
 	return (
 		<section
 			aria-label="Emergency controls"
-			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<header className="flex items-center justify-between mb-1">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Emergency</h2>
@@ -63,7 +63,7 @@ export default function EmergencyControls() {
 								aria-disabled="true"
 								aria-label={`${control.label} (coming in v2)`}
 								className={cn(
-									"flex flex-col items-start gap-1 text-left p-4 rounded-md border bg-[#0C0C0C] cursor-not-allowed opacity-70",
+									"flex flex-col items-start gap-1 text-left p-4 rounded-sm border bg-[#0C0C0C] cursor-not-allowed opacity-70",
 									TONE[control.tone],
 								)}
 							>

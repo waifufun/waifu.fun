@@ -57,7 +57,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 	return (
 		<section
 			aria-label="Treasury"
-			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>

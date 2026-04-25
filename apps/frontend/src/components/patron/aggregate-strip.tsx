@@ -23,7 +23,7 @@ export default function AggregateStrip({ agents }: { agents: PatronAgent[] }) {
 	return (
 		<section
 			aria-label="Aggregate stats"
-			className="grid grid-cols-2 md:grid-cols-4 gap-px mb-6 rounded-md overflow-hidden bg-stroke-strong border border-stroke-strong"
+			className="grid grid-cols-2 md:grid-cols-4 gap-px mb-6 rounded-sm overflow-hidden bg-stroke-strong border border-stroke-strong"
 		>
 			{metrics.map((m) => (
 				<div key={m.label} className="bg-[#0C0C0C] px-4 py-3">

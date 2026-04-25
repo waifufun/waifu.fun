@@ -42,7 +42,7 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 	return (
 		<section
 			aria-label="Activity feed"
-			className="p-5 rounded-md border border-stroke-strong bg-[#0C0C0C]"
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
 		>
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Activity</h2>

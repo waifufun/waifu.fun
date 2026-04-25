@@ -21,9 +21,9 @@ function formatRelative(iso: string | null | undefined): string {
 
 export default function AgentCard({ agent }: { agent: PatronAgent }) {
 	return (
-		<article className="flex flex-col gap-4 p-5 rounded-md border border-stroke-strong bg-[#0C0C0C] hover:border-stroke-intense transition-colors">
+		<article className="flex flex-col gap-4 p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C] hover:border-stroke-intense transition-colors">
 			<div className="flex items-start gap-3">
-				<div className="w-12 h-12 rounded-md overflow-hidden bg-[#141414] shrink-0 border border-stroke">
+				<div className="w-12 h-12 rounded-sm overflow-hidden bg-[#141414] shrink-0 border border-stroke">
 					{agent.avatar ? (
 						<Image
 							src={agent.avatar}
