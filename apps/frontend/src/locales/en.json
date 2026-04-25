@@ -109,7 +109,7 @@
 		"label": "Language"
 	},
 	"wallet": {
-		"connectWallet": "Connect Wallet",
+		"connectWallet": "connect wallet",
 		"signIn": "sign in",
 		"signOut": "Sign out"
 	},

@@ -11,6 +11,8 @@ import StepSafe from "@/components/create/step-safe";
 import WizardShell from "@/components/create/wizard-shell";
 import { STORAGE_KEY, useWizard, WizardStateProvider } from "@/components/create/wizard-state";
 import { buildProvisionPayload, provisionAgent, type ProvisionResult } from "@/lib/api/agent-provision";
+import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
+import { useAuthRequired } from "@/hooks/use-auth-required";
 
 function WizardInner() {
 	const router = useRouter();
@@ -89,12 +91,25 @@ function WizardInner() {
 	);
 }
 
-export default function WizardClient() {
+function WizardGate() {
+	const { isLoading, isAuthenticated } = useAuthRequired();
+	if (isLoading) return <AuthGateLoader />;
+	if (!isAuthenticated) return null;
 	return (
 		<WizardStateProvider>
 			<Suspense fallback={<div className="min-h-[100dvh]" />}>
 				<WizardInner />
 			</Suspense>
 		</WizardStateProvider>
+	);
+}
+
+export default function WizardClient() {
+	// useAuthRequired uses useSearchParams which requires a Suspense
+	// boundary at or above its render site under the App Router.
+	return (
+		<Suspense fallback={<AuthGateLoader />}>
+			<WizardGate />
+		</Suspense>
 	);
 }

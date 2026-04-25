@@ -14,12 +14,12 @@ export default function PatronPage() {
 
 	return (
 		<main className="py-6">
-			<PatronHeader title="Your Agents" subtitle="Overview of the agents you've launched and their treasury state." />
+			<PatronHeader title="your agents" subtitle="overview of the agents you've launched and their treasury state." />
 
 			{!address ? (
 				<EmptyState
-					title="Connect a wallet"
-					body="Sign in with your Solana wallet to see the agents you've launched and their treasury state."
+					title="connect a wallet"
+					body="sign in with your wallet to see the agents you've launched and their treasury state."
 					ctaHref={null}
 				/>
 			) : (
