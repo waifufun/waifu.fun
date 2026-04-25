@@ -45,7 +45,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 		>
 			{/* subtle ambient glow — calm, not neon */}
 			<div
-				aria-hidden
+				aria-hidden="true"
 				className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-green-500/[0.04] blur-3xl"
 			/>
 
@@ -116,10 +116,10 @@ function ReadyPill() {
 			>
 				<span className="relative inline-flex w-1.5 h-1.5">
 					<span
-						aria-hidden
+						aria-hidden="true"
 						className="absolute inset-0 rounded-full bg-green-400/60 animate-ping motion-reduce:hidden"
 					/>
-					<span aria-hidden className="relative w-1.5 h-1.5 rounded-full bg-green-400" />
+					<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-green-400" />
 				</span>
 				Ready to launch
 			</span>

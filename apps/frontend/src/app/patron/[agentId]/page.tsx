@@ -4,6 +4,7 @@ import { use } from "react";
 import PatronHeader from "@/components/patron/patron-header";
 import AgentHero from "@/components/patron/agent-hero";
 import LaunchReadyHero from "@/components/patron/launch-ready-hero";
+import LaunchPanel from "@/components/patron/launch-panel";
 import TreasuryCard from "@/components/patron/treasury-card";
 import ActivityFeed from "@/components/patron/activity-feed";
 import PolicyEditor from "@/components/patron/policy-editor";
@@ -45,7 +46,7 @@ export default function PatronAgentDetailPage({
 			) : isLaunchReady ? (
 				<div className="space-y-6">
 					<LaunchReadyHero agent={agent} isLoading={isLoading} />
-					{/* LaunchPanel + supporting cards land in commit 2 */}
+					<LaunchPanel agentId={agentId} safeAddress={agent?.safeAddress ?? null} />
 					<XConnectionPanel agentId={agentId} />
 				</div>
 			) : (
