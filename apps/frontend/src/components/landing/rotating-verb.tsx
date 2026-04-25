@@ -6,15 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useState } from "react";
 
 const HOLD_MS = 2400;
-const BLANK_EVERY = 7;
 const FALLBACK_VERBS = ["create", "trade", "shill", "scam", "blackmail"] as const;
-
-// Build a blank-slot tease roughly the same character width as the longest
-// verb in the pool, so the locked container width doesn't balloon in CJK.
-function makeBlank(longest: string): string {
-	const n = Math.max(3, Math.min(Array.from(longest).length, 12));
-	return "_".repeat(n);
-}
 
 // Brand neon and the resting verb tint. Used for a brief flash on each swap.
 const ACCENT = "#00ff87";
@@ -64,7 +56,6 @@ function RotatingVerbInner() {
 	const { messages } = useLocale();
 	const verbs = useMemo(() => readVerbs(messages), [messages]);
 	const longest = useMemo(() => pickLongest(verbs), [verbs]);
-	const blank = useMemo(() => makeBlank(longest), [longest]);
 	const reduced = useReducedMotion();
 
 	const [tick, setTick] = useState(0);
@@ -94,19 +85,12 @@ function RotatingVerbInner() {
 		};
 	}, [reduced, paused, verbs.length]);
 
-	// Resolve the verb to display from the tick counter. Every BLANK_EVERY ticks
-	// we slot in the blank "keep them guessing" tease (Shaw's idea). Otherwise we
-	// step through the verb pool, skipping over the blank slot in the count so
-	// the visible cadence stays even.
-	const { current, isBlank } = useMemo(() => {
-		if (verbs.length === 0) return { current: "", isBlank: false };
-		if (BLANK_EVERY > 0 && tick > 0 && tick % BLANK_EVERY === 0) {
-			return { current: blank, isBlank: true };
-		}
-		const skipped = BLANK_EVERY > 0 ? Math.floor(tick / BLANK_EVERY) : 0;
-		const i = (((tick - skipped) % verbs.length) + verbs.length) % verbs.length;
-		return { current: verbs[i] ?? verbs[0] ?? "", isBlank: false };
-	}, [tick, verbs, blank]);
+	// Resolve the verb to display from the tick counter.
+	const current = useMemo(() => {
+		if (verbs.length === 0) return "";
+		const i = ((tick % verbs.length) + verbs.length) % verbs.length;
+		return verbs[i] ?? verbs[0] ?? "";
+	}, [tick, verbs]);
 
 	const handleEnter = () => setHovered(true);
 	const handleLeave = () => setHovered(false);
@@ -114,12 +98,12 @@ function RotatingVerbInner() {
 	// Reduced-motion: render a single verb, no animation, no rotation.
 	if (reduced) {
 		return (
-			<span className="relative inline-block align-baseline">
+			<span className="relative inline-flex items-baseline justify-center align-baseline">
 				<span aria-hidden="true" className="invisible whitespace-nowrap">
 					{longest}
 					{TAIL}
 				</span>
-				<span className="absolute inset-y-0 left-0 whitespace-nowrap">
+				<span className="absolute inset-0 flex items-baseline justify-center whitespace-nowrap">
 					{verbs[0]}
 					{TAIL}
 				</span>
@@ -129,7 +113,7 @@ function RotatingVerbInner() {
 
 	return (
 		<span
-			className="relative inline-block align-baseline cursor-default"
+			className="relative inline-flex items-baseline justify-center align-baseline cursor-default"
 			onMouseEnter={handleEnter}
 			onMouseLeave={handleLeave}
 			onFocus={handleEnter}
@@ -142,7 +126,7 @@ function RotatingVerbInner() {
 			</span>
 			{/* Live region: announce the current verb for screen readers. */}
 			<span
-				className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap"
+				className="absolute inset-0 flex items-baseline justify-center overflow-hidden whitespace-nowrap"
 				aria-live="polite"
 				aria-atomic="true"
 			>
@@ -162,7 +146,7 @@ function RotatingVerbInner() {
 							ease: EASE_HERO,
 							color: { duration: 0.6, times: [0, 0.25, 1], ease: EASE_HERO },
 						}}
-						aria-label={isBlank ? "" : current}
+						aria-label={current}
 					>
 						{current}
 						{TAIL}
