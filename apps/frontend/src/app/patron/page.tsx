@@ -5,6 +5,7 @@ import PatronHeader from "@/components/patron/patron-header";
 import EmptyState from "@/components/patron/empty-state";
 import AggregateStrip from "@/components/patron/aggregate-strip";
 import AgentGrid from "@/components/patron/agent-grid";
+import StewardOnboardingBanner from "@/components/patron/steward-onboarding-banner";
 import { usePatronAgents } from "@/lib/api/patron";
 
 export default function PatronPage() {
@@ -23,6 +24,7 @@ export default function PatronPage() {
 				/>
 			) : (
 				<>
+					<StewardOnboardingBanner hasAgents={Boolean(agents && agents.length > 0)} />
 					{agents && agents.length > 0 ? <AggregateStrip agents={agents} /> : null}
 					<AgentGrid agents={agents} isLoading={isLoading} error={error as Error | null} />
 					{!isLoading && !error && (!agents || agents.length === 0) ? (

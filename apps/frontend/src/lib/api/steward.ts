@@ -132,7 +132,7 @@ export function useStewardStatus() {
 		staleTime: 30_000,
 	});
 
-	const link = useMutation<StewardStatus, Error, { stewardToken: string; stewardUserId?: string | null }>({
+	const link = useMutation<StewardStatus, Error, { stewardToken: string; stewardUserId?: string | null | undefined }>({
 		mutationFn: async ({ stewardToken, stewardUserId }) => {
 			const result = await sendJson<{ stewardUserId?: string; email?: string }>("/v2/patron/steward/link", {
 				method: "POST",
