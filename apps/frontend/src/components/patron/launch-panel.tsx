@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "viem";
 import { parseEther } from "viem";
+import { AlertTriangle, Check, Copy, ExternalLink, Loader2, Shield } from "lucide-react";
 import useBalance from "@/hooks/use-balance";
 import { useXConnection } from "@/lib/api/x-connection";
 import { cn } from "@/lib/utils";
@@ -50,105 +51,6 @@ export function useSafeBalance(safeAddress: string | null | undefined) {
 		error: error as Error | null,
 		refetch,
 	};
-}
-
-function CopyIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<rect x="5" y="5" width="9" height="9" rx="1.5" />
-			<path d="M3 11V3a1 1 0 0 1 1-1h7" />
-		</svg>
-	);
-}
-
-function CheckIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.6"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M3 8.5l3 3L13 5" />
-		</svg>
-	);
-}
-
-function ExternalLinkIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M9 3h4v4" />
-			<path d="M13 3l-7 7" />
-			<path d="M11 9v3.5A1.5 1.5 0 0 1 9.5 14h-6A1.5 1.5 0 0 1 2 12.5v-6A1.5 1.5 0 0 1 3.5 5H7" />
-		</svg>
-	);
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M8 1.5L2.5 3.5v4c0 3 2.4 5.6 5.5 7 3.1-1.4 5.5-4 5.5-7v-4L8 1.5z" />
-		</svg>
-	);
-}
-
-function WarnIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M8 2L1.5 13.5h13L8 2z" />
-			<path d="M8 6.5v3.5" />
-			<circle cx="8" cy="11.5" r="0.4" fill="currentColor" />
-		</svg>
-	);
-}
-
-function Spinner({ className }: { className?: string }) {
-	return (
-		<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={cn("animate-spin", className)}>
-			<circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-			<path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-		</svg>
-	);
 }
 
 function shortAddress(addr: string | null | undefined): string {
@@ -264,7 +166,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 				<div className="px-6 md:px-8 py-12 space-y-6">
 					<div className="flex items-start gap-3">
 						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] text-[#a1a1aa]">
-							<WarnIcon className="w-4 h-4" />
+							<AlertTriangle className="w-4 h-4" />
 						</div>
 						<div>
 							<h2 className="text-xl text-white tracking-tight">fund the safe first.</h2>
@@ -285,7 +187,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 								aria-label="Copy Safe address"
 								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-stroke text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
 							>
-								{copied ? <CheckIcon className="w-3.5 h-3.5 text-accent" /> : <CopyIcon className="w-3.5 h-3.5" />}
+								{copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
 								{copied ? "Copied" : "Copy"}
 							</button>
 							{safeAddress ? (
@@ -296,7 +198,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
 									aria-label="View Safe on BscScan"
 								>
-									<ExternalLinkIcon className="w-3.5 h-3.5" />
+									<ExternalLink className="w-3.5 h-3.5" />
 								</a>
 							) : null}
 						</div>
@@ -323,7 +225,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 							<h2 className="mt-1 text-xl text-white tracking-tight">launch the token.</h2>
 						</div>
 						<div className="inline-flex items-center gap-2 text-xs text-neutral-500">
-							<ShieldIcon className="w-3.5 h-3.5" />
+							<Shield className="w-3.5 h-3.5" />
 							<span>patron-only.</span>
 						</div>
 					</div>
@@ -331,7 +233,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 				{!xLoading && !xConnected ? (
 					<div className="px-6 md:px-8 py-3 border-b border-stroke-strong bg-white/[0.02] flex items-start gap-3">
-						<WarnIcon className="w-4 h-4 mt-0.5 text-[#a1a1aa] shrink-0" />
+						<AlertTriangle className="w-4 h-4 mt-0.5 text-[#a1a1aa] shrink-0" />
 						<p className="text-xs text-[#a1a1aa] leading-relaxed">
 							x not connected. your agent will launch silently.{" "}
 							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-white">
@@ -359,7 +261,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 										"disabled:opacity-40 disabled:cursor-not-allowed",
 									)}
 								>
-									{copied ? <CheckIcon className="w-3.5 h-3.5 text-accent" /> : <CopyIcon className="w-3.5 h-3.5" />}
+									{copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
 								</button>
 								{safeAddress ? (
 									<a
@@ -369,7 +271,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
 										aria-label="View Safe on BscScan"
 									>
-										<ExternalLinkIcon className="w-3.5 h-3.5" />
+										<ExternalLink className="w-3.5 h-3.5" />
 									</a>
 								) : null}
 							</div>
@@ -493,7 +395,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					>
 						{isLaunching ? (
 							<>
-								<Spinner className="w-4 h-4 mr-2" />
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
 								authorizing…
 							</>
 						) : (
@@ -532,7 +434,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 				>
 					{isLaunching ? (
 						<>
-							<Spinner className="w-4 h-4 mr-2" />
+							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
 							authorizing…
 						</>
 					) : (
