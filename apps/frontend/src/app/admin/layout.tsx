@@ -21,7 +21,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	const [userRole, setUserRole] = useState<string | null>(null);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+	// W5.7 ops dashboard uses its own admin-token gate (localStorage). Bypass
+	// the cookie-based moderator auth for those routes so ops engineers can
+	// hit kill-switch endpoints without going through the moderator login.
+	const isOpsRoute = pathname?.startsWith("/admin/ops") ?? false;
+
 	useEffect(() => {
+		if (isOpsRoute) {
+			setIsLoading(false);
+			setIsAdmin(true);
+			return;
+		}
 		const checkAdminStatus = async () => {
 			try {
 				console.log("Checking admin status...");
@@ -63,7 +73,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 		};
 
 		checkAdminStatus();
-	}, [router]);
+	}, [router, isOpsRoute]);
+
+	// Ops routes render their own chrome (red banner, token gate, ops nav).
+	if (isOpsRoute) {
+		return <>{children}</>;
+	}
 
 	const adminNavItems = [
 		{
