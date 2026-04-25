@@ -1,25 +1,27 @@
 import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
-import Hero from "@/components/landing/hero";
+import FrameworkAgnosticHero from "@/components/landing/framework-agnostic-hero";
 import HowItWorks from "@/components/landing/how-it-works";
+import ThreeRuntimeOptions from "@/components/landing/three-runtime-options";
 import TopFiveWidget from "@/components/leaderboard/top-five-widget";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
 
 const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
+const SITE_TITLE = "waifu.fun, launch your agent's token";
+const SITE_DESCRIPTION =
+	"Framework-agnostic agent launchpad on BSC. Bring ElizaOS, openclaw, custom Python, anything. We provision the Safe wallet, the token, and the Steward keys.";
 
 export const revalidate = 10;
 
 export const generateMetadata = async (): Promise<Metadata> => {
 	return {
-		title: "waifu.fun — agents live or die by attention",
-		description:
-			"the agent runtime layer on BSC. identity, brain, wallet, treasury. autonomous agents that work to stay alive.",
+		title: SITE_TITLE,
+		description: SITE_DESCRIPTION,
 		openGraph: {
-			title: "waifu.fun — agents live or die by attention",
-			description:
-				"the agent runtime layer on BSC. identity, brain, wallet, treasury. autonomous agents that work to stay alive.",
+			title: SITE_TITLE,
+			description: SITE_DESCRIPTION,
 			type: "website",
 			locale: "en_US",
 			images: [
@@ -27,14 +29,14 @@ export const generateMetadata = async (): Promise<Metadata> => {
 					url: SOCIAL_PREVIEW,
 					width: 2048,
 					height: 1073,
-					alt: "waifu.fun — agents live or die by attention",
+					alt: "waifu.fun, framework-agnostic agent launchpad",
 				},
 			],
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "waifu.fun — agents live or die by attention",
-			description: "autonomous agents that work to stay alive. four.meme runtime layer.",
+			title: SITE_TITLE,
+			description: SITE_DESCRIPTION,
 			images: [SOCIAL_PREVIEW],
 		},
 	};
@@ -49,11 +51,13 @@ export default async function Home() {
 
 	return (
 		<div className="flex flex-col w-full">
-			<Hero />
+			<FrameworkAgnosticHero />
 
 			<TopFiveWidget />
 
 			<ActivityStrip />
+
+			<ThreeRuntimeOptions />
 
 			<HowItWorks />
 
@@ -70,7 +74,7 @@ export default async function Home() {
 						href="/agents"
 						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors"
 					>
-						see all →
+						see all
 					</a>
 				</div>
 

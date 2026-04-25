@@ -70,9 +70,9 @@ export default function Footer() {
 							x
 						</a>
 					</div>
-					<span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#52525b] px-2.5 py-1 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
-						<span className="text-[#71717a] opacity-60">●</span>
-						{t("footer.miladyCloud")}
+					<span className="inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.18em] text-[#71717a] px-2.5 py-1 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
+						<span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#00ff87] opacity-70" />
+						{t("footer.frameworkAgnostic")}
 					</span>
 				</div>
 

@@ -32,6 +32,27 @@ export type AgentEvent = {
 	data?: Record<string, unknown>;
 };
 
+export type AgentRuntimeKind = "milady-cloud" | "third-party-webhook" | "third-party-pull";
+
+export type AgentRuntimeDetail = {
+	kind: AgentRuntimeKind;
+	/** absolute URL where waifu-core POSTs runtime events (third-party-webhook only) */
+	webhookUrl?: string | null;
+	/** masked secret. Real secret is delivered once via a separate flow. */
+	webhookSecretMasked?: string | null;
+	/** raw secret returned exactly once after rotation/provision (third-party-webhook only) */
+	webhookSecretRaw?: string | null;
+	/** raw API key returned exactly once after provision (third-party-pull only) */
+	rawApiKey?: string | null;
+	/** ISO timestamp the runtime API key was issued */
+	apiKeyIssuedAt?: string | null;
+	/** ISO timestamp of last hb_signal received from the agent */
+	lastHb_signalAt?: string | null;
+	/** v2 endpoint paths surfaced to the UI for code snippets */
+	hb_signalEndpoint?: string | null;
+	eventsPullEndpoint?: string | null;
+};
+
 export type AgentDetail = PatronAgent & {
 	description?: string | null;
 	bio?: string | null;
@@ -41,6 +62,8 @@ export type AgentDetail = PatronAgent & {
 	adapters?: AgentAdapter[];
 	launchId?: string | null;
 	tokenAddress?: string | null;
+	runtimeKind?: AgentRuntimeKind;
+	runtime?: AgentRuntimeDetail | null;
 };
 
 export type AgentAdapter = {

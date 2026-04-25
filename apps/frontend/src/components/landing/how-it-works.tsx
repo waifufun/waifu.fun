@@ -24,7 +24,7 @@ const STEPS = [
 
 export default function HowItWorks() {
 	return (
-		<section className="mx-auto w-full max-w-6xl px-5 md:px-8 py-20 md:py-24">
+		<section id="how-it-works" className="scroll-mt-20 mx-auto w-full max-w-6xl px-5 md:px-8 py-20 md:py-24">
 			<div className="mb-10 md:mb-14 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
 				<div>
 					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-white/40 mb-3">how it works</div>

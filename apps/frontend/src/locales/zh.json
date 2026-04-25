@@ -21,7 +21,8 @@
 		"stake": "stake",
 		"agents": "代理",
 		"leaderboard": "排行榜",
-		"docs": "文档"
+		"docs": "文档",
+		"launchAgent": "发布代理"
 	},
 	"layout": {
 		"devnetBanner": "— 这是连接测试网的开发环境，内容均非真实。",
@@ -63,6 +64,7 @@
 		"privacy": "隐私",
 		"support": "支持",
 		"miladyCloud": "开放协议 · BSC",
+		"frameworkAgnostic": "框架无关",
 		"homeAria": "waifu.fun 首页"
 	},
 	"create": {
