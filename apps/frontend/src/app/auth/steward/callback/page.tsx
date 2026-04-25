@@ -36,7 +36,7 @@ function StewardCallbackInner() {
 
 		if (!token) {
 			setPhase("error");
-			setErrorMessage("Steward redirect did not include a token. Try again.");
+			setErrorMessage("steward redirect did not include a token. try again.");
 			return;
 		}
 
@@ -63,7 +63,7 @@ function StewardCallbackInner() {
 					try {
 						window.opener?.postMessage(message, "*");
 					} catch {
-						// ignore — opener may be cross-origin in odd configs
+						// ignore - opener may be cross-origin in odd configs
 					}
 					// Give the parent a beat to react before tearing down.
 					window.setTimeout(() => window.close(), 250);
@@ -73,7 +73,7 @@ function StewardCallbackInner() {
 			})
 			.catch((err: unknown) => {
 				// On link failure, fall back to localStorage so the patron isn't
-				// stranded — the badge will treat them as connected via fallback.
+				// stranded; the badge will treat them as connected via fallback.
 				if (typeof window !== "undefined") {
 					try {
 						window.localStorage.setItem(STEWARD_LOCAL_TOKEN_KEY, token);
@@ -85,7 +85,7 @@ function StewardCallbackInner() {
 					}
 				}
 				setUsedFallback(true);
-				setErrorMessage(err instanceof Error ? err.message : "Could not contact waifu.fun backend.");
+				setErrorMessage(err instanceof Error ? err.message : "could not contact waifu.fun backend.");
 				setPhase("error");
 			});
 	}, [errorDescription, errorParam, link, router, stewardUserId, token]);
@@ -103,7 +103,7 @@ function StewardCallbackInner() {
 	};
 
 	return (
-		<main className="relative min-h-[100dvh] bg-[#050507] text-white antialiased flex items-center justify-center px-4 py-16">
+		<main className="relative min-h-[100dvh] bg-canvas text-white antialiased flex items-center justify-center px-4 py-16">
 			<div
 				aria-hidden="true"
 				className="pointer-events-none fixed inset-0 z-0 opacity-[0.04]"
@@ -119,40 +119,38 @@ function StewardCallbackInner() {
 						className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.2em] text-neutral-500 hover:text-neutral-300 transition-colors"
 					>
 						<ArrowLeft className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
-						Back to patron
+						back to patron
 					</Link>
 				</div>
 
-				<div className="rounded-xl border border-white/10 bg-[#0a0a0c] p-7 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.7)]">
+				<div className="rounded-sm border border-white/10 bg-[#0a0a0c] p-7 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.7)]">
 					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-4">
 						waifu.fun / steward / callback
 					</div>
 
 					{phase === "linking" || phase === "idle" ? (
 						<div className="flex flex-col items-start gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-black/40 text-[#00ff87]">
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87]">
 								<Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">Linking your Steward account</h1>
-							<p className="text-sm text-neutral-400 leading-relaxed">
-								Verifying the token Steward sent us. This usually takes a second.
-							</p>
+							<h1 className="text-xl font-medium text-white tracking-tight">linking your steward account</h1>
+							<p className="text-sm text-neutral-400 leading-relaxed">verifying the token. usually quick</p>
 						</div>
 					) : null}
 
 					{phase === "success" ? (
 						<div className="flex flex-col items-start gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-md border border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]">
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]">
 								<CheckCircle2 className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">Steward connected</h1>
+							<h1 className="text-xl font-medium text-white tracking-tight">steward connected</h1>
 							<p className="text-sm text-neutral-400 leading-relaxed">
 								{usedFallback
-									? "Stored locally. We'll sync to the backend automatically once it's wired up."
-									: "Your wallet is linked to your Steward account."}
+									? "stored locally. we'll sync to the backend once it's wired up"
+									: "your wallet is linked to your steward account"}
 							</p>
 							<p className="text-xs text-neutral-500 mt-2">
-								Closing this window automatically. If it doesn't,{" "}
+								closing this window automatically. if it doesn't,{" "}
 								<button
 									type="button"
 									onClick={() => {
@@ -163,34 +161,33 @@ function StewardCallbackInner() {
 								>
 									click here
 								</button>
-								.
 							</p>
 						</div>
 					) : null}
 
 					{phase === "error" ? (
 						<div className="flex flex-col items-start gap-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-md border border-rose-400/30 bg-rose-400/10 text-rose-300">
+							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-rose-400/30 bg-rose-400/10 text-rose-300">
 								<AlertTriangle className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">Steward connect failed</h1>
+							<h1 className="text-xl font-medium text-white tracking-tight">steward connect failed</h1>
 							<p className="text-sm text-neutral-300 leading-relaxed font-mono break-words">
-								{errorMessage ?? "Unknown error."}
+								{errorMessage ?? "unknown error"}
 							</p>
 							<div className="mt-3 flex flex-col sm:flex-row gap-2 w-full">
 								<button
 									type="button"
 									onClick={retry}
-									className="inline-flex items-center justify-center gap-1.5 rounded-md border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] hover:bg-[#00ff87]/15 transition-colors"
+									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] hover:bg-[#00ff87]/15 transition-colors"
 								>
 									<RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-									Try again
+									try again
 								</button>
 								<Link
 									href="/patron"
-									className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
+									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
 								>
-									Back to patron
+									back to patron
 								</Link>
 							</div>
 						</div>
@@ -198,7 +195,7 @@ function StewardCallbackInner() {
 				</div>
 
 				<p className="mt-5 text-center text-[11px] text-neutral-600 leading-relaxed">
-					Source: <span className="font-mono text-neutral-500">eliza.steward.dev</span>
+					source: <span className="font-mono text-neutral-500">eliza.steward.dev</span>
 				</p>
 			</div>
 		</main>
@@ -209,7 +206,7 @@ export default function StewardCallbackPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex min-h-[100dvh] items-center justify-center bg-[#050507] text-neutral-400">
+				<div className="flex min-h-[100dvh] items-center justify-center bg-canvas text-neutral-400">
 					<Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} aria-hidden="true" />
 				</div>
 			}

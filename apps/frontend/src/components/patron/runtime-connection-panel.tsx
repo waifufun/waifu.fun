@@ -11,7 +11,7 @@ type Props = {
 	isLoading: boolean;
 };
 
-const PANEL_BASE = "p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]";
+const PANEL_BASE = "p-5 rounded-sm border border-stroke bg-[#0C0C0C]";
 const CARD_INNER = "rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#0A0A0A]";
 
 function formatRelative(iso: string | null | undefined): string {
@@ -68,14 +68,14 @@ function CopyButton({ value, label, className }: { value: string; label?: string
 			type="button"
 			onClick={handle}
 			className={cn(
-				"inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#a1a1aa] transition-colors duration-200 hover:border-[#00ff87]/40 hover:text-[#00ff87]",
+				"inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] transition-colors duration-200 hover:border-[#00ff87]/40 hover:text-[#00ff87]",
 				className,
 			)}
 			aria-label={label ?? "Copy to clipboard"}
 		>
 			{copied ? (
 				<>
-					<Check className="h-3 w-3" strokeWidth={2} />
+					<Check className="h-3 w-3" strokeWidth={1.75} />
 					<span>copied</span>
 				</>
 			) : (
@@ -195,7 +195,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 			<header className="mb-4 flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
-						<ArrowLeftRight className="h-4 w-4" strokeWidth={1.5} />
+						<ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
 						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Webhook runtime</h2>
@@ -223,7 +223,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 					<div className="mb-1.5 flex items-center justify-between">
 						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">signing secret</span>
 						{raw ? (
-							<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00ff87]">
+							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">
 								shown once. save it now.
 							</span>
 						) : null}
@@ -235,7 +235,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 								<button
 									type="button"
 									onClick={() => setRevealed((r) => !r)}
-									className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
+									className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
 									aria-label={revealed ? "Hide secret" : "Reveal secret"}
 								>
 									{revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
@@ -376,7 +376,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 			<header className="mb-4 flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
-						<Antenna className="h-4 w-4" strokeWidth={1.5} />
+						<Antenna className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
 						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Pull runtime</h2>
@@ -407,7 +407,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 							<button
 								type="button"
 								onClick={() => setRevealed((r) => !r)}
-								className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
+								className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
 								aria-label={revealed ? "Hide key" : "Reveal key"}
 							>
 								{revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { motion } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Copy, Mail, ShieldCheck, UserPlus, X } from "lucide-react";
 import { buildStewardAuthUrl, defaultStewardRedirectUri } from "@/lib/api/steward";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 
 type Props = {
 	open: boolean;
@@ -45,13 +47,15 @@ function PathCard({
 	loading: boolean;
 }) {
 	return (
-		<button
+		<motion.button
 			type="button"
 			onClick={onClick}
 			disabled={loading}
-			className="group relative flex flex-col items-start gap-4 rounded-lg border border-white/10 bg-[#0b0b0d] p-5 text-left transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
+			whileHover={{ y: -2 }}
+			transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
+			className="group relative flex flex-col items-start gap-4 rounded-sm border border-white/10 bg-[#0b0b0d] p-5 text-left transition-colors duration-300 hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
 		>
-			<div className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-black/40 text-[#00ff87] transition-colors group-hover:border-[#00ff87]/30">
+			<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87] transition-colors group-hover:border-[#00ff87]/30">
 				{icon}
 			</div>
 			<div className="flex flex-col gap-1">
@@ -69,7 +73,7 @@ function PathCard({
 					aria-hidden="true"
 				/>
 			</span>
-		</button>
+		</motion.button>
 	);
 }
 
@@ -165,7 +169,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 				<Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
 				<Dialog.Content
 					aria-describedby="steward-connect-description"
-					className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-[#08080a] p-6 sm:p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
+					className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white/10 bg-[#08080a] p-6 sm:p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
 				>
 					<div className="flex items-start justify-between gap-4 mb-6">
 						<div className="flex flex-col gap-2">
@@ -173,17 +177,17 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 								waifu.fun / steward
 							</span>
 							<Dialog.Title className="text-2xl md:text-3xl font-medium text-white tracking-tight leading-tight">
-								Connect Steward
+								connect steward
 							</Dialog.Title>
 							<Dialog.Description
 								id="steward-connect-description"
 								className="text-sm text-neutral-400 leading-relaxed max-w-[60ch]"
 							>
-								Steward links your agents to your account. One Steward login, all your agents.
+								one login owns all your agents.
 							</Dialog.Description>
 						</div>
 						<Dialog.Close
-							className="-mr-2 -mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-white hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+							className="-mr-2 -mt-2 inline-flex h-8 w-8 items-center justify-center rounded-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
 							aria-label="Close dialog"
 						>
 							<X className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
@@ -193,74 +197,78 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<PathCard
 							icon={<Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />}
-							label="Existing user"
-							title="I have a Steward account"
-							body="Sign in with the email you used to create your Steward account."
-							cta={activePath === "signin" ? "Waiting for Steward..." : "Sign in with Steward"}
+							label="existing"
+							title="i have a steward account"
+							body="sign in with the email you used to create it."
+							cta={activePath === "signin" ? "waiting for steward..." : "sign in with steward"}
 							onClick={() => handlePath("signin")}
 							loading={activePath === "signin"}
 						/>
 						<PathCard
 							icon={<UserPlus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />}
-							label="New here"
-							title="I'm new to Steward"
-							body="Create a Steward account first. We'll bring you back here when you're done."
-							cta={activePath === "signup" ? "Waiting for Steward..." : "Create account"}
+							label="new here"
+							title="i'm new to steward"
+							body="create one first. we'll bring you back when you're done."
+							cta={activePath === "signup" ? "waiting for steward..." : "create account"}
 							onClick={() => handlePath("signup")}
 							loading={activePath === "signup"}
 						/>
 					</div>
 
 					{popupBlocked && manualUrl ? (
-						<div className="mt-4 rounded-lg border border-amber-400/30 bg-amber-400/[0.05] p-4">
-							<div className="text-xs font-mono uppercase tracking-[0.18em] text-amber-200 mb-2">Popup blocked</div>
-							<p className="text-sm text-amber-100/90 leading-relaxed mb-3">
-								Your browser blocked the Steward popup. Open the link manually, then come back here once you're done.
+						<div className="mt-4 rounded-sm border border-stroke bg-[rgba(255,255,255,0.02)] p-4">
+							<div className="text-xs font-mono uppercase tracking-[0.2em] text-[#a1a1aa] mb-2">popup blocked</div>
+							<p className="text-sm text-[#a1a1aa] leading-relaxed mb-3">
+								your browser blocked the steward popup. open the link manually, then come back here when you're done.
 							</p>
 							<div className="flex flex-col sm:flex-row items-stretch gap-2">
 								<a
 									href={manualUrl}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-100 hover:bg-amber-400/20 transition-colors"
+									className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-sm border border-stroke-strong bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs font-medium text-[#e4e4e7] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
 								>
-									Open Steward
+									open steward
 									<ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
 								</a>
 								<button
 									type="button"
 									onClick={handleCopy}
-									className="inline-flex items-center justify-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
+									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-black/30 px-3 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
 								>
 									<Copy className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-									{copied ? "Copied" : "Copy link"}
+									{copied ? "copied" : "copy link"}
 								</button>
 							</div>
 						</div>
 					) : null}
 
-					<div className="mt-6 rounded-lg border border-white/10 bg-[#0b0b0d]">
+					<div className="mt-6 rounded-sm border border-white/10 bg-[#0b0b0d]">
 						<button
 							type="button"
 							onClick={() => setInfoOpen((v) => !v)}
-							className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded-lg"
+							className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded-sm"
 							aria-expanded={infoOpen}
 							aria-controls="steward-info-panel"
 						>
 							<span className="flex items-center gap-2.5">
 								<ShieldCheck className="h-4 w-4 text-[#00ff87]" strokeWidth={1.75} aria-hidden="true" />
-								<span className="text-sm font-medium text-white">What's Steward?</span>
+								<span className="text-sm font-medium text-white">what's steward?</span>
 							</span>
 							<ChevronDown
-								className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${infoOpen ? "rotate-180" : "rotate-0"}`}
+								className={`h-4 w-4 text-neutral-500 transition-transform duration-300 ${infoOpen ? "rotate-180" : "rotate-0"}`}
+								style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
 								strokeWidth={1.75}
 								aria-hidden="true"
 							/>
 						</button>
 						<div
 							id="steward-info-panel"
-							className="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-							style={{ gridTemplateRows: infoOpen ? "1fr" : "0fr" }}
+							className="grid transition-[grid-template-rows] duration-300"
+							style={{
+								gridTemplateRows: infoOpen ? "1fr" : "0fr",
+								transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+							}}
 						>
 							<div className="overflow-hidden">
 								<ul className="flex flex-col gap-3 px-4 pb-4 pt-1">
@@ -271,8 +279,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										Steward is the action layer for AI agents. It signs transactions, manages keys, and handles
-										cross-chain calls.
+										steward is the action layer for ai agents. it signs txns, manages keys, handles cross-chain calls.
 									</InfoBullet>
 									<InfoBullet
 										icon={
@@ -287,7 +294,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										Email recovery means you'll never lose access to your agents.
+										email recovery. you won't lose access to your agents.
 									</InfoBullet>
 									<InfoBullet
 										icon={
@@ -297,7 +304,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										Multi-agent. One Steward account can own dozens of agents.
+										multi-agent. one steward, all your agents.
 									</InfoBullet>
 								</ul>
 							</div>
@@ -305,7 +312,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					</div>
 
 					<p className="mt-5 text-[11px] text-neutral-500 leading-relaxed">
-						You'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. We never see
+						you'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. we never see
 						your password.
 					</p>
 				</Dialog.Content>
