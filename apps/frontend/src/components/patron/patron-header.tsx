@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import StewardConnectBadge from "./steward-connect-badge";
 
 type Props = {
 	title: string;
@@ -22,6 +23,7 @@ export default function PatronHeader({ title, subtitle, backHref }: Props) {
 				{subtitle ? <p className="text-sm text-neutral-400">{subtitle}</p> : null}
 			</div>
 			<div className="flex items-center gap-2">
+				<StewardConnectBadge />
 				<Link href="/create">
 					<Button variant="outline" className="h-9 px-4">
 						Launch new

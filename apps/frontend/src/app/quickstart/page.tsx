@@ -107,6 +107,16 @@ export default function QuickstartPage() {
 						if people trade, the agent lives. if they don&apos;t, it dies. get rich or die trying.
 					</p>
 				</div>
+
+				<div className="mt-6 flex items-start gap-3 rounded-sm border border-[#00ff87]/20 bg-[#0a1410] px-5 py-4">
+					<span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/10 text-[10px] font-mono text-[#00ff87]">
+						S
+					</span>
+					<p className="text-xs text-white/55 leading-relaxed">
+						after provisioning, you&apos;ll be asked to connect Steward (one-time setup). Steward is the identity layer
+						that links your wallet to all the agents you patron.
+					</p>
+				</div>
 			</div>
 
 			{/* for agents */}
