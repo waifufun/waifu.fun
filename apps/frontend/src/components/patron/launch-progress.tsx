@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLaunchState, type LaunchStatus } from "@/lib/api/launches";
+import { EASE_HERO, EASE_OUT_EXPO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -28,24 +29,24 @@ const STAGE_ORDER: Stage[] = ["authorizing", "submitting", "confirming", "live"]
 
 const STAGE_COPY: Record<Stage, { title: string; subtitle: string }> = {
 	authorizing: {
-		title: "Authorizing launch",
-		subtitle: "Verifying your signature and locking the launch parameters.",
+		title: "authorizing launch",
+		subtitle: "verifying your signature",
 	},
 	submitting: {
-		title: "Submitting four.meme transaction",
-		subtitle: "The agent's Safe is signing the create-token call.",
+		title: "submitting four.meme transaction",
+		subtitle: "the agent's safe is signing the create-token call",
 	},
 	confirming: {
-		title: "Waiting for confirmation",
-		subtitle: "Block producers are picking up the transaction.",
+		title: "waiting for confirmation",
+		subtitle: "block producers are picking up the transaction",
 	},
 	live: {
-		title: "Token alive on bonding curve",
-		subtitle: "Your agent is born. Redirecting to its public page.",
+		title: "live on the curve.",
+		subtitle: "your agent is born. taking you home.",
 	},
 	failed: {
-		title: "Launch failed",
-		subtitle: "Something went wrong on the way to the curve.",
+		title: "launch failed.",
+		subtitle: "something went wrong on the way to the curve.",
 	},
 };
 
@@ -120,9 +121,9 @@ function StageRow({
 			<div
 				className={cn(
 					"mt-0.5 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors",
-					state === "active" && "border-green-500/50 bg-green-500/10 text-green-400",
-					state === "done" && "border-green-500/40 bg-green-500/15 text-green-400",
-					state === "pending" && "border-autofun-background-action-highlight/50 text-neutral-600",
+					state === "active" && "border-accent/50 bg-accent/10 text-accent",
+					state === "done" && "border-accent/40 bg-accent/15 text-accent",
+					state === "pending" && "border-stroke text-neutral-600",
 					state === "failed" && "border-red-500/50 bg-red-500/10 text-red-300",
 				)}
 			>
@@ -132,7 +133,7 @@ function StageRow({
 					<XIcon className="w-3.5 h-3.5" />
 				) : state === "active" ? (
 					<motion.span
-						className="w-2 h-2 rounded-full bg-green-400"
+						className="w-2 h-2 rounded-full bg-accent"
 						animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
 						transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
 					/>
@@ -216,7 +217,7 @@ export default function LaunchProgress({
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
-					transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+					transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
 				>
 					<motion.div
 						aria-hidden="true"
@@ -235,46 +236,46 @@ export default function LaunchProgress({
 								initial={{ opacity: 0, scale: 0.96 }}
 								animate={{ opacity: 1, scale: 1 }}
 								exit={{ opacity: 0 }}
-								transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+								transition={{ duration: 0.6, ease: EASE_HERO }}
 							>
-								<p className="text-xs uppercase tracking-[0.3em] text-green-400 mb-4">Live</p>
+								<p className="text-xs uppercase tracking-[0.3em] text-accent mb-4">live</p>
 								<h2 className="text-5xl md:text-7xl text-white tracking-tight font-medium leading-[1.05]">
 									<span className="font-mono">${(ticker ?? "token").replace(/^\$/, "")}</span>
-									<span className="text-green-400"> is alive</span>
+									<span className="text-accent"> is alive.</span>
 								</h2>
-								<p className="text-sm text-neutral-400 mt-6">Redirecting to the public page…</p>
+								<p className="text-sm text-neutral-400 mt-6">taking you home…</p>
 							</motion.div>
 						) : (
 							<motion.div
 								key="progress-card"
 								className={cn(
-									"relative z-10 w-full max-w-md rounded-md border bg-[#0A0A0A] overflow-hidden",
-									errorMessage ? "border-red-500/40" : "border-autofun-background-action-highlight/50",
+									"relative z-10 w-full max-w-md rounded-sm border bg-[#0A0A0A] overflow-hidden",
+									errorMessage ? "border-red-500/40" : "border-stroke",
 								)}
 								initial={{ y: 12, opacity: 0 }}
 								animate={{ y: 0, opacity: 1 }}
 								exit={{ y: -8, opacity: 0 }}
-								transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+								transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
 							>
 								{/* Subtle ambient — no neon */}
 								<div
 									aria-hidden="true"
 									className={cn(
 										"pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl",
-										errorMessage ? "bg-red-500/5" : "bg-green-500/[0.04]",
+										errorMessage ? "bg-red-500/5" : "bg-accent/[0.04]",
 									)}
 								/>
 
-								<header className="relative px-6 pt-7 pb-4 border-b border-autofun-background-action-highlight/30">
-									<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">
-										{errorMessage ? "Launch interrupted" : "Launching"}
+								<header className="relative px-6 pt-7 pb-4 border-b border-stroke">
+									<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">
+										{errorMessage ? "[interrupted]" : "[launching]"}
 									</p>
 									<h2 className="mt-1 text-lg text-white tracking-tight">
-										{errorMessage ? "We hit a snag" : STAGE_COPY[stage].title}
+										{errorMessage ? "we hit a snag." : STAGE_COPY[stage].title}
 									</h2>
 								</header>
 
-								<div className="relative px-6 py-2 divide-y divide-autofun-background-action-highlight/20">
+								<div className="relative px-6 py-2 divide-y divide-stroke">
 									{stageStates.map(({ stage: s, state }) => (
 										<StageRow key={s} stage={s} state={state} />
 									))}
@@ -292,7 +293,7 @@ export default function LaunchProgress({
 													onClick={onRetry}
 													className="h-9 bg-red-500/10 hover:bg-red-500/20 text-red-200 border border-red-500/40"
 												>
-													Try again
+													try again
 												</Button>
 											) : null}
 											<button
@@ -300,13 +301,13 @@ export default function LaunchProgress({
 												onClick={onClose}
 												className="text-xs text-neutral-400 hover:text-white underline-offset-4 hover:underline"
 											>
-												Close
+												close
 											</button>
 										</div>
 									</div>
 								) : pollError ? (
-									<div className="relative px-6 py-3 text-[11px] text-amber-300/80 border-t border-autofun-background-action-highlight/30">
-										Network blip while polling. Retrying…
+									<div className="relative px-6 py-3 text-[11px] text-[#a1a1aa] border-t border-stroke">
+										network blip while polling. retrying…
 									</div>
 								) : null}
 							</motion.div>

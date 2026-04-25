@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type Step = {
@@ -13,23 +14,23 @@ type Step = {
 const STEPS: Step[] = [
 	{
 		num: "01",
-		title: "You authorize",
-		body: "You sign a SIWE message confirming you're the patron. The launch is queued with the first-buy amount you set.",
+		title: "you authorize",
+		body: "you sign a SIWE message confirming you're the patron. the launch is queued with the first-buy amount you set.",
 	},
 	{
 		num: "02",
-		title: "Safe submits the create-token call",
-		body: "The agent's Safe signs the four.meme creation transaction. Tax recipient is locked to the agent's TaxSplitter (Safe + you, 80/20).",
+		title: "safe submits the create-token call",
+		body: "the agent's safe signs the four.meme creation transaction. tax recipient is locked to the agent's TaxSplitter (safe + you, 80/20).",
 	},
 	{
 		num: "03",
-		title: "Token lands on the bonding curve",
-		body: "Once the chain confirms, the token is born and the curve starts. The agent receives a webhook that says 'you're alive'.",
+		title: "token lands on the bonding curve",
+		body: "once the chain confirms, the token is born and the curve starts. the agent receives a webhook that says 'you're alive'.",
 	},
 	{
 		num: "04",
-		title: "The agent takes over",
-		body: "It posts its first message on X, opens its trade and treasury adapters, and starts running its main loop.",
+		title: "the agent takes over",
+		body: "it posts its first message on x, opens its trade and treasury adapters, and starts running its main loop.",
 	},
 ];
 
@@ -54,10 +55,7 @@ export default function WhatHappensNext() {
 	const [open, setOpen] = useState(false);
 
 	return (
-		<section
-			aria-label="Launch lifecycle"
-			className="rounded-md border border-autofun-background-action-highlight/40 bg-[#0A0A0A]"
-		>
+		<section aria-label="Launch lifecycle" className="rounded-sm border border-stroke bg-[#0A0A0A]">
 			<button
 				type="button"
 				onClick={() => setOpen((v) => !v)}
@@ -65,17 +63,17 @@ export default function WhatHappensNext() {
 				aria-controls="what-happens-next-body"
 				className={cn(
 					"w-full flex items-center justify-between gap-4 px-6 md:px-8 py-5",
-					"text-left hover:bg-white/[0.02] transition-colors rounded-md",
-					"focus:outline-none focus-visible:ring-1 focus-visible:ring-green-500/40",
+					"text-left hover:bg-white/[0.02] transition-colors rounded-sm",
+					"focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40",
 				)}
 			>
 				<div>
-					<p className="text-xs uppercase tracking-[0.16em] text-neutral-500">After you launch</p>
-					<h3 className="text-sm text-white mt-1 tracking-tight">What happens next?</h3>
+					<p className="text-xs uppercase tracking-[0.2em] text-neutral-500">after you launch</p>
+					<h3 className="text-sm text-white mt-1 tracking-tight">what happens next?</h3>
 				</div>
 				<motion.span
 					animate={{ rotate: open ? 180 : 0 }}
-					transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+					transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
 					className="text-neutral-400"
 				>
 					<ChevronIcon className="w-4 h-4" />
@@ -89,13 +87,13 @@ export default function WhatHappensNext() {
 						initial={{ height: 0, opacity: 0 }}
 						animate={{ height: "auto", opacity: 1 }}
 						exit={{ height: 0, opacity: 0 }}
-						transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-						className="overflow-hidden border-t border-autofun-background-action-highlight/30"
+						transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
+						className="overflow-hidden border-t border-stroke"
 					>
 						<ol className="px-6 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
 							{STEPS.map((step) => (
 								<li key={step.num} className="flex gap-4">
-									<div className="font-mono text-[11px] tracking-wider text-green-400 mt-0.5 shrink-0">{step.num}</div>
+									<div className="font-mono text-[11px] tracking-[0.2em] text-accent mt-0.5 shrink-0">{step.num}</div>
 									<div>
 										<div className="text-sm text-white tracking-tight">{step.title}</div>
 										<p className="text-xs text-neutral-400 mt-1.5 leading-relaxed max-w-[44ch]">{step.body}</p>

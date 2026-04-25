@@ -26,7 +26,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 	if (isLoading || !agent) {
 		return (
 			<div className="flex items-start gap-5 animate-pulse">
-				<div className="w-20 h-20 rounded-md bg-[#141414]" />
+				<div className="w-20 h-20 rounded-sm bg-[#141414]" />
 				<div className="flex-1 space-y-3 pt-2">
 					<div className="h-6 w-56 bg-[#141414] rounded" />
 					<div className="h-4 w-32 bg-[#141414] rounded" />
@@ -41,20 +41,20 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 	return (
 		<section
 			aria-label="Agent ready to launch"
-			className="relative overflow-hidden rounded-md border border-autofun-background-action-highlight/40 bg-[#0A0A0A]"
+			className="relative overflow-hidden rounded-sm border border-stroke bg-[#0A0A0A]"
 		>
 			{/* subtle ambient glow — calm, not neon */}
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-green-500/[0.04] blur-3xl"
+				className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-accent/[0.04] blur-3xl"
 			/>
 
 			<div className="relative px-6 py-12 md:px-10 md:py-14">
 				<div className="flex items-start gap-6 flex-wrap">
 					<div
 						className={cn(
-							"w-20 h-20 md:w-24 md:h-24 rounded-md overflow-hidden bg-[#141414] border border-autofun-background-action-highlight/40 shrink-0",
-							"ring-1 ring-green-500/20",
+							"w-20 h-20 md:w-24 md:h-24 rounded-sm overflow-hidden bg-[#141414] border border-stroke shrink-0",
+							"ring-1 ring-accent/20",
 						)}
 					>
 						{agent.avatar ? (
@@ -76,15 +76,14 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-3 flex-wrap">
 							<ReadyPill />
-							<span className="text-xs uppercase tracking-[0.2em] text-neutral-500">Stage 3 / 5</span>
 						</div>
-						<h1 className="mt-4 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
+						<h1 className="mt-4 text-3xl md:text-4xl font-bold text-white tracking-tight leading-[1.05]">
 							{agent.name}
 						</h1>
 						<p className="text-sm text-neutral-400 font-mono mt-1">${agent.ticker}</p>
 						{bio ? <p className="mt-5 max-w-[60ch] text-[15px] leading-relaxed text-neutral-300">{bio}</p> : null}
 						<p className="mt-6 max-w-[60ch] text-sm leading-relaxed text-neutral-400">
-							Your agent is alive but the token isn&apos;t on the curve yet. You decide when to launch.
+							your agent is alive. the token isn&apos;t on the curve yet. you decide when.
 						</p>
 					</div>
 				</div>
@@ -95,34 +94,19 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 
 function ReadyPill() {
 	return (
-		<>
-			<style jsx>{`
-				@keyframes ready-pulse {
-					0%, 100% { transform: scale(1); opacity: 1; }
-					50% { transform: scale(1.04); opacity: 0.92; }
-				}
-				.ready-pulse {
-					animation: ready-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-					transform-origin: left center;
-				}
-				@media (prefers-reduced-motion: reduce) {
-					.ready-pulse { animation: none; }
-				}
-			`}</style>
-			<span
-				className="ready-pulse inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] rounded border bg-green-500/10 text-green-400 border-green-500/30"
-				role="status"
-				aria-label="Agent status: ready to launch"
-			>
-				<span className="relative inline-flex w-1.5 h-1.5">
-					<span
-						aria-hidden="true"
-						className="absolute inset-0 rounded-full bg-green-400/60 animate-ping motion-reduce:hidden"
-					/>
-					<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-green-400" />
-				</span>
-				Ready to launch
+		<span
+			className="inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] rounded-sm border bg-accent/10 text-accent border-accent/30 animate-pulse motion-reduce:animate-none"
+			role="status"
+			aria-label="Agent status: ready to launch"
+		>
+			<span className="relative inline-flex w-1.5 h-1.5">
+				<span
+					aria-hidden="true"
+					className="absolute inset-0 rounded-full bg-accent/60 animate-ping motion-reduce:hidden"
+				/>
+				<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-accent" />
 			</span>
-		</>
+			ready to launch
+		</span>
 	);
 }

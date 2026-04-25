@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "viem";
 import { parseEther } from "viem";
+import { AlertTriangle, Check, Copy, ExternalLink, Loader2, Shield } from "lucide-react";
 import useBalance from "@/hooks/use-balance";
 import { useXConnection } from "@/lib/api/x-connection";
 import { cn } from "@/lib/utils";
@@ -50,105 +51,6 @@ export function useSafeBalance(safeAddress: string | null | undefined) {
 		error: error as Error | null,
 		refetch,
 	};
-}
-
-function CopyIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<rect x="5" y="5" width="9" height="9" rx="1.5" />
-			<path d="M3 11V3a1 1 0 0 1 1-1h7" />
-		</svg>
-	);
-}
-
-function CheckIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.6"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M3 8.5l3 3L13 5" />
-		</svg>
-	);
-}
-
-function ExternalLinkIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M9 3h4v4" />
-			<path d="M13 3l-7 7" />
-			<path d="M11 9v3.5A1.5 1.5 0 0 1 9.5 14h-6A1.5 1.5 0 0 1 2 12.5v-6A1.5 1.5 0 0 1 3.5 5H7" />
-		</svg>
-	);
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M8 1.5L2.5 3.5v4c0 3 2.4 5.6 5.5 7 3.1-1.4 5.5-4 5.5-7v-4L8 1.5z" />
-		</svg>
-	);
-}
-
-function WarnIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			aria-hidden="true"
-			viewBox="0 0 16 16"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.4"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			className={className}
-		>
-			<path d="M8 2L1.5 13.5h13L8 2z" />
-			<path d="M8 6.5v3.5" />
-			<circle cx="8" cy="11.5" r="0.4" fill="currentColor" />
-		</svg>
-	);
-}
-
-function Spinner({ className }: { className?: string }) {
-	return (
-		<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={cn("animate-spin", className)}>
-			<circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-			<path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-		</svg>
-	);
 }
 
 function shortAddress(addr: string | null | undefined): string {
@@ -260,22 +162,22 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 	// Empty Safe — render a focused funding state instead of the form.
 	if (isEmptySafe) {
 		return (
-			<section aria-label="Fund Safe" className="relative rounded-md border border-amber-500/30 bg-[#0C0C0C]">
+			<section aria-label="Fund Safe" className="relative rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 				<div className="px-6 md:px-8 py-12 space-y-6">
 					<div className="flex items-start gap-3">
-						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 text-amber-300">
-							<WarnIcon className="w-4 h-4" />
+						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] text-[#a1a1aa]">
+							<AlertTriangle className="w-4 h-4" />
 						</div>
 						<div>
-							<h2 className="text-xl text-white tracking-tight">Fund the Safe first</h2>
+							<h2 className="text-xl text-white tracking-tight">fund the safe first.</h2>
 							<p className="text-sm text-neutral-400 mt-2 max-w-[60ch] leading-relaxed">
-								Your agent&apos;s Safe holds 0 BNB. Send BNB to the address below before launching so the Safe can pay
-								gas and (optionally) take a first buy.
+								your agent&apos;s safe holds 0 BNB. send BNB to the address below so the safe can pay gas and
+								(optionally) take a first buy.
 							</p>
 						</div>
 					</div>
 
-					<div className="rounded-sm border border-autofun-background-action-highlight/40 bg-[#0A0A0A] p-4 flex items-center gap-3 flex-wrap">
+					<div className="rounded-sm border border-stroke bg-[#0A0A0A] p-4 flex items-center gap-3 flex-wrap">
 						<code className="font-mono text-sm text-white break-all flex-1 min-w-0">{safeAddress ?? "—"}</code>
 						<div className="flex items-center gap-2">
 							<button
@@ -283,9 +185,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 								onClick={handleCopy}
 								disabled={!safeAddress}
 								aria-label="Copy Safe address"
-								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-stroke text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
 							>
-								{copied ? <CheckIcon className="w-3.5 h-3.5 text-green-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
+								{copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
 								{copied ? "Copied" : "Copy"}
 							</button>
 							{safeAddress ? (
@@ -293,10 +195,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									href={`https://bscscan.com/address/${safeAddress}`}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
+									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
 									aria-label="View Safe on BscScan"
 								>
-									<ExternalLinkIcon className="w-3.5 h-3.5" />
+									<ExternalLink className="w-3.5 h-3.5" />
 								</a>
 							) : null}
 						</div>
@@ -304,9 +206,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 					<div className="flex items-center gap-3 flex-wrap">
 						<Button type="button" onClick={() => refetch()} className="h-10 bg-white text-black hover:bg-white/90">
-							I funded it, refresh
+							i funded it. refresh.
 						</Button>
-						<p className="text-[11px] text-neutral-500">Balance refreshes every 60 seconds automatically.</p>
+						<p className="text-[11px] text-neutral-500">balance refreshes every 60 seconds automatically.</p>
 					</div>
 				</div>
 			</section>
@@ -315,40 +217,37 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 	return (
 		<>
-			<section
-				aria-label="Launch panel"
-				className="relative rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-			>
-				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-autofun-background-action-highlight/30">
+			<section aria-label="Launch panel" className="relative rounded-sm border border-stroke bg-[#0C0C0C]">
+				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-stroke">
 					<div className="flex items-center justify-between gap-4 flex-wrap">
 						<div>
-							<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Pre-launch</p>
-							<h2 className="mt-1 text-xl text-white tracking-tight">Launch token</h2>
+							<p className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-500">[pre-launch]</p>
+							<h2 className="mt-1 text-xl text-white tracking-tight">launch the token.</h2>
 						</div>
 						<div className="inline-flex items-center gap-2 text-xs text-neutral-500">
-							<ShieldIcon className="w-3.5 h-3.5" />
-							<span>Patron-only action</span>
+							<Shield className="w-3.5 h-3.5" />
+							<span>patron-only.</span>
 						</div>
 					</div>
 				</header>
 
 				{!xLoading && !xConnected ? (
-					<div className="px-6 md:px-8 py-3 border-b border-amber-500/30 bg-amber-500/[0.04] flex items-start gap-3">
-						<WarnIcon className="w-4 h-4 mt-0.5 text-amber-300 shrink-0" />
-						<p className="text-xs text-amber-200 leading-relaxed">
-							X not connected. Your agent will launch silently.{" "}
-							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-amber-100">
-								Connect now.
+					<div className="px-6 md:px-8 py-3 border-b border-stroke-strong bg-white/[0.02] flex items-start gap-3">
+						<AlertTriangle className="w-4 h-4 mt-0.5 text-[#a1a1aa] shrink-0" />
+						<p className="text-xs text-[#a1a1aa] leading-relaxed">
+							x not connected. your agent will launch silently.{" "}
+							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-white">
+								connect now.
 							</Link>
 						</p>
 					</div>
 				) : null}
 
-				<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-autofun-background-action-highlight/30">
+				<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stroke">
 					{/* LEFT: Safe details */}
 					<div className="px-6 md:px-8 py-7 space-y-6">
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-3">Safe</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-3">safe</h3>
 							<div className="flex items-center gap-2">
 								<code className="font-mono text-sm text-white truncate">{shortAddress(safeAddress)}</code>
 								<button
@@ -358,37 +257,37 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									aria-label="Copy Safe address"
 									className={cn(
 										"inline-flex items-center justify-center w-7 h-7 rounded-sm border transition-colors",
-										"border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+										"border-stroke text-neutral-400 hover:text-white hover:bg-white/5",
 										"disabled:opacity-40 disabled:cursor-not-allowed",
 									)}
 								>
-									{copied ? <CheckIcon className="w-3.5 h-3.5 text-green-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
+									{copied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
 								</button>
 								{safeAddress ? (
 									<a
 										href={`https://bscscan.com/address/${safeAddress}`}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
+										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
 										aria-label="View Safe on BscScan"
 									>
-										<ExternalLinkIcon className="w-3.5 h-3.5" />
+										<ExternalLink className="w-3.5 h-3.5" />
 									</a>
 								) : null}
 							</div>
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">Balance</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">balance</h3>
 							<div className="flex items-baseline gap-2">
 								<div className="font-mono text-2xl text-white">{balanceLoading ? "…" : formatBnb(balance)}</div>
-								<div className="text-xs uppercase tracking-wider text-neutral-500">BNB</div>
+								<div className="text-xs uppercase tracking-[0.2em] text-neutral-500">BNB</div>
 								<button
 									type="button"
 									onClick={() => refetch()}
 									className="ml-2 text-[11px] text-neutral-500 hover:text-white underline-offset-4 hover:underline"
 								>
-									Refresh
+									refresh
 								</button>
 							</div>
 							{balanceError ? (
@@ -399,16 +298,16 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<div>
-							<h3 className="text-xs uppercase tracking-[0.16em] text-neutral-500 mb-2">X account</h3>
+							<h3 className="text-xs uppercase tracking-[0.2em] text-neutral-500 mb-2">x account</h3>
 							{xLoading ? (
 								<div className="h-4 w-32 bg-[#141414] rounded animate-pulse" />
 							) : xConnected ? (
 								<p className="text-sm text-white">
-									Connected{" "}
+									connected{" "}
 									<span className="text-neutral-400 font-mono">@{(xData?.xHandle ?? "").replace(/^@/, "")}</span>
 								</p>
 							) : (
-								<p className="text-sm text-amber-300">Not connected</p>
+								<p className="text-sm text-[#a1a1aa]">not connected</p>
 							)}
 						</div>
 					</div>
@@ -416,8 +315,8 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					{/* RIGHT: First buy */}
 					<div className="px-6 md:px-8 py-7 space-y-5">
 						<div className="flex items-center justify-between gap-4 flex-wrap">
-							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.16em] text-neutral-500">
-								First buy (BNB)
+							<label htmlFor="first-buy" className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+								first buy (BNB)
 							</label>
 							{balance != null && parsed.ok && parsed.value > 0 ? (
 								<span className="text-[11px] font-mono text-neutral-500">{formatBnb(parsed.value, 6)} BNB</span>
@@ -439,11 +338,11 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									"focus:outline-none focus:ring-1 transition-colors",
 									validationError
 										? "border-red-500/50 focus:border-red-400 focus:ring-red-400/30"
-										: "border-autofun-background-action-highlight/40 focus:border-green-500/60 focus:ring-green-500/30",
+										: "border-stroke focus:border-accent/60 focus:ring-accent/30",
 								)}
 								placeholder="0"
 							/>
-							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-wider text-neutral-500 font-mono">
+							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs uppercase tracking-[0.2em] text-neutral-500 font-mono">
 								BNB
 							</span>
 						</div>
@@ -460,8 +359,8 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 										className={cn(
 											"inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-sm border transition-colors",
 											active
-												? "border-green-500/40 bg-green-500/10 text-green-300"
-												: "border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+												? "border-accent/40 bg-accent/10 text-accent"
+												: "border-stroke text-neutral-400 hover:text-white hover:bg-white/5",
 										)}
 									>
 										{PRESET_LABELS[preset]}
@@ -471,7 +370,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 
 						<p id="first-buy-help" className="text-xs text-neutral-500 leading-relaxed max-w-[42ch]">
-							Optional. Defaults 0. The agent&apos;s Safe will buy this many BNB worth of its own token at launch.
+							optional. defaults 0. the agent&apos;s safe will buy this many BNB of its own token at launch.
 						</p>
 
 						{validationError ? (
@@ -482,33 +381,29 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					</div>
 				</div>
 
-				<div
-					ref={launchSentinelRef}
-					className="px-6 md:px-8 py-6 border-t border-autofun-background-action-highlight/30"
-				>
+				<div ref={launchSentinelRef} className="px-6 md:px-8 py-6 border-t border-stroke">
 					<Button
 						type="button"
 						onClick={handleSubmit}
 						disabled={!canLaunch}
-						aria-label="Launch token"
+						aria-label="launch token"
 						className={cn(
-							"w-full h-12 text-sm font-semibold uppercase tracking-[0.14em]",
-							"bg-green-500 text-black hover:bg-green-400 hover:text-black",
-							"disabled:bg-green-500/30 disabled:text-black/60",
+							"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
+							"bg-accent text-black hover:bg-accent-dim hover:text-black",
+							"disabled:bg-accent/30 disabled:text-black/60",
 						)}
 					>
 						{isLaunching ? (
 							<>
-								<Spinner className="w-4 h-4 mr-2" />
-								Authorizing…
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+								authorizing…
 							</>
 						) : (
-							"Launch token"
+							"launch token"
 						)}
 					</Button>
 					<p className="text-[11px] text-neutral-500 mt-3 text-center max-w-[60ch] mx-auto">
-						You&apos;ll sign a SIWE message. The Safe will then submit a four.meme creation transaction with this
-						first-buy amount.
+						you sign. the safe submits to four.meme. token lands on the curve.
 					</p>
 				</div>
 			</section>
@@ -519,7 +414,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 				className={cn(
 					"md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pb-4 pt-3",
 					"bg-gradient-to-t from-black via-black/95 to-black/0",
-					"transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+					"transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]", // EASE_OUT_EXPO (matches lib/motion)
 					stickyVisible
 						? "translate-y-0 opacity-100 pointer-events-auto"
 						: "translate-y-4 opacity-0 pointer-events-none",
@@ -529,21 +424,21 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					type="button"
 					onClick={handleSubmit}
 					disabled={!canLaunch}
-					aria-label="Launch token"
+					aria-label="launch token"
 					tabIndex={stickyVisible ? 0 : -1}
 					className={cn(
-						"w-full h-12 text-sm font-semibold uppercase tracking-[0.14em]",
-						"bg-green-500 text-black hover:bg-green-400 hover:text-black",
-						"disabled:bg-green-500/30 disabled:text-black/60",
+						"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
+						"bg-accent text-black hover:bg-accent-dim hover:text-black",
+						"disabled:bg-accent/30 disabled:text-black/60",
 					)}
 				>
 					{isLaunching ? (
 						<>
-							<Spinner className="w-4 h-4 mr-2" />
-							Authorizing…
+							<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+							authorizing…
 						</>
 					) : (
-						"Launch token"
+						"launch token"
 					)}
 				</Button>
 			</div>
