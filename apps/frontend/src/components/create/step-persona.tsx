@@ -7,12 +7,12 @@ import { useWizard } from "./wizard-state";
 import { CheckIcon, UploadIcon } from "./wizard-icons";
 
 const TEMPLATES: { id: string; label: string; tone: string; gradient: string }[] = [
-	{ id: "tessera", label: "Tessera", tone: "geometric", gradient: "linear-gradient(135deg,#1f3a2b 0%,#0a0a0a 60%)" },
-	{ id: "halia", label: "Halia", tone: "warm static", gradient: "linear-gradient(135deg,#3a2f1f 0%,#0a0a0a 60%)" },
-	{ id: "vesper", label: "Vesper", tone: "twilight", gradient: "linear-gradient(135deg,#1f2a3a 0%,#0a0a0a 60%)" },
-	{ id: "korin", label: "Korin", tone: "circuit", gradient: "linear-gradient(135deg,#2a1f3a 0%,#0a0a0a 60%)" },
-	{ id: "miren", label: "Miren", tone: "obsidian", gradient: "linear-gradient(135deg,#1a1a1a 0%,#040404 60%)" },
-	{ id: "ophir", label: "Ophir", tone: "phosphor", gradient: "linear-gradient(135deg,#0e3320 0%,#0a0a0a 60%)" },
+	{ id: "tessera", label: "tessera", tone: "geometric", gradient: "linear-gradient(135deg,#1f3a2b 0%,#0a0a0a 60%)" },
+	{ id: "halia", label: "halia", tone: "warm static", gradient: "linear-gradient(135deg,#3a2f1f 0%,#0a0a0a 60%)" },
+	{ id: "vesper", label: "vesper", tone: "twilight", gradient: "linear-gradient(135deg,#1f2a3a 0%,#0a0a0a 60%)" },
+	{ id: "korin", label: "korin", tone: "circuit", gradient: "linear-gradient(135deg,#2a1f3a 0%,#0a0a0a 60%)" },
+	{ id: "miren", label: "miren", tone: "obsidian", gradient: "linear-gradient(135deg,#1a1a1a 0%,#040404 60%)" },
+	{ id: "ophir", label: "ophir", tone: "phosphor", gradient: "linear-gradient(135deg,#0e3320 0%,#0a0a0a 60%)" },
 ];
 
 const MAX_BIO = 240;
@@ -34,11 +34,11 @@ export default function StepPersona() {
 		async (file: File) => {
 			setUploadError(null);
 			if (!file.type.startsWith("image/")) {
-				setUploadError("File must be an image");
+				setUploadError("file must be an image");
 				return;
 			}
 			if (file.size > MAX_FILE_BYTES) {
-				setUploadError("Image must be under 4 MB");
+				setUploadError("image must be under 4 MB");
 				return;
 			}
 			const dataUrl = await new Promise<string | null>((resolve) => {
@@ -48,7 +48,7 @@ export default function StepPersona() {
 				reader.readAsDataURL(file);
 			});
 			if (!dataUrl) {
-				setUploadError("Could not read image");
+				setUploadError("could not read image");
 				return;
 			}
 			// Verify dimensions
@@ -60,7 +60,7 @@ export default function StepPersona() {
 				}
 				patchPersona({ avatarDataUrl: dataUrl, avatarTemplateId: null });
 			};
-			img.onerror = () => setUploadError("Image failed to decode");
+			img.onerror = () => setUploadError("image failed to decode");
 			img.src = dataUrl;
 		},
 		[patchPersona],
@@ -92,10 +92,7 @@ export default function StepPersona() {
 			{/* Avatar */}
 			<section>
 				<div className="flex items-baseline justify-between">
-					<label
-						htmlFor={`${nameId}-avatar`}
-						className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400"
-					>
+					<label htmlFor={`${nameId}-avatar`} className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
 						Avatar
 					</label>
 					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
@@ -131,12 +128,12 @@ export default function StepPersona() {
 							accept="image/png,image/jpeg,image/webp"
 							className="sr-only"
 							onChange={onChange}
-							aria-label="Upload avatar image"
+							aria-label="upload avatar image"
 						/>
 						{state.persona.avatarDataUrl ? (
 							<Image
 								src={state.persona.avatarDataUrl}
-								alt="Avatar preview"
+								alt="avatar preview"
 								fill
 								sizes="160px"
 								className="object-cover"
@@ -146,7 +143,7 @@ export default function StepPersona() {
 							<div className="flex flex-col items-center justify-center gap-2 px-4 text-center">
 								<UploadIcon className="h-5 w-5 text-neutral-500" />
 								<span className="text-[11px] text-neutral-500 leading-tight">
-									Drop image
+									drop image
 									<br />
 									or click
 								</span>
@@ -156,7 +153,7 @@ export default function StepPersona() {
 
 					<div>
 						<p className="text-xs text-neutral-500 leading-relaxed">
-							Or pick a template. Placeholder until you upload your own.
+							or pick a template. placeholder until you upload your own.
 						</p>
 						<div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2">
 							{TEMPLATES.map((t) => {
@@ -166,7 +163,7 @@ export default function StepPersona() {
 										key={t.id}
 										type="button"
 										aria-pressed={selected}
-										aria-label={`Avatar template ${t.label}`}
+										aria-label={`avatar template ${t.label}`}
 										onClick={() => patchPersona({ avatarTemplateId: t.id, avatarDataUrl: null })}
 										className={cn(
 											"group relative aspect-square overflow-hidden border",
@@ -199,7 +196,7 @@ export default function StepPersona() {
 			<section className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-4">
 				<Field
 					id={nameId}
-					label="Name"
+					label="name"
 					value={state.persona.name}
 					placeholder="Eliza"
 					maxLength={48}
@@ -207,7 +204,7 @@ export default function StepPersona() {
 				/>
 				<Field
 					id={tickerId}
-					label="Ticker"
+					label="ticker"
 					value={tickerVal}
 					placeholder="ELIZA"
 					mono
@@ -222,13 +219,13 @@ export default function StepPersona() {
 								.slice(0, 10),
 						})
 					}
-					hint={tickerInvalid ? "Two to ten uppercase letters or digits" : "Two to ten chars, A-Z and 0-9"}
+					hint={tickerInvalid ? "two to ten uppercase letters or digits" : "two to ten chars, A-Z and 0-9"}
 				/>
 			</section>
 
 			{/* Bio */}
 			<section>
-				<FieldLabel htmlFor={bioId} label="One-line bio" counter={`${state.persona.bio.length}/${MAX_BIO}`} />
+				<FieldLabel htmlFor={bioId} label="one-line bio" counter={`${state.persona.bio.length}/${MAX_BIO}`} />
 				<textarea
 					id={bioId}
 					value={state.persona.bio}
@@ -248,12 +245,12 @@ export default function StepPersona() {
 			<section>
 				<FieldLabel
 					htmlFor={promptId}
-					label="Persona prompt"
+					label="persona prompt"
 					optional
 					counter={`${state.persona.personaPrompt.length}/${MAX_PROMPT}`}
 				/>
 				<p className="mt-1 text-xs text-neutral-500 leading-relaxed max-w-[58ch]">
-					Optional. Steerable later. Defines how the agent talks, reasons, and reacts to market moves. Leave empty to
+					optional. steerable later. defines how the agent talks, reasons, and reacts to market moves. leave empty to
 					use the default voice for the picked template.
 				</p>
 				<textarea

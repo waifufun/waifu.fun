@@ -11,26 +11,26 @@ export type ProvisioningStage = "safe" | "runtime" | "x-oauth" | "policies" | "d
 const STAGES: { id: Exclude<ProvisioningStage, "done">; label: string; sublabel: string; durationMs: number }[] = [
 	{
 		id: "safe",
-		label: "Deploying Safe",
+		label: "deploying safe",
 		sublabel: "1-of-2 multisig with steward key",
 		durationMs: 1600,
 	},
 	{
 		id: "runtime",
-		label: "Minting agent runtime",
+		label: "minting runtime",
 		sublabel: "wiring plugins, treasury, adapters",
 		durationMs: 1500,
 	},
 	{
 		id: "x-oauth",
-		label: "Wiring X OAuth",
+		label: "wiring x oauth",
 		sublabel: "ready to post once you authorize",
 		durationMs: 1200,
 	},
 	{
 		id: "policies",
-		label: "Seeding adapter policies",
-		sublabel: "Pancake and Venus with default caps",
+		label: "seeding policies",
+		sublabel: "pancake and venus with default caps",
 		durationMs: 1300,
 	},
 ];
@@ -75,7 +75,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 			className="fixed inset-0 z-50 bg-[#08080a]/95 backdrop-blur-xl flex items-center justify-center px-4"
 			aria-live="polite"
 			aria-busy={!allDone}
-			aria-label="Provisioning agent"
+			aria-label="provisioning agent"
 		>
 			<div className="w-full max-w-[520px] block">
 				<header className="mb-10">
@@ -89,7 +89,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 								transition={{ duration: 0.3 }}
 								className="inline-block"
 							>
-								{allDone ? "Live" : "Provisioning"}
+								{allDone ? "live" : "provisioning"}
 							</motion.span>
 						</AnimatePresence>
 					</p>
@@ -102,11 +102,11 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 							transition={TRANSITION}
 							className="mt-3 text-2xl md:text-3xl text-white tracking-tight leading-[1.1]"
 						>
-							{allDone ? "Your agent is alive." : "Spinning up your agent."}
+							{allDone ? "alive." : "spinning up."}
 						</motion.h2>
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">
-						{allDone ? "Redirecting to its home page..." : "This usually takes ten to fifteen seconds."}
+						{allDone ? "taking you home..." : "~10-15 seconds."}
 					</p>
 
 					{/* Macro progress */}

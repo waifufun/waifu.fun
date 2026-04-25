@@ -57,10 +57,10 @@ function WizardInner() {
 		// a contextual toast.
 		const message =
 			!result || result.reason === "not_wired" || result.reason === "network"
-				? "Backend wiring coming soon. Your config is saved."
+				? "backend wiring coming soon. your config is saved."
 				: result.reason === "validation"
-					? `Validation failed: ${result.message}`
-					: `Provision failed: ${result.message}`;
+					? `validation failed: ${result.message}`
+					: `provision failed: ${result.message}`;
 
 		const isStub = !result || result.reason === "not_wired" || result.reason === "network";
 		if (isStub) {

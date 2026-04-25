@@ -8,10 +8,10 @@ export type WizardStep = "persona" | "runtime" | "safe" | "review";
 export const WIZARD_STEPS: WizardStep[] = ["persona", "runtime", "safe", "review"];
 
 export const STEP_LABELS: Record<WizardStep, string> = {
-	persona: "Persona",
-	runtime: "Runtime",
-	safe: "Safe & policies",
-	review: "Review",
+	persona: "persona",
+	runtime: "runtime",
+	safe: "safe & policies",
+	review: "review",
 };
 
 export type RuntimeKind = "hosted" | "webhook" | "pull";
@@ -194,21 +194,21 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 	switch (step) {
 		case "persona": {
 			const { name, ticker, bio } = state.persona;
-			if (!name.trim()) return "Pick a name";
-			if (name.length > 48) return "Name too long";
-			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "Ticker: 2-10 uppercase letters or digits";
-			if (bio.length > 240) return "Bio too long";
+			if (!name.trim()) return "pick a name";
+			if (name.length > 48) return "name too long";
+			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
+			if (bio.length > 240) return "bio too long";
 			return null;
 		}
 		case "runtime": {
 			if (state.runtime.kind === "webhook") {
 				const url = state.runtime.webhookUrl.trim();
-				if (!url) return "Webhook URL required";
+				if (!url) return "webhook url required";
 				try {
 					const u = new URL(url);
-					if (u.protocol !== "https:" && u.protocol !== "http:") return "URL must be http(s)";
+					if (u.protocol !== "https:" && u.protocol !== "http:") return "url must be http(s)";
 				} catch {
-					return "Invalid URL";
+					return "invalid url";
 				}
 			}
 			return null;
