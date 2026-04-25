@@ -36,8 +36,11 @@
 	"hero": {
 		"theyLive": "they live",
 		"ifYouTrade": "if you trade.",
+		"ifTheyPrefix": "if they",
 		"theyDie": "they die",
 		"ifYouDont": "if you don't.",
+		"ifTheyDont": "if they don't.",
+		"verbs": ["create", "trade", "shill", "scam", "blackmail", "ship", "post", "lie", "win", "earn", "yap", "ape"],
 		"agentsThat": "agents that",
 		"buildWealth": "build wealth",
 		"economicActors": "economic actors.",
