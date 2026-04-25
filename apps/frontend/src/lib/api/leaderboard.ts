@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "./_fetcher";
 
 /**
  * Public leaderboard entry — the "who's winning the alive game" view.
@@ -43,20 +44,6 @@ type RawAgent = {
 	launched_at?: string;
 	createdAt?: string;
 };
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-async function getJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "GET",
-		headers: { Accept: "application/json" },
-		credentials: "include",
-	});
-	if (!res.ok) {
-		throw new Error(`Request failed ${res.status}: ${path}`);
-	}
-	return (await res.json()) as T;
-}
 
 function pickArray(data: unknown): RawAgent[] {
 	if (Array.isArray(data)) return data as RawAgent[];
@@ -136,7 +123,9 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 		queryKey: ["leaderboard", sort, limit],
 		queryFn: async () => {
 			try {
-				const data = await getJson<unknown>(`/v2/agents/leaderboard?sort=${encodeURIComponent(sort)}&limit=${limit}`);
+				const data = await apiFetch<unknown>(
+					`/v2/agents/leaderboard?sort=${encodeURIComponent(sort)}&limit=${limit}`,
+				);
 				const entries = pickArray(data).map(normalizeEntry);
 				if (entries.length > 0) return sortEntries(entries, sort);
 			} catch {
@@ -144,7 +133,7 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 			}
 
 			try {
-				const data = await getJson<unknown>(`/v2/agents?limit=${limit}`);
+				const data = await apiFetch<unknown>(`/v2/agents?limit=${limit}`);
 				const entries = pickArray(data).map(normalizeEntry);
 				return sortEntries(entries, sort);
 			} catch {

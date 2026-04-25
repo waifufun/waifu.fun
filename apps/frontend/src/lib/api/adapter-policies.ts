@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 /**
  * Adapter policy contract as shipped by W2.7.
@@ -27,8 +28,6 @@ export type AdapterTemplate = {
 	color?: string | null;
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
 export class HttpError extends Error {
 	status: number;
 	constructor(status: number, message: string) {
@@ -39,31 +38,27 @@ export class HttpError extends Error {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "GET",
-		headers: { Accept: "application/json" },
-		credentials: "include",
-	});
-	if (!res.ok) {
-		throw new HttpError(res.status, `Request failed ${res.status}: ${path}`);
+	try {
+		return await apiFetch<T>(path);
+	} catch (err) {
+		if (isApiError(err)) {
+			const apiErr = err as ApiError;
+			throw new HttpError(apiErr.status, `Request failed ${apiErr.status}: ${path}`);
+		}
+		throw err;
 	}
-	return (await res.json()) as T;
 }
 
 async function putJson<T>(path: string, body: unknown): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "PUT",
-		headers: {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		},
-		credentials: "include",
-		body: JSON.stringify(body),
-	});
-	if (!res.ok) {
-		throw new HttpError(res.status, `Request failed ${res.status}: ${path}`);
+	try {
+		return await apiFetch<T>(path, { method: "PUT", body: JSON.stringify(body) });
+	} catch (err) {
+		if (isApiError(err)) {
+			const apiErr = err as ApiError;
+			throw new HttpError(apiErr.status, `Request failed ${apiErr.status}: ${path}`);
+		}
+		throw err;
 	}
-	return (await res.json()) as T;
 }
 
 /**

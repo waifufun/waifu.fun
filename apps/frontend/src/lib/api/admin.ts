@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "./_fetcher";
 
 /**
  * W5.7 — Admin (kill-switch) API client.
@@ -19,8 +20,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
  */
 
 export const ADMIN_TOKEN_KEY = "waifu-admin-token";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export type AdminAgent = {
 	id: string;
@@ -80,44 +79,36 @@ export function clearAdminToken(): void {
 	}
 }
 
-function adminHeaders(token: string | null): HeadersInit {
-	const headers: Record<string, string> = {
-		Accept: "application/json",
-	};
+function adminHeaders(token: string | null): Record<string, string> {
+	// Admin operator token always wins over the Steward JWT module-global —
+	// apiFetch preserves an explicit Authorization header set in init.headers.
+	const headers: Record<string, string> = {};
 	if (token) headers.Authorization = `Bearer ${token}`;
 	return headers;
 }
 
 async function adminGet<T>(path: string, token: string | null): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "GET",
-		headers: adminHeaders(token),
-		credentials: "include",
-	});
-	if (!res.ok) {
-		const text = await res.text().catch(() => "");
-		throw new Error(`GET ${path} failed: ${res.status}${text ? ` ${text}` : ""}`);
+	try {
+		return await apiFetch<T>(path, { headers: adminHeaders(token) });
+	} catch (err) {
+		if (typeof err === "object" && err !== null && "status" in err) {
+			const e = err as { status: number; message: string };
+			throw new Error(`GET ${path} failed: ${e.status}${e.message ? ` ${e.message}` : ""}`);
+		}
+		throw err;
 	}
-	return (await res.json()) as T;
 }
 
 async function adminPost<T>(path: string, token: string | null): Promise<T> {
-	const res = await fetch(`${BASE_URL}${path}`, {
-		method: "POST",
-		headers: {
-			...adminHeaders(token),
-			"Content-Type": "application/json",
-		},
-		credentials: "include",
-	});
-	if (!res.ok) {
-		const text = await res.text().catch(() => "");
-		throw new Error(`POST ${path} failed: ${res.status}${text ? ` ${text}` : ""}`);
+	try {
+		return await apiFetch<T>(path, { method: "POST", headers: adminHeaders(token) });
+	} catch (err) {
+		if (typeof err === "object" && err !== null && "status" in err) {
+			const e = err as { status: number; message: string };
+			throw new Error(`POST ${path} failed: ${e.status}${e.message ? ` ${e.message}` : ""}`);
+		}
+		throw err;
 	}
-	if (res.status === 204) return undefined as T;
-	const ct = res.headers.get("content-type") ?? "";
-	if (!ct.includes("application/json")) return undefined as T;
-	return (await res.json()) as T;
 }
 
 /* ─── shape coercion ─── */
