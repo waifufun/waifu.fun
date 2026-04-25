@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ChevronDown, Copy, Mail, ShieldCheck, UserPlus, X } from "lucide-react";
-import { buildStewardAuthUrl, defaultStewardRedirectUri } from "@/lib/api/steward";
+import { ArrowUpRight, ChevronDown, Mail, ShieldCheck, UserPlus, X } from "lucide-react";
 import { EASE_OUT_EXPO } from "@/lib/motion";
+
+// W9.5: route the modal CTAs through the new Steward OAuth bridge instead
+// of the legacy popup-to-eliza.steward.dev flow. The /auth/connect page
+// hosts the provider picker (Google / GitHub / Discord / Twitter / Email /
+// Passkey) and forwards return_to to /auth/oauth/start.
+function buildConnectHref(returnTo: string): string {
+	const u = new URLSearchParams({ return_to: returnTo });
+	return `/auth/connect?${u.toString()}`;
+}
 
 type Props = {
 	open: boolean;
@@ -14,46 +22,35 @@ type Props = {
 
 type Path = "signin" | "signup";
 
-const POPUP_WIDTH = 600;
-const POPUP_HEIGHT = 700;
-
-function openCenteredPopup(url: string, name: string) {
-	if (typeof window === "undefined") return null;
-	const dualLeft = window.screenLeft ?? window.screenX ?? 0;
-	const dualTop = window.screenTop ?? window.screenY ?? 0;
-	const w = window.innerWidth ?? document.documentElement.clientWidth ?? 1200;
-	const h = window.innerHeight ?? document.documentElement.clientHeight ?? 800;
-	const left = dualLeft + (w - POPUP_WIDTH) / 2;
-	const top = dualTop + (h - POPUP_HEIGHT) / 2;
-	const features = `width=${POPUP_WIDTH},height=${POPUP_HEIGHT},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`;
-	return window.open(url, name, features);
-}
-
 function PathCard({
 	icon,
 	label,
 	title,
 	body,
 	cta,
+	href,
 	onClick,
-	loading,
 }: {
 	icon: React.ReactNode;
 	label: string;
 	title: string;
 	body: string;
 	cta: string;
+	href: string;
 	onClick: () => void;
-	loading: boolean;
 }) {
 	return (
-		<motion.button
-			type="button"
-			onClick={onClick}
-			disabled={loading}
+		<motion.a
+			href={href}
+			onClick={(e) => {
+				onClick();
+				// Default link nav handles the rest. We don't preventDefault so
+				// middle-click / cmd-click continue to work as expected.
+				void e;
+			}}
 			whileHover={{ y: -2 }}
 			transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
-			className="group relative flex flex-col items-start gap-4 rounded-sm border border-white/10 bg-[#0b0b0d] p-5 text-left transition-colors duration-300 hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-60 disabled:cursor-progress"
+			className="group relative flex flex-col items-start gap-4 rounded-sm border border-white/10 bg-[#0b0b0d] p-5 text-left transition-colors duration-300 hover:border-[#00ff87]/40 hover:bg-[#0d100e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40"
 		>
 			<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87] transition-colors group-hover:border-[#00ff87]/30">
 				{icon}
@@ -73,7 +70,7 @@ function PathCard({
 					aria-hidden="true"
 				/>
 			</span>
-		</motion.button>
+		</motion.a>
 	);
 }
 
@@ -89,78 +86,27 @@ function InfoBullet({ icon, children }: { icon: React.ReactNode; children: React
 }
 
 export default function StewardConnectModal({ open, onOpenChange }: Props) {
-	const [activePath, setActivePath] = useState<Path | null>(null);
-	const [popupBlocked, setPopupBlocked] = useState(false);
-	const [manualUrl, setManualUrl] = useState<string | null>(null);
-	const [copied, setCopied] = useState(false);
 	const [infoOpen, setInfoOpen] = useState(false);
-	const popupRef = useRef<Window | null>(null);
-	const pollRef = useRef<number | null>(null);
 
 	// Reset state every time the modal opens.
 	useEffect(() => {
 		if (open) {
-			setActivePath(null);
-			setPopupBlocked(false);
-			setManualUrl(null);
-			setCopied(false);
+			setInfoOpen(false);
 		}
 	}, [open]);
 
-	// Listen for steward.connected from the popup → close modal.
-	useEffect(() => {
-		function onMessage(event: MessageEvent) {
-			if (!event?.data || typeof event.data !== "object") return;
-			const data = event.data as { type?: string };
-			if (data.type === "steward.connected") {
-				onOpenChange(false);
-			}
-		}
-		window.addEventListener("message", onMessage);
-		return () => window.removeEventListener("message", onMessage);
-	}, [onOpenChange]);
+	// W9.5: when the modal is mounted on a page that already has a meaningful
+	// pathname (e.g. /create), preserve it as the return_to so the user lands
+	// back where they came from after sign-in.
+	const returnTo =
+		typeof window !== "undefined" && window.location?.pathname?.startsWith("/")
+			? `${window.location.pathname}${window.location.search ?? ""}`
+			: "/patron";
+	const connectHref = buildConnectHref(returnTo);
 
-	// Watch for popup close (user closed it manually).
-	useEffect(() => {
-		if (!activePath) return;
-		const id = window.setInterval(() => {
-			if (popupRef.current?.closed) {
-				window.clearInterval(id);
-				pollRef.current = null;
-				setActivePath(null);
-			}
-		}, 500);
-		pollRef.current = id;
-		return () => {
-			window.clearInterval(id);
-			pollRef.current = null;
-		};
-	}, [activePath]);
-
-	const handlePath = (mode: Path) => {
-		setActivePath(mode);
-		setPopupBlocked(false);
-		const redirectUri = defaultStewardRedirectUri();
-		const url = buildStewardAuthUrl({ mode, redirectUri });
-		const popup = openCenteredPopup(url, "steward-connect");
-		if (!popup) {
-			setPopupBlocked(true);
-			setManualUrl(url);
-			setActivePath(null);
-			return;
-		}
-		popupRef.current = popup;
-	};
-
-	const handleCopy = async () => {
-		if (!manualUrl) return;
-		try {
-			await navigator.clipboard.writeText(manualUrl);
-			setCopied(true);
-			window.setTimeout(() => setCopied(false), 1500);
-		} catch {
-			// clipboard might be blocked in iframes; user can still long-press the link
-		}
+	const markPath = (_mode: Path) => () => {
+		// Closing on click feels nicer than letting Radix unmount mid-navigation.
+		onOpenChange(false);
 	};
 
 	return (
@@ -200,48 +146,20 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 							label="existing"
 							title="i have a steward account"
 							body="sign in with the email you used to create it."
-							cta={activePath === "signin" ? "waiting for steward..." : "sign in with steward"}
-							onClick={() => handlePath("signin")}
-							loading={activePath === "signin"}
+							cta="sign in with steward"
+							href={connectHref}
+							onClick={markPath("signin")}
 						/>
 						<PathCard
 							icon={<UserPlus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />}
 							label="new here"
 							title="i'm new to steward"
 							body="create one first. we'll bring you back when you're done."
-							cta={activePath === "signup" ? "waiting for steward..." : "create account"}
-							onClick={() => handlePath("signup")}
-							loading={activePath === "signup"}
+							cta="create account"
+							href={connectHref}
+							onClick={markPath("signup")}
 						/>
 					</div>
-
-					{popupBlocked && manualUrl ? (
-						<div className="mt-4 rounded-sm border border-stroke bg-[rgba(255,255,255,0.02)] p-4">
-							<div className="text-xs font-mono uppercase tracking-[0.2em] text-[#a1a1aa] mb-2">popup blocked</div>
-							<p className="text-sm text-[#a1a1aa] leading-relaxed mb-3">
-								your browser blocked the steward popup. open the link manually, then come back here when you're done.
-							</p>
-							<div className="flex flex-col sm:flex-row items-stretch gap-2">
-								<a
-									href={manualUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-sm border border-stroke-strong bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs font-medium text-[#e4e4e7] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
-								>
-									open steward
-									<ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-								</a>
-								<button
-									type="button"
-									onClick={handleCopy}
-									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-black/30 px-3 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
-								>
-									<Copy className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-									{copied ? "copied" : "copy link"}
-								</button>
-							</div>
-						</div>
-					) : null}
 
 					<div className="mt-6 rounded-sm border border-white/10 bg-[#0b0b0d]">
 						<button
@@ -312,7 +230,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					</div>
 
 					<p className="mt-5 text-[11px] text-neutral-500 leading-relaxed">
-						you'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. we never see
+						you'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.fi</span>. we never see
 						your password.
 					</p>
 				</Dialog.Content>
