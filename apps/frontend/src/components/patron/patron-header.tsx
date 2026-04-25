@@ -24,9 +24,9 @@ export default function PatronHeader({ title, subtitle, backHref }: Props) {
 			</div>
 			<div className="flex items-center gap-2">
 				<StewardConnectBadge />
-				<Link href="/create">
+				<Link href="/create/wizard">
 					<Button variant="outline" className="h-9 px-4">
-						Launch new
+						Create agent
 					</Button>
 				</Link>
 			</div>

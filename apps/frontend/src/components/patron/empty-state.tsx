@@ -8,7 +8,7 @@ type Props = {
 	ctaHref?: string | null;
 };
 
-export default function EmptyState({ title, body, ctaLabel = "Launch one", ctaHref = "/create" }: Props) {
+export default function EmptyState({ title, body, ctaLabel = "Create agent", ctaHref = "/create/wizard" }: Props) {
 	return (
 		<section
 			aria-labelledby="patron-empty-title"
