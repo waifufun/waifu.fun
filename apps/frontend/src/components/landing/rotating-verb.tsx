@@ -104,7 +104,7 @@ function RotatingVerbInner() {
 			return { current: blank, isBlank: true };
 		}
 		const skipped = BLANK_EVERY > 0 ? Math.floor(tick / BLANK_EVERY) : 0;
-		const i = ((tick - skipped) % verbs.length + verbs.length) % verbs.length;
+		const i = (((tick - skipped) % verbs.length) + verbs.length) % verbs.length;
 		return { current: verbs[i] ?? verbs[0] ?? "", isBlank: false };
 	}, [tick, verbs, blank]);
 
