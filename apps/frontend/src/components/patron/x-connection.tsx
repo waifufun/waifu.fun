@@ -62,7 +62,7 @@ export default function XConnectionPanel({ agentId }: Props) {
 		return (
 			<section
 				aria-label="X account"
-				className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+				className="p-5 rounded-md border border-stroke bg-[#0C0C0C]"
 			>
 				<header className="mb-4">
 					<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
@@ -99,13 +99,13 @@ export default function XConnectionPanel({ agentId }: Props) {
 		return (
 			<section
 				aria-label="X account"
-				className="p-5 rounded-md border border-dashed border-autofun-background-action-highlight/60 bg-[#0A0A0A]"
+				className="p-5 rounded-md border border-dashed border-stroke bg-[#0A0A0A]"
 			>
 				<header className="mb-4">
 					<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
 				</header>
 				<div className="flex items-center gap-4 flex-wrap">
-					<div className="w-10 h-10 rounded-md bg-[#141414] border border-autofun-background-action-highlight/30 flex items-center justify-center shrink-0">
+					<div className="w-10 h-10 rounded-md bg-[#141414] border border-stroke flex items-center justify-center shrink-0">
 						<XLogo className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1 min-w-0">
@@ -148,13 +148,13 @@ export default function XConnectionPanel({ agentId }: Props) {
 	return (
 		<section
 			aria-label="X account"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+			className="p-5 rounded-md border border-stroke bg-[#0C0C0C]"
 		>
 			<header className="mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">X Account</h2>
 			</header>
 			<div className="flex items-center gap-4 flex-wrap">
-				<div className="w-10 h-10 rounded-md bg-[#141414] border border-autofun-background-action-highlight/30 flex items-center justify-center shrink-0">
+				<div className="w-10 h-10 rounded-md bg-[#141414] border border-stroke flex items-center justify-center shrink-0">
 					<XLogo className="w-5 h-5 text-white" />
 				</div>
 				<div className="flex-1 min-w-0">

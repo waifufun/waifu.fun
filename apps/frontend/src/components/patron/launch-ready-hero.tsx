@@ -41,20 +41,20 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 	return (
 		<section
 			aria-label="Agent ready to launch"
-			className="relative overflow-hidden rounded-md border border-autofun-background-action-highlight/40 bg-[#0A0A0A]"
+			className="relative overflow-hidden rounded-md border border-stroke bg-[#0A0A0A]"
 		>
 			{/* subtle ambient glow — calm, not neon */}
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-green-500/[0.04] blur-3xl"
+				className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-accent/[0.04] blur-3xl"
 			/>
 
 			<div className="relative px-6 py-12 md:px-10 md:py-14">
 				<div className="flex items-start gap-6 flex-wrap">
 					<div
 						className={cn(
-							"w-20 h-20 md:w-24 md:h-24 rounded-md overflow-hidden bg-[#141414] border border-autofun-background-action-highlight/40 shrink-0",
-							"ring-1 ring-green-500/20",
+							"w-20 h-20 md:w-24 md:h-24 rounded-md overflow-hidden bg-[#141414] border border-stroke shrink-0",
+							"ring-1 ring-accent/20",
 						)}
 					>
 						{agent.avatar ? (
@@ -110,16 +110,16 @@ function ReadyPill() {
 				}
 			`}</style>
 			<span
-				className="ready-pulse inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] rounded border bg-green-500/10 text-green-400 border-green-500/30"
+				className="ready-pulse inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] rounded border bg-accent/10 text-accent border-accent/30"
 				role="status"
 				aria-label="Agent status: ready to launch"
 			>
 				<span className="relative inline-flex w-1.5 h-1.5">
 					<span
 						aria-hidden="true"
-						className="absolute inset-0 rounded-full bg-green-400/60 animate-ping motion-reduce:hidden"
+						className="absolute inset-0 rounded-full bg-accent/60 animate-ping motion-reduce:hidden"
 					/>
-					<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-green-400" />
+					<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-accent" />
 				</span>
 				Ready to launch
 			</span>

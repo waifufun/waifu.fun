@@ -260,10 +260,10 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 	// Empty Safe — render a focused funding state instead of the form.
 	if (isEmptySafe) {
 		return (
-			<section aria-label="Fund Safe" className="relative rounded-md border border-amber-500/30 bg-[#0C0C0C]">
+			<section aria-label="Fund Safe" className="relative rounded-md border border-stroke-strong bg-[#0C0C0C]">
 				<div className="px-6 md:px-8 py-12 space-y-6">
 					<div className="flex items-start gap-3">
-						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/10 text-amber-300">
+						<div className="mt-1 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] text-[#a1a1aa]">
 							<WarnIcon className="w-4 h-4" />
 						</div>
 						<div>
@@ -275,7 +275,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						</div>
 					</div>
 
-					<div className="rounded-sm border border-autofun-background-action-highlight/40 bg-[#0A0A0A] p-4 flex items-center gap-3 flex-wrap">
+					<div className="rounded-sm border border-stroke bg-[#0A0A0A] p-4 flex items-center gap-3 flex-wrap">
 						<code className="font-mono text-sm text-white break-all flex-1 min-w-0">{safeAddress ?? "—"}</code>
 						<div className="flex items-center gap-2">
 							<button
@@ -283,9 +283,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 								onClick={handleCopy}
 								disabled={!safeAddress}
 								aria-label="Copy Safe address"
-								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+								className="inline-flex items-center gap-2 px-3 h-8 rounded-sm border border-stroke text-neutral-300 hover:text-white hover:bg-white/5 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
 							>
-								{copied ? <CheckIcon className="w-3.5 h-3.5 text-green-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
+								{copied ? <CheckIcon className="w-3.5 h-3.5 text-accent" /> : <CopyIcon className="w-3.5 h-3.5" />}
 								{copied ? "Copied" : "Copy"}
 							</button>
 							{safeAddress ? (
@@ -293,7 +293,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									href={`https://bscscan.com/address/${safeAddress}`}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
+									className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
 									aria-label="View Safe on BscScan"
 								>
 									<ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -317,9 +317,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 		<>
 			<section
 				aria-label="Launch panel"
-				className="relative rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
+				className="relative rounded-md border border-stroke bg-[#0C0C0C]"
 			>
-				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-autofun-background-action-highlight/30">
+				<header className="px-6 md:px-8 pt-7 pb-5 border-b border-stroke">
 					<div className="flex items-center justify-between gap-4 flex-wrap">
 						<div>
 							<p className="text-xs uppercase tracking-[0.18em] text-neutral-500">Pre-launch</p>
@@ -333,18 +333,18 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 				</header>
 
 				{!xLoading && !xConnected ? (
-					<div className="px-6 md:px-8 py-3 border-b border-amber-500/30 bg-amber-500/[0.04] flex items-start gap-3">
-						<WarnIcon className="w-4 h-4 mt-0.5 text-amber-300 shrink-0" />
-						<p className="text-xs text-amber-200 leading-relaxed">
+					<div className="px-6 md:px-8 py-3 border-b border-stroke-strong bg-white/[0.02] flex items-start gap-3">
+						<WarnIcon className="w-4 h-4 mt-0.5 text-[#a1a1aa] shrink-0" />
+						<p className="text-xs text-[#a1a1aa] leading-relaxed">
 							X not connected. Your agent will launch silently.{" "}
-							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-amber-100">
+							<Link href={`/patron/${agentId}#x-account`} className="underline-offset-4 hover:underline text-white">
 								Connect now.
 							</Link>
 						</p>
 					</div>
 				) : null}
 
-				<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-autofun-background-action-highlight/30">
+				<div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stroke">
 					{/* LEFT: Safe details */}
 					<div className="px-6 md:px-8 py-7 space-y-6">
 						<div>
@@ -358,18 +358,18 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									aria-label="Copy Safe address"
 									className={cn(
 										"inline-flex items-center justify-center w-7 h-7 rounded-sm border transition-colors",
-										"border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+										"border-stroke text-neutral-400 hover:text-white hover:bg-white/5",
 										"disabled:opacity-40 disabled:cursor-not-allowed",
 									)}
 								>
-									{copied ? <CheckIcon className="w-3.5 h-3.5 text-green-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
+									{copied ? <CheckIcon className="w-3.5 h-3.5 text-accent" /> : <CopyIcon className="w-3.5 h-3.5" />}
 								</button>
 								{safeAddress ? (
 									<a
 										href={`https://bscscan.com/address/${safeAddress}`}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5"
+										className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-stroke text-neutral-400 hover:text-white hover:bg-white/5"
 										aria-label="View Safe on BscScan"
 									>
 										<ExternalLinkIcon className="w-3.5 h-3.5" />
@@ -408,7 +408,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									<span className="text-neutral-400 font-mono">@{(xData?.xHandle ?? "").replace(/^@/, "")}</span>
 								</p>
 							) : (
-								<p className="text-sm text-amber-300">Not connected</p>
+								<p className="text-sm text-[#a1a1aa]">Not connected</p>
 							)}
 						</div>
 					</div>
@@ -439,7 +439,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 									"focus:outline-none focus:ring-1 transition-colors",
 									validationError
 										? "border-red-500/50 focus:border-red-400 focus:ring-red-400/30"
-										: "border-autofun-background-action-highlight/40 focus:border-green-500/60 focus:ring-green-500/30",
+										: "border-stroke focus:border-accent/60 focus:ring-accent/30",
 								)}
 								placeholder="0"
 							/>
@@ -460,8 +460,8 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 										className={cn(
 											"inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-sm border transition-colors",
 											active
-												? "border-green-500/40 bg-green-500/10 text-green-300"
-												: "border-autofun-background-action-highlight/40 text-neutral-400 hover:text-white hover:bg-white/5",
+												? "border-accent/40 bg-accent/10 text-accent"
+												: "border-stroke text-neutral-400 hover:text-white hover:bg-white/5",
 										)}
 									>
 										{PRESET_LABELS[preset]}
@@ -484,7 +484,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 
 				<div
 					ref={launchSentinelRef}
-					className="px-6 md:px-8 py-6 border-t border-autofun-background-action-highlight/30"
+					className="px-6 md:px-8 py-6 border-t border-stroke"
 				>
 					<Button
 						type="button"
@@ -492,9 +492,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						disabled={!canLaunch}
 						aria-label="Launch token"
 						className={cn(
-							"w-full h-12 text-sm font-semibold uppercase tracking-[0.14em]",
-							"bg-green-500 text-black hover:bg-green-400 hover:text-black",
-							"disabled:bg-green-500/30 disabled:text-black/60",
+							"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
+							"bg-accent text-black hover:bg-accent-dim hover:text-black",
+							"disabled:bg-accent/30 disabled:text-black/60",
 						)}
 					>
 						{isLaunching ? (
@@ -532,9 +532,9 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					aria-label="Launch token"
 					tabIndex={stickyVisible ? 0 : -1}
 					className={cn(
-						"w-full h-12 text-sm font-semibold uppercase tracking-[0.14em]",
-						"bg-green-500 text-black hover:bg-green-400 hover:text-black",
-						"disabled:bg-green-500/30 disabled:text-black/60",
+						"w-full h-12 text-sm font-semibold uppercase tracking-[0.18em]",
+						"bg-accent text-black hover:bg-accent-dim hover:text-black",
+						"disabled:bg-accent/30 disabled:text-black/60",
 					)}
 				>
 					{isLaunching ? (

@@ -56,7 +56,7 @@ export default function WhatHappensNext() {
 	return (
 		<section
 			aria-label="Launch lifecycle"
-			className="rounded-md border border-autofun-background-action-highlight/40 bg-[#0A0A0A]"
+			className="rounded-md border border-stroke bg-[#0A0A0A]"
 		>
 			<button
 				type="button"
@@ -66,7 +66,7 @@ export default function WhatHappensNext() {
 				className={cn(
 					"w-full flex items-center justify-between gap-4 px-6 md:px-8 py-5",
 					"text-left hover:bg-white/[0.02] transition-colors rounded-md",
-					"focus:outline-none focus-visible:ring-1 focus-visible:ring-green-500/40",
+					"focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40",
 				)}
 			>
 				<div>
@@ -90,12 +90,12 @@ export default function WhatHappensNext() {
 						animate={{ height: "auto", opacity: 1 }}
 						exit={{ height: 0, opacity: 0 }}
 						transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-						className="overflow-hidden border-t border-autofun-background-action-highlight/30"
+						className="overflow-hidden border-t border-stroke"
 					>
 						<ol className="px-6 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
 							{STEPS.map((step) => (
 								<li key={step.num} className="flex gap-4">
-									<div className="font-mono text-[11px] tracking-wider text-green-400 mt-0.5 shrink-0">{step.num}</div>
+									<div className="font-mono text-[11px] tracking-[0.2em] text-accent mt-0.5 shrink-0">{step.num}</div>
 									<div>
 										<div className="text-sm text-white tracking-tight">{step.title}</div>
 										<p className="text-xs text-neutral-400 mt-1.5 leading-relaxed max-w-[44ch]">{step.body}</p>
