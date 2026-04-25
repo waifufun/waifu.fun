@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
  * TODO: replace with generated types from `@autofun/types` once the backend
  * contract is locked in.
  */
-export type PatronAgentStatus = "active" | "dormant" | "killed";
+export type PatronAgentStatus = "provisioned" | "active" | "dormant" | "killed";
 
 export type PatronAgent = {
 	id: string;
@@ -21,6 +21,7 @@ export type PatronAgent = {
 	lastActionAt: string | null;
 	xHandle?: string | null;
 	owner?: string | null;
+	safeAddress?: string | null;
 };
 
 export type AgentEvent = {
@@ -33,10 +34,13 @@ export type AgentEvent = {
 
 export type AgentDetail = PatronAgent & {
 	description?: string | null;
+	bio?: string | null;
 	publicPageUrl?: string | null;
 	treasurySeries?: { ts: string; valueUsd: number }[];
 	treasuryDelta7d?: number;
 	adapters?: AgentAdapter[];
+	launchId?: string | null;
+	tokenAddress?: string | null;
 };
 
 export type AgentAdapter = {

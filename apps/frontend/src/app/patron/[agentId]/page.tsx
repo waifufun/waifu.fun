@@ -3,6 +3,7 @@
 import { use } from "react";
 import PatronHeader from "@/components/patron/patron-header";
 import AgentHero from "@/components/patron/agent-hero";
+import LaunchReadyHero from "@/components/patron/launch-ready-hero";
 import TreasuryCard from "@/components/patron/treasury-card";
 import ActivityFeed from "@/components/patron/activity-feed";
 import PolicyEditor from "@/components/patron/policy-editor";
@@ -21,17 +22,31 @@ export default function PatronAgentDetailPage({
 	const { data: agent, isLoading, error } = useAgentDetail(agentId);
 	const { data: events, isLoading: eventsLoading, error: eventsError } = useAgentEvents(agentId);
 
+	const isLaunchReady = agent?.status === "provisioned";
+
 	return (
 		<main className="py-6">
 			<PatronHeader
 				title={agent?.name ?? "Agent"}
-				subtitle={agent ? `Manage ${agent.ticker} and review recent activity.` : undefined}
+				subtitle={
+					agent
+						? isLaunchReady
+							? `Pre-launch controls for ${agent.ticker}.`
+							: `Manage ${agent.ticker} and review recent activity.`
+						: undefined
+				}
 				backHref="/patron"
 			/>
 
 			{error ? (
 				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
 					Couldn't load agent. {(error as Error).message}
+				</div>
+			) : isLaunchReady ? (
+				<div className="space-y-6">
+					<LaunchReadyHero agent={agent} isLoading={isLoading} />
+					{/* LaunchPanel + supporting cards land in commit 2 */}
+					<XConnectionPanel agentId={agentId} />
 				</div>
 			) : (
 				<div className="space-y-6">
