@@ -6,7 +6,19 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useState } from "react";
 
 const HOLD_MS = 2400;
+const BLANK_EVERY = 7;
 const FALLBACK_VERBS = ["create", "trade", "shill", "scam", "blackmail"] as const;
+
+// Build a blank-slot tease roughly the same character width as the longest
+// verb in the pool, so the locked container width doesn't balloon in CJK.
+function makeBlank(longest: string): string {
+	const n = Math.max(3, Math.min(Array.from(longest).length, 12));
+	return "_".repeat(n);
+}
+
+// Brand neon and the resting verb tint. Used for a brief flash on each swap.
+const ACCENT = "#00ff87";
+const REST = "#d4d4d8";
 
 function readVerbs(messages: Record<string, unknown>): string[] {
 	const hero = messages.hero;
@@ -52,32 +64,52 @@ function RotatingVerbInner() {
 	const { messages } = useLocale();
 	const verbs = useMemo(() => readVerbs(messages), [messages]);
 	const longest = useMemo(() => pickLongest(verbs), [verbs]);
+	const blank = useMemo(() => makeBlank(longest), [longest]);
 	const reduced = useReducedMotion();
 
-	const [index, setIndex] = useState(0);
-	const [paused, setPaused] = useState(false);
+	const [tick, setTick] = useState(0);
+	const [hovered, setHovered] = useState(false);
+	const [docHidden, setDocHidden] = useState(false);
 
-	// Reset to a valid index whenever the verb pool changes (e.g. locale swap).
+	const paused = hovered || docHidden;
+
 	useEffect(() => {
-		setIndex((i) => (i < verbs.length ? i : 0));
-	}, [verbs]);
+		if (typeof document === "undefined") return;
+		const onVis = () => setDocHidden(document.hidden);
+		document.addEventListener("visibilitychange", onVis);
+		return () => {
+			document.removeEventListener("visibilitychange", onVis);
+		};
+	}, []);
 
 	useEffect(() => {
 		if (reduced) return;
 		if (paused) return;
 		if (verbs.length <= 1) return;
 		const id = window.setInterval(() => {
-			setIndex((i) => (i + 1) % verbs.length);
+			setTick((t) => t + 1);
 		}, HOLD_MS);
 		return () => {
 			window.clearInterval(id);
 		};
 	}, [reduced, paused, verbs.length]);
 
-	const current = verbs[index] ?? verbs[0] ?? "";
+	// Resolve the verb to display from the tick counter. Every BLANK_EVERY ticks
+	// we slot in the blank "keep them guessing" tease (Shaw's idea). Otherwise we
+	// step through the verb pool, skipping over the blank slot in the count so
+	// the visible cadence stays even.
+	const { current, isBlank } = useMemo(() => {
+		if (verbs.length === 0) return { current: "", isBlank: false };
+		if (BLANK_EVERY > 0 && tick > 0 && tick % BLANK_EVERY === 0) {
+			return { current: blank, isBlank: true };
+		}
+		const skipped = BLANK_EVERY > 0 ? Math.floor(tick / BLANK_EVERY) : 0;
+		const i = ((tick - skipped) % verbs.length + verbs.length) % verbs.length;
+		return { current: verbs[i] ?? verbs[0] ?? "", isBlank: false };
+	}, [tick, verbs, blank]);
 
-	const handleEnter = () => setPaused(true);
-	const handleLeave = () => setPaused(false);
+	const handleEnter = () => setHovered(true);
+	const handleLeave = () => setHovered(false);
 
 	// Reduced-motion: render a single verb, no animation, no rotation.
 	if (reduced) {
@@ -116,12 +148,21 @@ function RotatingVerbInner() {
 			>
 				<AnimatePresence mode="wait" initial={false}>
 					<motion.span
-						key={`${current}-${index}`}
+						key={`${current}-${tick}`}
 						className="inline-block"
-						initial={{ y: 28, opacity: 0 }}
-						animate={{ y: 0, opacity: 1 }}
+						initial={{ y: 28, opacity: 0, color: ACCENT }}
+						animate={{
+							y: 0,
+							opacity: 1,
+							color: [ACCENT, ACCENT, REST],
+						}}
 						exit={{ y: -28, opacity: 0 }}
-						transition={{ duration: 0.45, ease: EASE_HERO }}
+						transition={{
+							duration: 0.45,
+							ease: EASE_HERO,
+							color: { duration: 0.6, times: [0, 0.25, 1], ease: EASE_HERO },
+						}}
+						aria-label={isBlank ? "" : current}
 					>
 						{current}
 						{TAIL}
