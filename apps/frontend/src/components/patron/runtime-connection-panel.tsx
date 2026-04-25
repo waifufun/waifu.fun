@@ -152,11 +152,11 @@ function StatusDot({ live }: { live: boolean }) {
 
 function WebhookCard({ agent }: { agent: AgentDetail }) {
 	const runtime = agent.runtime;
-	const webhookUrl = runtime?.webhookUrl ?? `<configure webhook URL>`;
+	const webhookUrl = runtime?.webhookUrl ?? "<configure webhook URL>";
 	const masked = runtime?.webhookSecretMasked ?? "wks_••••••••••••••••";
 	const raw = runtime?.webhookSecretRaw ?? null;
-	const lastHb_signal = runtime?.lastHb_signalAt ?? null;
-	const live = lastHb_signal && Date.now() - new Date(lastHb_signal).getTime() < 90_000;
+	const lastPulse = runtime?.lastHb_signalAt ?? null;
+	const live = lastPulse && Date.now() - new Date(lastPulse).getTime() < 90_000;
 
 	const [revealed, setRevealed] = useState(false);
 	const [testing, setTesting] = useState(false);
@@ -255,8 +255,8 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 
 				<div className="grid grid-cols-2 gap-3 pt-2">
 					<div>
-						<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">last heartbeat</div>
-						<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastHb_signal)}</div>
+						<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">last pulse</div>
+						<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastPulse)}</div>
 					</div>
 					<div className="flex items-end justify-end">
 						<button
@@ -272,17 +272,16 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 				</div>
 
 				{testResult ? (
-					<div
-						role="status"
+					<output
 						className={cn(
-							"rounded-sm border px-3 py-2 text-xs",
+							"block rounded-sm border px-3 py-2 text-xs",
 							testResult.ok
 								? "border-[#00ff87]/30 bg-[#00ff87]/5 text-[#86efac]"
 								: "border-red-500/30 bg-red-500/5 text-red-300",
 						)}
 					>
 						{testResult.message}
-					</div>
+					</output>
 				) : null}
 			</div>
 		</section>
@@ -293,13 +292,13 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 /* Pull variant                                                               */
 /* -------------------------------------------------------------------------- */
 
-function buildSnippets(agentId: string, heartbeatEndpoint: string, eventsEndpoint: string) {
+function buildSnippets(agentId: string, hb_signalEndpoint: string, eventsEndpoint: string) {
 	const apiBase = "https://api.waifu.fun";
-	const fullHb_signal = `${apiBase}${heartbeatEndpoint}`;
+	const fullPulse = `${apiBase}${hb_signalEndpoint}`;
 	const fullEvents = `${apiBase}${eventsEndpoint}`;
 
 	const js = `// hb_signal every 30s
-await fetch("${fullHb_signal}", {
+await fetch("${fullPulse}", {
   method: "POST",
   headers: {
     "Authorization": \`Bearer \${process.env.WAIFU_API_KEY}\`,
@@ -322,9 +321,9 @@ for (const ev of events) {
 API_KEY = os.environ["WAIFU_API_KEY"]
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
-# heartbeat every 30s
+# pulse every 30s
 httpx.post(
-    "${fullHb_signal}",
+    "${fullPulse}",
     json={"status": "live", "metadata": {"version": "my-agent/1.0.0"}},
     headers=HEADERS,
 )
@@ -340,8 +339,8 @@ for ev in data["events"]:
     # dispatch ev["eventType"] to your agent's brain
     pass`;
 
-	const bash = `# heartbeat every 30s
-curl -X POST "${fullHb_signal}" \\
+	const bash = `# pulse every 30s
+curl -X POST "${fullPulse}" \\
   -H "Authorization: Bearer $WAIFU_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"status":"live","metadata":{"version":"my-agent/1.0.0"}}'
@@ -359,15 +358,15 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 	const runtime = agent.runtime;
 	const apiKey = runtime?.rawApiKey ?? null;
 	const issuedAt = runtime?.apiKeyIssuedAt ?? null;
-	const lastHb_signal = runtime?.lastHb_signalAt ?? null;
-	const live = lastHb_signal && Date.now() - new Date(lastHb_signal).getTime() < 90_000;
+	const lastPulse = runtime?.lastHb_signalAt ?? null;
+	const live = lastPulse && Date.now() - new Date(lastPulse).getTime() < 90_000;
 
-	const heartbeatEndpoint = runtime?.heartbeatEndpoint ?? `/v2/agents/${agent.id}/heartbeat`;
+	const hb_signalEndpoint = runtime?.hb_signalEndpoint ?? `/v2/agents/${agent.id}/pulse`;
 	const eventsEndpoint = runtime?.eventsPullEndpoint ?? `/v2/agents/${agent.id}/events/pull`;
 
 	const snippets = useMemo(
-		() => buildSnippets(agent.id, heartbeatEndpoint, eventsEndpoint),
-		[agent.id, heartbeatEndpoint, eventsEndpoint],
+		() => buildSnippets(agent.id, hb_signalEndpoint, eventsEndpoint),
+		[agent.id, hb_signalEndpoint, eventsEndpoint],
 	);
 
 	const [revealed, setRevealed] = useState(false);
@@ -382,7 +381,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 					<div>
 						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Pull runtime</h2>
 						<p className="mt-1 text-xs text-[#71717a]">
-							Your agent calls us. Works behind firewalls. heartbeat at{" "}
+							Your agent calls us. Works behind firewalls. pulse at{" "}
 							<code className="font-mono text-[#a1a1aa]">~30s</code> and pull events on a cursor.
 						</p>
 					</div>
@@ -439,14 +438,14 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 			)}
 
 			<div className="grid gap-3 mb-4">
-				<EndpointRow label="heartbeat" method="POST" path={hb_signalEndpoint} />
+				<EndpointRow label="pulse" method="POST" path={hb_signalEndpoint} />
 				<EndpointRow label="events pull" method="GET" path={eventsEndpoint} />
 			</div>
 
 			<div className="grid grid-cols-2 gap-3 mb-5 pt-1 border-t border-[rgba(255,255,255,0.06)]">
 				<div className="pt-3">
-					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">last heartbeat</div>
-					<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastHb_signal)}</div>
+					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">last pulse</div>
+					<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastPulse)}</div>
 				</div>
 				<div className="pt-3">
 					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">issued</div>

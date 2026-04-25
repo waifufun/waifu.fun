@@ -49,7 +49,7 @@ export type AgentRuntimeDetail = {
 	/** ISO timestamp of last hb_signal received from the agent */
 	lastHb_signalAt?: string | null;
 	/** v2 endpoint paths surfaced to the UI for code snippets */
-	heartbeatEndpoint?: string | null;
+	hb_signalEndpoint?: string | null;
 	eventsPullEndpoint?: string | null;
 };
 

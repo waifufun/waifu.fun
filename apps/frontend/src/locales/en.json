@@ -21,7 +21,8 @@
 		"stake": "stake",
 		"agents": "agents",
 		"leaderboard": "leaderboard",
-		"docs": "docs"
+		"docs": "docs",
+		"launchAgent": "launch agent"
 	},
 	"layout": {
 		"devnetBanner": "— this is a development environment connected to testnet. nothing here is real.",
@@ -64,6 +65,7 @@
 		"privacy": "privacy",
 		"support": "Support",
 		"miladyCloud": "open protocol · BSC",
+		"frameworkAgnostic": "framework agnostic",
 		"homeAria": "waifu.fun home"
 	},
 	"create": {

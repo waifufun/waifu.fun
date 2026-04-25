@@ -94,10 +94,16 @@ export default function Header() {
 					</nav>
 				</div>
 
-				{/* Right: Language + Search + Wallet + Mobile Menu Button */}
+				{/* Right: Language + Search + Launch Agent + Wallet + Mobile Menu Button */}
 				<div className="flex items-center gap-3 shrink-0">
 					<LanguageSwitcher />
 					<SearchMenu />
+					<Link
+						href="/create/wizard"
+						className="hidden md:inline-flex items-center gap-1.5 rounded-sm border border-[rgba(0,255,135,0.25)] bg-[rgba(0,255,135,0.06)] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[#00ff87] hover:bg-[rgba(0,255,135,0.12)] hover:border-[rgba(0,255,135,0.45)] transition-colors duration-200"
+					>
+						{t("nav.launchAgent")}
+					</Link>
 					<div className="hidden lg:flex items-center gap-2">
 						<HeaderAuth />
 					</div>
@@ -159,6 +165,13 @@ export default function Header() {
 								className="text-sm font-mono uppercase tracking-wider py-3 px-4 rounded-sm text-red-300 hover:bg-red-500/10"
 								onNavigate={() => setMobileMenuOpen(false)}
 							/>
+							<Link
+								href="/create/wizard"
+								onClick={() => setMobileMenuOpen(false)}
+								className="text-sm font-mono uppercase tracking-wider py-3 px-4 rounded-sm text-[#00ff87] bg-[rgba(0,255,135,0.06)] hover:bg-[rgba(0,255,135,0.12)] transition-colors duration-200"
+							>
+								{t("nav.launchAgent")}
+							</Link>
 							<div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.06)] flex flex-col gap-2">
 								<HeaderAuth />
 							</div>

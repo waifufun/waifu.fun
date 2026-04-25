@@ -203,7 +203,7 @@ function LearnMorePanel({ option }: { option: RuntimeOption }) {
 
 export default function ThreeRuntimeOptions() {
 	const [activeKey, setActiveKey] = useState<RuntimeKey>("hosted");
-	const active = OPTIONS.find((o) => o.key === activeKey) ?? OPTIONS[0];
+	const active = OPTIONS.find((o) => o.key === activeKey) ?? OPTIONS[0]!;
 
 	return (
 		<section
