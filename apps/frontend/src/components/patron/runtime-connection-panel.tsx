@@ -75,7 +75,7 @@ function CopyButton({ value, label, className }: { value: string; label?: string
 		>
 			{copied ? (
 				<>
-					<Check className="h-3 w-3" strokeWidth={2} />
+					<Check className="h-3 w-3" strokeWidth={1.75} />
 					<span>copied</span>
 				</>
 			) : (
@@ -195,7 +195,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 			<header className="mb-4 flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
-						<ArrowLeftRight className="h-4 w-4" strokeWidth={1.5} />
+						<ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
 						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Webhook runtime</h2>
@@ -376,7 +376,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 			<header className="mb-4 flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
-						<Antenna className="h-4 w-4" strokeWidth={1.5} />
+						<Antenna className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
 						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Pull runtime</h2>

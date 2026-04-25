@@ -279,8 +279,7 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 											</svg>
 										}
 									>
-										steward is the action layer for ai agents. it signs txns, manages keys, handles cross-chain
-										calls.
+										steward is the action layer for ai agents. it signs txns, manages keys, handles cross-chain calls.
 									</InfoBullet>
 									<InfoBullet
 										icon={
@@ -313,8 +312,8 @@ export default function StewardConnectModal({ open, onOpenChange }: Props) {
 					</div>
 
 					<p className="mt-5 text-[11px] text-neutral-500 leading-relaxed">
-						you'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. we never
-						see your password.
+						you'll be redirected to <span className="font-mono text-neutral-400">eliza.steward.dev</span>. we never see
+						your password.
 					</p>
 				</Dialog.Content>
 			</Dialog.Portal>

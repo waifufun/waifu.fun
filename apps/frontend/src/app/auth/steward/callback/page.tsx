@@ -103,7 +103,7 @@ function StewardCallbackInner() {
 	};
 
 	return (
-		<main className="relative min-h-[100dvh] bg-[#050507] text-white antialiased flex items-center justify-center px-4 py-16">
+		<main className="relative min-h-[100dvh] bg-canvas text-white antialiased flex items-center justify-center px-4 py-16">
 			<div
 				aria-hidden="true"
 				className="pointer-events-none fixed inset-0 z-0 opacity-[0.04]"
@@ -206,7 +206,7 @@ export default function StewardCallbackPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex min-h-[100dvh] items-center justify-center bg-[#050507] text-neutral-400">
+				<div className="flex min-h-[100dvh] items-center justify-center bg-canvas text-neutral-400">
 					<Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} aria-hidden="true" />
 				</div>
 			}

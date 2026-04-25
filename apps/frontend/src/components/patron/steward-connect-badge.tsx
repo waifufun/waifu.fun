@@ -94,7 +94,7 @@ export default function StewardConnectBadge({ className }: Props) {
 						aria-label={`Steward connected as ${displayEmail}. Open menu.`}
 					>
 						<StatusDot tone="ok" />
-						<Check className="h-3 w-3 text-[#00ff87]" strokeWidth={2} aria-hidden="true" />
+						<Check className="h-3 w-3 text-[#00ff87]" strokeWidth={1.75} aria-hidden="true" />
 						<span className="font-mono text-[11px] text-[#71717a] uppercase tracking-[0.18em] mr-0.5">[steward]</span>
 						<span className="font-mono text-[11px] text-[#bff7d6] truncate max-w-[180px]">{displayEmail}</span>
 					</button>
@@ -115,7 +115,7 @@ export default function StewardConnectBadge({ className }: Props) {
 						className="mt-1 flex items-center justify-between gap-2 rounded-sm px-2 py-2 text-xs text-neutral-200 hover:bg-white/5 transition-colors"
 					>
 						<span>manage in steward</span>
-						<ExternalLink className="h-3.5 w-3.5 text-neutral-500" strokeWidth={1.5} aria-hidden="true" />
+						<ExternalLink className="h-3.5 w-3.5 text-neutral-500" strokeWidth={1.75} aria-hidden="true" />
 					</a>
 					<button
 						type="button"
@@ -128,7 +128,7 @@ export default function StewardConnectBadge({ className }: Props) {
 						className="mt-0.5 flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-xs text-rose-200/90 hover:bg-rose-500/10 transition-colors"
 					>
 						<span>disconnect</span>
-						<LogOut className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
+						<LogOut className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
 					</button>
 				</PopoverContent>
 			</Popover>
