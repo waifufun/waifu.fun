@@ -159,9 +159,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 		<li
 			className={cn(
 				"rounded-sm border transition-colors",
-				state.enabled
-					? "border-stroke-strong bg-[#0E0E0E]"
-					: "border-stroke bg-[#0A0A0A]",
+				state.enabled ? "border-stroke-strong bg-[#0E0E0E]" : "border-stroke bg-[#0A0A0A]",
 				grayedOut && "opacity-80",
 			)}
 		>
@@ -215,10 +213,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 			{expanded ? (
 				<div
 					id={`policy-panel-${slug}`}
-					className={cn(
-						"px-3 sm:px-4 pb-4 pt-3 border-t border-stroke",
-						!state.enabled && "opacity-60",
-					)}
+					className={cn("px-3 sm:px-4 pb-4 pt-3 border-t border-stroke", !state.enabled && "opacity-60")}
 				>
 					<p className="text-xs text-neutral-500 mb-3">{formatDefaultsLine(template)}</p>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
@@ -354,10 +349,7 @@ export default function PolicyEditor({ agentId }: Props) {
 	}, [templates]);
 
 	return (
-		<section
-			aria-label="Adapter permissions"
-			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
-		>
+		<section aria-label="Adapter permissions" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapter Permissions</h2>
 				<span className="text-xs text-neutral-500">Patron controls</span>
@@ -412,10 +404,7 @@ function LoadingSkeleton() {
 	return (
 		<ul className="space-y-2" aria-hidden="true">
 			{[0, 1, 2, 3, 4].map((i) => (
-				<li
-					key={i}
-					className="rounded-sm border border-stroke bg-[#0A0A0A] px-4 py-3 flex items-center gap-3"
-				>
+				<li key={i} className="rounded-sm border border-stroke bg-[#0A0A0A] px-4 py-3 flex items-center gap-3">
 					<div className="h-2.5 w-2.5 rounded-full bg-[#141414] animate-pulse" />
 					<div className="flex-1 space-y-2">
 						<div className="h-4 w-32 rounded bg-[#141414] animate-pulse" />

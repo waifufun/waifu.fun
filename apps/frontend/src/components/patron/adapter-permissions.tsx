@@ -49,10 +49,7 @@ export default function AdapterPermissions({ agent, isLoading }: Props) {
 	const adapters = agent?.adapters ?? [];
 
 	return (
-		<section
-			aria-label="Adapter permissions"
-			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
-		>
+		<section aria-label="Adapter permissions" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapters</h2>
 				<span className="text-xs text-neutral-500">Read-only</span>

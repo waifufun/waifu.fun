@@ -41,10 +41,7 @@ const TOOLTIP_COPY = "Coming in v2. Will route through a patron-scoped endpoint 
 
 export default function EmergencyControls() {
 	return (
-		<section
-			aria-label="Emergency controls"
-			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
-		>
+		<section aria-label="Emergency controls" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-1">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Emergency</h2>
 				<span className="text-xs text-neutral-500">v2</span>

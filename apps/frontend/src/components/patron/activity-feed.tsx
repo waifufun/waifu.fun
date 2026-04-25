@@ -40,10 +40,7 @@ function formatTime(iso: string | null | undefined): string {
 
 export default function ActivityFeed({ events, isLoading, error }: Props) {
 	return (
-		<section
-			aria-label="Activity feed"
-			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
-		>
+		<section aria-label="Activity feed" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Activity</h2>
 				<span className="text-xs text-neutral-500">Last 30 events</span>

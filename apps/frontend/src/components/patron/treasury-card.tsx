@@ -55,10 +55,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 	const deltaPositive = delta >= 0;
 
 	return (
-		<section
-			aria-label="Treasury"
-			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
-		>
+		<section aria-label="Treasury" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>
 					<h2 className="text-xs uppercase tracking-wide text-neutral-500">Treasury</h2>
