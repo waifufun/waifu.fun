@@ -11,11 +11,11 @@ type Props = {
 };
 
 const TYPE_STYLES: Record<string, { dot: string; label: string }> = {
-	trade: { dot: "bg-green-400", label: "Trade" },
+	trade: { dot: "bg-[#00ff87]", label: "Trade" },
 	tweet: { dot: "bg-sky-400", label: "Tweet" },
 	reconcile: { dot: "bg-purple-400", label: "Reconcile" },
-	pause: { dot: "bg-amber-400", label: "Pause" },
-	resume: { dot: "bg-green-400", label: "Resume" },
+	pause: { dot: "bg-[#a1a1aa]", label: "Pause" },
+	resume: { dot: "bg-[#00ff87]", label: "Resume" },
 	error: { dot: "bg-red-400", label: "Error" },
 };
 
@@ -40,10 +40,7 @@ function formatTime(iso: string | null | undefined): string {
 
 export default function ActivityFeed({ events, isLoading, error }: Props) {
 	return (
-		<section
-			aria-label="Activity feed"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-		>
+		<section aria-label="Activity feed" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Activity</h2>
 				<span className="text-xs text-neutral-500">Last 30 events</span>
@@ -64,7 +61,7 @@ export default function ActivityFeed({ events, isLoading, error }: Props) {
 			) : !events || events.length === 0 ? (
 				<p className="text-sm text-neutral-500">No activity yet.</p>
 			) : (
-				<ul className="divide-y divide-autofun-background-action-highlight/20">
+				<ul className="divide-y divide-stroke">
 					{events.map((event) => {
 						const s = styleFor(event.type);
 						return (

@@ -19,7 +19,7 @@ export default function AgentGrid({ agents, isLoading, error }: Props) {
 				aria-label="Loading agents"
 			>
 				{[0, 1, 2].map((i) => (
-					<Skeleton key={i} className="h-[220px] rounded-md" />
+					<Skeleton key={i} className="h-[220px] rounded-sm" />
 				))}
 			</div>
 		);
@@ -27,7 +27,7 @@ export default function AgentGrid({ agents, isLoading, error }: Props) {
 
 	if (error) {
 		return (
-			<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
+			<div role="alert" className="p-6 rounded-sm border border-red-500/30 bg-red-500/5 text-sm text-red-300">
 				Couldn't load your agents. {error.message}
 			</div>
 		);

@@ -2,9 +2,9 @@ import type { PatronAgentStatus } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 
 const STYLES: Record<PatronAgentStatus, string> = {
-	provisioned: "bg-green-500/10 text-green-400 border-green-500/30",
-	active: "bg-green-500/10 text-green-400 border-green-500/30",
-	dormant: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+	provisioned: "bg-[#00ff87]/10 text-[#00ff87] border-[#00ff87]/30",
+	active: "bg-[#00ff87]/10 text-[#00ff87] border-[#00ff87]/30",
+	dormant: "bg-stroke text-[#a1a1aa] border-stroke-strong",
 	killed: "bg-red-500/10 text-red-400 border-red-500/30",
 };
 
@@ -27,10 +27,10 @@ export default function StatusBadge({ status }: { status: PatronAgentStatus }) {
 				className={cn(
 					"w-1.5 h-1.5 rounded-full",
 					status === "active" || status === "provisioned"
-						? "bg-green-400"
+						? "bg-[#00ff87]"
 						: status === "killed"
 							? "bg-red-400"
-							: "bg-amber-400",
+							: "bg-[#71717a]",
 				)}
 				aria-hidden
 			/>

@@ -59,10 +59,10 @@ function Switch({
 			}}
 			className={cn(
 				"relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black",
+				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black",
 				disabled && "opacity-40 cursor-not-allowed",
 				!disabled && "cursor-pointer",
-				checked ? "bg-[#22c55e]/50 border border-[#22c55e]/60" : "bg-neutral-800 border border-neutral-700",
+				checked ? "bg-[#00ff87]/50 border border-[#00ff87]/60" : "bg-neutral-800 border border-neutral-700",
 			)}
 		>
 			<span
@@ -152,16 +152,14 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 		await commit(state);
 	}
 
-	const accent = template.color ?? "#22c55e";
+	const accent = template.color ?? "#00ff87";
 	const grayedOut = !state.enabled && !expanded;
 
 	return (
 		<li
 			className={cn(
-				"rounded-md border transition-colors",
-				state.enabled
-					? "border-autofun-background-action-highlight/40 bg-[#0E0E0E]"
-					: "border-autofun-background-action-highlight/20 bg-[#0A0A0A]",
+				"rounded-sm border transition-colors",
+				state.enabled ? "border-stroke-strong bg-[#0E0E0E]" : "border-stroke bg-[#0A0A0A]",
 				grayedOut && "opacity-80",
 			)}
 		>
@@ -178,7 +176,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 					aria-controls={`policy-panel-${slug}`}
 					className={cn(
 						"flex-1 min-w-0 flex items-center gap-2 text-left",
-						"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#22c55e]/40 rounded-sm",
+						"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00ff87]/40 rounded-sm",
 					)}
 				>
 					<div className="flex-1 min-w-0">
@@ -189,7 +187,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 							{savedRecently ? (
 								<span
 									aria-live="polite"
-									className="text-[10px] uppercase tracking-wide text-[#22c55e] flex items-center gap-1"
+									className="text-[10px] uppercase tracking-wide text-[#00ff87] flex items-center gap-1"
 								>
 									<CheckIcon className="h-3 w-3" /> saved
 								</span>
@@ -215,10 +213,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 			{expanded ? (
 				<div
 					id={`policy-panel-${slug}`}
-					className={cn(
-						"px-3 sm:px-4 pb-4 pt-3 border-t border-autofun-background-action-highlight/20",
-						!state.enabled && "opacity-60",
-					)}
+					className={cn("px-3 sm:px-4 pb-4 pt-3 border-t border-stroke", !state.enabled && "opacity-60")}
 				>
 					<p className="text-xs text-neutral-500 mb-3">{formatDefaultsLine(template)}</p>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
@@ -248,11 +243,11 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 							onClick={handleSaveCaps}
 							disabled={saving || !state.enabled}
 							className={cn(
-								"inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22c55e]/40",
+								"inline-flex items-center gap-1 rounded-sm px-3 py-1.5 text-xs font-medium transition-colors",
+								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40",
 								saving || !state.enabled
 									? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
-									: "bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 hover:bg-[#22c55e]/30",
+									: "bg-[#00ff87]/20 text-[#00ff87] border border-[#00ff87]/40 hover:bg-[#00ff87]/30",
 							)}
 						>
 							{saving ? "Saving…" : "Save"}
@@ -354,10 +349,7 @@ export default function PolicyEditor({ agentId }: Props) {
 	}, [templates]);
 
 	return (
-		<section
-			aria-label="Adapter permissions"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-		>
+		<section aria-label="Adapter permissions" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapter Permissions</h2>
 				<span className="text-xs text-neutral-500">Patron controls</span>
@@ -399,7 +391,7 @@ export default function PolicyEditor({ agentId }: Props) {
 
 function EmptyState() {
 	return (
-		<div className="rounded-md border border-dashed border-autofun-background-action-highlight/40 bg-[#0A0A0A] px-4 py-8 text-center">
+		<div className="rounded-sm border border-dashed border-stroke-strong bg-[#0A0A0A] px-4 py-8 text-center">
 			<p className="text-sm text-neutral-300">Adapter controls coming soon</p>
 			<p className="text-xs text-neutral-500 mt-1">
 				Patron-side toggles and caps will ship once the policy API is live.
@@ -412,10 +404,7 @@ function LoadingSkeleton() {
 	return (
 		<ul className="space-y-2" aria-hidden="true">
 			{[0, 1, 2, 3, 4].map((i) => (
-				<li
-					key={i}
-					className="rounded-md border border-autofun-background-action-highlight/20 bg-[#0A0A0A] px-4 py-3 flex items-center gap-3"
-				>
+				<li key={i} className="rounded-sm border border-stroke bg-[#0A0A0A] px-4 py-3 flex items-center gap-3">
 					<div className="h-2.5 w-2.5 rounded-full bg-[#141414] animate-pulse" />
 					<div className="flex-1 space-y-2">
 						<div className="h-4 w-32 rounded bg-[#141414] animate-pulse" />

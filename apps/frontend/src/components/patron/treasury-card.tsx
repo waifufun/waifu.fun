@@ -37,7 +37,7 @@ function Sparkline({ series }: { series: { ts: string; valueUsd: number }[] }) {
 		>
 			<polyline
 				fill="none"
-				stroke="#22c55e"
+				stroke="#00ff87"
 				strokeWidth="1.5"
 				strokeLinejoin="round"
 				strokeLinecap="round"
@@ -55,10 +55,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 	const deltaPositive = delta >= 0;
 
 	return (
-		<section
-			aria-label="Treasury"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-		>
+		<section aria-label="Treasury" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>
 					<h2 className="text-xs uppercase tracking-wide text-neutral-500">Treasury</h2>
@@ -66,7 +63,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 				</div>
 				<div className="text-right">
 					<div className="text-xs uppercase tracking-wide text-neutral-500">7d delta</div>
-					<div className={cn("text-lg font-medium mt-1", deltaPositive ? "text-green-400" : "text-red-400")}>
+					<div className={cn("text-lg font-medium mt-1", deltaPositive ? "text-[#00ff87]" : "text-red-400")}>
 						{isLoading ? "..." : `${deltaPositive ? "+" : ""}${formatUsd(delta)}`}
 					</div>
 				</div>
@@ -76,7 +73,7 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 				<Sparkline series={agent?.treasurySeries ?? []} />
 			</div>
 
-			<div className="grid grid-cols-2 gap-4 pt-4 border-t border-autofun-background-action-highlight/30">
+			<div className="grid grid-cols-2 gap-4 pt-4 border-t border-stroke">
 				<div>
 					<div className="text-xs uppercase tracking-wide text-neutral-500">Runway</div>
 					<div className="text-white font-medium mt-1">

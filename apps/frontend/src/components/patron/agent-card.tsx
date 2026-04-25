@@ -21,9 +21,9 @@ function formatRelative(iso: string | null | undefined): string {
 
 export default function AgentCard({ agent }: { agent: PatronAgent }) {
 	return (
-		<article className="flex flex-col gap-4 p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C] hover:border-autofun-background-action-highlight transition-colors">
+		<article className="flex flex-col gap-4 p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C] hover:border-stroke-intense transition-colors">
 			<div className="flex items-start gap-3">
-				<div className="w-12 h-12 rounded-md overflow-hidden bg-[#141414] shrink-0 border border-autofun-background-action-highlight/30">
+				<div className="w-12 h-12 rounded-sm overflow-hidden bg-[#141414] shrink-0 border border-stroke">
 					{agent.avatar ? (
 						<Image
 							src={agent.avatar}
@@ -48,7 +48,7 @@ export default function AgentCard({ agent }: { agent: PatronAgent }) {
 						<p className="text-xs text-neutral-400 font-mono truncate">${agent.ticker}</p>
 						{agent.xHandle ? (
 							<span
-								className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-400 border border-autofun-background-action-highlight/40 rounded px-1.5 py-0.5 truncate"
+								className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-400 border border-stroke-strong rounded px-1.5 py-0.5 truncate"
 								title={`X handle @${agent.xHandle.replace(/^@/, "")}`}
 							>
 								<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5">

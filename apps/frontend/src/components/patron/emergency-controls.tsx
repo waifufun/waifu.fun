@@ -7,7 +7,7 @@ type Control = {
 	id: string;
 	label: string;
 	description: string;
-	tone: "amber" | "orange" | "red";
+	tone: "neutral" | "warn" | "destructive";
 };
 
 const CONTROLS: Control[] = [
@@ -15,36 +15,33 @@ const CONTROLS: Control[] = [
 		id: "pause",
 		label: "Pause brain",
 		description: "Halt new actions. Positions stay open, adapters keep data flowing.",
-		tone: "amber",
+		tone: "neutral",
 	},
 	{
 		id: "freeze",
 		label: "Freeze withdrawals",
 		description: "Block treasury outflows while you investigate.",
-		tone: "orange",
+		tone: "warn",
 	},
 	{
 		id: "kill",
 		label: "Kill agent",
 		description: "Full stop. Signals permanent shutdown. Irreversible.",
-		tone: "red",
+		tone: "destructive",
 	},
 ];
 
 const TONE: Record<Control["tone"], string> = {
-	amber: "border-amber-500/30 text-amber-300",
-	orange: "border-orange-500/30 text-orange-300",
-	red: "border-red-500/30 text-red-300",
+	neutral: "border-stroke-strong text-[#a1a1aa]",
+	warn: "border-stroke-strong text-[#71717a]",
+	destructive: "border-red-500/30 text-red-300",
 };
 
 const TOOLTIP_COPY = "Coming in v2. Will route through a patron-scoped endpoint instead of the admin token.";
 
 export default function EmergencyControls() {
 	return (
-		<section
-			aria-label="Emergency controls"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-		>
+		<section aria-label="Emergency controls" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-1">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Emergency</h2>
 				<span className="text-xs text-neutral-500">v2</span>
@@ -63,7 +60,7 @@ export default function EmergencyControls() {
 								aria-disabled="true"
 								aria-label={`${control.label} (coming in v2)`}
 								className={cn(
-									"flex flex-col items-start gap-1 text-left p-4 rounded-md border bg-[#0C0C0C] cursor-not-allowed opacity-70",
+									"flex flex-col items-start gap-1 text-left p-4 rounded-sm border bg-[#0C0C0C] cursor-not-allowed opacity-70",
 									TONE[control.tone],
 								)}
 							>

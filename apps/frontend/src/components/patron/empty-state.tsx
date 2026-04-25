@@ -12,7 +12,7 @@ export default function EmptyState({ title, body, ctaLabel = "Create agent", cta
 	return (
 		<section
 			aria-labelledby="patron-empty-title"
-			className="flex flex-col items-center justify-center text-center py-16 px-6 border border-dashed border-autofun-background-action-highlight/40 rounded-md bg-[#0C0C0C]"
+			className="flex flex-col items-center justify-center text-center py-16 px-6 border border-dashed border-stroke-strong rounded-sm bg-[#0C0C0C]"
 		>
 			<h2 id="patron-empty-title" className="text-lg font-medium text-white mb-2">
 				{title}

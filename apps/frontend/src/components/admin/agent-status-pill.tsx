@@ -2,27 +2,27 @@ import type { AdminCombinedStatus } from "@/lib/api/admin";
 
 const STYLES: Record<AdminCombinedStatus, { bg: string; text: string; border: string; label: string }> = {
 	live: {
-		bg: "bg-emerald-500/10",
-		text: "text-emerald-300",
-		border: "border-emerald-500/30",
+		bg: "bg-[#00ff87]/10",
+		text: "text-[#00ff87]",
+		border: "border-[#00ff87]/30",
 		label: "live",
 	},
 	"paused-brain": {
-		bg: "bg-amber-500/10",
-		text: "text-amber-300",
-		border: "border-amber-500/30",
+		bg: "bg-stroke",
+		text: "text-[#a1a1aa]",
+		border: "border-stroke-strong",
 		label: "paused brain",
 	},
 	"frozen-withdrawals": {
-		bg: "bg-orange-500/10",
-		text: "text-orange-300",
-		border: "border-orange-500/30",
+		bg: "bg-stroke",
+		text: "text-[#a1a1aa]",
+		border: "border-stroke-strong",
 		label: "frozen withdrawals",
 	},
 	dormant: {
-		bg: "bg-neutral-500/10",
-		text: "text-neutral-300",
-		border: "border-neutral-500/30",
+		bg: "bg-stroke",
+		text: "text-[#71717a]",
+		border: "border-stroke-strong",
 		label: "dormant",
 	},
 	killed: {

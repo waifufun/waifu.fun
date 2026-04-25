@@ -14,7 +14,7 @@ export default function AgentHero({ agent, isLoading }: Props) {
 	if (isLoading || !agent) {
 		return (
 			<div className="flex items-center gap-4 animate-pulse">
-				<div className="w-16 h-16 rounded-md bg-[#141414]" />
+				<div className="w-16 h-16 rounded-sm bg-[#141414]" />
 				<div className="space-y-2">
 					<div className="h-6 w-40 bg-[#141414] rounded" />
 					<div className="h-4 w-24 bg-[#141414] rounded" />
@@ -28,7 +28,7 @@ export default function AgentHero({ agent, isLoading }: Props) {
 
 	return (
 		<div className="flex items-start gap-4 flex-wrap">
-			<div className="w-16 h-16 rounded-md overflow-hidden bg-[#141414] border border-autofun-background-action-highlight/30 shrink-0">
+			<div className="w-16 h-16 rounded-sm overflow-hidden bg-[#141414] border border-stroke shrink-0">
 				{agent.avatar ? (
 					<Image
 						src={agent.avatar}

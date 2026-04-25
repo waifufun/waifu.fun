@@ -28,7 +28,7 @@ function AdapterRow({ adapter }: { adapter: AgentAdapter }) {
 						aria-label={`${adapter.name} is ${enabled ? "enabled" : "disabled"}. Read-only in v1.`}
 						className={cn(
 							"relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-not-allowed",
-							enabled ? "bg-[#22c55e]/40 border border-[#22c55e]/40" : "bg-neutral-800 border border-neutral-700",
+							enabled ? "bg-[#00ff87]/40 border border-[#00ff87]/40" : "bg-neutral-800 border border-neutral-700",
 						)}
 					>
 						<span
@@ -49,17 +49,14 @@ export default function AdapterPermissions({ agent, isLoading }: Props) {
 	const adapters = agent?.adapters ?? [];
 
 	return (
-		<section
-			aria-label="Adapter permissions"
-			className="p-5 rounded-md border border-autofun-background-action-highlight/40 bg-[#0C0C0C]"
-		>
+		<section aria-label="Adapter permissions" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<header className="flex items-center justify-between mb-4">
 				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapters</h2>
 				<span className="text-xs text-neutral-500">Read-only</span>
 			</header>
 
 			{isLoading ? (
-				<ul className="divide-y divide-autofun-background-action-highlight/20">
+				<ul className="divide-y divide-stroke">
 					{[0, 1, 2].map((i) => (
 						<li key={i} className="py-3 flex items-center justify-between gap-3">
 							<div className="flex-1 space-y-2">
@@ -73,7 +70,7 @@ export default function AdapterPermissions({ agent, isLoading }: Props) {
 			) : adapters.length === 0 ? (
 				<p className="text-sm text-neutral-500">No adapters configured.</p>
 			) : (
-				<ul className="divide-y divide-autofun-background-action-highlight/20">
+				<ul className="divide-y divide-stroke">
 					{adapters.map((adapter) => (
 						<AdapterRow key={adapter.id} adapter={adapter} />
 					))}
