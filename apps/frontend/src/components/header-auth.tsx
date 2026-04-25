@@ -5,7 +5,8 @@ import { useTranslation } from "@/contexts/locale-context";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAuth } from "@stwd/react";
 import { LogIn, LogOut, Wallet } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useIsClient } from "usehooks-ts";
 import { useAccount, useDisconnect } from "wagmi";
 import { StewardLoginWidget } from "./steward/steward-login-widget";
@@ -16,19 +17,50 @@ import { Button } from "./ui/button";
  * Unified auth component for the header.
  *
  * States:
- * - Neither authed: single "Sign In" button → modal with Steward + wallet options
+ * - Neither authed: single "sign in" button → modal with Steward + wallet options
  * - Steward authed only: user menu + "Connect Wallet" button
- * - Wallet connected only: wallet pill + "Sign In" button
+ * - Wallet connected only: wallet pill + "sign in" button
  * - Both: user menu + wallet pill
+ *
+ * W9.9: when the URL carries `?signin=1` (set by middleware after a
+ * gated redirect, or anyone deep-linking a sign-in CTA), auto-open
+ * the modal on mount. After successful auth, honor `return_to`.
  */
-export default function HeaderAuth() {
+function HeaderAuthInner() {
 	const { t } = useTranslation();
 	const { isAuthenticated: isStewardAuthed, isLoading: stewardLoading } = useAuth();
 	const { address, isConnected: isWalletConnected } = useAccount();
 	const { disconnect } = useDisconnect();
 	const isClient = useIsClient();
+	const params = useSearchParams();
+	const router = useRouter();
 	const [loginOpen, setLoginOpen] = useState(false);
 	const [walletDropdownOpen, setWalletDropdownOpen] = useState(false);
+
+	// Auto-open the modal when ?signin=1 is in the URL and the user is
+	// not yet Steward-authed. Middleware uses this query param to bounce
+	// anonymous users back to the homepage with the modal pre-opened.
+	useEffect(() => {
+		if (!isClient) return;
+		if (stewardLoading) return;
+		if (params.get("signin") !== "1") return;
+		if (isStewardAuthed) return;
+		setLoginOpen(true);
+	}, [isClient, stewardLoading, params, isStewardAuthed]);
+
+	// Once the user becomes authenticated and we have a return_to, push
+	// them there. The OAuth flow itself also handles return_to (the
+	// callback page reads it after finalize), so this is mostly a
+	// belt-and-suspenders for the wallet-only / magic-link paths and
+	// for the case where auth state flips while the modal is open.
+	useEffect(() => {
+		if (!isClient) return;
+		if (!isStewardAuthed) return;
+		const returnTo = params.get("return_to");
+		if (!returnTo || !returnTo.startsWith("/")) return;
+		setLoginOpen(false);
+		router.replace(returnTo);
+	}, [isClient, isStewardAuthed, params, router]);
 
 	const handleWalletSignOut = useCallback(() => {
 		setWalletDropdownOpen(false);
@@ -42,14 +74,14 @@ export default function HeaderAuth() {
 				className="h-[38px] min-h-[38px] max-h-[38px] px-4 py-2 font-medium rounded-sm bg-[#00ff87] text-[#08080a] border-0 shadow-sm opacity-50 pointer-events-none"
 				disabled
 			>
-				{t("wallet.signIn") ?? "Sign In"}
+				{t("wallet.signIn") ?? "sign in"}
 			</Button>
 		);
 	}
 
 	const hasAnyAuth = isStewardAuthed || isWalletConnected;
 
-	// --- Not authenticated at all: single Sign In button ---
+	// --- Not authenticated at all: single sign-in button ---
 	if (!hasAnyAuth) {
 		return (
 			<>
@@ -58,7 +90,7 @@ export default function HeaderAuth() {
 					onClick={() => setLoginOpen(true)}
 				>
 					<LogIn className="size-4 mr-1.5" />
-					{t("wallet.signIn") ?? "Sign In"}
+					{t("wallet.signIn") ?? "sign in"}
 				</Button>
 				<StewardLoginWidget open={loginOpen} onOpenChange={setLoginOpen} />
 			</>
@@ -71,7 +103,7 @@ export default function HeaderAuth() {
 			{/* Steward user menu (when steward-authed) */}
 			{isStewardAuthed && <StewardUserMenu />}
 
-			{/* Sign In button (when only wallet connected, no steward) */}
+			{/* sign in button (when only wallet connected, no steward) */}
 			{!isStewardAuthed && (
 				<>
 					<Button
@@ -79,7 +111,7 @@ export default function HeaderAuth() {
 						onClick={() => setLoginOpen(true)}
 					>
 						<LogIn className="size-4 mr-1.5" />
-						{t("wallet.signIn") ?? "Sign In"}
+						{t("wallet.signIn") ?? "sign in"}
 					</Button>
 					<StewardLoginWidget open={loginOpen} onOpenChange={setLoginOpen} />
 				</>
@@ -109,13 +141,13 @@ export default function HeaderAuth() {
 							className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-400 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
 						>
 							<LogOut className="size-4" />
-							Disconnect Wallet
+							disconnect wallet
 						</button>
 					</PopoverContent>
 				</Popover>
 			)}
 
-			{/* Connect Wallet button (when steward-authed but no wallet) */}
+			{/* connect wallet button (when steward-authed but no wallet) */}
 			{isStewardAuthed && !isWalletConnected && (
 				<ConnectButton.Custom>
 					{({ openConnectModal }) => (
@@ -124,11 +156,27 @@ export default function HeaderAuth() {
 							onClick={openConnectModal}
 						>
 							<Wallet className="size-4 mr-1.5 opacity-70" />
-							{t("wallet.connectWallet") ?? "Connect Wallet"}
+							{t("wallet.connectWallet") ?? "connect wallet"}
 						</Button>
 					)}
 				</ConnectButton.Custom>
 			)}
 		</div>
+	);
+}
+
+/**
+ * Suspense wrapper — useSearchParams() requires it under Next.js
+ * App Router for static rendering compatibility.
+ */
+export default function HeaderAuth() {
+	return (
+		<Suspense
+			fallback={
+				<div className="h-[38px] w-[100px] rounded-sm bg-[rgba(255,255,255,0.04)] animate-pulse" aria-hidden="true" />
+			}
+		>
+			<HeaderAuthInner />
+		</Suspense>
 	);
 }
