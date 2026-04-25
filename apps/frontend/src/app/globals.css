@@ -193,7 +193,7 @@ html.dark body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background-color: #22c55e;
+	background-color: #00ff87;
 }
 
 /* For Firefox: thin thumb, transparent track */
@@ -225,7 +225,7 @@ input::selection {
 }
 
 .blue-flashy-bonding-block {
-	background-color: #22c55e;
+	background-color: #00ff87;
 	animation: pixel-pulse-emerald 1.5s infinite;
 }
 

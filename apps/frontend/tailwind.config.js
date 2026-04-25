@@ -38,8 +38,11 @@ module.exports = {
 					foreground: "hsl(var(--muted-foreground))",
 				},
 				accent: {
-					DEFAULT: "hsl(var(--accent))",
+					DEFAULT: "#00ff87",
 					foreground: "hsl(var(--accent-foreground))",
+					dim: "#00cc6a",
+					wash: "rgba(0, 255, 135, 0.06)",
+					ring: "rgba(0, 255, 135, 0.16)",
 				},
 				popover: {
 					DEFAULT: "hsl(var(--popover))",
@@ -59,6 +62,15 @@ module.exports = {
 					border: "hsl(var(--sidebar-border))",
 					ring: "hsl(var(--sidebar-ring))",
 				},
+				stroke: {
+					DEFAULT: "rgba(255, 255, 255, 0.06)",
+					strong: "rgba(255, 255, 255, 0.16)",
+					intense: "rgba(255, 255, 255, 0.24)",
+				},
+				canvas: "#08080a",
+				"surface-card": "#111114",
+				"surface-muted": "#0c0c0e",
+				"surface-elevated": "#0a0a0c",
 				waifu: {
 					green: "#00FF87",
 					"green-dim": "#00CC6A",
