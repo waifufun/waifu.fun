@@ -24,18 +24,8 @@ function readVerbs(messages: Record<string, unknown>): string[] {
 	return [...FALLBACK_VERBS];
 }
 
-function pickLongest(words: readonly string[]): string {
-	let longest = words[0] ?? "";
-	for (const w of words) {
-		// Use Array.from for grapheme-ish counting (CJK + ASCII safe enough here).
-		if (Array.from(w).length > Array.from(longest).length) longest = w;
-	}
-	return longest;
-}
-
 // The trailing period rides with the verb so it stays glued to the word
-// regardless of how wide the locked width container is. Visually constant,
-// just rendered inside the animated unit.
+// regardless of swap timing. Rendered inside the animated unit.
 const TAIL = ".";
 
 /**
@@ -55,7 +45,6 @@ const TAIL = ".";
 function RotatingVerbInner() {
 	const { messages } = useLocale();
 	const verbs = useMemo(() => readVerbs(messages), [messages]);
-	const longest = useMemo(() => pickLongest(verbs), [verbs]);
 	const reduced = useReducedMotion();
 
 	const [tick, setTick] = useState(0);
@@ -98,61 +87,49 @@ function RotatingVerbInner() {
 	// Reduced-motion: render a single verb, no animation, no rotation.
 	if (reduced) {
 		return (
-			<span className="relative inline-flex items-baseline justify-center align-baseline">
-				<span aria-hidden="true" className="invisible whitespace-nowrap">
-					{longest}
-					{TAIL}
-				</span>
-				<span className="absolute inset-0 flex items-baseline justify-center whitespace-nowrap">
-					{verbs[0]}
-					{TAIL}
-				</span>
+			<span className="inline-block whitespace-nowrap align-baseline">
+				{verbs[0]}
+				{TAIL}
 			</span>
 		);
 	}
 
+	// No width-lock. Let the verb flow naturally so 'if they lie. / if they
+	// don't.' lines up correctly. Framer's layout animation smooths width
+	// changes between swaps so the trailing 'they die' line doesn't jump.
 	return (
 		<span
-			className="relative inline-flex items-baseline justify-center align-baseline cursor-default"
+			className="inline-flex items-baseline align-baseline cursor-default whitespace-nowrap"
+			aria-live="polite"
+			aria-atomic="true"
 			onMouseEnter={handleEnter}
 			onMouseLeave={handleLeave}
 			onFocus={handleEnter}
 			onBlur={handleLeave}
 		>
-			{/* Invisible longest-word placeholder locks width so swaps don't shift layout. */}
-			<span aria-hidden="true" className="invisible whitespace-nowrap">
-				{longest}
-				{TAIL}
-			</span>
-			{/* Live region: announce the current verb for screen readers. */}
-			<span
-				className="absolute inset-0 flex items-baseline justify-center overflow-hidden whitespace-nowrap"
-				aria-live="polite"
-				aria-atomic="true"
-			>
-				<AnimatePresence mode="wait" initial={false}>
-					<motion.span
-						key={`${current}-${tick}`}
-						className="inline-block"
-						initial={{ y: 28, opacity: 0, color: ACCENT }}
-						animate={{
-							y: 0,
-							opacity: 1,
-							color: [ACCENT, ACCENT, REST],
-						}}
-						exit={{ y: -28, opacity: 0 }}
-						transition={{
-							duration: 0.45,
-							ease: EASE_HERO,
-							color: { duration: 0.6, times: [0, 0.25, 1], ease: EASE_HERO },
-						}}
-						aria-label={current}
-					>
-						{current}
-						{TAIL}
-					</motion.span>
-				</AnimatePresence>
-			</span>
+			<AnimatePresence mode="wait" initial={false}>
+				<motion.span
+					key={`${current}-${tick}`}
+					layout="position"
+					className="inline-block"
+					initial={{ y: 28, opacity: 0, color: ACCENT }}
+					animate={{
+						y: 0,
+						opacity: 1,
+						color: [ACCENT, ACCENT, REST],
+					}}
+					exit={{ y: -28, opacity: 0 }}
+					transition={{
+						duration: 0.45,
+						ease: EASE_HERO,
+						color: { duration: 0.6, times: [0, 0.25, 1], ease: EASE_HERO },
+					}}
+					aria-label={current}
+				>
+					{current}
+					{TAIL}
+				</motion.span>
+			</AnimatePresence>
 		</span>
 	);
 }
