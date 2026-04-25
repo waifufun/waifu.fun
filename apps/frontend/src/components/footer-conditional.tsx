@@ -8,6 +8,7 @@ export default function FooterConditional() {
 	const pathname = usePathname();
 	const isTokenPage = pathname?.startsWith("/token/");
 	const isLitepaper = pathname === "/litepaper" || pathname?.startsWith("/litepaper/");
-	if (isTokenPage || isLitepaper) return null;
+	const isStewardCallback = pathname?.startsWith("/auth/steward/");
+	if (isTokenPage || isLitepaper || isStewardCallback) return null;
 	return <Footer />;
 }

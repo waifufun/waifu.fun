@@ -25,12 +25,13 @@ export default function Header() {
 	const { scrollY } = useScroll();
 
 	const isLitepaper = pathname === "/litepaper" || pathname?.startsWith("/litepaper/");
+	const isStewardCallback = pathname?.startsWith("/auth/steward/");
 
 	useMotionValueEvent(scrollY, "change", (latest) => {
 		setScrolled(latest > 20);
 	});
 
-	if (isLitepaper) return null;
+	if (isLitepaper || isStewardCallback) return null;
 
 	return (
 		<motion.header
