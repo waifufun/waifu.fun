@@ -19,8 +19,6 @@ import { Suspense, useEffect, useRef, useState } from "react";
  *   - popup flow: postMessage the opener and self-close
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
-
 type Phase = "loading" | "error";
 
 function CallbackInner() {
@@ -56,11 +54,14 @@ function CallbackInner() {
 		const controller = new AbortController();
 		(async () => {
 			try {
-				const res = await fetch(`${API_URL}/auth/oauth/finalize`, {
+				// POST to SAME-ORIGIN /api/auth/finalize Next.js route which
+				// proxies to api.waifu.fun and mirrors Set-Cookie back as a
+				// first-party cookie. Avoids cross-origin storage failures.
+				const res = await fetch("/api/auth/finalize", {
 					method: "POST",
 					credentials: "include",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ token, state }),
+					body: JSON.stringify({ provider: "oauth", token, state }),
 					signal: controller.signal,
 				});
 				if (!res.ok) {

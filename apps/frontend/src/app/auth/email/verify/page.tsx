@@ -19,8 +19,6 @@ import { Suspense, useEffect, useRef, useState } from "react";
  * On failure: show the error with a "try again" button back to /auth/connect.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
-
 type Phase = "loading" | "error";
 
 function VerifyInner() {
@@ -47,11 +45,16 @@ function VerifyInner() {
 		const controller = new AbortController();
 		(async () => {
 			try {
-				const res = await fetch(`${API_URL}/auth/email/finalize`, {
+				// POST to a SAME-ORIGIN /api/auth/finalize Next.js route that
+				// proxies to api.waifu.fun and mirrors Set-Cookie back as a
+				// first-party cookie. Cross-origin cookie storage was failing
+				// in some browsers (Safari ITP, strict cookie policies) even
+				// with credentials:include + ACAC:true.
+				const res = await fetch("/api/auth/finalize", {
 					method: "POST",
 					credentials: "include",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ token, email }),
+					body: JSON.stringify({ provider: "email", token, email }),
 					signal: controller.signal,
 				});
 				if (!res.ok) {

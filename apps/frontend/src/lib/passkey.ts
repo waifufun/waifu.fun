@@ -58,11 +58,15 @@ async function postSteward<T>(path: string, body: unknown): Promise<{ status: nu
 }
 
 async function finalizeWithBackend(token: string, email: string, returnTo?: string): Promise<string> {
-	const res = await fetch(`${API_URL}/auth/passkey/finalize`, {
+	// POST to SAME-ORIGIN /api/auth/finalize Next.js route which proxies to
+	// api.waifu.fun and mirrors Set-Cookie back as a first-party cookie.
+	// Avoids cross-origin cookie storage failures in Safari ITP / strict
+	// browser modes.
+	const res = await fetch("/api/auth/finalize", {
 		method: "POST",
 		credentials: "include",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ token, email, return_to: returnTo }),
+		body: JSON.stringify({ provider: "passkey", token, email, return_to: returnTo }),
 	});
 	if (!res.ok) {
 		const body = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
@@ -119,13 +123,9 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 		assertion = await startAuthentication({ optionsJSON: optionsRes.body });
 	} catch (err) {
 		if (isCancelled(err)) {
-			const elapsedMs =
-				(typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
+			const elapsedMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
 			if (elapsedMs < 800) {
-				throw new PasskeyError(
-					"NO_LOCAL_CREDENTIAL",
-					"no passkey for this site is on this device",
-				);
+				throw new PasskeyError("NO_LOCAL_CREDENTIAL", "no passkey for this site is on this device");
 			}
 			throw new PasskeyError("USER_CANCELLED", "passkey prompt cancelled");
 		}
