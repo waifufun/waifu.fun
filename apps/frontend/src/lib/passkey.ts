@@ -20,7 +20,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 const TENANT = process.env.NEXT_PUBLIC_STEWARD_TENANT_ID ?? "waifu";
 
 export class PasskeyError extends Error {
-	readonly code: "USER_CANCELLED" | "NOT_SUPPORTED" | "NO_PASSKEY" | "RATE_LIMITED" | "STEWARD_ERROR" | "UNKNOWN";
+	readonly code:
+		| "USER_CANCELLED"
+		| "NOT_SUPPORTED"
+		| "NO_PASSKEY"
+		| "NO_LOCAL_CREDENTIAL"
+		| "RATE_LIMITED"
+		| "STEWARD_ERROR"
+		| "UNKNOWN";
 	constructor(code: PasskeyError["code"], message: string) {
 		super(message);
 		this.code = code;
@@ -98,11 +105,28 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 		);
 	}
 
+	// Track how long the prompt was open. If WebAuthn errors out very fast
+	// (<800ms), it's almost always "no matching local credential" — the
+	// browser couldn't satisfy the allowCredentials list because the user's
+	// device doesn't have any of the registered passkeys locally (e.g.
+	// they registered on a different device + iCloud sync isn't carrying
+	// the credential here). When that happens we surface NO_LOCAL_CREDENTIAL
+	// so the caller can fall through to register a NEW passkey on this
+	// device, instead of treating it as a user cancellation.
+	const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
 	let assertion: Awaited<ReturnType<typeof startAuthentication>>;
 	try {
 		assertion = await startAuthentication({ optionsJSON: optionsRes.body });
 	} catch (err) {
 		if (isCancelled(err)) {
+			const elapsedMs =
+				(typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
+			if (elapsedMs < 800) {
+				throw new PasskeyError(
+					"NO_LOCAL_CREDENTIAL",
+					"no passkey for this site is on this device",
+				);
+			}
 			throw new PasskeyError("USER_CANCELLED", "passkey prompt cancelled");
 		}
 		throw new PasskeyError("UNKNOWN", err instanceof Error ? err.message : "passkey failed");
@@ -196,8 +220,18 @@ export async function loginOrRegisterPasskey(email: string, returnTo?: string): 
 	try {
 		return await loginWithPasskey(email, returnTo);
 	} catch (err) {
-		if (err instanceof PasskeyError && err.code === "NO_PASSKEY") {
-			return registerPasskey(email, returnTo);
+		if (err instanceof PasskeyError) {
+			// No registered passkey at all for this email — register one.
+			if (err.code === "NO_PASSKEY") {
+				return registerPasskey(email, returnTo);
+			}
+			// User HAS a passkey registered (probably on a different device)
+			// but this device has no local credential matching the allowList.
+			// Register a NEW passkey for this device. Steward stores multiple
+			// authenticators per user, so this is the right move.
+			if (err.code === "NO_LOCAL_CREDENTIAL") {
+				return registerPasskey(email, returnTo);
+			}
 		}
 		throw err;
 	}
