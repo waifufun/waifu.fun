@@ -33,7 +33,11 @@ interface StewardLoginWidgetProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
-type ProviderId = "google" | "github" | "discord" | "twitter";
+// NOTE: discord temporarily disabled — Steward's Discord OAuth app needs
+// `https://eliza.steward.fi/auth/oauth/discord/callback` registered as an
+// allowed redirect URI in the Discord Developer Portal. Re-enable once
+// Shaw / steward team adds it.
+type ProviderId = "google" | "github" | "twitter";
 
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
 type PasskeyPhase = "idle" | "prompting" | "error";
@@ -48,7 +52,6 @@ type ProviderTile = {
 const PROVIDERS: ProviderTile[] = [
 	{ id: "google", label: "continue with google", short: "google", icon: <GoogleMark /> },
 	{ id: "github", label: "continue with github", short: "github", icon: <GithubMark /> },
-	{ id: "discord", label: "continue with discord", short: "discord", icon: <DiscordMark /> },
 	{ id: "twitter", label: "continue with twitter / x", short: "x", icon: <XMark /> },
 ];
 
@@ -294,7 +297,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					</div>
 
 					{/* Provider grid (icon-only, Privy style) */}
-					<ul className="grid grid-cols-4 gap-2">
+					<ul className="grid grid-cols-3 gap-2">
 						{PROVIDERS.map((p, i) => (
 							<motion.li
 								key={p.id}
