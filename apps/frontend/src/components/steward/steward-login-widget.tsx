@@ -1,13 +1,13 @@
 "use client";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAuth } from "@stwd/react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Fingerprint, Mail, Wallet } from "lucide-react";
-import { useCallback, useMemo, useState, type FormEvent } from "react";
+import { Wallet } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { EASE_OUT_EXPO } from "@/lib/motion";
+import { useCallback, useMemo } from "react";
 
 interface StewardLoginWidgetProps {
 	open: boolean;
@@ -32,7 +32,12 @@ interface StewardLoginWidgetProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
-type ProviderId = "google" | "github" | "discord" | "twitter" | "passkey";
+// NOTE: email magic-link and passkey are intentionally hidden from this modal
+// until the Steward upstream wiring is completed. Steward's /auth/email/send
+// is a POST → JSON flow (no redirect endpoint), and passkey is a WebAuthn
+// dance — neither matches the OAuth /auth/oauth/<p>/authorize redirect shape
+// our W9.5 backend bridge expects. Tracked as a follow-up.
+type ProviderId = "google" | "github" | "discord" | "twitter";
 
 type ProviderTile = {
 	id: ProviderId;
@@ -46,20 +51,12 @@ const PROVIDERS: ProviderTile[] = [
 	{ id: "github", label: "continue with github", short: "github", icon: <GithubMark /> },
 	{ id: "discord", label: "continue with discord", short: "discord", icon: <DiscordMark /> },
 	{ id: "twitter", label: "continue with twitter / x", short: "x", icon: <XMark /> },
-	{
-		id: "passkey",
-		label: "continue with passkey",
-		short: "passkey",
-		icon: <Fingerprint className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />,
-	},
 ];
 
 export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLoginWidgetProps) {
 	const { isAuthenticated } = useAuth();
 	const params = useSearchParams();
 	const reduceMotion = useReducedMotion();
-	const [email, setEmail] = useState("");
-	const [submitting, setSubmitting] = useState(false);
 
 	// Resolve return_to: explicit prop > URL param > current pathname > /patron
 	const resolvedReturnTo = useMemo(() => {
@@ -76,7 +73,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 	}, [returnTo, params]);
 
 	const startUrlFor = useCallback(
-		(provider: ProviderId | "email", extra?: Record<string, string>) => {
+		(provider: ProviderId, extra?: Record<string, string>) => {
 			const u = new URL(`${API_URL}/auth/oauth/start`);
 			u.searchParams.set("provider", provider);
 			u.searchParams.set("return_to", resolvedReturnTo);
@@ -96,25 +93,6 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 		[startUrlFor],
 	);
 
-	const handleEmailSubmit = useCallback(
-		(e: FormEvent<HTMLFormElement>) => {
-			e.preventDefault();
-			if (typeof window === "undefined") return;
-			const trimmed = email.trim();
-			if (!trimmed) return;
-			setSubmitting(true);
-			const extra: Record<string, string> = {};
-			// If the user typed something that looks like an email, forward it so
-			// Steward can pre-fill the magic-link form. Otherwise let Steward
-			// collect it on its side.
-			if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-				extra.email = trimmed;
-			}
-			window.location.href = startUrlFor("email", extra);
-		},
-		[email, startUrlFor],
-	);
-
 	if (isAuthenticated) {
 		return null;
 	}
@@ -126,7 +104,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 			<DialogContent className="max-w-[420px] border border-[rgba(255,255,255,0.08)] bg-[#08080a] p-0 gap-0 rounded-lg overflow-hidden">
 				<DialogHeader className="sr-only">
 					<DialogTitle>Sign in to waifu.fun</DialogTitle>
-					<DialogDescription>Sign in with email, a social account, a passkey, or connect a wallet.</DialogDescription>
+					<DialogDescription>Sign in with a social account or connect a wallet.</DialogDescription>
 				</DialogHeader>
 
 				{/* Branding header */}
@@ -142,47 +120,8 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					transition={transition}
 					className="px-6 pt-5"
 				>
-					{/* Email magic-link */}
-					<form onSubmit={handleEmailSubmit} className="flex items-stretch gap-2">
-						<div className="relative flex-1">
-							<Mail
-								className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#71717a]"
-								strokeWidth={1.75}
-								aria-hidden="true"
-							/>
-							<input
-								type="email"
-								inputMode="email"
-								autoComplete="email"
-								name="email"
-								placeholder="your email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								disabled={submitting}
-								aria-label="email address"
-								className="w-full rounded-sm border border-white/10 bg-[#0b0b0d] pl-9 pr-3 py-2.5 text-sm text-[#e4e4e7] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:border-white/25 focus-visible:ring-2 focus-visible:ring-[#00ff87]/30 disabled:opacity-50"
-							/>
-						</div>
-						<button
-							type="submit"
-							disabled={submitting || email.trim().length === 0}
-							aria-label="continue with email"
-							className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-[#00ff87] px-3.5 text-[#08080a] text-sm font-medium hover:bg-[#00ff87]/90 disabled:opacity-40 disabled:hover:bg-[#00ff87] transition-colors"
-						>
-							<span>continue</span>
-							<ArrowRight className="size-3.5" strokeWidth={2} aria-hidden="true" />
-						</button>
-					</form>
-
-					{/* "or" divider */}
-					<div className="flex items-center gap-3 my-5" aria-hidden="true">
-						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-						<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#71717a]">or</span>
-						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-					</div>
-
 					{/* Provider grid (icon-only, Privy style) */}
-					<ul className="grid grid-cols-5 gap-2">
+					<ul className="grid grid-cols-4 gap-2">
 						{PROVIDERS.map((p, i) => (
 							<motion.li
 								key={p.id}
