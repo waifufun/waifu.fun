@@ -1,9 +1,9 @@
 "use client";
 
+import { EASE_OUT_EXPO } from "@/lib/motion";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { EASE_OUT_EXPO } from "@/lib/motion";
 
 /**
  * Steward OAuth callback (W9.5).
@@ -86,11 +86,22 @@ function CallbackInner() {
 					window.close();
 					// If close() is blocked (some browsers refuse to close non-script-opened
 					// windows), still navigate so the user is not stranded.
-					router.replace(returnTo);
+					if (typeof window !== "undefined") {
+						window.location.assign(returnTo);
+					} else {
+						router.replace(returnTo);
+					}
 					return;
 				}
 
-				router.replace(returnTo);
+				// Full page navigation, not client-side. Guarantees browser sends
+				// the freshly-set wf_session cookie on the next request so the
+				// middleware on /patron etc. sees it.
+				if (typeof window !== "undefined") {
+					window.location.assign(returnTo);
+				} else {
+					router.replace(returnTo);
+				}
 			} catch (err) {
 				if ((err as { name?: string })?.name === "AbortError") return;
 				setPhase("error");

@@ -163,7 +163,12 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 		try {
 			const nextPath = await loginOrRegisterPasskey(trimmed, resolvedReturnTo);
 			onOpenChange(false);
-			router.replace(nextPath);
+			// Full page nav so the wf_session cookie is sent on the next request.
+			if (typeof window !== "undefined") {
+				window.location.assign(nextPath);
+			} else {
+				router.replace(nextPath);
+			}
 		} catch (err) {
 			if (err instanceof PasskeyError && err.code === "USER_CANCELLED") {
 				setPasskeyPhase("idle");
