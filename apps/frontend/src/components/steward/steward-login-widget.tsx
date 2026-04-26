@@ -5,9 +5,9 @@ import { EASE_OUT_EXPO } from "@/lib/motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAuth } from "@stwd/react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Wallet } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, Mail, Wallet } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { type FormEvent, useCallback, useMemo, useState } from "react";
 
 interface StewardLoginWidgetProps {
 	open: boolean;
@@ -32,12 +32,12 @@ interface StewardLoginWidgetProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
-// NOTE: email magic-link and passkey are intentionally hidden from this modal
-// until the Steward upstream wiring is completed. Steward's /auth/email/send
-// is a POST → JSON flow (no redirect endpoint), and passkey is a WebAuthn
-// dance — neither matches the OAuth /auth/oauth/<p>/authorize redirect shape
-// our W9.5 backend bridge expects. Tracked as a follow-up.
+// NOTE: passkey is intentionally hidden from this modal until WebAuthn
+// is wired (needs @simplewebauthn/browser + ceremony handler). Tracked
+// as a follow-up.
 type ProviderId = "google" | "github" | "discord" | "twitter";
+
+type EmailPhase = "idle" | "submitting" | "sent" | "error";
 
 type ProviderTile = {
 	id: ProviderId;
@@ -57,6 +57,9 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 	const { isAuthenticated } = useAuth();
 	const params = useSearchParams();
 	const reduceMotion = useReducedMotion();
+	const [email, setEmail] = useState("");
+	const [emailPhase, setEmailPhase] = useState<EmailPhase>("idle");
+	const [emailError, setEmailError] = useState<string | null>(null);
 
 	// Resolve return_to: explicit prop > URL param > current pathname > /patron
 	const resolvedReturnTo = useMemo(() => {
@@ -93,6 +96,40 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 		[startUrlFor],
 	);
 
+	const handleEmailSubmit = useCallback(
+		async (e: FormEvent<HTMLFormElement>) => {
+			e.preventDefault();
+			const trimmed = email.trim().toLowerCase();
+			if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+				setEmailPhase("error");
+				setEmailError("please enter a valid email address");
+				return;
+			}
+			setEmailPhase("submitting");
+			setEmailError(null);
+			try {
+				const res = await fetch(`${API_URL}/auth/email/start`, {
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ email: trimmed, return_to: resolvedReturnTo }),
+				});
+				if (!res.ok) {
+					const body = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
+					if (res.status === 429) {
+						throw new Error("too many requests, try again in a minute");
+					}
+					throw new Error(body?.message ?? body?.error ?? `http ${res.status}`);
+				}
+				setEmailPhase("sent");
+			} catch (err) {
+				setEmailPhase("error");
+				setEmailError(err instanceof Error ? err.message : "could not send magic link");
+			}
+		},
+		[email, resolvedReturnTo],
+	);
+
 	if (isAuthenticated) {
 		return null;
 	}
@@ -104,7 +141,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 			<DialogContent className="max-w-[420px] border border-[rgba(255,255,255,0.08)] bg-[#08080a] p-0 gap-0 rounded-lg overflow-hidden">
 				<DialogHeader className="sr-only">
 					<DialogTitle>Sign in to waifu.fun</DialogTitle>
-					<DialogDescription>Sign in with a social account or connect a wallet.</DialogDescription>
+					<DialogDescription>Sign in with email, a social account, or connect a wallet.</DialogDescription>
 				</DialogHeader>
 
 				{/* Branding header */}
@@ -120,6 +157,88 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					transition={transition}
 					className="px-6 pt-5"
 				>
+					{/* Email magic-link */}
+					{emailPhase === "sent" ? (
+						<output
+							className="flex items-start gap-3 rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/5 px-4 py-3"
+							aria-live="polite"
+						>
+							<CheckCircle2 className="size-4 mt-0.5 text-[#00ff87] shrink-0" strokeWidth={1.75} aria-hidden="true" />
+							<div className="flex-1 min-w-0">
+								<p className="text-sm text-[#e4e4e7]">check your inbox</p>
+								<p className="text-xs text-[#a1a1aa] mt-0.5 break-all">
+									we sent a magic link to {email.trim().toLowerCase()}
+								</p>
+								<button
+									type="button"
+									onClick={() => {
+										setEmailPhase("idle");
+										setEmail("");
+									}}
+									className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a] hover:text-[#e4e4e7] transition-colors"
+								>
+									use a different email
+								</button>
+							</div>
+						</output>
+					) : (
+						<form onSubmit={handleEmailSubmit} className="flex items-stretch gap-2">
+							<div className="relative flex-1">
+								<Mail
+									className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#71717a]"
+									strokeWidth={1.75}
+									aria-hidden="true"
+								/>
+								<input
+									type="email"
+									inputMode="email"
+									autoComplete="email"
+									name="email"
+									placeholder="your email"
+									value={email}
+									onChange={(e) => {
+										setEmail(e.target.value);
+										if (emailPhase === "error") {
+											setEmailPhase("idle");
+											setEmailError(null);
+										}
+									}}
+									disabled={emailPhase === "submitting"}
+									aria-label="email address"
+									aria-invalid={emailPhase === "error"}
+									className="w-full rounded-sm border border-white/10 bg-[#0b0b0d] pl-9 pr-3 py-2.5 text-sm text-[#e4e4e7] placeholder:text-[#52525b] focus-visible:outline-none focus-visible:border-white/25 focus-visible:ring-2 focus-visible:ring-[#00ff87]/30 disabled:opacity-50"
+								/>
+							</div>
+							<button
+								type="submit"
+								disabled={emailPhase === "submitting" || email.trim().length === 0}
+								aria-label="continue with email"
+								className="inline-flex items-center justify-center gap-1.5 rounded-sm bg-[#00ff87] px-3.5 text-[#08080a] text-sm font-medium hover:bg-[#00ff87]/90 disabled:opacity-40 disabled:hover:bg-[#00ff87] transition-colors"
+							>
+								{emailPhase === "submitting" ? (
+									<Loader2 className="size-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
+								) : (
+									<>
+										<span>continue</span>
+										<ArrowRight className="size-3.5" strokeWidth={2} aria-hidden="true" />
+									</>
+								)}
+							</button>
+						</form>
+					)}
+					{emailPhase === "error" && emailError ? (
+						<p className="mt-2 text-xs text-[#f87171] font-mono" role="alert">
+							{emailError}
+						</p>
+					) : null}
+
+					{/* "or" divider */}
+					<div className="flex items-center gap-3 my-5" aria-hidden="true">
+						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+						<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#71717a]">or</span>
+						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+					</div>
+
 					{/* Provider grid (icon-only, Privy style) */}
 					<ul className="grid grid-cols-4 gap-2">
 						{PROVIDERS.map((p, i) => (
