@@ -2,11 +2,12 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { PasskeyError, loginOrRegisterPasskey } from "@/lib/passkey";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAuth } from "@stwd/react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Mail, Wallet } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { ArrowRight, CheckCircle2, Fingerprint, Loader2, Mail, Wallet } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useCallback, useMemo, useState } from "react";
 
 interface StewardLoginWidgetProps {
@@ -32,12 +33,10 @@ interface StewardLoginWidgetProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
-// NOTE: passkey is intentionally hidden from this modal until WebAuthn
-// is wired (needs @simplewebauthn/browser + ceremony handler). Tracked
-// as a follow-up.
 type ProviderId = "google" | "github" | "discord" | "twitter";
 
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
+type PasskeyPhase = "idle" | "prompting" | "error";
 
 type ProviderTile = {
 	id: ProviderId;
@@ -56,10 +55,13 @@ const PROVIDERS: ProviderTile[] = [
 export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLoginWidgetProps) {
 	const { isAuthenticated } = useAuth();
 	const params = useSearchParams();
+	const router = useRouter();
 	const reduceMotion = useReducedMotion();
 	const [email, setEmail] = useState("");
 	const [emailPhase, setEmailPhase] = useState<EmailPhase>("idle");
 	const [emailError, setEmailError] = useState<string | null>(null);
+	const [passkeyPhase, setPasskeyPhase] = useState<PasskeyPhase>("idle");
+	const [passkeyError, setPasskeyError] = useState<string | null>(null);
 
 	// Resolve return_to: explicit prop > URL param > current pathname > /patron
 	const resolvedReturnTo = useMemo(() => {
@@ -129,6 +131,30 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 		},
 		[email, resolvedReturnTo],
 	);
+
+	const handlePasskey = useCallback(async () => {
+		const trimmed = email.trim().toLowerCase();
+		if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+			setPasskeyPhase("error");
+			setPasskeyError("enter your email above first, then tap passkey");
+			return;
+		}
+		setPasskeyPhase("prompting");
+		setPasskeyError(null);
+		try {
+			const nextPath = await loginOrRegisterPasskey(trimmed, resolvedReturnTo);
+			onOpenChange(false);
+			router.replace(nextPath);
+		} catch (err) {
+			if (err instanceof PasskeyError && err.code === "USER_CANCELLED") {
+				setPasskeyPhase("idle");
+				setPasskeyError(null);
+				return;
+			}
+			setPasskeyPhase("error");
+			setPasskeyError(err instanceof Error ? err.message : "passkey failed");
+		}
+	}, [email, resolvedReturnTo, onOpenChange, router]);
 
 	if (isAuthenticated) {
 		return null;
@@ -229,6 +255,34 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					{emailPhase === "error" && emailError ? (
 						<p className="mt-2 text-xs text-[#f87171] font-mono" role="alert">
 							{emailError}
+						</p>
+					) : null}
+
+					{/* Passkey — uses the email above as the WebAuthn user handle */}
+					{emailPhase !== "sent" ? (
+						<button
+							type="button"
+							onClick={handlePasskey}
+							disabled={passkeyPhase === "prompting"}
+							aria-label="continue with passkey"
+							className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-sm border border-white/10 bg-[#0b0b0d] py-2.5 px-4 text-sm font-medium text-[#e4e4e7] transition-all duration-200 hover:border-white/25 hover:bg-[#0e0e10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-50"
+						>
+							{passkeyPhase === "prompting" ? (
+								<>
+									<Loader2 className="size-4 animate-spin" strokeWidth={1.75} aria-hidden="true" />
+									<span>waiting for passkey</span>
+								</>
+							) : (
+								<>
+									<Fingerprint className="size-4" strokeWidth={1.75} aria-hidden="true" />
+									<span>continue with passkey</span>
+								</>
+							)}
+						</button>
+					) : null}
+					{passkeyPhase === "error" && passkeyError ? (
+						<p className="mt-2 text-xs text-[#f87171] font-mono" role="alert">
+							{passkeyError}
 						</p>
 					) : null}
 
