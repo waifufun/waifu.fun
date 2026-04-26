@@ -33,16 +33,16 @@ interface StewardLoginWidgetProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
-// NOTE: discord + twitter temporarily disabled — Steward's OAuth apps need
-// `https://eliza.steward.fi/auth/oauth/<provider>/callback` registered
-// as allowed redirect URIs in the respective developer portals.
+// NOTE: discord temporarily disabled — Steward's discord OAuth app needs
+// `https://eliza.steward.fi/auth/oauth/discord/callback` registered as
+// an allowed redirect URI in the Discord Developer Portal. Re-enable
+// once Shaw / steward team adds it.
 //
-// X/Twitter rejects the callback with "You weren't able to give access
-// to the App". Discord rejects with "incorrect oauth redirect url".
-//
-// Re-enable each once the corresponding portal config is fixed by
-// Shaw / steward team.
-type ProviderId = "google" | "github";
+// X/Twitter is wired through waifu's OWN X app via /auth/twitter/login
+// (the legacy patron-claim flow that already worked), NOT through
+// Steward. Steward's X app has the wrong callback URI in X's developer
+// portal and we couldn't access that account.
+type ProviderId = "google" | "github" | "twitter";
 
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
 type PasskeyPhase = "idle" | "prompting" | "error";
@@ -57,6 +57,7 @@ type ProviderTile = {
 const PROVIDERS: ProviderTile[] = [
 	{ id: "google", label: "continue with google", short: "google", icon: <GoogleMark /> },
 	{ id: "github", label: "continue with github", short: "github", icon: <GithubMark /> },
+	{ id: "twitter", label: "continue with twitter / x", short: "x", icon: <XMark /> },
 ];
 
 export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLoginWidgetProps) {
@@ -100,9 +101,20 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 	const handleProvider = useCallback(
 		(provider: ProviderId) => () => {
 			if (typeof window === "undefined") return;
+			// X/Twitter goes through waifu's own /auth/twitter/login (the
+			// legacy patron-claim flow which uses our X app, not Steward's).
+			// Returns wf_session as an X-OAuth random token; the existing
+			// requirePatron auth path accepts both Steward JWT and X-OAuth
+			// session tokens.
+			if (provider === "twitter") {
+				const u = new URL(`${API_URL}/auth/twitter/login`);
+				u.searchParams.set("return_to", resolvedReturnTo);
+				window.location.href = u.toString();
+				return;
+			}
 			window.location.href = startUrlFor(provider);
 		},
-		[startUrlFor],
+		[startUrlFor, resolvedReturnTo],
 	);
 
 	const handleEmailSubmit = useCallback(
@@ -301,7 +313,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					</div>
 
 					{/* Provider grid (icon-only, Privy style) */}
-					<ul className="grid grid-cols-2 gap-2">
+					<ul className="grid grid-cols-3 gap-2">
 						{PROVIDERS.map((p, i) => (
 							<motion.li
 								key={p.id}
