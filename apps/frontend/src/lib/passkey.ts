@@ -119,13 +119,9 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 		assertion = await startAuthentication({ optionsJSON: optionsRes.body });
 	} catch (err) {
 		if (isCancelled(err)) {
-			const elapsedMs =
-				(typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
+			const elapsedMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
 			if (elapsedMs < 800) {
-				throw new PasskeyError(
-					"NO_LOCAL_CREDENTIAL",
-					"no passkey for this site is on this device",
-				);
+				throw new PasskeyError("NO_LOCAL_CREDENTIAL", "no passkey for this site is on this device");
 			}
 			throw new PasskeyError("USER_CANCELLED", "passkey prompt cancelled");
 		}
