@@ -100,7 +100,7 @@ export default function Header() {
 					<SearchMenu />
 					<Link
 						href="/create/wizard"
-						className="hidden md:inline-flex items-center gap-1.5 rounded-sm border border-[rgba(0,255,135,0.25)] bg-[rgba(0,255,135,0.06)] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[#00ff87] hover:bg-[rgba(0,255,135,0.12)] hover:border-[rgba(0,255,135,0.45)] transition-colors duration-200"
+						className="hidden md:inline-flex items-center gap-1.5 h-[38px] min-h-[38px] max-h-[38px] rounded-sm border border-[rgba(0,255,135,0.3)] bg-[rgba(0,255,135,0.06)] px-4 font-mono text-[11px] uppercase tracking-[0.16em] text-[#00ff87] hover:bg-[rgba(0,255,135,0.12)] hover:border-[rgba(0,255,135,0.45)] transition-colors duration-200"
 					>
 						{t("nav.launchAgent")}
 					</Link>

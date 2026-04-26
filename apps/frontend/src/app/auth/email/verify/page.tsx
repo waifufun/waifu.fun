@@ -63,7 +63,17 @@ function VerifyInner() {
 					data: { return_to: string; patron: { stewardUserId: string; email: string | null } };
 				};
 				const returnTo = json?.data?.return_to ?? "/patron";
-				router.replace(returnTo);
+				// Use window.location.assign for a FULL page navigation rather than
+				// router.replace's client-side nav. The full nav guarantees the
+				// browser sends the freshly-set wf_session cookie on the next
+				// request to /patron, so middleware sees it and doesn't bounce
+				// us back to /?signin=1. Avoids a subtle race some browsers hit
+				// where the SPA navigation happens before the cookie is committed.
+				if (typeof window !== "undefined") {
+					window.location.assign(returnTo);
+				} else {
+					router.replace(returnTo);
+				}
 			} catch (err) {
 				if ((err as { name?: string })?.name === "AbortError") return;
 				setPhase("error");
