@@ -141,7 +141,13 @@ export async function registerPasskey(email: string, returnTo?: string): Promise
 			error?: string;
 			message?: string;
 		} & PublicKeyCredentialCreationOptionsJSON
-	>("/auth/passkey/register/options", { email });
+	>("/auth/passkey/register/options", {
+		email,
+		// Hint to Steward + browser: prefer the platform authenticator
+		// (Touch ID / Face ID / Windows Hello) over the QR/security-key
+		// picker. Requires Steward >= 0.3.6 (PR #30).
+		authenticatorAttachment: "platform",
+	});
 
 	if (optionsRes.status === 429) {
 		throw new PasskeyError("RATE_LIMITED", "too many requests, try again in a minute");
