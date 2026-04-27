@@ -81,13 +81,19 @@ export type AgentAdapter = {
  * and the UI falls back to an empty/error state. We deliberately avoid any
  * mock fallback so we can see real integration issues in staging.
  */
+/**
+ * Fetch agents owned by the current authed patron (any auth method).
+ *
+ * If `owner` is supplied (wallet address), uses ?owner=<address> for
+ * back-compat with the wallet-centric flow. Otherwise calls
+ * ?mine=true which the backend resolves via the wf_session cookie.
+ */
 export function usePatronAgents(owner?: string) {
 	return useQuery<PatronAgent[]>({
-		queryKey: ["patron-agents", owner ?? null],
-		enabled: Boolean(owner),
+		queryKey: ["patron-agents", owner ?? "mine"],
 		queryFn: async () => {
-			if (!owner) return [];
-			const data = await apiFetch<unknown>(`/v2/agents?owner=${encodeURIComponent(owner)}`);
+			const url = owner ? `/v2/agents?owner=${encodeURIComponent(owner)}` : "/v2/agents?mine=true";
+			const data = await apiFetch<unknown>(url);
 			// Accept either a bare array or `{ agents: [...] }` shape.
 			if (Array.isArray(data)) return data as PatronAgent[];
 			if (data && typeof data === "object" && Array.isArray((data as { agents?: unknown }).agents)) {
