@@ -95,6 +95,12 @@ export interface FetchAgentsParams {
 	offset?: number;
 	status?: AgentStatusFilter;
 	sort?: AgentSort;
+	/**
+	 * Include legacy v1 agents (e.g. $DEMO from the four.meme hackathon)
+	 * in the listing. Defaults to true so the demo agent stays visible
+	 * on the public agents page.
+	 */
+	includeLegacy?: boolean;
 }
 
 /**
@@ -106,6 +112,7 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 	const offset = params.offset ?? 0;
 	const status = params.status ?? "all";
 	const sort = params.sort ?? "newest";
+	const includeLegacy = params.includeLegacy ?? true;
 
 	const qs = new URLSearchParams({
 		limit: String(limit),
@@ -113,6 +120,7 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 		sort,
 	});
 	if (status !== "all") qs.set("status", status);
+	if (includeLegacy) qs.set("includeLegacy", "true");
 
 	try {
 		const res = await fetch(`${API_BASE}/v2/agents?${qs.toString()}`, {
