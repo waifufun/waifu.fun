@@ -16,7 +16,30 @@ export type PatronStatus = {
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.waifu.fun";
 
+// $DEMO (four.meme hackathon agent) doesn't have real patrons in the
+// production DB. Hardcode @waifudotfun as the showcase patron so the
+// public agent page doesn't render an empty 'patron data unavailable'
+// state. Tracked as the canonical demo until live patrons start landing.
+const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
+const DEMO_PATRON_LIST: PatronList = {
+	total: 1,
+	patrons: [
+		{
+			xHandle: "waifudotfun",
+			xAvatarUrl: null,
+			patronSince: "2026-04-20T09:38:09.215Z",
+		},
+	],
+};
+
+function isDemoAddress(addr: string): boolean {
+	return addr.toLowerCase() === DEMO_TOKEN_ADDRESS.toLowerCase();
+}
+
 export async function fetchPatrons(tokenAddress: string, limit = 12): Promise<PatronList | null> {
+	if (isDemoAddress(tokenAddress)) {
+		return DEMO_PATRON_LIST;
+	}
 	try {
 		const res = await fetch(`${API}/v2/agents/${tokenAddress}/patrons?limit=${limit}`);
 		if (!res.ok) return null;

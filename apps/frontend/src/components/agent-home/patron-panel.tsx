@@ -62,7 +62,11 @@ export default function PatronPanel({ agent }: Props) {
 				<div className="flex items-center gap-2">
 					<Radio className="w-3 h-3 text-[#00ff87]" strokeWidth={1.5} />
 					<span className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/70">
-						{loading ? "..." : patrons ? `${patrons.total} patrons` : "patron data unavailable"}
+						{loading
+							? "..."
+							: patrons
+								? `${patrons.total} ${patrons.total === 1 ? "patron" : "patrons"}`
+								: "no patrons yet"}
 					</span>
 				</div>
 			</div>
