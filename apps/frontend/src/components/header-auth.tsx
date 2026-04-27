@@ -9,8 +9,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useIsClient } from "usehooks-ts";
 import { useAccount, useDisconnect } from "wagmi";
+import { WaifuUserMenu } from "./auth/waifu-user-menu";
 import { StewardLoginWidget } from "./steward/steward-login-widget";
-import { StewardUserMenu } from "./steward/steward-user-menu";
 import { Button } from "./ui/button";
 
 /**
@@ -103,7 +103,7 @@ function HeaderAuthInner() {
 	return (
 		<div className="flex items-center gap-2">
 			{/* Steward user menu (when steward-authed) */}
-			{isStewardAuthed && <StewardUserMenu />}
+			{isStewardAuthed && <WaifuUserMenu />}
 
 			{/* sign in button (when only wallet connected, no steward) */}
 			{!isStewardAuthed && (
