@@ -2,8 +2,8 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation } from "@/contexts/locale-context";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAuth } from "@stwd/react";
 import { LogIn, LogOut, Wallet } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
@@ -28,7 +28,9 @@ import { Button } from "./ui/button";
  */
 function HeaderAuthInner() {
 	const { t } = useTranslation();
-	const { isAuthenticated: isStewardAuthed, isLoading: stewardLoading } = useAuth();
+	// `wf_authed` cookie-based auth state. @stwd/react's useAuth tracks
+	// localStorage which doesn't match our HttpOnly-cookie session model.
+	const { isAuthenticated: isStewardAuthed, isLoading: stewardLoading } = useWaifuAuth();
 	const { address, isConnected: isWalletConnected } = useAccount();
 	const { disconnect } = useDisconnect();
 	const isClient = useIsClient();

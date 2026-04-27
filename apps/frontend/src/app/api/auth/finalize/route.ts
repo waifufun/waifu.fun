@@ -117,5 +117,13 @@ export async function POST(req: NextRequest) {
 		out.headers.append("Set-Cookie", cookie);
 	}
 
+	// Also set a frontend-readable "is logged in" flag cookie so client-side
+	// hooks (useAuthRequired) can detect the session without needing to read
+	// the HttpOnly wf_session cookie. The actual JWT stays in the HttpOnly
+	// cookie; this is just a presence flag.
+	if (upstreamRes.ok) {
+		out.headers.append("Set-Cookie", "wf_authed=1; Max-Age=2592000; Path=/; SameSite=Lax; Domain=.waifu.fun; Secure");
+	}
+
 	return out;
 }
