@@ -26,7 +26,7 @@ const DEMO_PATRON_LIST: PatronList = {
 	patrons: [
 		{
 			xHandle: "waifudotfun",
-			xAvatarUrl: null,
+			xAvatarUrl: "https://unavatar.io/twitter/waifudotfun",
 			patronSince: "2026-04-20T09:38:09.215Z",
 		},
 	],
