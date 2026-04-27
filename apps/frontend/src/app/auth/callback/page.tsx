@@ -1,25 +1,24 @@
 "use client";
 
-import { StewardEmailCallback } from "@stwd/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 /**
- * Email magic-link callback page.
- * Steward redirects here with ?token=...&email=... after the user clicks the link.
+ * Legacy email-callback redirect.
+ *
+ * Older magic-link emails pointed at /auth/callback?token=...&email=...
+ * Current flow uses /auth/email/verify (set as the magicLinkBaseUrl
+ * callback path in Steward tenant config). Forward any stragglers.
  */
-export default function EmailCallbackPage() {
+export default function LegacyEmailCallback() {
 	const router = useRouter();
+	const params = useSearchParams();
 
-	return (
-		<div className="flex min-h-[60vh] items-center justify-center">
-			<StewardEmailCallback
-				onSuccess={() => router.push("/")}
-				onError={(err) => {
-					console.error("[email-callback]", err);
-					router.push("/");
-				}}
-				redirectTo="/"
-			/>
-		</div>
-	);
+	useEffect(() => {
+		const search = params?.toString() ?? "";
+		const target = search ? `/auth/email/verify?${search}` : "/";
+		router.replace(target);
+	}, [params, router]);
+
+	return <div className="min-h-[60vh] flex items-center justify-center text-sm text-[#71717a]">redirecting...</div>;
 }

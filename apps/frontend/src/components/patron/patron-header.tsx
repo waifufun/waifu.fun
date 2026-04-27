@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import StewardConnectBadge from "./steward-connect-badge";
+import Link from "next/link";
 
 type Props = {
 	title: string;
@@ -29,7 +28,6 @@ export default function PatronHeader({ title, subtitle, backHref }: Props) {
 				>
 					wallets
 				</Link>
-				<StewardConnectBadge />
 				<Link href="/create/wizard">
 					<Button variant="outline" className="h-9 px-4">
 						Create agent
