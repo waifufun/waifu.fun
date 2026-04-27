@@ -26,6 +26,14 @@ function avatarFor(p: Patron): string {
 	return p.xAvatarUrl || `https://unavatar.io/twitter/${p.xHandle}`;
 }
 
+// $DEMO is a static showcase — no real claim flow. Suppress the connect-x
+// and claim-patron CTAs so the page reads as a curated demo, not as if the
+// viewer can become a patron.
+const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
+function isDemoAgent(addr: string): boolean {
+	return addr.toLowerCase() === DEMO_TOKEN_ADDRESS.toLowerCase();
+}
+
 export default function PatronPanel({ agent }: Props) {
 	const { patronUser, isLoading: authLoading, loginWithX } = usePatronAuth();
 	const [patrons, setPatrons] = useState<PatronList | null>(null);
@@ -67,6 +75,7 @@ export default function PatronPanel({ agent }: Props) {
 	const fourMemeUrl = `https://four.meme/token/${agent.tokenAddress}`;
 	const totalPatrons = patrons?.total ?? 0;
 	const visible = patrons?.patrons.slice(0, 6) ?? [];
+	const showClaimChrome = !isDemoAgent(agent.tokenAddress);
 
 	return (
 		<div className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden">
@@ -122,8 +131,8 @@ export default function PatronPanel({ agent }: Props) {
 				</div>
 			) : null}
 
-			{/* call-to-action: become patron */}
-			{!patronUser && !authLoading ? (
+			{/* call-to-action: become patron (suppressed for $DEMO showcase) */}
+			{showClaimChrome && !patronUser && !authLoading ? (
 				<div className="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-3">
 					<p className="text-xs text-white/60">connect x to claim patron status.</p>
 					<button
@@ -135,7 +144,7 @@ export default function PatronPanel({ agent }: Props) {
 					</button>
 				</div>
 			) : null}
-			{patronUser && !status?.isPatron ? (
+			{showClaimChrome && patronUser && !status?.isPatron ? (
 				<div className="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-3">
 					<p className="text-xs text-white/60">you hold ${agent.ticker || "TOKEN"}? claim patron.</p>
 					<button
