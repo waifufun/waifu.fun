@@ -1,36 +1,43 @@
 "use client";
 
-import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@stwd/react";
+import { useEffect, useState } from "react";
 
 /**
  * In-page auth gate.
  *
  * The Next.js middleware (W9.9) catches anonymous navigations to
  * /create/* and /patron/*, but it can't catch a session that expires
- * while the user is sitting on a page (the cookie's gone but the
- * Steward auth context still hydrates as "loading" then "anonymous").
+ * while the user is sitting on a page.
  *
- * Drop this hook into client-rendered protected pages to handle the
- * in-page case: when isLoading flips false and isAuthenticated is
- * still false, we redirect to /?signin=1&return_to=<pathname>, which
- * matches the middleware shape so the homepage auto-opens the modal
- * and the user lands back here after re-auth.
+ * Auth detection: reads the `wf_authed` cookie (set as a non-HttpOnly
+ * flag alongside the HttpOnly `wf_session` cookie by /api/auth/finalize).
+ * The actual JWT stays HttpOnly; this is just a frontend-readable
+ * "is the user logged in" flag.
  *
- * Usage:
- *   const { isLoading, isAuthenticated } = useAuthRequired();
- *   if (isLoading) return <AuthGateLoader />;
- *   if (!isAuthenticated) return null; // redirect in flight
+ * @stwd/react's useAuth() is NOT used here because it tracks Steward's
+ * own localStorage-based session, not our HttpOnly-cookie-based one.
  */
+function readAuthedCookie(): boolean {
+	if (typeof document === "undefined") return false;
+	return document.cookie.split(";").some((c) => c.trim().startsWith("wf_authed=1"));
+}
+
 export function useAuthRequired(): { isAuthenticated: boolean; isLoading: boolean } {
-	const { isAuthenticated, isLoading } = useAuth();
 	const router = useRouter();
 	const pathname = usePathname();
 	const params = useSearchParams();
+	const [hydrated, setHydrated] = useState(false);
+	const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+	// Read the cookie on mount. document.cookie isn't available SSR.
+	useEffect(() => {
+		setIsAuthenticated(readAuthedCookie());
+		setHydrated(true);
+	}, []);
 
 	useEffect(() => {
-		if (isLoading) return;
+		if (!hydrated) return;
 		if (isAuthenticated) return;
 		// If we're already on the homepage with the modal opening, don't
 		// loop into another redirect.
@@ -38,7 +45,7 @@ export function useAuthRequired(): { isAuthenticated: boolean; isLoading: boolea
 		const target = pathname || "/";
 		const url = `/?signin=1&return_to=${encodeURIComponent(target)}`;
 		router.replace(url);
-	}, [isAuthenticated, isLoading, pathname, params, router]);
+	}, [hydrated, isAuthenticated, pathname, params, router]);
 
-	return { isAuthenticated, isLoading };
+	return { isAuthenticated, isLoading: !hydrated };
 }

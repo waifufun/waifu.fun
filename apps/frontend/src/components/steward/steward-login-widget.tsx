@@ -1,10 +1,10 @@
 "use client";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { PasskeyError, loginOrRegisterPasskey } from "@/lib/passkey";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAuth } from "@stwd/react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Fingerprint, Loader2, Mail, Wallet } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -61,7 +61,7 @@ const PROVIDERS: ProviderTile[] = [
 ];
 
 export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLoginWidgetProps) {
-	const { isAuthenticated } = useAuth();
+	const { isAuthenticated } = useWaifuAuth();
 	const params = useSearchParams();
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
