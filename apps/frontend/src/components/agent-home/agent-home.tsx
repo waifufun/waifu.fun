@@ -16,6 +16,10 @@ import XEmbed from "./x-embed";
 
 const EIP8004_CONTRACT = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
+// $DEMO is a curated showcase — hide tooling (adapter permissions, the
+// patron-only connect-x affordances) that don't apply to a static demo.
+const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
+
 export default function AgentHome({
 	agent,
 	trades,
@@ -24,6 +28,7 @@ export default function AgentHome({
 	trades: AgentTrade[];
 }) {
 	const graduated = agent.status === "graduated";
+	const isDemo = agent.tokenAddress.toLowerCase() === DEMO_TOKEN_ADDRESS.toLowerCase();
 
 	const agentId = agent.tokenAddress;
 	const treasuryAddress = agent.treasuryAddress || agent.walletAddress || agent.tokenAddress;
@@ -56,9 +61,11 @@ export default function AgentHome({
 						<SubSection title="treasury">
 							<TreasuryCard treasuryAddress={treasuryAddress} agentId={agentId} ticker={agent.ticker} />
 						</SubSection>
-						<SubSection title="permissions">
-							<AdapterPermissions agentId={agentId} />
-						</SubSection>
+						{isDemo ? null : (
+							<SubSection title="permissions">
+								<AdapterPermissions agentId={agentId} />
+							</SubSection>
+						)}
 					</div>
 					<div className="flex flex-col gap-5 min-w-0">
 						<SubSection title="voice">
