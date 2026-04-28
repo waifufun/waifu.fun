@@ -8,6 +8,14 @@ import { useEffect, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.waifu.fun";
 
+// $DEMO is a static showcase. The token-address-keyed agentId for the demo
+// short-circuits to the @waifudotfun X timeline so the page reads as a
+// curated demo rather than 'no x connected' empty state.
+const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
+function isDemoAgentId(id: string): boolean {
+	return id.toLowerCase() === DEMO_TOKEN_ADDRESS.toLowerCase();
+}
+
 type XStatus =
 	| { state: "loading" }
 	| { state: "connected"; handle: string }
@@ -34,11 +42,17 @@ export default function XEmbed({
 	fallbackHandle?: string | undefined;
 }) {
 	const { patronUser } = usePatronAuth();
+	const demo = isDemoAgentId(agentId);
 	const [status, setStatus] = useState<XStatus>(
-		fallbackHandle ? { state: "connected", handle: fallbackHandle } : { state: "loading" },
+		demo
+			? { state: "connected", handle: "waifudotfun" }
+			: fallbackHandle
+				? { state: "connected", handle: fallbackHandle }
+				: { state: "loading" },
 	);
 
 	useEffect(() => {
+		if (demo) return; // hardcoded above
 		let cancelled = false;
 		(async () => {
 			try {
@@ -70,7 +84,7 @@ export default function XEmbed({
 		return () => {
 			cancelled = true;
 		};
-	}, [agentId, fallbackHandle]);
+	}, [agentId, fallbackHandle, demo]);
 
 	if (status.state === "loading") {
 		return <Shell>{null}</Shell>;
