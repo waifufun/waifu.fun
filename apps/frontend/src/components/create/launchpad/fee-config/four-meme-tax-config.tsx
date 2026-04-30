@@ -42,7 +42,7 @@ function rescaleAllocation(
 ): FourMemeTaxFeeConfig["allocation"] {
 	const sum = current.founderBps + current.holderBps + current.burnBps + current.liquidityBps;
 	if (sum === 0) {
-		// All zero — distribute evenly
+		// All zero, distribute evenly
 		const each = Math.floor(target / 4);
 		return {
 			founderBps: each,
