@@ -2,7 +2,7 @@ import type { LaunchpadDescriptor } from "./types";
 
 /**
  * Local mock list of launchpads. Used by use-launchpads hook when
- * GET /v3/launchpads 404s (i.e. before W1.A merges).
+ * GET /v3/launchpads 404s or local development cannot reach the API.
  */
 export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 	{
@@ -39,33 +39,33 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 		status: "coming-soon",
 		chain: "solana",
 		displayName: "pump.fun",
-		shortDescription: "solana's largest launchpad. requires solana wallet integration.",
-		feeSummary: "1% trade fee.",
+		shortDescription: "Solana-native curve for creators whose audience already expects the pump.fun route.",
+		feeSummary: "platform fee model.",
 		graduationTarget: "Raydium",
 		expectedAvailability: "Wave 4",
-		comingSoonNotes: "needs solana wallet adapter and cross-chain agent migration.",
+		comingSoonNotes: "Requires Solana wallet adapter, metadata handling, and migration payload support.",
 	},
 	{
 		id: "bags",
 		status: "coming-soon",
 		chain: "solana",
 		displayName: "bags",
-		shortDescription: "creator-rewarded launchpad on solana with revenue splits.",
-		feeSummary: "split fee model.",
+		shortDescription: "Solana launch path for creators who want attribution and reward routing in the flow.",
+		feeSummary: "creator reward model.",
 		graduationTarget: "Meteora DLMM",
 		expectedAvailability: "Wave 4",
-		comingSoonNotes: "needs solana wallet adapter.",
+		comingSoonNotes: "Requires Solana wallet adapter and reward-split UX validation.",
 	},
 	{
 		id: "custom",
 		status: "coming-soon",
 		chain: "ethereum",
 		displayName: "custom",
-		shortDescription: "bring your own launchpad contract via the adapter SDK.",
-		feeSummary: "you define it.",
+		shortDescription: "Adapter SDK path for teams bringing their own launch contract or venue.",
+		feeSummary: "configured by adapter.",
 		graduationTarget: "configurable",
 		expectedAvailability: "Wave 5+",
-		comingSoonNotes: "adapter SDK still in design.",
+		comingSoonNotes: "Adapter SDK shape is still being designed with early teams.",
 	},
 ];
 

@@ -27,7 +27,7 @@ function sortByDisplayOrder(list: LaunchpadDescriptor[]): LaunchpadDescriptor[] 
 
 /**
  * SWR-style fetcher for /v3/launchpads. Falls back to local mock descriptors
- * if the endpoint 404s or is unreachable (i.e. before W1.A merges).
+ * if the endpoint 404s or is unreachable.
  */
 export function useLaunchpads(): UseLaunchpads {
 	const [launchpads, setLaunchpads] = useState<LaunchpadDescriptor[]>(() => sortByDisplayOrder(MOCK_LAUNCHPADS));
@@ -73,12 +73,37 @@ export function useLaunchpads(): UseLaunchpads {
 	return { launchpads, isLoading, error, source };
 }
 
-/** POSTs a waitlist signup. Treats 404 / network errors as "stub success". */
-export async function postWaitlistSignup(
-	launchpadId: LaunchpadId,
-	email: string,
-): Promise<{ ok: true; stub: boolean } | { ok: false; error: string }> {
-	const trimmed = email.trim();
+export type WaitlistSignupResult =
+	| { ok: true; status: "created" | "already"; email: string }
+	| { ok: false; error: string };
+
+type WaitlistErrorBody = {
+	error?: string;
+	message?: string;
+	code?: string;
+};
+
+function waitlistErrorMessage(status: number, body: WaitlistErrorBody): string {
+	if (status === 400 || status === 422) return body.error ?? body.message ?? "check the email and try again.";
+	if (status === 404) return "waitlist is not available for this launchpad yet.";
+	if (status === 429) return "too many attempts. wait a minute and try again.";
+	if (status >= 500) return "waitlist service is having trouble. try again soon.";
+	return body.error ?? body.message ?? `signup failed with status ${status}.`;
+}
+
+export function parseWaitlistResponse(status: number, body: WaitlistErrorBody = {}): WaitlistSignupResult {
+	if (status >= 200 && status < 300) {
+		return { ok: true, status: "created", email: "" };
+	}
+	if (status === 409 || body.code === "already_joined" || body.code === "duplicate") {
+		return { ok: true, status: "already", email: "" };
+	}
+	return { ok: false, error: waitlistErrorMessage(status, body) };
+}
+
+/** POSTs a waitlist signup to the backend launchpad waitlist route. */
+export async function postWaitlistSignup(launchpadId: LaunchpadId, email: string): Promise<WaitlistSignupResult> {
+	const trimmed = email.trim().toLowerCase();
 	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
 		return { ok: false, error: "enter a valid email address." };
 	}
@@ -89,11 +114,10 @@ export async function postWaitlistSignup(
 			credentials: "include",
 			body: JSON.stringify({ email: trimmed }),
 		});
-		if (res.ok) return { ok: true, stub: false };
-		if (res.status === 404) return { ok: true, stub: true };
-		const body = (await res.json().catch(() => ({}))) as { error?: string };
-		return { ok: false, error: body.error ?? `signup failed (${res.status}).` };
+		const body = (await res.json().catch(() => ({}))) as WaitlistErrorBody;
+		const parsed = parseWaitlistResponse(res.status, body);
+		return parsed.ok ? { ...parsed, email: trimmed } : parsed;
 	} catch {
-		return { ok: true, stub: true };
+		return { ok: false, error: "could not reach the waitlist service. try again when your connection is stable." };
 	}
 }

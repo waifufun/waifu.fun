@@ -5,6 +5,7 @@ import { useId } from "react";
 import { cn } from "@/lib/utils";
 import type { LaunchpadDescriptor } from "@/lib/launchpad/types";
 import { CheckIcon } from "../wizard-icons";
+import { getComingSoonCopy } from "./coming-soon-copy";
 import { LockIcon } from "./launchpad-icons";
 
 type Props = {
@@ -25,6 +26,7 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 	const isComingSoon = descriptor.status === "coming-soon";
 	const recommended = descriptor.badges?.includes("recommended");
 	const advanced = descriptor.badges?.includes("advanced");
+	const comingSoonCopy = isComingSoon ? getComingSoonCopy(descriptor.id) : null;
 
 	return (
 		<motion.button
@@ -38,12 +40,12 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 			whileTap={{ y: 0, scale: 0.995 }}
 			transition={{ type: "spring", stiffness: 320, damping: 24 }}
 			className={cn(
-				"group relative text-left flex flex-col gap-4 p-5 min-h-[220px] w-full",
+				"group relative text-left flex flex-col gap-4 p-5 min-h-[240px] w-full overflow-hidden",
 				"border bg-white/[0.012]",
 				"transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
 				"focus:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
 				selected ? "border-accent bg-accent/[0.04]" : "border-white/10 hover:border-white/25 hover:bg-white/[0.02]",
-				isComingSoon && "opacity-55 hover:opacity-75",
+				isComingSoon && "border-dashed border-white/15 bg-white/[0.018] hover:border-accent/35 hover:bg-accent/[0.025]",
 			)}
 		>
 			{/* top row: chain + badges */}
@@ -77,6 +79,12 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 					{descriptor.displayName}
 				</h3>
 				<p className="mt-2 text-xs text-neutral-400 leading-relaxed">{descriptor.shortDescription}</p>
+				{comingSoonCopy ? (
+					<div className="mt-4 border-l border-accent/45 pl-3">
+						<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-accent/90">{comingSoonCopy.label}</p>
+						<p className="mt-1.5 text-xs leading-relaxed text-neutral-300">{comingSoonCopy.readiness}</p>
+					</div>
+				) : null}
 			</div>
 
 			{/* fee + grad summary */}
@@ -114,7 +122,7 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 						selected
 					</>
 				) : isComingSoon ? (
-					"join waitlist"
+					"view waitlist"
 				) : (
 					"select"
 				)}
