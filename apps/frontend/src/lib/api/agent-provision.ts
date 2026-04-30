@@ -7,7 +7,7 @@
  * with localStorage persistence intact.
  */
 
-import type { WizardState } from "@/components/create/wizard-state";
+import type { ChainId, LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
 import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 export type ProvisionRequest = {
@@ -29,6 +29,13 @@ export type ProvisionRequest = {
 		taxPatronBps: number;
 		adapters: Array<{ slug: "pancake" | "venus"; enabled: boolean }>;
 	};
+	launchpad?: {
+		launchpad_id: LaunchpadId;
+		chain: ChainId;
+		launchpad_config: LaunchpadFeeConfig;
+		fee_mode: "production";
+		fees_can_be_disabled: false;
+	};
 };
 
 export type ProvisionResult =
@@ -44,8 +51,53 @@ export type ProvisionResult =
 			message: string;
 	  };
 
-export function buildProvisionPayload(state: WizardState): ProvisionRequest {
-	return {
+type ProvisionWizardState = {
+	persona: {
+		name: string;
+		ticker: string;
+		bio: string;
+		personaPrompt: string;
+		avatarTemplateId: string | null;
+		avatarDataUrl: string | null;
+	};
+	runtime: {
+		kind: "hosted" | "webhook" | "pull";
+		webhookUrl: string;
+		webhookSecret: string;
+	};
+	safe: {
+		taxAgentBps: number;
+		taxPatronBps: number;
+		adapters: { pancake: boolean; venus: boolean };
+	};
+	launchpad: {
+		selectedId: LaunchpadId | null;
+		selectedChain: ChainId | null;
+		feeConfig: LaunchpadFeeConfig | null;
+	};
+};
+
+type BuildProvisionPayloadOptions = {
+	launchpadPickerEnabled?: boolean;
+};
+
+const LAUNCHPAD_PICKER_FLAG = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
+
+const FALLBACK_CHAIN_BY_LAUNCHPAD: Record<LaunchpadId, ChainId> = {
+	"four-meme-regular": "bsc",
+	"four-meme-tax": "bsc",
+	flap: "bsc",
+	"pump-fun": "solana",
+	bags: "solana",
+	custom: "ethereum",
+};
+
+export function buildProvisionPayload(
+	state: ProvisionWizardState,
+	options: BuildProvisionPayloadOptions = {},
+): ProvisionRequest {
+	const launchpadPickerEnabled = options.launchpadPickerEnabled ?? LAUNCHPAD_PICKER_FLAG;
+	const base: ProvisionRequest = {
 		persona: {
 			name: state.persona.name.trim(),
 			ticker: state.persona.ticker.trim(),
@@ -69,6 +121,21 @@ export function buildProvisionPayload(state: WizardState): ProvisionRequest {
 				{ slug: "pancake", enabled: state.safe.adapters.pancake },
 				{ slug: "venus", enabled: state.safe.adapters.venus },
 			],
+		},
+	};
+
+	if (!launchpadPickerEnabled || !state.launchpad.selectedId || !state.launchpad.feeConfig) {
+		return base;
+	}
+
+	return {
+		...base,
+		launchpad: {
+			launchpad_id: state.launchpad.selectedId,
+			chain: state.launchpad.selectedChain ?? FALLBACK_CHAIN_BY_LAUNCHPAD[state.launchpad.selectedId],
+			launchpad_config: state.launchpad.feeConfig,
+			fee_mode: "production",
+			fees_can_be_disabled: false,
 		},
 	};
 }

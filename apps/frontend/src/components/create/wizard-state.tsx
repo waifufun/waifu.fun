@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
-import type { LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
+import type { ChainId, LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
 
 /**
  * Feature flag controlling the launchpad picker step.
@@ -54,6 +54,7 @@ export type WizardState = {
 	 */
 	launchpad: {
 		selectedId: LaunchpadId | null;
+		selectedChain: ChainId | null;
 		feeConfig: LaunchpadFeeConfig | null;
 	};
 };
@@ -79,6 +80,7 @@ export const DEFAULT_STATE: WizardState = {
 	},
 	launchpad: {
 		selectedId: null,
+		selectedChain: null,
 		feeConfig: null,
 	},
 };

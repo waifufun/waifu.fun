@@ -8,7 +8,7 @@ function PickerHarness() {
 	return (
 		<div className="bg-[#08080a] min-h-screen p-8">
 			<div className="max-w-[1100px] mx-auto">
-				<LaunchpadPicker selectedId={selected} onSelect={setSelected} />
+				<LaunchpadPicker selectedId={selected} onSelect={(descriptor) => setSelected(descriptor.id)} />
 			</div>
 		</div>
 	);

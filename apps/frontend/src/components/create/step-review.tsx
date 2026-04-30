@@ -2,13 +2,30 @@
 
 import Image from "next/image";
 import { useAccount } from "wagmi";
+import { computePlatformCutVolumeBps } from "@/lib/launchpad/validators";
 import { cn } from "@/lib/utils";
-import { useWizard } from "./wizard-state";
+import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
 	hosted: "hosted (milady cloud)",
 	webhook: "webhook",
 	pull: "pull",
+} as const;
+
+const LAUNCHPAD_LABEL = {
+	"four-meme-tax": "four.meme tax",
+	"four-meme-regular": "four.meme regular",
+	flap: "flap",
+	"pump-fun": "pump.fun",
+	bags: "bags",
+	custom: "custom",
+} as const;
+
+const CHAIN_LABEL = {
+	bsc: "BNB Smart Chain",
+	solana: "Solana",
+	base: "Base",
+	ethereum: "Ethereum",
 } as const;
 
 function shortAddr(addr?: string | null): string {
@@ -35,6 +52,16 @@ export default function StepReview() {
 	const adapters = Object.entries(state.safe.adapters)
 		.filter(([, enabled]) => enabled)
 		.map(([slug]) => slug);
+	const feeConfig = state.launchpad.feeConfig;
+	const selectedLaunchpad = state.launchpad.selectedId;
+	const selectedChain = state.launchpad.selectedChain;
+	const taxVolumePct = feeConfig && "taxBps" in feeConfig ? (feeConfig.taxBps / 100).toFixed(0) : null;
+	const platformCutPct =
+		feeConfig && "platformCutBps" in feeConfig ? (feeConfig.platformCutBps / 100).toFixed(0) : null;
+	const platformVolumePct =
+		feeConfig && "taxBps" in feeConfig && "platformCutBps" in feeConfig
+			? (computePlatformCutVolumeBps(feeConfig.taxBps, feeConfig.platformCutBps) / 100).toFixed(2)
+			: null;
 
 	return (
 		<div className="flex flex-col gap-8">
@@ -85,6 +112,27 @@ export default function StepReview() {
 					</div>
 				</div>
 
+				{/* Launchpad */}
+				{LAUNCHPAD_PICKER_ENABLED ? (
+					<Row label="launchpad">
+						<p className="text-sm text-neutral-200">
+							{selectedLaunchpad ? LAUNCHPAD_LABEL[selectedLaunchpad] : "not selected"}
+							{selectedChain ? <span className="text-neutral-600"> on {CHAIN_LABEL[selectedChain]}</span> : null}
+						</p>
+						{feeConfig?.kind === "four-meme-regular" ? (
+							<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
+								regular curve. no creator tax routing, no agent treasury feed from trades.
+							</p>
+						) : null}
+						{taxVolumePct && platformCutPct && platformVolumePct ? (
+							<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+								{taxVolumePct}% trade tax. waifu takes {platformCutPct}% of that tax, {platformVolumePct}% of volume,
+								then the rest follows your creator routing. production launches keep this fee path enabled.
+							</p>
+						) : null}
+					</Row>
+				) : null}
+
 				{/* Runtime */}
 				<Row label="runtime" value={RUNTIME_LABEL[state.runtime.kind]}>
 					{state.runtime.kind === "webhook" && state.runtime.webhookUrl ? (
@@ -103,6 +151,10 @@ export default function StepReview() {
 						<span className="text-neutral-500">steward</span>
 					</p>
 					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">1 of 2</p>
+					<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+						you keep patron control over policy changes and launch timing. the agent gets constrained autonomy only
+						through enabled adapters, caps, allowlists, and slippage rules.
+					</p>
 				</Row>
 
 				{/* Tax */}

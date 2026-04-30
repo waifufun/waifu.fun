@@ -6,25 +6,25 @@ import FlapConfig from "./launchpad/fee-config/flap-config";
 import LaunchpadPicker from "./launchpad/launchpad-picker";
 import { useWizard } from "./wizard-state";
 import { DEFAULT_FLAP, DEFAULT_FOUR_MEME_REGULAR, DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
-import type { FlapFeeConfig, FourMemeTaxFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
+import type { FlapFeeConfig, FourMemeTaxFeeConfig, LaunchpadDescriptor } from "@/lib/launchpad/types";
 
 export default function StepLaunchpad() {
 	const { state, patchLaunchpad } = useWizard();
 	const selectedId = state.launchpad.selectedId;
 	const feeConfig = state.launchpad.feeConfig;
 
-	const handleSelect = (id: LaunchpadId) => {
+	const handleSelect = (descriptor: LaunchpadDescriptor) => {
 		// switch fee config to the picked launchpad's default if the kind shifts.
 		const next =
-			id === "four-meme-tax"
+			descriptor.id === "four-meme-tax"
 				? DEFAULT_FOUR_MEME_TAX
-				: id === "four-meme-regular"
+				: descriptor.id === "four-meme-regular"
 					? DEFAULT_FOUR_MEME_REGULAR
-					: id === "flap"
+					: descriptor.id === "flap"
 						? DEFAULT_FLAP
 						: null;
 
-		patchLaunchpad({ selectedId: id, feeConfig: next });
+		patchLaunchpad({ selectedId: descriptor.id, selectedChain: descriptor.chain, feeConfig: next });
 	};
 
 	return (

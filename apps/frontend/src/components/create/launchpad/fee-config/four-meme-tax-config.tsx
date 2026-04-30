@@ -371,7 +371,8 @@ export default function FourMemeTaxConfig({ value, onChange }: Props) {
 						</p>
 						<p className="text-neutral-500 pt-2">
 							prod bounds: platform cut between {(MIN_PLATFORM_CUT_BPS / 100).toFixed(0)}% and{" "}
-							{(MAX_PLATFORM_CUT_BPS / 100).toFixed(0)}%.
+							{(MAX_PLATFORM_CUT_BPS / 100).toFixed(0)}%. production tax launches keep the fee path enabled and cannot
+							silently flip to zero-fee mode.
 						</p>
 					</div>
 				) : null}
