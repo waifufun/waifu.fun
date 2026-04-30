@@ -8,7 +8,7 @@ import { LaunchpadComingSoonModal } from "./launchpad-coming-soon-modal";
 
 type Props = {
 	selectedId: LaunchpadId | null;
-	onSelect: (id: LaunchpadId) => void;
+	onSelect: (descriptor: LaunchpadDescriptor) => void;
 };
 
 export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
@@ -21,7 +21,7 @@ export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
 				setWaitlistFor(descriptor);
 				return;
 			}
-			onSelect(descriptor.id);
+			onSelect(descriptor);
 		},
 		[onSelect],
 	);

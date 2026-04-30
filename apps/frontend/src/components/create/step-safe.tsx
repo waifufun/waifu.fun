@@ -58,8 +58,8 @@ export default function StepSafe() {
 						</span>
 						<div className="flex-1 min-w-0">
 							<p className="text-sm text-neutral-300 leading-relaxed">
-								two signers. either can submit. the agent moves fast on routine adapter calls; you stay in control of
-								anything that touches the rules.
+								two signers. either can submit. you keep patron control over launch timing, policy edits, and treasury
+								limits. the agent only acts inside constrained adapter permissions.
 							</p>
 						</div>
 					</div>

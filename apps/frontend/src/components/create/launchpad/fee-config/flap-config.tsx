@@ -125,7 +125,7 @@ export default function FlapConfig({ value, onChange }: Props) {
 				<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed">
 					at {(value.taxBps / 100).toFixed(0)}% tax and {(value.platformCutBps / 100).toFixed(0)}% platform cut, waifu
 					earns <span className="font-mono text-white tabular-nums">{(platformCutVolumeBps / 100).toFixed(2)}%</span> of
-					trade volume.
+					trade volume. production tax launches keep this fee path enabled.
 				</p>
 			</section>
 
