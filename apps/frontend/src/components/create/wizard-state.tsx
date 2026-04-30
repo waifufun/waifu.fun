@@ -1,14 +1,26 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
+import type { LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
+
+/**
+ * Feature flag controlling the launchpad picker step.
+ * Default: off. When off, wizard runs the legacy four.meme-only flow.
+ * W2.B handles the full cutover.
+ */
+export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
 
 /** Wizard step identifiers. URL-synced via `?step=`. */
-export type WizardStep = "persona" | "runtime" | "safe" | "review";
+export type WizardStep = "persona" | "launchpad" | "runtime" | "safe" | "review";
 
-export const WIZARD_STEPS: WizardStep[] = ["persona", "runtime", "safe", "review"];
+export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "runtime", "safe", "review"];
+export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "launchpad", "runtime", "safe", "review"];
+
+export const WIZARD_STEPS: WizardStep[] = LAUNCHPAD_PICKER_ENABLED ? LAUNCHPAD_WIZARD_STEPS : LEGACY_WIZARD_STEPS;
 
 export const STEP_LABELS: Record<WizardStep, string> = {
 	persona: "persona",
+	launchpad: "launchpad",
 	runtime: "runtime",
 	safe: "safe & policies",
 	review: "review",
@@ -35,6 +47,15 @@ export type WizardState = {
 		taxPatronBps: number;
 		adapters: { pancake: boolean; venus: boolean };
 	};
+	/**
+	 * Launchpad selection + per-launchpad fee config.
+	 * Populated only when LAUNCHPAD_PICKER_ENABLED. Legacy flow ignores this.
+	 * W2.B will read this slice in the final provision payload.
+	 */
+	launchpad: {
+		selectedId: LaunchpadId | null;
+		feeConfig: LaunchpadFeeConfig | null;
+	};
 };
 
 export const DEFAULT_STATE: WizardState = {
@@ -56,6 +77,10 @@ export const DEFAULT_STATE: WizardState = {
 		taxPatronBps: 2000,
 		adapters: { pancake: true, venus: true },
 	},
+	launchpad: {
+		selectedId: null,
+		feeConfig: null,
+	},
 };
 
 type Action =
@@ -63,6 +88,7 @@ type Action =
 	| { type: "patch_runtime"; patch: Partial<WizardState["runtime"]> }
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
 	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
+	| { type: "patch_launchpad"; patch: Partial<WizardState["launchpad"]> }
 	| { type: "reset" }
 	| { type: "hydrate"; state: WizardState };
 
@@ -76,6 +102,8 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, safe: { ...state.safe, ...action.patch } };
 		case "patch_safe_adapters":
 			return { ...state, safe: { ...state.safe, adapters: { ...state.safe.adapters, ...action.patch } } };
+		case "patch_launchpad":
+			return { ...state, launchpad: { ...state.launchpad, ...action.patch } };
 		case "reset":
 			return DEFAULT_STATE;
 		case "hydrate":
@@ -93,6 +121,7 @@ type Ctx = {
 	patchRuntime: (p: Partial<WizardState["runtime"]>) => void;
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
 	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
+	patchLaunchpad: (p: Partial<WizardState["launchpad"]>) => void;
 	reset: () => void;
 };
 
@@ -130,6 +159,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 						...(parsed.safe ?? {}),
 						adapters: { ...DEFAULT_STATE.safe.adapters, ...(parsed.safe?.adapters ?? {}) },
 					},
+					launchpad: { ...DEFAULT_STATE.launchpad, ...(parsed.launchpad ?? {}) },
 				};
 				dispatch({ type: "hydrate", state: merged });
 			}
@@ -175,6 +205,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 			patchRuntime: (patch) => dispatch({ type: "patch_runtime", patch }),
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
 			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
+			patchLaunchpad: (patch) => dispatch({ type: "patch_launchpad", patch }),
 			reset: () => dispatch({ type: "reset" }),
 		}),
 		[state],
@@ -198,6 +229,22 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			if (name.length > 48) return "name too long";
 			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
 			if (bio.length > 240) return "bio too long";
+			return null;
+		}
+		case "launchpad": {
+			if (!state.launchpad.selectedId) return "pick a launchpad";
+			const fee = state.launchpad.feeConfig;
+			if (!fee) return "configure launchpad fees";
+			if (fee.kind === "four-meme-tax") {
+				const sum =
+					fee.allocation.founderBps + fee.allocation.holderBps + fee.allocation.burnBps + fee.allocation.liquidityBps;
+				if (sum !== 10_000) return "allocations must sum to 100%";
+			}
+			if (fee.kind === "flap" && fee.recipient === "custom-vault") {
+				if (!/^0x[a-fA-F0-9]{40}$/.test(fee.customVaultAddress?.trim() ?? "")) {
+					return "vault address must be a valid 0x address";
+				}
+			}
 			return null;
 		}
 		case "runtime": {

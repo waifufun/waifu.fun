@@ -4,12 +4,18 @@ import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
+import StepLaunchpad from "@/components/create/step-launchpad";
 import StepPersona from "@/components/create/step-persona";
 import StepReview from "@/components/create/step-review";
 import StepRuntime from "@/components/create/step-runtime";
 import StepSafe from "@/components/create/step-safe";
 import WizardShell from "@/components/create/wizard-shell";
-import { STORAGE_KEY, useWizard, WizardStateProvider } from "@/components/create/wizard-state";
+import {
+	LAUNCHPAD_PICKER_ENABLED,
+	STORAGE_KEY,
+	useWizard,
+	WizardStateProvider,
+} from "@/components/create/wizard-state";
 import { buildProvisionPayload, provisionAgent, type ProvisionResult } from "@/lib/api/agent-provision";
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import { useAuthRequired } from "@/hooks/use-auth-required";
@@ -79,6 +85,7 @@ function WizardInner() {
 			<WizardShell
 				stepContent={{
 					persona: <StepPersona />,
+					launchpad: LAUNCHPAD_PICKER_ENABLED ? <StepLaunchpad /> : null,
 					runtime: <StepRuntime />,
 					safe: <StepSafe />,
 					review: <StepReview />,
