@@ -238,7 +238,8 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			if (fee.kind === "four-meme-tax") {
 				const sum =
 					fee.allocation.founderBps + fee.allocation.holderBps + fee.allocation.burnBps + fee.allocation.liquidityBps;
-				if (sum !== 10_000) return "allocations must sum to 100%";
+				const expected = 10_000 - fee.platformCutBps;
+				if (sum !== expected) return `allocations must sum to ${(expected / 100).toFixed(2)}%`;
 			}
 			if (fee.kind === "flap" && fee.recipient === "custom-vault") {
 				if (!/^0x[a-fA-F0-9]{40}$/.test(fee.customVaultAddress?.trim() ?? "")) {

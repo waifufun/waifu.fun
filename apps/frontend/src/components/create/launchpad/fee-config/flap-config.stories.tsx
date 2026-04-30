@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { DEFAULT_FLAP } from "@/lib/launchpad/fee-defaults";
-import type { FlapFeeConfig } from "@/lib/launchpad/types";
+import { DEFAULT_PLATFORM_CUT_BPS, type FlapFeeConfig } from "@/lib/launchpad/types";
 import FlapConfig from "./flap-config";
 
 function Harness({ initial }: { initial: FlapFeeConfig }) {
@@ -31,6 +31,7 @@ export const CustomVault: Story = {
 		initial: {
 			kind: "flap",
 			taxBps: 500,
+			platformCutBps: DEFAULT_PLATFORM_CUT_BPS,
 			recipient: "custom-vault",
 			customVaultAddress: `0x${"a".repeat(40)}`,
 		},
@@ -42,6 +43,7 @@ export const CustomVaultInvalid: Story = {
 		initial: {
 			kind: "flap",
 			taxBps: 300,
+			platformCutBps: DEFAULT_PLATFORM_CUT_BPS,
 			recipient: "custom-vault",
 			customVaultAddress: "0xnotahex",
 		},
