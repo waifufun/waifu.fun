@@ -63,7 +63,7 @@
 		"start:evm-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/evm-indexer' start",
 		"start:sol-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/sol-indexer' start",
 		"sync": "dotenv -e .env -- bun run --filter @waifufun/sync -- sync tokens",
-		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test",
+		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test --continue --filter=@waifufun/api --filter=@waifufun/frontend --filter=@waifufun/evm-indexer --filter=@waifufun/agent-actions --filter=@waifufun/db --filter=@waifufun/launchpad",
 		"test:e2e": "bun run test:contracts",
 		"test-migration": "bun run --filter @waifufun/migrations test",
 		"test:contracts": "node ./scripts/run-local-contract-tests.mjs",

@@ -10,6 +10,7 @@
 		"lint": "biome check scripts test hardhat.config.js package.json"
 	},
 	"devDependencies": {
+		"@openzeppelin/contracts": "^4.8.3",
 		"@nomicfoundation/hardhat-ethers": "^3.1.2",
 		"ethers": "^6.16.0",
 		"hardhat": "^2.27.1"

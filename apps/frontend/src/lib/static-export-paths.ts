@@ -7,11 +7,14 @@ export function isStaticExport(): boolean {
 	return process.env.STATIC_EXPORT === "true";
 }
 
+/** Same default as route handlers and client modules when env is unset (static export has no /api proxy). */
+const DEFAULT_PUBLIC_API_ORIGIN = "https://api.waifu.fun";
+
 function apiBaseForStaticExport(): string {
 	const trimmed = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ?? "";
 	if (trimmed.length > 0) return trimmed;
 	if (isStaticExport()) {
-		throw new Error("NEXT_PUBLIC_API_URL is required when STATIC_EXPORT=true (the static bundle has no /api proxy).");
+		return DEFAULT_PUBLIC_API_ORIGIN;
 	}
 	return "";
 }

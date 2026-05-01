@@ -54,10 +54,10 @@ No anon/browser key is needed for this initial foundation.
 
 Backend services (`apps/api`, `apps/worker`, `apps/evm-indexer`, `apps/brain`, `apps/mcp`) and shared `@waifufun/*` workspace packages live in this repo (merged from legacy `waifu-core`).
 
-- **Compose (Postgres + Redis only):** `docker/docker-compose.waifu-core.deps.yml`
+- **Compose (Postgres + Redis only):** `docker/docker-compose.deps.yml`
 - **Full compose (API + worker + indexer in dev containers):** `docker/docker-compose.dev.yml`
 - **Local monorepo infra (Mongo, Dragonfly, MinIO):** `docker/docker-compose.local.yml`
 - **Indexer Postgres:** `docker/docker-compose.indexer.yml`
-- **Multi-service Dockerfile:** `docker/Dockerfile.waifu-core`
+- **Multi-service Dockerfile:** `docker/Dockerfile`
 - **CI entry points:** `.github/workflows/ci.yml`, `build-push.yml`, `deploy*.yml`, `db-migrate.yml`, `reusable-*.yml`
-- **Scripts:** root `lint`, `typecheck`, `test`, `build`, `check` (full gates), plus `dev` / `dev:core`; see `package.json`
+- **Scripts:** see root `package.json` (`dev`, `check`, `db:*`, indexers, etc.).

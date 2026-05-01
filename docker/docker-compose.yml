@@ -21,7 +21,7 @@ services:
     image: ghcr.io/${GHCR_OWNER:-waifu}/${GHCR_IMAGE_PREFIX:-waifu-core}-api:${IMAGE_TAG:-latest}
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: runner
       args:
         SERVICE_NAME: api
@@ -42,7 +42,7 @@ services:
     image: ghcr.io/${GHCR_OWNER:-waifu}/${GHCR_IMAGE_PREFIX:-waifu-core}-worker:${IMAGE_TAG:-latest}
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: runner
       args:
         SERVICE_NAME: worker
@@ -52,7 +52,7 @@ services:
     image: ghcr.io/${GHCR_OWNER:-waifu}/${GHCR_IMAGE_PREFIX:-waifu-core}-indexer:${IMAGE_TAG:-latest}
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: runner
       args:
         SERVICE_NAME: evm-indexer

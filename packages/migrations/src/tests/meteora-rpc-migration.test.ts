@@ -1,8 +1,8 @@
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import {
+	CollectFeeMode,
 	CpAmm,
 	type InitializeCustomizeablePoolParams,
-	CollectFeeMode,
 	MAX_SQRT_PRICE,
 	MIN_SQRT_PRICE,
 	getReservesAmountForConcentratedLiquidity,
@@ -17,12 +17,18 @@ import type { IMigration, SolanaAddressLike } from "@waifufun/types";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { afterEach, before, describe, it } from "mocha";
-import { MigrationService } from "../services/migration-service";
 import { buildMeteoraCustomPoolFees } from "../protocols/meteora/calls";
+import { MigrationService } from "../services/migration-service";
 import { claimPositionFee, depositToMeteora, emergencyWithdraw } from "../vaults/meteoraVault";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
 import { expect, sinon } from "./setup";
-const meteoraVaultIdl = getVaultIdl("meteora");
+
+function meteoraRpcMigrationIntegrationEnabled(): boolean {
+	const key = process.env.EXECUTOR_PRIVATE_KEY;
+	return typeof key === "string" && key.length > 0;
+}
+
+// Env: HELIUS_API_KEY, EXECUTOR_PRIVATE_KEY (packages/migrations)
 
 const TEST_TIMEOUT = 2 * 60 * 1000;
 const TOTAL_SUPPLY = 1_000_000_000; // 1B tokens
@@ -31,9 +37,7 @@ const SOL_AMOUNT = 8.5 * LAMPORTS_PER_SOL; // 8.5 SOL total (10% of 85 SOL)
 const TOKEN_AMOUNT = 24_778 * 10 ** TOKEN_DECIMALS; // 10% of 247780
 const FIXED_FEE = 0.6 * LAMPORTS_PER_SOL; // 0.6 SOL (10% of 6 SOL)
 
-// {/* Malibu *} this needs a .env file with HELIUS_API_KEY and EXECUTOR_PRIVATE_KEY in packages/migration
-
-describe("Meteora RPC Migration Integration", function () {
+(meteoraRpcMigrationIntegrationEnabled() ? describe : describe.skip)("Meteora RPC Migration Integration", function () {
 	this.timeout(TEST_TIMEOUT);
 
 	let connection: Connection;
@@ -79,7 +83,7 @@ describe("Meteora RPC Migration Integration", function () {
 
 		// Build Anchor provider & program
 		provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
-		program = new Program<MeteoraVaultTypes>(meteoraVaultIdl as any, provider);
+		program = new Program<MeteoraVaultTypes>(getVaultIdl("meteora"), provider);
 
 		// mocks for DB and Redis
 		mockDb = {

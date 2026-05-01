@@ -2,7 +2,7 @@ services:
   workspace:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: base
     image: waifu-core-workspace:dev
     command: sh -lc "bun install"
@@ -13,7 +13,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: base
     image: waifu-core-api:dev
     command: sh -lc "bun run --filter @waifufun/api dev"
@@ -35,7 +35,7 @@ services:
   worker:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: base
     image: waifu-core-worker:dev
     command: sh -lc "bun run --filter @waifufun/worker dev"
@@ -57,7 +57,7 @@ services:
   evm-indexer:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.waifu-core
+      dockerfile: docker/Dockerfile
       target: base
     image: waifu-core-evm-indexer:dev
     command: sh -lc "bun run --filter @waifufun/evm-indexer dev"

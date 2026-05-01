@@ -84,7 +84,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.waifu-core
+          file: docker/Dockerfile
           target: runner
           build-args: |
             SERVICE_NAME=${{ matrix.service_name }}
@@ -100,7 +100,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.waifu-core
+          file: docker/Dockerfile
           target: runner
           build-args: |
             SERVICE_NAME=${{ matrix.service_name }}

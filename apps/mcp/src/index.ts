@@ -18,6 +18,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { AnySchema } from "@modelcontextprotocol/sdk/server/zod-compat.js";
 import { z } from "zod";
 
 const WAIFU_API = "https://api.waifu.fun";
@@ -28,30 +29,48 @@ const server = new McpServer({
 	version: "1.0.0",
 });
 
+// z.object(...) + registerTool avoids TS2589 from ShapeOutput<> over raw-field Zod chains (SDK issue).
+const launchAgentInputSchema = z.object({
+	apiKey: z
+		.string()
+		.min(1)
+		.describe("steward API key (agk_...). set WAIFU_AGENT_KEY env var to avoid passing inline."),
+	agentId: z.string().min(1).describe("unique agent identifier, must match the authed agent identity"),
+	name: z.string().min(1).max(32).describe("agent display name, 1-32 chars"),
+	ticker: z
+		.string()
+		.min(1)
+		.max(10)
+		.regex(/^[a-zA-Z0-9]+$/)
+		.describe("token ticker symbol, 1-10 alphanumeric chars"),
+	description: z.string().min(10).max(500).describe("what the agent does. shown on agent page. 10-500 chars."),
+	imageUrl: z.string().url().describe("https URL to agent avatar (png/jpg/webp). must return 200 OK. use a CDN."),
+	patronX: z.string().optional().describe("optional X handle of a human patron to co-announce the launch"),
+	chainId: z.literal(56).default(56).describe("chain ID — BSC mainnet only for v1"),
+});
+
+/** Output shape after MCP/Zod parses `launch_agent` input (explicit to avoid TS2589 / buggy ShapeOutput<ZodObject>). */
+interface LaunchAgentParams {
+	apiKey: string;
+	agentId: string;
+	name: string;
+	ticker: string;
+	description: string;
+	imageUrl: string;
+	patronX?: string;
+	chainId: number;
+}
+
 // ── Tool: launch_agent ────────────────────────────────────────────────────────
 
-server.tool(
+server.registerTool(
 	"launch_agent",
-	"Launch an agent's token on waifu.fun (BSC). One launch per agent lifetime. Requires a steward API key (agk_...).",
 	{
-		apiKey: z
-			.string()
-			.min(1)
-			.describe("steward API key (agk_...). set WAIFU_AGENT_KEY env var to avoid passing inline."),
-		agentId: z.string().min(1).describe("unique agent identifier, must match the authed agent identity"),
-		name: z.string().min(1).max(32).describe("agent display name, 1-32 chars"),
-		ticker: z
-			.string()
-			.min(1)
-			.max(10)
-			.regex(/^[a-zA-Z0-9]+$/)
-			.describe("token ticker symbol, 1-10 alphanumeric chars"),
-		description: z.string().min(10).max(500).describe("what the agent does. shown on agent page. 10-500 chars."),
-		imageUrl: z.string().url().describe("https URL to agent avatar (png/jpg/webp). must return 200 OK. use a CDN."),
-		patronX: z.string().optional().describe("optional X handle of a human patron to co-announce the launch"),
-		chainId: z.literal(56).default(56).describe("chain ID — BSC mainnet only for v1"),
+		description:
+			"Launch an agent's token on waifu.fun (BSC). One launch per agent lifetime. Requires a steward API key (agk_...).",
+		inputSchema: launchAgentInputSchema as unknown as AnySchema,
 	},
-	async (params) => {
+	async (params: LaunchAgentParams) => {
 		// Prefer env var over inline param so keys don't appear in tool call logs
 		const key = process.env.WAIFU_AGENT_KEY ?? params.apiKey;
 

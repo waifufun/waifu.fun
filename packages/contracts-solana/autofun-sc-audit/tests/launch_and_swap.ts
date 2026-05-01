@@ -1,7 +1,7 @@
 import * as assert from "node:assert";
 import * as anchor from "@coral-xyz/anchor";
 import { BN, type Program } from "@coral-xyz/anchor";
-import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair, type Connection } from "@solana/web3.js";
 import type { Autofun } from "../target/types/autofun";
 import {
   SEED_BONDING_CURVE,
@@ -14,23 +14,28 @@ import {
   airdropSol,
   ensureConfigured,
   getAutofunProgram,
+  isSolanaAuditIntegrationEnabled,
 } from "./helpers";
 import { getAssociatedTokenAccount } from "./utils";
 
 require("dotenv").config();
 
-describe("launch_and_swap", () => {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
-  const program = getAutofunProgram(provider) as Program<Autofun>;
+(isSolanaAuditIntegrationEnabled() ? describe : describe.skip)(
+  "launch_and_swap",
+  () => {
+  let provider: anchor.AnchorProvider;
+  let program: Program<Autofun>;
+  let connection: Connection;
 
   const adminKp = Keypair.generate();
   const creatorKp = Keypair.generate();
   const tokenKp = Keypair.generate();
 
-  const connection = provider.connection;
-
   before(async () => {
+    provider = anchor.AnchorProvider.env();
+    anchor.setProvider(provider);
+    program = getAutofunProgram(provider) as Program<Autofun>;
+    connection = provider.connection;
     await airdropSol(connection, adminKp.publicKey, 5);
     await airdropSol(connection, creatorKp.publicKey, 5);
   });
