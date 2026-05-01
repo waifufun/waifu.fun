@@ -7,7 +7,6 @@ import type { AppBindings } from "../lib/bindings.js";
 import type { StewardAuthPrincipal } from "../middleware/steward-auth.js";
 import {
 	OAUTH_RETURN_COOKIE,
-	OAUTH_STATE_COOKIE,
 	__setOAuthDbForTest,
 	__setOAuthStewardVerifierForTest,
 	createOAuthRoutes,
@@ -102,7 +101,7 @@ describe("GET /auth/oauth/start", () => {
 		assert.equal(res.status, 400);
 	});
 
-	it("redirects to Steward and sets state + return cookies for OAuth providers", async () => {
+	it("redirects to Steward and sets the return cookie for OAuth providers", async () => {
 		const res = await makeApp().request("http://x/auth/oauth/start?provider=google&return_to=/create");
 		assert.equal(res.status, 302);
 		const location = res.headers.get("Location") ?? "";
@@ -111,14 +110,12 @@ describe("GET /auth/oauth/start", () => {
 			`unexpected location: ${location}`,
 		);
 		const url = new URL(location);
+		assert.equal(url.searchParams.get("tenant_id"), "waifu");
 		assert.equal(url.searchParams.get("tenant"), "waifu");
 		assert.equal(url.searchParams.get("redirect_uri"), "https://waifu.fun/auth/oauth/callback");
-		assert.ok(url.searchParams.get("state"));
 
-		// state and return cookies set
 		const cookies = res.headers.getSetCookie?.() ?? [];
 		const cookieStr = cookies.join(";");
-		assert.ok(cookieStr.includes(OAUTH_STATE_COOKIE));
 		assert.ok(cookieStr.includes(OAUTH_RETURN_COOKIE));
 		assert.ok(cookieStr.includes("HttpOnly"));
 		assert.ok(cookieStr.includes("SameSite=Lax"));
@@ -176,48 +173,72 @@ describe("POST /auth/oauth/finalize", () => {
 		assert.equal(res.status, 400);
 	});
 
-	it("400s when state cookie does not match the body state", async () => {
-		__setOAuthStewardVerifierForTest(async () => null);
-		__setOAuthDbForTest(fakeDbWith({}));
-		const res = await makeApp().request("http://x/auth/oauth/finalize", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				cookie: `${OAUTH_STATE_COOKIE}=expected-state`,
-			},
-			body: JSON.stringify({ token: "stew-jwt", state: "wrong-state" }),
-		});
-		assert.equal(res.status, 400);
-		const body = (await res.json()) as { error: string };
-		assert.equal(body.error, "STATE_MISMATCH");
-	});
-
-	it("400s when state cookie is missing entirely", async () => {
-		const res = await makeApp().request("http://x/auth/oauth/finalize", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ token: "stew-jwt", state: "abc" }),
-		});
-		assert.equal(res.status, 400);
-	});
-
 	it("401s when steward verification fails", async () => {
 		__setOAuthStewardVerifierForTest(async () => null);
 		__setOAuthDbForTest(fakeDbWith({}));
 		const res = await makeApp().request("http://x/auth/oauth/finalize", {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				cookie: `${OAUTH_STATE_COOKIE}=abc`,
-			},
-			body: JSON.stringify({ token: "stew-jwt", state: "abc" }),
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ token: "stew-jwt" }),
 		});
 		assert.equal(res.status, 401);
 		const body = (await res.json()) as { error: string };
 		assert.equal(body.error, "INVALID_STEWARD_TOKEN");
 	});
 
-	it("provisions a new patron, sets wf_session, clears temp cookies, returns return_to", async () => {
+	it("accepts body with extra refreshToken field and never persists it", async () => {
+		// The /api/auth/finalize Next.js proxy may forward `refreshToken`; the
+		// backend doesn't use it, but it must not 400 the request and must not
+		// leak the token into the patron row.
+		__setOAuthStewardVerifierForTest(async () => ({
+			userId: STEWARD_USER_ID,
+			tenantId: "waifu",
+		}));
+		const inserts: Array<Record<string, unknown>> = [];
+		__setOAuthDbForTest(fakeDbWith({ patron: null, capturedInserts: inserts }));
+		const res = await makeApp().request("http://x/auth/oauth/finalize", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ token: "stew-jwt", refreshToken: "rt-abc" }),
+		});
+		assert.equal(res.status, 200);
+		assert.equal(inserts.length, 1);
+		const insert = inserts[0] ?? {};
+		assert.ok(!Object.values(insert).includes("rt-abc"), "refreshToken value must not be persisted");
+		assert.equal(insert.refreshToken, undefined);
+	});
+
+	it("succeeds for a personal-<userId> tenant principal", async () => {
+		__setOAuthStewardVerifierForTest(async () => ({
+			userId: STEWARD_USER_ID,
+			tenantId: `personal-${STEWARD_USER_ID}`,
+		}));
+		__setOAuthDbForTest(
+			fakeDbWith({
+				patron: {
+					id: PATRON_ID,
+					stewardUserId: STEWARD_USER_ID,
+					primaryEmail: null,
+				},
+			}),
+		);
+		const res = await makeApp().request("http://x/auth/oauth/finalize", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ token: "stew-jwt" }),
+		});
+		assert.equal(res.status, 200);
+		const body = (await res.json()) as {
+			ok: boolean;
+			data: { patron: { stewardUserId: string } };
+		};
+		assert.equal(body.ok, true);
+		assert.equal(body.data.patron.stewardUserId, STEWARD_USER_ID);
+		const setCookies = res.headers.getSetCookie?.() ?? [];
+		assert.ok(setCookies.some((c) => c.includes("wf_session=stew-jwt")));
+	});
+
+	it("provisions a new patron, sets wf_session, clears return cookie, returns return_to", async () => {
 		const principal: StewardAuthPrincipal = {
 			userId: STEWARD_USER_ID,
 			tenantId: "waifu",
@@ -228,19 +249,20 @@ describe("POST /auth/oauth/finalize", () => {
 		const inserts: Array<Record<string, unknown>> = [];
 		__setOAuthDbForTest(fakeDbWith({ patron: null, capturedInserts: inserts }));
 
-		const cookieHeader = [`${OAUTH_STATE_COOKIE}=abc`, `${OAUTH_RETURN_COOKIE}=${encodeURIComponent("/create")}`].join(
-			"; ",
-		);
+		const cookieHeader = `${OAUTH_RETURN_COOKIE}=${encodeURIComponent("/create")}`;
 
 		const res = await makeApp().request("http://x/auth/oauth/finalize", {
 			method: "POST",
 			headers: { "Content-Type": "application/json", cookie: cookieHeader },
-			body: JSON.stringify({ token: "stew-jwt", state: "abc" }),
+			body: JSON.stringify({ token: "stew-jwt" }),
 		});
 		assert.equal(res.status, 200);
 		const body = (await res.json()) as {
 			ok: boolean;
-			data: { return_to: string; patron: { stewardUserId: string; email: string | null } };
+			data: {
+				return_to: string;
+				patron: { stewardUserId: string; email: string | null };
+			};
 		};
 		assert.equal(body.ok, true);
 		assert.equal(body.data.return_to, "/create");
@@ -253,8 +275,7 @@ describe("POST /auth/oauth/finalize", () => {
 		const setCookies = res.headers.getSetCookie?.() ?? [];
 		const cookieStr = setCookies.join(";");
 		assert.ok(cookieStr.includes("wf_session=stew-jwt"));
-		// Temp cookies cleared
-		assert.ok(cookieStr.includes(`${OAUTH_STATE_COOKIE}=;`));
+		// Return cookie cleared
 		assert.ok(cookieStr.includes(`${OAUTH_RETURN_COOKIE}=;`));
 	});
 
@@ -266,21 +287,24 @@ describe("POST /auth/oauth/finalize", () => {
 		const inserts: Array<Record<string, unknown>> = [];
 		__setOAuthDbForTest(
 			fakeDbWith({
-				patron: { id: PATRON_ID, stewardUserId: STEWARD_USER_ID, primaryEmail: "stored@x.io" },
+				patron: {
+					id: PATRON_ID,
+					stewardUserId: STEWARD_USER_ID,
+					primaryEmail: "stored@x.io",
+				},
 				capturedInserts: inserts,
 			}),
 		);
 		const res = await makeApp().request("http://x/auth/oauth/finalize", {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				cookie: `${OAUTH_STATE_COOKIE}=abc`,
-			},
-			body: JSON.stringify({ token: "stew-jwt", state: "abc" }),
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ token: "stew-jwt" }),
 		});
 		assert.equal(res.status, 200);
 		assert.equal(inserts.length, 0);
-		const body = (await res.json()) as { data: { patron: { email: string | null } } };
+		const body = (await res.json()) as {
+			data: { patron: { email: string | null } };
+		};
 		assert.equal(body.data.patron.email, "stored@x.io");
 	});
 
@@ -291,19 +315,20 @@ describe("POST /auth/oauth/finalize", () => {
 		}));
 		__setOAuthDbForTest(
 			fakeDbWith({
-				patron: { id: PATRON_ID, stewardUserId: STEWARD_USER_ID, primaryEmail: null },
+				patron: {
+					id: PATRON_ID,
+					stewardUserId: STEWARD_USER_ID,
+					primaryEmail: null,
+				},
 			}),
 		);
 		const res = await makeApp().request("http://x/auth/oauth/finalize", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				cookie: [
-					`${OAUTH_STATE_COOKIE}=abc`,
-					`${OAUTH_RETURN_COOKIE}=${encodeURIComponent("https://evil.example")}`,
-				].join("; "),
+				cookie: `${OAUTH_RETURN_COOKIE}=${encodeURIComponent("https://evil.example")}`,
 			},
-			body: JSON.stringify({ token: "stew-jwt", state: "abc" }),
+			body: JSON.stringify({ token: "stew-jwt" }),
 		});
 		assert.equal(res.status, 200);
 		const body = (await res.json()) as { data: { return_to: string } };

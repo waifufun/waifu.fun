@@ -6,7 +6,10 @@
  * `@waifufun/constants`, etc.) the same way your normal `next build` / monorepo CI does —
  * those packages ship `dist/` entrypoints.
  *
- * Temporarily removes App Router Route Handlers — incompatible with `output: "export"`.
+ * Temporarily moves App Router Route Handlers aside — incompatible with `output: "export"`.
+ * The route files remain in source for local `next dev` (they back same-origin auth and
+ * the API proxy during development) but are not part of the deployed static bundle.
+ *
  * Also moves token OG generation aside: Next.js does not pick up `generateStaticParams()` on
  * `opengraph-image.tsx` the same way as `page.tsx`, so static export would fail otherwise.
  */
@@ -59,11 +62,9 @@ function restoreAll() {
 stashAll();
 let exitCode = 1;
 try {
-	const env = { ...process.env, STATIC_EXPORT: "true" };
 	const result = spawnSync("npx", ["next", "build"], {
 		cwd: root,
 		stdio: "inherit",
-		env,
 		shell: process.platform === "win32",
 	});
 	exitCode = result.status ?? 1;

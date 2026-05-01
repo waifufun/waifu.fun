@@ -1,25 +1,10 @@
 import type { NextConfig } from "next";
 import type { Configuration as WebpackConfiguration } from "webpack";
 
-const isStaticExport = process.env.STATIC_EXPORT === "true";
-const API_ORIGIN = process.env.API_ORIGIN || "http://89.167.63.246";
-
 const nextConfig: NextConfig = {
-	...(isStaticExport ? { output: "export" as const } : {}),
+	output: "export",
 	transpilePackages: ["@waifufun/types", "@waifufun/constants"],
 	turbopack: {},
-	...(isStaticExport
-		? {}
-		: {
-				async rewrites() {
-					return [
-						{
-							source: "/api/v1/:path*",
-							destination: `${API_ORIGIN}/:path*`,
-						},
-					];
-				},
-			}),
 	webpack: (config: WebpackConfiguration, { isServer }: { isServer: boolean }) => {
 		if (!isServer && config.resolve && typeof config.resolve === "object") {
 			const fallback = config.resolve.fallback ?? {};
@@ -36,7 +21,7 @@ const nextConfig: NextConfig = {
 	},
 	images: {
 		domains: ["v3.fal.media", "fal.media", "picsum.photos", "cdn.dexscreener.com", "ipfs.io"],
-		...(isStaticExport ? { unoptimized: true } : {}),
+		unoptimized: true,
 	},
 	reactStrictMode: false,
 	env: {

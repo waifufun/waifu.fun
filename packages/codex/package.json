@@ -24,7 +24,7 @@
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/redis": "workspace:*",
 		"@waifufun/types": "workspace:*",
-		"@codex-data/sdk": "^1.0.6",
+		"@codex-data/sdk": "^2.3.2",
 		"dotenv": "^16.5.0"
 	},
 	"devDependencies": {

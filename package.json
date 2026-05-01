@@ -36,11 +36,11 @@
 	"scripts": {
 		"build": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '!@waifufun/sync' --filter '!@waifufun/migrations' build",
 		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '!@waifufun/frontend' --filter '!@waifufun/sync' --filter '!@waifufun/migrations' build",
-		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/indexer' --filter '!@waifufun/api' --filter '!@waifufun/worker' --filter '!@waifufun/evm-indexer' --filter '!@waifufun/brain' --filter '!@waifufun/mcp' dev",
-		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/indexer' --filter '!@waifufun/api' --filter '!@waifufun/worker' --filter '!@waifufun/evm-indexer' --filter '!@waifufun/brain' --filter '!@waifufun/mcp' dev",
-		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '@waifufun/indexer' dev",
+		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/sol-indexer' --filter '!@waifufun/api' --filter '!@waifufun/worker' --filter '!@waifufun/evm-indexer' --filter '!@waifufun/brain' --filter '!@waifufun/mcp' dev",
+		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/sol-indexer' --filter '!@waifufun/api' --filter '!@waifufun/worker' --filter '!@waifufun/evm-indexer' --filter '!@waifufun/brain' --filter '!@waifufun/mcp' dev",
+		"dev:sol-indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '@waifufun/sol-indexer' dev",
 		"dev:evm-indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '@waifufun/evm-indexer' dev",
-		"dev:indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '@waifufun/indexer' dev",
+		"dev:sol-indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '@waifufun/sol-indexer' dev",
 		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bun run --parallel --filter '@waifufun/frontend' dev",
 		"docker:up": "docker compose -f docker/docker-compose.local.yml up -d && exit 0",
 		"docker:down": "docker compose -f docker/docker-compose.local.yml down",
@@ -58,7 +58,7 @@
 		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development bun run --filter @waifufun/migrations dev",
 		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter @waifufun/migrations build",
 		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter @waifufun/migrations start",
-		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/indexer' start",
+		"start:sol-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/sol-indexer' start",
 		"start:evm-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/evm-indexer' start",
 		"start:frontend": "bun run --filter '@waifufun/frontend' start",
 		"waifu-core:dev": "dotenv -e .env -- bunx turbo run dev --parallel --continue --filter=@waifufun/api --filter=@waifufun/worker --filter=@waifufun/evm-indexer",
@@ -95,5 +95,8 @@
 	},
 	"packageManager": "bun@1.3.13",
 	"dependencies": {},
+	"overrides": {
+		"graphql-ws": "^6.0.8"
+	},
 	"workspaces": ["apps/*", "packages/*", "packages/contracts-solana/*"]
 }

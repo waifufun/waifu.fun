@@ -180,9 +180,7 @@ export function createOAuthRoutes() {
 	 *
 	 * - Validates provider against the allowlist.
 	 * - Validates `return_to` is same-origin (path-only).
-	 * - Generates a CSRF state (32 random bytes hex).
-	 * - Sets `wf_oauth_state` + `wf_oauth_return` cookies (HttpOnly, Secure,
-	 *   SameSite=Lax, 10m TTL).
+	 * - Sets `wf_oauth_return` cookie (HttpOnly, Secure, SameSite=Lax, 10m TTL).
 	 * - 302 redirects to Steward's start URL.
 	 */
 	app.get("/start", (c) => {
@@ -199,16 +197,12 @@ export function createOAuthRoutes() {
 		}
 
 		const returnTo = sanitizeReturnTo(c.req.query("return_to")) ?? "/patron";
-		const state = generateState();
 		const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
 
-		const { url } = buildStewardStartUrl(provider, state);
+		const { url } = buildStewardStartUrl(provider);
 
 		// Use c.header(append:true) for Set-Cookie. See /finalize for why
 		// raw Response.headers.append doesn't survive Hono on Node 22 in prod.
-		c.header("Set-Cookie", buildTempCookie(OAUTH_STATE_COOKIE, state, secure), {
-			append: true,
-		});
 		c.header("Set-Cookie", buildTempCookie(OAUTH_RETURN_COOKIE, encodeURIComponent(returnTo), secure), {
 			append: true,
 		});
@@ -216,16 +210,10 @@ export function createOAuthRoutes() {
 	});
 
 	/**
-	 * POST /auth/oauth/finalize { token, state }
+	 * POST /auth/oauth/finalize { token, refreshToken? }
 	 *
-	 * Called by the frontend's /auth/oauth/callback page after Steward redirects
-	 * the browser back with the JWT + state in the URL. The frontend forwards
-	 * the values to us so we can:
-	 *   - validate the state cookie matches the body's state (CSRF)
-	 *   - verify the Steward JWT (issuer + tenant)
-	 *   - upsert the patron row (auto-provision on first sign-in)
-	 *   - set the long-lived `wf_session` cookie
-	 *   - clear the temp cookies
+	 * No state-cookie CSRF check: Steward owns the OAuth state server-side and
+	 * does not echo ours back. The HS256 JWT signature is the real authn.
 	 */
 	app.post("/finalize", async (c) => {
 		let body: unknown;
@@ -241,18 +229,14 @@ export function createOAuthRoutes() {
 				{
 					ok: false,
 					error: "BAD_REQUEST",
-					message: "expected { token: string, state: string } in body",
+					message: "expected { token: string } in body",
 				},
 				400,
 			);
 		}
-		const { token, state } = parsed;
+		const { token } = parsed;
 
 		const cookies = parseCookies(c.req.header("cookie") ?? "");
-		const cookieState = cookies[OAUTH_STATE_COOKIE];
-		if (!cookieState || cookieState !== state) {
-			return c.json({ ok: false, error: "STATE_MISMATCH", message: "oauth state cookie missing or mismatched" }, 400);
-		}
 
 		const principal = await getVerifier()(token);
 		if (!principal || !principal.userId) {
@@ -320,7 +304,6 @@ export function createOAuthRoutes() {
 		// it because the cors middleware materializes c.res first, and the
 		// assignment-back path strips raw-response Set-Cookie entries.
 		c.header("Set-Cookie", sessionCookie, { append: true });
-		c.header("Set-Cookie", clearTempCookie(OAUTH_STATE_COOKIE, secure), { append: true });
 		c.header("Set-Cookie", clearTempCookie(OAUTH_RETURN_COOKIE, secure), { append: true });
 		return c.json({
 			ok: true,
@@ -361,13 +344,13 @@ export function createOAuthRoutes() {
 
 // ─── Internal helpers ─────────────────────────────────────────────
 
-function parseFinalizeBody(value: unknown): { token: string; state: string } | null {
+function parseFinalizeBody(value: unknown): { token: string } | null {
 	if (!value || typeof value !== "object") return null;
 	const v = value as Record<string, unknown>;
-	if (typeof v.token !== "string" || typeof v.state !== "string") return null;
-	if (v.token.length === 0 || v.state.length === 0) return null;
-	if (v.token.length > 4096 || v.state.length > 256) return null;
-	return { token: v.token, state: v.state };
+	if (typeof v.token !== "string") return null;
+	if (v.token.length === 0) return null;
+	if (v.token.length > 4096) return null;
+	return { token: v.token };
 }
 
 function safeDecode(value: string): string | null {
