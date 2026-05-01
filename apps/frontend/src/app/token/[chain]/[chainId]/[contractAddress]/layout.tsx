@@ -1,4 +1,5 @@
 import { getToken } from "@/lib/api";
+import { fetchTokenRouteParamsForStaticExport, isStaticExport } from "@/lib/static-export-paths";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -6,6 +7,11 @@ import type { ReactNode } from "react";
 import PageClient from "./components/page-client";
 
 export const revalidate = 4;
+
+export async function generateStaticParams() {
+	if (!isStaticExport()) return [];
+	return fetchTokenRouteParamsForStaticExport();
+}
 
 async function fetchTokenWithFallback(tokenParams: ITokenLookUp): Promise<IToken | null> {
 	try {

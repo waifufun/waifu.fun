@@ -31,10 +31,7 @@ const server = new McpServer({
 
 // z.object(...) + registerTool avoids TS2589 from ShapeOutput<> over raw-field Zod chains (SDK issue).
 const launchAgentInputSchema = z.object({
-	apiKey: z
-		.string()
-		.min(1)
-		.describe("steward API key (agk_...). set WAIFU_AGENT_KEY env var to avoid passing inline."),
+	apiKey: z.string().min(1).describe("steward API key (agk_...). set WAIFU_AGENT_KEY env var to avoid passing inline."),
 	agentId: z.string().min(1).describe("unique agent identifier, must match the authed agent identity"),
 	name: z.string().min(1).max(32).describe("agent display name, 1-32 chars"),
 	ticker: z
