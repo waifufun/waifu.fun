@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import type { LeaderboardStatus } from "@/lib/api/leaderboard";
+import { cn } from "@/lib/utils";
 
 const STYLES: Record<LeaderboardStatus, string> = {
 	active: "bg-green-500/10 text-green-400 border-green-500/30",

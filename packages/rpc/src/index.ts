@@ -1,36 +1,36 @@
-import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@waifufun/types";
+import { EventEmitter } from "node:events";
+import { AnchorProvider, type Program, type Wallet } from "@coral-xyz/anchor";
+import { Metaplex } from "@metaplex-foundation/js";
+import { createSolanaRpc } from "@solana/kit";
+import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
+import { updateCryptoPrices } from "@waifufun/codex";
+import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@waifufun/constants";
+import logger from "@waifufun/logger";
 import {
+	type CurrentAutofunTypes,
+	type LegacyAutofunTypes,
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
+} from "@waifufun/programs";
+import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@waifufun/types";
+import type { SolanaNetworkIds } from "@waifufun/types";
+import type { SlotInfo } from "@waifufun/types";
+import BN from "bn.js";
+import Decimal from "decimal.js";
+import {
+	http,
+	type PublicClient,
+	type ReadContractParameters,
+	type WalletClient,
 	createPublicClient,
 	createWalletClient,
 	erc20Abi,
 	fallback,
 	getAddress,
-	http,
-	type PublicClient,
-	type ReadContractParameters,
-	type WalletClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import Decimal from "decimal.js";
-import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@waifufun/constants";
-import type { SolanaNetworkIds } from "@waifufun/types";
-import { createSolanaRpc } from "@solana/kit";
-import { Metaplex } from "@metaplex-foundation/js";
-import { AnchorProvider, type Wallet, type Program } from "@coral-xyz/anchor";
-import BN from "bn.js";
-import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
-import { updateCryptoPrices } from "@waifufun/codex";
-import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun";
 import autoFunAbi from "./evm/abis/WaifuFun.json";
-import { EventEmitter } from "node:events";
-import type { SlotInfo } from "@waifufun/types";
-import logger from "@waifufun/logger";
-import {
-	createCurrentAutofunProgramWithProvider,
-	createLegacyAutofunProgramWithProvider,
-	type CurrentAutofunTypes,
-	type LegacyAutofunTypes,
-} from "@waifufun/programs";
+import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -143,7 +143,6 @@ export class EVMRpcProvider {
 		return Number(balanceRaw) / 10 ** Number(decimals);
 	};
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	async readWaifuFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[]) {
 		return await this.client.readContract({
 			address: getAddress(contractAddress),
@@ -152,7 +151,6 @@ export class EVMRpcProvider {
 			args,
 		});
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	async writeWaifuFunContract(contractAddress: EvmAddressLike, functionName: string, args: any[], value?: bigint) {
 		if (!this.walletClient) {
 			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
@@ -230,7 +228,6 @@ export class EVMRpcProvider {
 
 const RETRYABLE_HTTP_CODES = new Set([429, 503]);
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function shouldFallback(error: any): boolean {
 	const status = error?.response?.status || error?.statusCode || error?.code;
 
@@ -299,9 +296,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		const dummyWallet = {
 			publicKey: new PublicKey("11111111111111111111111111111111"),
-			// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
 			signTransaction: async (tx: any) => tx,
-			// biome-ignore lint/suspicious/noExplicitAny: spoofing wallet
 			signAllTransactions: async (txs: any[]) => txs,
 		};
 
@@ -350,8 +345,9 @@ export class SolanaRpcProvider extends EventEmitter {
 			logger.info(`Unsubscribed from subscription ${subscriptionId}`);
 			this.emit("subscription:removed", subscriptionId);
 			return true;
-		} catch (error) {
-			logger.error(`Error unsubscribing from ${subscriptionId}:`, error);
+		} catch (error: unknown) {
+			const err = error instanceof Error ? error : new Error(String(error));
+			logger.error(err, `Error unsubscribing from ${subscriptionId}`);
 			return false;
 		}
 	}
@@ -364,8 +360,9 @@ export class SolanaRpcProvider extends EventEmitter {
 				if (subscription.cleanup) {
 					subscription.cleanup();
 				}
-			} catch (error) {
-				logger.error(`Error cleaning up subscription ${subscriptionId}:`, error);
+			} catch (error: unknown) {
+				const err = error instanceof Error ? error : new Error(String(error));
+				logger.error(err, `Error cleaning up subscription ${subscriptionId}`);
 			}
 		}
 
@@ -596,8 +593,10 @@ export class SolanaRpcProvider extends EventEmitter {
 
 			try {
 				return programToUse.coder.accounts.decode("bondingCurve", info.data);
-			} catch (err) {
-				logger.error("Failed to decode bonding curve for", tokenMints?.[i] ? tokenMints[i].toBase58() : undefined, err);
+			} catch (err: unknown) {
+				const wrapped = err instanceof Error ? err : new Error(String(err));
+				const mintLabel = tokenMints[i]?.toBase58() ?? "unknown";
+				logger.error(wrapped, `Failed to decode bonding curve for ${mintLabel}`);
 				return null;
 			}
 		});

@@ -13,9 +13,12 @@ module.exports = {
 	defaultNetwork: "hardhat",
 	networks: {
 		hardhat: {
-			forking: process.env.FORK_BSC === "true" ? {
-				url: process.env.FORK_BSC_URL || "https://bsc-dataseed1.binance.org/",
-			} : undefined,
+			forking:
+				process.env.FORK_BSC === "true"
+					? {
+							url: process.env.FORK_BSC_URL || "https://bsc-dataseed1.binance.org/",
+						}
+					: undefined,
 			chainId: 31337,
 		},
 		localhost: {

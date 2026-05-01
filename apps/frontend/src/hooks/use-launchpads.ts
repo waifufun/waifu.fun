@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { LAUNCHPAD_DISPLAY_ORDER, MOCK_LAUNCHPADS } from "@/lib/launchpad/mock-descriptors";
 import type { LaunchpadDescriptor, LaunchpadId } from "@/lib/launchpad/types";
+import { useEffect, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 

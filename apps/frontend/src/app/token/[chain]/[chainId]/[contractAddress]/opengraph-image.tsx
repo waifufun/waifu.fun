@@ -1,6 +1,15 @@
 import { getToken } from "@/lib/api";
+import { fetchTokenRouteParamsForStaticExport, isStaticExport } from "@/lib/static-export-paths";
 import type { ITokenLookUp } from "@waifufun/types";
 import { ImageResponse } from "next/og";
+
+/** Required for `output: "export"` — OG route is generated at build time per `generateStaticParams` on this segment. */
+export const dynamic = "force-static";
+
+export async function generateStaticParams() {
+	if (!isStaticExport()) return [];
+	return fetchTokenRouteParamsForStaticExport();
+}
 
 const toSubscript = (num: number): string => {
 	const subDigits: { [key: string]: string } = {
@@ -55,7 +64,7 @@ export const formatNumberSubscript = (inputNum: number, decimals = 1): string =>
 	return `${sign}0.${"0".repeat(totalZeros)}${mantissaDigits}`;
 };
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const contentType = "image/png";
 export const size = {
 	width: 1200,

@@ -1,34 +1,42 @@
 import type { NextConfig } from "next";
+import type { Configuration as WebpackConfiguration } from "webpack";
 
+const isStaticExport = process.env.STATIC_EXPORT === "true";
 const API_ORIGIN = process.env.API_ORIGIN || "http://89.167.63.246";
 
 const nextConfig: NextConfig = {
-	transpilePackages: ["@waifufun/types"],
+	...(isStaticExport ? { output: "export" as const } : {}),
+	transpilePackages: ["@waifufun/types", "@waifufun/constants"],
 	turbopack: {},
-	async rewrites() {
-		return [
-			{
-				source: "/api/v1/:path*",
-				destination: `${API_ORIGIN}/:path*`,
-			},
-		];
-	},
-	webpack: (config: { resolve: { fallback: { [key: string]: any } } }, { isServer }: any) => {
-		if (!isServer) {
+	...(isStaticExport
+		? {}
+		: {
+				async rewrites() {
+					return [
+						{
+							source: "/api/v1/:path*",
+							destination: `${API_ORIGIN}/:path*`,
+						},
+					];
+				},
+			}),
+	webpack: (config: WebpackConfiguration, { isServer }: { isServer: boolean }) => {
+		if (!isServer && config.resolve && typeof config.resolve === "object") {
+			const fallback = config.resolve.fallback ?? {};
 			config.resolve.fallback = {
-				...config.resolve.fallback,
+				...fallback,
 				crypto: require.resolve("crypto-browserify"),
 				stream: require.resolve("stream-browserify"),
 				buffer: require.resolve("buffer"),
+				fs: false,
 			};
-
-			config.resolve.fallback.fs = false;
 		}
 
 		return config;
 	},
 	images: {
 		domains: ["v3.fal.media", "fal.media", "picsum.photos", "cdn.dexscreener.com", "ipfs.io"],
+		...(isStaticExport ? { unoptimized: true } : {}),
 	},
 	reactStrictMode: false,
 	env: {

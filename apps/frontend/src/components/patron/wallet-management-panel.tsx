@@ -1,5 +1,15 @@
 "use client";
 
+import { isApiError } from "@/lib/api/_fetcher";
+import {
+	type PatronWallet,
+	bindWallet,
+	getNonce,
+	listWallets,
+	setPrimaryWallet,
+	unlinkWallet,
+} from "@/lib/api/wallets";
+import { EASE_OUT_EXPO } from "@/lib/motion";
 /**
  * WalletManagementPanel
  *
@@ -20,16 +30,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createSiweMessage } from "viem/siwe";
 import { useAccount, useSignMessage } from "wagmi";
-import {
-	type PatronWallet,
-	bindWallet,
-	getNonce,
-	listWallets,
-	setPrimaryWallet,
-	unlinkWallet,
-} from "@/lib/api/wallets";
-import { isApiError } from "@/lib/api/_fetcher";
-import { EASE_OUT_EXPO } from "@/lib/motion";
 
 function shortAddress(addr: string): string {
 	return `${addr.slice(0, 10)}…${addr.slice(-8)}`;

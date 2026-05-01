@@ -11,8 +11,8 @@
 
 const hre = require("hardhat");
 const addresses = require("./addresses");
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 async function main() {
 	const network = hre.network.name;
@@ -78,11 +78,11 @@ async function main() {
 	console.log("3. Deploying WaifuFunV2...");
 	const WaifuFunV2 = await hre.ethers.getContractFactory("WaifuFunV2");
 	const config = {
-		buyFee: 200,            // 2% (out of 10_000)
-		sellFee: 200,           // 2%
-		curveLimit: hre.ethers.utils.parseEther("2000000"),     // 2M WAIFU
-		minWAIFUAmount: hre.ethers.utils.parseEther("100"),     // min virtual reserve
-		maxWAIFUAmount: hre.ethers.utils.parseEther("10000000"),// max virtual reserve
+		buyFee: 200, // 2% (out of 10_000)
+		sellFee: 200, // 2%
+		curveLimit: hre.ethers.utils.parseEther("2000000"), // 2M WAIFU
+		minWAIFUAmount: hre.ethers.utils.parseEther("100"), // min virtual reserve
+		maxWAIFUAmount: hre.ethers.utils.parseEther("10000000"), // max virtual reserve
 		minTotalSupply: 1000,
 		maxTotalSupply: hre.ethers.utils.parseEther("1000000000000"), // 1T max
 		minDecimal: 18,

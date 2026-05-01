@@ -1,12 +1,12 @@
 "use client";
 
+import { EASE_HERO } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
-import { EASE_HERO } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from "./wizard-icons";
-import { STEP_LABELS, useStepValid, useWizard, WIZARD_STEPS, type WizardStep } from "./wizard-state";
+import { STEP_LABELS, WIZARD_STEPS, type WizardStep, useStepValid, useWizard } from "./wizard-state";
 
 const TRANSITION = { duration: 0.32, ease: EASE_HERO };
 

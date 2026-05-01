@@ -125,8 +125,14 @@ async function main() {
 		console.log("\nVerifying contracts on BSCScan...");
 		try {
 			await hre.run("verify:verify", { address: staking.address, constructorArguments: [waifuToken] });
-			await hre.run("verify:verify", { address: feeRouter.address, constructorArguments: [waifuToken, staking.address, platformWallet] });
-			await hre.run("verify:verify", { address: factory.address, constructorArguments: [waifuFun.address, feeRouter.address] });
+			await hre.run("verify:verify", {
+				address: feeRouter.address,
+				constructorArguments: [waifuToken, staking.address, platformWallet],
+			});
+			await hre.run("verify:verify", {
+				address: factory.address,
+				constructorArguments: [waifuFun.address, feeRouter.address],
+			});
 			console.log("Verification complete.");
 		} catch (e) {
 			console.log("Verification failed (non-blocking):", e.message);

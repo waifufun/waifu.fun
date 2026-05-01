@@ -1,5 +1,5 @@
-import { PublicKey } from "@solana/web3.js";
 import { CP_AMM_PROGRAM_ID } from "@meteora-ag/cp-amm-sdk";
+import { PublicKey } from "@solana/web3.js";
 
 export const VAULT_CONFIG_SEED = "meteora_vault_config";
 export const POSITION_SEED = "meteora_position";

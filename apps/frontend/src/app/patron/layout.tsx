@@ -1,6 +1,6 @@
+import { ProtectedShell } from "@/components/auth/protected-shell";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { ProtectedShell } from "@/components/auth/protected-shell";
 
 export const metadata: Metadata = {
 	title: "patron",

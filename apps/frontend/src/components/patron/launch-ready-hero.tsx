@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import type { AgentDetail } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 type Props = {
 	agent: AgentDetail | undefined;
@@ -96,6 +96,7 @@ function ReadyPill() {
 	return (
 		<span
 			className="inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] rounded-sm border bg-accent/10 text-accent border-accent/30 animate-pulse motion-reduce:animate-none"
+			// biome-ignore lint/a11y/useSemanticElements: <output> is for form-related results; this is a generic status indicator
 			role="status"
 			aria-label="Agent status: ready to launch"
 		>

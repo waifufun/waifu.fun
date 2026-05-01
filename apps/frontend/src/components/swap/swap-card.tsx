@@ -156,6 +156,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 		? Number((Number(minReceivedQuery.data.priceImpactPct) * 100).toFixed(0))
 		: null;
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mode is a prop; reset input when buy/sell toggle changes
 	useEffect(() => {
 		setValue("");
 	}, [mode]);

@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { BN, Program } from "@coral-xyz/anchor";
 import {
-  Connection,
+  type Connection,
+  type Keypair,
   LAMPORTS_PER_SOL,
-  Keypair,
   PublicKey,
 } from "@solana/web3.js";
 import { SEED_CONFIG } from "./constant";

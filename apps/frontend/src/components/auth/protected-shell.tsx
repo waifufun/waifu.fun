@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, type ReactNode } from "react";
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import { useAuthRequired } from "@/hooks/use-auth-required";
+import { type ReactNode, Suspense } from "react";
 
 /**
  * Client-side auth gate that wraps a protected page tree.

@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { useState } from "react";
 import { DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
 import { DEFAULT_PLATFORM_CUT_BPS, type FourMemeTaxFeeConfig } from "@/lib/launchpad/types";
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
 import FourMemeTaxConfig from "./four-meme-tax-config";
 
 function Harness({ initial }: { initial: FourMemeTaxFeeConfig }) {

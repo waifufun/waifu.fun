@@ -1,10 +1,10 @@
-import { SolanaRpcProvider } from "@waifufun/rpc";
 import DB from "@waifufun/database";
 import logger from "@waifufun/logger";
-import { BaseIndexer } from "./base-indexer";
-import { SolanaTransactionProcessor } from "../utils/solana/tx-processor";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 import type { SolanaIndexerConfig } from "../types";
 import type { ProcessingStats } from "../types";
+import { SolanaTransactionProcessor } from "../utils/solana/tx-processor";
+import { BaseIndexer } from "./base-indexer";
 
 export class SolanaIndexer extends BaseIndexer {
 	private rpc: SolanaRpcProvider;
@@ -24,7 +24,6 @@ export class SolanaIndexer extends BaseIndexer {
 
 		this.rpc = new SolanaRpcProvider(this.config.networkId);
 		this.debugStatements = config.debugStatements || false;
-		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		this.STOP_AT_SLOT = this.config.minBlock!;
 		this.processors = [
 			new SolanaTransactionProcessor(
@@ -103,7 +102,6 @@ export class SolanaIndexer extends BaseIndexer {
 			}
 		}, 60000);
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async saveBatchEvents(events: any[]): Promise<void> {
 		if (events.length === 0) return;
 
@@ -166,7 +164,6 @@ export class SolanaIndexer extends BaseIndexer {
 			)) || undefined
 		);
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async getSignatures(beforeSignature?: string): Promise<any[]> {
 		return (
 			(await this.safeAsyncOperation(
@@ -181,7 +178,6 @@ export class SolanaIndexer extends BaseIndexer {
 			)) || []
 		);
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async processSignature(signatureInfo: any): Promise<any[]> {
 		return (
 			(await this.safeAsyncOperation(
@@ -219,17 +215,13 @@ export class SolanaIndexer extends BaseIndexer {
 			)) || []
 		);
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async processSignaturesBatch(signatures: any[]): Promise<any[]> {
 		const { concurrencyLimit } = this.config;
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		const allEvents: any[] = [];
 
-		// biome-ignore lint/style/noNonNullAssertion: <explanation>
 		for (let i = 0; i < signatures.length; i += concurrencyLimit!) {
 			if (this.isShuttingDown) break;
 
-			// biome-ignore lint/style/noNonNullAssertion: <explanation>
 			const chunk = signatures.slice(i, i + concurrencyLimit!);
 
 			const chunkPromises = chunk.map((signatureInfo) =>
@@ -246,7 +238,6 @@ export class SolanaIndexer extends BaseIndexer {
 					allEvents.push(...result.value);
 				}
 			}
-			// biome-ignore lint/style/noNonNullAssertion: <explanation>
 			if (i + concurrencyLimit! < signatures.length) {
 				await new Promise((resolve) => setTimeout(resolve, 200));
 			}
@@ -490,7 +481,6 @@ export class SolanaIndexer extends BaseIndexer {
 
 					batchNumber++;
 					await new Promise((resolve) => setTimeout(resolve, 100));
-					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				} catch (error: any) {
 					logger.error(`Error processing batch ${batchNumber}: ${error.message}`);
 					break;
@@ -517,14 +507,12 @@ export class SolanaIndexer extends BaseIndexer {
 		}
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private shouldStopAtSlot(signatures: any[]): boolean {
 		return signatures.some((sig) => sig.slot && sig.slot <= this.STOP_AT_SLOT);
 	}
 
 	private logBatchProgress(
 		batchNumber: number,
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		signatures: any[],
 		batchDuration: number,
 		batchEventCount: number,

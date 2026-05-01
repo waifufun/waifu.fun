@@ -1,32 +1,34 @@
 {
-  "name": "@waifufun/sync",
-  "version": "1.0.0",
-  "description": "Sync data from PostgreSQL to MongoDB",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc -w",
-    "sync": "tsx src/cli.ts",
-    "clean": "rimraf dist"
-  },
-  "dependencies": {
-    "@waifufun/control-plane": "workspace:*",
-    "@waifufun/database": "workspace:*",
-    "@waifufun/logger": "workspace:*",
-    "@waifufun/types": "workspace:*",
-    "dotenv": "^16.4.5",
-    "pg": "^8.11.3",
-    "drizzle-orm": "^0.29.3",
-    "commander": "^12.0.0",
-    "mongoose": "^8.2.0",
-    "tsx": "^4.7.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.24",
-    "@types/pg": "^8.11.2",
-    "rimraf": "^5.0.5",
-    "typescript": "^5.4.2"
-  }
-} 
+	"name": "@waifufun/sync",
+	"version": "1.0.0",
+	"description": "Sync data from PostgreSQL to MongoDB",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc -w",
+		"sync": "tsx src/cli.ts",
+		"lint": "biome check src package.json tsconfig.json",
+		"clean": "rimraf dist",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@waifufun/control-plane": "workspace:*",
+		"@waifufun/database": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"@waifufun/types": "workspace:*",
+		"dotenv": "^16.4.5",
+		"pg": "^8.11.3",
+		"drizzle-orm": "^0.29.3",
+		"commander": "^12.0.0",
+		"mongoose": "^8.2.0",
+		"tsx": "^4.7.1"
+	},
+	"devDependencies": {
+		"@types/node": "^20.11.24",
+		"@types/pg": "^8.11.2",
+		"rimraf": "^5.0.5",
+		"typescript": "^5.4.2"
+	}
+}

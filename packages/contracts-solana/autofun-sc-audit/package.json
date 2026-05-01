@@ -9,7 +9,7 @@
 		"lint": "prettier \"tests/**/*.ts\" --check",
 		"test:contracts": "mocha -r ts-node/register/transpile-only -t 1000000 tests/autofun.ts",
 		"test:e2e": "mocha -r ts-node/register/transpile-only -t 1000000 tests/launch_and_swap.ts",
-		"test": "pnpm run test:contracts && pnpm run test:e2e",
+		"test": "bun run test:contracts && bun run test:e2e",
 		"build": "anchor build --no-idl --skip-lint",
 		"build:local": "anchor build --no-idl --skip-lint",
 		"deploy": "anchor deploy",

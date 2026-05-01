@@ -1,0 +1,28 @@
+name: Deploy Production (SSH)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to deploy (latest, sha-xxxxxxx, or vX.Y.Z)
+        required: true
+        default: latest
+      run_migrations:
+        description: Run database schema push before bringing services up
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production-ssh
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/reusable-ssh-deploy.yml
+    secrets: inherit
+    with:
+      environment: production
+      healthcheck_label: production
+      image_tag: ${{ inputs.image_tag }}
+      run_migrations: ${{ inputs.run_migrations }}

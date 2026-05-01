@@ -1,6 +1,6 @@
+import type { LaunchpadId } from "@/lib/launchpad/types";
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import type { LaunchpadId } from "@/lib/launchpad/types";
 import LaunchpadPicker from "./launchpad-picker";
 
 function PickerHarness() {

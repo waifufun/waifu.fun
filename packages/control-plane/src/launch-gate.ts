@@ -6,7 +6,6 @@ import {
 	normalizeControlPlaneInviteCode,
 	normalizeControlPlaneWalletKey,
 } from "./normalization";
-import { getWalletIdentityByAddress, upsertWalletIdentity, type UpsertWalletIdentityInput } from "./wallet-identities";
 import type {
 	ControlPlaneInsert,
 	ControlPlaneInviteRedemptionResult,
@@ -15,6 +14,7 @@ import type {
 	ControlPlaneWalletKeyInput,
 	Json,
 } from "./types";
+import { type UpsertWalletIdentityInput, getWalletIdentityByAddress, upsertWalletIdentity } from "./wallet-identities";
 
 function throwSupabaseError(context: string, error: PostgrestError | null): never {
 	throw new Error(`${context}: ${error?.message ?? "unknown Supabase error"}`);

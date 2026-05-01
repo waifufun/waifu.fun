@@ -1,5 +1,5 @@
 import logger from "@waifufun/logger";
-import Mongoose, { Schema, type PaginateModel } from "mongoose";
+import Mongoose, { Schema, type Model as MongooseModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 export interface IEvent {
@@ -36,7 +36,7 @@ export interface IEvent {
 	version?: string;
 }
 
-export interface IEventModel extends PaginateModel<IEvent> {
+export interface IEventModel extends MongooseModel<IEvent> {
 	createOrUpdate(eventData: Partial<IEvent>): Promise<IEvent>;
 	insertManyOrUpdate(events: Partial<IEvent>[]): Promise<IEvent[]>;
 }
@@ -81,7 +81,6 @@ const schema = new Schema<IEvent, IEventModel>(
 	{ timestamps: true, versionKey: false },
 );
 
-// biome-ignore lint/suspicious/noExplicitAny: Use any for now
 schema.plugin(paginate as any);
 
 // Compound unique index to prevent duplicates
@@ -172,8 +171,9 @@ schema.statics.insertManyOrUpdate = async function (events: Partial<IEvent>[]): 
 		});
 
 		return savedEvents;
-	} catch (error) {
-		logger.error("Error in bulk upsert operation:", error);
+	} catch (error: unknown) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		logger.error(err, "Error in bulk upsert operation");
 
 		throw error;
 	}

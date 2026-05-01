@@ -1,13 +1,13 @@
+import DB from "@waifufun/database";
 import logger from "@waifufun/logger";
+import { SolanaRpcProvider } from "@waifufun/rpc";
 import type { DecodedInstruction } from "../../types";
-import { SolanaInstructionDecoderV2 } from "./implementations/instruction-decoder";
 import type { SolanaInstructionDecoder } from "./abstract/instruction-decoder";
 import { SolanaEventDecoder } from "./event-decoder";
 import { SolanaAmountExtractor } from "./extract-amount";
-import { SolanaLogDecoder } from "./log-decoder";
-import DB from "@waifufun/database";
-import { SolanaRpcProvider } from "@waifufun/rpc";
+import { SolanaInstructionDecoderV2 } from "./implementations/instruction-decoder";
 import { SolanaInstructionDecoderLegacy } from "./implementations/legacy/instruction-decoder-legacy";
+import { SolanaLogDecoder } from "./log-decoder";
 
 export class SolanaTransactionProcessor {
 	private rpc: SolanaRpcProvider;
@@ -33,12 +33,10 @@ export class SolanaTransactionProcessor {
 		this.maxBlock = maxBlock;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	hasWaifuFunProgram(accounts: any[]): boolean {
 		return accounts.some((account) => account.toBase58() === this.autoFunAddress);
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private async createTokenFromLaunchEvent(eventData: any, blockTime: number): Promise<void> {
 		try {
 			const contractAddress = eventData.contractAddress;
@@ -112,9 +110,7 @@ export class SolanaTransactionProcessor {
 		}
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private extractSocialsFromMetadata(metadata: any): any {
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		const socials: any = {};
 
 		// Extract social links from RPC metadata response
@@ -126,9 +122,7 @@ export class SolanaTransactionProcessor {
 		return socials;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	processTransaction(transaction: any, blockTime: number, slot: number): any[] {
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		const events: any[] = [];
 
 		const transactionData = transaction.transaction || transaction;
@@ -146,7 +140,6 @@ export class SolanaTransactionProcessor {
 			return events;
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		const accountStrings = accounts.map((key: any) => key.toBase58());
 		const compiledInstructions = transactionData?.message?.compiledInstructions;
 
@@ -256,9 +249,7 @@ export class SolanaTransactionProcessor {
 		blockTime: number,
 		instructionIndex: number,
 		decodedInstruction: DecodedInstruction,
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		transaction?: any,
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	): any {
 		const baseEventData = {
 			signature,
@@ -292,9 +283,7 @@ export class SolanaTransactionProcessor {
 				};
 
 			case "swap": {
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const tokenMint = decodedInstruction.tokenMint!;
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const userAddress = decodedInstruction.user!;
 				const direction = instructionData.direction;
 
@@ -337,9 +326,7 @@ export class SolanaTransactionProcessor {
 			}
 
 			case "launchAndSwap": {
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const tokenMint = decodedInstruction.mintAddress!;
-				// biome-ignore lint/style/noNonNullAssertion: <explanation>
 				const userAddress = decodedInstruction.creator!;
 
 				const swapData = SolanaLogDecoder.decodeSwapLog(transaction?.meta?.logMessages || [], this.debugStatements);

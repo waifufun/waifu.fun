@@ -1,5 +1,5 @@
 import type { IAgent } from "@waifufun/types";
-import Mongoose, { Schema, type PaginateModel } from "mongoose";
+import Mongoose, { Schema, type Model as MongooseModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 const schema = new Schema<IAgent>(
@@ -20,6 +20,6 @@ const schema = new Schema<IAgent>(
 
 schema.plugin(paginate);
 
-const Model = Mongoose.model<IAgent, PaginateModel<IAgent>>("Agent", schema);
+const Model = Mongoose.model<IAgent, MongooseModel<IAgent>>("Agent", schema);
 
 export default Model;

@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write # Needed to push fixes
+  contents: write
 
 jobs:
   lint:
@@ -25,11 +25,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run linter
         run: pnpm run lint
@@ -39,7 +39,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Commit either staged or unstaged fixes produced by the lint command.
           if ! git diff --quiet || ! git diff --cached --quiet; then
             echo "Linting made changes. Committing and pushing..."
             git add .

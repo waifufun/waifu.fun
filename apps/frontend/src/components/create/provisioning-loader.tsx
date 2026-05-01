@@ -1,9 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { memo, useEffect, useState } from "react";
 import { EASE_HERO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { memo, useEffect, useState } from "react";
 import { CheckIcon } from "./wizard-icons";
 
 export type ProvisioningStage = "safe" | "runtime" | "x-oauth" | "policies" | "done";

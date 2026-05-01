@@ -1,21 +1,21 @@
+import * as assert from "node:assert";
 import * as anchor from "@coral-xyz/anchor";
-import { BN, Program } from "@coral-xyz/anchor";
-import { Autofun } from "../target/types/autofun";
+import { BN, type Program } from "@coral-xyz/anchor";
 import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
-import * as assert from "assert";
+import type { Autofun } from "../target/types/autofun";
 import {
+  SEED_BONDING_CURVE,
   TEST_NAME,
   TEST_SYMBOL,
   TEST_URI,
-  SEED_BONDING_CURVE,
 } from "./constant";
-import { getAssociatedTokenAccount } from "./utils";
 import {
   TEST_CONFIG,
   airdropSol,
   ensureConfigured,
   getAutofunProgram,
 } from "./helpers";
+import { getAssociatedTokenAccount } from "./utils";
 
 require("dotenv").config();
 

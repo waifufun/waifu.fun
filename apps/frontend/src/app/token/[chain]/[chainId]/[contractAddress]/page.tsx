@@ -1,7 +1,13 @@
 import ScrollToTop from "@/components/scroll-to-top";
 import TradesClient from "@/components/token-page/trades-client";
 import { getToken, getTrades } from "@/lib/api";
+import { fetchTokenRouteParamsForStaticExport, isStaticExport } from "@/lib/static-export-paths";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
+
+export async function generateStaticParams() {
+	if (!isStaticExport()) return [];
+	return fetchTokenRouteParamsForStaticExport();
+}
 
 export default async function Page({
 	params,

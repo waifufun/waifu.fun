@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useXConnection, formatRelativeTime } from "@/lib/api/x-connection";
 import { Button } from "@/components/ui/button";
+import { formatRelativeTime, useXConnection } from "@/lib/api/x-connection";
+import { useState } from "react";
 
 type Props = {
 	agentId: string;

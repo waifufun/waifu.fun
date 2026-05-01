@@ -1,20 +1,19 @@
-name: Warmup
+name: Hourly warmup
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs once every day at midnight UTC
-  workflow_dispatch:     # Allows manual triggering via GitHub UI
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   run-warmup:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Make warmup.sh executable
+      - name: Make warm.sh executable
         run: chmod +x ./warm.sh
 
-      - name: Run warmup.sh
+      - name: Run warm.sh
         run: ./warm.sh

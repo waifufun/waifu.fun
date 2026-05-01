@@ -1,11 +1,11 @@
-import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { tokens, type Token } from "./schema.js";
 import DB from "@waifufun/database";
 import logger from "@waifufun/logger";
-import type { IToken, IMigration, AddressLike, TURLLike } from "@waifufun/types";
+import type { AddressLike, IMigration, IToken, TURLLike } from "@waifufun/types";
 import { SolanaNetworkIds } from "@waifufun/types";
+import { drizzle } from "drizzle-orm/node-postgres";
 import Mongoose from "mongoose";
+import { Pool } from "pg";
+import { type Token, tokens } from "./schema.js";
 export class DataSync {
 	private pgPool: Pool;
 	private pgDb: ReturnType<typeof drizzle>;
@@ -227,7 +227,7 @@ export class DataSync {
 				`Token sync completed. Total: ${offset}, Success: ${successCount}, Failed: ${failureCount}, Deleted: ${deletedCount}, Skipped: ${skippedCount}`,
 			);
 		} catch (error) {
-			logger.error("Error syncing tokens:", error);
+			logger.error({ err: error }, "Error syncing tokens:");
 			throw error;
 		}
 	}

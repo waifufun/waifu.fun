@@ -3,6 +3,12 @@ import type { AgentData, AgentTrade } from "@/components/agent-home/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+export async function generateStaticParams() {
+	const { isStaticExport, fetchAgentAddressesForStaticExport } = await import("@/lib/static-export-paths");
+	if (!isStaticExport()) return [];
+	return fetchAgentAddressesForStaticExport();
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 const FOURMEME_BASE = "https://four.meme/token";
 

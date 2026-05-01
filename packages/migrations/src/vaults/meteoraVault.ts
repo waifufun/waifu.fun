@@ -1,5 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import * as spl from "@solana/spl-token";
 import type { Program } from "@coral-xyz/anchor";
 import {
 	CP_AMM_PROGRAM_ID,
@@ -7,9 +6,10 @@ import {
 	derivePositionAddress,
 	deriveTokenVaultAddress,
 } from "@meteora-ag/cp-amm-sdk";
+import * as spl from "@solana/spl-token";
 import type { MeteoraVaultTypes } from "@waifufun/programs";
-import { getVaultConfig, getUserPosition, getNftTokenFaucet, getEventAuthority } from "./meteroaPdas";
 import { retryOperation } from "../utils";
+import { getEventAuthority, getNftTokenFaucet, getUserPosition, getVaultConfig } from "./meteroaPdas";
 
 export async function depositToMeteora(
 	provider: anchor.AnchorProvider,

@@ -3,22 +3,64 @@
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
-	"main": "src/index.ts",
-	"types": "src/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"sideEffects": false,
 	"scripts": {
-		"check": "tsc --noEmit",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"clean": "rm -rf dist",
+		"check": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome format . --write && biome lint . --fix"
 	},
 	"exports": {
-		".": "./src/index.ts"
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./runtime": {
+			"types": "./dist/runtime/index.d.ts",
+			"import": "./dist/runtime/index.js"
+		},
+		"./auth": {
+			"types": "./dist/runtime/auth.d.ts",
+			"import": "./dist/runtime/auth.js"
+		},
+		"./common": {
+			"types": "./dist/runtime/common.d.ts",
+			"import": "./dist/runtime/common.js"
+		},
+		"./creator": {
+			"types": "./dist/runtime/creator.d.ts",
+			"import": "./dist/runtime/creator.js"
+		},
+		"./jobs": {
+			"types": "./dist/runtime/jobs.d.ts",
+			"import": "./dist/runtime/jobs.js"
+		},
+		"./launch": {
+			"types": "./dist/runtime/launch.d.ts",
+			"import": "./dist/runtime/launch.js"
+		},
+		"./token": {
+			"types": "./dist/runtime/token.d.ts",
+			"import": "./dist/runtime/token.js"
+		},
+		"./trade": {
+			"types": "./dist/runtime/trade.d.ts",
+			"import": "./dist/runtime/trade.js"
+		},
+		"./package.json": "./package.json"
 	},
 	"devDependencies": {
+		"@types/node": "^22.15.3",
 		"typescript": "^5.4.5"
 	},
 	"dependencies": {
 		"@solana/kit": "^2.1.0",
+		"@waifufun/config": "workspace:*",
 		"mongoose": "^8.14.1",
-		"viem": "2.30.5"
+		"viem": "2.30.5",
+		"zod": "^3.24.2"
 	}
 }

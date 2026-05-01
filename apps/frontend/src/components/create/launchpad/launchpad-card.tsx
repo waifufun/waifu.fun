@@ -1,9 +1,9 @@
 "use client";
 
+import type { LaunchpadDescriptor } from "@/lib/launchpad/types";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useId } from "react";
-import { cn } from "@/lib/utils";
-import type { LaunchpadDescriptor } from "@/lib/launchpad/types";
 import { CheckIcon } from "../wizard-icons";
 import { getComingSoonCopy } from "./coming-soon-copy";
 import { LockIcon } from "./launchpad-icons";

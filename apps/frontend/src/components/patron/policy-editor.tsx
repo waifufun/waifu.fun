@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDownIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import {
+	type AdapterPolicy,
+	type AdapterTemplate,
 	FALLBACK_TEMPLATES,
 	useAdapterPolicies,
 	useUpdateAdapterPolicy,
-	type AdapterPolicy,
-	type AdapterTemplate,
 } from "@/lib/api/adapter-policies";
+import { cn } from "@/lib/utils";
+import { ChevronDownIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 type Props = {
 	agentId: string;

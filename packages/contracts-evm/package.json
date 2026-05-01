@@ -12,7 +12,8 @@
 		"test:contracts:local": "hardhat test --network localhost test/Contracts.test.js test/Security.test.js",
 		"test:e2e": "hardhat test test/E2E.test.js",
 		"test:e2e:local": "hardhat test --network localhost test/E2E.test.js",
-		"test": "pnpm run test:contracts && pnpm run test:e2e"
+		"test": "bun run test:contracts && bun run test:e2e",
+		"lint": "biome check scripts test hardhat.config.js package.json"
 	},
 	"devDependencies": {
 		"@nomiclabs/hardhat-ethers": "^2.2.3",

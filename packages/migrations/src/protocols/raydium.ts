@@ -1,17 +1,17 @@
-import type { MigrationStep, MigrationContext } from "../types";
-import { commonSendNftStep, commonCollectFeesStep } from "../steps/common";
+import { PublicKey } from "@solana/web3.js";
+import DB from "@waifufun/database";
+import BN from "bn.js";
+import { commonCollectFeesStep, commonSendNftStep } from "../steps/common";
+import type { MigrationContext, MigrationStep } from "../types";
 import { withdrawLiquidity } from "../utils/protocol-utils";
+import { recordTransaction } from "../utils/protocol-utils";
 import {
 	createPool,
+	depositNftToRaydiumVault,
+	finalizeLockLP,
 	initRaydiumSdkAndFetchPoolInfo,
 	lockLP,
-	finalizeLockLP,
-	depositNftToRaydiumVault,
 } from "./raydium/calls";
-import BN from "bn.js";
-import DB from "@waifufun/database";
-import { PublicKey, Keypair } from "@solana/web3.js";
-import { recordTransaction } from "../utils/protocol-utils";
 
 export type RaydiumMigrationContext = MigrationContext;
 
@@ -50,7 +50,10 @@ export const raydiumMigrationSteps: MigrationStep[] = [
 			state.primarySolAmount = extraData.primaryAmountSol;
 			state.secondaryTokenAmount = extraData.secondaryAmount;
 			state.secondarySolAmount = extraData.secondaryAmountSol;
-			state.poolId = (poolAddresses && typeof poolAddresses === "object" && "id" in poolAddresses) ? (poolAddresses as { id: string }).id : undefined;
+			state.poolId =
+				poolAddresses && typeof poolAddresses === "object" && "id" in poolAddresses
+					? (poolAddresses as { id: string }).id
+					: undefined;
 		},
 		rollback: async (context: RaydiumMigrationContext) => {
 			throw new Error("Not implemented");

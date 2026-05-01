@@ -1,20 +1,20 @@
-import { PublicKey, Connection, Keypair } from "@solana/web3.js";
-import { claimPositionFee } from "./meteoraVault";
-import { claim } from "./raydiumVault";
+import { AnchorProvider } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import DB from "@waifufun/database";
 import type { SolanaNetworkIds } from "@waifufun/types";
-import { AnchorProvider } from "@coral-xyz/anchor";
+import * as dotenv from "dotenv";
 import { Wallet } from "../utils/customWallet.js";
 import { getRpcUrl } from "../utils/getRpcUrl";
-import { Program } from "@coral-xyz/anchor";
-import * as dotenv from "dotenv";
+import { claimPositionFee } from "./meteoraVault";
+import { claim } from "./raydiumVault";
 dotenv.config();
 
 import {
-	createRaydiumVaultProgramWithProvider,
-	createMeteoraVaultProgramWithProvider,
-	type RaydiumVaultTypes,
 	type MeteoraVaultTypes,
+	type RaydiumVaultTypes,
+	createMeteoraVaultProgramWithProvider,
+	createRaydiumVaultProgramWithProvider,
 } from "@waifufun/programs";
 
 export class Claimer {

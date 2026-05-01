@@ -3,15 +3,21 @@
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
-	"main": "src/index.ts",
-	"types": "src/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"sideEffects": false,
 	"scripts": {
-		"check": "tsc --noEmit",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"clean": "rm -rf dist",
+		"check": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome format . --write && biome lint . --fix"
 	},
 	"exports": {
-		".": "./src/index.ts"
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
 	},
 	"dependencies": {
 		"@waifufun/codex": "workspace:*",

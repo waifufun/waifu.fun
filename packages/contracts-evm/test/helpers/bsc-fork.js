@@ -50,13 +50,7 @@ async function deployV2System(deployer, overrides = {}) {
 		minDecimal: 18,
 		maxDecimal: 18,
 	};
-	const waifuFun = await WaifuFunV2.deploy(
-		waifu.address,
-		pancakeRouter,
-		pancakeFactory,
-		feeRouter.address,
-		config
-	);
+	const waifuFun = await WaifuFunV2.deploy(waifu.address, pancakeRouter, pancakeFactory, feeRouter.address, config);
 	await waifuFun.deployed();
 
 	// AgentTokenFactoryV2

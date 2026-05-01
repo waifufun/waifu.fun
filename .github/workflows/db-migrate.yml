@@ -1,0 +1,60 @@
+name: DB Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: Image tag to run migrations with (defaults to develop for staging, latest for production)
+        required: false
+        default: ""
+
+concurrency:
+  group: db-migrate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment == 'staging' && 'staging' || 'production' }}
+
+    steps:
+      - name: Run migration over SSH
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+          INPUT_IMAGE_TAG: ${{ inputs.image_tag }}
+          DEPLOY_PATH: /opt/waifu-core
+          COMPOSE_FILE: docker/docker-compose.yml
+          ENV_FILE: ${{ inputs.environment == 'staging' && '../.env.staging' || '../.env.production' }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+          GHCR_IMAGE_PREFIX: ${{ github.event.repository.name }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        with:
+          host: ${{ inputs.environment == 'staging' && secrets.STAGING_HOST || secrets.PROD_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: TARGET_ENV,INPUT_IMAGE_TAG,DEPLOY_PATH,COMPOSE_FILE,ENV_FILE,GHCR_OWNER,GHCR_IMAGE_PREFIX,GHCR_USERNAME,GHCR_READ_TOKEN
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+
+            if [ "$TARGET_ENV" = "staging" ]; then
+              IMAGE_TAG="${INPUT_IMAGE_TAG:-develop}"
+            else
+              IMAGE_TAG="${INPUT_IMAGE_TAG:-latest}"
+            fi
+
+            echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+            export GHCR_OWNER GHCR_IMAGE_PREFIX ENV_FILE IMAGE_TAG
+
+            docker compose -f "$COMPOSE_FILE" pull api
+            docker compose -f "$COMPOSE_FILE" run --rm --no-deps api bun run --filter @waifufun/db db:push

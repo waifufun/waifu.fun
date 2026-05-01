@@ -1,0 +1,33 @@
+{
+	"name": "@waifufun/mcp",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "MCP server — exposes waifu.fun launch_agent as an MCP tool",
+	"main": "dist/index.js",
+	"bin": {
+		"@waifufun/mcp": "dist/index.js"
+	},
+	"files": ["dist"],
+	"engines": {
+		"node": ">=22.0.0"
+	},
+	"scripts": {
+		"build": "tsup src/index.ts --format esm --target node22 --sourcemap --clean --out-dir dist",
+		"start": "node dist/index.js",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check src package.json tsconfig.json",
+		"dev": "tsx src/index.ts",
+		"check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"zod": "^3.25.76"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.0",
+		"tsup": "^8.3.5",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.3"
+	}
+}

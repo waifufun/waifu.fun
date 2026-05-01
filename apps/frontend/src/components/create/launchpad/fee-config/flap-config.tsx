@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useId, useMemo } from "react";
-import { cn } from "@/lib/utils";
 import {
 	DEFAULT_PLATFORM_CUT_BPS,
 	type FlapFeeConfig,
@@ -10,6 +8,8 @@ import {
 	TAX_TIER_BPS,
 } from "@/lib/launchpad/types";
 import { computePlatformCutVolumeBps, validateFlap } from "@/lib/launchpad/validators";
+import { cn } from "@/lib/utils";
+import { useCallback, useId, useMemo } from "react";
 import { InfoIcon } from "../launchpad-icons";
 
 type Props = {
@@ -62,6 +62,7 @@ export default function FlapConfig({ value, onChange }: Props) {
 							<button
 								key={tier}
 								type="button"
+								// biome-ignore lint/a11y/useSemanticElements: styled radio button group; native radios cannot be styled to match the design
 								role="radio"
 								aria-checked={active}
 								onClick={() => setTax(tier)}
@@ -156,6 +157,7 @@ export default function FlapConfig({ value, onChange }: Props) {
 							<button
 								key={opt.id}
 								type="button"
+								// biome-ignore lint/a11y/useSemanticElements: styled radio card; native radios cannot be styled to match the design
 								role="radio"
 								aria-checked={active}
 								onClick={() => setRecipient(opt.id)}

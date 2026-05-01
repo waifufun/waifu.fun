@@ -14,6 +14,9 @@ import type { NextRequest } from "next/server";
  * We pick the homepage-with-modal pattern over routing to a separate
  * /auth/connect page on purpose — staying on a familiar page while
  * the modal opens is the Privy / Linear feel.
+ *
+ * Note: `output: "export"` / Cloudflare Pages static uploads do not run
+ * middleware; `/create` and `/patron` rely on client-side gates there too.
  */
 
 const PROTECTED_PREFIXES = [

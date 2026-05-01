@@ -1,0 +1,110 @@
+services:
+  workspace:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.waifu-core
+      target: base
+    image: waifu-core-workspace:dev
+    command: sh -lc "bun install"
+    volumes:
+      - ..:/app
+      - root-node-modules:/app/node_modules
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.waifu-core
+      target: base
+    image: waifu-core-api:dev
+    command: sh -lc "bun run --filter @waifufun/api dev"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://waifu:waifu@postgres:5432/waifu_core
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ..:/app
+      - root-node-modules:/app/node_modules
+    depends_on:
+      workspace:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.waifu-core
+      target: base
+    image: waifu-core-worker:dev
+    command: sh -lc "bun run --filter @waifufun/worker dev"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://waifu:waifu@postgres:5432/waifu_core
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ..:/app
+      - root-node-modules:/app/node_modules
+    depends_on:
+      workspace:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  evm-indexer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.waifu-core
+      target: base
+    image: waifu-core-evm-indexer:dev
+    command: sh -lc "bun run --filter @waifufun/evm-indexer dev"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://waifu:waifu@postgres:5432/waifu_core
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ..:/app
+      - root-node-modules:/app/node_modules
+    depends_on:
+      workspace:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: waifu_core
+      POSTGRES_USER: waifu
+      POSTGRES_PASSWORD: waifu
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waifu -d waifu_core"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  root-node-modules:

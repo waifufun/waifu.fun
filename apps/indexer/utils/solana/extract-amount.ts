@@ -2,7 +2,6 @@ import logger from "@waifufun/logger";
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class SolanaAmountExtractor {
 	static extractAmountGotten(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		transaction: any,
 		tokenMint: string,
 		userAddress: string,
@@ -20,14 +19,12 @@ export class SolanaAmountExtractor {
 
 			if (direction === 0) {
 				// Direction 0: User is buying tokens (NATIVE TOKEN -> Token)
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				const preTokenBalance = preTokenBalances.find((balance: any) => {
 					const isCorrectMint = balance.mint === tokenMint;
 					const isCorrectOwner = balance.owner === userAddress;
 					return isCorrectMint && isCorrectOwner;
 				});
 
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				const postTokenBalance = postTokenBalances.find((balance: any) => {
 					const isCorrectMint = balance.mint === tokenMint;
 					const isCorrectOwner = balance.owner === userAddress;
@@ -50,7 +47,6 @@ export class SolanaAmountExtractor {
 				}
 			} else {
 				// Direction 1: User is selling tokens (Token -> NATIVE TOKEN)
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				const userIndex = accountKeys.findIndex((key: any) => key.toBase58() === userAddress);
 
 				if (userIndex !== -1 && preBalances[userIndex] !== undefined && postBalances[userIndex] !== undefined) {

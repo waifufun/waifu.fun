@@ -1,8 +1,8 @@
-import { getNetwork } from "./network";
 import type { Idl } from "@coral-xyz/anchor";
+import { devnetAutofun, devnetAutofunLegacy, devnetMeteoraVault, devnetRaydiumVault } from "./idls/devnet";
+import { mainnetAutofun, mainnetAutofunLegacy, mainnetMeteoraVault, mainnetRaydiumVault } from "./idls/mainnet";
+import { getNetwork } from "./network";
 import type { IdlVersion, VaultType } from "./types";
-import { mainnetAutofun, mainnetAutofunLegacy, mainnetRaydiumVault, mainnetMeteoraVault } from "./idls/mainnet";
-import { devnetAutofun, devnetAutofunLegacy, devnetRaydiumVault, devnetMeteoraVault } from "./idls/devnet";
 
 export function getAutofunIdl(version: IdlVersion = "v2"): Idl {
 	const network = getNetwork();

@@ -1,17 +1,16 @@
 {
-  "extends": "./tsconfig.base.json",
-  "compileOnSave": false,
-  "compilerOptions": {
-    // ensure this tsconfig cannot accidentally be used for a build
-    "noEmit": true
-  },
-  "include": [
-    "apps/**/*",
-    "packages/**/*",
-    "configs/**/*",
-    "reset.d.ts",
-    "*.config.ts",
-    "*.config.js"
-  ]
-  // "exclude": ["templates/**/*"]
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true
+	},
+	"include": [
+		"*.config.js",
+		"*.config.mjs",
+		"*.config.ts",
+		"apps/**/*",
+		"packages/**/*",
+		"scripts/**/*.mts",
+		"scripts/**/*.ts"
+	]
 }

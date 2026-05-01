@@ -1,5 +1,5 @@
 import type { IMigration } from "@waifufun/types";
-import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
+import Mongoose, { type Model as ModelType, Schema, type Model as MongooseModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 const schema = new Schema<IMigration, ModelType<IMigration>>(
@@ -40,7 +40,7 @@ schema.plugin(paginate);
 schema.index({ contractAddress: 1, chain: 1, chainId: 1 }, { unique: true });
 schema.index({ marketId: 1 });
 
-const Model = Mongoose.model<IMigration, PaginateModel<IMigration>>("Migration", schema);
+const Model = Mongoose.model<IMigration, MongooseModel<IMigration>>("Migration", schema);
 
 Model.createIndexes();
 

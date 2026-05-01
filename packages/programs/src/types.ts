@@ -1,6 +1,6 @@
 import type { getNetwork } from "./network";
-import type { MainnetAutofun, MainnetAutofunLegacy, MainnetRaydiumVault, MainnetMeteoraVault } from "./types/mainnet";
-import type { DevnetAutofun, DevnetAutofunLegacy, DevnetRaydiumVault, DevnetMeteoraVault } from "./types/devnet";
+import type { DevnetAutofun, DevnetAutofunLegacy, DevnetMeteoraVault, DevnetRaydiumVault } from "./types/devnet";
+import type { MainnetAutofun, MainnetAutofunLegacy, MainnetMeteoraVault, MainnetRaydiumVault } from "./types/mainnet";
 
 export type IdlVersion = "v1" | "v2";
 export type VaultType = "raydium" | "meteora";

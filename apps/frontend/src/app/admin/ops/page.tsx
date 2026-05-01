@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useAdminAgents, type AdminAgent, combinedStatus } from "@/lib/api/admin";
-import { useAdminTokenState } from "@/components/admin/ops-token-gate";
 import AgentActionBar from "@/components/admin/agent-action-bar";
 import StatusPill from "@/components/admin/agent-status-pill";
+import { useAdminTokenState } from "@/components/admin/ops-token-gate";
+import { type AdminAgent, combinedStatus, useAdminAgents } from "@/lib/api/admin";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
 function formatTs(iso: string | null | undefined): string {
 	if (!iso) return "—";

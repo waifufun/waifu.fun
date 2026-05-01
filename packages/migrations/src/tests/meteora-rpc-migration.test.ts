@@ -1,24 +1,27 @@
-import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
-import BN from "bn.js";
+import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import {
 	CpAmm,
-	MIN_SQRT_PRICE,
-	MAX_SQRT_PRICE,
-	getSqrtPriceFromPrice,
 	type InitializeCustomizeablePoolParams,
+	CollectFeeMode,
+	MAX_SQRT_PRICE,
+	MIN_SQRT_PRICE,
+	getReservesAmountForConcentratedLiquidity,
+	getSqrtPriceFromPrice,
 } from "@meteora-ag/cp-amm-sdk";
-import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
-import { expect, sinon } from "./setup";
-import { describe, it, before, afterEach } from "mocha";
-import { MigrationService } from "../services/migration-service";
-import type { IMigration, SolanaAddressLike } from "@waifufun/types";
-import { getVaultIdl, type MeteoraVaultTypes } from "@waifufun/programs";
-import { derivePositionNftAccount } from "../vaults/meteroaPdas";
-import { depositToMeteora, emergencyWithdraw, claimPositionFee } from "../vaults/meteoraVault";
+import { TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import type DB from "@waifufun/database";
+import { type MeteoraVaultTypes, getVaultIdl } from "@waifufun/programs";
 import type redis from "@waifufun/redis";
+import type { IMigration, SolanaAddressLike } from "@waifufun/types";
+import BN from "bn.js";
 import Decimal from "decimal.js";
+import { afterEach, before, describe, it } from "mocha";
+import { MigrationService } from "../services/migration-service";
+import { buildMeteoraCustomPoolFees } from "../protocols/meteora/calls";
+import { claimPositionFee, depositToMeteora, emergencyWithdraw } from "../vaults/meteoraVault";
+import { derivePositionNftAccount } from "../vaults/meteroaPdas";
+import { expect, sinon } from "./setup";
 const meteoraVaultIdl = getVaultIdl("meteora");
 
 const TEST_TIMEOUT = 2 * 60 * 1000;
@@ -39,7 +42,8 @@ describe("Meteora RPC Migration Integration", function () {
 	let program: Program<MeteoraVaultTypes>;
 	let migrationService: MigrationService;
 
-	let mockDb: any, mockRedis: any;
+	let mockDb: any;
+	let mockRedis: any;
 
 	let mint: PublicKey;
 	let tokenAccount: PublicKey;
@@ -172,6 +176,7 @@ describe("Meteora RPC Migration Integration", function () {
 			sqrtPrice: getSqrtPriceFromPrice(initPrice, tokenADecimals, tokenBDecimals),
 			sqrtMinPrice: MIN_SQRT_PRICE,
 			sqrtMaxPrice: MAX_SQRT_PRICE,
+			collectFeeMode: CollectFeeMode.BothToken,
 		});
 
 		const createCustomPoolParams: InitializeCustomizeablePoolParams = {
@@ -187,19 +192,7 @@ describe("Meteora RPC Migration Integration", function () {
 			// amount of liquidity to be added
 			liquidityDelta: liquidityDelta,
 			initSqrtPrice: getSqrtPriceFromPrice(initPrice, tokenADecimal, tokenBDecimal),
-			poolFees: {
-				baseFee: {
-					cliffFeeNumerator: new BN(2_500_000),
-					numberOfPeriod: 0,
-					periodFrequency: new BN(0),
-					reductionFactor: new BN(0),
-					feeSchedulerMode: 0,
-				},
-				protocolFeePercent: 20,
-				partnerFeePercent: 0,
-				referralFeePercent: 20,
-				dynamicFee: null,
-			},
+			poolFees: buildMeteoraCustomPoolFees(tokenBDecimal),
 			hasAlphaVault: false,
 			activationType: 1,
 			collectFeeMode: 0,
@@ -261,24 +254,28 @@ describe("Meteora RPC Migration Integration", function () {
 		if (!userPosition) {
 			throw new Error("Could not find the secondary position NFT in pool");
 		}
-		const positionState = await cpAmm.fetchPositionState(position);
-
-		if (!positionState) {
-			throw new Error("Position state not found");
-		}
 
 		// Use 10% of supply for this second “add liquidity” step
 		const secondaryTokens = new BN(TOKEN_AMOUNT).muln(10).divn(100);
 
-		const secondarySol = new BN(SOL_AMOUNT).sub(new BN(FIXED_FEE)).muln(10).divn(100);
-
 		// Get a quote
-		const quote = await cpAmm.getDepositQuote({
+		const [poolTokenAAmount, poolTokenBAmount] = getReservesAmountForConcentratedLiquidity(
+			poolState.sqrtPrice,
+			poolState.sqrtMinPrice,
+			poolState.sqrtMaxPrice,
+			poolState.liquidity,
+		);
+
+		const quote = cpAmm.getDepositQuote({
 			inAmount: secondaryTokens,
 			isTokenA: true,
 			minSqrtPrice: MIN_SQRT_PRICE,
 			maxSqrtPrice: MAX_SQRT_PRICE,
 			sqrtPrice: poolState.sqrtPrice,
+			collectFeeMode: poolState.collectFeeMode as CollectFeeMode,
+			tokenAAmount: poolTokenAAmount,
+			tokenBAmount: poolTokenBAmount,
+			liquidity: poolState.liquidity,
 		});
 		const maxAmountTokenA = quote.actualInputAmount;
 		const maxAmountTokenB = quote.outputAmount;
@@ -388,9 +385,13 @@ describe("Meteora RPC Migration Integration", function () {
 			getMigrationSteps: sinon.stub().resolves([]),
 			executeMigration: sinon.stub().resolves({ success: true }),
 		};
-		(migrationService as any).migrationManager = fakeMgr as any;
+		(
+			migrationService as unknown as {
+				migrationManager: typeof fakeMgr;
+			}
+		).migrationManager = fakeMgr;
 
-		await migrationService["processMigrations"]();
+		await migrationService.processMigrations();
 
 		console.log("Bonus: processMigrations() invoked.");
 	});

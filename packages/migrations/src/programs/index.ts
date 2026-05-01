@@ -2,21 +2,21 @@ import { type AnchorProvider, web3 } from "@coral-xyz/anchor";
 import type { Keypair } from "@solana/web3.js";
 import { Wallet } from "../utils/customWallet";
 
+import type { Program } from "@coral-xyz/anchor";
 import {
-	createRaydiumVaultProgramWithProvider,
-	createMeteoraVaultProgramWithProvider,
-	createCurrentAutofunProgramWithProvider,
-	createLegacyAutofunProgramWithProvider,
-	getRaydiumVaultProgramAddress,
-	getMeteoraVaultProgramAddress,
-	getCurrentProgramAddress,
-	getLegacyProgramAddress,
-	type RaydiumVaultTypes,
-	type MeteoraVaultTypes,
 	type CurrentAutofunTypes,
 	type LegacyAutofunTypes,
+	type MeteoraVaultTypes,
+	type RaydiumVaultTypes,
+	createCurrentAutofunProgramWithProvider,
+	createLegacyAutofunProgramWithProvider,
+	createMeteoraVaultProgramWithProvider,
+	createRaydiumVaultProgramWithProvider,
+	getCurrentProgramAddress,
+	getLegacyProgramAddress,
+	getMeteoraVaultProgramAddress,
+	getRaydiumVaultProgramAddress,
 } from "@waifufun/programs";
-import type { Program } from "@coral-xyz/anchor";
 
 // Program IDs - now using centralized addresses
 export const RAYDIUM_VAULT_PROGRAM_ID = new web3.PublicKey(getRaydiumVaultProgramAddress());

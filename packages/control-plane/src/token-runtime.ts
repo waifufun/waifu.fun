@@ -2,7 +2,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import type { ControlPlaneClient } from "./client";
 import { getControlPlaneServerClient } from "./client";
 import { normalizeControlPlaneTokenKey } from "./normalization";
-import { getTokenOwnership, upsertTokenOwnership, type UpsertTokenOwnershipInput } from "./token-ownerships";
+import { type UpsertTokenOwnershipInput, getTokenOwnership, upsertTokenOwnership } from "./token-ownerships";
 import type {
 	ControlPlaneAgentStatus,
 	ControlPlaneBillingMode,

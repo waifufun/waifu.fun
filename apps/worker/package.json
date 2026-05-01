@@ -1,0 +1,36 @@
+{
+	"name": "@waifufun/worker",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"predev": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"prestart": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"pretypecheck": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/db build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"start": "tsx src/index.ts",
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"lint": "biome check src package.json tsconfig.json",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@waifufun/db": "workspace:*",
+		"@waifufun/flap": "workspace:*",
+		"@waifufun/fourmeme": "workspace:*",
+		"@waifufun/queue": "workspace:*",
+		"bullmq": "^5.61.0",
+		"drizzle-orm": "^0.36.4",
+		"jose": "^6.2.0",
+		"@waifufun/logger": "workspace:*",
+		"pino": "^9.5.0",
+		"@waifufun/metrics": "workspace:*",
+		"viem": "^2.23.5"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.5",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2"
+	}
+}

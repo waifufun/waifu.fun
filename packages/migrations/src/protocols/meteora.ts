@@ -1,18 +1,18 @@
 import { PublicKey } from "@solana/web3.js";
-import type { MigrationStep, MigrationContext } from "../types";
-import { commonSendNftStep, commonCollectFeesStep } from "../steps/common";
-import { withdrawLiquidity } from "../utils/protocol-utils";
+import DB from "@waifufun/database";
 import BN from "bn.js";
+import { commonCollectFeesStep, commonSendNftStep } from "../steps/common";
+import type { MigrationContext, MigrationStep } from "../types";
+import { withdrawLiquidity } from "../utils/protocol-utils";
+import { recordTransaction } from "../utils/protocol-utils";
 import {
-	createPositionNft,
-	finalizePositionNft,
+	addLiquidity,
 	createPool,
 	createPosition,
-	addLiquidity,
+	createPositionNft,
 	depositNftToMeteora,
+	finalizePositionNft,
 } from "./meteora/calls";
-import DB from "@waifufun/database";
-import { recordTransaction } from "../utils/protocol-utils";
 
 export type MeteoraMigrationContext = MigrationContext;
 

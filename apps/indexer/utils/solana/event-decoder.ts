@@ -6,7 +6,6 @@ export class SolanaEventDecoder {
 	private static arraysEqual(a: number[], b: number[]): boolean {
 		return a.length === b.length && a.every((val, i) => val === b[i]);
 	}
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	static decodeCompleteEvent(eventData: Buffer, debugStatements = false): any {
 		try {
 			const discriminator = Array.from(eventData.slice(0, 8));

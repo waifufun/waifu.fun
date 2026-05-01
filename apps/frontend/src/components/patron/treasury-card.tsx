@@ -1,6 +1,6 @@
 "use client";
 
-import { formatUsd, type AgentDetail } from "@/lib/api/patron";
+import { type AgentDetail, formatUsd } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 
 type Props = {

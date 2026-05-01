@@ -1,0 +1,52 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-production-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    uses: ./.github/workflows/reusable-docker-build.yml
+    with:
+      push_images: true
+      use_latest_tag_only: true
+      cache_scope_suffix: prod-deploy
+
+  deploy:
+    name: Trigger Railway Redeploy
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Trigger Railway redeploy via GraphQL
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+          IMAGE_REF: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-api:latest
+        run: |
+          if [ -z "$RAILWAY_API_TOKEN" ] || [ -z "$RAILWAY_SERVICE_ID" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ]; then
+            echo "::notice::RAILWAY_API_TOKEN / RAILWAY_SERVICE_ID / RAILWAY_ENVIRONMENT_ID not set. Skipping auto-redeploy."
+            echo "::notice::Images are built + pushed. Redeploy manually in Railway dashboard."
+            exit 0
+          fi
+          # Railway should pull the API image published above (configure service image to match).
+          echo "::notice::Ensure Railway uses image $IMAGE_REF (or equivalent for your registry layout)."
+          # Project tokens use Project-Access-Token header (not Authorization: Bearer).
+          curl -sSf -X POST https://backboard.railway.com/graphql/v2 \
+            -H "Project-Access-Token: $RAILWAY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\":\"mutation{serviceInstanceRedeploy(serviceId:\\\"$RAILWAY_SERVICE_ID\\\",environmentId:\\\"$RAILWAY_ENVIRONMENT_ID\\\")}\"}"
+          echo ""
+          echo "Railway redeploy triggered for service $RAILWAY_SERVICE_ID"

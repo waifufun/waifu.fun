@@ -34,6 +34,7 @@ dist
 tmp
 /out-tsc
 /build
+.turbo/
 
 # coverage and related tools such as instanbul
 /coverage
@@ -105,3 +106,7 @@ testem.log
 .vercel/
 .vercel
 .env*.local
+
+# Waifu-core (optional local store artifacts + tracked CI seed env)
+.pnpm-store/
+!.env.ci

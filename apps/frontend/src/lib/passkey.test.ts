@@ -1,3 +1,8 @@
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import type {
+	PublicKeyCredentialCreationOptionsJSON,
+	PublicKeyCredentialRequestOptionsJSON,
+} from "@simplewebauthn/browser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	loginWithPasskey,
@@ -5,11 +10,6 @@ import {
 	preparePasskeyRegistrationOptions,
 	registerPasskey,
 } from "./passkey";
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
-import type {
-	PublicKeyCredentialCreationOptionsJSON,
-	PublicKeyCredentialRequestOptionsJSON,
-} from "@simplewebauthn/browser";
 
 vi.mock("@simplewebauthn/browser", async () => {
 	const actual = await vi.importActual<typeof import("@simplewebauthn/browser")>("@simplewebauthn/browser");

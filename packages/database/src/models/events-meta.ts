@@ -1,6 +1,6 @@
-import Mongoose, { Schema, type Model as ModelType } from "mongoose";
 import logger from "@waifufun/logger";
 import type { IEventsMeta } from "@waifufun/types";
+import Mongoose, { Schema, type Model as ModelType } from "mongoose";
 
 export interface IEventsMetaModel extends ModelType<IEventsMeta> {
 	getOrCreate(programId: string, networkId: string): Promise<IEventsMeta>;
@@ -49,8 +49,9 @@ schema.statics.getOrCreate = async function (programId: string, networkId: strin
 		}
 
 		return meta;
-	} catch (error) {
-		logger.error("Error getting or creating events meta:", error);
+	} catch (error: unknown) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		logger.error(err, "Error getting or creating events meta");
 		throw error;
 	}
 };

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
 import {
 	Dialog,
 	DialogClose,
@@ -13,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { type AdminAction, type AdminAgent, useAdminAgentAction } from "@/lib/api/admin";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type Props = {
 	agent: AdminAgent;

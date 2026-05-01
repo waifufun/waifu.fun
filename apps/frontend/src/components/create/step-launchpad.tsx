@@ -1,12 +1,12 @@
 "use client";
 
-import FourMemeRegularConfig from "./launchpad/fee-config/four-meme-regular-config";
-import FourMemeTaxConfig from "./launchpad/fee-config/four-meme-tax-config";
-import FlapConfig from "./launchpad/fee-config/flap-config";
-import LaunchpadPicker from "./launchpad/launchpad-picker";
-import { useWizard } from "./wizard-state";
 import { DEFAULT_FLAP, DEFAULT_FOUR_MEME_REGULAR, DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
 import type { FlapFeeConfig, FourMemeTaxFeeConfig, LaunchpadDescriptor } from "@/lib/launchpad/types";
+import FlapConfig from "./launchpad/fee-config/flap-config";
+import FourMemeRegularConfig from "./launchpad/fee-config/four-meme-regular-config";
+import FourMemeTaxConfig from "./launchpad/fee-config/four-meme-tax-config";
+import LaunchpadPicker from "./launchpad/launchpad-picker";
+import { useWizard } from "./wizard-state";
 
 export default function StepLaunchpad() {
 	const { state, patchLaunchpad } = useWizard();

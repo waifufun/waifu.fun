@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { useAccount } from "wagmi";
 import { computePlatformCutVolumeBps } from "@/lib/launchpad/validators";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { useAccount } from "wagmi";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {

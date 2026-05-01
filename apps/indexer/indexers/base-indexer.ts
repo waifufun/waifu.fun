@@ -17,12 +17,12 @@ export abstract class BaseIndexer {
 
 	protected setupGlobalErrorHandlers(): void {
 		process.on("uncaughtException", (error) => {
-			logger.error("Uncaught Exception:", error);
+			logger.error({ err: error }, "Uncaught Exception:");
 			this.handleCriticalError(error);
 		});
 
 		process.on("unhandledRejection", (reason, promise) => {
-			logger.error("Unhandled Rejection at:", promise, "reason:", reason);
+			logger.error({ promise, reason }, "Unhandled Rejection:");
 			this.handleCriticalError(new Error(`Unhandled rejection: ${reason}`));
 		});
 
@@ -32,7 +32,7 @@ export abstract class BaseIndexer {
 
 	protected async handleCriticalError(error: Error): Promise<void> {
 		try {
-			logger.error("Critical error occurred, attempting recovery:", error);
+			logger.error({ err: error }, "Critical error occurred, attempting recovery:");
 
 			await this.resetConnections();
 			await this.exponentialBackoff(this.retryAttempts);
@@ -46,7 +46,7 @@ export abstract class BaseIndexer {
 				process.exit(1);
 			}
 		} catch (recoveryError) {
-			logger.error("Recovery failed:", recoveryError);
+			logger.error({ err: recoveryError }, "Recovery failed:");
 			process.exit(1);
 		}
 	}
@@ -76,7 +76,7 @@ export abstract class BaseIndexer {
 			logger.info("Graceful shutdown completed");
 			process.exit(0);
 		} catch (error) {
-			logger.error("Error during graceful shutdown:", error);
+			logger.error({ err: error }, "Error during graceful shutdown:");
 			process.exit(1);
 		}
 	}
@@ -98,7 +98,6 @@ export abstract class BaseIndexer {
 				const result = await operation();
 				this.lastSuccessfulOperation = Date.now();
 				return result;
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			} catch (error: any) {
 				lastError = error;
 				logger.warn(`${operationName} failed (attempt ${attempt + 1}/${maxRetries}):`, error.message);
@@ -114,11 +113,10 @@ export abstract class BaseIndexer {
 			}
 		}
 
-		logger.error(`${operationName} failed after ${maxRetries} attempts:`, lastError);
+		logger.error({ err: lastError }, `${operationName} failed after ${maxRetries} attempts:`);
 		return null;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	protected isNetworkError(error: any): boolean {
 		// can't think of any more, feel free to add more
 		const networkErrorMessages = [

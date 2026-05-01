@@ -1,10 +1,10 @@
 "use client";
 
+import { EASE_HERO } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useId, useState } from "react";
-import { EASE_HERO } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 import { CheckIcon, CloudIcon, CopyIcon, PullIcon, WebhookIcon } from "./wizard-icons";
 import { type RuntimeKind, useWizard } from "./wizard-state";
 

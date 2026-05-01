@@ -1,0 +1,241 @@
+import assert from "node:assert/strict";
+import { afterEach, describe, it } from "node:test";
+
+import { Hono } from "hono";
+
+import {
+	type StewardParser,
+	__setRequirePatronDbForTest,
+	__setRequirePatronStewardParserForTest,
+} from "../../middleware/patron-auth.js";
+import {
+	__clearAuthSiweNoncesForTest,
+	__setAuthSiweDbForTest,
+	__setAuthSiweVerifierForTest,
+	authSiweRoutes,
+} from "./auth-siwe.js";
+
+const PATRON_ID = "00000000-0000-4000-8000-000000000001";
+const OTHER_PATRON_ID = "00000000-0000-4000-8000-000000000002";
+const ADDRESS = "0x1111111111111111111111111111111111111111";
+const OTHER = "0x2222222222222222222222222222222222222222";
+
+type WalletRow = { patronId: string; address: string; chainId: number; isPrimary: boolean };
+
+function readDrizzleTableName(t: unknown): string | null {
+	if (!t || typeof t !== "object") return null;
+	const sym = Object.getOwnPropertySymbols(t).find((s) => s.description === "drizzle:Name");
+	if (!sym) return null;
+	const value = (t as Record<symbol, unknown>)[sym];
+	return typeof value === "string" ? value : null;
+}
+
+function fakeDb(opts: { wallets?: WalletRow[]; deleteCount?: number } = {}) {
+	const state = {
+		wallets: [...(opts.wallets ?? [])],
+		inserts: [] as Record<string, unknown>[],
+		updates: [] as Record<string, unknown>[],
+		deleteCount: opts.deleteCount ?? 1,
+	};
+
+	const db = {
+		state,
+		select() {
+			let table: string | null = null;
+			const builder = {
+				from(t: unknown) {
+					table = readDrizzleTableName(t);
+					return builder;
+				},
+				where() {
+					return builder;
+				},
+				limit() {
+					if (table === "patron_users") {
+						return Promise.resolve([{ id: PATRON_ID, stewardUserId: "steward-1", primaryEmail: "a@b.test" }]);
+					}
+					if (table === "patron_wallets") return Promise.resolve(state.wallets);
+					return Promise.resolve([]);
+				},
+			};
+			return builder;
+		},
+		insert() {
+			return {
+				values(v: Record<string, unknown>) {
+					state.inserts.push(v);
+					state.wallets.push(v as WalletRow);
+					return { returning: () => Promise.resolve([v]) };
+				},
+			};
+		},
+		update() {
+			return {
+				set(v: Record<string, unknown>) {
+					state.updates.push(v);
+					return { where: () => Promise.resolve([]) };
+				},
+			};
+		},
+		delete() {
+			return {
+				where() {
+					return {
+						returning() {
+							return Promise.resolve(state.deleteCount > 0 ? state.wallets.splice(0, state.deleteCount) : []);
+						},
+					};
+				},
+			};
+		},
+	} as never as { state: typeof state };
+
+	return db;
+}
+
+function app() {
+	const h = new Hono();
+	h.route("/auth/siwe", authSiweRoutes as never);
+	return h;
+}
+
+function authHeaders() {
+	return { authorization: "Bearer steward-token", "content-type": "application/json" };
+}
+
+describe("/v2/auth/siwe", () => {
+	afterEach(() => {
+		__setRequirePatronDbForTest(undefined);
+		__setRequirePatronStewardParserForTest(undefined);
+		__setAuthSiweDbForTest(undefined);
+		__setAuthSiweVerifierForTest(undefined);
+		__clearAuthSiweNoncesForTest();
+	});
+
+	function installAuthAndDb(db = fakeDb()) {
+		__setRequirePatronStewardParserForTest((async () => ({
+			userId: "steward-1",
+			tenantId: "waifu",
+			email: "a@b.test",
+		})) as StewardParser);
+		__setRequirePatronDbForTest(db as never);
+		__setAuthSiweDbForTest(db as never);
+		return db;
+	}
+
+	it("requires Steward auth for nonce", async () => {
+		installAuthAndDb();
+		const res = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: { "content-type": "application/json" },
+		});
+		assert.equal(res.status, 401);
+	});
+
+	it("returns a patron-scoped nonce", async () => {
+		installAuthAndDb();
+		const res = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 200);
+		const body = (await res.json()) as { ok: boolean; nonce: string; expiresInSeconds: number };
+		assert.equal(body.ok, true);
+		assert.equal(body.expiresInSeconds, 600);
+		assert.match(body.nonce, /^[A-Za-z0-9]{8,}$/);
+	});
+
+	it("binds a wallet after SIWE verification and nonce consumption", async () => {
+		const db = installAuthAndDb();
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 56, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({ message: "siwe", signature: "0xsig", setPrimary: true }),
+			headers: authHeaders(),
+		});
+
+		assert.equal(res.status, 200);
+		assert.deepEqual(await res.json(), { ok: true, address: ADDRESS, chainId: 56 });
+		assert.equal(db.state.inserts.length, 1);
+		assert.equal(db.state.inserts[0]?.patronId, PATRON_ID);
+	});
+
+	it("rejects wrong or expired nonce", async () => {
+		installAuthAndDb();
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 56, nonce: "wrong" }));
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({ message: "siwe", signature: "0xsig" }),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 400);
+	});
+
+	it("rejects a wallet already bound to another patron", async () => {
+		const db = installAuthAndDb(
+			fakeDb({
+				wallets: [{ patronId: OTHER_PATRON_ID, address: ADDRESS, chainId: 56, isPrimary: false }],
+			}),
+		);
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 56, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({ message: "siwe", signature: "0xsig" }),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 409);
+		assert.equal(db.state.inserts.length, 0);
+	});
+
+	it("lists, deletes, and sets primary wallets", async () => {
+		const db = installAuthAndDb(
+			fakeDb({
+				wallets: [{ patronId: PATRON_ID, address: ADDRESS, chainId: 56, isPrimary: false }],
+			}),
+		);
+
+		const list = await app().request("http://unit.test/auth/siwe/wallets", {
+			headers: authHeaders(),
+		});
+		assert.equal(list.status, 200);
+		assert.equal(((await list.json()) as { wallets: unknown[] }).wallets.length, 1);
+
+		const primary = await app().request(`http://unit.test/auth/siwe/wallets/${ADDRESS}/primary`, {
+			method: "POST",
+			headers: authHeaders(),
+		});
+		assert.equal(primary.status, 200);
+		assert.deepEqual(db.state.updates, [{ isPrimary: false }, { isPrimary: true }]);
+
+		const del = await app().request(`http://unit.test/auth/siwe/wallets/${ADDRESS}`, {
+			method: "DELETE",
+			headers: authHeaders(),
+		});
+		assert.equal(del.status, 200);
+	});
+
+	it("404s when deleting a missing wallet", async () => {
+		installAuthAndDb(fakeDb({ deleteCount: 0 }));
+		const res = await app().request(`http://unit.test/auth/siwe/wallets/${OTHER}`, {
+			method: "DELETE",
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 404);
+	});
+});

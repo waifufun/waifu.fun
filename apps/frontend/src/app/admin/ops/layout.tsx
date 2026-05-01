@@ -1,9 +1,9 @@
 "use client";
 
+import OpsTokenGate from "@/components/admin/ops-token-gate";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import OpsTokenGate from "@/components/admin/ops-token-gate";
 
 interface AdminOpsLayoutProps {
 	children: React.ReactNode;

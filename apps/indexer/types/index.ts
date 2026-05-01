@@ -1,5 +1,5 @@
 import type { SolanaAddressLike, SolanaNetworkIds } from "@waifufun/types";
-import type { LaunchData, SwapData, CurveCompleteData } from "./events";
+import type { CurveCompleteData, LaunchData, SwapData } from "./events";
 
 export type EventData =
 	| { event: "launch"; data: LaunchData }
@@ -10,7 +10,6 @@ export interface RpcRequest {
 	jsonrpc: string;
 	id: number;
 	method: string;
-	// biome-ignore lint/suspicious/noExplicitAny: allow
 	params?: any[];
 }
 
@@ -44,7 +43,6 @@ export interface ProcessingStats {
 
 export interface DecodedInstruction {
 	type: "launch" | "swap" | "launchAndSwap" | "withdraw" | "unknown";
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	data?: any;
 	mintAddress?: string;
 	tokenMint?: string;
