@@ -1,4 +1,4 @@
-import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
+import { TokenPairStatisticsType } from "@codex-data/sdk";
 import { isAddress as isSolanaAddress } from "@solana/kit";
 import { PublicKey } from "@solana/web3.js";
 import { codex, updateCryptoPrices } from "@waifufun/codex";

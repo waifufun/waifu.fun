@@ -22,7 +22,7 @@ function parseArgs(argv: string[]): { from: bigint; to: bigint; contract: `0x${s
 	const contract = args.get("contract") ?? process.env.FOURMEME_TOKEN_MANAGER_2 ?? DEFAULT_TOKEN_MANAGER_2;
 
 	if (!from || !to) {
-		throw new Error("Usage: bun run waifu-core:evm-indexer:backfill --from=<block> --to=<block> --contract=<address>");
+		throw new Error("Usage: bun run evm-indexer:backfill --from=<block> --to=<block> --contract=<address>");
 	}
 
 	if (!/^0x[0-9a-fA-F]{40}$/.test(contract)) {

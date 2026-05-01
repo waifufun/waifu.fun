@@ -23,4 +23,11 @@ To learn more about Next.js, take a look at the following resources:
 
 ## Deploy
 
-Production builds can be exported for static hosting (see `build:static` and `pages:deploy` in `package.json`). See the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for other deployment models.
+The frontend is a static export deployed to Cloudflare Pages.
+
+- `bun run build` runs `scripts/static-export-build.mjs` and produces `out/`.
+- `bun run pages:deploy` ships `out/` to Cloudflare Pages via wrangler.
+- CI: `.github/workflows/deploy-frontend.yml` deploys on pushes to `main`.
+
+Set `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_HOST`, and any other `NEXT_PUBLIC_*`
+flags on the Cloudflare Pages project, not in this repo.

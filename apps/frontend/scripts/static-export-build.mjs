@@ -62,9 +62,13 @@ function restoreAll() {
 stashAll();
 let exitCode = 1;
 try {
+	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
+	// (next dev) doesn't fan out to the API on every page visit.
+	const env = { ...process.env, STATIC_EXPORT: "true" };
 	const result = spawnSync("npx", ["next", "build"], {
 		cwd: root,
 		stdio: "inherit",
+		env,
 		shell: process.platform === "win32",
 	});
 	exitCode = result.status ?? 1;

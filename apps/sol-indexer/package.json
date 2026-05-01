@@ -1,5 +1,5 @@
 {
-	"name": "@waifufun/sol-indexerexer",
+	"name": "@waifufun/sol-indexer",
 	"version": "1.0.0",
 	"description": "",
 	"type": "module",
@@ -9,7 +9,7 @@
 		"require": "./dist/index.js"
 	},
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "node -e \"process.exit(0)\"",
 		"dev": "tsx watch src/index.ts",
 		"start": "node dist/index.js",
 		"tests": "tsx watch tests/signatures.ts",

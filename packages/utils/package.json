@@ -26,6 +26,7 @@
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/rpc": "workspace:*",
 		"@codex-data/sdk": "^2.3.2",
+		"graphql": "^16.9.0",
 		"@solana/kit": "^2.1.0",
 		"@solana/web3.js": "^1.98.2",
 		"bignumber.js": "^9.3.0",

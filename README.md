@@ -60,4 +60,4 @@ Backend services (`apps/api`, `apps/worker`, `apps/evm-indexer`, `apps/brain`, `
 - **Indexer Postgres:** `docker/docker-compose.indexer.yml`
 - **Multi-service Dockerfile:** `docker/Dockerfile.waifu-core`
 - **CI entry points:** `.github/workflows/ci.yml`, `build-push.yml`, `deploy*.yml`, `db-migrate.yml`, `reusable-*.yml`
-- **Scripts:** root `bun run waifu-core:*` (see `package.json`)
+- **Scripts:** root `lint`, `typecheck`, `test`, `build`, `check` (full gates), plus `dev` / `dev:core`; see `package.json`
