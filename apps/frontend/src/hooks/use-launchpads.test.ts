@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { parseWaitlistResponse } from "./use-launchpads";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseWaitlistResponse, postWaitlistSignup } from "./use-launchpads";
 
 describe("parseWaitlistResponse", () => {
 	it("treats successful waitlist responses as a created signup", () => {
@@ -21,5 +21,39 @@ describe("parseWaitlistResponse", () => {
 			ok: false,
 			error: "waitlist is not available for this launchpad yet.",
 		});
+	});
+});
+
+describe("postWaitlistSignup", () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it("normalizes email and posts the waitlist payload to the v3 route", async () => {
+		const fetchMock = vi.fn().mockResolvedValue({
+			status: 201,
+			json: async () => ({}),
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const result = await postWaitlistSignup("pump-fun", " Creator@Example.COM ");
+
+		expect(result).toEqual({ ok: true, status: "created", email: "creator@example.com" });
+		expect(fetchMock).toHaveBeenCalledWith("https://api.waifu.fun/v3/launchpads/pump-fun/waitlist", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ email: "creator@example.com" }),
+		});
+	});
+
+	it("rejects invalid email locally without calling the backend", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		const result = await postWaitlistSignup("bags", "not-an-email");
+
+		expect(result).toEqual({ ok: false, error: "enter a valid email address." });
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
