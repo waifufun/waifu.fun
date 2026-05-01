@@ -50,7 +50,7 @@ export class SolanaIndexer extends BaseIndexer {
 
 			logger.info("Solana connections reset successfully");
 		} catch (error) {
-			logger.error("Failed to reset Solana connections:", error);
+			logger.error({ err: error }, "Failed to reset Solana connections:");
 			throw error;
 		}
 	}
@@ -71,7 +71,7 @@ export class SolanaIndexer extends BaseIndexer {
 
 			logger.info("Solana health check passed");
 		} catch (error) {
-			logger.error("Solana health check failed:", error);
+			logger.error({ err: error }, "Solana health check failed:");
 			throw error;
 		}
 	}
@@ -81,7 +81,7 @@ export class SolanaIndexer extends BaseIndexer {
 			await DB.Event.findOne({}).limit(1);
 			logger.info("Database connection verified");
 		} catch (error) {
-			logger.error("Database connection failed:", error);
+			logger.error({ err: error }, "Database connection failed:");
 			throw error;
 		}
 	}
@@ -97,7 +97,7 @@ export class SolanaIndexer extends BaseIndexer {
 					await this.performHealthCheck();
 				}
 			} catch (error) {
-				logger.error("Health check failed:", error);
+				logger.error({ err: error }, "Health check failed:");
 				await this.handleCriticalError(new Error("Health check failed"));
 			}
 		}, 60000);
@@ -226,7 +226,7 @@ export class SolanaIndexer extends BaseIndexer {
 
 			const chunkPromises = chunk.map((signatureInfo) =>
 				this.processSignature(signatureInfo).catch((error) => {
-					logger.error(`Failed to process signature ${signatureInfo.signature}:`, error);
+					logger.error({ err: error }, `Failed to process signature ${signatureInfo.signature}:`);
 					return [];
 				}),
 			);
@@ -280,7 +280,7 @@ export class SolanaIndexer extends BaseIndexer {
 								logger.info(`Sync completed for slot ${slotInfo.slot}`);
 							}
 						} catch (error) {
-							logger.error(`Error during sync at slot ${slotInfo.slot}:`, error);
+							logger.error({ err: error }, `Error during sync at slot ${slotInfo.slot}:`);
 						}
 					});
 				},
