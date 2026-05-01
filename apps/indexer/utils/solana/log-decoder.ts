@@ -1,6 +1,6 @@
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class SolanaLogDecoder {
-	static decodeSwapLog(logs: string[], debugStatements = false): { buyWith: string; sellWith: string } | null {
+	static decodeSwapLog(logs: string[], _debugStatements = false): { buyWith: string; sellWith: string } | null {
 		const data = {
 			buyWith: "0",
 			sellWith: "0",

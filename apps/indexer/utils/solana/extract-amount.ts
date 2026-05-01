@@ -68,7 +68,7 @@ export class SolanaAmountExtractor {
 			return {};
 		} catch (error) {
 			if (debugStatements) {
-				logger.error("Error extracting amount gotten:", error);
+				logger.error({ err: error }, "Error extracting amount gotten:");
 			}
 			return {};
 		}

@@ -56,7 +56,7 @@ const rawEnvSchema = z.object({
 	APP_NAME: z.string().min(1).default("waifu-core"),
 	API_HOST: z.string().min(1).default("0.0.0.0"),
 	API_PORT: positivePortSchema.default(3_100),
-	CORS_ORIGIN: z.string().default("https://waifu.fun,https://waifufun.vercel.app"),
+	CORS_ORIGIN: z.string().default("https://waifu.fun,https://www.waifu.fun,https://waifufun.pages.dev"),
 	DATABASE_URL: z.string().min(1).default("postgresql://postgres:postgres@localhost:5432/waifu_core"),
 	REDIS_URL: z.string().min(1).default("redis://127.0.0.1:6379"),
 	BSC_CHAIN_ID: supportedChainIdFromEnvSchema.default(DEFAULT_CHAIN_ID),

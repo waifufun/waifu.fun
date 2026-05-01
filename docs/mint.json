@@ -27,12 +27,12 @@
 	"topbarLinks": [
 		{
 			"name": "Launch App",
-			"url": "https://waifufun.vercel.app"
+			"url": "https://www.waifu.fun"
 		}
 	],
 	"topbarCtaButton": {
 		"name": "Deploy Agent",
-		"url": "https://waifufun.vercel.app/create"
+		"url": "https://www.waifu.fun/create"
 	},
 	"tabs": [
 		{

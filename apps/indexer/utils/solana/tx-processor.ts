@@ -70,7 +70,7 @@ export class SolanaTransactionProcessor {
 						socials = this.extractSocialsFromMetadata(metadata);
 					}
 				} catch (error) {
-					logger.warn(`Failed to fetch metadata for ${contractAddress}:`, error);
+					logger.warn({ err: error }, `Failed to fetch metadata for ${contractAddress}:`);
 				}
 			}
 
@@ -106,7 +106,7 @@ export class SolanaTransactionProcessor {
 			const newToken = await DB.Token.create(tokenData);
 			logger.info(`Created token ${contractAddress} from launch event`);
 		} catch (error) {
-			logger.error("Failed to create token from launch event:", error);
+			logger.error({ err: error }, "Failed to create token from launch event:");
 		}
 	}
 

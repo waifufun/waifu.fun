@@ -299,7 +299,7 @@ export class SolanaIndexer extends BaseIndexer {
 			});
 
 			this.rpc.on("websocket:error", async (error) => {
-				logger.error("WebSocket error:", error);
+				logger.error({ err: error }, "WebSocket error:");
 				this.reconnectAttempts++;
 
 				if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -312,7 +312,7 @@ export class SolanaIndexer extends BaseIndexer {
 			logger.info(`Will sync every ${SYNC_INTERVAL}ms when new slots arrive`);
 			this.startHealthCheck();
 		} catch (error) {
-			logger.error("Error setting up efficient listener:", error);
+			logger.error({ err: error }, "Error setting up efficient listener:");
 			throw error;
 		}
 	}
@@ -500,7 +500,7 @@ export class SolanaIndexer extends BaseIndexer {
 
 			this.logFinalSummary(totalStats, showLogs);
 		} catch (error) {
-			logger.error("Error running signature-based indexer:", error);
+			logger.error({ err: error }, "Error running signature-based indexer:");
 			if (!this.isShuttingDown) {
 				throw error; // Re-throw for higher level handling
 			}
@@ -571,7 +571,7 @@ export class SolanaIndexer extends BaseIndexer {
 						}
 					}
 				} catch (error) {
-					logger.error("Error in main sync loop:", error);
+					logger.error({ err: error }, "Error in main sync loop:");
 
 					if (this.isShuttingDown) break;
 
@@ -593,7 +593,7 @@ export class SolanaIndexer extends BaseIndexer {
 				}
 			}
 		} catch (error) {
-			logger.error("Critical error in runWithRealTimeSync:", error);
+			logger.error({ err: error }, "Critical error in runWithRealTimeSync:");
 			await this.handleCriticalError(error as Error);
 		}
 	}

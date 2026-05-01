@@ -27,7 +27,7 @@ export class SolanaEventDecoder {
 			return { user, mint, bondingCurve };
 		} catch (error) {
 			if (debugStatements) {
-				logger.error("Error decoding complete event:", error);
+				logger.error({ err: error }, "Error decoding complete event:");
 			}
 			return null;
 		}

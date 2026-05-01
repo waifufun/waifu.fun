@@ -103,8 +103,6 @@ testem.log
 .yarn-integrity
 *.tsbuildinfo
 .env.local
-.vercel/
-.vercel
 .env*.local
 
 # Waifu-core (optional local store artifacts + tracked CI seed env)
