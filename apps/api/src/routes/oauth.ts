@@ -4,31 +4,33 @@
  * Browser-driven flow:
  *
  *   1. Frontend calls GET /auth/oauth/start?provider=<id>&return_to=<path>
- *      Backend generates a CSRF state, sets two short-lived HttpOnly cookies
- *      (`wf_oauth_state` + `wf_oauth_return`), and 302s the user to Steward's
- *      hosted OAuth start endpoint with `tenant=waifu` and the redirect URI
+ *      Backend sets a short-lived HttpOnly `wf_oauth_return` cookie carrying
+ *      the post-login destination, then 302s the user to Steward's hosted
+ *      OAuth start endpoint with `tenant_id=waifu` and the redirect URI
  *      pointing back at the FRONTEND's callback page.
  *
  *   2. Steward runs the provider OAuth (Google/GitHub/Discord/Twitter/Email/
  *      Passkey) and redirects back to https://waifu.fun/auth/oauth/callback
- *      with the issued JWT + state in the URL.
+ *      with the issued JWT in the URL.
  *
- *   3. The frontend callback page reads the JWT/state from the URL and POSTs
- *      to POST /auth/oauth/finalize { token, state }. This endpoint:
- *        - verifies the state cookie matches
+ *   3. The frontend callback page reads the JWT from the URL and POSTs to
+ *      POST /auth/oauth/finalize { token }. This endpoint:
  *        - verifies the Steward JWT (HS256, issuer=steward, tenant=waifu)
  *        - upserts a `patron_users` row keyed by `steward_user_id`
  *        - sets the long-lived `wf_session` cookie carrying the Steward JWT
- *        - clears the temp state/return cookies
+ *        - clears the temp return cookie
  *        - returns the (sanitized) `return_to` for the frontend to navigate to
  *
  * Why split the callback between FE and BE? Steward issues the JWT via a 302
  * with the token in a URL parameter, so the only place that can pick it up
  * cleanly is the frontend SPA. The backend then re-verifies and binds the
  * cookie under the api.waifu.fun origin.
+ *
+ * Note: there is no app-level CSRF state token. Steward keeps its own
+ * server-side state for the OAuth dance and does not echo a caller-supplied
+ * `state` back to us, so the HS256 JWT signature against STEWARD_JWT_SECRET
+ * is the real authn at /finalize.
  */
-
-import { randomBytes } from "node:crypto";
 
 import { patronUsers } from "@waifufun/db";
 import { getDatabase } from "@waifufun/db";
@@ -65,18 +67,23 @@ function isProvider(value: string | undefined): value is Provider {
 
 // ─── Cookie naming + helpers ──────────────────────────────────────
 
-export const OAUTH_STATE_COOKIE = "wf_oauth_state";
 export const OAUTH_RETURN_COOKIE = "wf_oauth_return";
 const OAUTH_TEMP_TTL_SECONDS = 600; // 10 minutes — enough for the round-trip
 
 function buildTempCookie(name: string, value: string, secure: boolean): string {
 	const parts = [`${name}=${value}`, `Max-Age=${OAUTH_TEMP_TTL_SECONDS}`, "Path=/", "HttpOnly", "SameSite=Lax"];
+	// Domain set so wf_oauth_return survives the Steward round-trip back to
+	// the Next.js /api/auth/finalize proxy on a sibling subdomain.
+	const domain = process.env.SESSION_COOKIE_DOMAIN;
+	if (domain) parts.push(`Domain=${domain}`);
 	if (secure) parts.push("Secure");
 	return parts.join("; ");
 }
 
 function clearTempCookie(name: string, secure: boolean): string {
 	const parts = [`${name}=`, "Max-Age=0", "Path=/", "HttpOnly", "SameSite=Lax"];
+	const domain = process.env.SESSION_COOKIE_DOMAIN;
+	if (domain) parts.push(`Domain=${domain}`);
 	if (secure) parts.push("Secure");
 	return parts.join("; ");
 }
@@ -105,10 +112,6 @@ function sanitizeReturnTo(raw: string | null | undefined): string | null {
 	if (!raw.startsWith("/")) return null;
 	if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
 	return raw;
-}
-
-function generateState(): string {
-	return randomBytes(32).toString("hex");
 }
 
 // ─── Test injection hooks ─────────────────────────────────────────
@@ -142,7 +145,7 @@ interface BuiltStartUrl {
 	redirectUri: string;
 }
 
-function buildStewardStartUrl(provider: Provider, state: string): BuiltStartUrl {
+function buildStewardStartUrl(provider: Provider): BuiltStartUrl {
 	const stewardBase = process.env.STEWARD_API_URL ?? "https://eliza.steward.fi";
 	const tenant = process.env.STEWARD_TENANT_ID ?? "waifu";
 	const frontendBase = process.env.FRONTEND_URL ?? "https://waifu.fun";
@@ -156,11 +159,11 @@ function buildStewardStartUrl(provider: Provider, state: string): BuiltStartUrl 
 	const path = isOAuth ? `/auth/oauth/${provider}/authorize` : `/auth/${provider}/start`;
 
 	const url = new URL(path, stewardBase);
+	// Steward keys on `tenant_id`. `tenant` is kept as a belt-and-suspenders
+	// alias for any older Steward path that may still read the legacy name.
+	url.searchParams.set("tenant_id", tenant);
 	url.searchParams.set("tenant", tenant);
-	url.searchParams.set("state", state);
 	url.searchParams.set("redirect_uri", redirectUri);
-	// Email + Passkey use return_to in the eliza-cloud pattern; pass both so we
-	// are compatible with both shapes Steward may want.
 	if (!isOAuth) {
 		url.searchParams.set("return_to", redirectUri);
 	}

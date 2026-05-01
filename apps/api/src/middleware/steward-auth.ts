@@ -36,14 +36,15 @@ export async function verifyStewardJwt(token: string): Promise<StewardAuthPrinci
 		});
 
 		const userId = payload.userId ?? payload.sub;
-		const tenantId = payload.tenantId;
+		const tenantId = payload.tenantId ?? payload.tenant_id;
 
 		if (typeof userId !== "string" || typeof tenantId !== "string") {
 			return null;
 		}
 
-		// Reject tokens not issued for our tenant
-		if (tenantId !== EXPECTED_TENANT()) {
+		// Steward issues per-user `personal-<userId>` tenants alongside the org
+		// tenant; accept either, but only when the suffix matches the JWT's userId.
+		if (tenantId !== EXPECTED_TENANT() && tenantId !== `personal-${userId}`) {
 			return null;
 		}
 
