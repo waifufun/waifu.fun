@@ -39,7 +39,7 @@ type FinalizeBody =
 	| {
 			provider: "oauth";
 			token: string;
-			state: string;
+			refreshToken?: string | null;
 	  }
 	| {
 			provider: "twitter";
@@ -53,7 +53,7 @@ function isFinalizeBody(value: unknown): value is FinalizeBody {
 	if (typeof v.token !== "string") return false;
 	if (v.provider === "email") return typeof v.email === "string";
 	if (v.provider === "passkey") return true;
-	if (v.provider === "oauth") return typeof v.state === "string";
+	if (v.provider === "oauth") return true;
 	if (v.provider === "twitter") return true;
 	return false;
 }
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 	const { provider, ...providerBody } = body;
 	const path = upstreamPathFor(provider);
 
-	// Forward incoming cookies (e.g. wf_email_return / wf_oauth_state) so
+	// Forward incoming cookies (e.g. wf_email_return / wf_oauth_return) so
 	// the upstream API can read them.
 	const incomingCookie = req.headers.get("cookie") ?? "";
 
