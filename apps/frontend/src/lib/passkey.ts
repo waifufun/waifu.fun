@@ -19,6 +19,14 @@ const STEWARD_BASE = process.env.NEXT_PUBLIC_STEWARD_URL ?? "https://eliza.stewa
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 const TENANT = process.env.NEXT_PUBLIC_STEWARD_TENANT_ID ?? "waifu";
 
+const PLATFORM_AUTHENTICATOR_ATTACHMENT = "platform" as const;
+const PLATFORM_HINT = "client-device" as const;
+
+type ClientDeviceHint = typeof PLATFORM_HINT;
+type CredentialHint = ClientDeviceHint | "security-key" | "hybrid";
+type PasskeyRequestOptionsWithHints = PublicKeyCredentialRequestOptionsJSON & { hints?: CredentialHint[] };
+type PasskeyCreationOptionsWithHints = PublicKeyCredentialCreationOptionsJSON & { hints?: CredentialHint[] };
+
 export class PasskeyError extends Error {
 	readonly code:
 		| "USER_CANCELLED"
@@ -79,6 +87,37 @@ async function finalizeWithBackend(token: string, email: string, returnTo?: stri
 	return json?.data?.return_to ?? "/patron";
 }
 
+function withClientDeviceHint<T extends { hints?: CredentialHint[] }>(options: T): T {
+	const hints = options.hints ?? [];
+	if (hints.includes(PLATFORM_HINT)) return options;
+	return { ...options, hints: [PLATFORM_HINT, ...hints] };
+}
+
+export function preparePasskeyLoginOptions(
+	options: PublicKeyCredentialRequestOptionsJSON,
+): PasskeyRequestOptionsWithHints {
+	// Defense in depth for the QR regression fixed in waifu PRs #412 and #414:
+	// ask Steward for platform credentials, then also ship the browser a
+	// client-device hint so Chrome/Safari prefer Touch ID, Face ID, or Windows Hello.
+	return withClientDeviceHint(options as PasskeyRequestOptionsWithHints);
+}
+
+export function preparePasskeyRegistrationOptions(
+	options: PublicKeyCredentialCreationOptionsJSON,
+): PasskeyCreationOptionsWithHints {
+	const next = withClientDeviceHint(options as PasskeyCreationOptionsWithHints);
+	return {
+		...next,
+		authenticatorSelection: {
+			...next.authenticatorSelection,
+			authenticatorAttachment:
+				next.authenticatorSelection?.authenticatorAttachment ?? PLATFORM_AUTHENTICATOR_ATTACHMENT,
+			residentKey: next.authenticatorSelection?.residentKey ?? "preferred",
+			userVerification: next.authenticatorSelection?.userVerification ?? "preferred",
+		},
+	};
+}
+
 /**
  * Try to log in with a passkey for the given email. Returns the redirect path on success.
  * Throws PasskeyError on failure or cancellation.
@@ -94,7 +133,11 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 			error?: string;
 			message?: string;
 		} & PublicKeyCredentialRequestOptionsJSON
-	>("/auth/passkey/login/options", { email });
+	>("/auth/passkey/login/options", {
+		email,
+		authenticatorAttachment: PLATFORM_AUTHENTICATOR_ATTACHMENT,
+		hints: [PLATFORM_HINT],
+	});
 
 	if (optionsRes.status === 404) {
 		throw new PasskeyError("NO_PASSKEY", "no passkey found for that email");
@@ -120,7 +163,7 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 	const startedAt = typeof performance !== "undefined" ? performance.now() : Date.now();
 	let assertion: Awaited<ReturnType<typeof startAuthentication>>;
 	try {
-		assertion = await startAuthentication({ optionsJSON: optionsRes.body });
+		assertion = await startAuthentication({ optionsJSON: preparePasskeyLoginOptions(optionsRes.body) });
 	} catch (err) {
 		if (isCancelled(err)) {
 			const elapsedMs = (typeof performance !== "undefined" ? performance.now() : Date.now()) - startedAt;
@@ -170,7 +213,8 @@ export async function registerPasskey(email: string, returnTo?: string): Promise
 		// Hint to Steward + browser: prefer the platform authenticator
 		// (Touch ID / Face ID / Windows Hello) over the QR/security-key
 		// picker. Requires Steward >= 0.3.6 (PR #30).
-		authenticatorAttachment: "platform",
+		authenticatorAttachment: PLATFORM_AUTHENTICATOR_ATTACHMENT,
+		hints: [PLATFORM_HINT],
 	});
 
 	if (optionsRes.status === 429) {
@@ -185,7 +229,7 @@ export async function registerPasskey(email: string, returnTo?: string): Promise
 
 	let attestation: Awaited<ReturnType<typeof startRegistration>>;
 	try {
-		attestation = await startRegistration({ optionsJSON: optionsRes.body });
+		attestation = await startRegistration({ optionsJSON: preparePasskeyRegistrationOptions(optionsRes.body) });
 	} catch (err) {
 		if (isCancelled(err)) {
 			throw new PasskeyError("USER_CANCELLED", "passkey prompt cancelled");

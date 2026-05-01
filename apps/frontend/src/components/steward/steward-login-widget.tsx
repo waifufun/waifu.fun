@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { EASE_OUT_EXPO } from "@/lib/motion";
-import { PasskeyError, loginOrRegisterPasskey } from "@/lib/passkey";
+import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Fingerprint, Loader2, Mail, Wallet } from "lucide-react";
@@ -45,7 +45,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 type ProviderId = "google" | "github" | "twitter";
 
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
-type PasskeyPhase = "idle" | "prompting" | "error";
+type PasskeyPhase = "idle" | "prompting" | "registering" | "error";
 
 type ProviderTile = {
 	id: ProviderId;
@@ -70,6 +70,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 	const [emailError, setEmailError] = useState<string | null>(null);
 	const [passkeyPhase, setPasskeyPhase] = useState<PasskeyPhase>("idle");
 	const [passkeyError, setPasskeyError] = useState<string | null>(null);
+	const [passkeyNotice, setPasskeyNotice] = useState<string | null>(null);
 
 	// Resolve return_to: explicit prop > URL param > current pathname > /patron
 	const resolvedReturnTo = useMemo(() => {
@@ -155,13 +156,29 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 		const trimmed = email.trim().toLowerCase();
 		if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
 			setPasskeyPhase("error");
+			setPasskeyNotice(null);
 			setPasskeyError("enter your email above first, then tap passkey");
 			return;
 		}
 		setPasskeyPhase("prompting");
 		setPasskeyError(null);
+		setPasskeyNotice(null);
 		try {
-			const nextPath = await loginOrRegisterPasskey(trimmed, resolvedReturnTo);
+			let nextPath: string;
+			try {
+				nextPath = await loginWithPasskey(trimmed, resolvedReturnTo);
+			} catch (err) {
+				if (err instanceof PasskeyError && err.code === "NO_PASSKEY") {
+					setPasskeyPhase("registering");
+					nextPath = await registerPasskey(trimmed, resolvedReturnTo);
+				} else if (err instanceof PasskeyError && err.code === "NO_LOCAL_CREDENTIAL") {
+					setPasskeyNotice("No passkey is set up on this device. Setting one up now.");
+					setPasskeyPhase("registering");
+					nextPath = await registerPasskey(trimmed, resolvedReturnTo);
+				} else {
+					throw err;
+				}
+			}
 			onOpenChange(false);
 			// Full page nav so the wf_session cookie is sent on the next request.
 			if (typeof window !== "undefined") {
@@ -176,6 +193,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 				return;
 			}
 			setPasskeyPhase("error");
+			setPasskeyNotice(null);
 			setPasskeyError(err instanceof Error ? err.message : "passkey failed");
 		}
 	}, [email, resolvedReturnTo, onOpenChange, router]);
@@ -287,14 +305,14 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 						<button
 							type="button"
 							onClick={handlePasskey}
-							disabled={passkeyPhase === "prompting"}
+							disabled={passkeyPhase === "prompting" || passkeyPhase === "registering"}
 							aria-label="continue with passkey"
 							className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-sm border border-white/10 bg-[#0b0b0d] py-2.5 px-4 text-sm font-medium text-[#e4e4e7] transition-all duration-200 hover:border-white/25 hover:bg-[#0e0e10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 disabled:opacity-50"
 						>
-							{passkeyPhase === "prompting" ? (
+							{passkeyPhase === "prompting" || passkeyPhase === "registering" ? (
 								<>
 									<Loader2 className="size-4 animate-spin" strokeWidth={1.75} aria-hidden="true" />
-									<span>waiting for passkey</span>
+									<span>{passkeyPhase === "registering" ? "setting up passkey" : "waiting for passkey"}</span>
 								</>
 							) : (
 								<>
@@ -303,6 +321,11 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 								</>
 							)}
 						</button>
+					) : null}
+					{passkeyNotice ? (
+						<output className="mt-2 block text-xs text-[#a1a1aa] font-mono" aria-live="polite">
+							{passkeyNotice}
+						</output>
 					) : null}
 					{passkeyPhase === "error" && passkeyError ? (
 						<p className="mt-2 text-xs text-[#f87171] font-mono" role="alert">
