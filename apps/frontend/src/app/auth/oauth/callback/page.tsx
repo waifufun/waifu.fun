@@ -38,7 +38,8 @@ function CallbackInner() {
 				? new URLSearchParams(window.location.hash.slice(1))
 				: new URLSearchParams();
 		const token = params.get("token") ?? hashParams.get("token");
-		const state = params.get("state") ?? hashParams.get("state");
+		// Steward emits `?token=&refreshToken=` — it does NOT echo our state.
+		const refreshToken = params.get("refreshToken") ?? hashParams.get("refreshToken");
 		const errorParam = params.get("error") ?? hashParams.get("error");
 		const errorDescription = params.get("error_description") ?? hashParams.get("error_description");
 
@@ -49,9 +50,9 @@ function CallbackInner() {
 			return;
 		}
 
-		if (!token || !state) {
+		if (!token) {
 			setPhase("error");
-			setError("missing token or state in callback URL");
+			setError("missing token in callback URL");
 			return;
 		}
 
@@ -65,16 +66,22 @@ function CallbackInner() {
 					method: "POST",
 					credentials: "include",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ provider: "oauth", token, state }),
+					body: JSON.stringify({ provider: "oauth", token, refreshToken }),
 					signal: controller.signal,
 				});
 				if (!res.ok) {
-					const body = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
+					const body = (await res.json().catch(() => null)) as {
+						error?: string;
+						message?: string;
+					} | null;
 					throw new Error(body?.message ?? body?.error ?? `http ${res.status}`);
 				}
 				const json = (await res.json()) as {
 					ok: boolean;
-					data: { return_to: string; patron: { stewardUserId: string; email: string | null } };
+					data: {
+						return_to: string;
+						patron: { stewardUserId: string; email: string | null };
+					};
 				};
 				const returnTo = json?.data?.return_to ?? "/patron";
 
