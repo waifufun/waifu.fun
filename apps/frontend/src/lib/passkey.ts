@@ -89,17 +89,22 @@ async function finalizeWithBackend(token: string, email: string, returnTo?: stri
 
 function withClientDeviceHint<T extends { hints?: CredentialHint[] }>(options: T): T {
 	const hints = options.hints ?? [];
-	if (hints.includes(PLATFORM_HINT)) return options;
-	return { ...options, hints: [PLATFORM_HINT, ...hints] };
+	const withoutPlatform = hints.filter((hint) => hint !== PLATFORM_HINT);
+	return { ...options, hints: [PLATFORM_HINT, ...withoutPlatform] };
 }
 
 export function preparePasskeyLoginOptions(
 	options: PublicKeyCredentialRequestOptionsJSON,
 ): PasskeyRequestOptionsWithHints {
-	// Defense in depth for the QR regression fixed in waifu PRs #412 and #414:
-	// ask Steward for platform credentials, then also ship the browser a
-	// client-device hint so Chrome/Safari prefer Touch ID, Face ID, or Windows Hello.
-	return withClientDeviceHint(options as PasskeyRequestOptionsWithHints);
+	// Defense in depth for the QR regression fixed in waifu PRs #412, #414, and #431:
+	// ask Steward for platform credentials, then also force the browser-side
+	// optionsJSON to prefer the local device. Steward currently preserves
+	// authenticatorAttachment for registration but can drop hints, so do this
+	// after the options response, immediately before startAuthentication().
+	return {
+		...withClientDeviceHint(options as PasskeyRequestOptionsWithHints),
+		userVerification: "preferred",
+	};
 }
 
 export function preparePasskeyRegistrationOptions(
@@ -110,10 +115,9 @@ export function preparePasskeyRegistrationOptions(
 		...next,
 		authenticatorSelection: {
 			...next.authenticatorSelection,
-			authenticatorAttachment:
-				next.authenticatorSelection?.authenticatorAttachment ?? PLATFORM_AUTHENTICATOR_ATTACHMENT,
-			residentKey: next.authenticatorSelection?.residentKey ?? "preferred",
-			userVerification: next.authenticatorSelection?.userVerification ?? "preferred",
+			authenticatorAttachment: PLATFORM_AUTHENTICATOR_ATTACHMENT,
+			residentKey: "preferred",
+			userVerification: "preferred",
 		},
 	};
 }

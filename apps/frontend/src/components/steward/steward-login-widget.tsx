@@ -108,7 +108,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 			// requirePatron auth path accepts both Steward JWT and X-OAuth
 			// session tokens.
 			if (provider === "twitter") {
-				const u = new URL(`${API_URL}/auth/twitter/login`);
+				const u = new URL("/auth/twitter/login", window.location.origin);
 				u.searchParams.set("return_to", resolvedReturnTo);
 				window.location.href = u.toString();
 				return;

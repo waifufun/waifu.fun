@@ -33,10 +33,14 @@ function CallbackInner() {
 		if (ranRef.current) return;
 		ranRef.current = true;
 
-		const token = params.get("token");
-		const state = params.get("state");
-		const errorParam = params.get("error");
-		const errorDescription = params.get("error_description");
+		const hashParams =
+			typeof window !== "undefined" && window.location.hash.startsWith("#")
+				? new URLSearchParams(window.location.hash.slice(1))
+				: new URLSearchParams();
+		const token = params.get("token") ?? hashParams.get("token");
+		const state = params.get("state") ?? hashParams.get("state");
+		const errorParam = params.get("error") ?? hashParams.get("error");
+		const errorDescription = params.get("error_description") ?? hashParams.get("error_description");
 
 		// Steward (or the provider) returned an error before we even got the JWT.
 		if (errorParam) {

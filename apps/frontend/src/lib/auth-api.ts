@@ -56,6 +56,6 @@ export function redirectToXLogin(): void {
 	} catch {
 		/* ignore */
 	}
-	const url = `${API_URL}/auth/twitter/login?return_to=${encodeURIComponent(returnTo)}`;
+	const url = `/auth/twitter/login?return_to=${encodeURIComponent(returnTo)}`;
 	window.location.href = url;
 }
