@@ -17,7 +17,7 @@ import { type NextRequest, NextResponse } from "next/server";
  * Set-Cookie on www.waifu.fun. Browsers store same-origin cookies
  * unconditionally, so this bypasses the cross-origin storage failure mode.
  *
- * Body: { provider: "email" | "passkey" | "oauth", ...providerSpecificFields }
+ * Body: { provider: "email" | "passkey" | "oauth" | "twitter", ...providerSpecificFields }
  * Returns: the upstream JSON body verbatim, plus the wf_session cookie set
  *          on the .waifu.fun domain via THIS response.
  */
@@ -40,6 +40,11 @@ type FinalizeBody =
 			provider: "oauth";
 			token: string;
 			state: string;
+	  }
+	| {
+			provider: "twitter";
+			token: string;
+			return_to?: string;
 	  };
 
 function isFinalizeBody(value: unknown): value is FinalizeBody {
@@ -49,12 +54,14 @@ function isFinalizeBody(value: unknown): value is FinalizeBody {
 	if (v.provider === "email") return typeof v.email === "string";
 	if (v.provider === "passkey") return true;
 	if (v.provider === "oauth") return typeof v.state === "string";
+	if (v.provider === "twitter") return true;
 	return false;
 }
 
 function upstreamPathFor(provider: FinalizeBody["provider"]): string {
 	if (provider === "email") return "/auth/email/finalize";
 	if (provider === "passkey") return "/auth/passkey/finalize";
+	if (provider === "twitter") return "/auth/twitter/finalize";
 	return "/auth/oauth/finalize";
 }
 
