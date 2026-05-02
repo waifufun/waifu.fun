@@ -50,7 +50,7 @@ export const COMING_SOON_COPY: Partial<Record<LaunchpadId, ComingSoonCopy>> = {
 		],
 		waitlistHelper: "Join if reward attribution is central to your launch plan.",
 	},
-	custom: {
+	"custom-evm": {
 		label: "adapter sdk track",
 		readiness: "for teams bringing their own launch contract or venue.",
 		modalTitle: "custom adapter waitlist",

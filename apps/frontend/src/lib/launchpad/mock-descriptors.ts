@@ -1,8 +1,8 @@
 import type { LaunchpadDescriptor } from "./types";
 
 /**
- * Local mock list of launchpads. Used by use-launchpads hook when
- * GET /v3/launchpads 404s or local development cannot reach the API.
+ * Local mock list of launchpads. Used by use-launchpads hook when the
+ * backend launchpad endpoint is unreachable or in local development.
  */
 export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 	{
@@ -12,16 +12,6 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 		displayName: "four.meme tax",
 		shortDescription: "configurable trade tax that funds the agent's treasury, holders, burn, and LP.",
 		feeSummary: "1 / 3 / 5 / 10% trade tax. you split it.",
-		graduationTarget: "24 BNB → PancakeSwap V3",
-		badges: ["recommended"],
-	},
-	{
-		id: "four-meme-regular",
-		status: "live",
-		chain: "bsc",
-		displayName: "four.meme regular",
-		shortDescription: "no creator-side tax. simple bonding curve, no ongoing routing.",
-		feeSummary: "1% during curve, 0% post-graduation.",
 		graduationTarget: "24 BNB → PancakeSwap V3",
 	},
 	{
@@ -35,46 +25,63 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 		badges: ["advanced"],
 	},
 	{
+		id: "four-meme-regular",
+		status: "live",
+		chain: "bsc",
+		displayName: "four.meme regular",
+		shortDescription: "no creator-side tax. simple bonding curve, no ongoing routing.",
+		feeSummary: "1% during curve, 0% post-graduation.",
+		graduationTarget: "24 BNB → PancakeSwap V3",
+	},
+	{
+		id: "meteora",
+		status: "coming-soon",
+		chain: "solana",
+		displayName: "meteora",
+		shortDescription: "solana DLMM-native launch path with concentrated liquidity from day one.",
+		feeSummary: "DLMM bin fees, configurable.",
+		graduationTarget: "Meteora DLMM (native).",
+		comingSoonNotes: "needs solana wallet adapter and meteora SDK integration.",
+	},
+	{
 		id: "pump-fun",
 		status: "coming-soon",
 		chain: "solana",
 		displayName: "pump.fun",
-		shortDescription: "Solana-native curve for creators whose audience already expects the pump.fun route.",
+		shortDescription: "solana-native curve for creators whose audience already expects the pump.fun route.",
 		feeSummary: "platform fee model.",
 		graduationTarget: "Raydium",
-		expectedAvailability: "Wave 4",
-		comingSoonNotes: "Requires Solana wallet adapter, metadata handling, and migration payload support.",
+		comingSoonNotes: "needs solana wallet adapter, metadata handling, and migration payload support.",
 	},
 	{
 		id: "bags",
 		status: "coming-soon",
 		chain: "solana",
 		displayName: "bags",
-		shortDescription: "Solana launch path for creators who want attribution and reward routing in the flow.",
+		shortDescription: "solana launch path for creators who want attribution and reward routing in the flow.",
 		feeSummary: "creator reward model.",
 		graduationTarget: "Meteora DLMM",
-		expectedAvailability: "Wave 4",
-		comingSoonNotes: "Requires Solana wallet adapter and reward-split UX validation.",
+		comingSoonNotes: "needs solana wallet adapter and reward-split UX validation.",
 	},
 	{
-		id: "custom",
+		id: "custom-evm",
 		status: "coming-soon",
 		chain: "ethereum",
-		displayName: "custom",
-		shortDescription: "Adapter SDK path for teams bringing their own launch contract or venue.",
+		displayName: "custom evm",
+		shortDescription: "bring your own EVM launch contract or venue. adapter SDK.",
 		feeSummary: "configured by adapter.",
-		graduationTarget: "configurable",
-		expectedAvailability: "Wave 5+",
-		comingSoonNotes: "Adapter SDK shape is still being designed with early teams.",
+		graduationTarget: "configurable.",
+		comingSoonNotes: "adapter SDK shape is being designed with early teams.",
 	},
 ];
 
 /** Fixed render order, regardless of API order. */
 export const LAUNCHPAD_DISPLAY_ORDER = [
 	"four-meme-tax",
-	"four-meme-regular",
 	"flap",
+	"four-meme-regular",
+	"meteora",
 	"pump-fun",
 	"bags",
-	"custom",
+	"custom-evm",
 ] as const;
