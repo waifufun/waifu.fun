@@ -6,7 +6,19 @@ import type {
 	AgentStatusFilter,
 } from "@/components/agents-discover/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+/** Server-side fetch requires an absolute URL; client can use a relative `/api` BFF path. */
+function getApiBase(): string {
+	const configured = process.env.NEXT_PUBLIC_API_URL;
+	if (configured?.startsWith("http://") || configured?.startsWith("https://")) {
+		return configured.replace(/\/$/, "");
+	}
+	const pathBase = configured?.replace(/\/$/, "") || "/api";
+	if (typeof window !== "undefined") {
+		return pathBase;
+	}
+	const origin = (process.env.NEXT_PUBLIC_HOST || "https://www.waifu.fun").replace(/\/$/, "");
+	return `${origin}${pathBase.startsWith("/") ? pathBase : `/${pathBase}`}`;
+}
 
 /**
  * Backend returns { agentId, name, symbol, avatarUrl, ... } (see
@@ -123,7 +135,7 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 	if (includeLegacy) qs.set("includeLegacy", "true");
 
 	try {
-		const res = await fetch(`${API_BASE}/v2/agents?${qs.toString()}`, {
+		const res = await fetch(`${getApiBase()}/v2/agents?${qs.toString()}`, {
 			next: { revalidate: 10 },
 		});
 		if (!res.ok) {
@@ -184,7 +196,7 @@ async function fetchAgentsFallback({
 			category: "new",
 			origin: "auto-fun",
 		};
-		const res = await fetch(`${API_BASE}/tokens`, {
+		const res = await fetch(`${getApiBase()}/tokens`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(body),
@@ -246,7 +258,7 @@ export async function fetchAgentStats(): Promise<{
 	graduatedCount: number;
 }> {
 	try {
-		const res = await fetch(`${API_BASE}/v2/agents/stats`, {
+		const res = await fetch(`${getApiBase()}/v2/agents/stats`, {
 			next: { revalidate: 20 },
 		});
 		if (res.ok) {
@@ -296,7 +308,7 @@ export interface LiveTrade {
 
 export async function fetchRecentTrades(limit = 10): Promise<LiveTrade[]> {
 	try {
-		const res = await fetch(`${API_BASE}/v2/agents/trades?limit=${limit}`, { next: { revalidate: 5 } });
+		const res = await fetch(`${getApiBase()}/v2/agents/trades?limit=${limit}`, { next: { revalidate: 5 } });
 		if (res.ok) {
 			const data = await res.json();
 			const arr = Array.isArray(data) ? data : (data.trades ?? data.docs ?? []);
@@ -312,7 +324,7 @@ export async function fetchRecentTrades(limit = 10): Promise<LiveTrade[]> {
 		if (!agents.length) return [];
 		const first = agents[0];
 		if (!first) return [];
-		const res = await fetch(`${API_BASE}/v2/agents/${first.tokenAddress}/trades`, { next: { revalidate: 5 } });
+		const res = await fetch(`${getApiBase()}/v2/agents/${first.tokenAddress}/trades`, { next: { revalidate: 5 } });
 		if (!res.ok) return [];
 		const data = await res.json();
 		const trades = Array.isArray(data) ? data : (data.docs ?? data.trades ?? []);

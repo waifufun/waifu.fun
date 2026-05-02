@@ -1,26 +1,26 @@
+import { TokenPairStatisticsType } from "@codex-data/sdk";
+import { isAddress as isSolanaAddress } from "@solana/kit";
+import { PublicKey } from "@solana/web3.js";
+import { codex, updateCryptoPrices } from "@waifufun/codex";
+import { CHAINID_TO_CODEX_NETWORK_ID } from "@waifufun/constants";
+import DB from "@waifufun/database";
+import logger from "@waifufun/logger";
+import { SolanaRpcProvider } from "@waifufun/rpc";
+import { EVMRpcProvider } from "@waifufun/rpc";
 import {
-	EvmChainIds,
-	SolanaNetworkIds,
 	type AddressLike,
 	type EvmAddressLike,
+	EvmChainIds,
 	type IToken,
 	type SolanaAddressLike,
+	SolanaNetworkIds,
 	type TChain,
 	type TChainId,
 } from "@waifufun/types";
-import { isAddress as isSolanaAddress } from "@solana/kit";
-import { formatUnits, getAddress, isAddress as isEvmAddress, type Address } from "viem";
-import logger from "@waifufun/logger";
-import { CHAINID_TO_CODEX_NETWORK_ID } from "@waifufun/constants";
-import { codex, updateCryptoPrices } from "@waifufun/codex";
-import dotenv from "dotenv";
-import { TokenPairStatisticsType } from "@codex-data/sdk/dist/sdk/generated/graphql";
-import DB from "@waifufun/database";
-import moment from "moment";
-import { SolanaRpcProvider } from "@waifufun/rpc";
-import { EVMRpcProvider } from "@waifufun/rpc";
-import { PublicKey } from "@solana/web3.js";
 import { BigNumber } from "bignumber.js";
+import dotenv from "dotenv";
+import moment from "moment";
+import { type Address, formatUnits, getAddress, isAddress as isEvmAddress } from "viem";
 
 dotenv.config();
 export { codex, updateCryptoPrices } from "@waifufun/codex";

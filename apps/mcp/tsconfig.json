@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.node.base.json",
+	"compilerOptions": {
+		"rootDir": "src",
+		"outDir": "dist",
+		"noEmit": true,
+		"types": ["node"],
+		"exactOptionalPropertyTypes": true,
+		"tsBuildInfoFile": ".turbo/tsconfig.tsbuildinfo"
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["dist", "node_modules"]
+}

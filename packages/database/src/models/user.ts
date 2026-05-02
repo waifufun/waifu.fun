@@ -1,5 +1,5 @@
 import type { IUser } from "@waifufun/types";
-import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
+import Mongoose, { type Model as ModelType, Schema, type Model as MongooseModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 const schema = new Schema<IUser, ModelType<IUser>>(
@@ -31,7 +31,7 @@ schema.index({ address: 1, suspended: 1 });
 schema.index({ adminRole: 1 }, { sparse: true });
 schema.index({ adminPermissions: 1 });
 
-const Model = Mongoose.model<IUser, PaginateModel<IUser>>("User", schema);
+const Model = Mongoose.model<IUser, MongooseModel<IUser>>("User", schema);
 
 Model.createIndexes();
 

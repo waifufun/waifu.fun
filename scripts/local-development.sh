@@ -18,8 +18,8 @@ if $all_running; then
   exit 0
 fi
 
-echo "🚀 Starting missing Docker services with pnpm..."
-pnpm run docker:up
+echo "🚀 Starting missing Docker services..."
+bun run docker:up
 
 echo "⏳ Waiting for containers to be ready..."
 start_time=$(date +%s)

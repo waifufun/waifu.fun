@@ -1,8 +1,8 @@
 "use client";
 
+import { ADMIN_TOKEN_KEY, getAdminToken } from "@/lib/api/admin";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ADMIN_TOKEN_KEY, getAdminToken } from "@/lib/api/admin";
 
 const TOKEN_EVENT = "waifu-admin-token-change";
 

@@ -1,0 +1,39 @@
+{
+	"name": "@waifufun/config",
+	"type": "module",
+	"version": "0.0.0",
+	"private": true,
+	"license": "MIT",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"clean": "rm -rf dist",
+		"check": "tsc -p tsconfig.json --noEmit",
+		"lint": "biome format . --write && biome lint . --fix"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./chains": {
+			"types": "./dist/chains.d.ts",
+			"import": "./dist/chains.js"
+		},
+		"./env": {
+			"types": "./dist/env.d.ts",
+			"import": "./dist/env.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"dependencies": {
+		"zod": "^3.24.2"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.3",
+		"typescript": "^5.4.5"
+	}
+}

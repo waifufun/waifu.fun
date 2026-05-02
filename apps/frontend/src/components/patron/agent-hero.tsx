@@ -1,8 +1,8 @@
 "use client";
 
+import type { AgentDetail } from "@/lib/api/patron";
 import Image from "next/image";
 import Link from "next/link";
-import type { AgentDetail } from "@/lib/api/patron";
 import StatusBadge from "./status-badge";
 
 type Props = {

@@ -1,15 +1,10 @@
-import type { Connection } from "@solana/web3.js";
 import type { Program } from "@coral-xyz/anchor";
 import type { AnchorProvider } from "@coral-xyz/anchor";
+import type { Connection } from "@solana/web3.js";
 import type { ProgramContext } from "./programs";
 import type { Wallet } from "./utils/customWallet";
 
-import type {
-	RaydiumVaultTypes,
-	MeteoraVaultTypes,
-	CurrentAutofunTypes,
-	LegacyAutofunTypes,
-} from "@waifufun/programs";
+import type { CurrentAutofunTypes, LegacyAutofunTypes, MeteoraVaultTypes, RaydiumVaultTypes } from "@waifufun/programs";
 
 export type RpcClient = Connection;
 

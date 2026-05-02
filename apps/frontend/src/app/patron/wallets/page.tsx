@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import WalletManagementPanel from "@/components/patron/wallet-management-panel";
+import { WalletsPanelLoader } from "./wallets-panel-loader";
 
 export const metadata: Metadata = {
 	title: "wallets — waifu.fun",
@@ -19,7 +19,7 @@ export default function WalletsPage() {
 					new launches by default.
 				</p>
 			</div>
-			<WalletManagementPanel />
+			<WalletsPanelLoader />
 		</div>
 	);
 }

@@ -1,8 +1,8 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import type { PatronAgent } from "@/lib/api/patron";
 import AgentCard from "./agent-card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = {
 	agents: PatronAgent[] | undefined;

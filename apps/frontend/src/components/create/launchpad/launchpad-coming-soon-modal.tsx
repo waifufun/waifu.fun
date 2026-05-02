@@ -1,11 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { EASE_OUT_EXPO } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 import { postWaitlistSignup } from "@/hooks/use-launchpads";
 import type { LaunchpadDescriptor } from "@/lib/launchpad/types";
+import { EASE_OUT_EXPO } from "@/lib/motion";
+import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { getComingSoonCopy } from "./coming-soon-copy";
 import { CloseIcon } from "./launchpad-icons";
 

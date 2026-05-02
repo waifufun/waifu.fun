@@ -9,13 +9,17 @@
 		"classMembers": "off",
 		"duplicates": "off"
 	},
-	"ignoreDependencies": ["@biomejs/biome", "@semantic-release/github"],
+	"ignoreDependencies": ["@semantic-release/github"],
 	"workspaces": {
+		".": {
+			"ignoreFiles": ["demo/**/*.ts", "scripts/**/*.ts"]
+		},
 		"apps/frontend": {
+			"entry": ["workers/**/*.ts"],
 			"ignoreDependencies": ["buffer"]
 		},
 		"packages/contracts-evm": {
-			"entry": ["hardhat.config.js", "scripts/**/*.js", "test/**/*.js"],
+			"entry": ["scripts/**/*.js", "test/**/*.js"],
 			"ignoreDependencies": ["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]
 		},
 		"packages/contracts-solana/autofun-sc-audit": {

@@ -1,0 +1,38 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"globalDependencies": [
+		".env",
+		".env.*",
+		".env.example",
+		"biome.json",
+		"package.json",
+		"bun.lock",
+		"tsconfig.node.base.json"
+	],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**"]
+		},
+		"check": {
+			"dependsOn": ["^build"],
+			"outputs": []
+		},
+		"test": {
+			"dependsOn": ["^build"],
+			"outputs": []
+		},
+		"lint": {
+			"outputs": []
+		},
+		"dev": {
+			"dependsOn": ["^build"],
+			"cache": false,
+			"persistent": true
+		},
+		"clean": {
+			"dependsOn": ["^clean"],
+			"cache": false
+		}
+	}
+}

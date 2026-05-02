@@ -1,22 +1,51 @@
-import { PublicKey, Keypair, type Transaction } from "@solana/web3.js";
-import BN from "bn.js";
-import type { MigrationContext } from "../../types";
-import DB from "@waifufun/database";
-import * as spl from "@solana/spl-token";
-import { parseWithdrawLogs, handleTransaction, recordTransaction } from "../../utils/protocol-utils";
 import {
-	CpAmm,
-	MIN_SQRT_PRICE,
-	MAX_SQRT_PRICE,
-	getSqrtPriceFromPrice,
+	ActivationType,
 	type AddLiquidityParams,
+	BaseFeeMode,
+	CollectFeeMode,
+	CpAmm,
 	type InitializeCustomizeablePoolParams,
+	MAX_SQRT_PRICE,
+	MIN_SQRT_PRICE,
+	type PoolFeesParams,
+	feeNumeratorToBps,
+	getBaseFeeParams,
+	getReservesAmountForConcentratedLiquidity,
+	getSqrtPriceFromPrice,
 } from "@meteora-ag/cp-amm-sdk";
+import * as spl from "@solana/spl-token";
+import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Keypair, PublicKey, type Transaction } from "@solana/web3.js";
+import DB from "@waifufun/database";
+import BN from "bn.js";
 import Decimal from "decimal.js";
-import { TOKEN_PROGRAM_ID, NATIVE_MINT } from "@solana/spl-token";
+import type { MigrationContext } from "../../types";
+import { handleTransaction, parseWithdrawLogs, recordTransaction } from "../../utils/protocol-utils";
 import { depositToMeteora } from "../../vaults/meteoraVault";
-import { VersionedTransaction } from "@solana/web3.js";
 import { derivePositionNftAccount } from "../../vaults/meteroaPdas";
+
+export function buildMeteoraCustomPoolFees(tokenBDecimal: number): PoolFeesParams {
+	const legacyFeeBps = feeNumeratorToBps(new BN(2_500_000));
+	const baseFee = getBaseFeeParams(
+		{
+			baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
+			feeTimeSchedulerParam: {
+				startingFeeBps: legacyFeeBps,
+				endingFeeBps: legacyFeeBps,
+				numberOfPeriod: 0,
+				totalDuration: 0,
+			},
+		},
+		tokenBDecimal,
+		ActivationType.Timestamp,
+	);
+	return {
+		baseFee,
+		compoundingFeeBps: 0,
+		padding: 0,
+		dynamicFee: null,
+	};
+}
 
 export async function createPositionNft(
 	context: MigrationContext,
@@ -374,13 +403,13 @@ async function prepareCreatePoolTransaction(
 	// Set activation point to 5 minutes from now
 	const activationPoint = new BN(Math.floor(Date.now() / 1000) + 5 * 60);
 
-	// Calculate liquidity delta
 	const liquidityDelta = cpAmm.getLiquidityDelta({
 		maxAmountTokenA: tokenAAmount,
 		maxAmountTokenB: tokenBAmount,
 		sqrtPrice: getSqrtPriceFromPrice(initPrice, tokenADecimal, tokenBDecimal),
 		sqrtMinPrice: MIN_SQRT_PRICE,
 		sqrtMaxPrice: MAX_SQRT_PRICE,
+		collectFeeMode: CollectFeeMode.BothToken,
 	});
 
 	const createCustomPoolParams: InitializeCustomizeablePoolParams = {
@@ -395,19 +424,7 @@ async function prepareCreatePoolTransaction(
 		sqrtMaxPrice: MAX_SQRT_PRICE,
 		liquidityDelta,
 		initSqrtPrice: getSqrtPriceFromPrice(initPrice, tokenADecimal, tokenBDecimal),
-		poolFees: {
-			baseFee: {
-				cliffFeeNumerator: new BN(2_500_000),
-				numberOfPeriod: 0,
-				periodFrequency: new BN(0),
-				reductionFactor: new BN(0),
-				feeSchedulerMode: 0,
-			},
-			protocolFeePercent: 20,
-			partnerFeePercent: 0,
-			referralFeePercent: 20,
-			dynamicFee: null,
-		},
+		poolFees: buildMeteoraCustomPoolFees(tokenBDecimal),
 		hasAlphaVault: false,
 		activationType: 1,
 		collectFeeMode: 0,
@@ -573,15 +590,6 @@ export async function addLiquidity(
 
 	// const positionNftAccount = derivePositionNftAccount(positionNftMint);
 
-	// Calculate liquidity delta
-	const liquidityDelta = await cpAmm.getLiquidityDelta({
-		maxAmountTokenA: secondaryAmount,
-		maxAmountTokenB: secondaryAmountSol,
-		sqrtPrice: poolState.sqrtPrice,
-		sqrtMinPrice: MIN_SQRT_PRICE,
-		sqrtMaxPrice: MAX_SQRT_PRICE,
-	});
-
 	// Get user position
 	// console.log("allPosition", allPosition);
 	const userPositions = await cpAmm.getUserPositionByPool(pool, provider.wallet.publicKey);
@@ -590,14 +598,23 @@ export async function addLiquidity(
 		throw new Error("No user position found for pool");
 	}
 
-	// Get position state and deposit quote
-	const positionState = await cpAmm.fetchPositionState(userPosition.position);
-	const quote = await cpAmm.getDepositQuote({
+	const [poolTokenAAmount, poolTokenBAmount] = getReservesAmountForConcentratedLiquidity(
+		poolState.sqrtPrice,
+		poolState.sqrtMinPrice,
+		poolState.sqrtMaxPrice,
+		poolState.liquidity,
+	);
+
+	const quote = cpAmm.getDepositQuote({
 		inAmount: secondaryAmount,
 		isTokenA: true,
 		minSqrtPrice: MIN_SQRT_PRICE,
 		maxSqrtPrice: MAX_SQRT_PRICE,
 		sqrtPrice: poolState.sqrtPrice,
+		collectFeeMode: poolState.collectFeeMode as CollectFeeMode,
+		tokenAAmount: poolTokenAAmount,
+		tokenBAmount: poolTokenBAmount,
+		liquidity: poolState.liquidity,
 	});
 
 	const maxAmountTokenA = quote.actualInputAmount;

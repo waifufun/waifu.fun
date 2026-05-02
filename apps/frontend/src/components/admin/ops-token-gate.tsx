@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ADMIN_TOKEN_KEY, clearAdminToken, getAdminToken, setAdminToken } from "@/lib/api/admin";
+import { useEffect, useState } from "react";
 
 const TOKEN_EVENT = "waifu-admin-token-change";
 

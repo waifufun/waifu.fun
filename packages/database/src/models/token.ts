@@ -1,5 +1,5 @@
 import type { IToken } from "@waifufun/types";
-import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
+import Mongoose, { type Model as ModelType, Schema, type Model as MongooseModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 const schema = new Schema<IToken, ModelType<IToken>>(
@@ -59,7 +59,7 @@ schema.index({ imported: 1, volume24h: -1, marketcap: -1, hidden: 1 });
 
 schema.index({ name: "text", ticker: "text", contractAddress: "text" });
 schema.index({ createdAt: -1 });
-const Model = Mongoose.model<IToken, PaginateModel<IToken>>("Token", schema);
+const Model = Mongoose.model<IToken, MongooseModel<IToken>>("Token", schema);
 
 Model.createIndexes();
 

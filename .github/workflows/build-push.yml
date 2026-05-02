@@ -1,0 +1,26 @@
+name: Build and Push
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: build-push-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable-docker-build.yml
+    with:
+      push_images: true
+      use_latest_tag_only: false
+      cache_scope_suffix: ""

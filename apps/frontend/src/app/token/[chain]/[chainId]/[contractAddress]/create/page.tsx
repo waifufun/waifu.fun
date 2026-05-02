@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
+import { fetchTokenRouteParamsForStaticExport } from "@/lib/static-export-paths";
 
-export default async function TokenCreatePage({
+export async function generateStaticParams() {
+	return fetchTokenRouteParamsForStaticExport();
+}
+
+export default async function Page({
 	params,
 }: { params: Promise<{ chain: string; chainId: string; contractAddress: string }> }) {
 	const { chain, chainId, contractAddress } = await params;

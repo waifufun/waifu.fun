@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { LeaderboardSort } from "@/lib/api/leaderboard";
+import { cn } from "@/lib/utils";
 
 const OPTIONS: { key: LeaderboardSort; label: string }[] = [
 	{ key: "runway", label: "Runway" },

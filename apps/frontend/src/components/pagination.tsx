@@ -56,7 +56,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 						const isActive = item === page;
 						return (
 							<button
-								key={index}
+								key={`page-${item}`}
 								type="button"
 								tabIndex={0}
 								className={twMerge([
@@ -70,10 +70,12 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
 						);
 					}
 
+					const prevPage = pages[index - 1];
+					const nextPage = pages[index + 1];
 					return (
 						<button
 							type="button"
-							key={`ellipsis-${index}`}
+							key={`ellipsis-${prevPage ?? "start"}-${nextPage ?? "end"}`}
 							tabIndex={0}
 							className="cursor-pointer h-8 px-3 py-2 select-none text-center flex items-center justify-center text-[#71717a] text-base font-normal font-dm-mono leading-normal hover:text-[#e4e4e7] transition-colors"
 							onClick={() => {

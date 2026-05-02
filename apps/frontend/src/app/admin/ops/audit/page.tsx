@@ -1,10 +1,10 @@
 "use client";
 
+import { useAdminTokenState } from "@/components/admin/ops-token-gate";
+import { type AdminAuditEntry, useAdminAuditLog } from "@/lib/api/admin";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { useAdminTokenState } from "@/components/admin/ops-token-gate";
-import { useAdminAuditLog, type AdminAuditEntry } from "@/lib/api/admin";
 
 const ACTION_TONE: Record<string, string> = {
 	"pause-brain": "text-amber-300",

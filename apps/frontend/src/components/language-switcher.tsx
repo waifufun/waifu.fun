@@ -9,6 +9,7 @@ export default function LanguageSwitcher() {
 	return (
 		<div
 			className="flex items-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)] p-0.5"
+			// biome-ignore lint/a11y/useSemanticElements: <fieldset> would introduce default browser styling that conflicts with the design
 			role="group"
 			aria-label={t("language.label")}
 		>

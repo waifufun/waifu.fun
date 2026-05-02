@@ -1,7 +1,7 @@
-import * as DB from "./models";
 import logger from "@waifufun/logger";
 import dotenv from "dotenv";
 import Mongoose from "mongoose";
+import * as DB from "./models";
 
 dotenv.config();
 

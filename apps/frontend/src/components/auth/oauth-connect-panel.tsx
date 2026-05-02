@@ -1,10 +1,10 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { Suspense, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import { Fingerprint, Mail } from "lucide-react";
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { Fingerprint, Mail } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useMemo } from "react";
 
 /**
  * Provider picker for the W9.5 Steward OAuth bridge.

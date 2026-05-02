@@ -1,5 +1,5 @@
-import { pgTable, text, integer, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { integer, pgEnum, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 
 export const protocolEnum = pgEnum("protocol", ["raydium", "meteora"]);
 

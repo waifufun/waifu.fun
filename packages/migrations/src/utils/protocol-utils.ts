@@ -1,26 +1,26 @@
 import {
-	type Connection,
-	PublicKey,
-	Transaction,
-	SystemProgram,
-	sendAndConfirmTransaction,
-	TransactionMessage,
-	VersionedTransaction,
-	type TransactionConfirmationStatus,
-	type Keypair,
-} from "@solana/web3.js";
-import {
-	TOKEN_PROGRAM_ID,
 	TOKEN_2022_PROGRAM_ID,
-	getAssociatedTokenAddressSync,
+	TOKEN_PROGRAM_ID,
 	createAssociatedTokenAccountInstruction,
 	createTransferInstruction,
+	getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import type { MigrationContext } from "../types";
+import {
+	type Connection,
+	type Keypair,
+	PublicKey,
+	SystemProgram,
+	Transaction,
+	type TransactionConfirmationStatus,
+	TransactionMessage,
+	VersionedTransaction,
+	sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import DB from "@waifufun/database";
+import BN from "bn.js";
+import type { MigrationContext } from "../types";
 import type { ProtocolState } from "../types";
 import { derivePositionNftAccount } from "../vaults/meteroaPdas";
-import BN from "bn.js";
 
 export interface WithdrawLog {
 	sol: number;
@@ -294,7 +294,6 @@ export async function collectProtocolFees(
 		return { txId: "no_fee", extraData: {} };
 	}
 
-	// biome-ignore lint/style/noNonNullAssertion: <explanation>
 	const feeWallet = new PublicKey(process.env.ACCOUNT_FEE_MULTISIG!);
 	const signerWallet = wallet;
 

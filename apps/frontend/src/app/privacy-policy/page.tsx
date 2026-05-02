@@ -56,7 +56,7 @@ const PRIVACY_POLICY: PolicySection[] = [
 			"Pages you visit on the Platform and the referring URL",
 			"Approximate region derived from IP, used to enforce geographic restrictions",
 			"Error and performance telemetry from our edge and server infrastructure",
-			"Analytics events (e.g. Vercel Analytics) recording pageviews without personal identifiers",
+			"Aggregated analytics events recording pageviews without personal identifiers",
 		],
 	},
 	{
@@ -94,7 +94,7 @@ const PRIVACY_POLICY: PolicySection[] = [
 			"PancakeSwap — the decentralized exchange where graduated tokens trade",
 			"X (formerly Twitter) — OAuth provider for the claim flow",
 			"Steward — wallet and identity infrastructure used during the prepare step",
-			"Vercel — hosting, edge, and analytics",
+			"Cloudflare — edge hosting and CDN for the web application",
 			"Railway — backend API hosting",
 			"RPC and indexing providers on BNB Smart Chain",
 			"DexScreener and similar market-data providers, used to embed public chart iframes",

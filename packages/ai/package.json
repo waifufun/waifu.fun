@@ -7,6 +7,7 @@
 	"types": "src/index.ts",
 	"sideEffects": false,
 	"scripts": {
+		"build": "tsc --noEmit",
 		"check": "tsc --noEmit",
 		"lint": "biome format . --write && biome lint . --fix"
 	},

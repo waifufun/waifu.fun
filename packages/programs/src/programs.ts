@@ -1,17 +1,17 @@
-import type { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
+import type { Connection, PublicKey } from "@solana/web3.js";
+import { getAutofunIdl, getVaultIdl } from "./idl-registry";
 import { getNetwork } from "./network";
-import { getAutofunIdl, getVaultIdl } from "./idls";
 import type {
-	IdlVersion,
-	VaultType,
+	CurrentAutofunTypes,
 	GetAutofunTypes,
 	GetVaultTypes,
-	CurrentAutofunTypes,
+	IdlVersion,
 	LegacyAutofunTypes,
-	RaydiumVaultTypes,
 	MeteoraVaultTypes,
-} from "./types";
+	RaydiumVaultTypes,
+	VaultType,
+} from "./exported-types";
 
 export type WalletLike = {
 	publicKey: PublicKey;
@@ -47,7 +47,6 @@ export function createAutofunProgramWithProvider<T extends IdlVersion>(
 	version: T = "v2" as T,
 ): Program<GetAutofunTypes<T>> {
 	const idl = getAutofunIdl(version);
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	return new Program<GetAutofunTypes<T>>(idl as any, provider);
 }
 
@@ -67,7 +66,6 @@ export function createAutofunProgram<T extends IdlVersion>(
 ): Program<GetAutofunTypes<T>> {
 	const idl = getAutofunIdl(version);
 	const provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	return new Program<GetAutofunTypes<T>>(idl as any, provider);
 }
 
@@ -93,7 +91,6 @@ export function createVaultProgramWithProvider<T extends VaultType>(
 	vaultType: T,
 ): Program<GetVaultTypes<T>> {
 	const idl = getVaultIdl(vaultType);
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	return new Program<GetVaultTypes<T>>(idl as any, provider);
 }
 
@@ -119,7 +116,6 @@ export function createVaultProgram<T extends VaultType>(
 ): Program<GetVaultTypes<T>> {
 	const idl = getVaultIdl(vaultType);
 	const provider = new AnchorProvider(connection, wallet, AnchorProvider.defaultOptions());
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	return new Program<GetVaultTypes<T>>(idl as any, provider);
 }
 

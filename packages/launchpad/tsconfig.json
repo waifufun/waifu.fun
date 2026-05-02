@@ -1,0 +1,10 @@
+{
+	"extends": "../../tsconfig.node.base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"tsBuildInfoFile": ".turbo/tsconfig.tsbuildinfo"
+	},
+	"include": ["src/**/*.ts", "src/**/*.json"],
+	"exclude": ["dist", "node_modules", "test"]
+}

@@ -1,26 +1,26 @@
 {
-  "_status": "PENDING - needs testnet BNB to deploy",
-  "_deployer_address": "0x6e904991031Ebf05bDB881d8899b210A4DB953f4",
-  "_deployer_key_in": ".env (DEPLOYER field)",
-  "_instructions": [
-    "1. Fund deployer with ~0.5 tBNB from https://www.bnbchain.org/en/testnet-faucet (requires wallet connect)",
-    "2. Or use QuickNode faucet: https://faucet.quicknode.com/binance-smart-chain/bnb-testnet",
-    "3. Or use Chainlink faucet: https://faucets.chain.link/ (select BNB Chain Testnet)",
-    "4. Run: npx hardhat run scripts/deploy-testnet.js --network bscTestnet",
-    "5. This file will be overwritten with actual addresses"
-  ],
-  "_local_test_result": "PASSED - full V2 stack deployed and configured on hardhat",
-  "_script_bugs_fixed": [
-    "WaifuFunV2 constructor is (waifuToken, feeRouter, pancakeRouter, config) not (waifuToken, pancakeRouter, pancakeFactory, feeRouter, config)",
-    "ConfigParams V2 has no teamWallet or initBondingCurveRate fields",
-    "FeeRouter.setAuthorizedCaller takes (address, bool) not just (address)",
-    "Local deploy needs mock PancakeSwap (constructor calls router.factory())"
-  ],
-  "network": "bscTestnet",
-  "chainId": 97,
-  "contracts": null,
-  "pancakeSwap": {
-    "router": "0xD99D1c33F9fC3444f8101754aBC46c52416550D1",
-    "factory": "0x6725F303b657a9451d8BA641348b6761A6CC7a17"
-  }
+	"_status": "PENDING - needs testnet BNB to deploy",
+	"_deployer_address": "0x6e904991031Ebf05bDB881d8899b210A4DB953f4",
+	"_deployer_key_in": ".env (DEPLOYER field)",
+	"_instructions": [
+		"1. Fund deployer with ~0.5 tBNB from https://www.bnbchain.org/en/testnet-faucet (requires wallet connect)",
+		"2. Or use QuickNode faucet: https://faucet.quicknode.com/binance-smart-chain/bnb-testnet",
+		"3. Or use Chainlink faucet: https://faucets.chain.link/ (select BNB Chain Testnet)",
+		"4. Run: DEPLOY_TARGET=testnet npx hardhat run scripts/deploy/run.js --network bscTestnet",
+		"5. This file will be overwritten with actual addresses"
+	],
+	"_local_test_result": "PASSED - full V2 stack deployed and configured on hardhat",
+	"_script_bugs_fixed": [
+		"WaifuFunV2 constructor is (waifuToken, feeRouter, pancakeRouter, config) not (waifuToken, pancakeRouter, pancakeFactory, feeRouter, config)",
+		"ConfigParams V2 has no teamWallet or initBondingCurveRate fields",
+		"FeeRouter.setAuthorizedCaller takes (address, bool) not just (address)",
+		"Local deploy needs mock PancakeSwap (constructor calls router.factory())"
+	],
+	"network": "bscTestnet",
+	"chainId": 97,
+	"contracts": null,
+	"pancakeSwap": {
+		"router": "0xD99D1c33F9fC3444f8101754aBC46c52416550D1",
+		"factory": "0x6725F303b657a9451d8BA641348b6761A6CC7a17"
+	}
 }

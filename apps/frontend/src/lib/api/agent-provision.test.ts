@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
 import type { ChainId, LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/types";
+import { describe, expect, it } from "vitest";
 import { buildProvisionPayload } from "./agent-provision";
 
 type TestProvisionState = {

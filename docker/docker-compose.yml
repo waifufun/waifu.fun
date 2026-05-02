@@ -1,0 +1,81 @@
+name: waifu-core
+
+x-app-service: &app-service
+  restart: unless-stopped
+  env_file:
+    - ${ENV_FILE:-../.env}
+  depends_on:
+    redis:
+      condition: service_healthy
+  networks:
+    - waifu-core
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  api:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER:-waifu}/${GHCR_IMAGE_PREFIX:-waifu-core}-api:${IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runner
+      args:
+        SERVICE_NAME: api
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: "3100"
+    ports:
+      - "${API_BIND_ADDRESS:-127.0.0.1}:3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3100/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER:-waifu}/${GHCR_IMAGE_PREFIX:-waifu-core}-worker:${IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runner
+      args:
+        SERVICE_NAME: worker
+
+  indexer:
+    <<: *app-service
+    image: ghcr.io/${GHCR_OWNER:-waifu}/${GHCR_IMAGE_PREFIX:-waifu-core}-indexer:${IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runner
+      args:
+        SERVICE_NAME: evm-indexer
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_BIND_ADDRESS:-127.0.0.1}:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - waifu-core
+
+networks:
+  waifu-core:
+    driver: bridge
+
+volumes:
+  redis-data:

@@ -1,0 +1,33 @@
+{
+	"name": "@waifufun/evm-indexer",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"predev": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"prestart": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"pretypecheck": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/queue build && bun run --filter @waifufun/flap build",
+		"start": "tsx src/index.ts",
+		"dev": "tsx watch src/index.ts",
+		"backfill": "tsx src/backfill/fourmeme-backfill.ts",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test": "INDEXER_DISABLE_QUEUE_JOBS=1 tsx --test src/**/*.test.ts",
+		"lint": "biome check src package.json tsconfig.json",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@waifufun/db": "workspace:*",
+		"@waifufun/flap": "workspace:*",
+		"@waifufun/queue": "workspace:*",
+		"drizzle-orm": "^0.36.4",
+		"viem": "^2.21.54",
+		"@waifufun/logger": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.5",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2"
+	}
+}

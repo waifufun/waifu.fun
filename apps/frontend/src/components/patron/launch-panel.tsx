@@ -1,14 +1,14 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import useBalance from "@/hooks/use-balance";
+import { useXConnection } from "@/lib/api/x-connection";
+import { cn } from "@/lib/utils";
+import { AlertTriangle, Check, Copy, ExternalLink, Loader2, Shield } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Address } from "viem";
 import { parseEther } from "viem";
-import { AlertTriangle, Check, Copy, ExternalLink, Loader2, Shield } from "lucide-react";
-import useBalance from "@/hooks/use-balance";
-import { useXConnection } from "@/lib/api/x-connection";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 type Props = {
 	agentId: string;

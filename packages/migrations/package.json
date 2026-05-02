@@ -11,7 +11,9 @@
 		"dev": "nodemon --watch src --ext ts,tsx --exec \"tsx src/scripts/run-service.ts\"",
 		"test": "mocha --require tsx --require ./src/tests/test-setup.ts --require ./src/tests/setup.ts \"src/tests/**/*.test.ts\"",
 		"test:windows": "node \"./node_modules/.bin/mocha\" --loader ts-node/esm --extensions ts,tsx --file src/tests/test-setup.ts --file src/tests/setup.ts src/tests/**/*.test.ts",
-		"clean": "rimraf dist"
+		"lint": "biome check src package.json tsconfig.json",
+		"clean": "rimraf dist",
+		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
 		"@waifufun/database": "workspace:*",

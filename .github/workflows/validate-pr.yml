@@ -9,6 +9,8 @@ on:
 jobs:
   restrict-pr-source:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Check source branch
         run: |

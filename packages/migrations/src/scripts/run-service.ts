@@ -1,14 +1,14 @@
-import { Connection, Keypair } from "@solana/web3.js";
-import { AnchorProvider } from "@coral-xyz/anchor";
-import { MigrationService } from "../services/migration-service.js";
-import DB from "@waifufun/database";
-import redis from "@waifufun/redis";
-import { Wallet } from "../utils/customWallet.js";
-import * as dotenv from "dotenv";
-// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
-import { fileURLToPath } from "url";
 // biome-ignore lint/style/useNodejsImportProtocol: <explanation>
 import { dirname } from "path";
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
+import { fileURLToPath } from "url";
+import { AnchorProvider } from "@coral-xyz/anchor";
+import { Connection, Keypair } from "@solana/web3.js";
+import DB from "@waifufun/database";
+import redis from "@waifufun/redis";
+import * as dotenv from "dotenv";
+import { MigrationService } from "../services/migration-service.js";
+import { Wallet } from "../utils/customWallet.js";
 import { getRpcUrl } from "../utils/getRpcUrl.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,7 +32,6 @@ async function main() {
 
 	const migrationService = new MigrationService(connection, provider, redis, DB);
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	(migrationService as any).keyPair = keypair;
 
 	// Start the service

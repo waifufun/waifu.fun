@@ -328,10 +328,10 @@ const PromptProviderContent = ({
 		},
 	});
 
-	const setIsGeneratingAddress = (value: boolean) => {
+	const setIsGeneratingAddress = useCallback((value: boolean) => {
 		isGeneratingAddressRef.current = value;
 		setIsGeneratingAddressState(value);
-	};
+	}, []);
 
 	const terminateWorkers = useCallback(() => {
 		if (workerRefs?.current) {
@@ -348,7 +348,7 @@ const PromptProviderContent = ({
 			activeSuffixRef.current = "";
 			terminateWorkers();
 		}
-	}, [terminateWorkers]);
+	}, [terminateWorkers, setIsGeneratingAddress]);
 	const initializeAndStartWorkers = useCallback(
 		(suffix: string) => {
 			if (typeof Worker === "undefined") {
@@ -444,7 +444,7 @@ const PromptProviderContent = ({
 				}
 			}
 		},
-		[terminateWorkers],
+		[terminateWorkers, setIsGeneratingAddress],
 	);
 	const generateAddress = useCallback(
 		(newSuffix: string) => {
@@ -484,7 +484,7 @@ const PromptProviderContent = ({
 
 			initializeAndStartWorkers(newSuffix);
 		},
-		[initializeAndStartWorkers, terminateWorkers],
+		[initializeAndStartWorkers, terminateWorkers, setIsGeneratingAddress],
 	);
 
 	const generateToken = ({
@@ -573,6 +573,7 @@ const PromptProviderContent = ({
 			tradeLimitSol: Number(tradeLimitSol),
 		};
 	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mount-only initialization; rerunning would re-trigger vanity generation and metadata fetch
 	useEffect(() => {
 		generateAddress(INITIAL_GENERATION_SUFFIX);
 		generateToken({
@@ -588,7 +589,7 @@ const PromptProviderContent = ({
 				setLaunchSalt(null);
 			}
 		};
-	}, [terminateWorkers]);
+	}, [terminateWorkers, setIsGeneratingAddress]);
 
 	const contextValue: PromptContextType = {
 		control,

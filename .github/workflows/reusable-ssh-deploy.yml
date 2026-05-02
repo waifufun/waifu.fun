@@ -1,0 +1,70 @@
+name: Reusable — SSH deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub Environment name (staging or production)
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      run_migrations:
+        required: true
+        type: boolean
+      healthcheck_label:
+        description: Label used in failure message (e.g. staging, production)
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          DEPLOY_PATH: /opt/waifu-core
+          COMPOSE_FILE: docker/docker-compose.yml
+          ENV_FILE: ${{ inputs.environment == 'staging' && '../.env.staging' || '../.env.production' }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+          GHCR_IMAGE_PREFIX: ${{ github.event.repository.name }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          RUN_MIGRATIONS: ${{ inputs.run_migrations && 'true' || 'false' }}
+        with:
+          host: ${{ inputs.environment == 'staging' && secrets.STAGING_HOST || secrets.PROD_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: DEPLOY_PATH,COMPOSE_FILE,ENV_FILE,GHCR_OWNER,GHCR_IMAGE_PREFIX,GHCR_USERNAME,GHCR_READ_TOKEN,IMAGE_TAG,RUN_MIGRATIONS
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+
+            echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+
+            export GHCR_OWNER GHCR_IMAGE_PREFIX ENV_FILE IMAGE_TAG
+
+            docker compose -f "$COMPOSE_FILE" pull api worker indexer
+            docker compose -f "$COMPOSE_FILE" up -d redis
+
+            if [ "$RUN_MIGRATIONS" = "true" ]; then
+              docker compose -f "$COMPOSE_FILE" run --rm --no-deps api bun run --filter @waifufun/db db:push
+            fi
+
+            docker compose -f "$COMPOSE_FILE" up -d --remove-orphans api worker indexer
+
+            for _ in $(seq 1 12); do
+              if curl -fsS http://127.0.0.1:3100/health >/dev/null; then
+                docker image prune -f >/dev/null 2>&1 || true
+                exit 0
+              fi
+              sleep 5
+            done
+
+            echo "${{ inputs.healthcheck_label }} healthcheck failed"
+            exit 1

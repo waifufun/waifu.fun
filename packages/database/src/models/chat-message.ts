@@ -1,5 +1,5 @@
 import type { IChatMessage } from "@waifufun/types";
-import Mongoose, { type Model as ModelType, Schema, type PaginateModel } from "mongoose";
+import Mongoose, { type Model as ModelType, Schema, type Model as MongooseModel } from "mongoose";
 import paginate from "mongoose-paginate-v2";
 
 const schema = new Schema<IChatMessage, ModelType<IChatMessage>>(
@@ -18,7 +18,7 @@ schema.plugin(paginate);
 schema.index({ contractAddress: 1 });
 schema.index({ contractAddress: 1, room: 1 });
 
-const Model = Mongoose.model<IChatMessage, PaginateModel<IChatMessage>>("ChatMessage", schema);
+const Model = Mongoose.model<IChatMessage, MongooseModel<IChatMessage>>("ChatMessage", schema);
 
 Model.createIndexes();
 

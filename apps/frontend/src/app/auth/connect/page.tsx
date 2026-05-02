@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import OAuthConnectPanel from "@/components/auth/oauth-connect-panel";
+import type { Metadata } from "next";
 
 /**
  * Standalone sign-in surface for the W9.5 Steward OAuth bridge.

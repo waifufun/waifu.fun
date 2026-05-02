@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { BN, Program } from "@coral-xyz/anchor";
 import {
-  Connection,
+  type Connection,
+  type Keypair,
   LAMPORTS_PER_SOL,
-  Keypair,
   PublicKey,
 } from "@solana/web3.js";
 import { SEED_CONFIG } from "./constant";
@@ -24,6 +24,12 @@ function getEnvNumber(name: string, fallback: number): number {
 
 function getEnvString(name: string, fallback: string): string {
   return process.env[name] || fallback;
+}
+
+/** When unset, `bun run test` skips chain integration tests (no local validator required). */
+export function isSolanaAuditIntegrationEnabled(): boolean {
+  const url = process.env.ANCHOR_PROVIDER_URL;
+  return typeof url === "string" && url.length > 0;
 }
 
 export const TEST_CONFIG = {

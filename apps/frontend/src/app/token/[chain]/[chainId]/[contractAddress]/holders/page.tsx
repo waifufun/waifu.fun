@@ -1,6 +1,11 @@
 import Holders from "@/components/token-page/holders";
 import { getToken } from "@/lib/api";
+import { fetchTokenRouteParamsForStaticExport } from "@/lib/static-export-paths";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
+
+export async function generateStaticParams() {
+	return fetchTokenRouteParamsForStaticExport();
+}
 
 export default async function Page({
 	params,

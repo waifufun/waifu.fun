@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FOUR_MEME_TAX, DEFAULT_FLAP } from "./fee-defaults";
+import { DEFAULT_FLAP, DEFAULT_FOUR_MEME_TAX } from "./fee-defaults";
 import { DEFAULT_PLATFORM_CUT_BPS, MAX_PLATFORM_CUT_BPS, MIN_PLATFORM_CUT_BPS } from "./types";
 import { computePlatformCutVolumeBps, sumAllocationBps, validateFlap, validateFourMemeTax } from "./validators";
 

@@ -1,0 +1,3 @@
+# Four.Meme multi-recipient tax support
+
+`TokenManager2.createToken` does **not** expose native multi-recipient tax parameters in the checked ABI: the only create surface is `createToken(bytes args, bytes signature)`, so tax details are opaque, Four.Meme-signed API payload data rather than on-chain array parameters. The modeled Four.Meme create payload also exposes `tokenTaxInfo` as a single-recipient shape (`recipientRate` + `recipientAddress`) with no `address[]`, tuple array, or per-recipient bps list. Because native multi-recipient support is not clear from the ABI/API contract surface, W1.2 will use Path B: route the Four.Meme tax recipient to a custom immutable `TaxSplitter` contract that forwards 80% to the agent treasury and 20% to the patron.

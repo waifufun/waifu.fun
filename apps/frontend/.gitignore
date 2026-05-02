@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+.static-export-stash/
 
 # production
 /build
@@ -32,9 +33,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo

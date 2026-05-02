@@ -1,8 +1,8 @@
-import Link from "next/link";
-import Image from "next/image";
-import { formatUsd, type PatronAgent } from "@/lib/api/patron";
-import StatusBadge from "./status-badge";
 import { Button } from "@/components/ui/button";
+import { type PatronAgent, formatUsd } from "@/lib/api/patron";
+import Image from "next/image";
+import Link from "next/link";
+import StatusBadge from "./status-badge";
 
 function formatRelative(iso: string | null | undefined): string {
 	if (!iso) return "never";

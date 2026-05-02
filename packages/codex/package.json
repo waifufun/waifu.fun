@@ -3,22 +3,29 @@
 	"type": "module",
 	"version": "0.0.0",
 	"license": "MIT",
-	"main": "src/index.ts",
-	"types": "src/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"sideEffects": false,
 	"scripts": {
-		"check": "tsc --noEmit",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"clean": "rm -rf dist",
+		"check": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome format . --write && biome lint . --fix"
 	},
 	"exports": {
-		".": "./src/index.ts"
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
 	},
 	"dependencies": {
 		"@waifufun/constants": "workspace:*",
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/redis": "workspace:*",
 		"@waifufun/types": "workspace:*",
-		"@codex-data/sdk": "^1.0.6",
+		"@codex-data/sdk": "^2.3.2",
+		"graphql": "^16.9.0",
 		"dotenv": "^16.5.0"
 	},
 	"devDependencies": {

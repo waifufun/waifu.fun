@@ -6,29 +6,9 @@
 	},
 	"type": "module",
 	"private": true,
-	"pnpm": {
-		"supportedArchitectures": {
-			"os": ["current"],
-			"cpu": ["x64", "arm64"]
-		},
-		"ignoredBuiltDependencies": [
-			"@biomejs/biome",
-			"@bufbuild/buf",
-			"@tailwindcss/oxide",
-			"bigint-buffer",
-			"blake-hash",
-			"bufferutil",
-			"core-js-pure",
-			"es5-ext",
-			"esbuild",
-			"keccak",
-			"protobufjs",
-			"secp256k1",
-			"sharp",
-			"tiny-secp256k1",
-			"usb",
-			"utf-8-validate"
-		]
+	"engines": {
+		"node": ">=22.0.0",
+		"bun": ">=1.2.0"
 	},
 	"release": {
 		"branches": [
@@ -54,41 +34,58 @@
 		]
 	},
 	"scripts": {
-		"build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
-		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '!@waifufun/frontend' --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --stream build",
-		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter '!@waifufun/indexer' --parallel run dev",
-		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '!@waifufun/sync' --filter '!@waifufun/migrations' --filter !@waifufun/indexer --parallel run dev",
-		"dev:indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
-		"dev:indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/indexer' --parallel run dev",
-		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development pnpm -r --filter '@waifufun/frontend' --parallel run dev",
-		"docker:up": "docker compose up -d && exit 0",
-		"docker:down": "docker compose down",
-		"docker:kill": "docker compose down -v",
-		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" pnpm -r --stream --parallel lint",
-		"lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& pnpm -r --stream --parallel lint",
+		"build": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations --filter=!@waifufun/contracts-solana-audit",
 		"build:docker": "docker build -t waifufun-frontend -f apps/frontend/Dockerfile.frontend .",
+		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations --filter=!@waifufun/frontend --filter=!@waifufun/contracts-solana-audit",
+		"check": "bun run lint && bun run typecheck && bun run test",
+		"clean": "bunx turbo run clean --continue; rm -rf .turbo apps/api/dist apps/brain/dist apps/evm-indexer/dist apps/mcp/dist apps/worker/dist apps/sol-indexer/dist apps/frontend/out apps/frontend/.next packages/*/dist 2>/dev/null; find apps packages -type f -name '*.tsbuildinfo' -delete 2>/dev/null; true",
+		"db:generate": "bun --env-file-if-exists=.env run --filter @waifufun/db db:generate",
+		"db:migrate": "bun --env-file-if-exists=.env run --filter @waifufun/db db:migrate",
+		"db:push": "bun --env-file-if-exists=.env run --filter @waifufun/db db:push",
+		"db:studio": "bun --env-file-if-exists=.env run --filter @waifufun/db db:studio",
+		"dev": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --parallel --continue --filter=@waifufun/frontend --filter=@waifufun/api --filter=@waifufun/worker --filter=@waifufun/evm-indexer --filter=@waifufun/brain --filter=@waifufun/mcp",
+		"dev:core": "dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --parallel --continue --filter=@waifufun/api --filter=@waifufun/worker --filter=@waifufun/evm-indexer",
+		"dev:evm-indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --filter=@waifufun/evm-indexer",
+		"dev:frontend": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --filter=@waifufun/frontend",
+		"dev:sol-indexer": "./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --filter=@waifufun/sol-indexer",
+		"dev:sol-indexer-windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --filter=@waifufun/sol-indexer",
+		"dev:windows": "sh ./scripts/local-development.sh && dotenv -e .env -- cross-env NODE_ENV=development bunx turbo run dev --parallel --continue --filter=@waifufun/frontend --filter=@waifufun/api --filter=@waifufun/worker --filter=@waifufun/evm-indexer --filter=@waifufun/brain --filter=@waifufun/mcp",
+		"docker:down": "docker compose -f docker/docker-compose.local.yml down",
+		"docker:kill": "docker compose -f docker/docker-compose.local.yml down -v",
+		"docker:up": "docker compose -f docker/docker-compose.local.yml up -d && exit 0",
+		"evm-indexer:backfill": "dotenv -e .env -- bun apps/evm-indexer/src/backfill/fourmeme-backfill.ts",
+		"lint": "NODE_OPTIONS=\"--max-old-space-size=8096\" node scripts/check-tenant-id.mjs && biome check package.json turbo.json tsconfig.node.base.json biome.json && bunx turbo run lint",
+		"lint:win": "set NODE_OPTIONS=--max-old-space-size=8096&& node scripts/check-tenant-id.mjs && biome check package.json turbo.json tsconfig.node.base.json biome.json && bunx turbo run lint",
+		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter @waifufun/migrations build",
+		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development bun run --filter @waifufun/migrations dev",
+		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter @waifufun/migrations start",
 		"start:docker": "docker run -p 3000:3000 waifufun-frontend",
-		"sync": "dotenv -e .env -- pnpm --filter @waifufun/sync sync tokens",
-		"test-migration": "pnpm --filter @waifufun/migrations test",
-		"test": "node ./scripts/run-local-contract-tests.mjs",
+		"start:evm-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/evm-indexer' start",
+		"start:sol-indexer": "dotenv -e .env -- cross-env NODE_ENV=production bun run --filter '@waifufun/sol-indexer' start",
+		"sync": "dotenv -e .env -- bun run --filter @waifufun/sync -- sync tokens",
+		"test": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run test --continue --filter=@waifufun/api --filter=@waifufun/frontend --filter=@waifufun/evm-indexer --filter=@waifufun/agent-actions --filter=@waifufun/db --filter=@waifufun/launchpad",
+		"test:e2e": "bun run test:contracts",
+		"test-migration": "bun run --filter @waifufun/migrations test",
 		"test:contracts": "node ./scripts/run-local-contract-tests.mjs",
-		"test:e2e": "node ./scripts/run-local-contract-tests.mjs",
-		"migrations:dev": "dotenv -e .env -- cross-env NODE_ENV=development pnpm --filter @waifufun/migrations dev",
-		"migrations:build": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @waifufun/migrations build",
-		"migrations:start": "dotenv -e .env -- cross-env NODE_ENV=production pnpm --filter @waifufun/migrations start",
-		"start:indexer": "dotenv -e .env -- cross-env NODE_ENV=production pnpm -r --filter '@waifufun/indexer' run start",
-		"start:frontend": "pnpm --filter '@waifufun/frontend' run start"
+		"typecheck": "NODE_OPTIONS=\"--max-old-space-size=8096\" bunx turbo run check"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/git": "^10.0.1",
 		"@semantic-release/github": "^11.0.2",
+		"@types/bun": "^1.2.19",
+		"@types/node": "^22.13.10",
 		"cross-env": "^7.0.3",
 		"dotenv-cli": "^8.0.0",
 		"semantic-release": "^24.2.3",
-		"typescript": "^5.4.5"
+		"turbo": "^2.4.4",
+		"typescript": "^5.7.3"
 	},
-	"packageManager": "pnpm@10.11.0",
-	"dependencies": {}
+	"packageManager": "bun@1.3.13",
+	"dependencies": {},
+	"overrides": {
+		"graphql-ws": "^6.0.8"
+	},
+	"workspaces": ["apps/*", "packages/*", "packages/contracts-solana/*"]
 }

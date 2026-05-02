@@ -1,4 +1,4 @@
-import { formatUsd, type PatronAgent } from "@/lib/api/patron";
+import { type PatronAgent, formatUsd } from "@/lib/api/patron";
 
 type Metric = { label: string; value: string };
 

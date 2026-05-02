@@ -1,10 +1,10 @@
 import * as aws from "@aws-sdk/client-s3";
 import logger from "@waifufun/logger";
 import type { IFile, TURLLike } from "@waifufun/types";
+import dotenv from "dotenv";
 // @ts-ignore
 import mime from "mime-types";
 import sharp from "sharp";
-import dotenv from "dotenv";
 import { getS3Client } from "./s3Client";
 
 dotenv.config();
@@ -82,8 +82,9 @@ export const modifyFile = async (
 	try {
 		await client.send(command);
 		logger.info(`Successfully modified S3 file: ${bucketName}/${key}`);
-	} catch (error) {
-		logger.error(`Failed to modify S3 file ${bucketName}/${key}:`, error);
+	} catch (error: unknown) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		logger.error(err, `Failed to modify S3 file ${bucketName}/${key}`);
 		throw error;
 	}
 };
@@ -148,7 +149,8 @@ export async function deleteFile(folder: string, fileName: string): Promise<void
 		await client.send(cmd);
 		logger.info(`Deleted S3 object ${bucketName}/${key}`);
 	} catch (err: unknown) {
-		logger.error(`Failed to delete S3 object ${bucketName}/${key}:`, err);
+		const wrapped = err instanceof Error ? err : new Error(String(err));
+		logger.error(wrapped, `Failed to delete S3 object ${bucketName}/${key}`);
 		throw err;
 	}
 }

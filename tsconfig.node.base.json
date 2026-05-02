@@ -1,0 +1,17 @@
+{
+	"extends": "./tsconfig.shared.json",
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"compilerOptions": {
+		"declaration": true,
+		"declarationMap": true,
+		"incremental": true,
+		"lib": ["ES2023"],
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noEmitOnError": true,
+		"sourceMap": true,
+		"target": "ES2022",
+		"types": ["node"]
+	},
+	"exclude": [".turbo", "coverage", "dist", "node_modules"]
+}

@@ -1,18 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
-import * as spl from "@solana/spl-token";
 import type { Program } from "@coral-xyz/anchor";
 import { CREATE_CPMM_POOL_PROGRAM, Raydium } from "@raydium-io/raydium-sdk-v2";
 import * as raydium_api from "@raydium-io/raydium-sdk-v2";
-import {
-	getVaultConfig,
-	getUserPosition,
-	getNftTokenFaucet,
-	getLockedLiquidity,
-	LOCKING_PROGRAM,
-	LOCK_CP_AUTH_SEED,
-} from "./pdas";
+import * as spl from "@solana/spl-token";
 import type { RaydiumVaultTypes } from "@waifufun/programs";
 import { retryOperation } from "../utils";
+import {
+	LOCKING_PROGRAM,
+	LOCK_CP_AUTH_SEED,
+	getLockedLiquidity,
+	getNftTokenFaucet,
+	getUserPosition,
+	getVaultConfig,
+} from "./pdas";
 
 export async function depositToRaydiumVault(
 	provider: anchor.AnchorProvider,

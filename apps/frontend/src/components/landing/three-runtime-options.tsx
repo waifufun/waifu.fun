@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, Antenna, Cloud } from "lucide-react";
+import { Antenna, ArrowLeftRight, Cloud } from "lucide-react";
 import { useState } from "react";
 
 const EASE = [0.22, 1, 0.36, 1] as const;

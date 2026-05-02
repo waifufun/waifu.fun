@@ -3,11 +3,11 @@
 Getting Started – the Autofun Monorepo
 This guide helps you set up and run the Autofun monorepo locally.
 
-1. Install Dependencies (we use pnpm for package management):
-`pnpm i`
+1. Install Dependencies (package manager is pinned in `package.json`):
+`bun install`
 
 2. Start the Development Environment
-`pnpm run dev`
+`bun run dev`
 
 This will automatically configure and start the Docker containers.
 
@@ -49,3 +49,15 @@ Required server-side env vars:
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 No anon/browser key is needed for this initial foundation.
+
+## Waifu-core backend (`@waifufun/*`)
+
+Backend services (`apps/api`, `apps/worker`, `apps/evm-indexer`, `apps/brain`, `apps/mcp`) and shared `@waifufun/*` workspace packages live in this repo (merged from legacy `waifu-core`).
+
+- **Compose (Postgres + Redis only):** `docker/docker-compose.deps.yml`
+- **Full compose (API + worker + indexer in dev containers):** `docker/docker-compose.dev.yml`
+- **Local monorepo infra (Mongo, Dragonfly, MinIO):** `docker/docker-compose.local.yml`
+- **Indexer Postgres:** `docker/docker-compose.indexer.yml`
+- **Multi-service Dockerfile:** `docker/Dockerfile`
+- **CI entry points:** `.github/workflows/ci.yml`, `build-push.yml`, `deploy*.yml`, `db-migrate.yml`, `reusable-*.yml`
+- **Scripts:** see root `package.json` (`dev`, `check`, `db:*`, indexers, etc.).

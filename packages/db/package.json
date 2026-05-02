@@ -1,0 +1,45 @@
+{
+	"name": "@waifufun/db",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./client": {
+			"types": "./dist/client.d.ts",
+			"import": "./dist/client.js"
+		},
+		"./schema": {
+			"types": "./dist/schema/index.d.ts",
+			"import": "./dist/schema/index.js"
+		}
+	},
+	"files": ["dist", "drizzle"],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"lint": "biome check src drizzle.config.ts package.json tsconfig.json",
+		"clean": "rm -rf dist",
+		"db:generate": "bun run build && drizzle-kit generate --config=drizzle.config.ts",
+		"db:migrate": "bun run build && drizzle-kit migrate --config=drizzle.config.ts",
+		"db:push": "bun run build && drizzle-kit push --config=drizzle.config.ts",
+		"db:studio": "bun run build && drizzle-kit studio --config=drizzle.config.ts",
+		"db:seed": "tsx src/seed.ts",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then tsx --test $files; else echo \"No tests found\"; fi'",
+		"db:backfill-patron-wallets": "tsx src/scripts/backfill-patron-wallets.ts",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"drizzle-orm": "^0.36.4",
+		"postgres": "^3.4.5"
+	},
+	"devDependencies": {
+		"drizzle-kit": "^0.30.6",
+		"tsx": "^4.21.0"
+	}
+}

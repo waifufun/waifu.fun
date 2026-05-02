@@ -1,12 +1,12 @@
 "use client";
 import { fromNow } from "@/lib/utils";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function useTimeAgo({ date }: { date: Date | string | number }) {
 	const [timeAgo, setTimeAgo] = useState<string>();
 
-	const formatTime = () => {
+	const formatTime = useCallback(() => {
 		const now = moment();
 		const dateToCheck = moment(date);
 		const diffSecs = now.diff(dateToCheck, "seconds");
@@ -16,7 +16,7 @@ export default function useTimeAgo({ date }: { date: Date | string | number }) {
 		}
 
 		return setTimeAgo(`${diffSecs}s`);
-	};
+	}, [date]);
 	useEffect(() => {
 		const int = setInterval(() => {
 			formatTime();
@@ -25,7 +25,7 @@ export default function useTimeAgo({ date }: { date: Date | string | number }) {
 		return () => {
 			clearInterval(int);
 		};
-	}, []);
+	}, [formatTime]);
 
 	return timeAgo || formatTime();
 }

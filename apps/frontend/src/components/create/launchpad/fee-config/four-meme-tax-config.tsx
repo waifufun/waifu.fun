@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useId, useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
 import {
 	DEFAULT_PLATFORM_CUT_BPS,
 	type FourMemeTaxFeeConfig,
@@ -10,6 +8,8 @@ import {
 	TAX_TIER_BPS,
 } from "@/lib/launchpad/types";
 import { computePlatformCutVolumeBps, sumAllocationBps, validateFourMemeTax } from "@/lib/launchpad/validators";
+import { cn } from "@/lib/utils";
+import { useCallback, useId, useMemo, useState } from "react";
 import { ChevronDownIcon, InfoIcon, WarningIcon } from "../launchpad-icons";
 
 type Props = {
@@ -134,6 +134,7 @@ export default function FourMemeTaxConfig({ value, onChange }: Props) {
 							<button
 								key={tier}
 								type="button"
+								// biome-ignore lint/a11y/useSemanticElements: styled radio button group; native radios cannot be styled to match the design
 								role="radio"
 								aria-checked={active}
 								onClick={() => setTax(tier)}

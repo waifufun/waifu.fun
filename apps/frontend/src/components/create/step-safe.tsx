@@ -1,7 +1,7 @@
 "use client";
 
-import { useAccount } from "wagmi";
 import { cn } from "@/lib/utils";
+import { useAccount } from "wagmi";
 import { ShieldIcon } from "./wizard-icons";
 import { useWizard } from "./wizard-state";
 

@@ -1,0 +1,36 @@
+name: Deploy Staging
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Push
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to deploy to staging
+        required: false
+        default: develop
+      run_migrations:
+        description: Run database schema push before bringing services up
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop')
+    uses: ./.github/workflows/reusable-ssh-deploy.yml
+    secrets: inherit
+    with:
+      environment: staging
+      healthcheck_label: staging
+      image_tag: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.image_tag || 'develop') || 'develop' }}
+      run_migrations: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_migrations }}

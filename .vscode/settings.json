@@ -51,7 +51,7 @@
 	"tailwindCSS.codeActions": true,
 
 	"search.exclude": {
-		"pnpm-lock.yaml": true,
+		"bun.lock": true,
 		"**/node_modules/*": true,
 		"tmp/*": true
 	}

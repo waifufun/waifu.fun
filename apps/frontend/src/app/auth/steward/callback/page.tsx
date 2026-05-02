@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { STEWARD_LOCAL_TOKEN_KEY, STEWARD_LOCAL_USER_KEY, useStewardStatus } from "@/lib/api/steward";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
-import { STEWARD_LOCAL_TOKEN_KEY, STEWARD_LOCAL_USER_KEY, useStewardStatus } from "@/lib/api/steward";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "idle" | "linking" | "success" | "error";
 

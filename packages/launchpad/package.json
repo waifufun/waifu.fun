@@ -1,0 +1,35 @@
+{
+	"name": "@waifufun/launchpad",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"prebuild": "bun run --filter @waifufun/fourmeme build && bun run --filter @waifufun/flap build",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"lint": "biome check src test package.json tsconfig.json",
+		"pretest": "bun run prebuild",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then node --import tsx --test $files; else echo \"No tests found\"; fi'",
+		"clean": "rm -rf dist coverage .turbo",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@waifufun/flap": "workspace:*",
+		"@waifufun/fourmeme": "workspace:*",
+		"viem": "^2.23.5"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.0",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.3"
+	}
+}

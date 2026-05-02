@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
+import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
 import StepLaunchpad from "@/components/create/step-launchpad";
 import StepPersona from "@/components/create/step-persona";
@@ -13,12 +11,14 @@ import WizardShell from "@/components/create/wizard-shell";
 import {
 	LAUNCHPAD_PICKER_ENABLED,
 	STORAGE_KEY,
-	useWizard,
 	WizardStateProvider,
+	useWizard,
 } from "@/components/create/wizard-state";
-import { buildProvisionPayload, provisionAgent, type ProvisionResult } from "@/lib/api/agent-provision";
-import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import { useAuthRequired } from "@/hooks/use-auth-required";
+import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 
 function WizardInner() {
 	const router = useRouter();

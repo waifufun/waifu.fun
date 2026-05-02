@@ -1,0 +1,42 @@
+import { Hono } from "hono";
+import adapterTemplateRoutes from "./adapter-templates.js";
+import adminAgentRoutes from "./admin-agents.js";
+import agentPolicyRoutes from "./agent-policies.js";
+import agentPullRoutes from "./agent-pull.js";
+import agentEventsRoutes from "./agents-events.js";
+import agentRuntimeRoutes from "./agents-runtime.js";
+import agentXRoutes from "./agents-x.js";
+import agentRoutes from "./agents.js";
+import authSiweRoutes from "./auth-siwe.js";
+import claimRoutes from "./claim.js";
+import launchAuthorizeRoutes from "./launches-authorize.js";
+import launchRoutes from "./launches.js";
+import patronRoutes from "./patron-me.js";
+import stakingRoutes from "./staking.js";
+import webhookRoutes from "./webhooks.js";
+
+const v2 = new Hono();
+
+// IMPORTANT: sub-routers using app.use("*") swallow all routes mounted at the same path.
+// Scope wildcard middleware to specific path patterns.
+
+v2.route("/staking", stakingRoutes);
+v2.route("/auth/siwe", authSiweRoutes);
+v2.route("/adapters", adapterTemplateRoutes);
+v2.route("/admin/agents", adminAgentRoutes);
+v2.route("/launches", launchAuthorizeRoutes);
+// claim routes mount BEFORE agents so /v2/agents/claim/:token and
+// /v2/agents/prepare take precedence over the catch-all /:token handler
+// in agents.ts.
+v2.route("/agents", claimRoutes);
+v2.route("/agents", agentPolicyRoutes);
+v2.route("/agents", agentPullRoutes);
+v2.route("/agents", agentEventsRoutes);
+v2.route("/agents", agentXRoutes);
+v2.route("/agents", agentRuntimeRoutes);
+v2.route("/agents", agentRoutes);
+v2.route("/launches", launchRoutes);
+v2.route("/patron", patronRoutes);
+v2.route("/webhooks", webhookRoutes);
+
+export default v2;

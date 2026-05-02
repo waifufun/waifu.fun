@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-pnpm --filter @waifufun/frontend test
-pnpm --filter @waifufun/frontend exec tsc --noEmit
-pnpm lint
+bun run --filter @waifufun/frontend test
+bun run --filter @waifufun/frontend exec tsc --noEmit
+bun run lint

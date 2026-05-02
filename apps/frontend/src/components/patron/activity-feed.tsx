@@ -1,8 +1,8 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AgentEvent } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = {
 	events: AgentEvent[] | undefined;

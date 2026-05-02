@@ -1,12 +1,12 @@
 import {
-	devnetAutofun,
-	devnetAutofunLegacy,
-	mainnetAutofun,
-	mainnetAutofunLegacy,
 	type DevnetAutofun,
 	type DevnetAutofunLegacy,
 	type MainnetAutofun,
 	type MainnetAutofunLegacy,
+	devnetAutofun,
+	devnetAutofunLegacy,
+	mainnetAutofun,
+	mainnetAutofunLegacy,
 } from "@waifufun/programs";
 
 export const devnetWaifufunIdl = devnetAutofun;

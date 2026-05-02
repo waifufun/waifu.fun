@@ -5,6 +5,7 @@ import { coinbaseWallet, injectedWallet, metaMaskWallet, walletConnectWallet } f
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { EvmChainIds } from "@waifufun/types";
 import type { FC, ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { http, WagmiProvider } from "wagmi";
 import { bsc } from "wagmi/chains";
 import "@rainbow-me/rainbowkit/styles.css";
@@ -19,28 +20,6 @@ export const DEFAULT_EVM_RPC_URL =
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
 const hasWalletConnectProjectId = Boolean(walletConnectProjectId && walletConnectProjectId !== "waifu_fun_dev");
 const projectId = walletConnectProjectId || "waifu_fun_dev";
-
-const config = getDefaultConfig({
-	appName: "waifu.fun",
-	projectId,
-	chains: [DEFAULT_EVM_CHAIN],
-	wallets: [
-		{
-			groupName: "Recommended",
-			wallets: [
-				injectedWallet,
-				metaMaskWallet,
-				coinbaseWallet,
-				...(hasWalletConnectProjectId ? [walletConnectWallet] : []),
-			],
-		},
-	],
-	transports: {
-		[DEFAULT_EVM_CHAIN.id]: http(DEFAULT_EVM_RPC_URL),
-	},
-});
-
-const queryClient = new QueryClient();
 
 const rainbowKitTheme = (() => {
 	const baseTheme = darkTheme({
@@ -75,6 +54,31 @@ interface EvmProviderProps {
 }
 
 export const EvmProvider: FC<EvmProviderProps> = ({ children }) => {
+	const [queryClient] = useState(() => new QueryClient());
+	const config = useMemo(
+		() =>
+			getDefaultConfig({
+				appName: "waifu.fun",
+				projectId,
+				chains: [DEFAULT_EVM_CHAIN],
+				wallets: [
+					{
+						groupName: "Recommended",
+						wallets: [
+							injectedWallet,
+							metaMaskWallet,
+							coinbaseWallet,
+							...(hasWalletConnectProjectId ? [walletConnectWallet] : []),
+						],
+					},
+				],
+				transports: {
+					[DEFAULT_EVM_CHAIN.id]: http(DEFAULT_EVM_RPC_URL),
+				},
+			}),
+		[],
+	);
+
 	return (
 		<WagmiProvider config={config}>
 			<QueryClientProvider client={queryClient}>

@@ -1,0 +1,35 @@
+{
+	"name": "@waifufun/agent-actions",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./adapters": {
+			"types": "./dist/adapters/index.d.ts",
+			"import": "./dist/adapters/index.js"
+		},
+		"./adapters/pancakeswap-v3": {
+			"types": "./dist/adapters/pancakeswap-v3/index.d.ts",
+			"import": "./dist/adapters/pancakeswap-v3/index.js"
+		}
+	},
+	"files": ["src", "dist"],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"lint": "biome check src test package.json tsconfig.json",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then bun test $files; else echo \"No tests found\"; fi'",
+		"clean": "rm -rf dist",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"viem": "^2.23.5"
+	}
+}

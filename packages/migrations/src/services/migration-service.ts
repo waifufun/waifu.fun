@@ -1,14 +1,14 @@
-import type { Connection } from "@solana/web3.js";
 import type { AnchorProvider } from "@coral-xyz/anchor";
-import { MigrationManager } from "../migrations";
-import type { ProtocolMigration, ProtocolState } from "../types";
+import type { Connection } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import DB from "@waifufun/database";
 import logger from "@waifufun/logger";
-import { SolanaNetworkIds, type IMigration } from "@waifufun/types";
-import type { Model } from "mongoose";
 import redis from "@waifufun/redis";
-import { Keypair } from "@solana/web3.js";
+import { type IMigration, SolanaNetworkIds } from "@waifufun/types";
 import * as dotenv from "dotenv";
+import type { Model } from "mongoose";
+import { MigrationManager } from "../migrations";
+import type { ProtocolMigration, ProtocolState } from "../types";
 
 dotenv.config();
 
@@ -44,7 +44,7 @@ export class MigrationService {
 			this.startProcessing();
 			logger.info("Migration service initialized");
 		} catch (error) {
-			logger.error("Failed to initialize migration service:", error);
+			logger.error({ err: error }, "Failed to initialize migration service:");
 			throw error;
 		}
 	}
@@ -179,15 +179,15 @@ export class MigrationService {
 					await this.db.Token.updateOne({ contractAddress }, { $set: { curveCompleted: true, status: "migrating" } });
 					logger.info(`Created new migration for ${contractAddress}`);
 				} catch (error) {
-					logger.error(`Error processing migration event ${event._id}:`, error);
+					logger.error({ err: error }, `Error processing migration event ${event._id}:`);
 				}
 			}
 		} catch (error) {
-			logger.error("Error populating migrations:", error);
+			logger.error({ err: error }, "Error populating migrations:");
 		}
 	}
 
-	private async processMigrations(): Promise<void> {
+	async processMigrations(): Promise<void> {
 		if (this.isProcessing) {
 			return;
 		}
@@ -215,7 +215,7 @@ export class MigrationService {
 
 			await Promise.all(processingPromises);
 		} catch (error) {
-			logger.error("Error processing migrations:", error);
+			logger.error({ err: error }, "Error processing migrations:");
 		} finally {
 			this.isProcessing = false;
 		}
@@ -328,7 +328,7 @@ export class MigrationService {
 		try {
 			protocolState = this.parseNestedJson(JSON.parse(migration.protocolState || "{}")) as ProtocolState;
 		} catch (error) {
-			logger.error("Failed to parse protocol state:", error);
+			logger.error({ err: error }, "Failed to parse protocol state:");
 			protocolState = {
 				tokenMint: migration.contractAddress,
 				amount: 0,
@@ -344,7 +344,7 @@ export class MigrationService {
 					typeof secret === "string" ? JSON.parse(secret) : secret,
 				);
 			} catch (error) {
-				logger.error("Failed to parse positionNftsSecrets:", error);
+				logger.error({ err: error }, "Failed to parse positionNftsSecrets:");
 			}
 		}
 
@@ -357,7 +357,7 @@ export class MigrationService {
 						? JSON.parse(migration.withdrawnAmounts)
 						: migration.withdrawnAmounts;
 			} catch (error) {
-				logger.error("Failed to parse withdrawnAmounts:", error);
+				logger.error({ err: error }, "Failed to parse withdrawnAmounts:");
 			}
 		}
 

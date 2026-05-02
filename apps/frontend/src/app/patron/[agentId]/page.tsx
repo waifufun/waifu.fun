@@ -1,21 +1,21 @@
 "use client";
 
-import { use, useState } from "react";
-import { useRouter } from "next/navigation";
-import PatronHeader from "@/components/patron/patron-header";
+import ActivityFeed from "@/components/patron/activity-feed";
 import AgentHero from "@/components/patron/agent-hero";
-import LaunchReadyHero from "@/components/patron/launch-ready-hero";
+import EmergencyControls from "@/components/patron/emergency-controls";
 import LaunchPanel from "@/components/patron/launch-panel";
 import LaunchProgress from "@/components/patron/launch-progress";
-import WhatHappensNext from "@/components/patron/what-happens-next";
-import TreasuryCard from "@/components/patron/treasury-card";
-import ActivityFeed from "@/components/patron/activity-feed";
+import LaunchReadyHero from "@/components/patron/launch-ready-hero";
+import PatronHeader from "@/components/patron/patron-header";
 import PolicyEditor from "@/components/patron/policy-editor";
-import EmergencyControls from "@/components/patron/emergency-controls";
 import RuntimeConnectionPanel from "@/components/patron/runtime-connection-panel";
+import TreasuryCard from "@/components/patron/treasury-card";
+import WhatHappensNext from "@/components/patron/what-happens-next";
 import XConnectionPanel from "@/components/patron/x-connection";
-import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
 import { useAuthorizeLaunch } from "@/lib/api/launches";
+import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
 
 type Params = { agentId: string };
 

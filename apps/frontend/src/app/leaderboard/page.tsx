@@ -1,10 +1,10 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useMemo } from "react";
 import LeaderboardTable from "@/components/leaderboard/leaderboard-table";
 import SortToggle from "@/components/leaderboard/sort-toggle";
 import { type LeaderboardSort, useLeaderboard } from "@/lib/api/leaderboard";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useMemo } from "react";
 
 function parseSort(raw: string | null | undefined): LeaderboardSort {
 	if (raw === "treasury" || raw === "burn" || raw === "runway") return raw;

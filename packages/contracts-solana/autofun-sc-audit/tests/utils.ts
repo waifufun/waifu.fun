@@ -1,9 +1,9 @@
-import { PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 
 export const sleep = (ms: number) => {
   return new Promise((resolve) => {
@@ -15,7 +15,7 @@ export const getAssociatedTokenAccount = (
   ownerPubkey: PublicKey,
   mintPk: PublicKey
 ): PublicKey => {
-  let associatedTokenAccountPubkey = PublicKey.findProgramAddressSync(
+  const associatedTokenAccountPubkey = PublicKey.findProgramAddressSync(
     [
       ownerPubkey.toBytes(),
       TOKEN_PROGRAM_ID.toBytes(),

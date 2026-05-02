@@ -1,0 +1,37 @@
+{
+	"name": "@waifufun/sol-indexer",
+	"version": "1.0.0",
+	"description": "",
+	"type": "module",
+	"main": "dist/index.js",
+	"exports": {
+		"import": "./dist/index.js",
+		"require": "./dist/index.js"
+	},
+	"scripts": {
+		"test": "node -e \"process.exit(0)\"",
+		"dev": "tsx watch src/index.ts",
+		"start": "node dist/index.js",
+		"tests": "tsx watch tests/signatures.ts",
+		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/types build && bun run --filter @waifufun/redis build && bun run --filter @waifufun/constants build && bun run --filter @waifufun/codex build && bun run --filter @waifufun/programs build && bun run --filter @waifufun/rpc build && bun run --filter @waifufun/database build",
+		"build": "rimraf dist && tsx build.ts",
+		"lint": "biome format . --write && biome lint . --fix",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"devDependencies": {
+		"@waifufun/types": "workspace:*",
+		"esbuild": "^0.25.4",
+		"tsx": "^4.15.1",
+		"rimraf": "^6.0.1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@waifufun/database": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"@waifufun/rpc": "workspace:*",
+		"@solana/web3.js": "^1.98.2",
+		"dotenv": "^16.5.0"
+	}
+}

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { useLaunchState, type LaunchStatus } from "@/lib/api/launches";
+import { Button } from "@/components/ui/button";
+import { type LaunchStatus, useLaunchState } from "@/lib/api/launches";
 import { EASE_HERO, EASE_OUT_EXPO } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 
 type Stage = "authorizing" | "submitting" | "confirming" | "live" | "failed";
 
@@ -210,6 +210,7 @@ export default function LaunchProgress({
 			{open ? (
 				<motion.div
 					key="launch-progress"
+					// biome-ignore lint/a11y/useSemanticElements: motion.div with role=dialog; native <dialog> conflicts with framer-motion animation wrapping
 					role="dialog"
 					aria-modal="true"
 					aria-label="Launching token"

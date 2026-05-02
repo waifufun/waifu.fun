@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { formatRunway, useLeaderboard } from "@/lib/api/leaderboard";
+import Link from "next/link";
 import RankCell from "./rank-cell";
 
 export default function TopFiveWidget() {

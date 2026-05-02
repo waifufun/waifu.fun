@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { useState } from "react";
 import { DEFAULT_FLAP } from "@/lib/launchpad/fee-defaults";
 import { DEFAULT_PLATFORM_CUT_BPS, type FlapFeeConfig } from "@/lib/launchpad/types";
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
 import FlapConfig from "./flap-config";
 
 function Harness({ initial }: { initial: FlapFeeConfig }) {

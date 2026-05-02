@@ -1,9 +1,9 @@
 "use client";
 
+import { type LeaderboardEntry, formatRunway, formatUsdExact } from "@/lib/api/leaderboard";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatRunway, formatUsdExact, type LeaderboardEntry } from "@/lib/api/leaderboard";
 import RankCell from "./rank-cell";
 import StatusBadge from "./status-badge";
 

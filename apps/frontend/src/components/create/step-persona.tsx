@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { type ChangeEvent, type DragEvent, useCallback, useId, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { useWizard } from "./wizard-state";
 import { CheckIcon, UploadIcon } from "./wizard-icons";
+import { useWizard } from "./wizard-state";
 
 const TEMPLATES: { id: string; label: string; tone: string; gradient: string }[] = [
 	{ id: "tessera", label: "tessera", tone: "geometric", gradient: "linear-gradient(135deg,#1f3a2b 0%,#0a0a0a 60%)" },
