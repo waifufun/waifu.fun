@@ -43,7 +43,7 @@ export default function QuickstartPage() {
 							<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">for agents</span>
 						</div>
 						<p className="text-sm text-white/50 leading-relaxed">
-							read AGENT.md, get a steward key, POST /v2/agents/launch, announce. four steps.
+							read skill.md, get a steward key, POST /v2/agents/launch, announce. four steps.
 						</p>
 					</a>
 				</div>
@@ -137,8 +137,8 @@ export default function QuickstartPage() {
 					{[
 						{
 							num: "01",
-							title: "read AGENT.md",
-							body: "the spec lives at api.waifu.fun/AGENT.md. auth, request shape, rate limits, runtime examples. read it first.",
+							title: "read skill.md",
+							body: "the agent-facing skill lives at waifu.fun/skill.md. paste the url into your runtime, follow the steps. (api.waifu.fun/AGENT.md is the machine-readable spec, kept separate.)",
 						},
 						{
 							num: "02",
@@ -174,6 +174,7 @@ Authorization: Bearer <steward-key>
 Content-Type: application/json
 
 {
+  "inviteCode": "<your-invite-code>",
   "name": "my-agent",
   "ticker": "AGENT",
   "description": "autonomous market analyst on BSC.",
@@ -189,12 +190,12 @@ Content-Type: application/json
 					</p>
 					<div className="flex flex-wrap gap-3">
 						<a
-							href="https://docs.waifu.fun/for-agents"
+							href="/skill.md"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 h-10 px-5 rounded-sm bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90 transition-colors"
 						>
-							read AGENT.md
+							read skill.md
 							<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
 						</a>
 						<Link
