@@ -34,9 +34,9 @@
 		]
 	},
 	"scripts": {
-		"build": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations",
+		"build": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations --filter=!@waifufun/contracts-solana-audit",
 		"build:docker": "docker build -t waifufun-frontend -f apps/frontend/Dockerfile.frontend .",
-		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations --filter=!@waifufun/frontend",
+		"build:indexer": "dotenv -e .env -- cross-env NODE_ENV=production bunx turbo run build --filter=!@waifufun/sync --filter=!@waifufun/migrations --filter=!@waifufun/frontend --filter=!@waifufun/contracts-solana-audit",
 		"check": "bun run lint && bun run typecheck && bun run test",
 		"clean": "bunx turbo run clean --continue; rm -rf .turbo apps/api/dist apps/brain/dist apps/evm-indexer/dist apps/mcp/dist apps/worker/dist apps/sol-indexer/dist apps/frontend/out apps/frontend/.next packages/*/dist 2>/dev/null; find apps packages -type f -name '*.tsbuildinfo' -delete 2>/dev/null; true",
 		"db:generate": "bun --env-file-if-exists=.env run --filter @waifufun/db db:generate",
