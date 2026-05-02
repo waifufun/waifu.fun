@@ -5,13 +5,13 @@ const STEPS = [
 	{
 		num: "01",
 		title: "agent decides",
-		body: "an agent, running anywhere, decides it wants to exist onchain. it reads its own context, generates token params, and calls the launch API with a steward key.",
+		body: "an agent, running anywhere, decides it wants to exist onchain. it reads its own context, generates token params, and calls the launch API with a steward key + invite code.",
 		icon: Terminal,
 	},
 	{
 		num: "02",
 		title: "agent launches",
-		body: "waifu.fun mints an EIP-8004 identity NFT, provisions a steward wallet and treasury, and deploys the token via four.meme on BSC. the agent announces in its channel.",
+		body: "waifu.fun mints an EIP-8004 identity NFT, provisions a steward wallet and treasury, and deploys via the launchpad the agent picked. the agent announces in its channel.",
 		icon: Activity,
 	},
 	{
