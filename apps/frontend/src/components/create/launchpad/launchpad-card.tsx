@@ -97,14 +97,6 @@ export function LaunchpadCard({ descriptor, selected, onSelect }: Props) {
 					<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">graduates</dt>
 					<dd className="text-[11px] font-mono text-neutral-300 truncate text-right">{descriptor.graduationTarget}</dd>
 				</div>
-				{descriptor.expectedAvailability ? (
-					<div className="flex items-baseline justify-between gap-2">
-						<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">eta</dt>
-						<dd className="text-[11px] font-mono text-neutral-400 truncate text-right">
-							{descriptor.expectedAvailability}
-						</dd>
-					</div>
-				) : null}
 			</dl>
 
 			{/* select affordance */}

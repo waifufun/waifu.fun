@@ -35,9 +35,10 @@ export default meta;
 type Story = StoryObj<typeof Wrapper>;
 
 export const Live: Story = { args: { descriptor: byId("four-meme-regular") } };
-export const Recommended: Story = { args: { descriptor: byId("four-meme-tax") } };
+export const FourMemeTax: Story = { args: { descriptor: byId("four-meme-tax") } };
 export const Advanced: Story = { args: { descriptor: byId("flap") } };
 export const PumpFunComingSoon: Story = { args: { descriptor: byId("pump-fun") } };
 export const BagsComingSoon: Story = { args: { descriptor: byId("bags") } };
-export const CustomComingSoon: Story = { args: { descriptor: byId("custom") } };
+export const MeteoraComingSoon: Story = { args: { descriptor: byId("meteora") } };
+export const CustomEvmComingSoon: Story = { args: { descriptor: byId("custom-evm") } };
 export const Selected: Story = { args: { descriptor: byId("four-meme-tax"), defaultSelected: true } };

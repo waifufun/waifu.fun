@@ -93,9 +93,10 @@ const FALLBACK_CHAIN_BY_LAUNCHPAD: Record<LaunchpadId, ChainId> = {
 	"four-meme-regular": "bsc",
 	"four-meme-tax": "bsc",
 	flap: "bsc",
+	meteora: "solana",
 	"pump-fun": "solana",
 	bags: "solana",
-	custom: "ethereum",
+	"custom-evm": "ethereum",
 };
 
 export function buildProvisionPayload(
