@@ -36,17 +36,13 @@ function ensureNonEmptyTokenParams(
 	result: { chain: string; chainId: string; contractAddress: string }[],
 ): { chain: string; chainId: string; contractAddress: string }[] {
 	if (result.length > 0 || !isStaticExport()) return result;
-	console.warn(
-		"[static-export] no tokens from API; using placeholder param so export succeeds (page may 404)",
-	);
+	console.warn("[static-export] no tokens from API; using placeholder param so export succeeds (page may 404)");
 	return [{ chain: "evm", chainId: "1", contractAddress: STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS }];
 }
 
 function ensureNonEmptyAddresses(result: { address: string }[]): { address: string }[] {
 	if (result.length > 0 || !isStaticExport()) return result;
-	console.warn(
-		"[static-export] no agent/profile addresses from API; using placeholder so export succeeds",
-	);
+	console.warn("[static-export] no agent/profile addresses from API; using placeholder so export succeeds");
 	return [{ address: STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS }];
 }
 
