@@ -1,5 +1,6 @@
 import type { AgentGraduatedPayload } from "@waifufun/db";
 
+import { composePostWithBlink } from "../lib/blink-suffix.js";
 import { generateTweet } from "../llm/claude.js";
 import { buildGraduatedPrompt } from "../llm/prompt-builder.js";
 import type { Handler, HandlerResult } from "./index.js";
@@ -16,7 +17,12 @@ export const handleAgentGraduated: Handler = async ({ event, persona, ctx }) => 
 	const fallback = "made it.";
 	const reaction = llmLine ?? fallback;
 
-	let text = `${persona.name} graduated. now on pancakeswap. "${reaction}"`;
+	const baseText = `${persona.name} graduated. now on pancakeswap. "${reaction}"`;
+
+	let text = composePostWithBlink(baseText, payload.tokenAddress, {
+		blinkBaseUrl: process.env.WAIFU_BLINKS_BASE_URL,
+	});
+
 	if (text.length > 280) {
 		text = `${text.slice(0, 277).trimEnd()}...`;
 	}

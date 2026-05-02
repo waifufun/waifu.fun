@@ -31,19 +31,42 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger)
 	const app = new Hono<AppBindings>();
 
 	app.use("*", attachRequestContext(deps, logger));
+
+	// Permissive CORS for Blink (Blockchain Link) discovery URLs. Wallets and
+	// third-party renderers fetch these from arbitrary origins, so the global
+	// allowlist below must NOT gate them. Mounted BEFORE the global cors so
+	// the wildcard handles `OPTIONS` preflight first.
 	app.use(
-		"*",
+		"/v2/agents/:token/blink",
 		cors({
-			origin: deps.config.app.corsOrigins,
-			allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-			allowHeaders: ["Content-Type", "Authorization", "X-User-Address", "X-User-Role"],
-			// Required so `fetch(..., { credentials: 'include' })` attaches the
-			// patron session cookie on cross-origin requests (www.waifu.fun →
-			// api.waifu.fun). Without this, browsers drop the cookie silently
-			// and /auth/twitter/me always returns { user: null }.
-			credentials: true,
+			origin: "*",
+			allowMethods: ["GET", "POST", "OPTIONS"],
+			allowHeaders: ["Content-Type", "Content-Encoding", "Accept-Encoding"],
 		}),
 	);
+
+	// The credentialled global cors must skip Blink paths. Combining
+	// `Access-Control-Allow-Origin: *` (set by the wildcard above) with
+	// `Access-Control-Allow-Credentials: true` (which Hono's cors emits
+	// unconditionally when `credentials: true`) is a CORS spec violation that
+	// browsers reject. Blink endpoints are public — they don't carry session
+	// cookies — so credentials handling is unnecessary there anyway.
+	const blinkPathRe = /^\/v2\/agents\/[^/]+\/blink$/;
+	const credentialedCors = cors({
+		origin: deps.config.app.corsOrigins,
+		allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+		allowHeaders: ["Content-Type", "Authorization", "X-User-Address", "X-User-Role"],
+		// Required so `fetch(..., { credentials: 'include' })` attaches the
+		// patron session cookie on cross-origin requests (www.waifu.fun →
+		// api.waifu.fun). Without this, browsers drop the cookie silently
+		// and /auth/twitter/me always returns { user: null }.
+		credentials: true,
+	});
+	app.use("*", async (c, next) => {
+		if (blinkPathRe.test(c.req.path)) return next();
+		return credentialedCors(c, next);
+	});
+
 	app.use("*", optionalAuth());
 
 	app.get("/", (c) =>
