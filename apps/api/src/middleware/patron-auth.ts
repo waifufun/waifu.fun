@@ -79,6 +79,7 @@ type DbHandle = ReturnType<typeof getDatabase>["db"];
 let dbForTest: DbHandle | undefined;
 let stewardParserForTest: StewardParser | undefined;
 let walletSiweVerifierForTest: typeof verifySiweMessage | undefined;
+let recordPrimaryWalletsForTest = false;
 
 export function __setRequirePatronDbForTest(db: DbHandle | undefined): void {
 	dbForTest = db;
@@ -90,6 +91,10 @@ export function __setRequirePatronStewardParserForTest(parser: StewardParser | u
 
 export function __setRequireWalletSiweVerifierForTest(verifier: typeof verifySiweMessage | undefined): void {
 	walletSiweVerifierForTest = verifier;
+}
+
+export function __setRequirePatronRecordPrimaryWalletsForTest(enabled: boolean): void {
+	recordPrimaryWalletsForTest = enabled;
 }
 
 function getDb(): DbHandle {
@@ -129,6 +134,31 @@ function normalizeAddress(value: string | null | undefined): `0x${string}` | nul
 	return value as `0x${string}`;
 }
 
+async function ensurePrimaryPatronWallet(db: DbHandle, patronId: string, address: `0x${string}`): Promise<void> {
+	const lowerAddress = address.toLowerCase() as `0x${string}`;
+	const existing = await db.select().from(patronWallets).where(eq(patronWallets.address, lowerAddress)).limit(1);
+	const now = new Date();
+	if (existing[0]?.patronId === patronId) {
+		await db
+			.update(patronWallets)
+			.set({ kind: "steward_primary", isPrimary: true, lastUsedAt: now })
+			.where(and(eq(patronWallets.patronId, patronId), eq(patronWallets.address, lowerAddress)));
+		return;
+	}
+	if (existing.length > 0) return;
+	await db
+		.insert(patronWallets)
+		.values({
+			patronId,
+			address: lowerAddress,
+			chainId: 56,
+			kind: "steward_primary",
+			isPrimary: true,
+			lastUsedAt: now,
+		})
+		.returning();
+}
+
 // ─── requirePatron ────────────────────────────────────────────────
 
 /**
@@ -142,7 +172,7 @@ function normalizeAddress(value: string | null | undefined): `0x${string}` | nul
  *     inserts a fresh row (first-sign-in handshake) and uses that row.
  *
  * Note: this middleware does NOT also accept the legacy SIWE JWT or the
- * X-OAuth cookie session — those flows have their own existing middleware.
+ * X-OAuth cookie session, those flows have their own existing middleware.
  * Wave 9.2 will migrate mutating routes onto this one.
  */
 export function requirePatron(): MiddlewareHandler<RequirePatronBindings> {
@@ -193,14 +223,23 @@ export function requirePatron(): MiddlewareHandler<RequirePatronBindings> {
 			return c.json({ ok: false, error: "PATRON_PROVISION_FAILED", message: "could not load patron row" }, 500);
 		}
 
+		const primaryAddress = normalizeAddress(principal.address ?? null);
 		c.set("patron", {
 			id: row.id,
 			stewardUserId: row.stewardUserId ?? principal.userId,
 			email: row.primaryEmail ?? principal.email ?? null,
-			primaryAddress: normalizeAddress(principal.address ?? null),
+			primaryAddress,
 		});
 
 		await next();
+
+		if (primaryAddress && (!dbForTest || recordPrimaryWalletsForTest)) {
+			try {
+				await ensurePrimaryPatronWallet(db, row.id, primaryAddress);
+			} catch {
+				// Wallet recording is best-effort so auth remains available if a transient DB state cannot write the row.
+			}
+		}
 	};
 }
 
