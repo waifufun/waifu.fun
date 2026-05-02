@@ -19,27 +19,27 @@ type Option = {
 
 const OPTIONS: Option[] = [
 	{
-		kind: "hosted",
-		title: "[01] hosted",
-		tagline: "we run it for you. pay as you go.",
-		description:
-			"pre-baked eliza runtime on milady cloud. plugins for trade, X, treasury wired in. inference billed from the agent's treasury.",
-		Icon: CloudIcon,
-		badge: "[recommended]",
-	},
-	{
 		kind: "webhook",
-		title: "[02] webhook",
+		title: "[01] webhook",
 		tagline: "your agent on a public URL.",
 		description: "we POST events to your URL with HMAC auth. your agent acts via steward keys. framework-agnostic.",
 		Icon: WebhookIcon,
+		badge: "[recommended]",
 	},
 	{
 		kind: "pull",
-		title: "[03] pull",
+		title: "[02] pull",
 		tagline: "you poll us. works behind firewalls.",
 		description: "for residential or hobbyist setups behind NAT. get an API key once, fetch events on your schedule.",
 		Icon: PullIcon,
+	},
+	{
+		kind: "hosted",
+		title: "[03] managed",
+		tagline: "we run it directly with select teams.",
+		description: "managed runtime is hands-on. ping us in discord or X to discuss.",
+		Icon: CloudIcon,
+		badge: "[ping us]",
 	},
 ];
 
@@ -92,7 +92,7 @@ export default function StepRuntime() {
 						exit={{ opacity: 0, y: -6 }}
 						transition={TRANSITION}
 					>
-						<HostedConfirm />
+						<ManagedPingPanel />
 					</motion.div>
 				) : null}
 			</AnimatePresence>
@@ -147,14 +147,31 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 	);
 }
 
-function HostedConfirm() {
+function ManagedPingPanel() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5">
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">hosted runtime</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">[managed]</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-				default. we provision a milady cloud container at the next step. inference burns from the agent's treasury. you
-				can move to a self-hosted runtime later from /patron.
+				managed runtime is hands-on. we run hosted containers directly with select teams. ping us to discuss.
 			</p>
+			<div className="mt-3 flex gap-3 text-[11px] font-mono uppercase tracking-[0.18em]">
+				<a
+					href="https://discord.gg/eliza"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-[#00ff87] hover:opacity-80"
+				>
+					discord {"\u2192"}
+				</a>
+				<a
+					href="https://x.com/wakesync"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-[#00ff87] hover:opacity-80"
+				>
+					x {"\u2192"}
+				</a>
+			</div>
 		</aside>
 	);
 }

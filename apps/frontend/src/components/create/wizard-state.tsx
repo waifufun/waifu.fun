@@ -72,7 +72,7 @@ export const DEFAULT_STATE: WizardState = {
 		personaPrompt: "",
 	},
 	runtime: {
-		kind: "hosted",
+		kind: "webhook",
 		webhookUrl: "",
 		webhookSecret: "",
 	},
