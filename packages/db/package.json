@@ -19,10 +19,7 @@
 			"import": "./dist/schema/index.js"
 		}
 	},
-	"files": [
-		"dist",
-		"drizzle"
-	],
+	"files": ["dist", "drizzle"],
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
