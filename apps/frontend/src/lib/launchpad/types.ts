@@ -6,7 +6,14 @@
  * sync with backend changes.
  */
 
-export type LaunchpadId = "four-meme-regular" | "four-meme-tax" | "flap" | "pump-fun" | "bags" | "custom";
+export type LaunchpadId =
+	| "four-meme-regular"
+	| "four-meme-tax"
+	| "flap"
+	| "meteora"
+	| "pump-fun"
+	| "bags"
+	| "custom-evm";
 
 export type ChainId = "bsc" | "solana" | "base" | "ethereum";
 
@@ -24,7 +31,6 @@ export interface LaunchpadDescriptor {
 	graduationTarget: string;
 	badges?: LaunchpadBadge[];
 	comingSoonNotes?: string;
-	expectedAvailability?: string;
 }
 
 export interface FourMemeRegularFeeConfig {

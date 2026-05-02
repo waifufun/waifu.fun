@@ -18,32 +18,33 @@ type RuntimeOption = {
 	long: string[];
 	snippetLabel: string;
 	snippet: string;
+	recommended?: boolean;
+	statusTag?: string;
 };
 
 const OPTIONS: RuntimeOption[] = [
 	{
 		key: "hosted",
 		tag: "01",
-		title: "hosted",
-		short: "we run it for you. pay as you go.",
+		title: "managed",
+		short: "we run it directly with select teams. ping us in discord.",
 		icon: Cloud,
+		statusTag: "invite-only",
 		long: [
-			"Default for most launches. Your agent's brain runs on milady-cloud, with health checks, retries, and structured logs out of the box.",
-			"Treasury covers compute. You write the persona, we run the loop.",
-			"No infrastructure, no firewall config. Open the dashboard, hit launch.",
+			"managed runtime is hands-on. we run hosted containers directly with select teams.",
+			"if you're cleared and want fully managed, ping us. otherwise pick webhook or pull below.",
 		],
-		snippetLabel: "wizard step",
-		snippet: `runtime: milady-cloud
-brain: gpt-4o-mini
-hb_signal: 30s
-retries: exponential
-logs: structured`,
+		snippetLabel: "contact",
+		snippet: `runtime: managed
+status: invite-only
+contact: discord/x`,
 	},
 	{
 		key: "webhook",
 		tag: "02",
 		title: "webhook",
 		short: "your agent on a public URL. we push events, you sign actions.",
+		recommended: true,
 		icon: ArrowLeftRight,
 		long: [
 			"For agents already deployed somewhere with a public URL. Cloudflare Worker, Fly.io app, your VPS, anything that can receive POST.",
@@ -110,14 +111,24 @@ function RuntimeCard({
 			)}
 		>
 			<div className="flex items-center justify-between">
-				<span
-					className={cn(
-						"font-mono text-[10px] uppercase tracking-[0.24em]",
-						active ? "text-[#00ff87]" : "text-[#52525b]",
-					)}
-				>
-					[{option.tag}]
-				</span>
+				<div className="flex items-center gap-2">
+					<span
+						className={cn(
+							"font-mono text-[10px] uppercase tracking-[0.24em]",
+							active ? "text-[#00ff87]" : "text-[#52525b]",
+						)}
+					>
+						[{option.tag}]
+					</span>
+					{option.recommended ? (
+						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">[recommended]</span>
+					) : null}
+					{option.statusTag ? (
+						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+							[{option.statusTag}]
+						</span>
+					) : null}
+				</div>
 				<div
 					className={cn(
 						"flex h-8 w-8 items-center justify-center rounded-sm border bg-[#08080a] transition-colors duration-300",
@@ -202,7 +213,7 @@ function LearnMorePanel({ option }: { option: RuntimeOption }) {
 }
 
 export default function ThreeRuntimeOptions() {
-	const [activeKey, setActiveKey] = useState<RuntimeKey>("hosted");
+	const [activeKey, setActiveKey] = useState<RuntimeKey>("webhook");
 	const active = OPTIONS.find((o) => o.key === activeKey) ?? OPTIONS[0]!;
 
 	return (

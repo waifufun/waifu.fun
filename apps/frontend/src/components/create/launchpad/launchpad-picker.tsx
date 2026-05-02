@@ -50,7 +50,7 @@ export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
 
 			{source === "mock" ? (
 				<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-					note: descriptors served from local mock until /v3/launchpads ships.
+					note: api unavailable, using local list.
 				</p>
 			) : null}
 

@@ -11,6 +11,11 @@ import type { ChainId, LaunchpadFeeConfig, LaunchpadId } from "@/lib/launchpad/t
 import { type ApiError, apiFetch, isApiError } from "./_fetcher";
 
 export type ProvisionRequest = {
+	/**
+	 * Invite code captured in step-persona. Backend currently silently drops
+	 * unknown fields; forward-looking for invite-code validation.
+	 */
+	inviteCode: string;
 	persona: {
 		name: string;
 		ticker: string;
@@ -55,6 +60,7 @@ export type ProvisionResult =
 	  };
 
 type ProvisionWizardState = {
+	inviteCode: string;
 	persona: {
 		name: string;
 		ticker: string;
@@ -93,9 +99,10 @@ const FALLBACK_CHAIN_BY_LAUNCHPAD: Record<LaunchpadId, ChainId> = {
 	"four-meme-regular": "bsc",
 	"four-meme-tax": "bsc",
 	flap: "bsc",
+	meteora: "solana",
 	"pump-fun": "solana",
 	bags: "solana",
-	custom: "ethereum",
+	"custom-evm": "ethereum",
 };
 
 export function buildProvisionPayload(
@@ -104,6 +111,7 @@ export function buildProvisionPayload(
 ): ProvisionRequest {
 	const launchpadPickerEnabled = options.launchpadPickerEnabled ?? LAUNCHPAD_PICKER_FLAG;
 	const base: ProvisionRequest = {
+		inviteCode: state.inviteCode.trim(),
 		persona: {
 			name: state.persona.name.trim(),
 			ticker: state.persona.ticker.trim(),

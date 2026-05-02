@@ -36,4 +36,5 @@ type Story = StoryObj<typeof Harness>;
 export const Closed: Story = { args: { open: false } };
 export const PumpFunOpen: Story = { args: { open: true, launchpadId: "pump-fun" } };
 export const BagsOpen: Story = { args: { open: true, launchpadId: "bags" } };
-export const CustomOpen: Story = { args: { open: true, launchpadId: "custom" } };
+export const MeteoraOpen: Story = { args: { open: true, launchpadId: "meteora" } };
+export const CustomEvmOpen: Story = { args: { open: true, launchpadId: "custom-evm" } };

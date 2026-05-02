@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildProvisionPayload } from "./agent-provision";
 
 type TestProvisionState = {
+	inviteCode: string;
 	persona: {
 		name: string;
 		ticker: string;
@@ -34,6 +35,7 @@ type TestProvisionState = {
 
 function stateWithLaunchpad(): TestProvisionState {
 	return {
+		inviteCode: "WF-TEST1-TEST2",
 		persona: {
 			name: " Mika ",
 			ticker: " MIKA ",
@@ -68,6 +70,7 @@ describe("buildProvisionPayload", () => {
 		const payload = buildProvisionPayload(stateWithLaunchpad(), { launchpadPickerEnabled: false });
 
 		expect(payload).not.toHaveProperty("launchpad");
+		expect(payload.inviteCode).toBe("WF-TEST1-TEST2");
 		expect(payload.persona).toMatchObject({ name: "Mika", ticker: "MIKA" });
 		expect(payload.safe.owners).toEqual([
 			"0x1111111111111111111111111111111111111111",

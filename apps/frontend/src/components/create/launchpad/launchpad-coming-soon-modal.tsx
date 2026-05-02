@@ -147,16 +147,7 @@ export function LaunchpadComingSoonModal({ descriptor, open, onClose }: Props) {
 						<p id={descId} className="mt-4 text-sm text-neutral-300 leading-relaxed">
 							{copy.modalIntro}
 						</p>
-						<p className="mt-2 text-xs text-neutral-500 leading-relaxed">
-							{descriptor.comingSoonNotes}
-							{descriptor.expectedAvailability ? (
-								<>
-									{" "}
-									<span className="text-neutral-400">Current planning window:</span>{" "}
-									<span className="font-mono text-neutral-300">{descriptor.expectedAvailability}</span>.
-								</>
-							) : null}
-						</p>
+						<p className="mt-2 text-xs text-neutral-500 leading-relaxed">{descriptor.comingSoonNotes}</p>
 
 						<div className="mt-5 grid gap-2">
 							{copy.creatorReasons.map((reason, index) => (

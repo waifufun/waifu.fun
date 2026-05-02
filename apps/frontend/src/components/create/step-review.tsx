@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
-	hosted: "hosted (milady cloud)",
+	hosted: "managed (ping us)",
 	webhook: "webhook",
 	pull: "pull",
 } as const;
@@ -18,9 +18,10 @@ const LAUNCHPAD_LABEL = {
 	"four-meme-tax": "four.meme tax",
 	"four-meme-regular": "four.meme regular",
 	flap: "flap",
+	meteora: "meteora",
 	"pump-fun": "pump.fun",
 	bags: "bags",
-	custom: "custom",
+	"custom-evm": "custom evm",
 } as const;
 
 const CHAIN_LABEL = {

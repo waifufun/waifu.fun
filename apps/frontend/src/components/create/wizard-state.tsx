@@ -29,6 +29,11 @@ export const STEP_LABELS: Record<WizardStep, string> = {
 export type RuntimeKind = "hosted" | "webhook" | "pull";
 
 export type WizardState = {
+	/**
+	 * Invite code (waifu.fun is invite-only). Required to launch.
+	 * Step-persona fails validity if this is empty.
+	 */
+	inviteCode: string;
 	persona: {
 		name: string;
 		ticker: string;
@@ -63,6 +68,7 @@ export type WizardState = {
 };
 
 export const DEFAULT_STATE: WizardState = {
+	inviteCode: "",
 	persona: {
 		name: "",
 		ticker: "",
@@ -72,7 +78,7 @@ export const DEFAULT_STATE: WizardState = {
 		personaPrompt: "",
 	},
 	runtime: {
-		kind: "hosted",
+		kind: "webhook",
 		webhookUrl: "",
 		webhookSecret: "",
 	},
@@ -92,6 +98,7 @@ export const DEFAULT_STATE: WizardState = {
 };
 
 type Action =
+	| { type: "patch_invite_code"; code: string }
 	| { type: "patch_persona"; patch: Partial<WizardState["persona"]> }
 	| { type: "patch_runtime"; patch: Partial<WizardState["runtime"]> }
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
@@ -102,6 +109,8 @@ type Action =
 
 function reducer(state: WizardState, action: Action): WizardState {
 	switch (action.type) {
+		case "patch_invite_code":
+			return { ...state, inviteCode: action.code };
 		case "patch_persona":
 			return { ...state, persona: { ...state.persona, ...action.patch } };
 		case "patch_runtime":
@@ -125,6 +134,7 @@ export const STORAGE_KEY = "waifu-wizard-draft";
 
 type Ctx = {
 	state: WizardState;
+	patchInviteCode: (code: string) => void;
 	patchPersona: (p: Partial<WizardState["persona"]>) => void;
 	patchRuntime: (p: Partial<WizardState["runtime"]>) => void;
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
@@ -160,6 +170,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 			if (raw) {
 				const parsed = JSON.parse(raw) as Partial<WizardState>;
 				const merged: WizardState = {
+					inviteCode: typeof parsed.inviteCode === "string" ? parsed.inviteCode : DEFAULT_STATE.inviteCode,
 					persona: { ...DEFAULT_STATE.persona, ...(parsed.persona ?? {}) },
 					runtime: { ...DEFAULT_STATE.runtime, ...(parsed.runtime ?? {}) },
 					safe: {
@@ -209,6 +220,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 	const value = useMemo<Ctx>(
 		() => ({
 			state,
+			patchInviteCode: (code) => dispatch({ type: "patch_invite_code", code }),
 			patchPersona: (patch) => dispatch({ type: "patch_persona", patch }),
 			patchRuntime: (patch) => dispatch({ type: "patch_runtime", patch }),
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
@@ -232,6 +244,7 @@ export function useWizard(): Ctx {
 export function validateStep(step: WizardStep, state: WizardState): string | null {
 	switch (step) {
 		case "persona": {
+			if (!state.inviteCode.trim()) return "invite code required";
 			const { name, ticker, bio } = state.persona;
 			if (!name.trim()) return "pick a name";
 			if (name.length > 48) return "name too long";
