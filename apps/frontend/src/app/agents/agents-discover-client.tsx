@@ -94,9 +94,7 @@ function AgentsDiscoverInner() {
 					) : agents.length === 0 ? (
 						<EmptyState
 							title={status === "all" ? "no agents yet." : `no ${status} agents right now.`}
-							subtitle={
-								status === "all" ? "be the first to launch one." : "try switching filters, or launch one."
-							}
+							subtitle={status === "all" ? "be the first to launch one." : "try switching filters, or launch one."}
 						/>
 					) : (
 						<AgentGrid agents={agents} />
