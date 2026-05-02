@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { type ChangeEvent, type DragEvent, useCallback, useId, useRef, useState } from "react";
+import { type ElizaImportResult, parseElizaCharacter } from "./eliza-import";
 import { CheckIcon, UploadIcon } from "./wizard-icons";
 import { useWizard } from "./wizard-state";
 
@@ -21,7 +22,7 @@ const MIN_AVATAR_PX = 512;
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 
 export default function StepPersona() {
-	const { state, patchPersona } = useWizard();
+	const { state, patchPersona, patchInviteCode } = useWizard();
 	const [dragOver, setDragOver] = useState(false);
 	const [uploadError, setUploadError] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -29,6 +30,13 @@ export default function StepPersona() {
 	const tickerId = useId();
 	const bioId = useId();
 	const promptId = useId();
+	const inviteCodeId = useId();
+	const importTextareaId = useId();
+	const importFileId = useId();
+	const [mode, setMode] = useState<"import" | "create">("import");
+	const [importText, setImportText] = useState("");
+	const [importError, setImportError] = useState<string | null>(null);
+	const [importWarnings, setImportWarnings] = useState<string[]>([]);
 
 	const handleFile = useCallback(
 		async (file: File) => {
@@ -87,8 +95,170 @@ export default function StepPersona() {
 	const tickerVal = state.persona.ticker;
 	const tickerInvalid = tickerVal.length > 0 && !/^[A-Z0-9]{2,10}$/.test(tickerVal);
 
+	const applyImportResult = useCallback(
+		(result: ElizaImportResult) => {
+			if (!result.ok) {
+				setImportError(result.error);
+				setImportWarnings([]);
+				return;
+			}
+			setImportError(null);
+			setImportWarnings(result.warnings);
+			patchPersona({
+				name: result.persona.name,
+				ticker: result.persona.ticker,
+				bio: result.persona.bio,
+				personaPrompt: result.persona.personaPrompt,
+			});
+		},
+		[patchPersona],
+	);
+
+	const handleImportPaste = useCallback(() => {
+		applyImportResult(parseElizaCharacter(importText));
+	}, [applyImportResult, importText]);
+
+	const handleImportFile = useCallback(
+		(e: ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = () => {
+				const raw = typeof reader.result === "string" ? reader.result : "";
+				setImportText(raw);
+				applyImportResult(parseElizaCharacter(raw));
+			};
+			reader.onerror = () => {
+				setImportError("could not read file");
+			};
+			reader.readAsText(file);
+		},
+		[applyImportResult],
+	);
+
 	return (
 		<div className="flex flex-col gap-10">
+			{/* Invite code (curated launch) */}
+			<section className="border border-white/8 bg-white/[0.012] p-5">
+				<label htmlFor={inviteCodeId} className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+					[invite-only] · invite code
+				</label>
+				<input
+					id={inviteCodeId}
+					type="text"
+					value={state.inviteCode}
+					onChange={(e) => patchInviteCode(e.target.value)}
+					placeholder="WF-XXXXX-XXXXX"
+					autoComplete="off"
+					spellCheck={false}
+					className="mt-2 w-full bg-black/40 border border-white/10 px-3 h-11 font-mono text-sm text-white placeholder:text-white/20 focus:border-[#00ff87]/50 outline-none"
+				/>
+				<p className="mt-2 text-[11px] text-white/40 leading-relaxed">
+					waifu.fun is invite-only. if you don't have a code, ping us in{" "}
+					<a href="https://discord.gg/eliza" className="text-[#00ff87] hover:opacity-80">
+						discord
+					</a>{" "}
+					or{" "}
+					<a href="https://x.com/wakesync" className="text-[#00ff87] hover:opacity-80">
+						x
+					</a>
+					.
+				</p>
+			</section>
+
+			{/* Mode switcher: import existing agent vs create from scratch */}
+			<section>
+				<div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em]">
+					<button
+						type="button"
+						onClick={() => setMode("import")}
+						className={cn(
+							"px-3 h-8 border",
+							mode === "import"
+								? "border-[#00ff87]/50 text-[#00ff87] bg-[#00ff87]/[0.04]"
+								: "border-white/10 text-white/40 hover:text-white/70",
+						)}
+					>
+						[import]
+					</button>
+					<button
+						type="button"
+						onClick={() => setMode("create")}
+						className={cn(
+							"px-3 h-8 border",
+							mode === "create"
+								? "border-[#00ff87]/50 text-[#00ff87] bg-[#00ff87]/[0.04]"
+								: "border-white/10 text-white/40 hover:text-white/70",
+						)}
+					>
+						[create]
+					</button>
+					<span className="text-white/30 ml-2">
+						{mode === "import" ? "paste an existing eliza character file" : "build a new agent from scratch"}
+					</span>
+				</div>
+
+				{mode === "import" ? (
+					<div className="mt-4 border border-white/8 bg-white/[0.012] p-5 flex flex-col gap-4">
+						<div className="flex items-center justify-between">
+							<label
+								htmlFor={importTextareaId}
+								className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400"
+							>
+								character json
+							</label>
+							<label
+								htmlFor={importFileId}
+								className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-[#00ff87] cursor-pointer"
+							>
+								or upload .json →
+							</label>
+							<input
+								id={importFileId}
+								type="file"
+								accept="application/json,.json"
+								onChange={handleImportFile}
+								className="sr-only"
+							/>
+						</div>
+						<textarea
+							id={importTextareaId}
+							value={importText}
+							onChange={(e) => setImportText(e.target.value)}
+							placeholder='paste your character.json here, e.g. { "name": "...", "bio": [...] }'
+							rows={8}
+							spellCheck={false}
+							className="w-full bg-black/40 border border-white/10 p-3 font-mono text-xs text-white placeholder:text-white/20 focus:border-[#00ff87]/50 outline-none leading-relaxed"
+						/>
+						<div className="flex items-center gap-3">
+							<button
+								type="button"
+								onClick={handleImportPaste}
+								className="px-4 h-9 bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90"
+							>
+								import →
+							</button>
+							{state.persona.name ? (
+								<span className="text-[11px] font-mono text-[#00ff87]">
+									imported: {state.persona.name} · {state.persona.ticker}
+								</span>
+							) : null}
+						</div>
+						{importError ? <p className="text-[11px] font-mono text-red-400">{importError}</p> : null}
+						{importWarnings.length > 0 ? (
+							<ul className="text-[11px] font-mono text-yellow-400/80 list-disc pl-4 leading-relaxed">
+								{importWarnings.map((w) => (
+									<li key={w}>{w}</li>
+								))}
+							</ul>
+						) : null}
+						<p className="text-[11px] text-white/40 leading-relaxed">
+							we extract name, ticker (derived), bio, and persona prompt from the file. you can fine-tune in [create]
+							mode after.
+						</p>
+					</div>
+				) : null}
+			</section>
 			{/* Avatar */}
 			<section>
 				<div className="flex items-baseline justify-between">

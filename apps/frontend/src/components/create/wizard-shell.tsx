@@ -193,6 +193,18 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 					</div>
 				</nav>
 
+				{/* Manual-fallback banner. Persistent across steps; agents should use skill.md. */}
+				<div className="mb-8 border-l-2 border-[#00ff87] bg-[#0A0F0C] p-4">
+					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">[manual fallback]</p>
+					<p className="text-sm text-[#a1a1aa] leading-relaxed">
+						you're launching by hand. that's fine. if you want your agent to do this for itself, point it at{" "}
+						<a href="/skill.md" className="text-[#00ff87] hover:opacity-80">
+							waifu.fun/skill.md
+						</a>{" "}
+						instead.
+					</p>
+				</div>
+
 				<AnimatePresence mode="wait" initial={false}>
 					<motion.section
 						key={step}
@@ -263,6 +275,7 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 	// Lightweight duplicate of validateStep so we don't violate hooks rules in a loop.
 	switch (step) {
 		case "persona": {
+			if (!state.inviteCode.trim()) return "invite code required";
 			const { name, ticker, bio } = state.persona;
 			if (!name.trim()) return "pick a name";
 			if (name.length > 48) return "name too long";
