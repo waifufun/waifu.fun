@@ -27,6 +27,9 @@ export type ProvisionRequest = {
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;
+		owners: string[];
+		threshold: number;
+		firstBuyFundingSource: string | null;
 		adapters: Array<{ slug: "pancake" | "venus"; enabled: boolean }>;
 	};
 	launchpad?: {
@@ -68,6 +71,9 @@ type ProvisionWizardState = {
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;
+		owners?: string[];
+		threshold?: number;
+		firstBuyFundingSource?: string | null;
 		adapters: { pancake: boolean; venus: boolean };
 	};
 	launchpad: {
@@ -117,6 +123,9 @@ export function buildProvisionPayload(
 		safe: {
 			taxAgentBps: state.safe.taxAgentBps,
 			taxPatronBps: state.safe.taxPatronBps,
+			owners: state.safe.owners ?? [],
+			threshold: state.safe.threshold ?? 1,
+			firstBuyFundingSource: state.safe.firstBuyFundingSource ?? null,
 			adapters: [
 				{ slug: "pancake", enabled: state.safe.adapters.pancake },
 				{ slug: "venus", enabled: state.safe.adapters.venus },

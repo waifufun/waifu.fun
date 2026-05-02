@@ -9,7 +9,9 @@ import { bsc } from "viem/chains";
 import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 
 import { ConnectXButton } from "@/components/auth/connect-x-button";
+import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { Button } from "@/components/ui/button";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { usePatronAuth } from "@/contexts/auth-context";
 import { type ClaimInfo, claimAgent, editClaim, fetchClaimInfo, launchClaimed } from "@/lib/claim-api";
 
@@ -505,6 +507,7 @@ function NeedsFundSection({
 	onError: (msg: string) => void;
 }) {
 	const { address, isConnected, chain } = useAccount();
+	const auth = useWaifuAuth();
 	const { sendTransactionAsync, isPending: sendPending } = useSendTransaction();
 	const { switchChainAsync } = useSwitchChain();
 	const [isSending, setIsSending] = useState(false);
@@ -522,8 +525,12 @@ function NeedsFundSection({
 	}
 
 	async function onFund() {
+		if (!auth.isAuthenticated) {
+			onError("sign in first");
+			return;
+		}
 		if (!isConnected || !address) {
-			onError("connect a wallet first");
+			onError("link an external wallet first");
 			return;
 		}
 		const numeric = Number(fundAmountBnb);
@@ -581,23 +588,29 @@ function NeedsFundSection({
 			</div>
 
 			<div className="flex items-center gap-3">
-				<Button
-					onClick={onFund}
-					disabled={sending}
-					className="flex-1 bg-[#00ff87] text-black hover:bg-[#00ff87]/90 rounded-sm"
-				>
-					{sending ? (
-						<>
-							<Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-							sending...
-						</>
-					) : (
-						<>
-							fund and launch
-							<ArrowRight className="w-4 h-4 ml-1.5" />
-						</>
-					)}
-				</Button>
+				{!auth.isAuthenticated || !isConnected ? (
+					<LinkedEoaCTA className="flex-1 bg-[#00ff87] text-black hover:bg-[#00ff87]/90 rounded-sm">
+						{auth.isAuthenticated ? "Link external wallet" : "Sign in"}
+					</LinkedEoaCTA>
+				) : (
+					<Button
+						onClick={onFund}
+						disabled={sending}
+						className="flex-1 bg-[#00ff87] text-black hover:bg-[#00ff87]/90 rounded-sm"
+					>
+						{sending ? (
+							<>
+								<Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+								sending...
+							</>
+						) : (
+							<>
+								fund and launch
+								<ArrowRight className="w-4 h-4 ml-1.5" />
+							</>
+						)}
+					</Button>
+				)}
 				<Button
 					onClick={onSkip}
 					disabled={sending}
@@ -610,7 +623,7 @@ function NeedsFundSection({
 
 			{!isConnected && (
 				<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/40">
-					connect a bsc wallet above to fund. or skip to launch with zero funding.
+					link an external wallet to fund. or skip to launch with zero funding.
 				</div>
 			)}
 		</div>

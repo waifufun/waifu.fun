@@ -1,7 +1,9 @@
 "use client";
 
+import { useLinkedEoa } from "@/hooks/use-linked-eoa";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { cn } from "@/lib/utils";
-import { useAccount } from "wagmi";
+import { useEffect, useMemo, useState } from "react";
 import { ShieldIcon } from "./wizard-icons";
 import { useWizard } from "./wizard-state";
 
@@ -23,26 +25,93 @@ const ADAPTER_PREVIEWS = [
 ];
 
 function shortAddr(addr?: string | null): string {
-	if (!addr) return "0x... (connect wallet)";
+	if (!addr) return "0x...";
 	if (addr.length < 12) return addr;
 	return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-export default function StepSafe() {
-	const { state } = useWizard();
-	const { address } = useAccount();
+function sameAddress(a: string, b: string): boolean {
+	return a.toLowerCase() === b.toLowerCase();
+}
 
+function uniqueAddresses(addresses: string[]): string[] {
+	return addresses.filter((addr, index) => addresses.findIndex((other) => sameAddress(other, addr)) === index);
+}
+
+export default function StepSafe() {
+	const { state, patchSafe } = useWizard();
+	const auth = useWaifuAuth();
+	const linked = useLinkedEoa();
+	const [linking, setLinking] = useState(false);
+	const [linkAfterConnect, setLinkAfterConnect] = useState(false);
+	const [linkError, setLinkError] = useState<string | null>(null);
+
+	const primaryAddress = auth.primaryAddress;
+	const linkedWallets = auth.me.data?.linkedWallets ?? [];
+	const selectedOwners = useMemo(() => uniqueAddresses(state.safe.owners ?? []), [state.safe.owners]);
+
+	useEffect(() => {
+		if (!primaryAddress) return;
+		if (selectedOwners.some((owner) => sameAddress(owner, primaryAddress))) return;
+		patchSafe({ owners: uniqueAddresses([primaryAddress, ...selectedOwners]), threshold: state.safe.threshold || 1 });
+	}, [patchSafe, primaryAddress, selectedOwners, state.safe.threshold]);
+
+	const owners = primaryAddress ? uniqueAddresses([primaryAddress, ...selectedOwners]) : selectedOwners;
+	const threshold = Math.max(1, Math.min(state.safe.threshold || 1, Math.max(owners.length, 1)));
 	const agentBps = state.safe.taxAgentBps;
 	const patronBps = state.safe.taxPatronBps;
 	const agentPct = agentBps / 100;
 	const patronPct = patronBps / 100;
 
+	async function addLinkedOwner(address: string) {
+		setLinking(true);
+		try {
+			if (!linked.isLinkedToPatron) {
+				await linked.link();
+			}
+			patchSafe({ owners: uniqueAddresses([...owners, address]), threshold: 1 });
+		} finally {
+			setLinking(false);
+		}
+	}
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once when RainbowKit supplies an address after the signer CTA opened it.
+	useEffect(() => {
+		if (!linkAfterConnect || !linked.address) return;
+		setLinkAfterConnect(false);
+		addLinkedOwner(linked.address).catch((err) => {
+			setLinkError(err instanceof Error ? err.message : "could not link wallet");
+		});
+	}, [linkAfterConnect, linked.address]);
+
+	async function handleLinkExternalSigner() {
+		setLinkError(null);
+		try {
+			if (!linked.address) {
+				setLinkAfterConnect(true);
+				linked.openConnectModal();
+				return;
+			}
+			await addLinkedOwner(linked.address);
+		} catch (err) {
+			setLinkError(err instanceof Error ? err.message : "could not link wallet");
+		}
+	}
+
+	function toggleOwner(address: string, checked: boolean) {
+		const next = checked
+			? uniqueAddresses([...owners, address])
+			: owners.filter((owner) => !sameAddress(owner, address));
+		patchSafe({ owners: next, threshold: Math.max(1, Math.min(threshold, next.length || 1)) });
+	}
+
 	return (
 		<div className="flex flex-col gap-10">
-			{/* Safe preview */}
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
-					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">safe (1-of-2)</h2>
+					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">
+						safe ({threshold}-of-{owners.length || 1})
+					</h2>
 					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
 						deploys at provision
 					</span>
@@ -58,35 +127,90 @@ export default function StepSafe() {
 						</span>
 						<div className="flex-1 min-w-0">
 							<p className="text-sm text-neutral-300 leading-relaxed">
-								two signers. either can submit. you keep patron control over launch timing, policy edits, and treasury
-								limits. the agent only acts inside constrained adapter permissions.
+								the patron Steward wallet is the default Safe owner. add external signers only if you want a third-party
+								wallet available for recovery or co-signing later.
 							</p>
 						</div>
 					</div>
 
 					<dl className="mt-5 divide-y divide-white/5 border-t border-white/5">
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">patron wallet</dt>
-							<dd className="text-sm font-mono text-neutral-200 tabular-nums">{shortAddr(address)}</dd>
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">primary owner</dt>
+							<dd className="text-sm font-mono text-neutral-200 tabular-nums">{shortAddr(primaryAddress)}</dd>
 						</div>
-						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
-							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">agent steward</dt>
-							<dd className="flex items-center gap-2">
-								<span className="text-sm font-mono text-neutral-500">[generated at provision]</span>
-								<span className="inline-flex items-center text-[9px] font-mono uppercase tracking-[0.24em] text-accent border border-accent/30 px-1.5 py-0.5">
-									steward key
-								</span>
+						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-start">
+							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">safe owners</dt>
+							<dd className="space-y-2">
+								{owners.length ? (
+									owners.map((owner) => (
+										<p key={owner} className="text-sm font-mono text-neutral-200 tabular-nums">
+											{shortAddr(owner)}
+											{primaryAddress && sameAddress(owner, primaryAddress) ? (
+												<span className="text-neutral-500"> steward</span>
+											) : null}
+										</p>
+									))
+								) : (
+									<p className="text-sm text-neutral-500">sign in to load your Steward owner</p>
+								)}
 							</dd>
 						</div>
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
 							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">threshold</dt>
-							<dd className="text-sm font-mono text-neutral-200">1 of 2</dd>
+							<dd className="text-sm font-mono text-neutral-200">
+								{threshold} of {owners.length || 1}
+							</dd>
 						</div>
 					</dl>
+
+					<div className="mt-5 border-t border-white/5 pt-5 space-y-4">
+						<div className="flex items-center justify-between gap-3 flex-wrap">
+							<div>
+								<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">external signers</p>
+								<p className="mt-1 text-xs text-neutral-500">
+									optional linked EOAs stay 1-of-N until you raise the threshold later.
+								</p>
+							</div>
+							<button
+								type="button"
+								onClick={handleLinkExternalSigner}
+								disabled={linking}
+								className="px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								{linking ? "linking..." : "Add external signer"}
+							</button>
+						</div>
+
+						{linkedWallets.length ? (
+							<ul className="space-y-2">
+								{linkedWallets.map((wallet) => {
+									const checked = owners.some((owner) => sameAddress(owner, wallet.address));
+									return (
+										<li key={wallet.address} className="flex items-center gap-3 text-sm text-neutral-300">
+											<input
+												type="checkbox"
+												checked={checked}
+												onChange={(event) => toggleOwner(wallet.address, event.target.checked)}
+												className="h-4 w-4 accent-[#00ff87]"
+											/>
+											<span className="font-mono tabular-nums">{shortAddr(wallet.address)}</span>
+											<span className="text-[11px] text-neutral-600">
+												linked {wallet.addedAt ? new Date(wallet.addedAt).toLocaleDateString() : "recently"}
+											</span>
+										</li>
+									);
+								})}
+							</ul>
+						) : null}
+						{linkError ? (
+							<p className="text-xs text-[#f87171]" role="alert">
+								{linkError}
+							</p>
+						) : null}
+					</div>
 				</div>
 			</section>
 
-			{/* Tax split */}
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
 					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">tax routing</h2>
@@ -120,7 +244,6 @@ export default function StepSafe() {
 				</div>
 			</section>
 
-			{/* Adapters */}
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
 					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">adapters</h2>
