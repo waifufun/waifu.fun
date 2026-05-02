@@ -6,9 +6,10 @@ const { setupWaifuFunSuite } = require("./helpers/deployment");
 describe("WaifuFun Security Regression Tests", () => {
 	beforeEach(async function () {
 		Object.assign(this, await setupWaifuFunSuite());
+		this.waifuFunAddr = await this.WaifuFun.getAddress();
 		this.decimals = 18;
-		this.totalSupply = ethers.utils.parseUnits("500000", this.decimals);
-		this.virtualReserveETHAmount = ethers.utils.parseEther("0.5");
+		this.totalSupply = ethers.parseUnits("500000", this.decimals);
+		this.virtualReserveETHAmount = ethers.parseEther("0.5");
 
 		await this.WaifuFun.connect(this.user_1).launch(
 			this.totalSupply,
@@ -30,7 +31,7 @@ describe("WaifuFun Security Regression Tests", () => {
 		const buyAmount = 1000;
 		const beforeCurve = await this.WaifuFun.bondingCurvesByToken(this.tokenAddress);
 		const beforeUserBal = await this.token.balanceOf(this.user_1.address);
-		const beforeContractBal = await this.token.balanceOf(this.WaifuFun.address);
+		const beforeContractBal = await this.token.balanceOf(this.waifuFunAddr);
 
 		await this.WaifuFun.connect(this.user_1).swap(
 			{
@@ -47,20 +48,20 @@ describe("WaifuFun Security Regression Tests", () => {
 
 		const afterCurve = await this.WaifuFun.bondingCurvesByToken(this.tokenAddress);
 		const afterUserBal = await this.token.balanceOf(this.user_1.address);
-		const afterContractBal = await this.token.balanceOf(this.WaifuFun.address);
+		const afterContractBal = await this.token.balanceOf(this.waifuFunAddr);
 
-		const reserveDelta = beforeCurve.reserveTokenAmount.sub(afterCurve.reserveTokenAmount);
-		const userDelta = afterUserBal.sub(beforeUserBal);
-		const contractDelta = beforeContractBal.sub(afterContractBal);
+		const reserveDelta = beforeCurve.reserveTokenAmount - afterCurve.reserveTokenAmount;
+		const userDelta = afterUserBal - beforeUserBal;
+		const contractDelta = beforeContractBal - afterContractBal;
 
-		expect(userDelta).to.be.gt(0);
+		expect(userDelta).to.be.gt(0n);
 		expect(userDelta).to.equal(reserveDelta);
 		expect(contractDelta).to.equal(reserveDelta);
 	});
 
 	it("reverts dust buys that would otherwise produce zero output", async function () {
 		const decimals = 6;
-		const totalSupply = ethers.BigNumber.from(10000).mul(ethers.BigNumber.from(10).pow(decimals));
+		const totalSupply = 10000n * 10n ** BigInt(decimals);
 
 		await this.WaifuFun.connect(this.user_2).launch(
 			totalSupply,
@@ -94,7 +95,7 @@ describe("WaifuFun Security Regression Tests", () => {
 	});
 
 	it("reverts dust sells that would otherwise burn tokens for zero ETH", async function () {
-		const buyAmount = ethers.utils.parseEther("0.1");
+		const buyAmount = ethers.parseEther("0.1");
 
 		await this.WaifuFun.connect(this.user_1).swap(
 			{
@@ -109,7 +110,7 @@ describe("WaifuFun Security Regression Tests", () => {
 			},
 		);
 
-		await this.token.connect(this.user_1).approve(this.WaifuFun.address, 1);
+		await this.token.connect(this.user_1).approve(this.waifuFunAddr, 1);
 
 		await expect(
 			this.WaifuFun.connect(this.user_1).swap({
@@ -138,7 +139,7 @@ describe("WaifuFun Security Regression Tests", () => {
 		await expect(
 			this.WaifuFun.connect(this.user_2).launch(
 				this.totalSupply,
-				curveLimit.add(1),
+				curveLimit + 1n,
 				this.decimals,
 				"Over Limit Token",
 				"OLT",
@@ -153,20 +154,20 @@ describe("WaifuFun Security Regression Tests", () => {
 			this.WaifuFun.connect(this.user_1).swap(
 				{
 					token: unknownToken,
-					amountIn: ethers.utils.parseEther("0.1"),
+					amountIn: ethers.parseEther("0.1"),
 					minAmountOut: 0,
 					direction: 0,
 					deadline: getDeadline(),
 				},
 				{
-					value: ethers.utils.parseEther("0.1"),
+					value: ethers.parseEther("0.1"),
 				},
 			),
 		).to.be.revertedWith("TOKEN_NOT_LAUNCHED");
 	});
 
 	it("documents that the configured team wallet can dump its upfront allocation", async function () {
-		const buyAmount = ethers.utils.parseEther("0.1");
+		const buyAmount = ethers.parseEther("0.1");
 
 		await this.WaifuFun.connect(this.user_1).swap(
 			{
@@ -183,11 +184,11 @@ describe("WaifuFun Security Regression Tests", () => {
 
 		const teamToken = this.token.connect(this.teamWallet);
 		const teamTokenBalance = await teamToken.balanceOf(this.teamWallet.address);
-		const dumpAmount = teamTokenBalance.div(10);
+		const dumpAmount = teamTokenBalance / 10n;
 		const beforeCurve = await this.WaifuFun.bondingCurvesByToken(this.tokenAddress);
 		const beforeTeamEth = await ethers.provider.getBalance(this.teamWallet.address);
 
-		await teamToken.approve(this.WaifuFun.address, dumpAmount);
+		await teamToken.approve(this.waifuFunAddr, dumpAmount);
 		const sellTx = await this.WaifuFun.connect(this.teamWallet).swap({
 			token: this.tokenAddress,
 			amountIn: dumpAmount,
@@ -196,14 +197,15 @@ describe("WaifuFun Security Regression Tests", () => {
 			deadline: getDeadline(),
 		});
 		const sellReceipt = await sellTx.wait();
-		const gasCost = sellReceipt.gasUsed.mul(sellReceipt.effectiveGasPrice);
+		const gasPrice = sellReceipt.gasPrice ?? sellReceipt.effectiveGasPrice ?? 0n;
+		const gasCost = sellReceipt.gasUsed * gasPrice;
 
 		const afterCurve = await this.WaifuFun.bondingCurvesByToken(this.tokenAddress);
 		const afterTeamEth = await ethers.provider.getBalance(this.teamWallet.address);
 
-		expect(teamTokenBalance).to.be.gt(0);
-		expect(dumpAmount).to.be.gt(0);
+		expect(teamTokenBalance).to.be.gt(0n);
+		expect(dumpAmount).to.be.gt(0n);
 		expect(beforeCurve.reserveETHAmount).to.be.gt(afterCurve.reserveETHAmount);
-		expect(afterTeamEth.sub(beforeTeamEth).add(gasCost)).to.be.gt(0);
+		expect(afterTeamEth - beforeTeamEth + gasCost).to.be.gt(0n);
 	});
 });

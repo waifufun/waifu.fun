@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import { fetchTokenRouteParamsForStaticExport, isStaticExport } from "@/lib/static-export-paths";
+import { fetchTokenRouteParamsForStaticExport } from "@/lib/static-export-paths";
 
 export async function generateStaticParams() {
-	if (!isStaticExport()) return [];
 	return fetchTokenRouteParamsForStaticExport();
 }
 

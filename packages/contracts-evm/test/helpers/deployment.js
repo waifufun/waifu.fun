@@ -1,5 +1,4 @@
-const { ethers } = require("hardhat");
-const { deployProxy } = require("hardhat-libutils");
+const { ethers, upgrades } = require("hardhat");
 const { getDeploymentParams } = require("../../scripts/params");
 
 function normalizeGlobalConfig(config) {
@@ -7,12 +6,12 @@ function normalizeGlobalConfig(config) {
 		teamWallet: config.teamWallet,
 		buyFee: Number(config.buyFee.toString()),
 		sellFee: Number(config.sellFee.toString()),
-		curveLimit: config.curveLimit.toString(),
+		curveLimit: BigInt(config.curveLimit.toString()),
 		initBondingCurveRate: Number(config.initBondingCurveRate.toString()),
-		minETHAmount: config.minETHAmount.toString(),
-		maxETHAmount: config.maxETHAmount.toString(),
+		minETHAmount: BigInt(config.minETHAmount.toString()),
+		maxETHAmount: BigInt(config.maxETHAmount.toString()),
 		minTotalSupply: Number(config.minTotalSupply.toString()),
-		maxTotalSupply: Number(config.maxTotalSupply.toString()),
+		maxTotalSupply: BigInt(config.maxTotalSupply.toString()),
 		minDecimal: Number(config.minDecimal.toString()),
 		maxDecimal: Number(config.maxDecimal.toString()),
 	};
@@ -43,7 +42,7 @@ async function setupWaifuFunSuite() {
 			: normalizeGlobalConfig(await WaifuFun.globalConfig());
 		const teamWallet =
 			[deployer, user_1, user_2, fallbackTeamWallet].find(
-				(signer) => signer && signer.address.toLowerCase() === globalConfig.teamWallet.toLowerCase(),
+				(signer) => signer?.address.toLowerCase() === globalConfig.teamWallet.toLowerCase(),
 			) || fallbackTeamWallet;
 
 		return {
@@ -62,11 +61,23 @@ async function setupWaifuFunSuite() {
 	const globalConfig = normalizeGlobalConfig(getDeploymentParams());
 	globalConfig.teamWallet = teamWallet.address;
 
-	const WaifuFunTokenFactory = await deployProxy("WaifuFunTokenFactory", "WaifuFunTokenFactory");
-	const WaifuFun = await deployProxy("WaifuFun", "WaifuFun", [globalConfig]);
+	const WaifuFunTokenFactoryCF = await ethers.getContractFactory("WaifuFunTokenFactory");
+	const WaifuFunTokenFactory = await upgrades.deployProxy(WaifuFunTokenFactoryCF, [], {
+		initializer: "initialize",
+	});
+	await WaifuFunTokenFactory.waitForDeployment();
 
-	await WaifuFunTokenFactory.transferOwnership(WaifuFun.address);
-	await WaifuFun.updateFactory(WaifuFunTokenFactory.address);
+	const WaifuFunCF = await ethers.getContractFactory("WaifuFun");
+	const WaifuFun = await upgrades.deployProxy(WaifuFunCF, [globalConfig], {
+		initializer: "initialize",
+	});
+	await WaifuFun.waitForDeployment();
+
+	const factoryAddr = await WaifuFunTokenFactory.getAddress();
+	const waifuAddr = await WaifuFun.getAddress();
+
+	await (await WaifuFunTokenFactory.transferOwnership(waifuAddr)).wait();
+	await (await WaifuFun.updateFactory(factoryAddr)).wait();
 
 	return {
 		deployer,
@@ -78,8 +89,8 @@ async function setupWaifuFunSuite() {
 		globalConfig,
 		deployment: {
 			owner: deployer.address,
-			waifuFun: WaifuFun.address,
-			waifuFunTokenFactory: WaifuFunTokenFactory.address,
+			waifuFun: waifuAddr,
+			waifuFunTokenFactory: factoryAddr,
 			globalConfig,
 		},
 	};

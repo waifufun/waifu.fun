@@ -1,14 +1,12 @@
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-ethers");
-require("@nomiclabs/hardhat-etherscan");
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomicfoundation/hardhat-verify");
 require("@openzeppelin/hardhat-upgrades");
 require("hardhat-contract-sizer");
 require("solidity-coverage");
 require("dotenv").config();
 
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
 	defaultNetwork: "hardhat",
 	networks: {
@@ -49,18 +47,14 @@ module.exports = {
 		},
 	},
 	solidity: {
-		compilers: [
-			{
-				version: "0.8.20",
-				settings: {
-					viaIR: true,
-					optimizer: {
-						enabled: true,
-						runs: 200,
-					},
-				},
+		version: "0.8.24",
+		settings: {
+			viaIR: true,
+			optimizer: {
+				enabled: true,
+				runs: 200,
 			},
-		],
+		},
 	},
 	mocha: {
 		timeout: 200000,

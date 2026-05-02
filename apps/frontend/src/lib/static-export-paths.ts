@@ -3,8 +3,14 @@
  * Dynamic segments must be enumerated at build time; extend these helpers if you add new APIs.
  */
 
+/**
+ * True when prerendering for production (`next build`). This app uses `output: "export"`, so
+ * builds must enumerate dynamic segments. `next dev` stays false so local dev does not fan out
+ * to the API. `scripts/static-export-build.mjs` sets STATIC_EXPORT for clarity, but some Next
+ * workers do not inherit it — NODE_ENV is reliable.
+ */
 export function isStaticExport(): boolean {
-	return process.env.STATIC_EXPORT === "true";
+	return process.env.NODE_ENV === "production";
 }
 
 /** Same default as route handlers and client modules when env is unset (static export has no /api proxy). */
@@ -17,6 +23,31 @@ function apiBaseForStaticExport(): string {
 		return DEFAULT_PUBLIC_API_ORIGIN;
 	}
 	return "";
+}
+
+const STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+/**
+ * Next `output: "export"` throws if `generateStaticParams` yields zero paths (error text says
+ * "missing generateStaticParams"). When the API is unreachable at build time, fall back to a
+ * placeholder so the export completes; pages resolve to not-found or empty states.
+ */
+function ensureNonEmptyTokenParams(
+	result: { chain: string; chainId: string; contractAddress: string }[],
+): { chain: string; chainId: string; contractAddress: string }[] {
+	if (result.length > 0 || !isStaticExport()) return result;
+	console.warn(
+		"[static-export] no tokens from API; using placeholder param so export succeeds (page may 404)",
+	);
+	return [{ chain: "evm", chainId: "1", contractAddress: STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS }];
+}
+
+function ensureNonEmptyAddresses(result: { address: string }[]): { address: string }[] {
+	if (result.length > 0 || !isStaticExport()) return result;
+	console.warn(
+		"[static-export] no agent/profile addresses from API; using placeholder so export succeeds",
+	);
+	return [{ address: STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS }];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -73,7 +104,7 @@ export async function fetchAgentAddressesForStaticExport(): Promise<{ address: s
 		console.warn("[static-export] failed to enumerate agents (continuing with partial or empty list)", err);
 	}
 
-	return [...addresses].map((address) => ({ address }));
+	return ensureNonEmptyAddresses([...addresses].map((address) => ({ address })));
 }
 
 export async function fetchPatronAgentParamsForStaticExport(): Promise<{ agentId: string }[]> {
@@ -118,7 +149,7 @@ export async function fetchProfileAddressesForStaticExport(): Promise<{ address:
 		console.warn("[static-export] failed to enumerate profile addresses", err);
 	}
 
-	return [...addresses].map((address) => ({ address }));
+	return ensureNonEmptyAddresses([...addresses].map((address) => ({ address })));
 }
 
 function tokenItemsFromJson(data: unknown): Record<string, unknown>[] {
@@ -185,7 +216,7 @@ export async function fetchTokenRouteParamsForStaticExport(): Promise<
 		console.warn("[static-export] failed to enumerate tokens", err);
 	}
 
-	return out;
+	return ensureNonEmptyTokenParams(out);
 }
 
 /**

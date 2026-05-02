@@ -22,9 +22,6 @@
 			"entry": ["scripts/**/*.js", "test/**/*.js"],
 			"ignoreDependencies": ["@openzeppelin/contracts", "@openzeppelin/contracts-upgradeable"]
 		},
-		"packages/agent-contracts-evm": {
-			"entry": ["scripts/**/*.js", "test/**/*.js"]
-		},
 		"packages/contracts-solana/autofun-sc-audit": {
 			"entry": ["tests/**/*.ts"],
 			"ignoreBinaries": ["anchor"]

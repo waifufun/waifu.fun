@@ -9,7 +9,19 @@ export async function generateStaticParams() {
 	return fetchAgentAddressesForStaticExport();
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+/** Absolute base required for SSG fetches (`/api` is invalid in Node during `next build`). */
+function serverAgentApiBase(): string {
+	const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+	if (configured?.startsWith("http://") || configured?.startsWith("https://")) {
+		return configured.replace(/\/+$/, "");
+	}
+	if (process.env.NODE_ENV !== "production") {
+		return "http://localhost:3100";
+	}
+	return "https://api.waifu.fun";
+}
+
+const API_BASE = serverAgentApiBase();
 const FOURMEME_BASE = "https://four.meme/token";
 
 /**

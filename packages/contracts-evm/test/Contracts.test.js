@@ -4,11 +4,13 @@ const { setupWaifuFunSuite } = require("./helpers/deployment");
 describe("WaifuFun Contract Deployment", () => {
 	before(async function () {
 		Object.assign(this, await setupWaifuFunSuite());
+		this.waifuFunAddr = await this.WaifuFun.getAddress();
+		this.factoryAddr = await this.WaifuFunTokenFactory.getAddress();
 	});
 
 	it("wires the factory to the main contract", async function () {
-		expect(await this.WaifuFun.factory()).to.equal(this.WaifuFunTokenFactory.address);
-		expect(await this.WaifuFunTokenFactory.owner()).to.equal(this.WaifuFun.address);
+		expect(await this.WaifuFun.factory()).to.equal(this.factoryAddr);
+		expect(await this.WaifuFunTokenFactory.owner()).to.equal(this.waifuFunAddr);
 	});
 
 	it("keeps the expected owner and global config", async function () {

@@ -423,18 +423,13 @@ try {
 	};
 
 	console.log("Running EVM contract tests");
-	await runCommand("bun", ["run", "--filter", "@waifufun/contracts-evm", "test:contracts:local"], {
+	await runCommand("bun", ["run", "--filter", "@waifufun/contracts-evm", "test:local"], {
 		env: evmTestEnv,
 	});
 
 	console.log("Running Solana contract tests");
 	await runCommand("bun", ["run", "--filter", "@waifufun/contracts-solana-audit", "test:contracts"], {
 		env: solanaTestEnv,
-	});
-
-	console.log("Running EVM end-to-end tests");
-	await runCommand("bun", ["run", "--filter", "@waifufun/contracts-evm", "test:e2e:local"], {
-		env: evmTestEnv,
 	});
 
 	console.log("Running Solana end-to-end tests");
