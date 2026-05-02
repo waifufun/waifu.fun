@@ -1,5 +1,5 @@
 # Cloudflare Pages — static upload (`next build` with STATIC_EXPORT / build:static → ./out).
 # Set NEXT_PUBLIC_API_URL and NEXT_PUBLIC_HOST in the Pages project Environment Variables.
-name = "waifu-fun"
+name = "waifufun-frontend"
 compatibility_date = "2026-04-29"
 pages_build_output_dir = "out"

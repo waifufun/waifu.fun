@@ -7,7 +7,7 @@
 		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/types build && bun run --filter @waifufun/constants build",
 		"build": "node scripts/static-export-build.mjs",
 		"pages:deploy": "wrangler pages deploy out",
-		"lint": "biome format . --write && biome lint . --fix",
+		"lint": "biome format . --write && biome lint . --fix && node scripts/lint-rainbow.mjs",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
 		"build:workers": "tsc -p tsconfig.worker.json",

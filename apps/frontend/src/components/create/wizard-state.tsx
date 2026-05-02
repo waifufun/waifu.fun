@@ -45,6 +45,9 @@ export type WizardState = {
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;
+		owners: string[];
+		threshold: number;
+		firstBuyFundingSource: string | null;
 		adapters: { pancake: boolean; venus: boolean };
 	};
 	/**
@@ -76,6 +79,9 @@ export const DEFAULT_STATE: WizardState = {
 	safe: {
 		taxAgentBps: 8000,
 		taxPatronBps: 2000,
+		owners: [],
+		threshold: 1,
+		firstBuyFundingSource: null,
 		adapters: { pancake: true, venus: true },
 	},
 	launchpad: {

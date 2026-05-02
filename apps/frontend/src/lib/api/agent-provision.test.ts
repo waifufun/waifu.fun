@@ -20,6 +20,9 @@ type TestProvisionState = {
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;
+		owners: string[];
+		threshold: number;
+		firstBuyFundingSource: string | null;
 		adapters: { pancake: boolean; venus: boolean };
 	};
 	launchpad: {
@@ -47,6 +50,9 @@ function stateWithLaunchpad(): TestProvisionState {
 		safe: {
 			taxAgentBps: 8000,
 			taxPatronBps: 2000,
+			owners: ["0x1111111111111111111111111111111111111111", "0x2222222222222222222222222222222222222222"],
+			threshold: 1,
+			firstBuyFundingSource: "0x2222222222222222222222222222222222222222",
 			adapters: { pancake: true, venus: true },
 		},
 		launchpad: {
@@ -63,6 +69,12 @@ describe("buildProvisionPayload", () => {
 
 		expect(payload).not.toHaveProperty("launchpad");
 		expect(payload.persona).toMatchObject({ name: "Mika", ticker: "MIKA" });
+		expect(payload.safe.owners).toEqual([
+			"0x1111111111111111111111111111111111111111",
+			"0x2222222222222222222222222222222222222222",
+		]);
+		expect(payload.safe.threshold).toBe(1);
+		expect(payload.safe.firstBuyFundingSource).toBe("0x2222222222222222222222222222222222222222");
 		expect(payload.safe.adapters).toEqual([
 			{ slug: "pancake", enabled: true },
 			{ slug: "venus", enabled: true },

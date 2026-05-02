@@ -1,5 +1,6 @@
 "use client";
 
+import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import SwapInput from "@/components/swap/swap-input";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/contexts/locale-context";
@@ -8,9 +9,9 @@ import useBalance from "@/hooks/use-balance";
 import useSlippage from "@/hooks/use-slippage";
 import useSpeed from "@/hooks/use-speed";
 import useTokenBalance from "@/hooks/use-token-balance";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { abbreviateNumber, cn, executeSwap, retrieveQuote } from "@/lib/utils";
 import { useTransactionListener } from "@/providers/transaction-listener";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AddressLike, IToken } from "@waifufun/types";
 import { AlertCircle, Wallet } from "lucide-react";
@@ -47,7 +48,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const queryClient = useQueryClient();
 	const { speed } = useSpeed();
 	const { slippage } = useSlippage();
-	const { openConnectModal } = useConnectModal();
+	const auth = useWaifuAuth();
 	const address = useAddress();
 	const { addTransaction } = useTransactionListener();
 	const balance = useBalance({ chain: token.chain, address });
@@ -203,19 +204,21 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 	const primaryButtonLabel =
 		token.status === "migrating"
 			? t("swap.tokenMigrating")
-			: !address
-				? t("swap.connect")
-				: !isDexSwapAvailable
-					? "Direct swap soon"
-					: swapMutation.isPending
-						? t("common.loading")
-						: insufficientBalance
-							? t("swap.insufficientBalance")
-							: tooHighBuyAmount
-								? t("swap.amountTooHigh")
-								: mode === "buy"
-									? `Buy on ${chainNative.dex}`
-									: `Sell on ${chainNative.dex}`;
+			: !auth.isAuthenticated
+				? "Sign in"
+				: !address
+					? "Link external wallet"
+					: !isDexSwapAvailable
+						? "Direct swap soon"
+						: swapMutation.isPending
+							? t("common.loading")
+							: insufficientBalance
+								? t("swap.insufficientBalance")
+								: tooHighBuyAmount
+									? t("swap.amountTooHigh")
+									: mode === "buy"
+										? `Buy on ${chainNative.dex}`
+										: `Sell on ${chainNative.dex}`;
 
 	return (
 		<div className="h-full w-full overflow-hidden">
@@ -310,7 +313,7 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 							{!hasInputAmount ? (
 								<span>0</span>
 							) : !isDexSwapAvailable ? (
-								<span className="text-[#8C8C8C]">—</span>
+								<span className="text-[#8C8C8C]">-</span>
 							) : minReceivedQuery.isPending ? (
 								<Skeleton />
 							) : minReceivedQuery.error ? (
@@ -365,28 +368,26 @@ export default function SwapCard({ token, mode }: { token: IToken; mode: "buy" |
 						{t("swap.insufficientBalanceMessage")}
 					</div>
 					{tradingStarted ? (
-						<Button
-							disabled={
-								token.status === "migrating" ||
-								(address
-									? swapMutation.isPending ||
-										tooHighBuyAmount ||
-										insufficientBalance ||
-										!hasInputAmount ||
-										!isDexSwapAvailable
-									: false)
-							}
-							onClick={() => {
-								if (!address) {
-									openConnectModal?.();
-								} else {
-									swapMutation.mutate();
+						!address ? (
+							<LinkedEoaCTA className="mt-2 w-full rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-base font-medium uppercase text-white hover:border-[#00ff87]">
+								{primaryButtonLabel}
+							</LinkedEoaCTA>
+						) : (
+							<Button
+								disabled={
+									token.status === "migrating" ||
+									swapMutation.isPending ||
+									tooHighBuyAmount ||
+									insufficientBalance ||
+									!hasInputAmount ||
+									!isDexSwapAvailable
 								}
-							}}
-							className="mt-2 w-full rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-base font-medium uppercase text-white hover:border-[#00ff87]"
-						>
-							{primaryButtonLabel}
-						</Button>
+								onClick={() => swapMutation.mutate()}
+								className="mt-2 w-full rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-base font-medium uppercase text-white hover:border-[#00ff87]"
+							>
+								{primaryButtonLabel}
+							</Button>
+						)
 					) : (
 						<Tooltip>
 							<TooltipTrigger className="w-full">

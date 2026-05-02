@@ -141,6 +141,13 @@
 			"when": 1777555585476,
 			"tag": "0019_peaceful_dexter_bennett",
 			"breakpoints": true
+		},
+		{
+			"idx": 20,
+			"version": "7",
+			"when": 1777714200000,
+			"tag": "0020_patron_wallet_kind",
+			"breakpoints": true
 		}
 	]
 }

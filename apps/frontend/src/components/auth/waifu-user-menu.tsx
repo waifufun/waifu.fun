@@ -2,7 +2,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWaifuMe } from "@/hooks/use-waifu-me";
-import { LogOut, User2, Wallet } from "lucide-react";
+import { Copy, LogOut, User2, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -42,8 +42,14 @@ export function WaifuUserMenu() {
 	if (isLoading || !isAuthenticated) return null;
 
 	const email = me?.patron.email ?? null;
-	const primaryWallet = me?.wallets.find((w) => w.isPrimary)?.address ?? me?.wallets[0]?.address ?? null;
+	const primaryWallet =
+		me?.primaryAddress ?? me?.wallets.find((w) => w.isPrimary)?.address ?? me?.wallets[0]?.address ?? null;
+	const linkedWallet = me?.linkedWallets[0]?.address ?? null;
 	const label = email ?? shortAddr(primaryWallet) ?? "patron";
+
+	async function copyAddress(addr: string) {
+		await navigator.clipboard?.writeText(addr).catch(() => undefined);
+	}
 
 	async function handleSignOut() {
 		if (signingOut) return;
@@ -90,6 +96,17 @@ export function WaifuUserMenu() {
 				<div className="px-4 py-3 border-b border-white/[0.06]">
 					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a]">signed in as</p>
 					<p className="mt-1 text-sm text-[#e4e4e7] break-all">{label}</p>
+					{primaryWallet ? (
+						<div className="mt-2 flex items-center gap-2 text-[11px] font-mono text-[#a1a1aa]">
+							<span>primary: {shortAddr(primaryWallet)}</span>
+							<button type="button" onClick={() => copyAddress(primaryWallet)} aria-label="copy primary wallet">
+								<Copy className="size-3 text-[#71717a]" strokeWidth={1.75} />
+							</button>
+						</div>
+					) : null}
+					{linkedWallet ? (
+						<p className="mt-1 text-[11px] font-mono text-[#71717a]">linked: {shortAddr(linkedWallet)}</p>
+					) : null}
 					{me?.agentCount ? (
 						<p className="mt-1 text-[11px] font-mono text-[#a1a1aa]">
 							{me.agentCount} {me.agentCount === 1 ? "agent" : "agents"}
@@ -111,7 +128,7 @@ export function WaifuUserMenu() {
 						className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#e4e4e7] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
 					>
 						<Wallet className="size-4 text-[#a1a1aa]" strokeWidth={1.75} />
-						<span>wallets</span>
+						<span>Manage wallets</span>
 						{primaryWallet ? (
 							<span className="ml-auto text-[10px] font-mono text-[#71717a]">{shortAddr(primaryWallet)}</span>
 						) : null}
