@@ -20,12 +20,15 @@
 			"import": "./dist/adapters/pancakeswap-v3/index.js"
 		}
 	},
-	"files": ["src", "dist"],
+	"files": [
+		"src",
+		"dist"
+	],
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome check src test package.json tsconfig.json",
-		"test": "bun run build && node --test 'dist/**/*.test.js'",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then bun test $files; else echo \"No tests found\"; fi'",
 		"clean": "rm -rf dist",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},

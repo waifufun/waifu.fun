@@ -11,14 +11,16 @@
 			"import": "./dist/index.js"
 		}
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"prebuild": "bun run --filter @waifufun/fourmeme build && bun run --filter @waifufun/flap build",
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome check src test package.json tsconfig.json",
 		"pretest": "bun run prebuild",
-		"test": "node --import tsx --test test/**/*.test.ts",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then node --import tsx --test $files; else echo \"No tests found\"; fi'",
 		"clean": "rm -rf dist coverage .turbo",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},

@@ -19,7 +19,10 @@
 			"import": "./dist/schema/index.js"
 		}
 	},
-	"files": ["dist", "drizzle"],
+	"files": [
+		"dist",
+		"drizzle"
+	],
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
@@ -30,7 +33,7 @@
 		"db:push": "bun run build && drizzle-kit push --config=drizzle.config.ts",
 		"db:studio": "bun run build && drizzle-kit studio --config=drizzle.config.ts",
 		"db:seed": "tsx src/seed.ts",
-		"test": "tsx --test test/**/*.test.ts src/**/*.test.ts",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then tsx --test $files; else echo \"No tests found\"; fi'",
 		"db:backfill-patron-wallets": "tsx src/scripts/backfill-patron-wallets.ts",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
