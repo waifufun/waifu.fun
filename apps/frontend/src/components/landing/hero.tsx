@@ -88,7 +88,7 @@ export default function Hero() {
 			className="relative flex flex-col items-center justify-center min-h-[100svh] overflow-hidden isolate select-none"
 			style={{ backgroundColor: "#08080a" }}
 		>
-			{/* L1: Glitch character canvas — visible but not glowy */}
+			{/* L1: Glitch character canvas, visible but not glowy */}
 			<div className="absolute inset-0 z-0 opacity-45">
 				<GlitchBg
 					glitchColors={["#0f2a18", "#14532d", "#00ff87", "#86efac"]}
@@ -98,7 +98,7 @@ export default function Hero() {
 				/>
 			</div>
 
-			{/* L2: Hero background image — compressed local webp */}
+			{/* L2: Hero background image, compressed local webp */}
 			<div className="absolute inset-0 z-[1] opacity-80">
 				<img
 					src={HERO_BG_PATH}
@@ -126,7 +126,7 @@ export default function Hero() {
 				}}
 			/>
 
-			{/* L5: Center vignette for text readability — heavier for darker feel */}
+			{/* L5: Center vignette for text readability, heavier for darker feel */}
 			<div
 				className="absolute inset-0 z-[4] pointer-events-none"
 				style={{
@@ -134,7 +134,7 @@ export default function Hero() {
 				}}
 			/>
 
-			{/* L6: Edge vignette — stronger */}
+			{/* L6: Edge vignette, stronger */}
 			<div
 				className="absolute inset-0 z-[5] pointer-events-none"
 				style={{
@@ -144,7 +144,7 @@ export default function Hero() {
 
 			{/* Content */}
 			<div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
-				{/* Brand lockup — transparent waifufun, sized up */}
+				{/* Brand lockup, transparent waifufun, sized up */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -200,13 +200,23 @@ export default function Hero() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.6, delay: 0.75, ease: EASE }}
 				>
-					<MagneticButton href="/agents" variant="primary">
-						browse agents
+					<MagneticButton href="/skill.md" variant="primary">
+						{t("hero.giveSkill")}
 					</MagneticButton>
-					<MagneticButton href="/quickstart" variant="ghost">
-						for agents →
+					<MagneticButton href="/agents" variant="ghost">
+						{t("hero.browseAgents")}
 					</MagneticButton>
 				</motion.div>
+
+				{/* Invite-only line */}
+				<motion.p
+					className="mt-4 text-[10px] font-mono uppercase tracking-[0.2em] text-[#52525b]"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 0.6, delay: 0.9 }}
+				>
+					{t("hero.inviteOnly")}
+				</motion.p>
 
 				{/* Partner rail */}
 				<motion.div
@@ -216,6 +226,15 @@ export default function Hero() {
 					transition={{ duration: 0.8, delay: 1.0 }}
 				>
 					<a
+						href="https://flap.sh"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="transition-colors duration-200 hover:text-[#71717a]"
+					>
+						flap
+					</a>
+					<span>·</span>
+					<a
 						href="https://four.meme"
 						target="_blank"
 						rel="noopener noreferrer"
@@ -223,7 +242,7 @@ export default function Hero() {
 					>
 						four.meme
 					</a>
-					<span>×</span>
+					<span>·</span>
 					<a
 						href="https://pancakeswap.finance"
 						target="_blank"
@@ -232,7 +251,7 @@ export default function Hero() {
 					>
 						pancakeswap
 					</a>
-					<span>×</span>
+					<span>·</span>
 					<a
 						href="https://steward.sh"
 						target="_blank"

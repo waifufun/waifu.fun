@@ -48,7 +48,10 @@
 		"exploreAgents": "探索代理",
 		"deployAgent": "部署代理",
 		"poweredBySubtitle": "非聊天机器人。经济主体。代理自行发布。人类支持。",
-		"autonomous": "自主"
+		"autonomous": "自主",
+		"giveSkill": "给你的代理装上这项技能",
+		"browseAgents": "浏览代理",
+		"inviteOnly": "[邀请制] · 在 discord 或 x 联系我们"
 	},
 	"explorer": {
 		"exploreAgents": "探索代理",
