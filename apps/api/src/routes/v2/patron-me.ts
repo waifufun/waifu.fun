@@ -26,7 +26,11 @@ app.get("/me", requirePatron(), async (c) => {
 			id: patronWallets.id,
 			address: patronWallets.address,
 			chainId: patronWallets.chainId,
+			kind: patronWallets.kind,
+			label: patronWallets.label,
+			addedAt: patronWallets.addedAt,
 			linkedAt: patronWallets.linkedAt,
+			lastUsedAt: patronWallets.lastUsedAt,
 			isPrimary: patronWallets.isPrimary,
 		})
 		.from(patronWallets)
@@ -37,12 +41,27 @@ app.get("/me", requirePatron(), async (c) => {
 		.from(agentPersonas)
 		.where(eq(agentPersonas.ownerStewardUserId, patron.stewardUserId));
 
+	const primaryAddress = wallets.find((wallet) => wallet.kind === "steward_primary")?.address ?? patron.primaryAddress;
+	const linkedWallets = wallets
+		.filter((wallet) => wallet.kind === "linked_eoa")
+		.map((wallet) => ({
+			address: wallet.address,
+			label: wallet.label,
+			addedAt: wallet.addedAt.toISOString(),
+			lastUsedAt: wallet.lastUsedAt ? wallet.lastUsedAt.toISOString() : null,
+		}));
+
 	return c.json({
 		ok: true,
+		userId: patron.stewardUserId,
+		primaryAddress,
+		linkedWallets,
 		patron,
 		wallets: wallets.map((wallet) => ({
 			...wallet,
+			addedAt: wallet.addedAt.toISOString(),
 			linkedAt: wallet.linkedAt.toISOString(),
+			lastUsedAt: wallet.lastUsedAt ? wallet.lastUsedAt.toISOString() : null,
 		})),
 		agentCount: agentCountRow?.count ?? 0,
 	});

@@ -13,7 +13,13 @@ export const patronWallets = pgTable(
 		address: text("address").notNull(),
 		/** BSC mainnet by default. */
 		chainId: integer("chain_id").notNull().default(56),
+		/** Wallet role in the patron identity model. */
+		kind: text("kind").notNull().default("linked_eoa"),
+		/** Canonical add timestamp for W10 routes. Mirrors linked_at for older callers. */
+		addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
 		linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull(),
+		lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+		label: text("label"),
 		isPrimary: boolean("is_primary").notNull().default(false),
 	},
 	(table) => ({
