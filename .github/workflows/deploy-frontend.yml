@@ -69,4 +69,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/frontend
-          command: pages deploy out --project-name=waifufun-frontend --branch=${{ github.event.inputs.branch || github.ref_name }}
+          command: pages deploy out --project-name=waifu-fun --branch=${{ github.event.inputs.branch || github.ref_name }}
