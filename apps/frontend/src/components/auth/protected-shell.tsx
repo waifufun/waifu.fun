@@ -1,25 +1,30 @@
 "use client";
 
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
-import { useAuthRequired } from "@/hooks/use-auth-required";
-import { type ReactNode, Suspense } from "react";
+import { ConnectModal } from "@/components/auth/connect-modal";
+import { Button } from "@/components/ui/button";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
+import { usePathname } from "next/navigation";
+import { type ReactNode, Suspense, useState } from "react";
 
-/**
- * Client-side auth gate that wraps a protected page tree.
- *
- * Pair with the W9.9 middleware: middleware catches the initial
- * navigation, this catches in-page session expiry. Renders an
- * AuthGateLoader during hydration / loading, redirects on
- * unauthenticated, and reveals children only when authenticated.
- *
- * Use from a server-component layout:
- *   <ProtectedShell>{children}</ProtectedShell>
- */
 function Gate({ children }: { children: ReactNode }) {
-	const { isLoading, isAuthenticated } = useAuthRequired();
+	const { isLoading, isAuthenticated } = useWaifuAuth();
+	const pathname = usePathname();
+	const [open, setOpen] = useState(false);
 	if (isLoading) return <AuthGateLoader />;
-	if (!isAuthenticated) return null;
-	return <>{children}</>;
+	if (isAuthenticated) return <>{children}</>;
+	return (
+		<div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-6 text-center">
+			<div className="rounded-lg border border-white/10 bg-[#0b0b0d] p-6 shadow-xl">
+				<h1 className="text-xl font-semibold text-white">Sign in required</h1>
+				<p className="mt-2 text-sm text-[#a1a1aa]">Sign in with Steward to continue.</p>
+				<Button className="mt-5 bg-[#00ff87] text-[#08080a] hover:bg-[#00ff87]/90" onClick={() => setOpen(true)}>
+					Sign in
+				</Button>
+			</div>
+			<ConnectModal open={open} onOpenChange={setOpen} returnTo={pathname || "/patron"} />
+		</div>
+	);
 }
 
 export function ProtectedShell({ children }: { children: ReactNode }) {
