@@ -1,9 +1,11 @@
 "use client";
 
+import { useLinkedEoa } from "@/hooks/use-linked-eoa";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { computePlatformCutVolumeBps } from "@/lib/launchpad/validators";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { useAccount } from "wagmi";
+import { useEffect } from "react";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
@@ -46,8 +48,16 @@ function shortUrl(url: string): string {
 }
 
 export default function StepReview() {
-	const { state } = useWizard();
-	const { address } = useAccount();
+	const { state, patchSafe } = useWizard();
+	const { primaryAddress } = useWaifuAuth();
+	const linked = useLinkedEoa();
+	const linkedAddress = linked.isLinkedToPatron ? linked.address : null;
+
+	useEffect(() => {
+		if (!linkedAddress && state.safe.firstBuyFundingSource) {
+			patchSafe({ firstBuyFundingSource: null });
+		}
+	}, [linkedAddress, patchSafe, state.safe.firstBuyFundingSource]);
 
 	const adapters = Object.entries(state.safe.adapters)
 		.filter(([, enabled]) => enabled)
@@ -145,12 +155,19 @@ export default function StepReview() {
 
 				{/* Safe */}
 				<Row label="safe">
-					<p className="text-sm text-neutral-200 font-mono tabular-nums">
-						{shortAddr(address)}
-						<span className="text-neutral-600 mx-2">+</span>
-						<span className="text-neutral-500">steward</span>
+					<div className="space-y-1">
+						{(state.safe.owners.length ? state.safe.owners : primaryAddress ? [primaryAddress] : []).map((owner) => (
+							<p key={owner} className="text-sm text-neutral-200 font-mono tabular-nums">
+								{shortAddr(owner)}
+								{primaryAddress?.toLowerCase() === owner.toLowerCase() ? (
+									<span className="text-neutral-600"> steward</span>
+								) : null}
+							</p>
+						))}
+					</div>
+					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+						{state.safe.threshold || 1} of {Math.max(state.safe.owners.length || (primaryAddress ? 1 : 0), 1)}
 					</p>
-					<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">1 of 2</p>
 					<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
 						you keep patron control over policy changes and launch timing. the agent gets constrained autonomy only
 						through enabled adapters, caps, allowlists, and slippage rules.
@@ -190,9 +207,21 @@ export default function StepReview() {
 						gas <span className="text-neutral-500">+</span> $5.00 setup
 					</p>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
-						pulled from your wallet at provision. token launch is a separate step from the agent's home page once the
-						safe has BNB.
+						pulled from your primary Steward wallet at provision. token launch is a separate step from the agent's home
+						page once the safe has BNB.
 					</p>
+					{linkedAddress ? (
+						<label className="mt-4 flex items-center gap-3 text-sm text-neutral-300">
+							<input
+								type="checkbox"
+								checked={state.safe.firstBuyFundingSource === linkedAddress}
+								onChange={(event) => patchSafe({ firstBuyFundingSource: event.target.checked ? linkedAddress : null })}
+								className="h-4 w-4 accent-[#00ff87]"
+							/>
+							<span>Use linked wallet for first-buy</span>
+							<span className="font-mono text-neutral-500">{shortAddr(linkedAddress)}</span>
+						</label>
+					) : null}
 				</Row>
 			</section>
 

@@ -1,240 +1,162 @@
 "use client";
 
-import { isApiError } from "@/lib/api/_fetcher";
-import {
-	type PatronWallet,
-	bindWallet,
-	getNonce,
-	listWallets,
-	setPrimaryWallet,
-	unlinkWallet,
-} from "@/lib/api/wallets";
+import { useLinkedEoa } from "@/hooks/use-linked-eoa";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { EASE_OUT_EXPO } from "@/lib/motion";
-/**
- * WalletManagementPanel
- *
- * Patron-facing UI for managing the wallets bound to their account (W9.7).
- *
- *   1. List wallets bound via /v2/auth/siwe/wallets
- *   2. Bind the currently-connected wagmi wallet via SIWE sign + POST /bind
- *   3. Promote a wallet to primary
- *   4. Unlink a wallet (with confirm)
- *
- * SIWE message is built with viem's createSiweMessage so we don't need to add
- * the `siwe` npm package to the frontend; the backend (waifu-core) parses it
- * with the `siwe` package server-side and the EIP-4361 wire format is the
- * same either way.
- */
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { createSiweMessage } from "viem/siwe";
-import { useAccount, useSignMessage } from "wagmi";
 
 function shortAddress(addr: string): string {
-	return `${addr.slice(0, 10)}…${addr.slice(-8)}`;
+	return `${addr.slice(0, 10)}...${addr.slice(-8)}`;
 }
 
-function shortConnected(addr: string): string {
-	return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+function explorerUrl(addr: string): string {
+	return `https://bscscan.com/address/${addr}`;
 }
 
 function errorMessage(err: unknown, fallback: string): string {
-	if (isApiError(err)) return err.message;
 	if (err instanceof Error) return err.message;
 	return fallback;
 }
 
 export default function WalletManagementPanel() {
-	const [wallets, setWallets] = useState<PatronWallet[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [linking, setLinking] = useState(false);
-
-	const { address, chain, isConnected } = useAccount();
-	const { signMessageAsync } = useSignMessage();
-	const { openConnectModal } = useConnectModal();
+	const { primaryAddress, me, refetch } = useWaifuAuth();
+	const linked = useLinkedEoa();
 	const reducedMotion = useReducedMotion();
+	const [error, setError] = useState<string | null>(null);
+	const [busyAddress, setBusyAddress] = useState<string | null>(null);
+	const [linking, setLinking] = useState(false);
+	const [linkAfterConnect, setLinkAfterConnect] = useState(false);
 
-	async function refresh() {
-		setLoading(true);
-		setError(null);
-		try {
-			const list = await listWallets();
-			setWallets(list);
-		} catch (err) {
-			setError(errorMessage(err, "failed to load wallets"));
-		} finally {
-			setLoading(false);
-		}
+	const linkedWallets = me.data?.linkedWallets ?? [];
+
+	async function handleCopy(addr: string) {
+		await navigator.clipboard?.writeText(addr).catch(() => undefined);
 	}
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: refresh is a stable closure; we only want a one-shot fetch on mount.
-	useEffect(() => {
-		void refresh();
-	}, []);
-
-	async function handleBindCurrent() {
-		if (!address || !chain) {
-			setError("connect a wallet first");
-			return;
-		}
+	async function linkCurrentWallet() {
 		setLinking(true);
-		setError(null);
 		try {
-			const { nonce } = await getNonce(address);
-			const message = createSiweMessage({
-				domain: window.location.host,
-				address,
-				statement: "link this wallet to your waifu.fun patron account.",
-				uri: window.location.origin,
-				version: "1",
-				chainId: chain.id,
-				nonce,
-				issuedAt: new Date(),
-			});
-			const signature = await signMessageAsync({ message });
-			await bindWallet({
-				message,
-				signature,
-				setPrimary: wallets.length === 0,
-			});
-			await refresh();
-		} catch (err) {
-			setError(errorMessage(err, "bind failed"));
+			await linked.link();
+			await refetch();
 		} finally {
 			setLinking(false);
 		}
 	}
 
-	async function handleSetPrimary(addr: string) {
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once when RainbowKit supplies an address after the wallet CTA opened it.
+	useEffect(() => {
+		if (!linkAfterConnect || !linked.address) return;
+		setLinkAfterConnect(false);
+		linkCurrentWallet().catch((err) => setError(errorMessage(err, "link failed")));
+	}, [linkAfterConnect, linked.address]);
+
+	async function handleLink() {
 		setError(null);
 		try {
-			await setPrimaryWallet(addr);
-			await refresh();
+			if (!linked.address) {
+				setLinkAfterConnect(true);
+				linked.openConnectModal();
+				return;
+			}
+			await linkCurrentWallet();
 		} catch (err) {
-			setError(errorMessage(err, "set primary failed"));
+			setError(errorMessage(err, "link failed"));
 		}
 	}
 
 	async function handleUnlink(addr: string) {
-		// Native confirm — single destructive action, no need for a custom modal.
-		const ok = window.confirm("unlink this wallet? agents owned by it will become inaccessible until rebound.");
+		const ok = window.confirm("unlink this external wallet?");
 		if (!ok) return;
 		setError(null);
+		setBusyAddress(addr);
 		try {
-			await unlinkWallet(addr);
-			await refresh();
+			await linked.unlink(addr);
+			await refetch();
 		} catch (err) {
 			setError(errorMessage(err, "unlink failed"));
+		} finally {
+			setBusyAddress(null);
 		}
 	}
 
-	const alreadyBound = Boolean(address) && wallets.some((w) => w.address.toLowerCase() === address?.toLowerCase());
-
 	return (
-		<div className="space-y-6">
-			{/* Bind new wallet */}
+		<div id="wallet-management" className="space-y-6">
 			<div className="border border-stroke rounded-sm bg-surface-card p-6">
-				<div className="flex items-center justify-between gap-4 flex-wrap">
+				<div className="flex items-start justify-between gap-4 flex-wrap">
 					<div className="min-w-0">
-						<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a] mb-1">link new wallet</p>
-						<p className="text-sm text-[#e4e4e7]">
-							{isConnected && address ? (
-								<>
-									connected as <span className="font-mono">{shortConnected(address)}</span>
-									{alreadyBound ? <span className="text-[#71717a]"> · already linked</span> : null}
-								</>
-							) : (
-								"connect a wallet to bind it."
-							)}
+						<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a] mb-1">
+							primary Steward wallet
 						</p>
+						<p className="text-sm font-mono text-[#e4e4e7] break-all">{primaryAddress ?? "loading..."}</p>
+						<p className="mt-2 text-xs text-[#71717a]">read-only owner for sign-in and default Safe control.</p>
 					</div>
-					{isConnected && address ? (
-						<button
-							type="button"
-							onClick={handleBindCurrent}
-							disabled={linking || alreadyBound}
-							aria-label="link connected wallet"
-							className="px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 disabled:opacity-40 disabled:cursor-not-allowed rounded-sm transition-colors"
-						>
-							{linking ? "signing…" : "link wallet"}
-						</button>
-					) : (
-						<button
-							type="button"
-							onClick={() => openConnectModal?.()}
-							aria-label="connect wallet"
-							className="px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"
-						>
-							connect wallet
-						</button>
-					)}
+					{primaryAddress ? (
+						<div className="flex gap-2">
+							<button
+								type="button"
+								onClick={() => handleCopy(primaryAddress)}
+								className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"
+							>
+								copy
+							</button>
+							<a
+								href={explorerUrl(primaryAddress)}
+								target="_blank"
+								rel="noreferrer"
+								className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"
+							>
+								explorer
+							</a>
+						</div>
+					) : null}
 				</div>
 			</div>
 
-			{/* Wallet list */}
 			<div className="space-y-2">
 				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">
-					your wallets ({wallets.length})
+					linked external wallets ({linkedWallets.length})
 				</p>
-				{loading ? (
-					<div className="border border-stroke rounded-sm bg-surface-card p-6 text-sm text-[#a1a1aa]">loading…</div>
-				) : wallets.length === 0 ? (
+				{linkedWallets.length === 0 ? (
 					<div className="border border-stroke rounded-sm bg-surface-card p-8 text-center">
-						<p className="text-sm text-[#a1a1aa]">no wallets linked yet.</p>
+						<p className="text-sm text-[#a1a1aa]">no external wallets linked yet.</p>
 					</div>
 				) : (
 					<ul className="space-y-2">
 						<AnimatePresence initial={false}>
-							{wallets.map((w) => (
+							{linkedWallets.map((wallet) => (
 								<motion.li
-									key={w.address}
+									key={wallet.address}
 									layout={reducedMotion ? false : "position"}
 									initial={reducedMotion ? false : { opacity: 0, y: 8 }}
 									animate={{ opacity: 1, y: 0 }}
 									exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
-									transition={{
-										duration: reducedMotion ? 0 : 0.3,
-										ease: EASE_OUT_EXPO,
-									}}
+									transition={{ duration: reducedMotion ? 0 : 0.3, ease: EASE_OUT_EXPO }}
 									className="border border-stroke rounded-sm bg-surface-card p-5 flex items-center justify-between gap-4 flex-wrap hover:border-stroke-strong transition-colors"
 								>
-									<div className="flex items-center gap-3 min-w-0">
-										<span
-											className={
-												w.isPrimary
-													? "w-2 h-2 rounded-full bg-accent shrink-0"
-													: "w-2 h-2 rounded-full bg-stroke-strong shrink-0"
-											}
-											aria-hidden="true"
-										/>
-										<div className="min-w-0">
-											<p className="font-mono text-sm text-[#e4e4e7] truncate">{shortAddress(w.address)}</p>
-											<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a] mt-1">
-												chain {w.chainId} · linked {new Date(w.linkedAt).toLocaleDateString()}
-												{w.isPrimary ? " · primary" : ""}
-											</p>
-										</div>
+									<div className="min-w-0">
+										<p className="font-mono text-sm text-[#e4e4e7] truncate">{shortAddress(wallet.address)}</p>
+										<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a] mt-1">
+											label external signer · linked{" "}
+											{wallet.addedAt ? new Date(wallet.addedAt).toLocaleDateString() : "recently"}
+										</p>
 									</div>
 									<div className="flex gap-2">
-										{!w.isPrimary ? (
-											<button
-												type="button"
-												onClick={() => handleSetPrimary(w.address)}
-												aria-label={`set ${shortAddress(w.address)} as primary wallet`}
-												className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"
-											>
-												set primary
-											</button>
-										) : null}
 										<button
 											type="button"
-											onClick={() => handleUnlink(w.address)}
-											aria-label={`unlink ${shortAddress(w.address)}`}
-											className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#71717a] hover:border-[#f87171]/40 hover:text-[#f87171] rounded-sm transition-colors"
+											onClick={() => handleCopy(wallet.address)}
+											className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"
 										>
-											unlink
+											copy
+										</button>
+										<button
+											type="button"
+											onClick={() => handleUnlink(wallet.address)}
+											disabled={busyAddress === wallet.address}
+											aria-label={`unlink ${shortAddress(wallet.address)}`}
+											className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#71717a] hover:border-[#f87171]/40 hover:text-[#f87171] rounded-sm transition-colors disabled:opacity-50"
+										>
+											{busyAddress === wallet.address ? "unlinking..." : "unlink"}
 										</button>
 									</div>
 								</motion.li>
@@ -242,6 +164,21 @@ export default function WalletManagementPanel() {
 						</AnimatePresence>
 					</ul>
 				)}
+			</div>
+
+			<div className="border border-stroke rounded-sm bg-surface-card p-6 flex items-center justify-between gap-4 flex-wrap">
+				<div>
+					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#71717a] mb-1">add external wallet</p>
+					<p className="text-sm text-[#a1a1aa]">link a third-party wallet for Safe signing or first-buy funding.</p>
+				</div>
+				<button
+					type="button"
+					onClick={handleLink}
+					disabled={linking}
+					className="px-4 py-2 text-[11px] font-mono uppercase tracking-[0.18em] border border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 disabled:opacity-40 disabled:cursor-not-allowed rounded-sm transition-colors"
+				>
+					{linking ? "linking..." : "Link third-party wallet"}
+				</button>
 			</div>
 
 			{error ? (
