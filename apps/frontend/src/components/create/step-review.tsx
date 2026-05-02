@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
-	hosted: "hosted (milady cloud)",
+	hosted: "managed (ping us)",
 	webhook: "webhook",
 	pull: "pull",
 } as const;
