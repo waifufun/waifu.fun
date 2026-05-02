@@ -4,9 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Fingerprint, Loader2, Mail, Wallet } from "lucide-react";
+import { ArrowRight, CheckCircle2, Fingerprint, Loader2, Mail } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useCallback, useMemo, useState } from "react";
 
@@ -33,7 +32,7 @@ interface StewardLoginWidgetProps {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
-// NOTE: discord temporarily disabled — Steward's discord OAuth app needs
+// NOTE: discord temporarily disabled. Steward's discord OAuth app needs
 // `https://eliza.steward.fi/auth/oauth/discord/callback` registered as
 // an allowed redirect URI in the Discord Developer Portal. Re-enable
 // once Shaw / steward team adds it.
@@ -300,7 +299,7 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 						</p>
 					) : null}
 
-					{/* Passkey — uses the email above as the WebAuthn user handle */}
+					{/* Passkey uses the email above as the WebAuthn user handle */}
 					{emailPhase !== "sent" ? (
 						<button
 							type="button"
@@ -373,34 +372,8 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					</ul>
 				</motion.div>
 
-				{/* Wallet connect fallback */}
-				<div className="px-6 pb-6 pt-0">
-					<div className="flex items-center gap-3 my-5" aria-hidden="true">
-						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-						<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#71717a]">
-							or connect a wallet
-						</span>
-						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
-					</div>
-
-					<ConnectButton.Custom>
-						{({ openConnectModal }) => (
-							<button
-								type="button"
-								className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-sm bg-[rgba(255,255,255,0.04)] border border-white/10 text-[#e4e4e7] text-sm font-medium hover:bg-[rgba(255,255,255,0.08)] hover:border-white/20 transition-colors cursor-pointer"
-								onClick={() => {
-									onOpenChange(false);
-									// Small delay so the dialog closes before RainbowKit modal opens
-									setTimeout(() => openConnectModal(), 150);
-								}}
-							>
-								<Wallet className="size-[16px] opacity-80" />
-								<span>connect wallet</span>
-							</button>
-						)}
-					</ConnectButton.Custom>
-
-					<p className="mt-5 text-center text-[10px] font-mono uppercase tracking-[0.22em] text-[#52525b]">
+				<div className="px-6 pb-6 pt-5">
+					<p className="text-center text-[10px] font-mono uppercase tracking-[0.22em] text-[#52525b]">
 						powered by steward
 					</p>
 				</div>
