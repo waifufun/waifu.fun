@@ -99,11 +99,20 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 	const [walletPhase, setWalletPhase] = useState<WalletPhase>("idle");
 	const [walletError, setWalletError] = useState<string | null>(null);
 
-	// Resolve return_to: explicit prop > URL param > current pathname > /patron
+	// Resolve return_to: explicit prop > URL param > current pathname > /patron.
+	// Reject protocol-relative URLs (//evil.com, /\\evil.com) which would let
+	// an attacker navigate off-domain via a crafted ?return_to= query.
+	const isSafeRelativePath = (raw: string | null | undefined): raw is string => {
+		if (!raw || raw.length > 200) return false;
+		if (!raw.startsWith("/")) return false;
+		// Block //evil.com and /\evil.com (browsers normalize backslashes).
+		if (raw.startsWith("//") || raw.startsWith("/\\")) return false;
+		return true;
+	};
 	const resolvedReturnTo = useMemo(() => {
-		if (returnTo?.startsWith("/")) return returnTo;
+		if (isSafeRelativePath(returnTo)) return returnTo;
 		const fromQuery = params?.get("return_to");
-		if (fromQuery?.startsWith("/") && fromQuery.length <= 200) return fromQuery;
+		if (isSafeRelativePath(fromQuery)) return fromQuery;
 		if (typeof window !== "undefined" && window.location?.pathname?.startsWith("/")) {
 			const path = window.location.pathname;
 			// Don't loop a sign-in landing page back into itself.
