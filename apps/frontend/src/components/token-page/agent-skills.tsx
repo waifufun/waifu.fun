@@ -73,7 +73,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 
 	return (
 		<div className="relative rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4 sm:p-5 min-w-0">
-			{/* Personality traits — if character data exists */}
+			{/* Personality traits: if character data exists */}
 			{hasPersonality && (
 				<div className="mb-5">
 					{hasAdjectives && (
@@ -125,7 +125,7 @@ export function AgentInfo({ token }: { token: IToken }) {
 				</div>
 			)}
 
-			{/* Core info — minimal, divided rows */}
+			{/* Core info: minimal, divided rows */}
 			<div className="divide-y divide-white/[0.03]">
 				<InfoRow label="chain" value={chainLabel} />
 				<InfoRow label="created" value={formatCreatedAt(token.createdAt)} />

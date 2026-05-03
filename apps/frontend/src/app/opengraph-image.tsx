@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 export const dynamic = "force-static";
 
 export const runtime = "nodejs";
-export const alt = "waifu.fun — ai agent token launchpad";
+export const alt = "waifu.fun · ai agent token launchpad";
 export const size = {
 	width: 1200,
 	height: 630,

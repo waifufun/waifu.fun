@@ -16,7 +16,7 @@ import XEmbed from "./x-embed";
 
 const EIP8004_CONTRACT = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
 
-// $DEMO is a curated showcase — hide tooling (adapter permissions, the
+// $DEMO is a curated showcase: hide tooling (adapter permissions, the
 // patron-only connect-x affordances) that don't apply to a static demo.
 const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
 
@@ -55,7 +55,7 @@ export default function AgentHome({
 					<PatronPanel agent={{ tokenAddress: agent.tokenAddress, name: agent.name, ticker: agent.ticker }} />
 				</Section>
 
-				{/* 3. v2 surface — treasury + adapters (left) · x + activity (right) */}
+				{/* 3. v2 surface: treasury + adapters (left) · x + activity (right) */}
 				<section className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
 					<div className="flex flex-col gap-5 min-w-0">
 						<SubSection title="treasury">
@@ -194,7 +194,7 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 						<p className="text-xs md:text-sm text-white/55 leading-relaxed mt-2 line-clamp-3">{agent.description}</p>
 					)}
 
-					{/* runtime microcopy row — identity + brain + activity */}
+					{/* runtime microcopy row: identity + brain + activity */}
 					<div className="mt-3 flex items-center gap-3 flex-wrap text-[10px] font-mono uppercase tracking-[0.16em]">
 						{agent.eip8004TokenId !== undefined && (
 							<a

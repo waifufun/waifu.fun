@@ -90,12 +90,12 @@ const PRIVACY_POLICY: PolicySection[] = [
 		content:
 			"The Platform integrates with services that process some data on our behalf or on yours. By using the relevant feature you also accept the privacy policy of that provider. Data handled by these services is subject to their own policies.",
 		subcontent: [
-			"Four.Meme — the on-chain token launch protocol we integrate with",
-			"PancakeSwap — the decentralized exchange where graduated tokens trade",
-			"X (formerly Twitter) — OAuth provider for the claim flow",
-			"Steward — wallet and identity infrastructure used during the prepare step",
-			"Cloudflare — edge hosting and CDN for the web application",
-			"Railway — backend API hosting",
+			"Four.Meme: the on-chain token launch protocol we integrate with",
+			"PancakeSwap: the decentralized exchange where graduated tokens trade",
+			"X (formerly Twitter): OAuth provider for the claim flow",
+			"Steward: wallet and identity infrastructure used during the prepare step",
+			"Cloudflare: edge hosting and CDN for the web application",
+			"Railway: backend API hosting",
 			"RPC and indexing providers on BNB Smart Chain",
 			"DexScreener and similar market-data providers, used to embed public chart iframes",
 		],
@@ -103,13 +103,13 @@ const PRIVACY_POLICY: PolicySection[] = [
 	{
 		header: "Data retention",
 		content:
-			"We keep application data (claim tokens, prelaunch artifacts, patron sessions, logs) only for as long as needed to operate the Platform. Claim tokens expire by default within 48 hours. Session cookies expire automatically. Server logs are rotated on a short schedule. On-chain transactions cannot be deleted — they are part of the public blockchain record.",
+			"We keep application data (claim tokens, prelaunch artifacts, patron sessions, logs) only for as long as needed to operate the Platform. Claim tokens expire by default within 48 hours. Session cookies expire automatically. Server logs are rotated on a short schedule. On-chain transactions cannot be deleted: they are part of the public blockchain record.",
 	},
 	{
 		header: "Your choices",
 		content: "You always have the following choices:",
 		subcontent: [
-			"Don't sign in with X — most of the Platform works without it; you just cannot claim an agent",
+			"Don't sign in with X. Most of the Platform works without it; you just cannot claim an agent",
 			"Disconnect your wallet at any time from your browser wallet extension",
 			"Sign out from X via the user menu to invalidate your patron session",
 			"Clear your cookies and local storage from your browser settings",

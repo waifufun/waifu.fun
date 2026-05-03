@@ -36,7 +36,7 @@ export async function logout(): Promise<void> {
 			credentials: "include",
 		});
 	} catch {
-		// Best-effort — clear local state regardless
+		// Best-effort: clear local state regardless
 	}
 }
 
@@ -45,7 +45,7 @@ export async function logout(): Promise<void> {
  *
  * Preserves the current path so the callback can bounce the user back
  * where they started (e.g. /claim/abc). Only same-origin paths are
- * passed through — the backend ignores anything that doesn't start with "/".
+ * passed through: the backend ignores anything that doesn't start with "/".
  */
 export function redirectToXLogin(): void {
 	let returnTo = "/";

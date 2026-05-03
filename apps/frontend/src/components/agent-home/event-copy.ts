@@ -2,7 +2,7 @@ import type { AgentEvent } from "./types";
 
 /**
  * Short copy for the activity feed. One-line declarative, lowercase, no emoji.
- * Defensive on every data field — the backend schema is evolving (see W1.7 spec)
+ * Defensive on every data field: the backend schema is evolving (see W1.7 spec)
  * so we never assume a shape beyond what the event type guarantees.
  */
 export function describeEvent(e: AgentEvent): string {
@@ -81,7 +81,7 @@ export function describeEvent(e: AgentEvent): string {
 
 /**
  * Event type → short bracket marker rendered next to the row. Keeps it ASCII
- * so the brand stays tidy — no icon libraries, no emoji.
+ * so the brand stays tidy: no icon libraries, no emoji.
  */
 export function eventMarker(eventType: string): string {
 	if (eventType.startsWith("token.")) return "[tx]";

@@ -13,7 +13,7 @@ type LoadState = "idle" | "loading" | "ok" | "empty" | "unavailable";
 
 /**
  * Live event feed for an agent. Hits GET /v2/agents/:id/events which ships in
- * W1.7 — when it 404s we render the empty state rather than crashing.
+ * W1.7: when it 404s we render the empty state rather than crashing.
  */
 export default function ActivityFeed({ agentId }: { agentId: string }) {
 	const [events, setEvents] = useState<AgentEvent[]>([]);

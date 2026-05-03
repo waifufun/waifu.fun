@@ -48,13 +48,13 @@ plausible-looking number.
 `types.ts` defines the frontend-facing shapes. `AgentEvent` mirrors the
 backend event feed schema (w1.7). when the shared `@waifufun/types`
 package ships a single source of truth for events, delete the local copy
-and import from there — until then we duplicate, which is documented in
+and import from there. Until then we duplicate, which is documented in
 the type's jsdoc.
 
 ## voice + style rules
 
 - no emoji decoration
-- no em-dashes in user-facing copy (ok in code comments)
+- no em-dashes anywhere (UI placeholder strings excepted)
 - data in `font-mono`, prose in default (`space-grotesk` via layout)
 - `rounded-sm` maximum (no pill-shaped anything)
 - green `#00ff87` is the only chromatic accent; everything else is
@@ -66,9 +66,9 @@ the type's jsdoc.
 
 when adding a new panel that talks to an endpoint:
 
-1. assume `404` or `501` means "not yet deployed" — render an empty
+1. assume `404` or `501` means "not yet deployed": render an empty
    state, not an error toast.
-2. assume `5xx` / network error means "temporarily unavailable" — same
+2. assume `5xx` / network error means "temporarily unavailable": same
    empty state is fine; log to `console.error` for debug but don't
    surface a stack trace.
 3. never fall back to fixtures. if the backend has no data, the ui has

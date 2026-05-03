@@ -110,7 +110,7 @@ export default function RuntimeEconomicsCard({ token }: { token: IToken }) {
 		});
 	}
 
-	// Nothing to show — render nothing
+	// Nothing to show: render nothing
 	if (metrics.length === 0) {
 		return null;
 	}

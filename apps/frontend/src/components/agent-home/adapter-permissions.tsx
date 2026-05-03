@@ -24,7 +24,7 @@ type LoadState = { state: "loading" } | { state: "ok"; adapters: AgentAdapter[] 
 
 /**
  * Read-only preview of the onchain adapters the agent has enabled. No editing
- * from this surface — the policy editor at /agent/:id/policy is coming in v1.1.
+ * from this surface: the policy editor at /agent/:id/policy is coming in v1.1.
  *
  * Endpoint GET /v2/agents/:id/adapters isn't live yet; 404 → "unavailable"
  * empty state rather than invented permissions.

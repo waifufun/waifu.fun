@@ -1475,7 +1475,7 @@ export const deleteAgent = async (agentId: string): Promise<void> => {
 	await fetcher(`/agents/${agentId}`, "DELETE");
 };
 
-// ========== LEGACY EXPORTS (deprecated — Solana RPC removed) ==========
+// ========== LEGACY EXPORTS (deprecated: Solana RPC removed) ==========
 
 /** @deprecated BSC uses wagmi/viem public client instead */
 export const HELIUS_RPC_URL = "";

@@ -157,7 +157,7 @@ export async function loginWithPasskey(email: string, returnTo?: string): Promis
 	}
 
 	// Track how long the prompt was open. If WebAuthn errors out very fast
-	// (<800ms), it's almost always "no matching local credential" — the
+	// (<800ms), it's almost always "no matching local credential": the
 	// browser couldn't satisfy the allowCredentials list because the user's
 	// device doesn't have any of the registered passkeys locally (e.g.
 	// they registered on a different device + iCloud sync isn't carrying
@@ -269,7 +269,7 @@ export async function loginOrRegisterPasskey(email: string, returnTo?: string): 
 		return await loginWithPasskey(email, returnTo);
 	} catch (err) {
 		if (err instanceof PasskeyError) {
-			// No registered passkey at all for this email — register one.
+			// No registered passkey at all for this email: register one.
 			if (err.code === "NO_PASSKEY") {
 				return registerPasskey(email, returnTo);
 			}

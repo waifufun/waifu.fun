@@ -353,7 +353,7 @@ export const executeSwap = async (
 		return "redirect_to_pancakeswap";
 	}
 	// For bonding curve tokens, show message
-	throw new Error("Direct swap coming soon — use PancakeSwap for now.");
+	throw new Error("Direct swap coming soon. Use PancakeSwap for now.");
 };
 
 /**

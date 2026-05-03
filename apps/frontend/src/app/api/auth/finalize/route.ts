@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
 
 	// Mirror every upstream Set-Cookie back to the browser. Because THIS
 	// response is from www.waifu.fun (same-origin to the user's page), the
-	// browser stores these cookies unconditionally — no ITP / cross-site
+	// browser stores these cookies unconditionally: no ITP / cross-site
 	// storage shenanigans.
 	//
 	// Hono backend already set Domain=.waifu.fun on wf_session, which means

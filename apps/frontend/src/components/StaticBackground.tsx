@@ -13,15 +13,15 @@ const GlitchBg = dynamic(() => import("@/components/landing/glitch-bg"), {
  * black at a distance but has subtle character up close.
  *
  * Stacked layers (all `fixed inset-0 pointer-events-none` at z=0):
- *   1. base — solid #000 so SSR paints before the client layers mount
+ *   1. base: solid #000 so SSR paints before the client layers mount
  *   2. katakana glitch @ 7% opacity, tinted cyber-green, radial-masked
  *      so it fades out toward edges. Speed is slowed (120ms) so the
  *      effect drifts rather than strobes.
  *   3. hero background image echo @ 5% opacity with crushed saturation
  *      for organic grain + warmth
- *   4. radial vignette — pushes corners back to near-black so content
+ *   4. radial vignette: pushes corners back to near-black so content
  *      at the center of the viewport always sits on a dark spot
- *   5. 3px cyber-green scanlines @ 2.5% — almost invisible, adds just
+ *   5. 3px cyber-green scanlines @ 2.5%: almost invisible, adds just
  *      enough tech-UI feel to feel intentional
  *
  * Pages can place their own content at z=10+ to sit above this layer.
@@ -60,7 +60,7 @@ export default function StaticBackground() {
 				}}
 			/>
 
-			{/* layer 3: vignette — edges fall off to near-black */}
+			{/* layer 3: vignette: edges fall off to near-black */}
 			<div
 				className="absolute inset-0"
 				style={{

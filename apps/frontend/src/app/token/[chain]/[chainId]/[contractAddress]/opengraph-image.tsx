@@ -3,7 +3,7 @@ import { fetchTokenRouteParamsForStaticExport, isStaticExport } from "@/lib/stat
 import type { ITokenLookUp } from "@waifufun/types";
 import { ImageResponse } from "next/og";
 
-/** Required for `output: "export"` — OG route is generated at build time per `generateStaticParams` on this segment. */
+/** Required for `output: "export"`: OG route is generated at build time per `generateStaticParams` on this segment. */
 export const dynamic = "force-static";
 
 export async function generateStaticParams() {
