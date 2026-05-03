@@ -46,7 +46,9 @@ export default function StepSafe() {
 	const [linkAfterConnect, setLinkAfterConnect] = useState(false);
 	const [linkError, setLinkError] = useState<string | null>(null);
 
-	const primaryAddress = auth.primaryAddress;
+	const primaryAddress = auth.primaryChain === "evm" ? auth.primaryAddress : null;
+	const primaryLabel =
+		auth.primaryAddress && auth.primaryChain === "solana" ? "link evm wallet" : shortAddr(primaryAddress);
 	const linkedWallets = auth.me.data?.linkedWallets ?? [];
 	const selectedOwners = useMemo(() => uniqueAddresses(state.safe.owners ?? []), [state.safe.owners]);
 
@@ -127,8 +129,9 @@ export default function StepSafe() {
 						</span>
 						<div className="flex-1 min-w-0">
 							<p className="text-sm text-neutral-300 leading-relaxed">
-								the patron Steward wallet is the default Safe owner. add external signers only if you want a third-party
-								wallet available for recovery or co-signing later.
+								{auth.primaryChain === "solana"
+									? "solana sign-in is active. link an evm wallet before deploying a safe."
+									: "the patron steward wallet is the default safe owner. add external signers only if you want a third-party wallet available for recovery or co-signing later."}
 							</p>
 						</div>
 					</div>
@@ -136,7 +139,7 @@ export default function StepSafe() {
 					<dl className="mt-5 divide-y divide-white/5 border-t border-white/5">
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
 							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">primary owner</dt>
-							<dd className="text-sm font-mono text-neutral-200 tabular-nums">{shortAddr(primaryAddress)}</dd>
+							<dd className="text-sm font-mono text-neutral-200 tabular-nums">{primaryLabel}</dd>
 						</div>
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-start">
 							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">safe owners</dt>

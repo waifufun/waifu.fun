@@ -39,6 +39,7 @@ import { Hono } from "hono";
 
 import type { AppBindings } from "../lib/bindings.js";
 import { respondOk } from "../lib/http.js";
+import { ensurePrimaryPatronWallet, normalizeWalletChain, pickPrimaryWallet } from "../lib/patron-wallet.js";
 import { SESSION_COOKIE_NAME, buildSessionCookieHeader, getCookieOptions } from "../lib/session.js";
 import { verifyStewardJwt } from "../middleware/steward-auth.js";
 
@@ -234,7 +235,7 @@ export function createOAuthRoutes() {
 				400,
 			);
 		}
-		const { token } = parsed;
+		const { token, primaryChain } = parsed;
 
 		const cookies = parseCookies(c.req.header("cookie") ?? "");
 
@@ -285,6 +286,11 @@ export function createOAuthRoutes() {
 			);
 		}
 
+		const primaryWallet = pickPrimaryWallet(principal, primaryChain);
+		if (primaryWallet) {
+			await ensurePrimaryPatronWallet(db, row.id, primaryWallet);
+		}
+
 		// Sanitize return_to from cookie (frontend can't be trusted).
 		const rawReturn = cookies[OAUTH_RETURN_COOKIE];
 		const decodedReturn = rawReturn ? safeDecode(rawReturn) : null;
@@ -312,6 +318,8 @@ export function createOAuthRoutes() {
 				patron: {
 					stewardUserId: row.stewardUserId ?? principal.userId,
 					email: row.primaryEmail ?? principal.email ?? null,
+					primaryAddress: primaryWallet?.address ?? null,
+					primaryChain: primaryWallet?.chain ?? null,
 				},
 			},
 			requestId: c.get("requestId"),
@@ -344,13 +352,15 @@ export function createOAuthRoutes() {
 
 // ─── Internal helpers ─────────────────────────────────────────────
 
-function parseFinalizeBody(value: unknown): { token: string } | null {
+function parseFinalizeBody(
+	value: unknown,
+): { token: string; primaryChain: ReturnType<typeof normalizeWalletChain> } | null {
 	if (!value || typeof value !== "object") return null;
 	const v = value as Record<string, unknown>;
 	if (typeof v.token !== "string") return null;
 	if (v.token.length === 0) return null;
 	if (v.token.length > 4096) return null;
-	return { token: v.token };
+	return { token: v.token, primaryChain: normalizeWalletChain(v.primaryChain) };
 }
 
 function safeDecode(value: string): string | null {

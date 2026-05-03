@@ -220,6 +220,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 						provider: "oauth",
 						token: result.token,
 						refreshToken: result.refreshToken,
+						primaryChain: kind,
 					}),
 				});
 				if (!res.ok) {
@@ -369,12 +370,8 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 
 					<TabsContent value="wallet" className="pt-5">
 						<div data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
-							{/* EVM only for now. Solana sign-in completes against Steward but
-							waifu's /v3/patron/me only recognizes 0x EVM primary addresses
-							(useWaifuAuth + requirePatron). Will flip to chains="both" once
-							the patron model accepts Solana pubkeys. */}
 							<WalletLogin
-								chains="evm"
+								chains="both"
 								onSuccess={(result, kind) => {
 									void handleWalletSuccess(result, kind);
 								}}

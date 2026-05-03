@@ -11,8 +11,10 @@ export const patronWallets = pgTable(
 			.references(() => patronUsers.id, { onDelete: "cascade" }),
 		/** Lowercased EVM address. One wallet can belong to only one patron in v1. */
 		address: text("address").notNull(),
-		/** BSC mainnet by default. */
+		/** BSC mainnet by default for EVM wallets. Solana primary wallets use 0. */
 		chainId: integer("chain_id").notNull().default(56),
+		/** Wallet chain namespace from Steward. */
+		chainNamespace: text("chain_namespace").notNull().default("evm"),
 		/** Wallet role in the patron identity model. */
 		kind: text("kind").notNull().default("linked_eoa"),
 		/** Canonical add timestamp for W10 routes. Mirrors linked_at for older callers. */
