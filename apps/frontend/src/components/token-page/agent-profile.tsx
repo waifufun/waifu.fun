@@ -250,9 +250,9 @@ export default function AgentProfile({
 			transition={{ type: "spring", stiffness: 120, damping: 22 }}
 			className="relative"
 		>
-			{/* Main hero grid — portrait left, identity right */}
+			{/* Main hero grid: portrait left, identity right */}
 			<div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:gap-12">
-				{/* Agent portrait — gallery framing */}
+				{/* Agent portrait: gallery framing */}
 				<div className="relative mx-auto lg:mx-0">
 					<motion.div
 						className="relative"
@@ -327,10 +327,10 @@ export default function AgentProfile({
 						</div>
 					</div>
 
-					{/* Bio / description — prominent, first content */}
+					{/* Bio / description: prominent, first content */}
 					{token.description && <p className="max-w-xl text-sm leading-relaxed text-zinc-400">{token.description}</p>}
 
-					{/* Creator + socials + contract — metadata row */}
+					{/* Creator + socials + contract: metadata row */}
 					<div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] mt-auto">
 						{token?.creator && (
 							<div className="flex items-center gap-1.5">

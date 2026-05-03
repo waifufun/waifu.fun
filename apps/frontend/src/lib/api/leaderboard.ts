@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "./_fetcher";
 
 /**
- * Public leaderboard entry — the "who's winning the alive game" view.
+ * Public leaderboard entry: the "who's winning the alive game" view.
  *
  * Mirrors `GET /v2/agents/leaderboard` when the endpoint is live. Until
  * then we fall back to `GET /v2/agents` and compute runway client-side.

@@ -4,7 +4,7 @@
  * DexScreener chart embed.
  *
  * Uses DexScreener's public embed URL format. Works on BSC with the token
- * address — DexScreener auto-finds the highest-liquidity pair and renders
+ * address: DexScreener auto-finds the highest-liquidity pair and renders
  * a lightweight chart iframe (no backend work needed).
  *
  * Docs: https://docs.dexscreener.com/api/reference#embed

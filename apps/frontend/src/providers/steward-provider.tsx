@@ -14,7 +14,7 @@ import { type FC, type ReactNode, useEffect, useMemo, useRef } from "react";
 const STEWARD_API_URL = process.env.NEXT_PUBLIC_STEWARD_API_URL?.trim() || "https://eliza.steward.fi";
 const STEWARD_TENANT_ID = process.env.NEXT_PUBLIC_STEWARD_TENANT_ID?.trim() || "waifu";
 
-// Dummy agent ID — auth-only usage doesn't need a real agent
+// Dummy agent ID: auth-only usage doesn't need a real agent
 const STEWARD_AGENT_ID = "waifu-web";
 const REFRESH_CHECK_INTERVAL_MS = 60_000;
 const REFRESH_AHEAD_SECS = 120;

@@ -26,7 +26,7 @@ function avatarFor(p: Patron): string {
 	return p.xAvatarUrl || `https://unavatar.io/twitter/${p.xHandle}`;
 }
 
-// $DEMO is a static showcase — no real claim flow. Suppress the connect-x
+// $DEMO is a static showcase: no real claim flow. Suppress the connect-x
 // and claim-patron CTAs so the page reads as a curated demo, not as if the
 // viewer can become a patron.
 const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";

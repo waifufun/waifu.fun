@@ -44,7 +44,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 					{agent.description || "no description."}
 				</p>
 
-				{/* runtime microcopy — brain + last action */}
+				{/* runtime microcopy: brain + last action */}
 				<div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase tracking-[0.14em] text-white/30">
 					<span className="inline-flex items-center gap-1 min-w-0 truncate">
 						<Brain className="w-2.5 h-2.5 shrink-0" strokeWidth={1.5} />

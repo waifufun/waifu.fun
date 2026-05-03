@@ -15,7 +15,7 @@ export default function NotFound() {
 
 					<div className="flex flex-col items-center gap-6">
 						<div className="flex flex-col items-center gap-3">
-							<div className="text-[#00ff87] text-2xl font-bold capitalize">404 — waifu not found</div>
+							<div className="text-[#00ff87] text-2xl font-bold capitalize">404 · waifu not found</div>
 							<div className="text-[#a1a1aa] text-base leading-relaxed">
 								Looks like this waifu has gone missing. Navigate back to waifu.fun and continue where the real action
 								happens.

@@ -7,7 +7,7 @@
  * True when prerendering for production (`next build`). This app uses `output: "export"`, so
  * builds must enumerate dynamic segments. `next dev` stays false so local dev does not fan out
  * to the API. `scripts/static-export-build.mjs` sets STATIC_EXPORT for clarity, but some Next
- * workers do not inherit it — NODE_ENV is reliable.
+ * workers do not inherit it: NODE_ENV is reliable.
  */
 export function isStaticExport(): boolean {
 	return process.env.NODE_ENV === "production";

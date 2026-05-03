@@ -25,12 +25,12 @@
 		"launchAgent": "launch agent"
 	},
 	"layout": {
-		"devnetBanner": "— this is a development environment connected to testnet. nothing here is real.",
+		"devnetBanner": "this is a development environment connected to testnet. nothing here is real.",
 		"devnet": "devnet"
 	},
 	"home": {
 		"noAgentsFound": "no agents found",
-		"checkBackSoon": "check back soon — new agents are launching",
+		"checkBackSoon": "check back soon. new agents are launching",
 		"exploreAgents": "explore agents"
 	},
 	"hero": {
@@ -157,7 +157,7 @@
 	"owner": {
 		"console": "owner console",
 		"claimRuntime": "claim + runtime",
-		"honestAccessNote": "Honest owner access only. No mocked runtime stats — this panel reads the protected owner/control-plane routes when your wallet is eligible.",
+		"honestAccessNote": "Honest owner access only. No mocked runtime stats. This panel reads the protected owner/control-plane routes when your wallet is eligible.",
 		"refresh": "refresh",
 		"claimState": "claim state",
 		"creatorWallet": "creator wallet",
