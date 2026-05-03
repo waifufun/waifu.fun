@@ -1,19 +1,19 @@
-# waifu.fun Brand Assets — Final Package
+# waifu.fun Brand Assets: Final Package
 
 ## Locked Assets
 
 ### Icon
-- **Source**: `icon_only_02` — anime girl silhouette, neon green, magenta glitch, floating (no container)
+- **Source**: `icon_only_02`. Anime girl silhouette, neon green, magenta glitch, floating (no container)
 - **Transparent**: `icon/icon_*.png` (1024, 512, 256, 128, 64px)
 - **On black**: `icon/icon_on_black_*.png` (for app icon / pfp contexts)
 
-### Lockup — WAIFU.FUN
-- **Source**: `waifufun_01` — icon left, bold text right, chromatic aberration
+### Lockup: WAIFU.FUN
+- **Source**: `waifufun_01`. Icon left, bold text right, chromatic aberration
 - **Transparent**: `lockup/lockup_waifufun_*.png` (1920, 1024, 512, 256px)
 - **On black**: `lockup/lockup_waifufun_on_black_*.png`
 
-### Lockup — WAIFU
-- **Source**: `waifu_03` — icon left, bold text right, chromatic aberration  
+### Lockup: WAIFU
+- **Source**: `waifu_03`. Icon left, bold text right, chromatic aberration  
 - **Transparent**: `lockup/lockup_waifu_*.png` (1920, 1024, 512, 256px)
 - **On black**: `lockup/lockup_waifu_on_black_*.png`
 
@@ -32,7 +32,7 @@
 - For code-rendered text fallback: Orbitron (primary), Audiowide (secondary)
 
 ## Usage Guidelines
-- **Dark backgrounds only** — these assets are designed for dark mode
+- **Dark backgrounds only**. These assets are designed for dark mode
 - **Icon only** for small contexts (favicon, mobile nav, Discord pfp)
 - **WAIFU lockup** for navbar / header
 - **WAIFU.FUN lockup** for marketing / landing page / social banners

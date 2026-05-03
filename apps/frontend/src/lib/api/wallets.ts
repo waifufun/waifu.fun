@@ -27,7 +27,7 @@ type NonceResponse = { ok?: true; nonce: string; expiresInSeconds: number };
 type BindResponse = { ok: true; address: string; chainId: number };
 
 /**
- * GET /v2/auth/siwe/wallets — list every wallet bound to the current patron.
+ * GET /v2/auth/siwe/wallets: list every wallet bound to the current patron.
  *
  * Throws ApiError on non-2xx. Caller should surface 401 as "sign in first".
  */
@@ -37,7 +37,7 @@ export async function listWallets(): Promise<PatronWallet[]> {
 }
 
 /**
- * POST /v2/auth/siwe/nonce — request a single-use nonce to embed in the
+ * POST /v2/auth/siwe/nonce: request a single-use nonce to embed in the
  * SIWE message before the user signs it. Nonce is tied to the patron's
  * session server-side and expires in ~10 minutes.
  */
@@ -49,7 +49,7 @@ export async function getNonce(address: string): Promise<NonceResponse> {
 }
 
 /**
- * POST /v2/auth/siwe/bind — submit a signed SIWE message. Backend verifies
+ * POST /v2/auth/siwe/bind: submit a signed SIWE message. Backend verifies
  * the signature, consumes the nonce, then inserts (or upgrades) a row in
  * `patron_wallets` for the current patron.
  *
@@ -68,7 +68,7 @@ export async function bindWallet(input: {
 }
 
 /**
- * DELETE /v2/auth/siwe/wallets/:address — unlink a wallet from the patron.
+ * DELETE /v2/auth/siwe/wallets/:address: unlink a wallet from the patron.
  *
  * Caller is responsible for confirming destructive intent. Agents owned by
  * the unlinked wallet become inaccessible until rebound.
@@ -80,7 +80,7 @@ export async function unlinkWallet(address: string): Promise<void> {
 }
 
 /**
- * POST /v2/auth/siwe/wallets/:address/primary — promote `address` to be the
+ * POST /v2/auth/siwe/wallets/:address/primary: promote `address` to be the
  * patron's primary wallet (used by default for new launches).
  */
 export async function setPrimaryWallet(address: string): Promise<void> {

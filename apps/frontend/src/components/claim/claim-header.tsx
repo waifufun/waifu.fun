@@ -15,7 +15,7 @@ import { usePatronAuth } from "@/contexts/auth-context";
  *     visual confirmation that the OAuth round-trip succeeded without
  *     requiring the user to scroll or guess.
  *
- * The pill is read-only on purpose — the claim page has its own flow
+ * The pill is read-only on purpose: the claim page has its own flow
  * for managing claim attribution; the actual X connect/disconnect
  * controls live on the global header elsewhere.
  */

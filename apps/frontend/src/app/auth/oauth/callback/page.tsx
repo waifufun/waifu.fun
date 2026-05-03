@@ -38,7 +38,7 @@ function CallbackInner() {
 				? new URLSearchParams(window.location.hash.slice(1))
 				: new URLSearchParams();
 		const token = params.get("token") ?? hashParams.get("token");
-		// Steward emits `?token=&refreshToken=` — it does NOT echo our state.
+		// Steward emits `?token=&refreshToken=`: it does NOT echo our state.
 		const refreshToken = params.get("refreshToken") ?? hashParams.get("refreshToken");
 		const errorParam = params.get("error") ?? hashParams.get("error");
 		const errorDescription = params.get("error_description") ?? hashParams.get("error_description");

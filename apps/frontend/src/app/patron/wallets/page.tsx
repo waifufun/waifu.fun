@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { WalletsPanelLoader } from "./wallets-panel-loader";
 
 export const metadata: Metadata = {
-	title: "wallets — waifu.fun",
+	title: "wallets · waifu.fun",
 	description: "Link wallets to your patron account. Each wallet can own agents independently.",
 };
 

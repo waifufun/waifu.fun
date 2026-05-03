@@ -227,7 +227,7 @@ function deriveRunway({
 	}
 	// treasury balance is denominated in BNB; without a bnb→usd price from the
 	// backend we can't convert. Surface runway as "bnb / day of burn" when the
-	// backend ships only dailyBurnUsd, otherwise show "— days · runway unknown".
+	// backend ships only dailyBurnUsd, otherwise show the dash placeholder with `runway unknown`.
 	// This component stays honest rather than inventing a price feed.
 	return { value: "—", hint: "runway unknown" };
 }

@@ -16,7 +16,7 @@ type Props = {
 	ticker?: string | null;
 	/** Initial stage when the overlay opens (set by parent after the authorize POST). */
 	initialStage?: Stage;
-	/** Forced error message — overrides server state when provided (e.g. local fetch error). */
+	/** Forced error message: overrides server state when provided (e.g. local fetch error). */
 	errorOverride?: string | null;
 	onClose: () => void;
 	/** Called once the launch is `live`. Parent handles the redirect. */
@@ -204,7 +204,7 @@ export default function LaunchProgress({
 		});
 	}, [stage, launch?.status]);
 
-	// Backdrop motion variants — quick fade only.
+	// Backdrop motion variants: quick fade only.
 	return (
 		<AnimatePresence>
 			{open ? (
@@ -228,7 +228,7 @@ export default function LaunchProgress({
 						exit={{ opacity: 0 }}
 					/>
 
-					{/* Live celebration — overlay sits on top of the stage list when `live`. */}
+					{/* Live celebration: overlay sits on top of the stage list when `live`. */}
 					<AnimatePresence>
 						{stage === "live" && launch ? (
 							<motion.div
@@ -258,7 +258,7 @@ export default function LaunchProgress({
 								exit={{ y: -8, opacity: 0 }}
 								transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
 							>
-								{/* Subtle ambient — no neon */}
+								{/* Subtle ambient: no neon */}
 								<div
 									aria-hidden="true"
 									className={cn(

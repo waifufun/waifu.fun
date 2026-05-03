@@ -148,7 +148,7 @@ export function useStewardStatus() {
 			try {
 				await apiFetch<unknown>("/v2/patron/steward/link", { method: "DELETE" });
 			} catch (err) {
-				// 404 still counts as success in fallback mode — we just clear local.
+				// 404 still counts as success in fallback mode: we just clear local.
 				if (!(isApiError(err) && (err as ApiError).status === 404)) {
 					if (isApiError(err)) {
 						throw new Error(`steward.unlink failed (${(err as ApiError).status})`);

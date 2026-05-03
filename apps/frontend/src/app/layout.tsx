@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Audiowide, Orbitron } from "next/font/google";
 import Providers from "./providers";
 
-// Moving gradient background (performance-heavy) — uncomment to re-enable
+// Moving gradient background (performance-heavy): uncomment to re-enable
 // import InteractiveBackground from "@/components/InteractiveBackground";
 import StaticBackground from "@/components/StaticBackground";
 import DevnetBanner from "@/components/devnet-banner";
@@ -77,7 +77,7 @@ export default function RootLayout({
 				<Providers>
 					{/* Static layer prevents white flash when InteractiveBackground is off */}
 					<StaticBackground />
-					{/* Moving gradient background — uncomment to re-enable */}
+					{/* Moving gradient background: uncomment to re-enable */}
 					{/* <InteractiveBackground /> */}
 					<GrainOverlay />
 					<div className="relative z-10 flex flex-col min-h-[100dvh]">

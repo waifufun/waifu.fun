@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "./_fetcher";
 
 /**
- * W5.7 — Admin (kill-switch) API client.
+ * W5.7: Admin (kill-switch) API client.
  *
  * Surfaces the W1.8 admin routes:
  *   POST /v2/admin/agents/:id/pause-brain
@@ -80,7 +80,7 @@ export function clearAdminToken(): void {
 }
 
 function adminHeaders(token: string | null): Record<string, string> {
-	// Admin operator token always wins over the Steward JWT module-global —
+	// Admin operator token always wins over the Steward JWT module-global.
 	// apiFetch preserves an explicit Authorization header set in init.headers.
 	const headers: Record<string, string> = {};
 	if (token) headers.Authorization = `Bearer ${token}`;

@@ -123,10 +123,10 @@ export default function PageClient({
 						headerAccessory={<ViewModeToggle value={viewMode} onChange={handleViewModeChange} />}
 					/>
 
-					{/* Market Ribbon — quiet secondary metrics */}
+					{/* Market Ribbon: quiet secondary metrics */}
 					<MarketRibbon token={displayToken} marketDataSource={marketDataSource} />
 
-					{/* Main content grid — wider left, narrower sidebar */}
+					{/* Main content grid: wider left, narrower sidebar */}
 					<div className="grid gap-8 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_340px]">
 						{/* Left: Agent context */}
 						<div className="flex flex-col gap-8 min-w-0">
@@ -139,7 +139,7 @@ export default function PageClient({
 								<AgentInfo token={displayToken} />
 							</motion.div>
 
-							{/* Runtime economics — only renders if data exists */}
+							{/* Runtime economics: only renders if data exists */}
 							<RuntimeEconomicsCard token={displayToken} />
 
 							{/* Activity tabs */}
@@ -178,7 +178,7 @@ export default function PageClient({
 								</motion.div>
 							)}
 
-							{/* Operations panel — creator only */}
+							{/* Operations panel: creator only */}
 							{isCreator && (
 								<motion.div
 									initial={{ opacity: 0, y: 8 }}

@@ -38,7 +38,7 @@ const PRESET_FRACTION: Record<Preset, number> = {
  *
  * Thin wrapper over the existing wagmi/viem helper. Returns BNB as a number
  * (already formatted). Returns `null` when the address is missing or the
- * RPC call hasn't resolved yet — callers render a `—` placeholder.
+ * RPC call hasn't resolved yet: callers render a `—` placeholder.
  */
 export function useSafeBalance(safeAddress: string | null | undefined) {
 	const { data, isLoading, error, refetch } = useBalance({
@@ -98,7 +98,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 			? "First buy can't exceed Safe balance"
 			: null;
 
-	// Empty Safe state — balance read succeeded and equals 0.
+	// Empty Safe state: balance read succeeded and equals 0.
 	const isEmptySafe = !balanceLoading && balanceError == null && balance != null && balance === 0;
 
 	const canLaunch = parsed.ok && !exceedsBalance && !isLaunching && Boolean(safeAddress) && !isEmptySafe;
@@ -128,7 +128,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1500);
 		} catch {
-			// non-secure context — silent
+			// non-secure context: silent
 		}
 	};
 
@@ -143,7 +143,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 	};
 
 	// Show the mobile sticky launch button when the in-card button leaves
-	// the viewport. IntersectionObserver — no scroll listeners.
+	// the viewport. IntersectionObserver: no scroll listeners.
 	useEffect(() => {
 		const el = launchSentinelRef.current;
 		if (!el || typeof IntersectionObserver === "undefined") return;
@@ -159,7 +159,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 		return () => io.disconnect();
 	}, []);
 
-	// Empty Safe — render a focused funding state instead of the form.
+	// Empty Safe: render a focused funding state instead of the form.
 	if (isEmptySafe) {
 		return (
 			<section aria-label="Fund Safe" className="relative rounded-sm border border-stroke-strong bg-[#0C0C0C]">
@@ -408,7 +408,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 				</div>
 			</section>
 
-			{/* Mobile sticky launch button — appears when the in-card button is off-screen. */}
+			{/* Mobile sticky launch button: appears when the in-card button is off-screen. */}
 			<div
 				aria-hidden={!stickyVisible}
 				className={cn(

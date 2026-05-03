@@ -43,7 +43,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 			aria-label="Agent ready to launch"
 			className="relative overflow-hidden rounded-sm border border-stroke bg-[#0A0A0A]"
 		>
-			{/* subtle ambient glow — calm, not neon */}
+			{/* subtle ambient glow: calm, not neon */}
 			<div
 				aria-hidden="true"
 				className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-accent/[0.04] blur-3xl"

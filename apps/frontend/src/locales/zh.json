@@ -25,12 +25,12 @@
 		"launchAgent": "发布代理"
 	},
 	"layout": {
-		"devnetBanner": "— 这是连接测试网的开发环境，内容均非真实。",
+		"devnetBanner": "这是连接测试网的开发环境，内容均非真实。",
 		"devnet": "测试网"
 	},
 	"home": {
 		"noAgentsFound": "暂无代理",
-		"checkBackSoon": "敬请期待 — 新代理即将上线",
+		"checkBackSoon": "敬请期待。新代理即将上线",
 		"exploreAgents": "探索代理"
 	},
 	"hero": {
@@ -156,7 +156,7 @@
 	"owner": {
 		"console": "所有者控制台",
 		"claimRuntime": "认领 + 运行时",
-		"honestAccessNote": "仅限真实所有者访问。无模拟运行时数据 — 当您的钱包符合条件时，本面板会读取受保护的所有者/控制面路由。",
+		"honestAccessNote": "仅限真实所有者访问。无模拟运行时数据。当您的钱包符合条件时，本面板会读取受保护的所有者/控制面路由。",
 		"refresh": "刷新",
 		"claimState": "认领状态",
 		"creatorWallet": "创作者钱包",

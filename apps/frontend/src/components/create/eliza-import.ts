@@ -98,7 +98,7 @@ function buildPersonaPrompt(record: Record<string, unknown>): string {
 
 /**
  * Parse a raw character JSON string into a wizard persona patch.
- * Never throws — returns a typed error result on bad input.
+ * Never throws: returns a typed error result on bad input.
  */
 export function parseElizaCharacter(input: string): ElizaImportResult {
 	const trimmed = input.trim();

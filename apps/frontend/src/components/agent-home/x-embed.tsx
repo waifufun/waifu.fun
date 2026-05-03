@@ -28,7 +28,7 @@ type XStatus =
  *  - not_connected + viewer is patron → "connect x" CTA
  *  - not_connected + anon → quiet empty state
  *
- * Endpoint /v2/agents/:id/x ships in W1.6 — 404 collapses to "unavailable"
+ * Endpoint /v2/agents/:id/x ships in W1.6: 404 collapses to "unavailable"
  * which renders the same empty state as "not connected" (honest, no crash).
  */
 export default function XEmbed({
