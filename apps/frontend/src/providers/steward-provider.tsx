@@ -95,7 +95,12 @@ export const WaifuStewardProvider: FC<WaifuStewardProviderProps> = ({ children }
 		<BaseStewardProvider
 			client={client}
 			agentId={STEWARD_AGENT_ID}
-			auth={{ baseUrl: STEWARD_API_URL, tenantId: STEWARD_TENANT_ID }}
+			// `tenantId` is accepted by the SDK's StewardAuthConfig at runtime
+			// (used to set X-Steward-Tenant on SIWE requests) but @stwd/react
+			// 0.7.2's local type re-export omits it. Cast through to satisfy
+			// TS until we move to ^0.8.x. Without this, wallet sign-in lands
+			// in the default tenant and /api/auth/finalize rejects the JWT.
+			auth={{ baseUrl: STEWARD_API_URL, tenantId: STEWARD_TENANT_ID } as { baseUrl: string }}
 			tenantId={STEWARD_TENANT_ID}
 			theme={BRAND_THEME}
 			features={{
