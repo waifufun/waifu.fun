@@ -95,7 +95,7 @@ export const WaifuStewardProvider: FC<WaifuStewardProviderProps> = ({ children }
 		<BaseStewardProvider
 			client={client}
 			agentId={STEWARD_AGENT_ID}
-			auth={{ baseUrl: STEWARD_API_URL }}
+			auth={{ baseUrl: STEWARD_API_URL, tenantId: STEWARD_TENANT_ID }}
 			tenantId={STEWARD_TENANT_ID}
 			theme={BRAND_THEME}
 			features={{
