@@ -20,11 +20,13 @@ const StewardProviderLazy = dynamic(
 // from accessing `indexedDB` during SSR/static generation
 const EvmProvider = dynamic(() => import("@/providers/evm-provider").then((mod) => mod.EvmProvider), { ssr: false });
 
-// Solana wallet adapters touch window/localStorage at module init, so keep
-// them client-only for the static-export build.
-const SolanaProvider = dynamic(() => import("@/providers/solana-provider").then((mod) => mod.SolanaProvider), {
-	ssr: false,
-});
+// NOTE: <SolanaProvider> intentionally does NOT mount here. Solana
+// wallet adapters drag in a heavy dependency tree (@solana/* + 5 wallet
+// adapter subpackages) that ~zero waifu users care about outside of
+// signing into Steward. We instead mount <SolanaProvider> directly
+// inside <StewardLoginWidget> so it only loads when the user opens the
+// login modal. EVM stays here because waifu's existing trading flow
+// uses wagmi/RainbowKit globally.
 
 const googleTagID = process.env.NEXT_PUBLIC_GOOGLE_TAG_ID || "";
 
@@ -44,18 +46,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 						shouldCompareComplexProps
 					>
 						<EvmProvider>
-							<SolanaProvider>
-								<StewardProviderLazy>
-									<ApiAuthSync />
-									<AuthProvider>
-										<AnimationProvider>
-											<TransactionListenerProvider>{children}</TransactionListenerProvider>
-											<Toaster />
-											<GoogleAnalytics gaId={googleTagID} />
-										</AnimationProvider>
-									</AuthProvider>
-								</StewardProviderLazy>
-							</SolanaProvider>
+							<StewardProviderLazy>
+								<ApiAuthSync />
+								<AuthProvider>
+									<AnimationProvider>
+										<TransactionListenerProvider>{children}</TransactionListenerProvider>
+										<Toaster />
+										<GoogleAnalytics gaId={googleTagID} />
+									</AnimationProvider>
+								</AuthProvider>
+							</StewardProviderLazy>
 						</EvmProvider>
 					</ProgressProvider>
 				</TooltipProvider>

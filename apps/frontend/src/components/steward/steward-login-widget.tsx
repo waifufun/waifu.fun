@@ -25,6 +25,15 @@ const WalletLogin = dynamic(() => import("@stwd/react/wallet").then((mod) => ({ 
 	),
 });
 
+// SolanaProvider is mounted lazily here (instead of at the app root)
+// so the heavy @solana/* + wallet-adapter dep tree never resolves
+// for users who don't open the login modal. EVM provider already
+// lives at the app root because waifu's trading UI needs it globally.
+const SolanaProvider = dynamic(
+	() => import("@/providers/solana-provider").then((mod) => ({ default: mod.SolanaProvider })),
+	{ ssr: false },
+);
+
 interface StewardLoginWidgetProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -446,15 +455,17 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 					</div>
 
 					<div data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
-						<WalletLogin
-							chains="both"
-							onSuccess={(result, kind) => {
-								void handleWalletSuccess(result, kind);
-							}}
-							onError={handleWalletError}
-							evmLabel="ethereum"
-							solanaLabel="solana"
-						/>
+						<SolanaProvider>
+							<WalletLogin
+								chains="both"
+								onSuccess={(result, kind) => {
+									void handleWalletSuccess(result, kind);
+								}}
+								onError={handleWalletError}
+								evmLabel="ethereum"
+								solanaLabel="solana"
+							/>
+						</SolanaProvider>
 					</div>
 					{walletPhase === "finalizing" ? (
 						<output className="mt-2 flex items-center gap-2 text-xs text-[#a1a1aa] font-mono" aria-live="polite">
