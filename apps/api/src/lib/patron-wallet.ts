@@ -56,7 +56,6 @@ export function pickPrimaryWallet(
 ): PatronPrimaryWallet | null {
 	const authMethodChain = chainFromAuthMethod(principal.authMethod);
 	const walletChain = preferredChain ?? authMethodChain;
-	const direct = inferWalletFromAddress(principal.address, walletChain);
 	const wallets = (principal.wallets ?? [])
 		.map((wallet) => {
 			const chain = normalizeWalletChain(wallet.chainNamespace);
@@ -66,12 +65,22 @@ export function pickPrimaryWallet(
 		})
 		.filter((wallet): wallet is PatronPrimaryWallet => wallet !== null);
 
-	if (direct) return direct;
+	// When a chain is requested or implied by the auth method, honor it.
+	// Order:
+	//   1. Wallet from `wallets[]` matching the requested chain (most specific).
+	//   2. principal.address if it parses as the requested chain.
+	//   3. Any wallet at all in `wallets[]`.
+	//   4. principal.address inferred without a preferred chain.
+	// This avoids returning the EVM principal.address when the user signed
+	// in with Solana and both addresses are present in the JWT.
 	if (walletChain) {
-		const wallet = wallets.find((item) => item.chain === walletChain);
-		if (wallet) return wallet;
+		const preferred = wallets.find((item) => item.chain === walletChain);
+		if (preferred) return preferred;
+		const directOnPreferred = inferWalletFromAddress(principal.address, walletChain);
+		if (directOnPreferred && directOnPreferred.chain === walletChain) return directOnPreferred;
 	}
-	return wallets[0] ?? null;
+	if (wallets.length > 0) return wallets[0]!;
+	return inferWalletFromAddress(principal.address, walletChain);
 }
 
 export async function ensurePrimaryPatronWallet(
