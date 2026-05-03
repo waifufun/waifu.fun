@@ -4,8 +4,31 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
+import type { StewardAuthResult } from "@stwd/sdk";
 import { CheckCircle2, Fingerprint, Loader2, Mail } from "lucide-react";
+import dynamic from "next/dynamic";
 import { type FormEvent, type ReactNode, useCallback, useMemo, useState } from "react";
+
+// Lazy: keeps wagmi + @solana/* peers off the initial bundle until
+// the login modal is opened.
+//
+// NOTE: We patch @stwd/react@0.7.2's package.json to add a `default`
+// export condition (see patches/@stwd%2Freact@0.7.2.patch) because
+// Next 15.3.9 + Webpack rejects the 0.7.2 `"./wallet"` map when only
+// `import` is set. Patch can be removed once we move to ^0.8.0 here.
+const WalletLogin = dynamic(() => import("@stwd/react/wallet").then((mod) => ({ default: mod.WalletLogin })), {
+	ssr: false,
+	loading: () => (
+		<div
+			className="flex items-center justify-center rounded-sm border border-white/10 bg-[#0b0b0d] py-6 text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]"
+			data-testid="wallet-login-loading"
+		>
+			loading wallet sign-in
+		</div>
+	),
+});
+
+type WalletPhase = "idle" | "finalizing" | "error";
 
 interface ConnectModalProps {
 	open: boolean;
@@ -81,6 +104,14 @@ function validEmail(email: string): boolean {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Reject protocol-relative redirects (//evil.com, /\evil.com).
+function isSafeRelativePath(raw: string | null | undefined): raw is string {
+	if (!raw || raw.length > 200) return false;
+	if (!raw.startsWith("/")) return false;
+	if (raw.startsWith("//") || raw.startsWith("/\\")) return false;
+	return true;
+}
+
 export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps) {
 	const { isAuthenticated } = useWaifuAuth();
 	const [email, setEmail] = useState("");
@@ -88,9 +119,11 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 	const [emailError, setEmailError] = useState<string | null>(null);
 	const [passkeyPhase, setPasskeyPhase] = useState<PasskeyPhase>("idle");
 	const [passkeyError, setPasskeyError] = useState<string | null>(null);
+	const [walletPhase, setWalletPhase] = useState<WalletPhase>("idle");
+	const [walletError, setWalletError] = useState<string | null>(null);
 
 	const resolvedReturnTo = useMemo(() => {
-		if (returnTo) return returnTo;
+		if (isSafeRelativePath(returnTo)) return returnTo;
 		if (typeof window === "undefined") return "/";
 		return window.location.pathname + window.location.search;
 	}, [returnTo]);
@@ -174,6 +207,43 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 		}
 	}, [assignAfterAuth, email, resolvedReturnTo]);
 
+	const handleWalletSuccess = useCallback(
+		async (result: StewardAuthResult, kind: "evm" | "solana") => {
+			setWalletPhase("finalizing");
+			setWalletError(null);
+			try {
+				const res = await fetch("/api/auth/finalize", {
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						provider: "oauth",
+						token: result.token,
+						refreshToken: result.refreshToken,
+					}),
+				});
+				if (!res.ok) {
+					const body = (await res.json().catch(() => null)) as {
+						error?: string;
+						message?: string;
+					} | null;
+					throw new Error(body?.message ?? body?.error ?? `http ${res.status}`);
+				}
+				onOpenChange(false);
+				assignAfterAuth(resolvedReturnTo);
+			} catch (err) {
+				setWalletPhase("error");
+				setWalletError(err instanceof Error ? `${kind} sign-in failed: ${err.message}` : `${kind} sign-in failed`);
+			}
+		},
+		[assignAfterAuth, onOpenChange, resolvedReturnTo],
+	);
+
+	const handleWalletError = useCallback((err: Error, kind: "evm" | "solana") => {
+		setWalletPhase("error");
+		setWalletError(`${kind} sign-in failed: ${err.message}`);
+	}, []);
+
 	if (isAuthenticated) return null;
 
 	return (
@@ -187,7 +257,7 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 					</DialogDescription>
 				</DialogHeader>
 				<Tabs defaultValue="passkey" className="px-6 pb-6 pt-5">
-					<TabsList className="grid grid-cols-3 gap-1">
+					<TabsList className="grid grid-cols-4 gap-1">
 						<TabsTrigger value="passkey" className="text-xs">
 							passkey
 						</TabsTrigger>
@@ -196,6 +266,9 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 						</TabsTrigger>
 						<TabsTrigger value="oauth" className="text-xs">
 							oauth
+						</TabsTrigger>
+						<TabsTrigger value="wallet" className="text-xs">
+							wallet
 						</TabsTrigger>
 					</TabsList>
 
@@ -291,6 +364,38 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 						</div>
 						<p className="mt-4 text-center text-[11px] text-[#71717a]">
 							pick your usual. we use steward to keep your sessions safe.
+						</p>
+					</TabsContent>
+
+					<TabsContent value="wallet" className="pt-5">
+						<div data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
+							{/* EVM only for now. Solana sign-in completes against Steward but
+							waifu's /v3/patron/me only recognizes 0x EVM primary addresses
+							(useWaifuAuth + requirePatron). Will flip to chains="both" once
+							the patron model accepts Solana pubkeys. */}
+							<WalletLogin
+								chains="evm"
+								onSuccess={(result, kind) => {
+									void handleWalletSuccess(result, kind);
+								}}
+								onError={handleWalletError}
+								evmLabel="ethereum"
+							/>
+						</div>
+						{walletPhase === "finalizing" ? (
+							<output
+								className="mt-3 flex items-center justify-center gap-2 text-xs text-[#a1a1aa] font-mono"
+								aria-live="polite"
+							>
+								<Loader2 className="size-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
+								<span>finalizing session</span>
+							</output>
+						) : null}
+						{walletPhase === "error" && walletError ? (
+							<p className="mt-3 text-center text-xs text-[#f87171]">{walletError}</p>
+						) : null}
+						<p className="mt-3 text-center text-[11px] text-[#71717a]">
+							connect a wallet, sign the message, you're in.
 						</p>
 					</TabsContent>
 				</Tabs>

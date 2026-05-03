@@ -87,5 +87,8 @@
 	"overrides": {
 		"graphql-ws": "^6.0.8"
 	},
-	"workspaces": ["apps/*", "packages/*", "packages/contracts-solana/*"]
+	"workspaces": ["apps/*", "packages/*", "packages/contracts-solana/*"],
+	"patchedDependencies": {
+		"@stwd/react@0.7.2": "patches/@stwd%2Freact@0.7.2.patch"
+	}
 }
