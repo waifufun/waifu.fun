@@ -603,6 +603,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@stwd/react@0.7.2": "patches/@stwd%2Freact@0.7.2.patch",
+  },
   "overrides": {
     "graphql-ws": "^6.0.8",
   },

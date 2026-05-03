@@ -24,7 +24,7 @@ const EvmProvider = dynamic(() => import("@/providers/evm-provider").then((mod) 
 // wallet adapters drag in a heavy dependency tree (@solana/* + 5 wallet
 // adapter subpackages) that ~zero waifu users care about outside of
 // signing into Steward. We instead mount <SolanaProvider> directly
-// inside <StewardLoginWidget> so it only loads when the user opens the
+// inside <ConnectModal> so it only loads when the user opens the
 // login modal. EVM stays here because waifu's existing trading flow
 // uses wagmi/RainbowKit globally.
 

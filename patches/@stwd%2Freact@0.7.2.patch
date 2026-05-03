@@ -1,0 +1,20 @@
+diff --git a/package.json b/package.json
+index 999320aa5068d66488509543d1f8d60092da27a1..9da605786898f9915c90619fd89069be5972d00d 100644
+--- a/package.json
++++ b/package.json
+@@ -8,11 +8,13 @@
+   "exports": {
+     ".": {
+       "types": "./dist/index.d.ts",
+-      "import": "./dist/index.js"
++      "import": "./dist/index.js",
++      "default": "./dist/index.js"
+     },
+     "./wallet": {
+       "types": "./dist/wallet.d.ts",
+-      "import": "./dist/wallet.js"
++      "import": "./dist/wallet.js",
++      "default": "./dist/wallet.js"
+     },
+     "./styles.css": "./dist/styles.css"
+   },

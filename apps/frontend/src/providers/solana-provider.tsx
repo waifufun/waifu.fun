@@ -7,7 +7,7 @@ import type { FC, ReactNode } from "react";
  * Solana wallet adapter wrapper for waifu.fun.
  *
  * Mounts @stwd/react's curated SolanaWalletProvider so the embedded
- * <WalletLogin chains="solana"> panel inside <StewardLoginWidget> can
+ * <WalletLogin chains="solana"> panel inside <ConnectModal> can
  * connect Phantom / Solflare and complete a SIWS handshake against
  * Steward.
  *
