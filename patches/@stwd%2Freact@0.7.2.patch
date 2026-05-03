@@ -1,3 +1,33 @@
+diff --git a/node_modules/@stwd/react/.bun-tag-6f414bbc36251b4b b/.bun-tag-6f414bbc36251b4b
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/provider.js b/dist/provider.js
+index e627a30da72e71998818cf159c9fa25a1185f35d..82ef39d54e9be199e90dc895732326cffe35c644 100644
+--- a/dist/provider.js
++++ b/dist/provider.js
+@@ -36,8 +36,9 @@ export function StewardProvider({ client, agentId, features: featureOverrides, t
+         return new StewardAuth({
+             baseUrl: authConfig.baseUrl,
+             storage: authConfig.storage,
++            tenantId: authConfig.tenantId,
+         });
+-    }, [authConfig?.baseUrl, authConfig?.storage, authConfig]);
++    }, [authConfig?.baseUrl, authConfig?.storage, authConfig?.tenantId, authConfig]);
+     const [authSession, setAuthSession] = useState(null);
+     const [authLoading, setAuthLoading] = useState(false);
+     const [authInitialized, setAuthInitialized] = useState(false);
+diff --git a/dist/types.d.ts b/dist/types.d.ts
+index 348f96f63a638603d7a24b9e8cc55ed09393c856..a76a03ce8ee98f6eacb2a20d5febd8988e714066 100644
+--- a/dist/types.d.ts
++++ b/dist/types.d.ts
+@@ -225,6 +225,7 @@ export type { SessionStorage, StewardProviders as StewardProvidersState, Steward
+ export interface StewardAuthConfig {
+     baseUrl: string;
+     storage?: import("@stwd/sdk").SessionStorage;
++    tenantId?: string;
+ }
+ export interface StewardAuthContextValue {
+     isAuthenticated: boolean;
 diff --git a/package.json b/package.json
 index 999320aa5068d66488509543d1f8d60092da27a1..9da605786898f9915c90619fd89069be5972d00d 100644
 --- a/package.json
