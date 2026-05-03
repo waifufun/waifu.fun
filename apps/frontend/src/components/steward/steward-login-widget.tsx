@@ -4,10 +4,26 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
+import type { StewardAuthResult } from "@stwd/sdk";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Fingerprint, Loader2, Mail } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useCallback, useMemo, useState } from "react";
+
+// Lazy: keeps wagmi + @solana/* peers off the initial bundle until the
+// login modal opens. WalletLogin lives at the @stwd/react/wallet subpath.
+const WalletLogin = dynamic(() => import("@stwd/react/wallet").then((mod) => ({ default: mod.WalletLogin })), {
+	ssr: false,
+	loading: () => (
+		<div
+			className="flex items-center justify-center rounded-sm border border-white/10 bg-[#0b0b0d] py-6 text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]"
+			data-testid="wallet-login-loading"
+		>
+			loading wallet sign-in
+		</div>
+	),
+});
 
 interface StewardLoginWidgetProps {
 	open: boolean;
@@ -45,6 +61,7 @@ type ProviderId = "google" | "github" | "twitter";
 
 type EmailPhase = "idle" | "submitting" | "sent" | "error";
 type PasskeyPhase = "idle" | "prompting" | "registering" | "error";
+type WalletPhase = "idle" | "finalizing" | "error";
 
 type ProviderTile = {
 	id: ProviderId;
@@ -70,6 +87,8 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 	const [passkeyPhase, setPasskeyPhase] = useState<PasskeyPhase>("idle");
 	const [passkeyError, setPasskeyError] = useState<string | null>(null);
 	const [passkeyNotice, setPasskeyNotice] = useState<string | null>(null);
+	const [walletPhase, setWalletPhase] = useState<WalletPhase>("idle");
+	const [walletError, setWalletError] = useState<string | null>(null);
 
 	// Resolve return_to: explicit prop > URL param > current pathname > /patron
 	const resolvedReturnTo = useMemo(() => {
@@ -196,6 +215,52 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 			setPasskeyError(err instanceof Error ? err.message : "passkey failed");
 		}
 	}, [email, resolvedReturnTo, onOpenChange, router]);
+
+	const handleWalletSuccess = useCallback(
+		async (result: StewardAuthResult, kind: "evm" | "solana") => {
+			setWalletPhase("finalizing");
+			setWalletError(null);
+			try {
+				// Mirror /auth/oauth/callback: hand the freshly-minted Steward JWT
+				// to our same-origin finalize route so wf_session is bound under
+				// .waifu.fun (avoids cross-origin cookie storage failures).
+				const res = await fetch("/api/auth/finalize", {
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						provider: "oauth",
+						token: result.token,
+						refreshToken: result.refreshToken,
+					}),
+				});
+				if (!res.ok) {
+					const body = (await res.json().catch(() => null)) as {
+						error?: string;
+						message?: string;
+					} | null;
+					throw new Error(body?.message ?? body?.error ?? `http ${res.status}`);
+				}
+				onOpenChange(false);
+				// Full-page nav so the freshly-set wf_session cookie is sent on
+				// the next request and middleware sees the patron as authed.
+				if (typeof window !== "undefined") {
+					window.location.assign(resolvedReturnTo);
+				} else {
+					router.replace(resolvedReturnTo);
+				}
+			} catch (err) {
+				setWalletPhase("error");
+				setWalletError(err instanceof Error ? `${kind} sign-in failed: ${err.message}` : `${kind} sign-in failed`);
+			}
+		},
+		[onOpenChange, resolvedReturnTo, router],
+	);
+
+	const handleWalletError = useCallback((err: Error, kind: "evm" | "solana") => {
+		setWalletPhase("error");
+		setWalletError(`${kind} sign-in failed: ${err.message}`);
+	}, []);
 
 	if (isAuthenticated) {
 		return null;
@@ -370,6 +435,38 @@ export function StewardLoginWidget({ open, onOpenChange, returnTo }: StewardLogi
 							</motion.li>
 						))}
 					</ul>
+
+					{/* Wallet sign-in (SIWE / SIWS via Steward) */}
+					<div className="flex items-center gap-3 mt-6 mb-4" aria-hidden="true">
+						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+						<span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#71717a]">
+							or connect a wallet
+						</span>
+						<div className="flex-1 h-px bg-[rgba(255,255,255,0.08)]" />
+					</div>
+
+					<div data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
+						<WalletLogin
+							chains="both"
+							onSuccess={(result, kind) => {
+								void handleWalletSuccess(result, kind);
+							}}
+							onError={handleWalletError}
+							evmLabel="ethereum"
+							solanaLabel="solana"
+						/>
+					</div>
+					{walletPhase === "finalizing" ? (
+						<output className="mt-2 flex items-center gap-2 text-xs text-[#a1a1aa] font-mono" aria-live="polite">
+							<Loader2 className="size-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
+							<span>finalizing session</span>
+						</output>
+					) : null}
+					{walletPhase === "error" && walletError ? (
+						<p className="mt-2 text-xs text-[#f87171] font-mono" role="alert">
+							{walletError}
+						</p>
+					) : null}
 				</motion.div>
 
 				<div className="px-6 pb-6 pt-5">

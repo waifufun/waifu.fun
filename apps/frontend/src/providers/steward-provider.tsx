@@ -105,7 +105,7 @@ export const WaifuStewardProvider: FC<WaifuStewardProviderProps> = ({ children }
 				showPolicyControls: false,
 				showApprovalQueue: false,
 				showSecretManager: false,
-				enableSolana: false,
+				enableSolana: true,
 				showChainSelector: false,
 				allowAddressExport: false,
 			}}
