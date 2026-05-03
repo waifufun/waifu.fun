@@ -253,7 +253,7 @@ export default function Hero() {
 					</a>
 					<span>·</span>
 					<a
-						href="https://steward.sh"
+						href="https://steward.fi"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="transition-colors duration-200 hover:text-[#71717a]"
