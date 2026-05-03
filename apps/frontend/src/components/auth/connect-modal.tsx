@@ -28,14 +28,6 @@ const WalletLogin = dynamic(() => import("@stwd/react/wallet").then((mod) => ({ 
 	),
 });
 
-// SolanaProvider is mounted lazily here so the heavy @solana/* +
-// wallet-adapter dep tree never resolves for users who don't open
-// the login modal.
-const SolanaProvider = dynamic(
-	() => import("@/providers/solana-provider").then((mod) => ({ default: mod.SolanaProvider })),
-	{ ssr: false },
-);
-
 type WalletPhase = "idle" | "finalizing" | "error";
 
 interface ConnectModalProps {
@@ -377,17 +369,18 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 
 					<TabsContent value="wallet" className="pt-5">
 						<div data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
-							<SolanaProvider>
-								<WalletLogin
-									chains="both"
-									onSuccess={(result, kind) => {
-										void handleWalletSuccess(result, kind);
-									}}
-									onError={handleWalletError}
-									evmLabel="ethereum"
-									solanaLabel="solana"
-								/>
-							</SolanaProvider>
+							{/* EVM only for now. Solana sign-in completes against Steward but
+							waifu's /v3/patron/me only recognizes 0x EVM primary addresses
+							(useWaifuAuth + requirePatron). Will flip to chains="both" once
+							the patron model accepts Solana pubkeys. */}
+							<WalletLogin
+								chains="evm"
+								onSuccess={(result, kind) => {
+									void handleWalletSuccess(result, kind);
+								}}
+								onError={handleWalletError}
+								evmLabel="ethereum"
+							/>
 						</div>
 						{walletPhase === "finalizing" ? (
 							<output
