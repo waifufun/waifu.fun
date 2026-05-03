@@ -244,12 +244,12 @@ export default function Hero() {
 					</a>
 					<span>·</span>
 					<a
-						href="https://pancakeswap.finance"
+						href="https://elizacloud.ai"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="transition-colors duration-200 hover:text-[#71717a]"
 					>
-						pancakeswap
+						elizacloud
 					</a>
 					<span>·</span>
 					<a
