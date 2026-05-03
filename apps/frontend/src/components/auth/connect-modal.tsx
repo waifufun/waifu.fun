@@ -253,8 +253,23 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 
 	const inSubPanel = walletPanel !== null;
 
+	// Reset wallet subpanel when modal closes via Esc / overlay click /
+	// parent onOpenChange(false), so reopening lands on the main screen
+	// instead of dropping the user back into the connector list.
+	const handleOpenChange = useCallback(
+		(next: boolean) => {
+			if (!next) {
+				setWalletPanel(null);
+				setWalletPhase("idle");
+				setWalletError(null);
+			}
+			onOpenChange(next);
+		},
+		[onOpenChange],
+	);
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="max-w-[420px] border border-white/10 bg-[#08080a] p-0 rounded-none overflow-hidden">
 				{inSubPanel ? (
 					<div className="px-6 pb-6 pt-5">
