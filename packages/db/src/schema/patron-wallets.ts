@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { patronUsers } from "./patron-users.js";
 
@@ -27,6 +27,8 @@ export const patronWallets = pgTable(
 	(table) => ({
 		patronAddressUnique: uniqueIndex("patron_wallets_patron_address_unique").on(table.patronId, table.address),
 		addressUnique: uniqueIndex("patron_wallets_address_unique").on(table.address),
+		patronKindIdx: index("patron_wallets_patron_kind_idx").on(table.patronId, table.kind),
+		patronChainIdx: index("patron_wallets_patron_chain_idx").on(table.patronId, table.chainNamespace),
 	}),
 );
 

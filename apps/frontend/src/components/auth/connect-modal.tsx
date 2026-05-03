@@ -28,6 +28,10 @@ const WalletLogin = dynamic(() => import("@stwd/react/wallet").then((mod) => ({ 
 	),
 });
 
+const SolanaProvider = dynamic(() => import("@/providers/solana-provider").then((mod) => mod.SolanaProvider), {
+	ssr: false,
+});
+
 type WalletPhase = "idle" | "finalizing" | "error";
 
 interface ConnectModalProps {
@@ -370,14 +374,16 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 
 					<TabsContent value="wallet" className="pt-5">
 						<div data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
-							<WalletLogin
-								chains="both"
-								onSuccess={(result, kind) => {
-									void handleWalletSuccess(result, kind);
-								}}
-								onError={handleWalletError}
-								evmLabel="ethereum"
-							/>
+							<SolanaProvider>
+								<WalletLogin
+									chains="both"
+									onSuccess={(result, kind) => {
+										void handleWalletSuccess(result, kind);
+									}}
+									onError={handleWalletError}
+									evmLabel="ethereum"
+								/>
+							</SolanaProvider>
 						</div>
 						{walletPhase === "finalizing" ? (
 							<output
