@@ -95,7 +95,12 @@ export const WaifuStewardProvider: FC<WaifuStewardProviderProps> = ({ children }
 		<BaseStewardProvider
 			client={client}
 			agentId={STEWARD_AGENT_ID}
-			auth={{ baseUrl: STEWARD_API_URL }}
+			// tenantId forwarded to the internal StewardAuth instance so SIWE
+			// requests carry X-Steward-Tenant. Both the runtime forwarding
+			// (provider.js) and type field (types.d.ts) are added by
+			// patches/@stwd%2Freact@0.7.2.patch (bun patch). Patch can be
+			// removed when @stwd/react ^0.8.0 lands here.
+			auth={{ baseUrl: STEWARD_API_URL, tenantId: STEWARD_TENANT_ID }}
 			tenantId={STEWARD_TENANT_ID}
 			theme={BRAND_THEME}
 			features={{
@@ -105,7 +110,7 @@ export const WaifuStewardProvider: FC<WaifuStewardProviderProps> = ({ children }
 				showPolicyControls: false,
 				showApprovalQueue: false,
 				showSecretManager: false,
-				enableSolana: false,
+				enableSolana: true,
 				showChainSelector: false,
 				allowAddressExport: false,
 			}}
