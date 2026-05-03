@@ -246,16 +246,11 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 		setWalletError(`${kind} sign-in failed: ${err.message}`);
 	}, []);
 
-	if (isAuthenticated) return null;
-
-	const passkeyBusy = passkeyPhase === "prompting" || passkeyPhase === "registering";
-	const emailBusy = emailPhase === "submitting";
-
-	const inSubPanel = walletPanel !== null;
-
 	// Reset wallet subpanel when modal closes via Esc / overlay click /
 	// parent onOpenChange(false), so reopening lands on the main screen
 	// instead of dropping the user back into the connector list.
+	// Declared BEFORE the isAuthenticated early return to keep hook
+	// ordering stable when auth state flips during a session.
 	const handleOpenChange = useCallback(
 		(next: boolean) => {
 			if (!next) {
@@ -267,6 +262,13 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 		},
 		[onOpenChange],
 	);
+
+	if (isAuthenticated) return null;
+
+	const passkeyBusy = passkeyPhase === "prompting" || passkeyPhase === "registering";
+	const emailBusy = emailPhase === "submitting";
+
+	const inSubPanel = walletPanel !== null;
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
