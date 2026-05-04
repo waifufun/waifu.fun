@@ -27,7 +27,15 @@ const FRIENDLY_NAME: Record<string, string> = {
 };
 
 function displayName(connector: Connector): string {
-	return FRIENDLY_NAME[connector.id] ?? connector.name;
+	const friendly = FRIENDLY_NAME[connector.id];
+	if (friendly) return friendly;
+	// For the generic injected connector, RainbowKit names it after the
+	// detected wallet ("Rabby", "Brave Wallet", "Frame", etc). Pass it
+	// through. If it has no name, label it generically.
+	if (connector.id === "injected") {
+		return connector.name && connector.name.length > 0 ? connector.name : "Browser Wallet";
+	}
+	return connector.name;
 }
 
 // RainbowKit-wrapped connectors expose `rkDetails` with `iconUrl`
@@ -68,14 +76,28 @@ function truncateAddress(addr: string): string {
 	return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-// We hide the bare `injected` connector when a more specific RainbowKit
-// wallet (MetaMask, Coinbase) is already present, otherwise the user
-// sees a duplicate "Injected" row next to "MetaMask".
+// We hide the bare `injected` connector ONLY when its detected provider
+// is the same wallet we already show as a dedicated row (MetaMask or
+// Coinbase). Otherwise the user has Rabby, Brave, Trust, Frame, or
+// another non-MetaMask/Coinbase injected provider and we must keep the
+// row visible: it is the only sign-in path for them.
+//
+// Detection: RainbowKit names the injected connector after the detected
+// wallet ("MetaMask", "Coinbase Wallet"). If the injected connector's
+// name does not match an existing dedicated row, we keep it (renamed to
+// just "Browser Wallet" via the friendly map fallback below).
 function dedupeConnectors(connectors: readonly Connector[]): Connector[] {
-	const hasMetaMask = connectors.some((c) => c.id === "metaMask" || c.id === "metaMaskSDK");
-	const hasCoinbase = connectors.some((c) => c.id === "coinbaseWallet" || c.id === "coinbaseWalletSDK");
+	const hasMetaMaskRow = connectors.some(
+		(c) => c.id === "metaMask" || c.id === "metaMaskSDK" || c.id === "metaMaskWallet",
+	);
+	const hasCoinbaseRow = connectors.some((c) => c.id === "coinbaseWallet" || c.id === "coinbaseWalletSDK");
 	const filtered = connectors.filter((c) => {
-		if (c.id === "injected" && (hasMetaMask || hasCoinbase)) return false;
+		if (c.id !== "injected") return true;
+		const name = (c.name ?? "").toLowerCase();
+		const isMetaMaskInjected = name.includes("metamask");
+		const isCoinbaseInjected = name.includes("coinbase");
+		if (hasMetaMaskRow && isMetaMaskInjected) return false;
+		if (hasCoinbaseRow && isCoinbaseInjected) return false;
 		return true;
 	});
 	// Stable rank: MetaMask, Coinbase, WalletConnect, then everything else.
