@@ -25,6 +25,7 @@ import type { MiddlewareHandler } from "hono";
 
 import { verifySiweMessage } from "../lib/auth-service.js";
 import type { AppBindings } from "../lib/bindings.js";
+import { type WalletChain, ensurePrimaryPatronWallet, pickPrimaryWallet } from "../lib/patron-wallet.js";
 import { type StewardAuthPrincipal, verifyStewardJwt } from "./steward-auth.js";
 
 // Re-export the legacy launch auth surface for back-compat. W9.2 retires the
@@ -46,7 +47,8 @@ export type PatronContext = {
 	id: string;
 	stewardUserId: string;
 	email: string | null;
-	primaryAddress: `0x${string}` | null;
+	primaryAddress: string | null;
+	primaryChain?: WalletChain | null;
 };
 
 export type AgentOwnershipContext = {
@@ -128,37 +130,6 @@ function extractSessionCookie(cookieHeader: string | undefined): string | null {
 	return null;
 }
 
-function normalizeAddress(value: string | null | undefined): `0x${string}` | null {
-	if (!value) return null;
-	if (!/^0x[0-9a-fA-F]{40}$/.test(value)) return null;
-	return value as `0x${string}`;
-}
-
-async function ensurePrimaryPatronWallet(db: DbHandle, patronId: string, address: `0x${string}`): Promise<void> {
-	const lowerAddress = address.toLowerCase() as `0x${string}`;
-	const existing = await db.select().from(patronWallets).where(eq(patronWallets.address, lowerAddress)).limit(1);
-	const now = new Date();
-	if (existing[0]?.patronId === patronId) {
-		await db
-			.update(patronWallets)
-			.set({ kind: "steward_primary", isPrimary: true, lastUsedAt: now })
-			.where(and(eq(patronWallets.patronId, patronId), eq(patronWallets.address, lowerAddress)));
-		return;
-	}
-	if (existing.length > 0) return;
-	await db
-		.insert(patronWallets)
-		.values({
-			patronId,
-			address: lowerAddress,
-			chainId: 56,
-			kind: "steward_primary",
-			isPrimary: true,
-			lastUsedAt: now,
-		})
-		.returning();
-}
-
 // ─── requirePatron ────────────────────────────────────────────────
 
 /**
@@ -223,19 +194,20 @@ export function requirePatron(): MiddlewareHandler<RequirePatronBindings> {
 			return c.json({ ok: false, error: "PATRON_PROVISION_FAILED", message: "could not load patron row" }, 500);
 		}
 
-		const primaryAddress = normalizeAddress(principal.address ?? null);
+		const primaryWallet = pickPrimaryWallet(principal);
 		c.set("patron", {
 			id: row.id,
 			stewardUserId: row.stewardUserId ?? principal.userId,
 			email: row.primaryEmail ?? principal.email ?? null,
-			primaryAddress,
+			primaryAddress: primaryWallet?.address ?? null,
+			primaryChain: primaryWallet?.chain ?? null,
 		});
 
 		await next();
 
-		if (primaryAddress && (!dbForTest || recordPrimaryWalletsForTest)) {
+		if (primaryWallet && (!dbForTest || recordPrimaryWalletsForTest)) {
 			try {
-				await ensurePrimaryPatronWallet(db, row.id, primaryAddress);
+				await ensurePrimaryPatronWallet(db, row.id, primaryWallet);
 			} catch {
 				// Wallet recording is best-effort so auth remains available if a transient DB state cannot write the row.
 			}

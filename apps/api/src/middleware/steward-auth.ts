@@ -2,15 +2,37 @@ import * as jose from "jose";
 
 // ─── Steward JWT verification ──────────────────────────────────────
 
+export interface StewardJwtWallet {
+	chainNamespace: string;
+	address: string;
+}
+
 export interface StewardAuthPrincipal {
 	userId: string;
 	tenantId: string;
 	email?: string | undefined;
 	address?: string | undefined;
+	authMethod?: string | undefined;
+	wallets?: StewardJwtWallet[] | undefined;
 }
 
 const STEWARD_ISSUER = "steward";
 const EXPECTED_TENANT = () => process.env.STEWARD_TENANT_ID ?? "waifu";
+
+function parseWallets(value: unknown): StewardJwtWallet[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const wallets = value
+		.map((item) => {
+			if (!item || typeof item !== "object") return null;
+			const wallet = item as Record<string, unknown>;
+			const chainNamespace = wallet.chainNamespace ?? wallet.chain_namespace ?? wallet.namespace ?? wallet.chain;
+			const address = wallet.address ?? wallet.walletAddress ?? wallet.wallet_address;
+			if (typeof chainNamespace !== "string" || typeof address !== "string") return null;
+			return { chainNamespace, address };
+		})
+		.filter((wallet): wallet is StewardJwtWallet => wallet !== null);
+	return wallets.length > 0 ? wallets : undefined;
+}
 
 function getStewardSecret(): Uint8Array | null {
 	const secret = process.env.STEWARD_JWT_SECRET;
@@ -52,7 +74,19 @@ export async function verifyStewardJwt(token: string): Promise<StewardAuthPrinci
 			userId: userId as string,
 			tenantId: tenantId as string,
 			email: typeof payload.email === "string" ? payload.email : undefined,
-			address: typeof payload.address === "string" ? payload.address : undefined,
+			address:
+				typeof payload.address === "string"
+					? payload.address
+					: typeof payload.walletAddress === "string"
+						? payload.walletAddress
+						: undefined,
+			authMethod:
+				typeof payload.auth_method === "string"
+					? payload.auth_method
+					: typeof payload.authMethod === "string"
+						? payload.authMethod
+						: undefined,
+			wallets: parseWallets(payload.wallets),
 		};
 	} catch {
 		return null;

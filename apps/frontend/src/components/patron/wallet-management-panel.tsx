@@ -10,7 +10,8 @@ function shortAddress(addr: string): string {
 	return `${addr.slice(0, 10)}...${addr.slice(-8)}`;
 }
 
-function explorerUrl(addr: string): string {
+function explorerUrl(addr: string, chain: "evm" | "solana" | null): string {
+	if (chain === "solana") return `https://solscan.io/account/${addr}`;
 	return `https://bscscan.com/address/${addr}`;
 }
 
@@ -20,7 +21,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export default function WalletManagementPanel() {
-	const { primaryAddress, me, refetch } = useWaifuAuth();
+	const { primaryAddress, primaryChain, me, refetch } = useWaifuAuth();
 	const linked = useLinkedEoa();
 	const reducedMotion = useReducedMotion();
 	const [error, setError] = useState<string | null>(null);
@@ -89,7 +90,11 @@ export default function WalletManagementPanel() {
 							primary Steward wallet
 						</p>
 						<p className="text-sm font-mono text-[#e4e4e7] break-all">{primaryAddress ?? "loading..."}</p>
-						<p className="mt-2 text-xs text-[#71717a]">read-only owner for sign-in and default Safe control.</p>
+						<p className="mt-2 text-xs text-[#71717a]">
+							{primaryChain === "solana"
+								? "solana sign-in identity. link an evm wallet for trading."
+								: "read-only owner for sign-in and default safe control."}
+						</p>
 					</div>
 					{primaryAddress ? (
 						<div className="flex gap-2">
@@ -101,7 +106,7 @@ export default function WalletManagementPanel() {
 								copy
 							</button>
 							<a
-								href={explorerUrl(primaryAddress)}
+								href={explorerUrl(primaryAddress, primaryChain)}
 								target="_blank"
 								rel="noreferrer"
 								className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"

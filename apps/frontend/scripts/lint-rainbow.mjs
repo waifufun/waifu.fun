@@ -11,6 +11,11 @@ const allowedFiles = new Set([
 	"src/hooks/use-linked-eoa.ts",
 	"src/components/auth/linked-eoa-cta.tsx",
 	"src/providers/evm-provider.tsx",
+	// W15: connect modal's wallet sub-panel uses RainbowKit's
+	// useConnectModal() as a fallback for WalletConnect-backed
+	// connectors (which are configured showQrModal: false in
+	// EvmProvider so RainbowKit renders the QR / deeplink UI).
+	"src/components/auth/wallet-panel.tsx",
 ]);
 
 const importPattern =

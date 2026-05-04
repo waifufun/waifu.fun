@@ -148,6 +148,13 @@
 			"when": 1777714200000,
 			"tag": "0020_patron_wallet_kind",
 			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "7",
+			"when": 1777807289013,
+			"tag": "0021_patron_wallet_chain_namespace",
+			"breakpoints": true
 		}
 	]
 }

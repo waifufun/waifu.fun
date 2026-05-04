@@ -50,7 +50,8 @@ function shortUrl(url: string): string {
 
 export default function StepReview() {
 	const { state, patchSafe } = useWizard();
-	const { primaryAddress } = useWaifuAuth();
+	const auth = useWaifuAuth();
+	const primaryAddress = auth.primaryChain === "evm" ? auth.primaryAddress : null;
 	const linked = useLinkedEoa();
 	const linkedAddress = linked.isLinkedToPatron ? linked.address : null;
 

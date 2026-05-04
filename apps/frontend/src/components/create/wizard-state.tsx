@@ -282,8 +282,16 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			}
 			return null;
 		}
-		case "safe":
+		case "safe": {
+			// Safe is an EVM construct. Solana-only patrons can't sign as a
+			// Safe owner, so we require at least one valid EVM address before
+			// the user can advance. step-safe.tsx surfaces a 'link evm wallet'
+			// CTA in this state.
+			const owners = state.safe.owners ?? [];
+			const hasEvmOwner = owners.some((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim()));
+			if (!hasEvmOwner) return "link an EVM wallet to be a safe owner";
 			return null;
+		}
 		case "review":
 			return null;
 		default:

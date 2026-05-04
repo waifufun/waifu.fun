@@ -18,6 +18,7 @@ describe("useWaifuAuth helpers", () => {
 				new Response(
 					JSON.stringify({
 						primaryAddress: "0x1234567890123456789012345678901234567890",
+						primaryChain: "evm",
 						linkedWallets: [],
 					}),
 					{ status: 200 },
@@ -25,5 +26,23 @@ describe("useWaifuAuth helpers", () => {
 		);
 		const me = await fetchWaifuMe(fetcher as unknown as typeof fetch);
 		expect(me?.primaryAddress).toBe("0x1234567890123456789012345678901234567890");
+		expect(me?.primaryChain).toBe("evm");
+	});
+
+	it("hydrates a solana primary address", async () => {
+		const fetcher = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						primaryAddress: "7wF6Y7uqud2JjVnBvVADHXoEDGdYpP9vF4zXnU5nFQeA",
+						primaryChain: "solana",
+						linkedWallets: [],
+					}),
+					{ status: 200 },
+				),
+		);
+		const me = await fetchWaifuMe(fetcher as unknown as typeof fetch);
+		expect(me?.primaryAddress).toBe("7wF6Y7uqud2JjVnBvVADHXoEDGdYpP9vF4zXnU5nFQeA");
+		expect(me?.primaryChain).toBe("solana");
 	});
 });

@@ -5,6 +5,7 @@ import { SiweMessage } from "siwe";
 import { getAddress, isAddress } from "viem";
 import { z } from "zod";
 
+import type { WalletChain } from "../../lib/patron-wallet.js";
 import { type RequirePatronBindings, requirePatron } from "../../middleware/patron-auth.js";
 
 type DbHandle = ReturnType<typeof getDatabase>["db"];
@@ -64,12 +65,20 @@ function walletToSummary(wallet: {
 
 async function buildPatronMe(
 	db: DbHandle,
-	patron: { id: string; stewardUserId: string; primaryAddress: `0x${string}` | null },
+	patron: {
+		id: string;
+		stewardUserId: string;
+		email?: string | null;
+		primaryAddress: string | null;
+		primaryChain?: WalletChain | null;
+	},
 ) {
 	const wallets = await db
 		.select({
 			address: patronWallets.address,
 			kind: patronWallets.kind,
+			chainNamespace: patronWallets.chainNamespace,
+			isPrimary: patronWallets.isPrimary,
 			label: patronWallets.label,
 			addedAt: patronWallets.addedAt,
 			lastUsedAt: patronWallets.lastUsedAt,
@@ -78,11 +87,21 @@ async function buildPatronMe(
 		.where(eq(patronWallets.patronId, patron.id))
 		.limit(100);
 
-	const primary = wallets.find((wallet) => wallet.kind === "steward_primary")?.address ?? patron.primaryAddress;
+	const primaryWallet = wallets.find((wallet) => wallet.kind === "steward_primary" && wallet.isPrimary);
+	const primary = primaryWallet?.address ?? patron.primaryAddress;
+	const primaryChain = (primaryWallet?.chainNamespace as WalletChain | undefined) ?? patron.primaryChain;
 
 	return {
 		userId: patron.stewardUserId,
-		primaryAddress: primary ? (primary as `0x${string}`) : null,
+		primaryAddress: primary ?? null,
+		primaryChain,
+		patron: {
+			id: patron.id,
+			stewardUserId: patron.stewardUserId,
+			email: patron.email ?? null,
+			primaryAddress: primary ?? null,
+			primaryChain,
+		},
 		linkedWallets: wallets.filter((wallet) => wallet.kind === "linked_eoa").map(walletToSummary),
 	};
 }
@@ -163,7 +182,7 @@ export function createV3PatronRoutes() {
 
 		const patron = c.get("patron");
 		const address = lowerAddress(parsed.data.address);
-		if (patron.primaryAddress && lowerAddress(patron.primaryAddress) === address) {
+		if (patron.primaryChain === "evm" && patron.primaryAddress && lowerAddress(patron.primaryAddress) === address) {
 			return c.json({ ok: false, error: "PRIMARY_WALLET", message: "primary steward wallet cannot be linked" }, 409);
 		}
 
@@ -202,6 +221,7 @@ export function createV3PatronRoutes() {
 					patronId: patron.id,
 					address,
 					chainId: 56,
+					chainNamespace: "evm",
 					kind: "linked_eoa",
 					label: parsed.data.label ?? null,
 					lastUsedAt: now,

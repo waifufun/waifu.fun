@@ -40,6 +40,7 @@ type FinalizeBody =
 			provider: "oauth";
 			token: string;
 			refreshToken?: string | null;
+			primaryChain?: "evm" | "solana";
 	  }
 	| {
 			provider: "twitter";
