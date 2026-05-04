@@ -254,9 +254,17 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 	const handleOpenChange = useCallback(
 		(next: boolean) => {
 			if (!next) {
+				// Reset all transient state so the modal opens fresh next time.
+				// Without this, an emailPhase='sent' or walletPanel='evm' from
+				// a prior session sticks across modal close (the component
+				// stays mounted in header / protected-shell).
 				setWalletPanel(null);
 				setWalletPhase("idle");
 				setWalletError(null);
+				setEmailPhase("idle");
+				setEmailError(null);
+				setPasskeyPhase("idle");
+				setPasskeyError(null);
 			}
 			onOpenChange(next);
 		},
