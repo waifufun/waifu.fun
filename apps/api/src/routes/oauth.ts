@@ -288,7 +288,15 @@ export function createOAuthRoutes() {
 
 		const primaryWallet = pickPrimaryWallet(principal, primaryChain);
 		if (primaryWallet) {
-			await ensurePrimaryPatronWallet(db, row.id, primaryWallet);
+			// Best-effort: a first-time wallet sign-in racing with itself can
+			// hit the unique constraint on patron_wallets.address. The session
+			// is still valid in that case, so don't fail the whole finalize.
+			// Matches the pattern in the auth middleware path.
+			try {
+				await ensurePrimaryPatronWallet(db, row.id, primaryWallet);
+			} catch (err) {
+				console.warn("[oauth/finalize] ensurePrimaryPatronWallet failed (best-effort)", err);
+			}
 		}
 
 		// Sanitize return_to from cookie (frontend can't be trusted).
