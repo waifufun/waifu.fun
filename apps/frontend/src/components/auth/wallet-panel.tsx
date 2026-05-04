@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAuth as useStewardAuth } from "@stwd/react";
 import type { StewardAuthResult } from "@stwd/sdk";
 import { Loader2, Wallet } from "lucide-react";
@@ -36,6 +37,25 @@ function displayName(connector: Connector): string {
 		return connector.name && connector.name.length > 0 ? connector.name : "Browser Wallet";
 	}
 	return connector.name;
+}
+
+// RainbowKit configures WalletConnect-backed connectors with
+// `showQrModal: false` because RainbowKit normally renders its own
+// QR / deeplink UI. Calling wagmi's connectAsync() directly on these
+// will leave desktop users (no MetaMask extension) staring at a
+// hung connect with no way to scan.
+//
+// We detect WalletConnect-backed connectors by `type === 'walletConnect'`
+// (wagmi sets this) or by id-based heuristics (RainbowKit's metaMaskWallet
+// becomes a WC connector on desktop without the extension). For those
+// rows we open RainbowKit's modal instead of calling connectAsync() so
+// the QR / deeplink UI shows up correctly.
+function needsWalletConnectModal(connector: Connector): boolean {
+	if (connector.type === "walletConnect") return true;
+	// RainbowKit's metaMaskWallet falls back to WalletConnect when the
+	// extension isn't present. Same connector id stays "metaMask" but
+	// the type flips to walletConnect; covered by the check above.
+	return false;
 }
 
 // RainbowKit-wrapped connectors expose `rkDetails` with `iconUrl`
@@ -116,6 +136,9 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 	const { connectors, connectAsync, isPending: connectPending, variables: connectVariables } = useConnect();
 	const { disconnect } = useDisconnect();
 	const { signMessageAsync } = useSignMessage();
+	// RainbowKit's modal handles WalletConnect QR / deeplink rendering
+	// for connectors where showQrModal=false (RainbowKit's default).
+	const { openConnectModal } = useConnectModal();
 	const [signing, setSigning] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -124,6 +147,13 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 	const handleConnect = useCallback(
 		async (connector: Connector) => {
 			setError(null);
+			// WalletConnect-backed connectors need RainbowKit's modal to
+			// render the QR / deeplink. Calling connectAsync() directly
+			// on them shows nothing on desktop without an extension.
+			if (needsWalletConnectModal(connector) && openConnectModal) {
+				openConnectModal();
+				return;
+			}
 			try {
 				await connectAsync({ connector });
 			} catch (err) {
@@ -132,7 +162,7 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 				if (err instanceof Error) onError?.(err, "evm");
 			}
 		},
-		[connectAsync, onError],
+		[connectAsync, onError, openConnectModal],
 	);
 
 	const handleSign = useCallback(async () => {
