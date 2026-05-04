@@ -7,12 +7,12 @@ import type { FC, ReactNode } from "react";
  * Solana wallet adapter wrapper for waifu.fun.
  *
  * Mounts @stwd/react's curated SolanaWalletProvider so the embedded
- * <WalletLogin chains="both"> panel inside <ConnectModal> can
+ * <WalletLogin chains="solana"> panel inside <ConnectModal> can
  * connect Phantom / Solflare and complete a SIWS handshake against
  * Steward.
  *
  * Static-export safe: marked "use client" and dynamically imported by
- * apps/frontend/src/components/auth/connect-modal.tsx so @solana/* never resolves at
+ * apps/frontend/src/app/providers.tsx so @solana/* never resolves at
  * SSR time.
  *
  * RPC defaults to mainnet-beta. Override via NEXT_PUBLIC_SOLANA_RPC_URL.
