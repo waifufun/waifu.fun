@@ -26,6 +26,7 @@ app.get("/me", requirePatron(), async (c) => {
 			id: patronWallets.id,
 			address: patronWallets.address,
 			chainId: patronWallets.chainId,
+			chainNamespace: patronWallets.chainNamespace,
 			kind: patronWallets.kind,
 			label: patronWallets.label,
 			addedAt: patronWallets.addedAt,
@@ -41,7 +42,9 @@ app.get("/me", requirePatron(), async (c) => {
 		.from(agentPersonas)
 		.where(eq(agentPersonas.ownerStewardUserId, patron.stewardUserId));
 
-	const primaryAddress = wallets.find((wallet) => wallet.kind === "steward_primary")?.address ?? patron.primaryAddress;
+	const primaryWallet = wallets.find((wallet) => wallet.kind === "steward_primary" && wallet.isPrimary);
+	const primaryAddress = primaryWallet?.address ?? patron.primaryAddress;
+	const primaryChain = primaryWallet?.chainNamespace ?? patron.primaryChain;
 	const linkedWallets = wallets
 		.filter((wallet) => wallet.kind === "linked_eoa")
 		.map((wallet) => ({
@@ -55,6 +58,7 @@ app.get("/me", requirePatron(), async (c) => {
 		ok: true,
 		userId: patron.stewardUserId,
 		primaryAddress,
+		primaryChain,
 		linkedWallets,
 		patron,
 		wallets: wallets.map((wallet) => ({
