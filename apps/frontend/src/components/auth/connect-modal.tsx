@@ -12,18 +12,20 @@ import { type FormEvent, type ReactNode, useCallback, useMemo, useState } from "
 // Lazy: keeps wagmi + @solana/* peers off the initial bundle until
 // the login modal is opened.
 //
-// NOTE: We patch @stwd/react@0.7.2's package.json to add a `default`
-// export condition (see patches/@stwd%2Freact@0.7.2.patch) because
-// Next 15.3.9 + Webpack rejects the 0.7.2 `"./wallet"` map when only
-// `import` is set. Patch can be removed once we move to ^0.8.0 here.
-const WalletLogin = dynamic(() => import("@stwd/react/wallet").then((mod) => ({ default: mod.WalletLogin })), {
+// W15: replaced Steward's <WalletLogin> with our own <WalletPanel> that
+// renders a sharp-corner connector list directly via wagmi useConnect()
+// instead of RainbowKit's rounded ConnectButton pill. The Steward export
+// stays available for other consumers; this modal just doesn't use it.
+// Dynamic import keeps wagmi/RainbowKit-injected connectors off the SSR
+// pass (static export safety).
+const WalletPanel = dynamic(() => import("./wallet-panel").then((mod) => ({ default: mod.WalletPanel })), {
 	ssr: false,
 	loading: () => (
 		<div
 			className="flex items-center justify-center border border-white/10 bg-[#0b0b0d] py-6 text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]"
-			data-testid="wallet-login-loading"
+			data-testid="wallet-panel-loading"
 		>
-			loading wallet sign-in
+			loading wallets
 		</div>
 	),
 });
@@ -301,28 +303,16 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 								sign a message to prove ownership. no transaction, no gas.
 							</DialogDescription>
 						</div>
-						<div className="mt-5" data-testid="steward-wallet-login" aria-busy={walletPhase === "finalizing"}>
+						<div className="mt-5" data-testid="wallet-panel" aria-busy={walletPhase === "finalizing"}>
 							{/* EVM only for now. Solana sign-in completes against Steward but
-							waifu's /v3/patron/me only recognizes 0x EVM primary addresses
-							(useWaifuAuth + requirePatron). Will flip to chains="both" once
-							W12 lands the patron model accepting Solana pubkeys. */}
-							<WalletLogin
-								chains="evm"
+							waifu's /v3/patron/me requires further patron-side support before
+							we expose a Solana connector here. W12 (now merged) handles the
+							patron model side; flipping this on is a follow-up. */}
+							<WalletPanel
 								onSuccess={(result, kind) => {
 									void handleWalletSuccess(result, kind);
 								}}
 								onError={handleWalletError}
-								evmLabel=""
-								classes={{
-									root: "w-full",
-									column: "w-full",
-									heading: "hidden",
-									status: "text-[11px] font-mono text-[#71717a] tracking-[0.06em]",
-									signButton:
-										"w-full bg-[#00ff87] text-[#08080a] text-sm font-medium px-4 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50 rounded-none border-0",
-									error: "text-[11px] text-[#f87171] mt-2 text-center",
-									hint: "text-[11px] text-[#52525b] text-center mt-2",
-								}}
 							/>
 						</div>
 						{walletPhase === "finalizing" ? (
