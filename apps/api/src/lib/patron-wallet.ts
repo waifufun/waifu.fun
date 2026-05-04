@@ -65,14 +65,23 @@ export function pickPrimaryWallet(
 		})
 		.filter((wallet): wallet is PatronPrimaryWallet => wallet !== null);
 
-	// When a chain is requested or implied by the auth method, honor it.
-	// Order:
-	//   1. Wallet from `wallets[]` matching the requested chain (most specific).
-	//   2. principal.address if it parses as the requested chain.
-	//   3. Any wallet at all in `wallets[]`.
-	//   4. principal.address inferred without a preferred chain.
-	// This avoids returning the EVM principal.address when the user signed
-	// in with Solana and both addresses are present in the JWT.
+	// Two cases:
+	//   1. preferredChain explicitly requested by caller (UI passed primaryChain):
+	//      strict. Return only a wallet on that chain, or null. Never
+	//      cross-fall back to a different chain because the user explicitly
+	//      signed in with one specific wallet kind.
+	//   2. No explicit request; walletChain inferred from auth_method or null:
+	//      best-effort. Try the implied chain first, then fall back to any
+	//      wallet, then to principal.address.
+	if (preferredChain) {
+		const preferred = wallets.find((item) => item.chain === preferredChain);
+		if (preferred) return preferred;
+		const directOnPreferred = inferWalletFromAddress(principal.address, preferredChain);
+		if (directOnPreferred && directOnPreferred.chain === preferredChain) {
+			return directOnPreferred;
+		}
+		return null;
+	}
 	if (walletChain) {
 		const preferred = wallets.find((item) => item.chain === walletChain);
 		if (preferred) return preferred;
