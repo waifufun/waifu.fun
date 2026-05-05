@@ -292,6 +292,9 @@ test("POST /v2/agents/provision launches as patron and returns one-time keys", a
 	assert.equal(json.safeAddress, "0x0000000000000000000000000000000000000003");
 	assert.equal(launches.length, 1);
 	assert.equal((launches[0] as { name: string }).name, "Test Waifu");
+	const persona = (launches[0] as { persona?: Record<string, unknown> }).persona;
+	assert.equal(typeof persona?.runtimeWebhookSecretHash, "string");
+	assert.match(persona?.runtimeWebhookSecretHash as string, /^sha256:[a-f0-9]{64}$/);
 	resetProvisionDeps();
 });
 

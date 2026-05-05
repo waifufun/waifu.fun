@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
 
@@ -48,6 +50,10 @@ export function parseIncludeLegacy(value: string | undefined): boolean {
 	return value === "true";
 }
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+
+function hashWebhookSecret(secret: string): string {
+	return `sha256:${createHash("sha256").update(secret, "utf8").digest("hex")}`;
+}
 
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	if (agentsRouteDepsForTest.db) return agentsRouteDepsForTest.db;
@@ -143,6 +149,10 @@ function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
 					ownerAddress: personaJson && typeof personaJson.ownerAddress === "string" ? personaJson.ownerAddress : null,
 					runtimeKind,
 					runtimeWebhookUrl: personaJson && typeof personaJson.webhookUrl === "string" ? personaJson.webhookUrl : null,
+					runtimeWebhookSecretHash:
+						personaJson && typeof personaJson.runtimeWebhookSecretHash === "string"
+							? personaJson.runtimeWebhookSecretHash
+							: null,
 				});
 				await seedDefaultAdapterPolicies(db, persona);
 			},
@@ -653,6 +663,7 @@ function validateProvisionBody(
 	if (owners.length !== safe.owners.length) return { ok: false, message: "safe.owners contains an invalid address" };
 
 	const pullApiKey = runtime.kind === "pull" ? generateRuntimeApiKey() : null;
+	const webhookSecret = runtime.kind === "webhook" ? readString(runtime.webhookSecret) : null;
 	const metadata = {
 		inviteCode,
 		personaPrompt: readString(persona.personaPrompt),
@@ -660,6 +671,7 @@ function validateProvisionBody(
 		hasAvatarUpload: Boolean(persona.hasAvatarUpload),
 		runtimeKind: runtime.kind,
 		webhookUrl: typeof runtime.webhookUrl === "string" ? runtime.webhookUrl.trim() : null,
+		runtimeWebhookSecretHash: webhookSecret ? hashWebhookSecret(webhookSecret) : null,
 		ownerStewardUserId: patron.stewardUserId,
 		ownerAddress: patron.primaryAddress ?? owners[0] ?? null,
 		safe: {
