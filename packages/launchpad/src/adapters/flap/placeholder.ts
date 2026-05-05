@@ -341,10 +341,7 @@ export const createFlapAdapter = (options: CreateFlapAdapterOptions = {}): Launc
 		// fall back to the VaultPortal event if Portal events were filtered.
 		const resolvedTokenAddress = tokenAddress ?? tokenFromVault;
 		if (!resolvedTokenAddress) {
-			throw new FlapAdapterError(
-				"FlapContractUnavailable",
-				"TokenCreated event not found in Flap receipt",
-			);
+			throw new FlapAdapterError("FlapContractUnavailable", "TokenCreated event not found in Flap receipt");
 		}
 
 		return {
