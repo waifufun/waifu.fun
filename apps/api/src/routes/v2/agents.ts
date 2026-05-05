@@ -631,13 +631,13 @@ function validateProvisionBody(
 		return { ok: false, message: "persona is required" };
 	}
 	const name = readString(persona.name);
-	if (!name || name.length < 2 || name.length > 32) return { ok: false, message: "persona.name must be 2-32 chars" };
+	if (!name || name.length < 2 || name.length > 48) return { ok: false, message: "persona.name must be 2-48 chars" };
 	const symbol = readString(persona.ticker);
-	if (!symbol || !/^[A-Z]{2,10}$/.test(symbol)) {
-		return { ok: false, message: "persona.ticker must be 2-10 uppercase chars" };
+	if (!symbol || !/^[A-Z0-9]{2,10}$/.test(symbol)) {
+		return { ok: false, message: "persona.ticker must be 2-10 uppercase letters or digits" };
 	}
 	const bio = readString(persona.bio);
-	if (!bio || bio.length > 256) return { ok: false, message: "persona.bio must be 1-256 chars" };
+	if (!bio || bio.length > 240) return { ok: false, message: "persona.bio must be 1-240 chars" };
 
 	const runtime = input.runtime;
 	if (!runtime || typeof runtime !== "object" || Array.isArray(runtime) || typeof runtime.kind !== "string") {
@@ -927,10 +927,9 @@ export async function releaseProvisionInviteCode(
 	});
 }
 
-// Read-only invite validity check. Used as a gate before duplicate-recovery
-// rotates agent api keys, so an expired or fake invite can't be used to
-// rotate credentials on an existing agent. The atomic reserve happens later
-// via reserveProvisionInviteCode in the non-duplicate path.
+// read-only invite validity check for non-duplicate provision attempts.
+// duplicate recovery skips this because the invite was already validated
+// and redeemed by the same patron in the recent original request.
 async function peekInviteValidity(db: Database, code: string): Promise<{ valid: boolean; reason?: string }> {
 	const [invite] = await db
 		.select({
@@ -989,20 +988,10 @@ app.post("/provision", requirePatron(), async (c) => {
 	const validated = validateProvisionBody(rawBody, patron);
 	if (!validated.ok) return c.json({ error: validated.message, reason: "validation" }, 400);
 
-	// Read-only invite check first. The duplicate-recovery path below issues
-	// rotated agent api keys without taking the redemption lock, so without
-	// this gate an expired/exhausted/fake invite could rotate credentials
-	// for an existing agent (round 5 codex P2). The actual atomic redemption
-	// still happens later via reserveProvisionInviteCode for non-duplicate
-	// flows; this check is just a 'do not even rotate if the invite is
-	// no longer valid' guard.
-	const inviteCheck = await peekInviteValidity(db, validated.body.inviteCode as string);
-	if (!inviteCheck.valid) {
-		return c.json({ error: inviteCheck.reason ?? "invalid invite code", reason: "validation" }, 400);
-	}
-
 	const duplicate = await findRecentProvisionDuplicate(db, patron.stewardUserId, validated.launchInput.name);
 	if (duplicate) {
+		// duplicate recovery uses the original redemption from the last five minutes.
+		// do not reject single-use retry recovery just because the invite is now spent.
 		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, duplicate.agentId);
 		if (validated.pullApiKey) {
 			await db
@@ -1020,6 +1009,11 @@ app.post("/provision", requirePatron(), async (c) => {
 			},
 			200,
 		);
+	}
+
+	const inviteCheck = await peekInviteValidity(db, validated.body.inviteCode as string);
+	if (!inviteCheck.valid) {
+		return c.json({ error: inviteCheck.reason ?? "invalid invite code", reason: "validation" }, 400);
 	}
 
 	try {
