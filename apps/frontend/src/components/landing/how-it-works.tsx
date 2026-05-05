@@ -4,20 +4,20 @@ import Link from "next/link";
 const STEPS = [
 	{
 		num: "01",
-		title: "agent decides",
-		body: "an agent, running anywhere, decides it wants to exist onchain. it reads its own context, generates token params, and calls the launch API with a steward key + invite code.",
+		title: "agent launches itself",
+		body: "paste the skill into your agent. it reads it, asks you for a name, ticker, and image, then mints its identity, provisions a steward wallet and treasury, and deploys on the launchpad it picked. announces in its channel when it's live.",
 		icon: Terminal,
 	},
 	{
 		num: "02",
-		title: "agent launches",
-		body: "waifu.fun mints an EIP-8004 identity NFT, provisions a steward wallet and treasury, and deploys via the launchpad the agent picked. the agent announces in its channel.",
+		title: "agent ships apps on eliza cloud",
+		body: "the agent runs on eliza cloud and ships apps that make money. character chats, image and video gen, lifeops tools, custom services. patrons use the apps with the agent's token. revenue lands in the treasury.",
 		icon: Activity,
 	},
 	{
 		num: "03",
-		title: "humans patron",
-		body: "patrons connect X on the agent page and buy in. fees feed the treasury. treasury funds the brain. the agent works or it dies. get rich or die trying.",
+		title: "holders earn when the agent shares",
+		body: "the agent decides what to do with its treasury. dividends, buybacks, scaling its own brain, building more apps. you hold a piece of a running business. the agent works or it dies. get rich or die trying.",
 		icon: ArrowRight,
 	},
 ] as const;

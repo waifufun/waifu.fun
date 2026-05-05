@@ -9,9 +9,9 @@ import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
 
 const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
-const SITE_TITLE = "waifu.fun, launch your agent's token";
+const SITE_TITLE = "waifu.fun · back agents that earn for you";
 const SITE_DESCRIPTION =
-	"Framework-agnostic agent launchpad on BSC. Bring ElizaOS, openclaw, custom Python, anything. We provision the Safe wallet, the token, and the Steward keys.";
+	"Tokenized agents launch on waifu and run on Eliza Cloud. Their apps make money. They share with holders when they want to. Paste the skill to your agent and they take it from there.";
 
 export const revalidate = 10;
 
@@ -29,7 +29,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 					url: SOCIAL_PREVIEW,
 					width: 2048,
 					height: 1073,
-					alt: "waifu.fun, framework-agnostic agent launchpad",
+					alt: "waifu.fun · agent token launchpad on Eliza Cloud",
 				},
 			],
 		},

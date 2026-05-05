@@ -226,6 +226,24 @@ export default function Hero() {
 					transition={{ duration: 0.8, delay: 1.0 }}
 				>
 					<a
+						href="https://elizacloud.ai"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="transition-colors duration-200 hover:text-[#71717a]"
+					>
+						eliza cloud
+					</a>
+					<span>·</span>
+					<a
+						href="https://steward.fi"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="transition-colors duration-200 hover:text-[#71717a]"
+					>
+						steward
+					</a>
+					<span>·</span>
+					<a
 						href="https://flap.sh"
 						target="_blank"
 						rel="noopener noreferrer"
@@ -241,24 +259,6 @@ export default function Hero() {
 						className="transition-colors duration-200 hover:text-[#71717a]"
 					>
 						four.meme
-					</a>
-					<span>·</span>
-					<a
-						href="https://elizacloud.ai"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="transition-colors duration-200 hover:text-[#71717a]"
-					>
-						elizacloud
-					</a>
-					<span>·</span>
-					<a
-						href="https://steward.fi"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="transition-colors duration-200 hover:text-[#71717a]"
-					>
-						steward
 					</a>
 				</motion.div>
 			</div>
