@@ -52,6 +52,7 @@ export type ProvisionResult =
 			agentId: string;
 			safeAddress?: string;
 			pullApiKey?: string | null;
+			agentApiKey?: string | null;
 	  }
 	| {
 			ok: false;
@@ -193,12 +194,15 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 
 	const safeAddress = typeof obj.safeAddress === "string" ? obj.safeAddress : undefined;
 	const pullApiKey = typeof obj.pullApiKey === "string" ? obj.pullApiKey : obj.pullApiKey === null ? null : undefined;
+	const agentApiKey =
+		typeof obj.agentApiKey === "string" ? obj.agentApiKey : obj.agentApiKey === null ? null : undefined;
 
 	const result: ProvisionResult = {
 		ok: true,
 		agentId,
 		...(safeAddress !== undefined ? { safeAddress } : {}),
 		...(pullApiKey !== undefined ? { pullApiKey } : {}),
+		...(agentApiKey !== undefined ? { agentApiKey } : {}),
 	};
 	return result;
 }

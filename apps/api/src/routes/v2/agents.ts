@@ -1,10 +1,14 @@
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
 
-import { agentPersonaQueries, agentPersonas, agentQueries, getDatabase } from "@waifufun/db";
-import { eq, sql } from "drizzle-orm";
+import { agentPersonaQueries, agentPersonas, agentQueries, createDbRepository, getDatabase } from "@waifufun/db";
+import type { Database } from "@waifufun/db";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { isAddress } from "viem";
 
+import { createKey } from "../../lib/agent-keys.js";
 import { ensureAgentIdMatches, requireAgentAuth } from "../../middleware/agent-auth.js";
+import { generateRuntimeApiKey, hashRuntimeApiKey } from "../../middleware/agent-pull-auth.js";
 import { requireAgentOwnership, requirePatron } from "../../middleware/patron-auth.js";
 import type { RequireAgentOwnershipBindings, RequirePatronBindings } from "../../middleware/patron-auth.js";
 
@@ -27,15 +31,138 @@ const app = new Hono<RequireAgentOwnershipBindings>();
 
 const VALID_STATUS = new Set(["active", "graduated", "failed", "pending"]);
 
+const VALID_RUNTIME_KINDS = new Set(["hosted", "webhook", "pull"]);
+const DEFAULT_PROVISION_IMAGE_URL =
+	process.env.DEFAULT_AGENT_IMAGE_URL ??
+	"https://static.four.meme/market/68b871b6-96f7-408c-b8d0-388d804b34275092658264263839640.png";
+
 export function parseIncludeLegacy(value: string | undefined): boolean {
 	return value === "true";
 }
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
+	if (agentsRouteDepsForTest.db) return agentsRouteDepsForTest.db;
 	const url = process.env.DATABASE_URL;
 	if (!url || url.length === 0) return null;
 	return getDatabase(url).db;
+}
+
+type LaunchOrchestrator = ReturnType<typeof createOrchestrator>;
+
+type AgentsRouteDepsForTest = {
+	db: Database | undefined;
+	createOrchestrator: (() => LaunchOrchestrator) | undefined;
+	createAgentKey: typeof createKey | undefined;
+	validateInviteCode: ((code: string) => Promise<{ valid: boolean; reason?: string }>) | undefined;
+};
+
+const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
+	db: undefined,
+	createOrchestrator: undefined,
+	createAgentKey: undefined,
+	validateInviteCode: undefined,
+};
+
+export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
+	agentsRouteDepsForTest.db = deps.db;
+	agentsRouteDepsForTest.createOrchestrator = deps.createOrchestrator;
+	agentsRouteDepsForTest.createAgentKey = deps.createAgentKey;
+	agentsRouteDepsForTest.validateInviteCode = deps.validateInviteCode;
+}
+
+function slugifyAgentId(name: string): string {
+	const slug = name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 48);
+	return `waifu-${slug || "agent"}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
+	if (agentsRouteDepsForTest.createOrchestrator) return agentsRouteDepsForTest.createOrchestrator();
+	const chainId = Number(process.env.FOURMEME_CHAIN_ID ?? 56);
+	if (chainId !== 56 && chainId !== 97) {
+		throw new Error("FOURMEME_CHAIN_ID must be 56 or 97");
+	}
+	const rpcUrl =
+		process.env.BSC_RPC_URL ??
+		(chainId === 56 ? "https://bsc-dataseed.binance.org" : "https://data-seed-prebsc-1-s1.binance.org:8545");
+	const stewardBaseUrl = process.env.STEWARD_API_URL;
+	const stewardApiKey = process.env.STEWARD_API_KEY;
+	if (!stewardBaseUrl || !stewardApiKey) {
+		throw new Error("STEWARD_API_URL and STEWARD_API_KEY env vars required");
+	}
+	const steward = createStewardClient({
+		baseUrl: stewardBaseUrl,
+		apiKey: stewardApiKey,
+		tenantId: process.env.STEWARD_TENANT_ID ?? "waifu",
+	});
+	let personaStore: PersonaStore | undefined;
+	const db = requireDb();
+	if (db) {
+		personaStore = {
+			writeInitial: async (args) => {
+				const existing = await agentPersonaQueries.getAgentPersonaByAgentId(db, args.agentId);
+				if (existing) return;
+				const personaJson =
+					args.persona && typeof args.persona === "object" ? (args.persona as Record<string, unknown>) : undefined;
+				const preset = personaJson && typeof personaJson.preset === "string" ? personaJson.preset : null;
+				const systemPrompt =
+					personaJson && typeof personaJson.systemPrompt === "string" ? personaJson.systemPrompt : null;
+				const traits =
+					personaJson && Array.isArray(personaJson.traits)
+						? (personaJson.traits.filter((t: unknown) => typeof t === "string") as string[])
+						: [];
+				const twitterHandle =
+					personaJson && typeof personaJson.twitterHandle === "string" ? personaJson.twitterHandle : null;
+				const runtimeKind =
+					personaJson?.runtimeKind === "webhook"
+						? "third-party-webhook"
+						: personaJson?.runtimeKind === "pull"
+							? "third-party-pull"
+							: "milady-cloud";
+				const persona = await agentPersonaQueries.createAgentPersona(db, {
+					agentId: args.agentId,
+					name: args.name,
+					bio: args.bio ?? null,
+					avatarUrl: args.avatarUrl ?? null,
+					preset,
+					systemPrompt,
+					traits,
+					twitterHandle,
+					metadata: personaJson ?? null,
+					ownerStewardUserId:
+						personaJson && typeof personaJson.ownerStewardUserId === "string" ? personaJson.ownerStewardUserId : null,
+					ownerAddress: personaJson && typeof personaJson.ownerAddress === "string" ? personaJson.ownerAddress : null,
+					runtimeKind,
+					runtimeWebhookUrl: personaJson && typeof personaJson.webhookUrl === "string" ? personaJson.webhookUrl : null,
+				});
+				await seedDefaultAdapterPolicies(db, persona);
+			},
+			setToken: async (agentId, tokenAddress) => {
+				await agentPersonaQueries.setTokenAddressOnPersona(db, agentId, tokenAddress);
+			},
+			setIdentity: async (agentId, identity) => {
+				await agentPersonaQueries.setPersonaIdentity(db, agentId, identity);
+			},
+		};
+	}
+
+	const deps: OrchestratorDeps = {
+		steward,
+		rpcUrl,
+		chainId: chainId as 56 | 97,
+		...(process.env.FOURMEME_API_URL ? { fourMemeBaseUrl: process.env.FOURMEME_API_URL } : {}),
+		...(process.env.FOURMEME_TOKEN_MANAGER_2
+			? { tokenManager2Address: process.env.FOURMEME_TOKEN_MANAGER_2 as `0x${string}` }
+			: {}),
+		...(process.env.EIP8004_NFT_ADDRESS ? { eip8004NftAddress: process.env.EIP8004_NFT_ADDRESS as `0x${string}` } : {}),
+		platformSlug: "waifu",
+		...(personaStore ? { personaStore } : {}),
+	};
+	return createOrchestrator(deps);
 }
 
 export type ResurrectAgentDeps = {
@@ -428,6 +555,257 @@ app.get("/:token/fees", (c) => {
 
 app.get("/curve/:token", (c) => c.json({ error: "v2 curve query — indexer integration pending" }, 501));
 
+type ProvisionRequestBody = {
+	inviteCode?: unknown;
+	persona?: {
+		name?: unknown;
+		ticker?: unknown;
+		bio?: unknown;
+		personaPrompt?: unknown;
+		avatarTemplateId?: unknown;
+		hasAvatarUpload?: unknown;
+	};
+	runtime?: { kind?: unknown; webhookUrl?: unknown; webhookSecret?: unknown };
+	safe?: {
+		taxAgentBps?: unknown;
+		taxPatronBps?: unknown;
+		owners?: unknown;
+		threshold?: unknown;
+		firstBuyFundingSource?: unknown;
+		adapters?: unknown;
+	};
+	launchpad?: { launchpad_id?: unknown; chain?: unknown; launchpad_config?: unknown; fee_mode?: unknown };
+};
+
+type ProvisionValidationResult =
+	| { ok: true; body: ProvisionRequestBody; launchInput: AgentLaunchInput; pullApiKey: string | null }
+	| { ok: false; message: string };
+
+function readString(value: unknown): string | null {
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getTaxFeeRate(launchpadConfig: unknown): 1 | 3 | 5 | 10 | null {
+	if (!launchpadConfig || typeof launchpadConfig !== "object" || Array.isArray(launchpadConfig)) return null;
+	const taxBps = (launchpadConfig as { taxBps?: unknown }).taxBps;
+	if (taxBps === 100) return 1;
+	if (taxBps === 300) return 3;
+	if (taxBps === 500) return 5;
+	if (taxBps === 1000) return 10;
+	return null;
+}
+
+function validateProvisionBody(
+	body: unknown,
+	patron: { stewardUserId: string; primaryAddress: string | null },
+): ProvisionValidationResult {
+	if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, message: "body must be an object" };
+	const input = body as ProvisionRequestBody;
+	const inviteCode = readString(input.inviteCode);
+	if (!inviteCode) return { ok: false, message: "inviteCode is required" };
+
+	const persona = input.persona;
+	if (!persona || typeof persona !== "object" || Array.isArray(persona)) {
+		return { ok: false, message: "persona is required" };
+	}
+	const name = readString(persona.name);
+	if (!name || name.length < 2 || name.length > 32) return { ok: false, message: "persona.name must be 2-32 chars" };
+	const symbol = readString(persona.ticker);
+	if (!symbol || !/^[A-Z]{2,10}$/.test(symbol)) {
+		return { ok: false, message: "persona.ticker must be 2-10 uppercase chars" };
+	}
+	const bio = readString(persona.bio);
+	if (!bio || bio.length > 256) return { ok: false, message: "persona.bio must be 1-256 chars" };
+
+	const runtime = input.runtime;
+	if (!runtime || typeof runtime !== "object" || Array.isArray(runtime) || typeof runtime.kind !== "string") {
+		return { ok: false, message: "runtime.kind is required" };
+	}
+	if (!VALID_RUNTIME_KINDS.has(runtime.kind)) return { ok: false, message: "runtime.kind is invalid" };
+	if (runtime.kind === "webhook") {
+		const webhookUrl = readString(runtime.webhookUrl);
+		if (!webhookUrl) return { ok: false, message: "runtime.webhookUrl is required for webhook runtime" };
+		try {
+			const parsed = new URL(webhookUrl);
+			if (parsed.protocol !== "https:") return { ok: false, message: "runtime.webhookUrl must be https" };
+		} catch {
+			return { ok: false, message: "runtime.webhookUrl is invalid" };
+		}
+	}
+
+	const safe = input.safe;
+	if (!safe || typeof safe !== "object" || Array.isArray(safe)) return { ok: false, message: "safe is required" };
+	if (typeof safe.taxAgentBps !== "number" || typeof safe.taxPatronBps !== "number") {
+		return { ok: false, message: "safe tax bps are required" };
+	}
+	if (safe.taxAgentBps < 0 || safe.taxPatronBps < 0 || safe.taxAgentBps + safe.taxPatronBps !== 10000) {
+		return { ok: false, message: "safe tax bps must sum to 10000" };
+	}
+	if (!Array.isArray(safe.owners) || safe.owners.length === 0) {
+		return { ok: false, message: "safe.owners must include at least one address" };
+	}
+	const owners = safe.owners.filter((owner): owner is string => typeof owner === "string" && isAddress(owner));
+	if (owners.length !== safe.owners.length) return { ok: false, message: "safe.owners contains an invalid address" };
+
+	const pullApiKey = runtime.kind === "pull" ? generateRuntimeApiKey() : null;
+	const metadata = {
+		inviteCode,
+		personaPrompt: readString(persona.personaPrompt),
+		avatarTemplateId: typeof persona.avatarTemplateId === "string" ? persona.avatarTemplateId : null,
+		hasAvatarUpload: Boolean(persona.hasAvatarUpload),
+		runtimeKind: runtime.kind,
+		webhookUrl: typeof runtime.webhookUrl === "string" ? runtime.webhookUrl.trim() : null,
+		ownerStewardUserId: patron.stewardUserId,
+		ownerAddress: patron.primaryAddress ?? owners[0] ?? null,
+		safe: {
+			owners,
+			threshold: typeof safe.threshold === "number" ? safe.threshold : 1,
+			firstBuyFundingSource: typeof safe.firstBuyFundingSource === "string" ? safe.firstBuyFundingSource : null,
+			adapters: safe.adapters,
+		},
+		launchpad: input.launchpad ?? null,
+	};
+	const taxFeeRate = getTaxFeeRate(input.launchpad?.launchpad_config);
+	const launchInput: AgentLaunchInput = {
+		agentId: slugifyAgentId(name),
+		name,
+		symbol,
+		description: bio,
+		imageUrl: DEFAULT_PROVISION_IMAGE_URL,
+		persona: metadata,
+		taxSplit: {
+			agentBps: safe.taxAgentBps,
+			patronBps: safe.taxPatronBps,
+			patronAddress: owners[0] as `0x${string}`,
+		},
+		...(taxFeeRate
+			? {
+					tax: {
+						feeRate: taxFeeRate,
+						burnRate: 0,
+						divideRate: 0,
+						liquidityRate: 0,
+						recipientRate: 100,
+						minSharing: 100000,
+					},
+				}
+			: {}),
+	};
+	return { ok: true, body: input, launchInput, pullApiKey };
+}
+
+async function validateInviteCode(db: Database, code: string): Promise<{ valid: boolean; reason?: string }> {
+	if (agentsRouteDepsForTest.validateInviteCode) return agentsRouteDepsForTest.validateInviteCode(code);
+	return createDbRepository(db).validateInviteCode(code);
+}
+
+async function findRecentProvisionDuplicate(
+	db: Database,
+	patronStewardUserId: string,
+	name: string,
+): Promise<{ agentId: string; taxRecipientAddress: string | null } | null> {
+	const since = new Date(Date.now() - 5 * 60 * 1000);
+	const [row] = await db
+		.select({ agentId: agentPersonas.agentId, taxRecipientAddress: agentPersonas.taxRecipientAddress })
+		.from(agentPersonas)
+		.where(
+			and(
+				eq(agentPersonas.ownerStewardUserId, patronStewardUserId),
+				eq(agentPersonas.name, name),
+				gt(agentPersonas.createdAt, since),
+			),
+		)
+		.orderBy(desc(agentPersonas.createdAt))
+		.limit(1);
+	return row ?? null;
+}
+
+app.post("/provision", requirePatron(), async (c) => {
+	const db = requireDb();
+	if (!db) return c.json({ error: "database unavailable" }, 503);
+
+	let rawBody: unknown;
+	try {
+		rawBody = await c.req.json();
+	} catch {
+		return c.json({ error: "invalid JSON body" }, 400);
+	}
+
+	const patron = c.get("patron");
+	const validated = validateProvisionBody(rawBody, patron);
+	if (!validated.ok) return c.json({ error: validated.message, reason: "validation" }, 400);
+
+	const invite = await validateInviteCode(db, validated.body.inviteCode as string);
+	if (!invite.valid) return c.json({ error: invite.reason ?? "invalid invite code", reason: "validation" }, 400);
+
+	const duplicate = await findRecentProvisionDuplicate(db, patron.stewardUserId, validated.launchInput.name);
+	if (duplicate) {
+		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, duplicate.agentId);
+		if (validated.pullApiKey) {
+			await db
+				.update(agentPersonas)
+				.set({ runtimeApiKeyHash: hashRuntimeApiKey(validated.pullApiKey), updatedAt: new Date() })
+				.where(eq(agentPersonas.agentId, duplicate.agentId));
+		}
+		return c.json(
+			{
+				agentId: duplicate.agentId,
+				safeAddress: duplicate.taxRecipientAddress ?? null,
+				pullApiKey: validated.pullApiKey,
+				agentApiKey: key.raw,
+			},
+			200,
+		);
+	}
+
+	let orchestrator: LaunchOrchestrator;
+	try {
+		orchestrator = getOrCreateLaunchOrchestrator();
+	} catch (err) {
+		return c.json(
+			{
+				error: "orchestrator unavailable",
+				detail: err instanceof Error ? err.message : String(err),
+			},
+			503,
+		);
+	}
+
+	try {
+		const result = await orchestrator.launch(validated.launchInput);
+		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, result.agentId);
+		if (validated.pullApiKey) {
+			await db
+				.update(agentPersonas)
+				.set({ runtimeApiKeyHash: hashRuntimeApiKey(validated.pullApiKey), updatedAt: new Date() })
+				.where(eq(agentPersonas.agentId, result.agentId));
+		}
+		return c.json(
+			{
+				agentId: result.agentId,
+				safeAddress: result.treasuryAddress,
+				pullApiKey: validated.pullApiKey,
+				agentApiKey: key.raw,
+			},
+			200,
+		);
+	} catch (err) {
+		if (err instanceof FourMemeError) {
+			return c.json({ error: "four.meme error", status: err.status, detail: err.message, body: err.body ?? null }, 502);
+		}
+		if (err instanceof AgentLaunchError) {
+			return c.json({ error: "agent launch error", step: err.step, detail: err.message }, 500);
+		}
+		return c.json(
+			{
+				error: "internal error",
+				detail: err instanceof Error ? err.message : String(err),
+			},
+			500,
+		);
+	}
+});
+
 /**
  * POST /v2/agents/launch
  *
@@ -486,91 +864,10 @@ app.post("/launch", requireAgentAuth(), async (c) => {
 		);
 	}
 
-	let orchestrator: ReturnType<typeof createOrchestrator>;
+	let orchestrator: LaunchOrchestrator;
 	try {
-		const chainId = Number(process.env.FOURMEME_CHAIN_ID ?? 56);
-		if (chainId !== 56 && chainId !== 97) {
-			throw new Error("FOURMEME_CHAIN_ID must be 56 or 97");
-		}
-		const rpcUrl =
-			process.env.BSC_RPC_URL ??
-			(chainId === 56 ? "https://bsc-dataseed.binance.org" : "https://data-seed-prebsc-1-s1.binance.org:8545");
-		const stewardBaseUrl = process.env.STEWARD_API_URL;
-		const stewardApiKey = process.env.STEWARD_API_KEY;
-		if (!stewardBaseUrl || !stewardApiKey) {
-			throw new Error("STEWARD_API_URL and STEWARD_API_KEY env vars required");
-		}
-		const stewardTenantId = process.env.STEWARD_TENANT_ID ?? "waifu";
-		const steward = createStewardClient({
-			baseUrl: stewardBaseUrl,
-			apiKey: stewardApiKey,
-			tenantId: stewardTenantId,
-		});
-		// Optional persona store (best-effort). If DATABASE_URL is set, write
-		// persona rows to the agent_personas table. If not (e.g. bare-bones
-		// test env), orchestrator still runs — persona just isn't persisted.
-		let personaStore: PersonaStore | undefined;
-		if (process.env.DATABASE_URL && process.env.DATABASE_URL.length > 0) {
-			const { db } = getDatabase(process.env.DATABASE_URL);
-			personaStore = {
-				writeInitial: async (args) => {
-					// Idempotent: skip if a row already exists for this agentId.
-					const existing = await agentPersonaQueries.getAgentPersonaByAgentId(db, args.agentId);
-					if (existing) return;
-					const personaJson =
-						args.persona && typeof args.persona === "object" ? (args.persona as Record<string, unknown>) : undefined;
-					const preset = personaJson && typeof personaJson.preset === "string" ? (personaJson.preset as string) : null;
-					const systemPrompt =
-						personaJson && typeof personaJson.systemPrompt === "string" ? (personaJson.systemPrompt as string) : null;
-					const traits =
-						personaJson && Array.isArray(personaJson.traits)
-							? (personaJson.traits.filter((t: unknown) => typeof t === "string") as string[])
-							: [];
-					const twitterHandle =
-						personaJson && typeof personaJson.twitterHandle === "string" ? (personaJson.twitterHandle as string) : null;
-					const persona = await agentPersonaQueries.createAgentPersona(db, {
-						agentId: args.agentId,
-						name: args.name,
-						bio: args.bio ?? null,
-						avatarUrl: args.avatarUrl ?? null,
-						preset,
-						systemPrompt,
-						traits,
-						twitterHandle,
-						metadata: personaJson ?? null,
-					});
-					await seedDefaultAdapterPolicies(db, persona);
-				},
-				setToken: async (agentId, tokenAddress) => {
-					await agentPersonaQueries.setTokenAddressOnPersona(db, agentId, tokenAddress);
-				},
-				setIdentity: async (agentId, identity) => {
-					await agentPersonaQueries.setPersonaIdentity(db, agentId, identity);
-				},
-			};
-		}
-
-		const deps: OrchestratorDeps = {
-			steward,
-			rpcUrl,
-			chainId: chainId as 56 | 97,
-			...(process.env.FOURMEME_API_URL ? { fourMemeBaseUrl: process.env.FOURMEME_API_URL } : {}),
-			...(process.env.FOURMEME_TOKEN_MANAGER_2
-				? {
-						tokenManager2Address: process.env.FOURMEME_TOKEN_MANAGER_2 as `0x${string}`,
-					}
-				: {}),
-			...(process.env.EIP8004_NFT_ADDRESS
-				? {
-						eip8004NftAddress: process.env.EIP8004_NFT_ADDRESS as `0x${string}`,
-					}
-				: {}),
-			platformSlug: "waifu",
-			...(personaStore ? { personaStore } : {}),
-		};
-		orchestrator = createOrchestrator(deps);
+		orchestrator = getOrCreateLaunchOrchestrator();
 	} catch (err) {
-		// Config missing (Steward URL, private key, etc.)
 		return c.json(
 			{
 				error: "orchestrator unavailable",

@@ -1,5 +1,6 @@
 "use client";
 
+import PromptBlock from "@/components/give-skill/prompt-block";
 import ActivityFeed from "@/components/patron/activity-feed";
 import AgentHero from "@/components/patron/agent-hero";
 import EmergencyControls from "@/components/patron/emergency-controls";
@@ -15,7 +16,7 @@ import XConnectionPanel from "@/components/patron/x-connection";
 import { useAuthorizeLaunch } from "@/lib/api/launches";
 import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
 import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 type Params = { agentId: string };
 
@@ -50,6 +51,15 @@ export default function PatronAgentDetailPage({
 	const [progressOpen, setProgressOpen] = useState(false);
 	const [authorizeError, setAuthorizeError] = useState<string | null>(null);
 	const [pendingFirstBuy, setPendingFirstBuy] = useState<string | null>(null);
+	const [oneTimeAgentApiKey, setOneTimeAgentApiKey] = useState<string | null>(null);
+
+	useEffect(() => {
+		const storageKey = `wf_agent_api_key:${agentId}`;
+		const value = window.sessionStorage.getItem(storageKey);
+		if (!value) return;
+		setOneTimeAgentApiKey(value);
+		window.sessionStorage.removeItem(storageKey);
+	}, [agentId]);
 
 	const triggerLaunch = async (firstBuyWei: string) => {
 		if (!launchId) {
@@ -107,6 +117,7 @@ export default function PatronAgentDetailPage({
 			) : isLaunchReady ? (
 				<div className="space-y-6 pb-24 md:pb-0">
 					<LaunchReadyHero agent={agent} isLoading={isLoading} />
+					{oneTimeAgentApiKey ? <OneTimeAgentKeyBlock agentApiKey={oneTimeAgentApiKey} /> : null}
 					<LaunchPanel
 						agentId={agentId}
 						safeAddress={agent?.safeAddress ?? null}
@@ -143,5 +154,18 @@ export default function PatronAgentDetailPage({
 				</div>
 			)}
 		</main>
+	);
+}
+
+function OneTimeAgentKeyBlock({ agentApiKey }: { agentApiKey: string }) {
+	return (
+		<section className="border border-[#00ff87]/30 bg-[#00ff87]/[0.04] p-4">
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">agent api key</p>
+			<p className="mt-2 text-sm text-neutral-300 leading-relaxed max-w-[68ch]">
+				copy this now. we won't show it again after this page load. use it as the agent's bearer credential for launch
+				and runtime-scoped API calls.
+			</p>
+			<PromptBlock prompt={agentApiKey} className="mt-4" />
+		</section>
 	);
 }

@@ -55,6 +55,9 @@ function WizardInner() {
 		}
 
 		if (result?.ok) {
+			if (result.agentApiKey) {
+				window.sessionStorage.setItem(`wf_agent_api_key:${result.agentId}`, result.agentApiKey);
+			}
 			router.push(`/patron/${encodeURIComponent(result.agentId)}?just_provisioned=true`);
 			return;
 		}
