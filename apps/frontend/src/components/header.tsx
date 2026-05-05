@@ -99,7 +99,7 @@ export default function Header() {
 					<LanguageSwitcher />
 					<SearchMenu />
 					<Link
-						href="/create/wizard"
+						href="/give-skill"
 						className="hidden md:inline-flex items-center gap-1.5 h-[38px] min-h-[38px] max-h-[38px] rounded-sm border border-[rgba(0,255,135,0.3)] bg-[rgba(0,255,135,0.06)] px-4 font-mono text-[11px] uppercase tracking-[0.16em] text-[#00ff87] hover:bg-[rgba(0,255,135,0.12)] hover:border-[rgba(0,255,135,0.45)] transition-colors duration-200"
 					>
 						{t("nav.launchAgent")}
@@ -166,7 +166,7 @@ export default function Header() {
 								onNavigate={() => setMobileMenuOpen(false)}
 							/>
 							<Link
-								href="/create/wizard"
+								href="/give-skill"
 								onClick={() => setMobileMenuOpen(false)}
 								className="text-sm font-mono uppercase tracking-wider py-3 px-4 rounded-sm text-[#00ff87] bg-[rgba(0,255,135,0.06)] hover:bg-[rgba(0,255,135,0.12)] transition-colors duration-200"
 							>
