@@ -42,7 +42,7 @@ export interface FourMemeTaxFeeConfig {
 	taxBps: 100 | 300 | 500 | 1000;
 	/**
 	 * Platform cut taken off the top of the tax stream, before the creator's
-	 * 4-way allocation. Default DEFAULT_PLATFORM_CUT_BPS (2500 = 25%).
+	 * 4-way allocation. Default DEFAULT_PLATFORM_CUT_BPS (1000 = 10%).
 	 */
 	platformCutBps: number;
 	/**
@@ -70,9 +70,9 @@ export type LaunchpadFeeConfig = FourMemeRegularFeeConfig | FourMemeTaxFeeConfig
 
 /**
  * Platform cut: waifu takes a flat percentage of total tax off the top.
- * Default 25%, bounded 10-50% in prod (server-validated).
+ * Default 10%, bounded 10-50% in prod (server-validated).
  */
-export const DEFAULT_PLATFORM_CUT_BPS = 2500; // 25%
+export const DEFAULT_PLATFORM_CUT_BPS = 1000; // 10%
 export const MIN_PLATFORM_CUT_BPS = 1000; // 10%
 export const MAX_PLATFORM_CUT_BPS = 5000; // 50%
 

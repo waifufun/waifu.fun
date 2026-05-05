@@ -15,12 +15,16 @@
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"lint": "biome check src package.json tsconfig.json",
+		"lint": "biome check src test package.json tsconfig.json",
+		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \" ); if [ -n \"$files\" ]; then node --import tsx --test $files; else echo \"No tests found\"; fi'",
 		"clean": "rm -rf dist",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
 		"@waifufun/config": "workspace:*",
 		"viem": "^2.23.5"
+	},
+	"devDependencies": {
+		"tsx": "^4.19.2"
 	}
 }

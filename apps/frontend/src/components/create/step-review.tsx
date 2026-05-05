@@ -74,6 +74,10 @@ export default function StepReview() {
 		feeConfig && "taxBps" in feeConfig && "platformCutBps" in feeConfig
 			? (computePlatformCutVolumeBps(feeConfig.taxBps, feeConfig.platformCutBps) / 100).toFixed(2)
 			: null;
+	const treasuryVolumePct =
+		feeConfig && "taxBps" in feeConfig && "platformCutBps" in feeConfig
+			? ((feeConfig.taxBps - computePlatformCutVolumeBps(feeConfig.taxBps, feeConfig.platformCutBps)) / 100).toFixed(2)
+			: null;
 
 	return (
 		<div className="flex flex-col gap-8">
@@ -136,11 +140,19 @@ export default function StepReview() {
 								regular curve. no creator tax routing, no agent treasury feed from trades.
 							</p>
 						) : null}
-						{taxVolumePct && platformCutPct && platformVolumePct ? (
-							<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-								{taxVolumePct}% trade tax. waifu takes {platformCutPct}% of that tax, {platformVolumePct}% of volume,
-								then the rest follows your creator routing. production launches keep this fee path enabled.
-							</p>
+						{taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
+							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+								<p>trade tax: {taxVolumePct}%</p>
+								<p>
+									└─ platform: {platformCutPct}% of tax ({platformVolumePct}%)
+								</p>
+								<p>
+									└─ treasury: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+								</p>
+								{feeConfig?.kind === "flap" && feeConfig.recipient === "agent-treasury" ? (
+									<p className="mt-1">Flap deploys a Split Vault for this routing at launch.</p>
+								) : null}
+							</div>
 						) : null}
 					</Row>
 				) : null}

@@ -70,11 +70,13 @@ export async function setTokenAddressOnPersona(
 	db: Database,
 	agentId: string,
 	tokenAddress: string,
+	taxVaultAddress?: string,
 ): Promise<AgentPersonaRow | null> {
 	const [row] = await db
 		.update(agentPersonas)
 		.set({
 			tokenAddress: tokenAddress.toLowerCase(),
+			...(taxVaultAddress ? { taxVaultAddress: taxVaultAddress.toLowerCase() } : {}),
 			updatedAt: new Date(),
 		})
 		.where(eq(agentPersonas.agentId, agentId))

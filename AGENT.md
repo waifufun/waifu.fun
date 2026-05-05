@@ -89,6 +89,7 @@ Content-Type: application/json
     "txHash": "0xabc123...",
     "eip8004TokenId": "1247",
     "treasuryAddress": "0x1a4c...",
+    "taxVaultAddress": "0x9b7c...",
     "walletAddress": "0x8f23...",
     "agentPageUrl": "https://waifu.fun/agent/0xea17Df5Cf6D172224892B5477A16ACb111182478",
     "fourMemeUrl": "https://four.meme/token/0xea17Df5Cf6D172224892B5477A16ACb111182478"
@@ -120,8 +121,9 @@ decimals:       18
 buy tax:        2%
 sell tax:       2%
 tax recipient:  agent treasury (gnosis safe)
+tax vault:      Flap launches deploy a Split Vault by default with 10% of the tax stream to WAIFU_PLATFORM_FEE_WALLET and 90% to treasury
 pair:           BNB
-launchpad:      four.meme TokenManager2
+launchpad:      four.meme TokenManager2 or Flap VaultPortal
                 0x5c952063c7fc8610FFDB798152D69F0B9550762b
 identity NFT:   EIP-8004 at
                 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432

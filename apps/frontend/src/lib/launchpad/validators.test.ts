@@ -97,13 +97,7 @@ describe("validateFourMemeTax", () => {
 	});
 
 	it("clears warnings at default platform cut", () => {
-		const result = validateFourMemeTax({
-			kind: "four-meme-tax",
-			taxBps: 300,
-			platformCutBps: DEFAULT_PLATFORM_CUT_BPS,
-			allocation: { founderBps: 3750, holderBps: 2250, burnBps: 750, liquidityBps: 750 },
-			minHolderBalance: "10000",
-		});
+		const result = validateFourMemeTax(DEFAULT_FOUR_MEME_TAX);
 		expect(result.warnings).toEqual([]);
 		expect(result.errors).toEqual([]);
 	});

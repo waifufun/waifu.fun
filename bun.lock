@@ -382,6 +382,9 @@
         "@waifufun/config": "workspace:*",
         "viem": "^2.23.5",
       },
+      "devDependencies": {
+        "tsx": "^4.19.2",
+      },
     },
     "packages/fourmeme": {
       "name": "@waifufun/fourmeme",

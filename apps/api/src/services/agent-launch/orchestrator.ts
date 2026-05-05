@@ -101,8 +101,9 @@ export interface PersonaStore {
 		bio?: string;
 		avatarUrl?: string;
 		persona?: AgentPersonaConfig;
+		taxVaultAddress?: Address;
 	}) => Promise<void>;
-	setToken: (agentId: string, tokenAddress: Address) => Promise<void>;
+	setToken: (agentId: string, tokenAddress: Address, taxVaultAddress?: Address) => Promise<void>;
 	/**
 	 * Persist the EIP-8004 identity details onto the persona metadata after a
 	 * successful register. Optional — impls can no-op if they don't care.

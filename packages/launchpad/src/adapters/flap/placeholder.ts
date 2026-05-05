@@ -4,9 +4,14 @@ import {
 	FLAP_TOKEN_STATUSES,
 	buildNewTokenV5Params,
 	buildNewTokenV5Write,
+	buildNewTokenV6WithVaultParams,
+	buildNewTokenV6WithVaultWrite,
+	buildSplitVaultData,
+	getDefaultSplitVaultFactoryAddress,
 	getFlapMetadataUrl,
 	getTokenV7,
 	parsePortalReceiptEvents,
+	parseVaultPortalReceiptEvents,
 } from "@waifufun/flap";
 import {
 	type Address,
@@ -46,7 +51,7 @@ const DEFAULT_CHAIN_ID = FLAP_BSC_MAINNET_CHAIN_ID;
 type FlapAdapterCreateTokenParams = CreateTokenParams & {
 	/** Pre-uploaded Flap metadata CID returned by uploadFlapMetadata. Preferred. */
 	flapMetadataCid?: string;
-	/** Pre-uploaded Flap metadata URL. Used as newTokenV5 params.meta. */
+	/** Pre-uploaded Flap metadata URL. Used as newTokenV5 or newTokenV6WithVault params.meta. */
 	flapMetadataUrl?: string;
 	/** Raw Flap metadata string override for protocol-level tests/migrations. */
 	flapMeta?: string;
@@ -54,6 +59,10 @@ type FlapAdapterCreateTokenParams = CreateTokenParams & {
 	flapSalt?: Hex;
 	/** Override portal for tests, testnet, or emergency contract migrations. */
 	flapPortalAddress?: Address;
+	/** Override VaultPortal for tests, testnet, or emergency contract migrations. */
+	flapVaultPortalAddress?: Address;
+	/** Override Split Vault factory for tests or testnet. */
+	flapSplitVaultFactoryAddress?: Address;
 	/** Override chain id. Defaults to BSC mainnet. */
 	flapChainId?: number;
 };
@@ -62,6 +71,9 @@ export interface CreateFlapAdapterOptions {
 	publicClient?: PublicClient;
 	chainId?: number;
 	portalAddress?: Address;
+	vaultPortalAddress?: Address;
+	splitVaultFactoryAddress?: Address;
+	platformWalletAddress?: Address;
 }
 
 const unsupported = (message: string): never => {
@@ -84,6 +96,30 @@ const resolveBeneficiary = (params: CreateTokenParams, config: FlapFeeConfig): A
 	}
 
 	return requireAddress("founderAddress", params.founderAddress);
+};
+
+const resolvePlatformWallet = (options: CreateFlapAdapterOptions): Address => {
+	const configured = options.platformWalletAddress ?? process.env.WAIFU_PLATFORM_FEE_WALLET;
+	if (!configured) {
+		throw new FlapAdapterError(
+			"FlapNotConfigured",
+			"WAIFU_PLATFORM_FEE_WALLET is required for Flap agent-treasury launches so VaultPortal can deploy the Split Vault.",
+		);
+	}
+	return requireAddress("WAIFU_PLATFORM_FEE_WALLET", configured);
+};
+
+const buildAgentTreasuryRecipients = (
+	params: CreateTokenParams,
+	config: FlapFeeConfig,
+	options: CreateFlapAdapterOptions,
+) => {
+	const platform = resolvePlatformWallet(options);
+	const treasury = requireAddress("founderAddress", params.founderAddress);
+	return [
+		{ recipient: platform, bps: config.platformCutBps },
+		{ recipient: treasury, bps: 10_000 - config.platformCutBps },
+	] as const;
 };
 
 const resolveMeta = (params: FlapAdapterCreateTokenParams): string => {
@@ -119,17 +155,17 @@ const deriveSalt = (params: FlapAdapterCreateTokenParams, config: FlapFeeConfig)
 	);
 };
 
-/**
- * Map Waifu's option-3 fee model to Flap's current taxable-token params.
- *
- * Flap exposes one beneficiary for marketing tax revenue. Until a Waifu-owned
- * splitter/vault ABI is wired into launch orchestration, the on-chain launch
- * routes 100% of token tax to the selected beneficiary. That beneficiary should
- * be an agent treasury Safe or custom vault that enforces/settles
- * platformCutBps before creator routing.
- */
 export const toFlapNewTokenV5TaxParams = (config: FlapFeeConfig) => ({
 	taxRate: config.taxBps,
+	mktBps: 10_000,
+	deflationBps: 0,
+	dividendBps: 0,
+	lpBps: 0,
+});
+
+export const toFlapNewTokenV6TaxParams = (config: FlapFeeConfig) => ({
+	buyTaxRate: config.taxBps,
+	sellTaxRate: config.taxBps,
 	mktBps: 10_000,
 	deflationBps: 0,
 	dividendBps: 0,
@@ -142,7 +178,7 @@ export const flapDescriptor: LaunchpadDescriptor = {
 	chain: "bsc",
 	displayName: "Flap",
 	shortDescription: "BSC-native Flap launchpad adapter.",
-	feeSummary: "Configurable 1%, 3%, 5%, or 10% tax routed to agent treasury or custom vault.",
+	feeSummary: "Configurable 1%, 3%, 5%, or 10% tax routed through Split Vault to treasury, or to a custom vault.",
 	graduationTarget: "Flap-native graduation path.",
 	badges: ["recommended"],
 };
@@ -195,31 +231,58 @@ export const createFlapAdapter = (options: CreateFlapAdapterOptions = {}): Launc
 
 		const flapParams = params as FlapAdapterCreateTokenParams;
 		const chainId = flapParams.flapChainId ?? options.chainId ?? DEFAULT_CHAIN_ID;
-		const beneficiary = resolveBeneficiary(params, params.feeConfig);
-		const taxParams = toFlapNewTokenV5TaxParams(params.feeConfig);
-		const newTokenParams = buildNewTokenV5Params({
+
+		if (params.feeConfig.recipient === "custom-vault") {
+			const beneficiary = resolveBeneficiary(params, params.feeConfig);
+			const newTokenParams = buildNewTokenV5Params({
+				name: params.name,
+				symbol: params.ticker,
+				meta: resolveMeta(flapParams),
+				salt: deriveSalt(flapParams, params.feeConfig),
+				beneficiary,
+				quoteAmt: params.initialBuyWei ?? 0n,
+				...toFlapNewTokenV5TaxParams(params.feeConfig),
+			});
+			const write = buildNewTokenV5Write({
+				params: newTokenParams,
+				value: params.initialBuyWei ?? 0n,
+				chainId,
+				portalAddress: flapParams.flapPortalAddress ?? options.portalAddress,
+			});
+
+			return {
+				to: write.address,
+				data: encodeFunctionData({ abi: write.abi, functionName: write.functionName, args: write.args }),
+				value: write.value,
+				chainId,
+			};
+		}
+
+		const vaultFactory =
+			flapParams.flapSplitVaultFactoryAddress ??
+			options.splitVaultFactoryAddress ??
+			getDefaultSplitVaultFactoryAddress({ chainId });
+		const vaultData = buildSplitVaultData(buildAgentTreasuryRecipients(params, params.feeConfig, options));
+		const newTokenParams = buildNewTokenV6WithVaultParams({
 			name: params.name,
 			symbol: params.ticker,
 			meta: resolveMeta(flapParams),
 			salt: deriveSalt(flapParams, params.feeConfig),
-			beneficiary,
 			quoteAmt: params.initialBuyWei ?? 0n,
-			...taxParams,
+			vaultFactory,
+			vaultData,
+			...toFlapNewTokenV6TaxParams(params.feeConfig),
 		});
-		const write = buildNewTokenV5Write({
+		const write = buildNewTokenV6WithVaultWrite({
 			params: newTokenParams,
 			value: params.initialBuyWei ?? 0n,
 			chainId,
-			portalAddress: flapParams.flapPortalAddress ?? options.portalAddress,
+			vaultPortalAddress: flapParams.flapVaultPortalAddress ?? options.vaultPortalAddress,
 		});
 
 		return {
 			to: write.address,
-			data: encodeFunctionData({
-				abi: write.abi,
-				functionName: write.functionName,
-				args: write.args,
-			}),
+			data: encodeFunctionData({ abi: write.abi, functionName: write.functionName, args: write.args }),
 			value: write.value,
 			chainId,
 		};
@@ -228,8 +291,28 @@ export const createFlapAdapter = (options: CreateFlapAdapterOptions = {}): Launc
 	parseCreateTokenReceipt(receipt: { logs?: unknown[] }): {
 		tokenAddress: string;
 		curveAddress: string;
+		vaultAddress?: string;
+		vaultFactory?: string;
 	} {
 		const logs = Array.isArray(receipt?.logs) ? receipt.logs : [];
+		const vaultEvents = parseVaultPortalReceiptEvents({ logs: logs as never });
+		for (const event of vaultEvents) {
+			const args = event.args as Record<string, unknown> | undefined;
+			const token = args?.token;
+			const vault = args?.vault;
+			const vaultFactory = args?.vaultFactory;
+			if (typeof token === "string" && isAddress(token) && typeof vault === "string" && isAddress(vault)) {
+				return {
+					tokenAddress: getAddress(token),
+					curveAddress: getAddress(token),
+					vaultAddress: getAddress(vault),
+					...(typeof vaultFactory === "string" && isAddress(vaultFactory)
+						? { vaultFactory: getAddress(vaultFactory) }
+						: {}),
+				};
+			}
+		}
+
 		const events = parsePortalReceiptEvents({ logs: logs as never });
 		let tokenAddress: Address | undefined;
 		let curveAddress: Address | undefined;
