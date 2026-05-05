@@ -91,8 +91,7 @@ function slugifyAgentId(name: string): string {
 	return `waifu-${slug || "agent"}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
-	if (agentsRouteDepsForTest.createOrchestrator) return agentsRouteDepsForTest.createOrchestrator();
+export function buildLaunchOrchestratorDeps(): OrchestratorDeps {
 	const chainId = Number(process.env.FOURMEME_CHAIN_ID ?? 56);
 	if (chainId !== 56 && chainId !== 97) {
 		throw new Error("FOURMEME_CHAIN_ID must be 56 or 97");
@@ -173,11 +172,19 @@ function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
 		...(process.env.FOURMEME_TOKEN_MANAGER_2
 			? { tokenManager2Address: process.env.FOURMEME_TOKEN_MANAGER_2 as `0x${string}` }
 			: {}),
+		...(process.env.TAX_SPLITTER_FACTORY_ADDRESS
+			? { taxSplitterFactoryAddress: process.env.TAX_SPLITTER_FACTORY_ADDRESS as `0x${string}` }
+			: {}),
 		...(process.env.EIP8004_NFT_ADDRESS ? { eip8004NftAddress: process.env.EIP8004_NFT_ADDRESS as `0x${string}` } : {}),
 		platformSlug: "waifu",
 		...(personaStore ? { personaStore } : {}),
 	};
-	return createOrchestrator(deps);
+	return deps;
+}
+
+function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
+	if (agentsRouteDepsForTest.createOrchestrator) return agentsRouteDepsForTest.createOrchestrator();
+	return createOrchestrator(buildLaunchOrchestratorDeps());
 }
 
 export type ResurrectAgentDeps = {
@@ -784,6 +791,142 @@ export async function redeemProvisionInviteCode(
 	});
 }
 
+export async function reserveProvisionInviteCode(
+	db: Database,
+	code: string,
+	patron: { stewardUserId: string; primaryAddress?: string | null },
+): Promise<{ reserved: boolean; alreadyRedeemed: boolean }> {
+	return db.transaction(async (tx) => {
+		let [creator] = await tx
+			.select({ id: creators.id })
+			.from(creators)
+			.where(eq(creators.stewardUserId, patron.stewardUserId))
+			.limit(1);
+
+		if (!creator) {
+			const [created] = await tx
+				.insert(creators)
+				.values({ stewardUserId: patron.stewardUserId })
+				.onConflictDoUpdate({
+					target: creators.stewardUserId,
+					set: { updatedAt: new Date() },
+				})
+				.returning({ id: creators.id });
+			if (!created) throw new Error("failed to resolve invite creator");
+			creator = created;
+		}
+
+		const [invite] = await tx.execute<{
+			id: string;
+			maxUses: number;
+			usedCount: number;
+			isActive: boolean;
+			expiresAt: Date | null;
+		}>(sql`
+			SELECT
+				id,
+				max_uses AS "maxUses",
+				used_count AS "usedCount",
+				is_active AS "isActive",
+				expires_at AS "expiresAt"
+			FROM invite_codes
+			WHERE code = ${code}
+			FOR UPDATE
+		`);
+
+		if (!invite || !invite.isActive || (invite.expiresAt && invite.expiresAt < new Date())) {
+			throw new Error("invalid invite code");
+		}
+
+		const [existingRedemption] = await tx
+			.select({ creatorId: inviteRedemptions.creatorId })
+			.from(inviteRedemptions)
+			.where(and(eq(inviteRedemptions.inviteCodeId, invite.id), eq(inviteRedemptions.creatorId, creator.id)))
+			.limit(1);
+
+		if (existingRedemption) return { reserved: false, alreadyRedeemed: true };
+
+		const [pending] = await tx.execute<{ pendingCount: number }>(sql`
+			SELECT COUNT(*)::int AS "pendingCount"
+			FROM invite_redemptions
+			WHERE invite_code_id = ${invite.id}
+		`);
+		const reservedOrRedeemedCount = Math.max(invite.usedCount, pending?.pendingCount ?? 0);
+		if (reservedOrRedeemedCount >= invite.maxUses) throw new Error("invite code has reached max uses");
+
+		const [redemption] = await tx
+			.insert(inviteRedemptions)
+			.values({ inviteCodeId: invite.id, creatorId: creator.id })
+			.onConflictDoNothing()
+			.returning({ inviteCodeId: inviteRedemptions.inviteCodeId });
+
+		if (!redemption) return { reserved: false, alreadyRedeemed: true };
+		return { reserved: true, alreadyRedeemed: false };
+	});
+}
+
+export async function confirmProvisionInviteCode(
+	db: Database,
+	code: string,
+	patron: { stewardUserId: string; primaryAddress?: string | null },
+): Promise<void> {
+	await db.transaction(async (tx) => {
+		const [creator] = await tx
+			.select({ id: creators.id })
+			.from(creators)
+			.where(eq(creators.stewardUserId, patron.stewardUserId))
+			.limit(1);
+		if (!creator) throw new Error("failed to resolve invite creator");
+
+		const [invite] = await tx.execute<{ id: string }>(sql`
+			SELECT id
+			FROM invite_codes
+			WHERE code = ${code}
+			FOR UPDATE
+		`);
+		if (!invite) throw new Error("invalid invite code");
+
+		const [existingRedemption] = await tx
+			.select({ creatorId: inviteRedemptions.creatorId })
+			.from(inviteRedemptions)
+			.where(and(eq(inviteRedemptions.inviteCodeId, invite.id), eq(inviteRedemptions.creatorId, creator.id)))
+			.limit(1);
+		if (!existingRedemption) throw new Error("invite reservation missing");
+
+		await tx
+			.update(inviteCodes)
+			.set({ usedCount: sql`${inviteCodes.usedCount} + 1`, updatedAt: new Date() })
+			.where(eq(inviteCodes.id, invite.id));
+	});
+}
+
+export async function releaseProvisionInviteCode(
+	db: Database,
+	code: string,
+	patron: { stewardUserId: string; primaryAddress?: string | null },
+): Promise<void> {
+	await db.transaction(async (tx) => {
+		const [creator] = await tx
+			.select({ id: creators.id })
+			.from(creators)
+			.where(eq(creators.stewardUserId, patron.stewardUserId))
+			.limit(1);
+		if (!creator) return;
+
+		const [invite] = await tx.execute<{ id: string }>(sql`
+			SELECT id
+			FROM invite_codes
+			WHERE code = ${code}
+			FOR UPDATE
+		`);
+		if (!invite) return;
+
+		await tx
+			.delete(inviteRedemptions)
+			.where(and(eq(inviteRedemptions.inviteCodeId, invite.id), eq(inviteRedemptions.creatorId, creator.id)));
+	});
+}
+
 async function findRecentProvisionDuplicate(
 	db: Database,
 	patronStewardUserId: string,
@@ -846,8 +989,8 @@ app.post("/provision", requirePatron(), async (c) => {
 	}
 
 	try {
-		const redemption = await redeemProvisionInviteCode(db, validated.body.inviteCode as string, patron);
-		if (redemption.alreadyRedeemed) {
+		const reservation = await reserveProvisionInviteCode(db, validated.body.inviteCode as string, patron);
+		if (reservation.alreadyRedeemed) {
 			return c.json({ error: "invite unavailable", reason: "validation" }, 400);
 		}
 	} catch (err) {
@@ -860,10 +1003,12 @@ app.post("/provision", requirePatron(), async (c) => {
 		);
 	}
 
+	let inviteConfirmed = false;
 	let orchestrator: LaunchOrchestrator;
 	try {
 		orchestrator = getOrCreateLaunchOrchestrator();
 	} catch (err) {
+		await releaseProvisionInviteCode(db, validated.body.inviteCode as string, patron);
 		return c.json(
 			{
 				error: "orchestrator unavailable",
@@ -875,6 +1020,8 @@ app.post("/provision", requirePatron(), async (c) => {
 
 	try {
 		const result = await orchestrator.launch(validated.launchInput);
+		await confirmProvisionInviteCode(db, validated.body.inviteCode as string, patron);
+		inviteConfirmed = true;
 		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, result.agentId);
 		if (validated.pullApiKey) {
 			await db
@@ -893,6 +1040,7 @@ app.post("/provision", requirePatron(), async (c) => {
 			200,
 		);
 	} catch (err) {
+		if (!inviteConfirmed) await releaseProvisionInviteCode(db, validated.body.inviteCode as string, patron);
 		if (err instanceof FourMemeError) {
 			return c.json({ error: "four.meme error", status: err.status, detail: err.message, body: err.body ?? null }, 502);
 		}

@@ -54,7 +54,7 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 });
 
 import { __setRequirePatronDbForTest, __setRequirePatronStewardParserForTest } from "../../middleware/patron-auth.js";
-import app, { __setAgentsRouteDepsForTest } from "./agents.js";
+import app, { __setAgentsRouteDepsForTest, buildLaunchOrchestratorDeps } from "./agents.js";
 
 const PATRON_ROW = {
 	id: "patron-row-1",
@@ -95,6 +95,7 @@ function createInviteRedemptionDb() {
 	const db = {
 		transaction<T>(fn: (tx: unknown) => Promise<T>) {
 			let selectCount = 0;
+			let executeCount = 0;
 			const tx = {
 				select() {
 					selectCount += 1;
@@ -124,6 +125,8 @@ function createInviteRedemptionDb() {
 					};
 				},
 				execute() {
+					executeCount += 1;
+					if (executeCount === 2) return Promise.resolve([{ pendingCount: state.redemptions.size }]);
 					return Promise.resolve([state.invite]);
 				},
 				insert() {
@@ -162,6 +165,15 @@ function createInviteRedemptionDb() {
 						}),
 					};
 				},
+				delete() {
+					return {
+						where: () => {
+							const creator = state.creators.get(state.currentStewardUserId);
+							if (creator) state.redemptions.delete(`${state.invite.id}:${creator.id}`);
+							return Promise.resolve();
+						},
+					};
+				},
 			};
 			return fn(tx);
 		},
@@ -169,7 +181,13 @@ function createInviteRedemptionDb() {
 	return { db: db as never, state };
 }
 
-type ProvisionDbForTest = Database & { __inviteState: { currentStewardUserId: string } };
+type ProvisionDbForTest = Database & {
+	__inviteState: {
+		currentStewardUserId: string;
+		invite: { usedCount: number };
+		redemptions: Set<string>;
+	};
+};
 
 function createProvisionDb(
 	duplicateRows: Array<{ agentId: string; taxRecipientAddress: string | null; tokenAddress: string | null }> = [],
@@ -211,6 +229,28 @@ function resetProvisionDeps() {
 	__setRequirePatronStewardParserForTest(undefined);
 	__setAgentAuthDbForTest(undefined);
 }
+
+test("buildLaunchOrchestratorDeps forwards tax splitter factory address", () => {
+	const previous = {
+		stewardUrl: process.env.STEWARD_API_URL,
+		stewardKey: process.env.STEWARD_API_KEY,
+		taxFactory: process.env.TAX_SPLITTER_FACTORY_ADDRESS,
+	};
+	process.env.STEWARD_API_URL = "https://steward.example";
+	process.env.STEWARD_API_KEY = "steward-key";
+	process.env.TAX_SPLITTER_FACTORY_ADDRESS = "0x00000000000000000000000000000000000000aa";
+	try {
+		const deps = buildLaunchOrchestratorDeps();
+		assert.equal(deps.taxSplitterFactoryAddress, "0x00000000000000000000000000000000000000aa");
+	} finally {
+		if (previous.stewardUrl === undefined) delete process.env.STEWARD_API_URL;
+		else process.env.STEWARD_API_URL = previous.stewardUrl;
+		if (previous.stewardKey === undefined) delete process.env.STEWARD_API_KEY;
+		else process.env.STEWARD_API_KEY = previous.stewardKey;
+		if (previous.taxFactory === undefined) delete process.env.TAX_SPLITTER_FACTORY_ADDRESS;
+		else process.env.TAX_SPLITTER_FACTORY_ADDRESS = previous.taxFactory;
+	}
+});
 
 test("redeemProvisionInviteCode is idempotent per patron and enforces max uses", async () => {
 	const { db, state } = createInviteRedemptionDb();
@@ -355,6 +395,61 @@ test("POST /v2/agents/provision reserves last invite before launch", async () =>
 	assert.equal(second.status, 400);
 	assert.equal(((await second.json()) as { reason?: string }).reason, "validation");
 	assert.equal(launches.length, 1);
+	resetProvisionDeps();
+});
+
+test("POST /v2/agents/provision releases invite reservation when launch fails before persona write", async () => {
+	const db = createProvisionDb();
+	let shouldFail = true;
+	const launches: unknown[] = [];
+	__setRequirePatronDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "patron@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setAgentsRouteDepsForTest({
+		db,
+		createAgentKey: async (_db, agentId) => ({ raw: "agk_retry_key", row: { agentId } as never }),
+		createOrchestrator: () =>
+			({
+				launch: async (input: import("../../services/agent-launch/index.js").AgentLaunchInput) => {
+					launches.push(input);
+					if (shouldFail) throw new Error("persona write never happened");
+					return {
+						agentId: input.agentId ?? "waifu-test-waifu",
+						walletAddress: "0x0000000000000000000000000000000000000002",
+						treasuryAddress: "0x0000000000000000000000000000000000000003",
+						tokenAddress: "0x0000000000000000000000000000000000000004",
+						txHash: `0x${"1".repeat(64)}`,
+						fourMeme: { nonce: "n", imageUrl: "https://example.com/i.png", createArgHash: "h" },
+					};
+				},
+			}) as never,
+	});
+
+	const first = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify(provisionPayload()),
+	});
+	assert.equal(first.status, 500);
+	assert.equal(db.__inviteState.invite.usedCount, 0);
+	assert.equal(db.__inviteState.redemptions.size, 0);
+
+	shouldFail = false;
+	const second = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify(provisionPayload()),
+	});
+
+	assert.equal(second.status, 200);
+	const json = (await second.json()) as { agentApiKey?: string; agentId?: string };
+	assert.match(json.agentId ?? "", /^waifu-test-waifu-/);
+	assert.equal(json.agentApiKey, "agk_retry_key");
+	assert.equal(launches.length, 2);
 	resetProvisionDeps();
 });
 

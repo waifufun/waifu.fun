@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-client";
 import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 
 describe("wizard provision success routing", () => {
+	it("waits longer than the backend receipt timeout before failing the wizard", () => {
+		expect(PROVISION_RESPONSE_TIMEOUT_MS).toBe(300_000);
+	});
+
 	it("uses tokenAddress for patron redirect and one-time key storage when present", () => {
 		const result = {
 			ok: true,

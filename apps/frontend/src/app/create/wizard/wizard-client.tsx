@@ -17,9 +17,11 @@ import {
 import { useAuthRequired } from "@/hooks/use-auth-required";
 import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
 import { useRouter } from "next/navigation";
-import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
+
+export const PROVISION_RESPONSE_TIMEOUT_MS = 300_000;
 
 function WizardInner() {
 	const router = useRouter();
@@ -51,7 +53,10 @@ function WizardInner() {
 			if (provisionPromise.current) {
 				setAwaitingProvisionResponse(true);
 				const timeout = new Promise<ProvisionResult>((_, reject) => {
-					window.setTimeout(() => reject(new Error("launch timed out; check your patron page")), 60_000);
+					window.setTimeout(
+						() => reject(new Error("launch timed out; check your patron page")),
+						PROVISION_RESPONSE_TIMEOUT_MS,
+					);
 				});
 				result = await Promise.race([provisionPromise.current, timeout]);
 			}
