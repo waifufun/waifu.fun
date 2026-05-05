@@ -181,7 +181,7 @@ export default function HeroV2() {
 						<div className="rounded-sm p-1.5 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)]">
 							{/* Inner core */}
 							<VisualAsset
-								src="/litepaper/v2/hero-agent.webp"
+								src="/litepaper/hero-portrait.webp"
 								alt="Autonomous AI agent"
 								priority
 								className="relative aspect-[3/4] rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
