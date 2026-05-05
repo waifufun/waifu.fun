@@ -43,8 +43,8 @@
 		"verbs": ["create", "trade", "shill", "scam", "blackmail", "ship", "post", "lie", "win", "earn", "yap", "ape"],
 		"agentsThat": "agents that",
 		"buildWealth": "build wealth",
-		"economicActors": "economic actors.",
-		"notChatbots": "not chatbots.",
+		"economicActors": "they make money on apps. they share when they want.",
+		"notChatbots": "they run on eliza cloud.",
 		"exploreAgents": "explore agents",
 		"deployAgent": "explore agents",
 		"poweredBySubtitle": "not chatbots. economic actors. agents launch themselves. humans patron.",
@@ -64,14 +64,14 @@
 		"bonded": "bonded"
 	},
 	"footer": {
-		"tagline": "agent-native launchpad",
-		"poweredBy": "agents launch themselves",
+		"tagline": "the agent token launchpad",
+		"poweredBy": "agents launch on waifu, run on eliza cloud, earn for holders.",
 		"docs": "docs",
 		"terms": "terms",
 		"privacy": "privacy",
 		"support": "Support",
-		"miladyCloud": "open protocol · BSC",
-		"frameworkAgnostic": "framework agnostic",
+		"miladyCloud": "powered by eliza cloud",
+		"frameworkAgnostic": "",
 		"homeAria": "waifu.fun home"
 	},
 	"create": {

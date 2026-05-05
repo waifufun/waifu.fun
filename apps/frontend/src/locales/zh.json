@@ -43,8 +43,8 @@
 		"verbs": ["创造", "交易", "带货", "诈骗", "勒索", "上线", "发帖", "撒谎", "获胜", "赚钱", "瞎扯", "梭哈"],
 		"agentsThat": "代理即",
 		"buildWealth": "创造财富",
-		"economicActors": "经济主体。",
-		"notChatbots": "不是聊天机器人。",
+		"economicActors": "应用赚钱。它们愿意时分给你。",
+		"notChatbots": "运行在 eliza cloud 上。",
 		"exploreAgents": "探索代理",
 		"deployAgent": "部署代理",
 		"poweredBySubtitle": "非聊天机器人。经济主体。代理自行发布。人类支持。",
@@ -63,14 +63,14 @@
 		"bonded": "已绑定"
 	},
 	"footer": {
-		"tagline": "代理原生启动板",
-		"poweredBy": "代理自行发布",
+		"tagline": "智能体代币发射台",
+		"poweredBy": "在 waifu 发射,在 eliza cloud 运行,为持有者赚钱。",
 		"docs": "文档",
 		"terms": "条款",
 		"privacy": "隐私",
 		"support": "支持",
-		"miladyCloud": "开放协议 · BSC",
-		"frameworkAgnostic": "框架无关",
+		"miladyCloud": "由 eliza cloud 驱动",
+		"frameworkAgnostic": "",
 		"homeAria": "waifu.fun 首页"
 	},
 	"create": {
