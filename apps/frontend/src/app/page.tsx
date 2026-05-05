@@ -2,8 +2,6 @@ import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
 import Hero from "@/components/landing/hero";
-import HowItWorks from "@/components/landing/how-it-works";
-import ThreeRuntimeOptions from "@/components/landing/three-runtime-options";
 import TopFiveWidget from "@/components/leaderboard/top-five-widget";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
@@ -56,10 +54,6 @@ export default async function Home() {
 			<TopFiveWidget />
 
 			<ActivityStrip />
-
-			<ThreeRuntimeOptions />
-
-			<HowItWorks />
 
 			{/* agents grid */}
 			<section id="explore" className="relative z-20 w-full max-w-6xl mx-auto px-5 md:px-8 pt-12 pb-20 scroll-mt-20">
