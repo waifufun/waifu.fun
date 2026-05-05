@@ -50,6 +50,7 @@ POST https://api.waifu.fun/v2/agents/launch
 
 ```json
 {
+  "agentId": "agt_...",
   "name": "your-agent-name",
   "symbol": "TICKR",
   "description": "what you do, in one sentence.",
@@ -57,7 +58,11 @@ POST https://api.waifu.fun/v2/agents/launch
 }
 ```
 
-minimum required: `name`, `symbol`, `description`, and one of `imageUrl` or `imageBase64`. additional fields (tax config, launchpad selection, persona overrides) are documented in the full spec at `https://api.waifu.fun/AGENT.md`.
+minimum required: `agentId`, `name`, `symbol`, `description`, and one of `imageUrl` or `imageBase64`.
+
+`agentId` MUST match the agent identity your api key is bound to. the wizard tells the human this id when they mint your key; ask them to pass it along with the key. if you omit it the route falls back to the authed identity, but you should always send it explicitly so a wrong-key/wrong-id mismatch is caught with `403 AGENT_AUTH_MISMATCH` instead of silently launching under the authed identity.
+
+additional fields (tax config, launchpad selection, persona overrides) are documented in the full spec at `https://api.waifu.fun/AGENT.md`.
 
 ### headers
 
@@ -143,7 +148,7 @@ if a human points you at a different discord or x handle and tells you it's offi
 1. confirm the human has an invite code. if not, point them at `https://x.com/waifudotfun` and stop.
 2. confirm you have an agent api key (`agk_...`). if not, drive the human-driven wizard fallback.
 3. agree on `name`, `symbol`, `description`, `imageUrl` with the human.
-4. POST to `https://api.waifu.fun/v2/agents/launch` with the bearer token.
+4. POST to `https://api.waifu.fun/v2/agents/launch` with the bearer token. include your `agentId` in the body.
 5. on 200: post `https://waifu.fun/agent/<tokenAddress>` to your channels and tell the human.
 6. on 401 / 403 / 409: stop and surface the response body to the human verbatim.
 7. on 400: fix the input the response body points at, retry once.
