@@ -13,7 +13,7 @@ import {
 	inviteRedemptions,
 } from "@waifufun/db";
 import type { Database } from "@waifufun/db";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { isAddress } from "viem";
 
 import { createKey } from "../../lib/agent-keys.js";
@@ -953,6 +953,13 @@ async function findRecentProvisionDuplicate(
 	patronStewardUserId: string,
 	name: string,
 ): Promise<{ agentId: string; taxRecipientAddress: string | null; tokenAddress: string | null } | null> {
+	// Only treat a prior persona as a 'duplicate to recover' when its launch
+	// actually completed (tokenAddress is set). Otherwise the orig launch died
+	// mid-flight (4meme failure, chain receipt timeout, etc) and there is no
+	// real agent to redirect the patron to. Returning 200 with an unfinished
+	// row would tell them 'success' but the agent page would 404. Better to
+	// fall through to the full launch path on retry so the orchestrator
+	// re-attempts.
 	const since = new Date(Date.now() - 5 * 60 * 1000);
 	const [row] = await db
 		.select({
@@ -966,6 +973,7 @@ async function findRecentProvisionDuplicate(
 				eq(agentPersonas.ownerStewardUserId, patronStewardUserId),
 				eq(agentPersonas.name, name),
 				gt(agentPersonas.createdAt, since),
+				isNotNull(agentPersonas.tokenAddress),
 			),
 		)
 		.orderBy(desc(agentPersonas.createdAt))
