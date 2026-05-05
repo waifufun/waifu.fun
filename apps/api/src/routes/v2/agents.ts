@@ -788,10 +788,14 @@ async function findRecentProvisionDuplicate(
 	db: Database,
 	patronStewardUserId: string,
 	name: string,
-): Promise<{ agentId: string; taxRecipientAddress: string | null } | null> {
+): Promise<{ agentId: string; taxRecipientAddress: string | null; tokenAddress: string | null } | null> {
 	const since = new Date(Date.now() - 5 * 60 * 1000);
 	const [row] = await db
-		.select({ agentId: agentPersonas.agentId, taxRecipientAddress: agentPersonas.taxRecipientAddress })
+		.select({
+			agentId: agentPersonas.agentId,
+			taxRecipientAddress: agentPersonas.taxRecipientAddress,
+			tokenAddress: agentPersonas.tokenAddress,
+		})
 		.from(agentPersonas)
 		.where(
 			and(
@@ -820,21 +824,6 @@ app.post("/provision", requirePatron(), async (c) => {
 	const validated = validateProvisionBody(rawBody, patron);
 	if (!validated.ok) return c.json({ error: validated.message, reason: "validation" }, 400);
 
-	try {
-		const redemption = await redeemProvisionInviteCode(db, validated.body.inviteCode as string, patron);
-		if (redemption.alreadyRedeemed) {
-			return c.json({ error: "invite already used by you", reason: "validation" }, 400);
-		}
-	} catch (err) {
-		return c.json(
-			{
-				error: err instanceof Error ? err.message : "invalid invite code",
-				reason: "validation",
-			},
-			400,
-		);
-	}
-
 	const duplicate = await findRecentProvisionDuplicate(db, patron.stewardUserId, validated.launchInput.name);
 	if (duplicate) {
 		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, duplicate.agentId);
@@ -847,11 +836,27 @@ app.post("/provision", requirePatron(), async (c) => {
 		return c.json(
 			{
 				agentId: duplicate.agentId,
+				tokenAddress: duplicate.tokenAddress ?? null,
 				safeAddress: duplicate.taxRecipientAddress ?? null,
 				pullApiKey: validated.pullApiKey,
 				agentApiKey: key.raw,
 			},
 			200,
+		);
+	}
+
+	try {
+		const redemption = await redeemProvisionInviteCode(db, validated.body.inviteCode as string, patron);
+		if (redemption.alreadyRedeemed) {
+			return c.json({ error: "invite unavailable", reason: "validation" }, 400);
+		}
+	} catch (err) {
+		return c.json(
+			{
+				error: err instanceof Error ? err.message : "invalid invite code",
+				reason: "validation",
+			},
+			400,
 		);
 	}
 
@@ -880,6 +885,7 @@ app.post("/provision", requirePatron(), async (c) => {
 		return c.json(
 			{
 				agentId: result.agentId,
+				tokenAddress: result.tokenAddress,
 				safeAddress: result.treasuryAddress,
 				pullApiKey: validated.pullApiKey,
 				agentApiKey: key.raw,
@@ -949,6 +955,9 @@ app.post("/launch", requireAgentAuth(), async (c) => {
 	const db = requireDb();
 	if (!db) return c.json({ error: "database unavailable" }, 503);
 	const authed = (c as unknown as { get(key: "authedAgent"): { agentId: string } }).get("authedAgent");
+	if (!body.agentId) {
+		body.agentId = authed.agentId;
+	}
 	const existing = await agentPersonaQueries.getAgentPersonaByAgentId(db, authed.agentId).catch(() => null);
 	if (existing?.tokenAddress) {
 		return c.json(

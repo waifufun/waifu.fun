@@ -17,6 +17,7 @@ import {
 import { useAuthRequired } from "@/hooks/use-auth-required";
 import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
 import { useRouter } from "next/navigation";
+import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -74,9 +75,9 @@ function WizardInner() {
 
 		if (result?.ok) {
 			if (result.agentApiKey) {
-				window.sessionStorage.setItem(`wf_agent_api_key:${result.agentId}`, result.agentApiKey);
+				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
 			}
-			router.push(`/patron/${encodeURIComponent(result.agentId)}?just_provisioned=true`);
+			router.push(provisionSuccessRoute(result));
 			return;
 		}
 

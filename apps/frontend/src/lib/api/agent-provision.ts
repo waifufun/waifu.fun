@@ -50,6 +50,7 @@ export type ProvisionResult =
 	| {
 			ok: true;
 			agentId: string;
+			tokenAddress?: string;
 			safeAddress?: string;
 			pullApiKey?: string | null;
 			agentApiKey?: string | null;
@@ -192,6 +193,7 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 		return { ok: false, reason: "server", message: "no agentId in response" };
 	}
 
+	const tokenAddress = typeof obj.tokenAddress === "string" ? obj.tokenAddress : undefined;
 	const safeAddress = typeof obj.safeAddress === "string" ? obj.safeAddress : undefined;
 	const pullApiKey = typeof obj.pullApiKey === "string" ? obj.pullApiKey : obj.pullApiKey === null ? null : undefined;
 	const agentApiKey =
@@ -200,6 +202,7 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 	const result: ProvisionResult = {
 		ok: true,
 		agentId,
+		...(tokenAddress !== undefined ? { tokenAddress } : {}),
 		...(safeAddress !== undefined ? { safeAddress } : {}),
 		...(pullApiKey !== undefined ? { pullApiKey } : {}),
 		...(agentApiKey !== undefined ? { agentApiKey } : {}),

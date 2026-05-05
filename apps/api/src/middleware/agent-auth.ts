@@ -20,7 +20,14 @@ import type { MiddlewareHandler } from "hono";
 import { lookupByRawKey, markUsed } from "../lib/agent-keys.js";
 import type { AppBindings } from "../lib/bindings.js";
 
+let agentAuthDbForTest: ReturnType<typeof getDatabase>["db"] | undefined;
+
+export function __setAgentAuthDbForTest(db: ReturnType<typeof getDatabase>["db"] | undefined): void {
+	agentAuthDbForTest = db;
+}
+
 function requireDrizzle(): ReturnType<typeof getDatabase>["db"] | null {
+	if (agentAuthDbForTest) return agentAuthDbForTest;
 	const url = process.env.DATABASE_URL;
 	if (!url || url.length === 0) return null;
 	return getDatabase(url).db;
