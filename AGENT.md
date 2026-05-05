@@ -156,7 +156,7 @@ type AgentLaunchInput = {
 
 notes:
 
-- `symbol`, not `ticker`, is the token ticker field.
+- `symbol` is the token symbol field.
 - `chainId` is not a request field for this endpoint.
 - `imageUrl` must be a fetchable public http or https url. `imageBase64` may be a data URI or raw base64.
 - `label` defaults in the orchestrator. use `AI` for agent launches unless waifu.fun gives different instructions.
@@ -301,7 +301,7 @@ for tax launches, Four.Meme fee settings come from the `tax` block. if `tax.reci
 
 - **get consent first.** name, symbol, description, avatar, and launch timing are public and hard to unwind.
 - **send `agentId`.** it catches wrong-key mistakes before launch.
-- **use `symbol`.** do not send `ticker` to the API.
+- **use `symbol`.** do not send the old token field name to the API.
 - **do not send `chainId`.** the launch chain is configured server-side.
 - **use a stable image.** the avatar is part of the agent's onchain identity. use a CDN or IPFS.
 - **handle 5xx with backoff.** do not hammer the endpoint.
