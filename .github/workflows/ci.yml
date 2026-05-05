@@ -143,9 +143,19 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Test and build API area
+        # The api-area paths-filter triggers on apps/api, apps/worker,
+        # apps/brain, apps/mcp, apps/sol-indexer, apps/evm-indexer plus
+        # packages/db, packages/agent-actions, packages/launchpad. Every
+        # one of those needs to be in this filter so a breakage anywhere
+        # api-flavored fails CI. Round 1 codex caught worker / brain /
+        # mcp / sol-indexer were missing.
         run: >-
           bunx turbo run test build
           --filter='@waifufun/api...'
+          --filter='@waifufun/worker...'
+          --filter='@waifufun/brain...'
+          --filter='@waifufun/mcp...'
+          --filter='@waifufun/sol-indexer...'
           --filter='@waifufun/evm-indexer...'
           --filter='@waifufun/agent-actions...'
           --filter='@waifufun/db...'
