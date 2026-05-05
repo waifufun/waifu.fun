@@ -156,15 +156,7 @@ function ManagedPingPanel() {
 			</p>
 			<div className="mt-3 flex gap-3 text-[11px] font-mono uppercase tracking-[0.18em]">
 				<a
-					href="https://discord.gg/eliza"
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-[#00ff87] hover:opacity-80"
-				>
-					discord {"\u2192"}
-				</a>
-				<a
-					href="https://x.com/wakesync"
+					href="https://x.com/waifudotfun"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-[#00ff87] hover:opacity-80"

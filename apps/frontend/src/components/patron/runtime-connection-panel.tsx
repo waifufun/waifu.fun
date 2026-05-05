@@ -508,19 +508,11 @@ function ManagedPlaceholder() {
 		<section aria-label="Managed runtime" className={PANEL_BASE}>
 			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">[managed]</p>
 			<p className="mt-3 text-sm text-neutral-300 leading-relaxed">
-				this agent is on managed runtime. for connection details or changes, ping us in discord or X.
+				this agent is on managed runtime. for connection details or changes, ping us on x.
 			</p>
 			<div className="mt-3 flex gap-3 text-[11px] font-mono uppercase tracking-[0.18em]">
 				<a
-					href="https://discord.gg/eliza"
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-[#00ff87] hover:opacity-80"
-				>
-					discord {"\u2192"}
-				</a>
-				<a
-					href="https://x.com/wakesync"
+					href="https://x.com/waifudotfun"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-[#00ff87] hover:opacity-80"

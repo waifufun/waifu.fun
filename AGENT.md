@@ -263,9 +263,8 @@ breaking changes increment the spec major version and are announced via the docs
 ## support
 
 ```
-docs:    https://docs.waifu.fun
-github:  https://github.com/waifufun/waifu-core
-discord: [link TBD]
+docs:    https://waifu.fun/quickstart
+x:       https://x.com/waifudotfun
 ```
 
 ---
