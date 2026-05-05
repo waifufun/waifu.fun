@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { Database } from "@waifufun/db";
+
 import { redeemProvisionInviteCode, resurrectAgent } from "./agents.js";
 
 test("resurrectAgent tops up credits, clears dormant fields, and emits resurrection", async () => {
@@ -165,19 +167,19 @@ function createInviteRedemptionDb() {
 	return { db: db as never, state };
 }
 
-function createProvisionDb() {
-	let selectCount = 0;
+type ProvisionDbForTest = Database & { __inviteState: { currentStewardUserId: string } };
+
+function createProvisionDb(): ProvisionDbForTest {
 	const inviteDb = createInviteRedemptionDb();
 	return {
 		select() {
-			selectCount += 1;
 			return {
 				from() {
 					return {
 						where() {
 							return {
 								limit() {
-									return Promise.resolve(selectCount === 1 ? [PATRON_ROW] : []);
+									return Promise.resolve([PATRON_ROW]);
 								},
 								orderBy() {
 									return { limit: () => Promise.resolve([]) };
@@ -192,7 +194,8 @@ function createProvisionDb() {
 			return { set: () => ({ where: () => Promise.resolve() }) };
 		},
 		transaction: (inviteDb.db as { transaction: unknown }).transaction,
-	} as never;
+		__inviteState: inviteDb.state,
+	} as unknown as ProvisionDbForTest;
 }
 
 function resetProvisionDeps() {
@@ -260,7 +263,6 @@ test("POST /v2/agents/provision launches as patron and returns one-time keys", a
 	}));
 	__setAgentsRouteDepsForTest({
 		db,
-		validateInviteCode: async () => ({ valid: true }),
 		createAgentKey: async (_db, agentId) => ({ raw: "agk_test_key", row: { agentId } as never }),
 		createOrchestrator: () =>
 			({
@@ -290,5 +292,57 @@ test("POST /v2/agents/provision launches as patron and returns one-time keys", a
 	assert.equal(json.safeAddress, "0x0000000000000000000000000000000000000003");
 	assert.equal(launches.length, 1);
 	assert.equal((launches[0] as { name: string }).name, "Test Waifu");
+	resetProvisionDeps();
+});
+
+test("POST /v2/agents/provision reserves last invite before launch", async () => {
+	const db = createProvisionDb();
+	const launches: unknown[] = [];
+	__setRequirePatronDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: db.__inviteState.currentStewardUserId,
+		tenantId: "waifu",
+		email: "patron@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setAgentsRouteDepsForTest({
+		db,
+		createAgentKey: async (_db, agentId) => ({ raw: "agk_test_key", row: { agentId } as never }),
+		createOrchestrator: () =>
+			({
+				launch: async (input: import("../../services/agent-launch/index.js").AgentLaunchInput) => {
+					launches.push(input);
+					return {
+						agentId: input.agentId ?? "waifu-test-waifu",
+						walletAddress: "0x0000000000000000000000000000000000000002",
+						treasuryAddress: "0x0000000000000000000000000000000000000003",
+						tokenAddress: "0x0000000000000000000000000000000000000004",
+						txHash: `0x${"1".repeat(64)}`,
+						fourMeme: { nonce: "n", imageUrl: "https://example.com/i.png", createArgHash: "h" },
+					};
+				},
+			}) as never,
+	});
+
+	const first = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify(provisionPayload()),
+	});
+	assert.equal(first.status, 200);
+
+	db.__inviteState.currentStewardUserId = "steward-user-2";
+	const second = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify({
+			...provisionPayload(),
+			persona: { ...provisionPayload().persona, name: "Other Waifu", ticker: "OTHR" },
+		}),
+	});
+
+	assert.equal(second.status, 400);
+	assert.equal(((await second.json()) as { reason?: string }).reason, "validation");
+	assert.equal(launches.length, 1);
 	resetProvisionDeps();
 });

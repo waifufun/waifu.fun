@@ -5,7 +5,6 @@ import {
 	agentPersonaQueries,
 	agentPersonas,
 	agentQueries,
-	createDbRepository,
 	creators,
 	getDatabase,
 	inviteCodes,
@@ -63,21 +62,18 @@ type AgentsRouteDepsForTest = {
 	db: Database | undefined;
 	createOrchestrator: (() => LaunchOrchestrator) | undefined;
 	createAgentKey: typeof createKey | undefined;
-	validateInviteCode: ((code: string) => Promise<{ valid: boolean; reason?: string }>) | undefined;
 };
 
 const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
 	db: undefined,
 	createOrchestrator: undefined,
 	createAgentKey: undefined,
-	validateInviteCode: undefined,
 };
 
 export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
 	agentsRouteDepsForTest.db = deps.db;
 	agentsRouteDepsForTest.createOrchestrator = deps.createOrchestrator;
 	agentsRouteDepsForTest.createAgentKey = deps.createAgentKey;
-	agentsRouteDepsForTest.validateInviteCode = deps.validateInviteCode;
 }
 
 function slugifyAgentId(name: string): string {
@@ -703,11 +699,6 @@ function validateProvisionBody(
 	return { ok: true, body: input, launchInput, pullApiKey };
 }
 
-async function validateInviteCode(db: Database, code: string): Promise<{ valid: boolean; reason?: string }> {
-	if (agentsRouteDepsForTest.validateInviteCode) return agentsRouteDepsForTest.validateInviteCode(code);
-	return createDbRepository(db).validateInviteCode(code);
-}
-
 export async function redeemProvisionInviteCode(
 	db: Database,
 	code: string,
@@ -817,8 +808,20 @@ app.post("/provision", requirePatron(), async (c) => {
 	const validated = validateProvisionBody(rawBody, patron);
 	if (!validated.ok) return c.json({ error: validated.message, reason: "validation" }, 400);
 
-	const invite = await validateInviteCode(db, validated.body.inviteCode as string);
-	if (!invite.valid) return c.json({ error: invite.reason ?? "invalid invite code", reason: "validation" }, 400);
+	try {
+		const redemption = await redeemProvisionInviteCode(db, validated.body.inviteCode as string, patron);
+		if (redemption.alreadyRedeemed) {
+			return c.json({ error: "invite already used by you", reason: "validation" }, 400);
+		}
+	} catch (err) {
+		return c.json(
+			{
+				error: err instanceof Error ? err.message : "invalid invite code",
+				reason: "validation",
+			},
+			400,
+		);
+	}
 
 	const duplicate = await findRecentProvisionDuplicate(db, patron.stewardUserId, validated.launchInput.name);
 	if (duplicate) {
@@ -861,17 +864,6 @@ app.post("/provision", requirePatron(), async (c) => {
 				.update(agentPersonas)
 				.set({ runtimeApiKeyHash: hashRuntimeApiKey(validated.pullApiKey), updatedAt: new Date() })
 				.where(eq(agentPersonas.agentId, result.agentId));
-		}
-		try {
-			await redeemProvisionInviteCode(db, validated.body.inviteCode as string, patron);
-		} catch (err) {
-			return c.json(
-				{
-					error: err instanceof Error ? err.message : "invite redemption failed",
-					reason: "validation",
-				},
-				400,
-			);
 		}
 		return c.json(
 			{
