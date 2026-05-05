@@ -295,21 +295,31 @@ export const createFlapAdapter = (options: CreateFlapAdapterOptions = {}): Launc
 		vaultFactory?: string;
 	} {
 		const logs = Array.isArray(receipt?.logs) ? receipt.logs : [];
+
+		// VaultPortal launches emit FlapTaxVaultTokenCreated with token,
+		// vault, and vaultFactory. Capture them but don't return yet:
+		// the same receipt also carries the regular Portal events
+		// (TokenCreated + TokenCurveSet), and the curve address comes
+		// from the latter. Round 1 codex: previously we early-returned
+		// here with curveAddress = tokenAddress, which broke any caller
+		// relying on the real curve.
+		let vaultAddress: Address | undefined;
+		let vaultFactory: Address | undefined;
+		let tokenFromVault: Address | undefined;
 		const vaultEvents = parseVaultPortalReceiptEvents({ logs: logs as never });
 		for (const event of vaultEvents) {
 			const args = event.args as Record<string, unknown> | undefined;
 			const token = args?.token;
 			const vault = args?.vault;
-			const vaultFactory = args?.vaultFactory;
-			if (typeof token === "string" && isAddress(token) && typeof vault === "string" && isAddress(vault)) {
-				return {
-					tokenAddress: getAddress(token),
-					curveAddress: getAddress(token),
-					vaultAddress: getAddress(vault),
-					...(typeof vaultFactory === "string" && isAddress(vaultFactory)
-						? { vaultFactory: getAddress(vaultFactory) }
-						: {}),
-				};
+			const factory = args?.vaultFactory;
+			if (typeof token === "string" && isAddress(token)) {
+				tokenFromVault ??= getAddress(token) as Address;
+			}
+			if (typeof vault === "string" && isAddress(vault)) {
+				vaultAddress ??= getAddress(vault) as Address;
+			}
+			if (typeof factory === "string" && isAddress(factory)) {
+				vaultFactory ??= getAddress(factory) as Address;
 			}
 		}
 
@@ -327,11 +337,22 @@ export const createFlapAdapter = (options: CreateFlapAdapterOptions = {}): Launc
 			}
 		}
 
-		if (!tokenAddress) {
-			throw new FlapAdapterError("FlapContractUnavailable", "TokenCreated event not found in Flap receipt");
+		// Prefer Portal's TokenCreated for the canonical token address,
+		// fall back to the VaultPortal event if Portal events were filtered.
+		const resolvedTokenAddress = tokenAddress ?? tokenFromVault;
+		if (!resolvedTokenAddress) {
+			throw new FlapAdapterError(
+				"FlapContractUnavailable",
+				"TokenCreated event not found in Flap receipt",
+			);
 		}
 
-		return { tokenAddress, curveAddress: curveAddress ?? tokenAddress };
+		return {
+			tokenAddress: resolvedTokenAddress,
+			curveAddress: curveAddress ?? resolvedTokenAddress,
+			...(vaultAddress ? { vaultAddress } : {}),
+			...(vaultFactory ? { vaultFactory } : {}),
+		};
 	},
 
 	async getCurveProgress(tokenAddress: string): Promise<{ raisedWei: bigint; targetWei: bigint }> {
