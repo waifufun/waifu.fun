@@ -19,9 +19,10 @@ import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/l
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
 import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 
-export const PROVISION_RESPONSE_TIMEOUT_MS = 300_000;
+export { PROVISION_RESPONSE_TIMEOUT_MS };
 
 function WizardInner() {
 	const router = useRouter();

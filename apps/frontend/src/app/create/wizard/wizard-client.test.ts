@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-client";
+import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
 import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 
 describe("wizard provision success routing", () => {
