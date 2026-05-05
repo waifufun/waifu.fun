@@ -927,6 +927,28 @@ export async function releaseProvisionInviteCode(
 	});
 }
 
+// Read-only invite validity check. Used as a gate before duplicate-recovery
+// rotates agent api keys, so an expired or fake invite can't be used to
+// rotate credentials on an existing agent. The atomic reserve happens later
+// via reserveProvisionInviteCode in the non-duplicate path.
+async function peekInviteValidity(db: Database, code: string): Promise<{ valid: boolean; reason?: string }> {
+	const [invite] = await db
+		.select({
+			maxUses: inviteCodes.maxUses,
+			usedCount: inviteCodes.usedCount,
+			isActive: inviteCodes.isActive,
+			expiresAt: inviteCodes.expiresAt,
+		})
+		.from(inviteCodes)
+		.where(eq(inviteCodes.code, code))
+		.limit(1);
+
+	if (!invite || !invite.isActive) return { valid: false, reason: "invalid invite code" };
+	if (invite.expiresAt && invite.expiresAt < new Date()) return { valid: false, reason: "invite code has expired" };
+	if (invite.usedCount >= invite.maxUses) return { valid: false, reason: "invite code has reached its usage limit" };
+	return { valid: true };
+}
+
 async function findRecentProvisionDuplicate(
 	db: Database,
 	patronStewardUserId: string,
@@ -966,6 +988,18 @@ app.post("/provision", requirePatron(), async (c) => {
 	const patron = c.get("patron");
 	const validated = validateProvisionBody(rawBody, patron);
 	if (!validated.ok) return c.json({ error: validated.message, reason: "validation" }, 400);
+
+	// Read-only invite check first. The duplicate-recovery path below issues
+	// rotated agent api keys without taking the redemption lock, so without
+	// this gate an expired/exhausted/fake invite could rotate credentials
+	// for an existing agent (round 5 codex P2). The actual atomic redemption
+	// still happens later via reserveProvisionInviteCode for non-duplicate
+	// flows; this check is just a 'do not even rotate if the invite is
+	// no longer valid' guard.
+	const inviteCheck = await peekInviteValidity(db, validated.body.inviteCode as string);
+	if (!inviteCheck.valid) {
+		return c.json({ error: inviteCheck.reason ?? "invalid invite code", reason: "validation" }, 400);
+	}
 
 	const duplicate = await findRecentProvisionDuplicate(db, patron.stewardUserId, validated.launchInput.name);
 	if (duplicate) {
