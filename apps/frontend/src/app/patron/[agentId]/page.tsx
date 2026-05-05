@@ -110,6 +110,19 @@ export default function PatronAgentDetailPage({
 				backHref="/patron"
 			/>
 
+			{/* The one-time agent api key reveal must render outside the
+			isLaunchReady branch. After /v2/agents/provision succeeds with a
+			tokenAddress, the agent's status becomes 'active' (not 'provisioned'),
+			so a status-gated reveal would skip it and the key would be lost
+			after the next render strips sessionStorage. Always render the
+			reveal block at the top of the page when sessionStorage has a key,
+			regardless of agent status. */}
+			{oneTimeAgentApiKey ? (
+				<div className="mb-6">
+					<OneTimeAgentKeyBlock agentApiKey={oneTimeAgentApiKey} />
+				</div>
+			) : null}
+
 			{error ? (
 				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
 					Couldn't load agent. {(error as Error).message}
@@ -117,7 +130,6 @@ export default function PatronAgentDetailPage({
 			) : isLaunchReady ? (
 				<div className="space-y-6 pb-24 md:pb-0">
 					<LaunchReadyHero agent={agent} isLoading={isLoading} />
-					{oneTimeAgentApiKey ? <OneTimeAgentKeyBlock agentApiKey={oneTimeAgentApiKey} /> : null}
 					<LaunchPanel
 						agentId={agentId}
 						safeAddress={agent?.safeAddress ?? null}
