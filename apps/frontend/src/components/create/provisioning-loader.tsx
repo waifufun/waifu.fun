@@ -39,10 +39,11 @@ const TRANSITION = { duration: 0.45, ease: EASE_HERO };
 
 type Props = {
 	/** Called once all stages plus the success hold complete. */
-	onDone: () => void;
+	onDone: () => void | Promise<void>;
+	awaitingResponse?: boolean;
 };
 
-export default memo(function ProvisioningLoader({ onDone }: Props) {
+export default memo(function ProvisioningLoader({ onDone, awaitingResponse = false }: Props) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [allDone, setAllDone] = useState(false);
 
@@ -69,6 +70,7 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 	}, [allDone, onDone]);
 
 	const totalProgress = Math.min(currentIndex / STAGES.length, 1);
+	const showingExtension = allDone && awaitingResponse;
 
 	return (
 		<output
@@ -82,31 +84,35 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-accent">
 						<AnimatePresence mode="wait" initial={false}>
 							<motion.span
-								key={allDone ? "live" : "provisioning"}
+								key={showingExtension ? "awaiting" : allDone ? "live" : "provisioning"}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}
 								transition={{ duration: 0.3 }}
 								className="inline-block"
 							>
-								{allDone ? "live" : "provisioning"}
+								{showingExtension ? "still launching" : allDone ? "live" : "provisioning"}
 							</motion.span>
 						</AnimatePresence>
 					</p>
 					<AnimatePresence mode="wait" initial={false}>
 						<motion.h2
-							key={allDone ? "done" : "running"}
+							key={showingExtension ? "awaiting" : allDone ? "done" : "running"}
 							initial={{ opacity: 0, y: 8 }}
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -8 }}
 							transition={TRANSITION}
 							className="mt-3 text-2xl md:text-3xl text-white tracking-tight leading-[1.1]"
 						>
-							{allDone ? "alive." : "spinning up."}
+							{showingExtension ? "still launching." : allDone ? "alive." : "spinning up."}
 						</motion.h2>
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">
-						{allDone ? "taking you home..." : "~10-15 seconds."}
+						{showingExtension
+							? "still launching on bsc, this can take up to a minute"
+							: allDone
+								? "taking you home..."
+								: "~10-15 seconds."}
 					</p>
 
 					{/* Macro progress */}
@@ -127,6 +133,27 @@ export default memo(function ProvisioningLoader({ onDone }: Props) {
 						return <Stage key={stage.id} stage={stage} status={status} />;
 					})}
 				</ol>
+				{showingExtension ? (
+					<motion.div
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={TRANSITION}
+						className="mt-8 flex items-center gap-3 text-sm text-neutral-300"
+					>
+						<span className="relative inline-flex h-4 w-4 items-center justify-center" aria-hidden>
+							<motion.span
+								className="absolute inset-0 border border-accent/50"
+								animate={{ rotate: 360 }}
+								transition={{ duration: 1.1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+							/>
+							<span className="h-1 w-1 bg-accent" />
+						</span>
+						<span>
+							waiting for the chain response
+							<BlinkingDots />
+						</span>
+					</motion.div>
+				) : null}
 			</div>
 		</output>
 	);

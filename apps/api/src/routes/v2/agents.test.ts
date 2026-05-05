@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resurrectAgent } from "./agents.js";
+import { redeemProvisionInviteCode, resurrectAgent } from "./agents.js";
 
 test("resurrectAgent tops up credits, clears dormant fields, and emits resurrection", async () => {
 	const updates: unknown[] = [];
@@ -81,8 +81,93 @@ function provisionPayload() {
 	};
 }
 
+function createInviteRedemptionDb() {
+	const state = {
+		currentStewardUserId: "steward-user-1",
+		invite: { id: "invite-1", maxUses: 1, usedCount: 0, isActive: true, expiresAt: null as Date | null },
+		creators: new Map<string, { id: string }>(),
+		redemptions: new Set<string>(),
+	};
+	const db = {
+		transaction<T>(fn: (tx: unknown) => Promise<T>) {
+			let selectCount = 0;
+			const tx = {
+				select() {
+					selectCount += 1;
+					return {
+						from() {
+							return {
+								where() {
+									return {
+										limit() {
+											if (selectCount === 1)
+												return Promise.resolve(
+													state.creators.get(state.currentStewardUserId)
+														? [state.creators.get(state.currentStewardUserId)]
+														: [],
+												);
+											const creator = state.creators.get(state.currentStewardUserId);
+											return Promise.resolve(
+												creator && state.redemptions.has(`${state.invite.id}:${creator.id}`)
+													? [{ creatorId: creator.id }]
+													: [],
+											);
+										},
+									};
+								},
+							};
+						},
+					};
+				},
+				execute() {
+					return Promise.resolve([state.invite]);
+				},
+				insert() {
+					let values: Record<string, string | null> = {};
+					return {
+						values(input: Record<string, string | null>) {
+							values = input;
+							return this;
+						},
+						onConflictDoUpdate() {
+							return this;
+						},
+						onConflictDoNothing() {
+							return this;
+						},
+						returning() {
+							if (typeof values.stewardUserId === "string") {
+								const creator = { id: `creator-${values.stewardUserId}` };
+								state.creators.set(values.stewardUserId, creator);
+								return Promise.resolve([creator]);
+							}
+							const key = `${values.inviteCodeId}:${values.creatorId}`;
+							if (state.redemptions.has(key)) return Promise.resolve([]);
+							state.redemptions.add(key);
+							return Promise.resolve([{ inviteCodeId: values.inviteCodeId }]);
+						},
+					};
+				},
+				update() {
+					return {
+						set: () => ({
+							where: () => {
+								state.invite.usedCount += 1;
+								return Promise.resolve();
+							},
+						}),
+					};
+				},
+			};
+			return fn(tx);
+		},
+	};
+	return { db: db as never, state };
+}
+
 function createProvisionDb() {
 	let selectCount = 0;
+	const inviteDb = createInviteRedemptionDb();
 	return {
 		select() {
 			selectCount += 1;
@@ -106,6 +191,7 @@ function createProvisionDb() {
 		update() {
 			return { set: () => ({ where: () => Promise.resolve() }) };
 		},
+		transaction: (inviteDb.db as { transaction: unknown }).transaction,
 	} as never;
 }
 
@@ -114,6 +200,26 @@ function resetProvisionDeps() {
 	__setRequirePatronDbForTest(undefined);
 	__setRequirePatronStewardParserForTest(undefined);
 }
+
+test("redeemProvisionInviteCode is idempotent per patron and enforces max uses", async () => {
+	const { db, state } = createInviteRedemptionDb();
+
+	state.currentStewardUserId = "patron-a";
+	const first = await redeemProvisionInviteCode(db, "W18TEST", { stewardUserId: "patron-a" });
+	assert.deepEqual(first, { redeemed: true, alreadyRedeemed: false });
+	assert.equal(state.invite.usedCount, 1);
+
+	const second = await redeemProvisionInviteCode(db, "W18TEST", { stewardUserId: "patron-a" });
+	assert.deepEqual(second, { redeemed: false, alreadyRedeemed: true });
+	assert.equal(state.invite.usedCount, 1);
+
+	state.currentStewardUserId = "patron-b";
+	await assert.rejects(
+		redeemProvisionInviteCode(db, "W18TEST", { stewardUserId: "patron-b" }),
+		/invite code has reached max uses/,
+	);
+	assert.equal(state.invite.usedCount, 1);
+});
 
 test("POST /v2/agents/provision rejects missing patron session", async () => {
 	resetProvisionDeps();

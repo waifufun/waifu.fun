@@ -1,7 +1,16 @@
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
 
-import { agentPersonaQueries, agentPersonas, agentQueries, createDbRepository, getDatabase } from "@waifufun/db";
+import {
+	agentPersonaQueries,
+	agentPersonas,
+	agentQueries,
+	createDbRepository,
+	creators,
+	getDatabase,
+	inviteCodes,
+	inviteRedemptions,
+} from "@waifufun/db";
 import type { Database } from "@waifufun/db";
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { isAddress } from "viem";
@@ -699,6 +708,79 @@ async function validateInviteCode(db: Database, code: string): Promise<{ valid: 
 	return createDbRepository(db).validateInviteCode(code);
 }
 
+export async function redeemProvisionInviteCode(
+	db: Database,
+	code: string,
+	patron: { stewardUserId: string; primaryAddress?: string | null },
+): Promise<{ redeemed: boolean; alreadyRedeemed: boolean }> {
+	return db.transaction(async (tx) => {
+		let [creator] = await tx
+			.select({ id: creators.id })
+			.from(creators)
+			.where(eq(creators.stewardUserId, patron.stewardUserId))
+			.limit(1);
+
+		if (!creator) {
+			const [created] = await tx
+				.insert(creators)
+				.values({ stewardUserId: patron.stewardUserId })
+				.onConflictDoUpdate({
+					target: creators.stewardUserId,
+					set: { updatedAt: new Date() },
+				})
+				.returning({ id: creators.id });
+			if (!created) throw new Error("failed to resolve invite creator");
+			creator = created;
+		}
+
+		const [invite] = await tx.execute<{
+			id: string;
+			maxUses: number;
+			usedCount: number;
+			isActive: boolean;
+			expiresAt: Date | null;
+		}>(sql`
+			SELECT
+				id,
+				max_uses AS "maxUses",
+				used_count AS "usedCount",
+				is_active AS "isActive",
+				expires_at AS "expiresAt"
+			FROM invite_codes
+			WHERE code = ${code}
+			FOR UPDATE
+		`);
+
+		if (!invite || !invite.isActive || (invite.expiresAt && invite.expiresAt < new Date())) {
+			throw new Error("invalid invite code");
+		}
+
+		const [existingRedemption] = await tx
+			.select({ creatorId: inviteRedemptions.creatorId })
+			.from(inviteRedemptions)
+			.where(and(eq(inviteRedemptions.inviteCodeId, invite.id), eq(inviteRedemptions.creatorId, creator.id)))
+			.limit(1);
+
+		if (existingRedemption) return { redeemed: false, alreadyRedeemed: true };
+		if (invite.usedCount >= invite.maxUses) throw new Error("invite code has reached max uses");
+
+		const [redemption] = await tx
+			.insert(inviteRedemptions)
+			.values({ inviteCodeId: invite.id, creatorId: creator.id })
+			.onConflictDoNothing()
+			.returning({ inviteCodeId: inviteRedemptions.inviteCodeId });
+
+		if (!redemption) return { redeemed: false, alreadyRedeemed: true };
+
+		await tx
+			.update(inviteCodes)
+			.set({ usedCount: sql`${inviteCodes.usedCount} + 1`, updatedAt: new Date() })
+			.where(eq(inviteCodes.id, invite.id));
+
+		return { redeemed: true, alreadyRedeemed: false };
+	});
+}
+
 async function findRecentProvisionDuplicate(
 	db: Database,
 	patronStewardUserId: string,
@@ -779,6 +861,17 @@ app.post("/provision", requirePatron(), async (c) => {
 				.update(agentPersonas)
 				.set({ runtimeApiKeyHash: hashRuntimeApiKey(validated.pullApiKey), updatedAt: new Date() })
 				.where(eq(agentPersonas.agentId, result.agentId));
+		}
+		try {
+			await redeemProvisionInviteCode(db, validated.body.inviteCode as string, patron);
+		} catch (err) {
+			return c.json(
+				{
+					error: err instanceof Error ? err.message : "invite redemption failed",
+					reason: "validation",
+				},
+				400,
+			);
 		}
 		return c.json(
 			{
