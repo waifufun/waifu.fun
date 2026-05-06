@@ -2,7 +2,19 @@ name: Lint
 
 on:
   pull_request:
+    branches:
+      - develop
+      - main
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**.md'
+      - 'apps/frontend/public/skill.md'
+      - 'AGENT.md'
+      - 'docs/**'
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write

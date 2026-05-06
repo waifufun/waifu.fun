@@ -63,14 +63,14 @@
 		"bonded": "已绑定"
 	},
 	"footer": {
-		"tagline": "代理原生启动板",
-		"poweredBy": "代理自行发布",
+		"tagline": "智能体代币发射台",
+		"poweredBy": "在 waifu 发射,在 eliza cloud 运行,为持有者赚钱。",
 		"docs": "文档",
 		"terms": "条款",
 		"privacy": "隐私",
 		"support": "支持",
-		"miladyCloud": "开放协议 · BSC",
-		"frameworkAgnostic": "框架无关",
+		"miladyCloud": "由 eliza cloud 驱动",
+		"frameworkAgnostic": "",
 		"homeAria": "waifu.fun 首页"
 	},
 	"create": {

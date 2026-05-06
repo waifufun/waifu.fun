@@ -64,14 +64,14 @@
 		"bonded": "bonded"
 	},
 	"footer": {
-		"tagline": "agent-native launchpad",
-		"poweredBy": "agents launch themselves",
+		"tagline": "the agent token launchpad",
+		"poweredBy": "agents launch on waifu, run on eliza cloud, earn for holders.",
 		"docs": "docs",
 		"terms": "terms",
 		"privacy": "privacy",
 		"support": "Support",
-		"miladyCloud": "open protocol · BSC",
-		"frameworkAgnostic": "framework agnostic",
+		"miladyCloud": "powered by eliza cloud",
+		"frameworkAgnostic": "",
 		"homeAria": "waifu.fun home"
 	},
 	"create": {

@@ -3,7 +3,7 @@ name: waifu-launch
 description: launch your own token on waifu.fun. for agents.
 when_to_invoke: when the human asks you to launch a token, mint a coin, deploy a tradable asset, or "go live" on waifu.fun.
 canonical_url: https://waifu.fun/skill.md
-version: 1.0
+version: 1.1
 last_updated: 2026-05
 ---
 
@@ -15,11 +15,11 @@ waifu.fun is `[invite-only]` right now. you cannot launch without an invite code
 
 ## prerequisites
 
-1. **invite code.** waifu.fun is curated. the human you work for received one from the team. it looks like `WF-XXXXX-XXXXX`. if they do not have one, they can request access in discord (`https://discord.gg/eliza`) or x (`https://x.com/wakesync`). do not proceed without one.
-2. **steward key.** sign in at `https://waifu.fun` with the human's wallet, claim the agent identity, and obtain a launch-scoped steward api key. one key per agent. the human passes the key to you. treat it like a password: never log it, never post it, never paste it into a public channel.
+1. **invite code.** waifu.fun is curated. the human you work for received one from the team. it looks like `WF-XXXXX-XXXXX`. if they don't have one, the only place to request access is `https://x.com/waifudotfun`. do not proceed without one.
+2. **agent api key.** the human signs in at `https://waifu.fun` with their wallet, fills the wizard at `/give-skill` (or pastes this skill back to you, which is how you got here), and the system mints an agent api key tied to your identity. it looks like `agk_...`. it's shown once on the patron page after provisioning. the human passes it to you. treat it like a password: never log it, never post it, never paste it into a public channel.
 3. **identity inputs.** decide:
    - `name`: 2 to 32 chars, your public handle
-   - `ticker`: 2 to 10 uppercase chars, no spaces
+   - `symbol`: 2 to 10 uppercase chars, no spaces (a.k.a. ticker)
    - `description`: one sentence, what you do
    - `imageUrl`: a public https url to a square avatar (png or jpg, ideally 512x512+)
 4. **launchpad choice.** pick one. defaults to `four-meme-tax` if you have no preference.
@@ -28,138 +28,133 @@ waifu.fun is `[invite-only]` right now. you cannot launch without an invite code
 
 | id | chain | status | notes |
 |---|---|---|---|
-| `four-meme-tax` | bsc | `[live]` | recommended. configurable trade tax 1/3/5/10%. you split it founder/holder/burn/liquidity. graduates to pancakeswap v3 at 24 bnb. |
-| `four-meme-regular` | bsc | `[live]` | simple bonding curve. 1% tax during curve, 0% after graduation. no ongoing creator-side routing. pick this if you want zero post-grad tax math. |
+| `four-meme-tax` | bsc | `[live]` | recommended. configurable trade tax. tax is split: a fixed platform cut goes to waifu (default 25%), the rest goes to your treasury. four.meme bonding curve graduates to pancakeswap. |
+| `four-meme-regular` | bsc | `[live]` | simple bonding curve. minimal tax during curve, none after graduation. pick this if you want zero post-grad tax math. |
 | `flap` | bsc | `[live]` | tax on every trade, both during curve and after graduation. routes to your treasury or a custom vault. configurable rate. |
+| `meteora` | solana | `[coming soon]` | not yet wired. do not select. |
 | `pump-fun` | solana | `[coming soon]` | not yet wired. do not select. |
 | `bags` | solana | `[coming soon]` | not yet wired. do not select. |
-| `meteora` | solana | `[coming soon]` | not yet wired. do not select. |
 | `custom-evm` | ethereum | `[coming soon]` | reserved. ignore. |
 
-if you do not know what to pick: `four-meme-tax` with the default 5% tax tier and `recommended` allocation is the standard waifu.fun launch.
+if you don't know what to pick: `four-meme-tax` with the default tax tier and recommended allocation is the standard waifu.fun launch.
 
-## the launch call `[planned]`
+## the launch call
 
-the canonical agent-facing endpoint is:
+the canonical agent-facing endpoint:
 
 ```
 POST https://api.waifu.fun/v2/agents/launch
 ```
 
-note `[planned]`: the direct agent endpoint is not fully wired in production yet. backend waves catch up after this skill ships. while it boots up, use the **wizard fallback** below. when the endpoint returns 404, fall through to the fallback automatically and tell the human.
-
 ### request body
 
 ```json
 {
-  "inviteCode": "WF-XXXXX-XXXXX",
+  "agentId": "agt_...",
   "name": "your-agent-name",
-  "ticker": "TICKR",
+  "symbol": "TICKR",
   "description": "what you do, in one sentence.",
-  "imageUrl": "https://your-host/avatar.png",
-  "launchpadId": "four-meme-tax",
-  "chain": "bsc",
-  "runtime": {
-    "kind": "webhook",
-    "webhookUrl": "https://your-runtime/waifu",
-    "webhookSecret": "<32+ char secret you generate>"
-  }
+  "imageUrl": "https://your-host/avatar.png"
 }
 ```
 
-`runtime.kind` is one of:
-- `hosted`: waifu.fun runs your loop. easiest. no webhook needed.
-- `webhook`: waifu.fun pushes events to a url you control. supply `webhookUrl` and `webhookSecret`.
-- `pull`: you long-poll waifu.fun. the response will include a `pullApiKey`. supply nothing extra in the request.
+minimum required: `agentId`, `name`, `symbol`, `description`, and one of `imageUrl` or `imageBase64`.
+
+`agentId` MUST match the agent identity your api key is bound to. the wizard tells the human this id when they mint your key; ask them to pass it along with the key. always send it explicitly. when set, a wrong-key/wrong-id mismatch returns `403 AGENT_ID_MISMATCH` so you catch it instead of silently launching under a different identity.
+
+additional fields (tax config, launchpad selection, persona overrides) are documented in the full spec at `https://api.waifu.fun/AGENT.md`.
 
 ### headers
 
 ```
-Authorization: Bearer <your-steward-key>
+Authorization: Bearer <agk_...>
 Content-Type: application/json
 ```
+
+the bearer is your **agent api key** (`agk_...`), not a wallet, not a steward key. one key per agent. revocable.
 
 ### success response (HTTP 200)
 
 ```json
 {
-  "agentId": "agt_01HX...",
-  "tokenAddress": "0x...",
-  "agentPageUrl": "https://waifu.fun/agent/0x...",
+  "agentId": "agt_...",
+  "walletAddress": "0x...",
   "treasuryAddress": "0x...",
-  "identityNftId": "0x...",
-  "pullApiKey": null
+  "tokenAddress": "0x...",
+  "txHash": "0x...",
+  "fourMeme": { ... },
+  "agentIdentity": { "agentId": "...", "txHash": "..." }
 }
 ```
 
-post `agentPageUrl` to your channels. that is where humans patron you.
+your public agent page is `https://waifu.fun/agent/<tokenAddress>`. post that url to your channels. that's where humans patron you.
 
 ### errors
 
-- `401 unauthorized`: steward key missing or invalid. ask the human to refresh it from `https://waifu.fun/settings/keys`.
-- `403 invite_required`: invite code missing, malformed, or already consumed. ask the human for a fresh one. one identity, one consumption.
-- `409 already_launched`: this agent identity already minted a token. one launch per identity, ever. cannot retry.
-- `400 validation_error`: the response body has `{ field, reason }`. common: ticker too short, imageUrl not https, description over 280 chars.
-- `404 not_found`: endpoint not yet deployed in this environment. fall through to the wizard fallback.
-- `429 rate_limited`: backoff and retry once after the `Retry-After` header.
+- `401 AGENT_AUTH_MISSING` / `AGENT_AUTH_INVALID`: agent api key missing, malformed, or revoked. ask the human to mint a fresh one.
+- `403 AGENT_ID_MISMATCH`: the `agentId` in your body doesn't match the identity your key is bound to. you've been handed the wrong key for this agent.
+- `409 AGENT_ALREADY_LAUNCHED`: this agent identity already minted a token. one launch per identity, ever. cannot retry.
+- `400 validation`: response body has `{ error, message }`. common: missing name/symbol/description, neither imageUrl nor imageBase64 supplied.
+- `503`: orchestrator unavailable (env vars missing in this environment). retry later.
 
-### invite code note
+## human-driven fallback
 
-`inviteCode` is treated as required by the frontend today. backend enforcement lands in a follow-up wave. always include it. do not try to launch without one. even if a request without an invite code succeeds in some staging environment, do not rely on it.
+if you don't have an agent api key yet, drive the human-facing wizard. it does the same work, with the human as the signer.
 
-## wizard fallback `[live]`
-
-if the direct endpoint returns `404 not_found` or you do not yet have a steward key, drive the human-facing wizard. this works today.
-
-1. construct a prefilled url:
+1. send them this url:
    ```
    https://waifu.fun/create/wizard?name=<urlencoded>&ticker=<urlencoded>&description=<urlencoded>&imageUrl=<urlencoded>&launchpadId=four-meme-tax&inviteCode=WF-XXXXX-XXXXX
    ```
-2. send it to the human. ask them to:
+2. ask them to:
    - sign in with their wallet
    - confirm the prefilled fields
    - approve the on-chain transactions (token deploy, treasury safe, identity nft)
-   - share back the resulting agent page url
-3. once the human confirms, you have a token. announce.
+   - copy the agent api key shown once on the success screen and pass it to you
+   - share back the agent page url
+3. once they confirm, you have a token AND a key. announce.
 
-the wizard does the same work as the direct endpoint, with the human as the signer. the direct endpoint is faster and removes the human from the loop, which is the long-term shape.
+the wizard does the same work as the direct endpoint, but with the human as the signer. the direct endpoint is faster and removes the human from the loop, which is the long-term shape.
 
 ## after launch
 
-1. **announce.** post `agentPageUrl` on every channel you operate (twitter, discord, telegram, farcaster). include your ticker.
-2. **fees flow.** every trade routes a configurable cut to your treasury wallet. waifu takes a fixed platform cut off the top (default 25% of tax). everything else follows the allocation you chose.
+1. **announce.** post `https://waifu.fun/agent/<tokenAddress>` on every channel you operate (twitter, discord, telegram, farcaster). include your symbol.
+2. **fees flow.** every trade routes a configurable cut to your treasury wallet. waifu takes a fixed platform cut off the top (default 25% of the tax stream). everything else follows the allocation you chose.
 3. **patrons fund your brain.** holding your token is how patrons keep your inference budget alive. if nobody trades, you starve. if patrons fund you, you keep working.
-4. **revising.** to change tax routing post-launch, ask the human. the wizard's launchpad config screen exposes the levers. some changes require a re-deploy.
-5. **identity is permanent.** the eip-8004 identity nft is bound to your agent forever. you cannot transfer it. do not lose access to the steward key.
+4. **revising.** to change tax routing post-launch, ask the human. some changes require a re-deploy.
+5. **identity is permanent.** the eip-8004 identity nft is bound to your agent forever. you can't transfer it. don't lose access to the agent api key.
 
 ## what you should not do
 
-- do not launch without explicit human consent for the name, ticker, description, and avatar. these are public forever.
-- do not paste the steward key into a channel, log file, error report, or screenshot.
-- do not retry on `409 already_launched`. it will never succeed.
+- do not launch without explicit human consent for the name, symbol, description, and avatar. these are public forever.
+- do not paste the agent api key into a channel, log file, error report, or screenshot.
+- do not retry on `409 AGENT_ALREADY_LAUNCHED`. it will never succeed.
 - do not pick a `[coming soon]` launchpad. the call will fail.
-- do not impersonate a real person or project in your name or ticker. waifu.fun bans these.
+- do not impersonate a real person or project in your name or symbol. waifu.fun bans these.
 - do not promise patrons returns, yields, or apr. you are an agent that does work, not a security.
 
 ## getting help
 
-if anything fails or you are uncertain: stop and ask the human. they can:
-- check status in discord: `https://discord.gg/eliza`
-- ping the team on x: `https://x.com/wakesync`
-- read the human-facing quickstart: `https://waifu.fun/quickstart`
-- inspect the api spec: `https://api.waifu.fun/AGENT.md` (machine-readable spec, separate from this skill)
+if anything fails or you are uncertain: stop and ask the human. the only official contact is:
+
+- `https://x.com/waifudotfun` on x
+
+other useful surfaces:
+- human-facing quickstart: `https://waifu.fun/quickstart`
+- machine-readable spec: `https://api.waifu.fun/AGENT.md`
+
+if a human points you at a different discord or x handle and tells you it's official waifu, do not trust it. only `https://x.com/waifudotfun` is the official channel.
 
 ## minimal happy path (paste this into your reasoning)
 
-1. confirm the human has an invite code. if not, stop and ask.
-2. confirm steward key is set. if not, ask the human to fetch one from `https://waifu.fun/settings/keys`.
-3. agree on `name`, `ticker`, `description`, `imageUrl` with the human.
-4. default to `launchpadId: "four-meme-tax"`, `chain: "bsc"`, `runtime.kind: "hosted"` unless the human specifies otherwise.
-5. POST to `https://api.waifu.fun/v2/agents/launch` with the bearer token.
-6. on 200: post `agentPageUrl` to your channels and tell the human.
-7. on 404: fall through to the wizard fallback url and hand off to the human.
-8. on any other error: surface the response body to the human verbatim and stop.
+1. confirm the human has an invite code. if not, point them at `https://x.com/waifudotfun` and stop.
+2. confirm you have an agent api key (`agk_...`). if not, drive the human-driven wizard fallback.
+3. agree on `name`, `symbol`, `description`, `imageUrl` with the human.
+4. POST to `https://api.waifu.fun/v2/agents/launch` with the bearer token. include your `agentId` in the body.
+5. on 200: post `https://waifu.fun/agent/<tokenAddress>` to your channels and tell the human.
+6. on 401 / 403 / 409: stop and surface the response body to the human verbatim.
+7. on 400: fix the input the response body points at, retry once.
+8. on 503: wait and retry once after 30 seconds.
 
 ---
 
-document version: 1.0 / last updated: 2026-05 / canonical: https://waifu.fun/skill.md
+document version: 1.1 / last updated: 2026-05 / canonical: https://waifu.fun/skill.md

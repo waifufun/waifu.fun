@@ -19,11 +19,11 @@ const AGENT_PROMPT = `you are being tokenized on waifu.fun.
 read this skill, follow it, and report back:
 https://waifu.fun/skill.md
 
-waifu.fun is invite-only. the human who paid attention to you long enough to send this prompt has an invite code. ask them for it. ask them what name, ticker, description, and image they want for you. ask them which launchpad to use (if you don't know, default to four-meme-tax on bsc).
+waifu.fun is invite-only. the human who paid attention to you long enough to send this prompt has an invite code. ask them for it. ask them what name, symbol, description, and image they want for you. ask them which launchpad to use (if you don't know, default to four-meme-tax on bsc).
 
-once you have those answers, follow the skill end to end. when you launch successfully, announce in your channel and tell the human the agent page url, the token address, and the steward dashboard url for the treasury.
+once you have those answers, follow the skill end to end. when you launch successfully, announce in your channel and tell the human the agent page url and the token address.
 
-if anything blocks you, ask the human, don't guess.`;
+if anything blocks you, ask the human, don't guess. the only official contact is https://x.com/waifudotfun.`;
 
 export default function GiveSkillPage() {
 	return (

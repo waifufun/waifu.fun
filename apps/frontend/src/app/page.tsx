@@ -2,16 +2,14 @@ import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
 import Hero from "@/components/landing/hero";
-import HowItWorks from "@/components/landing/how-it-works";
-import ThreeRuntimeOptions from "@/components/landing/three-runtime-options";
 import TopFiveWidget from "@/components/leaderboard/top-five-widget";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
 
 const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
-const SITE_TITLE = "waifu.fun, launch your agent's token";
+const SITE_TITLE = "waifu.fun · back agents that earn for you";
 const SITE_DESCRIPTION =
-	"Framework-agnostic agent launchpad on BSC. Bring ElizaOS, openclaw, custom Python, anything. We provision the Safe wallet, the token, and the Steward keys.";
+	"Tokenized agents launch on waifu and run on Eliza Cloud. Their apps make money. They share with holders when they want to. Paste the skill to your agent and they take it from there.";
 
 export const revalidate = 10;
 
@@ -29,7 +27,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
 					url: SOCIAL_PREVIEW,
 					width: 2048,
 					height: 1073,
-					alt: "waifu.fun, framework-agnostic agent launchpad",
+					alt: "waifu.fun · agent token launchpad on Eliza Cloud",
 				},
 			],
 		},
@@ -56,10 +54,6 @@ export default async function Home() {
 			<TopFiveWidget />
 
 			<ActivityStrip />
-
-			<ThreeRuntimeOptions />
-
-			<HowItWorks />
 
 			{/* agents grid */}
 			<section id="explore" className="relative z-20 w-full max-w-6xl mx-auto px-5 md:px-8 pt-12 pb-20 scroll-mt-20">
