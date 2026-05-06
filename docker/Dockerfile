@@ -4,6 +4,13 @@
 
 FROM oven/bun:1-alpine AS base
 
+# Native build deps for transitive packages (notably 'usb' via
+# @trezor/transport, which is pulled in by Solana wallet adapters
+# and needs node-gyp + python3 + a C++ toolchain at install time).
+# Without these, `bun install --frozen-lockfile` fails with
+# 'install script from "usb" exited with 1'.
+RUN apk add --no-cache python3 make g++ libusb-dev linux-headers
+
 WORKDIR /app
 
 FROM base AS deps
