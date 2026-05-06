@@ -1,0 +1,1 @@
+ALTER TABLE "agent_personas" ADD COLUMN "tax_vault_address" text;

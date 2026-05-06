@@ -74,6 +74,10 @@ export default function StepReview() {
 		feeConfig && "taxBps" in feeConfig && "platformCutBps" in feeConfig
 			? (computePlatformCutVolumeBps(feeConfig.taxBps, feeConfig.platformCutBps) / 100).toFixed(2)
 			: null;
+	const treasuryVolumePct =
+		feeConfig && "taxBps" in feeConfig && "platformCutBps" in feeConfig
+			? ((feeConfig.taxBps - computePlatformCutVolumeBps(feeConfig.taxBps, feeConfig.platformCutBps)) / 100).toFixed(2)
+			: null;
 
 	return (
 		<div className="flex flex-col gap-8">
@@ -136,11 +140,39 @@ export default function StepReview() {
 								regular curve. no creator tax routing, no agent treasury feed from trades.
 							</p>
 						) : null}
-						{taxVolumePct && platformCutPct && platformVolumePct ? (
-							<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-								{taxVolumePct}% trade tax. waifu takes {platformCutPct}% of that tax, {platformVolumePct}% of volume,
-								then the rest follows your creator routing. production launches keep this fee path enabled.
-							</p>
+						{/* Flap custom-vault recipient bypasses Split Vault entirely:
+						100% of trade tax flows direct to the user's vault address, no
+						platform cut deducted on-chain. Show that explicitly so users
+						don't approve a launch under wrong fee expectations. */}
+						{feeConfig?.kind === "flap" && feeConfig.recipient === "custom-vault" ? (
+							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+								<p>trade tax: {taxVolumePct ?? "—"}%</p>
+								<p>└─ 100% routes direct to your custom vault. no platform cut on-chain.</p>
+							</div>
+						) : taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
+							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+								<p>trade tax: {taxVolumePct}%</p>
+								<p>
+									└─ platform: {platformCutPct}% of tax ({platformVolumePct}%)
+								</p>
+								{feeConfig?.kind === "four-meme-tax" ? (
+									<>
+										<p>
+											└─ remainder: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+										</p>
+										<p className="mt-1">
+											remainder routes through your four.meme tax allocation (founder / holders / burn / liquidity).
+										</p>
+									</>
+								) : (
+									<p>
+										└─ treasury: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+									</p>
+								)}
+								{feeConfig?.kind === "flap" && feeConfig.recipient === "agent-treasury" ? (
+									<p className="mt-1">Flap deploys a Split Vault for this routing at launch.</p>
+								) : null}
+							</div>
 						) : null}
 					</Row>
 				) : null}

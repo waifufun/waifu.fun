@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { portalAbi } from "@waifufun/flap";
-import { decodeFunctionData, encodeAbiParameters, getAddress, toEventHash } from "viem";
+import { portalAbi, vaultPortalAbi } from "@waifufun/flap";
+import { decodeAbiParameters, decodeFunctionData, encodeAbiParameters, getAddress, toEventHash } from "viem";
 
 import {
 	DEFAULT_PLATFORM_CUT_BPS,
@@ -18,6 +18,7 @@ const VAULT = "0x2222222222222222222222222222222222222222";
 const PORTAL = "0x3333333333333333333333333333333333333333";
 const TOKEN = "0x4444444444444444444444444444444444444444";
 const CURVE = "0x5555555555555555555555555555555555555555";
+const PLATFORM = "0x6666666666666666666666666666666666666666";
 
 const validConfig = (overrides: Partial<FlapFeeConfig> = {}): FlapFeeConfig => ({
 	kind: "flap",
@@ -73,7 +74,7 @@ test("flap maps option-3 tax model to current Flap marketing-tax beneficiary bou
 	});
 });
 
-test("flap builds a newTokenV5 unsigned transaction", async () => {
+test("flap builds a legacy newTokenV5 unsigned transaction for custom vaults", async () => {
 	const adapter = createFlapAdapter({ portalAddress: PORTAL, chainId: 56 });
 	const tx = await adapter.buildCreateTokenTx({
 		...createParams({
@@ -110,6 +111,61 @@ test("flap builds a newTokenV5 unsigned transaction", async () => {
 	assert.equal(params.quoteAmt, 123n);
 	assert.equal(params.taxRate, 300);
 	assert.equal(params.mktBps, 10_000);
+});
+
+test("flap builds a VaultPortal newTokenV6WithVault unsigned transaction for agent treasury", async () => {
+	const adapter = createFlapAdapter({
+		vaultPortalAddress: PORTAL,
+		splitVaultFactoryAddress: VAULT,
+		platformWalletAddress: PLATFORM,
+		chainId: 56,
+	});
+	const tx = await adapter.buildCreateTokenTx({
+		...createParams({ initialBuyWei: 123n }),
+		flapMetadataCid: "bafybeigdyrzt",
+		flapSalt: "0x0000000000000000000000000000000000000000000000000000000000000007",
+	} as CreateTokenParams);
+
+	assert.equal(tx.to, getAddress(PORTAL));
+	assert.equal(tx.chainId, 56);
+	assert.equal(tx.value, 123n);
+
+	const decoded = decodeFunctionData({ abi: vaultPortalAbi, data: tx.data });
+	assert.equal(decoded.functionName, "newTokenV6WithVault");
+	const [params] = decoded.args as [
+		{
+			name: string;
+			symbol: string;
+			buyTaxRate: number;
+			sellTaxRate: number;
+			mktBps: number;
+			vaultFactory: string;
+			vaultData: `0x${string}`;
+		},
+	];
+	assert.equal(params.name, "Waifu Agent");
+	assert.equal(params.symbol, "WAIFU");
+	assert.equal(params.buyTaxRate, 300);
+	assert.equal(params.sellTaxRate, 300);
+	assert.equal(params.mktBps, 10_000);
+	assert.equal(params.vaultFactory, getAddress(VAULT));
+	const [recipients] = decodeAbiParameters(
+		[
+			{
+				name: "recipients",
+				type: "tuple[]",
+				components: [
+					{ name: "recipient", type: "address" },
+					{ name: "bps", type: "uint16" },
+				],
+			},
+		],
+		params.vaultData,
+	) as [readonly { recipient: string; bps: number }[]];
+	assert.deepEqual(recipients, [
+		{ recipient: getAddress(PLATFORM), bps: DEFAULT_PLATFORM_CUT_BPS },
+		{ recipient: getAddress(SAFE), bps: 10_000 - DEFAULT_PLATFORM_CUT_BPS },
+	]);
 });
 
 test("flap parses token and curve addresses from portal receipt events", () => {
@@ -149,6 +205,25 @@ test("flap parses token and curve addresses from portal receipt events", () => {
 		}),
 		{ tokenAddress: getAddress(TOKEN), curveAddress: getAddress(CURVE) },
 	);
+});
+
+test("flap parses token and vault addresses from VaultPortal receipt events", () => {
+	const receiptEvent = {
+		topics: [
+			toEventHash("FlapTaxVaultTokenCreated(address,address,address)"),
+			`0x000000000000000000000000${TOKEN.slice(2)}`,
+			`0x000000000000000000000000${VAULT.slice(2)}`,
+			`0x000000000000000000000000${PORTAL.slice(2)}`,
+		],
+		data: "0x",
+	};
+
+	assert.deepEqual(flapAdapter.parseCreateTokenReceipt({ logs: [{ ...receiptEvent, address: PORTAL }] }), {
+		tokenAddress: getAddress(TOKEN),
+		curveAddress: getAddress(TOKEN),
+		vaultAddress: getAddress(VAULT),
+		vaultFactory: getAddress(PORTAL),
+	});
 });
 
 test("flap read methods fail explicitly when no public client is configured", async () => {

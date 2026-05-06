@@ -144,12 +144,12 @@ export default function FlapConfig({ value, onChange }: Props) {
 						{
 							id: "agent-treasury" as const,
 							label: "agent treasury",
-							description: "default. taxes route into the agent's safe.",
+							description: "default. Flap deploys a Split Vault: platform cut, then the rest to the agent's safe.",
 						},
 						{
 							id: "custom-vault" as const,
 							label: "custom vault",
-							description: "advanced. route to any address you control.",
+							description: "advanced. legacy single-beneficiary Flap Portal path, no Split Vault is deployed.",
 						},
 					].map((opt) => {
 						const active = value.recipient === opt.id;
@@ -182,7 +182,7 @@ export default function FlapConfig({ value, onChange }: Props) {
 						custom vault address
 					</label>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[58ch]">
-						0x-prefixed address on BSC. post-cut taxes route here on every trade.
+						0x-prefixed address on BSC. taxes route directly here on every trade. your vault owns any splitting logic.
 					</p>
 					<div
 						className={cn(
@@ -215,8 +215,8 @@ export default function FlapConfig({ value, onChange }: Props) {
 			<section className="border border-white/8 bg-white/[0.012] p-4 flex gap-3">
 				<InfoIcon className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" />
 				<p className="text-xs text-neutral-400 leading-relaxed">
-					flap charges tax on all trades, both curve and post-graduation. the agent earns continuously, even after the
-					token graduates to PancakeSwap.
+					Flap charges tax on all trades, both curve and post-graduation. agent treasury launches deploy Flap's official
+					Split Vault with the platform cut and treasury split in one launch transaction.
 				</p>
 			</section>
 		</div>

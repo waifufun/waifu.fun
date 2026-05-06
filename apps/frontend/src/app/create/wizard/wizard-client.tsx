@@ -19,32 +19,57 @@ import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/l
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
+import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
+
+export { PROVISION_RESPONSE_TIMEOUT_MS };
 
 function WizardInner() {
 	const router = useRouter();
 	const { state } = useWizard();
 	const [provisioning, setProvisioning] = useState(false);
-	const provisionResult = useRef<ProvisionResult | null>(null);
-	const provisionStarted = useRef(false);
+	const [awaitingProvisionResponse, setAwaitingProvisionResponse] = useState(false);
+	const provisionPromise = useRef<Promise<ProvisionResult> | null>(null);
 
-	const startProvisioning = useCallback(async () => {
-		if (provisionStarted.current) return;
-		provisionStarted.current = true;
+	const startProvisioning = useCallback(() => {
+		if (provisionPromise.current) return;
 		const payload = buildProvisionPayload(state);
-		const result = await provisionAgent(payload);
-		provisionResult.current = result;
+		const promise = provisionAgent(payload);
+		provisionPromise.current = promise;
+		void promise.then(
+			() => setAwaitingProvisionResponse(false),
+			() => setAwaitingProvisionResponse(false),
+		);
 	}, [state]);
 
 	const handleComplete = useCallback(() => {
 		setProvisioning(true);
-		// Kick off the real network call in parallel with the loader animation.
-		// Result lands in provisionResult.current; we read it once the loader
-		// finishes its choreography.
-		void startProvisioning();
+		// kick off the real network call in parallel with the loader animation.
+		startProvisioning();
 	}, [startProvisioning]);
 
-	const handleProvisioningDone = useCallback(() => {
-		const result = provisionResult.current;
+	const handleProvisioningDone = useCallback(async () => {
+		let result: ProvisionResult | null = null;
+		try {
+			if (provisionPromise.current) {
+				setAwaitingProvisionResponse(true);
+				const timeout = new Promise<ProvisionResult>((_, reject) => {
+					window.setTimeout(
+						() => reject(new Error("launch timed out; check your patron page")),
+						PROVISION_RESPONSE_TIMEOUT_MS,
+					);
+				});
+				result = await Promise.race([provisionPromise.current, timeout]);
+			}
+		} catch (err) {
+			result = {
+				ok: false,
+				reason: "server",
+				message: err instanceof Error ? err.message : "launch timed out; check your patron page",
+			};
+		} finally {
+			setAwaitingProvisionResponse(false);
+		}
 
 		// Clear the wizard draft on any terminal outcome so a fresh /create/wizard
 		// visit starts clean.
@@ -55,14 +80,15 @@ function WizardInner() {
 		}
 
 		if (result?.ok) {
-			router.push(`/patron/${encodeURIComponent(result.agentId)}?just_provisioned=true`);
+			if (result.agentApiKey) {
+				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
+			}
+			router.push(provisionSuccessRoute(result));
 			return;
 		}
 
-		// Failure modes: not_wired, network, server, validation, or simply
-		// not-yet-resolved (shouldn't happen since loader runs ~5.6s and
-		// the request is fired immediately). All paths route to /patron with
-		// a contextual toast.
+		// failure modes: not_wired, network, server, or validation. all paths
+		// route to /patron with a contextual toast.
 		const message =
 			!result || result.reason === "not_wired" || result.reason === "network"
 				? "backend wiring coming soon. your config is saved."
@@ -93,7 +119,9 @@ function WizardInner() {
 				onComplete={handleComplete}
 				provisioning={provisioning}
 			/>
-			{provisioning ? <ProvisioningLoader onDone={handleProvisioningDone} /> : null}
+			{provisioning ? (
+				<ProvisioningLoader onDone={handleProvisioningDone} awaitingResponse={awaitingProvisionResponse} />
+			) : null}
 		</>
 	);
 }

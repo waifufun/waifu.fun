@@ -8,9 +8,9 @@ import {
 } from "./types";
 
 /**
- * 25% platform cut → 75% remaining → split as:
+ * 10% platform cut → 90% remaining → split as:
  *   founder 53.3% / holder 26.7% / burn 10% / lp 10%
- *   (= 40 / 20 / 7.5 / 7.5 of total tax under default cut)
+ *   (= 48 / 24 / 9 / 9 of total tax under default cut)
  */
 function defaultAllocation(platformCutBps: number) {
 	const remaining = 10_000 - platformCutBps;

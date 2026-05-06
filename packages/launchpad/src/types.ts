@@ -28,7 +28,7 @@ export interface FourMemeTaxFeeConfig {
 	taxBps: 100 | 300 | 500 | 1000;
 	/**
 	 * Platform cut taken off the top of the tax stream, before the creator's
-	 * 4-way allocation. Defaults to WAIFU_PLATFORM_CUT_BPS env var (2500 = 25%).
+	 * 4-way allocation. Defaults to WAIFU_PLATFORM_CUT_BPS env var (1000 = 10%).
 	 * Bounded by MIN_PLATFORM_CUT_BPS (default 1000) and MAX_PLATFORM_CUT_BPS
 	 * (default 5000) at validation time.
 	 */
@@ -62,7 +62,12 @@ export interface LaunchpadAdapter {
 	validateFeeConfig(c: LaunchpadFeeConfig, env: "prod" | "dev"): { ok: boolean; errors: string[] };
 
 	buildCreateTokenTx(params: CreateTokenParams): Promise<UnsignedTx>;
-	parseCreateTokenReceipt(receipt: any): { tokenAddress: string; curveAddress: string };
+	parseCreateTokenReceipt(receipt: any): {
+		tokenAddress: string;
+		curveAddress: string;
+		vaultAddress?: string;
+		vaultFactory?: string;
+	};
 
 	getCurveProgress(tokenAddress: string): Promise<{ raisedWei: bigint; targetWei: bigint }>;
 	getGraduationStatus(tokenAddress: string): Promise<{ graduated: boolean; lpAddress?: string }>;

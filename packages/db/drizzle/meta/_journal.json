@@ -1,160 +1,167 @@
 {
-	"version": "7",
-	"dialect": "postgresql",
-	"entries": [
-		{
-			"idx": 0,
-			"version": "7",
-			"when": 1772937039751,
-			"tag": "0000_broken_imperial_guard",
-			"breakpoints": true
-		},
-		{
-			"idx": 1,
-			"version": "7",
-			"when": 1744510000000,
-			"tag": "0001_add_steward_user_id",
-			"breakpoints": true
-		},
-		{
-			"idx": 2,
-			"version": "7",
-			"when": 1776394871786,
-			"tag": "0002_gifted_the_twelve",
-			"breakpoints": true
-		},
-		{
-			"idx": 3,
-			"version": "7",
-			"when": 1776407747818,
-			"tag": "0003_nifty_colossus",
-			"breakpoints": true
-		},
-		{
-			"idx": 4,
-			"version": "7",
-			"when": 1776409314191,
-			"tag": "0004_eminent_bishop",
-			"breakpoints": true
-		},
-		{
-			"idx": 5,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0005_twitter_auth",
-			"breakpoints": true
-		},
-		{
-			"idx": 6,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0006_agent_auth",
-			"breakpoints": true
-		},
-		{
-			"idx": 7,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0007_claim_flow",
-			"breakpoints": true
-		},
-		{
-			"idx": 8,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0008_agent_events_canonical",
-			"breakpoints": true
-		},
-		{
-			"idx": 9,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0008_agent_pause_controls",
-			"breakpoints": true
-		},
-		{
-			"idx": 10,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0008_agent_x_accounts",
-			"breakpoints": true
-		},
-		{
-			"idx": 11,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0008_launch_tax_split",
-			"breakpoints": true
-		},
-		{
-			"idx": 12,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0009_agent_safes",
-			"breakpoints": true
-		},
-		{
-			"idx": 13,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0009_webhook_inbox",
-			"breakpoints": true
-		},
-		{
-			"idx": 14,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0010_agent_adapter_policies",
-			"breakpoints": true
-		},
-		{
-			"idx": 15,
-			"version": "7",
-			"when": 1777079646226,
-			"tag": "0010_graceful_shutdown",
-			"breakpoints": true
-		},
-		{
-			"idx": 16,
-			"version": "7",
-			"when": 1777087716914,
-			"tag": "0011_runtime_kind",
-			"breakpoints": true
-		},
-		{
-			"idx": 17,
-			"version": "7",
-			"when": 1777087730198,
-			"tag": "0012_launches_authorize",
-			"breakpoints": true
-		},
-		{
-			"idx": 18,
-			"version": "7",
-			"when": 1777105533600,
-			"tag": "0014_patron_steward_unification",
-			"breakpoints": true
-		},
-		{
-			"idx": 19,
-			"version": "7",
-			"when": 1777555585476,
-			"tag": "0019_peaceful_dexter_bennett",
-			"breakpoints": true
-		},
-		{
-			"idx": 20,
-			"version": "7",
-			"when": 1777714200000,
-			"tag": "0020_patron_wallet_kind",
-			"breakpoints": true
-		},
-		{
-			"idx": 21,
-			"version": "7",
-			"when": 1777807289013,
-			"tag": "0021_patron_wallet_chain_namespace",
-			"breakpoints": true
-		}
-	]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772937039751,
+      "tag": "0000_broken_imperial_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744510000000,
+      "tag": "0001_add_steward_user_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776394871786,
+      "tag": "0002_gifted_the_twelve",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776407747818,
+      "tag": "0003_nifty_colossus",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776409314191,
+      "tag": "0004_eminent_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0005_twitter_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0006_agent_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0007_claim_flow",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0008_agent_events_canonical",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0008_agent_pause_controls",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0008_agent_x_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0008_launch_tax_split",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0009_agent_safes",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0009_webhook_inbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0010_agent_adapter_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1777079646226,
+      "tag": "0010_graceful_shutdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1777087716914,
+      "tag": "0011_runtime_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1777087730198,
+      "tag": "0012_launches_authorize",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1777105533600,
+      "tag": "0014_patron_steward_unification",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1777555585476,
+      "tag": "0019_peaceful_dexter_bennett",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1777714200000,
+      "tag": "0020_patron_wallet_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777807289013,
+      "tag": "0021_patron_wallet_chain_namespace",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1778025253569,
+      "tag": "0022_lumpy_tarot",
+      "breakpoints": true
+    }
+  ]
 }
