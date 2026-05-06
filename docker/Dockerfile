@@ -9,6 +9,10 @@ WORKDIR /app
 FROM base AS deps
 
 COPY package.json bun.lock turbo.json tsconfig.shared.json tsconfig.node.base.json biome.json ./
+# patches/ holds bun patches required by the lockfile (e.g. @stwd/react@0.7.2).
+# Without this COPY, `bun install --frozen-lockfile` fails with
+# 'Couldn't find patch file'.
+COPY patches ./patches
 COPY apps ./apps
 COPY packages ./packages
 
