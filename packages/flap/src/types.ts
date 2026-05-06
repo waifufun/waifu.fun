@@ -18,6 +18,7 @@ export const FLAP_TOKEN_VERSIONS = {
 	TOKEN_GOPLUS: 3,
 	TOKEN_TAXED: 4,
 	TOKEN_TAXED_V2: 5,
+	TOKEN_TAXED_V3: 6,
 } as const;
 
 export type FlapTokenVersion = (typeof FLAP_TOKEN_VERSIONS)[keyof typeof FLAP_TOKEN_VERSIONS];
@@ -99,6 +100,71 @@ export interface BuildFlapNewTokenV5ParamsInput {
 	dividendBps?: number;
 	lpBps?: number;
 	minimumShareBalance?: bigint;
+}
+
+export interface SplitVaultRecipient {
+	recipient: Address;
+	bps: number;
+}
+
+export interface FlapNewTokenV6WithVaultParams {
+	name: string;
+	symbol: string;
+	meta: string;
+	dexThresh: FlapDexThreshType;
+	salt: Hex;
+	migratorType: FlapMigratorType;
+	quoteToken: Address;
+	quoteAmt: bigint;
+	permitData: Hex;
+	extensionID: Hex;
+	extensionData: Hex;
+	dexId: FlapDexId;
+	lpFeeProfile: FlapV3LpFeeProfile;
+	buyTaxRate: number;
+	sellTaxRate: number;
+	taxDuration: bigint;
+	antiFarmerDuration: bigint;
+	mktBps: number;
+	deflationBps: number;
+	dividendBps: number;
+	lpBps: number;
+	minimumShareBalance: bigint;
+	dividendToken: Address;
+	commissionReceiver: Address;
+	tokenVersion: FlapTokenVersion;
+	vaultFactory: Address;
+	vaultData: Hex;
+}
+
+export interface BuildFlapNewTokenV6WithVaultParamsInput {
+	name: string;
+	symbol: string;
+	meta: string;
+	salt: Hex;
+	vaultFactory: Address;
+	vaultData: Hex;
+	dexThresh?: FlapDexThreshType;
+	buyTaxRate?: number;
+	sellTaxRate?: number;
+	migratorType?: FlapMigratorType;
+	quoteToken?: Address;
+	quoteAmt?: bigint;
+	permitData?: Hex;
+	extensionID?: Hex;
+	extensionData?: Hex;
+	dexId?: FlapDexId;
+	lpFeeProfile?: FlapV3LpFeeProfile;
+	taxDuration?: bigint;
+	antiFarmerDuration?: bigint;
+	mktBps?: number;
+	deflationBps?: number;
+	dividendBps?: number;
+	lpBps?: number;
+	minimumShareBalance?: bigint;
+	dividendToken?: Address;
+	commissionReceiver?: Address;
+	tokenVersion?: FlapTokenVersion;
 }
 
 export interface FlapQuoteExactInputParams {

@@ -1,6 +1,7 @@
 import { type Hex, type Log, type TransactionReceipt, decodeEventLog, parseEventLogs } from "viem";
 
 import { portalAbi } from "./abi/portal.js";
+import { vaultPortalAbi } from "./abi/vault-portal.js";
 import { FLAP_EVENT_NAMES } from "./constants.js";
 
 export type FlapPortalEventName = (typeof FLAP_EVENT_NAMES)[number];
@@ -18,15 +19,20 @@ export const decodePortalEventLog = (input: {
 		topics: [...input.topics] as [Hex, ...Hex[]],
 	});
 
+const flapLaunchAbi = [...portalAbi, ...vaultPortalAbi] as const;
+
 export const parsePortalEventLogs = (logs: readonly Pick<Log, "data" | "topics">[]) =>
 	parseEventLogs({
-		abi: portalAbi,
+		abi: flapLaunchAbi,
 		logs: logs as unknown as Log[],
 		strict: false,
 	});
 
 export const parsePortalReceiptEvents = (receipt: Pick<TransactionReceipt, "logs">) =>
 	parsePortalEventLogs(receipt.logs);
+
+export const parseVaultPortalReceiptEvents = (receipt: Pick<TransactionReceipt, "logs">) =>
+	parsePortalEventLogs(receipt.logs).filter((log) => log.eventName === "FlapTaxVaultTokenCreated");
 
 export const filterPortalEvents = <TEventName extends FlapPortalEventName>(
 	logs: readonly Pick<Log, "data" | "topics">[],

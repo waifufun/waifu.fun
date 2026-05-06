@@ -94,6 +94,8 @@ export const agentPersonas = pgTable(
 		taxRecipientAddress: varchar("tax_recipient_address", { length: 42 }),
 		/** Full tax breakdown (burnRate/divideRate/liquidityRate/recipientRate/minSharing). */
 		taxConfig: jsonb("tax_config"),
+		/** Flap Split Vault address for new VaultPortal launches. */
+		taxVaultAddress: text("tax_vault_address"),
 
 		// v3 multi-launchpad metadata (Launchpad Wave / W1.B) -----------------
 		launchpadId: text("launchpad_id"),

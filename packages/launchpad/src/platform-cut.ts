@@ -5,7 +5,7 @@
  * the creator's 4-way allocation (founder / holders / burn / liquidity).
  *
  * Defaults:
- *   - 25% of total tax to platform (configurable via WAIFU_PLATFORM_CUT_BPS)
+ *   - 10% of total tax to platform (configurable via WAIFU_PLATFORM_CUT_BPS)
  *   - bounded between 10% and 50% in prod
  *
  * Per-agent overrides are stored in agent_personas.launchpad_config.platformCutBps
@@ -19,7 +19,7 @@ const parseInteger = (raw: string | undefined, fallback: number): number => {
 	return n;
 };
 
-export const DEFAULT_PLATFORM_CUT_BPS = 2500; // 25%
+export const DEFAULT_PLATFORM_CUT_BPS = 1000; // 10%
 export const MIN_PLATFORM_CUT_BPS = 1000; // 10%
 export const MAX_PLATFORM_CUT_BPS = 5000; // 50%
 

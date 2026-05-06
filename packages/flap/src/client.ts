@@ -85,4 +85,14 @@ export const getPortalContractConfig = (options: GetPortalContractConfigOptions 
 export const getFlapPortalAddress = (options: Omit<GetPortalContractConfigOptions, "address"> = {}) =>
 	getPortalContractConfig(options).address;
 
+export const getFlapVaultPortalAddress = (options: Omit<GetPortalContractConfigOptions, "address"> = {}) => {
+	const network = resolveFlapNetwork(options);
+	return network.vaultPortalAddress;
+};
+
+export const getFlapSplitVaultFactoryAddress = (options: Omit<GetPortalContractConfigOptions, "address"> = {}) => {
+	const network = resolveFlapNetwork(options);
+	return network.splitVaultFactoryAddress;
+};
+
 export const isFlapTestnet = (chainId: number) => chainId === FLAP_BSC_TESTNET_CHAIN_ID;

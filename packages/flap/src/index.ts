@@ -1,4 +1,5 @@
 export * from "./abi/portal.js";
+export * from "./abi/vault-portal.js";
 export * from "./client.js";
 export * from "./constants.js";
 export * from "./events.js";
