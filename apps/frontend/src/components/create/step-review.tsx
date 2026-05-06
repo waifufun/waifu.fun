@@ -155,9 +155,20 @@ export default function StepReview() {
 								<p>
 									└─ platform: {platformCutPct}% of tax ({platformVolumePct}%)
 								</p>
-								<p>
-									└─ treasury: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
-								</p>
+								{feeConfig?.kind === "four-meme-tax" ? (
+									<>
+										<p>
+											└─ remainder: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+										</p>
+										<p className="mt-1">
+											remainder routes through your four.meme tax allocation (founder / holders / burn / liquidity).
+										</p>
+									</>
+								) : (
+									<p>
+										└─ treasury: {100 - Number(platformCutPct)}% of tax ({treasuryVolumePct}%)
+									</p>
+								)}
 								{feeConfig?.kind === "flap" && feeConfig.recipient === "agent-treasury" ? (
 									<p className="mt-1">Flap deploys a Split Vault for this routing at launch.</p>
 								) : null}
