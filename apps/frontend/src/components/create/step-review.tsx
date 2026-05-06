@@ -140,7 +140,16 @@ export default function StepReview() {
 								regular curve. no creator tax routing, no agent treasury feed from trades.
 							</p>
 						) : null}
-						{taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
+						{/* Flap custom-vault recipient bypasses Split Vault entirely:
+						100% of trade tax flows direct to the user's vault address, no
+						platform cut deducted on-chain. Show that explicitly so users
+						don't approve a launch under wrong fee expectations. */}
+						{feeConfig?.kind === "flap" && feeConfig.recipient === "custom-vault" ? (
+							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+								<p>trade tax: {taxVolumePct ?? "—"}%</p>
+								<p>└─ 100% routes direct to your custom vault. no platform cut on-chain.</p>
+							</div>
+						) : taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
 							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
 								<p>trade tax: {taxVolumePct}%</p>
 								<p>
