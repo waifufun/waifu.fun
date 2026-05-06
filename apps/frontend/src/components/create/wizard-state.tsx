@@ -246,10 +246,13 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 		case "persona": {
 			if (!state.inviteCode.trim()) return "invite code required";
 			const { name, ticker, bio } = state.persona;
-			if (!name.trim()) return "pick a name";
-			if (name.length > 48) return "name too long";
-			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
-			if (bio.length > 240) return "bio too long";
+			const trimmedName = name.trim();
+			const trimmedBio = bio.trim();
+			if (trimmedName.length < 2) return "name: 2-48 chars";
+			if (trimmedName.length > 48) return "name: 2-48 chars";
+			if (!/^[A-Z0-9]{2,10}$/.test(ticker.trim())) return "ticker: 2-10 uppercase letters or digits";
+			if (!trimmedBio) return "bio required";
+			if (trimmedBio.length > 240) return "bio too long";
 			return null;
 		}
 		case "launchpad": {
