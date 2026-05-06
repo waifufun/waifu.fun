@@ -150,6 +150,61 @@ export const openApiSpec = {
 					},
 				},
 			},
+			ProvisionRequest: {
+				type: "object",
+				required: ["inviteCode", "persona", "runtime", "safe"],
+				properties: {
+					inviteCode: { type: "string", minLength: 1, maxLength: 64, example: "WAVE18" },
+					persona: {
+						type: "object",
+						required: ["name", "ticker", "bio", "personaPrompt", "avatarTemplateId", "hasAvatarUpload"],
+						properties: {
+							name: { type: "string", minLength: 2, maxLength: 32, example: "Eliza" },
+							ticker: { type: "string", minLength: 2, maxLength: 10, pattern: "^[A-Z]{2,10}$", example: "ELIZA" },
+							bio: { type: "string", minLength: 1, maxLength: 256 },
+							personaPrompt: { type: "string" },
+							avatarTemplateId: { type: ["string", "null"] },
+							hasAvatarUpload: { type: "boolean" },
+						},
+					},
+					runtime: {
+						type: "object",
+						required: ["kind"],
+						properties: {
+							kind: { type: "string", enum: ["hosted", "webhook", "pull"] },
+							webhookUrl: { type: "string", format: "uri" },
+							webhookSecret: { type: "string" },
+						},
+					},
+					safe: {
+						type: "object",
+						required: ["taxAgentBps", "taxPatronBps", "owners", "threshold", "firstBuyFundingSource", "adapters"],
+						properties: {
+							taxAgentBps: { type: "integer", minimum: 0, maximum: 10000 },
+							taxPatronBps: { type: "integer", minimum: 0, maximum: 10000 },
+							owners: {
+								type: "array",
+								minItems: 1,
+								items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" },
+							},
+							threshold: { type: "integer", minimum: 1 },
+							firstBuyFundingSource: { type: ["string", "null"] },
+							adapters: { type: "array", items: { type: "object" } },
+						},
+					},
+					launchpad: { type: "object" },
+				},
+			},
+			ProvisionResponse: {
+				type: "object",
+				required: ["agentId", "safeAddress", "agentApiKey"],
+				properties: {
+					agentId: { type: "string", example: "waifu-eliza-a1b2c3d4" },
+					safeAddress: { type: ["string", "null"], pattern: "^0x[0-9a-fA-F]{40}$" },
+					pullApiKey: { type: ["string", "null"], description: "one-time pull runtime key when runtime.kind is pull" },
+					agentApiKey: { type: ["string", "null"], description: "one-time agent API key" },
+				},
+			},
 			LaunchResponse: {
 				type: "object",
 				required: ["ok", "data"],
@@ -362,6 +417,42 @@ export const openApiSpec = {
 								schema: { $ref: "#/components/schemas/ApiError" },
 							},
 						},
+					},
+				},
+			},
+		},
+		"/v2/agents/provision": {
+			post: {
+				operationId: "provisionAgent",
+				summary: "provision an agent from a patron wizard session",
+				description:
+					"human Steward sessions call this endpoint to launch as the patron and receive one-time agent credentials.",
+				tags: ["agents"],
+				security: [{ patronCookie: [] }],
+				requestBody: {
+					required: true,
+					content: {
+						"application/json": {
+							schema: { $ref: "#/components/schemas/ProvisionRequest" },
+						},
+					},
+				},
+				responses: {
+					"200": {
+						description: "provision successful",
+						content: { "application/json": { schema: { $ref: "#/components/schemas/ProvisionResponse" } } },
+					},
+					"400": {
+						description: "invalid request body or invite code",
+						content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
+					},
+					"401": {
+						description: "missing or invalid patron session",
+						content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
+					},
+					"503": {
+						description: "database or orchestrator unavailable",
+						content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
 					},
 				},
 			},
