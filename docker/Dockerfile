@@ -9,7 +9,7 @@ FROM oven/bun:1-alpine AS base
 # and needs node-gyp + python3 + a C++ toolchain at install time).
 # Without these, `bun install --frozen-lockfile` fails with
 # 'install script from "usb" exited with 1'.
-RUN apk add --no-cache python3 make g++ libusb-dev linux-headers
+RUN apk add --no-cache python3 make g++ libusb-dev linux-headers eudev-dev
 
 WORKDIR /app
 
