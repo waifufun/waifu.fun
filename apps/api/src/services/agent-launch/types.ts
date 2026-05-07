@@ -10,6 +10,8 @@
 
 import type { Address, Hex } from "viem";
 
+import type { FlapFeeConfig, FourMemeRegularFeeConfig, FourMemeTaxFeeConfig } from "@waifufun/launchpad";
+
 export type FourMemeLabel =
 	| "Meme"
 	| "AI"
@@ -43,11 +45,26 @@ export interface AgentPersonaConfig {
 export interface TaxSplitRoutingConfig {
 	agentBps: number;
 	patronBps: number;
+	/** Optional platform wallet that receives a platform side of the split. */
+	platformAddress?: Address;
+	/** Platform share of the recipient stream. Agent and patron fill the remainder. */
+	platformBps?: number;
 	/** Patron wallet that receives the patron side of the split. */
 	patronAddress?: Address;
 	/** Existing immutable splitter to reuse when re-preparing an edited claim. */
 	splitterAddress?: Address;
 }
+
+export type ProvisionLaunchpadInput =
+	| { id: "four-meme-regular"; feeConfig: FourMemeRegularFeeConfig }
+	| { id: "four-meme-tax"; feeConfig: FourMemeTaxFeeConfig }
+	| {
+			id: "flap";
+			feeConfig: FlapFeeConfig;
+			platformWalletAddress?: Address;
+			flapVaultPortalAddress?: Address;
+			flapSplitVaultFactoryAddress?: Address;
+	  };
 
 export interface AgentLaunchInput {
 	/** Internal agent id. Stable slug — generated if not supplied. */
@@ -94,6 +111,8 @@ export interface AgentLaunchInput {
 	};
 	/** Optional immutable TaxSplitter routing metadata for multi-recipient tax. */
 	taxSplit?: TaxSplitRoutingConfig;
+	/** Wizard launchpad payload translated for adapter-aware callers. */
+	launchpad?: ProvisionLaunchpadInput;
 
 	// --- Persona / bookkeeping ---
 	persona?: AgentPersonaConfig;
