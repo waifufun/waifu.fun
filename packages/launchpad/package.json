@@ -13,7 +13,7 @@
 	},
 	"files": ["dist"],
 	"scripts": {
-		"prebuild": "bun run --filter @waifufun/fourmeme build && bun run --filter @waifufun/flap build",
+		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/fourmeme build && bun run --filter @waifufun/flap build",
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome check src test package.json tsconfig.json",
