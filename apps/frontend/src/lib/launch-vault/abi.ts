@@ -104,6 +104,33 @@ export const launchVaultAbi = [
 		inputs: [],
 		outputs: [{ name: "", type: "uint256" }],
 	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "totalDepositedAtLaunch",
+		inputs: [],
+		outputs: [{ name: "", type: "uint256" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "token",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "getDepositorInfo",
+		inputs: [{ name: "user", type: "address" }],
+		outputs: [
+			{ name: "deposited", type: "uint256" },
+			{ name: "totalTokens", type: "uint256" },
+			{ name: "vested", type: "uint256" },
+			{ name: "claimed", type: "uint256" },
+			{ name: "claimable", type: "uint256" },
+		],
+	},
 	// writes
 	{
 		type: "function",
@@ -151,6 +178,15 @@ export const launchVaultAbi = [
 			{ name: "amount", type: "uint256", indexed: false },
 			{ name: "penalty", type: "uint256", indexed: false },
 			{ name: "refund", type: "uint256", indexed: false },
+		],
+	},
+	{
+		type: "event",
+		name: "Launched",
+		inputs: [
+			{ name: "token", type: "address", indexed: true },
+			{ name: "totalBnb", type: "uint256", indexed: false },
+			{ name: "launchTimestamp", type: "uint256", indexed: false },
 		],
 	},
 	{
