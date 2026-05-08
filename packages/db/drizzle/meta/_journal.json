@@ -176,6 +176,13 @@
       "when": 1778258544447,
       "tag": "0024_bundle_submissions",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1778803200000,
+      "tag": "0025_w46_launch_notifications",
+      "breakpoints": true
     }
   ]
 }
