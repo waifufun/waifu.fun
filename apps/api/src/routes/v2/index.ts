@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import adapterTemplateRoutes from "./adapter-templates.js";
 import adminAgentRoutes from "./admin-agents.js";
+import agentLaunchRoutes from "./agent-launches.js";
 import agentPolicyRoutes from "./agent-policies.js";
 import agentPullRoutes from "./agent-pull.js";
 import agentEventsRoutes from "./agents-events.js";
@@ -24,7 +25,14 @@ v2.route("/staking", stakingRoutes);
 v2.route("/auth/siwe", authSiweRoutes);
 v2.route("/adapters", adapterTemplateRoutes);
 v2.route("/admin/agents", adminAgentRoutes);
+
+// W42 LaunchFactory routes mount FIRST under /v2/launches so POST /v2/launches
+// and the UUID-shaped GET /v2/launches/:id (+ depositors/preview) resolve to
+// the new agent_launches table. Legacy authorize/prepare routes still mount
+// on the same prefix and serve all other patterns (POST /:id/authorize, etc.).
+v2.route("/launches", agentLaunchRoutes);
 v2.route("/launches", launchAuthorizeRoutes);
+
 // claim routes mount BEFORE agents so /v2/agents/claim/:token and
 // /v2/agents/prepare take precedence over the catch-all /:token handler
 // in agents.ts.
