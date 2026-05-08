@@ -21,6 +21,10 @@ describe("BundleRouter (LaunchRouter)", () => {
 	beforeEach(async function () {
 		[owner, attacker] = await ethers.getSigners();
 
+		let factoryAddr;
+		let routerAddr;
+		let wbnbAddr;
+
 		// Check if BSC fork is active by reading PCS factory code
 		const factoryCode = await ethers.provider.getCode(PCS_FACTORY);
 		if (factoryCode === "0x") {
@@ -28,9 +32,9 @@ describe("BundleRouter (LaunchRouter)", () => {
 			this.skip();
 			return;
 		}
-		const factoryAddr = PCS_FACTORY;
-		const routerAddr = PCS_ROUTER;
-		const wbnbAddr = WBNB;
+		factoryAddr = PCS_FACTORY;
+		routerAddr = PCS_ROUTER;
+		wbnbAddr = WBNB;
 
 		const MockFlap = await ethers.getContractFactory("MockFlapToken");
 		flapToken = await MockFlap.deploy(routerAddr, factoryAddr, wbnbAddr);
