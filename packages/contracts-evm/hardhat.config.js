@@ -15,6 +15,7 @@ module.exports = {
 				process.env.FORK_BSC === "true"
 					? {
 							url: process.env.FORK_BSC_URL || "https://bsc-dataseed1.binance.org/",
+							blockNumber: process.env.FORK_BSC_BLOCK ? parseInt(process.env.FORK_BSC_BLOCK) : undefined,
 						}
 					: undefined,
 			chainId: 31337,
