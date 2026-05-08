@@ -6,6 +6,7 @@ import AdapterPermissions from "./adapter-permissions";
 import AddressRow from "./address-row";
 import CurveProgress from "./curve-progress";
 import DexChart from "./dex-chart";
+import { PostLaunchSurface } from "@/components/post-launch/post-launch-surface";
 import PatronPanel from "./patron-panel";
 import RecentActivity from "./recent-activity";
 import SwapStub from "./swap-stub";
@@ -118,6 +119,11 @@ export default function AgentHome({
 				<Section title={graduated ? "graduated" : "curve progress"}>
 					<CurveProgress agent={agent} />
 				</Section>
+
+				{/* 4a. v3 post-launch surface (W50): tier ladder, burn counter,
+				    claim widget, tax stream. Only renders for v3 launches that
+				    have graduated; the surface returns null otherwise. */}
+				{graduated && <PostLaunchSurface tokenAddress={agent.tokenAddress} ticker={agent.ticker} />}
 
 				{/* 4b. chart (only meaningful post-graduation, when pancake pair exists) */}
 				<Section title="chart">

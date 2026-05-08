@@ -72,6 +72,14 @@ test("serializeAgentLaunch returns null for null row", () => {
 	assert.equal(out, null);
 });
 
+test("GET /by-token/:tokenAddress rejects malformed addresses with 404", async () => {
+	// The route is constrained to `0x[40 hex]`; anything else falls through
+	// to Hono's default 404. No DB stub needed since the handler never runs.
+	const app = createAgentLaunchRoutes({ db: {} as never });
+	const res = await app.request("/by-token/not-an-address");
+	assert.equal(res.status, 404, "non-0x prefixed addresses should not match the route regex");
+});
+
 test("GET /:id returns 404 when the row is missing", async () => {
 	const fakeDb = {} as never;
 	const app = createAgentLaunchRoutes({

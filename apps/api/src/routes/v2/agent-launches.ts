@@ -254,6 +254,24 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 		});
 	});
 
+	// GET /v2/launches/by-token/:tokenAddress — single launch keyed by the
+	// ERC-20 token address. Used by the post-launch agent page (W50) to detect
+	// whether a v3 LaunchFactory-deployed token has graduated and should
+	// surface the tier ladder, burn counter, claim, and tax stream sections.
+	app.get("/by-token/:tokenAddress{0x[0-9a-fA-F]{40}}", async (c) => {
+		const tokenAddress = c.req.param("tokenAddress");
+		if (!tokenAddress) throw badRequest("INVALID_TOKEN", "Invalid token address");
+
+		const db = resolveDb();
+		const row = await launchRepo.getLaunchByToken(db, tokenAddress);
+		if (!row) throw notFound("LAUNCH_NOT_FOUND", "Launch not found");
+
+		const base = serializeAgentLaunch(row);
+		if (!base) return c.notFound();
+
+		return respondOk(c, base);
+	});
+
 	// GET /v2/launches/:id — single launch with full state.
 	//
 	// Constrained to UUID-shaped ids so the legacy GET /:id (which serves the
