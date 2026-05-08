@@ -7,7 +7,10 @@ import { formatBnb, formatBnbDelta, impliedBnbValue } from "./format";
 
 const TOTAL_SUPPLY = 1_000_000_000n * 10n ** 18n;
 
-function baseEntry(overrides: Partial<UserLaunchEntry["launch"]> = {}, position?: Partial<UserLaunchEntry["position"]>): UserLaunchEntry {
+function baseEntry(
+	overrides: Partial<UserLaunchEntry["launch"]> = {},
+	position?: Partial<UserLaunchEntry["position"]>,
+): UserLaunchEntry {
 	return {
 		launch: {
 			id: "00000000-0000-0000-0000-000000000000",
