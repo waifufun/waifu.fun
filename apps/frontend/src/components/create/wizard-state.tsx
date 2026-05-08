@@ -11,15 +11,16 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
 export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
 
 /** Wizard step identifiers. URL-synced via `?step=`. */
-export type WizardStep = "persona" | "launchpad" | "runtime" | "safe" | "review";
+export type WizardStep = "persona" | "tier" | "launchpad" | "runtime" | "safe" | "review";
 
-export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "runtime", "safe", "review"];
-export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "launchpad", "runtime", "safe", "review"];
+export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "tier", "runtime", "safe", "review"];
+export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "tier", "launchpad", "runtime", "safe", "review"];
 
 export const WIZARD_STEPS: WizardStep[] = LAUNCHPAD_PICKER_ENABLED ? LAUNCHPAD_WIZARD_STEPS : LEGACY_WIZARD_STEPS;
 
 export const STEP_LABELS: Record<WizardStep, string> = {
 	persona: "persona",
+	tier: "tier",
 	launchpad: "launchpad",
 	runtime: "runtime",
 	safe: "safe & policies",
@@ -65,6 +66,13 @@ export type WizardState = {
 		selectedChain: ChainId | null;
 		feeConfig: LaunchpadFeeConfig | null;
 	};
+	/**
+	 * W48: launch tier selection. Drives the economics preview and the
+	 * `POST /v2/launches` payload.
+	 */
+	launch: {
+		tierId: 80 | 90 | 95 | 98 | null;
+	};
 };
 
 export const DEFAULT_STATE: WizardState = {
@@ -95,6 +103,9 @@ export const DEFAULT_STATE: WizardState = {
 		selectedChain: null,
 		feeConfig: null,
 	},
+	launch: {
+		tierId: null,
+	},
 };
 
 type Action =
@@ -104,6 +115,7 @@ type Action =
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
 	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
 	| { type: "patch_launchpad"; patch: Partial<WizardState["launchpad"]> }
+	| { type: "patch_launch"; patch: Partial<WizardState["launch"]> }
 	| { type: "reset" }
 	| { type: "hydrate"; state: WizardState };
 
@@ -121,6 +133,8 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, safe: { ...state.safe, adapters: { ...state.safe.adapters, ...action.patch } } };
 		case "patch_launchpad":
 			return { ...state, launchpad: { ...state.launchpad, ...action.patch } };
+		case "patch_launch":
+			return { ...state, launch: { ...state.launch, ...action.patch } };
 		case "reset":
 			return DEFAULT_STATE;
 		case "hydrate":
@@ -140,6 +154,7 @@ type Ctx = {
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
 	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
 	patchLaunchpad: (p: Partial<WizardState["launchpad"]>) => void;
+	patchLaunch: (p: Partial<WizardState["launch"]>) => void;
 	reset: () => void;
 };
 
@@ -179,6 +194,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 						adapters: { ...DEFAULT_STATE.safe.adapters, ...(parsed.safe?.adapters ?? {}) },
 					},
 					launchpad: { ...DEFAULT_STATE.launchpad, ...(parsed.launchpad ?? {}) },
+					launch: { ...DEFAULT_STATE.launch, ...(parsed.launch ?? {}) },
 				};
 				dispatch({ type: "hydrate", state: merged });
 			}
@@ -226,6 +242,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
 			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
 			patchLaunchpad: (patch) => dispatch({ type: "patch_launchpad", patch }),
+			patchLaunch: (patch) => dispatch({ type: "patch_launch", patch }),
 			reset: () => dispatch({ type: "reset" }),
 		}),
 		[state],
@@ -253,6 +270,10 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			if (!/^[A-Z0-9]{2,10}$/.test(ticker.trim())) return "ticker: 2-10 uppercase letters or digits";
 			if (!trimmedBio) return "bio required";
 			if (trimmedBio.length > 240) return "bio too long";
+			return null;
+		}
+		case "tier": {
+			if (!state.launch.tierId) return "pick a launch tier";
 			return null;
 		}
 		case "launchpad": {
