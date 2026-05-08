@@ -399,11 +399,66 @@ async function deployAgentSafeFactory() {
 	return { network: net, agentSafeFactory: await factory.getAddress() };
 }
 
+// PancakeSwap V2 INIT_CODE_HASH for create2 pair lookup. This is
+// computed from the bytecode of UniswapV2Pair as deployed by PCS V2
+// factory and is identical across BSC mainnet + testnet.
+const PCS_INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
+
+async function deployLaunchV3() {
+	const net = hre.network.name;
+	const psCfg = addresses[net];
+	if (!psCfg) {
+		throw new Error(`No PancakeSwap address config for network: ${net}`);
+	}
+
+	const taxSplitter = process.env.TAX_SPLITTER;
+	if (!taxSplitter) {
+		throw new Error("Missing TAX_SPLITTER env var. Set to the deployed TaxSplitter address.");
+	}
+
+	console.log(`Deploying LaunchFactory v3 on ${net}\n`);
+	console.log(`  WBNB:           ${psCfg.WBNB}`);
+	console.log(`  PCS_FACTORY:    ${psCfg.pancakeFactory}`);
+	console.log(`  PCS_ROUTER:     ${psCfg.pancakeRouter}`);
+	console.log(`  INIT_CODE_HASH: ${PCS_INIT_CODE_HASH}`);
+	console.log(`  TAX_SPLITTER:   ${taxSplitter}`);
+	console.log();
+
+	const LaunchFactory = await hre.ethers.getContractFactory("LaunchFactory");
+	const factory = await LaunchFactory.deploy(
+		psCfg.WBNB,
+		psCfg.pancakeFactory,
+		psCfg.pancakeRouter,
+		PCS_INIT_CODE_HASH,
+		taxSplitter,
+	);
+	await factory.waitForDeployment();
+	const factoryAddr = await factory.getAddress();
+
+	console.log(`LaunchFactory deployed on ${net}: ${factoryAddr}`);
+	console.log();
+	console.log("Set this in your API .env:");
+	console.log(`  LAUNCH_FACTORY_ADDRESS=${factoryAddr}`);
+	console.log();
+	if (net === "bscMainnet" || net === "bscTestnet") {
+		console.log("Verify on BSCScan:");
+		console.log(`  bunx hardhat verify --network ${net} ${factoryAddr} \\`);
+		console.log(`    ${psCfg.WBNB} \\`);
+		console.log(`    ${psCfg.pancakeFactory} \\`);
+		console.log(`    ${psCfg.pancakeRouter} \\`);
+		console.log(`    ${PCS_INIT_CODE_HASH} \\`);
+		console.log(`    ${taxSplitter}`);
+	}
+
+	return { network: net, launchFactory: factoryAddr };
+}
+
 module.exports = {
 	deployWaifuFunV1,
 	deployWaifuFunV2,
 	deployWaifuFunV2Testnet,
 	deployAgentSafeFactory,
+	deployLaunchV3,
 	deployContracts: deployWaifuFunV1,
 	resolveGlobalConfig,
 };

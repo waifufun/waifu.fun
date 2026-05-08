@@ -2,10 +2,11 @@
  * Unified deploy entrypoint.
  *
  * Targets (DEPLOY_TARGET env or `-- --target <name>`):
- *   v1          — WaifuFun V1 upgradeable (default)
- *   v2          — WaifuFun V2 + staking + fee router (needs WAIFU_TOKEN_ADDRESS, PLATFORM_WALLET)
- *   testnet     — Mock WAIFU + V2 stack; writes deployments/{testnet,local}.json
- *   agent-safe  — AgentSafeFactory from scripts/addresses.js
+ *   v1          - WaifuFun V1 upgradeable (default)
+ *   v2          - WaifuFun V2 + staking + fee router (needs WAIFU_TOKEN_ADDRESS, PLATFORM_WALLET)
+ *   testnet     - Mock WAIFU + V2 stack; writes deployments/{testnet,local}.json
+ *   agent-safe  - AgentSafeFactory from scripts/addresses.js
+ *   launch-v3   - LaunchFactory v3 burn edition (needs TAX_SPLITTER)
  *
  * Examples:
  *   hardhat run scripts/deploy/run.js --network localhost
@@ -36,6 +37,7 @@ function normalizeTarget(raw) {
 	if (t === "waifu-v2") return "v2";
 	if (t === "v2-testnet") return "testnet";
 	if (t === "agent-safe-factory") return "agent-safe";
+	if (t === "launchv3" || t === "v3" || t === "launch_v3") return "launch-v3";
 	return t;
 }
 
@@ -55,8 +57,11 @@ async function main() {
 		case "agent-safe":
 			await tasks.deployAgentSafeFactory();
 			return;
+		case "launch-v3":
+			await tasks.deployLaunchV3();
+			return;
 		default:
-			throw new Error(`Unknown deploy target "${target}". Use: v1 | v2 | testnet | agent-safe`);
+			throw new Error(`Unknown deploy target "${target}". Use: v1 | v2 | testnet | agent-safe | launch-v3`);
 	}
 }
 
