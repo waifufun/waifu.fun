@@ -6,13 +6,13 @@ import { bsc } from "wagmi/chains";
 
 type Props = {
 	/** TaxSplitter contract address (from agent_launches.tax_split.splitterAddress). */
-	taxSplitter?: Address | null;
+	taxSplitter: Address | null;
 	/** TreasuryLP contract address (from agent_launches.treasuryLpAddress). */
-	treasuryLp?: Address | null;
+	treasuryLp: Address | null;
 	/** Agent BPS share of the tax stream (from launch metadata). */
-	agentBps?: number | null;
+	agentBps: number | null;
 	/** Patron BPS share of the tax stream (from launch metadata). */
-	patronBps?: number | null;
+	patronBps: number | null;
 };
 
 /**

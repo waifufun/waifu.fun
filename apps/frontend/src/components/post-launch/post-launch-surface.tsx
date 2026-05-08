@@ -3,11 +3,14 @@
 import { type Address, isAddress } from "viem";
 
 import { useLaunchByToken } from "@/hooks/use-post-launch";
+import { usePostLaunchMarket } from "@/hooks/use-post-launch-market";
 
 import { BurnCounter } from "./burn-counter";
 import { ClaimWidget } from "./claim-widget";
 import { TaxStreamStats } from "./tax-stream-stats";
 import { TierLadder } from "./tier-ladder";
+import { TokenChart } from "./token-chart";
+import { TradeActivityFeed } from "./trade-activity-feed";
 
 type Props = {
 	tokenAddress: string;
@@ -29,13 +32,20 @@ type Props = {
 export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 	const launch = useLaunchByToken(tokenAddress);
 
-	if (!launch.data) return null;
-	if (launch.data.state !== "launched") return null;
-
+	// Order matters: hooks above any conditional returns. The launched-token
+	// address comes from either the launch row (post-bundle) or the input
+	// address itself; we feed the market hook either, gated by the data path.
 	const data = launch.data;
+	const tokenFromLaunch = data && isAddress(data.token) ? (data.token as Address) : undefined;
+	const marketTokenAddress = tokenFromLaunch ?? (isAddress(tokenAddress) ? (tokenAddress as Address) : undefined);
+	const market = usePostLaunchMarket(marketTokenAddress, Boolean(marketTokenAddress));
+
+	if (!data) return null;
+	if (data.state !== "launched") return null;
+
 	const vault = isAddress(data.vault) ? (data.vault as Address) : undefined;
 	const treasuryLp = data.treasuryLp && isAddress(data.treasuryLp) ? (data.treasuryLp as Address) : undefined;
-	const token = isAddress(data.token) ? (data.token as Address) : undefined;
+	const token = tokenFromLaunch;
 
 	// Tax split metadata is stored on the legacy `launches` row, not the
 	// agent_launches one. The post-launch indexer ports the splitter address
@@ -48,6 +58,17 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 
 	return (
 		<div className="mt-10 flex flex-col gap-5">
+			{token ? (
+				<>
+					<SectionHeader>price chart</SectionHeader>
+					<TokenChart
+						tokenAddress={token}
+						pairAddress={market.data?.pairAddress ?? null}
+						pairUrl={market.data?.pairUrl ?? null}
+					/>
+				</>
+			) : null}
+
 			<SectionHeader>tier ladder</SectionHeader>
 			<TierLadder treasuryLp={treasuryLp} />
 
@@ -67,13 +88,20 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 				<div className="flex flex-col gap-3">
 					<SectionHeader>tax stream</SectionHeader>
 					<TaxStreamStats
-						taxSplitter={taxSplitter}
-						treasuryLp={treasuryLp}
-						agentBps={agentBpsRaw}
-						patronBps={patronBpsRaw}
+						taxSplitter={taxSplitter ?? null}
+						treasuryLp={treasuryLp ?? null}
+						agentBps={agentBpsRaw ?? null}
+						patronBps={patronBpsRaw ?? null}
 					/>
 				</div>
 			</div>
+
+			{token ? (
+				<>
+					<SectionHeader>trade activity</SectionHeader>
+					<TradeActivityFeed market={market.data ?? null} tokenAddress={token} isLoading={market.isLoading} />
+				</>
+			) : null}
 		</div>
 	);
 }

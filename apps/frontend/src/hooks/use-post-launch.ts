@@ -107,37 +107,42 @@ export function useClaimState(vault: Address | undefined) {
 export function useTreasuryLpTiers(treasuryLp: Address | undefined) {
 	const enabled = Boolean(treasuryLp) && (treasuryLp ? isAddress(treasuryLp) : false);
 
-	const tierContracts =
+	// Mixed-shape contracts (different `functionName` + `args` per row) trip
+	// wagmi's homogeneous-tuple inference. Cast through `unknown` to a loose
+	// array shape — the types are still validated at the call site, just not
+	// across the union.
+	type MixedContract = {
+		address: Address;
+		abi: typeof treasuryLpAbi;
+		functionName: "currentMcUSD" | "nextTierIndex" | "tiers";
+		args?: readonly [bigint];
+		chainId: number;
+	};
+
+	const contracts: MixedContract[] | undefined =
 		enabled && treasuryLp
-			? Array.from({ length: 4 }, (_, idx) => ({
-					address: treasuryLp,
-					abi: treasuryLpAbi,
-					functionName: "tiers" as const,
-					args: [BigInt(idx)] as const,
-					chainId: bsc.id,
-				}))
-			: [];
+			? [
+					{ address: treasuryLp, abi: treasuryLpAbi, functionName: "currentMcUSD", chainId: bsc.id },
+					{ address: treasuryLp, abi: treasuryLpAbi, functionName: "nextTierIndex", chainId: bsc.id },
+					...Array.from(
+						{ length: 4 },
+						(_, idx): MixedContract => ({
+							address: treasuryLp,
+							abi: treasuryLpAbi,
+							functionName: "tiers",
+							args: [BigInt(idx)] as const,
+							chainId: bsc.id,
+						}),
+					),
+				]
+			: undefined;
 
 	const meta = useReadContracts({
 		allowFailure: true,
-		contracts:
-			enabled && treasuryLp
-				? [
-						{
-							address: treasuryLp,
-							abi: treasuryLpAbi,
-							functionName: "currentMcUSD" as const,
-							chainId: bsc.id,
-						},
-						{
-							address: treasuryLp,
-							abi: treasuryLpAbi,
-							functionName: "nextTierIndex" as const,
-							chainId: bsc.id,
-						},
-						...tierContracts,
-					]
-				: undefined,
+		// Wagmi's `contracts` prop wants a tuple of identical shapes; our list
+		// is intentionally heterogenous (different functionName per slot). The
+		// runtime contract is fine — we cast to bypass the tuple inference.
+		contracts: contracts as unknown as readonly never[],
 		query: {
 			enabled,
 			refetchInterval: POLL_MS,
