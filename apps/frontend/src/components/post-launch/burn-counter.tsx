@@ -67,12 +67,14 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 function useEasingBigint(target: bigint): bigint {
 	const [value, setValue] = useState<bigint>(target);
 	const fromRef = useRef<bigint>(target);
+	const valueRef = useRef<bigint>(target);
+	valueRef.current = value;
 	const startRef = useRef<number>(0);
 	const targetRef = useRef<bigint>(target);
 
 	useEffect(() => {
 		if (target === targetRef.current) return;
-		fromRef.current = value;
+		fromRef.current = valueRef.current;
 		targetRef.current = target;
 		startRef.current = performance.now();
 
