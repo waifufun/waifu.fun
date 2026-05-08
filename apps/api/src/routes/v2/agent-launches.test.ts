@@ -8,9 +8,7 @@ import { apiErrorHandler } from "../../middleware/error-handler.js";
 import type { LaunchService } from "../../services/launch-v2/launch-service.js";
 import { createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
 
-function wrapWithErrorHandler(
-	router: ReturnType<typeof createAgentLaunchRoutes>,
-): Hono<AppBindings> {
+function wrapWithErrorHandler(router: ReturnType<typeof createAgentLaunchRoutes>): Hono<AppBindings> {
 	const app = new Hono<AppBindings>();
 	app.route("/", router as never);
 	app.onError(apiErrorHandler);
