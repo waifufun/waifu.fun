@@ -6,19 +6,21 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
-/// @title PresaleVaultV2
-/// @notice Presalers deposit BNB during OPEN window, may withdraw with 5% penalty
-///         (penalty pooled and forwarded into the launch bundle), then claim
-///         vested tokens pro-rata after the BundleRouter executes the launch.
+/// @title LaunchVault
+/// @notice Presalers deposit BNB during the OPEN window, may withdraw with a
+///         configurable penalty (capped at 10%, pooled and forwarded into the
+///         launch bundle), then claim vested tokens pro-rata after the launch
+///         router executes the launch.
 /// @dev    State machine: OPEN -> CLOSED -> LAUNCHED.
 ///         - deposit/withdraw allowed only in OPEN.
-///         - close() flips OPEN -> CLOSED (no further deposit/withdraw).
+///         - close() flips OPEN -> CLOSED. Owner may call any time. Anyone may
+///           call after `closeTimestamp` is reached (auto-close window).
 ///         - launch(token) flips CLOSED -> LAUNCHED and forwards
-///           (totalDeposited + bonusPool) BNB to the immutable bundleRouter.
-///         - After launch, vested tokens unlock 10% TGE + 90% linear over
-///           vestingDuration (cliff optional). Pro-rata = deposited /
-///           totalDeposited at LAUNCHED.
-contract PresaleVaultV2 is ReentrancyGuard {
+///           (totalDeposited + bonusPool) BNB to the immutable launchRouter.
+///         - After launch, vesting depends on `vestingEnabled`:
+///             * false: 100% unlocked at TGE
+///             * true:  50% TGE + 50% linear over 24h
+contract LaunchVault is ReentrancyGuard {
 	using SafeERC20 for IERC20;
 
 	// -------------------------------------------------------------------------
@@ -26,19 +28,21 @@ contract PresaleVaultV2 is ReentrancyGuard {
 	// -------------------------------------------------------------------------
 
 	uint256 public constant BPS_DENOM = 10_000;
-	uint256 public constant TGE_BPS = 1_000; // 10% unlocked at launch
-	uint256 public constant VESTING_BPS = 9_000; // 90% linear after cliff
+	uint256 public constant MAX_PENALTY_BPS = 1_000; // 10% max
+	uint256 public constant VESTING_WINDOW = 86_400; // 24h linear period when enabled
+	uint256 public constant VESTING_TGE_BPS = 5_000; // 50% TGE when enabled
+	uint256 public constant VESTING_LINEAR_BPS = 5_000; // 50% linear when enabled
 
 	// -------------------------------------------------------------------------
 	// Immutables
 	// -------------------------------------------------------------------------
 
 	address public immutable owner;
-	address payable public immutable bundleRouter;
+	address payable public immutable launchRouter;
 	uint256 public immutable presaleTokens; // total tokens to distribute pro-rata
-	uint256 public immutable penaltyBps; // capped <= 5000 in constructor
-	uint256 public immutable vestingCliff; // seconds after launch
-	uint256 public immutable vestingDuration; // linear period in seconds (must be > 0)
+	uint256 public immutable penaltyBps; // capped <= MAX_PENALTY_BPS in constructor
+	bool public immutable vestingEnabled; // false = 100% TGE, true = 50/50/24h
+	uint256 public immutable closeTimestamp; // anyone can close() after this
 
 	// -------------------------------------------------------------------------
 	// State
@@ -73,7 +77,7 @@ contract PresaleVaultV2 is ReentrancyGuard {
 
 	event Deposited(address indexed user, uint256 amount, uint256 newTotal);
 	event Withdrawn(address indexed user, uint256 amount, uint256 penalty, uint256 refund);
-	event Closed(uint256 totalDeposited, uint256 bonusPool);
+	event Closed(address indexed by, uint256 totalDeposited, uint256 bonusPool);
 	event Launched(address indexed token, uint256 totalBnb, uint256 launchTimestamp);
 	event Claimed(address indexed user, uint256 amount, uint256 totalClaimed);
 
@@ -82,6 +86,7 @@ contract PresaleVaultV2 is ReentrancyGuard {
 	// -------------------------------------------------------------------------
 
 	error NotOwner();
+	error NotAuthorizedToClose();
 	error InvalidState();
 	error InvalidParams();
 	error ZeroAmount();
@@ -107,24 +112,25 @@ contract PresaleVaultV2 is ReentrancyGuard {
 
 	constructor(
 		address _owner,
-		address payable _bundleRouter,
+		address payable _launchRouter,
 		uint256 _presaleTokens,
 		uint256 _penaltyBps,
-		uint256 _vestingCliff,
-		uint256 _vestingDuration
+		bool _vestingEnabled,
+		uint256 _closeTimestamp
 	) {
-		if (_owner == address(0) || _bundleRouter == address(0)) revert InvalidParams();
+		if (_owner == address(0) || _launchRouter == address(0)) revert InvalidParams();
 		if (_presaleTokens == 0) revert InvalidParams();
-		// Cap penalty at 50% so this can't be weaponized as a bricked window.
-		if (_penaltyBps > 5_000) revert InvalidParams();
-		if (_vestingDuration == 0) revert InvalidParams();
+		// Cap penalty at 10% so this can't be weaponized as a bricked window.
+		if (_penaltyBps > MAX_PENALTY_BPS) revert InvalidParams();
+		// closeTimestamp must be in the future at deploy time.
+		if (_closeTimestamp <= block.timestamp) revert InvalidParams();
 
 		owner = _owner;
-		bundleRouter = _bundleRouter;
+		launchRouter = _launchRouter;
 		presaleTokens = _presaleTokens;
 		penaltyBps = _penaltyBps;
-		vestingCliff = _vestingCliff;
-		vestingDuration = _vestingDuration;
+		vestingEnabled = _vestingEnabled;
+		closeTimestamp = _closeTimestamp;
 		state = State.OPEN;
 	}
 
@@ -174,16 +180,21 @@ contract PresaleVaultV2 is ReentrancyGuard {
 	}
 
 	// -------------------------------------------------------------------------
-	// Lifecycle (owner)
+	// Lifecycle
 	// -------------------------------------------------------------------------
 
 	/// @notice Close the deposit window. No further deposits or withdrawals.
-	function close() external onlyOwner inState(State.OPEN) {
+	/// @dev    Owner may call at any time. Anyone may call once the
+	///         `closeTimestamp` deadline has passed (auto-close).
+	function close() external inState(State.OPEN) {
+		if (msg.sender != owner && block.timestamp < closeTimestamp) {
+			revert NotAuthorizedToClose();
+		}
 		state = State.CLOSED;
-		emit Closed(totalDeposited, bonusPool);
+		emit Closed(msg.sender, totalDeposited, bonusPool);
 	}
 
-	/// @notice Forward all BNB (deposits + bonus pool) to the BundleRouter and
+	/// @notice Forward all BNB (deposits + bonus pool) to the launchRouter and
 	///         enter LAUNCHED. Tokens must be transferred to this vault before
 	///         the first claim, but verifying balance here would force the
 	///         caller to fund tokens upfront; we enforce it lazily in claim().
@@ -197,9 +208,9 @@ contract PresaleVaultV2 is ReentrancyGuard {
 		totalDepositedAtLaunch = totalDeposited;
 
 		uint256 totalBnb = totalDeposited + bonusPool;
-		// Forward the whole pot to the BundleRouter. The router is expected
+		// Forward the whole pot to the launchRouter. The router is expected
 		// to have a payable entrypoint (receive() or fallback).
-		(bool ok, ) = bundleRouter.call{value: totalBnb}("");
+		(bool ok, ) = launchRouter.call{value: totalBnb}("");
 		if (!ok) revert LaunchTransferFailed();
 
 		emit Launched(_token, totalBnb, launchTimestamp);
@@ -304,22 +315,19 @@ contract PresaleVaultV2 is ReentrancyGuard {
 		return (depositors[user].deposited * presaleTokens) / denom;
 	}
 
+	function _vestedPct(uint256 nowTs) internal view returns (uint256) {
+		if (state != State.LAUNCHED) return 0;
+		if (!vestingEnabled) return BPS_DENOM; // 100% at TGE
+		uint256 elapsed = nowTs - launchTimestamp;
+		if (elapsed >= VESTING_WINDOW) return BPS_DENOM;
+		return VESTING_TGE_BPS + (elapsed * VESTING_LINEAR_BPS) / VESTING_WINDOW;
+	}
+
 	function _vestedFromAlloc(uint256 totalAlloc, uint256 nowTs) internal view returns (uint256) {
 		if (totalAlloc == 0) return 0;
-		if (state != State.LAUNCHED) return 0;
-
-		uint256 elapsed = nowTs - launchTimestamp;
-		if (elapsed < vestingCliff) return 0;
-
-		uint256 afterCliff = elapsed - vestingCliff;
-		uint256 vestedPct;
-		if (afterCliff >= vestingDuration) {
-			vestedPct = BPS_DENOM;
-		} else {
-			vestedPct = TGE_BPS + (afterCliff * VESTING_BPS) / vestingDuration;
-			if (vestedPct > BPS_DENOM) vestedPct = BPS_DENOM;
-		}
-		return (totalAlloc * vestedPct) / BPS_DENOM;
+		uint256 pct = _vestedPct(nowTs);
+		if (pct == 0) return 0;
+		return (totalAlloc * pct) / BPS_DENOM;
 	}
 
 	// Reject stray BNB so users can't accidentally bypass deposit().

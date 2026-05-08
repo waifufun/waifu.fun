@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @notice Minimal BNB sink used by PresaleVaultV2 tests. Records every
+/// @notice Minimal BNB sink used by LaunchVault tests. Records every
 ///         payment so suites can assert on the BNB that arrived from launch().
-contract MockBundleRouter {
+contract MockLaunchRouter {
 	uint256 public received;
 	bool public rejectIncoming;
 
