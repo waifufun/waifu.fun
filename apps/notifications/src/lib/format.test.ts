@@ -35,12 +35,7 @@ function snapshot(overrides: Partial<LaunchSnapshot> = {}): LaunchSnapshot {
 }
 
 test("round_opened formats title, cap and creator", () => {
-	const m = formatMessage(
-		"round_opened",
-		{ kind: "round_opened" },
-		snapshot(),
-		{ frontendUrl: "https://waifu.fun" },
-	);
+	const m = formatMessage("round_opened", { kind: "round_opened" }, snapshot(), { frontendUrl: "https://waifu.fun" });
 	assert.match(m.title, /Launch round opened/);
 	assert.match(m.title, /FooBar/);
 	assert.equal(m.url, "https://waifu.fun/launch/launch-1");
@@ -118,11 +113,8 @@ test("summary_24h fallbacks to tbd when v2_pair missing", () => {
 });
 
 test("token label falls back to token address when name missing", () => {
-	const m = formatMessage(
-		"round_opened",
-		{ kind: "round_opened" },
-		snapshot({ tokenName: null, tokenTicker: null }),
-		{ frontendUrl: undefined },
-	);
+	const m = formatMessage("round_opened", { kind: "round_opened" }, snapshot({ tokenName: null, tokenTicker: null }), {
+		frontendUrl: undefined,
+	});
 	assert.match(m.title, /0xaaaa…aaaa/);
 });

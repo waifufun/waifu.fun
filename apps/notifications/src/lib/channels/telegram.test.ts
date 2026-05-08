@@ -37,8 +37,7 @@ test("buildTelegramPayload skips description and link when absent", () => {
 });
 
 test("sendTelegramMessage returns sent on 2xx", async () => {
-	const fetchImpl = (async () =>
-		new Response('{"ok":true}', { status: 200 })) as unknown as typeof fetch;
+	const fetchImpl = (async () => new Response('{"ok":true}', { status: 200 })) as unknown as typeof fetch;
 	const result = await sendTelegramMessage(
 		"BOT_TOKEN",
 		buildTelegramPayload("123", {
