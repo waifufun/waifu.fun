@@ -1,6 +1,6 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { useMemo } from "react";
 import { type Address, formatEther } from "viem";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
@@ -64,18 +64,7 @@ export function DepositWidget({
 				{!isConnected ? (
 					<div className="flex flex-col gap-3">
 						<p className="text-sm text-zinc-300">connect a wallet to deposit.</p>
-						<ConnectButton.Custom>
-							{({ openConnectModal, mounted }) => (
-								<Button
-									type="button"
-									onClick={openConnectModal}
-									disabled={!mounted}
-									className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90"
-								>
-									connect wallet
-								</Button>
-							)}
-						</ConnectButton.Custom>
+						<LinkedEoaCTA className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90">connect wallet</LinkedEoaCTA>
 					</div>
 				) : wrongChain ? (
 					<div className="flex flex-col gap-3">

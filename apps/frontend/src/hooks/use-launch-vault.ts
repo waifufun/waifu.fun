@@ -5,8 +5,8 @@ import { type Address, isAddress } from "viem";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { bsc } from "wagmi/chains";
 
-import { fetchDepositors, fetchPublicLaunch } from "@/lib/launch-vault/api";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
+import { fetchDepositors, fetchPublicLaunch } from "@/lib/launch-vault/api";
 
 const VAULT_REFRESH_MS = 12_000;
 

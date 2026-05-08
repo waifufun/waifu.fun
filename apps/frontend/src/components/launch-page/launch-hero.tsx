@@ -4,9 +4,9 @@ import { Users } from "lucide-react";
 import { formatEther } from "viem";
 
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
+import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
+import { cn } from "@/lib/utils";
 
 import { LaunchCountdown } from "./launch-countdown";
 
