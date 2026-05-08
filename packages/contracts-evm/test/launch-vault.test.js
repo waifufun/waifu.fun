@@ -123,14 +123,7 @@ describe("LaunchVault - constructor", () => {
 		const future = nowTs + ONE_DAY;
 
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [
-				ethers.ZeroAddress,
-				r,
-				PRESALE_TOKENS,
-				PENALTY_BPS,
-				false,
-				future,
-			]),
+			ethers.deployContract("LaunchVault", [ethers.ZeroAddress, r, PRESALE_TOKENS, PENALTY_BPS, false, future]),
 			"InvalidParams",
 		);
 		await expectCustomError(
@@ -160,14 +153,7 @@ describe("LaunchVault - constructor", () => {
 		const r = await router.getAddress();
 		const nowTs = await currentBlockTimestamp();
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [
-				signer.address,
-				r,
-				PRESALE_TOKENS,
-				1_001n,
-				false,
-				nowTs + ONE_DAY,
-			]),
+			ethers.deployContract("LaunchVault", [signer.address, r, PRESALE_TOKENS, 1_001n, false, nowTs + ONE_DAY]),
 			"InvalidParams",
 		);
 	});
@@ -421,7 +407,7 @@ describe("LaunchVault - vesting enabled (50% TGE + 50% over 24h)", () => {
 		const tgeExpected = aliceAlloc / 2n;
 		const tgeTolerance = aliceAlloc / 1_000n;
 		const tgeDiff = afterTge > tgeExpected ? afterTge - tgeExpected : tgeExpected - afterTge;
-		assert.ok(tgeDiff <= tgeTolerance, `tge claim drift too large`);
+		assert.ok(tgeDiff <= tgeTolerance, "tge claim drift too large");
 
 		await increaseTime(VEST_WINDOW + 1n);
 		await vault.connect(alice).claim();
