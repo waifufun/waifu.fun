@@ -184,20 +184,6 @@
         "typescript": "^5.7.3",
       },
     },
-    "apps/notifications": {
-      "name": "@waifufun/notifications",
-      "version": "0.1.0",
-      "dependencies": {
-        "@waifufun/db": "workspace:*",
-        "@waifufun/logger": "workspace:*",
-        "drizzle-orm": "^0.36.4",
-      },
-      "devDependencies": {
-        "@types/node": "^22.10.5",
-        "tsx": "^4.19.2",
-        "typescript": "^5.7.2",
-      },
-    },
     "apps/sol-indexer": {
       "name": "@waifufun/sol-indexer",
       "version": "1.0.0",
@@ -2507,8 +2493,6 @@
     "@waifufun/metrics": ["@waifufun/metrics@workspace:packages/metrics"],
 
     "@waifufun/migrations": ["@waifufun/migrations@workspace:packages/migrations"],
-
-    "@waifufun/notifications": ["@waifufun/notifications@workspace:apps/notifications"],
 
     "@waifufun/programs": ["@waifufun/programs@workspace:packages/programs"],
 
