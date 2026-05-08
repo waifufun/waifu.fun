@@ -28,3 +28,4 @@ export * from "./platform-fees-ledger.js";
 export * from "./launchpad-waitlist.js";
 export * from "./agent-adapter-policies.js";
 export * from "./agent-launches.js";
+export * from "./bundle-submissions.js";
