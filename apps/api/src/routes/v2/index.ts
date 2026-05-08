@@ -15,6 +15,7 @@ import launchAuthorizeRoutes from "./launches-authorize.js";
 import launchRoutes from "./launches.js";
 import patronRoutes from "./patron-me.js";
 import stakingRoutes from "./staking.js";
+import userLaunchRoutes from "./user-launches.js";
 import webhookRoutes from "./webhooks.js";
 
 const v2 = new Hono();
@@ -46,6 +47,7 @@ v2.route("/agents", agentXRoutes);
 v2.route("/agents", agentRuntimeRoutes);
 v2.route("/agents", agentRoutes);
 v2.route("/launches", launchRoutes);
+v2.route("/users", userLaunchRoutes);
 v2.route("/patron", patronRoutes);
 v2.route("/webhooks", webhookRoutes);
 

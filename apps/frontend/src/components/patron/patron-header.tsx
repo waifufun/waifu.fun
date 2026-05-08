@@ -23,6 +23,12 @@ export default function PatronHeader({ title, subtitle, backHref }: Props) {
 			</div>
 			<div className="flex items-center gap-3">
 				<Link
+					href="/patron/portfolio"
+					className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#a1a1aa] hover:text-[#e4e4e7] transition-colors"
+				>
+					portfolio
+				</Link>
+				<Link
 					href="/patron/wallets"
 					className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#a1a1aa] hover:text-[#e4e4e7] transition-colors"
 				>

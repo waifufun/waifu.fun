@@ -83,6 +83,27 @@ export const launchVaultAbi = [
 		inputs: [{ name: "user", type: "address" }],
 		outputs: [{ name: "", type: "uint256" }],
 	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "vestedOf",
+		inputs: [{ name: "user", type: "address" }],
+		outputs: [{ name: "", type: "uint256" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "claimableOf",
+		inputs: [{ name: "user", type: "address" }],
+		outputs: [{ name: "", type: "uint256" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "launchTimestamp",
+		inputs: [],
+		outputs: [{ name: "", type: "uint256" }],
+	},
 	// writes
 	{
 		type: "function",
@@ -105,6 +126,13 @@ export const launchVaultAbi = [
 		inputs: [],
 		outputs: [],
 	},
+	{
+		type: "function",
+		stateMutability: "nonpayable",
+		name: "claim",
+		inputs: [],
+		outputs: [],
+	},
 	// events
 	{
 		type: "event",
@@ -123,6 +151,15 @@ export const launchVaultAbi = [
 			{ name: "amount", type: "uint256", indexed: false },
 			{ name: "penalty", type: "uint256", indexed: false },
 			{ name: "refund", type: "uint256", indexed: false },
+		],
+	},
+	{
+		type: "event",
+		name: "Claimed",
+		inputs: [
+			{ name: "user", type: "address", indexed: true },
+			{ name: "amount", type: "uint256", indexed: false },
+			{ name: "totalClaimed", type: "uint256", indexed: false },
 		],
 	},
 ] as const;
