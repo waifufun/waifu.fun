@@ -24,7 +24,10 @@ describe("BundleRouter (LaunchRouter)", () => {
 		// Check if BSC fork is active by reading PCS factory code
 		const factoryCode = await ethers.provider.getCode(PCS_FACTORY);
 		if (factoryCode === "0x") {
-			// Not on a BSC fork, skip
+			const msg = "BSC fork not detected at PCS_FACTORY. Set FORK_BSC=true and FORK_BSC_URL to enable";
+			if (process.env.REQUIRE_BSC_FORK === "true") {
+				throw new Error(msg);
+			}
 			this.skip();
 			return;
 		}

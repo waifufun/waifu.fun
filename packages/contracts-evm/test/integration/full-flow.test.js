@@ -85,7 +85,11 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 
 	before(async function () {
 		if (!(await isBscFork())) {
-			console.warn("    (BSC fork not detected at PCS_FACTORY — tests will skip)");
+			const msg = "BSC fork not detected at PCS_FACTORY. Set FORK_BSC=true and FORK_BSC_URL to enable";
+			if (process.env.REQUIRE_BSC_FORK === "true") {
+				throw new Error(msg);
+			}
+			console.warn(`    (${msg})`);
 			this.skip();
 		}
 	});
