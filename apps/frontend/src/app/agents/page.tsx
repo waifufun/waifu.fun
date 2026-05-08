@@ -1,5 +1,5 @@
-import AgentsDiscoverClient from "./agents-discover-client";
 import type { Metadata } from "next";
+import AgentsDiscoverClient from "./agents-discover-client";
 
 export const metadata: Metadata = {
 	title: "agents · waifu.fun",

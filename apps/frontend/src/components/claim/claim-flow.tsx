@@ -11,8 +11,8 @@ import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 import { ConnectXButton } from "@/components/auth/connect-x-button";
 import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { Button } from "@/components/ui/button";
-import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { usePatronAuth } from "@/contexts/auth-context";
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { type ClaimInfo, claimAgent, editClaim, fetchClaimInfo, launchClaimed } from "@/lib/claim-api";
 
 type Step = "needs-x" | "claiming" | "needs-fund" | "funding" | "launching" | "done" | "error";

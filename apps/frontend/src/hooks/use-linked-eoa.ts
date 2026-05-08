@@ -1,9 +1,9 @@
 "use client";
 
+import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useCallback, useMemo } from "react";
 import { useAccount, useSignMessage } from "wagmi";
-import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
