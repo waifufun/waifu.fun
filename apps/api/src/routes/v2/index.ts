@@ -9,6 +9,7 @@ import agentRuntimeRoutes from "./agents-runtime.js";
 import agentXRoutes from "./agents-x.js";
 import agentRoutes from "./agents.js";
 import authSiweRoutes from "./auth-siwe.js";
+import bundleRoutes from "./bundles.js";
 import claimRoutes from "./claim.js";
 import launchAuthorizeRoutes from "./launches-authorize.js";
 import launchRoutes from "./launches.js";
@@ -25,6 +26,7 @@ v2.route("/staking", stakingRoutes);
 v2.route("/auth/siwe", authSiweRoutes);
 v2.route("/adapters", adapterTemplateRoutes);
 v2.route("/admin/agents", adminAgentRoutes);
+v2.route("/bundles", bundleRoutes);
 
 // W42 LaunchFactory routes mount FIRST under /v2/launches so POST /v2/launches
 // and the UUID-shaped GET /v2/launches/:id (+ depositors/preview) resolve to
