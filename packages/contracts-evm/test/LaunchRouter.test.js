@@ -8,8 +8,9 @@ const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
 
-describe("BundleRouter (LaunchRouter)", function () {
-	let owner, attacker;
+describe("BundleRouter (LaunchRouter)", () => {
+	let owner;
+	let attacker;
 	let router;
 	let flapToken;
 
@@ -20,8 +21,6 @@ describe("BundleRouter (LaunchRouter)", function () {
 	beforeEach(async function () {
 		[owner, attacker] = await ethers.getSigners();
 
-		let factoryAddr, routerAddr, wbnbAddr;
-
 		// Check if BSC fork is active by reading PCS factory code
 		const factoryCode = await ethers.provider.getCode(PCS_FACTORY);
 		if (factoryCode === "0x") {
@@ -29,9 +28,9 @@ describe("BundleRouter (LaunchRouter)", function () {
 			this.skip();
 			return;
 		}
-		factoryAddr = PCS_FACTORY;
-		routerAddr = PCS_ROUTER;
-		wbnbAddr = WBNB;
+		const factoryAddr = PCS_FACTORY;
+		const routerAddr = PCS_ROUTER;
+		const wbnbAddr = WBNB;
 
 		const MockFlap = await ethers.getContractFactory("MockFlapToken");
 		flapToken = await MockFlap.deploy(routerAddr, factoryAddr, wbnbAddr);
@@ -42,8 +41,8 @@ describe("BundleRouter (LaunchRouter)", function () {
 		await router.waitForDeployment();
 	});
 
-	describe("execute — full flow", function () {
-		it("fills curve, buys from V2, burns tokens", async function () {
+	describe("execute — full flow", () => {
+		it("fills curve, buys from V2, burns tokens", async () => {
 			const deadline = Math.floor(Date.now() / 1000) + 3600;
 
 			const tx = await router.execute(
@@ -54,7 +53,7 @@ describe("BundleRouter (LaunchRouter)", function () {
 					minTokensFromV2: 0, // no slippage protection for test
 					deadline,
 				},
-				{ value: TOTAL_BNB }
+				{ value: TOTAL_BNB },
 			);
 
 			const receipt = await tx.wait();
@@ -78,15 +77,13 @@ describe("BundleRouter (LaunchRouter)", function () {
 
 			// Verify event emitted
 			const routerAddr = await router.getAddress();
-			const events = receipt.logs.filter(
-				(l) => l.address.toLowerCase() === routerAddr.toLowerCase()
-			);
+			const events = receipt.logs.filter((l) => l.address.toLowerCase() === routerAddr.toLowerCase());
 			expect(events.length).to.be.gte(1);
 		});
 	});
 
-	describe("execute — curve only (0 V2 buy)", function () {
-		it("fills curve without V2 buy", async function () {
+	describe("execute — curve only (0 V2 buy)", () => {
+		it("fills curve without V2 buy", async () => {
 			const deadline = Math.floor(Date.now() / 1000) + 3600;
 
 			await router.execute(
@@ -97,7 +94,7 @@ describe("BundleRouter (LaunchRouter)", function () {
 					minTokensFromV2: 0,
 					deadline,
 				},
-				{ value: CURVE_FILL }
+				{ value: CURVE_FILL },
 			);
 
 			expect(await flapToken.graduated()).to.be.true;
@@ -108,8 +105,8 @@ describe("BundleRouter (LaunchRouter)", function () {
 		});
 	});
 
-	describe("reverts", function () {
-		it("reverts on non-owner call", async function () {
+	describe("reverts", () => {
+		it("reverts on non-owner call", async () => {
 			const deadline = Math.floor(Date.now() / 1000) + 3600;
 			await expect(
 				router.connect(attacker).execute(
@@ -120,12 +117,12 @@ describe("BundleRouter (LaunchRouter)", function () {
 						minTokensFromV2: 0,
 						deadline,
 					},
-					{ value: TOTAL_BNB }
-				)
+					{ value: TOTAL_BNB },
+				),
 			).to.be.revertedWithCustomError(router, "Unauthorized");
 		});
 
-		it("reverts on expired deadline", async function () {
+		it("reverts on expired deadline", async () => {
 			const deadline = 1; // way in the past
 			await expect(
 				router.execute(
@@ -136,12 +133,12 @@ describe("BundleRouter (LaunchRouter)", function () {
 						minTokensFromV2: 0,
 						deadline,
 					},
-					{ value: TOTAL_BNB }
-				)
+					{ value: TOTAL_BNB },
+				),
 			).to.be.revertedWithCustomError(router, "Expired");
 		});
 
-		it("reverts on BNB mismatch", async function () {
+		it("reverts on BNB mismatch", async () => {
 			const deadline = Math.floor(Date.now() / 1000) + 3600;
 			await expect(
 				router.execute(
@@ -152,12 +149,12 @@ describe("BundleRouter (LaunchRouter)", function () {
 						minTokensFromV2: 0,
 						deadline,
 					},
-					{ value: ethers.parseEther("1") } // wrong amount
-				)
+					{ value: ethers.parseEther("1") }, // wrong amount
+				),
 			).to.be.revertedWithCustomError(router, "BnbMismatch");
 		});
 
-		it("reverts on slippage (minTokensFromV2 too high)", async function () {
+		it("reverts on slippage (minTokensFromV2 too high)", async () => {
 			const deadline = Math.floor(Date.now() / 1000) + 3600;
 			await expect(
 				router.execute(
@@ -168,14 +165,14 @@ describe("BundleRouter (LaunchRouter)", function () {
 						minTokensFromV2: ethers.parseEther("999999999"), // impossibly high
 						deadline,
 					},
-					{ value: TOTAL_BNB }
-				)
+					{ value: TOTAL_BNB },
+				),
 			).to.be.reverted; // PCS router will revert with insufficient output
 		});
 	});
 
-	describe("dust sweep", function () {
-		it("sweeps remaining BNB back to owner", async function () {
+	describe("dust sweep", () => {
+		it("sweeps remaining BNB back to owner", async () => {
 			const deadline = Math.floor(Date.now() / 1000) + 3600;
 			const balBefore = await ethers.provider.getBalance(owner.address);
 
@@ -187,7 +184,7 @@ describe("BundleRouter (LaunchRouter)", function () {
 					minTokensFromV2: 0,
 					deadline,
 				},
-				{ value: TOTAL_BNB }
+				{ value: TOTAL_BNB },
 			);
 
 			// Router should have 0 BNB
@@ -196,8 +193,8 @@ describe("BundleRouter (LaunchRouter)", function () {
 		});
 	});
 
-	describe("previewPairAddress", function () {
-		it("matches actual pair address after graduation", async function () {
+	describe("previewPairAddress", () => {
+		it("matches actual pair address after graduation", async () => {
 			const predicted = await router.previewPairAddress(await flapToken.getAddress());
 
 			// Graduate
@@ -210,7 +207,7 @@ describe("BundleRouter (LaunchRouter)", function () {
 					minTokensFromV2: 0,
 					deadline,
 				},
-				{ value: CURVE_FILL }
+				{ value: CURVE_FILL },
 			);
 
 			const actual = await flapToken.v2Pair();

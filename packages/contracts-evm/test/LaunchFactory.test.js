@@ -12,48 +12,45 @@ const BURN_AMOUNT = ethers.parseEther("500000000");
 const PRESALE_AMOUNT = ethers.parseEther("200000000");
 const TIER = { TIER_80: 0, TIER_90: 1, TIER_95: 2, TIER_98: 3 };
 
-describe("LaunchFactory", function () {
-	let factory, deployer, creator, taxSplitter;
+describe("LaunchFactory", () => {
+	let factory;
+	let deployer;
+	let creator;
+	let taxSplitter;
 
-	beforeEach(async function () {
+	beforeEach(async () => {
 		[deployer, creator, taxSplitter] = await ethers.getSigners();
 
 		// Use real PCS V2 addresses (works on local without fork via mocks but tests
 		// that don't need actual PCS calls will still pass)
 		const Factory = await ethers.getContractFactory("LaunchFactory");
-		factory = await Factory.deploy(
-			WBNB,
-			PCS_FACTORY,
-			PCS_ROUTER,
-			INIT_CODE_HASH,
-			taxSplitter.address
-		);
+		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, taxSplitter.address);
 		await factory.waitForDeployment();
 	});
 
-	describe("tierConfig", function () {
-		it("returns correct config for TIER_80", async function () {
+	describe("tierConfig", () => {
+		it("returns correct config for TIER_80", async () => {
 			const [cap, v2, vest] = await factory.tierConfig(TIER.TIER_80);
 			expect(cap).to.equal(ethers.parseEther("16"));
 			expect(v2).to.equal(0);
 			expect(vest).to.equal(false);
 		});
 
-		it("returns correct config for TIER_90", async function () {
+		it("returns correct config for TIER_90", async () => {
 			const [cap, v2, vest] = await factory.tierConfig(TIER.TIER_90);
 			expect(cap).to.equal(ethers.parseEther("32"));
 			expect(v2).to.equal(ethers.parseEther("16"));
 			expect(vest).to.equal(true);
 		});
 
-		it("returns correct config for TIER_95", async function () {
+		it("returns correct config for TIER_95", async () => {
 			const [cap, v2, vest] = await factory.tierConfig(TIER.TIER_95);
 			expect(cap).to.equal(ethers.parseEther("64"));
 			expect(v2).to.equal(ethers.parseEther("48"));
 			expect(vest).to.equal(true);
 		});
 
-		it("returns correct config for TIER_98", async function () {
+		it("returns correct config for TIER_98", async () => {
 			const [cap, v2, vest] = await factory.tierConfig(TIER.TIER_98);
 			expect(cap).to.equal(ethers.parseEther("160"));
 			expect(v2).to.equal(ethers.parseEther("144"));
@@ -61,7 +58,7 @@ describe("LaunchFactory", function () {
 		});
 	});
 
-	describe("createLaunch", function () {
+	describe("createLaunch", () => {
 		const baseConfig = (creatorAddr, tier = TIER.TIER_90) => ({
 			name: "TestAgent",
 			symbol: "TEST",
@@ -71,14 +68,12 @@ describe("LaunchFactory", function () {
 			closeTimestamp: Math.floor(Date.now() / 1000) + 86400,
 		});
 
-		it("deploys for TIER_80", async function () {
+		it("deploys for TIER_80", async () => {
 			const cfg = baseConfig(creator.address, TIER.TIER_80);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
 
-			const events = receipt.logs.filter(
-				(l) => l.fragment && l.fragment.name === "LaunchCreated"
-			);
+			const events = receipt.logs.filter((l) => l.fragment && l.fragment.name === "LaunchCreated");
 			expect(events.length).to.equal(1);
 
 			const ev = events[0];
@@ -89,14 +84,12 @@ describe("LaunchFactory", function () {
 			expect(ev.args.vestingEnabled).to.equal(false);
 		});
 
-		it("deploys for TIER_90", async function () {
+		it("deploys for TIER_90", async () => {
 			const cfg = baseConfig(creator.address, TIER.TIER_90);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
 
-			const events = receipt.logs.filter(
-				(l) => l.fragment && l.fragment.name === "LaunchCreated"
-			);
+			const events = receipt.logs.filter((l) => l.fragment && l.fragment.name === "LaunchCreated");
 			expect(events.length).to.equal(1);
 			const ev = events[0];
 			expect(ev.args.tier).to.equal(TIER.TIER_90);
@@ -105,17 +98,17 @@ describe("LaunchFactory", function () {
 			expect(ev.args.vestingEnabled).to.equal(true);
 		});
 
-		it("deploys for TIER_95", async function () {
+		it("deploys for TIER_95", async () => {
 			const cfg = baseConfig(creator.address, TIER.TIER_95);
 			await expect(factory.createLaunch(cfg)).to.emit(factory, "LaunchCreated");
 		});
 
-		it("deploys for TIER_98", async function () {
+		it("deploys for TIER_98", async () => {
 			const cfg = baseConfig(creator.address, TIER.TIER_98);
 			await expect(factory.createLaunch(cfg)).to.emit(factory, "LaunchCreated");
 		});
 
-		it("burns 50% of supply at launch", async function () {
+		it("burns 50% of supply at launch", async () => {
 			const cfg = baseConfig(creator.address, TIER.TIER_90);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -127,7 +120,7 @@ describe("LaunchFactory", function () {
 			expect(deadBalance).to.equal(BURN_AMOUNT);
 		});
 
-		it("allocates 200M to vault", async function () {
+		it("allocates 200M to vault", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -138,7 +131,7 @@ describe("LaunchFactory", function () {
 			expect(vaultBalance).to.equal(PRESALE_AMOUNT);
 		});
 
-		it("factory holds 300M (200M for V2 LP + 100M for treasury)", async function () {
+		it("factory holds 300M (200M for V2 LP + 100M for treasury)", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -149,7 +142,7 @@ describe("LaunchFactory", function () {
 			expect(factoryBalance).to.equal(ethers.parseEther("300000000"));
 		});
 
-		it("token totalSupply equals 1B", async function () {
+		it("token totalSupply equals 1B", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -159,7 +152,7 @@ describe("LaunchFactory", function () {
 			expect(await token.totalSupply()).to.equal(TOTAL_SUPPLY);
 		});
 
-		it("vault has correct owner (creator)", async function () {
+		it("vault has correct owner (creator)", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -169,7 +162,7 @@ describe("LaunchFactory", function () {
 			expect(await vault.owner()).to.equal(creator.address);
 		});
 
-		it("metadataURI is queryable on token", async function () {
+		it("metadataURI is queryable on token", async () => {
 			const cfg = baseConfig(creator.address);
 			cfg.metadataURI = "ipfs://QmTest123";
 			const tx = await factory.createLaunch(cfg);
@@ -180,7 +173,7 @@ describe("LaunchFactory", function () {
 			expect(await token.metadataURI()).to.equal("ipfs://QmTest123");
 		});
 
-		it("token, vault, router are tax-exempt", async function () {
+		it("token, vault, router are tax-exempt", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -193,7 +186,7 @@ describe("LaunchFactory", function () {
 			expect(await token.taxExempt(DEAD)).to.equal(true);
 		});
 
-		it("bootstrap is finalized after createLaunch", async function () {
+		it("bootstrap is finalized after createLaunch", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -207,7 +200,7 @@ describe("LaunchFactory", function () {
 			// We can't easily test from outside since only factory can call setTaxExempt
 		});
 
-		it("populates launches[] mapping", async function () {
+		it("populates launches[] mapping", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -219,7 +212,7 @@ describe("LaunchFactory", function () {
 			expect(stored.router).to.equal(ev.args.router);
 		});
 
-		it("allLaunches.length increments", async function () {
+		it("allLaunches.length increments", async () => {
 			expect(await factory.launchCount()).to.equal(0);
 			await factory.createLaunch(baseConfig(creator.address));
 			expect(await factory.launchCount()).to.equal(1);
@@ -232,7 +225,7 @@ describe("LaunchFactory", function () {
 		});
 	});
 
-	describe("reverts", function () {
+	describe("reverts", () => {
 		const validCfg = (creatorAddr) => ({
 			name: "TestAgent",
 			symbol: "TEST",
@@ -242,39 +235,27 @@ describe("LaunchFactory", function () {
 			closeTimestamp: Math.floor(Date.now() / 1000) + 86400,
 		});
 
-		it("reverts on zero creator", async function () {
+		it("reverts on zero creator", async () => {
 			const cfg = validCfg(ethers.ZeroAddress);
-			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(
-				factory,
-				"InvalidCreator"
-			);
+			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(factory, "InvalidCreator");
 		});
 
-		it("reverts on past closeTimestamp", async function () {
+		it("reverts on past closeTimestamp", async () => {
 			const cfg = validCfg(creator.address);
 			cfg.closeTimestamp = 1;
-			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(
-				factory,
-				"InvalidCloseTimestamp"
-			);
+			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(factory, "InvalidCloseTimestamp");
 		});
 
-		it("reverts on empty name", async function () {
+		it("reverts on empty name", async () => {
 			const cfg = validCfg(creator.address);
 			cfg.name = "";
-			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(
-				factory,
-				"EmptyName"
-			);
+			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(factory, "EmptyName");
 		});
 
-		it("reverts on empty symbol", async function () {
+		it("reverts on empty symbol", async () => {
 			const cfg = validCfg(creator.address);
 			cfg.symbol = "";
-			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(
-				factory,
-				"EmptySymbol"
-			);
+			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(factory, "EmptySymbol");
 		});
 	});
 });

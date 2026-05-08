@@ -73,8 +73,14 @@ async function isBscFork() {
 describe("W41 — Agent Launch v3 End-to-End", function () {
 	this.timeout(180_000);
 
-	let deployer, creator, taxSplitter;
-	let alice, bob, carol, dave, eve;
+	let deployer;
+	let creator;
+	let taxSplitter;
+	let alice;
+	let bob;
+	let carol;
+	let dave;
+	let eve;
 	let factory;
 
 	before(async function () {
@@ -84,7 +90,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 		}
 	});
 
-	beforeEach(async function () {
+	beforeEach(async () => {
 		[deployer, creator, taxSplitter, alice, bob, carol, dave, eve] = await ethers.getSigners();
 
 		const Factory = await ethers.getContractFactory("LaunchFactory");
@@ -144,7 +150,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			PRESALE_AMOUNT,
 			500, // 5% penalty
 			vestingEnabled,
-			now + closeOffset
+			now + closeOffset,
 		);
 		await vault.waitForDeployment();
 
@@ -155,8 +161,8 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// 1. Tier 80 happy path (no V2 buy, no vesting)
 	// =========================================================================
 
-	describe("Tier 80 happy path", function () {
-		it("deploys factory artifacts with correct allocations", async function () {
+	describe("Tier 80 happy path", () => {
+		it("deploys factory artifacts with correct allocations", async () => {
 			const launch = await createFactoryLaunch(TIER.TIER_80);
 
 			expect(await launch.token.totalSupply()).to.equal(TOTAL_SUPPLY);
@@ -169,7 +175,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			expect(await launch.vestingEnabled).to.equal(false);
 		});
 
-		it("accepts deposits, closes, and exposes 100% allocation immediately", async function () {
+		it("accepts deposits, closes, and exposes 100% allocation immediately", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80);
 
 			await vault.connect(alice).deposit({ value: ethers.parseEther("8") });
@@ -187,7 +193,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			expect(bobAlloc).to.equal(PRESALE_AMOUNT / 2n);
 		});
 
-		it("withdraw applies 5% penalty and grows bonus pool", async function () {
+		it("withdraw applies 5% penalty and grows bonus pool", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80);
 
 			await vault.connect(alice).deposit({ value: ethers.parseEther("10") });
@@ -208,8 +214,8 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// 2. Tier 90 happy path (V2 buy, 50/50/24h vesting)
 	// =========================================================================
 
-	describe("Tier 90 happy path", function () {
-		it("factory wires vesting and v2BuyBnb correctly", async function () {
+	describe("Tier 90 happy path", () => {
+		it("factory wires vesting and v2BuyBnb correctly", async () => {
 			const launch = await createFactoryLaunch(TIER.TIER_90);
 			expect(launch.presaleCap).to.equal(ethers.parseEther("32"));
 			expect(launch.v2BuyBnb).to.equal(ethers.parseEther("16"));
@@ -217,7 +223,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			expect(await launch.vault.vestingEnabled()).to.equal(true);
 		});
 
-		it("end-to-end: deposit, close, launch, V2 graduation, claim with 50/50/24h vesting", async function () {
+		it("end-to-end: deposit, close, launch, V2 graduation, claim with 50/50/24h vesting", async () => {
 			const { flap, router, vault } = await deployGraduationRig({ vestingEnabled: true });
 
 			// 5 presalers totalling 32 BNB at the cap.
@@ -270,7 +276,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 					minTokensFromV2: 0,
 					deadline,
 				},
-				{ value: curveFill + v2Buy }
+				{ value: curveFill + v2Buy },
 			);
 
 			expect(await flap.graduated()).to.equal(true);
@@ -362,8 +368,8 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// 3. Cap not hit (deposit < cap, launch with smaller V2 buy)
 	// =========================================================================
 
-	describe("Cap not hit (under-subscribed launch)", function () {
-		it("can launch with deposits below the tier cap", async function () {
+	describe("Cap not hit (under-subscribed launch)", () => {
+		it("can launch with deposits below the tier cap", async () => {
 			const { flap, router, vault } = await deployGraduationRig({ vestingEnabled: true });
 
 			// 3 presalers totalling 20 BNB (cap is 32).
@@ -389,7 +395,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 					minTokensFromV2: 0,
 					deadline,
 				},
-				{ value: curveFill + v2Buy }
+				{ value: curveFill + v2Buy },
 			);
 
 			expect(await flap.graduated()).to.equal(true);
@@ -400,59 +406,52 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// 4. Reverts and edge cases
 	// =========================================================================
 
-	describe("Reverts and edge cases", function () {
-		it("cannot deposit when CLOSED", async function () {
+	describe("Reverts and edge cases", () => {
+		it("cannot deposit when CLOSED", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80);
 			await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
 			await vault.connect(creator).close();
-			await expect(
-				vault.connect(alice).deposit({ value: ethers.parseEther("1") })
-			).to.be.revertedWithCustomError(vault, "InvalidState");
-		});
-
-		it("cannot withdraw when CLOSED", async function () {
-			const { vault } = await createFactoryLaunch(TIER.TIER_80);
-			await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
-			await vault.connect(creator).close();
-			await expect(vault.connect(alice).withdrawAll()).to.be.revertedWithCustomError(
+			await expect(vault.connect(alice).deposit({ value: ethers.parseEther("1") })).to.be.revertedWithCustomError(
 				vault,
-				"InvalidState"
+				"InvalidState",
 			);
 		});
 
-		it("cannot claim before launched", async function () {
+		it("cannot withdraw when CLOSED", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80);
 			await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
 			await vault.connect(creator).close();
-			await expect(vault.connect(alice).claim()).to.be.revertedWithCustomError(
-				vault,
-				"InvalidState"
-			);
+			await expect(vault.connect(alice).withdrawAll()).to.be.revertedWithCustomError(vault, "InvalidState");
 		});
 
-		it("cannot launch twice", async function () {
+		it("cannot claim before launched", async () => {
+			const { vault } = await createFactoryLaunch(TIER.TIER_80);
+			await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
+			await vault.connect(creator).close();
+			await expect(vault.connect(alice).claim()).to.be.revertedWithCustomError(vault, "InvalidState");
+		});
+
+		it("cannot launch twice", async () => {
 			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false });
 			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
 			await vault.connect(creator).close();
 			const flapAddr = await flap.getAddress();
 			await vault.connect(creator).launch(flapAddr);
 
-			await expect(vault.connect(creator).launch(flapAddr)).to.be.revertedWithCustomError(
-				vault,
-				"InvalidState"
-			);
+			await expect(vault.connect(creator).launch(flapAddr)).to.be.revertedWithCustomError(vault, "InvalidState");
 		});
 
-		it("non-owner cannot launch", async function () {
+		it("non-owner cannot launch", async () => {
 			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false });
 			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
 			await vault.connect(creator).close();
-			await expect(
-				vault.connect(alice).launch(await flap.getAddress())
-			).to.be.revertedWithCustomError(vault, "NotOwner");
+			await expect(vault.connect(alice).launch(await flap.getAddress())).to.be.revertedWithCustomError(
+				vault,
+				"NotOwner",
+			);
 		});
 
-		it("router execute reverts for non-owner", async function () {
+		it("router execute reverts for non-owner", async () => {
 			const { flap, router } = await deployGraduationRig({ vestingEnabled: false });
 			const deadline = (await blockTimestamp()) + 3600;
 			await expect(
@@ -464,12 +463,12 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 						minTokensFromV2: 0,
 						deadline,
 					},
-					{ value: ethers.parseEther("32") }
-				)
+					{ value: ethers.parseEther("32") },
+				),
 			).to.be.revertedWithCustomError(router, "Unauthorized");
 		});
 
-		it("router execute reverts on slippage", async function () {
+		it("router execute reverts on slippage", async () => {
 			const { flap, router } = await deployGraduationRig({ vestingEnabled: false });
 			const deadline = (await blockTimestamp()) + 3600;
 			await expect(
@@ -481,12 +480,12 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 						minTokensFromV2: ethers.parseEther("9999999999"),
 						deadline,
 					},
-					{ value: ethers.parseEther("32") }
-				)
+					{ value: ethers.parseEther("32") },
+				),
 			).to.be.reverted;
 		});
 
-		it("factory rejects zero creator", async function () {
+		it("factory rejects zero creator", async () => {
 			const now = await blockTimestamp();
 			await expect(
 				factory.createLaunch({
@@ -496,11 +495,11 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 					creator: ethers.ZeroAddress,
 					tier: TIER.TIER_80,
 					closeTimestamp: now + ONE_DAY,
-				})
+				}),
 			).to.be.revertedWithCustomError(factory, "InvalidCreator");
 		});
 
-		it("factory rejects past closeTimestamp", async function () {
+		it("factory rejects past closeTimestamp", async () => {
 			await expect(
 				factory.createLaunch({
 					name: "X",
@@ -509,7 +508,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 					creator: creator.address,
 					tier: TIER.TIER_80,
 					closeTimestamp: 1,
-				})
+				}),
 			).to.be.revertedWithCustomError(factory, "InvalidCloseTimestamp");
 		});
 	});
@@ -518,8 +517,8 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// 5. Multiple presalers pro-rata correctness
 	// =========================================================================
 
-	describe("Multiple presalers pro-rata", function () {
-		it("allocation is exactly proportional to deposits at the launch snapshot", async function () {
+	describe("Multiple presalers pro-rata", () => {
+		it("allocation is exactly proportional to deposits at the launch snapshot", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_98);
 
 			// 4 presalers; deposit fractions designed to expose rounding.
@@ -546,7 +545,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			expect(sum).to.be.lte(PRESALE_AMOUNT);
 		});
 
-		it("snapshot at launch is independent of post-launch state changes", async function () {
+		it("snapshot at launch is independent of post-launch state changes", async () => {
 			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false });
 
 			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
@@ -565,8 +564,8 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// 6. Auto-close after closeTimestamp
 	// =========================================================================
 
-	describe("Auto-close after closeTimestamp", function () {
-		it("non-owner can close once timestamp passes", async function () {
+	describe("Auto-close after closeTimestamp", () => {
+		it("non-owner can close once timestamp passes", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80, 100);
 			await vault.connect(alice).deposit({ value: ethers.parseEther("5") });
 			await increaseTime(200);
@@ -574,13 +573,10 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			expect(await vault.state()).to.equal(1);
 		});
 
-		it("non-owner cannot close before timestamp", async function () {
+		it("non-owner cannot close before timestamp", async () => {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80, ONE_DAY);
 			await vault.connect(alice).deposit({ value: ethers.parseEther("5") });
-			await expect(vault.connect(bob).close()).to.be.revertedWithCustomError(
-				vault,
-				"NotAuthorizedToClose"
-			);
+			await expect(vault.connect(bob).close()).to.be.revertedWithCustomError(vault, "NotAuthorizedToClose");
 		});
 	});
 });
