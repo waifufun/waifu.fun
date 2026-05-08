@@ -152,6 +152,21 @@
         "wrangler": "^4.14.0",
       },
     },
+    "apps/launch-indexer": {
+      "name": "@waifufun/launch-indexer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@waifufun/db": "workspace:*",
+        "@waifufun/logger": "workspace:*",
+        "drizzle-orm": "^0.36.4",
+        "viem": "^2.21.54",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2",
+      },
+    },
     "apps/mcp": {
       "name": "@waifufun/mcp",
       "version": "0.1.0",
@@ -2466,6 +2481,8 @@
     "@waifufun/fourmeme": ["@waifufun/fourmeme@workspace:packages/fourmeme"],
 
     "@waifufun/frontend": ["@waifufun/frontend@workspace:apps/frontend"],
+
+    "@waifufun/launch-indexer": ["@waifufun/launch-indexer@workspace:apps/launch-indexer"],
 
     "@waifufun/launchpad": ["@waifufun/launchpad@workspace:packages/launchpad"],
 
