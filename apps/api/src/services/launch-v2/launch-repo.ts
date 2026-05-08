@@ -185,3 +185,96 @@ export async function listDeposits(db: Database, launchId: string): Promise<Laun
 		.where(eq(launchDeposits.launchId, launchId))
 		.orderBy(desc(launchDeposits.blockNumber));
 }
+
+/**
+ * One row per launch the user has touched (deposit, withdraw, or claim),
+ * with their net deposit + claimed totals. Returned ordered by launch
+ * created_at desc so newest backed launches sort first.
+ *
+ * The on-chain `claimable` view is intentionally NOT computed here — the
+ * route layer multicalls vaults to fill it in.
+ */
+export interface UserLaunchAggregate {
+	launch: AgentLaunchRow;
+	deposited: string;
+	withdrawn: string;
+	netDeposit: string;
+	claimed: string;
+}
+
+export async function listUserLaunches(db: Database, userAddress: string): Promise<UserLaunchAggregate[]> {
+	const normalized = userAddress.toLowerCase();
+
+	const rows = await db.execute<{
+		launch_id: string;
+		deposited: string | null;
+		withdrawn: string | null;
+		claimed: string | null;
+	}>(sql`
+		WITH d AS (
+			SELECT launch_id, SUM(amount::numeric) AS deposited
+			FROM launch_deposits
+			WHERE user_address = ${normalized}
+			GROUP BY launch_id
+		),
+		w AS (
+			SELECT launch_id, SUM(amount::numeric) AS withdrawn
+			FROM launch_withdrawals
+			WHERE user_address = ${normalized}
+			GROUP BY launch_id
+		),
+		c AS (
+			SELECT launch_id, SUM(amount::numeric) AS claimed
+			FROM launch_claims
+			WHERE user_address = ${normalized}
+			GROUP BY launch_id
+		)
+		SELECT
+			COALESCE(d.launch_id, w.launch_id, c.launch_id) AS launch_id,
+			COALESCE(d.deposited, 0)::text AS deposited,
+			COALESCE(w.withdrawn, 0)::text AS withdrawn,
+			COALESCE(c.claimed, 0)::text AS claimed
+		FROM d
+		FULL OUTER JOIN w ON d.launch_id = w.launch_id
+		FULL OUTER JOIN c ON COALESCE(d.launch_id, w.launch_id) = c.launch_id
+		LIMIT 500
+	`);
+
+	const rawRows = (rows as unknown as { rows?: unknown[] }).rows ?? (rows as unknown as unknown[]);
+	const aggregateByLaunch = new Map<string, { deposited: bigint; withdrawn: bigint; claimed: bigint }>();
+	for (const row of rawRows as Array<Record<string, string | null>>) {
+		const id = row.launch_id;
+		if (!id) continue;
+		aggregateByLaunch.set(id, {
+			deposited: BigInt(row.deposited ?? "0"),
+			withdrawn: BigInt(row.withdrawn ?? "0"),
+			claimed: BigInt(row.claimed ?? "0"),
+		});
+	}
+
+	const launchIds = Array.from(aggregateByLaunch.keys());
+	if (launchIds.length === 0) return [];
+
+	const launchRows = await db
+		.select()
+		.from(agentLaunches)
+		.where(
+			sql`${agentLaunches.id} IN (${sql.join(
+				launchIds.map((id) => sql`${id}::uuid`),
+				sql`, `,
+			)})`,
+		)
+		.orderBy(desc(agentLaunches.createdAt));
+
+	return launchRows.map((launch) => {
+		const agg = aggregateByLaunch.get(launch.id) ?? { deposited: 0n, withdrawn: 0n, claimed: 0n };
+		const netDeposit = agg.deposited > agg.withdrawn ? agg.deposited - agg.withdrawn : 0n;
+		return {
+			launch,
+			deposited: agg.deposited.toString(),
+			withdrawn: agg.withdrawn.toString(),
+			netDeposit: netDeposit.toString(),
+			claimed: agg.claimed.toString(),
+		};
+	});
+}
