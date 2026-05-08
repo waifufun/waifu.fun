@@ -35,8 +35,7 @@ test("colors differ by event type", () => {
 });
 
 test("sendDiscordWebhook returns sent on 2xx", async () => {
-	const fetchImpl = (async () =>
-		new Response("", { status: 204 })) as unknown as typeof fetch;
+	const fetchImpl = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
 	const result = await sendDiscordWebhook(
 		"https://discord.example/webhook",
 		buildDiscordPayload("round_opened", message),

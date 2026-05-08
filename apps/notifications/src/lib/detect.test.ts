@@ -56,11 +56,10 @@ test("fresh open launch fires only round_opened", () => {
 });
 
 test("50% deposited fires round_opened + T1 + T2 in order", () => {
-	const events = detectEvents(
-		snapshot({ totalDeposited: 50n * ONE_BNB }),
-		new FakeAlreadySent(),
-		{ trancheBpsThresholds: TRANCHES, now: new Date() },
-	);
+	const events = detectEvents(snapshot({ totalDeposited: 50n * ONE_BNB }), new FakeAlreadySent(), {
+		trancheBpsThresholds: TRANCHES,
+		now: new Date(),
+	});
 	const types = events.map((e) => e.eventType);
 	assert.deepEqual(types, ["round_opened", "tranche_deployed", "tranche_deployed"]);
 	const tranches = events
@@ -70,11 +69,10 @@ test("50% deposited fires round_opened + T1 + T2 in order", () => {
 });
 
 test("cap fully filled fires round_opened + all tranches + cap_hit", () => {
-	const events = detectEvents(
-		snapshot({ totalDeposited: 100n * ONE_BNB }),
-		new FakeAlreadySent(),
-		{ trancheBpsThresholds: TRANCHES, now: new Date() },
-	);
+	const events = detectEvents(snapshot({ totalDeposited: 100n * ONE_BNB }), new FakeAlreadySent(), {
+		trancheBpsThresholds: TRANCHES,
+		now: new Date(),
+	});
 	const types = events.map((e) => e.eventType);
 	assert.deepEqual(types, [
 		"round_opened",
@@ -99,11 +97,10 @@ test("partial tranche dedupe – T1 sent, T2 still fires", () => {
 	const already = new FakeAlreadySent()
 		.add("L1", "round_opened", "discord", "")
 		.add("L1", "tranche_deployed", "discord", "t1");
-	const events = detectEvents(
-		snapshot({ totalDeposited: 60n * ONE_BNB }),
-		already,
-		{ trancheBpsThresholds: TRANCHES, now: new Date() },
-	);
+	const events = detectEvents(snapshot({ totalDeposited: 60n * ONE_BNB }), already, {
+		trancheBpsThresholds: TRANCHES,
+		now: new Date(),
+	});
 	assert.equal(events.length, 1);
 	assert.equal(events[0]?.eventType, "tranche_deployed");
 	if (events[0]?.detail.kind === "tranche_deployed") {
@@ -165,11 +162,10 @@ test("summary_24h is gated on >= 24h since launch_timestamp", () => {
 });
 
 test("zero presaleCap defends against div-by-zero", () => {
-	const events = detectEvents(
-		snapshot({ presaleCap: 0n, totalDeposited: 0n }),
-		new FakeAlreadySent(),
-		{ trancheBpsThresholds: TRANCHES, now: new Date() },
-	);
+	const events = detectEvents(snapshot({ presaleCap: 0n, totalDeposited: 0n }), new FakeAlreadySent(), {
+		trancheBpsThresholds: TRANCHES,
+		now: new Date(),
+	});
 	// Only round_opened; no tranches, no cap_hit.
 	const types = events.map((e) => e.eventType);
 	assert.deepEqual(types, ["round_opened"]);

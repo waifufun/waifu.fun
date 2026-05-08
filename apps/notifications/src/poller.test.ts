@@ -166,7 +166,13 @@ test("tranche thresholds dispatch one event per crossed threshold", async () => 
 	const sender = new RecordingSender("sent");
 	const cfg = createNotificationsConfig({} as NodeJS.ProcessEnv);
 
-	const result = await pollOnce({ repo, sender, cfg, logger: silentLogger, now: () => new Date("2026-05-08T00:00:00Z") });
+	const result = await pollOnce({
+		repo,
+		sender,
+		cfg,
+		logger: silentLogger,
+		now: () => new Date("2026-05-08T00:00:00Z"),
+	});
 	// round_opened + T1 + T2 + T3 = 4 events
 	assert.equal(result.pendingEvents, 4);
 	const trancheRows = repo.sent.filter((r) => r.eventType === "tranche_deployed");
