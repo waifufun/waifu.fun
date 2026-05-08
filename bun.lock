@@ -201,6 +201,21 @@
         "tsx": "^4.15.1",
       },
     },
+    "apps/tier-cron": {
+      "name": "@waifufun/tier-cron",
+      "version": "0.1.0",
+      "dependencies": {
+        "@waifufun/db": "workspace:*",
+        "@waifufun/logger": "workspace:*",
+        "drizzle-orm": "^0.36.4",
+        "viem": "^2.21.54",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2",
+      },
+    },
     "apps/worker": {
       "name": "@waifufun/worker",
       "version": "0.1.0",
@@ -2507,6 +2522,8 @@
     "@waifufun/sol-indexer": ["@waifufun/sol-indexer@workspace:apps/sol-indexer"],
 
     "@waifufun/sync": ["@waifufun/sync@workspace:packages/sync"],
+
+    "@waifufun/tier-cron": ["@waifufun/tier-cron@workspace:apps/tier-cron"],
 
     "@waifufun/types": ["@waifufun/types@workspace:packages/types"],
 
