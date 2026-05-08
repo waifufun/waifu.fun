@@ -115,6 +115,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
 						{step === "persona" ? "who are they?" : null}
+						{step === "tier" ? "how big do they launch?" : null}
 						{step === "launchpad" ? "where do they launch?" : null}
 						{step === "runtime" ? "where do they live?" : null}
 						{step === "safe" ? "how do they spend?" : null}
@@ -122,6 +123,9 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 					</h1>
 					<p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-[52ch]">
 						{step === "persona" ? "pick a name, ticker, a one-line bio. they inherit this from launch." : null}
+						{step === "tier"
+							? "pick a tier. it sets the cap, the v2 buy, and the math everything else flows from."
+							: null}
 						{step === "launchpad"
 							? "pick the launchpad and the fee model. waifu's cut comes out of the agent treasury allocation."
 							: null}
@@ -136,7 +140,12 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 				</header>
 
 				<nav className="mb-10" aria-label="wizard steps">
-					<ol className={cn("grid gap-2", WIZARD_STEPS.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
+					<ol
+						className={cn(
+							"grid gap-2",
+							WIZARD_STEPS.length === 6 ? "grid-cols-6" : WIZARD_STEPS.length === 5 ? "grid-cols-5" : "grid-cols-4",
+						)}
+					>
 						{WIZARD_STEPS.map((s, i) => {
 							const isComplete = i < stepIndex;
 							const isCurrent = i === stepIndex;
@@ -281,6 +290,10 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 			if (name.length > 48) return "name too long";
 			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
 			if (bio.length > 240) return "bio too long";
+			return null;
+		}
+		case "tier": {
+			if (!state.launch.tierId) return "pick a launch tier";
 			return null;
 		}
 		case "launchpad": {

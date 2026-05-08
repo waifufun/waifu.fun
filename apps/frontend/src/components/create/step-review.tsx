@@ -6,6 +6,7 @@ import { computePlatformCutVolumeBps } from "@/lib/launchpad/validators";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect } from "react";
+import { getTier, totalBnb } from "./tier/tier-data";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
@@ -127,6 +128,31 @@ export default function StepReview() {
 						)}
 					</div>
 				</div>
+
+				{/* W48: Launch Tier */}
+				{state.launch.tierId ? (
+					<Row label="tier">
+						{(() => {
+							const t = getTier(state.launch.tierId);
+							if (!t) return null;
+							return (
+								<>
+									<p className="text-sm text-neutral-200">
+										tier_{t.id}
+										<span className="text-neutral-600">
+											{" "}
+											• cap {t.cap} BNB • v2 buy {t.v2Buy} BNB
+										</span>
+									</p>
+									<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+										total {totalBnb(t)} BNB • open mc projection {t.openMc}k • presaler{" "}
+										{t.presaler.toFixed(t.presaler % 1 === 0 ? 0 : 1)}x • burn {t.burn}% • vesting {t.vesting}
+									</p>
+								</>
+							);
+						})()}
+					</Row>
+				) : null}
 
 				{/* Launchpad */}
 				{LAUNCHPAD_PICKER_ENABLED ? (

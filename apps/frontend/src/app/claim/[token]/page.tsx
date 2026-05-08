@@ -1,5 +1,5 @@
-import ClaimTokenClient from "./claim-token-client";
 import { isStaticExport, parseClaimTokensFromEnv } from "@/lib/static-export-paths";
+import ClaimTokenClient from "./claim-token-client";
 
 export async function generateStaticParams() {
 	if (!isStaticExport()) return [];
