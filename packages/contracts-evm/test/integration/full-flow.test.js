@@ -136,7 +136,12 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// Hand-wires a MockFlapToken (has bonding curve) with a fresh
 	// LaunchVault + BundleRouter so the launch+graduation flow can be
 	// tested end-to-end against a real PCS V2 fork.
-	async function deployGraduationRig({ vestingEnabled, closeOffset = ONE_DAY, presaleCap = ethers.parseEther("32"), bnbForBuy = ethers.parseEther("16") }) {
+	async function deployGraduationRig({
+		vestingEnabled,
+		closeOffset = ONE_DAY,
+		presaleCap = ethers.parseEther("32"),
+		bnbForBuy = ethers.parseEther("16"),
+	}) {
 		const FlapToken = await ethers.getContractFactory("MockFlapToken");
 		const flap = await FlapToken.deploy(PCS_ROUTER, PCS_FACTORY, WBNB);
 		await flap.waitForDeployment();
@@ -355,9 +360,13 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			await vault.connect(creator).close();
 
 			const flapAddr = await flap.getAddress();
-			await expect(vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(vault, "UnderSubscribed");
+			await expect(
+				vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600),
+			).to.be.revertedWithCustomError(vault, "UnderSubscribed");
 			await vault.connect(creator).enableRefunds();
-			await expect(vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(vault, "UnderSubscribed");
+			await expect(
+				vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600),
+			).to.be.revertedWithCustomError(vault, "UnderSubscribed");
 			await vault.connect(alice).refund();
 			expect((await vault.depositors(alice.address)).deposited).to.equal(0);
 		});
@@ -399,17 +408,18 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			const flapAddr = await flap.getAddress();
 			await vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600);
 
-			await expect(vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(vault, "InvalidState");
+			await expect(
+				vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600),
+			).to.be.revertedWithCustomError(vault, "InvalidState");
 		});
 
 		it("non-owner cannot launch", async () => {
 			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false });
 			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
 			await vault.connect(creator).close();
-			await expect(vault.connect(alice).launch(await flap.getAddress(), 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(
-				vault,
-				"NotOwner",
-			);
+			await expect(
+				vault.connect(alice).launch(await flap.getAddress(), 0, (await blockTimestamp()) + 3600),
+			).to.be.revertedWithCustomError(vault, "NotOwner");
 		});
 
 		it("router execute reverts for non-vault", async () => {

@@ -232,7 +232,9 @@ describe("LaunchFactory", () => {
 		it("deploys a unique tax splitter per launch", async () => {
 			const rA = await (await factory.createLaunch(baseConfig(creator.address))).wait();
 			const evA = rA.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
-			const rB = await (await factory.createLaunch({ ...baseConfig(creator.address), name: "Agent B", symbol: "AGB" })).wait();
+			const rB = await (
+				await factory.createLaunch({ ...baseConfig(creator.address), name: "Agent B", symbol: "AGB" })
+			).wait();
 			const evB = rB.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
 
 			expect(evA.args.taxSplitter).to.not.equal(evB.args.taxSplitter);

@@ -134,7 +134,16 @@ describe("LaunchVault - constructor", () => {
 		const future = nowTs + ONE_DAY;
 
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [ethers.ZeroAddress, r, PRESALE_TOKENS, PRESALE_CAP, BNB_FOR_BUY, PENALTY_BPS, false, future]),
+			ethers.deployContract("LaunchVault", [
+				ethers.ZeroAddress,
+				r,
+				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				PENALTY_BPS,
+				false,
+				future,
+			]),
 			"InvalidParams",
 		);
 		await expectCustomError(
@@ -151,11 +160,29 @@ describe("LaunchVault - constructor", () => {
 			"InvalidParams",
 		);
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [signer.address, r, 0n, PRESALE_CAP, BNB_FOR_BUY, PENALTY_BPS, false, future]),
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				r,
+				0n,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				PENALTY_BPS,
+				false,
+				future,
+			]),
 			"InvalidParams",
 		);
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [signer.address, r, PRESALE_TOKENS, PRESALE_CAP, BNB_FOR_BUY, PENALTY_BPS, false, 1n]),
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				r,
+				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				PENALTY_BPS,
+				false,
+				1n,
+			]),
 			"InvalidParams",
 		);
 	});
@@ -166,7 +193,16 @@ describe("LaunchVault - constructor", () => {
 		const r = await router.getAddress();
 		const nowTs = await currentBlockTimestamp();
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [signer.address, r, PRESALE_TOKENS, PRESALE_CAP, BNB_FOR_BUY, 1_001n, false, nowTs + ONE_DAY]),
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				r,
+				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				1_001n,
+				false,
+				nowTs + ONE_DAY,
+			]),
 			"InvalidParams",
 		);
 	});
@@ -311,13 +347,22 @@ describe("LaunchVault - close + launch", () => {
 		const { vault, owner, alice, router, token } = await deployFixture();
 		const tokenAddr = await token.getAddress();
 
-		await expectCustomError(vault.connect(owner).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600), "InvalidState");
+		await expectCustomError(
+			vault.connect(owner).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600),
+			"InvalidState",
+		);
 
 		await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
 		await vault.connect(owner).close();
 
-		await expectCustomError(vault.connect(alice).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600), "NotOwner");
-		await expectCustomError(vault.connect(owner).launch(ethers.ZeroAddress, 0, Math.floor(Date.now() / 1000) + 3600), "InvalidParams");
+		await expectCustomError(
+			vault.connect(alice).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600),
+			"NotOwner",
+		);
+		await expectCustomError(
+			vault.connect(owner).launch(ethers.ZeroAddress, 0, Math.floor(Date.now() / 1000) + 3600),
+			"InvalidParams",
+		);
 
 		await router.setRejectIncoming(true);
 		await assert.rejects(vault.connect(owner).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600));
