@@ -22,7 +22,7 @@
 // Run on a BSC fork:
 //   FORK_BSC=true \
 //   FORK_BSC_URL="https://bnb-mainnet.g.alchemy.com/v2/$ALCHEMY_BSC_KEY" \
-//   FORK_BSC_BLOCK=97048100 \
+//   FORK_BSC_BLOCK=97368808 \
 //   npx hardhat test test/integration/full-flow.test.js
 
 const { expect } = require("chai");

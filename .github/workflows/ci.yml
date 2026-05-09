@@ -155,7 +155,7 @@ jobs:
         env:
           FORK_BSC: "true"
           FORK_BSC_URL: ${{ secrets.ALCHEMY_BSC_URL }}
-          FORK_BSC_BLOCK: "97048100"
+          FORK_BSC_BLOCK: "97368808"
           REQUIRE_BSC_FORK: "true"
         run: >-
           bunx turbo run test build

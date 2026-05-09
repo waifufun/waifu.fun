@@ -11,7 +11,7 @@ const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
 
 const TEST1_TOKEN = "0x1f4d04b456b96893d8fe0467d07dc5d7ebfa7777";
-const FORK_BLOCK = 97_312_500;
+const FORK_BLOCK = Number.parseInt(process.env.FORK_BSC_BLOCK || "97368808", 10);
 const LAUNCHED_TO_DEX_TOPIC = "0x6e4f47630b8745b8cacbd44f42a8a33e7eea7cc08ef22fc7630f4f385784ff7d";
 
 const FACTORY_ABI = ["function getPair(address tokenA, address tokenB) view returns (address)"];
