@@ -4,10 +4,6 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-interface IFlapToken {
-	function buy() external payable;
-}
-
 interface IPancakeFactory {
 	function getPair(address tokenA, address tokenB) external view returns (address);
 }
@@ -47,13 +43,26 @@ contract BundleRouter is ReentrancyGuard {
 		uint256 deadline;
 	}
 
+	struct PortalExactInputParams {
+		address inputToken;
+		address outputToken;
+		uint256 inputAmount;
+		uint256 minOutputAmount;
+		bytes permitData;
+	}
+
 	address public owner;
-	address public immutable WBNB;
-	address public immutable pcsFactory;
-	address public immutable pcsRouter;
-	bytes32 public immutable initCodeHash;
+	address internal immutable WBNB;
+	address internal immutable pcsFactory;
+	address internal immutable pcsRouter;
+	bytes32 internal immutable initCodeHash;
+	address internal immutable flapPortal;
 
 	address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
+	bytes4 private constant FLAP_SWAP_EXACT_INPUT = 0xef7ec2e7;
+	bytes4 private constant BUY_TAX_RATE = 0x691f224f;
+	bytes4 private constant SELL_TAX_RATE = 0x24024efd;
+	bytes4 private constant TAX_BPS = 0x68f4a786;
 
 	event BundleExecuted(
 		address indexed flapToken,
@@ -84,12 +93,13 @@ contract BundleRouter is ReentrancyGuard {
 		_;
 	}
 
-	constructor(address _wbnb, address _pcsFactory, address _pcsRouter, bytes32 _initCodeHash) {
+	constructor(address _wbnb, address _pcsFactory, address _pcsRouter, bytes32 _initCodeHash, address _flapPortal) {
 		owner = msg.sender;
 		WBNB = _wbnb;
 		pcsFactory = _pcsFactory;
 		pcsRouter = _pcsRouter;
 		initCodeHash = _initCodeHash;
+		flapPortal = _flapPortal;
 	}
 
 	/// @notice Transfer launch execution authority to the vault.
@@ -103,16 +113,32 @@ contract BundleRouter is ReentrancyGuard {
 		if (msg.value != params.curveFillBnb + params.v2BuyBnb) revert BnbMismatch();
 		if (block.timestamp > params.deadline) revert Expired();
 
-		// Step 1: Fill bonding curve when the token exposes buy(). Factory-minted
-		// AgentTokenV3 launches send LP inventory to this router instead, so the
-		// fallback path creates the V2 LP directly with that token inventory.
+		// Step 1: Fill the real Flap V3 bonding curve through the Portal. Real
+		// TOKEN_TAXED_V3 contracts do not expose token.buy(); the curve state lives
+		// in the Portal. Factory-minted AgentTokenV3 launches send LP inventory to
+		// this router instead, so the fallback path creates the V2 LP directly.
 		uint256 curveBalBefore = IERC20(params.flapToken).balanceOf(address(this));
-		try IFlapToken(params.flapToken).buy{value: params.curveFillBnb}() {
+		bool portalOk = false;
+		if (flapPortal.code.length > 0) {
+			(portalOk,) = flapPortal.call{value: params.curveFillBnb}(
+				abi.encodeWithSelector(
+					FLAP_SWAP_EXACT_INPUT,
+					PortalExactInputParams({
+						inputToken: address(0),
+						outputToken: params.flapToken,
+						inputAmount: params.curveFillBnb,
+						minOutputAmount: 0,
+						permitData: ""
+					})
+				)
+			);
+		}
+		if (portalOk) {
 			uint256 curveTokensReceived = IERC20(params.flapToken).balanceOf(address(this)) - curveBalBefore;
 			if (curveTokensReceived > 0) {
 				IERC20(params.flapToken).transfer(msg.sender, curveTokensReceived);
 			}
-		} catch {
+		} else {
 			uint256 lpTokens = IERC20(params.flapToken).balanceOf(address(this));
 			if (lpTokens == 0) revert NoLiquidityTokens();
 			IERC20(params.flapToken).approve(pcsRouter, lpTokens);
@@ -164,10 +190,10 @@ contract BundleRouter is ReentrancyGuard {
 			? 0
 			: (bnbReserve * IERC20(params.flapToken).totalSupply()) / tokenReserve;
 
-		// Approximate tokens that were taxed (3% by default; deltas with `* 100 / 97`).
-		uint256 tokensToTax = (params.v2BuyBnb > 0 && tokensReceived > 0)
-			? ((tokensReceived * 100) / 97) - tokensReceived
-			: 0;
+		// Read the real buy-tax bps from TOKEN_TAXED_V3 when present. Flap V3 allows
+		// asymmetric buy/sell tax, so do not assume the historical flat 3% rate.
+		(uint256 buyTaxBps,) = _readTaxRates(params.flapToken);
+		uint256 tokensToTax = _taxFromNet(tokensReceived, buyTaxBps);
 
 		emit BundleExecuted(
 			params.flapToken,
@@ -187,6 +213,26 @@ contract BundleRouter is ReentrancyGuard {
 			(bool ok,) = DEAD.call{value: dust}("");
 			if (!ok) revert SweepFailed();
 		}
+	}
+
+	function _readTaxRates(address token) internal view returns (uint256 buyTaxBps, uint256 sellTaxBps) {
+		(bool buyOk, bytes memory buyData) = token.staticcall(abi.encodeWithSelector(BUY_TAX_RATE));
+		if (buyOk && buyData.length >= 32) {
+			buyTaxBps = abi.decode(buyData, (uint256));
+		} else {
+			(bool legacyOk, bytes memory legacyData) = token.staticcall(abi.encodeWithSelector(TAX_BPS));
+			if (legacyOk && legacyData.length >= 32) buyTaxBps = abi.decode(legacyData, (uint256));
+		}
+
+		(bool sellOk, bytes memory sellData) = token.staticcall(abi.encodeWithSelector(SELL_TAX_RATE));
+		if (sellOk && sellData.length >= 32) sellTaxBps = abi.decode(sellData, (uint256));
+	}
+
+	function _taxFromNet(uint256 netAmount, uint256 taxBps) internal pure returns (uint256) {
+		if (netAmount == 0 || taxBps == 0) return 0;
+		if (taxBps >= 10_000) return 0;
+		uint256 grossAmount = (netAmount * 10_000) / (10_000 - taxBps);
+		return grossAmount - netAmount;
 	}
 
 	/// @notice Predict the V2 pair address for a flap token via CREATE2.

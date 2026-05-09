@@ -36,6 +36,7 @@ const PCS_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 const PCS_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 const DEAD = "0x000000000000000000000000000000000000dEaD";
+const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
 
 const TIER = { TIER_80: 0, TIER_90: 1, TIER_95: 2, TIER_98: 3 };
@@ -97,8 +98,14 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	beforeEach(async () => {
 		[deployer, creator, platformWallet, alice, bob, carol, dave, eve] = await ethers.getSigners();
 
+		const MockPortal = await ethers.getContractFactory("MockFlapPortal");
+		const mockPortal = await MockPortal.deploy();
+		await mockPortal.waitForDeployment();
+		const portalCode = await ethers.provider.getCode(await mockPortal.getAddress());
+		await ethers.provider.send("hardhat_setCode", [FLAP_PORTAL, portalCode]);
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
-		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address);
+		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address, FLAP_PORTAL);
 		await factory.waitForDeployment();
 	});
 
@@ -147,7 +154,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 		await flap.waitForDeployment();
 
 		const Router = await ethers.getContractFactory("BundleRouter");
-		const router = await Router.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH);
+		const router = await Router.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, FLAP_PORTAL);
 		await router.waitForDeployment();
 
 		const now = await blockTimestamp();

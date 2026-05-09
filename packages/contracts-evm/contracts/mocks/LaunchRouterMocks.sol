@@ -20,12 +20,42 @@ interface IUniswapV2Router {
     function WETH() external pure returns (address);
 }
 
+interface IMockFlapBuy {
+    function buy() external payable;
+}
+
+interface IMockERC20 {
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address to, uint256 amount) external returns (bool);
+}
+
+contract MockFlapPortal {
+    struct ExactInputParams {
+        address inputToken;
+        address outputToken;
+        uint256 inputAmount;
+        uint256 minOutputAmount;
+        bytes permitData;
+    }
+
+    function swapExactInput(ExactInputParams calldata params) external payable returns (uint256 outputAmount) {
+        require(params.inputToken == address(0), "input");
+        require(params.inputAmount == msg.value, "amount");
+        uint256 beforeBal = IMockERC20(params.outputToken).balanceOf(address(this));
+        IMockFlapBuy(params.outputToken).buy{value: msg.value}();
+        outputAmount = IMockERC20(params.outputToken).balanceOf(address(this)) - beforeBal;
+        require(outputAmount >= params.minOutputAmount, "min");
+        IMockERC20(params.outputToken).transfer(msg.sender, outputAmount);
+    }
+}
+
 /// @title MockFlapToken
 /// @notice ERC20 with bonding curve buy() + 3% transfer tax + graduation to V2 LP.
 contract MockFlapToken is ERC20 {
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000 ether;
     uint256 public constant GRADUATION_THRESHOLD = 16 ether; // 16 BNB to graduate
-    uint256 public constant TAX_BPS = 300; // 3%
+    uint256 public buyTaxRate = 300; // 3%
+    uint256 public sellTaxRate = 300; // 3%
     uint256 public constant LP_TOKENS = 200_000_000 ether; // 20% to LP
 
     address public immutable router;
@@ -48,6 +78,11 @@ contract MockFlapToken is ERC20 {
         _mint(address(this), TOTAL_SUPPLY);
         taxExempt[address(this)] = true;
         taxExempt[_router] = true;
+    }
+
+    function setTaxRates(uint256 buyBps, uint256 sellBps) external {
+        buyTaxRate = buyBps;
+        sellTaxRate = sellBps;
     }
 
     /// @notice Buy tokens from the bonding curve. Triggers graduation at threshold.
@@ -108,7 +143,7 @@ contract MockFlapToken is ERC20 {
             return;
         }
 
-        uint256 tax = (amount * TAX_BPS) / 10000;
+        uint256 tax = (amount * buyTaxRate) / 10000;
         uint256 net = amount - tax;
 
         // Tax goes to this contract (simulating TaxSplitter)

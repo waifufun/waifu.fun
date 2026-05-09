@@ -425,6 +425,7 @@ async function deployLaunchV3() {
 	console.log(`  PCS_ROUTER:      ${psCfg.pancakeRouter}`);
 	console.log(`  INIT_CODE_HASH:  ${PCS_INIT_CODE_HASH}`);
 	console.log(`  PLATFORM_WALLET: ${platformWallet}`);
+	console.log(`  FLAP_PORTAL:     ${psCfg.flapPortal}`);
 	console.log();
 
 	const LaunchFactory = await hre.ethers.getContractFactory("LaunchFactory");
@@ -434,6 +435,7 @@ async function deployLaunchV3() {
 		psCfg.pancakeRouter,
 		PCS_INIT_CODE_HASH,
 		platformWallet,
+		psCfg.flapPortal,
 	);
 	await factory.waitForDeployment();
 	const factoryAddr = await factory.getAddress();
@@ -450,7 +452,8 @@ async function deployLaunchV3() {
 		console.log(`    ${psCfg.pancakeFactory} \\`);
 		console.log(`    ${psCfg.pancakeRouter} \\`);
 		console.log(`    ${PCS_INIT_CODE_HASH} \\`);
-		console.log(`    ${platformWallet}`);
+		console.log(`    ${platformWallet} \\`);
+		console.log(`    ${psCfg.flapPortal}`);
 	}
 
 	return { network: net, launchFactory: factoryAddr };

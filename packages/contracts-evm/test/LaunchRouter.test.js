@@ -6,6 +6,7 @@ const PCS_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 const PCS_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 const DEAD = "0x000000000000000000000000000000000000dEaD";
+const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
 
 describe("BundleRouter (LaunchRouter)", () => {
@@ -35,17 +36,23 @@ describe("BundleRouter (LaunchRouter)", () => {
 		const routerAddr = PCS_ROUTER;
 		const wbnbAddr = WBNB;
 
+		const MockPortal = await ethers.getContractFactory("MockFlapPortal");
+		const mockPortal = await MockPortal.deploy();
+		await mockPortal.waitForDeployment();
+		const portalCode = await ethers.provider.getCode(await mockPortal.getAddress());
+		await ethers.provider.send("hardhat_setCode", [FLAP_PORTAL, portalCode]);
+
 		const MockFlap = await ethers.getContractFactory("MockFlapToken");
 		flapToken = await MockFlap.deploy(routerAddr, factoryAddr, wbnbAddr);
 		await flapToken.waitForDeployment();
 
 		const BundleRouter = await ethers.getContractFactory("BundleRouter");
-		router = await BundleRouter.deploy(wbnbAddr, factoryAddr, routerAddr, INIT_CODE_HASH);
+		router = await BundleRouter.deploy(wbnbAddr, factoryAddr, routerAddr, INIT_CODE_HASH, FLAP_PORTAL);
 		await router.waitForDeployment();
 	});
 
 	describe("execute — full flow", () => {
-		it("fills curve, buys from V2, burns tokens", async () => {
+		it("executes through Portal correctly, fills curve, buys from V2, burns tokens", async () => {
 			const deadline = 9_999_999_999;
 
 			const tx = await router.execute(
@@ -77,10 +84,18 @@ describe("BundleRouter (LaunchRouter)", () => {
 			expect(routerBalance).to.equal(0);
 			expect(await flapToken.balanceOf(owner.address)).to.be.gt(0);
 
-			// Verify event emitted
-			const routerAddr = await router.getAddress();
-			const events = receipt.logs.filter((l) => l.address.toLowerCase() === routerAddr.toLowerCase());
-			expect(events.length).to.be.gte(1);
+			// Verify BundleRouter emitted tax accounting based on the token buy tax.
+			await expect(tx).to.emit(router, "BundleExecuted");
+			const event = receipt.logs
+				.map((log) => {
+					try {
+						return router.interface.parseLog(log);
+					} catch (_) {
+						return null;
+					}
+				})
+				.find((log) => log && log.name === "BundleExecuted");
+			expect(event.args.tokensToTax).to.be.gt(0);
 		});
 	});
 
@@ -104,6 +119,38 @@ describe("BundleRouter (LaunchRouter)", () => {
 			// No tokens burned (no V2 buy)
 			const deadBalance = await flapToken.balanceOf(DEAD);
 			expect(deadBalance).to.equal(0);
+		});
+	});
+
+	describe("asymmetric tax accounting", () => {
+		it("uses the token buy tax instead of assuming 3%", async () => {
+			await flapToken.setTaxRates(400, 300);
+			const deadline = 9_999_999_999;
+
+			const tx = await router.execute(
+				{
+					flapToken: await flapToken.getAddress(),
+					curveFillBnb: CURVE_FILL,
+					v2BuyBnb: V2_BUY,
+					minTokensFromV2: 0,
+					deadline,
+				},
+				{ value: TOTAL_BNB },
+			);
+			const receipt = await tx.wait();
+			const event = receipt.logs
+				.map((log) => {
+					try {
+						return router.interface.parseLog(log);
+					} catch (_) {
+						return null;
+					}
+				})
+				.find((log) => log && log.name === "BundleExecuted");
+
+			const expectedTax = (event.args.tokensBurned * 10_000n) / 9_600n - event.args.tokensBurned;
+			expect(event.args.tokensToTax).to.equal(expectedTax);
+			expect(event.args.tokensToTax).to.not.equal((event.args.tokensBurned * 100n) / 97n - event.args.tokensBurned);
 		});
 	});
 

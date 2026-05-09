@@ -6,6 +6,7 @@ const PCS_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
+const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
 
 const TOTAL_SUPPLY = ethers.parseEther("1000000000");
 const BURN_AMOUNT = ethers.parseEther("500000000");
@@ -26,7 +27,7 @@ describe("LaunchFactory", () => {
 		// Use real PCS V2 addresses (works on local without fork via mocks but tests
 		// that don't need actual PCS calls will still pass)
 		const Factory = await ethers.getContractFactory("LaunchFactory");
-		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address);
+		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address, FLAP_PORTAL);
 		await factory.waitForDeployment();
 	});
 
@@ -289,7 +290,7 @@ describe("LaunchFactory", () => {
 		it("constructor reverts on zero platform wallet", async () => {
 			const Factory = await ethers.getContractFactory("LaunchFactory");
 			await expect(
-				Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, ethers.ZeroAddress),
+				Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, ethers.ZeroAddress, FLAP_PORTAL),
 			).to.be.revertedWithCustomError(Factory, "InvalidPlatformWallet");
 		});
 	});
