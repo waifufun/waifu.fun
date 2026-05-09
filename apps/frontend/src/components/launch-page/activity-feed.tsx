@@ -40,7 +40,7 @@ export function ActivityFeed({ launchId, vaultAddress }: Props) {
 				{isLoading && events.length === 0 ? (
 					<EmptyRow text="loading activity..." />
 				) : events.length === 0 ? (
-					<EmptyRow text="no deposits yet — be the first" />
+					<EmptyRow text="no deposits yet. be the first." />
 				) : (
 					<ul className="divide-y divide-white/5">
 						{events.map((event, idx) => (

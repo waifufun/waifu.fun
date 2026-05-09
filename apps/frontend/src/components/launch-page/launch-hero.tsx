@@ -36,21 +36,25 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 	const pctClamped = Math.min(100, Math.max(0, pct));
 
 	return (
-		<section className="border border-white/10 bg-[#08080a] p-6 md:p-8">
-			<div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-				<div className="flex items-start gap-4">
+		<section className="border border-white/10 bg-[#08080a] p-5 md:p-8">
+			<div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between md:gap-6">
+				<div className="flex items-start gap-3 md:gap-4 min-w-0">
 					{image ? (
 						// eslint-disable-next-line @next/next/no-img-element
-						<img src={image} alt={`${name} logo`} className="size-16 border border-white/10 object-cover md:size-20" />
+						<img
+							src={image}
+							alt={`${name} logo`}
+							className="size-14 shrink-0 rounded-sm border border-white/10 object-cover md:size-20"
+						/>
 					) : (
-						<div className="flex size-16 items-center justify-center border border-white/10 bg-[#111114] text-xs font-mono uppercase tracking-[0.2em] text-zinc-500 md:size-20">
+						<div className="flex size-14 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-[#111114] text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500 md:size-20">
 							no logo
 						</div>
 					)}
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-col gap-2 min-w-0">
 						<div className="flex flex-wrap items-center gap-2">
-							<h1 className="text-2xl font-semibold text-zinc-100 md:text-3xl">{name}</h1>
-							<span className="font-mono text-sm uppercase tracking-[0.2em] text-zinc-500">${symbol}</span>
+							<h1 className="text-xl font-semibold text-zinc-100 md:text-3xl truncate">{name}</h1>
+							<span className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-500 md:text-sm">${symbol}</span>
 						</div>
 						<div className="flex flex-wrap items-center gap-2">
 							<Badge variant="default">{tier.label}</Badge>
@@ -64,8 +68,10 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 					</div>
 				</div>
 
-				<div className="flex flex-col items-start md:items-end">
-					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">round closes in</span>
+				<div className="flex flex-col items-start md:items-end shrink-0">
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+						{state === 0 ? "round closes in" : state === 1 ? "closed" : state === 2 ? "launched" : "status"}
+					</span>
 					<LaunchCountdown closeTimestampSec={closeTimestamp} className="mt-1 flex items-baseline gap-2" />
 				</div>
 			</div>

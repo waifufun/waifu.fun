@@ -9,6 +9,7 @@ import { DepositWidget } from "@/components/launch-page/deposit-widget";
 import { LaunchHero } from "@/components/launch-page/launch-hero";
 import { LaunchTerms } from "@/components/launch-page/launch-terms";
 import { TierInfoCard } from "@/components/launch-page/tier-info-card";
+import { ErrorState } from "@/components/ui/error-state";
 import { useLaunchMeta, useVaultSnapshot } from "@/hooks/use-launch-vault";
 import { tierFromCapWei, tierFromString } from "@/lib/launch-vault/tiers";
 
@@ -51,7 +52,7 @@ export default function LaunchPageClient({ id }: Props) {
 		void snapshot.refetch();
 	};
 
-	if (!id || id === "_") {
+	if (!id || id === "_" || id === "placeholder") {
 		return <NotFound id={id} reason="missing launch id" />;
 	}
 
@@ -60,7 +61,16 @@ export default function LaunchPageClient({ id }: Props) {
 	}
 
 	if (meta.error) {
-		return <NotFound id={id} reason={meta.error instanceof Error ? meta.error.message : "failed to load launch"} />;
+		return (
+			<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-12">
+				<ErrorState
+					title="couldn't load this launch."
+					message={meta.error instanceof Error ? meta.error.message : "failed to load launch"}
+					onRetry={() => void meta.refetch()}
+					homeHref="/launches"
+				/>
+			</main>
+		);
 	}
 
 	if (!meta.data && !vaultAddress) {
@@ -104,13 +114,21 @@ export default function LaunchPageClient({ id }: Props) {
 function LoadingState() {
 	return (
 		<main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6">
-			<div className="h-32 border border-white/10 bg-[#08080a]" />
+			<div className="relative h-32 border border-white/10 bg-[#08080a] overflow-hidden">
+				<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
+			</div>
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
 				<div className="flex flex-col gap-6">
-					<div className="h-64 border border-white/10 bg-[#08080a]" />
-					<div className="h-48 border border-white/10 bg-[#08080a]" />
+					<div className="relative h-64 border border-white/10 bg-[#08080a] overflow-hidden">
+						<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
+					</div>
+					<div className="relative h-48 border border-white/10 bg-[#08080a] overflow-hidden">
+						<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
+					</div>
 				</div>
-				<div className="h-72 border border-white/10 bg-[#08080a]" />
+				<div className="relative h-72 border border-white/10 bg-[#08080a] overflow-hidden">
+					<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
+				</div>
 			</div>
 		</main>
 	);
@@ -118,12 +136,12 @@ function LoadingState() {
 
 function NotFound({ id, reason }: { id: string; reason: string }) {
 	return (
-		<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-3 px-4 py-12 text-center">
-			<h1 className="text-2xl font-semibold text-zinc-100">launch not found</h1>
-			<p className="text-sm text-zinc-400">
-				we couldn't find a round for <span className="font-mono">{id}</span>.
-			</p>
-			<p className="text-xs text-zinc-500">{reason}</p>
+		<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-12">
+			<ErrorState
+				title="launch not found."
+				message={`we couldn't find a round for ${id}. ${reason}`}
+				homeHref="/launches"
+			/>
 		</main>
 	);
 }
