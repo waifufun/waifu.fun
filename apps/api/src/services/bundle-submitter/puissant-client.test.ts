@@ -32,9 +32,26 @@ test("sendPrivateRawTransaction posts a JSON-RPC envelope and returns the result
 	assert.deepEqual(captured, {
 		jsonrpc: "2.0",
 		id: 1,
-		method: "eth_sendPrivateRawTransaction",
+		method: "eth_sendPrivateTransaction",
 		params: ["0xdeadbeef"],
 	});
+});
+
+test("sendPrivateRawTransaction uses the documented Puissant private transaction method", async () => {
+	let capturedMethod: unknown = null;
+	const client = createPuissantClient({
+		endpoint: "https://test.puissant.local",
+		fetchImpl: makeFetch(({ body }) => {
+			capturedMethod = (body as { method?: unknown }).method;
+			return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0xabc123" }), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
+		}),
+	});
+
+	await client.sendPrivateRawTransaction("0xdeadbeef");
+	assert.equal(capturedMethod, "eth_sendPrivateTransaction");
 });
 
 test("sendPrivateRawTransaction throws PuissantRpcError on JSON-RPC error", async () => {
