@@ -29,8 +29,8 @@ const ERROR_SELECTORS = {
 	NothingToClaim: "0x969bf728",
 	LaunchTransferFailed: "0x617b07a1",
 	TokenBalanceTooLow: "0x8cf25597",
-	PresaleClosed: null,
-	PresaleCapExceeded: null,
+	WindowClosed: null,
+	CapExceeded: null,
 	UnderSubscribed: null,
 };
 
@@ -236,6 +236,34 @@ describe("LaunchVault - deposit window", () => {
 		const { vault, owner, alice } = await deployFixture();
 		await vault.connect(owner).close();
 		await expectCustomError(vault.connect(alice).deposit({ value: ethers.parseEther("1") }), "InvalidState");
+	});
+
+	it("cannot deposit after closeTimestamp", async () => {
+		const { vault, alice, params } = await deployFixture();
+		await setNextBlockTimestamp(BigInt(params.closeTimestamp));
+		await expectCustomError(vault.connect(alice).deposit({ value: ethers.parseEther("1") }), "WindowClosed");
+	});
+
+	it("cannot deposit when current totalDeposited + amount exceeds presaleCap", async () => {
+		const { vault, alice, bob } = await deployFixture();
+		await vault.connect(alice).deposit({ value: ethers.parseEther("9") });
+		await expectCustomError(
+			vault.connect(bob).deposit({ value: ethers.parseEther("1.000000000000000001") }),
+			"CapExceeded",
+		);
+
+		assert.equal(await vault.totalDeposited(), ethers.parseEther("9"));
+		assert.equal((await vault.depositors(bob.address)).deposited, 0n);
+	});
+
+	it("can deposit exactly up to presaleCap", async () => {
+		const { vault, alice, bob } = await deployFixture();
+		await vault.connect(alice).deposit({ value: ethers.parseEther("4") });
+		await vault.connect(bob).deposit({ value: ethers.parseEther("6") });
+
+		assert.equal(await vault.totalDeposited(), PRESALE_CAP);
+		assert.equal((await vault.depositors(alice.address)).deposited, ethers.parseEther("4"));
+		assert.equal((await vault.depositors(bob.address)).deposited, ethers.parseEther("6"));
 	});
 
 	it("rejects stray BNB sent directly to the vault (no receive bypass)", async () => {
