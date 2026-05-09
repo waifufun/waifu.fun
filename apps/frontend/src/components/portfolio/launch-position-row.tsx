@@ -51,59 +51,114 @@ export default function LaunchPositionRow({ entry }: Props) {
 	const vestingPct = Math.max(0, Math.min(100, Math.round(vestingPctRaw * 100)));
 
 	return (
-		<div className="grid grid-cols-12 gap-3 items-center border-b border-stroke-strong last:border-b-0 bg-[#0C0C0C] px-4 py-3 text-sm hover:bg-[#0F0F0F] transition-colors">
-			<div className="col-span-4 md:col-span-3 min-w-0">
-				<Link href={`/launch/${encodeURIComponent(launch.id)}`} className="block min-w-0 group">
-					<div className="text-white truncate font-medium group-hover:text-[#00ff87] transition-colors">{name}</div>
-					<div className="text-[11px] font-mono text-neutral-500 truncate">${symbol}</div>
-				</Link>
-			</div>
-
-			<div className="col-span-2 md:col-span-2">
-				<span
-					className={`inline-block border px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.2em] rounded-sm ${stateBadge}`}
-				>
-					{launch.state}
-				</span>
-				<div className="text-[10px] font-mono text-neutral-500 mt-1 uppercase tracking-[0.18em]">
-					tier {launch.tier}
+		<div className="border-b border-stroke-strong last:border-b-0 bg-[#0C0C0C] px-4 py-3 text-sm hover:bg-[#0F0F0F] transition-colors">
+			{/* mobile: stacked card */}
+			<div className="flex flex-col gap-3 md:hidden">
+				<div className="flex items-start justify-between gap-3">
+					<Link href={`/launch/${encodeURIComponent(launch.id)}`} className="block min-w-0 group">
+						<div className="text-white truncate font-medium group-hover:text-[#00ff87] transition-colors">{name}</div>
+						<div className="text-[11px] font-mono text-neutral-500 truncate">${symbol}</div>
+					</Link>
+					<div className="flex flex-col items-end gap-1 shrink-0">
+						<span
+							className={`inline-block border px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.2em] rounded-sm ${stateBadge}`}
+						>
+							{launch.state}
+						</span>
+						<span className="text-[10px] font-mono text-neutral-500 uppercase tracking-[0.18em]">
+							tier {launch.tier}
+						</span>
+					</div>
 				</div>
-			</div>
-
-			<div className="col-span-2 md:col-span-2 text-right md:text-left">
-				<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
-				<div className="text-white tabular-nums">{formatBnb(position.deposited)} bnb</div>
-			</div>
-
-			<div className="col-span-2 hidden md:block">
-				<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">allocation</div>
-				<div className="text-white tabular-nums">
-					{position.totalAllocation ? `${formatTokens(position.totalAllocation)}` : "—"}
+				<div className="grid grid-cols-2 gap-3">
+					<div>
+						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
+						<div className="text-white tabular-nums">{formatBnb(position.deposited)} bnb</div>
+					</div>
+					<div className="text-right">
+						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">claimable</div>
+						<div className={`tabular-nums ${claimableWei > 0n ? "text-[#00ff87]" : "text-neutral-400"}`}>
+							{formatTokens(claimableWei)}
+						</div>
+					</div>
 				</div>
-				{launch.state === "launched" ? (
-					<div className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm" aria-label="vesting progress">
-						<div
-							className="h-full bg-[#00ff87]/70 transition-[width] duration-500"
-							style={{ width: `${vestingPct}%` }}
-						/>
+				{launch.state === "launched" && position.totalAllocation ? (
+					<div>
+						<div className="flex items-baseline justify-between text-[10px] font-mono text-neutral-500 uppercase tracking-[0.18em]">
+							<span>vesting</span>
+							<span className="tabular-nums text-neutral-300">{vestingPct}%</span>
+						</div>
+						<div className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm" aria-label="vesting progress">
+							<div
+								className="h-full bg-[#00ff87]/70 transition-[width] duration-500"
+								style={{ width: `${vestingPct}%` }}
+							/>
+						</div>
 					</div>
 				) : null}
-			</div>
-
-			<div className="col-span-2 md:col-span-2 text-right">
-				<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">claimable</div>
-				<div className={`tabular-nums ${claimableWei > 0n ? "text-[#00ff87]" : "text-neutral-400"}`}>
-					{formatTokens(claimableWei)}
-				</div>
-			</div>
-
-			<div className="col-span-2 md:col-span-1 text-right">
 				<Link
 					href={`/launch/${encodeURIComponent(launch.id)}`}
-					className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-400 hover:text-[#00ff87] transition-colors"
+					className="self-end text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-400 hover:text-[#00ff87] transition-colors"
 				>
 					view &rarr;
 				</Link>
+			</div>
+
+			{/* desktop: tabular grid */}
+			<div className="hidden md:grid grid-cols-12 gap-3 items-center">
+				<div className="col-span-3 min-w-0">
+					<Link href={`/launch/${encodeURIComponent(launch.id)}`} className="block min-w-0 group">
+						<div className="text-white truncate font-medium group-hover:text-[#00ff87] transition-colors">{name}</div>
+						<div className="text-[11px] font-mono text-neutral-500 truncate">${symbol}</div>
+					</Link>
+				</div>
+
+				<div className="col-span-2">
+					<span
+						className={`inline-block border px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.2em] rounded-sm ${stateBadge}`}
+					>
+						{launch.state}
+					</span>
+					<div className="text-[10px] font-mono text-neutral-500 mt-1 uppercase tracking-[0.18em]">
+						tier {launch.tier}
+					</div>
+				</div>
+
+				<div className="col-span-2">
+					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
+					<div className="text-white tabular-nums">{formatBnb(position.deposited)} bnb</div>
+				</div>
+
+				<div className="col-span-2">
+					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">allocation</div>
+					<div className="text-white tabular-nums">
+						{position.totalAllocation ? `${formatTokens(position.totalAllocation)}` : "—"}
+					</div>
+					{launch.state === "launched" ? (
+						<div className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm" aria-label="vesting progress">
+							<div
+								className="h-full bg-[#00ff87]/70 transition-[width] duration-500"
+								style={{ width: `${vestingPct}%` }}
+							/>
+						</div>
+					) : null}
+				</div>
+
+				<div className="col-span-2 text-right">
+					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">claimable</div>
+					<div className={`tabular-nums ${claimableWei > 0n ? "text-[#00ff87]" : "text-neutral-400"}`}>
+						{formatTokens(claimableWei)}
+					</div>
+				</div>
+
+				<div className="col-span-1 text-right">
+					<Link
+						href={`/launch/${encodeURIComponent(launch.id)}`}
+						className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-400 hover:text-[#00ff87] transition-colors"
+					>
+						view &rarr;
+					</Link>
+				</div>
 			</div>
 		</div>
 	);

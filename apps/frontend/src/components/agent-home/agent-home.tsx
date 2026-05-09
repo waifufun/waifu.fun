@@ -1,3 +1,4 @@
+import { PostLaunchSurface } from "@/components/post-launch/post-launch-surface";
 import { cn, timeAgo } from "@/lib/utils";
 import { ArrowLeft, Brain, ExternalLink, Fingerprint } from "lucide-react";
 import Link from "next/link";
@@ -6,7 +7,7 @@ import AdapterPermissions from "./adapter-permissions";
 import AddressRow from "./address-row";
 import CurveProgress from "./curve-progress";
 import DexChart from "./dex-chart";
-import { PostLaunchSurface } from "@/components/post-launch/post-launch-surface";
+import LiveLaunchBanner from "./live-launch-banner";
 import PatronPanel from "./patron-panel";
 import RecentActivity from "./recent-activity";
 import SwapStub from "./swap-stub";
@@ -50,6 +51,9 @@ export default function AgentHome({
 
 				{/* 1. header */}
 				<AgentHeader agent={agent} />
+
+				{/* 1a. live launch round banner (only when this agent has an open/closed v3 round) */}
+				<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 
 				{/* 2. patron */}
 				<Section title="patron">
