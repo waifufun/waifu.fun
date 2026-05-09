@@ -87,9 +87,9 @@ export function DepositWidget({
 							disabled={!roundOpen || capHit}
 							disabledReason={
 								!roundOpen
-									? "round is closed — deposits are locked"
+									? "round is closed. deposits are locked."
 									: capHit
-										? "cap reached — try the withdraw window or check secondary"
+										? "cap reached. try the withdraw window, or check the secondary market."
 										: undefined
 							}
 							onCompleted={() => {

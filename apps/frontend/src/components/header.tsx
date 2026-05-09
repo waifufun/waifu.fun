@@ -13,6 +13,8 @@ import SearchMenu from "./search-menu";
 
 const NAV_LINKS = [
 	{ href: "/agents", labelKey: "nav.agents" },
+	{ href: "/launches", labelKey: "nav.launches" },
+	{ href: "/patron/portfolio", labelKey: "nav.portfolio" },
 	{ href: "/leaderboard", labelKey: "nav.leaderboard" },
 	{ href: "/litepaper", labelKey: "nav.docs" },
 ] as const;

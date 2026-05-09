@@ -11,7 +11,6 @@
  * for aggregation. When the endpoint is unavailable (404), the hook
  * returns an empty list and the UI shows the empty state.
  */
-import Link from "next/link";
 import { useMemo } from "react";
 
 import PatronHeader from "@/components/patron/patron-header";
@@ -20,9 +19,12 @@ import HistoryTable from "@/components/portfolio/history-table";
 import LaunchPositionRow from "@/components/portfolio/launch-position-row";
 import NotificationSettings from "@/components/portfolio/notification-settings";
 import PortfolioStats from "@/components/portfolio/portfolio-stats";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import useAddress from "@/hooks/use-address";
 import { isActive, isClaimable, isHistorical, usePortfolioLaunches } from "@/lib/api/portfolio";
 import { aggregatePortfolio } from "@/lib/portfolio/aggregate";
+import { Coins, Plug } from "lucide-react";
 
 export default function PortfolioPage() {
 	const address = useAddress();
@@ -48,33 +50,33 @@ export default function PortfolioPage() {
 			/>
 
 			{!address ? (
-				<div className="rounded-sm border border-stroke-strong bg-[#0C0C0C] p-6 text-sm text-neutral-400">
-					connect a wallet to see launches you've backed.{" "}
-					<Link href="/patron/wallets" className="text-[#00ff87] hover:underline">
-						link a wallet
-					</Link>
-				</div>
+				<EmptyState
+					icon={Plug}
+					title="connect a wallet to see launches you've backed."
+					body="link a wallet on the wallets page, then come back here."
+					ctaHref="/patron/wallets"
+					ctaLabel="link a wallet"
+				/>
 			) : null}
 
-			{address && isLoading ? (
-				<div className="rounded-sm border border-stroke-strong bg-[#0C0C0C] p-6 text-sm text-neutral-500">
-					loading positions…
-				</div>
-			) : null}
+			{address && isLoading ? <PortfolioSkeleton /> : null}
 
 			{address && error ? (
-				<div className="rounded-sm border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-300">
-					failed to load portfolio: {(error as Error).message}
-				</div>
+				<ErrorState
+					title="couldn't load your portfolio."
+					message={(error as Error).message}
+					onRetry={() => void refetch()}
+				/>
 			) : null}
 
 			{address && !isLoading && !error && list.length === 0 ? (
-				<div className="rounded-sm border border-stroke-strong bg-[#0C0C0C] p-6 text-sm text-neutral-400">
-					you haven't backed any launches yet.{" "}
-					<Link href="/launch" className="text-[#00ff87] hover:underline">
-						browse launches
-					</Link>
-				</div>
+				<EmptyState
+					icon={Coins}
+					title="you haven't backed any launches yet."
+					body="deposit BNB on a live round and you'll see your positions here."
+					ctaHref="/launches"
+					ctaLabel="browse launches"
+				/>
 			) : null}
 
 			{address && list.length > 0 ? (
@@ -119,5 +121,38 @@ export default function PortfolioPage() {
 				<NotificationSettings />
 			</section>
 		</main>
+	);
+}
+
+function PortfolioSkeleton() {
+	return (
+		<div className="flex flex-col gap-6">
+			<div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+				<div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
+					{Array.from({ length: 3 }).map((_, i) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
+						<div key={i} className="rounded-sm border border-stroke-strong bg-[#0C0C0C] p-4">
+							<div className="h-3 w-20 bg-white/5 rounded-sm mb-3" />
+							<div className="h-5 w-24 bg-white/10 rounded-sm" />
+						</div>
+					))}
+				</div>
+				<div className="h-10 w-32 bg-white/5 rounded-sm shrink-0" />
+			</div>
+			<div className="border border-stroke-strong rounded-sm overflow-hidden">
+				{Array.from({ length: 3 }).map((_, i) => (
+					<div
+						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
+						key={i}
+						className="flex gap-3 items-center bg-[#0C0C0C] px-4 py-4 border-b border-stroke-strong last:border-b-0 relative overflow-hidden"
+					>
+						<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
+						<div className="h-3 w-32 bg-white/10 rounded-sm" />
+						<div className="h-3 w-16 bg-white/5 rounded-sm ml-auto" />
+						<div className="h-3 w-20 bg-white/5 rounded-sm" />
+					</div>
+				))}
+			</div>
+		</div>
 	);
 }
