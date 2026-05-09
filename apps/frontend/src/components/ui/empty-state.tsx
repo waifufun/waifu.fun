@@ -1,15 +1,14 @@
-/**
- * Generic empty-state primitive used across the app.
- *
- * Keeps the visual language consistent with `agents-discover/empty-state`
- * (the version that ships on the landing page): dashed border, mono label,
- * optional icon, optional CTA.
- *
- * Use this anywhere a list/section can legitimately be empty.
- */
-import Link from "next/link";
-import { ArrowRight, type LucideIcon, Sparkles } from "lucide-react";
+// Generic empty-state primitive used across the app.
+//
+// Keeps the visual language consistent with `agents-discover/empty-state`
+// (the version that ships on the landing page): dashed border, mono label,
+// optional icon, optional CTA.
+//
+// Use this anywhere a list/section can legitimately be empty.
+
 import { cn } from "@/lib/utils";
+import { ArrowRight, type LucideIcon, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 type EmptyStateProps = {
 	title?: string;

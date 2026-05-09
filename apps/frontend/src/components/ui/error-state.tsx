@@ -1,12 +1,11 @@
-/**
- * Generic error-state primitive.
- *
- * Replaces the bespoke red-tinted divs scattered across the app. Always
- * gives the user something to do (retry, go home, contact support).
- */
-import Link from "next/link";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+// Generic error-state primitive.
+//
+// Replaces the bespoke red-tinted divs scattered across the app. Always
+// gives the user something to do (retry, go home, contact support).
+
 import { cn } from "@/lib/utils";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import Link from "next/link";
 
 type ErrorStateProps = {
 	title?: string;
