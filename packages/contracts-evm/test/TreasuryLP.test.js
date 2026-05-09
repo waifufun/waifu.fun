@@ -469,6 +469,20 @@ describe("TreasuryLP", () => {
 		await expectError(treasury.connect(agentSafe).claim(), "nothing_to_claim");
 	});
 
+	it("claim forwards token-side V4 fees to the agentSafe", async () => {
+		const { treasury, agentSafe, v4, token, feed } = await deployFixture();
+		await readyOracle();
+		await advanceOneEpoch(treasury, feed);
+		await treasury.checkAndAdvance();
+		await v4.setClaimableToken(1, ethers.parseEther("1234"));
+
+		await treasury.connect(agentSafe).claim();
+
+		assert.equal(await token.balanceOf(agentSafe.address), ethers.parseEther("1234"));
+		assert.equal(await token.balanceOf(await treasury.getAddress()), TIER_AMOUNT * 11n);
+		assert.equal(await ethers.provider.getBalance(await treasury.getAddress()), 0n);
+	});
+
 	it("claim collects BNB, buys back 7 percent, burns tokens, and sends remainder to agentSafe", async () => {
 		const { treasury, agentSafe, v4, token, feed } = await deployFixture();
 		await readyOracle();

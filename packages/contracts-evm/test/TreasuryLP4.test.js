@@ -2,7 +2,7 @@
 // Smoke tests focused on 4-tier-specific behavior. Full TreasuryLP test suite
 // in TreasuryLP.test.js (12-tier) covers shared internal logic.
 
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { strict: assert } = require("node:assert");
 
 function tier(targetMcUSD, tickLower, tickUpper, minEpochs = 2) {
@@ -32,10 +32,36 @@ async function latestTimestamp() {
 	return block.timestamp;
 }
 
-async function deployFixture() {
+async function expectError(promise, errorName) {
+	await assert.rejects(promise, (err) => String(err).includes(errorName));
+}
+
+async function increase(seconds) {
+	await network.provider.send("evm_increaseTime", [seconds]);
+	await network.provider.send("evm_mine");
+}
+
+async function readyOracle() {
+	await increase(1800);
+}
+
+async function refreshFeed(feed) {
+	await feed.setAnswer(600n * 100000000n);
+}
+
+async function advanceOneEpoch(treasury, feed) {
+	await increase(Number(await treasury.epochLength()));
+	await refreshFeed(feed);
+	await treasury.checkAndAdvance();
+	await increase(Number(await treasury.epochLength()));
+	await refreshFeed(feed);
+}
+
+async function deployFixture(overrides = {}) {
 	const [owner, agentSafe] = await ethers.getSigners();
 
 	const token = await ethers.deployContract("ERC20Mock");
+	await token.mint(owner.address, ethers.parseEther("1000000000"));
 	const wbnb = await ethers.deployContract("ERC20Mock");
 	const router = await ethers.deployContract("MockFlapV2Router", [await wbnb.getAddress()]);
 	const pair = await ethers.deployContract("MockFlapV2Pair", [await token.getAddress(), await wbnb.getAddress()]);
@@ -55,7 +81,7 @@ async function deployFixture() {
 		tickSpacing: 60,
 	};
 
-	const tiers = defaultTiers();
+	const tiers = overrides.tiers || defaultTiers();
 	const treasury = await ethers.deployContract("TreasuryLP4", [
 		await token.getAddress(),
 		await pair.getAddress(),
@@ -67,7 +93,7 @@ async function deployFixture() {
 		tiers,
 	]);
 
-	return { owner, agentSafe, token, wbnb, treasury, tiers };
+	return { owner, agentSafe, token, wbnb, router, pair, feed, v4, treasury, tiers, poolKey };
 }
 
 describe("TreasuryLP4", () => {
@@ -98,6 +124,26 @@ describe("TreasuryLP4", () => {
 		assert.equal(sum, ethers.parseEther("100000000"));
 	});
 
+	it("rejects tier schedules above the 100M treasury allocation", async () => {
+		const fixture = await deployFixture();
+		const tiers = defaultTiers();
+		tiers[0].tokenAmount = ethers.parseEther("25000001");
+
+		await expectError(
+			ethers.deployContract("TreasuryLP4", [
+				await fixture.token.getAddress(),
+				await fixture.pair.getAddress(),
+				await fixture.router.getAddress(),
+				await fixture.v4.getAddress(),
+				fixture.poolKey,
+				fixture.agentSafe.address,
+				await fixture.feed.getAddress(),
+				tiers,
+			]),
+			"bad_tier",
+		);
+	});
+
 	it("nextTierIndex starts at 0", async () => {
 		const { treasury } = await deployFixture();
 		assert.equal(await treasury.nextTierIndex(), 0n);
@@ -114,5 +160,22 @@ describe("TreasuryLP4", () => {
 		const t0 = await treasury.tiers(0);
 		// $250k * 1e8 (chainlink decimals)
 		assert.equal(t0.targetMcUSD, 250000n * 100000000n);
+	});
+
+	it("claim forwards token-side V4 fees to the agentSafe", async () => {
+		const tiers = defaultTiers();
+		tiers[0].targetMcUSD = 1n;
+		tiers[0].minEpochs = 1;
+		const { agentSafe, token, feed, v4, treasury } = await deployFixture({ tiers });
+		await token.mint(await treasury.getAddress(), ethers.parseEther("100000000"));
+		await readyOracle();
+		await advanceOneEpoch(treasury, feed);
+		assert.equal(await treasury.nextTierIndex(), 1n);
+		await v4.setClaimableToken(1, ethers.parseEther("77"));
+
+		await treasury.connect(agentSafe).claim();
+
+		assert.equal(await token.balanceOf(agentSafe.address), ethers.parseEther("77"));
+		assert.equal(await token.balanceOf(await treasury.getAddress()), ethers.parseEther("75000000"));
 	});
 });

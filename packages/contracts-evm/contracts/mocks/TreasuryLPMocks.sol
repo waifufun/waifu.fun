@@ -110,6 +110,7 @@ contract MockV4PoolManager is IV4PoolManager {
 		bool tokenIsCurrency0;
 		uint256 tokenAmount;
 		uint256 claimableBnb;
+		uint256 claimableToken;
 	}
 
 	uint256 public nextPositionId = 1;
@@ -139,7 +140,8 @@ contract MockV4PoolManager is IV4PoolManager {
 			token: token,
 			tokenIsCurrency0: tokenIsCurrency0,
 			tokenAmount: amount,
-			claimableBnb: 0
+			claimableBnb: 0,
+			claimableToken: 0
 		});
 	}
 
@@ -148,28 +150,44 @@ contract MockV4PoolManager is IV4PoolManager {
 		positions[positionId].claimableBnb += amount;
 	}
 
+	function setClaimableToken(uint256 positionId, uint256 amount) external {
+		Position storage position = positions[positionId];
+		require(position.owner != address(0), "missing");
+		position.claimableToken += amount;
+		IMintableToken(position.token).mint(address(this), amount);
+	}
+
 	function collect(uint256 positionId, address recipient) external returns (uint256 amount0, uint256 amount1) {
 		Position storage position = positions[positionId];
 		require(position.owner != address(0), "missing");
-		uint256 amount = position.claimableBnb;
+		uint256 bnbAmount = position.claimableBnb;
+		uint256 tokenAmount = position.claimableToken;
 		position.claimableBnb = 0;
-		if (amount > 0) {
-			(bool ok,) = payable(recipient).call{value: amount}("");
+		position.claimableToken = 0;
+		if (bnbAmount > 0) {
+			(bool ok,) = payable(recipient).call{value: bnbAmount}("");
 			require(ok, "send failed");
 		}
+		if (tokenAmount > 0) {
+			IERC20(position.token).safeTransfer(recipient, tokenAmount);
+		}
 		if (position.tokenIsCurrency0) {
-			amount1 = amount;
+			amount0 = tokenAmount;
+			amount1 = bnbAmount;
 		} else {
-			amount0 = amount;
+			amount0 = bnbAmount;
+			amount1 = tokenAmount;
 		}
 	}
 
 	function claimable(uint256 positionId) external view returns (uint256 amount0, uint256 amount1) {
 		Position storage position = positions[positionId];
 		if (position.tokenIsCurrency0) {
+			amount0 = position.claimableToken;
 			amount1 = position.claimableBnb;
 		} else {
 			amount0 = position.claimableBnb;
+			amount1 = position.claimableToken;
 		}
 	}
 }
