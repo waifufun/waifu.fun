@@ -112,8 +112,8 @@ contract LaunchVault is ReentrancyGuard {
 	error NothingToClaim();
 	error LaunchTransferFailed();
 	error TokenBalanceTooLow();
-	error PresaleClosed();
-	error PresaleCapExceeded();
+	error WindowClosed();
+	error CapExceeded();
 	error UnderSubscribed();
 
 	modifier onlyOwner() {
@@ -165,8 +165,8 @@ contract LaunchVault is ReentrancyGuard {
 	/// @notice Deposit BNB during the OPEN window.
 	function deposit() external payable inState(State.OPEN) {
 		if (msg.value == 0) revert ZeroAmount();
-		if (block.timestamp >= closeTimestamp) revert PresaleClosed();
-		if (totalDeposited + msg.value > presaleCap) revert PresaleCapExceeded();
+		if (block.timestamp >= closeTimestamp) revert WindowClosed();
+		if (totalDeposited + msg.value > presaleCap) revert CapExceeded();
 
 		Depositor storage d = depositors[msg.sender];
 		if (!d.seen) {
