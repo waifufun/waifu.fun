@@ -13,6 +13,8 @@ const STATE_LAUNCHED = 2n;
 
 const PRESALE_TOKENS = 200_000_000n * ONE; // 200M
 const PENALTY_BPS = 500n; // 5%
+const PRESALE_CAP = 10n * ONE;
+const BNB_FOR_BUY = 0n;
 const VEST_WINDOW = 86_400n; // 24h
 const ONE_DAY = 24n * 60n * 60n;
 
@@ -27,6 +29,9 @@ const ERROR_SELECTORS = {
 	NothingToClaim: "0x969bf728",
 	LaunchTransferFailed: "0x617b07a1",
 	TokenBalanceTooLow: "0x8cf25597",
+	PresaleClosed: null,
+	PresaleCapExceeded: null,
+	UnderSubscribed: null,
 };
 
 async function expectCustomError(promise, errorName) {
@@ -75,6 +80,8 @@ async function deployFixture(overrides = {}) {
 		owner: owner.address,
 		launchRouter: routerAddr,
 		presaleTokens: PRESALE_TOKENS,
+		presaleCap: PRESALE_CAP,
+		bnbForBuy: BNB_FOR_BUY,
 		penaltyBps: PENALTY_BPS,
 		vestingEnabled: false,
 		closeTimestamp: defaultClose,
@@ -85,6 +92,8 @@ async function deployFixture(overrides = {}) {
 		params.owner,
 		params.launchRouter,
 		params.presaleTokens,
+		params.presaleCap,
+		params.bnbForBuy,
 		params.penaltyBps,
 		params.vestingEnabled,
 		params.closeTimestamp,
@@ -104,6 +113,8 @@ describe("LaunchVault - constructor", () => {
 		assert.equal(await vault.owner(), owner.address);
 		assert.equal(await vault.launchRouter(), routerAddr);
 		assert.equal(await vault.presaleTokens(), PRESALE_TOKENS);
+		assert.equal(await vault.presaleCap(), PRESALE_CAP);
+		assert.equal(await vault.bnbForBuy(), BNB_FOR_BUY);
 		assert.equal(await vault.penaltyBps(), PENALTY_BPS);
 		assert.equal(await vault.vestingEnabled(), false);
 		assert.equal(await vault.closeTimestamp(), params.closeTimestamp);
@@ -123,14 +134,12 @@ describe("LaunchVault - constructor", () => {
 		const future = nowTs + ONE_DAY;
 
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [ethers.ZeroAddress, r, PRESALE_TOKENS, PENALTY_BPS, false, future]),
-			"InvalidParams",
-		);
-		await expectCustomError(
 			ethers.deployContract("LaunchVault", [
-				signer.address,
 				ethers.ZeroAddress,
+				r,
 				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
 				PENALTY_BPS,
 				false,
 				future,
@@ -138,11 +147,42 @@ describe("LaunchVault - constructor", () => {
 			"InvalidParams",
 		);
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [signer.address, r, 0n, PENALTY_BPS, false, future]),
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				ethers.ZeroAddress,
+				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				PENALTY_BPS,
+				false,
+				future,
+			]),
 			"InvalidParams",
 		);
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [signer.address, r, PRESALE_TOKENS, PENALTY_BPS, false, 1n]),
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				r,
+				0n,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				PENALTY_BPS,
+				false,
+				future,
+			]),
+			"InvalidParams",
+		);
+		await expectCustomError(
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				r,
+				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				PENALTY_BPS,
+				false,
+				1n,
+			]),
 			"InvalidParams",
 		);
 	});
@@ -153,7 +193,16 @@ describe("LaunchVault - constructor", () => {
 		const r = await router.getAddress();
 		const nowTs = await currentBlockTimestamp();
 		await expectCustomError(
-			ethers.deployContract("LaunchVault", [signer.address, r, PRESALE_TOKENS, 1_001n, false, nowTs + ONE_DAY]),
+			ethers.deployContract("LaunchVault", [
+				signer.address,
+				r,
+				PRESALE_TOKENS,
+				PRESALE_CAP,
+				BNB_FOR_BUY,
+				1_001n,
+				false,
+				nowTs + ONE_DAY,
+			]),
 			"InvalidParams",
 		);
 	});
@@ -276,19 +325,21 @@ describe("LaunchVault - close + launch", () => {
 	it("launch() forwards (deposits + bonusPool) BNB to launchRouter", async () => {
 		const { vault, owner, alice, bob, router, token } = await deployFixture();
 
-		await vault.connect(alice).deposit({ value: ethers.parseEther("8") });
+		await vault.connect(alice).deposit({ value: ethers.parseEther("6") });
 		await vault.connect(bob).deposit({ value: ethers.parseEther("4") });
-		await vault.connect(alice).withdraw(ethers.parseEther("2"));
 
 		await vault.connect(owner).close();
 
 		const tokenAddr = await token.getAddress();
-		await vault.connect(owner).launch(tokenAddr);
+		await vault.connect(owner).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600);
 
 		assert.equal(await vault.state(), STATE_LAUNCHED);
 		assert.equal(await vault.token(), tokenAddr);
 		assert.equal(await vault.totalDepositedAtLaunch(), ethers.parseEther("10"));
-		assert.equal(await router.received(), ethers.parseEther("10.1"));
+		assert.equal(await router.received(), ethers.parseEther("10"));
+		const last = await router.lastParams();
+		assert.equal(last.curveFillBnb, ethers.parseEther("10"));
+		assert.equal(last.v2BuyBnb, 0n);
 		assert.equal(await ethers.provider.getBalance(await vault.getAddress()), 0n);
 	});
 
@@ -296,16 +347,39 @@ describe("LaunchVault - close + launch", () => {
 		const { vault, owner, alice, router, token } = await deployFixture();
 		const tokenAddr = await token.getAddress();
 
-		await expectCustomError(vault.connect(owner).launch(tokenAddr), "InvalidState");
+		await expectCustomError(
+			vault.connect(owner).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600),
+			"InvalidState",
+		);
 
 		await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
 		await vault.connect(owner).close();
 
-		await expectCustomError(vault.connect(alice).launch(tokenAddr), "NotOwner");
-		await expectCustomError(vault.connect(owner).launch(ethers.ZeroAddress), "InvalidParams");
+		await expectCustomError(
+			vault.connect(alice).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600),
+			"NotOwner",
+		);
+		await expectCustomError(
+			vault.connect(owner).launch(ethers.ZeroAddress, 0, Math.floor(Date.now() / 1000) + 3600),
+			"InvalidParams",
+		);
 
 		await router.setRejectIncoming(true);
-		await expectCustomError(vault.connect(owner).launch(tokenAddr), "LaunchTransferFailed");
+		await assert.rejects(vault.connect(owner).launch(tokenAddr, 0, Math.floor(Date.now() / 1000) + 3600));
+	});
+
+	it("refund() auto-enables failed launch path and pays bonus pool", async () => {
+		const { vault, owner, alice, bob } = await deployFixture();
+		await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
+		await vault.connect(bob).deposit({ value: ethers.parseEther("1") });
+		await vault.connect(bob).withdraw(ethers.parseEther("1")); // leaves 0.05 BNB bonusPool
+		await vault.connect(owner).close();
+
+		await vault.connect(alice).refund();
+		assert.equal((await vault.depositors(alice.address)).deposited, 0n);
+		assert.equal(await vault.totalDeposited(), 0n);
+		assert.equal(await vault.bonusPool(), 0n);
+		assert.equal(await ethers.provider.getBalance(await vault.getAddress()), 0n);
 	});
 });
 
@@ -318,7 +392,7 @@ describe("LaunchVault - vesting disabled (100% TGE)", () => {
 		await vault.connect(bob).deposit({ value: ethers.parseEther("4") });
 
 		await vault.connect(owner).close();
-		await vault.connect(owner).launch(await token.getAddress());
+		await vault.connect(owner).launch(await token.getAddress(), 0, Math.floor(Date.now() / 1000) + 3600);
 
 		await token.mint(await vault.getAddress(), PRESALE_TOKENS);
 
@@ -354,7 +428,7 @@ describe("LaunchVault - vesting enabled (50% TGE + 50% over 24h)", () => {
 		await vault.connect(bob).deposit({ value: ethers.parseEther("4") });
 
 		await vault.connect(owner).close();
-		await vault.connect(owner).launch(await token.getAddress());
+		await vault.connect(owner).launch(await token.getAddress(), 0, Math.floor(Date.now() / 1000) + 3600);
 
 		await token.mint(await vault.getAddress(), PRESALE_TOKENS);
 
@@ -428,9 +502,9 @@ describe("LaunchVault - vesting enabled (50% TGE + 50% over 24h)", () => {
 
 	it("claim reverts TokenBalanceTooLow if vault wasn't funded", async () => {
 		const { vault, owner, alice, token } = await deployFixture({ vestingEnabled: true });
-		await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
+		await vault.connect(alice).deposit({ value: PRESALE_CAP });
 		await vault.connect(owner).close();
-		await vault.connect(owner).launch(await token.getAddress());
+		await vault.connect(owner).launch(await token.getAddress(), 0, Math.floor(Date.now() / 1000) + 3600);
 
 		await increaseTime(VEST_WINDOW + 1n);
 		await expectCustomError(vault.connect(alice).claim(), "TokenBalanceTooLow");
@@ -446,9 +520,9 @@ describe("LaunchVault - claim guards", () => {
 
 	it("claim with no deposit reverts (NoDeposit)", async () => {
 		const { vault, owner, alice, carol, token } = await deployFixture();
-		await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
+		await vault.connect(alice).deposit({ value: PRESALE_CAP });
 		await vault.connect(owner).close();
-		await vault.connect(owner).launch(await token.getAddress());
+		await vault.connect(owner).launch(await token.getAddress(), 0, Math.floor(Date.now() / 1000) + 3600);
 		await token.mint(await vault.getAddress(), PRESALE_TOKENS);
 		await expectCustomError(vault.connect(carol).claim(), "NoDeposit");
 	});
@@ -457,24 +531,23 @@ describe("LaunchVault - claim guards", () => {
 describe("LaunchVault - view + accounting invariants", () => {
 	it("getDepositorInfo + getPresaleInfo return consistent values pre/post launch", async () => {
 		const { vault, owner, alice, bob, token } = await deployFixture({ vestingEnabled: false });
-		await vault.connect(alice).deposit({ value: ethers.parseEther("2") });
-		await vault.connect(bob).deposit({ value: ethers.parseEther("3") });
-		await vault.connect(alice).withdraw(ethers.parseEther("1"));
+		await vault.connect(alice).deposit({ value: ethers.parseEther("4") });
+		await vault.connect(bob).deposit({ value: ethers.parseEther("6") });
 
 		const preInfo = await vault.getPresaleInfo();
 		assert.equal(preInfo.currentState, STATE_OPEN);
-		assert.equal(preInfo.totalDeposited_, ethers.parseEther("4"));
-		assert.equal(preInfo.bonusPool_, ethers.parseEther("0.05"));
+		assert.equal(preInfo.totalDeposited_, ethers.parseEther("10"));
+		assert.equal(preInfo.bonusPool_, ethers.parseEther("0"));
 		assert.equal(preInfo.depositorCount_, 2n);
 
 		const aliceInfo = await vault.getDepositorInfo(alice.address);
-		assert.equal(aliceInfo.deposited, ethers.parseEther("1"));
-		assert.equal(aliceInfo.totalTokens, (PRESALE_TOKENS * 1n) / 4n);
+		assert.equal(aliceInfo.deposited, ethers.parseEther("4"));
+		assert.equal(aliceInfo.totalTokens, (PRESALE_TOKENS * 4n) / 10n);
 		assert.equal(aliceInfo.vested, 0n);
 		assert.equal(aliceInfo.claimable, 0n);
 
 		await vault.connect(owner).close();
-		await vault.connect(owner).launch(await token.getAddress());
+		await vault.connect(owner).launch(await token.getAddress(), 0, Math.floor(Date.now() / 1000) + 3600);
 		await token.mint(await vault.getAddress(), PRESALE_TOKENS);
 
 		const postInfo = await vault.getPresaleInfo();
@@ -482,7 +555,7 @@ describe("LaunchVault - view + accounting invariants", () => {
 		assert.notEqual(postInfo.launchTimestamp_, 0n);
 
 		const aliceAfter = await vault.getDepositorInfo(alice.address);
-		assert.equal(aliceAfter.totalTokens, (PRESALE_TOKENS * 1n) / 4n);
+		assert.equal(aliceAfter.totalTokens, (PRESALE_TOKENS * 4n) / 10n);
 	});
 
 	it("BNB conservation: sum(refunds + bonusPool) == sum(net deposits)", async () => {

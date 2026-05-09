@@ -14,6 +14,8 @@ export type LaunchEventName =
 	| "Withdrawn"
 	| "Closed"
 	| "Launched"
+	| "RefundsEnabled"
+	| "Refunded"
 	| "Claimed"
 	| "BundleExecuted";
 
@@ -36,6 +38,7 @@ export type LaunchCreatedEvent = LaunchEventEnvelope<
 		vault: Address;
 		router: Address;
 		taxSplitter: Address;
+		treasuryReserve: Address;
 		tier: number;
 		presaleCap: string;
 		v2BuyBnb: string;
@@ -80,6 +83,19 @@ export type LaunchedEvent = LaunchEventEnvelope<
 	}
 >;
 
+export type RefundsEnabledEvent = LaunchEventEnvelope<"RefundsEnabled", Record<string, never>>;
+
+export type RefundedEvent = LaunchEventEnvelope<
+	"Refunded",
+	{
+		user: Address;
+		principal: string;
+		bonus: string;
+		refundAmount: string;
+		newTotal: string;
+	}
+>;
+
 export type ClaimedEvent = LaunchEventEnvelope<
 	"Claimed",
 	{
@@ -109,8 +125,17 @@ export type LaunchEvent =
 	| WithdrawnEvent
 	| ClosedEvent
 	| LaunchedEvent
+	| RefundsEnabledEvent
+	| RefundedEvent
 	| ClaimedEvent
 	| BundleExecutedEvent;
 
-export type LaunchVaultEvent = DepositedEvent | WithdrawnEvent | ClosedEvent | LaunchedEvent | ClaimedEvent;
+export type LaunchVaultEvent =
+	| DepositedEvent
+	| WithdrawnEvent
+	| ClosedEvent
+	| LaunchedEvent
+	| RefundsEnabledEvent
+	| RefundedEvent
+	| ClaimedEvent;
 export type BundleRouterEvent = BundleExecutedEvent;

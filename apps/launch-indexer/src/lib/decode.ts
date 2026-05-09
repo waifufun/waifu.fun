@@ -25,6 +25,8 @@ const KNOWN_EVENTS: ReadonlySet<LaunchEventName> = new Set<LaunchEventName>([
 	"Withdrawn",
 	"Closed",
 	"Launched",
+	"RefundsEnabled",
+	"Refunded",
 	"Claimed",
 	"BundleExecuted",
 ]);
@@ -76,6 +78,7 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 					vault: args.vault as `0x${string}`,
 					router: args.router as `0x${string}`,
 					taxSplitter: args.taxSplitter as `0x${string}`,
+					treasuryReserve: args.treasuryReserve as `0x${string}`,
 					tier: Number(args.tier as bigint | number),
 					presaleCap: bn(args.presaleCap),
 					v2BuyBnb: bn(args.v2BuyBnb),
@@ -125,6 +128,26 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 					token: args.token as `0x${string}`,
 					totalBnb: bn(args.totalBnb),
 					launchTimestamp: bn(args.launchTimestamp),
+				},
+			};
+
+		case "RefundsEnabled":
+			return {
+				...base,
+				eventName: "RefundsEnabled",
+				data: {},
+			};
+
+		case "Refunded":
+			return {
+				...base,
+				eventName: "Refunded",
+				data: {
+					user: args.user as `0x${string}`,
+					principal: bn(args.principal),
+					bonus: bn(args.bonus),
+					refundAmount: bn(args.refundAmount),
+					newTotal: bn(args.newTotal),
 				},
 			};
 

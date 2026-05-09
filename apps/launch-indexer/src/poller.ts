@@ -15,7 +15,15 @@ import { eq } from "drizzle-orm";
 
 import { handleLaunchCreated } from "./handlers/launch-created.js";
 import { handleBundleExecuted } from "./handlers/router.js";
-import { handleClaimed, handleClosed, handleDeposited, handleLaunched, handleWithdrawn } from "./handlers/vault.js";
+import {
+	handleClaimed,
+	handleClosed,
+	handleDeposited,
+	handleLaunched,
+	handleRefunded,
+	handleRefundsEnabled,
+	handleWithdrawn,
+} from "./handlers/vault.js";
 import type { LaunchVaultEvent } from "./lib/events.js";
 import { type LaunchIndexerRuntime, factoryCursorId, routerCursorId, vaultCursorId } from "./lib/runtime.js";
 
@@ -71,6 +79,12 @@ export async function dispatchVaultEvent(
 			return;
 		case "Launched":
 			await handleLaunched(runtime, event, { launchId });
+			return;
+		case "RefundsEnabled":
+			await handleRefundsEnabled(runtime, event, { launchId });
+			return;
+		case "Refunded":
+			await handleRefunded(runtime, event, { launchId });
 			return;
 		case "Claimed":
 			await handleClaimed(runtime, event, { launchId });

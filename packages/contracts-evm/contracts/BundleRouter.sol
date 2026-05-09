@@ -13,6 +13,15 @@ interface IPancakeFactory {
 }
 
 interface IPancakeRouter {
+	function addLiquidityETH(
+		address token,
+		uint256 amountTokenDesired,
+		uint256 amountTokenMin,
+		uint256 amountETHMin,
+		address to,
+		uint256 deadline
+	) external payable returns (uint256 amountToken, uint256 amountETH, uint256 liquidity);
+
 	function swapExactETHForTokensSupportingFeeOnTransferTokens(
 		uint256 amountOutMin,
 		address[] calldata path,
@@ -38,7 +47,7 @@ contract BundleRouter is ReentrancyGuard {
 		uint256 deadline;
 	}
 
-	address public immutable owner;
+	address public owner;
 	address public immutable WBNB;
 	address public immutable pcsFactory;
 	address public immutable pcsRouter;
@@ -62,8 +71,15 @@ contract BundleRouter is ReentrancyGuard {
 	error Expired();
 	error PairNotCreated();
 	error SweepFailed();
+	error InvalidOwner();
+	error NoLiquidityTokens();
 
 	modifier onlyOwner() {
+		if (msg.sender != owner) revert Unauthorized();
+		_;
+	}
+
+	modifier onlyVault() {
 		if (msg.sender != owner) revert Unauthorized();
 		_;
 	}
@@ -76,13 +92,39 @@ contract BundleRouter is ReentrancyGuard {
 		initCodeHash = _initCodeHash;
 	}
 
+	/// @notice Transfer launch execution authority to the vault.
+	function transferOwnership(address newOwner) external onlyOwner {
+		if (newOwner == address(0)) revert InvalidOwner();
+		owner = newOwner;
+	}
+
 	/// @notice Execute the full bundle atomically.
-	function execute(BundleParams calldata params) external payable onlyOwner nonReentrant {
+	function execute(BundleParams calldata params) external payable onlyVault nonReentrant {
 		if (msg.value != params.curveFillBnb + params.v2BuyBnb) revert BnbMismatch();
 		if (block.timestamp > params.deadline) revert Expired();
 
-		// Step 1: Fill bonding curve (triggers graduation + V2 LP creation).
-		IFlapToken(params.flapToken).buy{value: params.curveFillBnb}();
+		// Step 1: Fill bonding curve when the token exposes buy(). Factory-minted
+		// AgentTokenV3 launches send LP inventory to this router instead, so the
+		// fallback path creates the V2 LP directly with that token inventory.
+		uint256 curveBalBefore = IERC20(params.flapToken).balanceOf(address(this));
+		try IFlapToken(params.flapToken).buy{value: params.curveFillBnb}() {
+			uint256 curveTokensReceived = IERC20(params.flapToken).balanceOf(address(this)) - curveBalBefore;
+			if (curveTokensReceived > 0) {
+				IERC20(params.flapToken).transfer(msg.sender, curveTokensReceived);
+			}
+		} catch {
+			uint256 lpTokens = IERC20(params.flapToken).balanceOf(address(this));
+			if (lpTokens == 0) revert NoLiquidityTokens();
+			IERC20(params.flapToken).approve(pcsRouter, lpTokens);
+			IPancakeRouter(pcsRouter).addLiquidityETH{value: params.curveFillBnb}(
+				params.flapToken,
+				lpTokens,
+				0,
+				0,
+				DEAD,
+				params.deadline
+			);
+		}
 
 		// Step 2: Verify V2 pair exists.
 		address pair = IPancakeFactory(pcsFactory).getPair(params.flapToken, WBNB);
@@ -138,10 +180,11 @@ contract BundleRouter is ReentrancyGuard {
 			openMcBnb
 		);
 
-		// Step 6: Sweep dust BNB back to owner.
+		// Step 6: Burn unsolicited BNB dust. The vault intentionally rejects
+		// raw receives, and pre-sent router dust must not be able to brick launch.
 		uint256 dust = address(this).balance;
 		if (dust > 0) {
-			(bool ok,) = owner.call{value: dust}("");
+			(bool ok,) = DEAD.call{value: dust}("");
 			if (!ok) revert SweepFailed();
 		}
 	}

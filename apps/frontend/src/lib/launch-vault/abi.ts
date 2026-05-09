@@ -191,6 +191,22 @@ export const launchVaultAbi = [
 	},
 	{
 		type: "event",
+		name: "RefundsEnabled",
+		inputs: [],
+	},
+	{
+		type: "event",
+		name: "Refunded",
+		inputs: [
+			{ name: "user", type: "address", indexed: true },
+			{ name: "principal", type: "uint256", indexed: false },
+			{ name: "bonus", type: "uint256", indexed: false },
+			{ name: "refundAmount", type: "uint256", indexed: false },
+			{ name: "newTotal", type: "uint256", indexed: false },
+		],
+	},
+	{
+		type: "event",
 		name: "Claimed",
 		inputs: [
 			{ name: "user", type: "address", indexed: true },

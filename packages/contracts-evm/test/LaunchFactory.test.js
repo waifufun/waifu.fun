@@ -10,6 +10,8 @@ const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f
 const TOTAL_SUPPLY = ethers.parseEther("1000000000");
 const BURN_AMOUNT = ethers.parseEther("500000000");
 const PRESALE_AMOUNT = ethers.parseEther("200000000");
+const V2_LP_AMOUNT = ethers.parseEther("200000000");
+const TREASURY_AMOUNT = ethers.parseEther("100000000");
 const TIER = { TIER_80: 0, TIER_90: 1, TIER_95: 2, TIER_98: 3 };
 
 describe("LaunchFactory", () => {
@@ -65,7 +67,7 @@ describe("LaunchFactory", () => {
 			metadataURI: "ipfs://test",
 			creator: creatorAddr,
 			tier,
-			closeTimestamp: Math.floor(Date.now() / 1000) + 86400,
+			closeTimestamp: 9_999_999_999,
 		});
 
 		it("deploys for TIER_80", async () => {
@@ -120,7 +122,7 @@ describe("LaunchFactory", () => {
 			expect(deadBalance).to.equal(BURN_AMOUNT);
 		});
 
-		it("allocates 200M to vault", async () => {
+		it("allocates 400M presale plus LP inventory to vault", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
@@ -128,18 +130,22 @@ describe("LaunchFactory", () => {
 
 			const token = await ethers.getContractAt("AgentTokenV3", ev.args.token);
 			const vaultBalance = await token.balanceOf(ev.args.vault);
-			expect(vaultBalance).to.equal(PRESALE_AMOUNT);
+			expect(vaultBalance).to.equal(PRESALE_AMOUNT + V2_LP_AMOUNT);
 		});
 
-		it("factory holds 300M (200M for V2 LP + 100M for treasury)", async () => {
+		it("forwards treasury reserve and leaves nothing stranded in factory", async () => {
 			const cfg = baseConfig(creator.address);
 			const tx = await factory.createLaunch(cfg);
 			const receipt = await tx.wait();
 			const ev = receipt.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
 
 			const token = await ethers.getContractAt("AgentTokenV3", ev.args.token);
+			const treasuryReserve = await ethers.getContractAt("TreasuryReserve", ev.args.treasuryReserve);
 			const factoryBalance = await token.balanceOf(await factory.getAddress());
-			expect(factoryBalance).to.equal(ethers.parseEther("300000000"));
+			const treasuryBalance = await token.balanceOf(ev.args.treasuryReserve);
+			expect(factoryBalance).to.equal(0);
+			expect(treasuryBalance).to.equal(TREASURY_AMOUNT);
+			expect(await treasuryReserve.owner()).to.equal(creator.address);
 		});
 
 		it("token totalSupply equals 1B", async () => {
@@ -160,6 +166,15 @@ describe("LaunchFactory", () => {
 
 			const vault = await ethers.getContractAt("LaunchVault", ev.args.vault);
 			expect(await vault.owner()).to.equal(creator.address);
+		});
+
+		it("vault owns router execution", async () => {
+			const cfg = baseConfig(creator.address);
+			const tx = await factory.createLaunch(cfg);
+			const receipt = await tx.wait();
+			const ev = receipt.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
+			const router = await ethers.getContractAt("BundleRouter", ev.args.router);
+			expect(await router.owner()).to.equal(ev.args.vault);
 		});
 
 		it("metadataURI is queryable on token", async () => {
@@ -211,39 +226,15 @@ describe("LaunchFactory", () => {
 			expect(stored.vault).to.equal(ev.args.vault);
 			expect(stored.router).to.equal(ev.args.router);
 			expect(stored.taxSplitter).to.equal(ev.args.taxSplitter);
+			expect(stored.treasuryReserve).to.equal(ev.args.treasuryReserve);
 		});
 
-		it("deploys a per-agent TaxSplitter at the address emitted in LaunchCreated", async () => {
-			const cfg = baseConfig(creator.address);
-			const tx = await factory.createLaunch(cfg);
-			const receipt = await tx.wait();
-			const ev = receipt.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
-
-			const splitterAddr = ev.args.taxSplitter;
-			expect(splitterAddr).to.not.equal(ethers.ZeroAddress);
-
-			const splitter = await ethers.getContractAt("TaxSplitter", splitterAddr);
-			expect(await splitter.recipientsLength()).to.equal(2n);
-			expect(await splitter.recipients(0)).to.equal(creator.address);
-			expect(await splitter.recipients(1)).to.equal(platformWallet.address);
-			expect(await splitter.bpsRates(0)).to.equal(9000);
-			expect(await splitter.bpsRates(1)).to.equal(1000);
-
-			// Token's taxSplitter immutable should match.
-			const token = await ethers.getContractAt("AgentTokenV3", ev.args.token);
-			expect(await token.taxSplitter()).to.equal(splitterAddr);
-			expect(await token.taxExempt(splitterAddr)).to.equal(true);
-		});
-
-		it("deploys a different TaxSplitter for each launch", async () => {
-			const cfgA = baseConfig(creator.address);
-			const txA = await factory.createLaunch(cfgA);
-			const rA = await txA.wait();
+		it("deploys a unique tax splitter per launch", async () => {
+			const rA = await (await factory.createLaunch(baseConfig(creator.address))).wait();
 			const evA = rA.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
-
-			const cfgB = { ...baseConfig(creator.address), name: "Agent2", symbol: "A2" };
-			const txB = await factory.createLaunch(cfgB);
-			const rB = await txB.wait();
+			const rB = await (
+				await factory.createLaunch({ ...baseConfig(creator.address), name: "Agent B", symbol: "AGB" })
+			).wait();
 			const evB = rB.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
 
 			expect(evA.args.taxSplitter).to.not.equal(evB.args.taxSplitter);
@@ -269,7 +260,7 @@ describe("LaunchFactory", () => {
 			metadataURI: "ipfs://test",
 			creator: creatorAddr,
 			tier: TIER.TIER_90,
-			closeTimestamp: Math.floor(Date.now() / 1000) + 86400,
+			closeTimestamp: 9_999_999_999,
 		});
 
 		it("reverts on zero creator", async () => {

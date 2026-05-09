@@ -20,6 +20,7 @@ const routerAddress = "0x3333333333333333333333333333333333333333" as const;
 const tokenAddress = "0x4444444444444444444444444444444444444444" as const;
 const userAddress = "0x5555555555555555555555555555555555555555" as const;
 const v2PairAddress = "0x6666666666666666666666666666666666666666" as const;
+const treasuryReserveAddress = "0x7777777777777777777777777777777777777777" as const;
 const blockTimestamp = new Date("2026-05-08T00:00:00.000Z");
 
 function buildLog(input: {
@@ -54,12 +55,13 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 			{ name: "vault", type: "address" },
 			{ name: "router", type: "address" },
 			{ name: "taxSplitter", type: "address" },
+			{ name: "treasuryReserve", type: "address" },
 			{ name: "tier", type: "uint8" },
 			{ name: "presaleCap", type: "uint256" },
 			{ name: "v2BuyBnb", type: "uint256" },
 			{ name: "vestingEnabled", type: "bool" },
 		],
-		[vaultAddress, routerAddress, splitterAddress, 90, 50_000n, 4_000n, true],
+		[vaultAddress, routerAddress, splitterAddress, treasuryReserveAddress, 90, 50_000n, 4_000n, true],
 	);
 
 	const decoded = decodeLaunchLog({
@@ -77,6 +79,7 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 	assert.equal(decoded.data.vault.toLowerCase(), vaultAddress);
 	assert.equal(decoded.data.router.toLowerCase(), routerAddress);
 	assert.equal(decoded.data.taxSplitter.toLowerCase(), splitterAddress);
+	assert.equal(decoded.data.treasuryReserve.toLowerCase(), treasuryReserveAddress);
 	assert.equal(decoded.data.tier, 90);
 	assert.equal(decoded.data.presaleCap, "50000");
 	assert.equal(decoded.data.v2BuyBnb, "4000");
@@ -205,6 +208,58 @@ test("decodeLaunchLog: Launched", () => {
 	assert.equal(decoded.data.token.toLowerCase(), tokenAddress);
 	assert.equal(decoded.data.totalBnb, "80000");
 	assert.equal(decoded.data.launchTimestamp, "1700000000");
+});
+
+test("decodeLaunchLog: RefundsEnabled", () => {
+	const topics = encodeEventTopics({
+		abi: launchVaultEventsAbi,
+		eventName: "RefundsEnabled",
+	}) as [Hex, ...Hex[]];
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: vaultAddress, topics, data: "0x" }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "RefundsEnabled") {
+		assert.fail(`expected RefundsEnabled, got ${decoded.eventName}`);
+	}
+});
+
+test("decodeLaunchLog: Refunded", () => {
+	const topics = encodeEventTopics({
+		abi: launchVaultEventsAbi,
+		eventName: "Refunded",
+		args: { user: userAddress },
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters(
+		[
+			{ name: "principal", type: "uint256" },
+			{ name: "bonus", type: "uint256" },
+			{ name: "refundAmount", type: "uint256" },
+			{ name: "newTotal", type: "uint256" },
+		],
+		[1_000n, 50n, 1_050n, 4_000n],
+	);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: vaultAddress, topics, data }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "Refunded") {
+		assert.fail(`expected Refunded, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.user.toLowerCase(), userAddress);
+	assert.equal(decoded.data.principal, "1000");
+	assert.equal(decoded.data.bonus, "50");
+	assert.equal(decoded.data.refundAmount, "1050");
+	assert.equal(decoded.data.newTotal, "4000");
 });
 
 test("decodeLaunchLog: Claimed", () => {

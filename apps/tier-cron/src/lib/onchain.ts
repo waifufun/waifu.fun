@@ -26,6 +26,7 @@ export interface ContractState {
 }
 
 export interface OnchainClient {
+	hasCode?(treasury: Address): Promise<boolean>;
 	readState(treasury: Address): Promise<ContractState>;
 	simulateOraclePoke(treasury: Address): Promise<void>;
 	simulateCheckAndAdvance(treasury: Address): Promise<void>;
@@ -40,6 +41,11 @@ export class ViemOnchainClient implements OnchainClient {
 		private readonly walletClient: WalletClient<Transport, Chain, Account> | undefined,
 		private readonly signerAddress: Address | undefined,
 	) {}
+
+	async hasCode(treasury: Address): Promise<boolean> {
+		const code = await this.publicClient.getBytecode({ address: treasury });
+		return code != null && code !== "0x";
+	}
 
 	async readState(treasury: Address): Promise<ContractState> {
 		const [nextTierIndexRaw, epochLengthRaw, snapshot] = await Promise.all([

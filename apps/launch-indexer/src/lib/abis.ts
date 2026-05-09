@@ -11,7 +11,7 @@
 import { parseAbi } from "viem";
 
 export const launchFactoryEventsAbi = parseAbi([
-	"event LaunchCreated(address indexed creator, address indexed token, address vault, address router, address taxSplitter, uint8 tier, uint256 presaleCap, uint256 v2BuyBnb, bool vestingEnabled)",
+	"event LaunchCreated(address indexed creator, address indexed token, address vault, address router, address taxSplitter, address treasuryReserve, uint8 tier, uint256 presaleCap, uint256 v2BuyBnb, bool vestingEnabled)",
 ]);
 
 export const launchVaultEventsAbi = parseAbi([
@@ -19,6 +19,8 @@ export const launchVaultEventsAbi = parseAbi([
 	"event Withdrawn(address indexed user, uint256 amount, uint256 penalty, uint256 refund)",
 	"event Closed(address indexed by, uint256 totalDeposited, uint256 bonusPool)",
 	"event Launched(address indexed token, uint256 totalBnb, uint256 launchTimestamp)",
+	"event RefundsEnabled()",
+	"event Refunded(address indexed user, uint256 principal, uint256 bonus, uint256 refundAmount, uint256 newTotal)",
 	"event Claimed(address indexed user, uint256 amount, uint256 totalClaimed)",
 ]);
 

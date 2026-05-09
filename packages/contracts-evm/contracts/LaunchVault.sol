@@ -6,6 +6,18 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
+interface IBundleRouter {
+	struct BundleParams {
+		address flapToken;
+		uint256 curveFillBnb;
+		uint256 v2BuyBnb;
+		uint256 minTokensFromV2;
+		uint256 deadline;
+	}
+
+	function execute(BundleParams calldata params) external payable;
+}
+
 /// @title LaunchVault
 /// @notice Presalers deposit BNB during the OPEN window, may withdraw with a
 ///         configurable penalty (capped at 10%, pooled and forwarded into the
@@ -40,6 +52,8 @@ contract LaunchVault is ReentrancyGuard {
 	address public immutable owner;
 	address payable public immutable launchRouter;
 	uint256 public immutable presaleTokens; // total tokens to distribute pro-rata
+	uint256 public immutable presaleCap; // max active BNB deposits and successful-launch threshold
+	uint256 public immutable bnbForBuy; // BNB reserved for the V2 buy leg
 	uint256 public immutable penaltyBps; // capped <= MAX_PENALTY_BPS in constructor
 	bool public immutable vestingEnabled; // false = 100% TGE, true = 50/50/24h
 	uint256 public immutable closeTimestamp; // anyone can close() after this
@@ -62,6 +76,7 @@ contract LaunchVault is ReentrancyGuard {
 	uint256 public bonusPool; // accumulated penalty BNB
 	uint256 public launchTimestamp; // block.timestamp at launch
 	uint256 public depositorCount; // unique addresses that ever held a deposit
+	bool public refundsEnabled; // owner-marked failed-launch refund path
 
 	struct Depositor {
 		uint256 deposited;
@@ -79,6 +94,8 @@ contract LaunchVault is ReentrancyGuard {
 	event Withdrawn(address indexed user, uint256 amount, uint256 penalty, uint256 refund);
 	event Closed(address indexed by, uint256 totalDeposited, uint256 bonusPool);
 	event Launched(address indexed token, uint256 totalBnb, uint256 launchTimestamp);
+	event RefundsEnabled();
+	event Refunded(address indexed user, uint256 principal, uint256 bonus, uint256 refundAmount, uint256 newTotal);
 	event Claimed(address indexed user, uint256 amount, uint256 totalClaimed);
 
 	// -------------------------------------------------------------------------
@@ -95,6 +112,9 @@ contract LaunchVault is ReentrancyGuard {
 	error NothingToClaim();
 	error LaunchTransferFailed();
 	error TokenBalanceTooLow();
+	error PresaleClosed();
+	error PresaleCapExceeded();
+	error UnderSubscribed();
 
 	modifier onlyOwner() {
 		if (msg.sender != owner) revert NotOwner();
@@ -114,12 +134,14 @@ contract LaunchVault is ReentrancyGuard {
 		address _owner,
 		address payable _launchRouter,
 		uint256 _presaleTokens,
+		uint256 _presaleCap,
+		uint256 _bnbForBuy,
 		uint256 _penaltyBps,
 		bool _vestingEnabled,
 		uint256 _closeTimestamp
 	) {
 		if (_owner == address(0) || _launchRouter == address(0)) revert InvalidParams();
-		if (_presaleTokens == 0) revert InvalidParams();
+		if (_presaleTokens == 0 || _presaleCap == 0 || _bnbForBuy > _presaleCap) revert InvalidParams();
 		// Cap penalty at 10% so this can't be weaponized as a bricked window.
 		if (_penaltyBps > MAX_PENALTY_BPS) revert InvalidParams();
 		// closeTimestamp must be in the future at deploy time.
@@ -128,6 +150,8 @@ contract LaunchVault is ReentrancyGuard {
 		owner = _owner;
 		launchRouter = _launchRouter;
 		presaleTokens = _presaleTokens;
+		presaleCap = _presaleCap;
+		bnbForBuy = _bnbForBuy;
 		penaltyBps = _penaltyBps;
 		vestingEnabled = _vestingEnabled;
 		closeTimestamp = _closeTimestamp;
@@ -141,6 +165,8 @@ contract LaunchVault is ReentrancyGuard {
 	/// @notice Deposit BNB during the OPEN window.
 	function deposit() external payable inState(State.OPEN) {
 		if (msg.value == 0) revert ZeroAmount();
+		if (block.timestamp >= closeTimestamp) revert PresaleClosed();
+		if (totalDeposited + msg.value > presaleCap) revert PresaleCapExceeded();
 
 		Depositor storage d = depositors[msg.sender];
 		if (!d.seen) {
@@ -161,15 +187,15 @@ contract LaunchVault is ReentrancyGuard {
 		if (d.deposited < amount) revert InsufficientDeposit();
 
 		uint256 penalty = (amount * penaltyBps) / BPS_DENOM;
-		uint256 refund = amount - penalty;
+		uint256 refundAmount = amount - penalty;
 
 		d.deposited -= amount;
 		totalDeposited -= amount;
 		bonusPool += penalty;
 
-		Address.sendValue(payable(msg.sender), refund);
+		Address.sendValue(payable(msg.sender), refundAmount);
 
-		emit Withdrawn(msg.sender, amount, penalty, refund);
+		emit Withdrawn(msg.sender, amount, penalty, refundAmount);
 	}
 
 	/// @notice Convenience helper: withdraw the full active deposit.
@@ -194,26 +220,73 @@ contract LaunchVault is ReentrancyGuard {
 		emit Closed(msg.sender, totalDeposited, bonusPool);
 	}
 
-	/// @notice Forward all BNB (deposits + bonus pool) to the launchRouter and
-	///         enter LAUNCHED. Tokens must be transferred to this vault before
-	///         the first claim, but verifying balance here would force the
-	///         caller to fund tokens upfront; we enforce it lazily in claim().
+	/// @notice Execute the launch bundle and enter LAUNCHED only after the router succeeds.
 	/// @param _token The launched ERC-20 token address.
-	function launch(address _token) external onlyOwner nonReentrant inState(State.CLOSED) {
+	/// @param minTokensFromV2 Slippage guard for the V2 buy leg.
+	/// @param deadline Router deadline for curve/V2 execution.
+	function launch(
+		address _token,
+		uint256 minTokensFromV2,
+		uint256 deadline
+	) external onlyOwner nonReentrant inState(State.CLOSED) {
 		if (_token == address(0)) revert InvalidParams();
+		if (refundsEnabled || totalDeposited < presaleCap) revert UnderSubscribed();
+
+		uint256 totalBnb = totalDeposited + bonusPool;
+		uint256 baseCurveBnb = presaleCap - bnbForBuy;
+		uint256 curveFillBnb = bnbForBuy == 0 ? totalBnb : (totalBnb < baseCurveBnb ? totalBnb : baseCurveBnb);
+		uint256 v2BuyBnb = totalBnb - curveFillBnb;
+
+		// Factory-created AgentTokenV3 launches pre-fund the vault with both
+		// presale inventory and LP inventory. Keep the presale inventory here for
+		// claims and hand only the extra inventory to the router.
+		if (IERC20(_token).balanceOf(address(this)) >= presaleTokens * 2) {
+			IERC20(_token).transfer(launchRouter, presaleTokens);
+		}
+
+		IBundleRouter(launchRouter).execute{value: totalBnb}(
+			IBundleRouter.BundleParams({
+				flapToken: _token,
+				curveFillBnb: curveFillBnb,
+				v2BuyBnb: v2BuyBnb,
+				minTokensFromV2: minTokensFromV2,
+				deadline: deadline
+			})
+		);
 
 		state = State.LAUNCHED;
 		token = _token;
 		launchTimestamp = block.timestamp;
 		totalDepositedAtLaunch = totalDeposited;
 
-		uint256 totalBnb = totalDeposited + bonusPool;
-		// Forward the whole pot to the launchRouter. The router is expected
-		// to have a payable entrypoint (receive() or fallback).
-		(bool ok, ) = launchRouter.call{value: totalBnb}("");
-		if (!ok) revert LaunchTransferFailed();
-
 		emit Launched(_token, totalBnb, launchTimestamp);
+	}
+
+	/// @notice Enable the failed-launch refund path after an under-subscribed close.
+	function enableRefunds() public inState(State.CLOSED) {
+		if (totalDeposited >= presaleCap) revert InvalidState();
+		if (!refundsEnabled) {
+			refundsEnabled = true;
+			emit RefundsEnabled();
+		}
+	}
+
+	/// @notice Refund active depositors after the owner marks a closed launch failed.
+	function refund() external nonReentrant inState(State.CLOSED) {
+		if (!refundsEnabled) enableRefunds();
+		Depositor storage d = depositors[msg.sender];
+		uint256 amount = d.deposited;
+		if (amount == 0) revert NoDeposit();
+
+		uint256 bonusShare = (amount == totalDeposited) ? bonusPool : (bonusPool * amount) / totalDeposited;
+		uint256 refundAmount = amount + bonusShare;
+
+		d.deposited = 0;
+		totalDeposited -= amount;
+		bonusPool -= bonusShare;
+		Address.sendValue(payable(msg.sender), refundAmount);
+
+		emit Refunded(msg.sender, amount, bonusShare, refundAmount, totalDeposited);
 	}
 
 	// -------------------------------------------------------------------------

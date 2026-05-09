@@ -45,6 +45,7 @@ export interface CreateLaunchResult {
 	vault: `0x${string}`;
 	router: `0x${string}`;
 	taxSplitter: `0x${string}`;
+	treasuryReserve: `0x${string}`;
 	presaleUrl: string;
 	txHash: `0x${string}`;
 	blockNumber: bigint;

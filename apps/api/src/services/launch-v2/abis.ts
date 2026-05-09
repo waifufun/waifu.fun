@@ -34,6 +34,7 @@ export const launchFactoryAbi = [
 					{ name: "vault", type: "address" },
 					{ name: "router", type: "address" },
 					{ name: "taxSplitter", type: "address" },
+					{ name: "treasuryReserve", type: "address" },
 				],
 			},
 		],
@@ -59,6 +60,7 @@ export const launchFactoryAbi = [
 			{ name: "vault", type: "address" },
 			{ name: "router", type: "address" },
 			{ name: "taxSplitter", type: "address" },
+			{ name: "treasuryReserve", type: "address" },
 		],
 	},
 	{
@@ -70,6 +72,7 @@ export const launchFactoryAbi = [
 			{ name: "vault", type: "address", indexed: false },
 			{ name: "router", type: "address", indexed: false },
 			{ name: "taxSplitter", type: "address", indexed: false },
+			{ name: "treasuryReserve", type: "address", indexed: false },
 			{ name: "tier", type: "uint8", indexed: false },
 			{ name: "presaleCap", type: "uint256", indexed: false },
 			{ name: "v2BuyBnb", type: "uint256", indexed: false },
