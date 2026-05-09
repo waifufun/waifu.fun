@@ -36,23 +36,24 @@ contract LaunchFactory {
 		address treasuryReserve;
 	}
 
-	uint256 public constant TOTAL_SUPPLY = 1_000_000_000 ether;
-	uint256 public constant BURN_AMOUNT = 500_000_000 ether;     // 50%
-	uint256 public constant PRESALE_AMOUNT = 200_000_000 ether;  // 20%
-	uint256 public constant V2_LP_AMOUNT = 200_000_000 ether;    // 20%
-	uint256 public constant TREASURY_AMOUNT = 100_000_000 ether; // 10%
-	uint256 public constant DEFAULT_PENALTY_BPS = 500;           // 5%
+	uint256 internal constant TOTAL_SUPPLY = 1_000_000_000 ether;
+	uint256 internal constant BURN_AMOUNT = 500_000_000 ether;     // 50%
+	uint256 internal constant PRESALE_AMOUNT = 200_000_000 ether;  // 20%
+	uint256 internal constant V2_LP_AMOUNT = 200_000_000 ether;    // 20%
+	uint256 internal constant TREASURY_AMOUNT = 100_000_000 ether; // 10%
+	uint256 internal constant DEFAULT_PENALTY_BPS = 500;           // 5%
 
-	uint16 public constant SPLITTER_AGENT_BPS = 9000;    // 90% to creator (agent treasury)
-	uint16 public constant SPLITTER_PLATFORM_BPS = 1000; // 10% to platform wallet
+	uint16 internal constant SPLITTER_AGENT_BPS = 9000;    // 90% to creator (agent treasury)
+	uint16 internal constant SPLITTER_PLATFORM_BPS = 1000; // 10% to platform wallet
 
-	address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
+	address internal constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
-	address public immutable WBNB;
-	address public immutable PCS_FACTORY;
-	address public immutable PCS_ROUTER;
-	bytes32 public immutable INIT_CODE_HASH;
-	address public immutable PLATFORM_WALLET;
+	address internal immutable WBNB;
+	address internal immutable PCS_FACTORY;
+	address internal immutable PCS_ROUTER;
+	bytes32 internal immutable INIT_CODE_HASH;
+	address internal immutable PLATFORM_WALLET;
+	address internal immutable FLAP_PORTAL;
 
 	mapping(address => LaunchAddresses) public launches;
 	address[] public allLaunches;
@@ -81,7 +82,8 @@ contract LaunchFactory {
 		address _pcsFactory,
 		address _pcsRouter,
 		bytes32 _initCodeHash,
-		address _platformWallet
+		address _platformWallet,
+		address _flapPortal
 	) {
 		if (_platformWallet == address(0)) revert InvalidPlatformWallet();
 		WBNB = _wbnb;
@@ -89,6 +91,7 @@ contract LaunchFactory {
 		PCS_ROUTER = _pcsRouter;
 		INIT_CODE_HASH = _initCodeHash;
 		PLATFORM_WALLET = _platformWallet;
+		FLAP_PORTAL = _flapPortal;
 	}
 
 	/// @notice Returns the (presaleCapBnb, v2BuyBnb, vestingEnabled) tuple for a tier.
@@ -144,7 +147,8 @@ contract LaunchFactory {
 			WBNB,
 			PCS_FACTORY,
 			PCS_ROUTER,
-			INIT_CODE_HASH
+			INIT_CODE_HASH,
+			FLAP_PORTAL
 		);
 
 		// 3. Deploy vault (creator owns)
@@ -204,11 +208,6 @@ contract LaunchFactory {
 			v2BuyBnb,
 			vestingEnabled
 		);
-	}
-
-	function _v2BuyForTier(LaunchTier tier) internal pure returns (uint256) {
-		(, uint256 v2, ) = tierConfig(tier);
-		return v2;
 	}
 
 	function launchCount() external view returns (uint256) {
