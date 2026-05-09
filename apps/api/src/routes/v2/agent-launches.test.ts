@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { afterEach } from "node:test";
 
 import { Hono } from "hono";
 
 import type { AppBindings } from "../../lib/bindings.js";
+import { clearRequestSiweNoncesForTest } from "../../lib/request-siwe.js";
 import { apiErrorHandler } from "../../middleware/error-handler.js";
+import {
+	type StewardParser,
+	__setRequirePatronDbForTest,
+	__setRequirePatronStewardParserForTest,
+} from "../../middleware/patron-auth.js";
 import type { LaunchService } from "../../services/launch-v2/launch-service.js";
 import { createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
 
@@ -20,6 +26,54 @@ const TOKEN = "0x000000000000000000000000000000000000aaaa";
 const VAULT = "0x000000000000000000000000000000000000bbbb";
 const ROUTER = "0x000000000000000000000000000000000000cccc";
 const CREATOR = "0x000000000000000000000000000000000000dddd";
+
+function patronDb() {
+	return {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								limit() {
+									return Promise.resolve([
+										{
+											id: "patron-1",
+											stewardUserId: "steward-1",
+											primaryEmail: null,
+										},
+									]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+	} as never;
+}
+
+function authHeaders() {
+	return { authorization: "Bearer steward-token", "content-type": "application/json" };
+}
+
+function createBody(overrides: Record<string, unknown> = {}) {
+	return {
+		name: "Demo Agent",
+		symbol: "DEMO",
+		metadataURI: "ipfs://example",
+		creator: CREATOR,
+		tier: "80",
+		siwe: { message: "siwe", signature: "0xsig" },
+		...overrides,
+	};
+}
+
+afterEach(() => {
+	__setRequirePatronDbForTest(undefined);
+	__setRequirePatronStewardParserForTest(undefined);
+	clearRequestSiweNoncesForTest();
+});
 
 function makeRow(overrides: Record<string, unknown> = {}) {
 	return {
@@ -94,7 +148,7 @@ test("GET /:id returns 404 when the row is missing", async () => {
 	assert.equal(res.status, 404);
 });
 
-test("POST / returns 400 on missing required fields", async () => {
+test("POST / requires patron auth before creating a launch", async () => {
 	const router = createAgentLaunchRoutes({
 		db: {} as never,
 		launchService: {
@@ -108,6 +162,50 @@ test("POST / returns 400 on missing required fields", async () => {
 	const res = await app.request("/", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
+		body: JSON.stringify(createBody()),
+	});
+	assert.equal(res.status, 401);
+});
+
+test("POST / rejects a creator SIWE signature for another wallet", async () => {
+	__setRequirePatronStewardParserForTest((async () => ({ userId: "steward-1", tenantId: "waifu" })) as StewardParser);
+	__setRequirePatronDbForTest(patronDb());
+
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		siweVerifier: async () => ({ address: "0x000000000000000000000000000000000000eeee", chainId: 56, nonce: "nonce" }),
+		launchService: {
+			async createLaunchOnchain() {
+				throw new Error("should not be called");
+			},
+		} as unknown as LaunchService,
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/", {
+		method: "POST",
+		headers: authHeaders(),
+		body: JSON.stringify(createBody()),
+	});
+	assert.equal(res.status, 400);
+});
+
+test("POST / returns 400 on missing required fields after auth", async () => {
+	__setRequirePatronStewardParserForTest((async () => ({ userId: "steward-1", tenantId: "waifu" })) as StewardParser);
+	__setRequirePatronDbForTest(patronDb());
+	const router = createAgentLaunchRoutes({
+		db: {} as never,
+		launchService: {
+			async createLaunchOnchain() {
+				throw new Error("should not be called");
+			},
+		} as unknown as LaunchService,
+	});
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/", {
+		method: "POST",
+		headers: authHeaders(),
 		body: JSON.stringify({ name: "" }),
 	});
 	// 422 = validation error in this app's error handler.

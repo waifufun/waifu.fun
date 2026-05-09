@@ -15,10 +15,14 @@ import { z } from "zod";
 import { getDatabase } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
+import { verifySiweMessage } from "../../lib/auth-service.js";
 import type { AppBindings } from "../../lib/bindings.js";
 import { badRequest, notFound } from "../../lib/errors.js";
 import { respondAccepted, respondOk } from "../../lib/http.js";
+import { issueRequestSiweNonce, validateRequestSiwe } from "../../lib/request-siwe.js";
 import { parseJsonBody } from "../../lib/validation.js";
+import { requirePatron } from "../../middleware/patron-auth.js";
+import { rateLimit } from "../../middleware/rate-limit.js";
 import {
 	type CreateLaunchInput,
 	LaunchService,
@@ -36,6 +40,15 @@ const addressSchema = z
 
 const tierSchema = z.enum(["80", "90", "95", "98"]);
 
+const siweProofSchema = z.object({
+	message: z.string().min(1),
+	signature: z.string().min(1),
+});
+
+const nonceBodySchema = z.object({
+	address: addressSchema,
+});
+
 const createLaunchBodySchema = z.object({
 	name: z.string().trim().min(1).max(64),
 	symbol: z
@@ -48,6 +61,7 @@ const createLaunchBodySchema = z.object({
 	creator: addressSchema,
 	tier: tierSchema,
 	closeTimestamp: z.coerce.number().int().positive().optional(),
+	siwe: siweProofSchema,
 });
 
 const previewBodySchema = z.object({
@@ -84,12 +98,34 @@ export interface AgentLaunchRoutesOptions {
 	launchService?: LaunchService;
 	getDb?: () => Database | null;
 	getService?: () => LaunchService | null;
+	siweVerifier?: typeof verifySiweMessage;
 }
 
 function defaultDb(): Database | null {
 	const url = process.env.DATABASE_URL;
 	if (!url) return null;
 	return getDatabase(url).db;
+}
+
+const LAUNCH_SIWE_PURPOSE = "launch:create";
+const LAUNCH_SIWE_STATEMENT =
+	"sign to confirm launch. waifu.fun will use this wallet as creator for the launch transaction.";
+const LAUNCH_SIWE_URI_PATH = "/create/wizard";
+
+async function launchRateLimitKey(c: Parameters<ReturnType<typeof rateLimit>>[0]): Promise<string | null> {
+	try {
+		const body = (await c.req.raw.clone().json()) as { creator?: unknown };
+		if (typeof body.creator === "string" && addressRegex.test(body.creator)) {
+			return body.creator.toLowerCase();
+		}
+	} catch {
+		// Fall through to patron-scoped fallback for malformed bodies.
+	}
+
+	const patron = (
+		c as unknown as { get(key: "patron"): { stewardUserId?: string; primaryAddress?: string | null } | undefined }
+	).get("patron");
+	return patron?.primaryAddress?.toLowerCase() ?? patron?.stewardUserId ?? null;
 }
 
 function defaultService(): LaunchService | null {
@@ -166,72 +202,103 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 		return svc;
 	};
 
-	// POST /v2/launches — submit createLaunch on-chain and persist a row.
-	app.post("/", async (c) => {
-		const body = await parseJsonBody(c, createLaunchBodySchema);
-		const db = resolveDb();
-		const service = resolveService();
-
-		const closeTs = body.closeTimestamp ?? Math.floor(Date.now() / 1000) + 24 * 60 * 60;
-		const tier = body.tier as LaunchTierString;
-
-		const input: CreateLaunchInput = {
-			name: body.name,
-			symbol: body.symbol,
-			metadataURI: body.metadataURI,
-			creator: body.creator,
-			tier,
-			closeTimestamp: closeTs,
-		};
-
-		const onchain = await service.createLaunchOnchain(input);
-
-		// Pre-compute tier config so we have a snapshot independent of the contract.
-		const presaleCapByTier: Record<LaunchTierString, string> = {
-			"80": "16000000000000000000",
-			"90": "32000000000000000000",
-			"95": "64000000000000000000",
-			"98": "160000000000000000000",
-		};
-		const v2BuyByTier: Record<LaunchTierString, string> = {
-			"80": "0",
-			"90": "16000000000000000000",
-			"95": "48000000000000000000",
-			"98": "144000000000000000000",
-		};
-		const vestingByTier: Record<LaunchTierString, boolean> = {
-			"80": false,
-			"90": true,
-			"95": true,
-			"98": true,
-		};
-
-		const row = await launchRepo.insertLaunch(db, {
-			tokenAddress: onchain.token,
-			vaultAddress: onchain.vault,
-			routerAddress: onchain.router,
-			taxSplitterAddress: onchain.taxSplitter,
-			creator: input.creator,
-			tier: Number(tier),
-			presaleCap: presaleCapByTier[tier],
-			v2BuyBnb: v2BuyByTier[tier],
-			vestingEnabled: vestingByTier[tier],
-			closeTimestamp: BigInt(closeTs),
-			metadataUri: input.metadataURI,
-			createTxHash: onchain.txHash,
-			createBlockNumber: onchain.blockNumber,
-		});
-
-		return respondAccepted(c, {
-			id: row.id,
-			token: row.tokenAddress,
-			vault: row.vaultAddress,
-			router: row.routerAddress,
-			taxSplitter: row.taxSplitterAddress,
-			presaleUrl: onchain.presaleUrl,
-			txHash: onchain.txHash,
+	// POST /v2/launches/nonce - issue a one-use SIWE nonce for launch creation.
+	app.post("/nonce", requirePatron() as never, async (c) => {
+		const body = await parseJsonBody(c, nonceBodySchema);
+		const patron = (c as unknown as { get(key: "patron"): { id: string } }).get("patron");
+		return respondOk(c, {
+			nonce: issueRequestSiweNonce(patron.id, LAUNCH_SIWE_PURPOSE, body.address),
+			expiresInSeconds: 600,
 		});
 	});
+
+	// POST /v2/launches - submit createLaunch on-chain and persist a row.
+	app.post(
+		"/",
+		requirePatron() as never,
+		rateLimit({
+			bucket: "launch:create",
+			limit: 10,
+			windowMs: 60 * 60 * 1000,
+			keyGenerator: launchRateLimitKey,
+		}) as never,
+		async (c) => {
+			const body = await parseJsonBody(c, createLaunchBodySchema);
+			const patron = (c as unknown as { get(key: "patron"): { id: string } }).get("patron");
+			const siweError = await validateRequestSiwe({
+				patronId: patron.id,
+				purpose: LAUNCH_SIWE_PURPOSE,
+				creator: body.creator,
+				siwe: body.siwe,
+				expectedStatement: LAUNCH_SIWE_STATEMENT,
+				expectedUriPath: LAUNCH_SIWE_URI_PATH,
+				verifier: options.siweVerifier ?? verifySiweMessage,
+			});
+			if (siweError) throw badRequest("SIWE_VERIFICATION_FAILED", siweError);
+			const db = resolveDb();
+			const service = resolveService();
+
+			const closeTs = body.closeTimestamp ?? Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+			const tier = body.tier as LaunchTierString;
+
+			const input: CreateLaunchInput = {
+				name: body.name,
+				symbol: body.symbol,
+				metadataURI: body.metadataURI,
+				creator: body.creator,
+				tier,
+				closeTimestamp: closeTs,
+			};
+
+			const onchain = await service.createLaunchOnchain(input);
+
+			// Pre-compute tier config so we have a snapshot independent of the contract.
+			const presaleCapByTier: Record<LaunchTierString, string> = {
+				"80": "16000000000000000000",
+				"90": "32000000000000000000",
+				"95": "64000000000000000000",
+				"98": "160000000000000000000",
+			};
+			const v2BuyByTier: Record<LaunchTierString, string> = {
+				"80": "0",
+				"90": "16000000000000000000",
+				"95": "48000000000000000000",
+				"98": "144000000000000000000",
+			};
+			const vestingByTier: Record<LaunchTierString, boolean> = {
+				"80": false,
+				"90": true,
+				"95": true,
+				"98": true,
+			};
+
+			const row = await launchRepo.insertLaunch(db, {
+				tokenAddress: onchain.token,
+				vaultAddress: onchain.vault,
+				routerAddress: onchain.router,
+				taxSplitterAddress: onchain.taxSplitter,
+				creator: input.creator,
+				tier: Number(tier),
+				presaleCap: presaleCapByTier[tier],
+				v2BuyBnb: v2BuyByTier[tier],
+				vestingEnabled: vestingByTier[tier],
+				closeTimestamp: BigInt(closeTs),
+				metadataUri: input.metadataURI,
+				createTxHash: onchain.txHash,
+				createBlockNumber: onchain.blockNumber,
+			});
+
+			return respondAccepted(c, {
+				id: row.id,
+				token: row.tokenAddress,
+				vault: row.vaultAddress,
+				router: row.routerAddress,
+				taxSplitter: row.taxSplitterAddress,
+				presaleUrl: onchain.presaleUrl,
+				txHash: onchain.txHash,
+			});
+		},
+	);
 
 	// GET /v2/launches — paginated list with filters.
 	app.get("/", async (c) => {
