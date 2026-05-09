@@ -4,12 +4,18 @@ pragma solidity ^0.8.24;
 import {AgentTokenV3} from "./AgentTokenV3.sol";
 import {LaunchVault} from "./LaunchVault.sol";
 import {BundleRouter} from "./BundleRouter.sol";
+import {TaxSplitter} from "./TaxSplitter.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /// @title LaunchFactory
 /// @notice Atomic deployment of agent launch primitives.
-///         Mints token, burns 50%, deploys vault + router, allocates supply.
+///         Mints token, burns 50%, deploys vault + router + per-agent
+///         TaxSplitter, allocates supply.
 ///         Treasury LP integration deferred until W33b lands (TierConfig[]).
+/// @dev W40c: each launch deploys its own TaxSplitter parameterized with
+///      `[creator, platformWallet]` recipients and `[9000, 1000]` bps so the
+///      3% transfer tax actually splits 90% to the agent treasury and 10% to
+///      the platform fee wallet on a per-agent basis (V3 audit C-5).
 contract LaunchFactory is ReentrancyGuard {
 	enum LaunchTier { TIER_80, TIER_90, TIER_95, TIER_98 }
 
@@ -26,6 +32,7 @@ contract LaunchFactory is ReentrancyGuard {
 		address token;
 		address vault;
 		address router;
+		address taxSplitter;
 	}
 
 	uint256 public constant TOTAL_SUPPLY = 1_000_000_000 ether;
@@ -35,13 +42,16 @@ contract LaunchFactory is ReentrancyGuard {
 	uint256 public constant TREASURY_AMOUNT = 100_000_000 ether; // 10%
 	uint256 public constant DEFAULT_PENALTY_BPS = 500;           // 5%
 
+	uint16 public constant SPLITTER_AGENT_BPS = 9000;    // 90% to creator (agent treasury)
+	uint16 public constant SPLITTER_PLATFORM_BPS = 1000; // 10% to platform wallet
+
 	address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
 	address public immutable WBNB;
 	address public immutable PCS_FACTORY;
 	address public immutable PCS_ROUTER;
 	bytes32 public immutable INIT_CODE_HASH;
-	address public immutable TAX_SPLITTER;
+	address public immutable PLATFORM_WALLET;
 
 	mapping(address => LaunchAddresses) public launches;
 	address[] public allLaunches;
@@ -51,6 +61,7 @@ contract LaunchFactory is ReentrancyGuard {
 		address indexed token,
 		address vault,
 		address router,
+		address taxSplitter,
 		LaunchTier tier,
 		uint256 presaleCap,
 		uint256 v2BuyBnb,
@@ -58,6 +69,7 @@ contract LaunchFactory is ReentrancyGuard {
 	);
 
 	error InvalidCreator();
+	error InvalidPlatformWallet();
 	error InvalidCloseTimestamp();
 	error EmptyName();
 	error EmptySymbol();
@@ -67,13 +79,14 @@ contract LaunchFactory is ReentrancyGuard {
 		address _pcsFactory,
 		address _pcsRouter,
 		bytes32 _initCodeHash,
-		address _taxSplitter
+		address _platformWallet
 	) {
+		if (_platformWallet == address(0)) revert InvalidPlatformWallet();
 		WBNB = _wbnb;
 		PCS_FACTORY = _pcsFactory;
 		PCS_ROUTER = _pcsRouter;
 		INIT_CODE_HASH = _initCodeHash;
-		TAX_SPLITTER = _taxSplitter;
+		PLATFORM_WALLET = _platformWallet;
 	}
 
 	/// @notice Returns the (presaleCapBnb, v2BuyBnb, vestingEnabled) tuple for a tier.
@@ -102,13 +115,26 @@ contract LaunchFactory is ReentrancyGuard {
 
 		(uint256 presaleCap, , bool vestingEnabled) = tierConfig(config.tier);
 
-		// 1. Deploy token
+		// 0. Deploy per-agent TaxSplitter (90% creator / 10% platform)
+		address splitterAddr;
+		{
+			address[] memory recipients = new address[](2);
+			recipients[0] = config.creator;
+			recipients[1] = PLATFORM_WALLET;
+			uint16[] memory bps = new uint16[](2);
+			bps[0] = SPLITTER_AGENT_BPS;
+			bps[1] = SPLITTER_PLATFORM_BPS;
+			TaxSplitter splitter = new TaxSplitter(recipients, bps);
+			splitterAddr = address(splitter);
+		}
+
+		// 1. Deploy token using the per-agent splitter
 		AgentTokenV3 token = new AgentTokenV3(
 			config.name,
 			config.symbol,
 			config.metadataURI,
 			address(this),
-			TAX_SPLITTER,
+			splitterAddr,
 			TOTAL_SUPPLY
 		);
 
@@ -130,7 +156,9 @@ contract LaunchFactory is ReentrancyGuard {
 			config.closeTimestamp
 		);
 
-		// 4. Tax-exempt the new contracts and DEAD
+		// 4. Tax-exempt the new contracts and DEAD.
+		//    AgentTokenV3 already exempts the factory, the splitter, itself, and DEAD
+		//    in its constructor; we add the vault + router here.
 		token.setTaxExempt(address(vault), true);
 		token.setTaxExempt(address(router), true);
 
@@ -150,7 +178,8 @@ contract LaunchFactory is ReentrancyGuard {
 		addrs = LaunchAddresses({
 			token: address(token),
 			vault: address(vault),
-			router: address(router)
+			router: address(router),
+			taxSplitter: splitterAddr
 		});
 		launches[address(token)] = addrs;
 		allLaunches.push(address(token));
@@ -160,6 +189,7 @@ contract LaunchFactory is ReentrancyGuard {
 			address(token),
 			address(vault),
 			address(router),
+			splitterAddr,
 			config.tier,
 			presaleCap,
 			_v2BuyForTier(config.tier),

@@ -45,6 +45,7 @@ export const agentLaunches = pgTable(
 		tokenAddress: varchar("token_address", { length: 42 }).notNull(),
 		vaultAddress: varchar("vault_address", { length: 42 }).notNull(),
 		routerAddress: varchar("router_address", { length: 42 }).notNull(),
+		taxSplitterAddress: varchar("tax_splitter_address", { length: 42 }),
 		treasuryLpAddress: varchar("treasury_lp_address", { length: 42 }),
 		creator: varchar("creator", { length: 42 }).notNull(),
 		tier: smallint("tier").notNull(),

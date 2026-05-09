@@ -75,7 +75,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 
 	let deployer;
 	let creator;
-	let taxSplitter;
+	let platformWallet;
 	let alice;
 	let bob;
 	let carol;
@@ -95,10 +95,10 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	});
 
 	beforeEach(async () => {
-		[deployer, creator, taxSplitter, alice, bob, carol, dave, eve] = await ethers.getSigners();
+		[deployer, creator, platformWallet, alice, bob, carol, dave, eve] = await ethers.getSigners();
 
 		const Factory = await ethers.getContractFactory("LaunchFactory");
-		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, taxSplitter.address);
+		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address);
 		await factory.waitForDeployment();
 	});
 
@@ -122,9 +122,11 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			token: await ethers.getContractAt("AgentTokenV3", ev.args.token),
 			vault: await ethers.getContractAt("LaunchVault", ev.args.vault),
 			router: await ethers.getContractAt("BundleRouter", ev.args.router),
+			splitter: await ethers.getContractAt("TaxSplitter", ev.args.taxSplitter),
 			tokenAddr: ev.args.token,
 			vaultAddr: ev.args.vault,
 			routerAddr: ev.args.router,
+			splitterAddr: ev.args.taxSplitter,
 			presaleCap: ev.args.presaleCap,
 			v2BuyBnb: ev.args.v2BuyBnb,
 			vestingEnabled: ev.args.vestingEnabled,
@@ -581,6 +583,56 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			const { vault } = await createFactoryLaunch(TIER.TIER_80, ONE_DAY);
 			await vault.connect(alice).deposit({ value: ethers.parseEther("5") });
 			await expect(vault.connect(bob).close()).to.be.revertedWithCustomError(vault, "NotAuthorizedToClose");
+		});
+	});
+
+	// =========================================================================
+	// 7. Per-agent TaxSplitter wiring (W40c / V3 audit C-5)
+	// =========================================================================
+
+	describe("Per-agent TaxSplitter wiring", () => {
+		it("taxed transfer routes 90% to creator and 10% to platform via release(token)", async () => {
+			const launch = await createFactoryLaunch(TIER.TIER_80);
+			const { token, splitter, splitterAddr, vault } = launch;
+
+			// Bring tokens onto the open market: alice deposits, vault closes,
+			// then we drop tokens directly into alice via the vault's tax-exempt
+			// transfer so we can stage a taxable transfer downstream.
+			await vault.connect(alice).deposit({ value: ethers.parseEther("8") });
+			await vault.connect(bob).deposit({ value: ethers.parseEther("8") });
+			await vault.connect(creator).close();
+
+			// Vault is tax-exempt, so impersonate it to fund alice with tokens
+			// without paying tax (mimics a post-launch claim path on the cheap).
+			const vaultAddr = await vault.getAddress();
+			await network.provider.send("hardhat_impersonateAccount", [vaultAddr]);
+			await network.provider.send("hardhat_setBalance", [vaultAddr, "0x56BC75E2D63100000"]);
+			const vaultSigner = await ethers.getSigner(vaultAddr);
+			const transferAmount = ethers.parseEther("1000");
+			await token.connect(vaultSigner).transfer(alice.address, transferAmount);
+			await network.provider.send("hardhat_stopImpersonatingAccount", [vaultAddr]);
+
+			// alice → bob is a taxable transfer (neither is exempt). 3% to splitter.
+			const sendAmount = ethers.parseEther("100");
+			const expectedTax = (sendAmount * 300n) / 10000n;
+
+			const splitterBefore = await token.balanceOf(splitterAddr);
+			await token.connect(alice).transfer(bob.address, sendAmount);
+			const splitterAfter = await token.balanceOf(splitterAddr);
+			expect(splitterAfter - splitterBefore).to.equal(expectedTax);
+
+			// release(token) splits 90% to creator and 10% to platform wallet.
+			const creatorBefore = await token.balanceOf(creator.address);
+			const platformBefore = await token.balanceOf(platformWallet.address);
+			await splitter.release(await token.getAddress());
+			const creatorAfter = await token.balanceOf(creator.address);
+			const platformAfter = await token.balanceOf(platformWallet.address);
+
+			const creatorCut = (expectedTax * 9000n) / 10000n;
+			const platformCut = (expectedTax * 1000n) / 10000n;
+			expect(creatorAfter - creatorBefore).to.equal(creatorCut);
+			expect(platformAfter - platformBefore).to.equal(platformCut);
+			expect(await token.balanceOf(splitterAddr)).to.equal(0n);
 		});
 	});
 });

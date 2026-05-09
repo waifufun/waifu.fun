@@ -16,15 +16,15 @@ describe("LaunchFactory", () => {
 	let factory;
 	let deployer;
 	let creator;
-	let taxSplitter;
+	let platformWallet;
 
 	beforeEach(async () => {
-		[deployer, creator, taxSplitter] = await ethers.getSigners();
+		[deployer, creator, platformWallet] = await ethers.getSigners();
 
 		// Use real PCS V2 addresses (works on local without fork via mocks but tests
 		// that don't need actual PCS calls will still pass)
 		const Factory = await ethers.getContractFactory("LaunchFactory");
-		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, taxSplitter.address);
+		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address);
 		await factory.waitForDeployment();
 	});
 
@@ -210,6 +210,43 @@ describe("LaunchFactory", () => {
 			expect(stored.token).to.equal(ev.args.token);
 			expect(stored.vault).to.equal(ev.args.vault);
 			expect(stored.router).to.equal(ev.args.router);
+			expect(stored.taxSplitter).to.equal(ev.args.taxSplitter);
+		});
+
+		it("deploys a per-agent TaxSplitter at the address emitted in LaunchCreated", async () => {
+			const cfg = baseConfig(creator.address);
+			const tx = await factory.createLaunch(cfg);
+			const receipt = await tx.wait();
+			const ev = receipt.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
+
+			const splitterAddr = ev.args.taxSplitter;
+			expect(splitterAddr).to.not.equal(ethers.ZeroAddress);
+
+			const splitter = await ethers.getContractAt("TaxSplitter", splitterAddr);
+			expect(await splitter.recipientsLength()).to.equal(2n);
+			expect(await splitter.recipients(0)).to.equal(creator.address);
+			expect(await splitter.recipients(1)).to.equal(platformWallet.address);
+			expect(await splitter.bpsRates(0)).to.equal(9000);
+			expect(await splitter.bpsRates(1)).to.equal(1000);
+
+			// Token's taxSplitter immutable should match.
+			const token = await ethers.getContractAt("AgentTokenV3", ev.args.token);
+			expect(await token.taxSplitter()).to.equal(splitterAddr);
+			expect(await token.taxExempt(splitterAddr)).to.equal(true);
+		});
+
+		it("deploys a different TaxSplitter for each launch", async () => {
+			const cfgA = baseConfig(creator.address);
+			const txA = await factory.createLaunch(cfgA);
+			const rA = await txA.wait();
+			const evA = rA.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
+
+			const cfgB = { ...baseConfig(creator.address), name: "Agent2", symbol: "A2" };
+			const txB = await factory.createLaunch(cfgB);
+			const rB = await txB.wait();
+			const evB = rB.logs.find((l) => l.fragment && l.fragment.name === "LaunchCreated");
+
+			expect(evA.args.taxSplitter).to.not.equal(evB.args.taxSplitter);
 		});
 
 		it("allLaunches.length increments", async () => {
@@ -256,6 +293,13 @@ describe("LaunchFactory", () => {
 			const cfg = validCfg(creator.address);
 			cfg.symbol = "";
 			await expect(factory.createLaunch(cfg)).to.be.revertedWithCustomError(factory, "EmptySymbol");
+		});
+
+		it("constructor reverts on zero platform wallet", async () => {
+			const Factory = await ethers.getContractFactory("LaunchFactory");
+			await expect(
+				Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, ethers.ZeroAddress),
+			).to.be.revertedWithCustomError(Factory, "InvalidPlatformWallet");
 		});
 	});
 });

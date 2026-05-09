@@ -230,6 +230,8 @@ const userA = "0x55555555555555555555555555555555555555aa" as const;
 const userB = "0x55555555555555555555555555555555555555bb" as const;
 const v2Pair = "0x6666666666666666666666666666666666666666" as const;
 
+const splitterAddress = "0x7777777777777777777777777777777777777777" as const;
+
 function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 	return {
 		eventName: "LaunchCreated",
@@ -244,6 +246,7 @@ function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 			token: tokenAddress,
 			vault: vaultAddress,
 			router: routerAddress,
+			taxSplitter: splitterAddress,
 			tier: 90,
 			presaleCap: "1000000",
 			v2BuyBnb: "40000",

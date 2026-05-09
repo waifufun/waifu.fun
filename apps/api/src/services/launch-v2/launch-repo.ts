@@ -64,6 +64,7 @@ export interface InsertLaunchInput {
 	tokenAddress: string;
 	vaultAddress: string;
 	routerAddress: string;
+	taxSplitterAddress?: string | null;
 	creator: string;
 	tier: number;
 	presaleCap: string;
@@ -82,6 +83,7 @@ export async function insertLaunch(db: Database, input: InsertLaunchInput): Prom
 			tokenAddress: input.tokenAddress.toLowerCase(),
 			vaultAddress: input.vaultAddress.toLowerCase(),
 			routerAddress: input.routerAddress.toLowerCase(),
+			taxSplitterAddress: input.taxSplitterAddress?.toLowerCase() ?? null,
 			creator: input.creator.toLowerCase(),
 			tier: input.tier,
 			presaleCap: input.presaleCap,

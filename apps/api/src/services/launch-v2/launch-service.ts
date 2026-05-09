@@ -182,12 +182,14 @@ export class LaunchService {
 				token: Address;
 				vault: Address;
 				router: Address;
+				taxSplitter: Address;
 			};
 		};
 
 		const tokenAddress = decoded.args.token as `0x${string}`;
 		const vaultAddress = decoded.args.vault as `0x${string}`;
 		const routerAddress = decoded.args.router as `0x${string}`;
+		const taxSplitterAddress = decoded.args.taxSplitter as `0x${string}`;
 		const presaleUrl = this.buildPresaleUrl(tokenAddress);
 		return {
 			// id is supplied by the DB layer; the route handler stitches them together.
@@ -195,6 +197,7 @@ export class LaunchService {
 			token: tokenAddress,
 			vault: vaultAddress,
 			router: routerAddress,
+			taxSplitter: taxSplitterAddress,
 			presaleUrl,
 			txHash,
 			blockNumber: receipt.blockNumber,

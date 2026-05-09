@@ -411,17 +411,20 @@ async function deployLaunchV3() {
 		throw new Error(`No PancakeSwap address config for network: ${net}`);
 	}
 
-	const taxSplitter = process.env.TAX_SPLITTER;
-	if (!taxSplitter) {
-		throw new Error("Missing TAX_SPLITTER env var. Set to the deployed TaxSplitter address.");
+	// W40c: per-agent TaxSplitter is now deployed by the factory inside
+	// createLaunch(). The factory itself only needs the platform fee wallet,
+	// which becomes the 10% recipient on every per-agent splitter.
+	const platformWallet = process.env.PLATFORM_WALLET;
+	if (!platformWallet) {
+		throw new Error("Missing PLATFORM_WALLET env var. Set to the platform fee recipient address (10% of all tax).");
 	}
 
 	console.log(`Deploying LaunchFactory v3 on ${net}\n`);
-	console.log(`  WBNB:           ${psCfg.WBNB}`);
-	console.log(`  PCS_FACTORY:    ${psCfg.pancakeFactory}`);
-	console.log(`  PCS_ROUTER:     ${psCfg.pancakeRouter}`);
-	console.log(`  INIT_CODE_HASH: ${PCS_INIT_CODE_HASH}`);
-	console.log(`  TAX_SPLITTER:   ${taxSplitter}`);
+	console.log(`  WBNB:            ${psCfg.WBNB}`);
+	console.log(`  PCS_FACTORY:     ${psCfg.pancakeFactory}`);
+	console.log(`  PCS_ROUTER:      ${psCfg.pancakeRouter}`);
+	console.log(`  INIT_CODE_HASH:  ${PCS_INIT_CODE_HASH}`);
+	console.log(`  PLATFORM_WALLET: ${platformWallet}`);
 	console.log();
 
 	const LaunchFactory = await hre.ethers.getContractFactory("LaunchFactory");
@@ -430,7 +433,7 @@ async function deployLaunchV3() {
 		psCfg.pancakeFactory,
 		psCfg.pancakeRouter,
 		PCS_INIT_CODE_HASH,
-		taxSplitter,
+		platformWallet,
 	);
 	await factory.waitForDeployment();
 	const factoryAddr = await factory.getAddress();
@@ -447,7 +450,7 @@ async function deployLaunchV3() {
 		console.log(`    ${psCfg.pancakeFactory} \\`);
 		console.log(`    ${psCfg.pancakeRouter} \\`);
 		console.log(`    ${PCS_INIT_CODE_HASH} \\`);
-		console.log(`    ${taxSplitter}`);
+		console.log(`    ${platformWallet}`);
 	}
 
 	return { network: net, launchFactory: factoryAddr };
