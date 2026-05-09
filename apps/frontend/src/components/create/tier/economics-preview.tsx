@@ -1,7 +1,8 @@
 "use client";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { type TierPreset, totalBnb } from "./tier-data";
+import { type TierPreset, formatUsdMarketCap, totalBnb } from "./tier-data";
 
 type Props = {
 	tier: TierPreset | null;
@@ -11,22 +12,15 @@ function fmtBnb(n: number, digits = 0): string {
 	return `${n.toFixed(digits)} BNB`;
 }
 
-function fmtMcap(n: number): string {
-	if (n >= 1_000) {
-		const m = n / 1_000;
-		return `$${m.toFixed(m >= 10 ? 0 : 2)}M`;
-	}
-	return `$${n}k`;
-}
-
 /**
  * Live preview of the economics implied by the selected tier.
- * Mirrors the math in treasury-lp-viz.shadowverse.workers.dev:
+ * Mirrors the W30v3 burn edition math:
  *   - presale clears at `cap` BNB
  *   - platform contributes `v2Buy` BNB at v2 graduation
- *   - resulting open mc is `openMc` (k notation)
+ *   - resulting open mc headline is post-burn circulating market cap
+ *   - FDV is shown secondarily because it includes burned supply
  *   - a presaler clearing the cap unlocks a `presaler`x at open
- *   - `burn`% of the LP / supply is burned at graduation
+ *   - `burn`% of total supply is burned at graduation
  *   - vesting controls the remaining unlock cadence
  */
 export function EconomicsPreview({ tier }: Props) {
@@ -54,8 +48,13 @@ export function EconomicsPreview({ tier }: Props) {
 			</div>
 
 			{/* big numbers row */}
-			<div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
-				<Metric label="open mc" value={fmtMcap(tier.openMc)} accent />
+			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+				<Metric label="circulating mc" value={formatUsdMarketCap(tier.openCircMcBnb)} accent />
+				<Metric
+					label="fdv"
+					value={formatUsdMarketCap(tier.openFdvBnb)}
+					help="fully diluted valuation includes burned supply. circulating mc is the headline number."
+				/>
 				<Metric label="presaler" value={`${tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x`} />
 				<Metric label="total bnb" value={fmtBnb(totalBnb(tier))} />
 			</div>
@@ -77,6 +76,7 @@ export function EconomicsPreview({ tier }: Props) {
 				<Row label="cap" value={fmtBnb(tier.cap)} />
 				<Row label="v2 buy" value={fmtBnb(tier.v2Buy)} />
 				<Row label="burn" value={`${tier.burn}%`} />
+				<Row label="circulating" value={`${tier.circulatingSupplyM}m`} />
 				<Row label="vesting" value={tier.vesting} />
 			</dl>
 
@@ -84,16 +84,30 @@ export function EconomicsPreview({ tier }: Props) {
 				presalers who clear the cap exit at roughly{" "}
 				<span className="text-accent">{tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x</span> when v2 opens.{" "}
 				{tier.vesting === "none" ? "no vesting, all unlocked at open." : "the rest unlocks 50% at open, 50% over 24h."}{" "}
-				{tier.burn}% of supply burns at graduation.
+				{tier.burn}% of supply burns at graduation, leaving {tier.circulatingSupplyM}m circulating.
 			</p>
 		</div>
 	);
 }
 
-function Metric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Metric({ label, value, accent, help }: { label: string; value: string; accent?: boolean; help?: string }) {
+	const labelNode = <span>{label}</span>;
 	return (
 		<div>
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">{label}</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">
+				{help ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span className="cursor-help underline decoration-dotted underline-offset-4">
+								{labelNode} <span className="normal-case tracking-normal">(includes burned supply)</span>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent>{help}</TooltipContent>
+					</Tooltip>
+				) : (
+					labelNode
+				)}
+			</p>
 			<p className={cn("mt-1 text-xl tracking-tight tabular-nums lowercase", accent ? "text-accent" : "text-white")}>
 				{value}
 			</p>

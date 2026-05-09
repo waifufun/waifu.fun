@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
 
 import { VestingTimeline } from "./vesting-timeline";
@@ -24,7 +25,13 @@ export function TierInfoCard({ tier, vestingEnabled }: Props) {
 					<Stat label="bundle" value={`${tier.bundlePct}%`} />
 					<Stat label="presale cap" value={`${tier.presaleCapBnb} bnb`} />
 					<Stat label="v2 buy at open" value={`${tier.v2BuyBnb} bnb`} />
-					<Stat label="open mc" value={tier.openMcUsdHint} />
+					<Stat label="circulating supply" value={`${tier.circulatingSupplyM}m`} />
+					<Stat label="circulating mc" value={tier.openCircMcUsdHint} />
+					<Stat
+						label="fdv"
+						value={tier.openFdvUsdHint}
+						help="fully diluted valuation includes burned supply. circulating mc removes tokens burned at launch."
+					/>
 					<Stat label="presaler cost basis" value={tier.presaler2xMultiple} fullWidth />
 				</dl>
 				<div>
@@ -36,10 +43,23 @@ export function TierInfoCard({ tier, vestingEnabled }: Props) {
 	);
 }
 
-function Stat({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) {
+function Stat({ label, value, fullWidth, help }: { label: string; value: string; fullWidth?: boolean; help?: string }) {
 	return (
 		<div className={fullWidth ? "col-span-2" : undefined}>
-			<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">{label}</dt>
+			<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+				{help ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span className="cursor-help underline decoration-dotted underline-offset-4">
+								{label} <span className="normal-case tracking-normal">(includes burned supply)</span>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent>{help}</TooltipContent>
+					</Tooltip>
+				) : (
+					label
+				)}
+			</dt>
 			<dd className="mt-1 text-zinc-100">{value}</dd>
 		</div>
 	);

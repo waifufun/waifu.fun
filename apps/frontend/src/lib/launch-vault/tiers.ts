@@ -12,7 +12,9 @@ export type LaunchTierInfo = {
 	bundlePct: number; // headline bundle %
 	presaleCapBnb: number; // total bnb cap on the presale window
 	v2BuyBnb: number; // amount the launch router pushes into pcsv2 at open
-	openMcUsdHint: string; // human estimate, copy only
+	circulatingSupplyM: number; // post-burn circulating supply, in millions
+	openCircMcUsdHint: string; // human estimate, copy only
+	openFdvUsdHint: string; // includes burned supply, copy only
 	presaler2xMultiple: string; // copy
 	vestingEnabled: boolean;
 };
@@ -28,8 +30,10 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 		bundlePct: 80,
 		presaleCapBnb: 16,
 		v2BuyBnb: 0,
-		openMcUsdHint: "~$10k open mc",
-		presaler2xMultiple: "presalers open at 2x cost basis",
+		circulatingSupplyM: 500,
+		openCircMcUsdHint: "~$25k circulating mc",
+		openFdvUsdHint: "~$51k fdv",
+		presaler2xMultiple: "presalers open at cost basis",
 		vestingEnabled: false,
 	},
 	TIER_90: {
@@ -38,7 +42,9 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 		bundlePct: 90,
 		presaleCapBnb: 32,
 		v2BuyBnb: 16,
-		openMcUsdHint: "~$30k open mc",
+		circulatingSupplyM: 400,
+		openCircMcUsdHint: "~$81k circulating mc",
+		openFdvUsdHint: "~$203k fdv",
 		presaler2xMultiple: "presalers open at 2x cost basis",
 		vestingEnabled: true,
 	},
@@ -48,8 +54,10 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 		bundlePct: 95,
 		presaleCapBnb: 64,
 		v2BuyBnb: 48,
-		openMcUsdHint: "~$60k open mc",
-		presaler2xMultiple: "presalers open at 2x cost basis",
+		circulatingSupplyM: 350,
+		openCircMcUsdHint: "~$284k circulating mc",
+		openFdvUsdHint: "~$813k fdv",
+		presaler2xMultiple: "presalers open at 4x cost basis",
 		vestingEnabled: true,
 	},
 	TIER_98: {
@@ -58,8 +66,10 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 		bundlePct: 98,
 		presaleCapBnb: 160,
 		v2BuyBnb: 144,
-		openMcUsdHint: "~$150k open mc",
-		presaler2xMultiple: "presalers open at 2x cost basis",
+		circulatingSupplyM: 320,
+		openCircMcUsdHint: "~$1.6m circulating mc",
+		openFdvUsdHint: "~$5.1m fdv",
+		presaler2xMultiple: "presalers open at 10x cost basis",
 		vestingEnabled: true,
 	},
 };

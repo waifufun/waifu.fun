@@ -26,8 +26,8 @@ export default function StepTier() {
 					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">tier_90 recommended</p>
 				</div>
 				<p className="text-[12px] text-neutral-400 mb-4 leading-relaxed max-w-2xl">
-					tiers price your launch. higher tier means more aggressive economics: smaller presale cap, larger platform v2
-					buy, higher projected open mc. start with tier_90 if you're not sure.
+					tiers price your launch. higher tier means more aggressive economics: larger platform v2 buy, larger burn, and
+					higher projected circulating mc. start with tier_90 if you're not sure.
 				</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
 					{TIERS.map((t) => (

@@ -6,7 +6,7 @@ import { computePlatformCutVolumeBps } from "@/lib/launchpad/validators";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect } from "react";
-import { getTier, totalBnb } from "./tier/tier-data";
+import { formatUsdMarketCap, getTier, totalBnb } from "./tier/tier-data";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
@@ -145,7 +145,8 @@ export default function StepReview() {
 										</span>
 									</p>
 									<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-										total {totalBnb(t)} BNB • open mc projection {t.openMc}k • presaler{" "}
+										total {totalBnb(t)} BNB • circulating mc {formatUsdMarketCap(t.openCircMcBnb)} • fdv{" "}
+										{formatUsdMarketCap(t.openFdvBnb)} includes burned supply • presaler{" "}
 										{t.presaler.toFixed(t.presaler % 1 === 0 ? 0 : 1)}x • burn {t.burn}% • vesting {t.vesting}
 									</p>
 								</>

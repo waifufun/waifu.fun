@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TIERS, getTier, tierLabel, totalBnb } from "./tier-data";
+import { TIERS, formatUsdMarketCap, getTier, tierLabel, totalBnb } from "./tier-data";
 
 describe("tier-data", () => {
 	it("exposes the four spec'd tiers in ascending order", () => {
@@ -21,7 +21,9 @@ describe("tier-data", () => {
 	it("getTier resolves a known tier", () => {
 		const t = getTier(90);
 		expect(t).not.toBeNull();
-		expect(t?.openMc).toBe(320);
+		expect(t?.openCircMcBnb).toBe(128);
+		expect(t?.openFdvBnb).toBe(320);
+		expect(t?.circulatingSupplyM).toBe(400);
 		expect(t?.presaler).toBe(2.0);
 		expect(t?.burn).toBe(60);
 		expect(t?.vesting).toBe("50/50/24h");
@@ -29,6 +31,12 @@ describe("tier-data", () => {
 
 	it("tier 80 has no vesting (legacy preset)", () => {
 		expect(getTier(80)?.vesting).toBe("none");
+	});
+
+	it("formats market caps from bnb using the fallback bnb price", () => {
+		expect(formatUsdMarketCap(40)).toBe("$25k");
+		expect(formatUsdMarketCap(128)).toBe("$81k");
+		expect(formatUsdMarketCap(2560)).toBe("$1.6m");
 	});
 
 	it("tierLabel is `tier_<id>`", () => {

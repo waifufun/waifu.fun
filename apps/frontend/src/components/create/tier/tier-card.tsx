@@ -1,10 +1,11 @@
 "use client";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useId } from "react";
 import { CheckIcon } from "../wizard-icons";
-import { type TierPreset, totalBnb } from "./tier-data";
+import { type TierPreset, formatUsdMarketCap, totalBnb } from "./tier-data";
 
 type Props = {
 	tier: TierPreset;
@@ -14,11 +15,6 @@ type Props = {
 
 function fmtBnb(n: number): string {
 	return `${n} BNB`;
-}
-
-function fmtMcap(n: number): string {
-	if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 2)}m`;
-	return `${n}k`;
 }
 
 export function TierCard({ tier, selected, onSelect }: Props) {
@@ -62,14 +58,25 @@ export function TierCard({ tier, selected, onSelect }: Props) {
 				</div>
 			</div>
 
-			{/* title: open mc projection (the number people care about) */}
+			{/* title: circulating open mc projection */}
 			<div className="flex-1 min-w-0">
 				<h3 id={headingId} className="text-2xl text-white tracking-tight lowercase font-medium">
-					{fmtMcap(tier.openMc)} open mc
+					{formatUsdMarketCap(tier.openCircMcBnb)} circulating mc
 				</h3>
-				<p className="mt-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">
-					{tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x presaler at open
-				</p>
+				<div className="mt-1 flex flex-col gap-1 text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<span className="cursor-help underline decoration-dotted underline-offset-4">
+								fdv {formatUsdMarketCap(tier.openFdvBnb)}{" "}
+								<span className="normal-case tracking-normal">(includes burned supply)</span>
+							</span>
+						</TooltipTrigger>
+						<TooltipContent>
+							fully diluted valuation uses 1b tokens. circulating mc removes the {tier.burn}% burned at launch.
+						</TooltipContent>
+					</Tooltip>
+					<span>{tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x presaler at open</span>
+				</div>
 			</div>
 
 			{/* stats grid */}
@@ -89,6 +96,10 @@ export function TierCard({ tier, selected, onSelect }: Props) {
 				<div>
 					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">burn</dt>
 					<dd className="mt-0.5 text-neutral-200">{tier.burn}%</dd>
+				</div>
+				<div>
+					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">circulating</dt>
+					<dd className="mt-0.5 text-neutral-200">{tier.circulatingSupplyM}m</dd>
 				</div>
 				<div className="col-span-2">
 					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">vesting</dt>

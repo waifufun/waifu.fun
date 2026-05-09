@@ -7,8 +7,9 @@
  */
 import { useState } from "react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { TIERS, type TierId, type TierPreset, totalBnb } from "./tier-data";
+import { TIERS, type TierId, type TierPreset, formatUsdMarketCap, totalBnb } from "./tier-data";
 
 type Props = {
 	selectedId: TierId | null | undefined;
@@ -47,7 +48,17 @@ export function TierComparison({ selectedId }: Props) {
 									presaler
 								</th>
 								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">
-									open mc
+									circ mc
+								</th>
+								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<span className="cursor-help underline decoration-dotted underline-offset-4">
+												fdv <span className="normal-case tracking-normal">(includes burned supply)</span>
+											</span>
+										</TooltipTrigger>
+										<TooltipContent>fully diluted valuation uses 1b tokens, including burned supply.</TooltipContent>
+									</Tooltip>
 								</th>
 								<th className="pb-2 pr-3 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">burn</th>
 								<th className="pb-2 font-mono uppercase tracking-[0.18em] text-neutral-500 font-normal">vesting</th>
@@ -77,19 +88,12 @@ function Row({ tier, active }: { tier: TierPreset; active: boolean }) {
 			<td className="py-2 pr-3">{tier.v2Buy} BNB</td>
 			<td className="py-2 pr-3">{totalBnb(tier)} BNB</td>
 			<td className="py-2 pr-3">{tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x</td>
-			<td className="py-2 pr-3">{formatMc(tier.openMc)}</td>
+			<td className="py-2 pr-3">{formatUsdMarketCap(tier.openCircMcBnb)}</td>
+			<td className="py-2 pr-3 text-neutral-400">{formatUsdMarketCap(tier.openFdvBnb)}</td>
 			<td className="py-2 pr-3">{tier.burn}%</td>
 			<td className="py-2 text-neutral-300">{tier.vesting}</td>
 		</tr>
 	);
-}
-
-function formatMc(n: number): string {
-	if (n >= 1_000) {
-		const m = n / 1_000;
-		return `$${m.toFixed(m >= 10 ? 0 : 2)}m`;
-	}
-	return `$${n}k`;
 }
 
 export default TierComparison;
