@@ -75,6 +75,7 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 					token: args.token as `0x${string}`,
 					vault: args.vault as `0x${string}`,
 					router: args.router as `0x${string}`,
+					taxSplitter: args.taxSplitter as `0x${string}`,
 					tier: Number(args.tier as bigint | number),
 					presaleCap: bn(args.presaleCap),
 					v2BuyBnb: bn(args.v2BuyBnb),

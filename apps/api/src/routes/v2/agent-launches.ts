@@ -126,6 +126,7 @@ export function serializeAgentLaunch(
 		token: row.tokenAddress,
 		vault: row.vaultAddress,
 		router: row.routerAddress,
+		taxSplitter: row.taxSplitterAddress,
 		treasuryLp: row.treasuryLpAddress,
 		creator: row.creator,
 		tier: row.tier,
@@ -209,6 +210,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			tokenAddress: onchain.token,
 			vaultAddress: onchain.vault,
 			routerAddress: onchain.router,
+			taxSplitterAddress: onchain.taxSplitter,
 			creator: input.creator,
 			tier: Number(tier),
 			presaleCap: presaleCapByTier[tier],
@@ -225,6 +227,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			token: row.tokenAddress,
 			vault: row.vaultAddress,
 			router: row.routerAddress,
+			taxSplitter: row.taxSplitterAddress,
 			presaleUrl: onchain.presaleUrl,
 			txHash: onchain.txHash,
 		});

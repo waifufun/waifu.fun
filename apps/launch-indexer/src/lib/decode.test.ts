@@ -48,16 +48,18 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 		args: { creator: userAddress, token: tokenAddress },
 	}) as [Hex, ...Hex[]];
 
+	const splitterAddress = "0x7777777777777777777777777777777777777777" as const;
 	const data = encodeAbiParameters(
 		[
 			{ name: "vault", type: "address" },
 			{ name: "router", type: "address" },
+			{ name: "taxSplitter", type: "address" },
 			{ name: "tier", type: "uint8" },
 			{ name: "presaleCap", type: "uint256" },
 			{ name: "v2BuyBnb", type: "uint256" },
 			{ name: "vestingEnabled", type: "bool" },
 		],
-		[vaultAddress, routerAddress, 90, 50_000n, 4_000n, true],
+		[vaultAddress, routerAddress, splitterAddress, 90, 50_000n, 4_000n, true],
 	);
 
 	const decoded = decodeLaunchLog({
@@ -74,6 +76,7 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 	assert.equal(decoded.data.token.toLowerCase(), tokenAddress);
 	assert.equal(decoded.data.vault.toLowerCase(), vaultAddress);
 	assert.equal(decoded.data.router.toLowerCase(), routerAddress);
+	assert.equal(decoded.data.taxSplitter.toLowerCase(), splitterAddress);
 	assert.equal(decoded.data.tier, 90);
 	assert.equal(decoded.data.presaleCap, "50000");
 	assert.equal(decoded.data.v2BuyBnb, "4000");

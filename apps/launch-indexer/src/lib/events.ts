@@ -35,6 +35,7 @@ export type LaunchCreatedEvent = LaunchEventEnvelope<
 		token: Address;
 		vault: Address;
 		router: Address;
+		taxSplitter: Address;
 		tier: number;
 		presaleCap: string;
 		v2BuyBnb: string;

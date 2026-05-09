@@ -17,7 +17,7 @@ export async function handleLaunchCreated(
 	runtime: LaunchIndexerRuntime,
 	event: LaunchCreatedEvent,
 ): Promise<{ launchId: string }> {
-	const { token, vault, router, creator, tier, presaleCap, v2BuyBnb, vestingEnabled } = event.data;
+	const { token, vault, router, taxSplitter, creator, tier, presaleCap, v2BuyBnb, vestingEnabled } = event.data;
 
 	// Try insert; on conflict update the on-chain immutables.
 	const inserted = await runtime.db
@@ -26,6 +26,7 @@ export async function handleLaunchCreated(
 			tokenAddress: token.toLowerCase(),
 			vaultAddress: vault.toLowerCase(),
 			routerAddress: router.toLowerCase(),
+			taxSplitterAddress: taxSplitter.toLowerCase(),
 			creator: creator.toLowerCase(),
 			tier,
 			presaleCap,
@@ -41,6 +42,7 @@ export async function handleLaunchCreated(
 			set: {
 				vaultAddress: vault.toLowerCase(),
 				routerAddress: router.toLowerCase(),
+				taxSplitterAddress: taxSplitter.toLowerCase(),
 				creator: creator.toLowerCase(),
 				tier,
 				presaleCap,
@@ -73,6 +75,7 @@ export async function handleLaunchCreated(
 			token: token.toLowerCase(),
 			vault: vault.toLowerCase(),
 			router: router.toLowerCase(),
+			taxSplitter: taxSplitter.toLowerCase(),
 			tier,
 			block: event.blockNumber.toString(),
 			tx: event.txHash,
