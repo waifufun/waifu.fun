@@ -72,7 +72,9 @@ export async function fetchLaunches(
 	try {
 		const init: RequestInit = {};
 		if (signal) init.signal = signal;
-		const data = await apiFetch<LaunchListResponse>(`/v2/launches?${qs.toString()}`, init);
+		// API wraps responses as { ok: true, data: T, requestId }, so unwrap here.
+		const envelope = await apiFetch<{ ok: true; data: LaunchListResponse }>(`/v2/launches?${qs.toString()}`, init);
+		const data = envelope?.data;
 		if (Array.isArray(data?.launches)) {
 			return {
 				launches: data.launches,
