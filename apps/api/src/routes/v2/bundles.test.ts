@@ -1,10 +1,70 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { afterEach } from "node:test";
 
+import { clearRequestSiweNoncesForTest, issueRequestSiweNonce } from "../../lib/request-siwe.js";
+import {
+	type StewardParser,
+	__setRequirePatronDbForTest,
+	__setRequirePatronStewardParserForTest,
+} from "../../middleware/patron-auth.js";
 import type { BundleSubmitterDeps } from "../../services/bundle-submitter/index.js";
 import { createBundleRoutes } from "./bundles.js";
 
 const FUTURE_DEADLINE = Math.floor(new Date("2030-01-01").getTime() / 1000);
+const CREATOR = "0x000000000000000000000000000000000000dddd";
+const CREATOR_CHECKSUM = "0x000000000000000000000000000000000000DdDD";
+
+function patronDb() {
+	return {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								limit() {
+									return Promise.resolve([{ id: "patron-1", stewardUserId: "steward-1", primaryEmail: null }]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+	} as never;
+}
+
+function authHeaders() {
+	return { authorization: "Bearer steward-token", "content-type": "application/json" };
+}
+
+function authedRoute() {
+	__setRequirePatronStewardParserForTest((async () => ({ userId: "steward-1", tenantId: "waifu" })) as StewardParser);
+	__setRequirePatronDbForTest(patronDb());
+}
+
+function siweMessage(address: string, nonce: string): string {
+	const siweAddress = address.toLowerCase() === CREATOR ? CREATOR_CHECKSUM : address;
+	return `waifu.fun wants you to sign in with your Ethereum account:\n${siweAddress}\n\nsign to confirm bundle submission.\n\nURI: https://waifu.fun/bundles/submit\nVersion: 1\nChain ID: 56\nNonce: ${nonce}\nIssued At: 2026-05-09T00:00:00.000Z\nExpiration Time: 2030-01-01T00:00:00.000Z`;
+}
+
+function validSubmitBody(overrides: Record<string, unknown> = {}) {
+	const nonce = issueRequestSiweNonce("patron-1", "bundle:submit", CREATOR);
+	return {
+		rawTx: "0xdeadbeef",
+		deadline: FUTURE_DEADLINE,
+		fallbackPublic: false,
+		creator: CREATOR,
+		siwe: { message: siweMessage(CREATOR, nonce), signature: "0xsig" },
+		...overrides,
+	};
+}
+
+afterEach(() => {
+	__setRequirePatronDbForTest(undefined);
+	__setRequirePatronStewardParserForTest(undefined);
+	clearRequestSiweNoncesForTest();
+});
 
 function makeFakeDeps(): BundleSubmitterDeps {
 	const rows = new Map<string, Record<string, unknown>>();
@@ -95,36 +155,70 @@ function makeFakeDeps(): BundleSubmitterDeps {
 	};
 }
 
-test("POST /submit returns 400 on invalid JSON", async () => {
+test("POST /submit requires patron auth", async () => {
 	const app = createBundleRoutes({ deps: makeFakeDeps() });
 	const res = await app.request("/submit", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
+		body: JSON.stringify(validSubmitBody()),
+	});
+	assert.equal(res.status, 401);
+});
+
+test("POST /submit returns 400 on invalid JSON", async () => {
+	authedRoute();
+	const app = createBundleRoutes({ deps: makeFakeDeps() });
+	const res = await app.request("/submit", {
+		method: "POST",
+		headers: authHeaders(),
 		body: "not-json",
 	});
 	assert.equal(res.status, 400);
 });
 
 test("POST /submit returns 400 on schema violation", async () => {
+	authedRoute();
 	const app = createBundleRoutes({ deps: makeFakeDeps() });
 	const res = await app.request("/submit", {
 		method: "POST",
-		headers: { "content-type": "application/json" },
-		body: JSON.stringify({ rawTx: "nope", deadline: FUTURE_DEADLINE }),
+		headers: authHeaders(),
+		body: JSON.stringify(validSubmitBody({ rawTx: "nope" })),
+	});
+	assert.equal(res.status, 400);
+});
+
+test("POST /submit rejects a creator SIWE signature for another wallet", async () => {
+	authedRoute();
+	const app = createBundleRoutes({
+		deps: makeFakeDeps(),
+		siweVerifier: async (message) => ({
+			address: "0x000000000000000000000000000000000000eeee",
+			chainId: 56,
+			nonce: message.match(/Nonce: ([^\n]+)/)?.[1] ?? "nonce",
+		}),
+	});
+	const res = await app.request("/submit", {
+		method: "POST",
+		headers: authHeaders(),
+		body: JSON.stringify(validSubmitBody()),
 	});
 	assert.equal(res.status, 400);
 });
 
 test("POST /submit submits and returns included bundle", async () => {
-	const app = createBundleRoutes({ deps: makeFakeDeps() });
+	authedRoute();
+	const app = createBundleRoutes({
+		deps: makeFakeDeps(),
+		siweVerifier: async (message) => ({
+			address: CREATOR,
+			chainId: 56,
+			nonce: message.match(/Nonce: ([^\n]+)/)?.[1] ?? "nonce",
+		}),
+	});
 	const res = await app.request("/submit", {
 		method: "POST",
-		headers: { "content-type": "application/json" },
-		body: JSON.stringify({
-			rawTx: "0xdeadbeef",
-			deadline: FUTURE_DEADLINE,
-			fallbackPublic: false,
-		}),
+		headers: authHeaders(),
+		body: JSON.stringify(validSubmitBody()),
 	});
 
 	assert.equal(res.status, 200);

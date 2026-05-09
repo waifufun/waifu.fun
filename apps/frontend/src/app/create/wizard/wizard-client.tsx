@@ -17,19 +17,56 @@ import {
 } from "@/components/create/wizard-state";
 import { useAuthRequired } from "@/hooks/use-auth-required";
 import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
-import { type CreateLaunchResult, createLaunch } from "@/lib/api/launches";
+import { type CreateLaunchResult, createLaunch, requestLaunchNonce } from "@/lib/api/launches";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useAccount, useSignMessage } from "wagmi";
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
 import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 
 export { PROVISION_RESPONSE_TIMEOUT_MS };
 
+function randomSiweNonce(): string {
+	const bytes = new Uint8Array(12);
+	crypto.getRandomValues(bytes);
+	return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
+}
+
+async function launchNonceOrFallback(address: string): Promise<string> {
+	try {
+		return await requestLaunchNonce(address);
+	} catch (err) {
+		if (isEndpointUnavailable(err)) return randomSiweNonce();
+		throw err;
+	}
+}
+
+function isEndpointUnavailable(err: unknown): boolean {
+	return Boolean(
+		err &&
+			typeof err === "object" &&
+			"status" in err &&
+			typeof (err as { status?: unknown }).status === "number" &&
+			(err as { status: number }).status === 404,
+	);
+}
+
+function buildLaunchSiweMessage(address: string, nonce: string): string {
+	const origin = window.location.origin;
+	const domain = window.location.host;
+	const issuedAt = new Date().toISOString();
+	const expirationTime = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+	return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nsign to confirm launch. waifu.fun will use this wallet as creator for the launch transaction.\n\nURI: ${origin}/create/wizard\nVersion: 1\nChain ID: 56\nNonce: ${nonce}\nIssued At: ${issuedAt}\nExpiration Time: ${expirationTime}`;
+}
+
 function WizardInner() {
 	const router = useRouter();
 	const { state } = useWizard();
+	const { address: connectedAddress } = useAccount();
+	const { signMessageAsync } = useSignMessage();
 	const [provisioning, setProvisioning] = useState(false);
+	const [signingLaunch, setSigningLaunch] = useState(false);
 	const [awaitingProvisionResponse, setAwaitingProvisionResponse] = useState(false);
 	const provisionPromise = useRef<Promise<ProvisionResult> | null>(null);
 	const launchPromise = useRef<Promise<CreateLaunchResult> | null>(null);
@@ -45,51 +82,69 @@ function WizardInner() {
 		);
 	}, [state]);
 
-	const startLaunchCreate = useCallback(() => {
-		if (launchPromise.current) return;
-		if (!state.launch.tierId) return;
-		const promise = createLaunch({
-			inviteCode: state.inviteCode.trim(),
-			persona: {
-				name: state.persona.name.trim(),
-				ticker: state.persona.ticker.trim(),
-				bio: state.persona.bio.trim(),
-				personaPrompt: state.persona.personaPrompt.trim() || null,
-				avatarTemplateId: state.persona.avatarTemplateId,
-				hasAvatarUpload: Boolean(state.persona.avatarDataUrl),
-			},
-			tier: state.launch.tierId,
-			runtime:
-				state.runtime.kind === "webhook"
-					? {
-							kind: "webhook",
-							webhookUrl: state.runtime.webhookUrl.trim(),
-							webhookSecret: state.runtime.webhookSecret,
-						}
-					: { kind: state.runtime.kind },
-			safe: {
-				taxAgentBps: state.safe.taxAgentBps,
-				taxPatronBps: state.safe.taxPatronBps,
-				owners: state.safe.owners ?? [],
-				threshold: state.safe.threshold ?? 1,
-				firstBuyFundingSource: state.safe.firstBuyFundingSource ?? null,
-				adapters: [
-					{ slug: "pancake", enabled: state.safe.adapters.pancake },
-					{ slug: "venus", enabled: state.safe.adapters.venus },
-				],
-			},
-		});
-		launchPromise.current = promise;
-	}, [state]);
+	const startLaunchCreate = useCallback(
+		async (launchAuthorization: { creator: string; siwe: { message: string; signature: string } }) => {
+			if (launchPromise.current) return;
+			if (!state.launch.tierId) return;
+			const promise = createLaunch({
+				inviteCode: state.inviteCode.trim(),
+				persona: {
+					name: state.persona.name.trim(),
+					ticker: state.persona.ticker.trim(),
+					bio: state.persona.bio.trim(),
+					personaPrompt: state.persona.personaPrompt.trim() || null,
+					avatarTemplateId: state.persona.avatarTemplateId,
+					hasAvatarUpload: Boolean(state.persona.avatarDataUrl),
+				},
+				tier: state.launch.tierId,
+				runtime:
+					state.runtime.kind === "webhook"
+						? {
+								kind: "webhook",
+								webhookUrl: state.runtime.webhookUrl.trim(),
+								webhookSecret: state.runtime.webhookSecret,
+							}
+						: { kind: state.runtime.kind },
+				safe: {
+					taxAgentBps: state.safe.taxAgentBps,
+					taxPatronBps: state.safe.taxPatronBps,
+					owners: state.safe.owners ?? [],
+					threshold: state.safe.threshold ?? 1,
+					firstBuyFundingSource: state.safe.firstBuyFundingSource ?? null,
+					adapters: [
+						{ slug: "pancake", enabled: state.safe.adapters.pancake },
+						{ slug: "venus", enabled: state.safe.adapters.venus },
+					],
+				},
+				launchAuthorization,
+			});
+			launchPromise.current = promise;
+		},
+		[state],
+	);
 
-	const handleComplete = useCallback(() => {
-		setProvisioning(true);
-		// kick off the real network call in parallel with the loader animation.
-		startProvisioning();
-		// W48: also fire the launch create. Backend may not be deployed yet;
-		// `createLaunch` returns `not_wired` and we fall back to provision routing.
-		startLaunchCreate();
-	}, [startProvisioning, startLaunchCreate]);
+	const handleComplete = useCallback(async () => {
+		if (!connectedAddress) {
+			toast.error("connect an evm wallet to confirm launch on-chain");
+			return;
+		}
+
+		setSigningLaunch(true);
+		try {
+			toast.info("sign to confirm launch");
+			const nonce = await launchNonceOrFallback(connectedAddress);
+			const message = buildLaunchSiweMessage(connectedAddress, nonce);
+			const signature = await signMessageAsync({ message });
+			void startLaunchCreate({ creator: connectedAddress, siwe: { message, signature } });
+			setProvisioning(true);
+			startProvisioning();
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "signature cancelled";
+			toast.error(message || "signature cancelled");
+		} finally {
+			setSigningLaunch(false);
+		}
+	}, [connectedAddress, signMessageAsync, startProvisioning, startLaunchCreate]);
 
 	const handleProvisioningDone = useCallback(async () => {
 		let result: ProvisionResult | null = null;
@@ -186,7 +241,8 @@ function WizardInner() {
 					review: <StepReview />,
 				}}
 				onComplete={handleComplete}
-				provisioning={provisioning}
+				provisioning={provisioning || signingLaunch}
+				completeLabel={signingLaunch ? "signing..." : "sign to confirm launch"}
 			/>
 			{provisioning ? (
 				<ProvisioningLoader onDone={handleProvisioningDone} awaitingResponse={awaitingProvisionResponse} />

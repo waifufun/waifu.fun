@@ -59,9 +59,10 @@ type Props = {
 	stepContent: Record<WizardStep, ReactNode>;
 	onComplete: () => void;
 	provisioning?: boolean;
+	completeLabel?: string;
 };
 
-export default function WizardShell({ stepContent, onComplete, provisioning }: Props) {
+export default function WizardShell({ stepContent, onComplete, provisioning, completeLabel = "provision." }: Props) {
 	const { step, stepIndex, goTo, next, prev, isFirst, isLast } = useWizardStep();
 	const { valid, reason } = useStepValid(step);
 	const { state } = useWizard();
@@ -260,7 +261,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 								"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 							)}
 						>
-							<span>{isLast ? "provision." : "next"}</span>
+							<span>{isLast ? completeLabel : "next"}</span>
 							<span
 								className={cn(
 									"inline-flex items-center justify-center h-7 w-7 bg-black/15",

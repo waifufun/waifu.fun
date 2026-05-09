@@ -27,7 +27,30 @@ export type CreateLaunchRequest = {
 		firstBuyFundingSource: string | null;
 		adapters: Array<{ slug: "pancake" | "venus"; enabled: boolean }>;
 	};
+	launchAuthorization: {
+		creator: string;
+		siwe: { message: string; signature: string };
+	};
 };
+
+type ApiEnvelope<T> = { ok?: boolean; data?: T } & T;
+
+function unwrapApiData<T extends Record<string, unknown>>(value: unknown): T | null {
+	if (typeof value !== "object" || value === null) return null;
+	const maybeEnvelope = value as ApiEnvelope<T>;
+	if (typeof maybeEnvelope.data === "object" && maybeEnvelope.data !== null) return maybeEnvelope.data;
+	return maybeEnvelope as T;
+}
+
+export async function requestLaunchNonce(address: string): Promise<string> {
+	const raw = await apiFetch<unknown>("/v2/launches/nonce", {
+		method: "POST",
+		body: JSON.stringify({ address }),
+	});
+	const data = unwrapApiData<{ nonce?: string }>(raw);
+	if (!data?.nonce) throw new Error("could not create launch nonce");
+	return data.nonce;
+}
 
 export type CreateLaunchResult =
 	| {
@@ -55,14 +78,22 @@ export async function createLaunch(payload: CreateLaunchRequest, signal?: AbortS
 	try {
 		const init: RequestInit = {
 			method: "POST",
-			body: JSON.stringify(payload),
+			body: JSON.stringify({
+				name: payload.persona.name,
+				symbol: payload.persona.ticker,
+				metadataURI: `waifu://create/${encodeURIComponent(payload.inviteCode || payload.persona.ticker || payload.persona.name)}`,
+				creator: payload.launchAuthorization.creator,
+				tier: String(payload.tier),
+				siwe: payload.launchAuthorization.siwe,
+			}),
 		};
 		if (signal) init.signal = signal;
-		const data = await apiFetch<unknown>("/v2/launches", init);
+		const raw = await apiFetch<unknown>("/v2/launches", init);
+		const data = unwrapApiData<Record<string, unknown>>(raw);
 		if (typeof data !== "object" || data === null) {
 			return { ok: false, reason: "server", message: "unexpected payload" };
 		}
-		const obj = data as Record<string, unknown>;
+		const obj = data;
 		const id = typeof obj.id === "string" ? obj.id : typeof obj.launchId === "string" ? obj.launchId : null;
 		if (!id) return { ok: false, reason: "server", message: "no launch id in response" };
 		const base = {
