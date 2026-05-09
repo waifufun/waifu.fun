@@ -46,7 +46,7 @@ describe("BundleRouter (LaunchRouter)", () => {
 
 	describe("execute — full flow", () => {
 		it("fills curve, buys from V2, burns tokens", async () => {
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+			const deadline = 9_999_999_999;
 
 			const tx = await router.execute(
 				{
@@ -72,11 +72,10 @@ describe("BundleRouter (LaunchRouter)", () => {
 			const deadBalance = await flapToken.balanceOf(DEAD);
 			expect(deadBalance).to.be.gt(0);
 
-			// Router keeps curve tokens (these get allocated to presale/treasury later)
-			// Only V2-bought tokens are burned in the same tx
+			// Router forwards curve tokens to its vault/owner and does not retain token custody.
 			const routerBalance = await flapToken.balanceOf(await router.getAddress());
-			// routerBalance should have curve tokens but no V2-buy tokens
-			expect(routerBalance).to.be.gt(0); // curve tokens are here
+			expect(routerBalance).to.equal(0);
+			expect(await flapToken.balanceOf(owner.address)).to.be.gt(0);
 
 			// Verify event emitted
 			const routerAddr = await router.getAddress();
@@ -87,7 +86,7 @@ describe("BundleRouter (LaunchRouter)", () => {
 
 	describe("execute — curve only (0 V2 buy)", () => {
 		it("fills curve without V2 buy", async () => {
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+			const deadline = 9_999_999_999;
 
 			await router.execute(
 				{
@@ -109,8 +108,8 @@ describe("BundleRouter (LaunchRouter)", () => {
 	});
 
 	describe("reverts", () => {
-		it("reverts on non-owner call", async () => {
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+		it("reverts on non-vault call", async () => {
+			const deadline = 9_999_999_999;
 			await expect(
 				router.connect(attacker).execute(
 					{
@@ -142,7 +141,7 @@ describe("BundleRouter (LaunchRouter)", () => {
 		});
 
 		it("reverts on BNB mismatch", async () => {
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+			const deadline = 9_999_999_999;
 			await expect(
 				router.execute(
 					{
@@ -158,7 +157,7 @@ describe("BundleRouter (LaunchRouter)", () => {
 		});
 
 		it("reverts on slippage (minTokensFromV2 too high)", async () => {
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+			const deadline = 9_999_999_999;
 			await expect(
 				router.execute(
 					{
@@ -176,7 +175,7 @@ describe("BundleRouter (LaunchRouter)", () => {
 
 	describe("dust sweep", () => {
 		it("sweeps remaining BNB back to owner", async () => {
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+			const deadline = 9_999_999_999;
 			const balBefore = await ethers.provider.getBalance(owner.address);
 
 			await router.execute(
@@ -201,7 +200,7 @@ describe("BundleRouter (LaunchRouter)", () => {
 			const predicted = await router.previewPairAddress(await flapToken.getAddress());
 
 			// Graduate
-			const deadline = Math.floor(Date.now() / 1000) + 3600;
+			const deadline = 9_999_999_999;
 			await router.execute(
 				{
 					flapToken: await flapToken.getAddress(),

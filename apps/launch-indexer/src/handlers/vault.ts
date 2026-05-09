@@ -10,7 +10,15 @@
 import { schema } from "@waifufun/db";
 import { eq, sql } from "drizzle-orm";
 
-import type { ClaimedEvent, ClosedEvent, DepositedEvent, LaunchedEvent, WithdrawnEvent } from "../lib/events.js";
+import type {
+	ClaimedEvent,
+	ClosedEvent,
+	DepositedEvent,
+	LaunchedEvent,
+	RefundedEvent,
+	RefundsEnabledEvent,
+	WithdrawnEvent,
+} from "../lib/events.js";
 import type { LaunchIndexerRuntime } from "../lib/runtime.js";
 
 export interface VaultHandlerContext {
@@ -163,6 +171,72 @@ export async function handleLaunched(
 			tx: event.txHash,
 		},
 		"vault Launched indexed",
+	);
+}
+
+export async function handleRefundsEnabled(
+	runtime: LaunchIndexerRuntime,
+	event: RefundsEnabledEvent,
+	ctx: VaultHandlerContext,
+): Promise<void> {
+	await runtime.db
+		.update(schema.agentLaunches)
+		.set({
+			state: "failed",
+			updatedAt: sql`now()`,
+		})
+		.where(eq(schema.agentLaunches.id, ctx.launchId));
+
+	runtime.logger.info(
+		{
+			launchId: ctx.launchId,
+			tx: event.txHash,
+		},
+		"RefundsEnabled indexed",
+	);
+}
+
+export async function handleRefunded(
+	runtime: LaunchIndexerRuntime,
+	event: RefundedEvent,
+	ctx: VaultHandlerContext,
+): Promise<void> {
+	const inserted = await runtime.db
+		.insert(schema.launchWithdrawals)
+		.values({
+			launchId: ctx.launchId,
+			userAddress: event.data.user.toLowerCase(),
+			amount: event.data.principal,
+			penalty: "0",
+			txHash: event.txHash,
+			blockNumber: event.blockNumber,
+			logIndex: event.logIndex,
+		})
+		.onConflictDoNothing()
+		.returning({ id: schema.launchWithdrawals.id });
+
+	await runtime.db
+		.update(schema.agentLaunches)
+		.set({
+			totalDeposited: event.data.newTotal,
+			bonusPool:
+				inserted.length > 0
+					? sql`GREATEST((${schema.agentLaunches.bonusPool})::numeric - ${event.data.bonus}::numeric, 0)::text`
+					: schema.agentLaunches.bonusPool,
+			updatedAt: sql`now()`,
+		})
+		.where(eq(schema.agentLaunches.id, ctx.launchId));
+
+	runtime.logger.debug(
+		{
+			launchId: ctx.launchId,
+			user: event.data.user,
+			principal: event.data.principal,
+			bonus: event.data.bonus,
+			refundAmount: event.data.refundAmount,
+			tx: event.txHash,
+		},
+		"Refunded indexed",
 	);
 }
 

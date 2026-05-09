@@ -96,6 +96,13 @@ async function processCandidate(runtime: TierCronRuntime, candidate: LaunchCandi
 
 	let nextTier: number;
 	try {
+		const code = await runtime.publicClient.getBytecode({ address: candidate.treasuryLpAddress });
+		if (code == null || code === "0x") {
+			out.skipped = true;
+			log.debug("treasury address has no contract code; skipping");
+			return out;
+		}
+
 		nextTier = await runtime.publicClient.readContract({
 			address: candidate.treasuryLpAddress,
 			abi: treasuryLp4Abi,

@@ -294,6 +294,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				vault: row.vaultAddress,
 				router: row.routerAddress,
 				taxSplitter: row.taxSplitterAddress,
+				treasuryReserve: onchain.treasuryReserve,
 				presaleUrl: onchain.presaleUrl,
 				txHash: onchain.txHash,
 			});

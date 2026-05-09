@@ -67,6 +67,16 @@ export async function processLaunch(deps: ProcessLaunchDeps, candidate: LaunchCa
 
 	let state: ContractState;
 	try {
+		if (deps.onchain.hasCode != null && !(await deps.onchain.hasCode(candidate.treasuryLpAddress))) {
+			outcome.pokeStatus = "skipped";
+			outcome.advanceStatus = "skipped";
+			deps.logger.debug(
+				{ launchId: candidate.id, treasury: candidate.treasuryLpAddress },
+				"treasury address has no contract code, skipping",
+			);
+			return outcome;
+		}
+
 		state = await deps.onchain.readState(candidate.treasuryLpAddress);
 	} catch (error) {
 		outcome.error = errorMessage(error);

@@ -5,7 +5,7 @@ import {AgentTokenV3} from "./AgentTokenV3.sol";
 import {LaunchVault} from "./LaunchVault.sol";
 import {BundleRouter} from "./BundleRouter.sol";
 import {TaxSplitter} from "./TaxSplitter.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {TreasuryReserve} from "./TreasuryReserve.sol";
 
 /// @title LaunchFactory
 /// @notice Atomic deployment of agent launch primitives.
@@ -16,7 +16,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 ///      `[creator, platformWallet]` recipients and `[9000, 1000]` bps so the
 ///      3% transfer tax actually splits 90% to the agent treasury and 10% to
 ///      the platform fee wallet on a per-agent basis (V3 audit C-5).
-contract LaunchFactory is ReentrancyGuard {
+contract LaunchFactory {
 	enum LaunchTier { TIER_80, TIER_90, TIER_95, TIER_98 }
 
 	struct LaunchConfig {
@@ -33,6 +33,7 @@ contract LaunchFactory is ReentrancyGuard {
 		address vault;
 		address router;
 		address taxSplitter;
+		address treasuryReserve;
 	}
 
 	uint256 public constant TOTAL_SUPPLY = 1_000_000_000 ether;
@@ -62,6 +63,7 @@ contract LaunchFactory is ReentrancyGuard {
 		address vault,
 		address router,
 		address taxSplitter,
+		address treasuryReserve,
 		LaunchTier tier,
 		uint256 presaleCap,
 		uint256 v2BuyBnb,
@@ -105,7 +107,6 @@ contract LaunchFactory is ReentrancyGuard {
 	/// @notice Deploy a complete agent launch system in one transaction.
 	function createLaunch(LaunchConfig calldata config)
 		external
-		nonReentrant
 		returns (LaunchAddresses memory addrs)
 	{
 		if (config.creator == address(0)) revert InvalidCreator();
@@ -113,7 +114,7 @@ contract LaunchFactory is ReentrancyGuard {
 		if (bytes(config.name).length == 0) revert EmptyName();
 		if (bytes(config.symbol).length == 0) revert EmptySymbol();
 
-		(uint256 presaleCap, , bool vestingEnabled) = tierConfig(config.tier);
+		(uint256 presaleCap, uint256 v2BuyBnb, bool vestingEnabled) = tierConfig(config.tier);
 
 		// 0. Deploy per-agent TaxSplitter (90% creator / 10% platform)
 		address splitterAddr;
@@ -138,7 +139,7 @@ contract LaunchFactory is ReentrancyGuard {
 			TOTAL_SUPPLY
 		);
 
-		// 2. Deploy router (factory is initial owner; transfer to creator at end)
+		// 2. Deploy router (factory is temporary owner; vault owns execution at end)
 		BundleRouter router = new BundleRouter(
 			WBNB,
 			PCS_FACTORY,
@@ -151,10 +152,14 @@ contract LaunchFactory is ReentrancyGuard {
 			config.creator,
 			payable(address(router)),
 			PRESALE_AMOUNT,
+			presaleCap,
+			v2BuyBnb,
 			DEFAULT_PENALTY_BPS,
 			vestingEnabled,
 			config.closeTimestamp
 		);
+
+		router.transferOwnership(address(vault));
 
 		// 4. Tax-exempt the new contracts and DEAD.
 		//    AgentTokenV3 already exempts the factory, the splitter, itself, and DEAD
@@ -165,12 +170,14 @@ contract LaunchFactory is ReentrancyGuard {
 		// 5. Burn 50%
 		token.transfer(DEAD, BURN_AMOUNT);
 
-		// 6. Allocate to vault
-		token.transfer(address(vault), PRESALE_AMOUNT);
+		// 6. Allocate presale + launch liquidity inventory to vault
+		token.transfer(address(vault), PRESALE_AMOUNT + V2_LP_AMOUNT);
 
-		// 7. Treasury allocation parked here in factory until W33b lands
-		//    (factory holds 200M for V2 LP + 100M for treasury = 300M)
-		//    Future: token.transfer(treasuryLp, TREASURY_AMOUNT);
+		// 7. Park treasury reserve in a tax-exempt holder controlled by creator
+		//    until TreasuryLP4 can be wired after the V2 pair exists.
+		TreasuryReserve treasury = new TreasuryReserve(config.creator);
+		token.setTaxExempt(address(treasury), true);
+		token.transfer(address(treasury), TREASURY_AMOUNT);
 
 		// 8. Lock token bootstrap (no more setTaxExempt)
 		token.finalizeBootstrap();
@@ -179,7 +186,8 @@ contract LaunchFactory is ReentrancyGuard {
 			token: address(token),
 			vault: address(vault),
 			router: address(router),
-			taxSplitter: splitterAddr
+			taxSplitter: splitterAddr,
+			treasuryReserve: address(treasury)
 		});
 		launches[address(token)] = addrs;
 		allLaunches.push(address(token));
@@ -190,9 +198,10 @@ contract LaunchFactory is ReentrancyGuard {
 			address(vault),
 			address(router),
 			splitterAddr,
+			address(treasury),
 			config.tier,
 			presaleCap,
-			_v2BuyForTier(config.tier),
+			v2BuyBnb,
 			vestingEnabled
 		);
 	}

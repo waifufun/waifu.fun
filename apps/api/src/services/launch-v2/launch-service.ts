@@ -14,7 +14,7 @@
  *   - All write transactions go through a single signer (`launchFactorySigner`)
  *     wallet whose private key is provisioned via env. The wallet only ever
  *     calls LaunchFactory.createLaunch on behalf of the requesting creator;
- *     the resulting vault/router are owned by `creator`, not by the signer.
+ *     the resulting vault is owned by `creator`, and the router is owned by the vault.
  *   - The signer should hold a small BNB balance (gas only). It never holds
  *     user funds.
  */
@@ -122,7 +122,7 @@ export class LaunchService {
 
 	/**
 	 * Submit createLaunch on-chain. Decodes LaunchCreated and returns the
-	 * deployed (token, vault, router) addresses plus the tx hash.
+	 * deployed (token, vault, router, treasury reserve) addresses plus the tx hash.
 	 *
 	 * The DB layer (caller) is responsible for inserting the row before
 	 * the tx is sent (so we can show "pending" state) and updating it on
@@ -183,6 +183,7 @@ export class LaunchService {
 				vault: Address;
 				router: Address;
 				taxSplitter: Address;
+				treasuryReserve: Address;
 			};
 		};
 
@@ -190,6 +191,7 @@ export class LaunchService {
 		const vaultAddress = decoded.args.vault as `0x${string}`;
 		const routerAddress = decoded.args.router as `0x${string}`;
 		const taxSplitterAddress = decoded.args.taxSplitter as `0x${string}`;
+		const treasuryReserveAddress = decoded.args.treasuryReserve as `0x${string}`;
 		const presaleUrl = this.buildPresaleUrl(tokenAddress);
 		return {
 			// id is supplied by the DB layer; the route handler stitches them together.
@@ -198,6 +200,7 @@ export class LaunchService {
 			vault: vaultAddress,
 			router: routerAddress,
 			taxSplitter: taxSplitterAddress,
+			treasuryReserve: treasuryReserveAddress,
 			presaleUrl,
 			txHash,
 			blockNumber: receipt.blockNumber,

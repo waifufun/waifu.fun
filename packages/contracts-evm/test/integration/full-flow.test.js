@@ -136,15 +136,12 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// Hand-wires a MockFlapToken (has bonding curve) with a fresh
 	// LaunchVault + BundleRouter so the launch+graduation flow can be
 	// tested end-to-end against a real PCS V2 fork.
-	async function deployGraduationRig({ vestingEnabled, closeOffset = ONE_DAY }) {
+	async function deployGraduationRig({ vestingEnabled, closeOffset = ONE_DAY, presaleCap = ethers.parseEther("32"), bnbForBuy = ethers.parseEther("16") }) {
 		const FlapToken = await ethers.getContractFactory("MockFlapToken");
 		const flap = await FlapToken.deploy(PCS_ROUTER, PCS_FACTORY, WBNB);
 		await flap.waitForDeployment();
 
 		const Router = await ethers.getContractFactory("BundleRouter");
-		// Router owner is whoever deploys it; LaunchFactory normally is the
-		// deployer, but for the rig the test signer (deployer) keeps
-		// ownership so we can drive execute() directly.
 		const router = await Router.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH);
 		await router.waitForDeployment();
 
@@ -154,11 +151,14 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			creator.address,
 			await router.getAddress(),
 			PRESALE_AMOUNT,
+			presaleCap,
+			bnbForBuy,
 			500, // 5% penalty
 			vestingEnabled,
 			now + closeOffset,
 		);
 		await vault.waitForDeployment();
+		await router.transferOwnership(await vault.getAddress());
 
 		return { flap, router, vault };
 	}
@@ -173,7 +173,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 
 			expect(await launch.token.totalSupply()).to.equal(TOTAL_SUPPLY);
 			expect(await launch.token.balanceOf(DEAD)).to.equal(BURN_AMOUNT);
-			expect(await launch.token.balanceOf(launch.vaultAddr)).to.equal(PRESALE_AMOUNT);
+			expect(await launch.token.balanceOf(launch.vaultAddr)).to.equal(PRESALE_AMOUNT * 2n);
 			expect(await launch.vault.vestingEnabled()).to.equal(false);
 			expect(await launch.vault.presaleTokens()).to.equal(PRESALE_AMOUNT);
 			expect(await launch.presaleCap).to.equal(ethers.parseEther("16"));
@@ -197,6 +197,21 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			const bobAlloc = await vault.allocationOf(bob.address);
 			expect(aliceAlloc).to.equal(PRESALE_AMOUNT / 2n);
 			expect(bobAlloc).to.equal(PRESALE_AMOUNT / 2n);
+		});
+
+		it("factory vault.launch creates a PCS V2 pair for AgentTokenV3", async () => {
+			const { token, tokenAddr, vault } = await createFactoryLaunch(TIER.TIER_80);
+
+			await vault.connect(alice).deposit({ value: ethers.parseEther("8") });
+			await vault.connect(bob).deposit({ value: ethers.parseEther("8") });
+			await vault.connect(creator).close();
+			await vault.connect(creator).launch(tokenAddr, 0, (await blockTimestamp()) + 3600);
+
+			const pcsFactory = await ethers.getContractAt("IPancakeFactory", PCS_FACTORY);
+			const pair = await pcsFactory.getPair(tokenAddr, WBNB);
+			expect(pair).to.not.equal(ethers.ZeroAddress);
+			expect(await vault.state()).to.equal(2);
+			expect(await token.balanceOf(await vault.getAddress())).to.equal(PRESALE_AMOUNT);
 		});
 
 		it("withdraw applies 5% penalty and grows bonus pool", async () => {
@@ -235,91 +250,45 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			// 5 presalers totalling 32 BNB at the cap.
 			const deposits = [
 				[alice, ethers.parseEther("12")],
-				[bob, ethers.parseEther("8")],
+				[bob, ethers.parseEther("10")],
 				[carol, ethers.parseEther("6")],
 				[dave, ethers.parseEther("4")],
-				[eve, ethers.parseEther("2")],
 			];
 			for (const [signer, amount] of deposits) {
 				await vault.connect(signer).deposit({ value: amount });
 			}
 			expect(await vault.totalDeposited()).to.equal(ethers.parseEther("32"));
-			expect(await vault.depositorCount()).to.equal(5);
+			expect(await vault.depositorCount()).to.equal(4);
 
-			// Eve withdraws all (5% penalty -> bonus pool grows by 0.1 BNB).
-			await vault.connect(eve).withdrawAll();
-			expect(await vault.bonusPool()).to.equal(ethers.parseEther("0.1"));
-			expect(await vault.totalDeposited()).to.equal(ethers.parseEther("30"));
+			expect(await vault.bonusPool()).to.equal(0n);
+			expect(await vault.totalDeposited()).to.equal(ethers.parseEther("32"));
 
 			// Owner closes.
 			await vault.connect(creator).close();
 			expect(await vault.state()).to.equal(1); // CLOSED
 
-			// Owner launches. Vault forwards 30.1 BNB to router.
+			// Owner launches. Vault calls the router, which executes the bundle in this tx.
 			const flapAddr = await flap.getAddress();
 			const routerAddr = await router.getAddress();
-
-			const routerBalBefore = await ethers.provider.getBalance(routerAddr);
-			await vault.connect(creator).launch(flapAddr);
-			const routerBalAfter = await ethers.provider.getBalance(routerAddr);
-			expect(routerBalAfter - routerBalBefore).to.equal(ethers.parseEther("30.1"));
-			expect(await vault.state()).to.equal(2); // LAUNCHED
-			expect(await vault.totalDepositedAtLaunch()).to.equal(ethers.parseEther("30"));
-
-			// Router executes the bundle. BundleRouter requires msg.value to
-			// match curveFillBnb + v2BuyBnb (the vault-forwarded BNB lives on
-			// the router and is swept back to the router owner at execute end).
-			const curveFill = ethers.parseEther("16");
-			const v2Buy = ethers.parseEther("16"); // 90% tier V2 buy
-			const deadline = (await blockTimestamp()) + 3600;
 			const deadBalBefore = await flap.balanceOf(DEAD);
-
-			await router.connect(deployer).execute(
-				{
-					flapToken: flapAddr,
-					curveFillBnb: curveFill,
-					v2BuyBnb: v2Buy,
-					minTokensFromV2: 0,
-					deadline,
-				},
-				{ value: curveFill + v2Buy },
-			);
+			await vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600);
+			expect(await vault.state()).to.equal(2); // LAUNCHED
+			expect(await vault.totalDepositedAtLaunch()).to.equal(ethers.parseEther("32"));
 
 			expect(await flap.graduated()).to.equal(true);
 			const v2Pair = await flap.v2Pair();
 			expect(v2Pair).to.not.equal(ethers.ZeroAddress);
-
-			// V2-bought tokens were burned (sent to DEAD).
 			expect(await flap.balanceOf(DEAD)).to.be.gt(deadBalBefore);
-
-			// Router has no leftover BNB after the sweep.
 			expect(await ethers.provider.getBalance(routerAddr)).to.equal(0);
-
-			// The vault still needs the presale tokens. Mint into vault by
-			// transferring from the router-held curve tokens (the orchestrator
-			// would do this in production).
-			const routerTokenBal = await flap.balanceOf(routerAddr);
-			expect(routerTokenBal).to.be.gt(0);
-			// Move 200M tokens from router to vault for claims. We use a
-			// signer-impersonated router to send the tokens.
-			await network.provider.send("hardhat_impersonateAccount", [routerAddr]);
-			await network.provider.send("hardhat_setBalance", [
-				routerAddr,
-				"0x56BC75E2D63100000", // 100 BNB so it can afford gas
-			]);
-			const routerSigner = await ethers.getSigner(routerAddr);
-			await flap.connect(routerSigner).transfer(await vault.getAddress(), PRESALE_AMOUNT);
-			await network.provider.send("hardhat_stopImpersonatingAccount", [routerAddr]);
-
+			expect(await flap.balanceOf(routerAddr)).to.equal(0);
 			expect(await flap.balanceOf(await vault.getAddress())).to.be.gte(PRESALE_AMOUNT);
 
 			// TGE claim: vesting is 50/50/24h, so each presaler gets 50% now.
-			// Allocations are pro-rata over 30 BNB snapshot:
-			//   alice 12/30, bob 8/30, carol 6/30, dave 4/30
-			const aliceAlloc = (PRESALE_AMOUNT * 12n) / 30n;
-			const bobAlloc = (PRESALE_AMOUNT * 8n) / 30n;
-			const carolAlloc = (PRESALE_AMOUNT * 6n) / 30n;
-			const daveAlloc = (PRESALE_AMOUNT * 4n) / 30n;
+			// Allocations are pro-rata over 32 BNB snapshot:
+			const aliceAlloc = (PRESALE_AMOUNT * 12n) / 32n;
+			const bobAlloc = (PRESALE_AMOUNT * 10n) / 32n;
+			const carolAlloc = (PRESALE_AMOUNT * 6n) / 32n;
+			const daveAlloc = (PRESALE_AMOUNT * 4n) / 32n;
 
 			expect(await vault.allocationOf(alice.address)).to.equal(aliceAlloc);
 			expect(await vault.allocationOf(bob.address)).to.equal(bobAlloc);
@@ -375,10 +344,9 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	// =========================================================================
 
 	describe("Cap not hit (under-subscribed launch)", () => {
-		it("can launch with deposits below the tier cap", async () => {
-			const { flap, router, vault } = await deployGraduationRig({ vestingEnabled: true });
+		it("under-subscribed launches use refund path", async () => {
+			const { flap, vault } = await deployGraduationRig({ vestingEnabled: true, bnbForBuy: ethers.parseEther("16") });
 
-			// 3 presalers totalling 20 BNB (cap is 32).
 			await vault.connect(alice).deposit({ value: ethers.parseEther("10") });
 			await vault.connect(bob).deposit({ value: ethers.parseEther("6") });
 			await vault.connect(carol).deposit({ value: ethers.parseEther("4") });
@@ -387,24 +355,11 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			await vault.connect(creator).close();
 
 			const flapAddr = await flap.getAddress();
-			await vault.connect(creator).launch(flapAddr);
-
-			// Smaller V2 buy reflects under-subscribed launch.
-			const deadline = (await blockTimestamp()) + 3600;
-			const curveFill = ethers.parseEther("16");
-			const v2Buy = ethers.parseEther("4");
-			await router.connect(deployer).execute(
-				{
-					flapToken: flapAddr,
-					curveFillBnb: curveFill,
-					v2BuyBnb: v2Buy,
-					minTokensFromV2: 0,
-					deadline,
-				},
-				{ value: curveFill + v2Buy },
-			);
-
-			expect(await flap.graduated()).to.equal(true);
+			await expect(vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(vault, "UnderSubscribed");
+			await vault.connect(creator).enableRefunds();
+			await expect(vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(vault, "UnderSubscribed");
+			await vault.connect(alice).refund();
+			expect((await vault.depositors(alice.address)).deposited).to.equal(0);
 		});
 	});
 
@@ -438,26 +393,26 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 		});
 
 		it("cannot launch twice", async () => {
-			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false });
-			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
+			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false, bnbForBuy: 0n });
+			await vault.connect(alice).deposit({ value: ethers.parseEther("32") });
 			await vault.connect(creator).close();
 			const flapAddr = await flap.getAddress();
-			await vault.connect(creator).launch(flapAddr);
+			await vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600);
 
-			await expect(vault.connect(creator).launch(flapAddr)).to.be.revertedWithCustomError(vault, "InvalidState");
+			await expect(vault.connect(creator).launch(flapAddr, 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(vault, "InvalidState");
 		});
 
 		it("non-owner cannot launch", async () => {
 			const { flap, vault } = await deployGraduationRig({ vestingEnabled: false });
 			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
 			await vault.connect(creator).close();
-			await expect(vault.connect(alice).launch(await flap.getAddress())).to.be.revertedWithCustomError(
+			await expect(vault.connect(alice).launch(await flap.getAddress(), 0, (await blockTimestamp()) + 3600)).to.be.revertedWithCustomError(
 				vault,
 				"NotOwner",
 			);
 		});
 
-		it("router execute reverts for non-owner", async () => {
+		it("router execute reverts for non-vault", async () => {
 			const { flap, router } = await deployGraduationRig({ vestingEnabled: false });
 			const deadline = (await blockTimestamp()) + 3600;
 			await expect(
@@ -557,7 +512,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			await vault.connect(alice).deposit({ value: ethers.parseEther("16") });
 			await vault.connect(bob).deposit({ value: ethers.parseEther("16") });
 			await vault.connect(creator).close();
-			await vault.connect(creator).launch(await flap.getAddress());
+			await vault.connect(creator).launch(await flap.getAddress(), 0, (await blockTimestamp()) + 3600);
 
 			expect(await vault.totalDepositedAtLaunch()).to.equal(ethers.parseEther("32"));
 			// Post-launch allocation uses the snapshot, not live totalDeposited.
