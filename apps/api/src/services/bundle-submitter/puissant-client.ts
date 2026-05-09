@@ -2,7 +2,7 @@
  * Thin HTTP client for the 48 Club Puissant private RPC.
  *
  * Endpoint: https://puissant-bsc.48.club
- * Method:   eth_sendPrivateRawTransaction
+ * Method:   eth_sendPrivateTransaction
  *   params: [signedRawTransaction] (hex string with 0x prefix)
  *   result: transaction hash on success, JSON-RPC error on failure
  *
@@ -22,6 +22,7 @@ export interface PuissantClientOptions {
 
 const DEFAULT_ENDPOINT = "https://puissant-bsc.48.club";
 const DEFAULT_TIMEOUT_MS = 5_000;
+const PUISSANT_SEND_PRIVATE_TRANSACTION_METHOD = "eth_sendPrivateTransaction";
 
 interface JsonRpcResponse<T> {
 	jsonrpc: "2.0";
@@ -65,7 +66,7 @@ export function createPuissantClient(options: PuissantClientOptions = {}): Puiss
 					body: JSON.stringify({
 						jsonrpc: "2.0",
 						id: 1,
-						method: "eth_sendPrivateRawTransaction",
+						method: PUISSANT_SEND_PRIVATE_TRANSACTION_METHOD,
 						params: [rawTx],
 					}),
 					signal: controller.signal,
