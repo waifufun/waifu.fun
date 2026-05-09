@@ -20,8 +20,8 @@ import {
 	handleClosed,
 	handleDeposited,
 	handleLaunched,
-	handleRefundsEnabled,
 	handleRefunded,
+	handleRefundsEnabled,
 	handleWithdrawn,
 } from "./handlers/vault.js";
 import type { LaunchVaultEvent } from "./lib/events.js";
