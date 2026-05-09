@@ -6,7 +6,7 @@
  *   v2          - WaifuFun V2 + staking + fee router (needs WAIFU_TOKEN_ADDRESS, PLATFORM_WALLET)
  *   testnet     - Mock WAIFU + V2 stack; writes deployments/{testnet,local}.json
  *   agent-safe  - AgentSafeFactory from scripts/addresses.js
- *   launch-v3   - LaunchFactory v3 burn edition (needs TAX_SPLITTER)
+ *   launch-v3   - LaunchFactory v3 burn edition (needs PLATFORM_WALLET)
  *
  * Examples:
  *   hardhat run scripts/deploy/run.js --network localhost
