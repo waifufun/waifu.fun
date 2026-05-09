@@ -6,6 +6,7 @@
 	"description": "WaifuFun EVM contracts (protocol V1/V2, patron Safe + TaxSplitter)",
 	"license": "ISC",
 	"scripts": {
+		"build": "hardhat compile",
 		"compile": "hardhat compile",
 		"deploy": "hardhat run scripts/deploy/run.js",
 		"deploy:local": "hardhat run scripts/deploy/run.js --network localhost",
