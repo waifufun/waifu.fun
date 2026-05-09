@@ -124,6 +124,7 @@ contract TreasuryLP is Ownable, ReentrancyGuard {
 	event TierPaused(uint8 indexed tierIdx, address indexed by);
 	event BuybackExecuted(uint256 bnbSpent, uint256 tokensBurned);
 	event BnbClaimed(address indexed agentSafe, uint256 bnbToAgent, uint256 bnbBuyback);
+	event TokenFeesClaimed(address indexed agentSafe, uint256 tokenAmount);
 	event BuybackBpsSet(uint16 oldBps, uint16 newBps);
 	event EpochLengthSet(uint32 oldSecs, uint32 newSecs);
 
@@ -263,6 +264,7 @@ contract TreasuryLP is Ownable, ReentrancyGuard {
 		if (nextTierIndex == 0) revert no_tiers_deployed();
 
 		uint256 balanceBefore = address(this).balance;
+		uint256 tokenBalanceBefore = token.balanceOf(address(this));
 		for (uint256 i = 0; i < nextTierIndex; i++) {
 			if (tiers[i].deployed) {
 				v4PoolManager.collect(tiers[i].positionId, address(this));
@@ -270,7 +272,13 @@ contract TreasuryLP is Ownable, ReentrancyGuard {
 		}
 
 		uint256 collected = address(this).balance - balanceBefore;
-		if (collected == 0) revert nothing_to_claim();
+		uint256 tokenCollected = token.balanceOf(address(this)) - tokenBalanceBefore;
+		if (collected == 0 && tokenCollected == 0) revert nothing_to_claim();
+
+		if (tokenCollected > 0) {
+			token.safeTransfer(agentSafe, tokenCollected);
+			emit TokenFeesClaimed(agentSafe, tokenCollected);
+		}
 
 		uint256 buybackBnb = (collected * buybackBps) / BPS_DENOMINATOR;
 		uint256 tokensBefore = token.balanceOf(DEAD);
@@ -287,8 +295,10 @@ contract TreasuryLP is Ownable, ReentrancyGuard {
 		uint256 tokensBurned = token.balanceOf(DEAD) - tokensBefore;
 
 		uint256 bnbToAgent = collected - buybackBnb;
-		(bool ok,) = payable(agentSafe).call{value: bnbToAgent}("");
-		if (!ok) revert bnb_transfer_failed();
+		if (bnbToAgent > 0) {
+			(bool ok,) = payable(agentSafe).call{value: bnbToAgent}("");
+			if (!ok) revert bnb_transfer_failed();
+		}
 
 		if (buybackBnb > 0) emit BuybackExecuted(buybackBnb, tokensBurned);
 		emit BnbClaimed(agentSafe, bnbToAgent, buybackBnb);
