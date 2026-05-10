@@ -39,6 +39,9 @@ export default function Footer() {
 						<Link href="/agents" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
 							agents
 						</Link>
+						<Link href="/launches" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
+							launches
+						</Link>
 						<Link href="/quickstart" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
 							quickstart
 						</Link>
@@ -84,6 +87,9 @@ export default function Footer() {
 					<div className="flex flex-wrap items-center gap-4">
 						<Link href="/privacy-policy" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
 							{t("footer.privacy")}
+						</Link>
+						<Link href="/support" className="text-[#52525b] hover:text-[#00ff87] transition-colors duration-200">
+							support
 						</Link>
 						<Link
 							href="/terms-of-service"

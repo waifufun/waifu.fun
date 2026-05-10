@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "terms of service · waifu.fun",
+	description: "the terms that govern WAIFU platform access, wallet usage, and launch participation.",
+};
+
 type TermsSection = {
 	header?: string;
 	subheader?: string;
