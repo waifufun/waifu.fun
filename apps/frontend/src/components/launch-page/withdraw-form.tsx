@@ -54,11 +54,11 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 		e.preventDefault();
 		setError(null);
 		if (requestedWei <= 0n) {
-			setError("invalid amount");
+			setError("enter an amount.");
 			return;
 		}
 		if (requestedWei > deposited) {
-			setError("amount exceeds your deposit");
+			setError("more than you deposited.");
 			return;
 		}
 		writeContract({
@@ -95,7 +95,7 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 					value={amountStr}
 					onChange={(e) => setAmountStr(sanitize(e.target.value))}
 					disabled={isLocked}
-					className="border border-white/10 bg-[#0b0b0d] px-3 py-2 font-mono text-lg text-zinc-100 outline-none focus:border-orange-300/40 disabled:opacity-50"
+					className="border border-white/10 bg-[#0b0b0d] px-3 py-2 font-mono text-lg text-zinc-100 outline-none transition-colors duration-150 focus:border-orange-300/40 disabled:opacity-50"
 				/>
 			</label>
 
@@ -112,7 +112,8 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 				</div>
 			) : (
 				<p className="text-xs text-zinc-500">
-					withdrawing during the open window forfeits {penaltyPct}% to the bonus pool.
+					withdrawing during the open window forfeits {penaltyPct}% to the bonus pool. it gets added to the bundle at
+					launch.
 				</p>
 			)}
 
@@ -127,14 +128,14 @@ export function WithdrawForm({ vault, deposited, penaltyBps, disabled, onComplet
 				>
 					{isPending ? (
 						<>
-							<Loader2 className="size-4 animate-spin" /> awaiting wallet
+							<Loader2 className="size-4 animate-spin" /> sign in wallet
 						</>
 					) : receipt.isLoading ? (
 						<>
 							<Loader2 className="size-4 animate-spin" /> confirming
 						</>
 					) : (
-						`withdraw (${penaltyPct}% fee)`
+						`withdraw (−${penaltyPct}%)`
 					)}
 				</Button>
 				<Button

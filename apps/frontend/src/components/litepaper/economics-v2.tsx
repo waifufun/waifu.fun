@@ -128,7 +128,7 @@ export default function EconomicsV2() {
 					</p>
 				</RevealBlock>
 
-				{/* Key numbers — asymmetric bento row */}
+				{/* Key numbers, asymmetric bento row */}
 				<div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4">
 					{keyNumbers.map((num, i) => (
 						<RevealBlock key={num.stat} delay={0.15 + i * 0.08}>
@@ -146,7 +146,7 @@ export default function EconomicsV2() {
 					))}
 				</div>
 
-				{/* Tiers — editorial split layout */}
+				{/* Tiers, editorial split layout */}
 				<div className="mt-20 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
 					{/* Left: tier context */}
 					<div className="lg:col-span-4">

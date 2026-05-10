@@ -56,8 +56,8 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 		<Link
 			href={`/launch/${encodeURIComponent(launch.id)}`}
 			className={cn(
-				"group relative flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden transition-colors duration-200",
-				"hover:border-[#00ff87]/30 hover:bg-[#0a0a0c]",
+				"group relative flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden transition-colors duration-150 ease-out",
+				"hover:border-[#00ff87]/30 hover:bg-[#0a0a0c] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00ff87]/40",
 			)}
 		>
 			<div className={cn("flex items-start gap-3", compact ? "p-3" : "p-4")}>
@@ -115,7 +115,9 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 							? "live on dex"
 							: launch.state === "closed"
 								? "awaiting bundle"
-								: "see details"}
+								: launch.state === "failed"
+									? "refundable"
+									: "view details"}
 					</div>
 				</div>
 			)}

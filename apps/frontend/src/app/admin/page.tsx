@@ -29,7 +29,7 @@ function StatCard({
 			</div>
 			<div className="min-w-0">
 				<p className="text-[10px] text-[#71717a] font-mono uppercase tracking-wider">{label}</p>
-				<p className="text-lg font-mono text-white leading-tight mt-0.5">{loading ? "—" : value}</p>
+				<p className="text-lg font-mono text-white leading-tight mt-0.5">{loading ? "–" : value}</p>
 			</div>
 		</div>
 	);
@@ -160,14 +160,14 @@ export default function AdminPage() {
 					<StatCard label="total users" value={totalUsers.toLocaleString()} icon={Users} loading={loading} />
 					<StatCard
 						label="active agents"
-						value={agentsLoading ? "—" : activeSlots.toLocaleString()}
+						value={agentsLoading ? "–" : activeSlots.toLocaleString()}
 						icon={Cpu}
 						accent="purple"
 						loading={agentsLoading}
 					/>
 					<StatCard
 						label="launches"
-						value={launchesLoading ? "—" : pendingLaunches.toLocaleString()}
+						value={launchesLoading ? "–" : pendingLaunches.toLocaleString()}
 						icon={Rocket}
 						accent="purple"
 						loading={launchesLoading}

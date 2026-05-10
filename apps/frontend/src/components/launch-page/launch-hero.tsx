@@ -20,16 +20,33 @@ type Props = {
 };
 
 const STATE_LABEL: Record<number, string> = {
-	0: "open",
+	0: "live",
 	1: "closed",
 	2: "launched",
 };
 
+const STATE_DOT: Record<number, string> = {
+	0: "bg-[#00ff87] animate-pulse",
+	1: "bg-yellow-300",
+	2: "bg-blue-300",
+};
+
+const STATE_BADGE_CLASS: Record<number, string> = {
+	0: "border-[#00ff87]/40 text-[#00ff87] bg-[#00ff87]/[0.05]",
+	1: "border-yellow-400/40 text-yellow-300 bg-yellow-400/5",
+	2: "border-blue-400/40 text-blue-300 bg-blue-400/5",
+};
+
 export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state }: Props) {
 	const name = meta?.tokenName ?? "agent launch";
-	const symbol = meta?.tokenTicker ?? "—";
+	const symbol = meta?.tokenTicker ?? "–";
 	const image = meta?.tokenImageUrl ?? null;
 	const stateLabel = state !== null ? (STATE_LABEL[state] ?? "unknown") : "loading";
+	const dotClass = state !== null ? (STATE_DOT[state] ?? "bg-white/40") : "bg-white/40";
+	const stateBadgeClass =
+		state !== null
+			? (STATE_BADGE_CLASS[state] ?? "border-white/15 text-white/60 bg-white/5")
+			: "border-white/15 text-white/60 bg-white/5";
 
 	const capWei = meta?.presaleCapWei ? BigInt(meta.presaleCapWei) : capFromBnb(tier.presaleCapBnb);
 	const pct = capWei === 0n ? 0 : Number((totalDeposited * 10_000n) / capWei) / 100;
@@ -57,12 +74,18 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 							<span className="font-mono text-xs uppercase tracking-[0.2em] text-zinc-500 md:text-sm">${symbol}</span>
 						</div>
 						<div className="flex flex-wrap items-center gap-2">
+							<span
+								className={cn(
+									"inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border text-[10px] font-mono uppercase tracking-[0.2em]",
+									stateBadgeClass,
+								)}
+							>
+								<span className={cn("w-1 h-1 rounded-full", dotClass)} />
+								{stateLabel}
+							</span>
 							<Badge variant="default">{tier.label}</Badge>
-							<Badge variant="outline" className="text-zinc-300">
-								state: {stateLabel}
-							</Badge>
 							<span className="flex items-center gap-1 text-xs text-zinc-400">
-								<Users className="size-3" /> {depositorCount.toString()} backers
+								<Users className="size-3" /> {depositorCount.toString()} backer{depositorCount === 1n ? "" : "s"}
 							</span>
 						</div>
 					</div>
@@ -70,7 +93,7 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 
 				<div className="flex flex-col items-start md:items-end shrink-0">
 					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-						{state === 0 ? "round closes in" : state === 1 ? "closed" : state === 2 ? "launched" : "status"}
+						{state === 0 ? "closes in" : state === 1 ? "awaiting bundle" : state === 2 ? "live on dex" : "status"}
 					</span>
 					<LaunchCountdown closeTimestampSec={closeTimestamp} className="mt-1 flex items-baseline gap-2" />
 				</div>

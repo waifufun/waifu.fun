@@ -5,7 +5,7 @@ import { ArrowDownLeft, ArrowUpRight, ExternalLink } from "lucide-react";
 import type { PostLaunchMarket } from "@/hooks/use-post-launch-market";
 
 /**
- * TradeActivityFeed — buys / sells per window, sourced from DEXScreener's
+ * TradeActivityFeed, buys / sells per window, sourced from DEXScreener's
  * pair-level `txns` aggregates (5m / 1h / 6h / 24h).
  *
  * DEXScreener's public endpoints don't expose individual trade detail,
@@ -99,7 +99,7 @@ function num(value: unknown): number | null {
 }
 
 function formatUsd(value: number | null): string {
-	if (value === null || !Number.isFinite(value) || value <= 0) return "—";
+	if (value === null || !Number.isFinite(value) || value <= 0) return "–";
 	if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}m`;
 	if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
 	if (value >= 1) return `$${value.toFixed(2)}`;

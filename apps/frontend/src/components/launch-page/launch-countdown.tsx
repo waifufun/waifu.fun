@@ -58,7 +58,7 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false 
 function TimeBlock({ value, label }: { value: number; label: string }) {
 	return (
 		<div className="flex flex-col items-center">
-			<span className="text-4xl font-semibold tabular-nums leading-none text-zinc-100 md:text-5xl">{pad(value)}</span>
+			<span className="text-3xl font-semibold tabular-nums leading-none text-zinc-100 md:text-5xl">{pad(value)}</span>
 			<span className="mt-1 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">{label}</span>
 		</div>
 	);

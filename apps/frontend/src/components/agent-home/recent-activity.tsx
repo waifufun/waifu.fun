@@ -47,13 +47,13 @@ export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
 }
 
 function shortenAddr(addr: string): string {
-	if (!addr) return "—";
+	if (!addr) return "–";
 	if (addr.length < 14) return addr;
 	return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
 function formatAmount(raw: string | number | undefined): string {
-	if (raw === undefined || raw === null) return "—";
+	if (raw === undefined || raw === null) return "–";
 	const n = typeof raw === "string" ? Number(raw) : raw;
 	if (!Number.isFinite(n)) return String(raw);
 	if (n === 0) return "0";
@@ -64,7 +64,7 @@ function formatAmount(raw: string | number | undefined): string {
 }
 
 function timeAgo(ts: number): string {
-	if (!ts) return "—";
+	if (!ts) return "–";
 	const ms = ts > 1e12 ? ts : ts * 1000;
 	const diff = Date.now() - ms;
 	if (diff < 0) return "now";

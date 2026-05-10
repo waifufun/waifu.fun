@@ -4,7 +4,7 @@
  * Realized BNB value is computed at the launch's opening market cap,
  * which is what was actually banked at v2 listing. If we don't have an
  * openMcBnb yet, we hide the p&l column for that row and just show
- * "—". Failed launches show the deposit as a loss (the vault refunds
+ * "–". Failed launches show the deposit as a loss (the vault refunds
  * net of penalty when in OPEN; failures past CLOSED return nothing).
  */
 import Link from "next/link";
@@ -64,7 +64,7 @@ export default function HistoryTable({ entries }: Props) {
 	if (entries.length === 0) {
 		return (
 			<div className="border border-stroke-strong rounded-sm bg-[#0C0C0C] px-4 py-6 text-center text-sm text-neutral-500">
-				no historical launches yet.
+				no history yet.
 			</div>
 		);
 	}
@@ -110,14 +110,14 @@ export default function HistoryTable({ entries }: Props) {
 							{formatBnb(investedWei)} bnb
 						</div>
 						<div className="col-span-2 hidden md:block text-white tabular-nums">
-							{realizedWei !== null ? `${formatBnb(realizedWei)} bnb` : "—"}
+							{realizedWei !== null ? `${formatBnb(realizedWei)} bnb` : "–"}
 						</div>
 						<div
 							className={`col-span-2 text-right tabular-nums ${
 								pnlTone === "positive" ? "text-[#00ff87]" : pnlTone === "negative" ? "text-red-400" : "text-neutral-400"
 							}`}
 						>
-							{pnlWei !== null ? `${formatBnbDelta(pnlWei)} bnb` : "—"}
+							{pnlWei !== null ? `${formatBnbDelta(pnlWei)} bnb` : "–"}
 						</div>
 					</div>
 				);

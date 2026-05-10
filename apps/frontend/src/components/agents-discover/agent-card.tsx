@@ -48,7 +48,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 				<div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase tracking-[0.14em] text-white/30">
 					<span className="inline-flex items-center gap-1 min-w-0 truncate">
 						<Brain className="w-2.5 h-2.5 shrink-0" strokeWidth={1.5} />
-						<span className="truncate">{agent.framework ?? "—"}</span>
+						<span className="truncate">{agent.framework ?? "–"}</span>
 					</span>
 					{agent.lastActionAt ? (
 						<span className="inline-flex items-center gap-1 shrink-0">

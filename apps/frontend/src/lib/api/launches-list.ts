@@ -1,5 +1,5 @@
 /**
- * GET /v2/launches — list active and recent launches with filters.
+ * GET /v2/launches, list active and recent launches with filters.
  *
  * Returns a normalized list shape that powers the `/launches` index page
  * and the live-launches rail on the landing page. Falls back to an empty

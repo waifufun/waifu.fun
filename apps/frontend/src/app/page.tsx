@@ -69,9 +69,9 @@ export default async function Home() {
 					</div>
 					<a
 						href="/agents"
-						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors"
+						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors duration-150"
 					>
-						see all
+						browse all
 					</a>
 				</div>
 

@@ -38,7 +38,7 @@ export function ActivityFeed({ launchId, vaultAddress }: Props) {
 			</CardHeader>
 			<CardContent className="px-0 py-0">
 				{isLoading && events.length === 0 ? (
-					<EmptyRow text="loading activity..." />
+					<ActivityFeedSkeleton />
 				) : events.length === 0 ? (
 					<EmptyRow text="no deposits yet. be the first." />
 				) : (
@@ -114,8 +114,32 @@ function EmptyRow({ text }: { text: string }) {
 	return <div className="px-6 py-8 text-center text-sm text-zinc-500">{text}</div>;
 }
 
+function ActivityFeedSkeleton() {
+	return (
+		<ul className="divide-y divide-white/5">
+			{Array.from({ length: 4 }).map((_, i) => (
+				<li
+					// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
+					key={i}
+					className="flex items-center justify-between px-6 py-3 relative overflow-hidden"
+				>
+					<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
+					<div className="flex items-center gap-3">
+						<div className="size-7 bg-white/5 rounded-sm" />
+						<div className="flex flex-col gap-1">
+							<div className="h-3 w-32 bg-white/5 rounded-sm" />
+							<div className="h-2 w-16 bg-white/5 rounded-sm" />
+						</div>
+					</div>
+					<div className="h-3 w-16 bg-white/5 rounded-sm" />
+				</li>
+			))}
+		</ul>
+	);
+}
+
 function shortAddr(value: string): string {
-	if (!value || value.length < 10) return value || "—";
+	if (!value || value.length < 10) return value || "–";
 	return `${value.slice(0, 6)}…${value.slice(-4)}`;
 }
 

@@ -57,28 +57,30 @@ export function DepositWidget({
 	return (
 		<Card className="sticky top-6 border-white/10 bg-[#08080a] py-0">
 			<CardHeader className="border-b border-white/10 px-6 py-5">
-				<CardTitle className="text-base font-semibold text-zinc-100">join this round</CardTitle>
+				<CardTitle className="text-base font-semibold text-zinc-100">join the round</CardTitle>
 				<p className="text-xs text-zinc-500">deposit bnb during the 24h window. allocations are pro-rata at close.</p>
 			</CardHeader>
 			<CardContent className="space-y-5 px-6 py-6">
 				{!isConnected ? (
 					<div className="flex flex-col gap-3">
-						<p className="text-sm text-zinc-300">connect a wallet to deposit.</p>
-						<LinkedEoaCTA className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90">connect wallet</LinkedEoaCTA>
+						<p className="text-sm text-zinc-300">connect a wallet to join.</p>
+						<LinkedEoaCTA className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90 transition-colors">
+							connect wallet
+						</LinkedEoaCTA>
 					</div>
 				) : wrongChain ? (
 					<div className="flex flex-col gap-3">
-						<p className="text-sm text-zinc-300">switch to bsc mainnet to deposit.</p>
+						<p className="text-sm text-zinc-300">switch to bsc to join.</p>
 						<Button
 							type="button"
 							onClick={() => switchChain({ chainId: bsc.id })}
-							className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90"
+							className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90 transition-colors"
 						>
 							switch network
 						</Button>
 					</div>
 				) : !vault ? (
-					<p className="text-sm text-zinc-400">vault address not yet available for this launch.</p>
+					<p className="text-sm text-zinc-400">vault address not ready yet. give it a moment.</p>
 				) : (
 					<>
 						<DepositForm
@@ -87,9 +89,9 @@ export function DepositWidget({
 							disabled={!roundOpen || capHit}
 							disabledReason={
 								!roundOpen
-									? "round is closed. deposits are locked."
+									? "round closed. deposits locked."
 									: capHit
-										? "cap reached. try the withdraw window, or check the secondary market."
+										? "cap reached. catch it on the secondary market."
 										: undefined
 							}
 							onCompleted={() => {

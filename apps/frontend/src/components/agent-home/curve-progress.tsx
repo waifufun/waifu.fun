@@ -62,7 +62,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 }
 
 function formatNum(n: number | undefined): string {
-	if (!n && n !== 0) return "—";
+	if (!n && n !== 0) return "–";
 	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
 	if (n >= 1_000) return `${(n / 1_000).toFixed(2)}K`;
 	return n.toFixed(2);

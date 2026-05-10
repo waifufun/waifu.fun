@@ -5,7 +5,7 @@
  *
  * Renders state + position + claimable amount. Pulls live `claimableOf`
  * from the vault as a fallback when the backend couldn't reach RPC. The
- * row is intentionally non-interactive — claim happens via the bulk
+ * row is intentionally non-interactive, claim happens via the bulk
  * ClaimAllButton at the top of the page.
  */
 import Link from "next/link";
@@ -132,7 +132,7 @@ export default function LaunchPositionRow({ entry }: Props) {
 				<div className="col-span-2">
 					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">allocation</div>
 					<div className="text-white tabular-nums">
-						{position.totalAllocation ? `${formatTokens(position.totalAllocation)}` : "—"}
+						{position.totalAllocation ? `${formatTokens(position.totalAllocation)}` : "–"}
 					</div>
 					{launch.state === "launched" ? (
 						<div className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm" aria-label="vesting progress">

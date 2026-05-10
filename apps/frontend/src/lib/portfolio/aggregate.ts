@@ -9,7 +9,7 @@
  * `realized` and `unrealized` need an opening market cap to convert
  * tokens back to BNB. When `openMcBnb` is missing on a launch (pre-bundle
  * or non-graduated), that launch contributes nothing to those totals,
- * which is correct — we don't have a price yet.
+ * which is correct, we don't have a price yet.
  */
 import type { UserLaunchEntry } from "@/lib/api/portfolio";
 

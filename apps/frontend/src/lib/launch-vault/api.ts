@@ -6,7 +6,7 @@
  *   (`vaultAddress`, `tier`, `presaleCapWei`, `closeAt`). Backend ships these
  *   when the launch row has them; the page degrades gracefully when missing.
  * - `GET /v2/launches/:id/depositors` returns recent deposit/withdrawal
- *   activity. Backend may not implement it yet — we surface an empty list
+ *   activity. Backend may not implement it yet, we surface an empty list
  *   and the on-chain event fallback in `use-vault-events` covers the gap.
  */
 import { apiFetch, isApiError } from "@/lib/api/_fetcher";
@@ -24,7 +24,7 @@ export type PublicLaunchExtended = {
 	launchAuthorizedAt: string | null;
 	launchAuthorizedBy: string | null;
 	errorMessage: string | null;
-	// W49 extensions (optional in response — backend may not populate):
+	// W49 extensions (optional in response, backend may not populate):
 	vaultAddress?: string | null;
 	tier?: string | null;
 	presaleCapWei?: string | null;
@@ -63,7 +63,7 @@ export async function fetchDepositors(id: string): Promise<DepositorEvent[]> {
 		if (Array.isArray(res)) return res;
 		return res.events ?? [];
 	} catch (err) {
-		// Endpoint may not exist yet — treat as empty so the on-chain event
+		// Endpoint may not exist yet, treat as empty so the on-chain event
 		// fallback can take over. Other errors bubble.
 		if (isApiError(err) && (err.status === 404 || err.status === 501)) return [];
 		throw err;

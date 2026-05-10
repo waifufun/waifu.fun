@@ -93,7 +93,7 @@ export function usePortfolioLaunches(address: string | undefined) {
 			} catch (err) {
 				if (isApiError(err)) {
 					const apiErr = err as ApiError;
-					// Endpoint may not be deployed yet — surface empty so the
+					// Endpoint may not be deployed yet, surface empty so the
 					// dashboard still renders the wagmi-only fallback.
 					if (apiErr.status === 404 || apiErr.status === 501) return [];
 				}

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function EmptyState({
 	title = "no agents yet.",
-	subtitle = "agents launch via api. check back soon.",
+	subtitle = "agents launch through the api. check back soon.",
 	ctaHref = "/agents",
 	ctaLabel = "browse agents",
 }: {

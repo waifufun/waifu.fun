@@ -4,7 +4,7 @@
  *
  * Pages that needed bespoke padding before this lived (the launch page
  * used `py-8`, the portfolio page used `py-6`, the agents page used
- * `pt-10 pb-24`) should opt-in incrementally — this is the source of
+ * `pt-10 pb-24`) should opt-in incrementally, this is the source of
  * truth going forward.
  */
 import { cn } from "@/lib/utils";

@@ -112,7 +112,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 			<div className="mx-auto w-full max-w-[640px]">
 				<header className="mb-10">
 					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-						provisioning {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
+						step {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
 						{step === "persona" ? "who are they?" : null}
@@ -123,20 +123,16 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 						{step === "review" ? "ready to wake them up?" : null}
 					</h1>
 					<p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-[52ch]">
-						{step === "persona" ? "pick a name, ticker, a one-line bio. they inherit this from launch." : null}
-						{step === "tier"
-							? "pick a tier. it sets the cap, the v2 buy, and the math everything else flows from."
-							: null}
+						{step === "persona" ? "name, ticker, one-line bio. they carry this with them." : null}
+						{step === "tier" ? "pick a tier. it sets the cap, the v2 buy, and the math the rest flows from." : null}
 						{step === "launchpad"
-							? "pick the launchpad and the fee model. waifu's cut comes out of the agent treasury allocation."
+							? "pick a launchpad and a fee model. waifu's cut comes out of the agent treasury."
 							: null}
 						{step === "runtime"
-							? "run on our hosted cloud, or wire up an agent you already have. you can change this later."
+							? "run on our cloud, or point at an agent you already have. you can change this later."
 							: null}
-						{step === "safe"
-							? "treasury rules and adapters. defaults are sane. tweak any of this later from /patron."
-							: null}
-						{step === "review" ? "last look. costs gas + a one-time $5 setup." : null}
+						{step === "safe" ? "treasury rules and adapters. defaults are sane. tweak from /patron later." : null}
+						{step === "review" ? "last look. costs gas plus a one-time $5 setup." : null}
 					</p>
 				</header>
 
@@ -205,13 +201,13 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 
 				{/* Manual-fallback banner. Persistent across steps; agents should use skill.md. */}
 				<div className="mb-8 border-l-2 border-[#00ff87] bg-[#0A0F0C] p-4">
-					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">[manual fallback]</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">manual fallback</p>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						you're launching by hand. that's fine. if you want your agent to do this for itself, point it at{" "}
-						<a href="/skill.md" className="text-[#00ff87] hover:opacity-80">
+						you're launching by hand. that's fine. if you want your agent to do this itself, point it at{" "}
+						<a href="/skill.md" className="text-[#00ff87] hover:opacity-80 transition-opacity">
 							waifu.fun/skill.md
-						</a>{" "}
-						instead.
+						</a>
+						.
 					</p>
 				</div>
 

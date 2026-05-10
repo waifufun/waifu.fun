@@ -96,7 +96,7 @@ export default function ClosingV2() {
 					</RevealBlock>
 				</div>
 
-				{/* Psyop signal — subtle, hits different */}
+				{/* Psyop signal, subtle, hits different */}
 				<RevealBlock delay={0.35}>
 					<p className="mt-16 font-mono text-[11px] tracking-[0.15em] text-[#3f3f46] italic">
 						if you made it this far, you already know what this is.

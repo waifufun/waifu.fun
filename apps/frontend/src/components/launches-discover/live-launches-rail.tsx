@@ -33,14 +33,18 @@ export function LiveLaunchesRail() {
 						live now
 					</div>
 					<h2 className="text-2xl md:text-3xl leading-tight tracking-tight text-white">
-						{showSkeleton ? "loading rounds…" : `${launches.length} round${launches.length === 1 ? "" : "s"} open`}
+						{showSkeleton
+							? "loading rounds…"
+							: launches.length === 1
+								? "1 round live"
+								: `${launches.length} rounds live`}
 					</h2>
 				</div>
 				<Link
 					href="/launches"
-					className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors"
+					className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors duration-150"
 				>
-					see all
+					browse all
 				</Link>
 			</div>
 

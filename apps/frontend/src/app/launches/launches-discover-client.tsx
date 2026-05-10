@@ -73,7 +73,7 @@ function LaunchesInner() {
 			<PageHeader
 				eyebrow="waifu.fun / launches"
 				title="launches"
-				subtitle="every round on waifu.fun. open rounds accept BNB for 24h, then graduate to a pancake v2 pool."
+				subtitle="open rounds take bnb for 24h, then graduate to pancake v2."
 				right={
 					!showSkeleton ? (
 						<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/45">
@@ -108,13 +108,11 @@ function LaunchesInner() {
 							state === "all"
 								? "no launches yet."
 								: state === "open"
-									? "no rounds open right now."
-									: `no ${state} launches right now.`
+									? "nothing live right now."
+									: `no ${state} rounds.`
 						}
 						body={
-							state === "open"
-								? "be the first to launch a round, or check back soon."
-								: "try switching filters, or launch your own."
+							state === "open" ? "be the first, or check back soon." : "try a different filter, or launch your own."
 						}
 						ctaHref="/create/wizard"
 						ctaLabel="launch yours"
@@ -200,7 +198,11 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 function LaunchesFallback() {
 	return (
 		<PageShell maxWidth="wide">
-			<PageHeader eyebrow="waifu.fun / launches" title="launches" subtitle="loading…" />
+			<PageHeader
+				eyebrow="waifu.fun / launches"
+				title="launches"
+				subtitle="open rounds take bnb for 24h, then graduate to pancake v2."
+			/>
 			<div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 				{Array.from({ length: 6 }).map((_, i) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
