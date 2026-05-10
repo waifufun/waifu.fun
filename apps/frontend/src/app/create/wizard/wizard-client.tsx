@@ -18,6 +18,7 @@ import {
 import { useAuthRequired } from "@/hooks/use-auth-required";
 import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
 import { type CreateLaunchResult, createLaunch, requestLaunchNonce } from "@/lib/api/launches";
+import { buildLaunchSiweMessage } from "@/lib/siwe";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -50,14 +51,6 @@ function isEndpointUnavailable(err: unknown): boolean {
 			typeof (err as { status?: unknown }).status === "number" &&
 			(err as { status: number }).status === 404,
 	);
-}
-
-function buildLaunchSiweMessage(address: string, nonce: string): string {
-	const origin = window.location.origin;
-	const domain = window.location.host;
-	const issuedAt = new Date().toISOString();
-	const expirationTime = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-	return `${domain} wants you to sign in with your Ethereum account:\n${address}\n\nsign to confirm launch. waifu.fun will use this wallet as creator for the launch transaction.\n\nURI: ${origin}/create/wizard\nVersion: 1\nChain ID: 56\nNonce: ${nonce}\nIssued At: ${issuedAt}\nExpiration Time: ${expirationTime}`;
 }
 
 function WizardInner() {
@@ -131,9 +124,9 @@ function WizardInner() {
 
 		setSigningLaunch(true);
 		try {
-			toast.info("sign to confirm launch");
+			toast.info("sign to prove this wallet owns the agent launch. no gas is spent.");
 			const nonce = await launchNonceOrFallback(connectedAddress);
-			const message = buildLaunchSiweMessage(connectedAddress, nonce);
+			const message = buildLaunchSiweMessage({ address: connectedAddress, nonce, origin: window.location.origin });
 			const signature = await signMessageAsync({ message });
 			void startLaunchCreate({ creator: connectedAddress, siwe: { message, signature } });
 			setProvisioning(true);
