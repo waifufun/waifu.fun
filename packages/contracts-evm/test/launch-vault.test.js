@@ -371,6 +371,25 @@ describe("LaunchVault - close + launch", () => {
 		assert.equal(await ethers.provider.getBalance(await vault.getAddress()), 0n);
 	});
 
+	it("launch() splits curve fill and V2 buy using bonusPool-inclusive total BNB", async () => {
+		const { vault, owner, alice, bob, router, token } = await deployFixture({
+			bnbForBuy: ethers.parseEther("4"),
+		});
+
+		await vault.connect(alice).deposit({ value: PRESALE_CAP });
+		await vault.connect(alice).withdraw(ethers.parseEther("1"));
+		await vault.connect(bob).deposit({ value: ethers.parseEther("1") });
+		await vault.connect(owner).close();
+
+		await vault.connect(owner).launch(await token.getAddress(), 123n, Math.floor(Date.now() / 1000) + 3600);
+
+		const last = await router.lastParams();
+		assert.equal(await router.received(), ethers.parseEther("10.05"));
+		assert.equal(last.curveFillBnb, ethers.parseEther("6"));
+		assert.equal(last.v2BuyBnb, ethers.parseEther("4.05"));
+		assert.equal(last.minTokensFromV2, 123n);
+	});
+
 	it("launch() reverts on bad caller / wrong state / zero token / failing transfer", async () => {
 		const { vault, owner, alice, router, token } = await deployFixture();
 		const tokenAddr = await token.getAddress();
@@ -408,6 +427,56 @@ describe("LaunchVault - close + launch", () => {
 		assert.equal(await vault.totalDeposited(), 0n);
 		assert.equal(await vault.bonusPool(), 0n);
 		assert.equal(await ethers.provider.getBalance(await vault.getAddress()), 0n);
+	});
+
+	it("launch() rejects under-subscribed closes until refunds are used", async () => {
+		const { vault, owner, alice, token } = await deployFixture();
+		await vault.connect(alice).deposit({ value: ethers.parseEther("9") });
+		await vault.connect(owner).close();
+
+		await expectCustomError(
+			vault.connect(owner).launch(await token.getAddress(), 0, Math.floor(Date.now() / 1000) + 3600),
+			"UnderSubscribed",
+		);
+
+		await vault.connect(owner).enableRefunds();
+		assert.equal(await vault.refundsEnabled(), true);
+		await vault.connect(owner).enableRefunds();
+		assert.equal(await vault.refundsEnabled(), true);
+	});
+});
+
+describe("LaunchVault - adversarial payout behavior", () => {
+	it("withdraw() is non-reentrant and preserves accounting when receiver reenters", async () => {
+		const { vault } = await deployFixture();
+		const attacker = await ethers.deployContract("LaunchVaultReentrantReceiver", [await vault.getAddress()]);
+		await attacker.waitForDeployment();
+
+		await attacker.deposit({ value: ethers.parseEther("2") });
+
+		await assert.rejects(attacker.attackWithdraw(ethers.parseEther("1")), /reentrant|unable to send value/i);
+		const info = await vault.depositors(await attacker.getAddress());
+		assert.equal(info.deposited, ethers.parseEther("2"));
+		assert.equal(await vault.totalDeposited(), ethers.parseEther("2"));
+		assert.equal(await vault.bonusPool(), 0n);
+	});
+
+	it("refund() is non-reentrant and leaves failed refund state unchanged on attack", async () => {
+		const { vault, owner, alice } = await deployFixture();
+		const attacker = await ethers.deployContract("LaunchVaultReentrantReceiver", [await vault.getAddress()]);
+		await attacker.waitForDeployment();
+
+		await attacker.deposit({ value: ethers.parseEther("2") });
+		await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
+		await vault.connect(alice).withdraw(ethers.parseEther("1"));
+		await vault.connect(owner).close();
+		await vault.connect(owner).enableRefunds();
+
+		await assert.rejects(attacker.attackRefund(), /reentrant|unable to send value/i);
+		const info = await vault.depositors(await attacker.getAddress());
+		assert.equal(info.deposited, ethers.parseEther("2"));
+		assert.equal(await vault.totalDeposited(), ethers.parseEther("2"));
+		assert.equal(await vault.bonusPool(), ethers.parseEther("0.05"));
 	});
 });
 

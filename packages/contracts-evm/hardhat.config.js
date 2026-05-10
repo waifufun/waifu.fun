@@ -6,19 +6,27 @@ require("hardhat-contract-sizer");
 require("solidity-coverage");
 require("dotenv").config();
 
+const forkBsc = process.env.FORK_BSC === "true";
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
 	defaultNetwork: "hardhat",
 	networks: {
 		hardhat: {
-			forking:
-				process.env.FORK_BSC === "true"
-					? {
-							url: process.env.FORK_BSC_URL || "https://bsc-dataseed1.binance.org/",
-							blockNumber: process.env.FORK_BSC_BLOCK ? Number.parseInt(process.env.FORK_BSC_BLOCK) : undefined,
-						}
-					: undefined,
-			chainId: 31337,
+			forking: forkBsc
+				? {
+						url: process.env.FORK_BSC_URL || "https://bsc-dataseed1.binance.org/",
+						blockNumber: process.env.FORK_BSC_BLOCK ? Number.parseInt(process.env.FORK_BSC_BLOCK) : undefined,
+					}
+				: undefined,
+			chainId: forkBsc ? 56 : 31337,
+			chains: {
+				56: {
+					hardforkHistory: {
+						shanghai: 0,
+					},
+				},
+			},
 		},
 		localhost: {
 			url: process.env.ETH_RPC || "http://127.0.0.1:8545",

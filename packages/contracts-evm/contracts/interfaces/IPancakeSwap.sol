@@ -15,6 +15,17 @@ interface IUniswapV2Factory {
     ) external returns (address pair);
 }
 
+/// @title IUniswapV2Pair
+/// @notice PancakeSwap V2 Pair interface (Uniswap V2 fork)
+interface IUniswapV2Pair {
+    function getReserves()
+        external
+        view
+        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+
+    function token0() external view returns (address);
+}
+
 /// @title IUniswapV2Router02
 /// @notice PancakeSwap V2 Router interface (Uniswap V2 fork)
 interface IUniswapV2Router02 {
@@ -33,6 +44,15 @@ interface IUniswapV2Router02 {
         uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB, uint256 liquidity);
 
+    function addLiquidityETH(
+        address token,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
+        address to,
+        uint256 deadline
+    ) external payable returns (uint256 amountToken, uint256 amountETH, uint256 liquidity);
+
     function removeLiquidity(
         address tokenA,
         address tokenB,
@@ -50,6 +70,13 @@ interface IUniswapV2Router02 {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
+
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external payable;
 
     function getAmountsOut(
         uint256 amountIn,

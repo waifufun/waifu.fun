@@ -3,33 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
-interface IPancakeFactory {
-	function getPair(address tokenA, address tokenB) external view returns (address);
-}
-
-interface IPancakeRouter {
-	function addLiquidityETH(
-		address token,
-		uint256 amountTokenDesired,
-		uint256 amountTokenMin,
-		uint256 amountETHMin,
-		address to,
-		uint256 deadline
-	) external payable returns (uint256 amountToken, uint256 amountETH, uint256 liquidity);
-
-	function swapExactETHForTokensSupportingFeeOnTransferTokens(
-		uint256 amountOutMin,
-		address[] calldata path,
-		address to,
-		uint256 deadline
-	) external payable;
-}
-
-interface IPancakePair {
-	function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-	function token0() external view returns (address);
-}
+import {IUniswapV2Factory, IUniswapV2Pair, IUniswapV2Router02} from "./interfaces/IPancakeSwap.sol";
 
 /// @title BundleRouter
 /// @notice Atomic bundle launch: fills bonding curve, buys from V2 pair, burns proceeds.
@@ -142,7 +116,7 @@ contract BundleRouter is ReentrancyGuard {
 			uint256 lpTokens = IERC20(params.flapToken).balanceOf(address(this));
 			if (lpTokens == 0) revert NoLiquidityTokens();
 			IERC20(params.flapToken).approve(pcsRouter, lpTokens);
-			IPancakeRouter(pcsRouter).addLiquidityETH{value: params.curveFillBnb}(
+			IUniswapV2Router02(pcsRouter).addLiquidityETH{value: params.curveFillBnb}(
 				params.flapToken,
 				lpTokens,
 				0,
@@ -153,7 +127,7 @@ contract BundleRouter is ReentrancyGuard {
 		}
 
 		// Step 2: Verify V2 pair exists.
-		address pair = IPancakeFactory(pcsFactory).getPair(params.flapToken, WBNB);
+		address pair = IUniswapV2Factory(pcsFactory).getPair(params.flapToken, WBNB);
 		if (pair == address(0)) revert PairNotCreated();
 
 		uint256 tokensReceived = 0;
@@ -166,7 +140,7 @@ contract BundleRouter is ReentrancyGuard {
 
 			uint256 balBefore = IERC20(params.flapToken).balanceOf(address(this));
 
-			IPancakeRouter(pcsRouter).swapExactETHForTokensSupportingFeeOnTransferTokens{value: params.v2BuyBnb}(
+			IUniswapV2Router02(pcsRouter).swapExactETHForTokensSupportingFeeOnTransferTokens{value: params.v2BuyBnb}(
 				params.minTokensFromV2,
 				path,
 				address(this),
@@ -182,8 +156,8 @@ contract BundleRouter is ReentrancyGuard {
 		}
 
 		// Step 5: Compute open MC and emit.
-		(uint112 r0, uint112 r1,) = IPancakePair(pair).getReserves();
-		bool tokenIsToken0 = IPancakePair(pair).token0() == params.flapToken;
+		(uint112 r0, uint112 r1,) = IUniswapV2Pair(pair).getReserves();
+		bool tokenIsToken0 = IUniswapV2Pair(pair).token0() == params.flapToken;
 		uint256 tokenReserve = tokenIsToken0 ? uint256(r0) : uint256(r1);
 		uint256 bnbReserve = tokenIsToken0 ? uint256(r1) : uint256(r0);
 		uint256 openMcBnb = tokenReserve == 0
