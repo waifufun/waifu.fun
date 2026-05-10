@@ -54,7 +54,7 @@
 		"forAgents": "for agents →",
 		"giveSkill": "give your agent the skill",
 		"browseAgents": "browse agents",
-		"inviteOnly": "[invite-only] · message us in discord or x"
+		"inviteOnly": "invite-only. dm us on discord or x."
 	},
 	"explorer": {
 		"exploreAgents": "explore agents",

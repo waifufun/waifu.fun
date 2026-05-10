@@ -17,7 +17,7 @@ export function TierInfoCard({ tier, vestingEnabled }: Props) {
 	return (
 		<Card className="border-white/10 bg-[#08080a] py-0">
 			<CardHeader className="flex flex-col gap-1 border-b border-white/10 px-6 py-5">
-				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">tier breakdown</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">tier</span>
 				<CardTitle className="text-xl font-semibold text-zinc-100">{tier.label}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-6 px-6 py-6">

@@ -42,9 +42,9 @@ export function LiveLaunchesRail() {
 				</div>
 				<Link
 					href="/launches"
-					className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors"
+					className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors duration-150"
 				>
-					see all
+					browse all
 				</Link>
 			</div>
 

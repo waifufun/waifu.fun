@@ -21,11 +21,11 @@ export default function PortfolioStats({ totals }: Props) {
 
 	const metrics: { label: string; value: string; tone?: "neutral" | "positive" | "negative" }[] = [
 		{
-			label: "launches backed",
+			label: "backed",
 			value: String(totals.count),
 		},
 		{
-			label: "total invested",
+			label: "invested",
 			value: `${formatBnb(totals.investedWei)} bnb`,
 		},
 		{
