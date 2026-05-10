@@ -109,9 +109,9 @@ export default memo(function ProvisioningLoader({ onDone, awaitingResponse = fal
 					</AnimatePresence>
 					<p className="mt-2 text-sm text-neutral-400 leading-relaxed">
 						{showingExtension
-							? "still launching on bsc, this can take up to a minute"
+							? "still launching on bsc, this can take up to a minute."
 							: allDone
-								? "taking you home..."
+								? "taking you home."
 								: "~10-15 seconds."}
 					</p>
 

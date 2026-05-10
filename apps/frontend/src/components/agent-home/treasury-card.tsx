@@ -109,12 +109,12 @@ export default function TreasuryCard({
 			<div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
 				<Stat
 					label="bnb balance"
-					value={balance.isLoading ? "..." : typeof balance.data === "number" ? `${balance.data.toFixed(4)}` : "—"}
+					value={balance.isLoading ? "..." : typeof balance.data === "number" ? `${balance.data.toFixed(4)}` : "–"}
 					suffix="bnb"
 				/>
 				<Stat
 					label={`${ticker ? `$${ticker}` : "token"} held`}
-					value={tokenBalance !== null && tokenBalance !== undefined ? formatTokenBalance(tokenBalance) : "—"}
+					value={tokenBalance !== null && tokenBalance !== undefined ? formatTokenBalance(tokenBalance) : "–"}
 				/>
 				<Stat label="inference runway" value={runway.value} suffix={runway.suffix} hint={runway.hint} />
 			</div>
@@ -123,11 +123,11 @@ export default function TreasuryCard({
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">last tax</div>
 				<div className="text-[11px] font-mono text-white/60">
 					{lastTax === null || lastTax === "unavailable" ? (
-						<span className="text-white/30">—</span>
+						<span className="text-white/30">–</span>
 					) : (
 						<>
 							<span className="text-[#00ff87]">
-								+{formatBnb((lastTax.data as Record<string, unknown>).amount) || "—"}
+								+{formatBnb((lastTax.data as Record<string, unknown>).amount) || "–"}
 							</span>
 							<span className="text-white/30 ml-2">{timeAgo(lastTax.createdAt)}</span>
 						</>
@@ -220,7 +220,7 @@ function deriveRunway({
 	dailyBurnUsd: number | null;
 }): { value: string; suffix?: string | undefined; hint?: string | undefined } {
 	if (dailyBurnUsd === null || dailyBurnUsd <= 0) {
-		return { value: "—", hint: "runway unknown" };
+		return { value: "–", hint: "runway unknown" };
 	}
 	if (bnb === undefined) {
 		return { value: "...", hint: "loading balance" };
@@ -229,12 +229,12 @@ function deriveRunway({
 	// backend we can't convert. Surface runway as "bnb / day of burn" when the
 	// backend ships only dailyBurnUsd, otherwise show the dash placeholder with `runway unknown`.
 	// This component stays honest rather than inventing a price feed.
-	return { value: "—", hint: "runway unknown" };
+	return { value: "–", hint: "runway unknown" };
 }
 
 function formatTokenBalance(v: number | string): string {
 	const n = typeof v === "string" ? Number(v) : v;
-	if (!Number.isFinite(n)) return "—";
+	if (!Number.isFinite(n)) return "–";
 	if (n === 0) return "0";
 	const abs = Math.abs(n);
 	if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;

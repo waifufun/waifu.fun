@@ -38,7 +38,7 @@ const PRESET_FRACTION: Record<Preset, number> = {
  *
  * Thin wrapper over the existing wagmi/viem helper. Returns BNB as a number
  * (already formatted). Returns `null` when the address is missing or the
- * RPC call hasn't resolved yet: callers render a `—` placeholder.
+ * RPC call hasn't resolved yet: callers render a `,` placeholder.
  */
 export function useSafeBalance(safeAddress: string | null | undefined) {
 	const { data, isLoading, error, refetch } = useBalance({
@@ -54,13 +54,13 @@ export function useSafeBalance(safeAddress: string | null | undefined) {
 }
 
 function shortAddress(addr: string | null | undefined): string {
-	if (!addr) return "—";
+	if (!addr) return "–";
 	if (addr.length <= 14) return addr;
 	return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
 function formatBnb(n: number | null | undefined, digits = 4): string {
-	if (n == null || Number.isNaN(n)) return "—";
+	if (n == null || Number.isNaN(n)) return "–";
 	if (n === 0) return "0";
 	if (n < 0.0001) return "<0.0001";
 	return n.toLocaleString("en-US", {
@@ -178,7 +178,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 					</div>
 
 					<div className="rounded-sm border border-stroke bg-[#0A0A0A] p-4 flex items-center gap-3 flex-wrap">
-						<code className="font-mono text-sm text-white break-all flex-1 min-w-0">{safeAddress ?? "—"}</code>
+						<code className="font-mono text-sm text-white break-all flex-1 min-w-0">{safeAddress ?? "–"}</code>
 						<div className="flex items-center gap-2">
 							<button
 								type="button"

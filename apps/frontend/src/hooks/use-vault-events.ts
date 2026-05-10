@@ -8,7 +8,7 @@ import { bsc } from "wagmi/chains";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 import type { DepositorEvent } from "@/lib/launch-vault/api";
 
-const RECENT_BLOCKS = 50_000n; // ~1.7 days on bsc — covers a 24h round
+const RECENT_BLOCKS = 50_000n; // ~1.7 days on bsc, covers a 24h round
 const REFETCH_MS = 15_000;
 const FEED_LIMIT = 10;
 

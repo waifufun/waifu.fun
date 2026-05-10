@@ -173,7 +173,7 @@ export default function StepReview() {
 						don't approve a launch under wrong fee expectations. */}
 						{feeConfig?.kind === "flap" && feeConfig.recipient === "custom-vault" ? (
 							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-								<p>trade tax: {taxVolumePct ?? "—"}%</p>
+								<p>trade tax: {taxVolumePct ?? "–"}%</p>
 								<p>└─ 100% routes direct to your custom vault. no platform cut on-chain.</p>
 							</div>
 						) : taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (

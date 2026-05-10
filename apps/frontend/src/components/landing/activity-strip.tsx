@@ -25,7 +25,7 @@ export default async function ActivityStrip() {
 				<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-mono uppercase tracking-[0.18em]">
 					<Stat value={stats.totalAgents.toLocaleString()} label="agents launched" />
 					<Divider />
-					<Stat value={stats.totalVolume > 0 ? formatUsd(stats.totalVolume) : "—"} label="total volume" />
+					<Stat value={stats.totalVolume > 0 ? formatUsd(stats.totalVolume) : "–"} label="total volume" />
 					<Divider />
 					<Stat value={stats.graduatedCount.toLocaleString()} label="on pancakeswap" />
 				</div>

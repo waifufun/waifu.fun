@@ -55,11 +55,11 @@ export function DepositForm({ vault, address, disabled, disabledReason, onComple
 			return;
 		}
 		if (valueWei <= 0n) {
-			setError("amount must be greater than 0");
+			setError("enter an amount.");
 			return;
 		}
 		if (max > 0n && valueWei > max) {
-			setError("not enough bnb (leave gas)");
+			setError("not enough bnb. leave headroom for gas.");
 			return;
 		}
 		writeContract({
@@ -82,7 +82,7 @@ export function DepositForm({ vault, address, disabled, disabledReason, onComple
 					value={amountStr}
 					onChange={(e) => setAmountStr(sanitize(e.target.value))}
 					disabled={isLocked}
-					className="border border-white/10 bg-[#0b0b0d] px-3 py-2 font-mono text-lg text-zinc-100 outline-none focus:border-[#00ff87]/40 disabled:opacity-50"
+					className="border border-white/10 bg-[#0b0b0d] px-3 py-2 font-mono text-lg text-zinc-100 outline-none transition-colors duration-150 focus:border-[#00ff87]/40 focus:bg-[#0c0c0e] disabled:opacity-50"
 				/>
 			</label>
 			<div className="flex flex-wrap gap-2">
@@ -101,24 +101,28 @@ export function DepositForm({ vault, address, disabled, disabledReason, onComple
 			<div className="flex justify-between text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
 				<span>balance</span>
 				<span className="tabular-nums text-zinc-300">
-					{balance.data ? `${formatEther(balance.data.value).slice(0, 8)} bnb` : "—"}
+					{balance.data ? `${formatEther(balance.data.value).slice(0, 8)} bnb` : "–"}
 				</span>
 			</div>
 
 			{error ? <p className="text-xs text-red-400">{error}</p> : null}
 			{disabled && disabledReason ? <p className="text-xs text-zinc-500">{disabledReason}</p> : null}
 
-			<Button type="submit" disabled={isLocked || max === 0n} className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90">
+			<Button
+				type="submit"
+				disabled={isLocked || max === 0n}
+				className="bg-[#00ff87] text-black hover:bg-[#00ff87]/90 transition-colors"
+			>
 				{isPending ? (
 					<>
-						<Loader2 className="size-4 animate-spin" /> awaiting wallet
+						<Loader2 className="size-4 animate-spin" /> sign in wallet
 					</>
 				) : receipt.isLoading ? (
 					<>
 						<Loader2 className="size-4 animate-spin" /> confirming
 					</>
 				) : (
-					"deposit bnb"
+					"deposit"
 				)}
 			</Button>
 		</form>

@@ -36,10 +36,10 @@ export function LiveLaunchBanner({ tokenAddress }: Props) {
 				</span>
 				<div className="min-w-0">
 					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
-						{isOpen ? "live launch round" : "round closed, awaiting bundle"}
+						{isOpen ? "round live" : "awaiting bundle"}
 					</div>
 					<div className="mt-0.5 text-sm text-white/85 truncate">
-						{isOpen ? "deposit BNB before the window closes" : "v2 graduation in progress"}
+						{isOpen ? "deposit bnb before the window closes." : "v2 graduation in progress."}
 					</div>
 				</div>
 			</div>

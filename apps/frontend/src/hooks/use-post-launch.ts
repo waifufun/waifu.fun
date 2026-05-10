@@ -109,7 +109,7 @@ export function useTreasuryLpTiers(treasuryLp: Address | undefined) {
 
 	// Mixed-shape contracts (different `functionName` + `args` per row) trip
 	// wagmi's homogeneous-tuple inference. Cast through `unknown` to a loose
-	// array shape — the types are still validated at the call site, just not
+	// array shape, the types are still validated at the call site, just not
 	// across the union.
 	type MixedContract = {
 		address: Address;
@@ -141,7 +141,7 @@ export function useTreasuryLpTiers(treasuryLp: Address | undefined) {
 		allowFailure: true,
 		// Wagmi's `contracts` prop wants a tuple of identical shapes; our list
 		// is intentionally heterogenous (different functionName per slot). The
-		// runtime contract is fine — we cast to bypass the tuple inference.
+		// runtime contract is fine, we cast to bypass the tuple inference.
 		contracts: contracts as unknown as readonly never[],
 		query: {
 			enabled,

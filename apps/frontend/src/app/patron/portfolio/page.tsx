@@ -45,15 +45,15 @@ export default function PortfolioPage() {
 		<main className="py-6">
 			<PatronHeader
 				title="portfolio"
-				subtitle="every launch you've backed, with claimable balances and realized p&l."
+				subtitle="every launch you've backed. claimable balances, realized p&l."
 				backHref="/patron"
 			/>
 
 			{!address ? (
 				<EmptyState
 					icon={Plug}
-					title="connect a wallet to see launches you've backed."
-					body="link a wallet on the wallets page, then come back here."
+					title="connect a wallet first."
+					body="link a wallet, then come back here for your positions."
 					ctaHref="/patron/wallets"
 					ctaLabel="link a wallet"
 				/>
@@ -72,10 +72,10 @@ export default function PortfolioPage() {
 			{address && !isLoading && !error && list.length === 0 ? (
 				<EmptyState
 					icon={Coins}
-					title="you haven't backed any launches yet."
-					body="deposit BNB on a live round and you'll see your positions here."
+					title="no positions yet."
+					body="deposit bnb on a live round, your positions will show here."
 					ctaHref="/launches"
-					ctaLabel="browse launches"
+					ctaLabel="browse rounds"
 				/>
 			) : null}
 
@@ -93,11 +93,11 @@ export default function PortfolioPage() {
 
 					<section className="mb-8">
 						<h2 className="text-sm font-mono uppercase tracking-[0.2em] text-neutral-400 mb-3">
-							active positions ({active.length + claimableEntries.length})
+							active ({active.length + claimableEntries.length})
 						</h2>
 						{active.length + claimableEntries.length === 0 ? (
 							<div className="rounded-sm border border-stroke-strong bg-[#0C0C0C] px-4 py-6 text-center text-sm text-neutral-500">
-								no active positions. all launches have settled.
+								no active positions. everything has settled.
 							</div>
 						) : (
 							<div className="border border-stroke-strong rounded-sm overflow-hidden">

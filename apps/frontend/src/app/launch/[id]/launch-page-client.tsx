@@ -65,7 +65,7 @@ export default function LaunchPageClient({ id }: Props) {
 			<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-12">
 				<ErrorState
 					title="couldn't load this launch."
-					message={meta.error instanceof Error ? meta.error.message : "failed to load launch"}
+					message={meta.error instanceof Error ? meta.error.message : "unknown error."}
 					onRetry={() => void meta.refetch()}
 					homeHref="/launches"
 				/>
@@ -137,11 +137,7 @@ function LoadingState() {
 function NotFound({ id, reason }: { id: string; reason: string }) {
 	return (
 		<main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-4 px-4 py-12">
-			<ErrorState
-				title="launch not found."
-				message={`we couldn't find a round for ${id}. ${reason}`}
-				homeHref="/launches"
-			/>
+			<ErrorState title="launch not found." message={`no round for ${id}. ${reason}`} homeHref="/launches" />
 		</main>
 	);
 }

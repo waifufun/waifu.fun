@@ -8,9 +8,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 function formatTs(iso: string | null | undefined): string {
-	if (!iso) return "—";
+	if (!iso) return "–";
 	const d = new Date(iso);
-	if (Number.isNaN(d.getTime())) return "—";
+	if (Number.isNaN(d.getTime())) return "–";
 	return `${d.toISOString().replace("T", " ").slice(0, 19)}Z`;
 }
 
@@ -132,7 +132,7 @@ function AgentRow({ agent, token }: { agent: AdminAgent; token: string | null })
 					<span className="text-[10px] font-mono text-neutral-600 truncate max-w-[280px]">{agent.id}</span>
 				</div>
 			</td>
-			<td className="px-3 py-2 align-top text-xs font-mono text-neutral-300">${agent.ticker || "—"}</td>
+			<td className="px-3 py-2 align-top text-xs font-mono text-neutral-300">${agent.ticker || "–"}</td>
 			<td className="px-3 py-2 align-top">
 				<StatusPill status={status} />
 			</td>

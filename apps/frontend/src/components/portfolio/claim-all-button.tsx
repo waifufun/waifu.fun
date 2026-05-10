@@ -5,7 +5,7 @@
  *
  * Iterates over every eligible vault and asks the wallet to sign a
  * `claim()` tx, one at a time. The button is intentionally NOT a single
- * batched call — claim() is a per-vault function on LaunchVault, and we
+ * batched call, claim() is a per-vault function on LaunchVault, and we
  * want each receipt to surface separately so a single failure doesn't
  * roll back the rest.
  *
@@ -77,7 +77,7 @@ export default function ClaimAllButton({ entries, onClaimed, onAllDone }: Props)
 				}
 			} catch (err) {
 				failed += 1;
-				// User rejection or revert — keep going to the next one. We
+				// User rejection or revert, keep going to the next one. We
 				// surface the count in the summary; per-tx errors aren't
 				// fatal to the sequence. If every single one is a rejection,
 				// short-circuit so we don't keep nagging the user.
