@@ -91,39 +91,41 @@ contract BundleRouter is ReentrancyGuard {
 		// TOKEN_TAXED_V3 contracts do not expose token.buy(); the curve state lives
 		// in the Portal. Factory-minted AgentTokenV3 launches send LP inventory to
 		// this router instead, so the fallback path creates the V2 LP directly.
-		uint256 curveBalBefore = IERC20(params.flapToken).balanceOf(address(this));
-		bool portalOk = false;
-		if (flapPortal.code.length > 0) {
-			(portalOk,) = flapPortal.call{value: params.curveFillBnb}(
-				abi.encodeWithSelector(
-					FLAP_SWAP_EXACT_INPUT,
-					PortalExactInputParams({
-						inputToken: address(0),
-						outputToken: params.flapToken,
-						inputAmount: params.curveFillBnb,
-						minOutputAmount: 0,
-						permitData: ""
-					})
-				)
-			);
-		}
-		if (portalOk) {
-			uint256 curveTokensReceived = IERC20(params.flapToken).balanceOf(address(this)) - curveBalBefore;
-			if (curveTokensReceived > 0) {
-				IERC20(params.flapToken).transfer(msg.sender, curveTokensReceived);
+		if (params.curveFillBnb > 0) {
+			uint256 curveBalBefore = IERC20(params.flapToken).balanceOf(address(this));
+			bool portalOk = false;
+			if (flapPortal.code.length > 0) {
+				(portalOk,) = flapPortal.call{value: params.curveFillBnb}(
+					abi.encodeWithSelector(
+						FLAP_SWAP_EXACT_INPUT,
+						PortalExactInputParams({
+							inputToken: address(0),
+							outputToken: params.flapToken,
+							inputAmount: params.curveFillBnb,
+							minOutputAmount: 0,
+							permitData: ""
+						})
+					)
+				);
 			}
-		} else {
-			uint256 lpTokens = IERC20(params.flapToken).balanceOf(address(this));
-			if (lpTokens == 0) revert NoLiquidityTokens();
-			IERC20(params.flapToken).approve(pcsRouter, lpTokens);
-			IUniswapV2Router02(pcsRouter).addLiquidityETH{value: params.curveFillBnb}(
-				params.flapToken,
-				lpTokens,
-				0,
-				0,
-				DEAD,
-				params.deadline
-			);
+			if (portalOk) {
+				uint256 curveTokensReceived = IERC20(params.flapToken).balanceOf(address(this)) - curveBalBefore;
+				if (curveTokensReceived > 0) {
+					IERC20(params.flapToken).transfer(msg.sender, curveTokensReceived);
+				}
+			} else {
+				uint256 lpTokens = IERC20(params.flapToken).balanceOf(address(this));
+				if (lpTokens == 0) revert NoLiquidityTokens();
+				IERC20(params.flapToken).approve(pcsRouter, lpTokens);
+				IUniswapV2Router02(pcsRouter).addLiquidityETH{value: params.curveFillBnb}(
+					params.flapToken,
+					lpTokens,
+					0,
+					0,
+					DEAD,
+					params.deadline
+				);
+			}
 		}
 
 		// Step 2: Verify V2 pair exists.

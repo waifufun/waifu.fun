@@ -11,7 +11,8 @@ const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
 
 const TEST1_TOKEN = "0x1f4d04b456b96893d8fe0467d07dc5d7ebfa7777";
-const FORK_BLOCK = Number.parseInt(process.env.FORK_BSC_BLOCK || "97368808", 10);
+const REQUIRED_FORK_BLOCK = 97_368_808;
+const FORK_BLOCK = Number.parseInt(process.env.FORK_BSC_BLOCK || String(REQUIRED_FORK_BLOCK), 10);
 const LAUNCHED_TO_DEX_TOPIC = "0x6e4f47630b8745b8cacbd44f42a8a33e7eea7cc08ef22fc7630f4f385784ff7d";
 
 const FACTORY_ABI = ["function getPair(address tokenA, address tokenB) view returns (address)"];
@@ -24,16 +25,29 @@ describe("BundleRouter real Flap V3 fork", function () {
 			if (process.env.REQUIRE_BSC_FORK === "true") throw new Error("FORK_BSC=true is required");
 			this.skip();
 		}
+		if (FORK_BLOCK !== REQUIRED_FORK_BLOCK) {
+			throw new Error(`FORK_BSC_BLOCK must be ${REQUIRED_FORK_BLOCK} for deterministic Test-1 state`);
+		}
+		if (!process.env.FORK_BSC_BLOCK) {
+			if (process.env.REQUIRE_BSC_FORK === "true") throw new Error(`FORK_BSC_BLOCK=${REQUIRED_FORK_BLOCK} is required`);
+			this.skip();
+		}
+
 		const forkUrl = process.env.FORK_BSC_URL;
 		if (!forkUrl) {
 			if (process.env.REQUIRE_BSC_FORK === "true") throw new Error("FORK_BSC_URL is required");
 			this.skip();
 		}
 
-		await network.provider.request({
-			method: "hardhat_reset",
-			params: [{ forking: { jsonRpcUrl: forkUrl, blockNumber: FORK_BLOCK } }],
-		});
+		// The Hardhat network is already forked by hardhat.config.js. Avoid
+		// hardhat_reset here: EDR drops the custom BSC hardfork history on reset,
+		// which makes historical calls at the fork pin fail with "no known hardfork".
+		const forkBlock = await ethers.provider.getBlockNumber();
+		if (forkBlock < FORK_BLOCK) throw new Error(`BSC fork is behind required block ${FORK_BLOCK}`);
+		// Mine once so calls execute on a local post-fork block. EDR otherwise
+		// treats eth_call at exactly the fork pin as historical and ignores the
+		// custom BSC hardfork history.
+		await network.provider.send("evm_mine", []);
 
 		const portalCode = await ethers.provider.getCode(FLAP_PORTAL);
 		const factoryCode = await ethers.provider.getCode(PCS_FACTORY);

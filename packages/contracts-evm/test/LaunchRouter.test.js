@@ -14,12 +14,14 @@ describe("BundleRouter (LaunchRouter)", () => {
 	let attacker;
 	let router;
 	let flapToken;
+	let snapshotId;
 
 	const CURVE_FILL = ethers.parseEther("16");
 	const V2_BUY = ethers.parseEther("16"); // 90% tier
 	const TOTAL_BNB = CURVE_FILL + V2_BUY;
 
 	beforeEach(async function () {
+		snapshotId = await ethers.provider.send("evm_snapshot", []);
 		[owner, attacker] = await ethers.getSigners();
 
 		// Check if BSC fork is active by reading PCS factory code
@@ -49,6 +51,13 @@ describe("BundleRouter (LaunchRouter)", () => {
 		const BundleRouter = await ethers.getContractFactory("BundleRouter");
 		router = await BundleRouter.deploy(wbnbAddr, factoryAddr, routerAddr, INIT_CODE_HASH, FLAP_PORTAL);
 		await router.waitForDeployment();
+	});
+
+	afterEach(async () => {
+		if (snapshotId) {
+			await ethers.provider.send("evm_revert", [snapshotId]);
+			snapshotId = undefined;
+		}
 	});
 
 	describe("execute — full flow", () => {

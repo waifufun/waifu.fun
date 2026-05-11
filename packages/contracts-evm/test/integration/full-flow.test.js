@@ -38,6 +38,7 @@ const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 const FLAP_PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
 const INIT_CODE_HASH = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5";
+const PCS_FACTORY_ABI = ["function getPair(address tokenA, address tokenB) view returns (address)"];
 
 const TIER = { TIER_80: 0, TIER_90: 1, TIER_95: 2, TIER_98: 3 };
 
@@ -83,6 +84,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	let dave;
 	let eve;
 	let factory;
+	let snapshotId;
 
 	before(async function () {
 		if (!(await isBscFork())) {
@@ -96,6 +98,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 	});
 
 	beforeEach(async () => {
+		snapshotId = await ethers.provider.send("evm_snapshot", []);
 		[deployer, creator, platformWallet, alice, bob, carol, dave, eve] = await ethers.getSigners();
 
 		const MockPortal = await ethers.getContractFactory("MockFlapPortal");
@@ -107,6 +110,13 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		factory = await Factory.deploy(WBNB, PCS_FACTORY, PCS_ROUTER, INIT_CODE_HASH, platformWallet.address, FLAP_PORTAL);
 		await factory.waitForDeployment();
+	});
+
+	afterEach(async () => {
+		if (snapshotId) {
+			await ethers.provider.send("evm_revert", [snapshotId]);
+			snapshotId = undefined;
+		}
 	});
 
 	// -------------------------------------------------------------------------
@@ -219,7 +229,7 @@ describe("W41 — Agent Launch v3 End-to-End", function () {
 			await vault.connect(creator).close();
 			await vault.connect(creator).launch(tokenAddr, 0, (await blockTimestamp()) + 3600);
 
-			const pcsFactory = await ethers.getContractAt("IPancakeFactory", PCS_FACTORY);
+			const pcsFactory = new ethers.Contract(PCS_FACTORY, PCS_FACTORY_ABI, ethers.provider);
 			const pair = await pcsFactory.getPair(tokenAddr, WBNB);
 			expect(pair).to.not.equal(ethers.ZeroAddress);
 			expect(await vault.state()).to.equal(2);
