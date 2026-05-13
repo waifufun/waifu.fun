@@ -1,0 +1,24 @@
+{
+  "cd1": {
+    "ok": true
+  },
+  "cd2": {
+    "ok": false,
+    "txErr": null,
+    "staticErr": "0xa7382e9b",
+    "user": "0x85e2fdD821C285f3C1A7492A603e423279E10857",
+    "unlockTime": "1778371697",
+    "now": 1778371697,
+    "cooldownSec": 0
+  },
+  "cd3": {
+    "ok": false,
+    "txErr": null
+  },
+  "beneficiaryDistinct": {
+    "ok": true,
+    "gas": "1737235",
+    "balB": "1728169770261480421490828",
+    "balC": "0"
+  }
+}
