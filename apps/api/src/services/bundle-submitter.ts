@@ -13,6 +13,8 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
 
+import { decryptBundleWalletPk, markUsed, releaseWallet, selectAvailableWallet } from "./bundle-wallet-pool.js";
+
 export const PUISSANT_RPC_URL = "https://puissant-bsc.48.club";
 export const BUNDLE_TIP_STEPS_BNB = ["0.03", "0.05", "0.08"] as const;
 
@@ -31,6 +33,8 @@ export interface BundleSubmitterConfig {
 	rpcUrl?: string;
 	privateRpcUrl?: string;
 	bundleBotPrivateKey?: Hex;
+	useWalletPool?: boolean;
+	allowSingleWalletFallback?: boolean;
 	dryRun?: boolean;
 }
 
@@ -87,12 +91,44 @@ export async function submitLaunchBundle(
 	const tipBnb = nextBundleTipBnb(launch.bundleAttempt, launch.bundleTipBnb);
 	const chainId = config.chainId ?? Number(process.env.BSC_CHAIN_ID ?? 56);
 	const chain = chainId === 97 ? bscTestnet : bsc;
-	const pk = config.bundleBotPrivateKey ?? (process.env.BUNDLE_BOT_PK as Hex | undefined);
-	if (!pk && !config.dryRun) throw new BundleSubmitterError("NO_BUNDLE_BOT_PK", "BUNDLE_BOT_PK is required");
+	let selectedPoolWallet: Awaited<ReturnType<typeof selectAvailableWallet>> = null;
+	let pk = config.bundleBotPrivateKey ?? (process.env.BUNDLE_BOT_PK as Hex | undefined);
+	const useWalletPool = config.useWalletPool ?? process.env.BUNDLE_WALLET_POOL_DISABLED !== "true";
+	if (useWalletPool && !config.bundleBotPrivateKey) {
+		selectedPoolWallet = await selectAvailableWallet(db);
+		if (selectedPoolWallet) {
+			try {
+				pk = decryptBundleWalletPk(selectedPoolWallet.encryptedPk);
+			} catch (error) {
+				await releaseWallet(db, selectedPoolWallet.address);
+				throw error;
+			}
+		}
+	}
+	const allowFallback = config.allowSingleWalletFallback ?? process.env.BUNDLE_WALLET_POOL_REQUIRED !== "true";
+	if (!selectedPoolWallet && !config.dryRun && useWalletPool && !allowFallback) {
+		const retryAt = new Date(Date.now() + 90_000);
+		await db
+			.update(schema.agentLaunches)
+			.set({
+				bundleStatus: "pending",
+				bundleFailureReason: `bundle wallet pool exhausted; retry after ${retryAt.toISOString()}`,
+				updatedAt: new Date(),
+			})
+			.where(eq(schema.agentLaunches.id, launch.id));
+		return { status: "pending", attempt: launch.bundleAttempt, reason: "bundle_wallet_pool_exhausted" };
+	}
+	if (!selectedPoolWallet && !pk && !config.dryRun) {
+		throw new BundleSubmitterError(
+			"NO_BUNDLE_BOT_PK",
+			"bundle wallet pool is exhausted and BUNDLE_BOT_PK fallback is not set",
+		);
+	}
 
 	const publicClient = createPublicClient({ chain, transport: http(config.rpcUrl ?? getRpcUrl(chainId)) });
 	const data = encodeFunctionData({ abi: bundleRouterAbi, functionName: "executeBundle" });
 
+	let privateTxAccepted = false;
 	try {
 		let txHash: Hex = "0x0000000000000000000000000000000000000000000000000000000000000000";
 		if (!config.dryRun) {
@@ -129,8 +165,10 @@ export async function submitLaunchBundle(
 				throw new Error(json.error?.message ?? `Puissant returned HTTP ${response.status}`);
 			}
 			txHash = json.result;
+			privateTxAccepted = true;
 		}
 
+		const submittedAt = new Date();
 		await db
 			.update(schema.agentLaunches)
 			.set({
@@ -139,12 +177,14 @@ export async function submitLaunchBundle(
 				bundleTipBnb: tipBnb,
 				bundleTxHash: txHash,
 				bundleFailureReason: null,
-				updatedAt: new Date(),
+				updatedAt: submittedAt,
 			})
 			.where(eq(schema.agentLaunches.id, launch.id));
+		if (selectedPoolWallet) await markUsed(db, selectedPoolWallet.address, submittedAt);
 
 		return { status: "submitted", txHash, attempt };
 	} catch (error) {
+		if (selectedPoolWallet && !privateTxAccepted) await releaseWallet(db, selectedPoolWallet.address);
 		const terminal = attempt >= 3;
 		const reason = error instanceof Error ? error.message : String(error);
 		const status = terminal ? "failed_terminal" : "failed_retry";
