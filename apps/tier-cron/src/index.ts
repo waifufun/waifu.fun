@@ -51,6 +51,7 @@ async function main(): Promise<void> {
 			runtime.logger.info(
 				{
 					candidatesScanned: result.candidatesScanned,
+					bundlesReady: result.bundlesReady,
 					pokesSent: result.pokesSent,
 					advancesSent: result.advancesSent,
 					completed: result.completed,

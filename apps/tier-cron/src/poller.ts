@@ -26,6 +26,7 @@ import type { LaunchCandidate, TierCronRuntime } from "./lib/runtime.js";
 
 export interface PollOnceResult {
 	candidatesScanned: number;
+	bundlesReady: number;
 	pokesSent: number;
 	advancesSent: number;
 	completed: number;
@@ -45,9 +46,27 @@ interface ProcessResult {
  * One pass over every launched contract. Returns counters for observability.
  */
 export async function pollOnce(runtime: TierCronRuntime): Promise<PollOnceResult> {
+	const nowSeconds = BigInt(Math.floor(Date.now() / 1_000));
+	let bundlesReady = 0;
+	if (runtime.repo.listBundlePendingReady) {
+		const pendingBundles = await runtime.repo.listBundlePendingReady(nowSeconds);
+		for (const launch of pendingBundles) {
+			if (!launch.predictedTokenAddress || !launch.vanitySalt || !launch.flapMetaCid) {
+				runtime.logger.warn({ launchId: launch.id }, "bundle pending but salt or Flap metadata is not ready");
+				continue;
+			}
+			bundlesReady += 1;
+			runtime.logger.info(
+				{ launchId: launch.id, router: launch.routerAddress, attempt: launch.bundleAttempt },
+				"bundle pending and ready for BundleRouter.executeBundle submission",
+			);
+		}
+	}
+
 	const candidates = await runtime.repo.listLaunchedWithTreasury();
 	const result: PollOnceResult = {
 		candidatesScanned: candidates.length,
+		bundlesReady,
 		pokesSent: 0,
 		advancesSent: 0,
 		completed: 0,

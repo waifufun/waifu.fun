@@ -13,6 +13,7 @@
 import { schema } from "@waifufun/db";
 import { eq } from "drizzle-orm";
 
+import { handleFlapLaunchedToDex, handlePortalTokenCreated } from "./handlers/flap.js";
 import { handleLaunchCreated } from "./handlers/launch-created.js";
 import { handleBundleExecuted } from "./handlers/router.js";
 import {
@@ -25,7 +26,14 @@ import {
 	handleWithdrawn,
 } from "./handlers/vault.js";
 import type { LaunchVaultEvent } from "./lib/events.js";
-import { type LaunchIndexerRuntime, factoryCursorId, routerCursorId, vaultCursorId } from "./lib/runtime.js";
+import {
+	type LaunchIndexerRuntime,
+	factoryCursorId,
+	flapCursorId,
+	portalCursorId,
+	routerCursorId,
+	vaultCursorId,
+} from "./lib/runtime.js";
 
 interface AgentLaunchRow {
 	id: string;
@@ -100,6 +108,8 @@ export interface PollOnceOptions {
 export interface PollOnceResult {
 	scannedToBlock: bigint;
 	factoryEventCount: number;
+	portalEventCount: number;
+	flapEventCount: number;
 	vaultEventCount: number;
 	routerEventCount: number;
 }
@@ -109,7 +119,14 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 	const targetBlock = latest > runtime.config.confirmations ? latest - runtime.config.confirmations : 0n;
 
 	if (targetBlock === 0n) {
-		return { scannedToBlock: 0n, factoryEventCount: 0, vaultEventCount: 0, routerEventCount: 0 };
+		return {
+			scannedToBlock: 0n,
+			factoryEventCount: 0,
+			portalEventCount: 0,
+			flapEventCount: 0,
+			vaultEventCount: 0,
+			routerEventCount: 0,
+		};
 	}
 
 	// --- Phase 1: factory ----------------------------------------------------
@@ -162,6 +179,71 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 		await runtime.cursors.advance(factoryId, factoryTo);
 	}
 
+	// --- Phase 1b: Flap Portal TokenCreated -----------------------------------
+	const portalAddress = runtime.config.portalAddress ?? "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
+	const portalId = portalCursorId(runtime.config.chainId, portalAddress);
+	const portalCursor = await runtime.cursors.ensure({
+		id: portalId,
+		contractAddress: portalAddress,
+		initialBlock: runtime.config.startBlock > 0n ? runtime.config.startBlock - 1n : 0n,
+	});
+	const portalFrom = portalCursor.lastBlock + 1n;
+	const portalTo = clampUpper(portalFrom + runtime.config.maxBlocksPerPoll - 1n, targetBlock);
+	let portalEventCount = 0;
+	if (portalFrom <= portalTo) {
+		const portalEvents = await runtime.source.getEvents({
+			addresses: [portalAddress],
+			fromBlock: portalFrom,
+			toBlock: portalTo,
+		});
+		for (const event of portalEvents) {
+			if (event.eventName !== "TokenCreated") continue;
+			try {
+				const matched = await handlePortalTokenCreated(runtime, event);
+				if (matched) portalEventCount += 1;
+			} catch (error) {
+				runtime.logger.error(
+					{ err: error instanceof Error ? error.message : String(error), tx: event.txHash },
+					"Portal TokenCreated handler failed",
+				);
+			}
+		}
+		await runtime.cursors.advance(portalId, portalTo);
+	}
+
+	// --- Phase 1c: Flap graduation -------------------------------------------
+	let flapEventCount = 0;
+	if (runtime.config.flapTokenFactoryAddress) {
+		const flapId = flapCursorId(runtime.config.chainId, runtime.config.flapTokenFactoryAddress);
+		const flapCursor = await runtime.cursors.ensure({
+			id: flapId,
+			contractAddress: runtime.config.flapTokenFactoryAddress,
+			initialBlock: runtime.config.startBlock > 0n ? runtime.config.startBlock - 1n : 0n,
+		});
+		const flapFrom = flapCursor.lastBlock + 1n;
+		const flapTo = clampUpper(flapFrom + runtime.config.maxBlocksPerPoll - 1n, targetBlock);
+		if (flapFrom <= flapTo) {
+			const flapEvents = await runtime.source.getEvents({
+				addresses: [runtime.config.flapTokenFactoryAddress],
+				fromBlock: flapFrom,
+				toBlock: flapTo,
+			});
+			for (const event of flapEvents) {
+				if (event.eventName !== "LaunchedToDEX") continue;
+				try {
+					const matched = await handleFlapLaunchedToDex(runtime, event);
+					if (matched) flapEventCount += 1;
+				} catch (error) {
+					runtime.logger.error(
+						{ err: error instanceof Error ? error.message : String(error), tx: event.txHash },
+						"Flap LaunchedToDEX handler failed",
+					);
+				}
+			}
+			await runtime.cursors.advance(flapId, flapTo);
+		}
+	}
+
 	// --- Phase 2: vaults + routers ------------------------------------------
 	const launches = await listAgentLaunches(runtime);
 	let vaultEventCount = 0;
@@ -186,7 +268,13 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				toBlock,
 			});
 			for (const event of events) {
-				if (event.eventName === "LaunchCreated" || event.eventName === "BundleExecuted") continue;
+				if (
+					event.eventName === "LaunchCreated" ||
+					event.eventName === "BundleExecuted" ||
+					event.eventName === "TokenCreated" ||
+					event.eventName === "LaunchedToDEX"
+				)
+					continue;
 				try {
 					await dispatchVaultEvent(runtime, event, launch.id);
 					vaultEventCount += 1;
@@ -238,6 +326,8 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 	return {
 		scannedToBlock: targetBlock,
 		factoryEventCount,
+		portalEventCount,
+		flapEventCount,
 		vaultEventCount,
 		routerEventCount,
 	};

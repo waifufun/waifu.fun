@@ -28,4 +28,18 @@ export const bundleRouterEventsAbi = parseAbi([
 	"event BundleExecuted(address indexed flapToken, address indexed v2Pair, uint256 curveFillBnb, uint256 v2BuyBnb, uint256 tokensFromV2, uint256 tokensBurned, uint256 tokensToTax, uint256 openMcBnb)",
 ]);
 
-export const allLaunchEventAbis = [...launchFactoryEventsAbi, ...launchVaultEventsAbi, ...bundleRouterEventsAbi];
+export const portalEventsAbi = parseAbi([
+	"event TokenCreated(uint256 ts, address creator, uint256 nonce, address token, string name, string symbol, string meta)",
+]);
+
+export const flapEventsAbi = parseAbi([
+	"event LaunchedToDEX(address indexed token, address indexed pair, uint256 quoteAmt)",
+]);
+
+export const allLaunchEventAbis = [
+	...launchFactoryEventsAbi,
+	...launchVaultEventsAbi,
+	...bundleRouterEventsAbi,
+	...portalEventsAbi,
+	...flapEventsAbi,
+];

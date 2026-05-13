@@ -12,7 +12,7 @@
 
 import { type Database, getDatabase, schema } from "@waifufun/db";
 import type { Logger } from "@waifufun/logger";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, lt, lte } from "drizzle-orm";
 import {
 	http,
 	type Account,
@@ -46,8 +46,21 @@ export interface LaunchCandidate {
 	treasuryLpAddress: Address;
 }
 
+export interface BundleCandidate {
+	id: string;
+	routerAddress: Address;
+	predictedTokenAddress: Address | null;
+	vanitySalt: string | null;
+	flapMetaCid: string | null;
+	bundleStatus: string;
+	bundleAttempt: number;
+	bundleTipBnb: string;
+}
+
 export interface LaunchRepo {
 	listLaunchedWithTreasury(): Promise<LaunchCandidate[]>;
+	listBundlePendingReady?(nowSeconds: bigint): Promise<BundleCandidate[]>;
+	markBundleSubmitted?(launchId: string, txHash: string, attempt: number, tipBnb: string): Promise<void>;
 }
 
 export interface TierCronRuntime {
@@ -122,6 +135,46 @@ export class DrizzleLaunchRepo implements LaunchRepo {
 			});
 		}
 		return candidates;
+	}
+
+	async listBundlePendingReady(nowSeconds: bigint): Promise<BundleCandidate[]> {
+		const rows = await this.db
+			.select({
+				id: schema.agentLaunches.id,
+				routerAddress: schema.agentLaunches.routerAddress,
+				predictedTokenAddress: schema.agentLaunches.predictedTokenAddress,
+				vanitySalt: schema.agentLaunches.vanitySalt,
+				flapMetaCid: schema.agentLaunches.flapMetaCid,
+				bundleStatus: schema.agentLaunches.bundleStatus,
+				bundleAttempt: schema.agentLaunches.bundleAttempt,
+				bundleTipBnb: schema.agentLaunches.bundleTipBnb,
+			})
+			.from(schema.agentLaunches)
+			.where(
+				and(
+					inArray(schema.agentLaunches.bundleStatus, ["pending", "failed_retry"]),
+					lt(schema.agentLaunches.bundleAttempt, 3),
+					lte(schema.agentLaunches.closeTimestamp, nowSeconds),
+				),
+			);
+		return rows.map((row) => ({
+			...row,
+			routerAddress: row.routerAddress as Address,
+			predictedTokenAddress: row.predictedTokenAddress as Address | null,
+		}));
+	}
+
+	async markBundleSubmitted(launchId: string, txHash: string, attempt: number, tipBnb: string): Promise<void> {
+		await this.db
+			.update(schema.agentLaunches)
+			.set({
+				bundleStatus: "submitted",
+				bundleTxHash: txHash,
+				bundleAttempt: attempt,
+				bundleTipBnb: tipBnb,
+				updatedAt: new Date(),
+			})
+			.where(eq(schema.agentLaunches.id, launchId));
 	}
 }
 

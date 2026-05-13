@@ -6,7 +6,7 @@
  * snapshot the indexer maintains.
  */
 
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lt, lte, sql } from "drizzle-orm";
 
 import { type AgentLaunchRow, type LaunchDepositRow, agentLaunches, launchDeposits } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
@@ -60,11 +60,34 @@ export async function getLaunchByToken(db: Database, tokenAddress: string): Prom
 	return row ?? null;
 }
 
+export async function getLaunchByPredictedToken(db: Database, tokenAddress: string): Promise<AgentLaunchRow | null> {
+	const [row] = await db
+		.select()
+		.from(agentLaunches)
+		.where(eq(agentLaunches.predictedTokenAddress, tokenAddress.toLowerCase()))
+		.limit(1);
+	return row ?? null;
+}
+
+export async function listBundlePendingReady(db: Database, nowSeconds: bigint): Promise<AgentLaunchRow[]> {
+	return db
+		.select()
+		.from(agentLaunches)
+		.where(
+			and(
+				lte(agentLaunches.closeTimestamp, nowSeconds),
+				inArray(agentLaunches.bundleStatus, ["pending", "failed_retry"]),
+				lt(agentLaunches.bundleAttempt, 3),
+			),
+		);
+}
+
 export interface InsertLaunchInput {
 	tokenAddress: string;
 	vaultAddress: string;
 	routerAddress: string;
 	taxSplitterAddress?: string | null;
+	treasuryLpAddress?: string | null;
 	creator: string;
 	tier: number;
 	presaleCap: string;
@@ -72,6 +95,8 @@ export interface InsertLaunchInput {
 	vestingEnabled: boolean;
 	closeTimestamp: bigint;
 	metadataUri?: string | null;
+	flapMetaCid?: string | null;
+	bundleTipBnb?: string | null;
 	createTxHash?: string | null;
 	createBlockNumber?: bigint | null;
 }
@@ -84,6 +109,7 @@ export async function insertLaunch(db: Database, input: InsertLaunchInput): Prom
 			vaultAddress: input.vaultAddress.toLowerCase(),
 			routerAddress: input.routerAddress.toLowerCase(),
 			taxSplitterAddress: input.taxSplitterAddress?.toLowerCase() ?? null,
+			treasuryLpAddress: input.treasuryLpAddress?.toLowerCase() ?? null,
 			creator: input.creator.toLowerCase(),
 			tier: input.tier,
 			presaleCap: input.presaleCap,
@@ -91,6 +117,8 @@ export async function insertLaunch(db: Database, input: InsertLaunchInput): Prom
 			vestingEnabled: input.vestingEnabled ? 1 : 0,
 			closeTimestamp: input.closeTimestamp,
 			metadataUri: input.metadataUri ?? null,
+			flapMetaCid: input.flapMetaCid ?? null,
+			bundleTipBnb: input.bundleTipBnb ?? "0.03",
 			createTxHash: input.createTxHash?.toLowerCase() ?? null,
 			createBlockNumber: input.createBlockNumber ?? null,
 		})
