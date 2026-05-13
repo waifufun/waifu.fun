@@ -17,7 +17,9 @@ export type LaunchEventName =
 	| "RefundsEnabled"
 	| "Refunded"
 	| "Claimed"
-	| "BundleExecuted";
+	| "BundleExecuted"
+	| "TokenCreated"
+	| "LaunchedToDEX";
 
 export interface LaunchEventEnvelope<TEventName extends LaunchEventName, TData> {
 	eventName: TEventName;
@@ -119,6 +121,28 @@ export type BundleExecutedEvent = LaunchEventEnvelope<
 	}
 >;
 
+export type PortalTokenCreatedEvent = LaunchEventEnvelope<
+	"TokenCreated",
+	{
+		ts: string;
+		creator: Address;
+		nonce: string;
+		token: Address;
+		name: string;
+		symbol: string;
+		meta: string;
+	}
+>;
+
+export type FlapLaunchedToDexEvent = LaunchEventEnvelope<
+	"LaunchedToDEX",
+	{
+		token: Address;
+		pair: Address;
+		quoteAmt: string;
+	}
+>;
+
 export type LaunchEvent =
 	| LaunchCreatedEvent
 	| DepositedEvent
@@ -128,7 +152,9 @@ export type LaunchEvent =
 	| RefundsEnabledEvent
 	| RefundedEvent
 	| ClaimedEvent
-	| BundleExecutedEvent;
+	| BundleExecutedEvent
+	| PortalTokenCreatedEvent
+	| FlapLaunchedToDexEvent;
 
 export type LaunchVaultEvent =
 	| DepositedEvent

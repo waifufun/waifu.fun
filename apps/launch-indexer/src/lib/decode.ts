@@ -29,6 +29,8 @@ const KNOWN_EVENTS: ReadonlySet<LaunchEventName> = new Set<LaunchEventName>([
 	"Refunded",
 	"Claimed",
 	"BundleExecuted",
+	"TokenCreated",
+	"LaunchedToDEX",
 ]);
 
 function bn(value: unknown): string {
@@ -175,6 +177,32 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 					tokensBurned: bn(args.tokensBurned),
 					tokensToTax: bn(args.tokensToTax),
 					openMcBnb: bn(args.openMcBnb),
+				},
+			};
+
+		case "TokenCreated":
+			return {
+				...base,
+				eventName: "TokenCreated",
+				data: {
+					ts: bn(args.ts),
+					creator: args.creator as `0x${string}`,
+					nonce: bn(args.nonce),
+					token: args.token as `0x${string}`,
+					name: String(args.name ?? ""),
+					symbol: String(args.symbol ?? ""),
+					meta: String(args.meta ?? ""),
+				},
+			};
+
+		case "LaunchedToDEX":
+			return {
+				...base,
+				eventName: "LaunchedToDEX",
+				data: {
+					token: args.token as `0x${string}`,
+					pair: args.pair as `0x${string}`,
+					quoteAmt: bn(args.quoteAmt),
 				},
 			};
 

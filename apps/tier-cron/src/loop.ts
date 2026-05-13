@@ -259,10 +259,29 @@ async function runWrite(
 export interface ProcessOnceDeps extends ProcessLaunchDeps {
 	repo: TierCronRuntime["repo"];
 	maxConcurrency: number;
+	bundleSubmitter?: (launchId: string) => Promise<{ txHash?: `0x${string}`; attempt: number; tipBnb: string }>;
 }
 
 export async function processOnce(deps: ProcessOnceDeps): Promise<RoundResult> {
 	const roundStartedAt = deps.now();
+	const nowSeconds = BigInt(Math.floor(roundStartedAt.getTime() / 1_000));
+	if (deps.repo.listBundlePendingReady) {
+		const pendingBundles = await deps.repo.listBundlePendingReady(nowSeconds);
+		for (const launch of pendingBundles) {
+			if (!launch.predictedTokenAddress || !launch.vanitySalt || !launch.flapMetaCid) {
+				deps.logger.warn({ launchId: launch.id }, "bundle pending but salt or Flap metadata is not ready");
+				continue;
+			}
+			if (deps.bundleSubmitter) {
+				await deps.bundleSubmitter(launch.id);
+				continue;
+			}
+			deps.logger.info(
+				{ launchId: launch.id, router: launch.routerAddress },
+				"bundle pending and ready for BundleRouter.executeBundle submission",
+			);
+		}
+	}
 	const candidates = await deps.repo.listLaunchedWithTreasury();
 	const outcomes: LaunchOutcome[] = [];
 

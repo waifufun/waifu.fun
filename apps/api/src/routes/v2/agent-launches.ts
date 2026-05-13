@@ -23,6 +23,7 @@ import { issueRequestSiweNonce, validateRequestSiwe } from "../../lib/request-si
 import { parseJsonBody } from "../../lib/validation.js";
 import { requirePatron } from "../../middleware/patron-auth.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
+import { FlapMetadataError, validateFlapMetadataCid } from "../../services/flap-metadata.js";
 import {
 	type CreateLaunchInput,
 	LaunchService,
@@ -30,6 +31,7 @@ import {
 	type LaunchTierString,
 	launchRepo,
 } from "../../services/launch-v2/index.js";
+import { queueSaltMining } from "../../services/salt-miner.js";
 
 const addressRegex = /^0x[a-fA-F0-9]{40}$/;
 const addressSchema = z
@@ -49,20 +51,27 @@ const nonceBodySchema = z.object({
 	address: addressSchema,
 });
 
-const createLaunchBodySchema = z.object({
-	name: z.string().trim().min(1).max(64),
-	symbol: z
-		.string()
-		.trim()
-		.min(1)
-		.max(16)
-		.transform((v) => v.toUpperCase()),
-	metadataURI: z.string().trim().min(1).max(2048),
-	creator: addressSchema,
-	tier: tierSchema,
-	closeTimestamp: z.coerce.number().int().positive().optional(),
-	siwe: siweProofSchema,
-});
+const createLaunchBodySchema = z
+	.object({
+		name: z.string().trim().min(1).max(64),
+		symbol: z
+			.string()
+			.trim()
+			.min(1)
+			.max(16)
+			.transform((v) => v.toUpperCase()),
+		metadataURI: z.string().trim().min(1).max(2048).optional(),
+		flapMetaCid: z.string().trim().min(1).max(256).optional(),
+		flap_meta_cid: z.string().trim().min(1).max(256).optional(),
+		creator: addressSchema,
+		tier: tierSchema,
+		closeTimestamp: z.coerce.number().int().positive().optional(),
+		siwe: siweProofSchema,
+	})
+	.refine((body) => Boolean(body.flapMetaCid ?? body.flap_meta_cid ?? body.metadataURI), {
+		message: "flapMetaCid or metadataURI is required",
+		path: ["flapMetaCid"],
+	});
 
 const previewBodySchema = z.object({
 	bnbAmount: z.union([z.string(), z.number()]).transform((v, ctx) => {
@@ -83,7 +92,7 @@ const previewBodySchema = z.object({
 
 const listQuerySchema = z.object({
 	creator: addressSchema.optional(),
-	state: z.enum(["open", "closed", "launched", "failed"]).optional(),
+	state: z.enum(["open", "closed", "launched", "failed", "mining_failed"]).optional(),
 	tier: z.coerce
 		.number()
 		.int()
@@ -179,6 +188,15 @@ export function serializeAgentLaunch(
 		openMcBnb: row.openMcBnb,
 		metadataUri: row.metadataUri,
 		metadata: row.metadata ?? {},
+		predictedTokenAddress: row.predictedTokenAddress,
+		vanitySalt: row.vanitySalt,
+		flapMetaCid: row.flapMetaCid,
+		flapTokenAddress: row.flapTokenAddress,
+		bundleStatus: row.bundleStatus,
+		bundleTxHash: row.bundleTxHash,
+		bundleAttempt: row.bundleAttempt,
+		bundleTipBnb: row.bundleTipBnb,
+		bundleFailureReason: row.bundleFailureReason,
 		createTxHash: row.createTxHash,
 		createdAt: row.createdAt.toISOString(),
 		updatedAt: row.updatedAt.toISOString(),
@@ -241,10 +259,22 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			const closeTs = body.closeTimestamp ?? Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 			const tier = body.tier as LaunchTierString;
 
+			const flapMetaCid = body.flapMetaCid ?? body.flap_meta_cid;
+			let metadataUri = body.metadataURI ?? "";
+			if (flapMetaCid) {
+				try {
+					const validated = await validateFlapMetadataCid(flapMetaCid);
+					metadataUri = validated.cid;
+				} catch (error) {
+					if (error instanceof FlapMetadataError) throw badRequest(error.code, error.message);
+					throw error;
+				}
+			}
+
 			const input: CreateLaunchInput = {
 				name: body.name,
 				symbol: body.symbol,
-				metadataURI: body.metadataURI,
+				metadataURI: metadataUri,
 				creator: body.creator,
 				tier,
 				closeTimestamp: closeTs,
@@ -284,13 +314,19 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				vestingEnabled: vestingByTier[tier],
 				closeTimestamp: BigInt(closeTs),
 				metadataUri: input.metadataURI,
+				flapMetaCid: flapMetaCid ?? null,
+				bundleTipBnb: process.env.BUNDLE_TIP_BNB ?? "0.03",
 				createTxHash: onchain.txHash,
 				createBlockNumber: onchain.blockNumber,
 			});
 
+			queueSaltMining({ db, launchId: row.id });
+
 			return respondAccepted(c, {
 				id: row.id,
+				status: "created",
 				token: row.tokenAddress,
+				predictedTokenAddress: row.predictedTokenAddress,
 				vault: row.vaultAddress,
 				router: row.routerAddress,
 				taxSplitter: row.taxSplitterAddress,
@@ -386,6 +422,27 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 
 		return respondOk(c, merged);
 	});
+
+	// GET /v2/launches/:id/bundle-status — bundle lifecycle snapshot.
+	app.get(
+		"/:id{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/bundle-status",
+		async (c) => {
+			const id = c.req.param("id");
+			const db = resolveDb();
+			const row = await launchRepo.getLaunchById(db, id);
+			if (!row) throw notFound("LAUNCH_NOT_FOUND", "Launch not found");
+			return respondOk(c, {
+				id: row.id,
+				bundleStatus: row.bundleStatus,
+				bundleTxHash: row.bundleTxHash,
+				bundleAttempt: row.bundleAttempt,
+				bundleTipBnb: row.bundleTipBnb,
+				bundleFailureReason: row.bundleFailureReason,
+				predictedTokenAddress: row.predictedTokenAddress,
+				flapTokenAddress: row.flapTokenAddress,
+			});
+		},
+	);
 
 	// GET /v2/launches/:id/depositors — full depositor list (with claimables).
 	app.get("/:id{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/depositors", async (c) => {

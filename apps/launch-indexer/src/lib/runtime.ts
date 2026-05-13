@@ -10,6 +10,8 @@ import { type LaunchEventSource, createLaunchEventSource } from "./source.js";
 export interface LaunchIndexerConfig {
 	chainId: number;
 	launchFactoryAddress: Address;
+	portalAddress?: Address;
+	flapTokenFactoryAddress?: Address;
 	rpcUrl: string;
 	startBlock: bigint;
 	pollIntervalMs: number;
@@ -49,6 +51,8 @@ export function createLaunchIndexerConfig(): LaunchIndexerConfig {
 	return {
 		chainId,
 		launchFactoryAddress,
+		portalAddress: (process.env.FLAP_PORTAL_ADDRESS ?? "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0") as Address,
+		flapTokenFactoryAddress: process.env.FLAP_TOKEN_FACTORY_ADDRESS as Address | undefined,
 		rpcUrl,
 		startBlock: BigInt(process.env.LAUNCH_INDEXER_START_BLOCK ?? "0"),
 		pollIntervalMs: Number(process.env.LAUNCH_INDEXER_POLL_INTERVAL_MS ?? 5_000),
@@ -83,4 +87,12 @@ export function vaultCursorId(chainId: number, vault: Address): string {
 
 export function routerCursorId(chainId: number, router: Address): string {
 	return `launch:bsc:${chainId}:router:${router.toLowerCase()}:live`;
+}
+
+export function portalCursorId(chainId: number, portal: Address): string {
+	return `launch:bsc:${chainId}:portal:${portal.toLowerCase()}:live`;
+}
+
+export function flapCursorId(chainId: number, flap: Address): string {
+	return `launch:bsc:${chainId}:flap:${flap.toLowerCase()}:live`;
 }
