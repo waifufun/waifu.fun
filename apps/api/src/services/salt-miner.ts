@@ -16,7 +16,9 @@ import {
 } from "viem";
 
 export const FLAP_PORTAL_ADDRESS = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0" as const;
-export const TOKEN_IMPL_TAXED_V3 = "0x29e6383F0ce68507b5A72a53c2B118a118332aA8" as const;
+// Portal.newTokenV6 clones TOKEN_TAXED_V3. TOKEN_TAXED V1 (0x29e6...32aA8)
+// is only for Portal.newTokenV2 and must not be used for Wave H salt mining.
+export const TOKEN_IMPL_TAXED_V3 = "0x024f18294970B5c76c0691b87f138A0317156422" as const;
 export const VANITY_SUFFIX = "7777";
 
 export interface MineSaltInput {

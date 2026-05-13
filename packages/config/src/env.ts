@@ -139,6 +139,7 @@ export interface AppConfig {
 		standardTokenImplementation: HexAddress;
 		taxTokenV1Implementation: HexAddress;
 		taxTokenV2Implementation: HexAddress;
+		taxTokenV3Implementation: HexAddress | undefined;
 		vanitySuffix: {
 			standard: "8888";
 			tax: "7777";
@@ -180,6 +181,8 @@ export function parseEnv(input: NodeJS.ProcessEnv): Env {
 export function getConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
 	const parsed = parseEnv(input);
 	const chain = getChainConfig(parsed.BSC_CHAIN_ID);
+	const taxTokenV3Implementation =
+		"taxTokenV3Implementation" in chain.flap ? chain.flap.taxTokenV3Implementation : undefined;
 
 	return {
 		app: {
@@ -223,6 +226,7 @@ export function getConfig(input: NodeJS.ProcessEnv = process.env): AppConfig {
 			standardTokenImplementation: chain.flap.standardTokenImplementation,
 			taxTokenV1Implementation: chain.flap.taxTokenV1Implementation,
 			taxTokenV2Implementation: chain.flap.taxTokenV2Implementation,
+			taxTokenV3Implementation,
 			vanitySuffix: chain.flap.vanitySuffix,
 		},
 		indexer: {

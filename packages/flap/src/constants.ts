@@ -49,8 +49,11 @@ export const FLAP_BSC_MAINNET = {
 	vaultPortalAddress: "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
 	splitVaultFactoryAddress: "0xfab75Dc774cB9B38b91749B8833360B46a52345F",
 	standardTokenImplementation: "0x8b4329947e34b6d56d71a3385cac122bade7d78d",
+	// TOKEN_TAXED V1, used by legacy Portal.newTokenV2. Do not use for newTokenV6.
 	taxTokenV1Implementation: "0x29e6383F0ce68507b5A72a53c2B118a118332aA8",
 	taxTokenV2Implementation: "0xae562c6A05b798499507c6276C6Ed796027807BA",
+	// TOKEN_TAXED_V3, used by Portal.newTokenV6/newTokenV6WithVault.
+	taxTokenV3Implementation: "0x024f18294970B5c76c0691b87f138A0317156422",
 	standardVanitySuffix: "8888",
 	taxVanitySuffix: "7777",
 	uploadApiUrl: FLAP_UPLOAD_API_URL,

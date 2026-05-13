@@ -11,6 +11,7 @@ import {
 	__setRequirePatronDbForTest,
 	__setRequirePatronStewardParserForTest,
 } from "../../middleware/patron-auth.js";
+import { LAUNCH_TIER_CONFIG } from "../../services/launch-v2/index.js";
 import type { LaunchService } from "../../services/launch-v2/launch-service.js";
 import { createAgentLaunchRoutes, serializeAgentLaunch } from "./agent-launches.js";
 
@@ -108,6 +109,33 @@ function makeRow(overrides: Record<string, unknown> = {}) {
 		...overrides,
 	};
 }
+
+test("LAUNCH_TIER_CONFIG matches corrected LaunchFactory.tierConfig snapshots", () => {
+	assert.deepEqual(LAUNCH_TIER_CONFIG["80"], {
+		presaleCap: "16000000000000000000",
+		quoteAmt: "16000000000000000000",
+		v2BuyBnb: "0",
+		vestingEnabled: false,
+	});
+	assert.deepEqual(LAUNCH_TIER_CONFIG["90"], {
+		presaleCap: "32000000000000000000",
+		quoteAmt: "20000000000000000000",
+		v2BuyBnb: "12000000000000000000",
+		vestingEnabled: true,
+	});
+	assert.deepEqual(LAUNCH_TIER_CONFIG["95"], {
+		presaleCap: "64000000000000000000",
+		quoteAmt: "20000000000000000000",
+		v2BuyBnb: "44000000000000000000",
+		vestingEnabled: true,
+	});
+	assert.deepEqual(LAUNCH_TIER_CONFIG["98"], {
+		presaleCap: "160000000000000000000",
+		quoteAmt: "20000000000000000000",
+		v2BuyBnb: "140000000000000000000",
+		vestingEnabled: true,
+	});
+});
 
 test("serializeAgentLaunch shapes a row into the public response", () => {
 	const out = serializeAgentLaunch(makeRow() as never);

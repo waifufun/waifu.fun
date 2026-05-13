@@ -238,6 +238,7 @@ export interface UploadFlapMetadataResult {
 export interface FindFlapVanitySaltInput {
 	taxRate: number;
 	mktBps?: number;
+	tokenVersion?: FlapTokenVersion;
 	salt?: Hex;
 	seed?: Hex;
 	suffix?: string;

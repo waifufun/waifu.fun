@@ -29,6 +29,7 @@ import {
 	LaunchService,
 	type LaunchServiceConfig,
 	type LaunchTierString,
+	getLaunchTierConfigSnapshot,
 	launchRepo,
 } from "../../services/launch-v2/index.js";
 import { queueSaltMining } from "../../services/salt-miner.js";
@@ -282,25 +283,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 
 			const onchain = await service.createLaunchOnchain(input);
 
-			// Pre-compute tier config so we have a snapshot independent of the contract.
-			const presaleCapByTier: Record<LaunchTierString, string> = {
-				"80": "16000000000000000000",
-				"90": "32000000000000000000",
-				"95": "64000000000000000000",
-				"98": "160000000000000000000",
-			};
-			const v2BuyByTier: Record<LaunchTierString, string> = {
-				"80": "0",
-				"90": "16000000000000000000",
-				"95": "48000000000000000000",
-				"98": "144000000000000000000",
-			};
-			const vestingByTier: Record<LaunchTierString, boolean> = {
-				"80": false,
-				"90": true,
-				"95": true,
-				"98": true,
-			};
+			const tierConfig = getLaunchTierConfigSnapshot(tier);
 
 			const row = await launchRepo.insertLaunch(db, {
 				tokenAddress: onchain.token,
@@ -309,9 +292,9 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				taxSplitterAddress: onchain.taxSplitter,
 				creator: input.creator,
 				tier: Number(tier),
-				presaleCap: presaleCapByTier[tier],
-				v2BuyBnb: v2BuyByTier[tier],
-				vestingEnabled: vestingByTier[tier],
+				presaleCap: tierConfig.presaleCap,
+				v2BuyBnb: tierConfig.v2BuyBnb,
+				vestingEnabled: tierConfig.vestingEnabled,
 				closeTimestamp: BigInt(closeTs),
 				metadataUri: input.metadataURI,
 				flapMetaCid: flapMetaCid ?? null,
