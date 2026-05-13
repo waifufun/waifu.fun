@@ -61,3 +61,16 @@ Backend services (`apps/api`, `apps/worker`, `apps/evm-indexer`, `apps/brain`, `
 - **Multi-service Dockerfile:** `docker/Dockerfile`
 - **CI entry points:** `.github/workflows/ci.yml`, `build-push.yml`, `deploy*.yml`, `db-migrate.yml`, `reusable-*.yml`
 - **Scripts:** see root `package.json` (`dev`, `check`, `db:*`, indexers, etc.).
+
+## Wave H bundle wallet pool (dev)
+
+Wave H Portal creates are rate-limited by `tx.origin` for roughly 90 seconds, so production should run a hot pool of four bundle signer wallets in `bundle_wallet_pool`. The legacy `BUNDLE_BOT_PK` env var is still supported as a local/dev fallback.
+
+Dev bootstrap flow:
+
+1. Set `BUNDLE_KMS_KEY` to a stable secret if you want seeded private keys encrypted at rest. Without it, the dev seed stores normalized `0x` keys for local-only testing.
+2. Run the `0028_wave_h_bundle_wallet_pool.sql` migration in your local database.
+3. Call `seedBundleWalletPool(db, [pk1, pk2, pk3, pk4])` from `apps/api/src/services/bundle-wallet-pool/seed.ts` in a local script or REPL.
+4. Refresh `balance_bnb` for each wallet before bundle submission. Wallets below `0.5` BNB are not selected, and `apps/tier-cron/src/wallet-pool-fund.ts` logs warnings below `0.3` BNB. It does not auto-fund yet.
+
+Set `BUNDLE_WALLET_POOL_REQUIRED=true` in environments where falling back to `BUNDLE_BOT_PK` would risk hitting the Portal cooldown.
