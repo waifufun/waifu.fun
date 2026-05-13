@@ -32,6 +32,14 @@ export type PublicLaunchExtended = {
 	tokenName?: string | null;
 	tokenTicker?: string | null;
 	tokenImageUrl?: string | null;
+	// Wave H (flap-native) extensions:
+	// - `predictedTokenAddress` is the CREATE2-mined `0x…7777` vanity address.
+	//   May be null while the backend is still mining the salt.
+	// - `metaCid` is the IPFS CID returned by `funcs.flap.sh/api/upload`.
+	// - `bundleTipBnb` is the configured priority tip routed to the 48 Club EOA.
+	predictedTokenAddress?: string | null;
+	metaCid?: string | null;
+	bundleTipBnb?: string | null;
 };
 
 export type DepositorEvent = {

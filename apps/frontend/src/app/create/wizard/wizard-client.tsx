@@ -3,6 +3,7 @@
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
 import StepLaunchpad from "@/components/create/step-launchpad";
+import StepMetadata from "@/components/create/step-metadata";
 import StepPersona from "@/components/create/step-persona";
 import StepReview from "@/components/create/step-review";
 import StepRuntime from "@/components/create/step-runtime";
@@ -227,6 +228,7 @@ function WizardInner() {
 			<WizardShell
 				stepContent={{
 					persona: <StepPersona />,
+					metadata: <StepMetadata />,
 					tier: <StepTier />,
 					launchpad: LAUNCHPAD_PICKER_ENABLED ? <StepLaunchpad /> : null,
 					runtime: <StepRuntime />,
