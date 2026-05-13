@@ -341,6 +341,10 @@ contract LaunchVault is ReentrancyGuard {
 	}
 
 	function vestedOf(address user) external view returns (uint256) {
+		return _vestedOf(user);
+	}
+
+	function _vestedOf(address user) internal view returns (uint256) {
 		uint256 alloc = _allocationOfPure(user);
 		if (alloc == 0) return 0;
 		if (!vestingEnabled) return alloc;
@@ -365,7 +369,7 @@ contract LaunchVault is ReentrancyGuard {
 	}
 
 	function _claimableOf(address user) internal view returns (uint256) {
-		uint256 v = this.vestedOf(user);
+		uint256 v = _vestedOf(user);
 		uint256 c = depositors[user].claimed;
 		if (v <= c) return 0;
 		return v - c;
