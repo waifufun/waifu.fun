@@ -9,10 +9,10 @@ test("validateFlapMetadataCid fetches and validates required metadata fields", a
 		gatewayBaseUrl: "https://funcs.flap.sh/api/",
 		fetchImpl: (async (url: string) => {
 			calls.push(url);
-			return new Response(
-				JSON.stringify({ name: "Waifu", symbol: "WF", description: "desc", image: "ipfs://image" }),
-				{ status: 200, headers: { "content-type": "application/json" } },
-			);
+			return new Response(JSON.stringify({ name: "Waifu", symbol: "WF", description: "desc", image: "ipfs://image" }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
 		}) as typeof fetch,
 	});
 	assert.equal(result.cid, "bafybeigdyrztvalidcid123456789");
