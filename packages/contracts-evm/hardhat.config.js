@@ -24,6 +24,12 @@ module.exports = {
 						blockNumber: process.env.FORK_BSC_BLOCK ? Number.parseInt(process.env.FORK_BSC_BLOCK) : undefined,
 					}
 				: undefined,
+			accounts: {
+				// wave H real-fork tests use signers 0..16; bump default 20 to 25
+				// to give headroom for additional tier-95/98 depositor sets.
+				count: 25,
+				accountsBalance: "10000000000000000000000", // 10k BNB each (tier 98 needs 160 BNB)
+			},
 			chainId: forkBsc ? 56 : 31337,
 			chains: {
 				56: {
