@@ -1,18 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+
+interface ILaunchFactoryOwner {
+	function owner() external view returns (address);
+}
+
 /// @title LaunchVault
 /// @notice wave H presale vault. one vault per launch. depositors put BNB
 ///         in during OPEN. on close + cap-met, the per-launch BundleRouter
 ///         pulls BNB, runs the atomic flap bundle, and calls distribute()
 ///         to set the token + presaler share. depositors then claim with
-///         optional vesting. under-subscribed / failed launches go to REFUND.
+///         optional 50/50/24h vesting. under-subscribed / bundle-failed /
+///         admin-stopped launches go to REFUND.
 ///
-/// @dev PHASE 1 SCAFFOLD: storage + signatures + events + custom errors
-///      are final; function bodies revert `WaveH:phase2`. phase 2 fills
-///      in deposit/withdraw/lifecycle/claim math. see
-///      `WAVE_H_FLAP_NATIVE_SPEC.md` / `WAVE_H_INTERFACES.md`.
-contract LaunchVault {
+/// @dev    state machine:
+///           OPEN -> CLOSED -> LAUNCHED   (happy path)
+///           OPEN -> CLOSED -> REFUND     (failure path; cannot exit REFUND)
+///         atomic-or-bust: pullBnbForLaunch + distribute happen inside a
+///         single executeBundle tx. any revert rolls everything back via
+///         EVM atomicity, leaving the vault in CLOSED with full BNB intact.
+contract LaunchVault is ReentrancyGuard {
+	using SafeERC20 for IERC20;
+
 	enum State {
 		OPEN,
 		CLOSED,
@@ -162,16 +176,49 @@ contract LaunchVault {
 	// OPEN-only
 	// ---------------------------------------------------------------------
 
-	function deposit() external payable {
-		revert("WaveH:phase2");
+	function deposit() external payable nonReentrant {
+		if (state != State.OPEN) revert InvalidState();
+		if (block.timestamp > closeTimestamp) revert WindowClosed();
+		if (msg.value == 0) revert ZeroAmount();
+		uint256 newTotal = totalDeposited + msg.value;
+		if (newTotal > presaleCap) revert CapExceeded();
+		Depositor storage d = depositors[msg.sender];
+		if (!d.seen) { d.seen = true; depositorCount += 1; }
+		d.deposited += msg.value;
+		totalDeposited = newTotal;
+		emit Deposited(msg.sender, msg.value, newTotal);
 	}
 
-	function withdraw(uint256 /* amount */) external {
-		revert("WaveH:phase2");
+	function withdraw(uint256 amount) external nonReentrant {
+		if (state != State.OPEN) revert InvalidState();
+		if (block.timestamp > closeTimestamp) revert WindowClosed();
+		Depositor storage d = depositors[msg.sender];
+		if (d.deposited == 0) revert NoDeposit();
+		if (amount == 0 || amount > d.deposited) revert InvalidParams();
+		uint256 penalty = (amount * penaltyBps) / BPS_DENOM;
+		uint256 refundAmount = amount - penalty;
+		d.deposited -= amount;
+		totalDeposited -= amount;
+		if (penalty > 0) { bonusPool += penalty; }
+		(bool ok,) = payable(msg.sender).call{value: refundAmount}("");
+		if (!ok) revert TransferFailed();
+		emit Withdrawn(msg.sender, amount, penalty, refundAmount);
 	}
 
-	function withdrawAll() external {
-		revert("WaveH:phase2");
+	function withdrawAll() external nonReentrant {
+		if (state != State.OPEN) revert InvalidState();
+		if (block.timestamp > closeTimestamp) revert WindowClosed();
+		Depositor storage d = depositors[msg.sender];
+		uint256 amount = d.deposited;
+		if (amount == 0) revert NoDeposit();
+		uint256 penalty = (amount * penaltyBps) / BPS_DENOM;
+		uint256 refundAmount = amount - penalty;
+		d.deposited = 0;
+		totalDeposited -= amount;
+		if (penalty > 0) { bonusPool += penalty; }
+		(bool ok,) = payable(msg.sender).call{value: refundAmount}("");
+		if (!ok) revert TransferFailed();
+		emit Withdrawn(msg.sender, amount, penalty, refundAmount);
 	}
 
 	// ---------------------------------------------------------------------
@@ -179,23 +226,43 @@ contract LaunchVault {
 	// ---------------------------------------------------------------------
 
 	function close() external {
-		revert("WaveH:phase2");
+		if (state != State.OPEN) revert InvalidState();
+		if (block.timestamp < closeTimestamp && totalDeposited < presaleCap) revert WindowClosed();
+		state = State.CLOSED;
+		totalDepositedAtLaunch = totalDeposited;
+		emit Closed(msg.sender, totalDeposited, bonusPool);
 	}
 
-	function requestLaunch() external view returns (bool /* ready */) {
-		revert("WaveH:phase2");
+	function requestLaunch() external view returns (bool ready) {
+		return state == State.CLOSED && totalDeposited >= presaleCap;
 	}
 
 	/// @notice called by the BundleRouter inside executeBundle to pull the
 	///         vault's BNB. transitions OPEN/CLOSED -> LAUNCHED.
-	function pullBnbForLaunch(uint256 /* amount */) external {
-		revert("WaveH:phase2");
+	function pullBnbForLaunch(uint256 amount) external {
+		if (msg.sender != router) revert NotRouter();
+		if (state != State.OPEN && state != State.CLOSED) revert InvalidState();
+		if (amount > address(this).balance) revert TokenBalanceTooLow();
+		state = State.LAUNCHED;
+		launchTimestamp = block.timestamp;
+		if (totalDepositedAtLaunch == 0) totalDepositedAtLaunch = totalDeposited;
+		(bool ok,) = payable(router).call{value: amount}("");
+		if (!ok) revert TransferFailed();
+		emit LaunchExecuted(address(0), amount, block.timestamp);
 	}
 
 	/// @notice called by the BundleRouter after the bundle succeeds, with the
 	///         token address + the presaler share of token Y.
-	function distribute(address /* _token */, uint256 /* _presalerShare */) external {
-		revert("WaveH:phase2");
+	function distribute(address _token, uint256 _presalerShare) external {
+		if (msg.sender != router) revert NotRouter();
+		if (state != State.LAUNCHED) revert InvalidState();
+		if (distributed) revert AlreadyDistributed();
+		if (_token == address(0)) revert ZeroAddress();
+		if (_presalerShare == 0) revert ZeroAmount();
+		token = _token;
+		presalerTokenBalance = _presalerShare;
+		distributed = true;
+		emit Distributed(_token, _presalerShare);
 	}
 
 	// ---------------------------------------------------------------------
@@ -203,45 +270,106 @@ contract LaunchVault {
 	// ---------------------------------------------------------------------
 
 	function enableRefundUnderSubscribed() external {
-		revert("WaveH:phase2");
+		if (state != State.OPEN && state != State.CLOSED) revert InvalidState();
+		if (block.timestamp < closeTimestamp) revert WindowClosed();
+		if (totalDeposited >= presaleCap) revert InvalidState();
+		state = State.REFUND;
+		emit RefundEnabled(msg.sender, "under-subscribed");
 	}
 
 	function enableRefundBundleFailed() external {
-		revert("WaveH:phase2");
+		if (msg.sender != bundleBot) revert NotBundleBot();
+		if (state != State.CLOSED) revert InvalidState();
+		state = State.REFUND;
+		emit RefundEnabled(msg.sender, "bundle-failed");
 	}
 
-	function adminEnableRefund(string calldata /* reason */) external {
-		revert("WaveH:phase2");
+	function adminEnableRefund(string calldata reason) external {
+		address factoryOwner = ILaunchFactoryOwner(factory).owner();
+		if (msg.sender != factoryOwner) revert NotFactoryOwner();
+		if (state == State.LAUNCHED) revert InvalidState();
+		state = State.REFUND;
+		emit RefundEnabled(msg.sender, reason);
 	}
 
-	function refund() external {
-		revert("WaveH:phase2");
+	/// @notice refund the caller's principal + pro-rata bonus share. idempotent
+	///         per address: second call from same address reverts NoDeposit().
+	///         post-refund the bookkeeping cleans up: depositors[user].deposited = 0,
+	///         totalDeposited -= principal, bonusPool -= bonusShare.
+	function refund() external nonReentrant {
+		if (state != State.REFUND) revert InvalidState();
+		Depositor storage d = depositors[msg.sender];
+		uint256 principal = d.deposited;
+		if (principal == 0) revert NoDeposit();
+		uint256 bonus = (principal == totalDeposited)
+			? bonusPool
+			: (bonusPool * principal) / totalDeposited;
+		uint256 refundAmount = principal + bonus;
+
+		// CEI: clear state before sending BNB.
+		d.deposited = 0;
+		totalDeposited -= principal;
+		bonusPool -= bonus;
+
+		(bool ok,) = payable(msg.sender).call{value: refundAmount}("");
+		if (!ok) revert TransferFailed();
+		emit Refunded(msg.sender, principal, bonus, refundAmount);
 	}
 
 	// ---------------------------------------------------------------------
 	// claim
 	// ---------------------------------------------------------------------
 
-	function claim() external {
-		revert("WaveH:phase2");
+	function claim() external nonReentrant {
+		if (state != State.LAUNCHED) revert InvalidState();
+		if (!distributed) revert InvalidState();
+		Depositor storage d = depositors[msg.sender];
+		if (d.deposited == 0) revert NoDeposit();
+		uint256 claimable = _claimableOf(msg.sender);
+		if (claimable == 0) revert NothingToClaim();
+		d.claimed += claimable;
+		IERC20(token).safeTransfer(msg.sender, claimable);
+		emit Claimed(msg.sender, claimable, d.claimed);
 	}
 
 	// ---------------------------------------------------------------------
 	// views
 	// ---------------------------------------------------------------------
 
-	function allocationOf(address /* user */) external view returns (uint256) {
-		revert("WaveH:phase2");
+	function allocationOf(address user) external view returns (uint256) {
+		return _allocationOfPure(user);
 	}
 
-	function vestedOf(address /* user */) external view returns (uint256) {
-		revert("WaveH:phase2");
+	function vestedOf(address user) external view returns (uint256) {
+		uint256 alloc = _allocationOfPure(user);
+		if (alloc == 0) return 0;
+		if (!vestingEnabled) return alloc;
+		uint256 tge = (alloc * VESTING_TGE_BPS) / BPS_DENOM;
+		uint256 linear = alloc - tge;
+		if (block.timestamp < launchTimestamp) return 0;
+		uint256 elapsed = block.timestamp - launchTimestamp;
+		if (elapsed >= VESTING_WINDOW) return alloc;
+		return tge + (linear * elapsed) / VESTING_WINDOW;
 	}
 
-	function claimableOf(address /* user */) external view returns (uint256) {
-		revert("WaveH:phase2");
+	function claimableOf(address user) external view returns (uint256) {
+		return _claimableOf(user);
 	}
 
+
+	function _allocationOfPure(address user) internal view returns (uint256) {
+		if (!distributed) return 0;
+		uint256 dep = depositors[user].deposited;
+		if (dep == 0 || totalDepositedAtLaunch == 0) return 0;
+		return (presalerTokenBalance * dep) / totalDepositedAtLaunch;
+	}
+
+	function _claimableOf(address user) internal view returns (uint256) {
+		uint256 v = this.vestedOf(user);
+		uint256 c = depositors[user].claimed;
+		if (v <= c) return 0;
+		return v - c;
+	}
 	// ---------------------------------------------------------------------
 	// raw BNB
 	// ---------------------------------------------------------------------
