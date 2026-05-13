@@ -20,7 +20,12 @@ const FORK_ENABLED = process.env.FORK_BSC === "true";
 
 // BSC mainnet address book (verified empirically — see WAVE_H_INTERFACES.md)
 const PORTAL = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0";
-const TOKEN_TAXED_V3_IMPL = "0x29e6383F0ce68507b5A72a53c2B118a118332aA8";
+// CORRECTION 2026-05-13: newTokenV6 clones from 0x024f...6422 (TOKEN_TAXED_V3),
+// NOT 0x29e6...332aA8 (which is TOKEN_TAXED V1, used by newTokenV2).
+// V6/V7 probe got this right; the on-chain bytecode 'verification' on Wave H
+// merge night was reading V2-launched tokens. See:
+// ~/.moltbot/projects/waifu/specs/FLAP_BUNDLE_PROBE_FINDINGS.md (V6/V7 section).
+const TOKEN_TAXED_V3_IMPL = "0x024f18294970B5c76c0691b87f138A0317156422";
 const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 const PCS_FACTORY = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const PCS_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
@@ -234,12 +239,158 @@ describe("Wave H real-fork integration", function () {
 		await expect(vault.connect(depositor1).deposit({ value: ethers.parseEther("1") })).to.be.reverted;
 	});
 
-	// NOTE: Live bundle execution against real Portal is gated on cooldown
-	// rotation. The bundle bot wallet (signer index 2) may hit RateLimitExceeded
-	// if it has launched on the same fork session within 90s. For dev sanity we
-	// keep this test SKIPPED for now and run it manually after a fresh fork.
-	// Real bundle test will use Portal cooldown-aware orchestration in CI.
-	it.skip("[manual] full bundle execution against real Portal", async function () {
-		this.skip();
+	// Live bundle execution against real Portal v5.14.1 at fork block 97368808.
+	// Use a fresh signer index per test so Portal's 90s tx.origin cooldown
+	// doesn't strand subsequent runs. Single-test-per-session by design.
+	it("[live] executeBundle against real Portal — tier 80 full happy path", async function () {
+		this.timeout(360_000); // up to 6 min budget (salt mining + real Portal calls)
+
+		// Use signer[5] (fresh, not used in other tests) to dodge cooldown.
+		const [, , , , , freshBot, freshDepositorA, freshDepositorB] = await ethers.getSigners();
+		console.log(`    [live] bundleBot=${freshBot.address}`);
+		console.log(`    [live] depositorA=${freshDepositorA.address}`);
+
+		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
+		const { salt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, "live-bundle");
+		console.log(`    [live] mined salt in ${iterations} iters; predicted=${predicted}`);
+
+		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+
+		const config = {
+			name: "Wave H Live Test",
+			symbol: "WHLIVE",
+			metaCid: "QmLiveTestPlaceholderCid",
+			creator: freshDepositorA.address,
+			bundleBot: freshBot.address,
+			commissionReceiver: owner.address,
+			tier: 0, // TIER_80
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31_536_000,
+			antiFarmerDuration: 86_400,
+			closeTimestamp,
+			vanitySalt: salt,
+			predictedTokenAddress: predicted,
+		};
+
+		// Step 1: createLaunch deploys vault + router + treasuryLp
+		const createTx = await factory.connect(freshDepositorA).createLaunch(config);
+		const createReceipt = await createTx.wait();
+		console.log(`    [live] createLaunch gas: ${createReceipt.gasUsed}`);
+
+		const launchAddrs = await factory.launches(predicted);
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const vault = Vault.attach(launchAddrs.vault);
+		const Router = await ethers.getContractFactory("BundleRouter");
+		const router = Router.attach(launchAddrs.router);
+
+		console.log(`    [live] vault=${launchAddrs.vault} router=${launchAddrs.router}`);
+
+		// Step 2: depositors fund vault to fill tier-80 cap (16 BNB total)
+		await vault.connect(freshDepositorA).deposit({ value: ethers.parseEther("10") });
+		await vault.connect(freshDepositorB).deposit({ value: ethers.parseEther("6") });
+		const totalDeposited = await vault.totalDeposited();
+		expect(totalDeposited).to.equal(ethers.parseEther("16"));
+		console.log(`    [live] vault funded: ${ethers.formatEther(totalDeposited)} BNB`);
+
+		// Step 3: close the presale (cap hit, anyone can call)
+		const closeTx = await vault.connect(freshBot).close();
+		await closeTx.wait();
+		console.log("    [live] vault closed");
+
+		// Step 4: bundleBot triggers executeBundle
+		// Tip = 0.05 BNB (mid-range per PUISSANT_TIP_RESEARCH.md)
+		// Send extra to bundleBot so it can cover the tip (vault pulls quoteAmt+v2BuyBnb+tipBnb)
+		const execParams = {
+			vanitySalt: salt,
+			name: config.name,
+			symbol: config.symbol,
+			meta: config.metaCid,
+			buyTaxBps: config.buyTaxBps,
+			sellTaxBps: config.sellTaxBps,
+			taxDuration: config.taxDuration,
+			antiFarmerDuration: config.antiFarmerDuration,
+			commissionReceiver: config.commissionReceiver,
+			minV2TokensOut: 0,
+			tipBnb: 0, // tier 80 has no V2 buy and no tip overhead in fork mode
+			deadline: closeTimestamp + 1800,
+		};
+
+		const beforeBalance = await ethers.provider.getBalance(launchAddrs.vault);
+		console.log(`    [live] vault BNB before bundle: ${ethers.formatEther(beforeBalance)}`);
+
+		const execTx = await router.connect(freshBot).executeBundle(execParams);
+		const execReceipt = await execTx.wait();
+		console.log(`    [live] executeBundle gas: ${execReceipt.gasUsed}`);
+		console.log(`    [live] executeBundle status: ${execReceipt.status}`);
+
+		expect(execReceipt.status).to.equal(1);
+
+		// Step 5: Verify chain state
+		// Token must exist at predicted address
+		const tokenCode = await ethers.provider.getCode(predicted);
+		expect(tokenCode.length).to.be.greaterThan(2);
+		console.log(`    [live] token deployed at ${predicted}, code length: ${(tokenCode.length - 2) / 2}b`);
+
+		// Tier 80 (16 BNB quoteAmt, no V2 buy): token stays in curve-only state,
+		// no V2 pair created. Tier 90/95/98 would have the pair.
+		const PCSFactoryAbi = ["function getPair(address, address) view returns (address)"];
+		const pcsFactory = new ethers.Contract(PCS_FACTORY, PCSFactoryAbi, ethers.provider);
+		const pair = await pcsFactory.getPair(predicted, WBNB);
+		if (pair === ethers.ZeroAddress) {
+			console.log("    [live] no V2 pair (tier 80 = curve-only, status=Tradable)");
+		} else {
+			console.log(`    [live] PCS V2 pair created at ${pair}`);
+		}
+
+		// Vault should be in LAUNCHED state and hold ~40% of total Y
+		const vaultState = await vault.state();
+		expect(vaultState).to.equal(2); // State.LAUNCHED
+
+		const tokenAbi = [
+			"function balanceOf(address) view returns (uint256)",
+			"function totalSupply() view returns (uint256)",
+		];
+		const token = new ethers.Contract(predicted, tokenAbi, ethers.provider);
+		const totalSupply = await token.totalSupply();
+		const vaultTokenBalance = await token.balanceOf(launchAddrs.vault);
+		const treasuryTokenBalance = await token.balanceOf(launchAddrs.treasuryLp);
+		const deadBalance = await token.balanceOf("0x000000000000000000000000000000000000dEaD");
+
+		console.log(`    [live] token total supply: ${ethers.formatUnits(totalSupply, 18)}`);
+		console.log(
+			`    [live] vault token balance: ${ethers.formatUnits(vaultTokenBalance, 18)} (~40% of router post-curve)`,
+		);
+		console.log(`    [live] treasury token balance: ${ethers.formatUnits(treasuryTokenBalance, 18)} (~10%)`);
+		console.log(`    [live] burned: ${ethers.formatUnits(deadBalance, 18)} (~50%)`);
+
+		// All splits non-zero
+		expect(vaultTokenBalance).to.be.greaterThan(0n);
+		expect(treasuryTokenBalance).to.be.greaterThan(0n);
+		expect(deadBalance).to.be.greaterThan(0n);
+
+		// Step 6: depositor claims tokens
+		const depositorClaimBefore = await token.balanceOf(freshDepositorA.address);
+		const claimTx = await vault.connect(freshDepositorA).claim();
+		const claimReceipt = await claimTx.wait();
+		const depositorClaimAfter = await token.balanceOf(freshDepositorA.address);
+		const claimed = depositorClaimAfter - depositorClaimBefore;
+		console.log(
+			`    [live] depositorA claimed: ${ethers.formatUnits(claimed, 18)} tokens (gas: ${claimReceipt.gasUsed})`,
+		);
+		expect(claimed).to.be.greaterThan(0n);
+
+		// Summary report
+		console.log("\n    ====== Wave H Live Bundle Test Summary ======");
+		console.log(`    createLaunch gas:   ${createReceipt.gasUsed}`);
+		console.log(`    executeBundle gas:  ${execReceipt.gasUsed}`);
+		console.log(`    claim gas:          ${claimReceipt.gasUsed}`);
+		console.log(`    Token address:      ${predicted}`);
+		console.log(`    V2 pair:            ${pair}`);
+		console.log(`    Total supply:       ${ethers.formatUnits(totalSupply, 18)}`);
+		console.log(`    50% burn:           ${ethers.formatUnits(deadBalance, 18)}`);
+		console.log(`    10% treasury:       ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
+		console.log(`    40% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
+		console.log("    =============================================\n");
 	});
 });

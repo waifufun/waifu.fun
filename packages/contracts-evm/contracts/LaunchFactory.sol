@@ -238,20 +238,34 @@ contract LaunchFactory {
 	}
 
 	/// @notice tier -> (presaleCap, quoteAmt, v2BuyBnb, vestingEnabled).
-	///   TIER_80: (16, 16,   0, false)
-	///   TIER_90: (32, 16,  16, true)
-	///   TIER_95: (64, 16,  48, true)
-	///   TIER_98: (160,16, 144, true)
+	///
+	/// Empirical (FLAP_BUNDLE_PROBE_FINDINGS): Portal's bonding curve fills with
+	/// 16 BNB to give 800M tokens (status=Tradable, progress=0.96, NO V2 pair).
+	/// To trigger atomic graduation (status=DEX, V2 pair created, tokens deposited
+	/// to the V2 LP), `quoteAmt` MUST be at least 20 BNB.
+	///
+	/// Tier 80% is curve-only: no graduation, no V2 follow-up buy. Presalers receive
+	/// 40% of the 800M curve allocation. The token starts tradable on Flap's curve.
+	///
+	/// Tiers 90/95/98% set quoteAmt=20 BNB to trigger Portal graduation, then do a
+	/// V2 follow-up buy from the freshly-created PCS V2 pair. v2BuyBnb covers the
+	/// rest of the tier budget. Math (gas + token math) is calibrated against the
+	/// V6/V7 probe + 20-BNB-graduation observation.
+	///
+	///   TIER_80: (16, 16,   0, false)  — curve only, no graduation
+	///   TIER_90: (32, 20,  12, true)   — 20 BNB graduates, 12 BNB V2 buy
+	///   TIER_95: (64, 20,  44, true)   — 20 BNB graduates, 44 BNB V2 buy
+	///   TIER_98: (160,20, 140, true)   — 20 BNB graduates, 140 BNB V2 buy
 	function tierConfig(LaunchTier tier)
 		public
 		pure
 		returns (uint256 presaleCapBnb, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled)
 	{
 		if (tier == LaunchTier.TIER_80) return (16 ether, 16 ether, 0, false);
-		if (tier == LaunchTier.TIER_90) return (32 ether, 16 ether, 16 ether, true);
-		if (tier == LaunchTier.TIER_95) return (64 ether, 16 ether, 48 ether, true);
+		if (tier == LaunchTier.TIER_90) return (32 ether, 20 ether, 12 ether, true);
+		if (tier == LaunchTier.TIER_95) return (64 ether, 20 ether, 44 ether, true);
 		// TIER_98
-		return (160 ether, 16 ether, 144 ether, true);
+		return (160 ether, 20 ether, 140 ether, true);
 	}
 
 	function launchCount() external view returns (uint256) {

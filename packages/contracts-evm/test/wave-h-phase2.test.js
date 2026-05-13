@@ -6,7 +6,7 @@ const { ethers } = require("hardhat");
 // deployment + first-call level. Full bundle-flow integration with mocked
 // Flap Portal lands in a follow-up.
 //
-// Authoritative TOKEN_TAXED_V3 impl: 0x29e6383f0Ce68507B5A72a53C2B118a118332aA8
+// Authoritative TOKEN_TAXED_V3 impl: 0x024f18294970B5c76c0691b87f138A0317156422
 describe("Wave H phase 2 smoke", () => {
 	const ZERO_BYTES32 = `0x${"0".repeat(64)}`;
 

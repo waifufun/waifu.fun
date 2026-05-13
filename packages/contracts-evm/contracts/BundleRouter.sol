@@ -72,7 +72,7 @@ contract BundleRouter {
 	address public immutable predictedToken; // 0x..7777, must match CREATE2
 	address public immutable creator;
 	uint256 public immutable presaleCap;
-	uint256 public immutable quoteAmt; // BNB to Portal (always 16e18)
+	uint256 public immutable quoteAmt; // BNB to Portal (16e18 for Tier 80 curve-only, 20e18 for graduating tiers)
 	uint256 public immutable v2BuyBnb; // BNB for V2 follow-up
 	uint256 public immutable closeTimestamp;
 
@@ -199,16 +199,22 @@ contract BundleRouter {
 		ILaunchVaultRouterCallbacks(vault).pullBnbForLaunch(needed);
 		if (address(this).balance < needed) revert InsufficientFunding();
 
-		// 2. Portal.newTokenV6 (curve fill + auto-graduation to PCS V2)
+		// 2. Portal.newTokenV6 (curve fill, optional auto-graduation to PCS V2)
 		address token = _callPortal(p);
 		if (token != predictedToken) revert PredictedAddressMismatch();
 
-		// 3. confirm V2 pair exists (Flap auto-graduates inside newTokenV6)
-		address pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
-		if (pair == address(0)) revert PairNotCreated();
-
-		// 4. optional V2 follow-up buy
+		// 3. V2 pair check is conditional on v2BuyBnb. Tier 80 sends exactly
+		//    16 BNB to Portal which fills the curve to progress=0.96 but does
+		//    NOT trigger Portal's auto-graduate-to-V2. The token is in status
+		//    Tradable on Flap's curve, no PCS V2 pair yet. That is the intended
+		//    Tier 80 outcome: token is curve-only until organic buyers push it
+		//    past graduation. For Tiers 90/95/98 (v2BuyBnb > 0), Portal MUST
+		//    have auto-graduated since `quoteAmt + v2BuyBnb >= 32 ether > 20 ether`,
+		//    which is the empirical graduation threshold.
+		address pair = address(0);
 		if (v2BuyBnb > 0) {
+			pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
+			if (pair == address(0)) revert PairNotCreated();
 			_v2FollowUpBuy(token, p.minV2TokensOut, p.deadline);
 		}
 
@@ -236,8 +242,8 @@ contract BundleRouter {
 			if (!ok) revert TipTransferFailed();
 		}
 
-		// 10. compute open MC for event emission
-		uint256 openMcBnb = _computeOpenMcBnb(token, pair);
+		// 10. compute open MC for event emission (only when V2 pair exists)
+		uint256 openMcBnb = pair == address(0) ? 0 : _computeOpenMcBnb(token, pair);
 
 		// 11. sweep any BNB dust to DEAD — never refunds router state.
 		//     soft-fail on sweep: we got this far, don't unwind a successful bundle.

@@ -38,7 +38,7 @@ bunx hardhat run scripts/deploy/deploy-wave-h.js --network bscTestnet
 | PCS V2 factory | `0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73` |
 | PCS V2 router | `0x10ED43C718714eb63d5aA57B78B54704E256024E` |
 | Flap portal | `0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0` |
-| TaxToken V3 impl | `0x29e6383f0Ce68507B5A72a53C2B118a118332aA8` |
+| TaxToken V3 impl | `0x024f18294970B5c76c0691b87f138A0317156422` |
 | Tip receiver (48 Club) | `0x4848489f0b2BEdd788c696e2D79b6b69D7484848` |
 
 The init code hash is derived in-script from the EIP-1167 minimal proxy formula in `WAVE_H_FLAP_NATIVE_SPEC.md` section 4.2.
