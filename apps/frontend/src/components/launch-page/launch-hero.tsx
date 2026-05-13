@@ -5,7 +5,14 @@ import { formatEther } from "viem";
 
 import { Badge } from "@/components/ui/badge";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
+import {
+	deriveLaunchDisplayState,
+	displayStateHeadline,
+	displayStateLabel,
+	displayStateTone,
+} from "@/lib/launch-vault/launch-display-state";
 import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
+import { bscscanTokenUrl, flapTokenUrl, formatVanityAddress, pancakeSwapUrl } from "@/lib/launch-vault/vanity-address";
 import { cn } from "@/lib/utils";
 
 import { LaunchCountdown } from "./launch-countdown";
@@ -19,38 +26,67 @@ type Props = {
 	state: number | null;
 };
 
-const STATE_LABEL: Record<number, string> = {
-	0: "live",
-	1: "closed",
-	2: "launched",
+const TONE_BADGE_CLASS: Record<ReturnType<typeof displayStateTone>, string> = {
+	accent: "border-[#00ff87]/40 text-[#00ff87] bg-[#00ff87]/[0.05]",
+	warn: "border-yellow-400/40 text-yellow-300 bg-yellow-400/5",
+	info: "border-blue-400/40 text-blue-300 bg-blue-400/5",
+	danger: "border-red-400/40 text-red-300 bg-red-400/5",
 };
 
-const STATE_DOT: Record<number, string> = {
-	0: "bg-[#00ff87] animate-pulse",
-	1: "bg-yellow-300",
-	2: "bg-blue-300",
-};
-
-const STATE_BADGE_CLASS: Record<number, string> = {
-	0: "border-[#00ff87]/40 text-[#00ff87] bg-[#00ff87]/[0.05]",
-	1: "border-yellow-400/40 text-yellow-300 bg-yellow-400/5",
-	2: "border-blue-400/40 text-blue-300 bg-blue-400/5",
+const TONE_DOT_CLASS: Record<ReturnType<typeof displayStateTone>, string> = {
+	accent: "bg-[#00ff87] animate-pulse",
+	warn: "bg-yellow-300",
+	info: "bg-blue-300",
+	danger: "bg-red-300",
 };
 
 export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state }: Props) {
 	const name = meta?.tokenName ?? "agent launch";
 	const symbol = meta?.tokenTicker ?? "–";
 	const image = meta?.tokenImageUrl ?? null;
-	const stateLabel = state !== null ? (STATE_LABEL[state] ?? "unknown") : "loading";
-	const dotClass = state !== null ? (STATE_DOT[state] ?? "bg-white/40") : "bg-white/40";
-	const stateBadgeClass =
-		state !== null
-			? (STATE_BADGE_CLASS[state] ?? "border-white/15 text-white/60 bg-white/5")
-			: "border-white/15 text-white/60 bg-white/5";
+
+	// Map on-chain + off-chain inputs to the wave H display state machine.
+	// Backend `status` field is informational only — vault state is the
+	// authoritative source for OPEN/CLOSED/LAUNCHED.
+	const displayState = deriveLaunchDisplayState({
+		vaultState: state,
+		backendStatus: meta?.status ?? null,
+		closeTimestamp: closeTimestamp ?? null,
+		tokenAddress: meta?.tokenAddress ?? null,
+	});
+	const tone = displayStateTone(displayState);
+	const stateBadgeClass = TONE_BADGE_CLASS[tone];
+	const dotClass = TONE_DOT_CLASS[tone];
+	const stateLabel = displayStateLabel(displayState);
+	const headline = displayStateHeadline(displayState);
+
+	// Predicted (vanity) address surfaces from the day the launch row is
+	// created. Real tokenAddress lands when the bundle confirms; we prefer
+	// it once known.
+	const tokenAddress = meta?.tokenAddress ?? null;
+	const predictedAddress = meta?.predictedTokenAddress ?? null;
+	const displayAddress = tokenAddress ?? predictedAddress;
+	const showVanity = displayState !== "presale" && displayState !== "created";
+	const bscscan = bscscanTokenUrl(tokenAddress);
+	const flap = flapTokenUrl(tokenAddress);
+	const pcs = pancakeSwapUrl(tokenAddress);
 
 	const capWei = meta?.presaleCapWei ? BigInt(meta.presaleCapWei) : capFromBnb(tier.presaleCapBnb);
 	const pct = capWei === 0n ? 0 : Number((totalDeposited * 10_000n) / capWei) / 100;
 	const pctClamped = Math.min(100, Math.max(0, pct));
+
+	const countdownLabel =
+		displayState === "presale"
+			? "closes in"
+			: displayState === "closed"
+				? "awaiting bundle"
+				: displayState === "bundling"
+					? "bundling now"
+					: displayState === "launched"
+						? "live on dex"
+						: displayState === "refunding"
+							? "refunds open"
+							: "status";
 
 	return (
 		<section className="border border-white/10 bg-[#08080a] p-5 md:p-8">
@@ -79,6 +115,7 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 									"inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border text-[10px] font-mono uppercase tracking-[0.2em]",
 									stateBadgeClass,
 								)}
+								data-testid="launch-state-badge"
 							>
 								<span className={cn("w-1 h-1 rounded-full", dotClass)} />
 								{stateLabel}
@@ -88,13 +125,44 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 								<Users className="size-3" /> {depositorCount.toString()} backer{depositorCount === 1n ? "" : "s"}
 							</span>
 						</div>
+						<p className="text-[11px] text-zinc-500 leading-relaxed max-w-[52ch]" data-testid="launch-state-headline">
+							{headline}
+						</p>
+						{showVanity ? (
+							<div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] font-mono">
+								<span className="text-zinc-500">token:</span>
+								<span className="tabular-nums text-zinc-200" data-testid="launch-token-address">
+									{formatVanityAddress(displayAddress)}
+								</span>
+								{displayState === "bundling" && !tokenAddress ? (
+									<span className="text-zinc-500 italic">mining…</span>
+								) : null}
+								{tokenAddress ? (
+									<span className="flex items-center gap-2 text-[#00ff87]">
+										{bscscan ? (
+											<a href={bscscan} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
+												bscscan ↗
+											</a>
+										) : null}
+										{flap ? (
+											<a href={flap} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
+												flap ↗
+											</a>
+										) : null}
+										{pcs ? (
+											<a href={pcs} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
+												pcs v2 ↗
+											</a>
+										) : null}
+									</span>
+								) : null}
+							</div>
+						) : null}
 					</div>
 				</div>
 
 				<div className="flex flex-col items-start md:items-end shrink-0">
-					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-						{state === 0 ? "closes in" : state === 1 ? "awaiting bundle" : state === 2 ? "live on dex" : "status"}
-					</span>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">{countdownLabel}</span>
 					<LaunchCountdown closeTimestampSec={closeTimestamp} className="mt-1 flex items-baseline gap-2" />
 				</div>
 			</div>

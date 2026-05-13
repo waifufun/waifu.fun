@@ -116,6 +116,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
 						{step === "persona" ? "who are they?" : null}
+						{step === "metadata" ? "how do they look on-chain?" : null}
 						{step === "tier" ? "how big do they launch?" : null}
 						{step === "launchpad" ? "where do they launch?" : null}
 						{step === "runtime" ? "where do they live?" : null}
@@ -124,6 +125,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 					</h1>
 					<p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-[52ch]">
 						{step === "persona" ? "name, ticker, one-line bio. they carry this with them." : null}
+						{step === "metadata" ? "token image + description + socials. uploaded to flap's ipfs before mint." : null}
 						{step === "tier" ? "pick a tier. it sets the cap, the v2 buy, and the math the rest flows from." : null}
 						{step === "launchpad"
 							? "pick a launchpad and a fee model. waifu's cut comes out of the agent treasury."
@@ -140,7 +142,13 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 					<ol
 						className={cn(
 							"grid gap-2",
-							WIZARD_STEPS.length === 6 ? "grid-cols-6" : WIZARD_STEPS.length === 5 ? "grid-cols-5" : "grid-cols-4",
+							WIZARD_STEPS.length === 7
+								? "grid-cols-7"
+								: WIZARD_STEPS.length === 6
+									? "grid-cols-6"
+									: WIZARD_STEPS.length === 5
+										? "grid-cols-5"
+										: "grid-cols-4",
 						)}
 					>
 						{WIZARD_STEPS.map((s, i) => {
@@ -287,6 +295,12 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 			if (name.length > 48) return "name too long";
 			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
 			if (bio.length > 240) return "bio too long";
+			return null;
+		}
+		case "metadata": {
+			if (!state.flap.description.trim()) return "description required";
+			if (!state.flap.tokenImageDataUrl) return "upload a token image";
+			if (!state.flap.metaCid) return "upload to flap before continuing";
 			return null;
 		}
 		case "tier": {
