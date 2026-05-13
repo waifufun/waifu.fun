@@ -14,6 +14,11 @@ import {TreasuryLP} from "./TreasuryLP.sol";
 ///      are final; function bodies revert `WaveH:phase2`. phase 2 fills
 ///      in createLaunch logic + fork integration tests. see
 ///      `WAVE_H_FLAP_NATIVE_SPEC.md` / `WAVE_H_INTERFACES.md`.
+
+interface IVaultRouterSetter {
+	function setRouter(address _router) external;
+}
+
 contract LaunchFactory {
 	enum LaunchTier {
 		TIER_80,
@@ -142,11 +147,94 @@ contract LaunchFactory {
 	// ---------------------------------------------------------------------
 
 	/// @notice deploy a wave H launch (vault + router + treasury LP) atomically.
-	/// @dev PHASE 1 STUB: reverts. phase 2 implements full deploy flow.
 	function createLaunch(
-		LaunchConfig calldata /* config */
-	) external returns (LaunchAddresses memory) {
-		revert("WaveH:phase2");
+		LaunchConfig calldata config
+	) external returns (LaunchAddresses memory addrs) {
+		// 1. validate config
+		if (config.creator == address(0)) revert InvalidCreator();
+		if (config.bundleBot == address(0)) revert InvalidBundleBot();
+		if (config.commissionReceiver == address(0)) revert InvalidCommissionReceiver();
+		if (config.predictedTokenAddress == address(0)) revert InvalidPredictedAddress();
+		if (config.closeTimestamp <= block.timestamp) revert InvalidCloseTimestamp();
+		if (config.buyTaxBps > 10000 || config.sellTaxBps > 10000) revert InvalidTaxBps();
+		if (bytes(config.name).length == 0) revert EmptyName();
+		if (bytes(config.symbol).length == 0) revert EmptySymbol();
+		if (bytes(config.metaCid).length == 0) revert EmptyMetaCid();
+
+		// 2. salt collision
+		if (usedSalts[config.vanitySalt]) revert SaltAlreadyUsed();
+
+		// 3. CREATE2 prediction reconciliation
+		address predicted = address(uint160(uint256(keccak256(abi.encodePacked(
+			bytes1(0xff), FLAP_PORTAL, config.vanitySalt, INIT_CODE_HASH
+		)))));
+		if (predicted != config.predictedTokenAddress) revert InvalidPredictedAddress();
+
+		// 4. get tier config
+		(uint256 presaleCap, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled) = tierConfig(config.tier);
+
+		// 5. deploy LaunchVault
+		LaunchVault vault = new LaunchVault(
+			address(this),
+			config.creator,
+			config.bundleBot,
+			presaleCap,
+			quoteAmt,
+			v2BuyBnb,
+			config.closeTimestamp,
+			0, // penaltyBps default 0; configurable in a follow-up
+			vestingEnabled
+		);
+
+		// 6. deploy TreasuryLP
+		TreasuryLP treasuryLp = new TreasuryLP(config.creator, address(this));
+
+		// 7. deploy BundleRouter
+		BundleRouter.ConstructorArgs memory routerArgs = BundleRouter.ConstructorArgs({
+			factory: address(this),
+			wbnb: WBNB,
+			pcsFactory: PCS_FACTORY,
+			pcsRouter: PCS_ROUTER,
+			flapPortal: FLAP_PORTAL,
+			tipReceiver: TIP_RECEIVER,
+			vault: payable(address(vault)),
+			treasuryLp: address(treasuryLp),
+			bundleBot: config.bundleBot,
+			predictedToken: predicted,
+			creator: config.creator,
+			presaleCap: presaleCap,
+			quoteAmt: quoteAmt,
+			v2BuyBnb: v2BuyBnb,
+			closeTimestamp: config.closeTimestamp
+		});
+		BundleRouter router = new BundleRouter(routerArgs);
+
+		// 8. one-shot wire vault -> router
+		IVaultRouterSetter(address(vault)).setRouter(address(router));
+
+		// 9. mark salt + store + emit
+		usedSalts[config.vanitySalt] = true;
+		addrs = LaunchAddresses({
+			vault: address(vault),
+			router: address(router),
+			treasuryLp: address(treasuryLp),
+			predictedTokenAddress: predicted
+		});
+		launches[predicted] = addrs;
+		allLaunches.push(predicted);
+
+		emit LaunchCreated(
+			keccak256(abi.encode(config.creator, config.vanitySalt)),
+			config.creator,
+			predicted,
+			address(vault),
+			address(router),
+			address(treasuryLp),
+			config.tier,
+			presaleCap,
+			v2BuyBnb,
+			config.closeTimestamp
+		);
 	}
 
 	/// @notice tier -> (presaleCap, quoteAmt, v2BuyBnb, vestingEnabled).

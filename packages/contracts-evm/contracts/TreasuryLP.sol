@@ -1,50 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 /// @title TreasuryLP
 /// @notice wave H custodial treasury holder. receives the 10% bundle-slice
 ///         of the new token and holds it. a follow-up wave promotes this
 ///         to a real V3 CLAMM single-sided LP. for wave H the contract is
 ///         pure custody, owner-sweepable.
-///
-/// @dev PHASE 1 SCAFFOLD: storage + signatures + events + custom errors
-///      are final; function bodies revert `WaveH:phase2`. phase 2 fills
-///      in recordManagedToken + sweep. see
-///      `WAVE_H_FLAP_NATIVE_SPEC.md` section 11 and
-///      `WAVE_H_INTERFACES.md` section 6.
 contract TreasuryLP {
-	// ---------------------------------------------------------------------
-	// immutables
-	// ---------------------------------------------------------------------
+	address public immutable owner;
+	address public immutable factory;
 
-	address public immutable owner; // platform fee wallet or treasury multisig
-	address public immutable factory; // LaunchFactory (records which launch this is for)
-
-	// ---------------------------------------------------------------------
-	// storage
-	// ---------------------------------------------------------------------
-
-	address public managedToken; // set on first recordManagedToken() call
-
-	// ---------------------------------------------------------------------
-	// events
-	// ---------------------------------------------------------------------
+	address public managedToken;
 
 	event TokensReceived(address indexed token, uint256 amount);
 	event TokensSwept(address indexed to, address indexed token, uint256 amount);
 	event ManagedTokenSet(address indexed token);
 
-	// ---------------------------------------------------------------------
-	// errors
-	// ---------------------------------------------------------------------
-
 	error NotOwner();
 	error MultipleTokens();
 	error ZeroAddress();
-
-	// ---------------------------------------------------------------------
-	// constructor
-	// ---------------------------------------------------------------------
+	error NoBnbAccepted();
 
 	constructor(address _owner, address _factory) {
 		if (_owner == address(0) || _factory == address(0)) revert ZeroAddress();
@@ -52,24 +29,37 @@ contract TreasuryLP {
 		factory = _factory;
 	}
 
-	// ---------------------------------------------------------------------
-	// external
-	// ---------------------------------------------------------------------
-
 	/// @notice idempotent token registration. anyone may call after first inflow.
-	function recordManagedToken(address /* t */) external {
-		revert("WaveH:phase2");
+	///         locks to the first registered token. subsequent calls with a different
+	///         token revert MultipleTokens.
+	function recordManagedToken(address t) external {
+		if (t == address(0)) revert ZeroAddress();
+		if (managedToken == address(0)) {
+			managedToken = t;
+			emit ManagedTokenSet(t);
+		} else if (managedToken != t) {
+			revert MultipleTokens();
+		}
 	}
 
 	/// @notice owner-only sweep. forwards `amount` of token `t` to `to`.
 	///         used to drain custody into a real LP-deployer contract once
 	///         the V3 CLAMM follow-up wave ships.
-	function sweep(address /* to */, address /* t */, uint256 /* amount */) external {
-		revert("WaveH:phase2");
+	function sweep(address to, address t, uint256 amount) external {
+		if (msg.sender != owner) revert NotOwner();
+		if (to == address(0) || t == address(0)) revert ZeroAddress();
+		IERC20(t).transfer(to, amount);
+		emit TokensSwept(to, t, amount);
+	}
+
+	/// @notice helper view: balance of managed token held by this contract.
+	function balance() external view returns (uint256) {
+		if (managedToken == address(0)) return 0;
+		return IERC20(managedToken).balanceOf(address(this));
 	}
 
 	/// @notice reject raw BNB. TreasuryLP only holds tokens.
 	receive() external payable {
-		revert("WaveH:phase2");
+		revert NoBnbAccepted();
 	}
 }
