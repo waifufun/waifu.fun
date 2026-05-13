@@ -292,17 +292,25 @@ contract LaunchVault is ReentrancyGuard {
 		emit RefundEnabled(msg.sender, reason);
 	}
 
+	/// @notice refund the caller's principal + pro-rata bonus share. idempotent
+	///         per address: second call from same address reverts NoDeposit().
+	///         post-refund the bookkeeping cleans up: depositors[user].deposited = 0,
+	///         totalDeposited -= principal, bonusPool -= bonusShare.
 	function refund() external nonReentrant {
 		if (state != State.REFUND) revert InvalidState();
 		Depositor storage d = depositors[msg.sender];
 		uint256 principal = d.deposited;
 		if (principal == 0) revert NoDeposit();
-		uint256 bonus = 0;
-		if (bonusPool > 0 && totalDeposited > 0) {
-			bonus = (bonusPool * principal) / totalDeposited;
-		}
+		uint256 bonus = (principal == totalDeposited)
+			? bonusPool
+			: (bonusPool * principal) / totalDeposited;
 		uint256 refundAmount = principal + bonus;
+
+		// CEI: clear state before sending BNB.
 		d.deposited = 0;
+		totalDeposited -= principal;
+		bonusPool -= bonus;
+
 		(bool ok,) = payable(msg.sender).call{value: refundAmount}("");
 		if (!ok) revert TransferFailed();
 		emit Refunded(msg.sender, principal, bonus, refundAmount);
