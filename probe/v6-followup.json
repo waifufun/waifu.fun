@@ -1,0 +1,40 @@
+{
+  "exp4r": {
+    "ok": true,
+    "gas": "1737319",
+    "token": "0xAd6245d0a40B8b98Ce01Aab5Ee7aD7cd40D57777",
+    "processor": {
+      "address": "0xDebEc184a26530b0d53E186dda6395e7aE56a93b",
+      "commissionReceiver": "0xC0C0c0c0C0C0c0c0c0C0c0C0C0C0C0C0C0C0c0c0",
+      "commissionBps": 60,
+      "commissionQuoteBalance": "291000000000000",
+      "feeReceiver": "0x8a08D98CBB218fceB318Ecf3aBc1BA43D8A7aB0E"
+    },
+    "commissionMatches": true
+  },
+  "exp6r": {
+    "create": {
+      "ok": true,
+      "gas": "5262692",
+      "token": "0x92eE714c8b4893815E6FC409aD5Bc29D0dC17777"
+    },
+    "state": {
+      "status": "4",
+      "pool": "0x27e22BEbDD1DBe7d7B1aa9aE5d5476dA7190239e",
+      "progress": "1000000000000000000"
+    },
+    "pair": "0x27e22BEbDD1DBe7d7B1aa9aE5d5476dA7190239e",
+    "processorBefore": {
+      "address": "0x7328E9c14b312AF89EFD45d60D879474B2B88506",
+      "commissionReceiver": "0xC0C0c0c0C0C0c0c0c0C0c0C0C0C0C0C0C0C0c0c0",
+      "commissionBps": 60,
+      "commissionQuoteBalance": "10461668946825571",
+      "feeReceiver": "0x8a08D98CBB218fceB318Ecf3aBc1BA43D8A7aB0E"
+    },
+    "commissionDelta": "10759339500871841",
+    "feeReceiverDelta": "55460512891091968",
+    "dispatchGas": "195791",
+    "pendingPost": "0",
+    "commissionFlowedToCustom": true
+  }
+}
