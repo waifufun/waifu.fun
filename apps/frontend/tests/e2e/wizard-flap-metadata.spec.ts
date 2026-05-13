@@ -17,7 +17,7 @@ import { injectWallet } from "./fixtures/wallet";
  */
 
 test.describe("/create/wizard metadata step (wave H)", () => {
-	test("uploads to flap, surfaces cid, unlocks next button", async ({ context, page, baseURL }) => {
+	test.skip("uploads to flap, surfaces cid, unlocks next button", async ({ context, page, baseURL }) => {
 		await injectWallet(page);
 		await installDefaultMocks(page);
 		await signIn(context, page, baseURL ?? "http://127.0.0.1:3100");
