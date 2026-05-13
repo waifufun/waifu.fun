@@ -13,7 +13,8 @@
 		"test": "hardhat test",
 		"test:local": "hardhat test --network localhost",
 		"clean": "hardhat clean",
-		"lint": "biome check scripts test hardhat.config.js package.json"
+		"lint": "biome check scripts test hardhat.config.js package.json",
+		"test:fork": "FORK_BSC=true FORK_BSC_BLOCK=97368808 hardhat test test/integration/wave-h-real-fork.test.js"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
