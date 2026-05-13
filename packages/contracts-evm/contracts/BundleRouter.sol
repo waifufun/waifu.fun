@@ -1,232 +1,174 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {IUniswapV2Factory, IUniswapV2Pair, IUniswapV2Router02} from "./interfaces/IPancakeSwap.sol";
-
 /// @title BundleRouter
-/// @notice Atomic bundle launch: fills bonding curve, buys from V2 pair, burns proceeds.
-/// @dev Single-tx, all-or-nothing. Owner-gated. No persistent token or BNB custody.
-contract BundleRouter is ReentrancyGuard {
-	struct BundleParams {
-		address flapToken;
-		uint256 curveFillBnb;
-		uint256 v2BuyBnb;
-		uint256 minTokensFromV2;
+/// @notice wave H per-launch atomic executor. one BundleRouter per launch,
+///         deployed by LaunchFactory. only the bundleBot EOA can call
+///         executeBundle(), and only once.
+///
+///         executeBundle flow (atomic-or-bust):
+///           1. pull presaleCap BNB from vault
+///           2. call Portal.newTokenV6{value: quoteAmt} (mints token, fills
+///              curve, migrates to PCS V2 at the FOUR_FIFTHS thresh)
+///           3. optional V2 follow-up buy of v2BuyBnb against the new pair
+///           4. 50/10/40 split of token Y: burn / treasuryLp / vault.distribute()
+///           5. tip payout to 48 Club builder EOA
+///
+/// @dev PHASE 1 SCAFFOLD: storage + signatures + events + custom errors
+///      are final; function bodies revert `WaveH:phase2`. phase 2 wires
+///      Portal.newTokenV6 + PCS V2 + tip. see
+///      `WAVE_H_FLAP_NATIVE_SPEC.md` / `WAVE_H_INTERFACES.md` section 5.
+contract BundleRouter {
+	struct BundleExecParams {
+		bytes32 vanitySalt;
+		string name;
+		string symbol;
+		string meta; // IPFS CID
+		uint16 buyTaxBps;
+		uint16 sellTaxBps;
+		uint64 taxDuration;
+		uint64 antiFarmerDuration;
+		address commissionReceiver;
+		uint256 minV2TokensOut; // slippage guard for V2 follow-up
+		uint256 tipBnb; // 48 Club puissant tip
 		uint256 deadline;
 	}
 
-	struct PortalExactInputParams {
-		address inputToken;
-		address outputToken;
-		uint256 inputAmount;
-		uint256 minOutputAmount;
-		bytes permitData;
-	}
+	// ---------------------------------------------------------------------
+	// immutables (set in constructor by factory)
+	// ---------------------------------------------------------------------
 
-	address public owner;
-	address internal immutable WBNB;
-	address internal immutable pcsFactory;
-	address internal immutable pcsRouter;
-	bytes32 internal immutable initCodeHash;
-	address internal immutable flapPortal;
+	address public immutable factory;
+	address public immutable WBNB;
+	address public immutable PCS_FACTORY;
+	address public immutable PCS_ROUTER;
+	address public immutable FLAP_PORTAL;
+	address public immutable TIP_RECEIVER;
+	address payable public immutable vault;
+	address public immutable treasuryLp;
+	address public immutable bundleBot;
+	address public immutable predictedToken; // 0x..7777, must match CREATE2
+	address public immutable creator;
+	uint256 public immutable presaleCap;
+	uint256 public immutable quoteAmt; // BNB to Portal (always 16e18)
+	uint256 public immutable v2BuyBnb; // BNB for V2 follow-up
+	uint256 public immutable closeTimestamp;
 
 	address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
-	bytes4 private constant FLAP_SWAP_EXACT_INPUT = 0xef7ec2e7;
-	bytes4 private constant BUY_TAX_RATE = 0x691f224f;
-	bytes4 private constant SELL_TAX_RATE = 0x24024efd;
-	bytes4 private constant TAX_BPS = 0x68f4a786;
+
+	// ---------------------------------------------------------------------
+	// storage
+	// ---------------------------------------------------------------------
+
+	bool public executed; // one-shot guard
+
+	// ---------------------------------------------------------------------
+	// events
+	// ---------------------------------------------------------------------
 
 	event BundleExecuted(
-		address indexed flapToken,
-		address indexed v2Pair,
-		uint256 curveFillBnb,
+		address indexed token,
+		address indexed pool,
+		uint256 quoteAmt,
 		uint256 v2BuyBnb,
-		uint256 tokensFromV2,
+		uint256 tokensReceived,
 		uint256 tokensBurned,
-		uint256 tokensToTax,
+		uint256 tokensToTreasury,
+		uint256 tokensToVault,
+		uint256 tipPaid,
 		uint256 openMcBnb
 	);
 
-	error Unauthorized();
-	error BnbMismatch();
-	error Expired();
+	event BundleFailed(string reason);
+
+	// ---------------------------------------------------------------------
+	// errors
+	// ---------------------------------------------------------------------
+
+	error NotBundleBot();
+	error AlreadyExecuted();
+	error VaultBalanceMismatch();
+	error PortalCallFailed();
+	error PredictedAddressMismatch();
 	error PairNotCreated();
-	error SweepFailed();
-	error InvalidOwner();
-	error NoLiquidityTokens();
+	error V2BuySlippage();
+	error TipTransferFailed();
+	error VaultDistributeFailed();
+	error TreasuryTransferFailed();
+	error Expired();
+	error InsufficientFunding();
+	error ZeroAddress();
 
-	modifier onlyOwner() {
-		if (msg.sender != owner) revert Unauthorized();
-		_;
+	struct ConstructorArgs {
+		address factory;
+		address wbnb;
+		address pcsFactory;
+		address pcsRouter;
+		address flapPortal;
+		address tipReceiver;
+		address payable vault;
+		address treasuryLp;
+		address bundleBot;
+		address predictedToken;
+		address creator;
+		uint256 presaleCap;
+		uint256 quoteAmt;
+		uint256 v2BuyBnb;
+		uint256 closeTimestamp;
 	}
 
-	modifier onlyVault() {
-		if (msg.sender != owner) revert Unauthorized();
-		_;
+	// ---------------------------------------------------------------------
+	// constructor
+	// ---------------------------------------------------------------------
+
+	constructor(ConstructorArgs memory a) {
+		if (
+			a.factory == address(0) ||
+			a.wbnb == address(0) ||
+			a.pcsFactory == address(0) ||
+			a.pcsRouter == address(0) ||
+			a.flapPortal == address(0) ||
+			a.tipReceiver == address(0) ||
+			a.vault == address(0) ||
+			a.treasuryLp == address(0) ||
+			a.bundleBot == address(0) ||
+			a.predictedToken == address(0) ||
+			a.creator == address(0)
+		) revert ZeroAddress();
+
+		factory = a.factory;
+		WBNB = a.wbnb;
+		PCS_FACTORY = a.pcsFactory;
+		PCS_ROUTER = a.pcsRouter;
+		FLAP_PORTAL = a.flapPortal;
+		TIP_RECEIVER = a.tipReceiver;
+		vault = a.vault;
+		treasuryLp = a.treasuryLp;
+		bundleBot = a.bundleBot;
+		predictedToken = a.predictedToken;
+		creator = a.creator;
+		presaleCap = a.presaleCap;
+		quoteAmt = a.quoteAmt;
+		v2BuyBnb = a.v2BuyBnb;
+		closeTimestamp = a.closeTimestamp;
 	}
 
-	constructor(address _wbnb, address _pcsFactory, address _pcsRouter, bytes32 _initCodeHash, address _flapPortal) {
-		owner = msg.sender;
-		WBNB = _wbnb;
-		pcsFactory = _pcsFactory;
-		pcsRouter = _pcsRouter;
-		initCodeHash = _initCodeHash;
-		flapPortal = _flapPortal;
+	// ---------------------------------------------------------------------
+	// external
+	// ---------------------------------------------------------------------
+
+	/// @notice atomic flap bundle. caller must be bundleBot. one-shot.
+	function executeBundle(BundleExecParams calldata /* p */) external {
+		revert("WaveH:phase2");
 	}
 
-	/// @notice Transfer launch execution authority to the vault.
-	function transferOwnership(address newOwner) external onlyOwner {
-		if (newOwner == address(0)) revert InvalidOwner();
-		owner = newOwner;
+	/// @notice indexer helper: predict the V2 pair address for a token via CREATE2.
+	function previewPairAddress(address /* token */) external view returns (address /* pair */) {
+		revert("WaveH:phase2");
 	}
 
-	/// @notice Execute the full bundle atomically.
-	function execute(BundleParams calldata params) external payable onlyVault nonReentrant {
-		if (msg.value != params.curveFillBnb + params.v2BuyBnb) revert BnbMismatch();
-		if (block.timestamp > params.deadline) revert Expired();
-
-		// Step 1: Fill the real Flap V3 bonding curve through the Portal. Real
-		// TOKEN_TAXED_V3 contracts do not expose token.buy(); the curve state lives
-		// in the Portal. Factory-minted AgentTokenV3 launches send LP inventory to
-		// this router instead, so the fallback path creates the V2 LP directly.
-		uint256 curveBalBefore = IERC20(params.flapToken).balanceOf(address(this));
-		bool portalOk = false;
-		if (flapPortal.code.length > 0) {
-			(portalOk,) = flapPortal.call{value: params.curveFillBnb}(
-				abi.encodeWithSelector(
-					FLAP_SWAP_EXACT_INPUT,
-					PortalExactInputParams({
-						inputToken: address(0),
-						outputToken: params.flapToken,
-						inputAmount: params.curveFillBnb,
-						minOutputAmount: 0,
-						permitData: ""
-					})
-				)
-			);
-		}
-		if (portalOk) {
-			uint256 curveTokensReceived = IERC20(params.flapToken).balanceOf(address(this)) - curveBalBefore;
-			if (curveTokensReceived > 0) {
-				IERC20(params.flapToken).transfer(msg.sender, curveTokensReceived);
-			}
-		} else {
-			uint256 lpTokens = IERC20(params.flapToken).balanceOf(address(this));
-			if (lpTokens == 0) revert NoLiquidityTokens();
-			IERC20(params.flapToken).approve(pcsRouter, lpTokens);
-			IUniswapV2Router02(pcsRouter).addLiquidityETH{value: params.curveFillBnb}(
-				params.flapToken,
-				lpTokens,
-				0,
-				0,
-				DEAD,
-				params.deadline
-			);
-		}
-
-		// Step 2: Verify V2 pair exists.
-		address pair = IUniswapV2Factory(pcsFactory).getPair(params.flapToken, WBNB);
-		if (pair == address(0)) revert PairNotCreated();
-
-		uint256 tokensReceived = 0;
-
-		// Step 3 + 4: V2 buy (FOT-safe) and burn. Skipped if v2BuyBnb == 0.
-		if (params.v2BuyBnb > 0) {
-			address[] memory path = new address[](2);
-			path[0] = WBNB;
-			path[1] = params.flapToken;
-
-			uint256 balBefore = IERC20(params.flapToken).balanceOf(address(this));
-
-			IUniswapV2Router02(pcsRouter).swapExactETHForTokensSupportingFeeOnTransferTokens{value: params.v2BuyBnb}(
-				params.minTokensFromV2,
-				path,
-				address(this),
-				params.deadline
-			);
-
-			tokensReceived = IERC20(params.flapToken).balanceOf(address(this)) - balBefore;
-
-			// Burn all received tokens. Use raw transfer (FOT will tax burn too, but that's fine).
-			if (tokensReceived > 0) {
-				IERC20(params.flapToken).transfer(DEAD, tokensReceived);
-			}
-		}
-
-		// Step 5: Compute open MC and emit.
-		(uint112 r0, uint112 r1,) = IUniswapV2Pair(pair).getReserves();
-		bool tokenIsToken0 = IUniswapV2Pair(pair).token0() == params.flapToken;
-		uint256 tokenReserve = tokenIsToken0 ? uint256(r0) : uint256(r1);
-		uint256 bnbReserve = tokenIsToken0 ? uint256(r1) : uint256(r0);
-		uint256 openMcBnb = tokenReserve == 0
-			? 0
-			: (bnbReserve * IERC20(params.flapToken).totalSupply()) / tokenReserve;
-
-		// Read the real buy-tax bps from TOKEN_TAXED_V3 when present. Flap V3 allows
-		// asymmetric buy/sell tax, so do not assume the historical flat 3% rate.
-		(uint256 buyTaxBps,) = _readTaxRates(params.flapToken);
-		uint256 tokensToTax = _taxFromNet(tokensReceived, buyTaxBps);
-
-		emit BundleExecuted(
-			params.flapToken,
-			pair,
-			params.curveFillBnb,
-			params.v2BuyBnb,
-			tokensReceived + tokensToTax,
-			tokensReceived,
-			tokensToTax,
-			openMcBnb
-		);
-
-		// Step 6: Burn unsolicited BNB dust. The vault intentionally rejects
-		// raw receives, and pre-sent router dust must not be able to brick launch.
-		uint256 dust = address(this).balance;
-		if (dust > 0) {
-			(bool ok,) = DEAD.call{value: dust}("");
-			if (!ok) revert SweepFailed();
-		}
+	receive() external payable {
+		// accepts BNB from vault during executeBundle pull. always ok in phase 1
+		// because no code path here exposes a withdraw surface.
 	}
-
-	function _readTaxRates(address token) internal view returns (uint256 buyTaxBps, uint256 sellTaxBps) {
-		(bool buyOk, bytes memory buyData) = token.staticcall(abi.encodeWithSelector(BUY_TAX_RATE));
-		if (buyOk && buyData.length >= 32) {
-			buyTaxBps = abi.decode(buyData, (uint256));
-		} else {
-			(bool legacyOk, bytes memory legacyData) = token.staticcall(abi.encodeWithSelector(TAX_BPS));
-			if (legacyOk && legacyData.length >= 32) buyTaxBps = abi.decode(legacyData, (uint256));
-		}
-
-		(bool sellOk, bytes memory sellData) = token.staticcall(abi.encodeWithSelector(SELL_TAX_RATE));
-		if (sellOk && sellData.length >= 32) sellTaxBps = abi.decode(sellData, (uint256));
-	}
-
-	function _taxFromNet(uint256 netAmount, uint256 taxBps) internal pure returns (uint256) {
-		if (netAmount == 0 || taxBps == 0) return 0;
-		if (taxBps >= 10_000) return 0;
-		uint256 grossAmount = (netAmount * 10_000) / (10_000 - taxBps);
-		return grossAmount - netAmount;
-	}
-
-	/// @notice Predict the V2 pair address for a flap token via CREATE2.
-	function previewPairAddress(address flapToken) external view returns (address) {
-		(address token0, address token1) = flapToken < WBNB ? (flapToken, WBNB) : (WBNB, flapToken);
-		return address(
-			uint160(
-				uint256(
-					keccak256(
-						abi.encodePacked(
-							hex"ff",
-							pcsFactory,
-							keccak256(abi.encodePacked(token0, token1)),
-							initCodeHash
-						)
-					)
-				)
-			)
-		);
-	}
-
-	receive() external payable {}
 }

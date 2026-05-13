@@ -1,216 +1,180 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {AgentTokenV3} from "./AgentTokenV3.sol";
 import {LaunchVault} from "./LaunchVault.sol";
 import {BundleRouter} from "./BundleRouter.sol";
-import {TaxSplitter} from "./TaxSplitter.sol";
-import {TreasuryReserve} from "./TreasuryReserve.sol";
+import {TreasuryLP} from "./TreasuryLP.sol";
 
 /// @title LaunchFactory
-/// @notice Atomic deployment of agent launch primitives.
-///         Mints token, burns 50%, deploys vault + router + per-agent
-///         TaxSplitter, allocates supply.
-///         Treasury LP integration deferred until W33b lands (TierConfig[]).
-/// @dev W40c: each launch deploys its own TaxSplitter parameterized with
-///      `[creator, platformWallet]` recipients and `[9000, 1000]` bps so the
-///      3% transfer tax actually splits 90% to the agent treasury and 10% to
-///      the platform fee wallet on a per-agent basis (V3 audit C-5).
+/// @notice wave H factory. one createLaunch() tx deploys a per-launch
+///         LaunchVault + BundleRouter + TreasuryLP. all tokens are minted
+///         by Flap Portal V6 inside the bundle, not here.
+///
+/// @dev PHASE 1 SCAFFOLD: storage + signatures + events + custom errors
+///      are final; function bodies revert `WaveH:phase2`. phase 2 fills
+///      in createLaunch logic + fork integration tests. see
+///      `WAVE_H_FLAP_NATIVE_SPEC.md` / `WAVE_H_INTERFACES.md`.
 contract LaunchFactory {
-	enum LaunchTier { TIER_80, TIER_90, TIER_95, TIER_98 }
+	enum LaunchTier {
+		TIER_80,
+		TIER_90,
+		TIER_95,
+		TIER_98
+	}
 
 	struct LaunchConfig {
 		string name;
 		string symbol;
-		string metadataURI;
-		address creator;
+		string metaCid; // IPFS CID from funcs.flap.sh
+		address creator; // SIWE-authenticated launcher
+		address bundleBot; // hot-wallet EOA authorized to call BundleRouter.executeBundle
+		address commissionReceiver; // platform fee wallet on BSC
 		LaunchTier tier;
-		uint256 closeTimestamp; // launch round end (typically now + 24h)
+		uint16 buyTaxBps; // 300 default for waifu.fun
+		uint16 sellTaxBps; // 300 default
+		uint64 taxDuration; // 365 days default
+		uint64 antiFarmerDuration; // 1 hour default
+		uint256 closeTimestamp; // presale end
+		bytes32 vanitySalt; // mined off-chain
+		address predictedTokenAddress; // must match CREATE2 derivation; on-chain reconciliation check
 	}
 
 	struct LaunchAddresses {
-		address token;
 		address vault;
 		address router;
-		address taxSplitter;
-		address treasuryReserve;
+		address treasuryLp;
+		address predictedTokenAddress;
 	}
 
-	uint256 internal constant TOTAL_SUPPLY = 1_000_000_000 ether;
-	uint256 internal constant BURN_AMOUNT = 500_000_000 ether;     // 50%
-	uint256 internal constant PRESALE_AMOUNT = 200_000_000 ether;  // 20%
-	uint256 internal constant V2_LP_AMOUNT = 200_000_000 ether;    // 20%
-	uint256 internal constant TREASURY_AMOUNT = 100_000_000 ether; // 10%
-	uint256 internal constant DEFAULT_PENALTY_BPS = 500;           // 5%
+	// ---------------------------------------------------------------------
+	// immutables
+	// ---------------------------------------------------------------------
 
-	uint16 internal constant SPLITTER_AGENT_BPS = 9000;    // 90% to creator (agent treasury)
-	uint16 internal constant SPLITTER_PLATFORM_BPS = 1000; // 10% to platform wallet
+	address public immutable WBNB;
+	address public immutable PCS_FACTORY;
+	address public immutable PCS_ROUTER;
+	bytes32 public immutable INIT_CODE_HASH;
+	address public immutable FLAP_PORTAL;
+	address public immutable TOKEN_IMPL_TAXED_V3;
+	address public immutable TIP_RECEIVER;
 
-	address internal constant DEAD = 0x000000000000000000000000000000000000dEaD;
+	// ---------------------------------------------------------------------
+	// storage
+	// ---------------------------------------------------------------------
 
-	address internal immutable WBNB;
-	address internal immutable PCS_FACTORY;
-	address internal immutable PCS_ROUTER;
-	bytes32 internal immutable INIT_CODE_HASH;
-	address internal immutable PLATFORM_WALLET;
-	address internal immutable FLAP_PORTAL;
-
-	mapping(address => LaunchAddresses) public launches;
+	address public owner; // admin emergency stop
+	mapping(bytes32 => bool) public usedSalts; // dedupe across launches
+	mapping(address => LaunchAddresses) public launches; // keyed by predictedToken
 	address[] public allLaunches;
 
+	// ---------------------------------------------------------------------
+	// events
+	// ---------------------------------------------------------------------
+
 	event LaunchCreated(
+		bytes32 indexed launchId, // keccak256(creator, salt)
 		address indexed creator,
-		address indexed token,
+		address indexed predictedToken,
 		address vault,
 		address router,
-		address taxSplitter,
-		address treasuryReserve,
+		address treasuryLp,
 		LaunchTier tier,
 		uint256 presaleCap,
 		uint256 v2BuyBnb,
-		bool vestingEnabled
+		uint256 closeTimestamp
 	);
 
+	event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+	// ---------------------------------------------------------------------
+	// errors
+	// ---------------------------------------------------------------------
+
 	error InvalidCreator();
-	error InvalidPlatformWallet();
+	error InvalidBundleBot();
+	error InvalidCommissionReceiver();
+	error InvalidPredictedAddress();
 	error InvalidCloseTimestamp();
+	error InvalidTaxBps();
 	error EmptyName();
 	error EmptySymbol();
+	error EmptyMetaCid();
+	error SaltAlreadyUsed();
+	error NotOwner();
+	error ZeroAddress();
+
+	// ---------------------------------------------------------------------
+	// constructor
+	// ---------------------------------------------------------------------
 
 	constructor(
 		address _wbnb,
 		address _pcsFactory,
 		address _pcsRouter,
 		bytes32 _initCodeHash,
-		address _platformWallet,
-		address _flapPortal
+		address _flapPortal,
+		address _tokenImplTaxedV3,
+		address _tipReceiver
 	) {
-		if (_platformWallet == address(0)) revert InvalidPlatformWallet();
+		if (
+			_wbnb == address(0) ||
+			_pcsFactory == address(0) ||
+			_pcsRouter == address(0) ||
+			_flapPortal == address(0) ||
+			_tokenImplTaxedV3 == address(0) ||
+			_tipReceiver == address(0)
+		) revert ZeroAddress();
+
 		WBNB = _wbnb;
 		PCS_FACTORY = _pcsFactory;
 		PCS_ROUTER = _pcsRouter;
 		INIT_CODE_HASH = _initCodeHash;
-		PLATFORM_WALLET = _platformWallet;
 		FLAP_PORTAL = _flapPortal;
+		TOKEN_IMPL_TAXED_V3 = _tokenImplTaxedV3;
+		TIP_RECEIVER = _tipReceiver;
+
+		owner = msg.sender;
+		emit OwnershipTransferred(address(0), msg.sender);
 	}
 
-	/// @notice Returns the (presaleCapBnb, v2BuyBnb, vestingEnabled) tuple for a tier.
-	function tierConfig(LaunchTier tier) public pure returns (
-		uint256 presaleCapBnb,
-		uint256 v2BuyBnb,
-		bool vestingEnabled
-	) {
-		if (tier == LaunchTier.TIER_80) return (16 ether, 0, false);
-		if (tier == LaunchTier.TIER_90) return (32 ether, 16 ether, true);
-		if (tier == LaunchTier.TIER_95) return (64 ether, 48 ether, true);
-		// TIER_98
-		return (160 ether, 144 ether, true);
+	// ---------------------------------------------------------------------
+	// external
+	// ---------------------------------------------------------------------
+
+	/// @notice deploy a wave H launch (vault + router + treasury LP) atomically.
+	/// @dev PHASE 1 STUB: reverts. phase 2 implements full deploy flow.
+	function createLaunch(
+		LaunchConfig calldata /* config */
+	) external returns (LaunchAddresses memory) {
+		revert("WaveH:phase2");
 	}
 
-	/// @notice Deploy a complete agent launch system in one transaction.
-	function createLaunch(LaunchConfig calldata config)
-		external
-		returns (LaunchAddresses memory addrs)
+	/// @notice tier -> (presaleCap, quoteAmt, v2BuyBnb, vestingEnabled).
+	///   TIER_80: (16, 16,   0, false)
+	///   TIER_90: (32, 16,  16, true)
+	///   TIER_95: (64, 16,  48, true)
+	///   TIER_98: (160,16, 144, true)
+	function tierConfig(LaunchTier tier)
+		public
+		pure
+		returns (uint256 presaleCapBnb, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled)
 	{
-		if (config.creator == address(0)) revert InvalidCreator();
-		if (config.closeTimestamp <= block.timestamp) revert InvalidCloseTimestamp();
-		if (bytes(config.name).length == 0) revert EmptyName();
-		if (bytes(config.symbol).length == 0) revert EmptySymbol();
-
-		(uint256 presaleCap, uint256 v2BuyBnb, bool vestingEnabled) = tierConfig(config.tier);
-
-		// 0. Deploy per-agent TaxSplitter (90% creator / 10% platform)
-		address splitterAddr;
-		{
-			address[] memory recipients = new address[](2);
-			recipients[0] = config.creator;
-			recipients[1] = PLATFORM_WALLET;
-			uint16[] memory bps = new uint16[](2);
-			bps[0] = SPLITTER_AGENT_BPS;
-			bps[1] = SPLITTER_PLATFORM_BPS;
-			TaxSplitter splitter = new TaxSplitter(recipients, bps);
-			splitterAddr = address(splitter);
-		}
-
-		// 1. Deploy token using the per-agent splitter
-		AgentTokenV3 token = new AgentTokenV3(
-			config.name,
-			config.symbol,
-			config.metadataURI,
-			address(this),
-			splitterAddr,
-			TOTAL_SUPPLY
-		);
-
-		// 2. Deploy router (factory is temporary owner; vault owns execution at end)
-		BundleRouter router = new BundleRouter(
-			WBNB,
-			PCS_FACTORY,
-			PCS_ROUTER,
-			INIT_CODE_HASH,
-			FLAP_PORTAL
-		);
-
-		// 3. Deploy vault (creator owns)
-		LaunchVault vault = new LaunchVault(
-			config.creator,
-			payable(address(router)),
-			PRESALE_AMOUNT,
-			presaleCap,
-			v2BuyBnb,
-			DEFAULT_PENALTY_BPS,
-			vestingEnabled,
-			config.closeTimestamp
-		);
-
-		router.transferOwnership(address(vault));
-
-		// 4. Tax-exempt the new contracts and DEAD.
-		//    AgentTokenV3 already exempts the factory, the splitter, itself, and DEAD
-		//    in its constructor; we add the vault + router here.
-		token.setTaxExempt(address(vault), true);
-		token.setTaxExempt(address(router), true);
-
-		// 5. Burn 50%
-		token.transfer(DEAD, BURN_AMOUNT);
-
-		// 6. Allocate presale + launch liquidity inventory to vault
-		token.transfer(address(vault), PRESALE_AMOUNT + V2_LP_AMOUNT);
-
-		// 7. Park treasury reserve in a tax-exempt holder controlled by creator
-		//    until TreasuryLP4 can be wired after the V2 pair exists.
-		TreasuryReserve treasury = new TreasuryReserve(config.creator);
-		token.setTaxExempt(address(treasury), true);
-		token.transfer(address(treasury), TREASURY_AMOUNT);
-
-		// 8. Lock token bootstrap (no more setTaxExempt)
-		token.finalizeBootstrap();
-
-		addrs = LaunchAddresses({
-			token: address(token),
-			vault: address(vault),
-			router: address(router),
-			taxSplitter: splitterAddr,
-			treasuryReserve: address(treasury)
-		});
-		launches[address(token)] = addrs;
-		allLaunches.push(address(token));
-
-		emit LaunchCreated(
-			config.creator,
-			address(token),
-			address(vault),
-			address(router),
-			splitterAddr,
-			address(treasury),
-			config.tier,
-			presaleCap,
-			v2BuyBnb,
-			vestingEnabled
-		);
+		if (tier == LaunchTier.TIER_80) return (16 ether, 16 ether, 0, false);
+		if (tier == LaunchTier.TIER_90) return (32 ether, 16 ether, 16 ether, true);
+		if (tier == LaunchTier.TIER_95) return (64 ether, 16 ether, 48 ether, true);
+		// TIER_98
+		return (160 ether, 16 ether, 144 ether, true);
 	}
 
 	function launchCount() external view returns (uint256) {
 		return allLaunches.length;
+	}
+
+	function transferOwnership(address newOwner) external {
+		if (msg.sender != owner) revert NotOwner();
+		if (newOwner == address(0)) revert ZeroAddress();
+		address prev = owner;
+		owner = newOwner;
+		emit OwnershipTransferred(prev, newOwner);
 	}
 }
