@@ -393,4 +393,199 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    40% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
 		console.log("    =============================================\n");
 	});
+
+	// ----------------------------------------------------------------
+	// Tier 90 / 95 / 98 — graduating tiers with V2 follow-up buy
+	// ----------------------------------------------------------------
+	//
+	// Each test mints a fresh launch with quoteAmt=20 BNB (Portal graduation
+	// threshold) plus tier-specific v2BuyBnb. Signers rotated per test to dodge
+	// Portal's 90s tx.origin cooldown — bundleBot is tx.origin for the
+	// router -> Portal.newTokenV6 call.
+	//
+	// Tier 90: presaleCap=32, quoteAmt=20, v2BuyBnb=12  -> signers 8/9/10
+	// Tier 95: presaleCap=64, quoteAmt=20, v2BuyBnb=44  -> signers 11/12/13
+	// Tier 98: presaleCap=160, quoteAmt=20, v2BuyBnb=140 -> signers 14/15/16
+
+	async function runGraduatingTierBundle({ tierEnum, tierLabel, presaleCapBnb, v2BuyBnb, signerOffset }) {
+		const signers = await ethers.getSigners();
+		const freshBot = signers[signerOffset];
+		const freshDepositorA = signers[signerOffset + 1];
+		const freshDepositorB = signers[signerOffset + 2];
+		console.log(`    [live ${tierLabel}] bundleBot=${freshBot.address}`);
+		console.log(`    [live ${tierLabel}] depositorA=${freshDepositorA.address}`);
+		console.log(`    [live ${tierLabel}] depositorB=${freshDepositorB.address}`);
+
+		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
+		const { salt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, `live-${tierLabel}`);
+		console.log(`    [live ${tierLabel}] mined salt in ${iterations} iters; predicted=${predicted}`);
+
+		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+
+		const config = {
+			name: `Wave H Live ${tierLabel}`,
+			symbol: `WHL${tierLabel}`,
+			metaCid: `QmLiveTestCid${tierLabel}`,
+			creator: freshDepositorA.address,
+			bundleBot: freshBot.address,
+			commissionReceiver: owner.address,
+			tier: tierEnum,
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31_536_000,
+			antiFarmerDuration: 86_400,
+			closeTimestamp,
+			vanitySalt: salt,
+			predictedTokenAddress: predicted,
+		};
+
+		// 1. createLaunch
+		const createTx = await factory.connect(freshDepositorA).createLaunch(config);
+		const createReceipt = await createTx.wait();
+		console.log(`    [live ${tierLabel}] createLaunch gas: ${createReceipt.gasUsed}`);
+
+		const launchAddrs = await factory.launches(predicted);
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const vault = Vault.attach(launchAddrs.vault);
+		const Router = await ethers.getContractFactory("BundleRouter");
+		const router = Router.attach(launchAddrs.router);
+		console.log(`    [live ${tierLabel}] vault=${launchAddrs.vault} router=${launchAddrs.router}`);
+
+		// 2. fill presaleCap exactly. depositorA puts in 60%, depositorB the rest.
+		const capWei = ethers.parseEther(String(presaleCapBnb));
+		const depositA = (capWei * 60n) / 100n;
+		const depositB = capWei - depositA;
+		await vault.connect(freshDepositorA).deposit({ value: depositA });
+		await vault.connect(freshDepositorB).deposit({ value: depositB });
+		expect(await vault.totalDeposited()).to.equal(capWei);
+		console.log(`    [live ${tierLabel}] vault funded: ${ethers.formatEther(capWei)} BNB`);
+
+		// 3. close
+		const closeTx = await vault.connect(freshBot).close();
+		await closeTx.wait();
+		console.log(`    [live ${tierLabel}] vault closed`);
+
+		// 4. executeBundle
+		const execParams = {
+			vanitySalt: salt,
+			name: config.name,
+			symbol: config.symbol,
+			meta: config.metaCid,
+			buyTaxBps: config.buyTaxBps,
+			sellTaxBps: config.sellTaxBps,
+			taxDuration: config.taxDuration,
+			antiFarmerDuration: config.antiFarmerDuration,
+			commissionReceiver: config.commissionReceiver,
+			minV2TokensOut: 0,
+			tipBnb: 0,
+			deadline: closeTimestamp + 1800,
+		};
+
+		const execTx = await router.connect(freshBot).executeBundle(execParams);
+		const execReceipt = await execTx.wait();
+		console.log(`    [live ${tierLabel}] executeBundle gas: ${execReceipt.gasUsed}`);
+		expect(execReceipt.status).to.equal(1);
+
+		// 5. token must exist at predicted address
+		const tokenCode = await ethers.provider.getCode(predicted);
+		expect(tokenCode.length).to.be.greaterThan(2);
+
+		// 6. PCS V2 pair MUST exist for graduating tiers (quoteAmt=20 BNB triggers it)
+		const PCSFactoryAbi = ["function getPair(address, address) view returns (address)"];
+		const pcsFactory = new ethers.Contract(PCS_FACTORY, PCSFactoryAbi, ethers.provider);
+		const pair = await pcsFactory.getPair(predicted, WBNB);
+		expect(pair).to.not.equal(ethers.ZeroAddress);
+		console.log(`    [live ${tierLabel}] PCS V2 pair created at ${pair}`);
+
+		// V2 pair must have non-zero reserves of both sides
+		const pairAbi = [
+			"function getReserves() view returns (uint112, uint112, uint32)",
+			"function token0() view returns (address)",
+			"function token1() view returns (address)",
+		];
+		const pairContract = new ethers.Contract(pair, pairAbi, ethers.provider);
+		const [reserve0, reserve1] = await pairContract.getReserves();
+		const token0 = await pairContract.token0();
+		const tokenIsToken0 = token0.toLowerCase() === predicted.toLowerCase();
+		const pairBnbReserve = tokenIsToken0 ? reserve1 : reserve0;
+		const pairTokenReserve = tokenIsToken0 ? reserve0 : reserve1;
+		expect(pairBnbReserve).to.be.greaterThan(0n);
+		expect(pairTokenReserve).to.be.greaterThan(0n);
+		console.log(
+			`    [live ${tierLabel}] V2 reserves: ${ethers.formatEther(pairBnbReserve)} BNB / ${ethers.formatUnits(pairTokenReserve, 18)} token`,
+		);
+
+		// 7. vault in LAUNCHED state, token splits non-zero
+		expect(await vault.state()).to.equal(2);
+
+		const tokenAbi = [
+			"function balanceOf(address) view returns (uint256)",
+			"function totalSupply() view returns (uint256)",
+		];
+		const token = new ethers.Contract(predicted, tokenAbi, ethers.provider);
+		const totalSupply = await token.totalSupply();
+		const vaultTokenBalance = await token.balanceOf(launchAddrs.vault);
+		const treasuryTokenBalance = await token.balanceOf(launchAddrs.treasuryLp);
+		const deadBalance = await token.balanceOf("0x000000000000000000000000000000000000dEaD");
+
+		expect(vaultTokenBalance).to.be.greaterThan(0n);
+		expect(treasuryTokenBalance).to.be.greaterThan(0n);
+		expect(deadBalance).to.be.greaterThan(0n);
+
+		// 8. depositorA claims
+		const depositorClaimBefore = await token.balanceOf(freshDepositorA.address);
+		const claimTx = await vault.connect(freshDepositorA).claim();
+		const claimReceipt = await claimTx.wait();
+		const depositorClaimAfter = await token.balanceOf(freshDepositorA.address);
+		const claimed = depositorClaimAfter - depositorClaimBefore;
+		expect(claimed).to.be.greaterThan(0n);
+
+		console.log(`\n    ====== Wave H Live ${tierLabel} Summary ======`);
+		console.log(`    presaleCap:         ${presaleCapBnb} BNB (quoteAmt=20, v2BuyBnb=${v2BuyBnb})`);
+		console.log(`    createLaunch gas:   ${createReceipt.gasUsed}`);
+		console.log(`    executeBundle gas:  ${execReceipt.gasUsed}`);
+		console.log(`    claim gas:          ${claimReceipt.gasUsed}`);
+		console.log(`    Token address:      ${predicted}`);
+		console.log(`    V2 pair:            ${pair}`);
+		console.log(`    V2 reserves:        ${ethers.formatEther(pairBnbReserve)} BNB / ${ethers.formatUnits(pairTokenReserve, 18)} token`);
+		console.log(`    Total supply:       ${ethers.formatUnits(totalSupply, 18)}`);
+		console.log(`    50% burn:           ${ethers.formatUnits(deadBalance, 18)}`);
+		console.log(`    10% treasury:       ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
+		console.log(`    40% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
+		console.log(`    depositorA claimed: ${ethers.formatUnits(claimed, 18)}`);
+		console.log("    =============================================\n");
+	}
+
+	it("[live] executeBundle against real Portal — tier 90 full graduation", async function () {
+		this.timeout(360_000);
+		await runGraduatingTierBundle({
+			tierEnum: 1, // TIER_90
+			tierLabel: "T90",
+			presaleCapBnb: 32,
+			v2BuyBnb: 12,
+			signerOffset: 8,
+		});
+	});
+
+	it("[live] executeBundle against real Portal — tier 95 full graduation", async function () {
+		this.timeout(360_000);
+		await runGraduatingTierBundle({
+			tierEnum: 2, // TIER_95
+			tierLabel: "T95",
+			presaleCapBnb: 64,
+			v2BuyBnb: 44,
+			signerOffset: 11,
+		});
+	});
+
+	it("[live] executeBundle against real Portal — tier 98 full graduation", async function () {
+		this.timeout(360_000);
+		await runGraduatingTierBundle({
+			tierEnum: 3, // TIER_98
+			tierLabel: "T98",
+			presaleCapBnb: 160,
+			v2BuyBnb: 140,
+			signerOffset: 14,
+		});
+	});
 });
