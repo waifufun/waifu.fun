@@ -18,8 +18,11 @@ export interface ChainRegistryEntry {
 	readonly flap: {
 		readonly portalAddress: HexAddress;
 		readonly standardTokenImplementation: HexAddress;
+		/** TOKEN_TAXED V1, used by legacy Portal.newTokenV2. */
 		readonly taxTokenV1Implementation: HexAddress;
 		readonly taxTokenV2Implementation: HexAddress;
+		/** TOKEN_TAXED_V3, used by Portal.newTokenV6/newTokenV6WithVault. */
+		readonly taxTokenV3Implementation?: HexAddress;
 		readonly uploadApiUrl: string;
 		readonly vanitySuffix: {
 			readonly standard: "8888";
@@ -46,6 +49,7 @@ export const CHAIN_REGISTRY = {
 			standardTokenImplementation: "0x8b4329947e34b6d56d71a3385cac122bade7d78d",
 			taxTokenV1Implementation: "0x29e6383F0ce68507b5A72a53c2B118a118332aA8",
 			taxTokenV2Implementation: "0xae562c6A05b798499507c6276C6Ed796027807BA",
+			taxTokenV3Implementation: "0x024f18294970B5c76c0691b87f138A0317156422",
 			uploadApiUrl: "https://funcs.flap.sh/api/upload",
 			vanitySuffix: {
 				standard: "8888",
