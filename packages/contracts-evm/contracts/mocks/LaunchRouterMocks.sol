@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IUniswapV2Factory, IUniswapV2Router02} from "../interfaces/IPancakeSwap.sol";
+import {IPancakeFactory} from "../uniswap/IPancakeFactory.sol";
+import {IPancakeRouter02} from "../uniswap/IPancakeRouter02.sol";
 
 interface IMockFlapBuy {
     function buy() external payable;
@@ -104,11 +105,11 @@ contract MockFlapToken is ERC20 {
         _approve(address(this), router, lpTokens);
 
         // Exempt the pair from tax during add liquidity
-        address predictedPair = IUniswapV2Factory(factory).createPair(address(this), wbnb);
+        address predictedPair = IPancakeFactory(factory).createPair(address(this), wbnb);
         v2Pair = predictedPair;
         taxExempt[predictedPair] = true;
 
-        IUniswapV2Router02(router).addLiquidityETH{value: lpBnb}(
+        IPancakeRouter02(router).addLiquidityETH{value: lpBnb}(
             address(this),
             lpTokens,
             0,
