@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title TreasuryLP
 /// @notice wave H custodial treasury holder. receives the 10% bundle-slice
@@ -9,6 +10,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///         to a real V3 CLAMM single-sided LP. for wave H the contract is
 ///         pure custody, owner-sweepable.
 contract TreasuryLP {
+	using SafeERC20 for IERC20;
+
 	address public immutable owner;
 	address public immutable factory;
 
@@ -48,7 +51,7 @@ contract TreasuryLP {
 	function sweep(address to, address t, uint256 amount) external {
 		if (msg.sender != owner) revert NotOwner();
 		if (to == address(0) || t == address(0)) revert ZeroAddress();
-		IERC20(t).transfer(to, amount);
+		IERC20(t).safeTransfer(to, amount);
 		emit TokensSwept(to, t, amount);
 	}
 

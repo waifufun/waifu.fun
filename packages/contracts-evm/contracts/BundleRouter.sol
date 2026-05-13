@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {FlapTypes} from "./flap/FlapTypes.sol";
 import {IFlapPortal} from "./flap/IFlapPortal.sol";
 import {IPancakeFactory} from "./uniswap/IPancakeFactory.sol";
@@ -38,6 +39,8 @@ interface ILaunchVaultRouterCallbacks {
 ///      tokens). hardcoding tier-specific numbers would drift from chain truth.
 ///      see WAVE_H_FLAP_NATIVE_SPEC.md section 3.2 for the reference table.
 contract BundleRouter {
+	using SafeERC20 for IERC20;
+
 	struct BundleExecParams {
 		bytes32 vanitySalt;
 		string name;
@@ -216,17 +219,15 @@ contract BundleRouter {
 		uint256 vaultAmt = totalY - burnAmt - treasuryAmt; // ~40% (rounding crumbs included)
 
 		// 6. burn
-		// raw transfer; tax tokens may apply tax even on burn path, that's fine —
-		// we only care that burnAmt LEAVES the router state. dead is the sink.
-		IERC20(token).transfer(DEAD, burnAmt);
+		// safeTransfer; tax tokens may apply tax even on burn path, that's fine
+		// because we only care that burnAmt LEAVES the router state.
+		IERC20(token).safeTransfer(DEAD, burnAmt);
 
 		// 7. treasury
-		bool t1 = IERC20(token).transfer(treasuryLp, treasuryAmt);
-		if (!t1) revert TreasuryTransferFailed();
+		IERC20(token).safeTransfer(treasuryLp, treasuryAmt);
 
 		// 8. vault distribution
-		bool t2 = IERC20(token).transfer(vault, vaultAmt);
-		if (!t2) revert VaultDistributeFailed();
+		IERC20(token).safeTransfer(vault, vaultAmt);
 		ILaunchVaultRouterCallbacks(vault).distribute(token, vaultAmt);
 
 		// 9. tip
