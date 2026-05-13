@@ -4,11 +4,9 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FlapTypes} from "./flap/FlapTypes.sol";
 import {IFlapPortal} from "./flap/IFlapPortal.sol";
-import {
-	IUniswapV2Factory,
-	IUniswapV2Pair,
-	IUniswapV2Router02
-} from "./interfaces/IPancakeSwap.sol";
+import {IPancakeFactory} from "./uniswap/IPancakeFactory.sol";
+import {IPancakePair} from "./uniswap/IPancakePair.sol";
+import {IPancakeRouter02} from "./uniswap/IPancakeRouter02.sol";
 
 interface ILaunchVaultRouterCallbacks {
 	function pullBnbForLaunch(uint256 amount) external;
@@ -203,7 +201,7 @@ contract BundleRouter {
 		if (token != predictedToken) revert PredictedAddressMismatch();
 
 		// 3. confirm V2 pair exists (Flap auto-graduates inside newTokenV6)
-		address pair = IUniswapV2Factory(PCS_FACTORY).getPair(token, WBNB);
+		address pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
 		if (pair == address(0)) revert PairNotCreated();
 
 		// 4. optional V2 follow-up buy
@@ -263,11 +261,11 @@ contract BundleRouter {
 	}
 
 	/// @notice indexer helper: returns the V2 pair address for `token` once it's been created.
-	/// @dev    This is a passthrough to `IUniswapV2Factory.getPair`, returning `address(0)` for
+	/// @dev    This is a passthrough to `IPancakeFactory.getPair`, returning `address(0)` for
 	///         not-yet-graduated tokens. A future router rev may add CREATE2 prediction (requires
 	///         INIT_CODE_HASH as immutable) but for wave H pair-lookup post-graduation is enough.
 	function previewPairAddress(address token) external view returns (address pair) {
-		pair = IUniswapV2Factory(PCS_FACTORY).getPair(token, WBNB);
+		pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
 	}
 
 	receive() external payable {
@@ -316,7 +314,7 @@ contract BundleRouter {
 		path[0] = WBNB;
 		path[1] = token;
 		uint256 balBefore = IERC20(token).balanceOf(address(this));
-		IUniswapV2Router02(PCS_ROUTER).swapExactETHForTokensSupportingFeeOnTransferTokens{
+		IPancakeRouter02(PCS_ROUTER).swapExactETHForTokensSupportingFeeOnTransferTokens{
 			value: v2BuyBnb
 		}(minOut, path, address(this), deadline);
 		uint256 received = IERC20(token).balanceOf(address(this)) - balBefore;
@@ -324,8 +322,8 @@ contract BundleRouter {
 	}
 
 	function _computeOpenMcBnb(address token, address pair) internal view returns (uint256) {
-		(uint112 r0, uint112 r1, ) = IUniswapV2Pair(pair).getReserves();
-		bool isToken0 = IUniswapV2Pair(pair).token0() == token;
+		(uint112 r0, uint112 r1, ) = IPancakePair(pair).getReserves();
+		bool isToken0 = IPancakePair(pair).token0() == token;
 		uint256 tokenReserve = isToken0 ? uint256(r0) : uint256(r1);
 		uint256 bnbReserve = isToken0 ? uint256(r1) : uint256(r0);
 		if (tokenReserve == 0) return 0;

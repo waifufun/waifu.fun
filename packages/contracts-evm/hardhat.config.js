@@ -8,6 +8,11 @@ require("dotenv").config();
 
 const forkBsc = process.env.FORK_BSC === "true";
 
+// Wave H deploy scripts read PRIVATE_KEY; we accept DEPLOYER as a back-compat
+// alias for the legacy V2 scripts that have been deleted. Prefer PRIVATE_KEY.
+const deployerKey = process.env.PRIVATE_KEY || process.env.DEPLOYER;
+const accounts = deployerKey ? [deployerKey] : [];
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
 	defaultNetwork: "hardhat",
@@ -31,22 +36,17 @@ module.exports = {
 		localhost: {
 			url: process.env.ETH_RPC || "http://127.0.0.1:8545",
 			chainId: 31337,
-			accounts: process.env.DEPLOYER ? [process.env.DEPLOYER] : undefined,
-		},
-		mainnet: {
-			url: process.env.ETH_RPC || "http://127.0.0.1:8545",
-			chainId: 1,
-			accounts: process.env.DEPLOYER ? [process.env.DEPLOYER] : undefined,
+			accounts: accounts.length ? accounts : undefined,
 		},
 		bscMainnet: {
-			url: process.env.BSC_RPC || "https://bsc-dataseed1.binance.org/",
+			url: process.env.BSC_RPC_URL || process.env.BSC_RPC || "https://bsc-dataseed1.binance.org/",
 			chainId: 56,
-			accounts: process.env.DEPLOYER ? [process.env.DEPLOYER] : [],
+			accounts,
 		},
 		bscTestnet: {
-			url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+			url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545/",
 			chainId: 97,
-			accounts: process.env.DEPLOYER ? [process.env.DEPLOYER] : [],
+			accounts,
 		},
 	},
 	etherscan: {
