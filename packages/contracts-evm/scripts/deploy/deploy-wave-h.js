@@ -133,6 +133,15 @@ async function main() {
 		console.log("");
 	}
 
+	// DRY_RUN mode: print everything we WOULD do, abort before broadcast.
+	// Use this as a safety check before mainnet ops.
+	if (process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1") {
+		console.log("=== DRY_RUN mode: NOT broadcasting transaction ===");
+		console.log("Would deploy LaunchFactory with the args above.");
+		console.log("To actually deploy, unset DRY_RUN.");
+		return;
+	}
+
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await LaunchFactory.deploy(
 		book.WBNB,
@@ -147,6 +156,39 @@ async function main() {
 	const factoryAddress = await factory.getAddress();
 
 	console.log("LaunchFactory deployed at:", factoryAddress);
+	console.log("");
+
+	// Post-deploy verification: read back every immutable and confirm it matches
+	// what we passed. Fails loudly if any address slipped (e.g. wrong env var,
+	// constructor arg order bug, etc.).
+	console.log("=== Post-deploy verification ===");
+	const checks = [
+		["WBNB", await factory.WBNB(), book.WBNB],
+		["PCS_FACTORY", await factory.PCS_FACTORY(), book.PCS_FACTORY],
+		["PCS_ROUTER", await factory.PCS_ROUTER(), book.PCS_ROUTER],
+		["INIT_CODE_HASH", await factory.INIT_CODE_HASH(), initCodeHash],
+		["FLAP_PORTAL", await factory.FLAP_PORTAL(), book.FLAP_PORTAL],
+		["TOKEN_IMPL_TAXED_V3", await factory.TOKEN_IMPL_TAXED_V3(), book.TOKEN_IMPL_TAXED_V3],
+		["TIP_RECEIVER", await factory.TIP_RECEIVER(), book.TIP_RECEIVER],
+		["owner", await factory.owner(), deployer.address],
+	];
+	let ok = true;
+	for (const [name, actual, expected] of checks) {
+		const actualNorm = String(actual).toLowerCase();
+		const expectedNorm = String(expected).toLowerCase();
+		const match = actualNorm === expectedNorm;
+		console.log(`  ${match ? "✓" : "✗"} ${name}: ${actual}`);
+		if (!match) {
+			console.error(`     EXPECTED: ${expected}`);
+			ok = false;
+		}
+	}
+	if (!ok) {
+		throw new Error(
+			"Post-deploy verification failed. Factory state does not match constructor args. Do NOT use this factory.",
+		);
+	}
+	console.log("  all checks passed");
 	console.log("");
 
 	const out = {
