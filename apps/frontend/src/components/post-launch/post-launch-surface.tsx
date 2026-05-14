@@ -57,7 +57,7 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 	const taxSplitter = taxSplitterRaw && isAddress(taxSplitterRaw) ? (taxSplitterRaw as Address) : null;
 
 	return (
-		<div className="mt-10 flex flex-col gap-5">
+		<section className="mt-10 flex flex-col gap-5" aria-label="post-launch surface" data-testid="post-launch-surface">
 			{token ? (
 				<>
 					<SectionHeader>price chart</SectionHeader>
@@ -102,7 +102,7 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 					<TradeActivityFeed market={market.data ?? null} tokenAddress={token} isLoading={market.isLoading} />
 				</>
 			) : null}
-		</div>
+		</section>
 	);
 }
 

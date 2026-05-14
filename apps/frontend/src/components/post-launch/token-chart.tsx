@@ -28,18 +28,32 @@ export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
 	const link = pairUrl ?? `https://dexscreener.com/bsc/${tokenAddress.toLowerCase()}`;
 
 	// Pre-warm the iframe origin so the first paint isn't gated on DNS.
+	// Guard against duplicate <link rel=preconnect> tags when the surface
+	// remounts (e.g. when the user toggles between agents). We also guard
+	// the cleanup so we never remove a tag that another mount inserted.
 	useEffect(() => {
+		if (typeof document === "undefined") return;
+		if (document.head.querySelector('link[rel="preconnect"][href="https://dexscreener.com"]')) {
+			return;
+		}
 		const tag = document.createElement("link");
 		tag.rel = "preconnect";
 		tag.href = "https://dexscreener.com";
+		tag.dataset.postLaunch = "1";
 		document.head.appendChild(tag);
 		return () => {
-			document.head.removeChild(tag);
+			if (tag.parentNode === document.head) {
+				document.head.removeChild(tag);
+			}
 		};
 	}, []);
 
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden">
+		<div
+			className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden"
+			role="region"
+			aria-label="price chart"
+		>
 			<div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">price chart</div>
 				<a
@@ -47,11 +61,17 @@ export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
 					target="_blank"
 					rel="noreferrer"
 					className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
+					aria-label="open chart on dexscreener"
 				>
 					dexscreener
 				</a>
 			</div>
-			<iframe src={src} title="price chart" className="w-full h-[420px] border-0" loading="lazy" />
+			<iframe
+				src={src}
+				title={`price chart for ${tokenAddress}`}
+				className="w-full h-[320px] sm:h-[420px] border-0"
+				loading="lazy"
+			/>
 		</div>
 	);
 }

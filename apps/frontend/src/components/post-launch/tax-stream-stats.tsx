@@ -1,8 +1,10 @@
 "use client";
 
-import { type Address, formatEther, isAddress } from "viem";
+import { type Address, isAddress } from "viem";
 import { useBalance } from "wagmi";
 import { bsc } from "wagmi/chains";
+
+import { formatBnb } from "./__lib/format";
 
 type Props = {
 	/** TaxSplitter contract address (from agent_launches.tax_split.splitterAddress). */
@@ -39,7 +41,11 @@ export function TaxStreamStats({ taxSplitter, treasuryLp, agentBps, patronBps }:
 
 	if (!splitterValid && !treasuryValid) {
 		return (
-			<div className="border border-white/10 bg-[#08080a] rounded-sm p-5 text-[11px] font-mono text-white/40">
+			<div
+				className="border border-white/10 bg-[#08080a] rounded-sm p-5 text-[11px] font-mono text-white/40"
+				role="region"
+				aria-label="tax stream"
+			>
 				tax routing not yet configured
 			</div>
 		);
@@ -50,7 +56,10 @@ export function TaxStreamStats({ taxSplitter, treasuryLp, agentBps, patronBps }:
 	const patronSharePct = patronBps != null ? patronBps / 100 : null;
 
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5">
+		/* TODO: needs indexer endpoint for lifetime + 24h tax aggregates over
+		   TaxSplitter Released() events. Wire in via `apiFetch('/v2/tax-stream/:splitter')`
+		   once the post-launch indexer lands. */
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="tax stream stats">
 			<div className="flex items-center justify-between mb-4">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">tax stream</div>
 				{splitterValid ? (
@@ -59,6 +68,7 @@ export function TaxStreamStats({ taxSplitter, treasuryLp, agentBps, patronBps }:
 						target="_blank"
 						rel="noreferrer"
 						className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
+						aria-label="view tax splitter contract on bscscan"
 					>
 						splitter
 					</a>
@@ -94,11 +104,4 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
 			{hint ? <div className="text-[10px] font-mono text-white/30 mt-0.5">{hint}</div> : null}
 		</div>
 	);
-}
-
-function formatBnb(value: bigint): string {
-	const s = formatEther(value);
-	const [intPart, fracPart] = s.split(".");
-	if (!fracPart) return intPart ?? "0";
-	return `${intPart}.${fracPart.slice(0, 4)}`;
 }
