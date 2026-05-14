@@ -7,6 +7,7 @@ import {
 	FLAP_TOKEN_VERSIONS,
 	buildNewTokenV6WithVaultParams,
 	buildSplitVaultData,
+	getFlapTokenImplementationAddress,
 	parseVaultPortalReceiptEvents,
 } from "../src/index.js";
 
@@ -73,6 +74,17 @@ test("buildNewTokenV6WithVaultParams maps Tax Token V3", () => {
 	assert.equal(params.tokenVersion, FLAP_TOKEN_VERSIONS.TOKEN_TAXED_V3);
 	assert.equal(params.vaultFactory, FACTORY);
 	assert.equal(params.vaultData, vaultData);
+});
+
+test("getFlapTokenImplementationAddress returns V3 implementation for newTokenV6", () => {
+	assert.equal(
+		getFlapTokenImplementationAddress({
+			taxRate: 500,
+			tokenVersion: FLAP_TOKEN_VERSIONS.TOKEN_TAXED_V3,
+			network: "bsc",
+		}),
+		"0x024f18294970B5c76c0691b87f138A0317156422",
+	);
 });
 
 test("buildNewTokenV6WithVaultParams requires nonzero tax", () => {
