@@ -291,6 +291,92 @@ directly).
 mentioned for completeness, there is no allowance-griefing surface in
 `BundleRouter`.
 
+## 16. frontend has no `refund()` write button
+
+the vault transitions to REFUND in three documented paths (under-subscribed,
+bundle-failed, admin emergency). once in REFUND, depositors are entitled to
+claim principal + pro-rata bonus by calling `LaunchVault.refund()` directly.
+the launch page + agent home both render a `displayState='refunding'` copy
+"bundle failed. claim refunds inside the window." but no wagmi
+`writeContract` action is wired to actually call `refund()`.
+
+why we ship this:
+- the function is permissionless and idempotent. anyone with a deposit can
+  call it directly from etherscan / a script.
+- adding the button is a UX task, not a contract or backend change.
+- portfolio claim-all path (which uses the same wagmi pattern for `claim()`)
+  is the template a follow-up PR will copy.
+
+operational implication: until the button ships, ops must publish a help
+guide for refund flow on the launch page itself. tracked in user-flow
+coverage matrix as gap 16.
+
+## 17. frontend `VaultState` enum missing REFUND
+
+`apps/frontend/src/lib/launch-vault/abi.ts:223` defines the abi mirror of
+`LaunchVault.State` as `{ OPEN: 0, CLOSED: 1, LAUNCHED: 2 }`. on-chain the
+enum has four values; `REFUND = 3`. anything reading raw vault state
+and comparing to the mirror treats REFUND as unknown.
+
+in practice today the launch page derives display state from a combination
+of backend `status='failed'` plus the on-chain vault number, so the UX
+still renders correctly when the backend has caught up. but until the
+indexer flips `status='failed'`, a user reading the chain directly sees
+"state=3" with no meaning.
+
+why we ship: cosmetic, no fund-flow effect. trivial follow-up patch.
+tracked in user-flow coverage matrix as gap 17.
+
+## 18. `enableRefundUnderSubscribed` has no automated trigger
+
+spec section 6.1 calls this "anyone calls permissionlessly" after
+`closeTimestamp + undersubscribed`. no off-chain service in `apps/`
+currently calls it. a launch that closes under-subscribed will sit at
+on-chain state OPEN/CLOSED until either a presaler or ops manually
+invokes the function.
+
+impact: refunds are delayed until manual trigger, not blocked. once
+triggered, the path works correctly.
+
+follow-up: tier-cron sweeper that scans for
+`closeTimestamp < now() - grace AND totalDeposited < cap AND state != REFUND`
+and fires the call. low-cost addition. tracked in user-flow coverage
+matrix as gap 18.
+
+## 19. bundle-submitter does not auto-call `enableRefundBundleFailed`
+
+`apps/api/src/services/bundle-submitter.ts:188-200` marks
+`bundleStatus='failed_terminal'` on attempt 3 and returns. it does NOT
+then submit a follow-up transaction calling
+`LaunchVault.enableRefundBundleFailed()`. the spec (section 7.4) requires
+this call so the refund path opens automatically.
+
+impact today: a launch whose bundle fails 3x sits in vault state CLOSED
+until ops manually fires either `enableRefundBundleFailed` (from the
+bundle-bot wallet) or `adminEnableRefund` (from `factory.owner`). no
+funds are at risk; only the refund window's opening is delayed.
+
+why we ship: the `adminEnableRefund` kill switch is sufficient. adding
+the auto-call is a follow-up engineering task. tracked in user-flow
+coverage matrix as gap 19.
+
+## 20. indexer silently no-ops on portal `TokenCreated` mismatch
+
+`apps/launch-indexer/src/handlers/flap.ts:9-30` looks up
+`agentLaunches.predictedTokenAddress = event.token` and returns `null`
+if no row matches. if our predicted-CREATE2 computation drifts from
+portal's (e.g. portal upgrade with new init-code) the launch is not
+flagged, even though the on-chain `BundleRouter.executeBundle` would
+have already reverted with `PredictedAddressMismatch`.
+
+impact: lost observability, not lost funds. the router-level revert
+guarantees the bundle either succeeds with our predicted address or
+leaves vault BNB intact.
+
+follow-up: warn-log on unmatched `TokenCreated` events so ops can
+investigate portal upgrades. tracked in user-flow coverage matrix as
+gap 20.
+
 ---
 
 ## non-goals (deferred to follow-up waves)
