@@ -547,7 +547,9 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    claim gas:          ${claimReceipt.gasUsed}`);
 		console.log(`    Token address:      ${predicted}`);
 		console.log(`    V2 pair:            ${pair}`);
-		console.log(`    V2 reserves:        ${ethers.formatEther(pairBnbReserve)} BNB / ${ethers.formatUnits(pairTokenReserve, 18)} token`);
+		console.log(
+			`    V2 reserves:        ${ethers.formatEther(pairBnbReserve)} BNB / ${ethers.formatUnits(pairTokenReserve, 18)} token`,
+		);
 		console.log(`    Total supply:       ${ethers.formatUnits(totalSupply, 18)}`);
 		console.log(`    50% burn:           ${ethers.formatUnits(deadBalance, 18)}`);
 		console.log(`    10% treasury:       ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
