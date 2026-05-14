@@ -1,7 +1,6 @@
 "use client";
 
 import { Users } from "lucide-react";
-import { formatEther } from "viem";
 
 import { Badge } from "@/components/ui/badge";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
@@ -16,6 +15,7 @@ import { bscscanTokenUrl, flapTokenUrl, formatVanityAddress, pancakeSwapUrl } fr
 import { cn } from "@/lib/utils";
 
 import { LaunchCountdown } from "./launch-countdown";
+import { PresaleProgress } from "./presale-progress";
 
 type Props = {
 	meta: PublicLaunchExtended | null;
@@ -24,6 +24,7 @@ type Props = {
 	depositorCount: bigint;
 	closeTimestamp: bigint | null;
 	state: number | null;
+	bonusPool?: bigint | null;
 };
 
 const TONE_BADGE_CLASS: Record<ReturnType<typeof displayStateTone>, string> = {
@@ -40,13 +41,13 @@ const TONE_DOT_CLASS: Record<ReturnType<typeof displayStateTone>, string> = {
 	danger: "bg-red-300",
 };
 
-export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state }: Props) {
+export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state, bonusPool }: Props) {
 	const name = meta?.tokenName ?? "agent launch";
 	const symbol = meta?.tokenTicker ?? "–";
 	const image = meta?.tokenImageUrl ?? null;
 
 	// Map on-chain + off-chain inputs to the wave H display state machine.
-	// Backend `status` field is informational only — vault state is the
+	// Backend `status` field is informational only. Vault state is the
 	// authoritative source for OPEN/CLOSED/LAUNCHED.
 	const displayState = deriveLaunchDisplayState({
 		vaultState: state,
@@ -72,8 +73,6 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 	const pcs = pancakeSwapUrl(tokenAddress);
 
 	const capWei = meta?.presaleCapWei ? BigInt(meta.presaleCapWei) : capFromBnb(tier.presaleCapBnb);
-	const pct = capWei === 0n ? 0 : Number((totalDeposited * 10_000n) / capWei) / 100;
-	const pctClamped = Math.min(100, Math.max(0, pct));
 
 	const countdownLabel =
 		displayState === "presale"
@@ -167,19 +166,8 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 				</div>
 			</div>
 
-			<div className="mt-8 flex flex-col gap-2">
-				<div className="flex items-baseline justify-between font-mono text-xs uppercase tracking-[0.18em] text-zinc-400">
-					<span>
-						{formatBnb(totalDeposited)} / {formatBnb(capWei)} bnb
-					</span>
-					<span className="tabular-nums">{pctClamped.toFixed(1)}%</span>
-				</div>
-				<div className="h-2 w-full overflow-hidden border border-white/10 bg-[#111114]">
-					<div
-						className={cn("h-full bg-[#00ff87] transition-[width] duration-500")}
-						style={{ width: `${pctClamped}%` }}
-					/>
-				</div>
+			<div className="mt-8">
+				<PresaleProgress totalDeposited={totalDeposited} capWei={capWei} bonusPool={bonusPool ?? null} />
 			</div>
 		</section>
 	);
@@ -187,14 +175,4 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 
 function capFromBnb(bnb: number): bigint {
 	return BigInt(Math.floor(bnb * 1e6)) * 10n ** 12n;
-}
-
-function formatBnb(value: bigint): string {
-	const ether = formatEther(value);
-	const num = Number(ether);
-	if (!Number.isFinite(num)) return ether;
-	if (num === 0) return "0";
-	if (num >= 100) return num.toFixed(1);
-	if (num >= 1) return num.toFixed(2);
-	return num.toFixed(4);
 }
