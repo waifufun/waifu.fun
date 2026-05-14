@@ -11,6 +11,7 @@ import { DepositWidget } from "@/components/launch-page/deposit-widget";
 import { LaunchFAQ } from "@/components/launch-page/launch-faq";
 import { LaunchHero } from "@/components/launch-page/launch-hero";
 import { LaunchTerms } from "@/components/launch-page/launch-terms";
+import { RefundWidget } from "@/components/launch-page/refund-widget";
 import { StateBanner } from "@/components/launch-page/state-banner";
 import { TierInfoCard } from "@/components/launch-page/tier-info-card";
 import { ErrorState } from "@/components/ui/error-state";
@@ -134,6 +135,40 @@ export default function LaunchPageClient({ id }: Props) {
 					<ActivityFeed launchId={id} vaultAddress={vaultAddress} />
 				</div>
 				<aside className="hidden lg:block">
+					{displayState === "refunding" ? (
+						<RefundWidget
+							vault={vaultAddress}
+							totalDeposited={totalDeposited}
+							bonusPool={bonusPool}
+							onUserStateChanged={refresh}
+						/>
+					) : (
+						<DepositWidget
+							vault={vaultAddress}
+							state={state}
+							totalDeposited={totalDeposited}
+							capWei={capWeiResolved}
+							penaltyBps={snap?.penaltyBps ?? null}
+							presaleTokens={snap?.presaleTokens ?? null}
+							tokenSymbol={meta.data?.tokenTicker ?? null}
+							tier={tier}
+							onUserStateChanged={refresh}
+						/>
+					)}
+				</aside>
+			</div>
+
+			{/* Mobile sticky widget. Renders below the lg breakpoint only. */}
+			<div className="lg:hidden">
+				{displayState === "refunding" ? (
+					<RefundWidget
+						vault={vaultAddress}
+						totalDeposited={totalDeposited}
+						bonusPool={bonusPool}
+						onUserStateChanged={refresh}
+						sticky="bottom"
+					/>
+				) : (
 					<DepositWidget
 						vault={vaultAddress}
 						state={state}
@@ -144,24 +179,9 @@ export default function LaunchPageClient({ id }: Props) {
 						tokenSymbol={meta.data?.tokenTicker ?? null}
 						tier={tier}
 						onUserStateChanged={refresh}
+						sticky="bottom"
 					/>
-				</aside>
-			</div>
-
-			{/* Mobile sticky deposit widget. Renders below the lg breakpoint only. */}
-			<div className="lg:hidden">
-				<DepositWidget
-					vault={vaultAddress}
-					state={state}
-					totalDeposited={totalDeposited}
-					capWei={capWeiResolved}
-					penaltyBps={snap?.penaltyBps ?? null}
-					presaleTokens={snap?.presaleTokens ?? null}
-					tokenSymbol={meta.data?.tokenTicker ?? null}
-					tier={tier}
-					onUserStateChanged={refresh}
-					sticky="bottom"
-				/>
+				)}
 			</div>
 		</main>
 	);

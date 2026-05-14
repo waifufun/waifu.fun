@@ -97,6 +97,30 @@ describe("deriveLaunchDisplayState", () => {
 		).toBe("launched");
 	});
 
+	it("returns refunding when vault state is REFUND on-chain", () => {
+		expect(
+			deriveLaunchDisplayState({
+				vaultState: VaultState.REFUND,
+				backendStatus: "live",
+				closeTimestamp: PAST,
+				tokenAddress: null,
+				nowSeconds: NOW,
+			}),
+		).toBe("refunding");
+	});
+
+	it("prefers on-chain REFUND state even over backend launched signals", () => {
+		expect(
+			deriveLaunchDisplayState({
+				vaultState: VaultState.REFUND,
+				backendStatus: "live",
+				closeTimestamp: PAST,
+				tokenAddress: "0xabcabcabcabcabcabcabcabcabcabcabcabcabcd",
+				nowSeconds: NOW,
+			}),
+		).toBe("refunding");
+	});
+
 	it("returns refunding when backend says failed", () => {
 		expect(
 			deriveLaunchDisplayState({

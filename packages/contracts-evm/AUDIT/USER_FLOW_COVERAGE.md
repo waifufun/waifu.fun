@@ -620,8 +620,15 @@ worth asking Pashov / Code4rena once they're engaged:
 
 ## 11. follow-up work (not in this audit cycle)
 
-- fill gap 16: wire `refund()` into the launch page + portfolio.
-- fill gap 17: extend frontend `VaultState` to include `REFUND = 3`.
+- ~~fill gap 16: wire `refund()` into the launch page + portfolio.~~
+  **RESOLVED (Wave J):** `refund-widget.tsx` wires the write via
+  wagmi `useWriteContract`; `launch-page-client.tsx` swaps it in when
+  `displayState === 'refunding'`. portfolio-side claim-all path stays
+  on the existing `claim()` template.
+- ~~fill gap 17: extend frontend `VaultState` to include `REFUND = 3`.~~
+  **RESOLVED (Wave J):** `abi.ts` now mirrors all four on-chain enum
+  values; the mapper takes `vaultState === REFUND` as the most
+  authoritative `refunding` signal.
 - fill gap 18: tier-cron sweeper that auto-calls
   `enableRefundUnderSubscribed` at `closeTimestamp + grace`.
 - fill gap 19: bundle-submitter auto-call

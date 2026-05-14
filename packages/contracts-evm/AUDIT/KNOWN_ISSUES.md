@@ -291,41 +291,44 @@ directly).
 mentioned for completeness, there is no allowance-griefing surface in
 `BundleRouter`.
 
-## 16. frontend has no `refund()` write button
+## 16. frontend has no `refund()` write button — RESOLVED (Wave J)
 
-the vault transitions to REFUND in three documented paths (under-subscribed,
-bundle-failed, admin emergency). once in REFUND, depositors are entitled to
-claim principal + pro-rata bonus by calling `LaunchVault.refund()` directly.
-the launch page + agent home both render a `displayState='refunding'` copy
-"bundle failed. claim refunds inside the window." but no wagmi
-`writeContract` action is wired to actually call `refund()`.
+status: resolved. `apps/frontend/src/components/launch-page/refund-widget.tsx`
+wires the `refund()` write via wagmi's `useWriteContract`, replaces the
+deposit widget in the `displayState='refunding'` branch of
+`launch-page-client.tsx`, and surfaces principal + pro-rata bonus share
++ total via the pure helpers in `refund-widget-logic.ts`. error normalization
+covers user rejection, the `NoDeposit()` revert (second-call idempotency),
+and the `InvalidState()` revert. tests:
 
-why we ship this:
-- the function is permissionless and idempotent. anyone with a deposit can
-  call it directly from etherscan / a script.
-- adding the button is a UX task, not a contract or backend change.
-- portfolio claim-all path (which uses the same wagmi pattern for `claim()`)
-  is the template a follow-up PR will copy.
+- vitest unit coverage of bonus math + error mapper in
+  `refund-widget-logic.test.ts`
+- vitest mapper coverage of the `vaultState === REFUND` priority path in
+  `launch-display-state.test.ts`
+- playwright e2e smoke in `tests/e2e/refund-flow.spec.ts` covering the
+  failed-pill render on the launches index
 
-operational implication: until the button ships, ops must publish a help
-guide for refund flow on the launch page itself. tracked in user-flow
-coverage matrix as gap 16.
+follow-ups still open:
+- full launch-detail e2e requires a SPA id-resolution patch (today
+  `/launch/[id]` short-circuits to NotFound when the prerendered shell
+  resolves `id="_"` at build time; needs `useParams` on the client to
+  override). tracked as a separate issue, not blocking the refund flow.
+- the widget assumes the vault snapshot's `bonusPool` is current; if the
+  indexer is offline the bonus row may show 0 until on-chain reads catch
+  up. principal is always sourced from the depositor mapping so the
+  refund button still reflects the right intent.
 
-## 17. frontend `VaultState` enum missing REFUND
+## 17. frontend `VaultState` enum missing REFUND — RESOLVED (Wave J)
 
-`apps/frontend/src/lib/launch-vault/abi.ts:223` defines the abi mirror of
-`LaunchVault.State` as `{ OPEN: 0, CLOSED: 1, LAUNCHED: 2 }`. on-chain the
-enum has four values; `REFUND = 3`. anything reading raw vault state
-and comparing to the mirror treats REFUND as unknown.
-
-in practice today the launch page derives display state from a combination
-of backend `status='failed'` plus the on-chain vault number, so the UX
-still renders correctly when the backend has caught up. but until the
-indexer flips `status='failed'`, a user reading the chain directly sees
-"state=3" with no meaning.
-
-why we ship: cosmetic, no fund-flow effect. trivial follow-up patch.
-tracked in user-flow coverage matrix as gap 17.
+status: resolved in the same PR as gap 16. `apps/frontend/src/lib/launch-vault/abi.ts`
+now mirrors all four on-chain enum values: `{ OPEN: 0, CLOSED: 1, LAUNCHED: 2,
+REFUND: 3 }`. the `deriveLaunchDisplayState` mapper takes the on-chain
+REFUND state as the most authoritative signal, ahead of the
+backend `status='failed'` fallback, so a user reading the chain directly
+resolves to `displayState='refunding'` even when the indexer is laggy.
+the abi event mirrors were also corrected: `RefundEnabled(address, string)`
+replaces the stale `RefundsEnabled()` placeholder, and `LaunchExecuted`
+replaces the unused `Launched` event name.
 
 ## 18. `enableRefundUnderSubscribed` has no automated trigger
 

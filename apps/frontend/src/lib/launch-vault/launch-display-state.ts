@@ -5,7 +5,7 @@
  * We have two inputs and one output:
  *
  *   inputs:
- *     - on-chain vault state (0=OPEN, 1=CLOSED, 2=LAUNCHED) via `VaultState`
+ *     - on-chain vault state (0=OPEN, 1=CLOSED, 2=LAUNCHED, 3=REFUND) via `VaultState`
  *     - off-chain backend status (`PublicLaunchExtended.status`):
  *         "draft" | "provisioned" | "queued" | "launching" | "live" | "failed"
  *     - extras: `closeTimestamp`, `predictedTokenAddress`, `tokenAddress`
@@ -56,21 +56,24 @@ function toUnix(value: bigint | number | null): number | null {
  * Pure mapper from on-chain + off-chain inputs to a display state.
  *
  * Priority order (most authoritative first):
- *   1. Backend says `failed` → `refunding`
- *   2. Backend says `live` AND token address known → `launched`
- *   3. Vault state is `LAUNCHED` (2) → `launched` (even if backend is laggy)
- *   4. Backend says `launching` OR vault state is `CLOSED` (1) → `bundling`
+ *   1. Vault state is `REFUND` (3) → `refunding` (most definitive)
+ *   2. Backend says `failed` → `refunding`
+ *   3. Backend says `live` AND token address known → `launched`
+ *   4. Vault state is `LAUNCHED` (2) → `launched` (even if backend is laggy)
+ *   5. Backend says `launching` OR vault state is `CLOSED` (1) → `bundling`
  *      - unless the close timestamp is in the future, in which case `closed`
  *        (vault is CLOSED but bundle bot hasn't picked it up yet)
- *   5. Vault state `OPEN` (0):
+ *   6. Vault state `OPEN` (0):
  *      - if `closeTimestamp` is in the past → `closed` (waiting for bundle)
  *      - else → `presale`
- *   6. Default → `created`
+ *   7. Default → `created`
  */
 export function deriveLaunchDisplayState(inputs: LaunchDisplayInputs): LaunchDisplayState {
 	const now = inputs.nowSeconds ?? Math.floor(Date.now() / 1000);
 	const close = toUnix(inputs.closeTimestamp);
 	const status = (inputs.backendStatus ?? "").toLowerCase();
+
+	if (inputs.vaultState === VaultState.REFUND) return "refunding";
 
 	if (status === "failed") return "refunding";
 
