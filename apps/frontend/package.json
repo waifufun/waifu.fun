@@ -17,7 +17,7 @@
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:install": "playwright install --with-deps chromium",
-		"check": "tsc -p tsconfig.typecheck.json --noEmit"
+		"check": "bun run prebuild && tsc -p tsconfig.typecheck.json --noEmit"
 	},
 	"dependencies": {
 		"@bprogress/next": "^3.2.12",
