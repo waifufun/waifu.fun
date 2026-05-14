@@ -26,19 +26,19 @@ export default function PortfolioStats({ totals }: Props) {
 		},
 		{
 			label: "invested",
-			value: `${formatBnb(totals.investedWei)} bnb`,
+			value: `${formatBnb(totals.investedWei)} BNB`,
 		},
 		{
 			label: "realized",
-			value: `${formatBnb(totals.realizedWei)} bnb`,
+			value: `${formatBnb(totals.realizedWei)} BNB`,
 		},
 		{
 			label: "unrealized",
-			value: `${formatBnb(totals.unrealizedWei)} bnb`,
+			value: `${formatBnb(totals.unrealizedWei)} BNB`,
 		},
 		{
 			label: "p&l",
-			value: `${formatBnbDelta(pnlWei)} bnb`,
+			value: `${formatBnbDelta(pnlWei)} BNB`,
 			tone: pnlWei === 0n ? "neutral" : pnlPositive ? "positive" : "negative",
 		},
 		{

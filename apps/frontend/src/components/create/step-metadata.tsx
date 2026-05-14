@@ -252,7 +252,7 @@ export default function StepMetadata() {
 					</label>
 
 					<div className="text-xs text-neutral-500 leading-relaxed max-w-[44ch]">
-						<p>png, jpeg, webp. defaults to your persona avatar — override here if your token has its own look.</p>
+						<p>png, jpeg, webp. defaults to your persona avatar. override here if your token has its own look.</p>
 						<p className="mt-2 text-[11px] text-neutral-600">
 							gets hashed onto ipfs via funcs.flap.sh/api/upload. nothing leaves your browser until you press upload.
 						</p>
@@ -371,8 +371,8 @@ export default function StepMetadata() {
 						</p>
 					) : (
 						<p className="text-[11px] text-neutral-500 leading-relaxed">
-							upload before you advance. if flap is having a moment, retry — we don't fall back to our own infra, flap
-							is the source of truth.
+							upload before you advance. if flap is having a moment, retry. we don't fall back to our own infra, flap is
+							the source of truth.
 						</p>
 					)}
 				</div>

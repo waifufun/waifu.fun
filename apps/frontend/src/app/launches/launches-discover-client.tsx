@@ -73,7 +73,7 @@ function LaunchesInner() {
 			<PageHeader
 				eyebrow="waifu.fun / launches"
 				title="launches"
-				subtitle="open rounds take bnb for 24h, then graduate to pancake v2."
+				subtitle="open rounds take BNB for 24h, then graduate to PancakeSwap v2."
 				right={
 					!showSkeleton ? (
 						<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/45">
@@ -201,7 +201,7 @@ function LaunchesFallback() {
 			<PageHeader
 				eyebrow="waifu.fun / launches"
 				title="launches"
-				subtitle="open rounds take bnb for 24h, then graduate to pancake v2."
+				subtitle="open rounds take BNB for 24h, then graduate to PancakeSwap v2."
 			/>
 			<div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 				{Array.from({ length: 6 }).map((_, i) => (

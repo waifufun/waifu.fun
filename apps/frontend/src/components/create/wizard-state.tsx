@@ -58,9 +58,9 @@ export type WizardState = {
 	 * CID is stored in `flap.metaCid` and passed as `params.meta` when the
 	 * bundle router calls `Portal.newTokenV6`.
 	 *
-	 * `tokenImageDataUrl` is the raw image for upload (separate from the
-	 * persona avatar — agents and tokens can have different visual identity,
-	 * though the wizard pre-fills from the persona avatar by default).
+	 * `tokenImageDataUrl` is the raw image for upload, separate from the
+	 * persona avatar. agents and tokens can have different visual identity,
+	 * though the wizard pre-fills from the persona avatar by default.
 	 */
 	flap: {
 		tokenImageDataUrl: string | null;
