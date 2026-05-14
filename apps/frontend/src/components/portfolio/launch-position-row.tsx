@@ -73,7 +73,7 @@ export default function LaunchPositionRow({ entry }: Props) {
 				<div className="grid grid-cols-2 gap-3">
 					<div>
 						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
-						<div className="text-white tabular-nums">{formatBnb(position.deposited)} bnb</div>
+						<div className="text-white tabular-nums">{formatBnb(position.deposited)} BNB</div>
 					</div>
 					<div className="text-right">
 						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">claimable</div>
@@ -126,7 +126,7 @@ export default function LaunchPositionRow({ entry }: Props) {
 
 				<div className="col-span-2">
 					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
-					<div className="text-white tabular-nums">{formatBnb(position.deposited)} bnb</div>
+					<div className="text-white tabular-nums">{formatBnb(position.deposited)} BNB</div>
 				</div>
 
 				<div className="col-span-2">

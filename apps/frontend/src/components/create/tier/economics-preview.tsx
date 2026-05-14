@@ -56,7 +56,7 @@ export function EconomicsPreview({ tier }: Props) {
 					help="fully diluted valuation includes burned supply. circulating mc is the headline number."
 				/>
 				<Metric label="presaler" value={`${tier.presaler.toFixed(tier.presaler % 1 === 0 ? 0 : 1)}x`} />
-				<Metric label="total bnb" value={fmtBnb(totalBnb(tier))} />
+				<Metric label="total BNB" value={fmtBnb(totalBnb(tier))} />
 			</div>
 
 			{/* breakdown bar */}

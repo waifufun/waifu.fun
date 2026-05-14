@@ -9,6 +9,7 @@
  */
 import Link from "next/link";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import type { UserLaunchEntry } from "@/lib/api/portfolio";
 import { formatBnb, formatBnbDelta, impliedBnbValue } from "@/lib/portfolio/format";
 
@@ -63,9 +64,13 @@ function deriveRealized(entry: UserLaunchEntry): {
 export default function HistoryTable({ entries }: Props) {
 	if (entries.length === 0) {
 		return (
-			<div className="border border-stroke-strong rounded-sm bg-[#0C0C0C] px-4 py-6 text-center text-sm text-neutral-500">
-				no history yet.
-			</div>
+			<EmptyState
+				title="no history yet."
+				body="back a round and your positions show up here."
+				ctaHref="/launches"
+				ctaLabel="browse launches"
+				tone="compact"
+			/>
 		);
 	}
 
@@ -107,17 +112,17 @@ export default function HistoryTable({ entries }: Props) {
 							<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-400">{launch.state}</span>
 						</div>
 						<div className="col-span-2 text-right md:text-left text-white tabular-nums">
-							{formatBnb(investedWei)} bnb
+							{formatBnb(investedWei)} BNB
 						</div>
 						<div className="col-span-2 hidden md:block text-white tabular-nums">
-							{realizedWei !== null ? `${formatBnb(realizedWei)} bnb` : "–"}
+							{realizedWei !== null ? `${formatBnb(realizedWei)} BNB` : "–"}
 						</div>
 						<div
 							className={`col-span-2 text-right tabular-nums ${
 								pnlTone === "positive" ? "text-[#00ff87]" : pnlTone === "negative" ? "text-red-400" : "text-neutral-400"
 							}`}
 						>
-							{pnlWei !== null ? `${formatBnbDelta(pnlWei)} bnb` : "–"}
+							{pnlWei !== null ? `${formatBnbDelta(pnlWei)} BNB` : "–"}
 						</div>
 					</div>
 				);

@@ -95,6 +95,8 @@ function AgentsDiscoverInner() {
 						<EmptyState
 							title={status === "all" ? "no agents yet." : `no ${status} agents.`}
 							subtitle={status === "all" ? "be the first." : "try a different filter, or launch one."}
+							ctaHref="/create/wizard"
+							ctaLabel="launch yours"
 						/>
 					) : (
 						<AgentGrid agents={agents} />
