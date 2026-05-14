@@ -64,6 +64,23 @@
         "typescript": "^5.7.2",
       },
     },
+    "apps/bundle-bot": {
+      "name": "@waifufun/bundle-bot",
+      "version": "0.1.0",
+      "dependencies": {
+        "@waifufun/config": "workspace:*",
+        "@waifufun/db": "workspace:*",
+        "@waifufun/logger": "workspace:*",
+        "drizzle-orm": "^0.36.4",
+        "postgres": "^3.4.9",
+        "viem": "^2.21.54",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2",
+      },
+    },
     "apps/docs": {
       "name": "@waifufun/docs",
       "version": "0.0.1",
@@ -2656,6 +2673,8 @@
     "@waifufun/blank": ["@waifufun/blank@workspace:packages/blank"],
 
     "@waifufun/brain": ["@waifufun/brain@workspace:apps/brain"],
+
+    "@waifufun/bundle-bot": ["@waifufun/bundle-bot@workspace:apps/bundle-bot"],
 
     "@waifufun/codex": ["@waifufun/codex@workspace:packages/codex"],
 
