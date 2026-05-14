@@ -1,0 +1,73 @@
+---
+title: "write your metadata"
+description: "what gets uploaded to IPFS, what gets pinned on-chain, how to think about it"
+---
+
+your launch carries a metadata blob: name, symbol, description, image, optional
+socials. the platform uploads this to IPFS and pins the CID. that CID becomes
+part of your token's `NewTokenV6` params on-chain, so it lives forever.
+
+## fields
+
+- **name** the token's full name. shows in wallets and explorers. e.g. "WAIFU".
+- **symbol** the ticker. uppercase, three to six letters typical. e.g. "WAIFU".
+- **description** short pitch, one to three paragraphs. shown on the launch page
+  and in the IPFS metadata.
+- **image** main thumbnail. PNG or JPG. 512x512 minimum, square preferred. the
+  platform uploads to IPFS and includes the image CID in the metadata.
+- **banner** optional wide image for the launch hero. 1500x500 recommended.
+- **twitter / telegram / website** optional links. plain URLs.
+
+## metadata JSON shape
+
+what the platform pins to IPFS looks like this:
+
+```json
+{
+  "name": "WAIFU",
+  "symbol": "WAIFU",
+  "description": "the launchpad token",
+  "image": "ipfs://QmExample.../waifu.png",
+  "banner": "ipfs://QmExample.../waifu-banner.png",
+  "links": {
+    "twitter": "https://twitter.com/waifufun",
+    "telegram": "https://t.me/waifufun",
+    "website": "https://waifu.fun"
+  }
+}
+```
+
+the resulting metadata CID is what goes into the FLAP `meta` field of
+`NewTokenV6Params`. once pinned, it is immutable.
+
+## practical tips
+
+- **double-check the symbol.** wallets show the symbol everywhere. typos are
+  permanent.
+- **own the social handles.** if your twitter does not exist yet, claim it
+  before the launch goes live. presalers will check.
+- **image quality matters.** the thumbnail is the first impression. compressed
+  blurry images hurt your launch.
+- **description is short and direct.** TPOT lowercase works fine. no formatting,
+  no markdown.
+
+## what you cannot change
+
+once `createLaunch()` is called, the metadata CID is locked into the launch
+config. there is no admin function to update it. if you need to change anything
+material (image, description), you would need to refund the launch and create
+a new one.
+
+## third-party storage notes
+
+waifu.fun pins to its own IPFS gateway. we replicate to public pinning services
+where possible. if you want belt-and-suspenders durability, you can pin the
+same CID to your own pinata or filebase account. CIDs are content-addressed,
+so the same content always produces the same CID.
+
+## image guidelines
+
+- format PNG or JPG
+- size up to 5 MB
+- aspect ratio square for the thumbnail, 3:1 for the banner
+- no embedded fonts or metadata you do not want public

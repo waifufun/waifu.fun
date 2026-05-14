@@ -1,0 +1,183 @@
+---
+title: "API"
+description: "REST and WebSocket endpoints for waifu.fun"
+---
+
+waifu.fun exposes a public REST API and a WebSocket channel for real-time
+launch events. authentication uses SIWE for write endpoints. reads are
+mostly open.
+
+base URL: `https://api.waifu.fun`
+
+## conventions
+
+- all timestamps are ISO 8601 UTC
+- all BNB amounts are strings in wei (avoid float precision issues)
+- all addresses are 0x-prefixed lowercase hex
+- errors use `{ "error": "code", "message": "human readable" }`
+- rate limits: 60 requests/minute per IP for unauthenticated, 600/minute authenticated
+
+## auth
+
+write endpoints require a SIWE-signed session cookie. flow:
+
+<Steps>
+  <Step title="GET /auth/nonce">
+    returns a one-time nonce. include `address` query param.
+  </Step>
+  <Step title="sign the SIWE message">
+    construct a SIWE message with the nonce, sign it with your wallet.
+  </Step>
+  <Step title="POST /auth/verify">
+    send `{ message, signature }`. response sets a session cookie.
+  </Step>
+</Steps>
+
+## REST endpoints
+
+### `GET /tokens`
+
+list launched tokens. supports pagination.
+
+```bash
+curl https://api.waifu.fun/tokens?limit=20&offset=0
+```
+
+### `GET /tokens/:address`
+
+token detail, including current PCS price, holder count, transfer volume.
+
+```bash
+curl https://api.waifu.fun/tokens/0xabc...
+```
+
+### `GET /tokens/:address/trades`
+
+recent swaps from the PCS pair. supports `limit` and `cursor`.
+
+### `GET /tokens/:address/chart`
+
+OHLC candles, intervals: `1m`, `5m`, `15m`, `1h`, `1d`.
+
+### `GET /v2/launches`
+
+list launches. filter by `status` (`open` | `closed` | `launched` | `refund`),
+`tier`, `creator`.
+
+### `GET /v2/launches/:id`
+
+launch detail. includes vault state, total deposited, close timestamp, tier,
+predicted token, creator address.
+
+### `GET /v2/launches/:id/depositors`
+
+list depositors with principal and claimed amounts. paginated.
+
+### `POST /v2/launches`
+
+create a new launch. requires SIWE session.
+
+<CodeGroup>
+
+```typescript TypeScript
+const res = await fetch("https://api.waifu.fun/v2/launches", {
+  method: "POST",
+  credentials: "include",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    tier: "TIER_90",
+    name: "WAIFU",
+    symbol: "WAIFU",
+    description: "the launchpad token",
+    image: "ipfs://Qm.../waifu.png",
+    closeTimestamp: 1735603200,
+    buyTaxBps: 300,
+    sellTaxBps: 300,
+    socials: {
+      twitter: "https://twitter.com/waifufun",
+      telegram: "https://t.me/waifufun"
+    }
+  })
+});
+const launch = await res.json();
+```
+
+```bash curl
+curl -X POST https://api.waifu.fun/v2/launches \
+  -H "content-type: application/json" \
+  --cookie "session=..." \
+  -d '{
+    "tier": "TIER_90",
+    "name": "WAIFU",
+    "symbol": "WAIFU",
+    "description": "the launchpad token",
+    "image": "ipfs://Qm.../waifu.png",
+    "closeTimestamp": 1735603200,
+    "buyTaxBps": 300,
+    "sellTaxBps": 300
+  }'
+```
+
+</CodeGroup>
+
+returns the launch row including vault address, router address, treasury
+address, predicted token address. these are computed off the
+`LaunchCreated` event from the factory.
+
+### `POST /v2/launches/:id/preview`
+
+dry-run a bundle to estimate gas and predicted output token amounts. does
+not submit on-chain.
+
+### `GET /v2/users/:address/launches`
+
+launches a user has deposited into or created.
+
+### `GET /v2/users/me/deposits`
+
+current user's deposits across all launches. requires SIWE session.
+
+## WebSocket
+
+real-time launch events. connect to `wss://api.waifu.fun/ws`.
+
+subscribe to a launch:
+
+```typescript
+const ws = new WebSocket("wss://api.waifu.fun/ws");
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    type: "subscribe",
+    channel: "launch",
+    id: "<launch-uuid>"
+  }));
+};
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  // msg.type is one of: deposited, withdrew, closed, launchExecuted,
+  //                     distributed, claimed, refundEnabled, refunded
+};
+```
+
+available channels:
+
+- `launch.<id>` per-launch events (deposit, withdraw, close, etc.)
+- `token.<address>` PCS swap events on a deployed token
+- `factory` all launches created on the factory
+
+## indexer freshness
+
+the API reads from a postgres replica fed by the on-chain indexer. typical
+lag is one to three BSC blocks (under five seconds). if you need real-time
+guarantees, read directly from the contract via your own RPC.
+
+## errors
+
+| code | meaning |
+| --- | --- |
+| `not_authenticated` | missing or invalid SIWE session |
+| `not_authorized` | session does not match the resource owner |
+| `not_found` | resource does not exist or has not been indexed yet |
+| `rate_limited` | back off and retry |
+| `validation_failed` | request body did not match the schema |
+| `internal_error` | server-side issue, retry with backoff |
