@@ -57,9 +57,28 @@ export interface BundleCandidate {
 	bundleTipBnb: string;
 }
 
+/**
+ * A launch whose presale window has been over for >= STUCK_LAUNCH_GRACE_SECONDS
+ * and which never made it to launched/failed. Either the bundle bot died,
+ * the launch was under-subscribed and nobody pinged enableRefundUnderSubscribed,
+ * or the bundle keeps reverting. Surface these to ops so a human can decide
+ * whether to refund or retry.
+ */
+export interface StuckLaunchCandidate {
+	id: string;
+	vaultAddress: Address;
+	routerAddress: Address;
+	state: string;
+	bundleStatus: string;
+	bundleAttempt: number;
+	closeTimestamp: bigint;
+	secondsStuck: bigint;
+}
+
 export interface LaunchRepo {
 	listLaunchedWithTreasury(): Promise<LaunchCandidate[]>;
 	listBundlePendingReady?(nowSeconds: bigint): Promise<BundleCandidate[]>;
+	listStuckLaunches?(nowSeconds: bigint, graceSeconds: bigint): Promise<StuckLaunchCandidate[]>;
 	markBundleSubmitted?(launchId: string, txHash: string, attempt: number, tipBnb: string): Promise<void>;
 }
 
@@ -135,6 +154,34 @@ export class DrizzleLaunchRepo implements LaunchRepo {
 			});
 		}
 		return candidates;
+	}
+
+	async listStuckLaunches(nowSeconds: bigint, graceSeconds: bigint): Promise<StuckLaunchCandidate[]> {
+		const cutoff = nowSeconds - graceSeconds;
+		const rows = await this.db
+			.select({
+				id: schema.agentLaunches.id,
+				vaultAddress: schema.agentLaunches.vaultAddress,
+				routerAddress: schema.agentLaunches.routerAddress,
+				state: schema.agentLaunches.state,
+				bundleStatus: schema.agentLaunches.bundleStatus,
+				bundleAttempt: schema.agentLaunches.bundleAttempt,
+				closeTimestamp: schema.agentLaunches.closeTimestamp,
+			})
+			.from(schema.agentLaunches)
+			.where(
+				and(inArray(schema.agentLaunches.state, ["open", "closed"]), lte(schema.agentLaunches.closeTimestamp, cutoff)),
+			);
+		return rows.map((row) => ({
+			id: row.id,
+			vaultAddress: row.vaultAddress as Address,
+			routerAddress: row.routerAddress as Address,
+			state: row.state,
+			bundleStatus: row.bundleStatus,
+			bundleAttempt: row.bundleAttempt,
+			closeTimestamp: row.closeTimestamp,
+			secondsStuck: nowSeconds - row.closeTimestamp,
+		}));
 	}
 
 	async listBundlePendingReady(nowSeconds: bigint): Promise<BundleCandidate[]> {

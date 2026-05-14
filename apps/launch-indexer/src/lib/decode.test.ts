@@ -1,5 +1,5 @@
 /**
- * Unit tests for the launch event decoder.
+ * Unit tests for the launch event decoder (wave H signatures).
  *
  * Each test encodes a known event with viem's `encodeEventTopics` +
  * `encodeAbiParameters`, then asserts the decoder reconstructs the original
@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { type Hex, encodeAbiParameters, encodeEventTopics } from "viem";
+import { type Hex, encodeAbiParameters, encodeEventTopics, keccak256, toHex } from "viem";
 
 import { bundleRouterEventsAbi, launchFactoryEventsAbi, launchVaultEventsAbi } from "./abis.js";
 import { decodeLaunchLog } from "./decode.js";
@@ -19,8 +19,8 @@ const vaultAddress = "0x2222222222222222222222222222222222222222" as const;
 const routerAddress = "0x3333333333333333333333333333333333333333" as const;
 const tokenAddress = "0x4444444444444444444444444444444444444444" as const;
 const userAddress = "0x5555555555555555555555555555555555555555" as const;
-const v2PairAddress = "0x6666666666666666666666666666666666666666" as const;
-const treasuryReserveAddress = "0x7777777777777777777777777777777777777777" as const;
+const poolAddress = "0x6666666666666666666666666666666666666666" as const;
+const treasuryLpAddress = "0x7777777777777777777777777777777777777777" as const;
 const blockTimestamp = new Date("2026-05-08T00:00:00.000Z");
 
 function buildLog(input: {
@@ -43,25 +43,24 @@ function buildLog(input: {
 }
 
 test("decodeLaunchLog: LaunchCreated round-trips", () => {
+	const launchId = keccak256(toHex("launch-1"));
 	const topics = encodeEventTopics({
 		abi: launchFactoryEventsAbi,
 		eventName: "LaunchCreated",
-		args: { creator: userAddress, token: tokenAddress },
+		args: { launchId, creator: userAddress, predictedToken: tokenAddress },
 	}) as [Hex, ...Hex[]];
 
-	const splitterAddress = "0x7777777777777777777777777777777777777777" as const;
 	const data = encodeAbiParameters(
 		[
 			{ name: "vault", type: "address" },
 			{ name: "router", type: "address" },
-			{ name: "taxSplitter", type: "address" },
-			{ name: "treasuryReserve", type: "address" },
+			{ name: "treasuryLp", type: "address" },
 			{ name: "tier", type: "uint8" },
 			{ name: "presaleCap", type: "uint256" },
 			{ name: "v2BuyBnb", type: "uint256" },
-			{ name: "vestingEnabled", type: "bool" },
+			{ name: "closeTimestamp", type: "uint256" },
 		],
-		[vaultAddress, routerAddress, splitterAddress, treasuryReserveAddress, 90, 50_000n, 4_000n, true],
+		[vaultAddress, routerAddress, treasuryLpAddress, 90, 50_000n, 4_000n, 1_700_000_000n],
 	);
 
 	const decoded = decodeLaunchLog({
@@ -72,18 +71,18 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 
 	assert.ok(decoded);
 	assert.equal(decoded.eventName, "LaunchCreated");
-	if (decoded.eventName !== "LaunchCreated") return; // for tsc narrowing
+	if (decoded.eventName !== "LaunchCreated") return;
 
+	assert.equal(decoded.data.launchId.toLowerCase(), launchId.toLowerCase());
 	assert.equal(decoded.data.creator.toLowerCase(), userAddress);
-	assert.equal(decoded.data.token.toLowerCase(), tokenAddress);
+	assert.equal(decoded.data.predictedToken.toLowerCase(), tokenAddress);
 	assert.equal(decoded.data.vault.toLowerCase(), vaultAddress);
 	assert.equal(decoded.data.router.toLowerCase(), routerAddress);
-	assert.equal(decoded.data.taxSplitter.toLowerCase(), splitterAddress);
-	assert.equal(decoded.data.treasuryReserve.toLowerCase(), treasuryReserveAddress);
+	assert.equal(decoded.data.treasuryLp.toLowerCase(), treasuryLpAddress);
 	assert.equal(decoded.data.tier, 90);
 	assert.equal(decoded.data.presaleCap, "50000");
 	assert.equal(decoded.data.v2BuyBnb, "4000");
-	assert.equal(decoded.data.vestingEnabled, true);
+	assert.equal(decoded.data.closeTimestamp, "1700000000");
 	assert.equal(decoded.chainId, 56);
 	assert.equal(decoded.blockNumber, 100n);
 });
@@ -180,17 +179,17 @@ test("decodeLaunchLog: Closed", () => {
 	assert.equal(decoded.data.bonusPool, "1500");
 });
 
-test("decodeLaunchLog: Launched", () => {
+test("decodeLaunchLog: LaunchExecuted", () => {
 	const topics = encodeEventTopics({
 		abi: launchVaultEventsAbi,
-		eventName: "Launched",
+		eventName: "LaunchExecuted",
 		args: { token: tokenAddress },
 	}) as [Hex, ...Hex[]];
 
 	const data = encodeAbiParameters(
 		[
 			{ name: "totalBnb", type: "uint256" },
-			{ name: "launchTimestamp", type: "uint256" },
+			{ name: "timestamp", type: "uint256" },
 		],
 		[80_000n, 1_700_000_000n],
 	);
@@ -202,30 +201,58 @@ test("decodeLaunchLog: Launched", () => {
 	});
 
 	assert.ok(decoded);
-	if (decoded.eventName !== "Launched") {
-		assert.fail(`expected Launched, got ${decoded.eventName}`);
+	if (decoded.eventName !== "LaunchExecuted") {
+		assert.fail(`expected LaunchExecuted, got ${decoded.eventName}`);
 	}
 	assert.equal(decoded.data.token.toLowerCase(), tokenAddress);
 	assert.equal(decoded.data.totalBnb, "80000");
-	assert.equal(decoded.data.launchTimestamp, "1700000000");
+	assert.equal(decoded.data.timestamp, "1700000000");
 });
 
-test("decodeLaunchLog: RefundsEnabled", () => {
+test("decodeLaunchLog: Distributed", () => {
 	const topics = encodeEventTopics({
 		abi: launchVaultEventsAbi,
-		eventName: "RefundsEnabled",
+		eventName: "Distributed",
+		args: { token: tokenAddress },
 	}) as [Hex, ...Hex[]];
 
+	const data = encodeAbiParameters([{ name: "presalerShare", type: "uint256" }], [40_000_000n]);
+
 	const decoded = decodeLaunchLog({
-		log: buildLog({ address: vaultAddress, topics, data: "0x" }),
+		log: buildLog({ address: vaultAddress, topics, data }),
 		chainId: 56,
 		blockTimestamp,
 	});
 
 	assert.ok(decoded);
-	if (decoded.eventName !== "RefundsEnabled") {
-		assert.fail(`expected RefundsEnabled, got ${decoded.eventName}`);
+	if (decoded.eventName !== "Distributed") {
+		assert.fail(`expected Distributed, got ${decoded.eventName}`);
 	}
+	assert.equal(decoded.data.token.toLowerCase(), tokenAddress);
+	assert.equal(decoded.data.presalerShare, "40000000");
+});
+
+test("decodeLaunchLog: RefundEnabled", () => {
+	const topics = encodeEventTopics({
+		abi: launchVaultEventsAbi,
+		eventName: "RefundEnabled",
+		args: { by: userAddress },
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters([{ name: "reason", type: "string" }], ["under-subscribed"]);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: vaultAddress, topics, data }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "RefundEnabled") {
+		assert.fail(`expected RefundEnabled, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.by.toLowerCase(), userAddress);
+	assert.equal(decoded.data.reason, "under-subscribed");
 });
 
 test("decodeLaunchLog: Refunded", () => {
@@ -240,9 +267,8 @@ test("decodeLaunchLog: Refunded", () => {
 			{ name: "principal", type: "uint256" },
 			{ name: "bonus", type: "uint256" },
 			{ name: "refundAmount", type: "uint256" },
-			{ name: "newTotal", type: "uint256" },
 		],
-		[1_000n, 50n, 1_050n, 4_000n],
+		[1_000n, 50n, 1_050n],
 	);
 
 	const decoded = decodeLaunchLog({
@@ -259,7 +285,6 @@ test("decodeLaunchLog: Refunded", () => {
 	assert.equal(decoded.data.principal, "1000");
 	assert.equal(decoded.data.bonus, "50");
 	assert.equal(decoded.data.refundAmount, "1050");
-	assert.equal(decoded.data.newTotal, "4000");
 });
 
 test("decodeLaunchLog: Claimed", () => {
@@ -296,19 +321,21 @@ test("decodeLaunchLog: BundleExecuted", () => {
 	const topics = encodeEventTopics({
 		abi: bundleRouterEventsAbi,
 		eventName: "BundleExecuted",
-		args: { flapToken: tokenAddress, v2Pair: v2PairAddress },
+		args: { token: tokenAddress, pool: poolAddress },
 	}) as [Hex, ...Hex[]];
 
 	const data = encodeAbiParameters(
 		[
-			{ name: "curveFillBnb", type: "uint256" },
+			{ name: "quoteAmt", type: "uint256" },
 			{ name: "v2BuyBnb", type: "uint256" },
-			{ name: "tokensFromV2", type: "uint256" },
+			{ name: "tokensReceived", type: "uint256" },
 			{ name: "tokensBurned", type: "uint256" },
-			{ name: "tokensToTax", type: "uint256" },
+			{ name: "tokensToTreasury", type: "uint256" },
+			{ name: "tokensToVault", type: "uint256" },
+			{ name: "tipPaid", type: "uint256" },
 			{ name: "openMcBnb", type: "uint256" },
 		],
-		[60_000n, 4_000n, 7_000n, 200n, 100n, 250_000n],
+		[60_000n, 4_000n, 7_000n, 200n, 100n, 100n, 50n, 250_000n],
 	);
 
 	const decoded = decodeLaunchLog({
@@ -321,14 +348,37 @@ test("decodeLaunchLog: BundleExecuted", () => {
 	if (decoded.eventName !== "BundleExecuted") {
 		assert.fail(`expected BundleExecuted, got ${decoded.eventName}`);
 	}
-	assert.equal(decoded.data.flapToken.toLowerCase(), tokenAddress);
-	assert.equal(decoded.data.v2Pair.toLowerCase(), v2PairAddress);
-	assert.equal(decoded.data.curveFillBnb, "60000");
+	assert.equal(decoded.data.token.toLowerCase(), tokenAddress);
+	assert.equal(decoded.data.pool.toLowerCase(), poolAddress);
+	assert.equal(decoded.data.quoteAmt, "60000");
 	assert.equal(decoded.data.v2BuyBnb, "4000");
-	assert.equal(decoded.data.tokensFromV2, "7000");
+	assert.equal(decoded.data.tokensReceived, "7000");
 	assert.equal(decoded.data.tokensBurned, "200");
-	assert.equal(decoded.data.tokensToTax, "100");
+	assert.equal(decoded.data.tokensToTreasury, "100");
+	assert.equal(decoded.data.tokensToVault, "100");
+	assert.equal(decoded.data.tipPaid, "50");
 	assert.equal(decoded.data.openMcBnb, "250000");
+});
+
+test("decodeLaunchLog: BundleFailed", () => {
+	const topics = encodeEventTopics({
+		abi: bundleRouterEventsAbi,
+		eventName: "BundleFailed",
+	}) as [Hex, ...Hex[]];
+
+	const data = encodeAbiParameters([{ name: "reason", type: "string" }], ["PredictedAddressMismatch"]);
+
+	const decoded = decodeLaunchLog({
+		log: buildLog({ address: routerAddress, topics, data }),
+		chainId: 56,
+		blockTimestamp,
+	});
+
+	assert.ok(decoded);
+	if (decoded.eventName !== "BundleFailed") {
+		assert.fail(`expected BundleFailed, got ${decoded.eventName}`);
+	}
+	assert.equal(decoded.data.reason, "PredictedAddressMismatch");
 });
 
 test("decodeLaunchLog: returns null for unrelated topic", () => {

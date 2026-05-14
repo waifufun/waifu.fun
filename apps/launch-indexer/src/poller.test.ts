@@ -15,12 +15,15 @@ import { test } from "node:test";
 import { InMemoryCursorStore } from "./lib/cursor-store.js";
 import type {
 	BundleExecutedEvent,
+	BundleFailedEvent,
 	ClaimedEvent,
 	ClosedEvent,
 	DepositedEvent,
+	DistributedEvent,
 	LaunchCreatedEvent,
 	LaunchEvent,
-	LaunchedEvent,
+	LaunchExecutedEvent,
+	RefundEnabledEvent,
 	WithdrawnEvent,
 } from "./lib/events.js";
 import type { LaunchIndexerConfig, LaunchIndexerRuntime } from "./lib/runtime.js";
@@ -231,8 +234,6 @@ const userB = "0x55555555555555555555555555555555555555bb" as const;
 const v2Pair = "0x6666666666666666666666666666666666666666" as const;
 const treasuryReserveAddress = "0x7777777777777777777777777777777777777777" as const;
 
-const splitterAddress = "0x7777777777777777777777777777777777777777" as const;
-
 function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 	return {
 		eventName: "LaunchCreated",
@@ -243,16 +244,16 @@ function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 		logIndex: 0,
 		blockTimestamp: new Date("2026-05-08T00:00:00Z"),
 		data: {
+			launchId: "0xaaaa" as `0x${string}`,
 			creator: userA,
-			token: tokenAddress,
+			predictedToken: tokenAddress,
 			vault: vaultAddress,
 			router: routerAddress,
-			taxSplitter: splitterAddress,
-			treasuryReserve: treasuryReserveAddress,
+			treasuryLp: treasuryReserveAddress,
 			tier: 90,
 			presaleCap: "1000000",
 			v2BuyBnb: "40000",
-			vestingEnabled: true,
+			closeTimestamp: "1700000000",
 		},
 	};
 }
@@ -296,16 +297,42 @@ function closedEvent(blockNumber: bigint): ClosedEvent {
 	};
 }
 
-function launchedEvent(blockNumber: bigint): LaunchedEvent {
+function launchExecutedEvent(blockNumber: bigint): LaunchExecutedEvent {
 	return {
-		eventName: "Launched",
+		eventName: "LaunchExecuted",
 		chainId: 56,
 		contractAddress: vaultAddress,
 		blockNumber,
 		txHash: `0xb${blockNumber.toString(16).padStart(63, "0")}` as `0x${string}`,
 		logIndex: 0,
 		blockTimestamp: new Date(),
-		data: { token: tokenAddress, totalBnb: "1500", launchTimestamp: "1700000000" },
+		data: { token: tokenAddress, totalBnb: "1500", timestamp: "1700000000" },
+	};
+}
+
+function distributedEvent(blockNumber: bigint): DistributedEvent {
+	return {
+		eventName: "Distributed",
+		chainId: 56,
+		contractAddress: vaultAddress,
+		blockNumber,
+		txHash: `0xdd${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
+		logIndex: 0,
+		blockTimestamp: new Date(),
+		data: { token: tokenAddress, presalerShare: "40000000000000000000000" },
+	};
+}
+
+function refundEnabledEvent(blockNumber: bigint, reason: string): RefundEnabledEvent {
+	return {
+		eventName: "RefundEnabled",
+		chainId: 56,
+		contractAddress: vaultAddress,
+		blockNumber,
+		txHash: `0xre${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
+		logIndex: 0,
+		blockTimestamp: new Date(),
+		data: { by: userA, reason },
 	};
 }
 
@@ -319,15 +346,30 @@ function bundleExecutedEvent(blockNumber: bigint): BundleExecutedEvent {
 		logIndex: 0,
 		blockTimestamp: new Date(),
 		data: {
-			flapToken: tokenAddress,
-			v2Pair,
-			curveFillBnb: "60000",
+			token: tokenAddress,
+			pool: v2Pair,
+			quoteAmt: "60000",
 			v2BuyBnb: "4000",
-			tokensFromV2: "7000",
+			tokensReceived: "7000",
 			tokensBurned: "200",
-			tokensToTax: "100",
+			tokensToTreasury: "100",
+			tokensToVault: "100",
+			tipPaid: "50",
 			openMcBnb: "250000",
 		},
+	};
+}
+
+function bundleFailedEvent(blockNumber: bigint, reason: string): BundleFailedEvent {
+	return {
+		eventName: "BundleFailed",
+		chainId: 56,
+		contractAddress: routerAddress,
+		blockNumber,
+		txHash: `0xbf${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
+		logIndex: 0,
+		blockTimestamp: new Date(),
+		data: { reason },
 	};
 }
 
@@ -396,7 +438,7 @@ test("pollOnce: indexes LaunchCreated → Deposited → Closed → BundleExecute
 		depositedEvent(101n, userA, "1000", "1000"),
 		depositedEvent(102n, userB, "500", "1500"),
 		closedEvent(110n),
-		launchedEvent(111n),
+		launchExecutedEvent(111n),
 		bundleExecutedEvent(112n),
 		claimedEvent(120n, userA),
 	];

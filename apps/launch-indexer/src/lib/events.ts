@@ -1,23 +1,29 @@
 /**
- * Decoded launch event envelopes used by the W44 indexer.
+ * Decoded launch event envelopes used by the wave H/I indexer.
  *
  * `bigint` values from the chain are normalized to decimal strings so that
  * downstream persistence (`numeric` / `text` columns) doesn't have to
  * re-encode them.
+ *
+ * Event names match the on-chain Solidity events 1:1 (LaunchExecuted, not
+ * Launched; RefundEnabled, not RefundsEnabled; etc.).
  */
 
 import type { Address } from "viem";
 
 export type LaunchEventName =
 	| "LaunchCreated"
+	| "RouterSet"
 	| "Deposited"
 	| "Withdrawn"
 	| "Closed"
-	| "Launched"
-	| "RefundsEnabled"
+	| "LaunchExecuted"
+	| "Distributed"
+	| "RefundEnabled"
 	| "Refunded"
 	| "Claimed"
 	| "BundleExecuted"
+	| "BundleFailed"
 	| "TokenCreated"
 	| "LaunchedToDEX";
 
@@ -35,16 +41,23 @@ export interface LaunchEventEnvelope<TEventName extends LaunchEventName, TData> 
 export type LaunchCreatedEvent = LaunchEventEnvelope<
 	"LaunchCreated",
 	{
+		launchId: `0x${string}`;
 		creator: Address;
-		token: Address;
+		predictedToken: Address;
 		vault: Address;
 		router: Address;
-		taxSplitter: Address;
-		treasuryReserve: Address;
+		treasuryLp: Address;
 		tier: number;
 		presaleCap: string;
 		v2BuyBnb: string;
-		vestingEnabled: boolean;
+		closeTimestamp: string;
+	}
+>;
+
+export type RouterSetEvent = LaunchEventEnvelope<
+	"RouterSet",
+	{
+		router: Address;
 	}
 >;
 
@@ -76,16 +89,30 @@ export type ClosedEvent = LaunchEventEnvelope<
 	}
 >;
 
-export type LaunchedEvent = LaunchEventEnvelope<
-	"Launched",
+export type LaunchExecutedEvent = LaunchEventEnvelope<
+	"LaunchExecuted",
 	{
 		token: Address;
 		totalBnb: string;
-		launchTimestamp: string;
+		timestamp: string;
 	}
 >;
 
-export type RefundsEnabledEvent = LaunchEventEnvelope<"RefundsEnabled", Record<string, never>>;
+export type DistributedEvent = LaunchEventEnvelope<
+	"Distributed",
+	{
+		token: Address;
+		presalerShare: string;
+	}
+>;
+
+export type RefundEnabledEvent = LaunchEventEnvelope<
+	"RefundEnabled",
+	{
+		by: Address;
+		reason: string;
+	}
+>;
 
 export type RefundedEvent = LaunchEventEnvelope<
 	"Refunded",
@@ -94,7 +121,6 @@ export type RefundedEvent = LaunchEventEnvelope<
 		principal: string;
 		bonus: string;
 		refundAmount: string;
-		newTotal: string;
 	}
 >;
 
@@ -110,14 +136,23 @@ export type ClaimedEvent = LaunchEventEnvelope<
 export type BundleExecutedEvent = LaunchEventEnvelope<
 	"BundleExecuted",
 	{
-		flapToken: Address;
-		v2Pair: Address;
-		curveFillBnb: string;
+		token: Address;
+		pool: Address;
+		quoteAmt: string;
 		v2BuyBnb: string;
-		tokensFromV2: string;
+		tokensReceived: string;
 		tokensBurned: string;
-		tokensToTax: string;
+		tokensToTreasury: string;
+		tokensToVault: string;
+		tipPaid: string;
 		openMcBnb: string;
+	}
+>;
+
+export type BundleFailedEvent = LaunchEventEnvelope<
+	"BundleFailed",
+	{
+		reason: string;
 	}
 >;
 
@@ -145,23 +180,29 @@ export type FlapLaunchedToDexEvent = LaunchEventEnvelope<
 
 export type LaunchEvent =
 	| LaunchCreatedEvent
+	| RouterSetEvent
 	| DepositedEvent
 	| WithdrawnEvent
 	| ClosedEvent
-	| LaunchedEvent
-	| RefundsEnabledEvent
+	| LaunchExecutedEvent
+	| DistributedEvent
+	| RefundEnabledEvent
 	| RefundedEvent
 	| ClaimedEvent
 	| BundleExecutedEvent
+	| BundleFailedEvent
 	| PortalTokenCreatedEvent
 	| FlapLaunchedToDexEvent;
 
 export type LaunchVaultEvent =
+	| RouterSetEvent
 	| DepositedEvent
 	| WithdrawnEvent
 	| ClosedEvent
-	| LaunchedEvent
-	| RefundsEnabledEvent
+	| LaunchExecutedEvent
+	| DistributedEvent
+	| RefundEnabledEvent
 	| RefundedEvent
 	| ClaimedEvent;
-export type BundleRouterEvent = BundleExecutedEvent;
+
+export type BundleRouterEvent = BundleExecutedEvent | BundleFailedEvent;

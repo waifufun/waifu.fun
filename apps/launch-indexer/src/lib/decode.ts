@@ -2,6 +2,8 @@
  * Pure event decoder. Splits the "fetch RPC logs" concern from the "decode a
  * raw log into a typed envelope" concern so that unit tests can exercise the
  * decoder against hand-crafted topic/data pairs without any network.
+ *
+ * Mirrors wave H on-chain event signatures 1:1; see `./abis.ts`.
  */
 
 import { decodeEventLog } from "viem";
@@ -21,14 +23,17 @@ export interface RawLog {
 
 const KNOWN_EVENTS: ReadonlySet<LaunchEventName> = new Set<LaunchEventName>([
 	"LaunchCreated",
+	"RouterSet",
 	"Deposited",
 	"Withdrawn",
 	"Closed",
-	"Launched",
-	"RefundsEnabled",
+	"LaunchExecuted",
+	"Distributed",
+	"RefundEnabled",
 	"Refunded",
 	"Claimed",
 	"BundleExecuted",
+	"BundleFailed",
 	"TokenCreated",
 	"LaunchedToDEX",
 ]);
@@ -75,16 +80,25 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 				...base,
 				eventName: "LaunchCreated",
 				data: {
+					launchId: args.launchId as `0x${string}`,
 					creator: args.creator as `0x${string}`,
-					token: args.token as `0x${string}`,
+					predictedToken: args.predictedToken as `0x${string}`,
 					vault: args.vault as `0x${string}`,
 					router: args.router as `0x${string}`,
-					taxSplitter: args.taxSplitter as `0x${string}`,
-					treasuryReserve: args.treasuryReserve as `0x${string}`,
+					treasuryLp: args.treasuryLp as `0x${string}`,
 					tier: Number(args.tier as bigint | number),
 					presaleCap: bn(args.presaleCap),
 					v2BuyBnb: bn(args.v2BuyBnb),
-					vestingEnabled: Boolean(args.vestingEnabled),
+					closeTimestamp: bn(args.closeTimestamp),
+				},
+			};
+
+		case "RouterSet":
+			return {
+				...base,
+				eventName: "RouterSet",
+				data: {
+					router: args.router as `0x${string}`,
 				},
 			};
 
@@ -122,22 +136,35 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 				},
 			};
 
-		case "Launched":
+		case "LaunchExecuted":
 			return {
 				...base,
-				eventName: "Launched",
+				eventName: "LaunchExecuted",
 				data: {
 					token: args.token as `0x${string}`,
 					totalBnb: bn(args.totalBnb),
-					launchTimestamp: bn(args.launchTimestamp),
+					timestamp: bn(args.timestamp),
 				},
 			};
 
-		case "RefundsEnabled":
+		case "Distributed":
 			return {
 				...base,
-				eventName: "RefundsEnabled",
-				data: {},
+				eventName: "Distributed",
+				data: {
+					token: args.token as `0x${string}`,
+					presalerShare: bn(args.presalerShare),
+				},
+			};
+
+		case "RefundEnabled":
+			return {
+				...base,
+				eventName: "RefundEnabled",
+				data: {
+					by: args.by as `0x${string}`,
+					reason: String(args.reason ?? ""),
+				},
 			};
 
 		case "Refunded":
@@ -149,7 +176,6 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 					principal: bn(args.principal),
 					bonus: bn(args.bonus),
 					refundAmount: bn(args.refundAmount),
-					newTotal: bn(args.newTotal),
 				},
 			};
 
@@ -169,14 +195,25 @@ export function decodeLaunchLog(input: { log: RawLog; chainId: number; blockTime
 				...base,
 				eventName: "BundleExecuted",
 				data: {
-					flapToken: args.flapToken as `0x${string}`,
-					v2Pair: args.v2Pair as `0x${string}`,
-					curveFillBnb: bn(args.curveFillBnb),
+					token: args.token as `0x${string}`,
+					pool: args.pool as `0x${string}`,
+					quoteAmt: bn(args.quoteAmt),
 					v2BuyBnb: bn(args.v2BuyBnb),
-					tokensFromV2: bn(args.tokensFromV2),
+					tokensReceived: bn(args.tokensReceived),
 					tokensBurned: bn(args.tokensBurned),
-					tokensToTax: bn(args.tokensToTax),
+					tokensToTreasury: bn(args.tokensToTreasury),
+					tokensToVault: bn(args.tokensToVault),
+					tipPaid: bn(args.tipPaid),
 					openMcBnb: bn(args.openMcBnb),
+				},
+			};
+
+		case "BundleFailed":
+			return {
+				...base,
+				eventName: "BundleFailed",
+				data: {
+					reason: String(args.reason ?? ""),
 				},
 			};
 
