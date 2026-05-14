@@ -332,7 +332,9 @@ export function useWizard(): Ctx {
 export function validateStep(step: WizardStep, state: WizardState): string | null {
 	switch (step) {
 		case "persona": {
-			if (!state.inviteCode.trim()) return "invite code required";
+			// Invite code is recommended but not required at validation time.
+			// Backend enforces curated-launch policy via CURATED_LAUNCH_ONLY env flag
+			// + invite_codes table; frontend just collects and forwards the code.
 			const { name, ticker, bio } = state.persona;
 			const trimmedName = name.trim();
 			const trimmedBio = bio.trim();

@@ -141,7 +141,7 @@ export default function StepPersona() {
 			{/* Invite code (curated launch) */}
 			<section className="border border-white/8 bg-white/[0.012] p-5">
 				<label htmlFor={inviteCodeId} className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
-					[invite-only] · invite code
+					invite code (optional)
 				</label>
 				<input
 					id={inviteCodeId}
@@ -154,14 +154,14 @@ export default function StepPersona() {
 					className="mt-2 w-full bg-black/40 border border-white/10 px-3 h-11 font-mono text-sm text-white placeholder:text-white/20 focus:border-[#00ff87]/50 outline-none"
 				/>
 				<p className="mt-2 text-[11px] text-white/40 leading-relaxed">
-					waifu.fun is invite-only. if you don't have a code, ping us on{" "}
+					have an invite code? drop it here for early access perks. otherwise leave blank.{" "}
 					<a
 						href="https://x.com/waifudotfun"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="text-[#00ff87] hover:opacity-80"
 					>
-						x
+						ping us on x for one
 					</a>
 					.
 				</p>

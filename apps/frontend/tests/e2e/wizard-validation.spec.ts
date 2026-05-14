@@ -26,8 +26,7 @@ test.describe("/create/wizard validation", () => {
 		// Switch to "create from scratch" so name/ticker/bio inputs render.
 		await page.getByRole("button", { name: /\[create\]/i }).click();
 
-		// Fill invite code only; name/ticker/bio still missing → still disabled.
-		await page.getByPlaceholder("WF-XXXXX-XXXXX").fill("WF-TEST1-TEST1");
+		// Invite code is OPTIONAL as of wave H. Name/ticker/bio are the real gate.
 		await expect(nextBtn).toBeDisabled();
 
 		// Fill the persona name + ticker + bio. Now next should be enabled.
