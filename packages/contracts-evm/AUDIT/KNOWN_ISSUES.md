@@ -327,7 +327,7 @@ indexer flips `status='failed'`, a user reading the chain directly sees
 why we ship: cosmetic, no fund-flow effect. trivial follow-up patch.
 tracked in user-flow coverage matrix as gap 17.
 
-## 18. `enableRefundUnderSubscribed` has no automated trigger
+## 18. `enableRefundUnderSubscribed` has no automated trigger — RESOLVED (wave J)
 
 spec section 6.1 calls this "anyone calls permissionlessly" after
 `closeTimestamp + undersubscribed`. no off-chain service in `apps/`
@@ -338,12 +338,16 @@ invokes the function.
 impact: refunds are delayed until manual trigger, not blocked. once
 triggered, the path works correctly.
 
-follow-up: tier-cron sweeper that scans for
-`closeTimestamp < now() - grace AND totalDeposited < cap AND state != REFUND`
-and fires the call. low-cost addition. tracked in user-flow coverage
-matrix as gap 18.
+resolution: `apps/tier-cron/src/refund-cron.ts` scans every poll round
+for `closeTimestamp + 12h < now() AND bundleStatus in (pending,
+failed_retry) AND totalDeposited < presaleCap`, simulates
+`enableRefundUnderSubscribed`, and (when `ENABLE_AUTO_REFUND_CRON=1`)
+submits the tx using the tier-cron signer. simulate-revert is treated
+as a no-op for already-resolved launches. feature-flagged off by
+default for the initial ship; ops flips it on after one round of
+live observation.
 
-## 19. bundle-submitter does not auto-call `enableRefundBundleFailed`
+## 19. bundle-submitter does not auto-call `enableRefundBundleFailed` — OPEN
 
 `apps/api/src/services/bundle-submitter.ts:188-200` marks
 `bundleStatus='failed_terminal'` on attempt 3 and returns. it does NOT
@@ -360,7 +364,7 @@ why we ship: the `adminEnableRefund` kill switch is sufficient. adding
 the auto-call is a follow-up engineering task. tracked in user-flow
 coverage matrix as gap 19.
 
-## 20. indexer silently no-ops on portal `TokenCreated` mismatch
+## 20. indexer silently no-ops on portal `TokenCreated` mismatch — RESOLVED (wave J)
 
 `apps/launch-indexer/src/handlers/flap.ts:9-30` looks up
 `agentLaunches.predictedTokenAddress = event.token` and returns `null`
@@ -373,9 +377,12 @@ impact: lost observability, not lost funds. the router-level revert
 guarantees the bundle either succeeds with our predicted address or
 leaves vault BNB intact.
 
-follow-up: warn-log on unmatched `TokenCreated` events so ops can
-investigate portal upgrades. tracked in user-flow coverage matrix as
-gap 20.
+resolution: `handlePortalTokenCreated` now warn-logs the unmatched
+event and bumps the `indexer_portal_token_created_unmatched_total`
+counter on every mismatch. symmetric coverage was added for
+`handleFlapLaunchedToDex` orphans
+(`indexer_flap_launched_to_dex_unmatched_total`). unit tests in
+`apps/launch-indexer/src/handlers/flap.test.ts` pin the behavior.
 
 ---
 
