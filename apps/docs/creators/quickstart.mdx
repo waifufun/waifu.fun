@@ -1,0 +1,63 @@
+---
+title: "quickstart"
+description: "launch a token on waifu.fun in five steps"
+---
+
+you need a BSC wallet, some BNB for the creation fee, and a token concept.
+everything else the platform handles.
+
+<Steps>
+  <Step title="sign in">
+    go to [waifu.fun](https://waifu.fun) and connect your wallet. you will be
+    asked to sign a SIWE message. this proves wallet ownership without spending
+    gas. SIWE binds your session to a single address on BSC mainnet (chain id 56).
+  </Step>
+  <Step title="pick a tier">
+    four options:
+    - **TIER_80** curve-only, no PCS LP, lower-stakes launch
+    - **TIER_90** 32 BNB cap, 20 BNB graduation, 12 BNB follow-up buy
+    - **TIER_95** 64 BNB cap, 20 BNB graduation, 44 BNB follow-up buy
+    - **TIER_98** 160 BNB cap, 20 BNB graduation, 140 BNB follow-up buy
+
+    pick the cap you think your community can actually hit. an under-subscribed
+    vault refunds at the deadline. see [choose your tier](/creators/choose-your-tier).
+  </Step>
+  <Step title="write metadata">
+    name, symbol, description, image, optional social links. the platform
+    uploads to IPFS and pins it. the IPFS CID becomes part of your
+    `NewTokenV6` params on-chain. see [write your metadata](/creators/write-your-metadata).
+  </Step>
+  <Step title="deploy the launch">
+    the platform calls `LaunchFactory.createLaunch(config)`. this deploys three
+    contracts: `LaunchVault`, `BundleRouter`, `TreasuryLP`. you pay the gas plus
+    the platform creation fee.
+
+    once deployed, your launch is in `OPEN` state. anyone can deposit BNB into
+    the vault. you do not need to be online for the rest. the bundle bot
+    handles execution.
+  </Step>
+  <Step title="watch the cap fill">
+    the dashboard shows live deposits. when the cap is hit (or the window
+    closes with the cap met), the bundle bot picks up the launch and runs
+    `executeBundle()`. you will see a `BundleExecuted` event on the router,
+    a PCS pair on the FLAP token, and tokens flowing to claimers.
+
+    if the cap is not hit by the deadline, the vault automatically goes to
+    `REFUND` and depositors get their BNB plus a pro-rata bonus share.
+  </Step>
+</Steps>
+
+## what you do not have to do
+
+- write any code
+- run a bot
+- hold custody of presaler BNB
+- send tokens manually after launch (claims are pull-based)
+- maintain a multisig (the contracts are immutable per launch)
+
+## what you should do
+
+- announce the launch with the vault address so depositors know where to send BNB
+- engage with the community during the OPEN window
+- after launch, manage the 10% TreasuryLP balance through the platform UI
+  (future feature, see [after launch](/creators/after-launch))

@@ -1,0 +1,75 @@
+---
+title: "quickstart"
+description: "deposit BNB into a launch, in five minutes"
+---
+
+depositing into a launch is one transaction. you send BNB to the launch's
+vault, and you wait for one of two outcomes: tokens (LAUNCHED) or your BNB
+back plus a bonus (REFUND).
+
+<Steps>
+  <Step title="find a launch">
+    browse open launches on [waifu.fun](https://waifu.fun). every launch shows
+    its tier, cap, current total deposited, and close window. pick one.
+  </Step>
+  <Step title="connect your wallet">
+    metamask, rabby, or any BSC-compatible wallet. you will be on chain id 56
+    (BSC mainnet).
+  </Step>
+  <Step title="deposit BNB">
+    click "deposit." enter the amount. confirm the transaction. you are calling
+    `LaunchVault.deposit()` with `msg.value` equal to your amount.
+
+    your deposit is recorded as `depositors[you].deposited += amount` and the
+    vault total goes up by the same. you do not get tokens yet. tokens come
+    after the bundle executes.
+  </Step>
+  <Step title="wait for the cap or the window">
+    the launch either fills (total >= cap) and the bundle bot picks it up, or
+    the window expires (`closeTimestamp` reached) with the cap not met and the
+    vault goes to `REFUND`.
+
+    you do not need to be online for either outcome. the contracts handle it.
+  </Step>
+  <Step title="claim or refund">
+    if the launch hit `LAUNCHED`, call `claim()` on the vault. you receive
+    tokens pro-rata. if vesting is enabled, you get 50% at TGE and 50% linear
+    over 24 hours, so you may need to claim more than once.
+
+    if the launch hit `REFUND`, call `refund()` on the vault. you receive your
+    principal back plus a pro-rata bonus from the bonus pool (if there is one).
+  </Step>
+</Steps>
+
+## what you should know before depositing
+
+- **your BNB is locked until the launch resolves.** you can withdraw before
+  the window closes (`withdraw()`), but once the vault transitions to `CLOSED`
+  or `LAUNCHED`, deposits are frozen until claim or refund.
+- **the launch can refund.** under-subscription, bundle failure after retries,
+  or admin emergency stop all trigger refund. read
+  [refund safety](/presalers/refund-safety) for the full list.
+- **tokens can go to zero.** even a successful launch is not a guarantee of
+  price. you are buying a token. tokens can drop 90% in an hour. read
+  [risks](/presalers/risks).
+- **the platform cannot drain the vault.** the vault contract is immutable
+  per launch. the only privileged action the platform owner has is
+  `adminEnableRefund`, which transitions the vault to `REFUND` and returns
+  your BNB.
+
+## the three windows
+
+- **OPEN.** deposits accepted. you can `withdraw()` to back out before close.
+- **CLOSED.** deposits frozen. the bundle bot has the launch in its queue.
+  if the bundle succeeds you transition to `LAUNCHED`. if it fails after
+  three retries, you go to `REFUND`.
+- **LAUNCHED or REFUND.** terminal. claim tokens or refund BNB.
+
+## quick checks before you deposit
+
+- does the cap make sense for the project? a 160 BNB cap with no community
+  is going to refund.
+- does the metadata match the social channels? if twitter does not exist or
+  is brand-new, that is a yellow flag.
+- is the vault address the same one announced by the creator? always verify
+  the on-chain address.
