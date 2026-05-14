@@ -331,6 +331,7 @@ replaces the stale `RefundsEnabled()` placeholder, and `LaunchExecuted`
 replaces the unused `Launched` event name.
 
 ## 18. `enableRefundUnderSubscribed` has no automated trigger — RESOLVED (wave J)
+## 18. `enableRefundUnderSubscribed` has no automated trigger
 
 spec section 6.1 calls this "anyone calls permissionlessly" after
 `closeTimestamp + undersubscribed`. no off-chain service in `apps/`
