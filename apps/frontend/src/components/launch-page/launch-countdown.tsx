@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 
+import { formatRemainingHumanized } from "./countdown-format";
+
 type Props = {
 	closeTimestampSec: bigint | number | null | undefined;
 	className?: string;
 	compact?: boolean;
+	/**
+	 * "humanized" → "2d 4h 17m" for >1h, "47m 23s" for <1h, "closed" past.
+	 * "blocks" → numeric HH:MM:SS blocks (default, used in the hero).
+	 */
+	format?: "humanized" | "blocks";
 };
 
 /**
@@ -13,7 +20,7 @@ type Props = {
  * shows "round closed" once the deadline passes (the vault flips OPEN -> CLOSED
  * shortly after; the page itself reads `state` from on-chain to drive UI).
  */
-export function LaunchCountdown({ closeTimestampSec, className, compact = false }: Props) {
+export function LaunchCountdown({ closeTimestampSec, className, compact = false, format = "blocks" }: Props) {
 	const target = useTargetMs(closeTimestampSec);
 	const [now, setNow] = useState(() => Date.now());
 
@@ -23,29 +30,59 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false 
 	}, []);
 
 	if (target === null) {
-		return <div className={className ?? "text-sm text-zinc-400"}>round window not set</div>;
+		return (
+			<div className={className ?? "text-sm text-zinc-400"} aria-label="round window not set">
+				round window not set
+			</div>
+		);
 	}
 
 	const remainingMs = Math.max(0, target - now);
 	if (remainingMs <= 0) {
-		return <div className={className ?? "text-2xl font-semibold tabular-nums text-zinc-300"}>round closed</div>;
+		return (
+			<div
+				className={className ?? "text-2xl font-semibold tabular-nums text-zinc-300"}
+				role="status"
+				aria-label="round closed"
+			>
+				{format === "humanized" ? "closed" : "round closed"}
+			</div>
+		);
 	}
 
 	const totalSec = Math.floor(remainingMs / 1000);
-	const hours = Math.floor(totalSec / 3600);
+	const days = Math.floor(totalSec / 86400);
+	const hours = Math.floor((totalSec % 86400) / 3600);
 	const minutes = Math.floor((totalSec % 3600) / 60);
 	const seconds = totalSec % 60;
+	const ariaText = `${days > 0 ? `${days} days ` : ""}${hours} hours ${minutes} minutes ${seconds} seconds remaining`;
+
+	if (format === "humanized") {
+		const text = formatRemainingHumanized(remainingMs);
+		return (
+			<span className={className ?? "tabular-nums text-zinc-200"} role="timer" aria-live="off" aria-label={ariaText}>
+				{text}
+			</span>
+		);
+	}
 
 	if (compact) {
 		return (
-			<span className={className ?? "tabular-nums text-zinc-300"}>
+			<span className={className ?? "tabular-nums text-zinc-300"} role="timer" aria-live="off" aria-label={ariaText}>
+				{days > 0 ? `${days}d ` : ""}
 				{pad(hours)}:{pad(minutes)}:{pad(seconds)}
 			</span>
 		);
 	}
 
 	return (
-		<div className={className ?? "flex items-baseline gap-2"}>
+		<div className={className ?? "flex items-baseline gap-2"} role="timer" aria-live="off" aria-label={ariaText}>
+			{days > 0 ? (
+				<>
+					<TimeBlock value={days} label="days" />
+					<span className="text-zinc-500">:</span>
+				</>
+			) : null}
 			<TimeBlock value={hours} label="hours" />
 			<span className="text-zinc-500">:</span>
 			<TimeBlock value={minutes} label="min" />

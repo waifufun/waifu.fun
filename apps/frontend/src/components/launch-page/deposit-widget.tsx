@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { VaultState } from "@/lib/launch-vault/abi";
+import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
+import { cn } from "@/lib/utils";
 
 import { DepositForm } from "./deposit-form";
 import { WithdrawForm } from "./withdraw-form";
@@ -22,7 +24,11 @@ type Props = {
 	penaltyBps: bigint | null;
 	presaleTokens: bigint | null;
 	tokenSymbol: string | null;
+	tier: LaunchTierInfo;
 	onUserStateChanged?: () => void;
+	/** Mobile-only sticky positioning. Desktop sidebar uses sticky-top instead. */
+	sticky?: "top" | "bottom";
+	className?: string;
 };
 
 export function DepositWidget({
@@ -33,7 +39,10 @@ export function DepositWidget({
 	penaltyBps,
 	presaleTokens,
 	tokenSymbol,
+	tier,
 	onUserStateChanged,
+	sticky = "top",
+	className,
 }: Props) {
 	const { address, isConnected } = useAccount();
 	const chainId = useChainId();
@@ -43,22 +52,37 @@ export function DepositWidget({
 	const wrongChain = isConnected && chainId !== bsc.id;
 	const roundOpen = state === VaultState.OPEN;
 	const capHit = capWei > 0n && totalDeposited >= capWei;
+	const remainingToCap = capWei > totalDeposited ? capWei - totalDeposited : 0n;
 
 	const projectedTokens = useMemo(() => {
 		if (!presaleTokens || presaleTokens === 0n) return 0n;
 		if (!position.deposited || position.deposited === 0n) return 0n;
-		const denom = totalDeposited > 0n ? totalDeposited : 0n;
-		if (denom === 0n) return 0n;
-		return (position.deposited * presaleTokens) / denom;
+		if (totalDeposited === 0n) return 0n;
+		return (position.deposited * presaleTokens) / totalDeposited;
 	}, [presaleTokens, position.deposited, totalDeposited]);
 
 	const allocation = position.allocation > 0n ? position.allocation : projectedTokens;
 
+	// Tier-specific subtitle copy + secondary CTA tooltip
+	const graduates = tier.v2BuyBnb > 0;
+	const subtitle = graduates
+		? `deposit bnb during the 24h window. allocations are pro-rata at close. graduates to pcs v2 lp (${tier.v2BuyBnb} bnb v2 buy).`
+		: "deposit bnb during the 24h window. allocations are pro-rata at close. seeds the pcs bonding curve directly.";
+
 	return (
-		<Card className="sticky top-6 border-white/10 bg-[#08080a] py-0">
+		<Card
+			className={cn(
+				"border-white/10 bg-[#08080a] py-0",
+				sticky === "top" && "sticky top-6",
+				sticky === "bottom" &&
+					"fixed bottom-0 left-0 right-0 z-30 border-t border-l-0 border-r-0 border-b-0 md:static md:border-l md:border-r md:border-t md:border-b",
+				className,
+			)}
+			data-testid="deposit-widget"
+		>
 			<CardHeader className="border-b border-white/10 px-6 py-5">
 				<CardTitle className="text-base font-semibold text-zinc-100">join the round</CardTitle>
-				<p className="text-xs text-zinc-500">deposit bnb during the 24h window. allocations are pro-rata at close.</p>
+				<p className="text-xs text-zinc-500">{subtitle}</p>
 			</CardHeader>
 			<CardContent className="space-y-5 px-6 py-6">
 				{!isConnected ? (
@@ -94,6 +118,10 @@ export function DepositWidget({
 										? "cap reached. catch it on the secondary market."
 										: undefined
 							}
+							remainingToCapWei={remainingToCap}
+							presaleTokens={presaleTokens}
+							totalDepositedWei={totalDeposited}
+							tokenSymbol={tokenSymbol}
 							onCompleted={() => {
 								void position.refetch();
 								onUserStateChanged?.();
