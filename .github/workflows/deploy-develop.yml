@@ -1,0 +1,51 @@
+name: Deploy develop to dev.waifu.fun
+
+# Triggered after Build and Push completes for the develop branch.
+# Pulls the freshly-built ghcr.io/waifufun/waifu.fun-api:develop image
+# into the waifu-core Railway service (currently shared dev backend).
+#
+# Note: dev.waifu.fun currently points at the production Railway api
+# (see docs/STAGING_ENV.md). When we split to a real isolated staging
+# env, change RAILWAY_SERVICE_ID / RAILWAY_ENVIRONMENT_ID to the new
+# scope.
+
+on:
+  workflow_run:
+    workflows: ["Build and Push"]
+    branches: [develop]
+    types:
+      - completed
+
+concurrency:
+  group: deploy-develop
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  redeploy:
+    name: Trigger Railway redeploy
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: production
+    steps:
+      - name: Redeploy waifu-core via Railway GraphQL
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
+        run: |
+          if [ -z "$RAILWAY_API_TOKEN" ] || [ -z "$RAILWAY_SERVICE_ID" ] || [ -z "$RAILWAY_ENVIRONMENT_ID" ]; then
+            echo "::warning::Railway secrets not set; skipping auto-redeploy. Configure RAILWAY_API_TOKEN, RAILWAY_SERVICE_ID, RAILWAY_ENVIRONMENT_ID in the production environment."
+            exit 0
+          fi
+          # Use serviceInstanceDeployV2 instead of redeploy so Railway
+          # actually pulls the latest image (redeploy alone reuses the
+          # cached digest).
+          curl -sSf -X POST https://backboard.railway.com/graphql/v2 \
+            -H "Project-Access-Token: $RAILWAY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\":\"mutation(\$serviceId:String!,\$environmentId:String!){serviceInstanceDeployV2(serviceId:\$serviceId,environmentId:\$environmentId)}\",\"variables\":{\"serviceId\":\"$RAILWAY_SERVICE_ID\",\"environmentId\":\"$RAILWAY_ENVIRONMENT_ID\"}}"
+          echo ""
+          echo "::notice::Railway deploy triggered for service $RAILWAY_SERVICE_ID"
