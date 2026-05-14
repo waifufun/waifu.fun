@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { type Address, formatUnits } from "viem";
+import type { Address } from "viem";
 
 import { useBurnStats } from "@/hooks/use-post-launch";
+
+import { burnedPercent, formatTokenAmount } from "./__lib/format";
 
 type Props = {
 	tokenAddress: Address | undefined;
@@ -34,21 +36,39 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 	if (stats.isLoading || !stats.data) {
 		return (
 			<Wrapper>
-				<div className="h-10 w-48 animate-pulse rounded-sm bg-white/[0.04]" />
+				<div
+					className="h-10 w-48 animate-pulse rounded-sm bg-white/[0.04]"
+					role="status"
+					aria-label={`loading ${ticker} burn stats`}
+				/>
 			</Wrapper>
 		);
 	}
 
 	const formatted = formatTokenAmount(display, TOKEN_DECIMALS);
-	const burnedPct = supply > 0n ? Number((target * 10000n) / supply) / 100 : 0;
+	const targetFormatted = formatTokenAmount(target, TOKEN_DECIMALS);
+	const burnedPct = burnedPercent(target, supply);
 
 	return (
 		<Wrapper>
-			<div className="flex items-baseline gap-3 flex-wrap">
-				<span className="text-2xl md:text-3xl tracking-tight tabular-nums text-[#ff5d4a]">{formatted}</span>
+			<div
+				className="flex items-baseline gap-3 flex-wrap"
+				role="group"
+				aria-label={`${targetFormatted} ${ticker} burned`}
+			>
+				<span
+					className="text-2xl md:text-3xl tracking-tight tabular-nums text-[#ff5d4a]"
+					aria-live="polite"
+					aria-atomic="true"
+				>
+					{formatted}
+				</span>
 				<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/55">${ticker} burned</span>
 			</div>
-			<div className="mt-2 text-[11px] font-mono text-white/45">
+			<div
+				className="mt-2 text-[11px] font-mono text-white/45"
+				aria-label={`${burnedPct.toFixed(2)} percent of supply`}
+			>
 				<span className="tabular-nums text-white/75">{burnedPct.toFixed(2)}%</span> of supply
 			</div>
 		</Wrapper>
@@ -56,7 +76,11 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 }
 
 function Wrapper({ children }: { children: React.ReactNode }) {
-	return <div className="border border-white/10 bg-[#08080a] rounded-sm p-5">{children}</div>;
+	return (
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="burn counter">
+			{children}
+		</div>
+	);
 }
 
 /**
@@ -99,12 +123,4 @@ function useEasingBigint(target: bigint): bigint {
 	}, [target]);
 
 	return value;
-}
-
-function formatTokenAmount(value: bigint, decimals: number): string {
-	const whole = formatUnits(value, decimals);
-	const [intPart, fracPart] = whole.split(".");
-	const grouped = (intPart ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-	if (!fracPart || /^0+$/.test(fracPart)) return grouped;
-	return `${grouped}.${fracPart.slice(0, 2)}`;
 }

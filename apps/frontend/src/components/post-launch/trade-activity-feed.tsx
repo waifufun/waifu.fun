@@ -4,6 +4,8 @@ import { ArrowDownLeft, ArrowUpRight, ExternalLink } from "lucide-react";
 
 import type { PostLaunchMarket } from "@/hooks/use-post-launch-market";
 
+import { formatVolumeUsd } from "./__lib/format";
+
 /**
  * TradeActivityFeed, buys / sells per window, sourced from DEXScreener's
  * pair-level `txns` aggregates (5m / 1h / 6h / 24h).
@@ -35,7 +37,10 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 	const link = market?.pairUrl ?? `https://dexscreener.com/bsc/${tokenAddress.toLowerCase()}`;
 
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm">
+		/* TODO: needs indexer endpoint for individual buy / sell rows on the
+		   PCS V2 pair. Until then we surface the DEXScreener aggregate windows;
+		   the "full feed" link routes to DEXScreener for the granular tape. */
+		<div className="border border-white/10 bg-[#08080a] rounded-sm" role="region" aria-label="trade activity feed">
 			<div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">trade activity</div>
 				<a
@@ -43,16 +48,17 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 					target="_blank"
 					rel="noreferrer"
 					className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
+					aria-label="open full trade feed on dexscreener"
 				>
-					full feed <ExternalLink className="w-3 h-3" />
+					full feed <ExternalLink className="w-3 h-3" aria-hidden="true" />
 				</a>
 			</div>
 			{isLoading && !market ? (
 				<EmptyRow text="loading activity\u2026" />
 			) : !market ? (
-				<EmptyRow text="no pair indexed yet" />
+				<EmptyRow text="no trades yet" />
 			) : (
-				<ul className="divide-y divide-white/5">
+				<ul className="divide-y divide-white/5" aria-label="buy and sell counts per window">
 					{WINDOWS.map((w) => {
 						const txns = market.txns?.[w.key] ?? {};
 						const buys = Number(txns.buys ?? 0);
@@ -60,24 +66,39 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 						const total = buys + sells;
 						const buyShare = total > 0 ? (buys / total) * 100 : 50;
 						const volume = num(market.volume?.[w.volumeKey]);
+						const rowLabel = `${w.label}: ${buys} buys, ${sells} sells`;
 						return (
-							<li key={w.key} className="grid grid-cols-[48px_1fr_96px] items-center gap-4 px-5 py-3">
+							<li
+								key={w.key}
+								className="grid grid-cols-[48px_1fr_96px] items-center gap-4 px-5 py-3"
+								aria-label={rowLabel}
+							>
 								<span className="font-mono text-xs uppercase tracking-[0.2em] text-white/45">{w.label}</span>
 								<div className="flex flex-col gap-2">
 									<div className="flex items-center justify-between text-xs">
 										<span className="inline-flex items-center gap-1 text-[#00ff87]">
-											<ArrowDownLeft className="w-3 h-3" /> {buys.toLocaleString()} buys
+											<ArrowDownLeft className="w-3 h-3" aria-hidden="true" /> {buys.toLocaleString()} buys
 										</span>
 										<span className="inline-flex items-center gap-1 text-orange-300/85">
-											<ArrowUpRight className="w-3 h-3" /> {sells.toLocaleString()} sells
+											<ArrowUpRight className="w-3 h-3" aria-hidden="true" /> {sells.toLocaleString()} sells
 										</span>
 									</div>
-									<div className="flex h-1 w-full overflow-hidden border border-white/10 bg-[#111114]">
+									<div
+										className="flex h-1 w-full overflow-hidden border border-white/10 bg-[#111114]"
+										role="progressbar"
+										aria-valuemin={0}
+										aria-valuemax={100}
+										aria-valuenow={Math.round(buyShare)}
+										aria-label={`buy / sell ratio for ${w.label}`}
+										tabIndex={-1}
+									>
 										<div className="h-full bg-[#00ff87]/70" style={{ width: `${buyShare}%` }} />
 										<div className="h-full bg-orange-300/70" style={{ width: `${100 - buyShare}%` }} />
 									</div>
 								</div>
-								<span className="text-right font-mono text-xs tabular-nums text-white/75">{formatUsd(volume)}</span>
+								<span className="text-right font-mono text-xs tabular-nums text-white/75">
+									{formatVolumeUsd(volume)}
+								</span>
 							</li>
 						);
 					})}
@@ -96,12 +117,4 @@ function EmptyRow({ text }: { text: string }) {
 function num(value: unknown): number | null {
 	const n = typeof value === "number" ? value : Number(value);
 	return Number.isFinite(n) ? n : null;
-}
-
-function formatUsd(value: number | null): string {
-	if (value === null || !Number.isFinite(value) || value <= 0) return "–";
-	if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}m`;
-	if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
-	if (value >= 1) return `$${value.toFixed(2)}`;
-	return `$${value.toPrecision(2)}`;
 }

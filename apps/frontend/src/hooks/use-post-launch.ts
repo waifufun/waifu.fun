@@ -10,6 +10,7 @@ import { type AgentLaunchByToken, fetchLaunchByToken } from "@/lib/post-launch/a
 import { treasuryLpAbi } from "@/lib/post-launch/treasury-lp-abi";
 
 const POLL_MS = 15_000;
+const BURN_POLL_MS = 10_000;
 
 /**
  * Lookup a v3 launch by token address. Returns `null` (not undefined) when
@@ -195,7 +196,7 @@ export function useBurnStats(tokenAddress: Address | undefined) {
 				: undefined,
 		query: {
 			enabled,
-			refetchInterval: 30_000,
+			refetchInterval: BURN_POLL_MS,
 			select: (rows) => {
 				const [totalSupply, deadBal, zeroBal] = rows as [bigint, bigint, bigint];
 				return {

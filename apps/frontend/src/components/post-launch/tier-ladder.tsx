@@ -4,6 +4,8 @@ import type { Address } from "viem";
 
 import { useTreasuryLpTiers } from "@/hooks/use-post-launch";
 
+import { formatUsdFromChainlink } from "./__lib/format";
+
 type Props = {
 	treasuryLp: Address | undefined;
 };
@@ -71,27 +73,27 @@ export function TierLadder({ treasuryLp }: Props) {
 	const remainingUsd = nextTier && nextTier.targetMcUsd > currentMcUsd ? nextTier.targetMcUsd - currentMcUsd : 0n;
 
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5">
+		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="tier deploy ladder">
 			<div className="flex items-center justify-between mb-4">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">tier deploy status</div>
 				<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 tabular-nums">
-					mc {formatUsd(currentMcUsd)}
+					mc {formatUsdFromChainlink(currentMcUsd)}
 				</div>
 			</div>
-			<div className="grid grid-cols-4 gap-2">
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-2" aria-label="tier ladder cells">
 				{tiers.map((t) => (
 					<TierCell key={t.idx} tier={t} />
 				))}
 			</div>
 			{nextTier ? (
-				<div className="mt-4 text-[11px] font-mono text-white/55">
+				<div className="mt-4 text-[11px] font-mono text-white/55" aria-live="polite">
 					next: <span className="text-white/85">t{nextTier.idx + 1}</span> at{" "}
-					<span className="text-white/85">{formatUsd(nextTier.targetMcUsd)} mc</span>
+					<span className="text-white/85">{formatUsdFromChainlink(nextTier.targetMcUsd)} mc</span>
 					{remainingUsd > 0n ? (
 						<>
 							{" "}
-							<span className="text-white/40">\u2013</span>{" "}
-							<span className="text-[#00ff87]">{formatUsd(remainingUsd)} away</span>
+							<span className="text-white/40">·</span>{" "}
+							<span className="text-[#00ff87]">{formatUsdFromChainlink(remainingUsd)} away</span>
 						</>
 					) : (
 						<>
@@ -117,14 +119,15 @@ function TierCell({ tier }: { tier: TierRow }) {
 				: "border-white/10 bg-white/[0.02] text-white/55";
 
 	const epochs = !tier.deployed && tier.minEpochs > 0 ? `${tier.epochsAbove}/${tier.minEpochs}` : null;
+	const tierLabel = `tier ${tier.idx + 1}, ${formatUsdFromChainlink(tier.targetMcUsd)} mc target, ${status}${epochs ? `, ${epochs} epochs` : ""}`;
 
 	return (
-		<div className={`border ${colorClass} rounded-sm px-3 py-3 flex flex-col gap-1`}>
+		<div className={`border ${colorClass} rounded-sm px-3 py-3 flex flex-col gap-1`} aria-label={tierLabel}>
 			<div className="text-[10px] font-mono uppercase tracking-[0.18em] opacity-80">t{tier.idx + 1}</div>
-			<div className="text-sm tabular-nums">{formatUsd(tier.targetMcUsd)}</div>
+			<div className="text-sm tabular-nums">{formatUsdFromChainlink(tier.targetMcUsd)}</div>
 			<div className="text-[10px] font-mono uppercase tracking-[0.16em] opacity-70">
 				{status}
-				{epochs ? ` \u00b7 ${epochs}` : ""}
+				{epochs ? ` · ${epochs}` : ""}
 			</div>
 		</div>
 	);
@@ -136,17 +139,4 @@ function Card({ children }: { children: React.ReactNode }) {
 			{children}
 		</div>
 	);
-}
-
-/**
- * `value` is a chainlink-scale 1e8 USD bigint. We compress to compact
- * notation: < $1k -> "$X", < $1M -> "$Xk", else "$X.YM" / "$X.YB".
- */
-function formatUsd(value: bigint): string {
-	const usd = Number(value) / 1e8;
-	if (!Number.isFinite(usd) || usd <= 0) return "$0";
-	if (usd >= 1_000_000_000) return `$${(usd / 1_000_000_000).toFixed(2)}b`;
-	if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(2)}m`;
-	if (usd >= 1_000) return `$${(usd / 1_000).toFixed(1)}k`;
-	return `$${usd.toFixed(0)}`;
 }
