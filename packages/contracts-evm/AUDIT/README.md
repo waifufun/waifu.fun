@@ -24,6 +24,7 @@ paid in-tx to the 48 Club builder EOA.
 | `EMPIRICAL_VALIDATION.md` | real-fork probe findings: portal version, cooldown, V6 semantics, commissionReceiver, gas baselines, pre-audit bugs caught |
 | `TEST_COVERAGE.md` | test inventory, per-contract solidity-coverage report, gaps + reproduction |
 | `KNOWN_ISSUES.md` | accepted risks, non-goals, follow-up wave plans |
+| `STATIC_ANALYSIS.md` | slither output + triage + accepted findings + defensive fix |
 
 ## commit hash + tag
 

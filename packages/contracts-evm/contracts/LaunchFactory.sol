@@ -209,10 +209,9 @@ contract LaunchFactory {
 		});
 		BundleRouter router = new BundleRouter(routerArgs);
 
-		// 8. one-shot wire vault -> router
-		IVaultRouterSetter(address(vault)).setRouter(address(router));
-
-		// 9. mark salt + store + emit
+		// 8. mark salt + store BEFORE any third-party call (defensive CEI).
+		//     setRouter targets a vault we just deployed (trusted), but we keep
+		//     state-writes-before-third-party-call as a static-analysis-clean baseline.
 		usedSalts[config.vanitySalt] = true;
 		addrs = LaunchAddresses({
 			vault: address(vault),
@@ -222,6 +221,9 @@ contract LaunchFactory {
 		});
 		launches[predicted] = addrs;
 		allLaunches.push(predicted);
+
+		// 9. one-shot wire vault -> router (last third-party call before emit)
+		IVaultRouterSetter(address(vault)).setRouter(address(router));
 
 		emit LaunchCreated(
 			keccak256(abi.encode(config.creator, config.vanitySalt)),
