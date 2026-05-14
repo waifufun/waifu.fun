@@ -64,30 +64,42 @@ tier-cron looped over `state=launched` rows to drive tier advancement, and it po
 
 the stuck detector currently only logs. firing `enableRefundUnderSubscribed()` on-chain requires (a) the bundle bot or factory owner signer key in tier-cron (currently has `signerPrivateKey` for tier writes but no policy for refund calls), and (b) a careful state check against the vault to avoid double-flipping a launch that's mid-bundle.
 
-**followup (P1):** wire a separate `refundCronAction` that, when a launch is stuck >12h AND `bundleStatus in (pending, failed_retry)` AND under-subscribed (totalDeposited < presaleCap), simulates + sends `enableRefundUnderSubscribed`. tracked separately because it touches signer auth + needs a feature flag for prod.
+**followup (P1) — FIXED in wave J:** added `apps/tier-cron/src/refund-cron.ts`. each poll round it scans for launches stuck >12h with `bundleStatus in (pending, failed_retry)` AND `state in (open, closed)`, reads `(totalDeposited, presaleCap)` from the vault to confirm under-subscription, simulates `enableRefundUnderSubscribed` against the configured tier-cron signer, and (only when `ENABLE_AUTO_REFUND_CRON=1`) sends the tx. simulate-revert is treated as a no-op (state already REFUND/LAUNCHED). dry-run honored. feature-flagged off by default. observability via `tier_cron_auto_refund_{simulated,sent,failed}_total` counters.
 
 ### P2 — wallet pool stuck-lock detection
 
 `bundle_wallet_pool.next_available_ts` can stay in the past forever if `releaseWallet` is never called and the cooldown is bumped on each attempt. there's no alert if a wallet has been locked > N minutes.
 
-**followup (P2):** add a metric / health check in tier-cron or a dedicated wallet-pool-health cron that warns when `next_available_ts > now() + 5*BUNDLE_WALLET_COOLDOWN_SECONDS`.
+**followup (P2) — FIXED in wave J:** added `apps/tier-cron/src/wallet-pool-health.ts`. each poll round it scans active wallet pool rows, warn-logs + bumps `bundle_wallet_pool_stuck_seconds` whenever `next_available_ts > now + 5 * BUNDLE_WALLET_COOLDOWN_SECONDS` (90s * 5 = 7.5min). inactive wallets are ignored. ops can wire a log-based alert off the warn log or the counter.
 
 ### P2 — partial test coverage on Flap Portal handlers
 
 `handlePortalTokenCreated` / `handleFlapLaunchedToDex` are exercised end-to-end by `poller.test.ts`'s round-trip flow but lack standalone unit tests asserting field-by-field DB writes. low risk (small handlers, simple shape) but worth filling in.
 
-**followup (P2):** add handler-level tests mirroring the new vault handler test pattern.
+**followup (P2) — FIXED in wave J:** added `apps/launch-indexer/src/handlers/flap.test.ts`. covers field-by-field DB writes for both handlers + the new gap #20 warn + counter path (see below) + the symmetric `LaunchedToDEX` orphan path.
 
 ### P2 — reorg / restart-from-snapshot safety is shallow
 
-current strategy: every handler is keyed on `(tx_hash, log_index)` for inserts, and the launch row is unique on `tokenAddress`. that's enough to survive a clean replay, but a real reorg where the same `(tx_hash, log_index)` reappears at a different block number would slip through because we don't store `block_hash`. low priority on bsc post-3-block-finality (we use `confirmations >= 3`) but worth noting.
+current strategy: every handler is keyed on `(tx_hash, log_index)` for inserts, and the launch row is unique on `tokenAddress`. that's enough to survive a clean replay, but a real reorg where the same `(tx_hash, log_index)` reappears at a different block number would slip through because we don't store `block_hash`.
 
-**followup (P2):** add `block_hash` to the unique key once `confirmations` is brought down or a different chain is supported.
+**status: deferred, accepted risk (wave J).** safety bound: BSC reorg depth has empirically been bounded by 1-2 blocks since the 2022 hard fork; we wait `confirmations >= 3` (set via `LAUNCH_INDEXER_CONFIRMATIONS`, default 3) before processing, which puts the probability of a reverted `(txHash, logIndex)` re-appearing at a different block number well below the cost of the migration. **what to monitor:** if BSC drops below 3-block reorg resistance, OR we lower `LAUNCH_INDEXER_CONFIRMATIONS` to chase latency, OR we port the indexer to a chain with deeper reorgs (any L2 sequencer), the `block_hash` migration becomes mandatory. operationally: if a depositor reports a 'phantom' Deposited row with no on-chain receipt after a reorg, that's the signal to ship the migration.
+
+**followup (P2):** add `block_hash` to the `*_tx_log_unique` keys (4 tables: `launch_deposits`, `launch_withdrawals`, `launch_refunds_log`, `launch_claims`) plus a backfill that reads the original `block_number → block_hash` for existing rows. schema change only; handlers already have `event.blockNumber` in scope and viem returns `blockHash` on every log, so the wiring is trivial.
+
+### gap #20 resolution — predicted-address mismatch warn log + metric
+
+gap #20 (from `packages/contracts-evm/AUDIT/USER_FLOW_COVERAGE.md`): `handlePortalTokenCreated` would silently return `null` when the portal-emitted token address did not match any stored `predictedTokenAddress`. router-level `PredictedAddressMismatch` already protects funds, but the indexer dropped the only visible observation event.
+
+**FIXED in wave J:** `apps/launch-indexer/src/handlers/flap.ts` now warn-logs `"portal TokenCreated has no matching predicted address (gap #20)"` with `{token, creator, nonce, name, symbol, txHash, blockNumber}` AND bumps the `indexer_portal_token_created_unmatched_total` counter on every mismatch. symmetric coverage added for the `LaunchedToDEX` orphan path (`indexer_flap_launched_to_dex_unmatched_total`). unit tests pin the behavior.
 
 ## fix summary
 
-- 4 P0 gaps fixed inline (ABI sync + new handlers + idempotency).
-- 1 P1 gap fixed inline (stuck-launch detector).
-- 3 followups filed (auto-refund tx, wallet-pool lock alerts, block_hash key).
+- 4 P0 gaps fixed inline (ABI sync + new handlers + idempotency, wave I).
+- 1 P1 gap fixed inline (stuck-launch detector, wave I).
+- P1 auto-refund cron: FIXED in wave J (`tier-cron/refund-cron.ts`, feature-flagged).
+- P2 wallet-pool stuck-lock detection: FIXED in wave J (`tier-cron/wallet-pool-health.ts`).
+- P2 portal handler tests: FIXED in wave J (`launch-indexer/handlers/flap.test.ts`).
+- P2 `block_hash` unique key: DEFERRED, accepted risk (see above).
+- gap #20 (silent no-op on predicted-addr mismatch): FIXED in wave J (warn log + counter).
 
 15/15 launch-indexer tests pass. 16/16 tier-cron tests pass. no contract changes, no new dependencies, no schema migrations needed (every column already exists on `agent_launches`).
