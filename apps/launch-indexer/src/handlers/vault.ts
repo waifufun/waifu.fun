@@ -1,7 +1,17 @@
 /**
- * LaunchVault event handlers. Maps Deposited / Withdrawn / Closed / Launched
- * / Claimed → DB rows on launch_deposits, launch_withdrawals, launch_claims,
- * and the canonical agent_launches row.
+ * LaunchVault event handlers (wave H). Maps each on-chain event to the
+ * canonical agent_launches row plus per-event tables.
+ *
+ * Coverage:
+ *   - RouterSet        → noop except for log (wiring confirmation)
+ *   - Deposited        → launch_deposits + agent_launches.totalDeposited
+ *   - Withdrawn        → launch_withdrawals + agent_launches.totalDeposited
+ *   - Closed           → state=closed + totalDeposited + bonusPool
+ *   - LaunchExecuted   → state=launched + launchTimestamp
+ *   - Distributed      → flapTokenAddress + bundleStatus=confirmed
+ *   - RefundEnabled    → state=failed + failureReason
+ *   - Refunded         → launch_withdrawals + totalDeposited + bonusPool
+ *   - Claimed          → launch_claims
  *
  * All inserts are idempotent on (tx_hash, log_index) so that re-running the
  * indexer over the same block range does not create duplicates.
@@ -14,9 +24,11 @@ import type {
 	ClaimedEvent,
 	ClosedEvent,
 	DepositedEvent,
-	LaunchedEvent,
+	DistributedEvent,
+	LaunchExecutedEvent,
+	RefundEnabledEvent,
 	RefundedEvent,
-	RefundsEnabledEvent,
+	RouterSetEvent,
 	WithdrawnEvent,
 } from "../lib/events.js";
 import type { LaunchIndexerRuntime } from "../lib/runtime.js";
@@ -25,12 +37,22 @@ export interface VaultHandlerContext {
 	launchId: string;
 }
 
+export async function handleRouterSet(
+	runtime: LaunchIndexerRuntime,
+	event: RouterSetEvent,
+	ctx: VaultHandlerContext,
+): Promise<void> {
+	// Wiring confirmation only; the LaunchCreated handler already wrote the
+	// router address. We log so operators can verify wiring happened atomically.
+	runtime.logger.debug({ launchId: ctx.launchId, router: event.data.router, tx: event.txHash }, "RouterSet observed");
+}
+
 export async function handleDeposited(
 	runtime: LaunchIndexerRuntime,
 	event: DepositedEvent,
 	ctx: VaultHandlerContext,
 ): Promise<void> {
-	await runtime.db
+	const inserted = await runtime.db
 		.insert(schema.launchDeposits)
 		.values({
 			launchId: ctx.launchId,
@@ -40,7 +62,15 @@ export async function handleDeposited(
 			blockNumber: event.blockNumber,
 			logIndex: event.logIndex,
 		})
-		.onConflictDoNothing();
+		.onConflictDoNothing()
+		.returning({ id: schema.launchDeposits.id });
+
+	// Only mutate the launch row when this was a fresh insert. Otherwise a
+	// replay would clobber state with a stale `newTotal` and double-bump the
+	// depositor counter.
+	if (inserted.length === 0) {
+		return;
+	}
 
 	// `newTotal` is authoritative on-chain running sum; persist it.
 	await runtime.db
@@ -51,7 +81,7 @@ export async function handleDeposited(
 		})
 		.where(eq(schema.agentLaunches.id, ctx.launchId));
 
-	// Optional: bump depositor_count if this is the first deposit from this user.
+	// Bump depositor_count if this is the first deposit row from this user.
 	const [existing] = await runtime.db
 		.select({ count: sql<number>`count(*)::int` })
 		.from(schema.launchDeposits)
@@ -85,7 +115,7 @@ export async function handleWithdrawn(
 	event: WithdrawnEvent,
 	ctx: VaultHandlerContext,
 ): Promise<void> {
-	await runtime.db
+	const inserted = await runtime.db
 		.insert(schema.launchWithdrawals)
 		.values({
 			launchId: ctx.launchId,
@@ -96,16 +126,22 @@ export async function handleWithdrawn(
 			blockNumber: event.blockNumber,
 			logIndex: event.logIndex,
 		})
-		.onConflictDoNothing();
+		.onConflictDoNothing()
+		.returning({ id: schema.launchWithdrawals.id });
 
-	// totalDeposited is reduced; we recompute by re-reading running totals
-	// rather than trying to subtract here (event has refund + penalty, not the
-	// on-chain post-state). Cheapest correct path: subtract `amount` (the
-	// gross withdrawn). Penalty stays in `bonusPool` until Closed fires.
+	// Idempotency guard: don't double-debit totalDeposited / double-credit
+	// bonusPool on a replayed event.
+	if (inserted.length === 0) {
+		return;
+	}
+
+	// totalDeposited shrinks by the gross `amount` withdrawn; the `penalty`
+	// stays in the on-chain bonusPool until Closed fires.
 	await runtime.db
 		.update(schema.agentLaunches)
 		.set({
 			totalDeposited: sql`(${schema.agentLaunches.totalDeposited})::numeric - ${event.data.amount}::numeric`,
+			bonusPool: sql`(${schema.agentLaunches.bonusPool})::numeric + ${event.data.penalty}::numeric`,
 			updatedAt: sql`now()`,
 		})
 		.where(eq(schema.agentLaunches.id, ctx.launchId));
@@ -148,16 +184,16 @@ export async function handleClosed(
 	);
 }
 
-export async function handleLaunched(
+export async function handleLaunchExecuted(
 	runtime: LaunchIndexerRuntime,
-	event: LaunchedEvent,
+	event: LaunchExecutedEvent,
 	ctx: VaultHandlerContext,
 ): Promise<void> {
 	await runtime.db
 		.update(schema.agentLaunches)
 		.set({
 			state: "launched",
-			launchTimestamp: BigInt(event.data.launchTimestamp),
+			launchTimestamp: BigInt(event.data.timestamp),
 			updatedAt: sql`now()`,
 		})
 		.where(eq(schema.agentLaunches.id, ctx.launchId));
@@ -167,22 +203,23 @@ export async function handleLaunched(
 			launchId: ctx.launchId,
 			token: event.data.token,
 			totalBnb: event.data.totalBnb,
-			launchTimestamp: event.data.launchTimestamp,
+			timestamp: event.data.timestamp,
 			tx: event.txHash,
 		},
-		"vault Launched indexed",
+		"vault LaunchExecuted indexed",
 	);
 }
 
-export async function handleRefundsEnabled(
+export async function handleDistributed(
 	runtime: LaunchIndexerRuntime,
-	event: RefundsEnabledEvent,
+	event: DistributedEvent,
 	ctx: VaultHandlerContext,
 ): Promise<void> {
 	await runtime.db
 		.update(schema.agentLaunches)
 		.set({
-			state: "failed",
+			flapTokenAddress: event.data.token.toLowerCase(),
+			bundleStatus: "confirmed",
 			updatedAt: sql`now()`,
 		})
 		.where(eq(schema.agentLaunches.id, ctx.launchId));
@@ -190,9 +227,36 @@ export async function handleRefundsEnabled(
 	runtime.logger.info(
 		{
 			launchId: ctx.launchId,
+			token: event.data.token,
+			presalerShare: event.data.presalerShare,
 			tx: event.txHash,
 		},
-		"RefundsEnabled indexed",
+		"vault Distributed indexed",
+	);
+}
+
+export async function handleRefundEnabled(
+	runtime: LaunchIndexerRuntime,
+	event: RefundEnabledEvent,
+	ctx: VaultHandlerContext,
+): Promise<void> {
+	await runtime.db
+		.update(schema.agentLaunches)
+		.set({
+			state: "failed",
+			failureReason: event.data.reason,
+			updatedAt: sql`now()`,
+		})
+		.where(eq(schema.agentLaunches.id, ctx.launchId));
+
+	runtime.logger.info(
+		{
+			launchId: ctx.launchId,
+			reason: event.data.reason,
+			by: event.data.by,
+			tx: event.txHash,
+		},
+		"RefundEnabled indexed",
 	);
 }
 
@@ -215,14 +279,15 @@ export async function handleRefunded(
 		.onConflictDoNothing()
 		.returning({ id: schema.launchWithdrawals.id });
 
+	if (inserted.length === 0) {
+		return;
+	}
+
 	await runtime.db
 		.update(schema.agentLaunches)
 		.set({
-			totalDeposited: event.data.newTotal,
-			bonusPool:
-				inserted.length > 0
-					? sql`GREATEST((${schema.agentLaunches.bonusPool})::numeric - ${event.data.bonus}::numeric, 0)::text`
-					: schema.agentLaunches.bonusPool,
+			totalDeposited: sql`GREATEST((${schema.agentLaunches.totalDeposited})::numeric - ${event.data.principal}::numeric, 0)::text`,
+			bonusPool: sql`GREATEST((${schema.agentLaunches.bonusPool})::numeric - ${event.data.bonus}::numeric, 0)::text`,
 			updatedAt: sql`now()`,
 		})
 		.where(eq(schema.agentLaunches.id, ctx.launchId));

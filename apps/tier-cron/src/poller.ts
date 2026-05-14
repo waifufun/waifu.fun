@@ -27,12 +27,21 @@ import type { LaunchCandidate, TierCronRuntime } from "./lib/runtime.js";
 export interface PollOnceResult {
 	candidatesScanned: number;
 	bundlesReady: number;
+	stuckLaunches: number;
 	pokesSent: number;
 	advancesSent: number;
 	completed: number;
 	skipped: number;
 	errors: number;
 }
+
+/**
+ * Default "stuck" threshold: 6 hours after closeTimestamp without graduating
+ * or being refunded is a strong signal nobody/nothing has progressed the
+ * launch. We surface this with a warn-level log so ops can act on it before
+ * depositor frustration mounts.
+ */
+export const STUCK_LAUNCH_GRACE_SECONDS = 6n * 60n * 60n;
 
 interface ProcessResult {
 	pokeSent: boolean;
@@ -48,6 +57,25 @@ interface ProcessResult {
 export async function pollOnce(runtime: TierCronRuntime): Promise<PollOnceResult> {
 	const nowSeconds = BigInt(Math.floor(Date.now() / 1_000));
 	let bundlesReady = 0;
+	let stuckLaunches = 0;
+	if (runtime.repo.listStuckLaunches) {
+		const stuck = await runtime.repo.listStuckLaunches(nowSeconds, STUCK_LAUNCH_GRACE_SECONDS);
+		for (const launch of stuck) {
+			stuckLaunches += 1;
+			runtime.logger.warn(
+				{
+					launchId: launch.id,
+					vault: launch.vaultAddress,
+					router: launch.routerAddress,
+					state: launch.state,
+					bundleStatus: launch.bundleStatus,
+					bundleAttempt: launch.bundleAttempt,
+					secondsStuck: launch.secondsStuck.toString(),
+				},
+				"stuck launch: presale window closed but never graduated or refunded",
+			);
+		}
+	}
 	if (runtime.repo.listBundlePendingReady) {
 		const pendingBundles = await runtime.repo.listBundlePendingReady(nowSeconds);
 		for (const launch of pendingBundles) {
@@ -67,6 +95,7 @@ export async function pollOnce(runtime: TierCronRuntime): Promise<PollOnceResult
 	const result: PollOnceResult = {
 		candidatesScanned: candidates.length,
 		bundlesReady,
+		stuckLaunches,
 		pokesSent: 0,
 		advancesSent: 0,
 		completed: 0,

@@ -15,14 +15,16 @@ import { eq } from "drizzle-orm";
 
 import { handleFlapLaunchedToDex, handlePortalTokenCreated } from "./handlers/flap.js";
 import { handleLaunchCreated } from "./handlers/launch-created.js";
-import { handleBundleExecuted } from "./handlers/router.js";
+import { handleBundleExecuted, handleBundleFailed } from "./handlers/router.js";
 import {
 	handleClaimed,
 	handleClosed,
 	handleDeposited,
-	handleLaunched,
+	handleDistributed,
+	handleLaunchExecuted,
+	handleRefundEnabled,
 	handleRefunded,
-	handleRefundsEnabled,
+	handleRouterSet,
 	handleWithdrawn,
 } from "./handlers/vault.js";
 import type { LaunchVaultEvent } from "./lib/events.js";
@@ -76,6 +78,9 @@ export async function dispatchVaultEvent(
 	launchId: string,
 ): Promise<void> {
 	switch (event.eventName) {
+		case "RouterSet":
+			await handleRouterSet(runtime, event, { launchId });
+			return;
 		case "Deposited":
 			await handleDeposited(runtime, event, { launchId });
 			return;
@@ -85,11 +90,14 @@ export async function dispatchVaultEvent(
 		case "Closed":
 			await handleClosed(runtime, event, { launchId });
 			return;
-		case "Launched":
-			await handleLaunched(runtime, event, { launchId });
+		case "LaunchExecuted":
+			await handleLaunchExecuted(runtime, event, { launchId });
 			return;
-		case "RefundsEnabled":
-			await handleRefundsEnabled(runtime, event, { launchId });
+		case "Distributed":
+			await handleDistributed(runtime, event, { launchId });
+			return;
+		case "RefundEnabled":
+			await handleRefundEnabled(runtime, event, { launchId });
 			return;
 		case "Refunded":
 			await handleRefunded(runtime, event, { launchId });
@@ -271,6 +279,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				if (
 					event.eventName === "LaunchCreated" ||
 					event.eventName === "BundleExecuted" ||
+					event.eventName === "BundleFailed" ||
 					event.eventName === "TokenCreated" ||
 					event.eventName === "LaunchedToDEX"
 				)
@@ -304,15 +313,20 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				toBlock,
 			});
 			for (const event of events) {
-				if (event.eventName !== "BundleExecuted") continue;
+				if (event.eventName !== "BundleExecuted" && event.eventName !== "BundleFailed") continue;
 				try {
-					await handleBundleExecuted(runtime, event, { launchId: launch.id });
+					if (event.eventName === "BundleExecuted") {
+						await handleBundleExecuted(runtime, event, { launchId: launch.id });
+					} else {
+						await handleBundleFailed(runtime, event, { launchId: launch.id });
+					}
 					routerEventCount += 1;
 				} catch (error) {
 					runtime.logger.error(
 						{
 							err: error instanceof Error ? error.message : String(error),
 							launchId: launch.id,
+							eventName: event.eventName,
 							tx: event.txHash,
 						},
 						"router handler failed",
