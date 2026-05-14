@@ -160,6 +160,27 @@ export const launchVaultAbi = [
 		inputs: [],
 		outputs: [],
 	},
+	{
+		type: "function",
+		stateMutability: "nonpayable",
+		name: "refund",
+		inputs: [],
+		outputs: [],
+	},
+	{
+		type: "function",
+		stateMutability: "nonpayable",
+		name: "enableRefundUnderSubscribed",
+		inputs: [],
+		outputs: [],
+	},
+	{
+		type: "function",
+		stateMutability: "nonpayable",
+		name: "enableRefundBundleFailed",
+		inputs: [],
+		outputs: [],
+	},
 	// events
 	{
 		type: "event",
@@ -182,17 +203,20 @@ export const launchVaultAbi = [
 	},
 	{
 		type: "event",
-		name: "Launched",
+		name: "LaunchExecuted",
 		inputs: [
 			{ name: "token", type: "address", indexed: true },
 			{ name: "totalBnb", type: "uint256", indexed: false },
-			{ name: "launchTimestamp", type: "uint256", indexed: false },
+			{ name: "timestamp", type: "uint256", indexed: false },
 		],
 	},
 	{
 		type: "event",
-		name: "RefundsEnabled",
-		inputs: [],
+		name: "RefundEnabled",
+		inputs: [
+			{ name: "by", type: "address", indexed: true },
+			{ name: "reason", type: "string", indexed: false },
+		],
 	},
 	{
 		type: "event",
@@ -202,7 +226,6 @@ export const launchVaultAbi = [
 			{ name: "principal", type: "uint256", indexed: false },
 			{ name: "bonus", type: "uint256", indexed: false },
 			{ name: "refundAmount", type: "uint256", indexed: false },
-			{ name: "newTotal", type: "uint256", indexed: false },
 		],
 	},
 	{
@@ -218,12 +241,17 @@ export const launchVaultAbi = [
 
 /**
  * State enum mirror of `LaunchVault.State`.
- * On-chain ordering: OPEN=0, CLOSED=1, LAUNCHED=2.
+ * On-chain ordering: OPEN=0, CLOSED=1, LAUNCHED=2, REFUND=3.
+ *
+ * REFUND is entered via `enableRefundUnderSubscribed` (anyone, post-close,
+ * under-subscribed), `enableRefundBundleFailed` (bundle bot after a failed
+ * bundle), or `adminEnableRefund` (factory owner kill switch).
  */
 export const VaultState = {
 	OPEN: 0,
 	CLOSED: 1,
 	LAUNCHED: 2,
+	REFUND: 3,
 } as const;
 
 export type VaultStateValue = (typeof VaultState)[keyof typeof VaultState];
