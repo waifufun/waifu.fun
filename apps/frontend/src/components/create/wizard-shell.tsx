@@ -289,7 +289,7 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 	// Lightweight duplicate of validateStep so we don't violate hooks rules in a loop.
 	switch (step) {
 		case "persona": {
-			if (!state.inviteCode.trim()) return "invite code required";
+			// invite code optional at frontend; backend validates if provided.
 			const { name, ticker, bio } = state.persona;
 			if (!name.trim()) return "pick a name";
 			if (name.length > 48) return "name too long";
