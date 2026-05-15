@@ -1,4 +1,17 @@
 // SPDX-License-Identifier: MIT
+//
+//             ╭───────────────────────────────────╮
+//             │   w a i f u . f u n               │
+//             │   agent token launchpad           │
+//             │   ─────────────────────────       │
+//             │   LaunchFactory                   │
+//             │   bsc · 0x18BF...0983             │
+//             ╰───────────────────────────────────╯
+//
+//          .・゜゜・   ・゜゜・．
+//             ✿  she launches herself  ✿
+//          .・゜゜・   ・゜゜・．
+//
 pragma solidity ^0.8.24;
 
 import {LaunchVault} from "./LaunchVault.sol";
@@ -6,14 +19,9 @@ import {BundleRouter} from "./BundleRouter.sol";
 import {TreasuryLP} from "./TreasuryLP.sol";
 
 /// @title LaunchFactory
-/// @notice wave H factory. one createLaunch() tx deploys a per-launch
+/// @notice per-launch deployer. one createLaunch() tx deploys a per-launch
 ///         LaunchVault + BundleRouter + TreasuryLP. all tokens are minted
 ///         by Flap Portal V6 inside the bundle, not here.
-///
-/// @dev PHASE 1 SCAFFOLD: storage + signatures + events + custom errors
-///      are final; function bodies revert `WaveH:phase2`. phase 2 fills
-///      in createLaunch logic + fork integration tests. see
-///      `WAVE_H_FLAP_NATIVE_SPEC.md` / `WAVE_H_INTERFACES.md`.
 
 interface IVaultRouterSetter {
 	function setRouter(address _router) external;
@@ -146,7 +154,7 @@ contract LaunchFactory {
 	// external
 	// ---------------------------------------------------------------------
 
-	/// @notice deploy a wave H launch (vault + router + treasury LP) atomically.
+	/// @notice deploy a launch (vault + router + treasury LP) atomically.
 	function createLaunch(
 		LaunchConfig calldata config
 	) external returns (LaunchAddresses memory addrs) {
@@ -182,7 +190,7 @@ contract LaunchFactory {
 			quoteAmt,
 			v2BuyBnb,
 			config.closeTimestamp,
-			0, // penaltyBps default 0; configurable in a follow-up
+			0, // penaltyBps default 0
 			vestingEnabled
 		);
 
@@ -254,10 +262,10 @@ contract LaunchFactory {
 	/// rest of the tier budget. Math (gas + token math) is calibrated against the
 	/// V6/V7 probe + 20-BNB-graduation observation.
 	///
-	///   TIER_80: (16, 16,   0, false)  — curve only, no graduation
-	///   TIER_90: (32, 20,  12, true)   — 20 BNB graduates, 12 BNB V2 buy
-	///   TIER_95: (64, 20,  44, true)   — 20 BNB graduates, 44 BNB V2 buy
-	///   TIER_98: (160,20, 140, true)   — 20 BNB graduates, 140 BNB V2 buy
+	///   TIER_80:  (16,  16,   0, false)  curve only, no graduation
+	///   TIER_90:  (32,  20,  12, true)   20 BNB graduates, 12 BNB V2 buy
+	///   TIER_95:  (64,  20,  44, true)   20 BNB graduates, 44 BNB V2 buy
+	///   TIER_98:  (160, 20, 140, true)   20 BNB graduates, 140 BNB V2 buy
 	function tierConfig(LaunchTier tier)
 		public
 		pure

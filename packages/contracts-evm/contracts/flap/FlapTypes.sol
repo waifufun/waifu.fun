@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈ waifu.fun ┈╮
+//   │  FlapTypes  │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈╯
+//   shared types for FLAP integration.
+//
 pragma solidity ^0.8.24;
 
 /// @title FlapTypes
 /// @notice shared enums + structs used by the Flap Portal V6 entry point.
-///         pinned to the V6 abi from `WAVE_H_FLAP_NATIVE_SPEC.md` /
-///         `C3_FLAP_INTEGRATION_RESEARCH.md`. wave H bundle router talks to
-///         the portal exclusively through `newTokenV6`.
+///         pinned to the V6 abi. BundleRouter talks to the portal
+///         exclusively through `newTokenV6`.
 library FlapTypes {
 	enum DexThreshType {
 		TWO_THIRDS, // 0

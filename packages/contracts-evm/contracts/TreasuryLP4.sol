@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈┈┈ waifu.fun ┈┈┈╮
+//   │   TreasuryLP4    │
+//   │   tier-4 vault   │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+//
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

@@ -1,4 +1,13 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈┈┈┈┈┈┈ waifu.fun ┈┈┈┈┈┈┈╮
+//   │      BundleRouter         │
+//   │   one tx. all or nothing. │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+//
+//          ✿  presale → buy → LP  ✿
+//             atomic or revert
+//
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,7 +24,7 @@ interface ILaunchVaultRouterCallbacks {
 }
 
 /// @title BundleRouter
-/// @notice wave H per-launch atomic executor. one BundleRouter per launch,
+/// @notice per-launch atomic executor. one BundleRouter per launch,
 ///         deployed by LaunchFactory. only the bundleBot EOA can call
 ///         executeBundle(), and only once.
 ///
@@ -37,7 +46,6 @@ interface ILaunchVaultRouterCallbacks {
 /// @dev splits are computed dynamically from `IERC20(token).balanceOf(address(this))`
 ///      because TOKEN_TAXED_V3 is fee-on-transfer (the V2 buy returns post-tax
 ///      tokens). hardcoding tier-specific numbers would drift from chain truth.
-///      see WAVE_H_FLAP_NATIVE_SPEC.md section 3.2 for the reference table.
 contract BundleRouter {
 	using SafeERC20 for IERC20;
 
@@ -218,7 +226,7 @@ contract BundleRouter {
 			_v2FollowUpBuy(token, p.minV2TokensOut, p.deadline);
 		}
 
-		// 5. token splits — read router's current balance (curve + V2)
+		// 5. token splits, read router's current balance (curve + V2)
 		uint256 totalY = IERC20(token).balanceOf(address(this));
 		uint256 burnAmt = totalY / 2; // 50%
 		uint256 treasuryAmt = totalY / 10; // 10%
@@ -245,7 +253,7 @@ contract BundleRouter {
 		// 10. compute open MC for event emission (only when V2 pair exists)
 		uint256 openMcBnb = pair == address(0) ? 0 : _computeOpenMcBnb(token, pair);
 
-		// 11. sweep any BNB dust to DEAD — never refunds router state.
+		// 11. sweep any BNB dust to DEAD, never refunds router state.
 		//     soft-fail on sweep: we got this far, don't unwind a successful bundle.
 		uint256 dust = address(this).balance;
 		if (dust > 0) {
@@ -268,9 +276,9 @@ contract BundleRouter {
 	}
 
 	/// @notice indexer helper: returns the V2 pair address for `token` once it's been created.
-	/// @dev    This is a passthrough to `IPancakeFactory.getPair`, returning `address(0)` for
-	///         not-yet-graduated tokens. A future router rev may add CREATE2 prediction (requires
-	///         INIT_CODE_HASH as immutable) but for wave H pair-lookup post-graduation is enough.
+	/// @dev    passthrough to `IPancakeFactory.getPair`. returns `address(0)` for
+	///         not-yet-graduated tokens; post-graduation pair lookup is the only
+	///         path this contract needs.
 	function previewPairAddress(address token) external view returns (address pair) {
 		pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
 	}
