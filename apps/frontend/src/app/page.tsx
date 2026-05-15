@@ -2,6 +2,7 @@ import AgentGrid from "@/components/agents-discover/agent-grid";
 import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
 import Hero from "@/components/landing/hero";
+import LiveLaunchesRail from "@/components/launches-discover/live-launches-rail";
 import TopFiveWidget from "@/components/leaderboard/top-five-widget";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
@@ -51,6 +52,8 @@ export default async function Home() {
 		<div className="flex flex-col w-full">
 			<Hero />
 
+			<LiveLaunchesRail />
+
 			<TopFiveWidget />
 
 			<ActivityStrip />
@@ -66,9 +69,9 @@ export default async function Home() {
 					</div>
 					<a
 						href="/agents"
-						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors"
+						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors duration-150"
 					>
-						see all
+						browse all
 					</a>
 				</div>
 

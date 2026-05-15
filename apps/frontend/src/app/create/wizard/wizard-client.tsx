@@ -3,10 +3,12 @@
 import { AuthGateLoader } from "@/components/auth/auth-gate-loader";
 import ProvisioningLoader from "@/components/create/provisioning-loader";
 import StepLaunchpad from "@/components/create/step-launchpad";
+import StepMetadata from "@/components/create/step-metadata";
 import StepPersona from "@/components/create/step-persona";
 import StepReview from "@/components/create/step-review";
 import StepRuntime from "@/components/create/step-runtime";
 import StepSafe from "@/components/create/step-safe";
+import StepTier from "@/components/create/tier/step-tier";
 import WizardShell from "@/components/create/wizard-shell";
 import {
 	LAUNCHPAD_PICKER_ENABLED,
@@ -16,20 +18,52 @@ import {
 } from "@/components/create/wizard-state";
 import { useAuthRequired } from "@/hooks/use-auth-required";
 import { type ProvisionResult, buildProvisionPayload, provisionAgent } from "@/lib/api/agent-provision";
+import { type CreateLaunchResult, createLaunch, requestLaunchNonce } from "@/lib/api/launches";
+import { buildLaunchSiweMessage } from "@/lib/siwe";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useAccount, useSignMessage } from "wagmi";
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
 import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
 
 export { PROVISION_RESPONSE_TIMEOUT_MS };
 
+function randomSiweNonce(): string {
+	const bytes = new Uint8Array(12);
+	crypto.getRandomValues(bytes);
+	return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
+}
+
+async function launchNonceOrFallback(address: string): Promise<string> {
+	try {
+		return await requestLaunchNonce(address);
+	} catch (err) {
+		if (isEndpointUnavailable(err)) return randomSiweNonce();
+		throw err;
+	}
+}
+
+function isEndpointUnavailable(err: unknown): boolean {
+	return Boolean(
+		err &&
+			typeof err === "object" &&
+			"status" in err &&
+			typeof (err as { status?: unknown }).status === "number" &&
+			(err as { status: number }).status === 404,
+	);
+}
+
 function WizardInner() {
 	const router = useRouter();
 	const { state } = useWizard();
+	const { address: connectedAddress } = useAccount();
+	const { signMessageAsync } = useSignMessage();
 	const [provisioning, setProvisioning] = useState(false);
+	const [signingLaunch, setSigningLaunch] = useState(false);
 	const [awaitingProvisionResponse, setAwaitingProvisionResponse] = useState(false);
 	const provisionPromise = useRef<Promise<ProvisionResult> | null>(null);
+	const launchPromise = useRef<Promise<CreateLaunchResult> | null>(null);
 
 	const startProvisioning = useCallback(() => {
 		if (provisionPromise.current) return;
@@ -42,11 +76,69 @@ function WizardInner() {
 		);
 	}, [state]);
 
-	const handleComplete = useCallback(() => {
-		setProvisioning(true);
-		// kick off the real network call in parallel with the loader animation.
-		startProvisioning();
-	}, [startProvisioning]);
+	const startLaunchCreate = useCallback(
+		async (launchAuthorization: { creator: string; siwe: { message: string; signature: string } }) => {
+			if (launchPromise.current) return;
+			if (!state.launch.tierId) return;
+			const promise = createLaunch({
+				inviteCode: state.inviteCode.trim(),
+				persona: {
+					name: state.persona.name.trim(),
+					ticker: state.persona.ticker.trim(),
+					bio: state.persona.bio.trim(),
+					personaPrompt: state.persona.personaPrompt.trim() || null,
+					avatarTemplateId: state.persona.avatarTemplateId,
+					hasAvatarUpload: Boolean(state.persona.avatarDataUrl),
+				},
+				tier: state.launch.tierId,
+				runtime:
+					state.runtime.kind === "webhook"
+						? {
+								kind: "webhook",
+								webhookUrl: state.runtime.webhookUrl.trim(),
+								webhookSecret: state.runtime.webhookSecret,
+							}
+						: { kind: state.runtime.kind },
+				safe: {
+					taxAgentBps: state.safe.taxAgentBps,
+					taxPatronBps: state.safe.taxPatronBps,
+					owners: state.safe.owners ?? [],
+					threshold: state.safe.threshold ?? 1,
+					firstBuyFundingSource: state.safe.firstBuyFundingSource ?? null,
+					adapters: [
+						{ slug: "pancake", enabled: state.safe.adapters.pancake },
+						{ slug: "venus", enabled: state.safe.adapters.venus },
+					],
+				},
+				launchAuthorization,
+			});
+			launchPromise.current = promise;
+		},
+		[state],
+	);
+
+	const handleComplete = useCallback(async () => {
+		if (!connectedAddress) {
+			toast.error("connect an evm wallet to confirm launch on-chain");
+			return;
+		}
+
+		setSigningLaunch(true);
+		try {
+			toast.info("sign to prove this wallet owns the agent launch. no gas is spent.");
+			const nonce = await launchNonceOrFallback(connectedAddress);
+			const message = buildLaunchSiweMessage({ address: connectedAddress, nonce, origin: window.location.origin });
+			const signature = await signMessageAsync({ message });
+			void startLaunchCreate({ creator: connectedAddress, siwe: { message, signature } });
+			setProvisioning(true);
+			startProvisioning();
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "signature cancelled";
+			toast.error(message || "signature cancelled");
+		} finally {
+			setSigningLaunch(false);
+		}
+	}, [connectedAddress, signMessageAsync, startProvisioning, startLaunchCreate]);
 
 	const handleProvisioningDone = useCallback(async () => {
 		let result: ProvisionResult | null = null;
@@ -71,12 +163,37 @@ function WizardInner() {
 			setAwaitingProvisionResponse(false);
 		}
 
+		// W48: prefer routing to /launch/[id] when the tier-aware create
+		// endpoint succeeded. Falls through to legacy provision routing on
+		// any failure (incl. 404 not_wired) so behavior stays unchanged in
+		// the legacy flow.
+		let launchResult: CreateLaunchResult | null = null;
+		if (launchPromise.current) {
+			try {
+				launchResult = await launchPromise.current;
+			} catch (err) {
+				launchResult = {
+					ok: false,
+					reason: "server",
+					message: err instanceof Error ? err.message : "launch create failed",
+				};
+			}
+		}
+
 		// Clear the wizard draft on any terminal outcome so a fresh /create/wizard
 		// visit starts clean.
 		try {
 			window.localStorage.removeItem(STORAGE_KEY);
 		} catch {
 			// best effort
+		}
+
+		if (launchResult?.ok) {
+			if (result?.ok && result.agentApiKey) {
+				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
+			}
+			router.push(`/launch/${encodeURIComponent(launchResult.id)}`);
+			return;
 		}
 
 		if (result?.ok) {
@@ -111,13 +228,16 @@ function WizardInner() {
 			<WizardShell
 				stepContent={{
 					persona: <StepPersona />,
+					metadata: <StepMetadata />,
+					tier: <StepTier />,
 					launchpad: LAUNCHPAD_PICKER_ENABLED ? <StepLaunchpad /> : null,
 					runtime: <StepRuntime />,
 					safe: <StepSafe />,
 					review: <StepReview />,
 				}}
 				onComplete={handleComplete}
-				provisioning={provisioning}
+				provisioning={provisioning || signingLaunch}
+				completeLabel={signingLaunch ? "signing..." : "sign to confirm launch"}
 			/>
 			{provisioning ? (
 				<ProvisioningLoader onDone={handleProvisioningDone} awaitingResponse={awaitingProvisionResponse} />

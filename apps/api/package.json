@@ -17,7 +17,7 @@
 		"test:int": "bun run --filter @waifufun/db build && node --env-file-if-exists=../../.env.test --import tsx --test test/db.int.test.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check src package.json tsconfig.json",
-		"test": "bun run --filter @waifufun/db build && bun run --filter @waifufun/launchpad build && node --import tsx --test test/**/*.test.ts src/**/*.test.ts",
+		"test": "bun run --filter @waifufun/db build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/metrics build && bun run --filter @waifufun/agent-runtime build && bun run --filter @waifufun/launchpad build && node --import tsx --test test/**/*.test.ts src/**/*.test.ts",
 		"check": "tsc --noEmit"
 	},
 	"dependencies": {

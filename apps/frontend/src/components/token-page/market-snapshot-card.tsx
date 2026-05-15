@@ -68,12 +68,12 @@ export default function MarketSnapshotCard({
 				<SnapshotItem label="price" value={formatNumberSubscript(token.price)} icon={Activity} />
 				<SnapshotItem
 					label="market cap"
-					value={token.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "—"}
+					value={token.marketcap ? `$${abbreviateNumber(token.marketcap)}` : "–"}
 					icon={BarChart3}
 				/>
 				<SnapshotItem
 					label="24h volume"
-					value={token.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "—"}
+					value={token.volume24h ? `$${abbreviateNumber(token.volume24h)}` : "–"}
 					icon={Database}
 					{...(volumeHelper ? { helper: volumeHelper } : {})}
 				/>

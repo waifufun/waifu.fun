@@ -47,7 +47,7 @@ export default function SwapStub({ agent }: { agent: AgentData }) {
 						<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">you get</span>
 						<span className="text-[10px] font-mono text-white/40">{getLabel}</span>
 					</div>
-					<div className="text-2xl font-mono text-white/20 tracking-tight">—</div>
+					<div className="text-2xl font-mono text-white/20 tracking-tight">–</div>
 				</div>
 			</div>
 

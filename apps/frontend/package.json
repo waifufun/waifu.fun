@@ -14,7 +14,10 @@
 		"watch:workers": "tsc -p tsconfig.worker.json --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"check": "tsc -p tsconfig.typecheck.json --noEmit"
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:install": "playwright install --with-deps chromium",
+		"check": "bun run prebuild && tsc -p tsconfig.typecheck.json --noEmit"
 	},
 	"dependencies": {
 		"@bprogress/next": "^3.2.12",
@@ -63,6 +66,7 @@
 		"wagmi": "^2.19.5"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.59.1",
 		"@storybook/addon-essentials": "8.6.14",
 		"@storybook/addon-links": "8.6.14",
 		"@storybook/builder-webpack5": "8.6.14",

@@ -11,15 +11,25 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
 export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
 
 /** Wizard step identifiers. URL-synced via `?step=`. */
-export type WizardStep = "persona" | "launchpad" | "runtime" | "safe" | "review";
+export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "runtime" | "safe" | "review";
 
-export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "runtime", "safe", "review"];
-export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "launchpad", "runtime", "safe", "review"];
+export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "runtime", "safe", "review"];
+export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = [
+	"persona",
+	"metadata",
+	"tier",
+	"launchpad",
+	"runtime",
+	"safe",
+	"review",
+];
 
 export const WIZARD_STEPS: WizardStep[] = LAUNCHPAD_PICKER_ENABLED ? LAUNCHPAD_WIZARD_STEPS : LEGACY_WIZARD_STEPS;
 
 export const STEP_LABELS: Record<WizardStep, string> = {
 	persona: "persona",
+	metadata: "metadata",
+	tier: "tier",
 	launchpad: "launchpad",
 	runtime: "runtime",
 	safe: "safe & policies",
@@ -41,6 +51,25 @@ export type WizardState = {
 		avatarDataUrl: string | null;
 		avatarTemplateId: string | null;
 		personaPrompt: string;
+	};
+	/**
+	 * Wave H token metadata. Captured before the tier step; uploaded to Flap's
+	 * IPFS endpoint (`funcs.flap.sh/api/upload`) on step-complete. The returned
+	 * CID is stored in `flap.metaCid` and passed as `params.meta` when the
+	 * bundle router calls `Portal.newTokenV6`.
+	 *
+	 * `tokenImageDataUrl` is the raw image for upload, separate from the
+	 * persona avatar. agents and tokens can have different visual identity,
+	 * though the wizard pre-fills from the persona avatar by default.
+	 */
+	flap: {
+		tokenImageDataUrl: string | null;
+		description: string;
+		twitter: string;
+		telegram: string;
+		website: string;
+		metaCid: string | null;
+		metaUri: string | null;
 	};
 	runtime: {
 		kind: RuntimeKind;
@@ -65,6 +94,23 @@ export type WizardState = {
 		selectedChain: ChainId | null;
 		feeConfig: LaunchpadFeeConfig | null;
 	};
+	/**
+	 * W48: launch tier selection. Drives the economics preview and the
+	 * `POST /v2/launches` payload.
+	 */
+	launch: {
+		tierId: 80 | 90 | 95 | 98 | null;
+	};
+	/**
+	 * Vanity-address mining bookkeeping. The backend mines `0x…7777` salts
+	 * asynchronously after the wizard submits. The frontend echoes the
+	 * predicted address back from the launch row so review / status surfaces
+	 * can show "your token: 0x…7777" while we wait.
+	 */
+	vanity: {
+		submitted: boolean;
+		predictedAddress: string | null;
+	};
 };
 
 export const DEFAULT_STATE: WizardState = {
@@ -76,6 +122,15 @@ export const DEFAULT_STATE: WizardState = {
 		avatarDataUrl: null,
 		avatarTemplateId: "tessera",
 		personaPrompt: "",
+	},
+	flap: {
+		tokenImageDataUrl: null,
+		description: "",
+		twitter: "",
+		telegram: "",
+		website: "",
+		metaCid: null,
+		metaUri: null,
 	},
 	runtime: {
 		kind: "webhook",
@@ -95,15 +150,25 @@ export const DEFAULT_STATE: WizardState = {
 		selectedChain: null,
 		feeConfig: null,
 	},
+	launch: {
+		tierId: null,
+	},
+	vanity: {
+		submitted: false,
+		predictedAddress: null,
+	},
 };
 
 type Action =
 	| { type: "patch_invite_code"; code: string }
 	| { type: "patch_persona"; patch: Partial<WizardState["persona"]> }
+	| { type: "patch_flap"; patch: Partial<WizardState["flap"]> }
 	| { type: "patch_runtime"; patch: Partial<WizardState["runtime"]> }
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
 	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
 	| { type: "patch_launchpad"; patch: Partial<WizardState["launchpad"]> }
+	| { type: "patch_launch"; patch: Partial<WizardState["launch"]> }
+	| { type: "patch_vanity"; patch: Partial<WizardState["vanity"]> }
 	| { type: "reset" }
 	| { type: "hydrate"; state: WizardState };
 
@@ -113,6 +178,10 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, inviteCode: action.code };
 		case "patch_persona":
 			return { ...state, persona: { ...state.persona, ...action.patch } };
+		case "patch_flap":
+			return { ...state, flap: { ...state.flap, ...action.patch } };
+		case "patch_vanity":
+			return { ...state, vanity: { ...state.vanity, ...action.patch } };
 		case "patch_runtime":
 			return { ...state, runtime: { ...state.runtime, ...action.patch } };
 		case "patch_safe":
@@ -121,6 +190,8 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, safe: { ...state.safe, adapters: { ...state.safe.adapters, ...action.patch } } };
 		case "patch_launchpad":
 			return { ...state, launchpad: { ...state.launchpad, ...action.patch } };
+		case "patch_launch":
+			return { ...state, launch: { ...state.launch, ...action.patch } };
 		case "reset":
 			return DEFAULT_STATE;
 		case "hydrate":
@@ -136,10 +207,13 @@ type Ctx = {
 	state: WizardState;
 	patchInviteCode: (code: string) => void;
 	patchPersona: (p: Partial<WizardState["persona"]>) => void;
+	patchFlap: (p: Partial<WizardState["flap"]>) => void;
 	patchRuntime: (p: Partial<WizardState["runtime"]>) => void;
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
 	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
 	patchLaunchpad: (p: Partial<WizardState["launchpad"]>) => void;
+	patchLaunch: (p: Partial<WizardState["launch"]>) => void;
+	patchVanity: (p: Partial<WizardState["vanity"]>) => void;
 	reset: () => void;
 };
 
@@ -172,6 +246,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 				const merged: WizardState = {
 					inviteCode: typeof parsed.inviteCode === "string" ? parsed.inviteCode : DEFAULT_STATE.inviteCode,
 					persona: { ...DEFAULT_STATE.persona, ...(parsed.persona ?? {}) },
+					flap: { ...DEFAULT_STATE.flap, ...(parsed.flap ?? {}) },
 					runtime: { ...DEFAULT_STATE.runtime, ...(parsed.runtime ?? {}) },
 					safe: {
 						...DEFAULT_STATE.safe,
@@ -179,6 +254,8 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 						adapters: { ...DEFAULT_STATE.safe.adapters, ...(parsed.safe?.adapters ?? {}) },
 					},
 					launchpad: { ...DEFAULT_STATE.launchpad, ...(parsed.launchpad ?? {}) },
+					launch: { ...DEFAULT_STATE.launch, ...(parsed.launch ?? {}) },
+					vanity: { ...DEFAULT_STATE.vanity, ...(parsed.vanity ?? {}) },
 				};
 				dispatch({ type: "hydrate", state: merged });
 			}
@@ -203,6 +280,14 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 							? state.persona.avatarDataUrl
 							: null,
 				},
+				flap: {
+					...state.flap,
+					// Token image data URL is large; only persist when within quota.
+					tokenImageDataUrl:
+						state.flap.tokenImageDataUrl && state.flap.tokenImageDataUrl.length < 250_000
+							? state.flap.tokenImageDataUrl
+							: null,
+				},
 			};
 			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
 		} catch {
@@ -222,10 +307,13 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 			state,
 			patchInviteCode: (code) => dispatch({ type: "patch_invite_code", code }),
 			patchPersona: (patch) => dispatch({ type: "patch_persona", patch }),
+			patchFlap: (patch) => dispatch({ type: "patch_flap", patch }),
 			patchRuntime: (patch) => dispatch({ type: "patch_runtime", patch }),
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
 			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
 			patchLaunchpad: (patch) => dispatch({ type: "patch_launchpad", patch }),
+			patchLaunch: (patch) => dispatch({ type: "patch_launch", patch }),
+			patchVanity: (patch) => dispatch({ type: "patch_vanity", patch }),
 			reset: () => dispatch({ type: "reset" }),
 		}),
 		[state],
@@ -244,7 +332,9 @@ export function useWizard(): Ctx {
 export function validateStep(step: WizardStep, state: WizardState): string | null {
 	switch (step) {
 		case "persona": {
-			if (!state.inviteCode.trim()) return "invite code required";
+			// Invite code is recommended but not required at validation time.
+			// Backend enforces curated-launch policy via CURATED_LAUNCH_ONLY env flag
+			// + invite_codes table; frontend just collects and forwards the code.
 			const { name, ticker, bio } = state.persona;
 			const trimmedName = name.trim();
 			const trimmedBio = bio.trim();
@@ -253,6 +343,18 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			if (!/^[A-Z0-9]{2,10}$/.test(ticker.trim())) return "ticker: 2-10 uppercase letters or digits";
 			if (!trimmedBio) return "bio required";
 			if (trimmedBio.length > 240) return "bio too long";
+			return null;
+		}
+		case "metadata": {
+			const desc = state.flap.description.trim();
+			if (!desc) return "description required";
+			if (desc.length > 280) return "description too long (280 max)";
+			if (!state.flap.tokenImageDataUrl) return "upload a token image";
+			if (!state.flap.metaCid) return "upload to flap before continuing";
+			return null;
+		}
+		case "tier": {
+			if (!state.launch.tierId) return "pick a launch tier";
 			return null;
 		}
 		case "launchpad": {

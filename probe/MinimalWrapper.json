@@ -1,0 +1,187 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MinimalWrapper",
+  "sourceName": "contracts/probe/MinimalWrapper.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_portal",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "symbol",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "meta",
+              "type": "string"
+            },
+            {
+              "internalType": "uint8",
+              "name": "dexThresh",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "salt",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint16",
+              "name": "tax",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint8",
+              "name": "migratorType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "quoteToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "quoteAmt",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "beneficiary",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "permitData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct IFlapPortalMinimalProbe.NewTokenV6Params",
+          "name": "params",
+          "type": "tuple"
+        }
+      ],
+      "name": "callV2",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "symbol",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "meta",
+              "type": "string"
+            },
+            {
+              "internalType": "uint8",
+              "name": "dexThresh",
+              "type": "uint8"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "salt",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint16",
+              "name": "tax",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint8",
+              "name": "migratorType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "address",
+              "name": "quoteToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "quoteAmt",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "beneficiary",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes",
+              "name": "permitData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct IFlapPortalMinimalProbe.NewTokenV6Params",
+          "name": "params",
+          "type": "tuple"
+        }
+      ],
+      "name": "callV6",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "portal",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a03461007057601f61044538819003918201601f19168301916001600160401b038311848410176100755780849260209460405283398101031261007057516001600160a01b0381168103610070576080526040516103b9908161008c8239608051818181607e01526101050152f35b600080fd5b634e487b7160e01b600052604160045260246000fdfe60806040818152600436101561001457600080fd5b600091823560e01c9081634730cf6414610138575080636425666b146100f15763facd5f3e1461004357600080fd5b610078906100503661016c565b81516305d3192760e11b8152926001600160a01b039291602091859182919060048301610270565b038134867f0000000000000000000000000000000000000000000000000000000000000000165af19283156100e757602094936100b8575b505191168152f35b6100d9919350843d86116100e0575b6100d181836101a4565b8101906101dc565b91386100b0565b503d6100c7565b81513d86823e3d90fd5b5034610134578160031936011261013457517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5080fd5b9190506101443661016c565b637efe450d60e01b83526001600160a01b039190602090849081906100789060048301610270565b6003199060208183011261019f576004359167ffffffffffffffff831161019f57826101609203011261019f5760040190565b600080fd5b90601f8019910116810190811067ffffffffffffffff8211176101c657604052565b634e487b7160e01b600052604160045260246000fd5b9081602091031261019f57516001600160a01b038116810361019f5790565b9035601e198236030181121561019f57016020813591019167ffffffffffffffff821161019f57813603831361019f57565b908060209392818452848401376000828201840152601f01601f1916010190565b359060ff8216820361019f57565b35906001600160a01b038216820361019f57565b6020815261029861028183806101fb565b91906101609283602086015261018085019161022d565b6102dc6102bf6102ab60208701876101fb565b601f1987860381016040890152949161022d565b6102cc60408701876101fb565b908487840301606088015261022d565b9260ff6102eb6060870161024e565b166080820152608085013560a082015260a085013561ffff811680910361019f57610380956103719160c084015260ff61032760c0830161024e565b1660e084015261033960e0820161025c565b61035f61010060018060a01b03809316818701526101209084013581870152830161025c565b906101409116818501528101906101fb565b9390928286030191015261022d565b9056fea26469706673582212202c05579a292fcea102f53454dbbec07099cccba8a62d856007d26a8f561cc52264736f6c63430008180033",
+  "deployedBytecode": "0x60806040818152600436101561001457600080fd5b600091823560e01c9081634730cf6414610138575080636425666b146100f15763facd5f3e1461004357600080fd5b610078906100503661016c565b81516305d3192760e11b8152926001600160a01b039291602091859182919060048301610270565b038134867f0000000000000000000000000000000000000000000000000000000000000000165af19283156100e757602094936100b8575b505191168152f35b6100d9919350843d86116100e0575b6100d181836101a4565b8101906101dc565b91386100b0565b503d6100c7565b81513d86823e3d90fd5b5034610134578160031936011261013457517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5080fd5b9190506101443661016c565b637efe450d60e01b83526001600160a01b039190602090849081906100789060048301610270565b6003199060208183011261019f576004359167ffffffffffffffff831161019f57826101609203011261019f5760040190565b600080fd5b90601f8019910116810190811067ffffffffffffffff8211176101c657604052565b634e487b7160e01b600052604160045260246000fd5b9081602091031261019f57516001600160a01b038116810361019f5790565b9035601e198236030181121561019f57016020813591019167ffffffffffffffff821161019f57813603831361019f57565b908060209392818452848401376000828201840152601f01601f1916010190565b359060ff8216820361019f57565b35906001600160a01b038216820361019f57565b6020815261029861028183806101fb565b91906101609283602086015261018085019161022d565b6102dc6102bf6102ab60208701876101fb565b601f1987860381016040890152949161022d565b6102cc60408701876101fb565b908487840301606088015261022d565b9260ff6102eb6060870161024e565b166080820152608085013560a082015260a085013561ffff811680910361019f57610380956103719160c084015260ff61032760c0830161024e565b1660e084015261033960e0820161025c565b61035f61010060018060a01b03809316818701526101209084013581870152830161025c565b906101409116818501528101906101fb565b9390928286030191015261022d565b9056fea26469706673582212202c05579a292fcea102f53454dbbec07099cccba8a62d856007d26a8f561cc52264736f6c63430008180033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

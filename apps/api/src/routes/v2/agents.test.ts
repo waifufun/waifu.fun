@@ -684,3 +684,46 @@ test("POST /v2/agents/launch injects missing agentId from the authed agent", asy
 	assert.equal(json.agentId, "authed-agent-1");
 	resetProvisionDeps();
 });
+
+test("POST /v2/agents/provision rejects unsupported launchpad with explicit code", async () => {
+	const db = createProvisionDb();
+	const launches: unknown[] = [];
+	__setRequirePatronDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "patron@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setAgentsRouteDepsForTest({
+		db,
+		createOrchestrator: () =>
+			({
+				launch: async (input: import("../../services/agent-launch/index.js").AgentLaunchInput) => {
+					launches.push(input);
+					throw new Error("unsupported launchpad should not launch");
+				},
+			}) as never,
+	});
+
+	const res = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify({
+			...provisionPayload(),
+			launchpad: {
+				launchpad_id: "pump-fun",
+				chain: "solana",
+				launchpad_config: { kind: "pump-fun" },
+				fee_mode: "regular",
+			},
+		}),
+	});
+
+	assert.equal(res.status, 400);
+	const json = (await res.json()) as { code?: string; reason?: string };
+	assert.equal(json.reason, "validation");
+	assert.equal(json.code, "LAUNCHPAD_NOT_SUPPORTED");
+	assert.equal(launches.length, 0);
+	resetProvisionDeps();
+});

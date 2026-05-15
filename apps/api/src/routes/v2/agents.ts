@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { Hono } from "hono";
 import type { Context, Next } from "hono";
 
@@ -34,6 +32,11 @@ import {
 } from "../../services/agent-launch/index.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
 import { type MiladyCloudClient, createMiladyCloudClient } from "../../services/milady-client.js";
+import {
+	type PatronContext,
+	type ProvisionAdapterConfig,
+	validateProvisionRequest,
+} from "../../services/provision/payload-adapter.js";
 
 const app = new Hono<RequireAgentOwnershipBindings>();
 
@@ -41,7 +44,6 @@ const app = new Hono<RequireAgentOwnershipBindings>();
 
 const VALID_STATUS = new Set(["active", "graduated", "failed", "pending"]);
 
-const VALID_RUNTIME_KINDS = new Set(["hosted", "webhook", "pull"]);
 const DEFAULT_PROVISION_IMAGE_URL =
 	process.env.DEFAULT_AGENT_IMAGE_URL ??
 	"https://static.four.meme/market/68b871b6-96f7-408c-b8d0-388d804b34275092658264263839640.png";
@@ -50,10 +52,6 @@ export function parseIncludeLegacy(value: string | undefined): boolean {
 	return value === "true";
 }
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
-
-function hashWebhookSecret(secret: string): string {
-	return `sha256:${createHash("sha256").update(secret, "utf8").digest("hex")}`;
-}
 
 function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	if (agentsRouteDepsForTest.db) return agentsRouteDepsForTest.db;
@@ -577,145 +575,49 @@ app.get("/:token/fees", (c) => {
 
 app.get("/curve/:token", (c) => c.json({ error: "v2 curve query — indexer integration pending" }, 501));
 
-type ProvisionRequestBody = {
-	inviteCode?: unknown;
-	persona?: {
-		name?: unknown;
-		ticker?: unknown;
-		bio?: unknown;
-		personaPrompt?: unknown;
-		avatarTemplateId?: unknown;
-		hasAvatarUpload?: unknown;
-	};
-	runtime?: { kind?: unknown; webhookUrl?: unknown; webhookSecret?: unknown };
-	safe?: {
-		taxAgentBps?: unknown;
-		taxPatronBps?: unknown;
-		owners?: unknown;
-		threshold?: unknown;
-		firstBuyFundingSource?: unknown;
-		adapters?: unknown;
-	};
-	launchpad?: { launchpad_id?: unknown; chain?: unknown; launchpad_config?: unknown; fee_mode?: unknown };
-};
-
 type ProvisionValidationResult =
-	| { ok: true; body: ProvisionRequestBody; launchInput: AgentLaunchInput; pullApiKey: string | null }
-	| { ok: false; message: string };
+	| {
+			ok: true;
+			body: import("../../services/provision/payload-adapter.js").ProvisionRequest;
+			launchInput: AgentLaunchInput;
+			pullApiKey: string | null;
+	  }
+	| { ok: false; message: string; code?: string };
 
-function readString(value: unknown): string | null {
-	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+function readEnvAddress(name: string): `0x${string}` | null {
+	const value = process.env[name];
+	return value && isAddress(value) ? (value as `0x${string}`) : null;
 }
 
-function getTaxFeeRate(launchpadConfig: unknown): 1 | 3 | 5 | 10 | null {
-	if (!launchpadConfig || typeof launchpadConfig !== "object" || Array.isArray(launchpadConfig)) return null;
-	const taxBps = (launchpadConfig as { taxBps?: unknown }).taxBps;
-	if (taxBps === 100) return 1;
-	if (taxBps === 300) return 3;
-	if (taxBps === 500) return 5;
-	if (taxBps === 1000) return 10;
-	return null;
+function getProvisionAdapterConfig(): ProvisionAdapterConfig {
+	const fourMemePlatformBps = Number(
+		process.env.WAIFU_FOURMEME_PLATFORM_BPS ?? process.env.WAIFU_PLATFORM_CUT_BPS ?? 2500,
+	);
+	const flapVaultPortalAddress = readEnvAddress("FLAP_VAULT_PORTAL_ADDRESS");
+	const flapSplitVaultFactoryAddress = readEnvAddress("FLAP_SPLIT_VAULT_FACTORY_ADDRESS");
+	return {
+		platformWallet: readEnvAddress("WAIFU_PLATFORM_FEE_WALLET"),
+		fourMemePlatformBps: Number.isFinite(fourMemePlatformBps) ? fourMemePlatformBps : 2500,
+		...(flapVaultPortalAddress ? { flapVaultPortalAddress } : {}),
+		...(flapSplitVaultFactoryAddress ? { flapSplitVaultFactoryAddress } : {}),
+	};
 }
 
-function validateProvisionBody(
-	body: unknown,
-	patron: { stewardUserId: string; primaryAddress: string | null },
-): ProvisionValidationResult {
-	if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, message: "body must be an object" };
-	const input = body as ProvisionRequestBody;
-	const inviteCode = readString(input.inviteCode);
-	if (!inviteCode) return { ok: false, message: "inviteCode is required" };
-
-	const persona = input.persona;
-	if (!persona || typeof persona !== "object" || Array.isArray(persona)) {
-		return { ok: false, message: "persona is required" };
-	}
-	const name = readString(persona.name);
-	if (!name || name.length < 2 || name.length > 48) return { ok: false, message: "persona.name must be 2-48 chars" };
-	const symbol = readString(persona.ticker);
-	if (!symbol || !/^[A-Z0-9]{2,10}$/.test(symbol)) {
-		return { ok: false, message: "persona.ticker must be 2-10 uppercase letters or digits" };
-	}
-	const bio = readString(persona.bio);
-	if (!bio || bio.length > 240) return { ok: false, message: "persona.bio must be 1-240 chars" };
-
-	const runtime = input.runtime;
-	if (!runtime || typeof runtime !== "object" || Array.isArray(runtime) || typeof runtime.kind !== "string") {
-		return { ok: false, message: "runtime.kind is required" };
-	}
-	if (!VALID_RUNTIME_KINDS.has(runtime.kind)) return { ok: false, message: "runtime.kind is invalid" };
-	if (runtime.kind === "webhook") {
-		const webhookUrl = readString(runtime.webhookUrl);
-		if (!webhookUrl) return { ok: false, message: "runtime.webhookUrl is required for webhook runtime" };
-		try {
-			const parsed = new URL(webhookUrl);
-			if (parsed.protocol !== "https:") return { ok: false, message: "runtime.webhookUrl must be https" };
-		} catch {
-			return { ok: false, message: "runtime.webhookUrl is invalid" };
-		}
-	}
-
-	const safe = input.safe;
-	if (!safe || typeof safe !== "object" || Array.isArray(safe)) return { ok: false, message: "safe is required" };
-	if (typeof safe.taxAgentBps !== "number" || typeof safe.taxPatronBps !== "number") {
-		return { ok: false, message: "safe tax bps are required" };
-	}
-	if (safe.taxAgentBps < 0 || safe.taxPatronBps < 0 || safe.taxAgentBps + safe.taxPatronBps !== 10000) {
-		return { ok: false, message: "safe tax bps must sum to 10000" };
-	}
-	if (!Array.isArray(safe.owners) || safe.owners.length === 0) {
-		return { ok: false, message: "safe.owners must include at least one address" };
-	}
-	const owners = safe.owners.filter((owner): owner is string => typeof owner === "string" && isAddress(owner));
-	if (owners.length !== safe.owners.length) return { ok: false, message: "safe.owners contains an invalid address" };
-
-	const pullApiKey = runtime.kind === "pull" ? generateRuntimeApiKey() : null;
-	const webhookSecret = runtime.kind === "webhook" ? readString(runtime.webhookSecret) : null;
-	const metadata = {
-		inviteCode,
-		personaPrompt: readString(persona.personaPrompt),
-		avatarTemplateId: typeof persona.avatarTemplateId === "string" ? persona.avatarTemplateId : null,
-		hasAvatarUpload: Boolean(persona.hasAvatarUpload),
-		runtimeKind: runtime.kind,
-		webhookUrl: typeof runtime.webhookUrl === "string" ? runtime.webhookUrl.trim() : null,
-		runtimeWebhookSecretHash: webhookSecret ? hashWebhookSecret(webhookSecret) : null,
-		ownerStewardUserId: patron.stewardUserId,
-		ownerAddress: patron.primaryAddress ?? owners[0] ?? null,
-		safe: {
-			owners,
-			threshold: typeof safe.threshold === "number" ? safe.threshold : 1,
-			firstBuyFundingSource: typeof safe.firstBuyFundingSource === "string" ? safe.firstBuyFundingSource : null,
-			adapters: safe.adapters,
-		},
-		launchpad: input.launchpad ?? null,
+function validateProvisionBody(body: unknown, patron: PatronContext): ProvisionValidationResult {
+	const validated = validateProvisionRequest(
+		body,
+		patron,
+		getProvisionAdapterConfig(),
+		slugifyAgentId,
+		DEFAULT_PROVISION_IMAGE_URL,
+	);
+	if (!validated.ok) return validated;
+	return {
+		ok: true,
+		body: validated.body,
+		launchInput: validated.launchInput,
+		pullApiKey: validated.pullRuntime ? generateRuntimeApiKey() : null,
 	};
-	const taxFeeRate = getTaxFeeRate(input.launchpad?.launchpad_config);
-	const launchInput: AgentLaunchInput = {
-		agentId: slugifyAgentId(name),
-		name,
-		symbol,
-		description: bio,
-		imageUrl: DEFAULT_PROVISION_IMAGE_URL,
-		persona: metadata,
-		taxSplit: {
-			agentBps: safe.taxAgentBps,
-			patronBps: safe.taxPatronBps,
-			patronAddress: owners[0] as `0x${string}`,
-		},
-		...(taxFeeRate
-			? {
-					tax: {
-						feeRate: taxFeeRate,
-						burnRate: 0,
-						divideRate: 0,
-						liquidityRate: 0,
-						recipientRate: 100,
-						minSharing: 100000,
-					},
-				}
-			: {}),
-	};
-	return { ok: true, body: input, launchInput, pullApiKey };
 }
 
 export async function redeemProvisionInviteCode(
@@ -994,7 +896,12 @@ app.post("/provision", requirePatron(), async (c) => {
 
 	const patron = c.get("patron");
 	const validated = validateProvisionBody(rawBody, patron);
-	if (!validated.ok) return c.json({ error: validated.message, reason: "validation" }, 400);
+	if (!validated.ok) {
+		return c.json(
+			{ error: validated.message, reason: "validation", ...(validated.code ? { code: validated.code } : {}) },
+			400,
+		);
+	}
 
 	const duplicate = await findRecentProvisionDuplicate(db, patron.stewardUserId, validated.launchInput.name);
 	if (duplicate) {

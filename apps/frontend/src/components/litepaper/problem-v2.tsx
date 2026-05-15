@@ -60,7 +60,7 @@ export default function ProblemV2() {
 			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 				{/* Asymmetric editorial split: text left, image right */}
 				<div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-					{/* Left — copy */}
+					{/* Left, copy */}
 					<div className="lg:col-span-7">
 						<RevealBlock>
 							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#f87171]/70 block mb-4">
@@ -92,7 +92,7 @@ export default function ProblemV2() {
 						</RevealBlock>
 					</div>
 
-					{/* Right — image with double-bezel */}
+					{/* Right, image with double-bezel */}
 					<div className="lg:col-span-5">
 						<RevealBlock delay={0.2}>
 							<div className="rounded-sm p-1.5 bg-[rgba(248,113,113,0.02)] border border-[rgba(248,113,113,0.08)]">
@@ -120,7 +120,7 @@ export default function ProblemV2() {
 					</div>
 				</div>
 
-				{/* Problem cards — equal 3-col */}
+				{/* Problem cards, equal 3-col */}
 				<div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-4">
 					{problems.map((problem, i) => {
 						const Icon = problem.icon;

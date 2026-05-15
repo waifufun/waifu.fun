@@ -140,8 +140,13 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 	const handleProvider = useCallback(
 		(providerId: ProviderId) => {
 			if (typeof window === "undefined") return;
-			const next = new URL(`${API_URL}/v2/auth/oauth/${providerId}/start`);
-			next.searchParams.set("returnTo", resolvedReturnTo);
+			// Backend route is `GET /auth/oauth/start?provider=<id>&return_to=<path>`.
+			// Both the path and the query-param names matter: `provider` not
+			// `providerId`, `return_to` not `returnTo` (sanitizeReturnTo reads
+			// `return_to`).
+			const next = new URL(`${API_URL}/auth/oauth/start`);
+			next.searchParams.set("provider", providerId);
+			next.searchParams.set("return_to", resolvedReturnTo);
 			window.location.assign(next.toString());
 		},
 		[resolvedReturnTo],
@@ -159,11 +164,11 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 			setEmailError(null);
 			setEmailPhase("submitting");
 			try {
-				const response = await fetch(`${API_URL}/v2/auth/email/start`, {
+				const response = await fetch(`${API_URL}/auth/email/start`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",
-					body: JSON.stringify({ email: trimmed, returnTo: resolvedReturnTo }),
+					body: JSON.stringify({ email: trimmed, return_to: resolvedReturnTo }),
 				});
 				if (!response.ok) {
 					setEmailPhase("error");

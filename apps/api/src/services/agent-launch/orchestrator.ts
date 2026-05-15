@@ -26,6 +26,7 @@ import {
 	getAddress,
 	keccak256,
 	parseEther,
+	zeroAddress,
 } from "viem";
 
 import { TokenManager2Abi, createFourMemeClient } from "@waifufun/fourmeme";
@@ -851,13 +852,19 @@ export class AgentLaunchOrchestrator {
 			? getAddress(input.tax.recipientAddress)
 			: wallet.walletAddress;
 		const split = input.taxSplit;
-		if (!input.tax || !split || split.patronBps <= 0) {
+		if (!input.tax || !split) {
 			return { treasury: fallbackTreasury };
 		}
-		if (split.agentBps <= 0 || split.patronBps <= 0 || split.agentBps + split.patronBps !== 10000) {
+		const platformBps = split.platformAddress ? (split.platformBps ?? 0) : 0;
+		if (
+			split.agentBps < 0 ||
+			split.patronBps < 0 ||
+			platformBps < 0 ||
+			split.agentBps + split.patronBps + platformBps !== 10000
+		) {
 			throw new AgentLaunchError(
 				"tax.split",
-				"taxSplit agentBps and patronBps must both be positive and sum to 10000",
+				"taxSplit agentBps, patronBps, and optional platformBps must be non-negative and sum to 10000",
 				split,
 			);
 		}
@@ -870,7 +877,31 @@ export class AgentLaunchOrchestrator {
 			};
 		}
 
-		if (!split.patronAddress) {
+		if (!split.platformAddress && split.patronBps <= 0) {
+			return { treasury: fallbackTreasury, taxSplit: split };
+		}
+		if (!split.patronAddress && split.patronBps > 0) {
+			return { treasury: fallbackTreasury, taxSplit: split };
+		}
+		const recipients: Address[] = [];
+		const bpsRates: number[] = [];
+		if (split.platformAddress && platformBps > 0) {
+			recipients.push(getAddress(split.platformAddress));
+			bpsRates.push(platformBps);
+		}
+		if (split.agentBps > 0) {
+			recipients.push(wallet.walletAddress);
+			bpsRates.push(split.agentBps);
+		}
+		const patronAddress = split.patronAddress ? getAddress(split.patronAddress) : zeroAddress;
+		if (split.patronBps > 0) {
+			recipients.push(patronAddress);
+			bpsRates.push(split.patronBps);
+		}
+		if (recipients.length === 1) {
+			return { treasury: recipients[0] ?? fallbackTreasury, taxSplit: split };
+		}
+		if (recipients.length === 0) {
 			return { treasury: fallbackTreasury, taxSplit: split };
 		}
 		if (!this.deps.taxSplitterFactoryAddress) {
@@ -879,21 +910,27 @@ export class AgentLaunchOrchestrator {
 				"TAX_SPLITTER_FACTORY_ADDRESS is required to deploy multi-recipient tax splitters",
 			);
 		}
-
 		const factoryAddress = getAddress(this.deps.taxSplitterFactoryAddress);
-		const patronAddress = getAddress(split.patronAddress);
-		const recipients = [wallet.walletAddress, patronAddress] as Address[];
-		const bpsRates = [split.agentBps, split.patronBps];
 		const salt = keccak256(
 			encodeAbiParameters(
 				[
 					{ name: "agentId", type: "string" },
 					{ name: "agent", type: "address" },
 					{ name: "patron", type: "address" },
+					{ name: "platform", type: "address" },
 					{ name: "agentBps", type: "uint16" },
 					{ name: "patronBps", type: "uint16" },
+					{ name: "platformBps", type: "uint16" },
 				],
-				[wallet.agentId, wallet.walletAddress, patronAddress, split.agentBps, split.patronBps],
+				[
+					wallet.agentId,
+					wallet.walletAddress,
+					patronAddress,
+					split.platformAddress ? getAddress(split.platformAddress) : zeroAddress,
+					split.agentBps,
+					split.patronBps,
+					platformBps,
+				],
 			),
 		);
 		const { publicClient } = this.buildChainClients();
