@@ -61,6 +61,11 @@ module.exports = {
 			bscTestnet: process.env.BSCSCAN_API_KEY || "",
 		},
 	},
+	sourcify: {
+		enabled: true,
+		apiUrl: "https://sourcify.dev/server",
+		browserUrl: "https://repo.sourcify.dev",
+	},
 	solidity: {
 		version: "0.8.24",
 		settings: {
