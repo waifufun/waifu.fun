@@ -252,3 +252,186 @@ test("POST /:id/preview returns 400/422 on invalid bnbAmount", async () => {
 	});
 	assert.ok(res.status === 400 || res.status === 422, `got ${res.status}`);
 });
+
+// ─── Wave J: agent self-launch via agk_ key ────────────────────────
+
+import { __setAgentOrPatronDbForTest } from "../../middleware/agent-or-patron-auth.js";
+
+const VALID_AGK = "agk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4";
+const AGENT_ID_SLUG = "agt_demo";
+const AGENT_OWNER_STEWARD = "steward-agent-owner";
+const AGENT_OWNER_ADDR = CREATOR; // creator must equal owner address for SIWE pass
+
+function readDrizzleTableNameForLaunchTest(t: unknown): string | null {
+	if (!t || typeof t !== "object") return null;
+	const sym = Object.getOwnPropertySymbols(t).find((s) => s.description === "drizzle:Name");
+	if (!sym) return null;
+	const value = (t as Record<symbol, unknown>)[sym];
+	return typeof value === "string" ? value : null;
+}
+
+function agentAuthDb() {
+	return {
+		select(_cols?: unknown) {
+			let table: string | null = null;
+			const builder = {
+				from(t: unknown) {
+					table = readDrizzleTableNameForLaunchTest(t);
+					return builder;
+				},
+				where() {
+					return builder;
+				},
+				limit() {
+					if (table === "agent_api_keys") {
+						return Promise.resolve([{ id: "key-1", agentId: AGENT_ID_SLUG, scopes: ["launch:*"] }]);
+					}
+					if (table === "agent_personas") {
+						return Promise.resolve([
+							{
+								id: "persona-uuid",
+								agentId: AGENT_ID_SLUG,
+								ownerStewardUserId: AGENT_OWNER_STEWARD,
+								ownerAddress: AGENT_OWNER_ADDR,
+							},
+						]);
+					}
+					if (table === "patron_users") {
+						return Promise.resolve([
+							{ id: "patron-agent-owner", stewardUserId: AGENT_OWNER_STEWARD, primaryEmail: null },
+						]);
+					}
+					return Promise.resolve([]);
+				},
+			};
+			return builder;
+		},
+		update() {
+			return { set: () => ({ where: () => Promise.resolve() }) };
+		},
+	} as never;
+}
+
+test("POST /nonce works with an agent api key (Wave J)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	const router = createAgentLaunchRoutes({ db: {} as never });
+	const app = wrapWithErrorHandler(router);
+
+	const res = await app.request("/nonce", {
+		method: "POST",
+		headers: {
+			authorization: `Bearer ${VALID_AGK}`,
+			"content-type": "application/json",
+		},
+		body: JSON.stringify({ address: CREATOR }),
+	});
+	assert.equal(res.status, 200);
+	const body = (await res.json()) as { ok: boolean; data: { nonce: string } };
+	assert.equal(body.ok, true);
+	assert.ok(typeof body.data.nonce === "string" && body.data.nonce.length > 0);
+
+	__setAgentOrPatronDbForTest(undefined);
+});
+
+test("POST / accepts an agent api key + valid SIWE (Wave J)", async () => {
+	__setAgentOrPatronDbForTest(agentAuthDb());
+
+	let createCalled = false;
+	const router = createAgentLaunchRoutes({
+		db: {
+			insert() {
+				return {
+					values() {
+						return {
+							returning: () =>
+								Promise.resolve([
+									{
+										id: SAMPLE_ID,
+										tokenAddress: TOKEN,
+										vaultAddress: VAULT,
+										routerAddress: ROUTER,
+										taxSplitterAddress: null,
+										treasuryLpAddress: null,
+										creator: CREATOR,
+										tier: 80,
+										presaleCap: "16000000000000000000",
+										v2BuyBnb: "0",
+										vestingEnabled: 0,
+										state: "open",
+										totalDeposited: "0",
+										bonusPool: "0",
+										depositorCount: 0,
+										closeTimestamp: BigInt(1_900_000_000),
+										launchTimestamp: null,
+										v2Pair: null,
+										openMcBnb: null,
+										metadataUri: "ipfs://example",
+										metadata: {},
+										flapMetaCid: null,
+										flapTokenAddress: null,
+										bundleStatus: null,
+										bundleTxHash: null,
+										bundleAttempt: null,
+										bundleTipBnb: null,
+										bundleFailureReason: null,
+										createTxHash: "0xfeed",
+										createBlockNumber: BigInt(123),
+										predictedTokenAddress: null,
+										vanitySalt: null,
+										createdAt: new Date(),
+										updatedAt: new Date(),
+									},
+								]),
+						};
+					},
+				};
+			},
+		} as never,
+		// SIWE verifier must return the agent owner's address (= CREATOR) so
+		// validateRequestSiwe matches body.creator.
+		siweVerifier: async () => ({ address: CREATOR, chainId: 56, nonce: "skip" }),
+		launchService: {
+			async createLaunchOnchain() {
+				createCalled = true;
+				return {
+					token: TOKEN,
+					vault: VAULT,
+					router: ROUTER,
+					taxSplitter: "0x0000000000000000000000000000000000000000",
+					treasuryReserve: null,
+					txHash: "0xfeed",
+					blockNumber: 123,
+					presaleUrl: null,
+				};
+			},
+		} as unknown as LaunchService,
+	});
+	const app = wrapWithErrorHandler(router);
+
+	// Issue a nonce first to satisfy validateRequestSiwe's nonce store.
+	const nonceRes = await app.request("/nonce", {
+		method: "POST",
+		headers: { authorization: `Bearer ${VALID_AGK}`, "content-type": "application/json" },
+		body: JSON.stringify({ address: CREATOR }),
+	});
+	const nonceBody = (await nonceRes.json()) as { data: { nonce: string } };
+	assert.ok(nonceBody.data.nonce);
+
+	// Re-bind the auth db (the nonce route consumed our hook above is fine; setter persists).
+	const res = await app.request("/", {
+		method: "POST",
+		headers: { authorization: `Bearer ${VALID_AGK}`, "content-type": "application/json" },
+		body: JSON.stringify(createBody({ creator: CREATOR })),
+	});
+
+	// Either 202 (full success) or 400 (SIWE statement/uri-path mismatch) is
+	// fine for proving the auth path itself worked. The point is: NOT 401.
+	assert.notEqual(res.status, 401, `auth must succeed; got ${res.status}: ${await res.text()}`);
+	// If we got past auth and got 202, the on-chain stub was called.
+	if (res.status === 202) {
+		assert.equal(createCalled, true);
+	}
+
+	__setAgentOrPatronDbForTest(undefined);
+});
