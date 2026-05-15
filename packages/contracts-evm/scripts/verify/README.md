@@ -1,0 +1,56 @@
+# Contract Verification Runbook
+
+## What's verified where
+
+| Contract | Address | BscScan | Sourcify |
+|---|---|---|---|
+| LaunchFactory | `0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983` | ⏳ pending API key | ✅ full match |
+
+Sourcify URL:
+https://repo.sourcify.dev/contracts/full_match/56/0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983/
+
+## Why both?
+
+- **Sourcify** = open verifier. No API key. Used by ChainList, MetaMask, Otterscan, RotkiHQ. Critical for trustless verification.
+- **BscScan** = BNB Chain block explorer. The "verified" green checkmark users + reviewers (DappBay, etc.) actually look at. Requires free API key.
+
+## Verify a fresh deployment
+
+```bash
+cd packages/contracts-evm
+
+# LaunchFactory
+npx hardhat verify \
+  --network bscMainnet \
+  --constructor-args scripts/verify/launch-factory-args.js \
+  <ADDRESS>
+```
+
+This tries BOTH BscScan (if BSCSCAN_API_KEY set in env) AND Sourcify (no key needed). Either may succeed independently — that's fine.
+
+## Per-launch contracts
+
+When `LaunchFactory.createLaunch()` is called, it deploys three new contracts via CREATE/CREATE2:
+- `BundleRouter`
+- `LaunchVault`
+- `TreasuryLP`
+
+These need separate verification per launch. Use the constructor args printed by the indexer's launch event (or extract from the tx trace).
+
+TODO: write a post-launch hook that auto-submits all three to Sourcify + BscScan.
+
+## Get a BscScan API key (if needed)
+
+1. Go to https://bscscan.com/myapikey (sign up if needed, free)
+2. Create a new key
+3. Set in env: `BSCSCAN_API_KEY=<key>` in `packages/contracts-evm/.env`
+4. Re-run `npx hardhat verify ...` — both BscScan and Sourcify will be tried
+
+## DappBay submission
+
+DappBay (https://dappbay.bnbchain.org/submit) requires verified contracts on BscScan. Sourcify is a nice-to-have for trustless verification but **DappBay specifically wants the BscScan verification badge**.
+
+Steps:
+1. Get BSCSCAN_API_KEY → run verify script for each deployed contract
+2. Confirm the green "Contract Source Code Verified" badge on https://bscscan.com/address/<addr>#code
+3. Submit to DappBay with the BscScan link as proof
