@@ -1,11 +1,11 @@
 /**
- * Constructor args for LaunchFactory at 0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983
- * (BSC mainnet, deployed 2026-05-14T19:50:43Z by 0xC9846a839c4e1D9050Dc890A25661AB13224e9EC)
+ * Constructor args for LaunchFactory at 0x54f250Ea490239E7C3B1672283607213B5fA2459
+ * (BSC mainnet, deployed 2026-05-15T19:46:10Z by 0xC9846a839c4e1D9050Dc890A25661AB13224e9EC)
  *
  * Source: packages/contracts-evm/deployments/bsc-mainnet.json
  *
  * Used by: npx hardhat verify --constructor-args scripts/verify/launch-factory-args.js \
- *            --network bscMainnet 0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983
+ *            --network bscMainnet 0x54f250Ea490239E7C3B1672283607213B5fA2459
  */
 module.exports = [
 	"0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // wbnb

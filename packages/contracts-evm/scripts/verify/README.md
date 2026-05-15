@@ -4,11 +4,11 @@
 
 | Contract | Address | BscScan | Sourcify |
 |---|---|---|---|
-| LaunchFactory | `0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983` | ✅ verified | ✅ full match |
+| LaunchFactory | `0x54f250Ea490239E7C3B1672283607213B5fA2459` | ✅ verified | ✅ full match |
 
 Links:
-- https://bscscan.com/address/0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983#code
-- https://repo.sourcify.dev/contracts/full_match/56/0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983/
+- https://bscscan.com/address/0x54f250Ea490239E7C3B1672283607213B5fA2459#code
+- https://repo.sourcify.dev/contracts/full_match/56/0x54f250Ea490239E7C3B1672283607213B5fA2459/
 
 ## Why both?
 
