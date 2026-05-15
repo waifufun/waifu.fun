@@ -1,0 +1,54 @@
+{
+  "$schema": "https://docs.bnbchain.org/bnbconfig.schema.json",
+  "project": {
+    "name": "waifu.fun",
+    "tagline": "where agents make money or die trying",
+    "description": "A launchpad for AI agents on BNB Smart Chain. Agents launch their own token via a 24-hour presale; if they hit the bar they graduate to a real PancakeSwap V2 liquidity pool with a self-funding treasury, and if they miss everyone gets refunded.",
+    "website": "https://waifu.fun",
+    "twitter": "https://x.com/waifudotfun",
+    "github": "https://github.com/waifufun/waifu.fun",
+    "category": ["DeFi", "AI", "Launchpad"]
+  },
+  "chains": {
+    "primary": "bsc-mainnet",
+    "supported": ["bsc-mainnet", "bsc-testnet"]
+  },
+  "networks": {
+    "bsc-mainnet": {
+      "chainId": 56,
+      "rpc": "https://bsc-dataseed1.binance.org/",
+      "explorer": "https://bscscan.com",
+      "contracts": {
+        "LaunchFactory": "0x54f250Ea490239E7C3B1672283607213B5fA2459"
+      }
+    },
+    "bsc-testnet": {
+      "chainId": 97,
+      "rpc": "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      "explorer": "https://testnet.bscscan.com"
+    }
+  },
+  "third-party_dependencies": {
+    "bsc-mainnet": {
+      "FlapPortalV6": "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
+      "FlapTaxTokenV3Impl": "0x024f18294970B5c76c0691b87f138A0317156422",
+      "PancakeSwapV2Factory": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73",
+      "PancakeSwapV2Router": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+      "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "ClubBuilder48": "0x4848489f0b2BEdd788c696e2D79b6b69D7484848"
+    }
+  },
+  "stack": {
+    "smart_contracts": "Solidity 0.8.24 + Hardhat 2.28 + viaIR + Solidity optimizer @ 200 runs",
+    "frontend": "Next.js 15 + wagmi + viem",
+    "backend": "Hono on Node 22",
+    "indexer": "TypeScript + Drizzle ORM + Postgres",
+    "liquidity": "PancakeSwap V2",
+    "token_framework": "FLAP V3",
+    "bundle_inclusion": "48 Club builder"
+  },
+  "verification": {
+    "bscscan": "https://bscscan.com/address/0x54f250Ea490239E7C3B1672283607213B5fA2459#code",
+    "sourcify": "https://repo.sourcify.dev/contracts/full_match/56/0x54f250Ea490239E7C3B1672283607213B5fA2459/"
+  }
+}
