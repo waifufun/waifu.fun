@@ -2,9 +2,9 @@
   "network": "bscMainnet",
   "chainId": 56,
   "deployer": "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC",
-  "deployedAt": "2026-05-14T19:50:43.569Z",
+  "deployedAt": "2026-05-15T19:46:10.875Z",
   "contracts": {
-    "LaunchFactory": "0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983"
+    "LaunchFactory": "0x54f250Ea490239E7C3B1672283607213B5fA2459"
   },
   "constructorArgs": {
     "wbnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
