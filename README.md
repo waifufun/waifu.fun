@@ -1,66 +1,42 @@
 # waifu.fun
 
-**The agent token launchpad on BNB Chain.**
-
-Agents launch themselves via atomic bundle, run on Eliza Cloud, and earn for tokenholders through tax-funded skills.
+A launchpad for AI agents built on **BNB Smart Chain (BSC)**. Agents launch their own token via a 24-hour presale; if they hit the bar they graduate to a real PancakeSwap liquidity pool with a self-funding treasury, and if they miss everyone gets refunded.
 
 - **Live:** https://waifu.fun
-- **Docs:** https://docs.waifu.fun
 - **Twitter:** [@waifudotfun](https://x.com/waifudotfun)
-- **Chain:** BNB Smart Chain (BSC, chain id 56)
 
----
+## Technology Stack
 
-## What it does
+- **Blockchain:** BNB Smart Chain (BSC)
+- **Smart Contracts:** Solidity ^0.8.24 (Hardhat 2.28 + viaIR + Solidity optimizer @ 200 runs)
+- **Frontend:** Next.js 15 + wagmi + viem
+- **Backend:** Hono on Node 22 (Bun 1.3 dev runtime)
+- **Indexer:** TypeScript + Drizzle ORM + Postgres
+- **Liquidity:** PancakeSwap V2
+- **Token framework:** FLAP V3 (on-chain tax + presale curve)
+- **Bundle inclusion:** 48 Club builder
 
-waifu.fun is a token launchpad designed for AI agents. Each launch deploys a per-agent contract triplet (LaunchVault, BundleRouter, TreasuryLP) via the platform's `LaunchFactory`. Tokens are minted by [FLAP](https://flap.bot) Portal V6 inside an **atomic bundle**: presale deposits, dev-buy, and PCS V2 LP creation all happen in **one transaction, all-or-nothing**.
+## Supported Networks
 
-If anything in the bundle reverts, depositors are refunded automatically.
+- **BNB Smart Chain Mainnet** (Chain ID: 56) — production
+- **BNB Smart Chain Testnet** (Chain ID: 97) — local dev / staging
 
-### Why atomic bundle
+waifu.fun is BSC-native. The platform is not deployed on any other chain.
 
-- **No MEV sandwich** between presale close and LP creation
-- **No rug** between fundraise and liquidity (single tx, no holding period)
-- **No partial state** (vault either graduates fully or refunds fully)
+## Contract Addresses
 
-### Tier system
+| Network | Contract | Address |
+|---------|----------|---------|
+| BNB Smart Chain Mainnet | LaunchFactory | `0x54f250Ea490239E7C3B1672283607213B5fA2459` |
 
-Four launch tiers control supply distribution and burn ratio:
+Per-launch contracts (`LaunchVault`, `BundleRouter`, `TreasuryLP`) are deployed by the factory inside `createLaunch()` for each agent.
 
-| Tier | Curve only | Dev buy | Burn |
-|------|------------|---------|------|
-| TIER_80 | 16 BNB | 16 BNB | 0 |
-| TIER_90 | 32 BNB | 20 BNB | 12 BNB |
-| TIER_95 | 64 BNB | 20 BNB | 44 BNB |
-| TIER_98 | 160 BNB | 20 BNB | 140 BNB |
+### Verification
 
-Minimum 20 BNB to graduate (aligns with FLAP curve threshold).
+- BscScan: https://bscscan.com/address/0x54f250Ea490239E7C3B1672283607213B5fA2459#code
+- Sourcify: https://repo.sourcify.dev/contracts/full_match/56/0x54f250Ea490239E7C3B1672283607213B5fA2459/
 
-### Tax flow
-
-Tokens use the FLAP V3 tax framework. On-chain tax split between:
-- **Agent treasury** (Safe-anchored multisig per agent)
-- **Platform fee** (configurable 10-50% per launch, default 10%)
-
-Tax revenue funds the agent's skills + mini-apps for tokenholders.
-
-### Agents
-
-Each waifu.fun agent runs on [Eliza Cloud](https://eliza.steward.fi) (containerized agent runtime). Agents can self-launch via API (`POST /v2/launches` with an `agk_` API key) and are listed on the platform once their bundle executes.
-
----
-
-## Smart contracts
-
-Source: [packages/contracts-evm](packages/contracts-evm)
-
-| Contract | Address | Verification |
-|---|---|---|
-| LaunchFactory | `0x54f250Ea490239E7C3B1672283607213B5fA2459` | [BscScan](https://bscscan.com/address/0x54f250Ea490239E7C3B1672283607213B5fA2459#code) · [Sourcify](https://repo.sourcify.dev/contracts/full_match/56/0x54f250Ea490239E7C3B1672283607213B5fA2459/) |
-
-Per-launch contracts (`LaunchVault`, `BundleRouter`, `TreasuryLP`) are deployed by the factory on each `createLaunch()` call.
-
-### External dependencies (BSC mainnet)
+### External BSC dependencies
 
 | Protocol | Address |
 |---|---|
@@ -71,33 +47,24 @@ Per-launch contracts (`LaunchVault`, `BundleRouter`, `TreasuryLP`) are deployed 
 | WBNB | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` |
 | 48 Club builder (tip receiver) | `0x4848489f0b2BEdd788c696e2D79b6b69D7484848` |
 
-### Audit status
+## Features
 
-Pre-audit package: [packages/contracts-evm/AUDIT](packages/contracts-evm/AUDIT/)
+- **Atomic graduation on BSC.** When an agent hits its presale tier target, the BNB in the LaunchVault, the dev-buy, and the PancakeSwap V2 LP creation all happen in one BSC transaction.
+- **24-hour presale window.** Each agent has 24 hours to hit the bar. Miss it and depositors withdraw their BNB.
+- **Four launch tiers.** TIER_80 / TIER_90 / TIER_95 / TIER_98 control supply distribution and burn ratio. 20 BNB minimum for graduation.
+- **FLAP V3 tax framework.** Tokens use FLAP's on-chain tax-split, routing trade tax to the agent treasury and the platform.
+- **Configurable platform cut.** Platform takes 10% by default (configurable 10-50% per launch). The rest accrues to the agent's Safe-anchored treasury.
+- **Eliza Cloud agent runtime.** Graduated agents run on containerized Eliza Cloud and earn for their tokenholders through skills and mini-apps.
+- **48 Club builder integration.** Bundle includes a tip to BNB Chain's [48 Club](https://www.48.club) MEV builder for inclusion.
 
-Includes:
-- ARCHITECTURE.md
-- THREAT_MODEL.md
-- EMPIRICAL_VALIDATION.md (real-fork gas + behavior baselines)
-- TEST_COVERAGE.md (81 passing, 27 adversarial stress tests)
-- KNOWN_ISSUES.md
-- QUALITY_REVIEW.md
-- STATIC_ANALYSIS.md (Slither, 51 accepted findings + 1 defensive CEI fix)
-- USER_FLOW_COVERAGE.md
-- STAGING_WALKTHROUGH.md
-
-External audit (Pashov / Code4rena) pending.
-
----
-
-## Repo layout
+## Repo Layout
 
 ```
 apps/
   frontend/        Next.js 15 launch UI + agent portal
   api/             Hono backend (auth, launches, agents, indexer hooks)
-  evm-indexer/     onchain event indexer (Postgres, Drizzle ORM)
-  bundle-bot/      bundle execution runtime (4-wallet hot pool, currently dry-run default)
+  evm-indexer/     onchain BSC event indexer
+  bundle-bot/      bundle execution runtime (4-wallet hot pool)
   worker/          background jobs (notifications, refund cron)
   brain/           launch policy engine
 
@@ -110,13 +77,23 @@ packages/
   steward/         Steward auth client
 ```
 
----
+## Audit Status
 
-## Local development
+Pre-audit package: [`packages/contracts-evm/AUDIT/`](packages/contracts-evm/AUDIT/)
+
+- 81 unit tests + 27 adversarial stress tests passing
+- Slither static analysis clean (51 findings triaged + 1 defensive CEI fix landed)
+- Real-fork validation against BSC mainnet at block 97368808
+- ARCHITECTURE / THREAT_MODEL / EMPIRICAL_VALIDATION / TEST_COVERAGE / KNOWN_ISSUES / QUALITY_REVIEW / STATIC_ANALYSIS / USER_FLOW_COVERAGE / STAGING_WALKTHROUGH
+
+External audit (Pashov / Code4rena) pending.
+
+## Development
 
 Requires:
-- [Bun 1.3.13](https://bun.sh) (pinned; mismatched versions break frozen lockfile)
-- Docker (for Postgres)
+- [Bun 1.3.13](https://bun.sh) (pinned in `package.json`)
+- Docker (for local Postgres)
+- Foundry (optional, for fork tests)
 
 ```bash
 bun install
@@ -125,44 +102,51 @@ bun run dev
 
 Frontend at `http://localhost:3000`, API at `http://localhost:8787`.
 
-### Environment
-
-See `.env.example` for required env vars. Critical ones:
-
-- `LAUNCH_FACTORY_ADDRESS` — the deployed factory you're targeting
-- `FLAP_PORTAL_ADDRESS` — FLAP Portal V6
-- `LAUNCH_BROADCAST_ENABLED` — gates the bundle bot
-- `BUNDLE_BOT_DRY_RUN` — set `false` to actually broadcast (default `true` for safety)
-
 ### Smart contract development
+
+Hardhat config explicitly targets **BSC mainnet** as the deployment network:
+
+```js
+// packages/contracts-evm/hardhat.config.js
+networks: {
+  bscMainnet: {
+    url: process.env.BSC_RPC_URL || "https://bsc-dataseed1.binance.org/",
+    chainId: 56,
+    accounts,
+  },
+  bscTestnet: {
+    url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545/",
+    chainId: 97,
+    accounts,
+  },
+}
+```
+
+Contract commands:
 
 ```bash
 cd packages/contracts-evm
 bun run compile
-bun run test                  # 81 tests
-FORK_BSC=true bun run test:fork   # real-fork validation against BSC mainnet
+bun run test                       # 81 tests
+FORK_BSC=true bun run test:fork    # real-fork against BSC mainnet
 ```
 
-### Deploy a new LaunchFactory
+### Deploy a new LaunchFactory to BSC
 
 ```bash
 cd packages/contracts-evm
 DRY_RUN=true npx hardhat run scripts/deploy/deploy-wave-h.js --network bscMainnet
-# review the planned deploy, then:
+# review, then:
 npx hardhat run scripts/deploy/deploy-wave-h.js --network bscMainnet
 npx hardhat verify --constructor-args scripts/verify/launch-factory-args.js \
   --network bscMainnet <NEW_ADDRESS>
 ```
 
-See [packages/contracts-evm/scripts/verify/README.md](packages/contracts-evm/scripts/verify/README.md) for verification details.
-
----
+Verification submits to both BscScan and Sourcify in one shot. See [`packages/contracts-evm/scripts/verify/README.md`](packages/contracts-evm/scripts/verify/README.md) for details.
 
 ## License
 
-MIT. See [LICENSE](LICENSE) if present, otherwise per-package SPDX headers.
-
----
+MIT. Per-package SPDX headers.
 
 ## Contact
 
