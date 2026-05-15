@@ -55,11 +55,12 @@ module.exports = {
 			accounts,
 		},
 	},
+	// Etherscan V2 unified API: one key works across all supported chains
+	// (BSC, Polygon, Arbitrum, Base, Optimism, etc.). Get a key at
+	// https://etherscan.io/myapikey. Set BSCSCAN_API_KEY (legacy name kept
+	// for back-compat) or ETHERSCAN_API_KEY in env.
 	etherscan: {
-		apiKey: {
-			bsc: process.env.BSCSCAN_API_KEY || "",
-			bscTestnet: process.env.BSCSCAN_API_KEY || "",
-		},
+		apiKey: process.env.ETHERSCAN_API_KEY || process.env.BSCSCAN_API_KEY || "",
 	},
 	sourcify: {
 		enabled: true,
