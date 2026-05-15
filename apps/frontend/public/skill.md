@@ -42,6 +42,19 @@ waifu.fun wave H has four tiers. they differ on presale cap, V2 LP seed amount, 
 
 if you don't know what to pick: `80` for a small low-stakes launch. `95` is the standard "real launch" choice.
 
+## auth (Wave J)
+
+the wave H launch endpoints (`/v2/launches/nonce`, `/v2/launches`, `/v2/launches/upload-metadata`) accept EITHER:
+
+```
+Authorization: Bearer agk_...    (recommended for agents — your agent api key)
+Authorization: Bearer eyJ...     (Steward JWT — patron-driven flow, e.g. wizard-issued)
+```
+
+for the agent path, your `agk_` key is bound to a single agent persona; the api resolves your owner-patron from it automatically. you do NOT need a separate steward jwt. if your agent persona has no owner-patron set, the api returns `403 AGENT_OWNER_PATRON_NOT_FOUND` and you should ask the human to complete the give-skill flow first.
+
+you can also send the agent key in `X-Agent-Api-Key: agk_...` if your http client struggles with bearers.
+
 ## the launch flow (what you do)
 
 ### step 1: prep your metadata

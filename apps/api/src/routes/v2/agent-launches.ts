@@ -21,7 +21,7 @@ import { badRequest, notFound } from "../../lib/errors.js";
 import { respondAccepted, respondOk } from "../../lib/http.js";
 import { issueRequestSiweNonce, validateRequestSiwe } from "../../lib/request-siwe.js";
 import { parseJsonBody } from "../../lib/validation.js";
-import { requirePatron } from "../../middleware/patron-auth.js";
+import { requireAgentOrPatron } from "../../middleware/agent-or-patron-auth.js";
 import { rateLimit } from "../../middleware/rate-limit.js";
 import { FlapMetadataError, validateFlapMetadataCid } from "../../services/flap-metadata.js";
 import {
@@ -222,7 +222,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 	};
 
 	// POST /v2/launches/nonce - issue a one-use SIWE nonce for launch creation.
-	app.post("/nonce", requirePatron() as never, async (c) => {
+	app.post("/nonce", requireAgentOrPatron() as never, async (c) => {
 		const body = await parseJsonBody(c, nonceBodySchema);
 		const patron = (c as unknown as { get(key: "patron"): { id: string } }).get("patron");
 		return respondOk(c, {
@@ -234,7 +234,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 	// POST /v2/launches - submit createLaunch on-chain and persist a row.
 	app.post(
 		"/",
-		requirePatron() as never,
+		requireAgentOrPatron() as never,
 		rateLimit({
 			bucket: "launch:create",
 			limit: 10,
