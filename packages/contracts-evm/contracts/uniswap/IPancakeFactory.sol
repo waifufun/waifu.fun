@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈ waifu.fun ┈╮
+//   │ IPancakeFct │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈╯
+//
 pragma solidity ^0.8.24;
 
 /// @title IPancakeFactory

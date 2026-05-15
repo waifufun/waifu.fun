@@ -1,4 +1,13 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈┈┈ waifu.fun ┈┈┈╮
+//   │   LaunchVault    │
+//   │   the presale    │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+//
+//      ✿  bnb in. shares out.  ✿
+//         refund if it doesn't pop.
+//
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -11,7 +20,7 @@ interface ILaunchFactoryOwner {
 }
 
 /// @title LaunchVault
-/// @notice wave H presale vault. one vault per launch. depositors put BNB
+/// @notice presale vault. one vault per launch. depositors put BNB
 ///         in during OPEN. on close + cap-met, the per-launch BundleRouter
 ///         pulls BNB, runs the atomic flap bundle, and calls distribute()
 ///         to set the token + presaler share. depositors then claim with
@@ -63,7 +72,9 @@ contract LaunchVault is ReentrancyGuard {
 	// ---------------------------------------------------------------------
 
 	/// @dev set once post-construction by the factory in the same createLaunch tx.
-	///      see `WAVE_H_INTERFACES.md` section 10 for the chicken-and-egg note.
+	///      vault and router reference each other (chicken-and-egg), so the
+	///      factory deploys the vault first, then the router, then wires them
+	///      together with this one-shot setter.
 	address payable public router;
 
 	State public state;
@@ -163,7 +174,7 @@ contract LaunchVault is ReentrancyGuard {
 	// ---------------------------------------------------------------------
 
 	/// @notice set the per-launch BundleRouter. callable once by the factory
-	///         during createLaunch. see `WAVE_H_INTERFACES.md` section 10.
+	///         during createLaunch.
 	function setRouter(address _router) external {
 		if (msg.sender != factory) revert NotFactory();
 		if (router != address(0)) revert RouterAlreadySet();

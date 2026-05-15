@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈ waifu.fun ┈╮
+//   │ ITreasuryLP │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈╯
+//   minimal deps surface.
+//
 pragma solidity ^0.8.24;
 
 interface IFlapV2Pair {

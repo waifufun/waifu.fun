@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈┈┈ waifu.fun ┈┈┈╮
+//   │  VeWaifuStaking  │
+//   │  vote-escrowed   │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+//
+//     ✿  lock WAIFU, earn say  ✿
+//
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";

@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈ waifu.fun ┈╮
+//   │ IPancakeR02 │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈╯
+//   trimmed PCS V2 router.
+//
 pragma solidity ^0.8.24;
 
 /// @title IPancakeRouter02
-/// @notice trimmed PancakeSwap V2 router surface used by wave H.
-///         only the methods we actually call: V2 follow-up buy with FOT
-///         support, addLiquidityETH for future TreasuryLP wiring, and
-///         getAmountsOut for indexer/preview use.
+/// @notice trimmed PancakeSwap V2 router surface. only the methods we
+///         actually call: V2 follow-up buy with FOT support,
+///         addLiquidityETH for TreasuryLP wiring, and getAmountsOut for
+///         indexer/preview use.
 interface IPancakeRouter02 {
 	function swapExactETHForTokensSupportingFeeOnTransferTokens(
 		uint256 amountOutMin,

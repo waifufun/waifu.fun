@@ -1,14 +1,23 @@
 // SPDX-License-Identifier: MIT
+//
+//   ╭┈┈┈ waifu.fun ┈┈┈╮
+//   │   TreasuryLP     │
+//   │   the agent's    │
+//   │   bag.           │
+//   ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+//
+//      ✿  custodial for now  ✿
+//
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title TreasuryLP
-/// @notice wave H custodial treasury holder. receives the 10% bundle-slice
-///         of the new token and holds it. a follow-up wave promotes this
-///         to a real V3 CLAMM single-sided LP. for wave H the contract is
-///         pure custody, owner-sweepable.
+/// @notice custodial treasury holder. receives the 10% bundle-slice of the
+///         new token and holds it. pure custody, owner-sweepable: the owner
+///         can drain custody into a downstream LP-deployer contract via
+///         sweep().
 contract TreasuryLP {
 	using SafeERC20 for IERC20;
 
@@ -46,8 +55,7 @@ contract TreasuryLP {
 	}
 
 	/// @notice owner-only sweep. forwards `amount` of token `t` to `to`.
-	///         used to drain custody into a real LP-deployer contract once
-	///         the V3 CLAMM follow-up wave ships.
+	///         used to drain custody into a downstream LP-deployer contract.
 	function sweep(address to, address t, uint256 amount) external {
 		if (msg.sender != owner) revert NotOwner();
 		if (to == address(0) || t == address(0)) revert ZeroAddress();
