@@ -15,14 +15,14 @@ const ACTION_TONE: Record<string, string> = {
 };
 
 function formatTs(iso: string | null | undefined): string {
-	if (!iso) return "—";
+	if (!iso) return "–";
 	const d = new Date(iso);
-	if (Number.isNaN(d.getTime())) return "—";
+	if (Number.isNaN(d.getTime())) return "–";
 	return `${d.toISOString().replace("T", " ").slice(0, 19)}Z`;
 }
 
 function shorten(value: string | null, head = 6, tail = 4): string {
-	if (!value) return "—";
+	if (!value) return "–";
 	if (value.length <= head + tail + 2) return value;
 	return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
@@ -170,7 +170,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
 						{shorten(entry.agentId)}
 					</Link>
 				) : (
-					<span className="text-neutral-500">—</span>
+					<span className="text-neutral-500">–</span>
 				)}
 			</td>
 			<td className={`px-3 py-2 text-[11px] font-mono uppercase tracking-wider ${tone}`}>{entry.action}</td>
@@ -178,7 +178,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
 				{shorten(entry.actor)}
 			</td>
 			<td className="px-3 py-2 text-[11px] font-mono text-neutral-400 max-w-[420px]">
-				{entry.reason ? entry.reason : <span className="text-neutral-600">—</span>}
+				{entry.reason ? entry.reason : <span className="text-neutral-600">–</span>}
 			</td>
 		</tr>
 	);

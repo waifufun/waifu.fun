@@ -20,7 +20,16 @@
 		},
 		"test": {
 			"dependsOn": ["^build", "build"],
-			"outputs": []
+			"outputs": [],
+			"env": [
+				"FORK_BSC",
+				"FORK_BSC_URL",
+				"FORK_BSC_BLOCK",
+				"REQUIRE_BSC_FORK",
+				"BSC_RPC",
+				"BSCSCAN_API_KEY",
+				"DEPLOYER"
+			]
 		},
 		"lint": {
 			"outputs": []

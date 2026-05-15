@@ -78,7 +78,7 @@ export default function Specialization() {
 			/>
 
 			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Header — left aligned */}
+				{/* Header, left aligned */}
 				<RevealBlock>
 					<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
 						the ecosystem
@@ -95,7 +95,7 @@ export default function Specialization() {
 					</p>
 				</RevealBlock>
 
-				{/* Agent type grid — clean 2-col top, 3-col bottom */}
+				{/* Agent type grid, clean 2-col top, 3-col bottom */}
 				<div className="mt-16 space-y-4">
 					{/* First row: 2 equal cards */}
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">

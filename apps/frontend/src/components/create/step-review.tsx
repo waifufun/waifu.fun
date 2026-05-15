@@ -2,10 +2,13 @@
 
 import { useLinkedEoa } from "@/hooks/use-linked-eoa";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
+import { shortenCid } from "@/lib/flap/metadata";
+import { formatVanityAddress, hasVanitySuffix } from "@/lib/launch-vault/vanity-address";
 import { computePlatformCutVolumeBps } from "@/lib/launchpad/validators";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect } from "react";
+import { formatUsdMarketCap, getTier, totalBnb } from "./tier/tier-data";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
 const RUNTIME_LABEL = {
@@ -128,6 +131,60 @@ export default function StepReview() {
 					</div>
 				</div>
 
+				{/* Wave H: flap token preview */}
+				<Row label="flap token">
+					<p className="text-sm text-neutral-200 font-mono tabular-nums" data-testid="vanity-address-display">
+						{state.vanity.predictedAddress
+							? formatVanityAddress(state.vanity.predictedAddress)
+							: state.vanity.submitted
+								? "mining vanity address…"
+								: "your token: 0x…7777"}
+					</p>
+					{state.vanity.predictedAddress && !hasVanitySuffix(state.vanity.predictedAddress) ? (
+						<p className="mt-1 text-[11px] font-mono text-yellow-400/80">
+							heads up: backend skipped vanity mining. address ships as-is.
+						</p>
+					) : null}
+					<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+						your agent token (deployed via flap portal) gets a create2-mined `0x…7777` suffix. token mints + curve
+						graduation happen atomically inside our bundle.
+					</p>
+					{state.flap.metaCid ? (
+						<p className="mt-2 text-[11px] font-mono text-neutral-500">
+							meta cid: <span className="text-neutral-300">{shortenCid(state.flap.metaCid)}</span>
+						</p>
+					) : null}
+				</Row>
+
+				{/* W48: Launch Tier */}
+				{state.launch.tierId ? (
+					<Row label="tier">
+						{(() => {
+							const t = getTier(state.launch.tierId);
+							if (!t) return null;
+							return (
+								<>
+									<p className="text-sm text-neutral-200">
+										tier_{t.id}
+										<span className="text-neutral-600">
+											{" "}
+											• cap {t.cap} BNB • v2 buy {t.v2Buy} BNB
+										</span>
+									</p>
+									<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
+										total {totalBnb(t)} BNB • circulating mc {formatUsdMarketCap(t.openCircMcBnb)} • fdv{" "}
+										{formatUsdMarketCap(t.openFdvBnb)} includes burned supply • presaler{" "}
+										{t.presaler.toFixed(t.presaler % 1 === 0 ? 0 : 1)}x • burn {t.burn}% • vesting {t.vesting}
+									</p>
+									<p className="mt-1 text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-600 leading-relaxed max-w-[54ch]">
+										burn / treasury / presale = 50 / 10 / 40 of the vault's share of the dev-buy
+									</p>
+								</>
+							);
+						})()}
+					</Row>
+				) : null}
+
 				{/* Launchpad */}
 				{LAUNCHPAD_PICKER_ENABLED ? (
 					<Row label="launchpad">
@@ -146,7 +203,7 @@ export default function StepReview() {
 						don't approve a launch under wrong fee expectations. */}
 						{feeConfig?.kind === "flap" && feeConfig.recipient === "custom-vault" ? (
 							<div className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[54ch]">
-								<p>trade tax: {taxVolumePct ?? "—"}%</p>
+								<p>trade tax: {taxVolumePct ?? "–"}%</p>
 								<p>└─ 100% routes direct to your custom vault. no platform cut on-chain.</p>
 							</div>
 						) : taxVolumePct && platformCutPct && platformVolumePct && treasuryVolumePct ? (
@@ -238,11 +295,12 @@ export default function StepReview() {
 				{/* Cost */}
 				<Row label="cost">
 					<p className="text-sm font-mono tabular-nums text-neutral-200">
-						gas <span className="text-neutral-500">+</span> $5.00 setup
+						gas <span className="text-neutral-500">+</span> $5.00 setup <span className="text-neutral-500">+</span> 0.03
+						BNB bundle tip
 					</p>
 					<p className="mt-1 text-[11px] text-neutral-500 leading-relaxed max-w-[48ch]">
-						pulled from your primary Steward wallet at provision. token launch is a separate step from the agent's home
-						page once the safe has BNB.
+						pulled from your primary Steward wallet at provision. bundle tip goes to the 48 club builder eoa for
+						priority inclusion when the puissant bundle ships.
 					</p>
 					{linkedAddress ? (
 						<label className="mt-4 flex items-center gap-3 text-sm text-neutral-300">

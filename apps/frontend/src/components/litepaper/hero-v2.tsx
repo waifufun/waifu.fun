@@ -61,7 +61,7 @@ export default function HeroV2() {
 
 	return (
 		<section ref={sectionRef} className="relative min-h-[100dvh] flex items-center py-28 sm:py-40 overflow-hidden">
-			{/* Radial glow — top left asymmetric */}
+			{/* Radial glow, top left asymmetric */}
 			<div
 				className="absolute inset-0"
 				style={{
@@ -81,7 +81,7 @@ export default function HeroV2() {
 			>
 				{/* Asymmetric split: 7/5 grid */}
 				<div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-					{/* Text column — left heavy */}
+					{/* Text column, left heavy */}
 					<div className="lg:col-span-7">
 						{/* Brand lockup */}
 						<motion.div
@@ -166,7 +166,7 @@ export default function HeroV2() {
 						</motion.div>
 					</div>
 
-					{/* Hero image — right column with double-bezel */}
+					{/* Hero image, right column with double-bezel */}
 					<motion.div
 						initial={{ opacity: 0, x: 40 }}
 						animate={{ opacity: 1, x: 0 }}
@@ -204,7 +204,7 @@ export default function HeroV2() {
 					</motion.div>
 				</div>
 
-				{/* Three pillars — staggered reveal */}
+				{/* Three pillars, staggered reveal */}
 				<motion.div
 					initial={{ opacity: 0, y: 30 }}
 					animate={{ opacity: 1, y: 0 }}

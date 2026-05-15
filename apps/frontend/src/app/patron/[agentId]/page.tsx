@@ -23,15 +23,15 @@ type Params = { agentId: string };
 function authorizeErrorMessage(err: Error & { status?: number | null }): string {
 	const status = err.status ?? null;
 	if (status === 401) {
-		return "Your session expired. Reconnect your wallet and sign again.";
+		return "session expired. reconnect your wallet and sign again.";
 	}
 	if (status === 403) {
-		return "You're not the patron of this agent.";
+		return "you're not the patron of this agent.";
 	}
 	if (status && status >= 500) {
-		return "Something went wrong on our side. Try again in a moment.";
+		return "something broke on our side. try again in a moment.";
 	}
-	return err.message || "Couldn't authorize the launch.";
+	return err.message || "couldn't authorize the launch.";
 }
 
 export default function PatronAgentDetailPage({
@@ -63,7 +63,7 @@ export default function PatronAgentDetailPage({
 
 	const triggerLaunch = async (firstBuyWei: string) => {
 		if (!launchId) {
-			setAuthorizeError("Launch hasn't been provisioned yet. Refresh and try again.");
+			setAuthorizeError("launch hasn't been provisioned yet. refresh and try again.");
 			setProgressOpen(true);
 			return;
 		}
@@ -99,12 +99,12 @@ export default function PatronAgentDetailPage({
 	return (
 		<main className="py-6">
 			<PatronHeader
-				title={agent?.name ?? "Agent"}
+				title={agent?.name ?? "agent"}
 				subtitle={
 					agent
 						? isLaunchReady
-							? `Pre-launch controls for ${agent.ticker}.`
-							: `Manage ${agent.ticker} and review recent activity.`
+							? `pre-launch controls for ${agent.ticker}.`
+							: `manage ${agent.ticker}, review recent activity.`
 						: undefined
 				}
 				backHref="/patron"

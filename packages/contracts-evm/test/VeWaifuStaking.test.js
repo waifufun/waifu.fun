@@ -13,13 +13,16 @@ describe("VeWaifuStaking", () => {
 	beforeEach(async () => {
 		[owner, alice, bob] = await ethers.getSigners();
 
-		const Token = await ethers.getContractFactory("WaifuFunToken");
-		waifu = await Token.deploy("Waifu", "WAIFU", ethers.parseEther("1000000000"), 18);
+		// ERC20Mock has the same staking-relevant surface (transfer, approve,
+		// balanceOf) as the deprecated WaifuFunToken used to. We just need an
+		// ERC20 to stake; the exact contract doesn't matter for VeWaifuStaking.
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		waifu = await Token.deploy();
 		await waifu.waitForDeployment();
 
-		await waifu.mintToken(owner.address, ethers.parseEther("100000"));
-		await waifu.mintToken(alice.address, ethers.parseEther("100000"));
-		await waifu.mintToken(bob.address, ethers.parseEther("100000"));
+		await waifu.mint(owner.address, ethers.parseEther("100000"));
+		await waifu.mint(alice.address, ethers.parseEther("100000"));
+		await waifu.mint(bob.address, ethers.parseEther("100000"));
 
 		const Staking = await ethers.getContractFactory("VeWaifuStaking");
 		staking = await Staking.deploy(await waifu.getAddress());

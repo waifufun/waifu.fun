@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { fetchTokenRouteParamsForStaticExport } from "@/lib/static-export-paths";
+import { redirect } from "next/navigation";
 
 export async function generateStaticParams() {
 	return fetchTokenRouteParamsForStaticExport();

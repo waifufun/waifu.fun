@@ -122,6 +122,15 @@ export async function fetchWaifuMe(fetcher: typeof fetch = fetch): Promise<Waifu
 	};
 }
 
+function clearStaleAuthCookie(): void {
+	if (typeof document === "undefined") return;
+	// Best-effort delete on the .waifu.fun root domain (where auth/finalize
+	// originally set it). Browsers ignore Set-Cookie writes for paths/domains
+	// they don't match, so this is safe even when the cookie was set elsewhere.
+	document.cookie = "wf_authed=; Path=/; Max-Age=0; SameSite=Lax";
+	document.cookie = "wf_authed=; Path=/; Domain=.waifu.fun; Max-Age=0; SameSite=Lax";
+}
+
 export function useWaifuAuth() {
 	const authed = hasWaifuAuthCookie();
 	const query = useQuery<WaifuMe | null, Error>({
@@ -130,8 +139,19 @@ export function useWaifuAuth() {
 		enabled: authed,
 		staleTime: 30_000,
 		refetchOnWindowFocus: true,
-		retry: 1,
+		// Don't retry: a 401 means the session is dead, retrying just keeps
+		// the auth-loading spinner spinning forever and disables the sign-in
+		// button. One shot, fail fast, fall through to the unauth path.
+		retry: false,
 	});
+
+	// If the cookie says we're authed but the patron lookup returns null /
+	// errors with 401, the session was invalidated server-side (logout, JWT
+	// expired, etc). Clear the stale cookie so the UI flips to unauth
+	// instead of being stuck in an "authed but no patron" limbo.
+	if (typeof document !== "undefined" && authed && (query.error || (query.isFetched && !query.data))) {
+		clearStaleAuthCookie();
+	}
 
 	const primaryAddress = useMemo(() => query.data?.primaryAddress ?? null, [query.data?.primaryAddress]);
 	const primaryChain = useMemo(() => query.data?.primaryChain ?? null, [query.data?.primaryChain]);

@@ -377,7 +377,7 @@ export const resizeImage = (url: string, width: number, height: number) => {
  * "just now" | "2m ago" | "3h ago" | "2d ago" | "6w ago" | "3mo ago" | "1y ago"
  */
 export function timeAgo(ts: number | undefined | null): string {
-	if (!ts || !Number.isFinite(ts)) return "—";
+	if (!ts || !Number.isFinite(ts)) return "–";
 	const diff = Math.max(0, Date.now() - ts);
 	const s = Math.floor(diff / 1000);
 	if (s < 30) return "just now";
@@ -400,7 +400,7 @@ export function timeAgo(ts: number | undefined | null): string {
  * Shorten an Ethereum-style address like 0x1234…abcd.
  */
 export function shortAddress(addr: string | undefined | null, chars = 4): string {
-	if (!addr) return "—";
+	if (!addr) return "–";
 	if (addr.length <= chars * 2 + 2) return addr;
 	return `${addr.slice(0, 2 + chars)}…${addr.slice(-chars)}`;
 }

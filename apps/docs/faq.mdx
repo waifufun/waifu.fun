@@ -1,0 +1,161 @@
+---
+title: "FAQ"
+description: "common questions, direct answers"
+---
+
+## general
+
+### what is waifu.fun
+
+a token launchpad on BSC. you deposit BNB into a per-launch vault. when the
+cap is hit, our bundle bot wraps the FLAP mint plus the PCS graduation plus
+the follow-up buy into one atomic transaction. presalers get pro-rata tokens
+with optional vesting, or BNB refunds if the launch fails.
+
+### what chains do you support
+
+BSC mainnet only (chain id 56).
+
+### is this audited
+
+contracts are in audit at the time of writing. see the audit page on
+waifu.fun for the current status, audit firm, and report PDF.
+{/* TODO link to audit report once published */}
+
+### who runs this
+
+a small team. the platform is open source. the contracts are immutable.
+the social side and the API are operated by the waifu.fun team.
+
+## creators
+
+### how much does it cost to launch
+
+the gas to deploy three contracts (`LaunchVault`, `BundleRouter`,
+`TreasuryLP`) plus a platform creation fee. exact BNB amount shown in the
+UI before you confirm. expect roughly the same range as a typical FLAP mint
+plus our cut.
+
+### do i get tokens at TGE
+
+no. the creator does not receive a token allocation. the dynamic split is
+50% burn, 10% TreasuryLP, ~40% to presalers. zero to the creator.
+
+### can i change the metadata after launch
+
+no. the metadata CID is on-chain and immutable. if you need to change it,
+refund the launch and create a new one.
+
+### can i change the tier after createLaunch
+
+no. tier is set at `createLaunch` and is immutable. if you need a different
+tier, refund and recreate.
+
+### what happens if my launch is under-subscribed
+
+the close window passes without the cap being met. anyone calls
+`enableRefundUnderSubscribed()`. the vault goes to REFUND. presalers get
+their BNB back plus any bonus. you do not pay any extra penalty, but you
+also do not get a token deployed.
+
+### can i set a custom token tax
+
+yes. `buyTaxBps` and `sellTaxBps` are set at `createLaunch` time. they apply
+for the `taxDuration` you configure, then fall to zero. the four bps splits
+(mkt, deflation, dividend, lp) are also configurable.
+
+### can i be a depositor in my own launch
+
+yes. you can deposit BNB into your own vault during the OPEN window. you
+get a pro-rata share of the presaler allocation like any other depositor.
+
+## presalers
+
+### can i get my BNB back if i change my mind
+
+if the vault is still in OPEN, yes, call `withdraw()`. if the vault has
+transitioned to CLOSED, you wait. if the bundle succeeds you get tokens
+instead of BNB. if the bundle fails (or any other refund trigger) you get
+BNB.
+
+### how long does claiming take
+
+claim is one transaction. for graduating tiers (90/95/98) vesting unlocks
+50% at TGE and 50% linear over 24 hours, so you may need to claim multiple
+times to receive the full amount.
+
+### what is the bonus pool
+
+an optional pool of BNB that gets distributed pro-rata to refunders. funded
+out-of-band by the platform or the creator. most launches have zero bonus
+pool. if you refund, you get principal + pro-rata bonus, which equals
+principal when the bonus is zero.
+
+### why did i get fewer tokens than i expected
+
+three reasons, in rough order of likelihood:
+
+1. **the v2 buy was fee-on-transfer.** the PCS buy returns post-tax tokens.
+   if buy tax is 3%, you receive 97% of the spot quote.
+2. **vesting.** if your tier has vesting, only 50% is claimable at TGE.
+   wait 24 hours for the full unlock.
+3. **other presalers deposited too.** the pro-rata math means more deposits
+   dilute your share. if you put in 10% of the total, you get 10% of the
+   presaler allocation.
+
+### can the platform freeze my claim
+
+no. once the vault is in LAUNCHED state with tokens distributed, claim is
+permissionless. nobody can pause it. the contract has no admin function
+for this.
+
+### what is "vault state"
+
+one of OPEN, CLOSED, LAUNCHED, REFUND. you can query it directly via
+`vault.state()` or read it from the API. it tells you exactly what you can
+do next.
+
+### can multiple refund triggers fire
+
+no. once the vault enters REFUND from any of the three triggers, it is
+terminal. calling another trigger function reverts with `WrongState`.
+
+## technical
+
+### what if FLAP changes their portal address
+
+we re-deploy a new `LaunchFactory` pointing at the new portal. old launches
+continue to work against the old portal. nothing migrates.
+
+### what if PCS upgrades to v4
+
+same as above. our contracts target v2 specifically. if we want v3 or v4
+support, it ships in a new factory.
+
+### can the bundle bot front-run users
+
+the bot submits through puissant, which is a private mempool. its
+transactions are not visible to public mempool MEV bots. inside the bundle
+the order is fixed: mint, then v2 buy, then split. the bot cannot insert
+arbitrary actions.
+
+### what if i run out of gas mid-claim
+
+your `claim()` reverts. nothing transferred. retry with more gas. there is
+no state corruption from a failed claim because the contract uses CEI
+ordering and the `nonReentrant` modifier.
+
+### are the contracts upgradeable
+
+no. there is no proxy. no implementation slot. no migration path. each
+launch is locked at deploy.
+
+### where can i read the source
+
+[github.com/waifufun/waifu.fun](https://github.com/waifufun/waifu.fun)
+`packages/contracts-evm/contracts/`. {/* TODO confirm repo path is public */}
+
+### still have questions
+
+reach out on twitter [@waifufun](https://twitter.com/waifufun) or our
+discord. we will add to this FAQ if we see the same question twice.

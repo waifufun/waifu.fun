@@ -62,7 +62,7 @@ export default function TheFixV2() {
 			/>
 
 			<div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Header — left aligned, not centered */}
+				{/* Header, left aligned, not centered */}
 				<RevealBlock>
 					<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
 						the architecture
@@ -87,7 +87,7 @@ export default function TheFixV2() {
 					</p>
 				</RevealBlock>
 
-				{/* Differentiator cards — asymmetric 2-col bento */}
+				{/* Differentiator cards, asymmetric 2-col bento */}
 				<div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-4">
 					{differentiators.map((item, i) => {
 						const Icon = item.icon;

@@ -59,9 +59,10 @@ type Props = {
 	stepContent: Record<WizardStep, ReactNode>;
 	onComplete: () => void;
 	provisioning?: boolean;
+	completeLabel?: string;
 };
 
-export default function WizardShell({ stepContent, onComplete, provisioning }: Props) {
+export default function WizardShell({ stepContent, onComplete, provisioning, completeLabel = "provision." }: Props) {
 	const { step, stepIndex, goTo, next, prev, isFirst, isLast } = useWizardStep();
 	const { valid, reason } = useStepValid(step);
 	const { state } = useWizard();
@@ -111,32 +112,45 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 			<div className="mx-auto w-full max-w-[640px]">
 				<header className="mb-10">
 					<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-						provisioning {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
+						step {String(stepIndex + 1).padStart(2, "0")} / {String(WIZARD_STEPS.length).padStart(2, "0")}
 					</p>
 					<h1 className="mt-3 text-3xl md:text-4xl font-medium text-white tracking-tight leading-[1.05]">
 						{step === "persona" ? "who are they?" : null}
+						{step === "metadata" ? "how do they look on-chain?" : null}
+						{step === "tier" ? "how big do they launch?" : null}
 						{step === "launchpad" ? "where do they launch?" : null}
 						{step === "runtime" ? "where do they live?" : null}
 						{step === "safe" ? "how do they spend?" : null}
 						{step === "review" ? "ready to wake them up?" : null}
 					</h1>
 					<p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-[52ch]">
-						{step === "persona" ? "pick a name, ticker, a one-line bio. they inherit this from launch." : null}
+						{step === "persona" ? "name, ticker, one-line bio. they carry this with them." : null}
+						{step === "metadata" ? "token image + description + socials. uploaded to flap's ipfs before mint." : null}
+						{step === "tier" ? "pick a tier. it sets the cap, the v2 buy, and the math the rest flows from." : null}
 						{step === "launchpad"
-							? "pick the launchpad and the fee model. waifu's cut comes out of the agent treasury allocation."
+							? "pick a launchpad and a fee model. waifu's cut comes out of the agent treasury."
 							: null}
 						{step === "runtime"
-							? "run on our hosted cloud, or wire up an agent you already have. you can change this later."
+							? "run on our cloud, or point at an agent you already have. you can change this later."
 							: null}
-						{step === "safe"
-							? "treasury rules and adapters. defaults are sane. tweak any of this later from /patron."
-							: null}
-						{step === "review" ? "last look. costs gas + a one-time $5 setup." : null}
+						{step === "safe" ? "treasury rules and adapters. defaults are sane. tweak from /patron later." : null}
+						{step === "review" ? "last look. costs gas plus a one-time $5 setup." : null}
 					</p>
 				</header>
 
 				<nav className="mb-10" aria-label="wizard steps">
-					<ol className={cn("grid gap-2", WIZARD_STEPS.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
+					<ol
+						className={cn(
+							"grid gap-2",
+							WIZARD_STEPS.length === 7
+								? "grid-cols-7"
+								: WIZARD_STEPS.length === 6
+									? "grid-cols-6"
+									: WIZARD_STEPS.length === 5
+										? "grid-cols-5"
+										: "grid-cols-4",
+						)}
+					>
 						{WIZARD_STEPS.map((s, i) => {
 							const isComplete = i < stepIndex;
 							const isCurrent = i === stepIndex;
@@ -195,13 +209,13 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 
 				{/* Manual-fallback banner. Persistent across steps; agents should use skill.md. */}
 				<div className="mb-8 border-l-2 border-[#00ff87] bg-[#0A0F0C] p-4">
-					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">[manual fallback]</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">manual fallback</p>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						you're launching by hand. that's fine. if you want your agent to do this for itself, point it at{" "}
-						<a href="/skill.md" className="text-[#00ff87] hover:opacity-80">
+						you're launching by hand. that's fine. if you want your agent to do this itself, point it at{" "}
+						<a href="/skill.md" className="text-[#00ff87] hover:opacity-80 transition-opacity">
 							waifu.fun/skill.md
-						</a>{" "}
-						instead.
+						</a>
+						.
 					</p>
 				</div>
 
@@ -251,7 +265,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning }: P
 								"disabled:bg-neutral-800 disabled:text-neutral-600 disabled:pointer-events-none",
 							)}
 						>
-							<span>{isLast ? "provision." : "next"}</span>
+							<span>{isLast ? completeLabel : "next"}</span>
 							<span
 								className={cn(
 									"inline-flex items-center justify-center h-7 w-7 bg-black/15",
@@ -275,12 +289,22 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 	// Lightweight duplicate of validateStep so we don't violate hooks rules in a loop.
 	switch (step) {
 		case "persona": {
-			if (!state.inviteCode.trim()) return "invite code required";
+			// invite code optional at frontend; backend validates if provided.
 			const { name, ticker, bio } = state.persona;
 			if (!name.trim()) return "pick a name";
 			if (name.length > 48) return "name too long";
 			if (!/^[A-Z0-9]{2,10}$/.test(ticker)) return "ticker: 2-10 uppercase letters or digits";
 			if (bio.length > 240) return "bio too long";
+			return null;
+		}
+		case "metadata": {
+			if (!state.flap.description.trim()) return "description required";
+			if (!state.flap.tokenImageDataUrl) return "upload a token image";
+			if (!state.flap.metaCid) return "upload to flap before continuing";
+			return null;
+		}
+		case "tier": {
+			if (!state.launch.tierId) return "pick a launch tier";
 			return null;
 		}
 		case "launchpad": {

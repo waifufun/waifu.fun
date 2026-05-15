@@ -1,0 +1,107 @@
+{
+  "fork": {
+    "block": 97368810,
+    "portal": "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
+    "taxV3Impl": "0x024f18294970B5c76c0691b87f138A0317156422"
+  },
+  "portalVersion": "v5.14.1",
+  "exp0": {
+    "v7TxOk": false,
+    "v7TxErr": null,
+    "v7TxMsg": "transaction execution reverted",
+    "v7CallData": "0x",
+    "v7Exists": false
+  },
+  "exp1": {
+    "ok": true,
+    "gas": "1720147",
+    "token": "0x5E3F04c4DE7cc435B025B20BC081F77F86707777",
+    "state": {
+      "status": "1",
+      "tokenVersion": "6",
+      "reserve": "9600000000000000",
+      "circ": "1728169770261480421490828",
+      "progress": "600071828013029",
+      "pool": "0x0000000000000000000000000000000000000000",
+      "buyTaxRate": "300",
+      "sellTaxRate": "1000",
+      "dexSupplyThresh": "800000000000000000000000000"
+    },
+    "processor": {
+      "address": "0xb1C241662D7df254a776B5eEc584816D226fcA20",
+      "commissionReceiver": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "commissionBps": 60,
+      "commissionQuoteBalance": "1746000000000",
+      "feeReceiver": "0x8a08D98CBB218fceB318Ecf3aBc1BA43D8A7aB0E",
+      "dividendAddress": "0x4f30A1CBd02DE18e7787761637037BD229050D16"
+    }
+  },
+  "exp2": {
+    "ok": true
+  },
+  "exp3": {
+    "retryImmediate": {
+      "ok": false,
+      "err": null,
+      "msg": "transaction execution reverted"
+    },
+    "retryAfter95s": {
+      "ok": false,
+      "err": null
+    }
+  },
+  "exp4": {
+    "create": {
+      "ok": false,
+      "token": "0x98527a0c479B79719F612e721b522C0Bae607777",
+      "err": null,
+      "msg": "bad address checksum"
+    }
+  },
+  "exp5": {
+    "q16": {
+      "ok": true,
+      "gas": "1737271",
+      "token": "0x8fc8E56f4425200d3170f87564e3d2e50c857777",
+      "state": {
+        "status": "1",
+        "reserve": "15360000000000000000",
+        "progress": "960114924820846905",
+        "pool": "0x0000000000000000000000000000000000000000"
+      },
+      "pair": "0x0000000000000000000000000000000000000000"
+    },
+    "q20": {
+      "ok": true,
+      "gas": "5274666",
+      "token": "0xDaBE28D7F1b00F1c3dEc7601310641F5760e7777",
+      "state": {
+        "status": "4",
+        "reserve": "0",
+        "progress": "1000000000000000000",
+        "pool": "0x5EB4B8F1f679e038B1679e6947CfaF9c4b9BD9D5"
+      },
+      "pair": "0x5EB4B8F1f679e038B1679e6947CfaF9c4b9BD9D5",
+      "events": [
+        "TokenCreated",
+        "FlapTokenTaxSet",
+        "FlapTokenAsymmetricTaxSet",
+        "TokenBought",
+        "FlapTokenProgressChanged",
+        "LaunchedToDEX"
+      ]
+    }
+  },
+  "exp6": {
+    "token": "0xDaBE28D7F1b00F1c3dEc7601310641F5760e7777",
+    "processorBefore": {
+      "address": "0x4Bf5a2d282584dC2648aB3eD2120FACaaCF004CA",
+      "commissionReceiver": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "commissionBps": 60,
+      "commissionQuoteBalance": "2909651675835862",
+      "feeReceiver": "0x8a08D98CBB218fceB318Ecf3aBc1BA43D8A7aB0E",
+      "dividendAddress": "0xe14D5F05745aC8248bF58770cfc547de0521f105"
+    },
+    "error": "nonce has already been used"
+  }
+}

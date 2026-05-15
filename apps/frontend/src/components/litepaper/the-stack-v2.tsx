@@ -115,7 +115,7 @@ export default function TheStackV2() {
 						</RevealBlock>
 					</div>
 
-					{/* Right: stack layers — vertical strip diagram */}
+					{/* Right: stack layers, vertical strip diagram */}
 					<div className="lg:col-span-8">
 						<div className="space-y-3">
 							{stackLayers.map((layer, i) => {

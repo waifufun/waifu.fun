@@ -4,11 +4,12 @@ import { type Address, type Hex, getContractAddress, keccak256, toBytes, toHex }
 
 import { getFlapPortalAddress } from "./client.js";
 import { resolveFlapNetwork } from "./constants.js";
-import type { FindFlapVanitySaltInput, FindFlapVanitySaltResult } from "./types.js";
+import { FLAP_TOKEN_VERSIONS, type FindFlapVanitySaltInput, type FindFlapVanitySaltResult } from "./types.js";
 
 export const getFlapTokenImplementationAddress = (input: {
 	taxRate: number;
 	mktBps?: number;
+	tokenVersion?: number;
 	chainId?: number;
 	network?: string;
 }): Address => {
@@ -19,6 +20,13 @@ export const getFlapTokenImplementationAddress = (input: {
 
 	if (input.taxRate <= 0) {
 		return network.standardTokenImplementation;
+	}
+
+	if (input.tokenVersion === FLAP_TOKEN_VERSIONS.TOKEN_TAXED_V3) {
+		if (!("taxTokenV3Implementation" in network) || !network.taxTokenV3Implementation) {
+			throw new Error(`TOKEN_TAXED_V3 implementation is not configured for ${network.key}`);
+		}
+		return network.taxTokenV3Implementation;
 	}
 
 	if ((input.mktBps ?? 10_000) === 10_000) {
@@ -73,6 +81,7 @@ export const findFlapVanitySalt = async (input: FindFlapVanitySaltInput): Promis
 		getFlapTokenImplementationAddress({
 			taxRate: input.taxRate,
 			mktBps: input.mktBps,
+			tokenVersion: input.tokenVersion,
 			network: network.key,
 		});
 	const suffix = (input.suffix ?? getFlapVanitySuffix(input)).toLowerCase();

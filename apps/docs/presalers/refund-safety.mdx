@@ -1,0 +1,129 @@
+---
+title: "refund safety"
+description: "when you can get your BNB back, and how"
+---
+
+three triggers send a vault to `REFUND`. one function, `refund()`, retrieves
+your BNB. once a vault hits REFUND, it cannot leave. there is no path back to
+OPEN, CLOSED, or LAUNCHED.
+
+this is the strongest safety property the platform has. you should understand
+how it works before you deposit serious money.
+
+## the three refund triggers
+
+### 1. under-subscribed
+
+if the close window expires (`block.timestamp >= closeTimestamp`) and the
+vault total is below the tier's `presaleCap`, anyone can call:
+
+```solidity
+vault.enableRefundUnderSubscribed()
+```
+
+this is permissionless. literally anyone with gas can flip the vault to
+REFUND once it qualifies. you do not have to wait for the platform.
+
+### 2. bundle failed
+
+if the bundle bot tries `executeBundle()` three times and each attempt
+reverts (e.g. PCS revert, FLAP revert, network issue), the bot calls:
+
+```solidity
+vault.enableRefundBundleFailed()
+```
+
+this can only be called by the bot's address (set at construction). it
+requires `state == CLOSED`. once in REFUND, the bot can never go back.
+
+### 3. admin emergency stop
+
+the platform owner (an EOA controlled by waifu.fun) can call:
+
+```solidity
+vault.adminEnableRefund("reason string")
+```
+
+this requires `state != LAUNCHED`. the owner cannot interrupt an already-
+launched token. this kill switch exists for unforeseen issues during the
+OPEN or CLOSED window.
+
+what the owner cannot do:
+
+- they cannot drain BNB
+- they cannot mint tokens
+- they cannot change tier math
+- they cannot interfere with claim or refund once enabled
+
+the kill switch sends to REFUND only. it never sends to LAUNCHED.
+
+## the refund function
+
+once any of the above triggers fires, the vault is in `REFUND`. every
+depositor calls `refund()` independently:
+
+```solidity
+function refund() third-party nonReentrant {
+    Depositor storage d = depositors[msg.sender];
+    if (d.deposited == 0) revert NoDeposit();
+    uint256 principal = d.deposited;
+    uint256 bonus = (principal == totalDeposited)
+        ? bonusPool
+        : (bonusPool * principal) / totalDeposited;
+    uint256 total = principal + bonus;
+    // clear state first (CEI)
+    d.deposited = 0;
+    totalDeposited -= principal;
+    (bool ok, ) = msg.sender.call{value: total}("");
+    require(ok, "refund-transfer-failed");
+    emit Refunded(msg.sender, principal, bonus, total);
+}
+```
+
+key properties:
+
+- **idempotent.** calling `refund()` twice from the same address reverts
+  with `NoDeposit` on the second call. clean exit.
+- **CEI.** state is cleared before the BNB transfer, so reentrancy from a
+  malicious receive function cannot drain the contract.
+- **nonReentrant.** belt and suspenders. the modifier blocks reentry even
+  if CEI ordering somehow fails.
+- **pro-rata bonus.** the bonus pool (if any) is split proportional to your
+  share of the principal.
+
+## what refund returns
+
+- your full principal, exactly what you deposited
+- your share of the bonus pool, if there is one (most launches have no bonus pool)
+
+no fees are charged on refund. you get the gas cost of the refund transaction
+(small, BSC is cheap) and nothing else is deducted.
+
+## what about the platform's creation fee
+
+the creation fee is paid by the creator at `createLaunch()` time, out of
+their own wallet. it never enters the vault. refunds are unaffected.
+
+## comparing to "rug refund"
+
+on most launchpads, "refund" depends on the team's promise to send BNB back
+manually. on waifu.fun, refund is enforced by the contract. the platform
+cannot prevent it. the creator cannot prevent it. the vault is the source
+of truth and it is permissionless.
+
+the one weakness: the admin emergency-stop is centralized. the platform owner
+can flip ANY non-LAUNCHED vault to REFUND. they cannot drain BNB, but they
+can force an exit. the assumption is the platform uses this only in genuine
+emergencies.
+
+## quick sanity checks
+
+before you deposit:
+
+- **verify the contract address** on bscscan. compare to what the UI says.
+- **check the close timestamp.** it should be a reasonable time in the
+  future, not a year from now.
+- **check the tier.** the cap and graduation parameters should match what
+  the project announced.
+- **read the source.** the contracts are open. you can read `LaunchVault.sol`
+  yourself.
