@@ -4,10 +4,11 @@
 
 | Contract | Address | BscScan | Sourcify |
 |---|---|---|---|
-| LaunchFactory | `0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983` | ⏳ pending API key | ✅ full match |
+| LaunchFactory | `0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983` | ✅ verified | ✅ full match |
 
-Sourcify URL:
-https://repo.sourcify.dev/contracts/full_match/56/0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983/
+Links:
+- https://bscscan.com/address/0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983#code
+- https://repo.sourcify.dev/contracts/full_match/56/0x18BFb4Bee9b2E910a5adcAc51d5977A0f4Be0983/
 
 ## Why both?
 
@@ -39,12 +40,16 @@ These need separate verification per launch. Use the constructor args printed by
 
 TODO: write a post-launch hook that auto-submits all three to Sourcify + BscScan.
 
-## Get a BscScan API key (if needed)
+## Get an Etherscan V2 API key (if needed)
 
-1. Go to https://bscscan.com/myapikey (sign up if needed, free)
+Etherscan V2 unified API: one key works across BSC, Polygon, Arbitrum, Base, Optimism, etc.
+
+1. Go to https://etherscan.io/myapikey (sign up if needed, free)
 2. Create a new key
-3. Set in env: `BSCSCAN_API_KEY=<key>` in `packages/contracts-evm/.env`
+3. Set in env: `ETHERSCAN_API_KEY=<key>` (or legacy `BSCSCAN_API_KEY=<key>`) in `packages/contracts-evm/.env`
 4. Re-run `npx hardhat verify ...` — both BscScan and Sourcify will be tried
+
+The legacy V1 endpoint (`bscscan.com/api`) was deprecated May 31 2025. hardhat-verify v2 uses V2 by default.
 
 ## DappBay submission
 
