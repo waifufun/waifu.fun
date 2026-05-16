@@ -20,6 +20,7 @@ import {LaunchVault} from "./LaunchVault.sol";
 import {BundleRouter} from "./BundleRouter.sol";
 import {TreasuryLP} from "./TreasuryLP.sol";
 import {IVaultRouterSetter} from "./interfaces/IVaultRouterSetter.sol";
+import {TierMath} from "./TierMath.sol";
 
 contract LaunchFactory {
     enum LaunchTier {
@@ -179,8 +180,9 @@ contract LaunchFactory {
         if (predicted != config.predictedTokenAddress) revert InvalidPredictedAddress();
         if (predicted.code.length != 0) revert PredictedAddressAlreadyDeployed();
 
-        // 4. get tier config
-        (uint256 presaleCap, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled) = tierConfig(config.tier);
+        // 4. get tier budget (tax-calibrated quoteAmt based on config.buyTaxBps)
+        (uint256 presaleCap, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled) =
+            tierBudget(config.tier, config.buyTaxBps);
 
         // 5. deploy LaunchVault
         LaunchVault vault = new LaunchVault(
@@ -250,44 +252,25 @@ contract LaunchFactory {
         );
     }
 
-    /// @notice tier -> (presaleCap, quoteAmt, v2BuyBnb, vestingEnabled).
-    ///
-    /// Empirical calibration on FLAP Portal v5.14.3 (block 98651857, 2026-05-16):
-    /// Portal's bonding curve fills with 16.8 BNB to trigger atomic graduation
-    /// (status=DEX, V2 pair created, tokens deposited to the V2 LP). 17 BNB is
-    /// the safe production value with a small headroom margin above the threshold.
-    /// At 16 BNB the curve sits at progress=0.96 (Tradable, NO V2 pair); each
-    /// extra 0.2 BNB adds ~1.2% progress.
-    ///
-    /// Tier 80% is curve-only: no graduation, no V2 follow-up buy. Presalers receive
-    /// 40% of the 800M curve allocation. The token starts tradable on Flap's curve.
-    ///
-    /// Tiers 90/95/98% set quoteAmt=17 BNB to trigger Portal graduation, then do a
-    /// V2 follow-up buy from the freshly-created PCS V2 pair. v2BuyBnb covers the
-    /// rest of the tier budget so `quoteAmt + v2BuyBnb == presaleCap` exactly
-    /// (no BNB strands in the vault post-launch).
-    ///
-    ///   TIER_80:  (16,  16,   0, false)  curve only, no graduation
-    ///   TIER_90:  (32,  17,  15, true)   17 BNB graduates, 15 BNB V2 buy
-    ///   TIER_95:  (64,  17,  47, true)   17 BNB graduates, 47 BNB V2 buy
-    ///   TIER_98:  (160, 17, 143, true)   17 BNB graduates, 143 BNB V2 buy
-    function tierConfig(LaunchTier tier)
+    /// @notice Full tier budget for a given (tier, buyTaxBps).
+    ///         Delegates math to TierMath library (TIER_80 is curve-only,
+    ///         graduating tiers calibrate quoteAmt against FLAP fee + buyTax
+    ///         to keep effective curve fill >= 16 BNB with 1% margin).
+    function tierBudget(LaunchTier tier, uint16 buyTaxBps)
         public
         pure
         returns (uint256 presaleCapBnb, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled)
     {
-        if (tier == LaunchTier.TIER_80) return (16 ether, 16 ether, 0, false);
-        if (tier == LaunchTier.TIER_90) return (32 ether, 17 ether, 15 ether, true);
-        if (tier == LaunchTier.TIER_95) return (64 ether, 17 ether, 47 ether, true);
-        // TIER_98
-        return (160 ether, 17 ether, 143 ether, true);
+        return TierMath.tierBudget(uint8(tier), buyTaxBps);
     }
+
+
 
     function launchCount() external view returns (uint256) {
         return allLaunches.length;
     }
 
-    function effectiveSalt(address creator, bytes32 vanitySalt) public pure returns (bytes32) {
+    function effectiveSalt(address creator, bytes32 vanitySalt) internal pure returns (bytes32) {
         return keccak256(abi.encode(creator, vanitySalt));
     }
 
