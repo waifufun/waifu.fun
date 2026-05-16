@@ -81,10 +81,13 @@ stashAll();
 let exitCode = 1;
 const hadPagesDir = existsSync(pagesDir);
 const hadPagesApp = existsSync(pagesApp);
+let keepPagesShim = null;
 try {
 	rmSync(join(root, ".next"), { recursive: true, force: true });
-	if (!hadPagesApp) ensurePagesShim();
-	const keepPagesShim = hadPagesApp ? null : setInterval(ensurePagesShim, 250);
+	if (!hadPagesApp) {
+		ensurePagesShim();
+		keepPagesShim = setInterval(ensurePagesShim, 250);
+	}
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
@@ -98,8 +101,8 @@ try {
 		result.on("close", (code) => resolve(code ?? 1));
 		result.on("error", () => resolve(1));
 	});
-	if (keepPagesShim) clearInterval(keepPagesShim);
 } finally {
+	if (keepPagesShim) clearInterval(keepPagesShim);
 	if (!hadPagesApp) rmSync(pagesApp, { force: true });
 	if (!hadPagesDir) rmSync(pagesDir, { recursive: true, force: true });
 	restoreAll();
