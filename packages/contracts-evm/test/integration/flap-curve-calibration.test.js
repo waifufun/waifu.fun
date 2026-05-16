@@ -57,7 +57,7 @@ function mineVanitySalt(deployer, codeHash, label) {
 	throw new Error(`salt mining exceeded ${maxIterations} iterations`);
 }
 
-describe("FLAP curve calibration v5.14.3", function () {
+describe("FLAP curve calibration v5.14.3", () => {
 	if (!FORK_ENABLED) {
 		it.skip("requires FORK_BSC=true", () => {});
 		return;
@@ -82,11 +82,7 @@ describe("FLAP curve calibration v5.14.3", function () {
 			await network.provider.send("evm_increaseTime", [200]);
 			await network.provider.send("evm_mine");
 
-			const { salt, predicted } = mineVanitySalt(
-				PORTAL,
-				INIT_CODE_HASH,
-				`calibration-${quoteEth}-${Date.now()}`,
-			);
+			const { salt, predicted } = mineVanitySalt(PORTAL, INIT_CODE_HASH, `calibration-${quoteEth}`);
 
 			const quoteAmt = ethers.parseEther(quoteEth.toString());
 			const params = {
@@ -137,6 +133,14 @@ describe("FLAP curve calibration v5.14.3", function () {
 			console.log(
 				`    [${quoteEth} BNB] status=${statusName} progress=${progress} pair=${pair === ethers.ZeroAddress ? "NONE" : pair}`,
 			);
+
+			if (quoteEth >= 16.8) {
+				expect(status).to.equal(4);
+				expect(pair).to.not.equal(ethers.ZeroAddress);
+			} else {
+				expect(status).to.not.equal(4);
+				expect(pair).to.equal(ethers.ZeroAddress);
+			}
 		});
 	}
 });
