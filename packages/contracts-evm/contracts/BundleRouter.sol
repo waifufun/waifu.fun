@@ -228,15 +228,20 @@ contract BundleRouter {
             _v2FollowUpBuy(token, p.minV2TokensOut, p.deadline);
         }
 
-        // 5. token splits, read router's current balance (curve + V2)
-        // splits target 50/10/20 of TOTAL supply (curve gives router 80%,
-        // remaining 20% locked in flap-created PCS V2 LP). against router
-        // balance: 25 / 12.5 / 62.5 vault / treasury / burn. burn absorbs
-        // the rounding remainder so presaler pro-rata math stays exact.
+        // 5. token splits , FLAT amounts pegged to total supply.
+        //   vault    = 20% of supply (200M of 1B)
+        //   treasury = 10% of supply (100M of 1B)
+        //   burn     = router balance minus vault minus treasury
+        //              (= 50% of supply for tier 80; absorbs the V2
+        //              follow-up buy tokens for graduating tiers so
+        //              presalers always receive exactly 20% of supply)
+        // remaining 20% of supply lives in the flap-created PCS V2 LP.
         uint256 totalY = IERC20(token).balanceOf(address(this));
-        uint256 vaultAmt = totalY / 4; // 25% of router = 20% of supply
-        uint256 treasuryAmt = totalY / 8; // 12.5% of router = 10% of supply
-        uint256 burnAmt = totalY - vaultAmt - treasuryAmt; // ~62.5% of router = ~50% of supply
+        uint256 supply = IERC20(token).totalSupply();
+        uint256 vaultAmt = supply / 5; // 20% of supply
+        uint256 treasuryAmt = supply / 10; // 10% of supply
+        if (vaultAmt + treasuryAmt > totalY) revert InsufficientFunding();
+        uint256 burnAmt = totalY - vaultAmt - treasuryAmt;
 
         // 6. burn
         // safeTransfer; tax tokens may apply tax even on burn path, that's fine
