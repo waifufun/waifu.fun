@@ -37,6 +37,14 @@ export type AgentRuntimeKind = "eliza-cloud" | "third-party-webhook" | "third-pa
 
 export type AgentRuntimeDetail = {
 	kind: AgentRuntimeKind;
+	/** Hosted Eliza Cloud agent identifier (eliza-cloud only) */
+	cloudAgentId?: string | null;
+	/** Hosted cloud status as returned by the runtime provisioner */
+	cloudStatus?: string | null;
+	/** Hosted cloud web UI link, when available */
+	webUiUrl?: string | null;
+	/** Hosted cloud logs link, when available */
+	logsUrl?: string | null;
 	/** absolute URL where waifu-core POSTs runtime events (third-party-webhook only) */
 	webhookUrl?: string | null;
 	/** masked secret. Real secret is delivered once via a separate flow. */

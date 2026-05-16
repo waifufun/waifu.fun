@@ -2,8 +2,9 @@
  * Eliza Cloud API client — service-account bridge.
  *
  * waifu-core acts as a gateway: the frontend never talks to eliza-cloud
- * directly. This client signs requests with a service JWT that has admin
- * access to the eliza-cloud backend running on the same host.
+ * directly. Hosted-agent provisioning uses the Eliza Cloud service API
+ * (`/api/v1/agents` + `X-Service-Key`). Legacy routes remain available for
+ * older deployments that still expect bearer auth or service JWTs.
  */
 
 import * as jose from "jose";
@@ -21,6 +22,45 @@ export interface ElizaAvailability {
 export interface CreateAgentInput {
 	agentName: string;
 	agentConfig?: Record<string, unknown> | undefined;
+}
+
+export interface ProvisionWaifuCloudAgentInput {
+	agentId: string;
+	tokenContractAddress: string;
+	chain: string;
+	chainId: number;
+	tokenName: string;
+	tokenTicker: string;
+	launchType: "native" | "imported";
+	character?: {
+		name: string;
+		bio?: string;
+		avatar?: string;
+		config?: Record<string, unknown>;
+	};
+	billing?: {
+		mode: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+		initialReserveUsd?: number;
+	};
+	webhookUrl?: string;
+	modelDefaults?: Record<string, string>;
+}
+
+interface ElizaServiceCreateAgentBody {
+	tokenContractAddress: string;
+	chain: string;
+	chainId: number;
+	tokenName: string;
+	tokenTicker: string;
+	launchType: "native" | "imported";
+	character: {
+		name: string;
+		bio?: string;
+		avatar?: string;
+		config: Record<string, unknown>;
+	};
+	billing: NonNullable<ProvisionWaifuCloudAgentInput["billing"]>;
+	webhookUrl?: string;
 }
 
 export interface Logger {
@@ -73,6 +113,23 @@ export interface ElizaCreateResult {
 	message: string;
 }
 
+export interface ElizaCloudProvisionResult {
+	agentId: string;
+	cloudAgentId: string;
+	characterId?: string;
+	jobId?: string;
+	status: string;
+	polling?: {
+		endpoint: string;
+		intervalMs: number;
+		expectedDurationMs: number;
+	};
+	tokenAddress?: string | null;
+	tokenChain?: string | null;
+	tokenName?: string | null;
+	tokenTicker?: string | null;
+}
+
 export interface ElizaJobResult {
 	jobId: string;
 	status: string;
@@ -85,6 +142,7 @@ export interface ElizaClientConfig {
 	baseUrl: string;
 	jwtSecret?: string | undefined;
 	apiKey?: string | undefined;
+	serviceKey?: string | undefined;
 	logger?: Logger | undefined;
 	/** Service-account user ID in eliza-cloud (created lazily). */
 	serviceUserId?: string | undefined;
@@ -156,7 +214,9 @@ export class ElizaClient {
 		const needsAuth = options?.authenticated !== false;
 
 		if (needsAuth) {
-			if (this.config.apiKey !== undefined) {
+			if (this.config.serviceKey) {
+				headers["X-Service-Key"] = this.config.serviceKey;
+			} else if (this.config.apiKey) {
 				headers.authorization = `Bearer ${this.config.apiKey}`;
 			} else {
 				const token = options?.asUserId ? await this.generateUserToken(options.asUserId) : await this.getServiceToken();
@@ -257,6 +317,56 @@ export class ElizaClient {
 		});
 	}
 
+	async provisionWaifuAgent(input: ProvisionWaifuCloudAgentInput): Promise<ElizaCloudProvisionResult> {
+		const characterConfig = {
+			...(input.character?.config ?? {}),
+			waifuAgentId: input.agentId,
+			...(input.modelDefaults ? { modelDefaults: input.modelDefaults, settings: input.modelDefaults } : {}),
+		};
+		const body: ElizaServiceCreateAgentBody = {
+			tokenContractAddress: input.tokenContractAddress,
+			chain: input.chain,
+			chainId: input.chainId,
+			tokenName: input.tokenName,
+			tokenTicker: input.tokenTicker,
+			launchType: input.launchType,
+			character: {
+				name: input.character?.name ?? input.tokenName,
+				...(input.character?.bio ? { bio: input.character.bio } : {}),
+				...(input.character?.avatar ? { avatar: input.character.avatar } : {}),
+				config: characterConfig,
+			},
+			billing: input.billing ?? { mode: "owner_credits" },
+			...(input.webhookUrl ? { webhookUrl: input.webhookUrl } : {}),
+		};
+
+		const result = await this.request<Record<string, unknown>>("POST", "/api/v1/agents", { body });
+		const cloudAgentId =
+			stringField(result, "cloudAgentId") ??
+			stringField(result, "agentId") ??
+			stringField(result, "id") ??
+			input.agentId;
+		const polling = normalizePolling(result.polling);
+		const characterId = stringField(result, "characterId");
+		const jobId = stringField(result, "jobId");
+		const normalized: ElizaCloudProvisionResult = {
+			agentId: input.agentId,
+			cloudAgentId,
+			status: stringField(result, "status") ?? "pending",
+			...(characterId ? { characterId } : {}),
+			...(jobId ? { jobId } : {}),
+			...(polling ? { polling } : {}),
+			tokenAddress:
+				stringField(result, "token_address") ??
+				stringField(result, "tokenAddress") ??
+				stringField(result, "tokenContractAddress"),
+			tokenChain: stringField(result, "token_chain") ?? stringField(result, "tokenChain"),
+			tokenName: stringField(result, "token_name") ?? stringField(result, "tokenName"),
+			tokenTicker: stringField(result, "token_ticker") ?? stringField(result, "tokenTicker"),
+		};
+		return normalized;
+	}
+
 	async getAgents(userId: string): Promise<ElizaAgent[]> {
 		return this.request<ElizaAgent[]>("GET", "/api/agents", {
 			asUserId: userId,
@@ -312,6 +422,7 @@ export class ElizaClient {
 
 export interface ElizaCloudClient {
 	provisionAgent(input: ProvisionAgentInput): Promise<ElizaCreateResult | { containerId: string }>;
+	provisionWaifuAgent?(input: ProvisionWaifuCloudAgentInput): Promise<ElizaCloudProvisionResult>;
 	pauseAgent(agentId: string): Promise<unknown>;
 	resumeAgent(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
@@ -339,7 +450,7 @@ export class ElizaApiError extends Error {
 export const ElizaCloudError = ElizaApiError;
 
 export class ElizaCloudNotConfiguredError extends Error {
-	constructor(message = "ELIZA_CLOUD_BASE_URL is not configured") {
+	constructor(message = "Eliza Cloud client is not configured") {
 		super(message);
 		this.name = "ElizaCloudNotConfiguredError";
 	}
@@ -351,14 +462,19 @@ let _instance: ElizaClient | null = null;
 
 export function getElizaClient(): ElizaClient {
 	if (!_instance) {
-		const baseUrl = process.env.ELIZA_API_URL ?? "http://localhost:3000";
+		const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+		const serviceKey = nonEmpty(process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY);
+		const apiKey = nonEmpty(process.env.ELIZA_CLOUD_API_KEY);
 		const jwtSecret = process.env.ELIZA_JWT_SECRET;
+		const serviceUserId = nonEmpty(process.env.ELIZA_SERVICE_USER_ID);
 
-		if (!jwtSecret) {
-			throw new Error("ELIZA_JWT_SECRET env var is required for the agent bridge");
+		if (!serviceKey && !apiKey && !jwtSecret) {
+			throw new Error(
+				"ELIZA_CLOUD_SERVICE_KEY, ELIZA_CLOUD_API_KEY, or ELIZA_JWT_SECRET env var is required for the agent bridge",
+			);
 		}
 
-		_instance = new ElizaClient({ baseUrl, jwtSecret });
+		_instance = new ElizaClient({ baseUrl, serviceKey, apiKey, jwtSecret, serviceUserId });
 	}
 
 	return _instance;
@@ -366,12 +482,34 @@ export function getElizaClient(): ElizaClient {
 
 export function createElizaCloudClient(opts: {
 	baseUrl: string;
-	apiKey: string;
+	apiKey?: string;
+	serviceKey?: string;
 	logger: Logger;
 }): ElizaCloudClient {
 	return new ElizaClient({
 		baseUrl: opts.baseUrl.trim().replace(/\/+$/, ""),
-		apiKey: opts.apiKey,
+		apiKey: nonEmpty(opts.apiKey),
+		serviceKey: nonEmpty(opts.serviceKey),
 		logger: opts.logger,
 	});
+}
+
+function nonEmpty(value: string | undefined): string | undefined {
+	const trimmed = value?.trim();
+	return trimmed ? trimmed : undefined;
+}
+
+function stringField(data: Record<string, unknown>, key: string): string | null {
+	const value = data[key];
+	return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function normalizePolling(value: unknown): ElizaCloudProvisionResult["polling"] | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	const record = value as Record<string, unknown>;
+	const endpoint = stringField(record, "endpoint");
+	const intervalMs = typeof record.intervalMs === "number" ? record.intervalMs : null;
+	const expectedDurationMs = typeof record.expectedDurationMs === "number" ? record.expectedDurationMs : null;
+	if (!endpoint || intervalMs === null || expectedDurationMs === null) return null;
+	return { endpoint, intervalMs, expectedDurationMs };
 }

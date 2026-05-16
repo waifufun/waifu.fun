@@ -17,8 +17,8 @@ const STAGES: { id: Exclude<ProvisioningStage, "done">; label: string; sublabel:
 	},
 	{
 		id: "runtime",
-		label: "minting runtime",
-		sublabel: "wiring plugins, treasury, adapters",
+		label: "starting agent",
+		sublabel: "wiring eliza cloud, treasury, adapters",
 		durationMs: 1500,
 	},
 	{

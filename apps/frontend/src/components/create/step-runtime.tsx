@@ -19,27 +19,29 @@ type Option = {
 
 const OPTIONS: Option[] = [
 	{
-		kind: "webhook",
-		title: "[01] webhook",
-		tagline: "your agent on a public URL.",
-		description: "we POST events to your URL with HMAC auth. your agent acts via steward keys. framework-agnostic.",
-		Icon: WebhookIcon,
+		kind: "hosted",
+		title: "[01] eliza cloud",
+		tagline: "hosted runtime. no setup required.",
+		description:
+			"we provision and run your agent on hosted Eliza Cloud. you can inspect status and links from /patron.",
+		Icon: CloudIcon,
 		badge: "[recommended]",
 	},
 	{
-		kind: "pull",
-		title: "[02] pull",
-		tagline: "you poll us. works behind firewalls.",
-		description: "for residential or hobbyist setups behind NAT. get an API key once, fetch events on your schedule.",
-		Icon: PullIcon,
+		kind: "webhook",
+		title: "[02] webhook",
+		tagline: "advanced: bring a public agent URL.",
+		description: "BYO runtime. we POST events to your URL with HMAC auth. your agent acts via steward keys.",
+		Icon: WebhookIcon,
+		badge: "[advanced]",
 	},
 	{
-		kind: "hosted",
-		title: "[03] managed",
-		tagline: "we run it directly with select teams.",
-		description: "managed runtime is hands-on. ping us in discord or X to discuss.",
-		Icon: CloudIcon,
-		badge: "[ping us]",
+		kind: "pull",
+		title: "[03] pull",
+		tagline: "advanced: poll us from your runtime.",
+		description: "BYO runtime for NAT or firewall setups. get an API key once, fetch events on your schedule.",
+		Icon: PullIcon,
+		badge: "[advanced]",
 	},
 ];
 
@@ -92,7 +94,7 @@ export default function StepRuntime() {
 						exit={{ opacity: 0, y: -6 }}
 						transition={TRANSITION}
 					>
-						<ManagedPingPanel />
+						<HostedConfig />
 					</motion.div>
 				) : null}
 			</AnimatePresence>
@@ -147,23 +149,17 @@ function RuntimeCard({ opt, selected, onSelect }: { opt: Option; selected: boole
 	);
 }
 
-function ManagedPingPanel() {
+function HostedConfig() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5">
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">[managed]</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">[hosted]</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
-				managed runtime is hands-on. we run hosted containers directly with select teams. ping us to discuss.
+				hosted Eliza Cloud is provisioned automatically after launch confirmation. no webhook, polling loop, or server
+				setup required.
 			</p>
-			<div className="mt-3 flex gap-3 text-[11px] font-mono uppercase tracking-[0.18em]">
-				<a
-					href="https://x.com/waifudotfun"
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-[#00ff87] hover:opacity-80"
-				>
-					x {"\u2192"}
-				</a>
-			</div>
+			<p className="mt-2 text-[11px] text-neutral-500 leading-relaxed">
+				cloud status, agent id, and runtime links appear on the patron page as soon as the backend returns them.
+			</p>
 		</aside>
 	);
 }
@@ -276,7 +272,7 @@ function WebhookConfig() {
 function PullConfig() {
 	return (
 		<aside className="border border-white/5 bg-white/[0.012] p-5">
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">pull mode</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">advanced pull mode</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed">
 				after provisioning we'll show your API key once. use it to long-poll{" "}
 				<span className="font-mono text-neutral-200">GET /v2/agents/:id/events</span> from anywhere. no public URL

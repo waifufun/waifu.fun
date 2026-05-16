@@ -13,13 +13,12 @@ export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER
 /** Wizard step identifiers. URL-synced via `?step=`. */
 export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "runtime" | "safe" | "review";
 
-export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "runtime", "safe", "review"];
+export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "safe", "review"];
 export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = [
 	"persona",
 	"metadata",
 	"tier",
 	"launchpad",
-	"runtime",
 	"safe",
 	"review",
 ];
@@ -133,7 +132,7 @@ export const DEFAULT_STATE: WizardState = {
 		metaUri: null,
 	},
 	runtime: {
-		kind: "webhook",
+		kind: "hosted",
 		webhookUrl: "",
 		webhookSecret: "",
 	},

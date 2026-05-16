@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
-import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
+import {
+	provisionCloudStorageKey,
+	provisionSuccessRoute,
+	provisionSuccessStorageKey,
+} from "./wizard-provision-success";
 
 describe("wizard provision success routing", () => {
 	it("waits longer than the backend receipt timeout before failing the wizard", () => {
@@ -19,6 +23,7 @@ describe("wizard provision success routing", () => {
 		expect(provisionSuccessStorageKey(result)).toMatchInlineSnapshot(
 			`"wf_agent_api_key:0x0000000000000000000000000000000000000004"`,
 		);
+		expect(provisionCloudStorageKey(result)).toBe("wf_cloud_provision:0x0000000000000000000000000000000000000004");
 		expect(provisionSuccessRoute(result)).toMatchInlineSnapshot(
 			`"/patron/0x0000000000000000000000000000000000000004?just_provisioned=true"`,
 		);

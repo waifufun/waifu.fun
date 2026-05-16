@@ -203,6 +203,22 @@ export const openApiSpec = {
 					safeAddress: { type: ["string", "null"], pattern: "^0x[0-9a-fA-F]{40}$" },
 					pullApiKey: { type: ["string", "null"], description: "one-time pull runtime key when runtime.kind is pull" },
 					agentApiKey: { type: ["string", "null"], description: "one-time agent API key" },
+					cloudAgentId: { type: "string", description: "Eliza Cloud agent id when runtime.kind is hosted" },
+					cloudStatus: { type: "string", description: "Eliza Cloud provisioning status" },
+					cloudJobId: { type: ["string", "null"] },
+					cloudPolling: { type: ["object", "null"] },
+					cloudCharacterId: { type: ["string", "null"] },
+					cloud: {
+						type: "object",
+						properties: {
+							provider: { type: "string", enum: ["eliza-cloud"] },
+							agentId: { type: "string" },
+							status: { type: "string" },
+							jobId: { type: ["string", "null"] },
+							polling: { type: ["object", "null"] },
+							characterId: { type: ["string", "null"] },
+						},
+					},
 				},
 			},
 			LaunchResponse: {

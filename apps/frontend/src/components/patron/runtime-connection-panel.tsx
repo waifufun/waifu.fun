@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AgentDetail, AgentRuntimeKind } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
-import { Antenna, ArrowLeftRight, Check, Copy, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { Antenna, ArrowLeftRight, Check, Cloud, Copy, ExternalLink, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type Props = {
@@ -503,22 +503,64 @@ function EndpointRow({ label, method, path }: { label: string; method: "GET" | "
 /* Managed placeholder                                                        */
 /* -------------------------------------------------------------------------- */
 
-function ManagedPlaceholder() {
+function ManagedPlaceholder({ agent }: { agent: AgentDetail }) {
+	const runtime = agent.runtime;
+	const cloudAgentId = runtime?.cloudAgentId ?? null;
+	const cloudStatus = runtime?.cloudStatus ?? agent.status;
+	const links = [
+		runtime?.webUiUrl ? { label: "open cloud", href: runtime.webUiUrl } : null,
+		runtime?.logsUrl ? { label: "logs", href: runtime.logsUrl } : null,
+	].filter((link): link is { label: string; href: string } => Boolean(link));
+
 	return (
 		<section aria-label="Managed runtime" className={PANEL_BASE}>
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">[managed]</p>
-			<p className="mt-3 text-sm text-neutral-300 leading-relaxed">
-				this agent is on managed runtime. for connection details or changes, ping us on x.
-			</p>
-			<div className="mt-3 flex gap-3 text-[11px] font-mono uppercase tracking-[0.18em]">
-				<a
-					href="https://x.com/waifudotfun"
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-[#00ff87] hover:opacity-80"
-				>
-					x {"\u2192"}
-				</a>
+			<header className="mb-4 flex items-start justify-between gap-4">
+				<div className="flex items-start gap-3">
+					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
+						<Cloud className="h-4 w-4" strokeWidth={1.75} />
+					</div>
+					<div>
+						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Eliza Cloud runtime</h2>
+						<p className="mt-1 text-xs text-[#71717a]">
+							Hosted runtime provisioned by waifu. No webhook or polling setup required.
+						</p>
+					</div>
+				</div>
+				<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#71717a]">
+					<StatusDot live={cloudStatus === "active" || cloudStatus === "running"} />
+					<span>{cloudStatus.replace(/_/g, " ")}</span>
+				</div>
+			</header>
+
+			<div className="grid gap-3">
+				{cloudAgentId ? (
+					<div className={cn(CARD_INNER, "flex items-center justify-between gap-2 px-3 py-2.5")}>
+						<div className="min-w-0">
+							<div className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">cloud agent id</div>
+							<code className="block truncate font-mono text-xs text-[#e4e4e7]">{cloudAgentId}</code>
+						</div>
+						<CopyButton value={cloudAgentId} />
+					</div>
+				) : null}
+
+				{links.length > 0 ? (
+					<div className="flex flex-wrap gap-2">
+						{links.map((link) => (
+							<a
+								key={link.href}
+								href={link.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] transition-colors duration-200 hover:border-[#00ff87]/40 hover:text-[#00ff87]"
+							>
+								<ExternalLink className="h-3 w-3" strokeWidth={1.75} />
+								<span>{link.label}</span>
+							</a>
+						))}
+					</div>
+				) : (
+					<p className="text-xs text-[#71717a]">Cloud links will appear here after the provisioner returns them.</p>
+				)}
 			</div>
 		</section>
 	);
@@ -562,7 +604,7 @@ export default function RuntimeConnectionPanel({ agent, isLoading }: Props) {
 
 	if (!kind || kind === "eliza-cloud") {
 		// managed runtime: route to ping-us placeholder rather than silent null
-		return <ManagedPlaceholder />;
+		return <ManagedPlaceholder agent={agent} />;
 	}
 
 	if (kind === "third-party-webhook") return <WebhookCard agent={agent} />;

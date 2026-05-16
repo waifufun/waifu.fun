@@ -56,6 +56,90 @@ test("provisionAgent POSTs /api/agents with bearer auth", async () => {
 	assert.equal(fetchMock.mock.callCount(), 1);
 });
 
+test("provisionWaifuAgent POSTs service API payload with X-Service-Key", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async (url: string | URL | Request, init?: RequestInit) => {
+		assert.equal(String(url), "https://cloud.test/api/v1/agents");
+		assert.equal(init?.method, "POST");
+		assert.equal((init?.headers as Record<string, string>)["X-Service-Key"], "svc_123");
+		assert.deepEqual(JSON.parse(String(init?.body)), {
+			tokenContractAddress: "0x0000000000000000000000000000000000000004",
+			chain: "bsc",
+			chainId: 56,
+			tokenName: "Test Waifu",
+			tokenTicker: "TEST",
+			launchType: "native",
+			character: {
+				name: "Test Waifu",
+				bio: "a test agent",
+				config: {
+					waifuAgentId: "waifu-demo-01",
+					modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
+					settings: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
+				},
+			},
+			billing: { mode: "owner_credits" },
+		});
+		return Response.json({
+			cloudAgentId: "cloud-agent-1",
+			characterId: "char-1",
+			status: "pending",
+			jobId: "job-1",
+			polling: { endpoint: "/api/v1/jobs/job-1", intervalMs: 5000, expectedDurationMs: 90000 },
+			token_address: "0x0000000000000000000000000000000000000004",
+			token_chain: "bsc",
+		});
+	});
+
+	const client = createElizaCloudClient({
+		baseUrl: "https://cloud.test/",
+		serviceKey: "svc_123",
+		logger: {},
+	});
+	const result = await client.provisionWaifuAgent?.({
+		agentId: "waifu-demo-01",
+		tokenContractAddress: "0x0000000000000000000000000000000000000004",
+		chain: "bsc",
+		chainId: 56,
+		tokenName: "Test Waifu",
+		tokenTicker: "TEST",
+		launchType: "native",
+		character: { name: "Test Waifu", bio: "a test agent" },
+		modelDefaults: { ELIZAOS_CLOUD_SMALL_MODEL: "openai/gpt-oss-120b" },
+	});
+
+	assert.deepEqual(result, {
+		agentId: "waifu-demo-01",
+		cloudAgentId: "cloud-agent-1",
+		characterId: "char-1",
+		status: "pending",
+		jobId: "job-1",
+		polling: { endpoint: "/api/v1/jobs/job-1", intervalMs: 5000, expectedDurationMs: 90000 },
+		tokenAddress: "0x0000000000000000000000000000000000000004",
+		tokenChain: "bsc",
+		tokenName: null,
+		tokenTicker: null,
+	});
+	assert.equal(fetchMock.mock.callCount(), 1);
+});
+
+test("createElizaCloudClient prefers service-key auth when configured", async () => {
+	const fetchMock = mock.method(globalThis, "fetch", async (_url: string | URL | Request, init?: RequestInit) => {
+		const headers = init?.headers as Record<string, string>;
+		assert.equal(headers["X-Service-Key"], "svc_123");
+		assert.equal(headers.authorization, undefined);
+		return Response.json({ success: true, data: { jobId: "job-1", status: "queued", message: "ok" } });
+	});
+
+	const client = createElizaCloudClient({
+		baseUrl: "https://cloud.test",
+		apiKey: "key_123",
+		serviceKey: "svc_123",
+		logger: {},
+	});
+	await client.pauseAgent("waifu-demo-01");
+	assert.equal(fetchMock.mock.callCount(), 1);
+});
+
 test("client throws ElizaCloudNotConfiguredError when baseUrl is unset", async () => {
 	const client = createElizaCloudClient({ baseUrl: "", apiKey: "key_123", logger: {} });
 

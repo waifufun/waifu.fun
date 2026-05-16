@@ -191,6 +191,7 @@ type ProvisionDbForTest = Database & {
 
 function createProvisionDb(
 	duplicateRows: Array<{ agentId: string; taxRecipientAddress: string | null; tokenAddress: string | null }> = [],
+	personaMetadata: Record<string, unknown> | null = null,
 ): ProvisionDbForTest {
 	const inviteDb = createInviteRedemptionDb();
 	return {
@@ -207,7 +208,7 @@ function createProvisionDb(
 									if (fields && typeof fields === "object" && "taxRecipientAddress" in fields) {
 										return Promise.resolve(duplicateRows);
 									}
-									return Promise.resolve([PATRON_ROW]);
+									return Promise.resolve([{ ...PATRON_ROW, metadata: personaMetadata }]);
 								},
 								orderBy() {
 									return { limit: () => Promise.resolve(duplicateRows) };
@@ -219,7 +220,13 @@ function createProvisionDb(
 			};
 		},
 		update() {
-			return { set: () => ({ where: () => Promise.resolve() }) };
+			return {
+				set: (values: Record<string, unknown>) => ({
+					where: () => ({
+						returning: () => Promise.resolve([{ id: "patron-row-1", ...values }]),
+					}),
+				}),
+			};
 		},
 		transaction: (inviteDb.db as { transaction: unknown }).transaction,
 		__inviteState: inviteDb.state,
@@ -346,6 +353,81 @@ test("POST /v2/agents/provision launches as patron and returns one-time keys", a
 	const persona = (launches[0] as { persona?: Record<string, unknown> }).persona;
 	assert.equal(typeof persona?.runtimeWebhookSecretHash, "string");
 	assert.match(persona?.runtimeWebhookSecretHash as string, /^sha256:[a-f0-9]{64}$/);
+	resetProvisionDeps();
+});
+
+test("POST /v2/agents/provision provisions hosted agents in Eliza Cloud", async () => {
+	const db = createProvisionDb();
+	const launches: unknown[] = [];
+	const cloudInputs: unknown[] = [];
+	__setRequirePatronDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "patron@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setAgentsRouteDepsForTest({
+		db,
+		createAgentKey: async (_db, agentId) => ({ raw: "agk_hosted_key", row: { agentId } as never }),
+		elizaCloudClient: {
+			async provisionWaifuAgent(input) {
+				cloudInputs.push(input);
+				return {
+					agentId: input.agentId,
+					cloudAgentId: "cloud-waifu-test-waifu",
+					status: "queued",
+					jobId: "job-1",
+					polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
+				};
+			},
+		},
+		createOrchestrator: () =>
+			({
+				launch: async (input: import("../../services/agent-launch/index.js").AgentLaunchInput) => {
+					launches.push(input);
+					return {
+						agentId: input.agentId ?? "waifu-test-waifu",
+						walletAddress: "0x0000000000000000000000000000000000000002",
+						treasuryAddress: "0x0000000000000000000000000000000000000003",
+						tokenAddress: "0x0000000000000000000000000000000000000004",
+						txHash: `0x${"1".repeat(64)}`,
+						fourMeme: { nonce: "n", imageUrl: "https://example.com/i.png", createArgHash: "h" },
+					};
+				},
+			}) as never,
+	});
+
+	const payload = provisionPayload();
+	payload.runtime = { kind: "hosted" } as never;
+	const res = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify(payload),
+	});
+
+	assert.equal(res.status, 200);
+	const json = (await res.json()) as {
+		cloudAgentId?: string;
+		cloudStatus?: string;
+		cloud?: { provider?: string; agentId?: string; status?: string };
+	};
+	assert.equal(json.cloudAgentId, "cloud-waifu-test-waifu");
+	assert.equal(json.cloudStatus, "queued");
+	assert.deepEqual(json.cloud, {
+		provider: "eliza-cloud",
+		agentId: "cloud-waifu-test-waifu",
+		status: "queued",
+		jobId: "job-1",
+		polling: { endpoint: "/api/v1/agents/cloud-waifu-test-waifu", intervalMs: 2000, expectedDurationMs: 120000 },
+		characterId: null,
+	});
+	assert.equal(cloudInputs.length, 1);
+	assert.equal(
+		(cloudInputs[0] as { tokenContractAddress?: string }).tokenContractAddress,
+		"0x0000000000000000000000000000000000000004",
+	);
+	assert.equal(launches.length, 1);
 	resetProvisionDeps();
 });
 
@@ -547,6 +629,65 @@ test("POST /v2/agents/provision recovers duplicate retry with rotated agent api 
 	assert.equal(json.safeAddress, "0x0000000000000000000000000000000000000003");
 	assert.equal(json.tokenAddress, "0x0000000000000000000000000000000000000004");
 	assert.equal(launches.length, 0);
+	resetProvisionDeps();
+});
+
+test("POST /v2/agents/provision reuses existing hosted cloud metadata on duplicate retry", async () => {
+	const db = createProvisionDb(
+		[
+			{
+				agentId: "waifu-test-waifu",
+				taxRecipientAddress: "0x0000000000000000000000000000000000000003",
+				tokenAddress: "0x0000000000000000000000000000000000000004",
+			},
+		],
+		{
+			provisioning: {
+				cloudAgentId: "cloud-existing-waifu",
+				status: "running",
+				jobId: "job-existing",
+			},
+		},
+	);
+	const cloudInputs: unknown[] = [];
+	__setRequirePatronDbForTest(db);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-user-1",
+		tenantId: "waifu",
+		email: "patron@example.com",
+		wallets: [{ address: "0x0000000000000000000000000000000000000001", chainNamespace: "evm" }],
+	}));
+	__setAgentsRouteDepsForTest({
+		db,
+		createAgentKey: async (_db, agentId) => ({ raw: "agk_rotated_key", row: { agentId } as never }),
+		elizaCloudClient: {
+			async provisionWaifuAgent(input) {
+				cloudInputs.push(input);
+				throw new Error("duplicate recovery should not create a second cloud agent");
+			},
+		},
+		createOrchestrator: () =>
+			({
+				launch: async () => {
+					throw new Error("duplicate recovery should not launch");
+				},
+			}) as never,
+	});
+
+	const payload = provisionPayload();
+	payload.runtime = { kind: "hosted" } as never;
+	const res = await app.request("/provision", {
+		method: "POST",
+		headers: { authorization: "Bearer steward" },
+		body: JSON.stringify(payload),
+	});
+
+	assert.equal(res.status, 200);
+	const json = (await res.json()) as { cloudAgentId?: string; cloudStatus?: string; agentApiKey?: string };
+	assert.equal(json.cloudAgentId, "cloud-existing-waifu");
+	assert.equal(json.cloudStatus, "running");
+	assert.equal(json.agentApiKey, "agk_rotated_key");
+	assert.equal(cloudInputs.length, 0);
 	resetProvisionDeps();
 });
 

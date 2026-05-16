@@ -131,7 +131,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 							? "pick a launchpad and a fee model. waifu's cut comes out of the agent treasury."
 							: null}
 						{step === "runtime"
-							? "run on our cloud, or point at an agent you already have. you can change this later."
+							? "hosted Eliza Cloud is the default. BYO webhook or pull runtimes are advanced paths."
 							: null}
 						{step === "safe" ? "treasury rules and adapters. defaults are sane. tweak from /patron later." : null}
 						{step === "review" ? "last look. costs gas plus a one-time $5 setup." : null}

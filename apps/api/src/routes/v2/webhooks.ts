@@ -70,8 +70,9 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 			const elizaCloud =
 				options.elizaCloud ??
 				createElizaCloudClient({
-					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? "",
+					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
 					apiKey: process.env.ELIZA_CLOUD_API_KEY ?? "",
+					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
 				});
 
