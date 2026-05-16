@@ -23,6 +23,8 @@ const stashRoot = join(root, "..", ".frontend-static-export-stash");
 const nextBin = join(root, "node_modules/.bin/next");
 const pagesDir = join(root, "src/pages");
 const pagesApp = join(pagesDir, "_app.tsx");
+const pages404 = join(pagesDir, "404.tsx");
+const pagesManifest = join(root, ".next/server/pages-manifest.json");
 
 const moves = [
 	["src/app/api", "app-api"],
@@ -34,13 +36,17 @@ function ensureParentDir(filePath) {
 	mkdirSync(dirname(filePath), { recursive: true });
 }
 
+function removeTree(path) {
+	rmSync(path, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+}
+
 function stashAll() {
 	mkdirSync(stashRoot, { recursive: true });
 	for (const [relFrom, stashName] of moves) {
 		const from = join(root, relFrom);
 		const to = join(stashRoot, stashName);
 		if (!existsSync(from)) continue;
-		if (existsSync(to)) rmSync(to, { recursive: true, force: true });
+		if (existsSync(to)) removeTree(to);
 		ensureParentDir(to);
 		renameSync(from, to);
 	}
@@ -51,18 +57,18 @@ function restoreAll() {
 		const from = join(root, relFrom);
 		const stashed = join(stashRoot, stashName);
 		if (!existsSync(stashed)) continue;
-		if (existsSync(from)) rmSync(from, { recursive: true, force: true });
+		if (existsSync(from)) removeTree(from);
 		ensureParentDir(from);
 		renameSync(stashed, from);
 	}
 	try {
-		rmSync(stashRoot, { recursive: true, force: true });
+		removeTree(stashRoot);
 	} catch {
 		/* ignore */
 	}
 }
 
-function ensurePagesShim() {
+function ensurePagesFiles() {
 	mkdirSync(pagesDir, { recursive: true });
 	writeFileSync(
 		pagesApp,
@@ -75,19 +81,29 @@ function ensurePagesShim() {
 			"",
 		].join("\n"),
 	);
+	writeFileSync(pages404, "export default function Custom404() {\n\treturn null;\n}\n");
+}
+
+function ensurePagesManifest() {
+	if (existsSync(pagesManifest)) return;
+	const serverDir = dirname(pagesManifest);
+	if (!existsSync(serverDir)) return;
+	writeFileSync(pagesManifest, "{}\n");
 }
 
 stashAll();
 let exitCode = 1;
 const hadPagesDir = existsSync(pagesDir);
 const hadPagesApp = existsSync(pagesApp);
-let keepPagesShim = null;
+const hadPages404 = existsSync(pages404);
+let keepPagesAlive = null;
 try {
-	rmSync(join(root, ".next"), { recursive: true, force: true });
-	if (!hadPagesApp) {
-		ensurePagesShim();
-		keepPagesShim = setInterval(ensurePagesShim, 250);
-	}
+	removeTree(join(root, ".next"));
+	if (!hadPagesApp || !hadPages404) ensurePagesFiles();
+	keepPagesAlive = setInterval(() => {
+		if (!hadPagesApp || !hadPages404) ensurePagesFiles();
+		ensurePagesManifest();
+	}, 250);
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
@@ -102,9 +118,10 @@ try {
 		result.on("error", () => resolve(1));
 	});
 } finally {
-	if (keepPagesShim) clearInterval(keepPagesShim);
+	if (keepPagesAlive) clearInterval(keepPagesAlive);
 	if (!hadPagesApp) rmSync(pagesApp, { force: true });
-	if (!hadPagesDir) rmSync(pagesDir, { recursive: true, force: true });
+	if (!hadPages404) rmSync(pages404, { force: true });
+	if (!hadPagesDir) removeTree(pagesDir);
 	restoreAll();
 }
 process.exit(exitCode);
