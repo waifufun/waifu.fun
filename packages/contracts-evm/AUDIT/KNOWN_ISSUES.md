@@ -196,14 +196,19 @@ we have no on-chain defense against these. operational response:
   on all in-flight launches and deploys a new factory targeting the new
   portal version.
 
-## 10. no formal verification
+## 10. formal verification coverage is partial
 
-the wave H suite is example-based. specifically:
-- no foundry / forge invariant runners over the vault state machine.
-- no certora / halmos / scribble rules for vault BNB conservation.
-- no symbolic execution over `executeBundle` paths.
+the wave H suite now includes example tests, property fuzzing, Foundry invariants,
+Scribble annotations, SMTChecker, Halmos, and Mythril runs. specifically:
+- Foundry invariant runners cover the vault state machine for BNB conservation,
+  cap bounds, claim ceilings, and distribution state.
+- Scribble annotations are present for key `LaunchVault` cap/distribution
+  invariants and instrumentation succeeds.
+- Halmos passes the Foundry invariant surface at depth 2.
+- Mythril completes `LaunchVault`, `BundleRouter`, and `TreasuryLP4` with no
+  issues detected.
 
-example tests do exercise:
+the suite also exercises:
 - all four tier paths happy-path
 - all reverts on access control
 - atomic-revert property (induced via mock)
@@ -211,13 +216,15 @@ example tests do exercise:
 - pro-rata math
 - vesting math
 
-example tests do NOT exhaustively prove:
-- vault BNB invariant under arbitrary deposit/withdraw/refund sequences
-- claim ceiling under all vesting-time-warp scenarios
-- splits sum to total under arbitrary bot-supplied params
+the suite does NOT exhaustively prove:
+- all higher-depth arbitrary deposit/withdraw/refund sequences.
+- all vesting-time-warp permutations beyond the invariant/fuzz bounds.
+- all `executeBundle` paths under a real third-party Portal implementation.
+- Certora-style temporal rules across factory/router/vault deployment.
 
-follow-up wave plan: certora rules over `LaunchVault` state machine + a
-foundry invariant suite over `BundleRouter` accounting.
+follow-up wave plan: Certora rules over the `LaunchVault` state machine and
+cross-contract `BundleRouter` accounting, plus deeper Halmos bounds if runtime
+budget allows.
 
 ## 11. dust-burn-on-success
 
@@ -405,7 +412,7 @@ explicit list of things we explicitly do NOT implement in wave H:
 9. parametric splits other than `mktBps = 10000`
 10. per-launch ephemeral bot keys
 11. multi-sig governance over `factory.owner` (planned within 30 days post-deploy)
-12. formal verification of state-machine invariants
+12. deeper Certora-style verification of cross-contract state-machine invariants
 
 these are NOT bugs. they are deliberate scope reductions to ship a small,
 well-tested wave H first. each has a follow-up wave designation.

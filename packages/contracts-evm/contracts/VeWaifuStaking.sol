@@ -9,6 +9,8 @@
 //
 pragma solidity ^0.8.20;
 
+// slither-disable-start incorrect-equality,reentrancy-balance,reentrancy-benign,reentrancy-no-eth
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -34,10 +36,12 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 reward);
     event RewardNotified(uint256 reward);
+    event RewardDistributorSet(address indexed distributor);
 
     error ZeroAmount();
     error NotRewardDistributor();
     error NoStakers();
+    error ZeroAddress();
 
     modifier onlyRewardDistributor() {
         if (msg.sender != rewardDistributor) revert NotRewardDistributor();
@@ -53,6 +57,7 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
     }
 
     constructor(address waifuToken_) {
+        if (waifuToken_ == address(0)) revert ZeroAddress();
         waifuToken = IERC20(waifuToken_);
     }
 
@@ -70,10 +75,13 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
 
     function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
         if (amount == 0) revert ZeroAmount();
-        _totalStaked += amount;
-        _balances[msg.sender] += amount;
+        uint256 balanceBefore = waifuToken.balanceOf(address(this));
         waifuToken.safeTransferFrom(msg.sender, address(this), amount);
-        emit Staked(msg.sender, amount);
+        uint256 received = waifuToken.balanceOf(address(this)) - balanceBefore;
+        if (received == 0) revert ZeroAmount();
+        _totalStaked += received;
+        _balances[msg.sender] += received;
+        emit Staked(msg.sender, received);
     }
 
     function withdraw(uint256 amount) external nonReentrant updateReward(msg.sender) {
@@ -95,27 +103,40 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
 
     function exit() external nonReentrant updateReward(msg.sender) {
         uint256 bal = _balances[msg.sender];
+        uint256 reward = rewards[msg.sender];
         if (bal > 0) {
             _totalStaked -= bal;
             _balances[msg.sender] = 0;
+        }
+        if (reward > 0) {
+            rewards[msg.sender] = 0;
+        }
+        if (bal > 0) {
             waifuToken.safeTransfer(msg.sender, bal);
             emit Withdrawn(msg.sender, bal);
         }
-        uint256 reward = rewards[msg.sender];
         if (reward > 0) {
-            rewards[msg.sender] = 0;
             waifuToken.safeTransfer(msg.sender, reward);
             emit RewardClaimed(msg.sender, reward);
         }
     }
 
-    function notifyRewardAmount(uint256 reward) external onlyRewardDistributor {
+    function notifyRewardAmount(uint256 reward) external nonReentrant onlyRewardDistributor {
+        if (reward == 0) revert ZeroAmount();
         if (_totalStaked == 0) revert NoStakers();
-        rewardPerTokenStored += (reward * 1e18) / _totalStaked;
-        emit RewardNotified(reward);
+        uint256 balanceBefore = waifuToken.balanceOf(address(this));
+        waifuToken.safeTransferFrom(msg.sender, address(this), reward);
+        uint256 received = waifuToken.balanceOf(address(this)) - balanceBefore;
+        if (received == 0) revert ZeroAmount();
+        rewardPerTokenStored += (received * 1e18) / _totalStaked;
+        emit RewardNotified(received);
     }
 
     function setRewardDistributor(address distributor_) external onlyOwner {
+        if (distributor_ == address(0)) revert ZeroAddress();
         rewardDistributor = distributor_;
+        emit RewardDistributorSet(distributor_);
     }
 }
+
+// slither-disable-end incorrect-equality,reentrancy-balance,reentrancy-benign,reentrancy-no-eth

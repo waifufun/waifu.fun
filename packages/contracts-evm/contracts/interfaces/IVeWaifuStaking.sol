@@ -12,7 +12,7 @@ pragma solidity ^0.8.20;
 /// @dev Based on the Synthetix StakingRewards pattern. veWAIFU balances are
 ///      tracked internally (no separate ERC-20 token). No lock period in v1.
 interface IVeWaifuStaking {
-    //  Events 
+    //  Events
 
     /// @notice Emitted when a user stakes WAIFU.
     /// @param user   The staker's address.
@@ -29,26 +29,28 @@ interface IVeWaifuStaking {
     /// @param reward The amount of WAIFU reward claimed.
     event RewardClaimed(address indexed user, uint256 reward);
 
-    /// @notice Emitted when the FeeRouter notifies new rewards.
+    /// @notice Emitted when the reward distributor notifies new rewards.
     /// @param reward The amount of WAIFU added to the reward pool.
-    event RewardAdded(uint256 reward);
+    event RewardNotified(uint256 reward);
 
-    /// @notice Emitted when the rewards distributor address is updated.
-    /// @param distributor The new distributor address.
-    event RewardsDistributorUpdated(address indexed distributor);
+    /// @notice Emitted when the reward distributor address is updated.
+    event RewardDistributorSet(address indexed distributor);
 
-    //  Errors 
+    //  Errors
 
     /// @notice Supplied amount is zero.
     error ZeroAmount();
 
     /// @notice Caller is not the authorized rewards distributor.
-    error NotDistributor();
+    error NotRewardDistributor();
+
+    /// @notice Cannot notify rewards while nobody is staked.
+    error NoStakers();
 
     /// @notice Supplied address is the zero address.
     error ZeroAddress();
 
-    //  Functions 
+    //  Functions
 
     /// @notice Stake WAIFU tokens. Caller must have pre-approved this contract.
     /// @param amount The amount of WAIFU to stake.
@@ -70,7 +72,7 @@ interface IVeWaifuStaking {
 
     /// @notice Set the authorized rewards distributor (FeeRouter).
     /// @param distributor The new distributor address.
-    function setRewardsDistributor(address distributor) external;
+    function setRewardDistributor(address distributor) external;
 
     /// @notice Returns the user's staked (veWAIFU) balance.
     /// @param account The user address.
@@ -79,11 +81,10 @@ interface IVeWaifuStaking {
 
     /// @notice Returns the total staked WAIFU across all users.
     /// @return The total staked amount.
-    function totalSupply() external view returns (uint256);
+    function totalStaked() external view returns (uint256);
 
-    /// @notice Returns the current accumulated reward per token.
-    /// @return The reward per token value (scaled by 1e18).
-    function rewardPerToken() external view returns (uint256);
+    /// @notice Returns the current accumulated reward per token, scaled by 1e18.
+    function rewardPerTokenStored() external view returns (uint256);
 
     /// @notice Returns the amount of rewards earned but not yet claimed.
     /// @param account The user address.

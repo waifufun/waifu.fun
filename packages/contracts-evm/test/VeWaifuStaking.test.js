@@ -34,6 +34,11 @@ describe("VeWaifuStaking", () => {
 		await waifu.approve(await staking.getAddress(), ethers.MaxUint256);
 	});
 
+	it("rejects zero token deployment", async () => {
+		const Staking = await ethers.getContractFactory("VeWaifuStaking");
+		await expect(Staking.deploy(ethers.ZeroAddress)).to.be.revertedWithCustomError(Staking, "ZeroAddress");
+	});
+
 	it("should stake WAIFU", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
 		expect(await staking.balanceOf(alice.address)).to.equal(STAKE_AMOUNT);
@@ -52,7 +57,6 @@ describe("VeWaifuStaking", () => {
 
 	it("should distribute rewards to single staker", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
-		await waifu.transfer(await staking.getAddress(), REWARD_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
 		expect(await staking.earned(alice.address)).to.equal(REWARD_AMOUNT);
 	});
@@ -60,7 +64,6 @@ describe("VeWaifuStaking", () => {
 	it("should distribute rewards proportionally to multiple stakers", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
 		await staking.connect(bob).stake(STAKE_AMOUNT);
-		await waifu.transfer(await staking.getAddress(), REWARD_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
 		expect(await staking.earned(alice.address)).to.equal(REWARD_AMOUNT / 2n);
 		expect(await staking.earned(bob.address)).to.equal(REWARD_AMOUNT / 2n);
@@ -68,7 +71,6 @@ describe("VeWaifuStaking", () => {
 
 	it("should claim rewards", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
-		await waifu.transfer(await staking.getAddress(), REWARD_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
 		const balBefore = await waifu.balanceOf(alice.address);
 		await staking.connect(alice).claimReward();
@@ -78,7 +80,6 @@ describe("VeWaifuStaking", () => {
 
 	it("should exit (withdraw all + claim)", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
-		await waifu.transfer(await staking.getAddress(), REWARD_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
 		await staking.connect(alice).exit();
 		expect(await staking.balanceOf(alice.address)).to.equal(0);
@@ -92,5 +93,46 @@ describe("VeWaifuStaking", () => {
 
 	it("should revert notifyRewardAmount with no stakers", async () => {
 		await expect(staking.notifyRewardAmount(REWARD_AMOUNT)).to.be.reverted;
+	});
+
+	it("should revert notifyRewardAmount when distributor has not approved reward funding", async () => {
+		await staking.connect(alice).stake(STAKE_AMOUNT);
+		await staking.setRewardDistributor(bob.address);
+		await waifu.connect(bob).approve(await staking.getAddress(), 0);
+		await expect(staking.connect(bob).notifyRewardAmount(REWARD_AMOUNT)).to.be.reverted;
+	});
+
+	it("credits fee-on-transfer stakes by received balance", async () => {
+		const Token = await ethers.getContractFactory("ERC20FeeMock");
+		const taxed = await Token.deploy();
+		await taxed.mint(alice.address, STAKE_AMOUNT);
+		await taxed.setTransferTaxBps(1000);
+
+		const Staking = await ethers.getContractFactory("VeWaifuStaking");
+		const taxedStaking = await Staking.deploy(await taxed.getAddress());
+		await taxedStaking.setRewardDistributor(owner.address);
+		await taxed.connect(alice).approve(await taxedStaking.getAddress(), ethers.MaxUint256);
+
+		await taxedStaking.connect(alice).stake(STAKE_AMOUNT);
+		expect(await taxedStaking.balanceOf(alice.address)).to.equal(ethers.parseEther("900"));
+		expect(await taxedStaking.totalStaked()).to.equal(ethers.parseEther("900"));
+	});
+
+	it("distributes fee-on-transfer rewards by received balance", async () => {
+		const Token = await ethers.getContractFactory("ERC20FeeMock");
+		const taxed = await Token.deploy();
+		await taxed.mint(owner.address, REWARD_AMOUNT);
+		await taxed.mint(alice.address, STAKE_AMOUNT);
+		await taxed.setTransferTaxBps(1000);
+
+		const Staking = await ethers.getContractFactory("VeWaifuStaking");
+		const taxedStaking = await Staking.deploy(await taxed.getAddress());
+		await taxedStaking.setRewardDistributor(owner.address);
+		await taxed.approve(await taxedStaking.getAddress(), ethers.MaxUint256);
+		await taxed.connect(alice).approve(await taxedStaking.getAddress(), ethers.MaxUint256);
+
+		await taxedStaking.connect(alice).stake(STAKE_AMOUNT);
+		await taxedStaking.notifyRewardAmount(REWARD_AMOUNT);
+		expect(await taxedStaking.earned(alice.address)).to.equal(ethers.parseEther("90"));
 	});
 });

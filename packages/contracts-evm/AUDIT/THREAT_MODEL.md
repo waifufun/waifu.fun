@@ -311,10 +311,10 @@ per-launch executor. one-shot. owns no persistent state post-bundle.
   no `owner`, anything stuck (eg ERC-20 someone airdrops post-bundle)
   is permanently locked. accepted, per-launch routers are not
   expected to receive any third-party value.
-- **NO formal verification.** the wave H tests cover happy paths,
-  reverts, and one-shot guards but do not run a model-checker
-  (foundry's `forge-std` invariant tests, certora, or halmos) over the
-  vault state machine. recommendation for a follow-up wave.
+- **formal verification remains bounded.** Foundry invariants, Scribble
+  annotations, SMTChecker, Halmos, Echidna, Medusa, and Mythril now cover the
+  vault state-machine surface, but there is still no Certora-style proof over
+  all cross-contract factory/router/vault accounting.
 
 ## 4. TreasuryLP
 
@@ -449,8 +449,9 @@ honest list of "we know, we ship anyway, for these reasons":
    for first launches.
 3. **TreasuryLP is custodial for wave H.** creator can drain. follow-up wave
    = V3 CLAMM single-sided position deployer.
-4. **no formal verification.** test suite is property-style but
-   no model-checker. follow-up = certora rules over state machine.
+4. **bounded formal verification only.** Foundry invariants, SMTChecker,
+   Halmos, Scribble, Echidna, Medusa, and Mythril have been run; follow-up =
+   Certora rules over cross-contract state machine.
 5. **no public mempool fallback.** if Puissant goes down during a launch
    window, we refund instead of degrading to public submission. accepted
    to avoid sandwich risk.

@@ -60,13 +60,19 @@ async function advanceOneEpoch(treasury, feed) {
 async function deployFixture(overrides = {}) {
 	const [owner, agentSafe] = await ethers.getSigners();
 
-	const token = await ethers.deployContract("ERC20Mock");
+	const token = await ethers.deployContract(overrides.tokenContract || "ERC20Mock");
 	await token.mint(owner.address, ethers.parseEther("1000000000"));
 	const wbnb = await ethers.deployContract("ERC20Mock");
 	const router = await ethers.deployContract("MockFlapV2Router", [await wbnb.getAddress()]);
 	const pair = await ethers.deployContract("MockFlapV2Pair", [await token.getAddress(), await wbnb.getAddress()]);
 	const feed = await ethers.deployContract("MockBnbUsdFeed", [600n * 100000000n]);
+	if (overrides.feedDecimals !== undefined) {
+		await feed.setDecimals(overrides.feedDecimals);
+	}
 	const v4 = await ethers.deployContract("MockV4PoolManager");
+	if (overrides.lieAboutSpent !== undefined) {
+		await v4.setLieAboutSpent(overrides.lieAboutSpent);
+	}
 
 	// Seed pair reserves before deploying TreasuryLP4 (constructor calls oraclePoke)
 	const now = await latestTimestamp();
@@ -144,6 +150,10 @@ describe("TreasuryLP4", () => {
 		);
 	});
 
+	it("rejects non-8-decimal BNB/USD feeds", async () => {
+		await expectError(deployFixture({ feedDecimals: 18 }), "bad_feed_decimals");
+	});
+
 	it("nextTierIndex starts at 0", async () => {
 		const { treasury } = await deployFixture();
 		assert.equal(await treasury.nextTierIndex(), 0n);
@@ -177,5 +187,45 @@ describe("TreasuryLP4", () => {
 
 		assert.equal(await token.balanceOf(agentSafe.address), ethers.parseEther("77"));
 		assert.equal(await token.balanceOf(await treasury.getAddress()), ethers.parseEther("75000000"));
+	});
+
+	it("rejects V4 adapter spent values that do not match token balance delta", async () => {
+		const tiers = defaultTiers();
+		tiers[0].targetMcUSD = 1n;
+		tiers[0].minEpochs = 1;
+		const { token, feed, treasury } = await deployFixture({ tiers, lieAboutSpent: true });
+		await token.mint(await treasury.getAddress(), ethers.parseEther("100000000"));
+		await readyOracle();
+		await increase(Number(await treasury.epochLength()));
+		await refreshFeed(feed);
+
+		await expectError(treasury.checkAndAdvance(), "bad_tier");
+	});
+
+	it("rejects fee-on-transfer token deployment into V4 tiers", async () => {
+		const tiers = defaultTiers();
+		tiers[0].targetMcUSD = 1n;
+		tiers[0].minEpochs = 1;
+		const { token, feed, treasury } = await deployFixture({ tiers, tokenContract: "ERC20FeeMock" });
+		await token.mint(await treasury.getAddress(), ethers.parseEther("100000000"));
+		await token.setTransferTaxBps(1000);
+		await readyOracle();
+		await increase(Number(await treasury.epochLength()));
+		await refreshFeed(feed);
+
+		await expectError(treasury.checkAndAdvance(), "bad_tier");
+	});
+
+	it("uses live token supply in market-cap math", async () => {
+		const { token, feed, treasury } = await deployFixture();
+		await readyOracle();
+		await refreshFeed(feed);
+		const beforeMintMc = await treasury.currentMcUSD();
+
+		await token.mint(ethers.Wallet.createRandom().address, ethers.parseEther("1000000000"));
+		const afterMintMc = await treasury.currentMcUSD();
+
+		assert.ok(afterMintMc >= beforeMintMc * 2n);
+		assert.ok(afterMintMc <= beforeMintMc * 2n + 2n);
 	});
 });

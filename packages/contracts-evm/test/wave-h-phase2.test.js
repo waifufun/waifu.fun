@@ -83,19 +83,27 @@ describe("Wave H phase 2 smoke", () => {
 		const { owner, creator } = await setup();
 		const Treasury = await ethers.getContractFactory("TreasuryLP");
 		const treasury = await Treasury.deploy(creator.address, owner.address);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const token = await Token.deploy();
+		await token.mint(await treasury.getAddress(), 1n);
 
-		await expect(treasury.recordManagedToken(creator.address)).to.not.be.reverted;
-		expect(await treasury.managedToken()).to.equal(creator.address);
+		await expect(treasury.connect(owner).recordManagedToken(await token.getAddress())).to.not.be.reverted;
+		expect(await treasury.managedToken()).to.equal(await token.getAddress());
 	});
 
 	it("TreasuryLP recordManagedToken reverts on different second token", async () => {
-		const { owner, creator, bundleBot } = await setup();
+		const { owner, creator } = await setup();
 		const Treasury = await ethers.getContractFactory("TreasuryLP");
 		const treasury = await Treasury.deploy(creator.address, owner.address);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const tokenA = await Token.deploy();
+		const tokenB = await Token.deploy();
+		await tokenA.mint(await treasury.getAddress(), 1n);
+		await tokenB.mint(await treasury.getAddress(), 1n);
 
-		await treasury.recordManagedToken(creator.address);
+		await treasury.connect(owner).recordManagedToken(await tokenA.getAddress());
 		// Second call with different token must revert MultipleTokens
-		await expect(treasury.recordManagedToken(bundleBot.address)).to.be.reverted;
+		await expect(treasury.connect(owner).recordManagedToken(await tokenB.getAddress())).to.be.reverted;
 	});
 
 	it("Wave H contracts compile + deploy with phase-2 impls", async () => {

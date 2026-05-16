@@ -32,6 +32,7 @@ contract EchidnaBundleRouter {
     uint256 internal constant PRESALE_CAP = 32 ether;
     uint256 internal constant QUOTE_AMT = 20 ether;
     uint256 internal constant V2_BUY = 12 ether;
+    bytes32 internal constant LAUNCH_PARAMS_HASH = keccak256("echidna-launch-params");
 
     constructor() payable {
         BundleRouter.ConstructorArgs memory a = BundleRouter.ConstructorArgs({
@@ -49,7 +50,8 @@ contract EchidnaBundleRouter {
             presaleCap: PRESALE_CAP,
             quoteAmt: QUOTE_AMT,
             v2BuyBnb: V2_BUY,
-            closeTimestamp: block.timestamp + 7 days
+            closeTimestamp: block.timestamp + 7 days,
+            launchParamsHash: LAUNCH_PARAMS_HASH
         });
         router = new BundleRouter(a);
     }
@@ -96,20 +98,13 @@ contract EchidnaBundleRouter {
 
     /// immutables are stable.
     function echidna_immutables_stable() public view returns (bool) {
-        return router.factory() == FACTORY &&
-            router.WBNB() == WBNB &&
-            router.PCS_FACTORY() == PCS_FACTORY &&
-            router.PCS_ROUTER() == PCS_ROUTER &&
-            router.FLAP_PORTAL() == FLAP_PORTAL &&
-            router.TIP_RECEIVER() == TIP_RECEIVER &&
-            router.vault() == payable(VAULT) &&
-            router.treasuryLp() == TREASURY_LP &&
-            router.bundleBot() == BUNDLE_BOT &&
-            router.predictedToken() == PREDICTED_TOKEN &&
-            router.creator() == CREATOR &&
-            router.presaleCap() == PRESALE_CAP &&
-            router.quoteAmt() == QUOTE_AMT &&
-            router.v2BuyBnb() == V2_BUY;
+        return router.factory() == FACTORY && router.WBNB() == WBNB && router.PCS_FACTORY() == PCS_FACTORY
+            && router.PCS_ROUTER() == PCS_ROUTER && router.FLAP_PORTAL() == FLAP_PORTAL
+            && router.TIP_RECEIVER() == TIP_RECEIVER && router.vault() == payable(VAULT)
+            && router.treasuryLp() == TREASURY_LP && router.bundleBot() == BUNDLE_BOT
+            && router.predictedToken() == PREDICTED_TOKEN && router.creator() == CREATOR
+            && router.presaleCap() == PRESALE_CAP && router.quoteAmt() == QUOTE_AMT && router.v2BuyBnb() == V2_BUY
+            && router.launchParamsHash() == LAUNCH_PARAMS_HASH;
     }
 
     /// extra public action so echidna has >1 callable function (avoids
