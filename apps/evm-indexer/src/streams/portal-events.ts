@@ -36,8 +36,9 @@ async function pollPortalEventsOnce(runtime: IndexerRuntime, options: Required<L
 					txHash: event.txHash,
 					error: handlerError instanceof Error ? handlerError.message : String(handlerError),
 				},
-				"event handler failed, skipping event",
+				"event handler failed; cursor will retry this event",
 			);
+			break;
 		}
 		await runtime.cursors.advance(runtime.cursorIds.live, getPortalEventCursorPosition(event));
 	}

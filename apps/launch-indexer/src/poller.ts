@@ -275,6 +275,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				fromBlock,
 				toBlock,
 			});
+			let failed = false;
 			for (const event of events) {
 				if (
 					event.eventName === "LaunchCreated" ||
@@ -297,9 +298,11 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 						},
 						"vault handler failed",
 					);
+					failed = true;
+					break;
 				}
 			}
-			await runtime.cursors.advance(vCursorId, toBlock);
+			if (!failed) await runtime.cursors.advance(vCursorId, toBlock);
 		}
 
 		// Router
@@ -312,6 +315,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				fromBlock,
 				toBlock,
 			});
+			let failed = false;
 			for (const event of events) {
 				if (event.eventName !== "BundleExecuted" && event.eventName !== "BundleFailed") continue;
 				try {
@@ -331,9 +335,11 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 						},
 						"router handler failed",
 					);
+					failed = true;
+					break;
 				}
 			}
-			await runtime.cursors.advance(rCursorId, toBlock);
+			if (!failed) await runtime.cursors.advance(rCursorId, toBlock);
 		}
 	}
 
