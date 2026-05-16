@@ -18,9 +18,8 @@ import {ITreasuryLPRegistry} from "./interfaces/ITreasuryLPRegistry.sol";
 
 /// @title TreasuryLP
 /// @notice custodial treasury holder. receives the 10% bundle-slice of the
-///         new token and holds it. pure custody, owner-sweepable: the owner
-///         can drain custody into a downstream LP-deployer contract via
-///         sweep().
+///         new token and holds it. The launch token is locked once registered;
+///         sweep() is only a rescue path for unrelated tokens sent by mistake.
 contract TreasuryLP is ITreasuryLPRegistry {
     using SafeERC20 for IERC20;
 
@@ -72,11 +71,13 @@ contract TreasuryLP is ITreasuryLPRegistry {
         emit RegistrarSet(_registrar);
     }
 
-    /// @notice owner-only sweep. forwards `amount` of token `t` to `to`.
-    ///         used to drain custody into a downstream LP-deployer contract.
+    /// @notice owner-only rescue sweep for tokens that are not the registered
+    ///         launch token. The managed treasury allocation is intentionally
+    ///         not sweepable by the creator owner.
     function sweep(address to, address t, uint256 amount) external {
         if (msg.sender != owner) revert NotOwner();
         if (to == address(0) || t == address(0)) revert ZeroAddress();
+        if (t == managedToken) revert NotAuthorized();
         IERC20(t).safeTransfer(to, amount);
         emit TokensSwept(to, t, amount);
     }

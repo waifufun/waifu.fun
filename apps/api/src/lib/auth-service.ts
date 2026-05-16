@@ -60,6 +60,9 @@ export interface SiweContextOptions {
 	nowMs?: number;
 }
 
+export const LEGACY_LOGIN_SIWE_STATEMENT = "Sign in to waifu.fun.";
+export const LEGACY_LOGIN_SIWE_URI_PATH = "/auth/siwe";
+
 export async function verifySiweMessage(messageStr: string, signature: string): Promise<SiweVerifyResult> {
 	const message = new SiweMessage(messageStr);
 	const result = await message.verify({ signature });
@@ -165,6 +168,24 @@ export interface JwtPayload {
 	role: string;
 }
 
+export interface RefreshTokenPayload extends JwtPayload {
+	jti: string;
+	exp: number;
+}
+
+const JWT_REFRESH_AUDIENCE = "waifu-api-refresh";
+const REFRESH_TOKEN_USE = "refresh";
+const revokedRefreshTokenJtis = new Map<string, number>();
+
+function pruneRevokedRefreshTokenJtis(): void {
+	const now = Date.now();
+	for (const [jti, expiresAtMs] of revokedRefreshTokenJtis) {
+		if (expiresAtMs <= now) revokedRefreshTokenJtis.delete(jti);
+	}
+}
+
+setInterval(pruneRevokedRefreshTokenJtis, 60_000).unref();
+
 export async function signJwt(payload: JwtPayload, expiresInSeconds: number): Promise<string> {
 	const secret = getJwtSecret();
 
@@ -194,8 +215,62 @@ export async function verifyJwt(token: string): Promise<JwtPayload> {
 	if (typeof address !== "string" || typeof role !== "string") {
 		throw new Error("Invalid JWT payload: missing address or role");
 	}
+	if (payload.tokenUse !== undefined && payload.tokenUse !== "access") {
+		throw new Error("Invalid JWT payload: token is not an access token");
+	}
 
 	return { address, role };
+}
+
+export async function signRefreshToken(payload: JwtPayload, expiresInSeconds: number): Promise<string> {
+	const secret = getJwtSecret();
+
+	return new jose.SignJWT({
+		address: payload.address,
+		role: payload.role,
+		tokenUse: REFRESH_TOKEN_USE,
+	})
+		.setProtectedHeader({ alg: "HS256" })
+		.setIssuedAt()
+		.setIssuer(JWT_ISSUER)
+		.setAudience(JWT_REFRESH_AUDIENCE)
+		.setJti(crypto.randomUUID())
+		.setExpirationTime(`${expiresInSeconds}s`)
+		.sign(secret);
+}
+
+export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
+	const secret = getJwtSecret();
+
+	const { payload } = await jose.jwtVerify(token, secret, {
+		issuer: JWT_ISSUER,
+		audience: JWT_REFRESH_AUDIENCE,
+	});
+
+	const address = payload.address;
+	const role = payload.role;
+	const jti = payload.jti;
+	const exp = payload.exp;
+
+	if (
+		typeof address !== "string" ||
+		typeof role !== "string" ||
+		typeof jti !== "string" ||
+		typeof exp !== "number" ||
+		payload.tokenUse !== REFRESH_TOKEN_USE
+	) {
+		throw new Error("Invalid refresh token payload");
+	}
+	if (revokedRefreshTokenJtis.get(jti) !== undefined) {
+		throw new Error("Refresh token has already been used");
+	}
+
+	return { address, role, jti, exp };
+}
+
+export function revokeRefreshTokenJti(jti: string, exp: number): void {
+	revokedRefreshTokenJtis.set(jti, exp * 1000);
+	pruneRevokedRefreshTokenJtis();
 }
 
 export function isProductionAuth(): boolean {

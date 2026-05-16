@@ -60,6 +60,9 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     uint256 public constant VESTING_TGE_BPS = 5_000;
     uint256 public constant VESTING_LINEAR_BPS = 5_000;
     uint256 public constant BUNDLE_GRACE_PERIOD = 86_400; // 24h after close
+    uint256 public constant ADMIN_REFUND_DELAY = 86_400; // 24h public notice before owner emergency refund
+    uint256 internal constant MAX_WALLET_DEPOSIT_BPS = 6_000; // 60% max allocation per wallet
+    uint256 internal constant MIN_OPEN_DURATION = 900; // 15m before cap-hit early close
 
     // ---------------------------------------------------------------------
     // immutables
@@ -74,6 +77,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     uint256 public immutable closeTimestamp;
     uint256 public immutable penaltyBps; // capped at MAX_PENALTY_BPS
     bool public immutable vestingEnabled;
+    uint256 private immutable _openTimestamp;
 
     // ---------------------------------------------------------------------
     // storage
@@ -93,6 +97,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     uint256 public bonusPool;
     uint256 public launchTimestamp;
     uint256 public depositorCount;
+    uint256 public adminRefundReadyAt;
     bool public distributed; // one-shot guard
 
     struct Depositor {
@@ -113,6 +118,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     event Closed(address indexed by, uint256 totalDeposited, uint256 bonusPool);
     event LaunchExecuted(address indexed token, uint256 totalBnb, uint256 timestamp);
     event Distributed(address indexed token, uint256 presalerShare);
+    event AdminRefundScheduled(address indexed by, uint256 readyAt, string reason);
     event RefundEnabled(address indexed by, string reason);
     event Refunded(address indexed user, uint256 principal, uint256 bonus, uint256 refundAmount);
     event Claimed(address indexed user, uint256 amount, uint256 totalClaimed);
@@ -139,6 +145,8 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     error TokenBalanceTooLow();
     error TransferFailed();
     error AlreadyDistributed();
+    error AdminRefundNotScheduled();
+    error AdminRefundDelayNotElapsed();
     error RouterAlreadySet();
     error ZeroAddress();
 
@@ -171,6 +179,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         presaleCap = _presaleCap;
         quoteAmt = _quoteAmt;
         v2BuyBnb = _v2BuyBnb;
+        _openTimestamp = block.timestamp;
         closeTimestamp = _closeTimestamp;
         penaltyBps = _penaltyBps;
         vestingEnabled = _vestingEnabled;
@@ -202,11 +211,13 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         uint256 newTotal = totalDeposited + msg.value;
         if (newTotal > presaleCap) revert CapExceeded();
         Depositor storage d = depositors[msg.sender];
+        uint256 newUserDeposit = d.deposited + msg.value;
+        if (newUserDeposit > (presaleCap * MAX_WALLET_DEPOSIT_BPS) / BPS_DENOM) revert CapExceeded();
         if (!d.seen) {
             d.seen = true;
             depositorCount += 1;
         }
-        d.deposited += msg.value;
+        d.deposited = newUserDeposit;
         totalDeposited = newTotal;
         emit Deposited(msg.sender, msg.value, newTotal);
     }
@@ -249,7 +260,10 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
 
     function close() external {
         if (state != State.OPEN) revert InvalidState();
-        if (block.timestamp < closeTimestamp && totalDeposited < presaleCap) revert WindowClosed();
+        if (block.timestamp < closeTimestamp) {
+            if (totalDeposited < presaleCap) revert WindowClosed();
+            if (block.timestamp < _openTimestamp + MIN_OPEN_DURATION) revert WindowClosed();
+        }
         state = State.CLOSED;
         totalDepositedAtLaunch = totalDeposited;
         emit Closed(msg.sender, totalDeposited, bonusPool);
@@ -316,10 +330,25 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         emit RefundEnabled(msg.sender, "launch-expired");
     }
 
+    /// @notice schedule a factory-owner emergency refund. This is deliberately
+    ///         delayed so the global owner cannot instantly flip live vaults
+    ///         into REFUND without an observable on-chain warning period.
+    function scheduleAdminRefund(string calldata reason) external {
+        address factoryOwner = ILaunchFactoryOwner(factory).owner();
+        if (msg.sender != factoryOwner) revert NotFactoryOwner();
+        if (state == State.LAUNCHED) revert InvalidState();
+        uint256 readyAt = block.timestamp + ADMIN_REFUND_DELAY;
+        adminRefundReadyAt = readyAt;
+        emit AdminRefundScheduled(msg.sender, readyAt, reason);
+    }
+
     function adminEnableRefund(string calldata reason) external {
         address factoryOwner = ILaunchFactoryOwner(factory).owner();
         if (msg.sender != factoryOwner) revert NotFactoryOwner();
         if (state == State.LAUNCHED) revert InvalidState();
+        uint256 readyAt = adminRefundReadyAt;
+        if (readyAt == 0) revert AdminRefundNotScheduled();
+        if (block.timestamp < readyAt) revert AdminRefundDelayNotElapsed();
         state = State.REFUND;
         emit RefundEnabled(msg.sender, reason);
     }

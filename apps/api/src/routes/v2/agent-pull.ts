@@ -5,7 +5,7 @@ import {
 	getDatabase,
 	isAgentEventType,
 } from "@waifufun/db";
-import { and, asc, count, eq, gt, inArray } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
 import { z } from "zod";
@@ -97,7 +97,7 @@ export function createAgentPullRoutes(deps: AgentPullRouteDeps = {}) {
 		const [row] = await db
 			.select({ eventsAvailable: count() })
 			.from(agentEventsTable)
-			.where(and(eq(agentEventsTable.agentId, agentId)));
+			.where(and(eq(agentEventsTable.agentId, agentId), ne(agentEventsTable.status, "skipped")));
 
 		return c.json({
 			agentId,
@@ -173,7 +173,7 @@ export function createAgentPullRoutes(deps: AgentPullRouteDeps = {}) {
 			}
 		}
 
-		const filters = [eq(agentEventsTable.agentId, agentId)];
+		const filters = [eq(agentEventsTable.agentId, agentId), ne(agentEventsTable.status, "skipped")];
 		if (sinceDate) filters.push(gt(agentEventsTable.createdAt, sinceDate));
 		if (types.length > 0) filters.push(inArray(agentEventsTable.eventType, types));
 

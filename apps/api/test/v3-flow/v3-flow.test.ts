@@ -142,8 +142,11 @@ test("v3 launchpad picker defaults validate, reject prod bounds, and feed POST /
 		}),
 	});
 	assert.equal(createRes.status, 201);
+	const createdAgentId = (inserted[0] as { agentId: string }).agentId;
+	assert.match(createdAgentId, /^waifu-aed96123ee-picker-flow-[0-9a-f]{8}$/);
+	assert.notEqual(createdAgentId, "waifu-picker-flow");
 	assert.deepEqual(inserted[0], {
-		agentId: "waifu-picker-flow",
+		agentId: createdAgentId,
 		ownerStewardUserId: "steward-1",
 		ownerAddress: OWNER,
 		name: "Picker Flow",

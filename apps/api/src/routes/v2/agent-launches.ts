@@ -10,6 +10,7 @@
  */
 
 import { Hono } from "hono";
+import type { Address } from "viem";
 import { z } from "zod";
 
 import { getDatabase } from "@waifufun/db";
@@ -32,7 +33,7 @@ import {
 	getLaunchTierConfigSnapshot,
 	launchRepo,
 } from "../../services/launch-v2/index.js";
-import { queueSaltMining } from "../../services/salt-miner.js";
+import { type MineSaltInput, mineVanitySalt } from "../../services/salt-miner.js";
 
 const addressRegex = /^0x[a-fA-F0-9]{40}$/;
 const addressSchema = z
@@ -162,6 +163,14 @@ function defaultService(): LaunchService | null {
 	return new LaunchService(config);
 }
 
+function readLaunchAddress(...names: string[]): `0x${string}` | null {
+	for (const name of names) {
+		const value = process.env[name];
+		if (value && addressRegex.test(value)) return value.toLowerCase() as `0x${string}`;
+	}
+	return null;
+}
+
 /**
  * Serialize agent_launches row to the public API shape (the `state` document
  * in the spec). bigints become strings; addresses are returned as stored
@@ -264,26 +273,47 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 
 			const closeTs = body.closeTimestamp ?? Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 			const tier = body.tier as LaunchTierString;
+			const creator = body.creator as Address;
 
 			const flapMetaCid = body.flapMetaCid ?? body.flap_meta_cid;
 			let metadataUri = body.metadataURI ?? "";
+			let metadata: Record<string, unknown> = { name: body.name, symbol: body.symbol };
 			if (flapMetaCid) {
 				try {
 					const validated = await validateFlapMetadataCid(flapMetaCid);
 					metadataUri = validated.cid;
+					metadata = { ...validated.metadata, name: body.name, symbol: body.symbol };
 				} catch (error) {
 					if (error instanceof FlapMetadataError) throw badRequest(error.code, error.message);
 					throw error;
 				}
 			}
+			const bundleBot = readLaunchAddress("BUNDLE_BOT_ADDRESS", "LAUNCH_BUNDLE_BOT_ADDRESS") ?? creator;
+			const commissionReceiver =
+				readLaunchAddress("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ?? creator;
+			const mineInput: MineSaltInput = { creator };
+			if (process.env.LAUNCH_VANITY_SUFFIX !== undefined) mineInput.suffix = process.env.LAUNCH_VANITY_SUFFIX;
+			if (process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS !== undefined) {
+				mineInput.maxIterations = Number(process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS);
+			}
+			const mined = mineVanitySalt(mineInput);
 
 			const input: CreateLaunchInput = {
 				name: body.name,
 				symbol: body.symbol,
 				metadataURI: metadataUri,
-				creator: body.creator,
+				metaCid: flapMetaCid ?? metadataUri,
+				creator: creator as `0x${string}`,
+				bundleBot: bundleBot as `0x${string}`,
+				commissionReceiver: commissionReceiver as `0x${string}`,
 				tier,
+				buyTaxBps: Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
+				sellTaxBps: Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),
+				taxDuration: Number(process.env.LAUNCH_TAX_DURATION_SECONDS ?? 365 * 24 * 60 * 60),
+				antiFarmerDuration: Number(process.env.LAUNCH_ANTI_FARMER_DURATION_SECONDS ?? 60 * 60),
 				closeTimestamp: closeTs,
+				vanitySalt: mined.vanitySalt,
+				predictedTokenAddress: mined.predictedTokenAddress as `0x${string}`,
 			};
 
 			const onchain = await service.createLaunchOnchain(input);
@@ -301,14 +331,15 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				v2BuyBnb: tierConfig.v2BuyBnb,
 				vestingEnabled: tierConfig.vestingEnabled,
 				closeTimestamp: BigInt(closeTs),
+				metadata,
 				metadataUri: input.metadataURI,
+				predictedTokenAddress: mined.predictedTokenAddress,
+				vanitySalt: mined.vanitySalt,
 				flapMetaCid: flapMetaCid ?? null,
 				bundleTipBnb: process.env.BUNDLE_TIP_BNB ?? "0.03",
 				createTxHash: onchain.txHash,
 				createBlockNumber: onchain.blockNumber,
 			});
-
-			queueSaltMining({ db, launchId: row.id });
 
 			return respondAccepted(c, {
 				id: row.id,

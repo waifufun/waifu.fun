@@ -80,6 +80,7 @@ async function deployStack() {
 		await portal.getAddress(),
 		creator.address,
 		tipReceiver.address,
+		creator.address,
 	);
 
 	return {
@@ -118,7 +119,7 @@ async function createLaunch(ctx, tier, overrides = {}) {
 		tier,
 		buyTaxBps: overrides.buyTaxBps ?? 300,
 		sellTaxBps: overrides.sellTaxBps ?? 300,
-		taxDuration: 365 * 24 * 60 * 60,
+		taxDuration: overrides.taxDuration ?? 365 * 24 * 60 * 60,
 		antiFarmerDuration: 3600,
 		closeTimestamp,
 		vanitySalt: rawSalt,
@@ -274,6 +275,30 @@ describe("Wave H adversarial / edge cases", () => {
 		);
 	});
 
+	it("createLaunch rejects tax values above platform policy bounds", async () => {
+		const ctx = await deployStack();
+		await expect(createLaunch(ctx, TIER_80, { buyTaxBps: 1001 })).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidTaxBps",
+		);
+		await expect(createLaunch(ctx, TIER_80, { sellTaxBps: 1001 })).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidTaxBps",
+		);
+		await expect(createLaunch(ctx, TIER_80, { taxDuration: 365 * 24 * 60 * 60 + 1 })).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidTaxBps",
+		);
+	});
+
+	it("createLaunch rejects non-platform commission receivers", async () => {
+		const ctx = await deployStack();
+		await expect(createLaunch(ctx, TIER_80, { commissionReceiver: ctx.alice.address })).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidCommissionReceiver",
+		);
+	});
+
 	it("createLaunch reverts with empty metaCid", async () => {
 		const ctx = await deployStack();
 		await expect(createLaunch(ctx, TIER_80, { metaCid: "" })).to.be.revertedWithCustomError(
@@ -387,7 +412,6 @@ describe("Wave H adversarial / edge cases", () => {
 		await ctx.factory.connect(ctx.alice).createLaunch({
 			...common,
 			creator: ctx.alice.address,
-			commissionReceiver: ctx.alice.address,
 			predictedTokenAddress: attackerPredicted,
 		});
 		await expect(

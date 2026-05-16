@@ -97,7 +97,7 @@ function parseAndValidateUrl(rawUrl: string): URL {
 	} catch {
 		throw new SafeFetchError("URL is not valid", "invalid_url");
 	}
-	if (url.protocol !== "https:" && url.protocol !== "http:") {
+	if (url.protocol !== "https:") {
 		throw new SafeFetchError(`URL scheme ${url.protocol || "(none)"} is not allowed`, "blocked_scheme");
 	}
 	if (url.username || url.password) {
@@ -165,16 +165,57 @@ function isBlockedIp(address: string): boolean {
 	if (isIP(normalized) === 4) return isBlockedIpv4(normalized);
 	const mapped = extractMappedIpv4(normalized);
 	if (mapped) return isBlockedIpv4(mapped);
-	if (normalized === "::" || normalized === "::1") return true;
-	const firstHextet = normalized.startsWith("::") ? 0 : Number.parseInt(normalized.split(":")[0] ?? "0", 16);
-	if (!Number.isFinite(firstHextet)) return true;
-	return (firstHextet & 0xfe00) === 0xfc00 || (firstHextet & 0xffc0) === 0xfe80;
+	const bytes = parseIpv6Bytes(normalized);
+	if (!bytes) return true;
+	const byte = (index: number) => bytes[index] ?? 0;
+	const firstWord = (byte(0) << 8) | byte(1);
+	return (
+		bytes.every((byte) => byte === 0) ||
+		(bytes.slice(0, 15).every((byte) => byte === 0) && byte(15) === 1) ||
+		(bytes.slice(0, 12).every((byte) => byte === 0) && isBlockedIpv4(bytesToIpv4(bytes, 12))) ||
+		(bytes.slice(0, 10).every((byte) => byte === 0) &&
+			byte(10) === 0xff &&
+			byte(11) === 0xff &&
+			isBlockedIpv4(bytesToIpv4(bytes, 12))) ||
+		(byte(0) === 0x64 &&
+			byte(1) === 0xff &&
+			byte(2) === 0x9b &&
+			bytes.slice(3, 12).every((byte) => byte === 0) &&
+			isBlockedIpv4(bytesToIpv4(bytes, 12))) ||
+		(firstWord & 0xfe00) === 0xfc00 ||
+		(firstWord & 0xffc0) === 0xfe80 ||
+		(firstWord & 0xff00) === 0xff00 ||
+		firstWord === 0x2002 ||
+		(byte(0) === 0x20 && byte(1) === 0x01 && (byte(2) === 0x00 || byte(2) === 0x0d) && byte(3) === 0xb8)
+	);
 }
 
 function extractMappedIpv4(address: string): string | null {
 	if (!address.includes(".")) return null;
 	const candidate = address.slice(address.lastIndexOf(":") + 1);
 	return isIP(candidate) === 4 ? candidate : null;
+}
+
+function parseIpv6Bytes(address: string): number[] | null {
+	if (isIP(address) !== 6) return null;
+	const [head = "", tail = ""] = address.split("::", 2);
+	const headParts = head ? head.split(":") : [];
+	const tailParts = tail ? tail.split(":") : [];
+	const missing = 8 - headParts.length - tailParts.length;
+	if (missing < 0 || (!address.includes("::") && missing !== 0)) return null;
+	const parts = [...headParts, ...Array.from({ length: missing }, () => "0"), ...tailParts];
+	if (parts.length !== 8) return null;
+	const bytes: number[] = [];
+	for (const part of parts) {
+		const value = Number.parseInt(part, 16);
+		if (!Number.isInteger(value) || value < 0 || value > 0xffff) return null;
+		bytes.push(value >> 8, value & 0xff);
+	}
+	return bytes;
+}
+
+function bytesToIpv4(bytes: number[], offset: number): string {
+	return `${bytes[offset] ?? 0}.${bytes[offset + 1] ?? 0}.${bytes[offset + 2] ?? 0}.${bytes[offset + 3] ?? 0}`;
 }
 
 function isBlockedIpv4(address: string): boolean {
@@ -189,6 +230,7 @@ function isBlockedIpv4(address: string): boolean {
 		(a === 100 && b >= 64 && b <= 127) ||
 		(a === 169 && b === 254) ||
 		(a === 172 && b >= 16 && b <= 31) ||
+		(a === 192 && b === 0) ||
 		(a === 192 && b === 168)
 	);
 }

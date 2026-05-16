@@ -4,7 +4,7 @@ import { afterEach, describe, it } from "node:test";
 import type { AgentLaunchRow } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
-import { BundleSubmitterError, markBundleReceipt, submitLaunchBundle } from "./index.js";
+import { BundleSubmitterError, buildBundleExecParams, markBundleReceipt, submitLaunchBundle } from "./index.js";
 import { decryptBundleWalletPk } from "./wallet-pool.js";
 
 const TEST_PK = `0x${"11".repeat(32)}` as const;
@@ -44,7 +44,7 @@ function launchFixture(overrides: Partial<AgentLaunchRow> = {}): AgentLaunchRow 
 		curveFillBnb: null,
 		tokensFromV2: null,
 		tokensBurned: null,
-		metadata: {},
+		metadata: { name: "Test Waifu", symbol: "TWAIFU" },
 		createTxHash: null,
 		createBlockNumber: null,
 		failureReason: null,
@@ -219,5 +219,18 @@ describe("bundle-bot submitter safety", () => {
 	it("rejects plaintext private key envelopes unless explicitly allowed for non-live tooling", () => {
 		assert.throws(() => decryptBundleWalletPk(TEST_PK), /plaintext bundle wallet keys are disabled/u);
 		assert.equal(decryptBundleWalletPk(TEST_PK, { allowPlaintext: true }), TEST_PK);
+	});
+
+	it("builds BundleExecParams with raw vanity salt", () => {
+		const launch = launchFixture();
+		const params = buildBundleExecParams(launch, {
+			commissionReceiver: "0x00000000000000000000000000000000000000cc",
+			deadlineSeconds: 60,
+		});
+		assert.equal(params.vanitySalt, launch.vanitySalt);
+		assert.equal(params.name, "Test Waifu");
+		assert.equal(params.symbol, "TWAIFU");
+		assert.equal(params.meta, "bafy-test");
+		assert.equal(params.tipBnb, 0n);
 	});
 });

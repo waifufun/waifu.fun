@@ -13,6 +13,7 @@ type SiweVerifier = typeof verifySiweMessage;
 type NonceEntry = { nonce: string; address: string; expiresAt: number };
 const NONCE_STORE = new Map<string, NonceEntry>();
 const NONCE_TTL_MS = 10 * 60 * 1000;
+const WALLET_BIND_SIWE_PURPOSE = "wallet:bind";
 
 let dbForTest: DbHandle | undefined;
 let verifierForTest: SiweVerifier | undefined;
@@ -37,13 +38,13 @@ function verifier(): SiweVerifier {
 	return verifierForTest ?? verifySiweMessage;
 }
 
-function nonceKey(patronId: string, address: string): string {
-	return `${patronId}:${address.toLowerCase()}`;
+function nonceKey(patronId: string, purpose: string, address: string): string {
+	return `${purpose}:${patronId}:${address.toLowerCase()}`;
 }
 
 function setNonce(patronId: string, address: string): string {
 	const nonce = generateNonce();
-	NONCE_STORE.set(nonceKey(patronId, address), {
+	NONCE_STORE.set(nonceKey(patronId, WALLET_BIND_SIWE_PURPOSE, address), {
 		nonce,
 		address: address.toLowerCase(),
 		expiresAt: Date.now() + NONCE_TTL_MS,
@@ -52,7 +53,7 @@ function setNonce(patronId: string, address: string): string {
 }
 
 function consumePatronNonce(patronId: string, address: string, nonce: string): boolean {
-	const key = nonceKey(patronId, address);
+	const key = nonceKey(patronId, WALLET_BIND_SIWE_PURPOSE, address);
 	const entry = NONCE_STORE.get(key);
 	if (!entry) return false;
 	if (entry.nonce !== nonce) return false;

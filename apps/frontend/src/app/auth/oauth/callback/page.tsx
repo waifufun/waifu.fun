@@ -22,6 +22,30 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "loading" | "error";
 
+function scrubCallbackUrl() {
+	if (typeof window === "undefined") return;
+	const url = new URL(window.location.href);
+	let changed = false;
+	for (const key of ["token", "refreshToken"]) {
+		if (url.searchParams.has(key)) {
+			url.searchParams.delete(key);
+			changed = true;
+		}
+	}
+	if (url.hash) {
+		const hashParams = new URLSearchParams(url.hash.slice(1));
+		for (const key of ["token", "refreshToken"]) {
+			if (hashParams.has(key)) {
+				hashParams.delete(key);
+				changed = true;
+			}
+		}
+		const nextHash = hashParams.toString();
+		url.hash = nextHash ? `#${nextHash}` : "";
+	}
+	if (changed) window.history.replaceState(null, "", url.toString());
+}
+
 function CallbackInner() {
 	const router = useRouter();
 	const params = useSearchParams();
@@ -43,6 +67,7 @@ function CallbackInner() {
 		const refreshToken = params?.get("refreshToken") ?? hashParams.get("refreshToken");
 		const errorParam = params?.get("error") ?? hashParams.get("error");
 		const errorDescription = params?.get("error_description") ?? hashParams.get("error_description");
+		scrubCallbackUrl();
 
 		// Steward (or the provider) returned an error before we even got the JWT.
 		if (errorParam) {

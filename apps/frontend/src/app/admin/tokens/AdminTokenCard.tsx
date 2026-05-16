@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { sanitizeSocialLinks } from "@/lib/url-safety";
+import { getSocialLinkEntries } from "@/lib/url-safety";
 import { Eye, EyeOff, Shield, Star } from "lucide-react";
 
 export interface Token {
@@ -48,7 +48,7 @@ export default function AdminTokenCard({
 	formatVolume,
 	formatMarketCap,
 }: AdminTokenCardProps) {
-	const socials = sanitizeSocialLinks(token.socials);
+	const socialEntries = getSocialLinkEntries(token.socials);
 	return (
 		<div className="border  p-4 bg-card hover:bg-zinc-800 transition-colors duration-150 shadow-sm">
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -95,37 +95,24 @@ export default function AdminTokenCard({
 						<span>Market Cap: {formatMarketCap(token.marketCap)}</span>
 						<span>Created: {new Date(token.createdAt).toLocaleDateString()}</span>
 					</div>
-					{(socials.twitter || socials.telegram || socials.website) && (
+					{socialEntries.length > 0 && (
 						<div className="flex flex-wrap gap-2 mt-2">
-							{socials.twitter && (
-								<a
-									href={socials.twitter}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-blue-500 hover:underline text-xs md:text-sm"
-								>
-									Twitter
-								</a>
-							)}
-							{socials.telegram && (
-								<a
-									href={socials.telegram}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-blue-500 hover:underline text-xs md:text-sm"
-								>
-									Telegram
-								</a>
-							)}
-							{socials.website && (
-								<a
-									href={socials.website}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-blue-500 hover:underline text-xs md:text-sm"
-								>
-									Website
-								</a>
+							{socialEntries.map((social) =>
+								social.href ? (
+									<a
+										key={social.key}
+										href={social.href}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-blue-500 hover:underline text-xs md:text-sm"
+									>
+										{social.label}
+									</a>
+								) : (
+									<span key={social.key} className="text-muted-foreground text-xs md:text-sm break-all">
+										{social.label}: {social.value}
+									</span>
+								),
 							)}
 						</div>
 					)}

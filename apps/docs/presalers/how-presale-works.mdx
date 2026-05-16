@@ -100,9 +100,10 @@ the vault has reached refund state through one of three paths:
    anyone can call `enableRefundUnderSubscribed()`.
 2. **bundle failed.** after three failed bundle attempts, the bot calls
    `enableRefundBundleFailed()`.
-3. **admin emergency stop.** the platform owner calls `adminEnableRefund(reason)`
-   with a human-readable reason string. this is the kill switch. it only
-   works if the vault is not yet `LAUNCHED`.
+3. **admin emergency stop.** the platform owner first calls
+   `scheduleAdminRefund(reason)`, then waits the on-chain delay before calling
+   `adminEnableRefund(reason)`. it only works if the vault is not yet
+   `LAUNCHED`.
 
 in REFUND state, every depositor calls `refund()` independently to get their
 BNB back plus a pro-rata bonus from the bonus pool.

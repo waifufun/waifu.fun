@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
 import { getDatabase, webhookInbox } from "@waifufun/db";
@@ -108,19 +107,15 @@ function requireDb(): Db | null {
 }
 
 export async function insertInboxRow(db: Db, payload: WebhookConsumerEvent): Promise<boolean> {
-	const key = payload.idempotencyKey ?? null;
+	const key = payload.idempotencyKey;
+	if (!key) throw new Error("idempotencyKey is required");
 
-	if (key) {
-		const [existing] = await db
-			.select({ id: webhookInbox.id })
-			.from(webhookInbox)
-			.where(eq(webhookInbox.key, key))
-			.limit(1);
-		if (existing) return true;
-	}
-
-	await db.insert(webhookInbox).values({ key, eventType: payload.event });
-	return false;
+	const [inserted] = await db
+		.insert(webhookInbox)
+		.values({ key, eventType: payload.event })
+		.onConflictDoNothing({ target: webhookInbox.key })
+		.returning({ id: webhookInbox.id });
+	return !inserted;
 }
 
 export function signWebhookPayload(rawBody: string, timestamp: string, secret: string): string {

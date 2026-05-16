@@ -136,7 +136,7 @@ export const agentEvents = pgTable(
 		type: varchar("type", { length: 50 }).notNull(),
 		/** Legacy brain bus payload (kept until the worker is migrated). */
 		payload: jsonb("payload").notNull(),
-		/** pending | processing | done | failed */
+		/** pending | processing | done | failed | skipped */
 		status: varchar("status", { length: 20 }).notNull().default("pending"),
 		attempts: integer("attempts").notNull().default(0),
 		errorMessage: text("error_message"),

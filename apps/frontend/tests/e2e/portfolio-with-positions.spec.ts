@@ -39,7 +39,7 @@ test.describe("/portfolio with positions", () => {
 			},
 		]);
 
-		await page.goto("/portfolio");
+		await page.goto("/patron/portfolio");
 
 		// page renders without crash; portfolio data fetches the mocked
 		// endpoint. Exact UI shape varies (the row component may render
@@ -54,7 +54,7 @@ test.describe("/portfolio with positions", () => {
 		await installDefaultMocks(page);
 		await mockPortfolio(page, []);
 
-		await page.goto("/portfolio");
+		await page.goto("/patron/portfolio");
 		// page renders without error
 		await expect(page.locator("body")).toBeVisible();
 	});

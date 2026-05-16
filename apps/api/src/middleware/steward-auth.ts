@@ -17,7 +17,7 @@ export interface StewardAuthPrincipal {
 }
 
 const STEWARD_ISSUER = "steward";
-const EXPECTED_TENANT = () => process.env.STEWARD_TENANT_ID ?? "waifu";
+const EXPECTED_TENANT = () => process.env.STEWARD_TENANT_ID;
 
 function parseWallets(value: unknown): StewardJwtWallet[] | undefined {
 	if (!Array.isArray(value)) return undefined;
@@ -59,12 +59,13 @@ export async function verifyStewardJwt(token: string): Promise<StewardAuthPrinci
 
 		const userId = payload.userId ?? payload.sub;
 		const tenantId = payload.tenantId ?? payload.tenant_id;
+		const expectedTenant = EXPECTED_TENANT();
 
-		if (typeof userId !== "string" || typeof tenantId !== "string") {
+		if (typeof userId !== "string" || typeof tenantId !== "string" || typeof expectedTenant !== "string") {
 			return null;
 		}
 
-		if (tenantId !== EXPECTED_TENANT()) {
+		if (tenantId !== expectedTenant) {
 			return null;
 		}
 

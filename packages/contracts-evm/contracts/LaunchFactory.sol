@@ -73,6 +73,7 @@ contract LaunchFactory {
     mapping(bytes32 => bool) public usedSalts; // dedupe across launches
     mapping(address => LaunchAddresses) public launches; // keyed by predictedToken
     address[] public allLaunches;
+    address private platformCommissionReceiver;
 
     // ---------------------------------------------------------------------
     // events
@@ -123,11 +124,13 @@ contract LaunchFactory {
         bytes32 _initCodeHash,
         address _flapPortal,
         address _tokenImplTaxedV3,
-        address _tipReceiver
+        address _tipReceiver,
+        address _platformCommissionReceiver
     ) {
         if (
             _wbnb == address(0) || _pcsFactory == address(0) || _pcsRouter == address(0) || _flapPortal == address(0)
                 || _tokenImplTaxedV3 == address(0) || _tipReceiver == address(0)
+                || _platformCommissionReceiver == address(0)
         ) revert ZeroAddress();
 
         WBNB = _wbnb;
@@ -137,6 +140,7 @@ contract LaunchFactory {
         FLAP_PORTAL = _flapPortal;
         TOKEN_IMPL_TAXED_V3 = _tokenImplTaxedV3;
         TIP_RECEIVER = _tipReceiver;
+        platformCommissionReceiver = _platformCommissionReceiver;
 
         owner = msg.sender;
         emit OwnershipTransferred(address(0), msg.sender);
@@ -156,6 +160,10 @@ contract LaunchFactory {
         if (config.predictedTokenAddress == address(0)) revert InvalidPredictedAddress();
         if (config.closeTimestamp <= block.timestamp) revert InvalidCloseTimestamp();
         if (config.buyTaxBps > 10000 || config.sellTaxBps > 10000) revert InvalidTaxBps();
+        if (config.commissionReceiver != platformCommissionReceiver) revert InvalidCommissionReceiver();
+        if (config.buyTaxBps > 1000 || config.sellTaxBps > 1000 || config.taxDuration > 365 days) {
+            revert InvalidTaxBps();
+        }
         if (bytes(config.name).length == 0) revert EmptyName();
         if (bytes(config.symbol).length == 0) revert EmptySymbol();
         if (bytes(config.metaCid).length == 0) revert EmptyMetaCid();

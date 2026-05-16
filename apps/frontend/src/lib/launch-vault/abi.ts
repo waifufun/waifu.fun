@@ -245,7 +245,8 @@ export const launchVaultAbi = [
  *
  * REFUND is entered via `enableRefundUnderSubscribed` (anyone, post-close,
  * under-subscribed), `enableRefundBundleFailed` (bundle bot after a failed
- * bundle), or `adminEnableRefund` (factory owner kill switch).
+ * bundle), or delayed `scheduleAdminRefund` + `adminEnableRefund` calls from
+ * the factory owner.
  */
 export const VaultState = {
 	OPEN: 0,

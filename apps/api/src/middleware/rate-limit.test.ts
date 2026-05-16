@@ -4,7 +4,12 @@ import test from "node:test";
 import { Hono } from "hono";
 
 import type { AppBindings } from "../lib/bindings.js";
-import { __resetRateLimitBucketsForTest, rateLimit } from "./rate-limit.js";
+import {
+	type RedisRateLimitClient,
+	__resetRateLimitBucketsForTest,
+	createRedisRateLimitStore,
+	rateLimit,
+} from "./rate-limit.js";
 
 test("rateLimit enforces explicit limits", async () => {
 	__resetRateLimitBucketsForTest();
@@ -46,4 +51,39 @@ test("rateLimit uses bounded defaults for sensitive buckets", async () => {
 
 	assert.equal(response.status, 429);
 	assert.equal(response.headers.get("X-RateLimit-Limit"), "60");
+});
+
+test("rateLimit can use an atomic Redis-style store", async () => {
+	const calls: Array<{ key: string; windowMs: string }> = [];
+	const counts = new Map<string, number>();
+	const redisClient = {
+		async eval(_script: string, _keyCount: number, key: string, windowMs: string) {
+			const redisKey = String(key);
+			const count = (counts.get(redisKey) ?? 0) + 1;
+			counts.set(redisKey, count);
+			calls.push({ key: redisKey, windowMs: String(windowMs) });
+			return [count, Number(windowMs)];
+		},
+		disconnect() {},
+	} as RedisRateLimitClient;
+	const store = createRedisRateLimitStore(redisClient);
+	const app = new Hono<AppBindings>();
+	app.use(
+		"*",
+		rateLimit({
+			bucket: "auth",
+			limit: 1,
+			windowMs: 1_000,
+			store,
+			keyGenerator: () => "wallet 0xabc",
+		}),
+	);
+	app.get("/", (c) => c.text("ok"));
+
+	assert.equal((await app.request("/")).status, 200);
+	assert.equal((await app.request("/")).status, 429);
+	assert.deepEqual(calls, [
+		{ key: "waifu:api:rate-limit:auth:wallet_0xabc", windowMs: "1000" },
+		{ key: "waifu:api:rate-limit:auth:wallet_0xabc", windowMs: "1000" },
+	]);
 });

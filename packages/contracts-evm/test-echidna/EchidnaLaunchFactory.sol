@@ -20,6 +20,7 @@ contract EchidnaLaunchFactory {
     address internal constant FLAP_PORTAL = address(0x0040);
     address internal constant TOKEN_IMPL = address(0x0050);
     address internal constant TIP_RECEIVER = address(0x0060);
+    address internal constant PLATFORM_COMMISSION_RECEIVER = address(0x0070);
     bytes32 internal constant INIT_CODE_HASH = bytes32(uint256(0xCAFE));
 
     address internal constant ALICE = address(0x100);
@@ -32,7 +33,8 @@ contract EchidnaLaunchFactory {
             INIT_CODE_HASH,
             FLAP_PORTAL,
             TOKEN_IMPL,
-            TIP_RECEIVER
+            TIP_RECEIVER,
+            PLATFORM_COMMISSION_RECEIVER
         );
     }
 

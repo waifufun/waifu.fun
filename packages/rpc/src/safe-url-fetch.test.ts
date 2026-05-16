@@ -10,15 +10,31 @@ test("rpc safeFetchJson blocks unsupported URI schemes", async () => {
 	);
 });
 
-test("rpc safeFetchJson blocks metadata URI redirects to link-local addresses", async () => {
+test("rpc safeFetchJson blocks metadata URI redirects to non-https URLs", async () => {
 	await assert.rejects(
 		safeFetchJson("https://meta.test/token.json", {
 			maxBytes: 1024,
 			lookupIpAddresses: async (hostname) => (hostname === "meta.test" ? ["93.184.216.34"] : ["169.254.169.254"]),
 			fetchImpl: async () => new Response(null, { status: 302, headers: { location: "http://aws.test/latest" } }),
 		}),
+		(error: unknown) => error instanceof SafeFetchError && error.code === "blocked_scheme",
+	);
+});
+
+test("rpc safeFetchJson blocks metadata URI redirects to IPv4-mapped IPv6 loopback literals", async () => {
+	let calls = 0;
+	await assert.rejects(
+		safeFetchJson("https://meta.test/token.json", {
+			maxBytes: 1024,
+			lookupIpAddresses: async () => ["93.184.216.34"],
+			fetchImpl: async () => {
+				calls += 1;
+				return new Response(null, { status: 302, headers: { location: "https://[::ffff:7f00:1]/meta" } });
+			},
+		}),
 		(error: unknown) => error instanceof SafeFetchError && error.code === "blocked_address",
 	);
+	assert.equal(calls, 1);
 });
 
 test("rpc safeFetchJson parses bounded public token metadata", async () => {

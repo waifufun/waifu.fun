@@ -34,9 +34,18 @@ export interface CreateLaunchInput {
 	name: string;
 	symbol: string;
 	metadataURI: string;
+	metaCid: string;
 	creator: `0x${string}`;
+	bundleBot: `0x${string}`;
+	commissionReceiver: `0x${string}`;
 	tier: LaunchTierString;
+	buyTaxBps: number;
+	sellTaxBps: number;
+	taxDuration: number;
+	antiFarmerDuration: number;
 	closeTimestamp: number;
+	vanitySalt: `0x${string}`;
+	predictedTokenAddress: `0x${string}`;
 }
 
 export interface CreateLaunchResult {
@@ -44,7 +53,7 @@ export interface CreateLaunchResult {
 	token: `0x${string}`;
 	vault: `0x${string}`;
 	router: `0x${string}`;
-	taxSplitter: `0x${string}`;
+	taxSplitter: `0x${string}` | null;
 	treasuryReserve: `0x${string}`;
 	presaleUrl: string;
 	txHash: `0x${string}`;

@@ -22,6 +22,7 @@ export const TOKEN_IMPL_TAXED_V3 = "0x024f18294970B5c76c0691b87f138A0317156422" 
 export const VANITY_SUFFIX = "7777";
 
 export interface MineSaltInput {
+	creator?: Address;
 	deployer?: Address;
 	implementation?: Address;
 	suffix?: string;
@@ -30,7 +31,8 @@ export interface MineSaltInput {
 }
 
 export interface MineSaltResult {
-	salt: Hex;
+	vanitySalt: Hex;
+	effectiveSalt: Hex;
 	predictedTokenAddress: Address;
 	iterations: number;
 }
@@ -52,12 +54,22 @@ export function cloneInitCode(implementation: Address = TOKEN_IMPL_TAXED_V3): He
 	]);
 }
 
-export function predictFlapTokenAddress(input: { salt: Hex; deployer?: Address; implementation?: Address }): Address {
+export function effectiveLaunchSalt(creator: Address, vanitySalt: Hex): Hex {
+	return keccak256(concatHex([padHex(creator as Hex, { size: 32 }), vanitySalt]));
+}
+
+export function predictFlapTokenAddress(input: {
+	salt: Hex;
+	creator?: Address;
+	deployer?: Address;
+	implementation?: Address;
+}): Address {
+	const salt = input.creator ? effectiveLaunchSalt(input.creator, input.salt) : input.salt;
 	return getContractAddress({
 		bytecode: cloneInitCode(input.implementation ?? TOKEN_IMPL_TAXED_V3),
 		from: input.deployer ?? FLAP_PORTAL_ADDRESS,
 		opcode: "CREATE2",
-		salt: input.salt,
+		salt,
 	}).toLowerCase() as Address;
 }
 
@@ -65,17 +77,25 @@ export function mineVanitySalt(input: MineSaltInput = {}): MineSaltResult {
 	const suffix = (input.suffix ?? VANITY_SUFFIX).toLowerCase();
 	const maxIterations = input.maxIterations ?? 250_000;
 	const seed = input.seed ?? toHex(randomBytes(32));
-	let salt = padHex(seed, { size: 32 });
+	let vanitySalt = padHex(seed, { size: 32 });
 
 	for (let i = 0; i < maxIterations; i++) {
-		const predictInput: { salt: Hex; deployer?: Address; implementation?: Address } = { salt };
+		const predictInput: { salt: Hex; creator?: Address; deployer?: Address; implementation?: Address } = {
+			salt: vanitySalt,
+		};
+		if (input.creator) predictInput.creator = input.creator;
 		if (input.deployer) predictInput.deployer = input.deployer;
 		if (input.implementation) predictInput.implementation = input.implementation;
 		const predictedTokenAddress = predictFlapTokenAddress(predictInput);
 		if (predictedTokenAddress.toLowerCase().endsWith(suffix)) {
-			return { salt, predictedTokenAddress, iterations: i + 1 };
+			return {
+				vanitySalt,
+				effectiveSalt: input.creator ? effectiveLaunchSalt(input.creator, vanitySalt) : vanitySalt,
+				predictedTokenAddress,
+				iterations: i + 1,
+			};
 		}
-		salt = keccak256(concatHex([salt, numberToHex(i, { size: 8 })]));
+		vanitySalt = keccak256(concatHex([vanitySalt, numberToHex(i, { size: 8 })]));
 	}
 
 	throw new Error(`vanity salt mining exhausted ${maxIterations} iterations without suffix ${suffix}`);
@@ -100,7 +120,7 @@ export async function runSaltMiningJob(input: QueueSaltMiningInput): Promise<Min
 			.update(schema.agentLaunches)
 			.set({
 				predictedTokenAddress: result.predictedTokenAddress,
-				vanitySalt: result.salt,
+				vanitySalt: result.vanitySalt,
 				updatedAt: new Date(),
 			})
 			.where(eq(schema.agentLaunches.id, input.launchId));

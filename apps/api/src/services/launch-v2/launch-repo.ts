@@ -94,7 +94,10 @@ export interface InsertLaunchInput {
 	v2BuyBnb: string;
 	vestingEnabled: boolean;
 	closeTimestamp: bigint;
+	metadata?: Record<string, unknown>;
 	metadataUri?: string | null;
+	predictedTokenAddress?: string | null;
+	vanitySalt?: string | null;
 	flapMetaCid?: string | null;
 	bundleTipBnb?: string | null;
 	createTxHash?: string | null;
@@ -116,7 +119,10 @@ export async function insertLaunch(db: Database, input: InsertLaunchInput): Prom
 			v2BuyBnb: input.v2BuyBnb,
 			vestingEnabled: input.vestingEnabled ? 1 : 0,
 			closeTimestamp: input.closeTimestamp,
+			metadata: input.metadata ?? {},
 			metadataUri: input.metadataUri ?? null,
+			predictedTokenAddress: input.predictedTokenAddress?.toLowerCase() ?? null,
+			vanitySalt: input.vanitySalt?.toLowerCase() ?? null,
 			flapMetaCid: input.flapMetaCid ?? null,
 			bundleTipBnb: input.bundleTipBnb ?? "0.03",
 			createTxHash: input.createTxHash?.toLowerCase() ?? null,

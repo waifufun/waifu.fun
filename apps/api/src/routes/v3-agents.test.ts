@@ -40,7 +40,7 @@ function installCreatePatronAuth() {
 	}));
 }
 
-test("POST /v3/agents creates a persona with launchpad fields", async () => {
+test("POST /v3/agents creates a patron-owned persona and ignores caller-supplied IDs", async () => {
 	installCreatePatronAuth();
 	test.after(resetPatronAuthMocks);
 
@@ -76,8 +76,11 @@ test("POST /v3/agents creates a persona with launchpad fields", async () => {
 	const json = (await res.json()) as { ok: boolean; agent: Record<string, unknown> };
 	assert.equal(json.ok, true);
 	assert.equal(json.agent.launchpadId, "four-meme-tax");
+	const createdAgentId = (inserted[0] as { agentId: string }).agentId;
+	assert.match(createdAgentId, /^waifu-aed96123ee-demo-[0-9a-f]{8}$/);
+	assert.notEqual(createdAgentId, "waifu-demo");
 	assert.deepEqual(inserted[0], {
-		agentId: "waifu-demo",
+		agentId: createdAgentId,
 		ownerStewardUserId: "steward-1",
 		ownerAddress: OWNER,
 		name: "Demo",

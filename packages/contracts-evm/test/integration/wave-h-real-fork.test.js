@@ -100,6 +100,7 @@ describe("Wave H real-fork integration", function () {
 			PORTAL,
 			TOKEN_TAXED_V3_IMPL,
 			TIP_RECEIVER,
+			owner.address,
 		);
 		await factory.waitForDeployment();
 		console.log(`    [fork] LaunchFactory deployed at ${await factory.getAddress()}`);

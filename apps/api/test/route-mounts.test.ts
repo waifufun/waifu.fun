@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { createApp } from "../src/app.js";
 import type { AppConfig, AppDependencies, DbClient, FlapClient } from "../src/contracts/services.js";
+import { createMemoryRateLimitStore } from "../src/middleware/rate-limit.js";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const SAMPLE_ID = "route-smoke";
@@ -176,7 +177,7 @@ const ROUTES = [
 ] as const;
 
 test("app route table mounts every public API family used by the frontend", async () => {
-	const app = createApp(deps());
+	const app = createApp(deps(), undefined, { rateLimitStore: createMemoryRateLimitStore() });
 
 	for (const route of ROUTES) {
 		const response = await app.request(`http://api.test${route.path}`, {
@@ -189,6 +190,41 @@ test("app route table mounts every public API family used by the frontend", asyn
 			const body = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
 			assert.notEqual(body?.error?.code, "NOT_FOUND", `${route.method} ${route.path} fell through to global 404`);
 		}
-		assert.ok(response.status >= 200 && response.status < 600, `${route.method} ${route.path} returned ${response.status}`);
+		assert.ok(
+			response.status >= 200 && response.status < 600,
+			`${route.method} ${route.path} returned ${response.status}`,
+		);
+	}
+});
+
+test("app mounts bounded rate limits on sensitive API families", async () => {
+	const app = createApp(deps(), undefined, { rateLimitStore: createMemoryRateLimitStore() });
+	const routes = [
+		{ method: "POST", path: "/auth/refresh", bucket: "auth", body: {} },
+		{ method: "POST", path: "/auth/oauth/finalize", bucket: "auth", body: {} },
+		{ method: "POST", path: "/auth/email/finalize", bucket: "auth", body: {} },
+		{ method: "POST", path: "/auth/passkey/finalize", bucket: "auth", body: {} },
+		{ method: "POST", path: "/v2/auth/siwe/nonce", bucket: "auth", body: {} },
+		{ method: "GET", path: "/v2/launches", bucket: "launch" },
+		{ method: "POST", path: "/v2/agents/prepare", bucket: "launch", body: {} },
+		{ method: "PATCH", path: `/v2/agents/claim/${ZERO_ADDRESS}`, bucket: "launch", body: {} },
+		{ method: "POST", path: `/v2/agents/claim/${ZERO_ADDRESS}/launch`, bucket: "launch", body: {} },
+		{ method: "GET", path: "/v2/admin/agents/demo/state", bucket: "admin" },
+		{ method: "POST", path: "/v2/webhooks/agent-events", bucket: "webhook", body: {} },
+		{ method: "POST", path: "/v3/agents/demo/launch", bucket: "v3-agent", body: {} },
+	] as const;
+
+	for (const route of routes) {
+		const response = await app.request(`http://api.test${route.path}`, {
+			method: route.method,
+			headers: route.body ? { "Content-Type": "application/json" } : undefined,
+			body: route.body ? JSON.stringify(route.body) : undefined,
+		});
+
+		assert.match(
+			response.headers.get("X-RateLimit-Policy") ?? "",
+			new RegExp(`^${route.bucket}; limit=\\d+; window=\\d+`),
+			`${route.method} ${route.path} is missing ${route.bucket} rate limit headers`,
+		);
 	}
 });

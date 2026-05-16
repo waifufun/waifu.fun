@@ -1,6 +1,6 @@
 import { type AgentLaunchRow, schema } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
 	http,
 	type Address,
@@ -17,13 +17,33 @@ import { decryptBundleWalletPk, markUsed, releaseWallet, selectAvailableWallet }
 
 export const PUISSANT_RPC_URL = "https://puissant-bsc.48.club";
 export const BUNDLE_TIP_STEPS_BNB = ["0.03", "0.05", "0.08"] as const;
+const SUBMITTING_STATUS = "submitting" as AgentLaunchRow["bundleStatus"];
 
 export const bundleRouterAbi = [
 	{
 		type: "function",
 		name: "executeBundle",
 		stateMutability: "payable",
-		inputs: [],
+		inputs: [
+			{
+				name: "p",
+				type: "tuple",
+				components: [
+					{ name: "vanitySalt", type: "bytes32" },
+					{ name: "name", type: "string" },
+					{ name: "symbol", type: "string" },
+					{ name: "meta", type: "string" },
+					{ name: "buyTaxBps", type: "uint16" },
+					{ name: "sellTaxBps", type: "uint16" },
+					{ name: "taxDuration", type: "uint64" },
+					{ name: "antiFarmerDuration", type: "uint64" },
+					{ name: "commissionReceiver", type: "address" },
+					{ name: "minV2TokensOut", type: "uint256" },
+					{ name: "tipBnb", type: "uint256" },
+					{ name: "deadline", type: "uint256" },
+				],
+			},
+		],
 		outputs: [],
 	},
 ] as const;
@@ -37,6 +57,8 @@ export interface BundleSubmitterConfig {
 	allowSingleWalletFallback?: boolean;
 	dryRun?: boolean;
 	maxAttempts?: number;
+	commissionReceiver?: Address;
+	deadlineSeconds?: number;
 }
 
 export interface SubmitBundleResult {
@@ -72,6 +94,64 @@ function resolveMaxAttempts(configured?: number): number {
 	return Number.isFinite(value) && value > 0 ? Math.floor(value) : 3;
 }
 
+function stringFromMetadata(metadata: unknown, key: string): string | null {
+	if (!metadata || typeof metadata !== "object") return null;
+	const value = (metadata as Record<string, unknown>)[key];
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readAddressEnv(...names: string[]): Address | null {
+	for (const name of names) {
+		const value = process.env[name];
+		if (value && /^0x[a-fA-F0-9]{40}$/.test(value)) return value.toLowerCase() as Address;
+	}
+	return null;
+}
+
+export function buildBundleExecParams(launch: AgentLaunchRow, config: BundleSubmitterConfig = {}) {
+	const name = stringFromMetadata(launch.metadata, "name");
+	const symbol = stringFromMetadata(launch.metadata, "symbol");
+	if (!name || !symbol) {
+		throw new BundleSubmitterError("BUNDLE_METADATA_MISSING", "launch metadata is missing name or symbol");
+	}
+	return {
+		vanitySalt: launch.vanitySalt as Hex,
+		name,
+		symbol,
+		meta: launch.flapMetaCid as string,
+		buyTaxBps: Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
+		sellTaxBps: Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),
+		taxDuration: BigInt(Number(process.env.LAUNCH_TAX_DURATION_SECONDS ?? 365 * 24 * 60 * 60)),
+		antiFarmerDuration: BigInt(Number(process.env.LAUNCH_ANTI_FARMER_DURATION_SECONDS ?? 60 * 60)),
+		commissionReceiver:
+			config.commissionReceiver ??
+			readAddressEnv("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ??
+			(launch.creator as Address),
+		minV2TokensOut: 0n,
+		tipBnb: 0n,
+		deadline: BigInt(Math.floor(Date.now() / 1000) + (config.deadlineSeconds ?? 10 * 60)),
+	} as const;
+}
+
+async function claimLaunchForBundleSubmission(db: Database, launch: AgentLaunchRow): Promise<boolean> {
+	const rows = await db
+		.update(schema.agentLaunches)
+		.set({
+			bundleStatus: SUBMITTING_STATUS,
+			bundleFailureReason: null,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(
+				eq(schema.agentLaunches.id, launch.id),
+				eq(schema.agentLaunches.bundleAttempt, launch.bundleAttempt),
+				inArray(schema.agentLaunches.bundleStatus, ["pending", "failed_retry"]),
+			),
+		)
+		.returning({ id: schema.agentLaunches.id });
+	return rows.length === 1;
+}
+
 export async function submitLaunchBundle(
 	db: Database,
 	launch: AgentLaunchRow,
@@ -84,6 +164,7 @@ export async function submitLaunchBundle(
 		);
 	}
 	if (
+		launch.bundleStatus === SUBMITTING_STATUS ||
 		launch.bundleStatus === "submitted" ||
 		launch.bundleStatus === "confirmed" ||
 		launch.bundleStatus === "refunded"
@@ -98,45 +179,50 @@ export async function submitLaunchBundle(
 	const maxAttempts = resolveMaxAttempts(config.maxAttempts);
 	const chainId = config.chainId ?? Number(process.env.BSC_CHAIN_ID ?? 56);
 	const chain = chainId === 97 ? bscTestnet : bsc;
-	let selectedPoolWallet: Awaited<ReturnType<typeof selectAvailableWallet>> = null;
-	let pk = config.bundleBotPrivateKey ?? (process.env.BUNDLE_BOT_PK as Hex | undefined);
 	const useWalletPool = config.useWalletPool ?? process.env.BUNDLE_WALLET_POOL_DISABLED !== "true";
-	if (useWalletPool && !config.bundleBotPrivateKey) {
-		selectedPoolWallet = await selectAvailableWallet(db);
-		if (selectedPoolWallet) {
-			try {
-				pk = decryptBundleWalletPk(selectedPoolWallet.encryptedPk);
-			} catch (error) {
-				await releaseWallet(db, selectedPoolWallet.address);
-				throw error;
-			}
-		}
-	}
-	const allowFallback = config.allowSingleWalletFallback ?? process.env.BUNDLE_WALLET_POOL_REQUIRED !== "true";
-	if (!selectedPoolWallet && !config.dryRun && useWalletPool && !allowFallback) {
-		const retryAt = new Date(Date.now() + 90_000);
-		await db
-			.update(schema.agentLaunches)
-			.set({
-				bundleStatus: "pending",
-				bundleFailureReason: `bundle wallet pool exhausted; retry after ${retryAt.toISOString()}`,
-				updatedAt: new Date(),
-			})
-			.where(eq(schema.agentLaunches.id, launch.id));
-		return { status: "pending", attempt: launch.bundleAttempt, reason: "bundle_wallet_pool_exhausted" };
-	}
-	if (!selectedPoolWallet && !pk && !config.dryRun) {
-		throw new BundleSubmitterError(
-			"NO_BUNDLE_BOT_PK",
-			"bundle wallet pool is exhausted and BUNDLE_BOT_PK fallback is not set",
-		);
+	const bundleParams = buildBundleExecParams(launch, config);
+	const data = encodeFunctionData({ abi: bundleRouterAbi, functionName: "executeBundle", args: [bundleParams] });
+	if (!(await claimLaunchForBundleSubmission(db, launch))) {
+		return { status: "pending", attempt: launch.bundleAttempt, reason: "bundle_submission_already_claimed" };
 	}
 
+	let selectedPoolWallet: Awaited<ReturnType<typeof selectAvailableWallet>> = null;
+	let pk = config.bundleBotPrivateKey ?? (process.env.BUNDLE_BOT_PK as Hex | undefined);
 	const publicClient = createPublicClient({ chain, transport: http(config.rpcUrl ?? getRpcUrl(chainId)) });
-	const data = encodeFunctionData({ abi: bundleRouterAbi, functionName: "executeBundle" });
 
 	let privateTxAccepted = false;
 	try {
+		if (useWalletPool && !config.bundleBotPrivateKey) {
+			selectedPoolWallet = await selectAvailableWallet(db);
+			if (selectedPoolWallet) {
+				try {
+					pk = decryptBundleWalletPk(selectedPoolWallet.encryptedPk);
+				} catch (error) {
+					await releaseWallet(db, selectedPoolWallet.address);
+					throw error;
+				}
+			}
+		}
+		const allowFallback = config.allowSingleWalletFallback ?? process.env.BUNDLE_WALLET_POOL_REQUIRED !== "true";
+		if (!selectedPoolWallet && !config.dryRun && useWalletPool && !allowFallback) {
+			const retryAt = new Date(Date.now() + 90_000);
+			await db
+				.update(schema.agentLaunches)
+				.set({
+					bundleStatus: "pending",
+					bundleFailureReason: `bundle wallet pool exhausted; retry after ${retryAt.toISOString()}`,
+					updatedAt: new Date(),
+				})
+				.where(eq(schema.agentLaunches.id, launch.id));
+			return { status: "pending", attempt: launch.bundleAttempt, reason: "bundle_wallet_pool_exhausted" };
+		}
+		if (!selectedPoolWallet && !pk && !config.dryRun) {
+			throw new BundleSubmitterError(
+				"NO_BUNDLE_BOT_PK",
+				"bundle wallet pool is exhausted and BUNDLE_BOT_PK fallback is not set",
+			);
+		}
+
 		let txHash: Hex = "0x0000000000000000000000000000000000000000000000000000000000000000";
 		if (!config.dryRun) {
 			const account = privateKeyToAccount(pk as Hex);

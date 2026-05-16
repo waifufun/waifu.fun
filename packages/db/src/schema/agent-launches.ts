@@ -87,8 +87,8 @@ export const agentLaunches = pgTable(
 		metadataUri: text("metadata_uri"),
 
 		// Wave H Flap-native launch flow. Flap mints the final token inside
-		// BundleRouter.executeBundle(); we pre-mine the CREATE2 salt here so the
-		// frontend can show the vanity address before the bundle lands.
+		// BundleRouter.executeBundle(); we store the raw vanity salt here. The
+		// contracts derive the creator-scoped CREATE2 salt from creator + raw salt.
 		predictedTokenAddress: varchar("predicted_token_address", { length: 42 }),
 		vanitySalt: varchar("vanity_salt", { length: 66 }),
 		flapMetaCid: text("flap_meta_cid"),

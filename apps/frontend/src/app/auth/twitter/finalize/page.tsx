@@ -8,6 +8,19 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "loading" | "error";
 
+function scrubCallbackUrl() {
+	if (typeof window === "undefined") return;
+	const url = new URL(window.location.href);
+	let changed = false;
+	for (const key of ["code", "return_to"]) {
+		if (url.searchParams.has(key)) {
+			url.searchParams.delete(key);
+			changed = true;
+		}
+	}
+	if (changed) window.history.replaceState(null, "", url.toString());
+}
+
 function TwitterFinalizeInner() {
 	const router = useRouter();
 	const params = useSearchParams();
@@ -19,17 +32,18 @@ function TwitterFinalizeInner() {
 		if (ranRef.current) return;
 		ranRef.current = true;
 
-		const token = params?.get("token");
+		const code = params?.get("code");
 		const returnTo = sanitizeRedirectPath(params?.get("return_to") ?? null);
 		const errorParam = params?.get("error") ?? params?.get("auth_error");
+		scrubCallbackUrl();
 		if (errorParam) {
 			setPhase("error");
 			setError(errorParam);
 			return;
 		}
-		if (!token) {
+		if (!code) {
 			setPhase("error");
-			setError("missing token in twitter callback URL");
+			setError("missing code in twitter callback URL");
 			return;
 		}
 
@@ -40,7 +54,7 @@ function TwitterFinalizeInner() {
 					method: "POST",
 					credentials: "include",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ provider: "twitter", token, return_to: returnTo }),
+					body: JSON.stringify({ provider: "twitter", code, return_to: returnTo }),
 					signal: controller.signal,
 				});
 				if (!res.ok) {

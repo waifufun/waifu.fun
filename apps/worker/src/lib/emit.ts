@@ -7,7 +7,7 @@ export interface EmitAgentEventInput {
 	agentId?: string | null;
 	tokenAddress?: string | null;
 	data?: Record<string, unknown>;
-	status?: "pending" | "processing" | "done" | "failed";
+	status?: "pending" | "processing" | "done" | "failed" | "skipped";
 }
 export async function emitAgentEvent(input: EmitAgentEventInput): Promise<AgentEvent> {
 	if (!isAgentEventType(input.eventType)) throw new Error(`invalid agent event type: ${input.eventType}`);

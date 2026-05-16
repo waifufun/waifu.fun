@@ -14,6 +14,23 @@ import {
 
 const addressA = "0x00000000000000000000000000000000000000aa";
 const encryptedPkA = `0x${"11".repeat(32)}`;
+const ORIGINAL_BUNDLE_KMS_KEY = process.env.BUNDLE_KMS_KEY;
+const ORIGINAL_BUNDLE_KMS_KEY_HEX = process.env.BUNDLE_KMS_KEY_HEX;
+const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
+
+function restoreEnv(): void {
+	if (ORIGINAL_BUNDLE_KMS_KEY == null) delete process.env.BUNDLE_KMS_KEY;
+	else process.env.BUNDLE_KMS_KEY = ORIGINAL_BUNDLE_KMS_KEY;
+	if (ORIGINAL_BUNDLE_KMS_KEY_HEX == null) delete process.env.BUNDLE_KMS_KEY_HEX;
+	else process.env.BUNDLE_KMS_KEY_HEX = ORIGINAL_BUNDLE_KMS_KEY_HEX;
+	if (ORIGINAL_NODE_ENV == null) delete process.env.NODE_ENV;
+	else process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+}
+
+function clearBundleKmsKey(): void {
+	delete process.env.BUNDLE_KMS_KEY;
+	delete process.env.BUNDLE_KMS_KEY_HEX;
+}
 
 function makeSelectDb(rows: Array<{ address: string; encrypted_pk: string }>): Database {
 	return {
@@ -71,16 +88,41 @@ test("markUsed sets last create and next available timestamps", async () => {
 });
 
 test("bundle wallet key encryption round trips with BUNDLE_KMS_KEY", () => {
-	const old = process.env.BUNDLE_KMS_KEY;
 	process.env.BUNDLE_KMS_KEY = "a".repeat(64);
 	try {
 		const pk = `0x${"22".repeat(32)}`;
 		const encrypted = encryptBundleWalletPk(pk);
+		assert.match(encrypted, /^bwp:v1:/u);
 		assert.notEqual(encrypted, pk);
 		assert.equal(decryptBundleWalletPk(encrypted), pk);
 		assert.match(addressForPrivateKey(pk), /^0x[a-fA-F0-9]{40}$/u);
 	} finally {
-		if (old == null) delete process.env.BUNDLE_KMS_KEY;
-		else process.env.BUNDLE_KMS_KEY = old;
+		restoreEnv();
+	}
+});
+
+test("bundle wallet decryption rejects plaintext private keys by default", () => {
+	const pk = `0x${"33".repeat(32)}`;
+	assert.throws(
+		() => decryptBundleWalletPk(pk),
+		/re-encrypt existing bundle_wallet_pool\.encrypted_pk rows with encryptBundleWalletPk/u,
+	);
+	assert.throws(
+		() => decryptBundleWalletPk(pk.slice(2)),
+		/re-encrypt existing bundle_wallet_pool\.encrypted_pk rows with encryptBundleWalletPk/u,
+	);
+	assert.equal(decryptBundleWalletPk(pk, { allowPlaintext: true }), pk);
+});
+
+test("bundle wallet encryption fails closed in production when BUNDLE_KMS_KEY is absent", () => {
+	clearBundleKmsKey();
+	process.env.NODE_ENV = "production";
+	try {
+		assert.throws(
+			() => encryptBundleWalletPk(`0x${"44".repeat(32)}`),
+			/BUNDLE_KMS_KEY is required in production to encrypt bundle wallet keys/u,
+		);
+	} finally {
+		restoreEnv();
 	}
 });

@@ -38,7 +38,7 @@ describe("same-origin auth API routes", () => {
 			{ provider: "email", body: { token: "email-token", email: "test@waifu.fun" }, path: "/auth/email/finalize" },
 			{ provider: "passkey", body: { token: "passkey-token" }, path: "/auth/passkey/finalize" },
 			{ provider: "oauth", body: { token: "oauth-token" }, path: "/auth/oauth/finalize" },
-			{ provider: "twitter", body: { token: "twitter-token" }, path: "/auth/twitter/finalize" },
+			{ provider: "twitter", body: { code: "twitter-code" }, path: "/auth/twitter/finalize" },
 		] as const;
 
 		for (const entry of providers) {

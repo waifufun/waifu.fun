@@ -194,6 +194,113 @@ describe("/v2/auth/siwe", () => {
 		assert.equal(res.status, 400);
 	});
 
+	it("rejects replaying a nonce issued for a different wallet", async () => {
+		installAuthAndDb();
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: OTHER, chainId: 56, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({ message: siweMessage(OTHER, nonce), signature: "0xsig" }),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 400);
+		assert.equal(((await res.json()) as { error: string }).error, "nonce mismatch or expired");
+	});
+
+	it("rejects a SIWE message for another domain", async () => {
+		installAuthAndDb();
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 56, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({
+				message: siweMessage(ADDRESS, nonce).replace("waifu.fun wants", "evil.example wants"),
+				signature: "0xsig",
+			}),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 400);
+		assert.equal(((await res.json()) as { error: string }).error, "SIWE domain is not allowed");
+	});
+
+	it("rejects a SIWE message with the wrong chain", async () => {
+		installAuthAndDb();
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 1, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({ message: siweMessage(ADDRESS, nonce, 1), signature: "0xsig" }),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 400);
+		assert.equal(((await res.json()) as { error: string }).error, "SIWE chainId must be 56");
+	});
+
+	it("rejects a SIWE message with the wrong statement", async () => {
+		installAuthAndDb();
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 56, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({
+				message: siweMessage(ADDRESS, nonce).replace(
+					"Link this wallet to your waifu.fun patron account.",
+					"Sign in to waifu.fun.",
+				),
+				signature: "0xsig",
+			}),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 400);
+		assert.equal(((await res.json()) as { error: string }).error, "SIWE statement is not allowed");
+	});
+
+	it("rejects a SIWE message with the wrong URI path", async () => {
+		installAuthAndDb();
+		const nonceRes = await app().request("http://unit.test/auth/siwe/nonce", {
+			method: "POST",
+			body: JSON.stringify({ address: ADDRESS }),
+			headers: authHeaders(),
+		});
+		const { nonce } = (await nonceRes.json()) as { nonce: string };
+		__setAuthSiweVerifierForTest(async () => ({ address: ADDRESS, chainId: 56, nonce }));
+
+		const res = await app().request("http://unit.test/auth/siwe/bind", {
+			method: "POST",
+			body: JSON.stringify({
+				message: siweMessage(ADDRESS, nonce).replace("/patron/wallets", "/create/wizard"),
+				signature: "0xsig",
+			}),
+			headers: authHeaders(),
+		});
+		assert.equal(res.status, 400);
+		assert.equal(((await res.json()) as { error: string }).error, "SIWE uri path is not allowed");
+	});
+
 	it("rejects a wallet already bound to another patron", async () => {
 		const db = installAuthAndDb(
 			fakeDb({

@@ -90,6 +90,7 @@ describe("Wave H bundle flow e2e", () => {
 			await portal.getAddress(),
 			creator.address, // TOKEN_IMPL_TAXED_V3 (only used as immutable; not exercised by mock portal)
 			tipReceiver.address,
+			creator.address,
 		);
 
 		return {
@@ -549,7 +550,7 @@ describe("Wave H bundle flow e2e", () => {
 		expect(aliceAfter + gas - aliceBefore).to.equal(PRESALE_CAPS[TIER_80]);
 	});
 
-	it("admin emergency refund: factory.owner can flip OPEN or CLOSED state to REFUND", async () => {
+	it("admin emergency refund: factory.owner must schedule before flipping OPEN or CLOSED state to REFUND", async () => {
 		const ctx = await deployStack();
 		const { owner, alice } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
@@ -561,7 +562,18 @@ describe("Wave H bundle flow e2e", () => {
 			vault,
 			"NotFactoryOwner",
 		);
-		// owner can
+		await expect(vault.connect(owner).adminEnableRefund("emergency")).to.be.revertedWithCustomError(
+			vault,
+			"AdminRefundNotScheduled",
+		);
+		const scheduleTx = await vault.connect(owner).scheduleAdminRefund("emergency");
+		const scheduleBlock = await ethers.provider.getBlock(scheduleTx.blockNumber);
+		expect(await vault.adminRefundReadyAt()).to.equal(BigInt(scheduleBlock.timestamp) + 86400n);
+		await expect(vault.connect(owner).adminEnableRefund("emergency")).to.be.revertedWithCustomError(
+			vault,
+			"AdminRefundDelayNotElapsed",
+		);
+		await advanceTo(BigInt(scheduleBlock.timestamp) + 86400n);
 		await vault.connect(owner).adminEnableRefund("emergency");
 		expect(await vault.state()).to.equal(3n); // REFUND
 		await vault.connect(alice).refund();
@@ -667,6 +679,28 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await treasuryLp.managedToken()).to.equal(predicted);
 	});
 
+	it("creator cannot sweep the managed treasury allocation", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, creator } = ctx;
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
+
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(ctx.creator).close();
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = rawSalt;
+		await router.connect(bundleBot).executeBundle(params);
+
+		const token = await ethers.getContractAt("BundleFlowToken", predicted);
+		const treasuryBalance = await token.balanceOf(addrs.treasuryLp);
+		await expect(
+			treasuryLp.connect(creator).sweep(creator.address, predicted, treasuryBalance),
+		).to.be.revertedWithCustomError(treasuryLp, "NotAuthorized");
+		expect(await token.balanceOf(addrs.treasuryLp)).to.equal(treasuryBalance);
+	});
+
 	it("records actual vault token balance when token transfers take a fee", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, portal } = ctx;
@@ -691,6 +725,76 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await treasuryLp.balance()).to.equal(ethers.parseEther("72000000"));
 		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
 		expect(await token.balanceOf(alice.address)).to.equal(ethers.parseEther("259200000"));
+	});
+
+	it("fee-on-transfer token claims do not strand later presalers", async () => {
+		const ctx = await deployStack();
+		const { alice, bob, carol, bundleBot, portal, creator } = ctx;
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		const taxBps = 1000n;
+
+		await portal.setTokenTransferTaxBps(Number(taxBps));
+		const a = ethers.parseEther("8");
+		const b = ethers.parseEther("5");
+		const c = ethers.parseEther("3");
+		await vault.connect(alice).deposit({ value: a });
+		await vault.connect(bob).deposit({ value: b });
+		await vault.connect(carol).deposit({ value: c });
+		await vault.connect(creator).close();
+
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = rawSalt;
+		await router.connect(bundleBot).executeBundle(params);
+
+		const token = await ethers.getContractAt("BundleFlowToken", predicted);
+		const presalerBal = await vault.presalerTokenBalance();
+		const cap = PRESALE_CAPS[TIER_80];
+		const expectedNet = (gross) => gross - (gross * taxBps) / 10000n;
+
+		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
+		await expect(vault.connect(bob).claim()).to.emit(vault, "Claimed");
+		await expect(vault.connect(carol).claim()).to.emit(vault, "Claimed");
+
+		expect(await token.balanceOf(alice.address)).to.equal(expectedNet((a * presalerBal) / cap));
+		expect(await token.balanceOf(bob.address)).to.equal(expectedNet((b * presalerBal) / cap));
+		expect(await token.balanceOf(carol.address)).to.equal(expectedNet((c * presalerBal) / cap));
+		expect(await token.balanceOf(addrs.vault)).to.equal(0n);
+	});
+
+	it("fee-on-transfer token claims remain claimable across vesting tranches", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, portal } = ctx;
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		const taxBps = 1000n;
+
+		await portal.setTokenTransferTaxBps(Number(taxBps));
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_90] });
+		await vault.connect(ctx.creator).close();
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = rawSalt;
+		await router.connect(bundleBot).executeBundle(params);
+
+		const token = await ethers.getContractAt("BundleFlowToken", predicted);
+		const expectedNet = (gross) => gross - (gross * taxBps) / 10000n;
+		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
+		const firstGrossClaimed = (await vault.depositors(alice.address)).claimed;
+		expect(await token.balanceOf(alice.address)).to.equal(expectedNet(firstGrossClaimed));
+
+		const launchTs = await vault.launchTimestamp();
+		await advanceTo(launchTs + 24n * 3600n + 1n);
+		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
+		const totalGrossClaimed = (await vault.depositors(alice.address)).claimed;
+		const secondGrossClaimed = totalGrossClaimed - firstGrossClaimed;
+
+		expect(await token.balanceOf(alice.address)).to.equal(
+			expectedNet(firstGrossClaimed) + expectedNet(secondGrossClaimed),
+		);
+		expect(await token.balanceOf(addrs.vault)).to.equal(0n);
+		await expect(vault.connect(alice).claim()).to.be.revertedWithCustomError(vault, "NothingToClaim");
 	});
 
 	it("tipBnb stays disabled for factory-created launches", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeExternalUrl, sanitizeRedirectPath, sanitizeSocialLinks } from "./url-safety";
+import { getSocialLinkEntries, sanitizeExternalUrl, sanitizeRedirectPath, sanitizeSocialLinks } from "./url-safety";
 
 describe("url safety helpers", () => {
 	it("keeps http and https external links", () => {
@@ -26,6 +26,18 @@ describe("url safety helpers", () => {
 			telegram: "https://t.me/waifu",
 			website: "https://waifu.fun/",
 		});
+	});
+
+	it("classifies invalid social links for text-only rendering", () => {
+		expect(
+			getSocialLinkEntries({
+				twitter: "javascript:alert(1)",
+				telegram: "https://t.me/waifu",
+			}),
+		).toEqual([
+			{ key: "twitter", label: "Twitter", value: "javascript:alert(1)", href: null },
+			{ key: "telegram", label: "Telegram", value: "https://t.me/waifu", href: "https://t.me/waifu" },
+		]);
 	});
 
 	it("keeps same-origin relative post-auth redirects", () => {

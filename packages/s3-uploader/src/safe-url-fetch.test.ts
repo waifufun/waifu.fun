@@ -14,6 +14,21 @@ test("s3 safeFetchBytes blocks DNS that resolves to private ranges", async () =>
 	);
 });
 
+test("s3 safeFetchBytes blocks IPv4-mapped IPv6 loopback literals before fetch", async () => {
+	let fetched = false;
+	await assert.rejects(
+		safeFetchBytes("https://[::ffff:7f00:1]/avatar.png", {
+			maxBytes: 1024,
+			fetchImpl: async () => {
+				fetched = true;
+				return new Response("nope");
+			},
+		}),
+		(error: unknown) => error instanceof SafeFetchError && error.code === "blocked_address",
+	);
+	assert.equal(fetched, false);
+});
+
 test("s3 safeFetchBytes rejects oversized image responses", async () => {
 	await assert.rejects(
 		safeFetchBytes("https://image.test/avatar.png", {

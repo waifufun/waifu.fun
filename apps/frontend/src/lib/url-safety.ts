@@ -44,6 +44,20 @@ export function sanitizeExternalUrl(raw: string | null | undefined): string | nu
 }
 
 export type SocialLinks = Partial<Record<"twitter" | "telegram" | "discord" | "website", string>>;
+export type SocialLinkKey = keyof SocialLinks;
+export type SocialLinkEntry = {
+	key: SocialLinkKey;
+	label: string;
+	value: string;
+	href: string | null;
+};
+
+const SOCIAL_LINK_CONFIG = [
+	{ key: "twitter", label: "Twitter" },
+	{ key: "telegram", label: "Telegram" },
+	{ key: "discord", label: "Discord" },
+	{ key: "website", label: "Website" },
+] as const;
 
 export function sanitizeSocialLinks<T extends SocialLinks>(links: T | null | undefined): SocialLinks {
 	if (!links) return {};
@@ -57,4 +71,15 @@ export function sanitizeSocialLinks<T extends SocialLinks>(links: T | null | und
 	if (discord) sanitized.discord = discord;
 	if (website) sanitized.website = website;
 	return sanitized;
+}
+
+export function getSocialLinkEntries<T extends SocialLinks>(links: T | null | undefined): SocialLinkEntry[] {
+	if (!links) return [];
+	return SOCIAL_LINK_CONFIG.flatMap(({ key, label }) => {
+		const raw = links[key];
+		if (typeof raw !== "string") return [];
+		const value = raw.trim();
+		if (!value) return [];
+		return [{ key, label, value, href: sanitizeExternalUrl(value) }];
+	});
 }

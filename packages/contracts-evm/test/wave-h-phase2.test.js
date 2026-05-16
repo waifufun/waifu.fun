@@ -11,9 +11,9 @@ describe("Wave H phase 2 smoke", () => {
 	const ZERO_BYTES32 = `0x${"0".repeat(64)}`;
 
 	async function setup() {
-		const [owner, creator, bundleBot, depositor] = await ethers.getSigners();
+		const [owner, creator, bundleBot, depositor, depositor2] = await ethers.getSigners();
 		const placeholderAddr = owner.address;
-		return { owner, creator, bundleBot, depositor, placeholderAddr };
+		return { owner, creator, bundleBot, depositor, depositor2, placeholderAddr };
 	}
 
 	async function deployFactory(placeholderAddr) {
@@ -26,6 +26,7 @@ describe("Wave H phase 2 smoke", () => {
 			placeholderAddr, // _flapPortal
 			placeholderAddr, // _tokenImplTaxedV3
 			placeholderAddr, // _tipReceiver
+			placeholderAddr, // _platformCommissionReceiver
 		);
 	}
 
@@ -79,6 +80,50 @@ describe("Wave H phase 2 smoke", () => {
 		await expect(vault.connect(depositor).deposit({ value: ethers.parseEther("33") })).to.be.reverted;
 	});
 
+	it("LaunchVault deposit enforces per-wallet presale cap", async () => {
+		const { owner, creator, bundleBot, depositor } = await setup();
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const vault = await Vault.deploy(
+			owner.address,
+			creator.address,
+			bundleBot.address,
+			ethers.parseEther("32"),
+			ethers.parseEther("16"),
+			0n,
+			2000000000,
+			0,
+			false,
+		);
+
+		await vault.connect(depositor).deposit({ value: ethers.parseEther("19.2") });
+		await expect(vault.connect(depositor).deposit({ value: 1n })).to.be.revertedWithCustomError(vault, "CapExceeded");
+	});
+
+	it("LaunchVault cannot close a filled cap before the minimum open duration", async () => {
+		const { owner, creator, bundleBot, depositor, depositor2 } = await setup();
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const now = BigInt((await ethers.provider.getBlock("latest")).timestamp);
+		const vault = await Vault.deploy(
+			owner.address,
+			creator.address,
+			bundleBot.address,
+			ethers.parseEther("32"),
+			ethers.parseEther("16"),
+			0n,
+			now + 3600n,
+			0,
+			false,
+		);
+
+		await vault.connect(depositor).deposit({ value: ethers.parseEther("19.2") });
+		await vault.connect(depositor2).deposit({ value: ethers.parseEther("12.8") });
+		await expect(vault.connect(creator).close()).to.be.revertedWithCustomError(vault, "WindowClosed");
+
+		await ethers.provider.send("evm_setNextBlockTimestamp", [Number(now + 900n)]);
+		await ethers.provider.send("evm_mine", []);
+		await expect(vault.connect(creator).close()).to.emit(vault, "Closed");
+	});
+
 	it("TreasuryLP recordManagedToken succeeds once", async () => {
 		const { owner, creator } = await setup();
 		const Treasury = await ethers.getContractFactory("TreasuryLP");
@@ -104,6 +149,26 @@ describe("Wave H phase 2 smoke", () => {
 		await treasury.connect(owner).recordManagedToken(await tokenA.getAddress());
 		// Second call with different token must revert MultipleTokens
 		await expect(treasury.connect(owner).recordManagedToken(await tokenB.getAddress())).to.be.reverted;
+	});
+
+	it("TreasuryLP owner can only rescue non-managed tokens", async () => {
+		const { owner, creator } = await setup();
+		const Treasury = await ethers.getContractFactory("TreasuryLP");
+		const treasury = await Treasury.deploy(creator.address, owner.address);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const managed = await Token.deploy();
+		const dust = await Token.deploy();
+		await managed.mint(await treasury.getAddress(), 100n);
+		await dust.mint(await treasury.getAddress(), 10n);
+
+		await treasury.connect(owner).recordManagedToken(await managed.getAddress());
+		await expect(
+			treasury.connect(creator).sweep(creator.address, await managed.getAddress(), 100n),
+		).to.be.revertedWithCustomError(treasury, "NotAuthorized");
+
+		await expect(treasury.connect(creator).sweep(creator.address, await dust.getAddress(), 10n)).to.not.be.reverted;
+		expect(await dust.balanceOf(creator.address)).to.equal(10n);
+		expect(await managed.balanceOf(await treasury.getAddress())).to.equal(100n);
 	});
 
 	it("Wave H contracts compile + deploy with phase-2 impls", async () => {

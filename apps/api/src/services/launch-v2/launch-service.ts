@@ -138,6 +138,12 @@ export class LaunchService {
 		}
 
 		const wallet = this.requireWalletClient();
+		if (wallet.account?.address.toLowerCase() !== input.creator.toLowerCase()) {
+			throw new LaunchServiceError(
+				"SIGNER_NOT_CREATOR",
+				"LaunchFactory.createLaunch must be signed by the creator wallet for this contract version.",
+			);
+		}
 		const tierEnum = TIER_STRING_TO_ENUM[input.tier];
 		if (tierEnum === undefined) {
 			throw new LaunchServiceError("INVALID_TIER", `Unknown tier: ${input.tier}`);
@@ -146,10 +152,18 @@ export class LaunchService {
 		const config = {
 			name: input.name,
 			symbol: input.symbol,
-			metadataURI: input.metadataURI,
+			metaCid: input.metaCid,
 			creator: input.creator,
+			bundleBot: input.bundleBot,
+			commissionReceiver: input.commissionReceiver,
 			tier: tierEnum,
+			buyTaxBps: input.buyTaxBps,
+			sellTaxBps: input.sellTaxBps,
+			taxDuration: BigInt(input.taxDuration),
+			antiFarmerDuration: BigInt(input.antiFarmerDuration),
 			closeTimestamp: BigInt(input.closeTimestamp),
+			vanitySalt: input.vanitySalt,
+			predictedTokenAddress: input.predictedTokenAddress,
 		} as const;
 
 		// Simulate first so failures surface a clean error before broadcast.
@@ -179,19 +193,17 @@ export class LaunchService {
 		const decoded = events[0] as unknown as {
 			args: {
 				creator: Address;
-				token: Address;
+				predictedToken: Address;
 				vault: Address;
 				router: Address;
-				taxSplitter: Address;
-				treasuryReserve: Address;
+				treasuryLp: Address;
 			};
 		};
 
-		const tokenAddress = decoded.args.token as `0x${string}`;
+		const tokenAddress = decoded.args.predictedToken as `0x${string}`;
 		const vaultAddress = decoded.args.vault as `0x${string}`;
 		const routerAddress = decoded.args.router as `0x${string}`;
-		const taxSplitterAddress = decoded.args.taxSplitter as `0x${string}`;
-		const treasuryReserveAddress = decoded.args.treasuryReserve as `0x${string}`;
+		const treasuryLpAddress = decoded.args.treasuryLp as `0x${string}`;
 		const presaleUrl = this.buildPresaleUrl(tokenAddress);
 		return {
 			// id is supplied by the DB layer; the route handler stitches them together.
@@ -199,8 +211,8 @@ export class LaunchService {
 			token: tokenAddress,
 			vault: vaultAddress,
 			router: routerAddress,
-			taxSplitter: taxSplitterAddress,
-			treasuryReserve: treasuryReserveAddress,
+			taxSplitter: null,
+			treasuryReserve: treasuryLpAddress,
 			presaleUrl,
 			txHash,
 			blockNumber: receipt.blockNumber,

@@ -70,6 +70,7 @@ async function main() {
 	// fork integration tests replace these with real fixtures.
 	const SENTINEL_IMPL = "0x0000000000000000000000000000000000000001";
 	const SENTINEL_TIP = "0x0000000000000000000000000000000000000002";
+	const platformCommissionReceiver = process.env.PLATFORM_COMMISSION_RECEIVER || deployer.address;
 	const initCodeHash = ethers.ZeroHash;
 
 	console.log("deploying LaunchFactory...");
@@ -82,6 +83,7 @@ async function main() {
 		mockPortalAddress,
 		SENTINEL_IMPL,
 		SENTINEL_TIP,
+		platformCommissionReceiver,
 	);
 	await factory.waitForDeployment();
 	const factoryAddress = await factory.getAddress();

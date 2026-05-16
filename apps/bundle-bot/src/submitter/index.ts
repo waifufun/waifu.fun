@@ -29,7 +29,26 @@ export const bundleRouterAbi = [
 		type: "function",
 		name: "executeBundle",
 		stateMutability: "payable",
-		inputs: [],
+		inputs: [
+			{
+				name: "p",
+				type: "tuple",
+				components: [
+					{ name: "vanitySalt", type: "bytes32" },
+					{ name: "name", type: "string" },
+					{ name: "symbol", type: "string" },
+					{ name: "meta", type: "string" },
+					{ name: "buyTaxBps", type: "uint16" },
+					{ name: "sellTaxBps", type: "uint16" },
+					{ name: "taxDuration", type: "uint64" },
+					{ name: "antiFarmerDuration", type: "uint64" },
+					{ name: "commissionReceiver", type: "address" },
+					{ name: "minV2TokensOut", type: "uint256" },
+					{ name: "tipBnb", type: "uint256" },
+					{ name: "deadline", type: "uint256" },
+				],
+			},
+		],
 		outputs: [],
 	},
 ] as const;
@@ -44,6 +63,8 @@ export interface BundleSubmitterConfig {
 	allowPlaintextWalletKeys?: boolean;
 	dryRun?: boolean;
 	maxAttempts?: number;
+	commissionReceiver?: Address;
+	deadlineSeconds?: number;
 }
 
 export interface SubmitBundleResult {
@@ -78,6 +99,45 @@ export function nextBundleTipBnb(attempt: number, current?: string | null): stri
 	const stepped = BUNDLE_TIP_STEPS_BNB[Math.min(attempt, BUNDLE_TIP_STEPS_BNB.length - 1)] ?? BUNDLE_TIP_STEPS_BNB[0];
 	if (!current) return stepped;
 	return Number(current) > Number(stepped) ? current : stepped;
+}
+
+function stringFromMetadata(metadata: unknown, key: string): string | null {
+	if (!metadata || typeof metadata !== "object") return null;
+	const value = (metadata as Record<string, unknown>)[key];
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readAddressEnv(...names: string[]): Address | null {
+	for (const name of names) {
+		const value = process.env[name];
+		if (value && /^0x[a-fA-F0-9]{40}$/.test(value)) return value.toLowerCase() as Address;
+	}
+	return null;
+}
+
+export function buildBundleExecParams(launch: AgentLaunchRow, config: BundleSubmitterConfig = {}) {
+	const name = stringFromMetadata(launch.metadata, "name");
+	const symbol = stringFromMetadata(launch.metadata, "symbol");
+	if (!name || !symbol) {
+		throw new BundleSubmitterError("BUNDLE_METADATA_MISSING", "launch metadata is missing name or symbol");
+	}
+	return {
+		vanitySalt: launch.vanitySalt as Hex,
+		name,
+		symbol,
+		meta: launch.flapMetaCid as string,
+		buyTaxBps: Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
+		sellTaxBps: Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),
+		taxDuration: BigInt(Number(process.env.LAUNCH_TAX_DURATION_SECONDS ?? 365 * 24 * 60 * 60)),
+		antiFarmerDuration: BigInt(Number(process.env.LAUNCH_ANTI_FARMER_DURATION_SECONDS ?? 60 * 60)),
+		commissionReceiver:
+			config.commissionReceiver ??
+			readAddressEnv("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ??
+			(launch.creator as Address),
+		minV2TokensOut: 0n,
+		tipBnb: 0n,
+		deadline: BigInt(Math.floor(Date.now() / 1000) + (config.deadlineSeconds ?? 10 * 60)),
+	} as const;
 }
 
 async function claimLaunchForBundleSubmission(db: Database, launch: AgentLaunchRow): Promise<boolean> {
@@ -140,6 +200,8 @@ export async function submitLaunchBundle(
 			"live bundle submission refuses BUNDLE_BOT_PK/config private key fallback; use encrypted bundle wallet pool",
 		);
 	}
+	const bundleParams = buildBundleExecParams(launch, config);
+	const data = encodeFunctionData({ abi: bundleRouterAbi, functionName: "executeBundle", args: [bundleParams] });
 	if (!(await claimLaunchForBundleSubmission(db, launch))) {
 		return { status: "pending", attempt: launch.bundleAttempt, reason: "bundle_submission_already_claimed" };
 	}
@@ -148,7 +210,6 @@ export async function submitLaunchBundle(
 	let pk = dryRun ? (config.bundleBotPrivateKey ?? (process.env.BUNDLE_BOT_PK as Hex | undefined)) : undefined;
 
 	const publicClient = createPublicClient({ chain, transport: http(config.rpcUrl ?? getRpcUrl(chainId)) });
-	const data = encodeFunctionData({ abi: bundleRouterAbi, functionName: "executeBundle" });
 
 	let privateTxAccepted = false;
 	try {

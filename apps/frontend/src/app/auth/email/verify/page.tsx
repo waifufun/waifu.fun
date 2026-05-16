@@ -22,6 +22,19 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "loading" | "error";
 
+function scrubCallbackUrl() {
+	if (typeof window === "undefined") return;
+	const url = new URL(window.location.href);
+	let changed = false;
+	for (const key of ["token", "email"]) {
+		if (url.searchParams.has(key)) {
+			url.searchParams.delete(key);
+			changed = true;
+		}
+	}
+	if (changed) window.history.replaceState(null, "", url.toString());
+}
+
 function VerifyInner() {
 	const router = useRouter();
 	const params = useSearchParams();
@@ -36,6 +49,7 @@ function VerifyInner() {
 
 		const token = params?.get("token");
 		const email = params?.get("email");
+		scrubCallbackUrl();
 
 		if (!token || !email) {
 			setPhase("error");

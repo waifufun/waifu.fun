@@ -8,7 +8,7 @@ import { respondOk } from "./lib/http.js";
 import { logger as defaultLogger } from "./lib/logger.js";
 import { optionalAuth } from "./middleware/auth.js";
 import { apiErrorHandler, notFoundHandler } from "./middleware/error-handler.js";
-import { rateLimit } from "./middleware/rate-limit.js";
+import { type RateLimitStore, rateLimit } from "./middleware/rate-limit.js";
 import { attachRequestContext } from "./middleware/request-context.js";
 import { createAdminKeysRoutes } from "./routes/admin-keys.js";
 import { createAdminRoutes } from "./routes/admin.js";
@@ -27,8 +27,14 @@ import { createTradeRoutes } from "./routes/trades.js";
 import v2Routes from "./routes/v2/index.js";
 import v3Routes from "./routes/v3/index.js";
 
-export function createApp(deps: AppDependencies, logger: Logger = defaultLogger) {
+export interface CreateAppOptions {
+	rateLimitStore?: RateLimitStore;
+}
+
+export function createApp(deps: AppDependencies, logger: Logger = defaultLogger, options: CreateAppOptions = {}) {
 	const app = new Hono<AppBindings>();
+	const limit = (bucket: string) =>
+		rateLimit({ bucket, ...(options.rateLimitStore ? { store: options.rateLimitStore } : {}) });
 
 	app.use("*", attachRequestContext(deps, logger));
 
@@ -79,15 +85,22 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger)
 		}),
 	);
 
-	app.use("/auth/*", rateLimit({ bucket: "auth" }));
-	app.use("/launches/*", rateLimit({ bucket: "launch" }));
-	app.use("/trades/*", rateLimit({ bucket: "trade" }));
-	app.use("/agents/*", rateLimit({ bucket: "trade" }));
-	app.use("/jobs/*", rateLimit({ bucket: "trade" }));
-	app.use("/admin/*", rateLimit({ bucket: "admin" }));
-	app.use("/v2/webhooks/*", rateLimit({ bucket: "webhook" }));
-	app.use("/v3/agents", rateLimit({ bucket: "v3-agent" }));
-	app.use("/v3/agents/*", rateLimit({ bucket: "v3-agent" }));
+	app.use("/auth/*", limit("auth"));
+	app.use("/launches", limit("launch"));
+	app.use("/launches/*", limit("launch"));
+	app.use("/trades/*", limit("trade"));
+	app.use("/agents/*", limit("trade"));
+	app.use("/jobs/*", limit("trade"));
+	app.use("/admin/*", limit("admin"));
+	app.use("/v2/auth/*", limit("auth"));
+	app.use("/v2/admin/*", limit("admin"));
+	app.use("/v2/launches", limit("launch"));
+	app.use("/v2/launches/*", limit("launch"));
+	app.use("/v2/agents/prepare", limit("launch"));
+	app.use("/v2/agents/claim/*", limit("launch"));
+	app.use("/v2/webhooks/*", limit("webhook"));
+	app.use("/v3/agents", limit("v3-agent"));
+	app.use("/v3/agents/*", limit("v3-agent"));
 
 	app.route("/metrics", createMetricsRoutes());
 	app.route("/health", createHealthRoutes());

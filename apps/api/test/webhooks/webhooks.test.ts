@@ -26,6 +26,25 @@ test("POST /agent-events requires a signed webhook body", async () => {
 	assert.equal(response.status, 401);
 });
 
+test("POST /agent-events rejects a tampered raw body", async () => {
+	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
+	const signedPayload = validPayload();
+	const signedBody = JSON.stringify(signedPayload);
+	const tamperedBody = JSON.stringify({ ...signedPayload, data: { claimedByXHandle: "mallory" } });
+
+	const response = await app.request("/agent-events", {
+		method: "POST",
+		headers: {
+			"content-type": "application/json",
+			"X-Waifu-Webhook-Signature": signBody(signedPayload, signedBody),
+		},
+		body: tamperedBody,
+	});
+
+	assert.equal(response.status, 401);
+	assert.match(await response.text(), /signature/);
+});
+
 test("POST /agent-events validates payload shape", async () => {
 	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
 	const payload = { ...validPayload(), data: [] };
@@ -46,6 +65,15 @@ test("POST /agent-events validates payload shape", async () => {
 test("POST /agent-events rejects stale signed payloads", async () => {
 	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
 	const payload = { ...validPayload(), timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() };
+	const response = await post(app, payload);
+
+	assert.equal(response.status, 401);
+	assert.match(await response.text(), /timestamp/);
+});
+
+test("POST /agent-events rejects signed payloads too far in the future", async () => {
+	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
+	const payload = { ...validPayload(), timestamp: new Date(Date.now() + 10 * 60 * 1000).toISOString() };
 	const response = await post(app, payload);
 
 	assert.equal(response.status, 401);
@@ -111,26 +139,20 @@ function signBody(payload: unknown, body = JSON.stringify(payload)): string {
 function fakeDb() {
 	const keys = new Set<string>();
 	return {
-		select() {
+		insert() {
 			return {
-				from() {
+				values(row: { key: string | null }) {
 					return {
-						where() {
+						onConflictDoNothing() {
 							return {
-								limit() {
-									return Promise.resolve(keys.has("evt_1") ? [{ id: "existing" }] : []);
+								returning() {
+									if (!row.key || keys.has(row.key)) return Promise.resolve([]);
+									keys.add(row.key);
+									return Promise.resolve([{ id: "inserted" }]);
 								},
 							};
 						},
 					};
-				},
-			};
-		},
-		insert() {
-			return {
-				values(row: { key: string | null }) {
-					if (row.key) keys.add(row.key);
-					return Promise.resolve();
 				},
 			};
 		},
