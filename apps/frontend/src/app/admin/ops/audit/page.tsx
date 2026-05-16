@@ -30,7 +30,7 @@ function shorten(value: string | null, head = 6, tail = 4): string {
 export default function AdminOpsAuditPage() {
 	const { token } = useAdminTokenState();
 	const search = useSearchParams();
-	const agentIdFilter = search.get("agentId") ?? null;
+	const agentIdFilter = search?.get("agentId") ?? null;
 
 	const { data, isLoading, error, refetch, isFetching } = useAdminAuditLog({
 		token,

@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const stashRoot = join(root, ".static-export-stash");
+const stashRoot = join(root, "..", ".frontend-static-export-stash");
 
 const moves = [
 	["src/app/api", "app-api"],

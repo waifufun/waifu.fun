@@ -192,9 +192,20 @@ function goodSiwe(address = LINKED, nonce = "nonce-1") {
 		chainId: 56,
 		nonce,
 		domain: "waifu.fun",
-		uri: "https://waifu.fun/auth/connect",
+		uri: "https://waifu.fun/patron/wallets",
+		statement: "Link this wallet to your waifu.fun patron account.",
 		expirationTime: "2999-01-01T00:00:00.000Z",
 	};
+}
+
+async function issueLinkNonce(app: Hono, address = LINKED): Promise<string> {
+	const res = await app.request("/patron/wallets/link/nonce", {
+		method: "POST",
+		headers: { authorization: "Bearer steward", "content-type": "application/json" },
+		body: JSON.stringify({ address }),
+	});
+	assert.equal(res.status, 200);
+	return ((await res.json()) as { nonce: string }).nonce;
 }
 
 function stateWith(wallets: WalletRow[] = []): State {
@@ -251,7 +262,10 @@ describe("/v3/patron wallets", () => {
 
 	it("rejects cross-patron wallet collisions", async () => {
 		const state = stateWith([makeWallet({ patronId: OTHER_PATRON_ID, address: LINKED, kind: "linked_eoa" })]);
-		const res = await makeApp(state).request("/patron/wallets/link", {
+		const app = makeApp(state);
+		const nonce = await issueLinkNonce(app);
+		__setPatronWalletsSiweVerifierForTest(async () => goodSiwe(LINKED, nonce));
+		const res = await app.request("/patron/wallets/link", {
 			method: "POST",
 			headers: { authorization: "Bearer steward", "content-type": "application/json" },
 			body: JSON.stringify({ address: LINKED, signature: "0x1234", message: "ok" }),
