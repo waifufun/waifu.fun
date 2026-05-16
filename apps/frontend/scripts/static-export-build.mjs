@@ -25,10 +25,12 @@ const pagesDir = join(root, "src/pages");
 const pagesApp = join(pagesDir, "_app.tsx");
 const pages404 = join(pagesDir, "404.tsx");
 const pagesManifest = join(root, ".next/server/pages-manifest.json");
+const appPathsManifest = join(root, ".next/server/app-paths-manifest.json");
 
 const moves = [
 	["src/app/api", "app-api"],
 	["src/app/auth/twitter/login/route.ts", "twitter-login-route.ts"],
+	["src/app/opengraph-image.tsx", "root-opengraph-image.tsx"],
 	["src/app/token/[chain]/[chainId]/[contractAddress]/opengraph-image.tsx", "token-opengraph-image.tsx"],
 ];
 
@@ -70,18 +72,22 @@ function restoreAll() {
 
 function ensurePagesFiles() {
 	mkdirSync(pagesDir, { recursive: true });
-	writeFileSync(
-		pagesApp,
-		[
-			'import type { AppProps } from "next/app";',
-			"",
-			"export default function App({ Component, pageProps }: AppProps) {",
-			"\treturn <Component {...pageProps} />;",
-			"}",
-			"",
-		].join("\n"),
-	);
-	writeFileSync(pages404, "export default function Custom404() {\n\treturn null;\n}\n");
+	if (!existsSync(pagesApp)) {
+		writeFileSync(
+			pagesApp,
+			[
+				'import type { AppProps } from "next/app";',
+				"",
+				"export default function App({ Component, pageProps }: AppProps) {",
+				"\treturn <Component {...pageProps} />;",
+				"}",
+				"",
+			].join("\n"),
+		);
+	}
+	if (!existsSync(pages404)) {
+		writeFileSync(pages404, "export default function Custom404() {\n\treturn null;\n}\n");
+	}
 }
 
 function ensurePagesManifest() {
@@ -91,19 +97,47 @@ function ensurePagesManifest() {
 	writeFileSync(pagesManifest, "{}\n");
 }
 
+function ensureAppPathsManifest() {
+	if (existsSync(appPathsManifest)) return;
+	const serverDir = dirname(appPathsManifest);
+	if (!existsSync(serverDir)) return;
+	writeFileSync(appPathsManifest, "{}\n");
+}
+
 stashAll();
 let exitCode = 1;
 const hadPagesDir = existsSync(pagesDir);
 const hadPagesApp = existsSync(pagesApp);
 const hadPages404 = existsSync(pages404);
 let keepPagesAlive = null;
+let cleanedUp = false;
+
+function cleanup() {
+	if (cleanedUp) return;
+	cleanedUp = true;
+	if (keepPagesAlive) clearInterval(keepPagesAlive);
+	if (!hadPagesApp) rmSync(pagesApp, { force: true });
+	if (!hadPages404) rmSync(pages404, { force: true });
+	if (!hadPagesDir) removeTree(pagesDir);
+	restoreAll();
+}
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+	process.once(signal, () => {
+		cleanup();
+		process.kill(process.pid, signal);
+	});
+}
+
 try {
 	removeTree(join(root, ".next"));
 	if (!hadPagesApp || !hadPages404) ensurePagesFiles();
 	ensurePagesManifest();
+	ensureAppPathsManifest();
 	keepPagesAlive = setInterval(() => {
 		if (!hadPagesApp || !hadPages404) ensurePagesFiles();
 		ensurePagesManifest();
+		ensureAppPathsManifest();
 	}, 10);
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
@@ -119,10 +153,6 @@ try {
 		result.on("error", () => resolve(1));
 	});
 } finally {
-	if (keepPagesAlive) clearInterval(keepPagesAlive);
-	if (!hadPagesApp) rmSync(pagesApp, { force: true });
-	if (!hadPages404) rmSync(pages404, { force: true });
-	if (!hadPagesDir) removeTree(pagesDir);
-	restoreAll();
+	cleanup();
 }
 process.exit(exitCode);
