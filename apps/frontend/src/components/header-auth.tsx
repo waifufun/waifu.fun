@@ -21,13 +21,13 @@ function HeaderAuthInner() {
 
 	useEffect(() => {
 		if (!isClient || isLoading) return;
-		if (params.get("signin") !== "1" || isAuthenticated) return;
+		if (params?.get("signin") !== "1" || isAuthenticated) return;
 		setLoginOpen(true);
 	}, [isClient, isLoading, params, isAuthenticated]);
 
 	useEffect(() => {
 		if (!isClient || !isAuthenticated) return;
-		const rawReturnTo = params.get("return_to");
+		const rawReturnTo = params?.get("return_to");
 		if (!rawReturnTo) return;
 		const returnTo = sanitizeRedirectPath(rawReturnTo, "");
 		if (!returnTo) return;
@@ -71,7 +71,7 @@ function HeaderAuthInner() {
 				<ConnectModal
 					open={loginOpen}
 					onOpenChange={setLoginOpen}
-					returnTo={sanitizeRedirectPath(params.get("return_to"))}
+					returnTo={sanitizeRedirectPath(params?.get("return_to") ?? null)}
 				/>
 			</>
 		);
@@ -89,7 +89,7 @@ function HeaderAuthInner() {
 			<ConnectModal
 				open={loginOpen}
 				onOpenChange={setLoginOpen}
-				returnTo={sanitizeRedirectPath(params.get("return_to"))}
+				returnTo={sanitizeRedirectPath(params?.get("return_to") ?? null)}
 			/>
 		</>
 	);

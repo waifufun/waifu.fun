@@ -30,9 +30,9 @@ function AgentsDiscoverInner() {
 	const searchParams = useSearchParams();
 	const { status, sort, page } = useMemo(() => {
 		return {
-			status: parseStatus(searchParams.get("status")),
-			sort: parseSort(searchParams.get("sort")),
-			page: parsePage(searchParams.get("page")),
+			status: parseStatus(searchParams?.get("status") ?? null),
+			sort: parseSort(searchParams?.get("sort") ?? null),
+			page: parsePage(searchParams?.get("page") ?? null),
 		};
 	}, [searchParams]);
 

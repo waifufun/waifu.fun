@@ -18,7 +18,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 		transactionPage: 1,
 	});
 	const params = useParams<{ address: string }>();
-	const address = params?.address;
+	const address = params?.address ?? "";
 
 	const query = useQuery({
 		queryKey: ["get-swaps", address, paginationOptions.transactionPage],
@@ -26,6 +26,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 			const swaps = await getSwaps({ address, page: paginationOptions.transactionPage });
 			return swaps;
 		},
+		enabled: address.length > 0,
 	});
 
 	const tokensCreatedQuery = useQuery({
@@ -34,6 +35,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 			const tokensCreated = await getTokensCreated({ address, page: paginationOptions.createdPage });
 			return tokensCreated;
 		},
+		enabled: address.length > 0,
 	});
 	const tokensCreated = tokensCreatedQuery.data?.docs ?? [];
 
@@ -43,6 +45,7 @@ export default function Page({ balances }: { balances: { user: any; balances: an
 			const points = await getAddressPoints({ address });
 			return points;
 		},
+		enabled: address.length > 0,
 	});
 
 	const transactions = query?.data?.docs ?? [];

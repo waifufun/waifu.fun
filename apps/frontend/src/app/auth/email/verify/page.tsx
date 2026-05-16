@@ -34,8 +34,8 @@ function VerifyInner() {
 		if (ranRef.current) return;
 		ranRef.current = true;
 
-		const token = params.get("token");
-		const email = params.get("email");
+		const token = params?.get("token");
+		const email = params?.get("email");
 
 		if (!token || !email) {
 			setPhase("error");

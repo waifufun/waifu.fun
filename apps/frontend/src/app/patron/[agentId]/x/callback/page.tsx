@@ -15,9 +15,9 @@ export default function XCallbackPage({ params }: { params: Promise<Params> }) {
 	const searchParams = useSearchParams();
 
 	const { status, message, handle } = useMemo(() => {
-		const status = searchParams.get("status") ?? "error";
-		const message = searchParams.get("message") ?? "";
-		const handle = searchParams.get("handle") ?? "";
+		const status = searchParams?.get("status") ?? "error";
+		const message = searchParams?.get("message") ?? "";
+		const handle = searchParams?.get("handle") ?? "";
 		return { status, message, handle };
 	}, [searchParams]);
 

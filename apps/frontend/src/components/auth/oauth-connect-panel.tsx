@@ -48,7 +48,7 @@ function ConnectInner() {
 	// The return_to is forwarded to the backend, which validates same-origin
 	// and falls back to /patron on anything that smells like an open redirect.
 	const returnTo = useMemo(() => {
-		return sanitizeRedirectPath(params.get("return_to"));
+		return sanitizeRedirectPath(params?.get("return_to") ?? null);
 	}, [params]);
 
 	const startUrlFor = useCallback(

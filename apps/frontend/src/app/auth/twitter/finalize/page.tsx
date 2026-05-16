@@ -19,9 +19,9 @@ function TwitterFinalizeInner() {
 		if (ranRef.current) return;
 		ranRef.current = true;
 
-		const token = params.get("token");
-		const returnTo = sanitizeRedirectPath(params.get("return_to"));
-		const errorParam = params.get("error") ?? params.get("auth_error");
+		const token = params?.get("token");
+		const returnTo = sanitizeRedirectPath(params?.get("return_to") ?? null);
+		const errorParam = params?.get("error") ?? params?.get("auth_error");
 		if (errorParam) {
 			setPhase("error");
 			setError(errorParam);
