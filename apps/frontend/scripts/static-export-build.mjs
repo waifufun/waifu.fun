@@ -85,9 +85,9 @@ function ensurePagesFiles() {
 }
 
 function ensurePagesManifest() {
-	const serverDir = dirname(pagesManifest);
-	mkdirSync(serverDir, { recursive: true });
 	if (existsSync(pagesManifest)) return;
+	const serverDir = dirname(pagesManifest);
+	if (!existsSync(serverDir)) return;
 	writeFileSync(pagesManifest, "{}\n");
 }
 
@@ -104,7 +104,7 @@ try {
 	keepPagesAlive = setInterval(() => {
 		if (!hadPagesApp || !hadPages404) ensurePagesFiles();
 		ensurePagesManifest();
-	}, 50);
+	}, 10);
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
