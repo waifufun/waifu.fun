@@ -20,8 +20,8 @@ import {
 import type { Database } from "@waifufun/db/client";
 
 import { generateRuntimeApiKey, hashRuntimeApiKey } from "../middleware/agent-pull-auth.js";
-import { emitAgentEvent } from "./events/emit.js";
 import type { CreateAgentInput, ElizaClient } from "./eliza-client.js";
+import { emitAgentEvent } from "./events/emit.js";
 import { getRuntimeRegistry } from "./runtime-registry.js";
 
 export interface Logger {

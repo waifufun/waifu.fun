@@ -1,16 +1,16 @@
 import {
 	type AgentEventPayload,
+	ElizaCloudRuntimeAdapter,
 	ExternalPullRuntimeAdapter,
 	ExternalWebhookRuntimeAdapter,
-	ElizaCloudRuntimeAdapter,
 	type RuntimeAdapter,
 	type RuntimeKind,
 	createRuntimeAdapterMap,
 } from "@waifufun/agent-runtime";
 import { agentPersonaQueries, getDatabase } from "@waifufun/db";
 
-import { emitAgentEvent } from "./events/emit.js";
 import { getElizaClient } from "./eliza-client.js";
+import { emitAgentEvent } from "./events/emit.js";
 
 let registry: Map<RuntimeKind, RuntimeAdapter> | null = null;
 

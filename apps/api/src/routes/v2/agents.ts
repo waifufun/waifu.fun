@@ -30,8 +30,8 @@ import {
 	createOrchestrator,
 	createStewardClient,
 } from "../../services/agent-launch/index.js";
-import { emitAgentEvent } from "../../services/events/emit.js";
 import { type ElizaCloudClient, createElizaCloudClient } from "../../services/eliza-client.js";
+import { emitAgentEvent } from "../../services/events/emit.js";
 import {
 	type PatronContext,
 	type ProvisionAdapterConfig,
