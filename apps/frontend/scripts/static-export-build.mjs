@@ -24,8 +24,6 @@ const nextBin = join(root, "node_modules/.bin/next");
 const pagesDir = join(root, "src/pages");
 const pagesApp = join(pagesDir, "_app.tsx");
 const pages404 = join(pagesDir, "404.tsx");
-const pagesManifest = join(root, ".next/server/pages-manifest.json");
-const appPathsManifest = join(root, ".next/server/app-paths-manifest.json");
 
 const moves = [
 	["src/app/api", "app-api"],
@@ -90,29 +88,13 @@ function ensurePagesFiles() {
 	}
 }
 
-function ensurePagesManifest() {
-	if (existsSync(pagesManifest)) return;
-	const serverDir = dirname(pagesManifest);
-	if (!existsSync(serverDir)) return;
-	writeFileSync(pagesManifest, "{}\n");
-}
-
-function ensureAppPathsManifest() {
-	if (existsSync(appPathsManifest)) return;
-	const serverDir = dirname(appPathsManifest);
-	if (!existsSync(serverDir)) return;
-	writeFileSync(appPathsManifest, "{}\n");
-}
-
 stashAll();
 let exitCode = 1;
 const hadPagesDir = existsSync(pagesDir);
 const hadPagesApp = existsSync(pagesApp);
 const hadPages404 = existsSync(pages404);
-let keepPagesAlive = null;
 
 function cleanup() {
-	if (keepPagesAlive) clearInterval(keepPagesAlive);
 	if (!hadPagesApp) rmSync(pagesApp, { force: true });
 	if (!hadPages404) rmSync(pages404, { force: true });
 	if (!hadPagesDir) removeTree(pagesDir);
@@ -122,12 +104,6 @@ function cleanup() {
 try {
 	removeTree(join(root, ".next"));
 	if (!hadPagesApp || !hadPages404) ensurePagesFiles();
-	ensurePagesManifest();
-	ensureAppPathsManifest();
-	keepPagesAlive = setInterval(() => {
-		ensurePagesManifest();
-		ensureAppPathsManifest();
-	}, 10);
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
