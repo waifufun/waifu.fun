@@ -65,6 +65,21 @@ function mineVanitySalt(deployer, codeHash, creator, label) {
 	throw new Error(`salt mining exceeded ${maxIterations} iterations`);
 }
 
+async function advanceTo(timestamp) {
+	const target = typeof timestamp === "bigint" ? Number(timestamp) : timestamp;
+	await ethers.provider.send("evm_setNextBlockTimestamp", [target]);
+	await ethers.provider.send("evm_mine", []);
+}
+
+async function closeSubscribedVault(vault, closer) {
+	const block = await ethers.provider.getBlock("latest");
+	const closeTimestamp = await vault.closeTimestamp();
+	const minOpenReady = BigInt(block.timestamp) + 901n;
+	await advanceTo(minOpenReady < closeTimestamp ? minOpenReady : closeTimestamp + 1n);
+	const closeTx = await vault.connect(closer).close();
+	return closeTx.wait();
+}
+
 describe("Wave H real-fork integration", function () {
 	if (!FORK_ENABLED) {
 		it.skip("requires FORK_BSC=true", () => {});
@@ -298,15 +313,14 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live] vault=${launchAddrs.vault} router=${launchAddrs.router}`);
 
 		// Step 2: depositors fund vault to fill tier-80 cap (16 BNB total)
-		await vault.connect(freshDepositorA).deposit({ value: ethers.parseEther("10") });
-		await vault.connect(freshDepositorB).deposit({ value: ethers.parseEther("6") });
+		await vault.connect(freshDepositorA).deposit({ value: ethers.parseEther("9.6") });
+		await vault.connect(freshDepositorB).deposit({ value: ethers.parseEther("6.4") });
 		const totalDeposited = await vault.totalDeposited();
 		expect(totalDeposited).to.equal(ethers.parseEther("16"));
 		console.log(`    [live] vault funded: ${ethers.formatEther(totalDeposited)} BNB`);
 
 		// Step 3: close the presale (cap hit, anyone can call)
-		const closeTx = await vault.connect(freshBot).close();
-		await closeTx.wait();
+		await closeSubscribedVault(vault, freshBot);
 		console.log("    [live] vault closed");
 
 		// Step 4: bundleBot triggers executeBundle. Builder tips are disabled
@@ -476,8 +490,7 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live ${tierLabel}] vault funded: ${ethers.formatEther(capWei)} BNB`);
 
 		// 3. close
-		const closeTx = await vault.connect(freshBot).close();
-		await closeTx.wait();
+		await closeSubscribedVault(vault, freshBot);
 		console.log(`    [live ${tierLabel}] vault closed`);
 
 		// 4. executeBundle
