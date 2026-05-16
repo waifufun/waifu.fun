@@ -54,6 +54,11 @@ export type ProvisionResult =
 			safeAddress?: string;
 			pullApiKey?: string | null;
 			agentApiKey?: string | null;
+			cloudAgentId?: string;
+			cloudStatus?: string;
+			provisioningJobId?: string;
+			webUiUrl?: string;
+			logsUrl?: string;
 	  }
 	| {
 			ok: false;
@@ -122,14 +127,7 @@ export function buildProvisionPayload(
 			avatarTemplateId: state.persona.avatarTemplateId,
 			hasAvatarUpload: Boolean(state.persona.avatarDataUrl),
 		},
-		runtime:
-			state.runtime.kind === "webhook"
-				? {
-						kind: "webhook",
-						webhookUrl: state.runtime.webhookUrl.trim(),
-						webhookSecret: state.runtime.webhookSecret,
-					}
-				: { kind: state.runtime.kind },
+		runtime: { kind: "hosted" },
 		safe: {
 			taxAgentBps: state.safe.taxAgentBps,
 			taxPatronBps: state.safe.taxPatronBps,
@@ -198,6 +196,19 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 	const pullApiKey = typeof obj.pullApiKey === "string" ? obj.pullApiKey : obj.pullApiKey === null ? null : undefined;
 	const agentApiKey =
 		typeof obj.agentApiKey === "string" ? obj.agentApiKey : obj.agentApiKey === null ? null : undefined;
+	const cloudAgentId = typeof obj.cloudAgentId === "string" ? obj.cloudAgentId : undefined;
+	const cloudStatus =
+		typeof obj.cloudStatus === "string" ? obj.cloudStatus : typeof obj.status === "string" ? obj.status : undefined;
+	const provisioningJobId =
+		typeof obj.provisioningJobId === "string"
+			? obj.provisioningJobId
+			: typeof obj.cloudJobId === "string"
+				? obj.cloudJobId
+				: typeof obj.jobId === "string"
+					? obj.jobId
+					: undefined;
+	const webUiUrl = typeof obj.webUiUrl === "string" ? obj.webUiUrl : undefined;
+	const logsUrl = typeof obj.logsUrl === "string" ? obj.logsUrl : undefined;
 
 	const result: ProvisionResult = {
 		ok: true,
@@ -206,6 +217,11 @@ export async function provisionAgent(payload: ProvisionRequest, signal?: AbortSi
 		...(safeAddress !== undefined ? { safeAddress } : {}),
 		...(pullApiKey !== undefined ? { pullApiKey } : {}),
 		...(agentApiKey !== undefined ? { agentApiKey } : {}),
+		...(cloudAgentId !== undefined ? { cloudAgentId } : {}),
+		...(cloudStatus !== undefined ? { cloudStatus } : {}),
+		...(provisioningJobId !== undefined ? { provisioningJobId } : {}),
+		...(webUiUrl !== undefined ? { webUiUrl } : {}),
+		...(logsUrl !== undefined ? { logsUrl } : {}),
 	};
 	return result;
 }

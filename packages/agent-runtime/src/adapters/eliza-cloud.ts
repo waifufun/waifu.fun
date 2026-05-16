@@ -15,6 +15,7 @@ export interface ElizaCreateAgentInput {
 
 export interface ElizaCreateAgentResult {
 	agentId?: string;
+	cloudAgentId?: string;
 	containerId?: string;
 	agentName?: string;
 	jobId?: string;
@@ -22,6 +23,34 @@ export interface ElizaCreateAgentResult {
 	nodeId?: string;
 	message?: string;
 	livenessCheckUrl?: string;
+	characterId?: string;
+	polling?: {
+		endpoint: string;
+		intervalMs: number;
+		expectedDurationMs: number;
+	};
+}
+
+export interface ElizaProvisionWaifuAgentInput {
+	agentId: string;
+	tokenContractAddress: string;
+	chain: string;
+	chainId: number;
+	tokenName: string;
+	tokenTicker: string;
+	launchType: "native" | "imported";
+	character?: {
+		name: string;
+		bio?: string;
+		avatar?: string;
+		config?: Record<string, unknown>;
+	};
+	billing?: {
+		mode: "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
+		initialReserveUsd?: number;
+	};
+	webhookUrl?: string;
+	modelDefaults?: Record<string, string>;
 }
 
 export interface ElizaAgentStatus {
@@ -33,6 +62,7 @@ export interface ElizaAgentStatus {
 
 export interface ElizaClient {
 	createAgent(userId: string, data: ElizaCreateAgentInput): Promise<ElizaCreateAgentResult>;
+	provisionWaifuAgent?(input: ElizaProvisionWaifuAgentInput): Promise<ElizaCreateAgentResult>;
 	pauseAgent(agentId: string): Promise<unknown>;
 	resumeAgent(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
@@ -57,16 +87,9 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 	}
 
 	async provision(opts: ProvisionOptions): Promise<ProvisionResult> {
-		const result = await this.client.createAgent(opts.agentId, {
-			agentName: opts.agentName,
-			agentConfig: {
-				persona: opts.persona,
-				safeAddress: opts.safeAddress,
-				xHandle: opts.xHandle,
-			},
-		});
+		const result = await this.provisionCloudAgent(opts);
 
-		const runtimeAgentId = result.agentId ?? result.containerId ?? opts.agentId;
+		const runtimeAgentId = result.cloudAgentId ?? result.agentId ?? result.containerId ?? opts.agentId;
 		this.logger?.info?.("provisioned eliza cloud runtime", {
 			agentId: opts.agentId,
 			runtimeAgentId,
@@ -75,10 +98,45 @@ export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
 		});
 
 		return {
-			containerId: result.containerId ?? result.agentId,
+			containerId: result.containerId ?? result.cloudAgentId ?? result.agentId,
 			runtimeAgentId,
 			...(result.livenessCheckUrl ? { livenessCheckUrl: result.livenessCheckUrl } : {}),
 		};
+	}
+
+	private async provisionCloudAgent(opts: ProvisionOptions): Promise<ElizaCreateAgentResult> {
+		if (this.client.provisionWaifuAgent && opts.tokenAddress) {
+			return this.client.provisionWaifuAgent({
+				agentId: opts.agentId,
+				tokenContractAddress: opts.tokenAddress,
+				chain: opts.chain ?? "bsc",
+				chainId: opts.chainId ?? 56,
+				tokenName: opts.tokenName ?? opts.agentName,
+				tokenTicker: opts.tokenTicker ?? opts.agentId.slice(0, 10).toUpperCase(),
+				launchType: opts.launchType ?? "native",
+				character: {
+					name: opts.persona.name || opts.agentName,
+					...(opts.persona.bio ? { bio: opts.persona.bio } : {}),
+					...(opts.persona.image ? { avatar: opts.persona.image } : {}),
+					config: {
+						persona: opts.persona,
+						safeAddress: opts.safeAddress,
+						xHandle: opts.xHandle,
+					},
+				},
+				...(opts.webhookUrl ? { webhookUrl: opts.webhookUrl } : {}),
+				...(opts.modelDefaults ? { modelDefaults: opts.modelDefaults } : {}),
+			});
+		}
+
+		return this.client.createAgent(opts.agentId, {
+			agentName: opts.agentName,
+			agentConfig: {
+				persona: opts.persona,
+				safeAddress: opts.safeAddress,
+				xHandle: opts.xHandle,
+			},
+		});
 	}
 
 	async dispatchEvent(agentId: string, event: AgentEventPayload): Promise<void> {

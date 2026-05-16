@@ -11,12 +11,6 @@ import { useEffect } from "react";
 import { formatUsdMarketCap, getTier, totalBnb } from "./tier/tier-data";
 import { LAUNCHPAD_PICKER_ENABLED, useWizard } from "./wizard-state";
 
-const RUNTIME_LABEL = {
-	hosted: "managed (ping us)",
-	webhook: "webhook",
-	pull: "pull",
-} as const;
-
 const LAUNCHPAD_LABEL = {
 	"four-meme-tax": "four.meme tax",
 	"four-meme-regular": "four.meme regular",
@@ -38,17 +32,6 @@ function shortAddr(addr?: string | null): string {
 	if (!addr) return "(connect wallet)";
 	if (addr.length < 12) return addr;
 	return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
-
-function shortUrl(url: string): string {
-	if (!url) return "";
-	try {
-		const u = new URL(url);
-		const path = u.pathname === "/" ? "" : u.pathname;
-		return `${u.host}${path.length > 24 ? `${path.slice(0, 24)}...` : path}`;
-	} catch {
-		return url.slice(0, 36);
-	}
 }
 
 export default function StepReview() {
@@ -233,16 +216,6 @@ export default function StepReview() {
 						) : null}
 					</Row>
 				) : null}
-
-				{/* Runtime */}
-				<Row label="runtime" value={RUNTIME_LABEL[state.runtime.kind]}>
-					{state.runtime.kind === "webhook" && state.runtime.webhookUrl ? (
-						<p className="mt-1 text-[11px] font-mono text-neutral-500 truncate">{shortUrl(state.runtime.webhookUrl)}</p>
-					) : null}
-					{state.runtime.kind === "pull" ? (
-						<p className="mt-1 text-[11px] text-neutral-500">api key shown once after provisioning</p>
-					) : null}
-				</Row>
 
 				{/* Safe */}
 				<Row label="safe">

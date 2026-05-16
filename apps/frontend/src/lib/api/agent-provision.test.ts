@@ -72,6 +72,7 @@ describe("buildProvisionPayload", () => {
 		expect(payload).not.toHaveProperty("launchpad");
 		expect(payload.inviteCode).toBe("WF-TEST1-TEST2");
 		expect(payload.persona).toMatchObject({ name: "Mika", ticker: "MIKA" });
+		expect(payload.runtime).toEqual({ kind: "hosted" });
 		expect(payload.safe.owners).toEqual([
 			"0x1111111111111111111111111111111111111111",
 			"0x2222222222222222222222222222222222222222",
@@ -103,5 +104,18 @@ describe("buildProvisionPayload", () => {
 		const payload = buildProvisionPayload(oldDraft, { launchpadPickerEnabled: true });
 
 		expect(payload.launchpad?.chain).toBe("bsc");
+	});
+
+	it("forces hosted runtime even when an older draft has BYO runtime settings", () => {
+		const state = stateWithLaunchpad();
+		state.runtime = {
+			kind: "webhook",
+			webhookUrl: " https://agent.example.com/waifu/events ",
+			webhookSecret: "secret-not-trimmed",
+		};
+
+		const payload = buildProvisionPayload(state, { launchpadPickerEnabled: false });
+
+		expect(payload.runtime).toEqual({ kind: "hosted" });
 	});
 });

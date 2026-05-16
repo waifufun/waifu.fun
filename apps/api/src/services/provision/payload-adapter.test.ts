@@ -101,6 +101,25 @@ test("provision request validation accepts explicit null launchpad as default", 
 	assert.equal(result.launchInput.tax, undefined);
 });
 
+test("provision request validation requires an invite code", () => {
+	const result = validate({ ...basePayload("hosted"), inviteCode: " " });
+	assert.equal(result.ok, false);
+	if (result.ok) return;
+	assert.equal(result.message, "inviteCode is required");
+});
+
+test("provision adapter maps hosted runtime metadata without webhook credentials", () => {
+	const result = validate({ ...basePayload("hosted"), launchpad: null });
+	assert.equal(result.ok, true);
+	if (!result.ok) return;
+
+	const persona = result.launchInput.persona as Record<string, unknown>;
+	assert.equal(persona.runtimeKind, "hosted");
+	assert.equal(persona.webhookUrl, null);
+	assert.equal(persona.runtimeWebhookSecretHash, null);
+	assert.equal(result.pullRuntime, false);
+});
+
 test("provision request validation rejects platform cut bypasses", () => {
 	const zeroCutPayload = { ...basePayload("webhook"), launchpad: taxLaunchpad(300) };
 	zeroCutPayload.launchpad.launchpad_config.platformCutBps = 0;

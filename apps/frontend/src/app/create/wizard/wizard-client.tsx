@@ -6,7 +6,6 @@ import StepLaunchpad from "@/components/create/step-launchpad";
 import StepMetadata from "@/components/create/step-metadata";
 import StepPersona from "@/components/create/step-persona";
 import StepReview from "@/components/create/step-review";
-import StepRuntime from "@/components/create/step-runtime";
 import StepSafe from "@/components/create/step-safe";
 import StepTier from "@/components/create/tier/step-tier";
 import WizardShell from "@/components/create/wizard-shell";
@@ -25,7 +24,11 @@ import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAccount, useSignMessage } from "wagmi";
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
-import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
+import {
+	provisionCloudStorageKey,
+	provisionSuccessRoute,
+	provisionSuccessStorageKey,
+} from "./wizard-provision-success";
 
 export { PROVISION_RESPONSE_TIMEOUT_MS };
 
@@ -91,14 +94,7 @@ function WizardInner() {
 					hasAvatarUpload: Boolean(state.persona.avatarDataUrl),
 				},
 				tier: state.launch.tierId,
-				runtime:
-					state.runtime.kind === "webhook"
-						? {
-								kind: "webhook",
-								webhookUrl: state.runtime.webhookUrl.trim(),
-								webhookSecret: state.runtime.webhookSecret,
-							}
-						: { kind: state.runtime.kind },
+				runtime: { kind: "hosted" },
 				safe: {
 					taxAgentBps: state.safe.taxAgentBps,
 					taxPatronBps: state.safe.taxPatronBps,
@@ -192,6 +188,9 @@ function WizardInner() {
 			if (result?.ok && result.agentApiKey) {
 				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
 			}
+			if (result?.ok) {
+				storeCloudProvision(result);
+			}
 			router.push(`/launch/${encodeURIComponent(launchResult.id)}`);
 			return;
 		}
@@ -200,6 +199,7 @@ function WizardInner() {
 			if (result.agentApiKey) {
 				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
 			}
+			storeCloudProvision(result);
 			router.push(provisionSuccessRoute(result));
 			return;
 		}
@@ -231,7 +231,7 @@ function WizardInner() {
 					metadata: <StepMetadata />,
 					tier: <StepTier />,
 					launchpad: LAUNCHPAD_PICKER_ENABLED ? <StepLaunchpad /> : null,
-					runtime: <StepRuntime />,
+					runtime: null,
 					safe: <StepSafe />,
 					review: <StepReview />,
 				}}
@@ -244,6 +244,18 @@ function WizardInner() {
 			) : null}
 		</>
 	);
+}
+
+function storeCloudProvision(result: Extract<ProvisionResult, { ok: true }>) {
+	const cloud = {
+		cloudAgentId: result.cloudAgentId,
+		cloudStatus: result.cloudStatus,
+		provisioningJobId: result.provisioningJobId,
+		webUiUrl: result.webUiUrl,
+		logsUrl: result.logsUrl,
+	};
+	if (!Object.values(cloud).some(Boolean)) return;
+	window.sessionStorage.setItem(provisionCloudStorageKey(result), JSON.stringify(cloud));
 }
 
 function WizardGate() {
