@@ -321,3 +321,132 @@ Total calls: 50283
 [2026-05-16 16:19:15.19] Saving coverage... Done! (0.750958771s)
 === END EchidnaLaunchVault at Sat May 16 04:19:16 PM UTC 2026 ===
 === ALL DONE at Sat May 16 04:19:16 PM UTC 2026 ===
+=== START EchidnaTreasuryLP at Sat May 16 06:58:19 PM UTC 2026 ===
+[2026-05-16 18:58:24.10]  Saved reproducer to echidna-corpus/coverage/5140772153567011076.txt
+[2026-05-16 18:58:24.11]  Saved reproducer to echidna-corpus/coverage/7176309701181277667.txt
+[2026-05-16 18:58:24.22] [Worker 3] New coverage: 2780 instr, 4 contracts, 5 seqs in corpus
+[2026-05-16 18:58:24.22]  Saved reproducer to echidna-corpus/coverage/4999215118651755627.txt
+[2026-05-16 18:58:24.69] [Worker 0] New coverage: 2784 instr, 4 contracts, 6 seqs in corpus
+[2026-05-16 18:58:24.69]  Saved reproducer to echidna-corpus/coverage/5397108822028969141.txt
+[2026-05-16 18:58:26.26] [Worker 3] New coverage: 2788 instr, 4 contracts, 7 seqs in corpus
+[2026-05-16 18:58:26.27]  Saved reproducer to echidna-corpus/coverage/2508504606898652265.txt
+[2026-05-16 18:58:26.95] [status] tests: 0/4, fuzzing: 19476/50000, values: [], cov: 2788, corpus: 7, gas/s: 259279439
+[2026-05-16 18:58:29.95] [status] tests: 0/4, fuzzing: 38205/50000, values: [], cov: 2788, corpus: 7, gas/s: 250612398
+[2026-05-16 18:58:31.65] [Worker 2] Test limit reached. Stopping.
+[2026-05-16 18:58:31.78] [Worker 0] Test limit reached. Stopping.
+[2026-05-16 18:58:31.82] [Worker 3] Test limit reached. Stopping.
+[2026-05-16 18:58:31.92] [Worker 1] Test limit reached. Stopping.
+[2026-05-16 18:58:31.92] [status] tests: 0/4, fuzzing: 50159/50000, values: [], cov: 2788, corpus: 7, gas/s: 239252719
+echidna_factory_immutable: passing
+echidna_managed_token_lock_holds: passing
+echidna_owner_immutable: passing
+echidna_no_raw_bnb: passing
+
+Unique instructions: 2788
+Unique codehashes: 4
+Corpus size: 7
+Seed: 3024884471932478916
+Total calls: 50159
+
+[2026-05-16 18:58:31.92] Saving test reproducers... Done! (0.000000981s)
+[2026-05-16 18:58:31.92] Saving corpus... Done! (0.000489683s)
+[2026-05-16 18:58:31.92] Saving foundry reproducers... Done! (0.000109704s)
+[2026-05-16 18:58:31.92] Saving coverage... Done! (0.218238051s)
+=== END EchidnaTreasuryLP at Sat May 16 06:58:32 PM UTC 2026 ===
+=== START EchidnaLaunchFactory at Sat May 16 06:58:32 PM UTC 2026 ===
+[2026-05-16 18:58:50.67] [Worker 2] New coverage: 1178 instr, 3 contracts, 4 seqs in corpus
+[2026-05-16 18:58:50.68]  Saved reproducer to echidna-corpus/coverage/1277991805271732864.txt
+[2026-05-16 18:58:51.34] [status] tests: 0/5, fuzzing: 6557/50000, values: [], cov: 1178, corpus: 4, gas/s: 277369191
+[2026-05-16 18:58:54.34] [status] tests: 0/5, fuzzing: 13819/50000, values: [], cov: 1178, corpus: 4, gas/s: 305415293
+[2026-05-16 18:58:57.35] [status] tests: 0/5, fuzzing: 21046/50000, values: [], cov: 1178, corpus: 4, gas/s: 305377309
+[2026-05-16 18:59:00.35] [status] tests: 0/5, fuzzing: 27999/50000, values: [], cov: 1178, corpus: 4, gas/s: 291074969
+[2026-05-16 18:59:03.36] [status] tests: 0/5, fuzzing: 34731/50000, values: [], cov: 1178, corpus: 4, gas/s: 281856984
+[2026-05-16 18:59:06.36] [status] tests: 0/5, fuzzing: 41497/50000, values: [], cov: 1178, corpus: 4, gas/s: 282080396
+[2026-05-16 18:59:09.37] [status] tests: 0/5, fuzzing: 48477/50000, values: [], cov: 1178, corpus: 4, gas/s: 290339414
+[2026-05-16 18:59:09.91] [Worker 0] Test limit reached. Stopping.
+[2026-05-16 18:59:09.94] [Worker 2] Test limit reached. Stopping.
+[2026-05-16 18:59:10.09] [Worker 1] Test limit reached. Stopping.
+[2026-05-16 18:59:10.12] [Worker 3] Test limit reached. Stopping.
+[2026-05-16 18:59:10.12] [status] tests: 0/5, fuzzing: 50194/50000, values: [], cov: 1178, corpus: 4, gas/s: 222722295
+echidna_owner_nonzero: passing
+echidna_launch_count_zero: passing
+echidna_immutables_constant: passing
+echidna_tier_table_total: passing
+echidna_no_used_salts: passing
+
+Unique instructions: 1178
+Unique codehashes: 3
+Corpus size: 4
+Seed: 1397540341617060338
+Total calls: 50194
+
+[2026-05-16 18:59:10.12] Saving test reproducers... Done! (0.000001473s)
+[2026-05-16 18:59:10.12] Saving corpus... Done! (0.00030822s)
+[2026-05-16 18:59:10.12] Saving foundry reproducers... Done! (0.000111968s)
+[2026-05-16 18:59:10.12] Saving coverage... Done! (0.329263773s)
+=== END EchidnaLaunchFactory at Sat May 16 06:59:10 PM UTC 2026 ===
+=== START EchidnaBundleRouter at Sat May 16 06:59:10 PM UTC 2026 ===
+[2026-05-16 18:59:16.96]  Saved reproducer to echidna-corpus/coverage/3405742262344566759.txt
+[2026-05-16 18:59:16.96]  Saved reproducer to echidna-corpus/coverage/2486093403988294812.txt
+[2026-05-16 18:59:19.15] [Worker 0] New coverage: 1915 instr, 2 contracts, 4 seqs in corpus
+[2026-05-16 18:59:19.16]  Saved reproducer to echidna-corpus/coverage/671600944758597637.txt
+[2026-05-16 18:59:19.54] [Worker 2] New coverage: 1918 instr, 2 contracts, 5 seqs in corpus
+[2026-05-16 18:59:19.54]  Saved reproducer to echidna-corpus/coverage/2970307026974324734.txt
+[2026-05-16 18:59:19.70] [status] tests: 0/3, fuzzing: 8269/50000, values: [], cov: 1918, corpus: 5, gas/s: 75453746
+[2026-05-16 18:59:22.70] [status] tests: 0/3, fuzzing: 17239/50000, values: [], cov: 1918, corpus: 5, gas/s: 81723644
+[2026-05-16 18:59:25.71] [status] tests: 0/3, fuzzing: 26281/50000, values: [], cov: 1918, corpus: 5, gas/s: 82389788
+[2026-05-16 18:59:28.71] [status] tests: 0/3, fuzzing: 34864/50000, values: [], cov: 1918, corpus: 5, gas/s: 78125241
+[2026-05-16 18:59:31.71] [status] tests: 0/3, fuzzing: 43143/50000, values: [], cov: 1918, corpus: 5, gas/s: 75340266
+[2026-05-16 18:59:33.57] [Worker 2] Test limit reached. Stopping.
+[2026-05-16 18:59:34.04] [Worker 3] Test limit reached. Stopping.
+[2026-05-16 18:59:34.06] [Worker 0] Test limit reached. Stopping.
+[2026-05-16 18:59:34.47] [Worker 1] Test limit reached. Stopping.
+[2026-05-16 18:59:34.47] [status] tests: 0/3, fuzzing: 50218/50000, values: [], cov: 1918, corpus: 5, gas/s: 64381635
+echidna_dead_constant: passing
+echidna_executed_false: passing
+echidna_immutables_stable: passing
+
+Unique instructions: 1918
+Unique codehashes: 2
+Corpus size: 5
+Seed: 7880828523208068472
+Total calls: 50218
+
+[2026-05-16 18:59:34.47] Saving test reproducers... Done! (0.000001132s)
+[2026-05-16 18:59:34.47] Saving corpus... Done! (0.000320784s)
+[2026-05-16 18:59:34.47] Saving foundry reproducers... Done! (0.000099714s)
+[2026-05-16 18:59:34.47] Saving coverage... Done! (0.436125172s)
+=== END EchidnaBundleRouter at Sat May 16 06:59:35 PM UTC 2026 ===
+=== START EchidnaLaunchVault at Sat May 16 06:59:35 PM UTC 2026 ===
+[2026-05-16 19:00:10.59] [status] tests: 0/9, fuzzing: 34316/50000, values: [], cov: 5160, corpus: 13, gas/s: 63466012
+[2026-05-16 19:00:13.59] [status] tests: 0/9, fuzzing: 38112/50000, values: [], cov: 5160, corpus: 13, gas/s: 62552764
+[2026-05-16 19:00:16.60] [status] tests: 0/9, fuzzing: 42048/50000, values: [], cov: 5160, corpus: 13, gas/s: 65410598
+[2026-05-16 19:00:19.60] [status] tests: 0/9, fuzzing: 46035/50000, values: [], cov: 5160, corpus: 13, gas/s: 65893357
+[2026-05-16 19:00:22.30] [Worker 2] Test limit reached. Stopping.
+[2026-05-16 19:00:22.40] [Worker 1] Test limit reached. Stopping.
+[2026-05-16 19:00:22.60] [status] tests: 0/9, fuzzing: 49907/50000, values: [], cov: 5160, corpus: 13, gas/s: 62663415
+[2026-05-16 19:00:22.69] [Worker 0] Test limit reached. Stopping.
+[2026-05-16 19:00:22.99] [Worker 3] Test limit reached. Stopping.
+[2026-05-16 19:00:22.99] [status] tests: 0/9, fuzzing: 50210/50000, values: [], cov: 5160, corpus: 13, gas/s: 0
+echidna_launch_snapshot: passing
+echidna_vesting_bounded: passing
+echidna_alloc_sum_bounded: passing
+echidna_router_immutable: passing
+echidna_bnb_conservation: passing
+echidna_no_overclaim: passing
+echidna_cap_respected: passing
+echidna_state_wellformed: passing
+echidna_distribute_once: passing
+
+Unique instructions: 5160
+Unique codehashes: 4
+Corpus size: 13
+Seed: 5910314408613575872
+Total calls: 50210
+
+[2026-05-16 19:00:22.99] Saving test reproducers... Done! (0.000001322s)
+[2026-05-16 19:00:22.99] Saving corpus... Done! (0.000835296s)
+[2026-05-16 19:00:22.99] Saving foundry reproducers... Done! (0.000112348s)
+[2026-05-16 19:00:22.99] Saving coverage... Done! (0.749478896s)
+=== END EchidnaLaunchVault at Sat May 16 07:00:23 PM UTC 2026 ===
+=== ALL DONE at Sat May 16 07:00:23 PM UTC 2026 ===
