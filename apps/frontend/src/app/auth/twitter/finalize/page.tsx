@@ -1,6 +1,7 @@
 "use client";
 
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -19,7 +20,7 @@ function TwitterFinalizeInner() {
 		ranRef.current = true;
 
 		const token = params.get("token");
-		const returnTo = params.get("return_to") ?? undefined;
+		const returnTo = sanitizeRedirectPath(params.get("return_to"));
 		const errorParam = params.get("error") ?? params.get("auth_error");
 		if (errorParam) {
 			setPhase("error");
@@ -47,7 +48,7 @@ function TwitterFinalizeInner() {
 					throw new Error(body?.message ?? body?.error ?? `http ${res.status}`);
 				}
 				const json = (await res.json()) as { ok: boolean; data?: { return_to?: string } };
-				window.location.assign(json.data?.return_to ?? returnTo ?? "/patron");
+				window.location.assign(sanitizeRedirectPath(json.data?.return_to, returnTo));
 			} catch (err) {
 				if ((err as { name?: string })?.name === "AbortError") return;
 				setPhase("error");

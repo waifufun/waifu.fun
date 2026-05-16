@@ -15,11 +15,40 @@ import { apiFetch } from "./_fetcher";
  *   GET  /v2/admin/agents/:id/status
  *
  * All requests carry the operator's admin token via Authorization: Bearer.
- * The token lives in localStorage under ADMIN_TOKEN_KEY. This is intentional:
- * this UI is for internal operator use, not patron-facing.
+ * The token is kept for the current browser session only; callers use the
+ * helpers below so the public API does not depend on the storage backend.
  */
 
 export const ADMIN_TOKEN_KEY = "waifu-admin-token";
+
+let inMemoryAdminToken: string | null = null;
+
+function browserSessionStorage(): Storage | null {
+	if (typeof window === "undefined") return null;
+	try {
+		return window.sessionStorage;
+	} catch {
+		return null;
+	}
+}
+
+function clearLegacyAdminToken(): void {
+	if (typeof window === "undefined") return;
+	try {
+		window.localStorage.removeItem(ADMIN_TOKEN_KEY);
+	} catch {
+		/* localStorage may be blocked; ignored */
+	}
+}
+
+function readLegacyAdminToken(): string | null {
+	if (typeof window === "undefined") return null;
+	try {
+		return window.localStorage.getItem(ADMIN_TOKEN_KEY);
+	} catch {
+		return null;
+	}
+}
 
 export type AdminAgent = {
 	id: string;
@@ -55,25 +84,37 @@ export type AdminCombinedStatus = "killed" | "frozen-withdrawals" | "paused-brai
 export function getAdminToken(): string | null {
 	if (typeof window === "undefined") return null;
 	try {
-		return window.localStorage.getItem(ADMIN_TOKEN_KEY);
+		const storage = browserSessionStorage();
+		const legacy = readLegacyAdminToken();
+		const stored = storage?.getItem(ADMIN_TOKEN_KEY) ?? legacy ?? inMemoryAdminToken;
+		if (legacy && storage && !storage.getItem(ADMIN_TOKEN_KEY)) {
+			storage.setItem(ADMIN_TOKEN_KEY, legacy);
+		}
+		if (stored) inMemoryAdminToken = stored;
+		clearLegacyAdminToken();
+		return stored;
 	} catch {
-		return null;
+		return inMemoryAdminToken;
 	}
 }
 
 export function setAdminToken(token: string): void {
 	if (typeof window === "undefined") return;
+	inMemoryAdminToken = token;
 	try {
-		window.localStorage.setItem(ADMIN_TOKEN_KEY, token);
+		browserSessionStorage()?.setItem(ADMIN_TOKEN_KEY, token);
+		clearLegacyAdminToken();
 	} catch {
-		/* localStorage may be blocked; ignored */
+		/* sessionStorage may be blocked; memory fallback remains */
 	}
 }
 
 export function clearAdminToken(): void {
 	if (typeof window === "undefined") return;
+	inMemoryAdminToken = null;
 	try {
-		window.localStorage.removeItem(ADMIN_TOKEN_KEY);
+		browserSessionStorage()?.removeItem(ADMIN_TOKEN_KEY);
+		clearLegacyAdminToken();
 	} catch {
 		/* ignored */
 	}

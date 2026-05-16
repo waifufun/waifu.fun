@@ -124,7 +124,7 @@ function safeMetadata(row: NonNullable<Awaited<ReturnType<typeof agentSafeQuerie
 export function createV3AgentRoutes(options?: V3RouteOptions) {
 	const app = new Hono<RequireAgentOwnershipBindings>();
 
-	app.post("/", async (c) => {
+	app.post("/", requirePatron(), async (c) => {
 		const db = requireDb(options);
 		if (!db) return c.json({ error: "database unavailable" }, 503);
 
@@ -150,8 +150,13 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 					? body.agentId.trim()
 					: slugifyAgentId(name);
 
+		const patron = c.get("patron");
+		const ownerAddress = patron.primaryAddress && isAddress(patron.primaryAddress) ? getAddress(patron.primaryAddress) : null;
+
 		const persona = await agentPersonaQueries.createAgentPersona(db, {
 			agentId,
+			ownerStewardUserId: patron.stewardUserId,
+			ownerAddress,
 			name,
 			bio: typeof body.bio === "string" ? body.bio : null,
 			avatarUrl: typeof body.avatar_url === "string" ? body.avatar_url : null,

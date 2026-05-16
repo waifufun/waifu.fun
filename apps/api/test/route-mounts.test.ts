@@ -171,7 +171,7 @@ const ROUTES = [
 	{ method: "GET", path: `/v2/agents/${ZERO_ADDRESS}/blink` },
 	{ method: "POST", path: "/v2/auth/siwe/nonce", body: { address: ZERO_ADDRESS, chainId: 56 } },
 	{ method: "GET", path: "/v3/launchpads" },
-	{ method: "GET", path: "/v3/agents" },
+	{ method: "POST", path: "/v3/agents", body: { name: "Route Smoke", chain: "bsc" } },
 	{ method: "GET", path: "/v3/patron/me" },
 ] as const;
 

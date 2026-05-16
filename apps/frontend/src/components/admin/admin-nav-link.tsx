@@ -21,7 +21,7 @@ export default function AdminNavLink({ className, onNavigate }: { className?: st
 
 		const handleChange = () => setHasToken(Boolean(getAdminToken()));
 		const handleStorage = (e: StorageEvent) => {
-			if (e.key === ADMIN_TOKEN_KEY) setHasToken(Boolean(e.newValue));
+			if (e.key === ADMIN_TOKEN_KEY) setHasToken(Boolean(getAdminToken()));
 		};
 		window.addEventListener(TOKEN_EVENT, handleChange);
 		window.addEventListener("storage", handleStorage);

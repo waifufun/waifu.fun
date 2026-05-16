@@ -36,6 +36,7 @@ export type AgentLaunchState = (typeof agentLaunchStates)[number];
 
 export const launchBundleStatuses = [
 	"pending",
+	"submitting",
 	"submitted",
 	"confirmed",
 	"failed_retry",

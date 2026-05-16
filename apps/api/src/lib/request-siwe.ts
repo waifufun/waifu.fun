@@ -1,6 +1,6 @@
 import { SiweMessage, generateNonce } from "siwe";
 
-import { verifySiweMessage } from "./auth-service.js";
+import { validateSiweContext, verifySiweMessage } from "./auth-service.js";
 
 type NonceEntry = {
 	nonce: string;
@@ -46,19 +46,6 @@ function consumeRequestSiweNonce(patronId: string, purpose: string, address: str
 	return true;
 }
 
-function allowedHosts(): Set<string> {
-	const hosts = new Set(["waifu.fun", "www.waifu.fun", "localhost:3000", "127.0.0.1:3000"]);
-	for (const value of [process.env.FRONTEND_URL, process.env.NEXT_PUBLIC_HOST, process.env.API_PUBLIC_URL]) {
-		if (!value) continue;
-		try {
-			hosts.add(new URL(value).host);
-		} catch {
-			// ignore malformed optional env values
-		}
-	}
-	return hosts;
-}
-
 export type RequestSiweProof = {
 	message: string;
 	signature: string;
@@ -100,30 +87,9 @@ export async function validateRequestSiwe(input: RequestSiweValidation): Promise
 		return "nonce mismatch or expired";
 	}
 
-	const message = parsed as unknown as {
-		domain?: string;
-		uri?: string;
-		statement?: string;
-		expirationTime?: string | Date;
-	};
-	if (!message.domain || !allowedHosts().has(message.domain)) {
-		return "SIWE domain is not allowed";
-	}
-	if (message.statement !== input.expectedStatement) {
-		return "SIWE statement is not allowed";
-	}
-	if (!message.uri) return "SIWE uri is missing";
-	try {
-		const uri = new URL(message.uri);
-		if (!allowedHosts().has(uri.host) || uri.pathname !== input.expectedUriPath) {
-			return "SIWE uri is not allowed";
-		}
-	} catch {
-		return "SIWE uri is invalid";
-	}
-	if (message.expirationTime && Date.parse(String(message.expirationTime)) <= Date.now()) {
-		return "SIWE message expired";
-	}
-
-	return null;
+	return validateSiweContext(input.siwe.message, {
+		expectedChainId: 56,
+		expectedStatement: input.expectedStatement,
+		expectedUriPath: input.expectedUriPath,
+	});
 }

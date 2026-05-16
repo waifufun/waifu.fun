@@ -14,6 +14,7 @@ import {
 	startAuthentication,
 	startRegistration,
 } from "@simplewebauthn/browser";
+import { sanitizeRedirectPath } from "./url-safety";
 
 const STEWARD_BASE = process.env.NEXT_PUBLIC_STEWARD_URL ?? "https://eliza.steward.fi";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
@@ -84,7 +85,7 @@ async function finalizeWithBackend(token: string, email: string, returnTo?: stri
 		ok: boolean;
 		data: { return_to: string };
 	};
-	return json?.data?.return_to ?? "/patron";
+	return sanitizeRedirectPath(json?.data?.return_to);
 }
 
 function withClientDeviceHint<T extends { hints?: CredentialHint[] }>(options: T): T {

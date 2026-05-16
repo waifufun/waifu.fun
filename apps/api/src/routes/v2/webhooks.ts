@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
@@ -12,26 +14,29 @@ type Db = ReturnType<typeof getDatabase>["db"];
 type WebhookRoutesOptions = {
 	db?: Db;
 	secret?: string;
+	maxSkewMs?: number;
 	elizaCloud?: ElizaCloudClient;
 	logger?: Logger;
 	dispatch?: typeof dispatchEvent;
 };
 
 const app = createWebhookRoutes();
+const DEFAULT_MAX_SKEW_MS = 5 * 60 * 1000;
+const SIGNATURE_PREFIX = "sha256=";
 
 export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 	const routes = new Hono();
 
 	routes.post("/agent-events", async (c) => {
 		const expectedSecret = options.secret ?? process.env.WEBHOOK_RECEIVER_SECRET;
-		const providedSecret = c.req.header("X-Waifu-Webhook-Secret");
-		if (!expectedSecret || providedSecret !== expectedSecret) {
+		if (!expectedSecret) {
 			return c.json({ error: "unauthorized" }, 401);
 		}
 
+		const rawBody = await c.req.text();
 		let payload: WebhookConsumerEvent;
 		try {
-			payload = validatePayload(await c.req.json());
+			payload = validatePayload(JSON.parse(rawBody));
 		} catch (err) {
 			return c.json(
 				{
@@ -40,6 +45,17 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 				},
 				400,
 			);
+		}
+
+		const authError = verifyWebhookRequest({
+			rawBody,
+			payload,
+			secret: expectedSecret,
+			signature: c.req.header("X-Waifu-Webhook-Signature"),
+			maxSkewMs: options.maxSkewMs ?? DEFAULT_MAX_SKEW_MS,
+		});
+		if (authError) {
+			return c.json({ error: "unauthorized", detail: authError }, 401);
 		}
 
 		const db = options.db ?? requireDb();
@@ -107,6 +123,31 @@ export async function insertInboxRow(db: Db, payload: WebhookConsumerEvent): Pro
 	return false;
 }
 
+export function signWebhookPayload(rawBody: string, timestamp: string, secret: string): string {
+	return `${SIGNATURE_PREFIX}${createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex")}`;
+}
+
+function verifyWebhookRequest(args: {
+	rawBody: string;
+	payload: WebhookConsumerEvent;
+	secret: string;
+	signature: string | undefined;
+	maxSkewMs: number;
+}): string | null {
+	if (!args.payload.idempotencyKey) return "idempotencyKey is required";
+
+	const eventTime = Date.parse(args.payload.timestamp);
+	const skew = Math.abs(Date.now() - eventTime);
+	if (!Number.isFinite(eventTime) || skew > args.maxSkewMs) return "webhook timestamp is outside the allowed window";
+
+	if (!args.signature?.startsWith(SIGNATURE_PREFIX)) return "webhook signature is required";
+	const expected = signWebhookPayload(args.rawBody, args.payload.timestamp, args.secret);
+	const expectedBytes = Buffer.from(expected);
+	const actualBytes = Buffer.from(args.signature);
+	if (actualBytes.length !== expectedBytes.length) return "webhook signature is invalid";
+	return timingSafeEqual(actualBytes, expectedBytes) ? null : "webhook signature is invalid";
+}
+
 export function validatePayload(value: unknown): WebhookConsumerEvent {
 	if (!value || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error("payload must be an object");
@@ -133,6 +174,9 @@ export function validatePayload(value: unknown): WebhookConsumerEvent {
 	}
 	if (idempotencyKey !== undefined && typeof idempotencyKey !== "string") {
 		throw new Error("idempotencyKey must be a string when provided");
+	}
+	if (typeof idempotencyKey === "string" && idempotencyKey.trim().length === 0) {
+		throw new Error("idempotencyKey must be non-empty when provided");
 	}
 
 	return {

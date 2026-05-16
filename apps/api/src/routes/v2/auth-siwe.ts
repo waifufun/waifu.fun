@@ -4,13 +4,13 @@ import { Hono } from "hono";
 import { generateNonce } from "siwe";
 import { z } from "zod";
 
-import { verifySiweMessage } from "../../lib/auth-service.js";
+import { validateSiweContext, verifySiweMessage } from "../../lib/auth-service.js";
 import { type RequirePatronBindings, requirePatron } from "../../middleware/patron-auth.js";
 
 type DbHandle = ReturnType<typeof getDatabase>["db"];
 type SiweVerifier = typeof verifySiweMessage;
 
-type NonceEntry = { nonce: string; expiresAt: number };
+type NonceEntry = { nonce: string; address: string; expiresAt: number };
 const NONCE_STORE = new Map<string, NonceEntry>();
 const NONCE_TTL_MS = 10 * 60 * 1000;
 
@@ -37,21 +37,27 @@ function verifier(): SiweVerifier {
 	return verifierForTest ?? verifySiweMessage;
 }
 
-function setNonce(patronId: string): string {
+function nonceKey(patronId: string, address: string): string {
+	return `${patronId}:${address.toLowerCase()}`;
+}
+
+function setNonce(patronId: string, address: string): string {
 	const nonce = generateNonce();
-	NONCE_STORE.set(patronId, { nonce, expiresAt: Date.now() + NONCE_TTL_MS });
+	NONCE_STORE.set(nonceKey(patronId, address), { nonce, address: address.toLowerCase(), expiresAt: Date.now() + NONCE_TTL_MS });
 	return nonce;
 }
 
-function consumePatronNonce(patronId: string, nonce: string): boolean {
-	const entry = NONCE_STORE.get(patronId);
+function consumePatronNonce(patronId: string, address: string, nonce: string): boolean {
+	const key = nonceKey(patronId, address);
+	const entry = NONCE_STORE.get(key);
 	if (!entry) return false;
 	if (entry.nonce !== nonce) return false;
+	if (entry.address !== address.toLowerCase()) return false;
 	if (Date.now() > entry.expiresAt) {
-		NONCE_STORE.delete(patronId);
+		NONCE_STORE.delete(key);
 		return false;
 	}
-	NONCE_STORE.delete(patronId);
+	NONCE_STORE.delete(key);
 	return true;
 }
 
@@ -77,7 +83,7 @@ authSiweRoutes.post("/nonce", async (c) => {
 	}
 
 	const patron = c.get("patron");
-	const nonce = setNonce(patron.id);
+	const nonce = setNonce(patron.id, parsed.data.address);
 	return c.json({ ok: true, nonce, expiresInSeconds: 600 });
 });
 
@@ -96,7 +102,12 @@ authSiweRoutes.post("/bind", async (c) => {
 		return c.json({ ok: false, error: "siwe verification failed" }, 400);
 	}
 
-	if (!consumePatronNonce(patron.id, verified.nonce)) {
+	const contextError = validateSiweContext(parsed.data.message, { expectedChainId: 56 });
+	if (contextError) {
+		return c.json({ ok: false, error: contextError }, 400);
+	}
+
+	if (!consumePatronNonce(patron.id, verified.address, verified.nonce)) {
 		return c.json({ ok: false, error: "nonce mismatch or expired" }, 400);
 	}
 

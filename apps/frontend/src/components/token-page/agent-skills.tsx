@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import { cn, shortenAddress } from "@/lib/utils";
 import { EvmChainIds, type IToken } from "@waifufun/types";
 import { Globe } from "lucide-react";
@@ -153,10 +154,10 @@ const PLATFORM_COLORS: Record<string, string> = {
 
 export function SidebarSocials({ token }: { token: IToken }) {
 	const socials = [
-		{ title: "website", href: token?.socials?.website, icon: "/socials/website.svg" },
-		{ title: "twitter", href: token?.socials?.twitter, icon: "/socials/twitter.svg" },
-		{ title: "telegram", href: token?.socials?.telegram, icon: "/socials/telegram.svg" },
-		{ title: "discord", href: token?.socials?.discord, icon: "/socials/discord.svg" },
+		{ title: "website", href: sanitizeExternalUrl(token?.socials?.website), icon: "/socials/website.svg" },
+		{ title: "twitter", href: sanitizeExternalUrl(token?.socials?.twitter), icon: "/socials/twitter.svg" },
+		{ title: "telegram", href: sanitizeExternalUrl(token?.socials?.telegram), icon: "/socials/telegram.svg" },
+		{ title: "discord", href: sanitizeExternalUrl(token?.socials?.discord), icon: "/socials/discord.svg" },
 	];
 	return (
 		<div className="relative rounded-sm border border-white/[0.04] bg-[#111114]/40 p-4">

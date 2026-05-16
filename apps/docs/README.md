@@ -33,5 +33,5 @@ opens on `http://localhost:3000` by default.
 
 ## deploy
 
-mintlify auto-deploys from the repo when wired up via their github app. for
-ad-hoc previews, `mint build` produces a static export under `.mintlify/`.
+mintlify auto-deploys from the repo when wired up via their github app. use
+`mint validate` for local strict docs validation.

@@ -1,7 +1,14 @@
 import { Hono } from "hono";
 
 import { refreshTokenSchema, siweLoginSchema } from "../contracts/auth.js";
-import { consumeNonce, isProductionAuth, issueNonce, signJwt, verifySiweMessage } from "../lib/auth-service.js";
+import {
+	consumeNonce,
+	isProductionAuth,
+	issueNonce,
+	signJwt,
+	validateSiweContext,
+	verifySiweMessage,
+} from "../lib/auth-service.js";
 import type { AppBindings } from "../lib/bindings.js";
 import { badRequest, unauthorized } from "../lib/errors.js";
 import { respondOk } from "../lib/http.js";
@@ -139,14 +146,18 @@ export function createAuthRoutes() {
 
 		if (isProductionAuth()) {
 			let verified: Awaited<ReturnType<typeof verifySiweMessage>> | undefined;
-			try {
-				verified = await verifySiweMessage(input.message, input.signature);
-			} catch (err) {
-				throw badRequest("SIWE_VERIFICATION_FAILED", err instanceof Error ? err.message : "SIWE verification failed");
-			}
+				try {
+					verified = await verifySiweMessage(input.message, input.signature);
+				} catch (err) {
+					throw badRequest("SIWE_VERIFICATION_FAILED", err instanceof Error ? err.message : "SIWE verification failed");
+				}
+				const contextError = validateSiweContext(input.message, { expectedChainId: 56 });
+				if (contextError) {
+					throw badRequest("SIWE_CONTEXT_INVALID", contextError);
+				}
 
-			if (!consumeNonce(verified.nonce)) {
-				throw badRequest("INVALID_NONCE", "Nonce is invalid or expired. Request a new one via GET /auth/nonce.");
+				if (!consumeNonce(verified.nonce)) {
+					throw badRequest("INVALID_NONCE", "Nonce is invalid or expired. Request a new one via GET /auth/nonce.");
 			}
 
 			const profile = await deps.db.getCreatorProfile(verified.address);
@@ -186,14 +197,9 @@ export function createAuthRoutes() {
 			throw unauthorized("Invalid refresh token");
 		}
 
-		if (isProductionAuth()) {
-			const accessToken = await signJwt({ address, role: "creator" }, c.get("deps").config.auth.accessTokenTtlSeconds);
-
-			return respondOk(c, {
-				accessToken,
-				refreshToken: `compat-rotated:${address}`,
-			});
-		}
+			if (isProductionAuth()) {
+				throw unauthorized("Legacy compat refresh tokens are disabled in production");
+			}
 
 		return respondOk(c, {
 			accessToken: `dev:${address}:creator`,

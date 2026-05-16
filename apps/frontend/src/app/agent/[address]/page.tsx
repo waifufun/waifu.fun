@@ -105,7 +105,7 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 
 	// fallback: hit the legacy token endpoint and shape it into an agent
 	try {
-		const res = await fetch(`${API_BASE}/tokens/bsc/56/${address}`, {
+		const res = await fetch(`${API_BASE}/tokens/${address}`, {
 			next: { revalidate: 30 },
 		});
 		if (!res.ok) return null;

@@ -85,6 +85,9 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger)
 	app.use("/agents/*", rateLimit({ bucket: "trade" }));
 	app.use("/jobs/*", rateLimit({ bucket: "trade" }));
 	app.use("/admin/*", rateLimit({ bucket: "admin" }));
+	app.use("/v2/webhooks/*", rateLimit({ bucket: "webhook" }));
+	app.use("/v3/agents", rateLimit({ bucket: "v3-agent" }));
+	app.use("/v3/agents/*", rateLimit({ bucket: "v3-agent" }));
 
 	app.route("/metrics", createMetricsRoutes());
 	app.route("/health", createHealthRoutes());

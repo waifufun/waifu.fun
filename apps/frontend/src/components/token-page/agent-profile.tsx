@@ -3,6 +3,7 @@
 import { CopyButton } from "@/components/copy-button";
 import Verified from "@/components/verified";
 import { getExplorerAddressUrl } from "@/lib/explorer";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import { cn, fromNow, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
@@ -239,7 +240,7 @@ export default function AgentProfile({
 	const socialsWithLinks = socialsConfig
 		.map((s) => ({
 			...s,
-			href: token?.socials?.[s.key as keyof typeof token.socials] as string | undefined,
+			href: sanitizeExternalUrl(token?.socials?.[s.key as keyof typeof token.socials] as string | undefined),
 		}))
 		.filter((s): s is typeof s & { href: string } => Boolean(s.href));
 

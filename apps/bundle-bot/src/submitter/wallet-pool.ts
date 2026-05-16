@@ -151,8 +151,15 @@ export function encryptBundleWalletPk(privateKey: string): string {
 	).toString("base64url")}`;
 }
 
-export function decryptBundleWalletPk(encryptedPk: string): Hex {
+export interface DecryptBundleWalletPkOptions {
+	allowPlaintext?: boolean;
+}
+
+export function decryptBundleWalletPk(encryptedPk: string, options: DecryptBundleWalletPkOptions = {}): Hex {
 	if (encryptedPk.startsWith("0x") || /^[0-9a-fA-F]{64}$/u.test(encryptedPk)) {
+		if (!options.allowPlaintext) {
+			throw new Error("plaintext bundle wallet keys are disabled; store BUNDLE_KMS_KEY-encrypted envelopes");
+		}
 		return normalizePrivateKey(encryptedPk);
 	}
 	if (!encryptedPk.startsWith(ENVELOPE_PREFIX)) {

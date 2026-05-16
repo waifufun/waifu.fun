@@ -13,9 +13,9 @@ function emitTokenChange() {
 }
 
 /**
- * Subscribe to localStorage admin-token changes. Returns the current token
+ * Subscribe to admin-token changes. Returns the current token
  * (or null) and a setter; updates flow through both same-tab CustomEvents and
- * cross-tab `storage` events.
+ * browser `storage` events where the storage backend supports them.
  */
 export function useAdminTokenState(): {
 	token: string | null;
@@ -33,7 +33,7 @@ export function useAdminTokenState(): {
 
 		const handleChange = () => setToken(getAdminToken());
 		const handleStorage = (e: StorageEvent) => {
-			if (e.key === ADMIN_TOKEN_KEY) setToken(e.newValue);
+			if (e.key === ADMIN_TOKEN_KEY) setToken(getAdminToken());
 		};
 		window.addEventListener(TOKEN_EVENT, handleChange);
 		window.addEventListener("storage", handleStorage);
@@ -94,8 +94,8 @@ function OpsTokenGate({ children }: { children: React.ReactNode }) {
 							Admin token required
 						</h2>
 						<p className="text-xs text-neutral-400 leading-relaxed">
-							Paste your operator token. It is stored in <code className="text-red-300">localStorage</code> and sent as
-							<code className="text-red-300"> Authorization: Bearer …</code> on every admin call. Internal tooling only.
+							Paste your operator token. It is kept for this browser session and sent as
+							<code className="text-red-300"> Authorization: Bearer ...</code> on every admin call. Internal tooling only.
 						</p>
 					</div>
 					<div className="space-y-2">

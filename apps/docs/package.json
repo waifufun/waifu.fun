@@ -5,7 +5,7 @@
   "description": "user-facing docs for waifu.fun, built with mintlify",
   "scripts": {
     "dev": "mint dev",
-    "build": "mint build",
+    "build": "mint validate",
     "broken-links": "mint broken-links"
   },
   "devDependencies": {

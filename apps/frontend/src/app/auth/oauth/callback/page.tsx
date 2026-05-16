@@ -1,6 +1,7 @@
 "use client";
 
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -83,7 +84,7 @@ function CallbackInner() {
 						patron: { stewardUserId: string; email: string | null };
 					};
 				};
-				const returnTo = json?.data?.return_to ?? "/patron";
+				const returnTo = sanitizeRedirectPath(json?.data?.return_to);
 
 				// Popup-flow: notify the opener and self-close. Otherwise redirect.
 				if (typeof window !== "undefined" && window.opener && !window.opener.closed) {

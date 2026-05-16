@@ -1,6 +1,7 @@
 "use client";
 
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion, useReducedMotion } from "framer-motion";
 import { Fingerprint, Mail } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -47,12 +48,7 @@ function ConnectInner() {
 	// The return_to is forwarded to the backend, which validates same-origin
 	// and falls back to /patron on anything that smells like an open redirect.
 	const returnTo = useMemo(() => {
-		const raw = params.get("return_to");
-		if (!raw) return "/patron";
-		// Don't try to validate here (the backend will). Just trim hostile
-		// shapes that would crash the URL builder.
-		if (raw.length > 200) return "/patron";
-		return raw;
+		return sanitizeRedirectPath(params.get("return_to"));
 	}, [params]);
 
 	const startUrlFor = useCallback(

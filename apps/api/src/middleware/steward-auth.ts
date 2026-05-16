@@ -64,11 +64,9 @@ export async function verifyStewardJwt(token: string): Promise<StewardAuthPrinci
 			return null;
 		}
 
-		// Steward issues per-user `personal-<userId>` tenants alongside the org
-		// tenant; accept either, but only when the suffix matches the JWT's userId.
-		if (tenantId !== EXPECTED_TENANT() && tenantId !== `personal-${userId}`) {
-			return null;
-		}
+			if (tenantId !== EXPECTED_TENANT()) {
+				return null;
+			}
 
 		return {
 			userId: userId as string,

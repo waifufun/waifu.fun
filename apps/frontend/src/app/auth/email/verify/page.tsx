@@ -1,6 +1,7 @@
 "use client";
 
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -65,7 +66,7 @@ function VerifyInner() {
 					ok: boolean;
 					data: { return_to: string; patron: { stewardUserId: string; email: string | null } };
 				};
-				const returnTo = json?.data?.return_to ?? "/patron";
+				const returnTo = sanitizeRedirectPath(json?.data?.return_to);
 				// Use window.location.assign for a FULL page navigation rather than
 				// router.replace's client-side nav. The full nav guarantees the
 				// browser sends the freshly-set wf_session cookie on the next

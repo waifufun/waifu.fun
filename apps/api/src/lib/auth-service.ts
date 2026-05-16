@@ -52,6 +52,14 @@ export interface SiweVerifyResult {
 	nonce: string;
 }
 
+export interface SiweContextOptions {
+	allowedHosts?: Iterable<string>;
+	expectedChainId?: number;
+	expectedStatement?: string;
+	expectedUriPath?: string;
+	nowMs?: number;
+}
+
 export async function verifySiweMessage(messageStr: string, signature: string): Promise<SiweVerifyResult> {
 	const message = new SiweMessage(messageStr);
 	const result = await message.verify({ signature });
@@ -65,6 +73,68 @@ export async function verifySiweMessage(messageStr: string, signature: string): 
 		chainId: result.data.chainId,
 		nonce: result.data.nonce,
 	};
+}
+
+function defaultAllowedHosts(): Set<string> {
+	const hosts = new Set(["waifu.fun", "www.waifu.fun", "localhost:3000", "127.0.0.1:3000"]);
+	for (const value of [process.env.FRONTEND_URL, process.env.NEXT_PUBLIC_HOST, process.env.API_PUBLIC_URL]) {
+		if (!value) continue;
+		try {
+			hosts.add(new URL(value).host);
+		} catch {
+			// Ignore malformed optional env values.
+		}
+	}
+	return hosts;
+}
+
+export function validateSiweContext(messageStr: string, options: SiweContextOptions = {}): string | null {
+	let parsed: SiweMessage;
+	try {
+		parsed = new SiweMessage(messageStr);
+	} catch {
+		return "invalid SIWE message";
+	}
+
+	const message = parsed as unknown as {
+		domain?: string;
+		uri?: string;
+		statement?: string;
+		chainId?: number;
+		expirationTime?: string | Date;
+		notBefore?: string | Date;
+	};
+	const hosts = new Set(options.allowedHosts ?? defaultAllowedHosts());
+	const expectedChainId = options.expectedChainId ?? 56;
+	const nowMs = options.nowMs ?? Date.now();
+
+	if (!message.domain || !hosts.has(message.domain)) {
+		return "SIWE domain is not allowed";
+	}
+	if (message.chainId !== expectedChainId) {
+		return `SIWE chainId must be ${expectedChainId}`;
+	}
+	if (options.expectedStatement !== undefined && message.statement !== options.expectedStatement) {
+		return "SIWE statement is not allowed";
+	}
+	if (!message.uri) return "SIWE uri is missing";
+	try {
+		const uri = new URL(message.uri);
+		if (!hosts.has(uri.host)) return "SIWE uri host is not allowed";
+		if (options.expectedUriPath !== undefined && uri.pathname !== options.expectedUriPath) {
+			return "SIWE uri path is not allowed";
+		}
+	} catch {
+		return "SIWE uri is invalid";
+	}
+	if (message.expirationTime && Date.parse(String(message.expirationTime)) <= nowMs) {
+		return "SIWE message expired";
+	}
+	if (message.notBefore && Date.parse(String(message.notBefore)) > nowMs) {
+		return "SIWE message is not valid yet";
+	}
+
+	return null;
 }
 
 // ─── JWT ───────────────────────────────────────────────────────────
