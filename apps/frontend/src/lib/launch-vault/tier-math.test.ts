@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it as test } from "vitest";
 
-import { calibratedQuoteAmtWei, tierBudget } from "./tier-math.js";
+import { calibratedQuoteAmtWei, tierBudget } from "./tier-math";
 
 const ETHER = 10n ** 18n;
 
