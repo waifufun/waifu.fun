@@ -2,7 +2,7 @@ import { agentPersonas, getDatabase } from "@waifufun/db";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 
-import { type AgentSpec, type Logger, type ElizaCloudClient, ElizaCloudNotConfiguredError } from "../eliza-client.js";
+import { type AgentSpec, type ElizaCloudClient, ElizaCloudNotConfiguredError, type Logger } from "../eliza-client.js";
 import { emitAgentEvent } from "../events/emit.js";
 import { type XClient, getAgentXClient } from "../x/agent-x-client.js";
 
