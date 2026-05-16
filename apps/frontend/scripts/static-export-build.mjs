@@ -84,7 +84,7 @@ function ensurePagesFiles() {
 		);
 	}
 	if (!existsSync(pages404)) {
-		writeFileSync(pages404, "export default function Custom404() {\n\treturn null;\n}\n");
+		writeFileSync(pages404, "export default function Custom404() {\n\treturn <main />;\n}\n");
 	}
 }
 
