@@ -312,7 +312,7 @@ sequenceDiagram
   R->>Portal: newTokenV6 { value: quoteAmt }
   Portal->>PCS: createPair + addLiquidity (graduating tiers)
   R->>PCS: swapExactETHForTokensSupportingFeeOnTransferTokens (v2BuyBnb > 0)
-  R->>R: 50/10/40 split + burn + treasury + vault
+  R->>R: 50/10/20 split + burn + treasury + vault
   R->>V: distribute(token, vaultAmt)
   R->>R: tip + dust sweep
   R-->>IDX: BundleExecuted
@@ -338,7 +338,7 @@ sequenceDiagram
 | C11 | router asserts `token == predictedToken` | `wave-h-bundle-flow.test.js` (predicted in mocks) + real-fork `:323-340` | n/a | n/a | n/a | clean |
 | C12 | tier 80: pair stays `address(0)` | real-fork `:347-375` (skipped V2 leg explicitly) | n/a | FE `display-state.ts` knows tier 80 stays Tradable | `handlers/flap.ts:handleFlapLaunchedToDex` (skipped for tier 80) | clean |
 | C13 | tier 90+: PCS pair populated + V2 follow-up buy | real-fork `:561,572,583` (tier-90,95,98) + mocked `:184` | n/a | n/a | `handlers/router.ts:handleBundleExecuted:18-46` | clean |
-| C14 | router splits tokens 50/10/40 dynamically (post-tax) | `wave-h-bundle-flow.test.js:552` (treasury allocation) + real-fork `:333-370` | n/a | n/a | router event captures tokensFromV2 / tokensBurned | clean |
+| C14 | router splits tokens 50/10/20 dynamically (post-tax) | `wave-h-bundle-flow.test.js:552` (treasury allocation) + real-fork `:333-370` | n/a | n/a | router event captures tokensFromV2 / tokensBurned | clean |
 | C15 | router safeTransfer to DEAD / treasury / vault | `wave-h-bundle-flow.test.js:552` | n/a | n/a | indexer reads from `BundleExecuted` event payload | clean |
 | C16 | router calls `vault.distribute(token, vaultAmt)` | `wave-h-bundle-flow.test.js:743` (revert paths) + happy path :184 | n/a | n/a | `handlers/vault.ts:handleLaunched` indirectly | clean |
 | C17 | router tip transfer to 48 club EOA | `wave-h-bundle-flow.test.js:575` | n/a | n/a | indexer reads `tipPaid` from event | clean |

@@ -2,6 +2,7 @@
 
 **Date:** 2026-05-16
 **Branch:** sol/echidna-fuzz-pass (off develop @ 6b359ab1)
+**Re-run:** 2026-05-16 after the BundleRouter split fix (62.5/12.5/25 of router = 50/10/20 of total supply). All 21 properties still pass under the new numbers; the conservation + state-machine invariants are agnostic to specific ratios.
 **Tooling:** Echidna 2.3.2 (trailofbits/echidna:latest), Foundry 1.5.1, solc 0.8.24 via_ir + 200 runs
 **Scope:** Wave H launchpad contracts (LaunchVault, BundleRouter, LaunchFactory, TreasuryLP)
 **Intent:** complement the existing 81 unit + 29 adversarial + 26 e2e bundle test suite with property-based fuzzing before the first real-money launch (Nubs, 32 BNB)
