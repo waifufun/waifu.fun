@@ -422,14 +422,14 @@ describe("Wave H real-fork integration", function () {
 	// Tier 90 / 95 / 98 — graduating tiers with V2 follow-up buy
 	// ----------------------------------------------------------------
 	//
-	// Each test mints a fresh launch with quoteAmt=20 BNB (Portal graduation
+	// Each test mints a fresh launch with quoteAmt=17 BNB (Portal graduation
 	// threshold) plus tier-specific v2BuyBnb. Signers rotated per test to dodge
 	// Portal's 90s tx.origin cooldown — bundleBot is tx.origin for the
 	// router -> Portal.newTokenV6 call.
 	//
-	// Tier 90: presaleCap=32, quoteAmt=20, v2BuyBnb=12  -> signers 8/9/10
-	// Tier 95: presaleCap=64, quoteAmt=20, v2BuyBnb=44  -> signers 11/12/13
-	// Tier 98: presaleCap=160, quoteAmt=20, v2BuyBnb=140 -> signers 14/15/16
+	// Tier 90: presaleCap=32, quoteAmt=17, v2BuyBnb=15  -> signers 8/9/10
+	// Tier 95: presaleCap=64, quoteAmt=17, v2BuyBnb=47  -> signers 11/12/13
+	// Tier 98: presaleCap=160, quoteAmt=17, v2BuyBnb=143 -> signers 14/15/16
 
 	async function runGraduatingTierBundle({ tierEnum, tierLabel, presaleCapBnb, v2BuyBnb, signerOffset }) {
 		const signers = await ethers.getSigners();
@@ -518,7 +518,7 @@ describe("Wave H real-fork integration", function () {
 		const tokenCode = await ethers.provider.getCode(predicted);
 		expect(tokenCode.length).to.be.greaterThan(2);
 
-		// 6. PCS V2 pair MUST exist for graduating tiers (quoteAmt=20 BNB triggers it)
+		// 6. PCS V2 pair MUST exist for graduating tiers (quoteAmt=17 BNB triggers it on Portal v5.14.3)
 		const PCSFactoryAbi = ["function getPair(address, address) view returns (address)"];
 		const pcsFactory = new ethers.Contract(PCS_FACTORY, PCSFactoryAbi, ethers.provider);
 		const pair = await pcsFactory.getPair(predicted, WBNB);
@@ -569,7 +569,7 @@ describe("Wave H real-fork integration", function () {
 		expect(claimed).to.be.greaterThan(0n);
 
 		console.log(`\n    ====== Wave H Live ${tierLabel} Summary ======`);
-		console.log(`    presaleCap:         ${presaleCapBnb} BNB (quoteAmt=20, v2BuyBnb=${v2BuyBnb})`);
+		console.log(`    presaleCap:         ${presaleCapBnb} BNB (quoteAmt=17, v2BuyBnb=${v2BuyBnb})`);
 		console.log(`    createLaunch gas:   ${createReceipt.gasUsed}`);
 		console.log(`    executeBundle gas:  ${execReceipt.gasUsed}`);
 		console.log(`    claim gas:          ${claimReceipt.gasUsed}`);

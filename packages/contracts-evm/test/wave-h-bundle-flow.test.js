@@ -34,13 +34,15 @@ describe("Wave H bundle flow e2e", () => {
 	};
 	// Real tier math (per LaunchFactory.tierConfig):
 	// - quoteAmt = 16 BNB for TIER_80 (curve only, no graduation),
-	//   20 BNB for graduating tiers (need >=20 to trigger Portal graduation).
-	// - v2BuyBnb is leftover BNB swapped through V2 after graduation.
+	//   17 BNB for graduating tiers on Portal v5.14.3 (16.8 BNB empirical
+	//   threshold, 17 BNB has small headroom margin).
+	// - v2BuyBnb is leftover BNB swapped through V2 after graduation
+	//   (presaleCap - quoteAmt).
 	const V2_BUY_BNB = {
 		[TIER_80]: 0n,
-		[TIER_90]: ethers.parseEther("12"),
-		[TIER_95]: ethers.parseEther("44"),
-		[TIER_98]: ethers.parseEther("140"),
+		[TIER_90]: ethers.parseEther("15"),
+		[TIER_95]: ethers.parseEther("47"),
+		[TIER_98]: ethers.parseEther("143"),
 	};
 
 	function computeInitCodeHash(creationCode, name, symbol) {
