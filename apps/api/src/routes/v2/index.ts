@@ -9,6 +9,7 @@ import agentRuntimeRoutes from "./agents-runtime.js";
 import agentXRoutes from "./agents-x.js";
 import agentRoutes from "./agents.js";
 import authSiweRoutes from "./auth-siwe.js";
+import blinkRoutes from "./blinks.js";
 import bundleRoutes from "./bundles.js";
 import claimRoutes from "./claim.js";
 import launchAuthorizeRoutes from "./launches-authorize.js";
@@ -38,8 +39,10 @@ v2.route("/launches", launchAuthorizeRoutes);
 
 // claim routes mount BEFORE agents so /v2/agents/claim/:token and
 // /v2/agents/prepare take precedence over the catch-all /:token handler
-// in agents.ts.
+// in agents.ts. blinkRoutes follows the same discipline so
+// /v2/agents/:tokenAddress/blink resolves before the /:token catch-all.
 v2.route("/agents", claimRoutes);
+v2.route("/agents", blinkRoutes);
 v2.route("/agents", agentPolicyRoutes);
 v2.route("/agents", agentPullRoutes);
 v2.route("/agents", agentEventsRoutes);
