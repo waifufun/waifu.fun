@@ -1,5 +1,6 @@
 import type { AgentCreatedPayload } from "@waifufun/db";
 
+import { composePostWithBlink } from "../lib/blink-suffix.js";
 import { generateTweet } from "../llm/claude.js";
 import { buildCreatedPrompt } from "../llm/prompt-builder.js";
 import type { Handler, HandlerResult } from "./index.js";
@@ -21,12 +22,13 @@ export const handleAgentCreated: Handler = async ({ event, persona, ctx }) => {
 	const bioSnippet = persona.bio ? ` ${persona.bio}` : "";
 	const url = `waifu.fun/agent/${payload.tokenAddress}`;
 
-	let text: string;
-	if (llmLine) {
-		text = `${persona.name} just launched. ${llmLine} → ${url}`;
-	} else {
-		text = `${persona.name} just launched.${bioSnippet} → ${url}`;
-	}
+	const baseText = llmLine
+		? `${persona.name} just launched. ${llmLine} → ${url}`
+		: `${persona.name} just launched.${bioSnippet} → ${url}`;
+
+	let text = composePostWithBlink(baseText, payload.tokenAddress, {
+		blinkBaseUrl: process.env.WAIFU_BLINKS_BASE_URL,
+	});
 
 	if (text.length > 280) {
 		text = `${text.slice(0, 277).trimEnd()}...`;
