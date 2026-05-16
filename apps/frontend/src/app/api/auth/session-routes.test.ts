@@ -42,7 +42,9 @@ describe("same-origin auth API routes", () => {
 		] as const;
 
 		for (const entry of providers) {
-			const response = await finalizePost(makeJsonRequest({ provider: entry.provider, ...entry.body }, "wf_return=/patron"));
+			const response = await finalizePost(
+				makeJsonRequest({ provider: entry.provider, ...entry.body }, "wf_return=/patron"),
+			);
 			expect(response.status).toBe(200);
 			expect(response.headers.get("set-cookie")).toContain("wf_authed=1");
 			expect(fetch).toHaveBeenLastCalledWith(

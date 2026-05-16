@@ -7,7 +7,9 @@ describe("twitter login route", () => {
 		const response = GET(new NextRequest("https://www.waifu.fun/auth/twitter/login?return_to=/patron/wallets"));
 
 		expect(response.status).toBe(302);
-		expect(response.headers.get("location")).toBe("https://api.waifu.fun/auth/twitter/login?return_to=%2Fpatron%2Fwallets");
+		expect(response.headers.get("location")).toBe(
+			"https://api.waifu.fun/auth/twitter/login?return_to=%2Fpatron%2Fwallets",
+		);
 	});
 
 	it("rejects absolute or protocol-relative return targets", () => {

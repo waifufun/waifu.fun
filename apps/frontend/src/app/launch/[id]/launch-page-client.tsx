@@ -17,7 +17,7 @@ import { TierInfoCard } from "@/components/launch-page/tier-info-card";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLaunchMeta, useVaultSnapshot, useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
-import { deriveLaunchDisplayState, type LaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
+import { type LaunchDisplayState, deriveLaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
 import { tierFromCapWei, tierFromString } from "@/lib/launch-vault/tiers";
 
 type Props = {
