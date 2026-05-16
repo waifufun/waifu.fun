@@ -110,23 +110,13 @@ const hadPagesDir = existsSync(pagesDir);
 const hadPagesApp = existsSync(pagesApp);
 const hadPages404 = existsSync(pages404);
 let keepPagesAlive = null;
-let cleanedUp = false;
 
 function cleanup() {
-	if (cleanedUp) return;
-	cleanedUp = true;
 	if (keepPagesAlive) clearInterval(keepPagesAlive);
 	if (!hadPagesApp) rmSync(pagesApp, { force: true });
 	if (!hadPages404) rmSync(pages404, { force: true });
 	if (!hadPagesDir) removeTree(pagesDir);
 	restoreAll();
-}
-
-for (const signal of ["SIGINT", "SIGTERM"]) {
-	process.once(signal, () => {
-		cleanup();
-		process.kill(process.pid, signal);
-	});
 }
 
 try {
