@@ -41,13 +41,12 @@ export function TaxStreamStats({ taxSplitter, treasuryLp, agentBps, patronBps }:
 
 	if (!splitterValid && !treasuryValid) {
 		return (
-			<div
+			<section
 				className="border border-white/10 bg-[#08080a] rounded-sm p-5 text-[11px] font-mono text-white/40"
-				role="region"
 				aria-label="tax stream"
 			>
 				tax routing not yet configured
-			</div>
+			</section>
 		);
 	}
 
@@ -59,7 +58,7 @@ export function TaxStreamStats({ taxSplitter, treasuryLp, agentBps, patronBps }:
 		/* TODO: needs indexer endpoint for lifetime + 24h tax aggregates over
 		   TaxSplitter Released() events. Wire in via `apiFetch('/v2/tax-stream/:splitter')`
 		   once the post-launch indexer lands. */
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="tax stream stats">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label="tax stream stats">
 			<div className="flex items-center justify-between mb-4">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">tax stream</div>
 				{splitterValid ? (
@@ -92,7 +91,7 @@ export function TaxStreamStats({ taxSplitter, treasuryLp, agentBps, patronBps }:
 			<div className="mt-4 text-[11px] font-mono text-white/40">
 				live splitter balance auto-refreshes. lifetime + 24h numbers fill in once the post-launch indexer is live.
 			</div>
-		</div>
+		</section>
 	);
 }
 

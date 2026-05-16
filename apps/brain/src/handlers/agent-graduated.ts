@@ -3,7 +3,7 @@ import type { AgentGraduatedPayload } from "@waifufun/db";
 import { composePostWithBlink } from "../lib/blink-suffix.js";
 import { generateTweet } from "../llm/claude.js";
 import { buildGraduatedPrompt } from "../llm/prompt-builder.js";
-import type { Handler, HandlerResult } from "./index.js";
+import type { Handler, HandlerResult } from "./types.js";
 
 export const handleAgentGraduated: Handler = async ({ event, persona, ctx }) => {
 	const payload = event.payload as AgentGraduatedPayload;

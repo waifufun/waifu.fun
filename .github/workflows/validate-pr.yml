@@ -13,15 +13,18 @@ jobs:
       contents: read
     steps:
       - name: Check source branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          echo "PR from ${{ github.head_ref }} to ${{ github.base_ref }}"
+          echo "PR from $HEAD_REF to $BASE_REF"
 
-          if [[ "${{ github.base_ref }}" == "staging" && "${{ github.head_ref }}" != "develop" ]]; then
+          if [[ "$BASE_REF" == "staging" && "$HEAD_REF" != "develop" ]]; then
             echo "❌ Pull requests to 'staging' must come from 'develop'"
             exit 1
           fi
 
-          if [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" != "staging" ]]; then
+          if [[ "$BASE_REF" == "main" && "$HEAD_REF" != "staging" ]]; then
             echo "❌ Pull requests to 'main' must come from 'staging'"
             exit 1
           fi

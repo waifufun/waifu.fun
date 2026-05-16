@@ -51,11 +51,7 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 
 	return (
 		<Wrapper>
-			<div
-				className="flex items-baseline gap-3 flex-wrap"
-				role="group"
-				aria-label={`${targetFormatted} ${ticker} burned`}
-			>
+			<output className="flex items-baseline gap-3 flex-wrap" aria-label={`${targetFormatted} ${ticker} burned`}>
 				<span
 					className="text-2xl md:text-3xl tracking-tight tabular-nums text-[#ff5d4a]"
 					aria-live="polite"
@@ -64,7 +60,7 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 					{formatted}
 				</span>
 				<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/55">${ticker} burned</span>
-			</div>
+			</output>
 			<div
 				className="mt-2 text-[11px] font-mono text-white/45"
 				aria-label={`${burnedPct.toFixed(2)} percent of supply`}
@@ -77,9 +73,9 @@ export function BurnCounter({ tokenAddress, ticker }: Props) {
 
 function Wrapper({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="burn counter">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label="burn counter">
 			{children}
-		</div>
+		</section>
 	);
 }
 

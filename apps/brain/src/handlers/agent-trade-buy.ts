@@ -2,7 +2,7 @@ import type { AgentTradeBuyPayload } from "@waifufun/db";
 
 import { generateTweet } from "../llm/claude.js";
 import { buildBuyPrompt, formatBnb } from "../llm/prompt-builder.js";
-import type { Handler, HandlerResult } from "./index.js";
+import type { Handler, HandlerResult } from "./types.js";
 
 export const handleAgentTradeBuy: Handler = async ({ event, persona, ctx }) => {
 	const payload = event.payload as AgentTradeBuyPayload;

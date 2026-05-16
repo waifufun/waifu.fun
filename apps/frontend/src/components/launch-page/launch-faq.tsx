@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
 import { cn } from "@/lib/utils";
 
-import { buildLaunchFaq, type FaqItem } from "./launch-faq-data";
+import { type FaqItem, buildLaunchFaq } from "./launch-faq-data";
 
 type Props = {
 	tier: LaunchTierInfo;
@@ -52,15 +52,14 @@ export function LaunchFAQ({ tier }: Props) {
 										)}
 									/>
 								</button>
-								<div
+								<section
 									id={panelId}
-									role="region"
 									aria-labelledby={btnId}
 									hidden={!open}
 									className="px-4 pb-4 pt-0 text-[13px] leading-relaxed text-zinc-400"
 								>
 									{item.a}
-								</div>
+								</section>
 							</li>
 						);
 					})}

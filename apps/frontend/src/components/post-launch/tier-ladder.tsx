@@ -73,7 +73,7 @@ export function TierLadder({ treasuryLp }: Props) {
 	const remainingUsd = nextTier && nextTier.targetMcUsd > currentMcUsd ? nextTier.targetMcUsd - currentMcUsd : 0n;
 
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="tier deploy ladder">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label="tier deploy ladder">
 			<div className="flex items-center justify-between mb-4">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">tier deploy status</div>
 				<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 tabular-nums">
@@ -105,7 +105,7 @@ export function TierLadder({ treasuryLp }: Props) {
 			) : (
 				<div className="mt-4 text-[11px] font-mono text-[#00ff87]">all four tiers deployed</div>
 			)}
-		</div>
+		</section>
 	);
 }
 

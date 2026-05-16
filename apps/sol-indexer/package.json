@@ -15,7 +15,7 @@
 		"tests": "tsx watch tests/signatures.ts",
 		"prebuild": "bun run --filter @waifufun/config build && bun run --filter @waifufun/logger build && bun run --filter @waifufun/types build && bun run --filter @waifufun/redis build && bun run --filter @waifufun/constants build && bun run --filter @waifufun/codex build && bun run --filter @waifufun/programs build && bun run --filter @waifufun/rpc build && bun run --filter @waifufun/database build",
 		"build": "rimraf dist && tsx build.ts",
-		"lint": "biome format . --write && biome lint . --fix",
+		"lint": "biome check .",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"devDependencies": {

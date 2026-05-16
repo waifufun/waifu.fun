@@ -3,7 +3,7 @@ import type { AgentCreatedPayload } from "@waifufun/db";
 import { composePostWithBlink } from "../lib/blink-suffix.js";
 import { generateTweet } from "../llm/claude.js";
 import { buildCreatedPrompt } from "../llm/prompt-builder.js";
-import type { Handler, HandlerResult } from "./index.js";
+import type { Handler, HandlerResult } from "./types.js";
 
 /**
  * `agent.created` — first impression. We still prepend the "X just launched"

@@ -184,9 +184,9 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp }: 
 
 function Card({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="border border-white/10 bg-[#08080a] rounded-sm p-5" role="region" aria-label="claim widget">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label="claim widget">
 			{children}
-		</div>
+		</section>
 	);
 }
 

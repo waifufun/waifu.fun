@@ -56,9 +56,8 @@ const ICON_TONE: Record<LaunchDisplayState, string> = {
 export function StateBanner({ state, className }: Props) {
 	const copy = COPY[state];
 	return (
-		<div
+		<output
 			className={cn("flex items-start gap-3 border px-4 py-3", TONE[state], className)}
-			role="status"
 			aria-live="polite"
 			data-testid="launch-state-banner"
 			data-state={state}
@@ -68,6 +67,6 @@ export function StateBanner({ state, className }: Props) {
 				<span className="text-sm font-medium leading-tight">{copy.title}</span>
 				<span className="text-[12px] leading-relaxed text-zinc-300/90">{copy.body}</span>
 			</div>
-		</div>
+		</output>
 	);
 }
