@@ -76,11 +76,21 @@ export async function verifySiweMessage(messageStr: string, signature: string): 
 }
 
 function defaultAllowedHosts(): Set<string> {
-	const hosts = new Set(["waifu.fun", "www.waifu.fun", "localhost:3000", "127.0.0.1:3000"]);
+	const hosts = new Set(["waifu.fun", "www.waifu.fun"]);
+	if (process.env.NODE_ENV !== "production") {
+		hosts.add("localhost:3000");
+		hosts.add("127.0.0.1:3000");
+	}
 	for (const value of [process.env.FRONTEND_URL, process.env.NEXT_PUBLIC_HOST, process.env.API_PUBLIC_URL]) {
 		if (!value) continue;
 		try {
-			hosts.add(new URL(value).host);
+			const host = new URL(value).host;
+			if (
+				process.env.NODE_ENV !== "production" ||
+				(host !== "127.0.0.1" && !host.startsWith("127.0.0.1:") && !host.startsWith("localhost:"))
+			) {
+				hosts.add(host);
+			}
 		} catch {
 			// Ignore malformed optional env values.
 		}

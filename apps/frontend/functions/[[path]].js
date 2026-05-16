@@ -159,6 +159,16 @@ export async function onRequest(context) {
 	if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleLogout(request, env, host);
 	if (url.pathname === "/auth/twitter/login" && request.method === "GET") return handleTwitterLogin(request, env);
 	if (url.pathname.startsWith("/api/v1/")) return handleApiV1Proxy(request, env);
+	if (request.method === "GET" || request.method === "HEAD") {
+		if (/^\/launch\/[^/]+\/?$/.test(url.pathname)) {
+			url.pathname = "/launch/_";
+			return env.ASSETS.fetch(new Request(url.toString(), request));
+		}
+		if (/^\/claim\/[^/]+\/?$/.test(url.pathname)) {
+			url.pathname = "/claim/_";
+			return env.ASSETS.fetch(new Request(url.toString(), request));
+		}
+	}
 
 	return env.ASSETS.fetch(request);
 }

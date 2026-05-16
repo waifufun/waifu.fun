@@ -663,7 +663,8 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await vault.presalerTokenBalance()).to.equal(actualVaultBalance);
 		expect(await treasuryLp.managedToken()).to.equal(predicted);
 		expect(await treasuryLp.balance()).to.equal(ethers.parseEther("72000000"));
-		await expect(vault.connect(alice).claim()).to.be.revertedWithCustomError(vault, "TokenBalanceTooLow");
+		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
+		expect(await token.balanceOf(alice.address)).to.equal(ethers.parseEther("259200000"));
 	});
 
 	it("tipBnb stays disabled for factory-created launches", async () => {

@@ -11,6 +11,30 @@ export function buildLinkedEoaMessage(address: string): string {
 	return `Link ${address} to your waifu.fun patron account.`;
 }
 
+function buildLinkedEoaSiweMessage(input: {
+	address: string;
+	nonce: string;
+	statement: string;
+	uriPath: string;
+	origin: string;
+	issuedAt: string;
+	expirationTime: string;
+}): string {
+	const uri = `${input.origin.replace(/\/+$/, "")}${input.uriPath}`;
+	const domain = new URL(input.origin).host;
+	return `${domain} wants you to sign in with your Ethereum account:
+${input.address}
+
+${input.statement}
+
+URI: ${uri}
+Version: 1
+Chain ID: 56
+Nonce: ${input.nonce}
+Issued At: ${input.issuedAt}
+Expiration Time: ${input.expirationTime}`;
+}
+
 export function isAddressLinked(address: string | undefined, linkedWallets: Array<{ address: string }>): boolean {
 	if (!address) return false;
 	return linkedWallets.some((w) => w.address.toLowerCase() === address.toLowerCase());
@@ -29,7 +53,27 @@ export function useLinkedEoa() {
 			throw new Error("connect a third-party wallet before linking it");
 		}
 		if (isAddressLinked(address, linkedWallets)) return;
-		const message = buildLinkedEoaMessage(address);
+		const nonceRes = await fetch(`${API_URL}/v3/patron/wallets/link/nonce`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ address }),
+		});
+		if (!nonceRes.ok) {
+			const body = (await nonceRes.json().catch(() => null)) as { error?: string; message?: string } | null;
+			throw new Error(body?.message ?? body?.error ?? "could not start wallet link");
+		}
+		const nonceBody = (await nonceRes.json()) as { nonce: string; statement: string; uriPath: string };
+		const issuedAt = new Date();
+		const message = buildLinkedEoaSiweMessage({
+			address,
+			nonce: nonceBody.nonce,
+			statement: nonceBody.statement,
+			uriPath: nonceBody.uriPath,
+			origin: window.location.origin,
+			issuedAt: issuedAt.toISOString(),
+			expirationTime: new Date(issuedAt.getTime() + 10 * 60 * 1000).toISOString(),
+		});
 		const signature = await signMessageAsync({ message });
 		const res = await fetch(`${API_URL}/v3/patron/wallets/link`, {
 			method: "POST",

@@ -75,6 +75,9 @@ const bindSchema = z.object({
 	setPrimary: z.boolean().optional(),
 });
 
+const WALLET_BIND_STATEMENT = "Link this wallet to your waifu.fun patron account.";
+const WALLET_BIND_URI_PATH = "/patron/wallets";
+
 export const authSiweRoutes = new Hono<RequirePatronBindings>();
 
 authSiweRoutes.use("*", requirePatron());
@@ -106,7 +109,11 @@ authSiweRoutes.post("/bind", async (c) => {
 		return c.json({ ok: false, error: "siwe verification failed" }, 400);
 	}
 
-	const contextError = validateSiweContext(parsed.data.message, { expectedChainId: 56 });
+	const contextError = validateSiweContext(parsed.data.message, {
+		expectedChainId: 56,
+		expectedStatement: WALLET_BIND_STATEMENT,
+		expectedUriPath: WALLET_BIND_URI_PATH,
+	});
 	if (contextError) {
 		return c.json({ ok: false, error: contextError }, 400);
 	}

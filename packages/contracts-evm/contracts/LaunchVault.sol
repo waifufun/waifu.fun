@@ -357,10 +357,8 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         if (d.deposited == 0) revert NoDeposit();
         uint256 claimable = _claimableOf(msg.sender);
         if (claimable == 0) revert NothingToClaim();
-        uint256 balanceBefore = IERC20(token).balanceOf(msg.sender);
         d.claimed += claimable;
         IERC20(token).safeTransfer(msg.sender, claimable);
-        if (IERC20(token).balanceOf(msg.sender) - balanceBefore != claimable) revert TokenBalanceTooLow();
         emit Claimed(msg.sender, claimable, d.claimed);
     }
 

@@ -45,11 +45,12 @@ export async function safeFetchBytes(inputUrl: string, opts: SafeFetchOptions): 
 	try {
 		for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount++) {
 			await assertPublicAddress(url, lookupIpAddresses);
-			const res = await fetchImpl(url.toString(), {
+			const init: RequestInit = {
 				redirect: "manual",
 				signal: controller.signal,
-				headers: opts.accept ? { Accept: opts.accept } : undefined,
-			});
+			};
+			if (opts.accept) init.headers = { Accept: opts.accept };
+			const res = await fetchImpl(url.toString(), init);
 
 			if (REDIRECT_STATUSES.has(res.status)) {
 				const location = res.headers.get("location");

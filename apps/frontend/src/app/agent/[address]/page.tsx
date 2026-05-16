@@ -31,6 +31,25 @@ function unwrapApiData<T = unknown>(payload: unknown): T {
 	return payload as T;
 }
 
+function mapAgentTrade(raw: Record<string, unknown>): AgentTrade {
+	const timestamp =
+		typeof raw.timestamp === "number"
+			? raw.timestamp
+			: typeof raw.timestamp === "string"
+				? Date.parse(raw.timestamp)
+				: typeof raw.blockTime === "string"
+					? Date.parse(raw.blockTime)
+					: Date.now();
+
+	return {
+		txId: String(raw.txId ?? raw.txHash ?? ""),
+		type: (raw.type === "sell" || raw.side === "sell" ? "sell" : "buy") as "buy" | "sell",
+		address: String(raw.address ?? raw.trader ?? raw.traderAddress ?? ""),
+		amount: String(raw.amount ?? raw.amountOut ?? raw.toAmount ?? raw.amountIn ?? raw.fromAmount ?? ""),
+		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+	};
+}
+
 /**
  * Backend shape (AgentDetail) doesn't match AgentData; do the same kind of
  * mapping we do in agents-api.ts for list items, but with the extra fields
@@ -165,7 +184,8 @@ async function fetchTrades(address: string): Promise<AgentTrade[]> {
 		});
 		if (res.ok) {
 			const data = await res.json();
-			return Array.isArray(data) ? data : (data.docs ?? data.trades ?? []);
+			const trades = Array.isArray(data) ? data : (data.docs ?? data.trades ?? []);
+			return trades.slice(0, 20).map((t: Record<string, unknown>) => mapAgentTrade(t));
 		}
 	} catch (e) {
 		console.error("trades fetch failed", e);
@@ -187,21 +207,7 @@ async function fetchTrades(address: string): Promise<AgentTrade[]> {
 		if (!res.ok) return [];
 		const data = unwrapApiData<Record<string, unknown> | unknown[]>(await res.json());
 		const docs = Array.isArray(data) ? data : data && "docs" in data && Array.isArray(data.docs) ? data.docs : [];
-		return docs.slice(0, 20).map((t) => {
-			const trade = t as Record<string, unknown>;
-			return {
-				txId: String(trade.txId ?? trade.txHash ?? ""),
-				type: (trade.type === "sell" || trade.side === "sell" ? "sell" : "buy") as "buy" | "sell",
-				address: String(trade.address ?? trade.traderAddress ?? ""),
-				amount: String(trade.toAmount ?? trade.amountOut ?? trade.fromAmount ?? trade.amountIn ?? ""),
-				timestamp:
-					typeof trade.timestamp === "number"
-						? trade.timestamp
-						: typeof trade.timestamp === "string"
-							? Date.parse(trade.timestamp)
-							: Date.now(),
-			};
-		});
+		return docs.slice(0, 20).map((t) => mapAgentTrade(t as Record<string, unknown>));
 	} catch (e) {
 		console.error("fallback trades fetch failed", e);
 		return [];

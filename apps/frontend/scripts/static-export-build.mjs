@@ -62,6 +62,7 @@ function restoreAll() {
 stashAll();
 let exitCode = 1;
 try {
+	rmSync(join(root, ".next"), { recursive: true, force: true });
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };

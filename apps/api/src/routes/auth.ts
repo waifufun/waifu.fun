@@ -168,7 +168,6 @@ export function createAuthRoutes() {
 
 			return respondOk(c, {
 				accessToken,
-				refreshToken: buildCompatRefreshToken(verified.address),
 				expiresIn: deps.config.auth.accessTokenTtlSeconds,
 				profile,
 			});
