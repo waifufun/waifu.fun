@@ -2,6 +2,8 @@ import type { MiddlewareHandler } from "hono";
 import RedisModule from "ioredis";
 import type { Redis, RedisOptions } from "ioredis";
 
+import { getRedisUrl, redisOptionsFromEnv } from "@waifufun/redis/config";
+
 import type { AppBindings } from "../lib/bindings.js";
 
 export interface RateLimitOptions {
@@ -79,12 +81,15 @@ export function createMemoryRateLimitStore(): RateLimitStore {
 }
 
 export function createRedisRateLimitStore(
-	client: RedisRateLimitClient = new RedisClient(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
-		connectionName: "waifu:api:rate-limit",
-		enableReadyCheck: false,
-		lazyConnect: true,
-		maxRetriesPerRequest: 1,
-	}),
+	client: RedisRateLimitClient = new RedisClient(
+		getRedisUrl(),
+		redisOptionsFromEnv(process.env, {
+			connectionName: "waifu:api:rate-limit",
+			enableReadyCheck: false,
+			lazyConnect: true,
+			maxRetriesPerRequest: 1,
+		}),
+	),
 	prefix = "waifu:api:rate-limit",
 ): RateLimitStore {
 	return {
@@ -115,12 +120,15 @@ function shouldUseRedisByDefault(): boolean {
 function getDefaultStore(): RateLimitStore {
 	if (!defaultStore) {
 		if (shouldUseRedisByDefault()) {
-			defaultRedisClient = new RedisClient(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
-				connectionName: "waifu:api:rate-limit",
-				enableReadyCheck: false,
-				lazyConnect: true,
-				maxRetriesPerRequest: 1,
-			});
+			defaultRedisClient = new RedisClient(
+				getRedisUrl(),
+				redisOptionsFromEnv(process.env, {
+					connectionName: "waifu:api:rate-limit",
+					enableReadyCheck: false,
+					lazyConnect: true,
+					maxRetriesPerRequest: 1,
+				}),
+			);
 			defaultStore = createRedisRateLimitStore(defaultRedisClient);
 		} else {
 			defaultStore = createMemoryRateLimitStore();

@@ -34,6 +34,7 @@
         "@waifufun/logger": "workspace:*",
         "@waifufun/metrics": "workspace:*",
         "@waifufun/queue": "workspace:*",
+        "@waifufun/redis": "workspace:*",
         "drizzle-orm": "^0.36.4",
         "hono": "^4.6.12",
         "ioredis": "5.9.3",
@@ -551,6 +552,7 @@
       "name": "@waifufun/queue",
       "version": "0.1.0",
       "dependencies": {
+        "@waifufun/redis": "workspace:*",
         "bullmq": "^5.61.0",
         "ioredis": "5.10.1",
         "zod": "^3.24.1",

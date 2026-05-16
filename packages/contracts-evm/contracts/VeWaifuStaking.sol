@@ -22,6 +22,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract VeWaifuStaking is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    uint256 public constant rewardsDuration = 7 days;
+
     IERC20 public immutable waifuToken;
     address public rewardDistributor;
 
@@ -29,6 +31,9 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
     mapping(address => uint256) private _balances;
 
     uint256 public rewardPerTokenStored;
+    uint256 public lastUpdateTime;
+    uint256 public rewardRate;
+    uint256 public periodFinish;
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
@@ -49,6 +54,8 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
     }
 
     modifier updateReward(address account) {
+        rewardPerTokenStored = rewardPerToken();
+        lastUpdateTime = lastTimeRewardApplicable();
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
@@ -69,8 +76,19 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
         return _balances[account];
     }
 
+    function lastTimeRewardApplicable() public view returns (uint256) {
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
+    }
+
+    function rewardPerToken() public view returns (uint256) {
+        if (_totalStaked == 0) {
+            return rewardPerTokenStored;
+        }
+        return rewardPerTokenStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) / _totalStaked;
+    }
+
     function earned(address account) public view returns (uint256) {
-        return (_balances[account] * (rewardPerTokenStored - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
+        return (_balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
     }
 
     function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
@@ -121,14 +139,22 @@ contract VeWaifuStaking is Ownable, ReentrancyGuard {
         }
     }
 
-    function notifyRewardAmount(uint256 reward) external nonReentrant onlyRewardDistributor {
+    function notifyRewardAmount(uint256 reward) external nonReentrant onlyRewardDistributor updateReward(address(0)) {
         if (reward == 0) revert ZeroAmount();
         if (_totalStaked == 0) revert NoStakers();
         uint256 balanceBefore = waifuToken.balanceOf(address(this));
         waifuToken.safeTransferFrom(msg.sender, address(this), reward);
         uint256 received = waifuToken.balanceOf(address(this)) - balanceBefore;
         if (received == 0) revert ZeroAmount();
-        rewardPerTokenStored += (received * 1e18) / _totalStaked;
+        if (block.timestamp >= periodFinish) {
+            rewardRate = received / rewardsDuration;
+        } else {
+            uint256 remaining = periodFinish - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            rewardRate = (received + leftover) / rewardsDuration;
+        }
+        lastUpdateTime = block.timestamp;
+        periodFinish = block.timestamp + rewardsDuration;
         emit RewardNotified(received);
     }
 

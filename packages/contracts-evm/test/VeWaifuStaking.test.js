@@ -1,6 +1,11 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+async function increase(seconds) {
+	await ethers.provider.send("evm_increaseTime", [seconds]);
+	await ethers.provider.send("evm_mine", []);
+}
+
 describe("VeWaifuStaking", () => {
 	let waifu;
 	let staking;
@@ -9,6 +14,11 @@ describe("VeWaifuStaking", () => {
 	let bob;
 	const STAKE_AMOUNT = ethers.parseEther("1000");
 	const REWARD_AMOUNT = ethers.parseEther("100");
+	const REWARDS_DURATION = 7 * 24 * 60 * 60;
+
+	async function streamedReward() {
+		return (await staking.rewardRate()) * (await staking.rewardsDuration());
+	}
 
 	beforeEach(async () => {
 		[owner, alice, bob] = await ethers.getSigners();
@@ -58,29 +68,44 @@ describe("VeWaifuStaking", () => {
 	it("should distribute rewards to single staker", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
-		expect(await staking.earned(alice.address)).to.equal(REWARD_AMOUNT);
+		await increase(REWARDS_DURATION);
+		expect(await staking.earned(alice.address)).to.equal(await streamedReward());
 	});
 
 	it("should distribute rewards proportionally to multiple stakers", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
 		await staking.connect(bob).stake(STAKE_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
-		expect(await staking.earned(alice.address)).to.equal(REWARD_AMOUNT / 2n);
-		expect(await staking.earned(bob.address)).to.equal(REWARD_AMOUNT / 2n);
+		await increase(REWARDS_DURATION);
+		const distributed = await streamedReward();
+		expect(await staking.earned(alice.address)).to.equal(distributed / 2n);
+		expect(await staking.earned(bob.address)).to.equal(distributed / 2n);
+	});
+
+	it("does not let a stake immediately before notify capture rewards", async () => {
+		await staking.connect(alice).stake(STAKE_AMOUNT);
+		await staking.connect(bob).stake(STAKE_AMOUNT);
+
+		await staking.notifyRewardAmount(REWARD_AMOUNT);
+
+		expect(await staking.earned(alice.address)).to.equal(0);
+		expect(await staking.earned(bob.address)).to.equal(0);
 	});
 
 	it("should claim rewards", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
+		await increase(REWARDS_DURATION);
 		const balBefore = await waifu.balanceOf(alice.address);
 		await staking.connect(alice).claimReward();
 		const balAfter = await waifu.balanceOf(alice.address);
-		expect(balAfter - balBefore).to.equal(REWARD_AMOUNT);
+		expect(balAfter - balBefore).to.equal(await streamedReward());
 	});
 
 	it("should exit (withdraw all + claim)", async () => {
 		await staking.connect(alice).stake(STAKE_AMOUNT);
 		await staking.notifyRewardAmount(REWARD_AMOUNT);
+		await increase(REWARDS_DURATION);
 		await staking.connect(alice).exit();
 		expect(await staking.balanceOf(alice.address)).to.equal(0);
 		expect(await staking.earned(alice.address)).to.equal(0);
@@ -133,6 +158,9 @@ describe("VeWaifuStaking", () => {
 
 		await taxedStaking.connect(alice).stake(STAKE_AMOUNT);
 		await taxedStaking.notifyRewardAmount(REWARD_AMOUNT);
-		expect(await taxedStaking.earned(alice.address)).to.equal(ethers.parseEther("90"));
+		await increase(REWARDS_DURATION);
+		expect(await taxedStaking.earned(alice.address)).to.equal(
+			(await taxedStaking.rewardRate()) * (await taxedStaking.rewardsDuration()),
+		);
 	});
 });

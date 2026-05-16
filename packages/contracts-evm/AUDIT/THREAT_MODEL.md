@@ -34,7 +34,7 @@ singleton. only owner-mutable state is `owner` (transferable).
 | role | bound to | what they can do |
 |------|----------|------------------|
 | owner | `factory.owner` (storage) | `transferOwnership`, `LaunchVault.adminEnableRefund` on any vault |
-| caller of `createLaunch` | anyone | deploy a new launch trio with their own config |
+| caller of `createLaunch` | `config.creator` | deploy a new launch trio with their own config |
 
 ### 1.2 trust assumptions
 
@@ -53,20 +53,16 @@ singleton. only owner-mutable state is `owner` (transferable).
 
 ### 1.3 attack surfaces
 
-- **anyone can call createLaunch with any creator address.** the factory does
-  NOT enforce that `msg.sender == creator`. this is intentional (so a backend
-  service can deploy launches on behalf of SIWE-authenticated users), but it
-  means a third party could front-run a creator and deploy their launch with
-  unfavorable bundleBot / commissionReceiver. mitigation: the SIWE flow
-  produces an off-chain authorization that the backend submits with the
-  correct `creator`/`bundleBot`. on-chain there is no protection.
-- **salt grinding griefing.** `usedSalts[salt]` is a global mapping. a
-  griefer who knows the target predicted address can call `createLaunch`
-  first with a throwaway config to burn the salt. cost: 1 createLaunch gas
-  fee (~3.3M gas). mitigation: salts are derived off-chain per-creator
-  (`launchId = keccak256(creator, salt)`) so a griefer would have to mine
-  THEIR address into a 0x...7777 suffix, which is the same 1-in-65536
-  cost they imposed on us, not a useful asymmetric attack. accepted risk.
+- **creator-only launch creation.** the factory enforces
+  `msg.sender == config.creator`, so a third party cannot front-run a creator
+  by launching with unfavorable bundleBot / commissionReceiver values. backend
+  flows that previously submitted on behalf of a SIWE-authenticated creator now
+  need creator-signed execution or a forwarding design.
+- **salt grinding griefing.** `usedSalts[effectiveSalt]` is a global mapping,
+  where `effectiveSalt = keccak256(abi.encode(creator, vanitySalt))`. a griefer
+  who learns a raw `vanitySalt` cannot burn the creator's salt unless they also
+  control that creator address. they can only consume the same raw salt in
+  their own creator namespace, producing a different predicted token address.
 - **factory.owner is a single key.** if compromised, owner can flip every
   vault to refund mode (admin kill switch). they cannot drain funds; the
   vault always pays principal + bonus to the original depositors. accepted
@@ -81,7 +77,7 @@ singleton. only owner-mutable state is `owner` (transferable).
 
 ### 1.4 invariants
 
-- `usedSalts[salt]` is monotonic (true once set, never unset).
+- `usedSalts[effectiveSalt]` is monotonic (true once set, never unset).
 - `allLaunches.length` is monotonic.
 - `launches[predicted].vault/router/treasuryLp` are set once per
   `createLaunch` call and never updated.

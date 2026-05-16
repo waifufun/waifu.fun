@@ -205,7 +205,7 @@ describe("POST /auth/passkey/finalize", () => {
 		assert.equal(body.data.return_to, "/patron");
 	});
 
-	it("rejects open-redirect return_to and falls back to /patron", async () => {
+	it("rejects open-redirect return_to variants and falls back to /patron", async () => {
 		__setPasskeyStewardVerifierForTest(
 			async () =>
 				({
@@ -225,17 +225,24 @@ describe("POST /auth/passkey/finalize", () => {
 			}),
 		);
 
-		const res = await makeApp().request("http://x/auth/passkey/finalize", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				token: "STEWARD_JWT",
-				return_to: "https://evil.example/steal",
-			}),
-		});
-		assert.equal(res.status, 200);
+		for (const returnTo of [
+			"https://evil.example/steal",
+			"//evil.example/steal",
+			"/\\evil.example",
+			"/%2fevil.example",
+		]) {
+			const res = await makeApp().request("http://x/auth/passkey/finalize", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					token: "STEWARD_JWT",
+					return_to: returnTo,
+				}),
+			});
+			assert.equal(res.status, 200);
 
-		const body = (await res.json()) as { data: { return_to: string } };
-		assert.equal(body.data.return_to, "/patron");
+			const body = (await res.json()) as { data: { return_to: string } };
+			assert.equal(body.data.return_to, "/patron", returnTo);
+		}
 	});
 });

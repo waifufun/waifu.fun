@@ -49,8 +49,11 @@ describe("url safety helpers", () => {
 			"https://evil.test/patron",
 			"//evil.test/patron",
 			"/\\evil.test",
+			"/foo\\bar",
 			"/%2fevil.test",
+			"/%2Fevil.test",
 			"/%5cevil.test",
+			"/%5Cevil.test",
 			"javascript:alert(1)",
 			"data:text/html,<h1>owned</h1>",
 		]) {

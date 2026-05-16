@@ -98,6 +98,8 @@ async function handleFinalize(request, env, host) {
 	appendUpstreamCookies(out, upstream, host);
 	if (upstream.ok) {
 		const domain = host.endsWith(".pages.dev") ? "" : "; Domain=.waifu.fun";
+		// Cosmetic frontend hint only. Backend authorization must always come
+		// from upstream's HttpOnly wf_session cookie or an Authorization bearer.
 		out.headers.append("Set-Cookie", `wf_authed=1; Max-Age=2592000; Path=/; SameSite=Lax${domain}; Secure`);
 	}
 	return out;

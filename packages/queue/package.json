@@ -12,13 +12,17 @@
 		}
 	},
 	"scripts": {
+		"prebuild": "bun run --filter @waifufun/redis build",
+		"pretypecheck": "bun run --filter @waifufun/redis build",
 		"build": "tsc -p tsconfig.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"lint": "biome check src package.json tsconfig.json",
 		"clean": "rm -rf dist",
+		"precheck": "bun run --filter @waifufun/redis build",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
+		"@waifufun/redis": "workspace:*",
 		"bullmq": "^5.61.0",
 		"ioredis": "5.10.1",
 		"zod": "^3.24.1"

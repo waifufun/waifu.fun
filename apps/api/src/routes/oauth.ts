@@ -40,6 +40,7 @@ import { Hono } from "hono";
 import type { AppBindings } from "../lib/bindings.js";
 import { respondOk } from "../lib/http.js";
 import { ensurePrimaryPatronWallet, normalizeWalletChain, pickPrimaryWallet } from "../lib/patron-wallet.js";
+import { sanitizeAuthReturnTo } from "../lib/redirect-safety.js";
 import { SESSION_COOKIE_NAME, buildSessionCookieHeader, getCookieOptions } from "../lib/session.js";
 import { verifyStewardJwt } from "../middleware/steward-auth.js";
 
@@ -100,19 +101,6 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 		if (key) out[key] = value;
 	}
 	return out;
-}
-
-/**
- * Same-origin only. Reject absolute URLs, protocol-relative paths, backslash
- * tricks, and anything past 200 chars. Result is the path itself; the FE
- * is responsible for prepending its own origin.
- */
-function sanitizeReturnTo(raw: string | null | undefined): string | null {
-	if (!raw) return null;
-	if (raw.length > 200) return null;
-	if (!raw.startsWith("/")) return null;
-	if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
-	return raw;
 }
 
 // ─── Test injection hooks ─────────────────────────────────────────
@@ -197,7 +185,7 @@ export function createOAuthRoutes() {
 			);
 		}
 
-		const returnTo = sanitizeReturnTo(c.req.query("return_to")) ?? "/patron";
+		const returnTo = sanitizeAuthReturnTo(c.req.query("return_to")) ?? "/patron";
 		const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
 
 		const { url } = buildStewardStartUrl(provider);
@@ -302,7 +290,7 @@ export function createOAuthRoutes() {
 		// Sanitize return_to from cookie (frontend can't be trusted).
 		const rawReturn = cookies[OAUTH_RETURN_COOKIE];
 		const decodedReturn = rawReturn ? safeDecode(rawReturn) : null;
-		const returnTo = sanitizeReturnTo(decodedReturn) ?? "/patron";
+		const returnTo = sanitizeAuthReturnTo(decodedReturn) ?? "/patron";
 
 		const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
 		const cookieOpts = getCookieOptions();

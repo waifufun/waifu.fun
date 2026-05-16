@@ -27,6 +27,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { AppBindings } from "../lib/bindings.js";
+import { sanitizeAuthReturnTo } from "../lib/redirect-safety.js";
 import { SESSION_COOKIE_NAME, buildSessionCookieHeader, getCookieOptions } from "../lib/session.js";
 import { verifyStewardJwt } from "../middleware/steward-auth.js";
 
@@ -54,14 +55,6 @@ function getVerifier(): StewardVerifier {
 	return stewardVerifierForTest ?? verifyStewardJwt;
 }
 
-function sanitizeReturnTo(raw: string | null | undefined): string | null {
-	if (!raw) return null;
-	if (raw.length > 200) return null;
-	if (!raw.startsWith("/")) return null;
-	if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
-	return raw;
-}
-
 const EMAIL_RE = /^[^\s@]{1,128}@[^\s@]{1,128}\.[^\s@]{1,32}$/;
 
 function parseFinalizeBody(value: unknown): {
@@ -79,7 +72,7 @@ function parseFinalizeBody(value: unknown): {
 		out.email = v.email.trim().toLowerCase();
 	}
 	if (typeof v.return_to === "string") {
-		const sanitized = sanitizeReturnTo(v.return_to);
+		const sanitized = sanitizeAuthReturnTo(v.return_to);
 		if (sanitized) out.return_to = sanitized;
 	}
 	return out;

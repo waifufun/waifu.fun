@@ -6,10 +6,32 @@ describe("useWaifuAuth helpers", () => {
 		expect(hasWaifuAuthCookie("other=1")).toBe(false);
 	});
 
+	it("only treats an exact wf_authed=1 cookie as the cosmetic auth hint", () => {
+		expect(hasWaifuAuthCookie("wf_authed=10")).toBe(false);
+		expect(hasWaifuAuthCookie("wf_authed=1abc")).toBe(false);
+		expect(hasWaifuAuthCookie("other=1; wf_authed=1")).toBe(true);
+	});
+
 	it("treats a present cookie with a failing me request as unauthenticated", async () => {
 		const fetcher = vi.fn(async () => new Response(JSON.stringify({ error: "nope" }), { status: 500 }));
 		expect(hasWaifuAuthCookie("wf_authed=1")).toBe(true);
 		await expect(fetchWaifuMe(fetcher as unknown as typeof fetch)).resolves.toBeNull();
+	});
+
+	it("sends credentials on the authoritative patron lookup", async () => {
+		const fetcher = vi.fn(
+			async (_input: RequestInfo | URL, _init?: RequestInit) =>
+				new Response(
+					JSON.stringify({
+						primaryAddress: "0x1234567890123456789012345678901234567890",
+						primaryChain: "evm",
+						linkedWallets: [],
+					}),
+					{ status: 200 },
+				),
+		);
+		await fetchWaifuMe(fetcher as unknown as typeof fetch);
+		expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ credentials: "include", cache: "no-store" });
 	});
 
 	it("hydrates the primary address when the me request succeeds", async () => {

@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 
-const defaultRedisUrl = "redis://127.0.0.1:6379";
+import { getRedisUrl as getConfiguredRedisUrl, redisOptionsFromEnv } from "@waifufun/redis/config";
 
 export type RedisConnection = InstanceType<typeof Redis>;
 
@@ -10,16 +10,19 @@ export interface RedisConnectionOptions {
 }
 
 export function getRedisUrl(): string {
-	return process.env.REDIS_URL ?? defaultRedisUrl;
+	return getConfiguredRedisUrl(process.env);
 }
 
 export function createRedisConnection(options: RedisConnectionOptions = {}): RedisConnection {
-	return new Redis(getRedisUrl(), {
-		connectionName: options.connectionName,
-		maxRetriesPerRequest: null,
-		enableReadyCheck: false,
-		lazyConnect: options.lazyConnect ?? false,
-	});
+	return new Redis(
+		getRedisUrl(),
+		redisOptionsFromEnv(process.env, {
+			connectionName: options.connectionName,
+			maxRetriesPerRequest: null,
+			enableReadyCheck: false,
+			lazyConnect: options.lazyConnect ?? false,
+		}),
+	);
 }
 
 // Shared producer/admin connection used by queue instances in this package.

@@ -1,10 +1,8 @@
-import pino from "pino";
+import { type Logger, createLogger } from "@waifufun/logger";
 
-export const logger = pino({
-	name: "waifu-brain",
+export const logger: Logger = createLogger({
+	service: "waifu-brain",
 	level: process.env.LOG_LEVEL ?? "info",
-	base: undefined,
-	timestamp: pino.stdTimeFunctions.isoTime,
 });
 
-export type { Logger } from "pino";
+export type { Logger };

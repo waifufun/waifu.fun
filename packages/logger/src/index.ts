@@ -4,6 +4,35 @@ import pino, { type Logger } from "pino";
 
 export type { Logger };
 
+const REDACTED = "[Redacted]";
+const REDACTED_KEY_PATTERN = /^(authorization|apiKey|token|secret|privateKey|encrypted.*)$/iu;
+const MAX_REDACTION_DEPTH = 12;
+
+export const loggerRedactionConfig: { paths: string[]; censor: string } = {
+	paths: [
+		"authorization",
+		"apiKey",
+		"token",
+		"secret",
+		"privateKey",
+		"headers.authorization",
+		"req.headers.authorization",
+		"request.headers.authorization",
+		"*.authorization",
+		"*.apiKey",
+		"*.token",
+		"*.secret",
+		"*.privateKey",
+		"*.headers.authorization",
+		"*.*.authorization",
+		"*.*.apiKey",
+		"*.*.token",
+		"*.*.secret",
+		"*.*.privateKey",
+	],
+	censor: REDACTED,
+} as const;
+
 export interface CreateLoggerOptions {
 	service: string;
 	level?: string | undefined;
@@ -43,9 +72,17 @@ export function createLogger(opts: CreateLoggerOptions): Logger {
 			level,
 			base: { service: opts.service },
 			timestamp: pino.stdTimeFunctions.isoTime,
+			redact: loggerRedactionConfig,
+			formatters: {
+				log: redactLogSecrets,
+			},
 		},
 		stream,
 	);
+}
+
+export function redactLogSecrets<T extends Record<string, unknown>>(line: T): T {
+	return redactValue(line, 0, new WeakMap<object, unknown>()) as T;
 }
 
 export function logAgentEventToLoki(opts: LokiLogEntryOptions): void {
@@ -133,6 +170,7 @@ async function pushToLoki(opts: {
 	}
 
 	const ts = BigInt((opts.timestamp ?? new Date()).getTime()) * 1_000_000n;
+	const line = redactLogSecrets(opts.line);
 	await fetch(url, {
 		method: "POST",
 		headers,
@@ -140,7 +178,7 @@ async function pushToLoki(opts: {
 			streams: [
 				{
 					stream: opts.labels,
-					values: [[ts.toString(), JSON.stringify(opts.line)]],
+					values: [[ts.toString(), JSON.stringify(line)]],
 				},
 			],
 		}),
@@ -180,6 +218,32 @@ function parseJsonObject(line: string): ParsedJsonLine | null {
 
 function isParsedJsonLine(value: unknown): value is ParsedJsonLine {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function redactValue(value: unknown, depth: number, seen: WeakMap<object, unknown>): unknown {
+	if (depth > MAX_REDACTION_DEPTH || value === null || typeof value !== "object") return value;
+	if (value instanceof Date) return value;
+	if (value instanceof Error) return value;
+
+	const cached = seen.get(value);
+	if (cached) return cached;
+
+	if (Array.isArray(value)) {
+		const copy: unknown[] = [];
+		seen.set(value, copy);
+		for (const item of value) copy.push(redactValue(item, depth + 1, seen));
+		return copy;
+	}
+
+	const input = value as Record<string, unknown>;
+	const copy: Record<string, unknown> = {};
+	seen.set(value, copy);
+
+	for (const [key, nestedValue] of Object.entries(input)) {
+		copy[key] = REDACTED_KEY_PATTERN.test(key) ? REDACTED : redactValue(nestedValue, depth + 1, seen);
+	}
+
+	return copy;
 }
 
 const defaultService = process.env.WAIFUFUN_LOG_SERVICE ?? "waifufun";

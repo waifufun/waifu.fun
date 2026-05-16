@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 import {
 	type AgentEvent,
 	type AgentEventType,
@@ -7,11 +9,9 @@ import {
 	isAgentEventType,
 } from "@waifufun/db";
 import { logAgentEventToLoki } from "@waifufun/logger";
-import { createHmac } from "node:crypto";
+import { agentActionsTotal, agentEventsTotal, agentInferenceCostUsdTotal, agentXPostsTotal } from "@waifufun/metrics";
 
 import { dispatchAgentEventAlert } from "../alerts/event-consumer.js";
-
-import { agentActionsTotal, agentEventsTotal, agentInferenceCostUsdTotal, agentXPostsTotal } from "@waifufun/metrics";
 
 export type EmitAgentEventInput = Omit<NewAgentEvent, "type" | "payload"> &
 	Partial<Pick<NewAgentEvent, "type" | "payload">>;
@@ -61,7 +61,11 @@ export function signWebhookPayload(rawBody: string, timestamp: string, secret: s
 	return `sha256=${createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex")}`;
 }
 
-export function buildWebhookHeaders(payload: AgentEventWebhookPayload, body: string, secret: string): HeadersInit {
+export function buildWebhookHeaders(
+	payload: AgentEventWebhookPayload,
+	body: string,
+	secret: string,
+): Record<string, string> {
 	const signature = signWebhookPayload(body, payload.timestamp, secret);
 	return {
 		"content-type": "application/json",

@@ -391,7 +391,11 @@ function claimedEvent(blockNumber: bigint, user: `0x${string}`): ClaimedEvent {
 	};
 }
 
-function portalTokenCreatedEvent(blockNumber: bigint, token = tokenAddress, ts = "1715551200"): PortalTokenCreatedEvent {
+function portalTokenCreatedEvent(
+	blockNumber: bigint,
+	token = tokenAddress,
+	ts = "1715551200",
+): PortalTokenCreatedEvent {
 	return {
 		eventName: "TokenCreated",
 		chainId: 56,

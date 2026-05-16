@@ -19,6 +19,7 @@ import {
 import type { AppBindings } from "../lib/bindings.js";
 import { badRequest, unauthorized } from "../lib/errors.js";
 import { respondOk } from "../lib/http.js";
+import { sanitizeAuthReturnTo } from "../lib/redirect-safety.js";
 import {
 	buildClearCookieHeader,
 	buildSessionCookieHeader,
@@ -97,19 +98,6 @@ function buildOAuthTempCookie(name: string, value: string, secure: boolean): str
 
 function clearOAuthTempCookie(name: string): string {
 	return `${name}=; Max-Age=0; Path=/auth/twitter; HttpOnly; SameSite=Lax`;
-}
-
-/**
- * Only allow same-origin redirect paths on the frontend. Rejects absolute
- * URLs, protocol-relative paths, and anything not starting with "/". This
- * stops the OAuth flow from being used as an open redirect.
- */
-function sanitizeReturnTo(raw: string | null | undefined): string | null {
-	if (!raw) return null;
-	if (raw.length > 200) return null;
-	// Reject absolute (with scheme), protocol-relative (//), backslash tricks.
-	if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return null;
-	return raw;
 }
 
 function getTwitterFinalizeUrl(): string | null {
@@ -314,7 +302,7 @@ export function createAuthRoutes() {
 	 */
 	app.get("/twitter/login", (c) => {
 		const oauthConfig = getTwitterOAuthConfig();
-		const returnTo = sanitizeReturnTo(c.req.query("return_to"));
+		const returnTo = sanitizeAuthReturnTo(c.req.query("return_to"));
 
 		if (!oauthConfig) {
 			// Not configured yet — return 501 with a helpful message
@@ -405,7 +393,7 @@ export function createAuthRoutes() {
 		const storedVerifier = cookiePairs[OAUTH_VERIFIER_COOKIE];
 		const rawReturnTo = cookiePairs[OAUTH_RETURN_TO_COOKIE];
 		const decodedReturnTo = rawReturnTo ? decodeURIComponent(rawReturnTo) : null;
-		const returnToPath = sanitizeReturnTo(decodedReturnTo);
+		const returnToPath = sanitizeAuthReturnTo(decodedReturnTo);
 		const frontendUrl = process.env.FRONTEND_URL ?? "https://waifu.fun";
 
 		// Clear temp cookies regardless of outcome
@@ -536,7 +524,7 @@ export function createAuthRoutes() {
 		}
 
 		const returnTo =
-			sanitizeReturnTo(typeof rawReturnTo === "string" ? rawReturnTo : null) ?? pending.returnToPath ?? "/patron";
+			sanitizeAuthReturnTo(typeof rawReturnTo === "string" ? rawReturnTo : null) ?? pending.returnToPath ?? "/patron";
 		const cookieOpts = getCookieOptions();
 		const cookieToken = session.rotated && session.newToken ? session.newToken : pending.sessionToken;
 

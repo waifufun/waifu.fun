@@ -2,6 +2,8 @@ import logger from "@waifufun/logger";
 import dotenv from "dotenv";
 import IORedis, { type RedisOptions } from "ioredis";
 
+import { assertRedisUrlAllowed, redisOptionsFromEnv } from "./config.js";
+
 dotenv.config();
 
 const url = process.env.REDIS_URL;
@@ -15,6 +17,14 @@ if (process.env.NODE_ENV === "production") {
 	if (!url && (!port || !host || !password)) {
 		logger.error("Missing REDIS_* environment variables");
 		process.exit(1);
+	}
+	if (url) {
+		try {
+			assertRedisUrlAllowed(url);
+		} catch (error) {
+			logger.error(error instanceof Error ? error.message : "Invalid REDIS_URL");
+			process.exit(1);
+		}
 	}
 }
 
@@ -39,22 +49,16 @@ redis.on("reconnecting", () => {
 export default redis;
 
 function redisAuthOptions(): RedisOptions {
-	return {
-		...(username ? { username } : {}),
-		...(password ? { password } : {}),
-		...(db ? { db: Number(db) } : {}),
-	};
+	return redisOptionsFromEnv();
 }
 
 function redisHostOptions(): RedisOptions {
 	if (!host && process.env.NODE_ENV !== "production") return {};
-	return {
+	return redisOptionsFromEnv(process.env, {
 		port: port ? Number(port) : 6379,
 		host: host ?? "127.0.0.1",
-		...(username ? { username } : {}),
-		...(password ? { password } : {}),
 		db: db ? Number(db) : 0,
-	};
+	});
 }
 
 function redactRedisErrorMessage(message: string): string {

@@ -39,7 +39,7 @@ export interface WaifuMe {
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
 export function hasWaifuAuthCookie(cookie = typeof document === "undefined" ? "" : document.cookie): boolean {
-	return cookie.split(";").some((c) => c.trim().startsWith("wf_authed=1"));
+	return cookie.split(";").some((c) => c.trim() === "wf_authed=1");
 }
 
 function normalizeAddress(address: unknown): string | null {
@@ -64,6 +64,9 @@ async function readJson(res: Response): Promise<unknown> {
 }
 
 export async function fetchWaifuMe(fetcher: typeof fetch = fetch): Promise<WaifuMe | null> {
+	// `wf_authed` is a writable UI hint only. This request is the authoritative
+	// browser-session check because the backend validates the HttpOnly
+	// `wf_session` cookie or Authorization bearer.
 	const v3 = await fetcher(`${API_URL}/v3/patron/me`, { credentials: "include", cache: "no-store" });
 	if (v3.ok) {
 		const json = (await readJson(v3)) as {

@@ -134,7 +134,7 @@ original code:
 
 ```solidity
 IVaultRouterSetter(address(vault)).setRouter(address(router));  // third-party call
-usedSalts[config.vanitySalt] = true;                            // state write after
+usedSalts[effectiveSalt] = true;                                // state write after
 launches[predicted] = addrs;                                     // state write after
 allLaunches.push(predicted);                                     // state write after
 ```
@@ -146,7 +146,7 @@ defensive CEI is cheap and removes the warning.
 **fix**: reordered state writes to before the third-party call.
 
 ```solidity
-usedSalts[config.vanitySalt] = true;
+usedSalts[effectiveSalt] = true;
 launches[predicted] = addrs;
 allLaunches.push(predicted);
 IVaultRouterSetter(address(vault)).setRouter(address(router));
@@ -388,18 +388,16 @@ no concern.
 
 ### 7.5 MEV via salt frontrunning
 
-`createLaunch` accepts `vanitySalt` as `bytes32`. once a creator's tx is in the
-mempool, anyone can extract the salt and submit a competing `createLaunch` with
-the same salt. however:
+`createLaunch` accepts raw `vanitySalt` as `bytes32`, but the factory scopes it
+with `effectiveSalt = keccak256(abi.encode(creator, vanitySalt))` before
+computing the predicted token address or marking `usedSalts`. the factory also
+requires `msg.sender == creator`.
 
-1. `usedSalts[salt]` is dedup'd globally in the factory. only the first
-   `createLaunch` to land succeeds.
-2. the salt is used in `keccak256(0xff, FLAP_PORTAL, salt, INIT_CODE_HASH)` to
-   compute the predicted token address. an attacker who frontruns with the
-   same salt produces the SAME predicted token address. they would launch a
-   token at "my" vanity address, but with their own LaunchVault + BundleRouter
-   wired in. the actual `newTokenV6` is called by BundleRouter, which is
-   per-launch-immutable. attacker's launch deploys attacker's vault.
+1. `usedSalts[effectiveSalt]` is dedup'd globally in the factory. only the
+   first `createLaunch` in a given creator/raw-salt namespace succeeds.
+2. an attacker who copies the raw salt under their own creator address gets a
+   different effective salt and a different predicted token address. they
+   cannot burn the victim creator's effective salt without the victim key.
 
 practical impact: a frontrunner can grief by "stealing" a vanity address, but
 cannot steal funds (their vault is theirs; depositors choose which vault to

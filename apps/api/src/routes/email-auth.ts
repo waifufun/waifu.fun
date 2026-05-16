@@ -35,6 +35,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
 import type { AppBindings } from "../lib/bindings.js";
+import { sanitizeAuthReturnTo } from "../lib/redirect-safety.js";
 import { SESSION_COOKIE_NAME, buildSessionCookieHeader, getCookieOptions } from "../lib/session.js";
 import { verifyStewardJwt } from "../middleware/steward-auth.js";
 
@@ -80,14 +81,6 @@ function safeDecode(value: string): string | null {
 	} catch {
 		return null;
 	}
-}
-
-function sanitizeReturnTo(raw: string | null | undefined): string | null {
-	if (!raw) return null;
-	if (raw.length > 200) return null;
-	if (!raw.startsWith("/")) return null;
-	if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
-	return raw;
 }
 
 // Permissive enough for dotted/+aliased addresses; tight enough to reject
@@ -182,7 +175,7 @@ export function createEmailAuthRoutes() {
 			return c.json({ ok: false, error: "BAD_EMAIL", message: "expected { email: string } in body" }, 400);
 		}
 		const email = (v.email as string).trim().toLowerCase();
-		const returnTo = typeof v.return_to === "string" ? sanitizeReturnTo(v.return_to) : null;
+		const returnTo = typeof v.return_to === "string" ? sanitizeAuthReturnTo(v.return_to) : null;
 
 		const upstream = await callSteward("/auth/email/send", { email });
 		if (upstream.status >= 400) {
@@ -326,7 +319,7 @@ export function createEmailAuthRoutes() {
 		const cookies = parseCookies(c.req.header("cookie") ?? "");
 		const rawReturn = cookies[EMAIL_RETURN_COOKIE];
 		const decodedReturn = rawReturn ? safeDecode(rawReturn) : null;
-		const returnTo = sanitizeReturnTo(decodedReturn) ?? "/patron";
+		const returnTo = sanitizeAuthReturnTo(decodedReturn) ?? "/patron";
 
 		const secure = (process.env.SESSION_COOKIE_SECURE ?? "true") === "true";
 		const cookieOpts = getCookieOptions();

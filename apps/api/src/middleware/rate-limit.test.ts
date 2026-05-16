@@ -87,3 +87,24 @@ test("rateLimit can use an atomic Redis-style store", async () => {
 		{ key: "waifu:api:rate-limit:auth:wallet_0xabc", windowMs: "1000" },
 	]);
 });
+
+test("Redis-backed rate limiter rejects unauthenticated production REDIS_URL", () => {
+	const originalNodeEnv = process.env.NODE_ENV;
+	const originalRedisUrl = process.env.REDIS_URL;
+	const originalRedisPassword = process.env.REDIS_PASSWORD;
+
+	try {
+		process.env.NODE_ENV = "production";
+		process.env.REDIS_URL = "redis://cache.example.com:6379/0";
+		delete process.env.REDIS_PASSWORD;
+
+		assert.throws(() => createRedisRateLimitStore(), /credentials/);
+	} finally {
+		if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+		else process.env.NODE_ENV = originalNodeEnv;
+		if (originalRedisUrl === undefined) delete process.env.REDIS_URL;
+		else process.env.REDIS_URL = originalRedisUrl;
+		if (originalRedisPassword === undefined) delete process.env.REDIS_PASSWORD;
+		else process.env.REDIS_PASSWORD = originalRedisPassword;
+	}
+});

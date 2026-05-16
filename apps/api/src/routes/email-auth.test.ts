@@ -167,6 +167,33 @@ describe("POST /auth/email/start", () => {
 		assert.match(found ?? "", /HttpOnly/);
 	});
 
+	it("does not set return cookie for open-redirect return_to variants", async () => {
+		__setEmailStewardClientForTest(async () => ({
+			status: 200,
+			body: { ok: true, data: { expiresAt: "2099-01-01T00:00:00.000Z" } },
+		}));
+
+		for (const returnTo of [
+			"https://evil.example/steal",
+			"//evil.example/steal",
+			"/\\evil.example",
+			"/%2fevil.example",
+		]) {
+			const res = await makeApp().request("http://x/auth/email/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: "user@example.com", return_to: returnTo }),
+			});
+			assert.equal(res.status, 200);
+			const setCookies = res.headers.getSetCookie?.() ?? [];
+			assert.equal(
+				setCookies.some((c) => c.startsWith(`${EMAIL_RETURN_COOKIE}=`)),
+				false,
+				returnTo,
+			);
+		}
+	});
+
 	it("propagates 429 from Steward", async () => {
 		__setEmailStewardClientForTest(async () => ({
 			status: 429,
@@ -345,5 +372,39 @@ describe("POST /auth/email/finalize", () => {
 		assert.equal(body.data.patron.email, "user@example.com");
 		assert.equal(updates.length, 1);
 		assert.equal(updates[0]?.primaryEmail, "user@example.com");
+	});
+
+	it("falls back to /patron for open-redirect return cookie variants", async () => {
+		__setEmailStewardClientForTest(async () => ({
+			status: 200,
+			body: { ok: true, token: "STEWARD_JWT" },
+		}));
+		__setEmailStewardVerifierForTest(
+			async () =>
+				({
+					userId: STEWARD_USER_ID,
+					email: "user@example.com",
+					tenantId: "waifu",
+				}) as StewardAuthPrincipal,
+		);
+		__setEmailDbForTest(
+			fakeDbWith({
+				patron: { id: PATRON_ID, stewardUserId: STEWARD_USER_ID, primaryEmail: "user@example.com" },
+			}),
+		);
+
+		for (const returnTo of ["https://evil.example", "//evil.example", "/\\evil.example", "/%5cevil.example"]) {
+			const res = await makeApp().request("http://x/auth/email/finalize", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Cookie: `${EMAIL_RETURN_COOKIE}=${encodeURIComponent(returnTo)}`,
+				},
+				body: JSON.stringify({ token: "magic-token", email: "user@example.com" }),
+			});
+			assert.equal(res.status, 200);
+			const body = (await res.json()) as { data: { return_to: string } };
+			assert.equal(body.data.return_to, "/patron", returnTo);
+		}
 	});
 });
