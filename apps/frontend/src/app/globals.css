@@ -1,7 +1,7 @@
+@import "@solana/wallet-adapter-react-ui/styles.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@stwd/react/styles.css";
-@import "@solana/wallet-adapter-react-ui/styles.css";
 @config "../../tailwind.config.js";
 
 @custom-variant dark (&:is(.dark *));

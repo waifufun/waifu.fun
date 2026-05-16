@@ -3,8 +3,6 @@ import { AnchorProvider, type Program, type Wallet } from "@coral-xyz/anchor";
 import { Metaplex } from "@metaplex-foundation/js";
 import { createSolanaRpc } from "@solana/kit";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } from "@solana/web3.js";
-import { updateCryptoPrices } from "@waifufun/codex";
-import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@waifufun/constants";
 import logger from "@waifufun/logger";
 import type { CurrentAutofunTypes, LegacyAutofunTypes } from "@waifufun/programs";
 import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@waifufun/types";
@@ -24,6 +22,7 @@ import {
 	getAddress,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { base, baseSepolia, bsc, mainnet, sepolia } from "viem/chains";
 import autoFunAbi from "./evm/abis/WaifuFun.json" with { type: "json" };
 import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun.js";
 import { safeFetchJson } from "./safe-url-fetch.js";
@@ -33,15 +32,61 @@ type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
 const MAX_TOKEN_METADATA_BYTES = 1024 * 1024;
 const TOKEN_METADATA_TIMEOUT_MS = 10_000;
 
+function getViemChain(chainId: EvmChainIds) {
+	switch (Number(chainId)) {
+		case 56:
+			return bsc;
+		case 1:
+			return mainnet;
+		case 11155111:
+			return sepolia;
+		case 8453:
+			return base;
+		case 84532:
+			return baseSepolia;
+		default:
+			return undefined;
+	}
+}
+
+function getEvmRpcUrls(chainId: EvmChainIds): string[] {
+	const alchemyApiKey = process.env.ALCHEMY_API_KEY;
+	if (!alchemyApiKey) return [];
+
+	switch (Number(chainId)) {
+		case 56:
+			return [`https://bnb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`];
+		case 1:
+			return [`https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`];
+		case 11155111:
+			return [`https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`];
+		case 8453:
+			return [`https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`];
+		case 84532:
+			return [`https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`];
+		default:
+			return [];
+	}
+}
+
+function getSolanaRpcUrls(networkId: SolanaNetworkIds): string[] {
+	const heliusApiKey = process.env.HELIUS_API_KEY;
+	if (!heliusApiKey) return [];
+	return Number(networkId) === 101
+		? [`https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`]
+		: [`https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`];
+}
+
 export class EVMRpcProvider {
 	public client: PublicClient;
 	private walletClient?: WalletClient;
 	private chainId: EvmChainIds;
 
 	constructor(chainId: EvmChainIds, privateKey?: string) {
-		const chain = CHAINID_TO_VIEM_CHAIN[chainId];
-		if (!chain) throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
-		if (!EVM_RPC_URLS?.[chainId] || EVM_RPC_URLS?.[chainId]?.length === 0) {
+		const chain = getViemChain(chainId);
+		if (!chain) throw new Error("ChainId does not exist in supported EVM chains");
+		const evmRpcUrls = getEvmRpcUrls(chainId);
+		if (evmRpcUrls.length === 0) {
 			throw new Error(`No RPC provider configured for EVM: ${chainId}`);
 		}
 
@@ -51,16 +96,16 @@ export class EVMRpcProvider {
 				multicall: true,
 			},
 			chain,
-			transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
-		});
+			transport: fallback(evmRpcUrls.map((rpcUrl: string) => http(rpcUrl))),
+		}) as PublicClient;
 
 		if (privateKey) {
 			const normalizedPrivateKey = (privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`) as `0x${string}`;
 			this.walletClient = createWalletClient({
 				account: privateKeyToAccount(normalizedPrivateKey),
 				chain,
-				transport: fallback([...EVM_RPC_URLS[chainId].map((rpcUrl: string) => http(rpcUrl))]),
-			});
+				transport: fallback(evmRpcUrls.map((rpcUrl: string) => http(rpcUrl))),
+			}) as WalletClient;
 		}
 	}
 
@@ -153,9 +198,9 @@ export class EVMRpcProvider {
 		if (!this.walletClient) {
 			throw new Error("Wallet client not initialized. Please provide a private key in the constructor.");
 		}
-		const chain = CHAINID_TO_VIEM_CHAIN[this.chainId];
+		const chain = getViemChain(this.chainId);
 		if (!chain) {
-			throw new Error("ChainId does not exist in CHAINID_TO_VIEM_CHAIN");
+			throw new Error("ChainId does not exist in supported EVM chains");
 		}
 		if (!this.walletClient.account) {
 			throw new Error("Wallet client account not initialized.");
@@ -262,7 +307,7 @@ function withFallBack<TArgs extends unknown[], TResult>(
 				throw error;
 			}
 			logger.warn(`Falling back to next RPC due to: ${error}`);
-			const rpcList = SOLANA_RPC_URLS?.[ctx.networkId];
+			const rpcList = getSolanaRpcUrls(ctx.networkId);
 			if (rpcList && rpcList.length > 1) {
 				SolanaRpcProvider.currentRpcIndex = (SolanaRpcProvider.currentRpcIndex + 1) % rpcList.length;
 			}
@@ -284,7 +329,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 	constructor(networkId: SolanaNetworkIds) {
 		super();
-		const rpc = SOLANA_RPC_URLS?.[networkId]?.[0];
+		const rpc = getSolanaRpcUrls(networkId)[0];
 		if (!rpc) {
 			throw new Error(`No RPC URL configured for Solana network: ${networkId}`);
 		}
@@ -293,11 +338,12 @@ export class SolanaRpcProvider extends EventEmitter {
 		this.networkId = networkId;
 	}
 
-	private async getAutofunProgram(version?: number): Promise<Program<CurrentAutofunTypes> | Program<LegacyAutofunTypes>> {
-		const {
-			createCurrentAutofunProgramWithProvider,
-			createLegacyAutofunProgramWithProvider,
-		} = await import("@waifufun/programs");
+	private async getAutofunProgram(
+		version?: number,
+	): Promise<Program<CurrentAutofunTypes> | Program<LegacyAutofunTypes>> {
+		const { createCurrentAutofunProgramWithProvider, createLegacyAutofunProgramWithProvider } = await import(
+			"@waifufun/programs"
+		);
 		const dummyWallet = {
 			publicKey: new PublicKey("11111111111111111111111111111111"),
 			signTransaction: async (tx: any) => tx,
@@ -400,7 +446,7 @@ export class SolanaRpcProvider extends EventEmitter {
 			return SolanaRpcProvider.currentRpc;
 		}
 
-		const rpcList = SOLANA_RPC_URLS?.[networkId];
+		const rpcList = getSolanaRpcUrls(networkId);
 		if (!rpcList || rpcList.length === 0) {
 			throw new Error(`No RPC URLs configured for Solana: ${networkId}`);
 		}
@@ -594,6 +640,7 @@ export class SolanaRpcProvider extends EventEmitter {
 			),
 		);
 
+		const { updateCryptoPrices } = await import("@waifufun/codex");
 		const cryptoPrices = await updateCryptoPrices({});
 		const solanaUsdPrice = cryptoPrices.solana;
 

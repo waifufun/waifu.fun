@@ -9,18 +9,16 @@ Mongoose.set("strictQuery", false);
 
 logger.info("Attempting to connect to database..");
 
-/** @dev Shutdown server if we are not able to connect to server */
-if (!process.env.MONGO_URI) {
-	logger.error("Missing MONGO_URI from ENV");
-	process.exit(1);
-}
-
 /** @dev Connect to MongoDB */
-Mongoose.connect(process.env.MONGO_URI, {
-	socketTimeoutMS: 15_000,
-}).catch((e) => {
-	logger.info(`Unable to connect to database => ${e.message}`);
-});
+if (process.env.MONGO_URI) {
+	Mongoose.connect(process.env.MONGO_URI, {
+		socketTimeoutMS: 15_000,
+	}).catch((e) => {
+		logger.info(`Unable to connect to database => ${e.message}`);
+	});
+} else {
+	logger.warn("Skipping database connection because MONGO_URI is not set.");
+}
 
 /** @dev MongoDB Event Listeners */
 Mongoose.connection.on("error", (err) => {

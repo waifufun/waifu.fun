@@ -58,9 +58,7 @@ class FakeRepo implements NotificationsRepository {
 		const noSubscriberKeys = new Set<string>();
 		for (const row of this.sent) {
 			if (isNoSubscriberSentinel(row)) {
-				noSubscriberKeys.add(
-					`${row.launchId}:${row.eventType}:${normalizeNoSubscribersDedupeKey(row.dedupeKey)}`,
-				);
+				noSubscriberKeys.add(`${row.launchId}:${row.eventType}:${normalizeNoSubscribersDedupeKey(row.dedupeKey)}`);
 				continue;
 			}
 			keys.add(`${row.launchId}:${row.eventType}:${row.channel}:${row.dedupeKey}`);
@@ -83,8 +81,7 @@ class FakeRepo implements NotificationsRepository {
 function isNoSubscriberSentinel(row: NotificationLogInput): boolean {
 	return (
 		row.dedupeKey.startsWith("__no_subscribers__:") ||
-		(row.status === "skipped" &&
-			(row.errorMessage === "no subscribers" || row.payload.reason === "no_subscribers"))
+		(row.status === "skipped" && (row.errorMessage === "no subscribers" || row.payload.reason === "no_subscribers"))
 	);
 }
 
@@ -248,7 +245,10 @@ test("no-subscriber sentinel does not suppress a later subscriber", async () => 
 	assert.equal(r2.pendingEvents, 1);
 	assert.equal(r2.sent, 1);
 	assert.equal(sender.calls.length, 1);
-	assert.equal(repo.sent.some((r) => r.status === "sent" && r.channel === "discord" && r.dedupeKey === ""), true);
+	assert.equal(
+		repo.sent.some((r) => r.status === "sent" && r.channel === "discord" && r.dedupeKey === ""),
+		true,
+	);
 });
 
 test("legacy no-subscriber sentinel does not suppress a later subscriber", async () => {

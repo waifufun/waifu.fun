@@ -10,17 +10,15 @@ import { safeFetchBytes } from "./safe-url-fetch.js";
 
 dotenv.config();
 const { PUBLIC_STORAGE_BASE_URL, S3_BUCKET_NAME: bucketName } = process.env;
-if (!PUBLIC_STORAGE_BASE_URL || !bucketName) {
-	logger.error("Missing PUBLIC_STORAGE_BASE_URL or S3_BUCKET_NAME in environment variables.");
-	process.exit(1);
-}
 
-export const publicBaseUrl = `${PUBLIC_STORAGE_BASE_URL.replace(/\/$/, "")}/${bucketName}`;
+export const publicBaseUrl =
+	PUBLIC_STORAGE_BASE_URL && bucketName ? `${PUBLIC_STORAGE_BASE_URL.replace(/\/$/, "")}/${bucketName}` : "";
 const MAX_IMAGE_FETCH_BYTES = 10 * 1024 * 1024;
 const IMAGE_FETCH_TIMEOUT_MS = 10_000;
 
 export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
-	return `${process.env.PUBLIC_STORAGE_BASE_URL}/${bucket}/${fileName}` as TURLLike;
+	const { publicBaseUrl } = getS3Client();
+	return `${publicBaseUrl}/${bucket}/${fileName}` as TURLLike;
 };
 
 /**

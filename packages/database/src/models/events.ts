@@ -181,6 +181,8 @@ schema.statics.insertManyOrUpdate = async function (events: Partial<IEvent>[]): 
 
 const Model = Mongoose.model<IEvent, IEventModel>("Event", schema);
 
-Model.createIndexes();
+if (process.env.MONGO_URI) {
+	Model.createIndexes();
+}
 
 export default Model;

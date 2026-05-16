@@ -4,7 +4,7 @@ import test from "node:test";
 import type { AgentLaunchRow } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
-import { submitLaunchBundle } from "./bundle-submitter.js";
+import { markBundleReceipt, submitLaunchBundle } from "./bundle-submitter.js";
 
 function makeDb(capture: { set?: Record<string, unknown>; whereCalled?: boolean }): Database {
 	return {
@@ -55,4 +55,33 @@ test("submitLaunchBundle leaves launch pending when wallet pool is exhausted and
 	} finally {
 		if (oldPk != null) process.env.BUNDLE_BOT_PK = oldPk;
 	}
+});
+
+test("submitLaunchBundle uses configured maxAttempts before terminalizing failures", async () => {
+	const oldPk = process.env.BUNDLE_BOT_PK;
+	delete process.env.BUNDLE_BOT_PK;
+	const capture: { set?: Record<string, unknown>; whereCalled?: boolean } = {};
+	try {
+		const launch = { ...launchFixture(), bundleAttempt: 2, bundleStatus: "failed_retry" } as AgentLaunchRow;
+		const result = await submitLaunchBundle(makeDb(capture), launch, {
+			dryRun: false,
+			bundleBotPrivateKey: `0x${"11".repeat(32)}`,
+			useWalletPool: false,
+			allowSingleWalletFallback: true,
+			maxAttempts: 5,
+		});
+		assert.equal(result.status, "failed_retry");
+		assert.equal(result.attempt, 3);
+		assert.equal(capture.set?.bundleStatus, "failed_retry");
+	} finally {
+		if (oldPk != null) process.env.BUNDLE_BOT_PK = oldPk;
+	}
+});
+
+test("markBundleReceipt uses configured maxAttempts before terminalizing reverted receipts", async () => {
+	const capture: { set?: Record<string, unknown>; whereCalled?: boolean } = {};
+	const launch = { ...launchFixture(), bundleAttempt: 3 } as AgentLaunchRow;
+	const status = await markBundleReceipt(makeDb(capture), launch, { status: "reverted" }, { maxAttempts: 5 });
+	assert.equal(status, "failed_retry");
+	assert.equal(capture.set?.bundleStatus, "failed_retry");
 });

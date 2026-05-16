@@ -36,6 +36,7 @@ export interface BundleSubmitterConfig {
 	useWalletPool?: boolean;
 	allowSingleWalletFallback?: boolean;
 	dryRun?: boolean;
+	maxAttempts?: number;
 }
 
 export interface SubmitBundleResult {
@@ -66,6 +67,11 @@ export function nextBundleTipBnb(attempt: number, current?: string | null): stri
 	return Number(current) > Number(stepped) ? current : stepped;
 }
 
+function resolveMaxAttempts(configured?: number): number {
+	const value = configured ?? Number(process.env.BUNDLE_BOT_MAX_ATTEMPTS ?? 3);
+	return Number.isFinite(value) && value > 0 ? Math.floor(value) : 3;
+}
+
 export async function submitLaunchBundle(
 	db: Database,
 	launch: AgentLaunchRow,
@@ -89,6 +95,7 @@ export async function submitLaunchBundle(
 
 	const attempt = launch.bundleAttempt + 1;
 	const tipBnb = nextBundleTipBnb(launch.bundleAttempt, launch.bundleTipBnb);
+	const maxAttempts = resolveMaxAttempts(config.maxAttempts);
 	const chainId = config.chainId ?? Number(process.env.BSC_CHAIN_ID ?? 56);
 	const chain = chainId === 97 ? bscTestnet : bsc;
 	let selectedPoolWallet: Awaited<ReturnType<typeof selectAvailableWallet>> = null;
@@ -185,7 +192,7 @@ export async function submitLaunchBundle(
 		return { status: "submitted", txHash, attempt };
 	} catch (error) {
 		if (selectedPoolWallet && !privateTxAccepted) await releaseWallet(db, selectedPoolWallet.address);
-		const terminal = attempt >= 3;
+		const terminal = attempt >= maxAttempts;
 		const reason = error instanceof Error ? error.message : String(error);
 		const status = terminal ? "failed_terminal" : "failed_retry";
 		await db
@@ -206,9 +213,14 @@ export async function markBundleReceipt(
 	db: Database,
 	launch: AgentLaunchRow,
 	receipt: { status: "success" | "reverted" },
+	config: Pick<BundleSubmitterConfig, "maxAttempts"> = {},
 ): Promise<AgentLaunchRow["bundleStatus"]> {
 	const status =
-		receipt.status === "success" ? "confirmed" : launch.bundleAttempt >= 3 ? "failed_terminal" : "failed_retry";
+		receipt.status === "success"
+			? "confirmed"
+			: launch.bundleAttempt >= resolveMaxAttempts(config.maxAttempts)
+				? "failed_terminal"
+				: "failed_retry";
 	await db
 		.update(schema.agentLaunches)
 		.set({ bundleStatus: status, updatedAt: new Date() })

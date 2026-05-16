@@ -11,7 +11,7 @@
 	"ignoreDependencies": ["@semantic-release/github"],
 	"workspaces": {
 		".": {
-			"ignoreFiles": ["apps/.frontend-static-export-stash/**", "probe/**/*.cjs", "scripts/**/*.ts"]
+			"ignoreFiles": ["probe/**/*.cjs", "scripts/**/*.ts"]
 		},
 		"apps/frontend": {
 			"entry": ["workers/**/*.ts"],
