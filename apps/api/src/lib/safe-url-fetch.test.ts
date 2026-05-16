@@ -70,7 +70,8 @@ test("safeFetchBytes enforces content type and streamed size limits", async () =
 			maxBytes: 4,
 			allowedContentTypes: ["image/"],
 			lookupIpAddresses: publicLookup,
-			fetchImpl: async () => new Response(new Uint8Array([1, 2, 3, 4, 5]), { headers: { "content-type": "image/png" } }),
+			fetchImpl: async () =>
+				new Response(new Uint8Array([1, 2, 3, 4, 5]), { headers: { "content-type": "image/png" } }),
 		}),
 		(error: unknown) => error instanceof SafeFetchError && error.code === "response_too_large",
 	);
@@ -80,7 +81,8 @@ test("safeFetchJson accepts public JSON within limit", async () => {
 	const result = await safeFetchJson<{ ok: boolean }>("https://public.test/meta.json", {
 		maxBytes: 1024,
 		lookupIpAddresses: publicLookup,
-		fetchImpl: async () => new Response(JSON.stringify({ ok: true }), { headers: { "content-type": "application/json" } }),
+		fetchImpl: async () =>
+			new Response(JSON.stringify({ ok: true }), { headers: { "content-type": "application/json" } }),
 	});
 	assert.deepEqual(result, { ok: true });
 });
