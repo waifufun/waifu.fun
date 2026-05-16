@@ -1,0 +1,161 @@
+
+Detector: arbitrary-send-eth
+BundleRouter._callPortal(BundleRouter.BundleExecParams) (contracts/BundleRouter.sol#295-325) sends eth to arbitrary user
+	Dangerous calls:
+	- token = IFlapPortal(FLAP_PORTAL).newTokenV6{value: quoteAmt}(params) (contracts/BundleRouter.sol#324)
+BundleRouter._v2FollowUpBuy(address,uint256,uint256) (contracts/BundleRouter.sol#327-337) sends eth to arbitrary user
+	Dangerous calls:
+	- IPancakeRouter02(PCS_ROUTER).swapExactETHForTokensSupportingFeeOnTransferTokens{value: v2BuyBnb}(minOut,path,address(this),deadline) (contracts/BundleRouter.sol#332-334)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+
+Detector: reentrancy-balance
+Reentrancy in BundleRouter._v2FollowUpBuy(address,uint256,uint256) (contracts/BundleRouter.sol#327-337):
+	External call allowing reentrancy:
+	- IPancakeRouter02(PCS_ROUTER).swapExactETHForTokensSupportingFeeOnTransferTokens{value: v2BuyBnb}(minOut,path,address(this),deadline) (contracts/BundleRouter.sol#332-334)
+	Balance read before the call:
+	- balBefore = IERC20(token).balanceOf(address(this)) (contracts/BundleRouter.sol#331)
+	Possible stale balance used after the call in a condition:
+	- received < minOut (contracts/BundleRouter.sol#336)
+		- stale variable `received`
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities
+
+Detector: incorrect-equality
+LaunchVault._allocationOfPure(address) (contracts/LaunchVault.sol#375-380) uses a dangerous strict equality:
+	- dep == 0 || totalDepositedAtLaunch == 0 (contracts/LaunchVault.sol#378)
+LaunchVault._vestedOf(address) (contracts/LaunchVault.sol#358-368) uses a dangerous strict equality:
+	- alloc == 0 (contracts/LaunchVault.sol#360)
+LaunchVault.claim() (contracts/LaunchVault.sol#334-344) uses a dangerous strict equality:
+	- claimable == 0 (contracts/LaunchVault.sol#340)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+
+Detector: unused-return
+BundleRouter._computeOpenMcBnb(address,address) (contracts/BundleRouter.sol#339-346) ignores return value by (r0,r1,None) = IPancakePair(pair).getReserves() (contracts/BundleRouter.sol#340)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+Detector: reentrancy-events
+Reentrancy in LaunchFactory.createLaunch(LaunchFactory.LaunchConfig) (contracts/LaunchFactory.sol#158-248):
+	External calls:
+	- IVaultRouterSetter(address(vault)).setRouter(address(router)) (contracts/LaunchFactory.sol#234)
+	Event emitted after the call(s):
+	- LaunchCreated(keccak256(bytes)(abi.encode(config.creator,config.vanitySalt)),config.creator,predicted,address(vault),address(router),address(treasuryLp),config.tier,presaleCap,v2BuyBnb,config.closeTimestamp) (contracts/LaunchFactory.sol#236-247)
+Reentrancy in BundleRouter.executeBundle(BundleRouter.BundleExecParams) (contracts/BundleRouter.sol#194-276):
+	External calls:
+	- ILaunchVaultRouterCallbacks(vault).pullBnbForLaunch(needed) (contracts/BundleRouter.sol#207)
+	- token = _callPortal(p) (contracts/BundleRouter.sol#211)
+		- token = IFlapPortal(FLAP_PORTAL).newTokenV6{value: quoteAmt}(params) (contracts/BundleRouter.sol#324)
+	- _v2FollowUpBuy(token,p.minV2TokensOut,p.deadline) (contracts/BundleRouter.sol#226)
+		- IPancakeRouter02(PCS_ROUTER).swapExactETHForTokensSupportingFeeOnTransferTokens{value: v2BuyBnb}(minOut,path,address(this),deadline) (contracts/BundleRouter.sol#332-334)
+	- IERC20(token).safeTransfer(DEAD,burnAmt) (contracts/BundleRouter.sol#238)
+	- IERC20(token).safeTransfer(treasuryLp,treasuryAmt) (contracts/BundleRouter.sol#241)
+	- IERC20(token).safeTransfer(vault,vaultAmt) (contracts/BundleRouter.sol#244)
+	- ILaunchVaultRouterCallbacks(vault).distribute(token,vaultAmt) (contracts/BundleRouter.sol#245)
+	- (ok,None) = address(TIP_RECEIVER).call{value: p.tipBnb}() (contracts/BundleRouter.sol#249)
+	- (sweepOk,None) = address(DEAD).call{value: dust}() (contracts/BundleRouter.sol#260)
+	External calls sending eth:
+	- token = _callPortal(p) (contracts/BundleRouter.sol#211)
+		- token = IFlapPortal(FLAP_PORTAL).newTokenV6{value: quoteAmt}(params) (contracts/BundleRouter.sol#324)
+	- _v2FollowUpBuy(token,p.minV2TokensOut,p.deadline) (contracts/BundleRouter.sol#226)
+		- IPancakeRouter02(PCS_ROUTER).swapExactETHForTokensSupportingFeeOnTransferTokens{value: v2BuyBnb}(minOut,path,address(this),deadline) (contracts/BundleRouter.sol#332-334)
+	- (ok,None) = address(TIP_RECEIVER).call{value: p.tipBnb}() (contracts/BundleRouter.sol#249)
+	- (sweepOk,None) = address(DEAD).call{value: dust}() (contracts/BundleRouter.sol#260)
+	Event emitted after the call(s):
+	- BundleExecuted(token,pair,quoteAmt,v2BuyBnb,totalY,burnAmt,treasuryAmt,vaultAmt,p.tipBnb,openMcBnb) (contracts/BundleRouter.sol#264-275)
+Reentrancy in LaunchVault.pullBnbForLaunch(uint256) (contracts/LaunchVault.sol#253-263):
+	External calls:
+	- (ok,None) = address(router).call{value: amount}() (contracts/LaunchVault.sol#260)
+	Event emitted after the call(s):
+	- LaunchExecuted(address(0),amount,block.timestamp) (contracts/LaunchVault.sol#262)
+Reentrancy in TreasuryLP.sweep(address,address,uint256) (contracts/TreasuryLP.sol#59-64):
+	External calls:
+	- IERC20(t).safeTransfer(to,amount) (contracts/TreasuryLP.sol#62)
+	Event emitted after the call(s):
+	- TokensSwept(to,t,amount) (contracts/TreasuryLP.sol#63)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+
+Detector: timestamp
+BundleRouter.executeBundle(BundleRouter.BundleExecParams) (contracts/BundleRouter.sol#194-276) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > p.deadline (contracts/BundleRouter.sol#198)
+LaunchFactory.createLaunch(LaunchFactory.LaunchConfig) (contracts/LaunchFactory.sol#158-248) uses timestamp for comparisons
+	Dangerous comparisons:
+	- config.closeTimestamp <= block.timestamp (contracts/LaunchFactory.sol#166)
+LaunchVault.constructor(address,address,address,uint256,uint256,uint256,uint256,uint256,bool) (contracts/LaunchVault.sol#141-170) uses timestamp for comparisons
+	Dangerous comparisons:
+	- _closeTimestamp <= block.timestamp (contracts/LaunchVault.sol#158)
+LaunchVault.deposit() (contracts/LaunchVault.sol#190-201) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > closeTimestamp (contracts/LaunchVault.sol#192)
+LaunchVault.withdraw(uint256) (contracts/LaunchVault.sol#203-217) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > closeTimestamp (contracts/LaunchVault.sol#205)
+LaunchVault.withdrawAll() (contracts/LaunchVault.sol#219-233) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > closeTimestamp (contracts/LaunchVault.sol#221)
+LaunchVault.close() (contracts/LaunchVault.sol#239-245) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < closeTimestamp && totalDeposited < presaleCap (contracts/LaunchVault.sol#241)
+LaunchVault.enableRefundUnderSubscribed() (contracts/LaunchVault.sol#283-289) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < closeTimestamp (contracts/LaunchVault.sol#285)
+LaunchVault.claim() (contracts/LaunchVault.sol#334-344) uses timestamp for comparisons
+	Dangerous comparisons:
+	- claimable == 0 (contracts/LaunchVault.sol#340)
+LaunchVault._vestedOf(address) (contracts/LaunchVault.sol#358-368) uses timestamp for comparisons
+	Dangerous comparisons:
+	- alloc == 0 (contracts/LaunchVault.sol#360)
+	- block.timestamp < launchTimestamp (contracts/LaunchVault.sol#364)
+	- elapsed >= VESTING_WINDOW (contracts/LaunchVault.sol#366)
+LaunchVault._allocationOfPure(address) (contracts/LaunchVault.sol#375-380) uses timestamp for comparisons
+	Dangerous comparisons:
+	- dep == 0 || totalDepositedAtLaunch == 0 (contracts/LaunchVault.sol#378)
+LaunchVault._claimableOf(address) (contracts/LaunchVault.sol#382-387) uses timestamp for comparisons
+	Dangerous comparisons:
+	- v <= c (contracts/LaunchVault.sol#385)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Detector: cyclomatic-complexity
+BundleRouter.executeBundle(BundleRouter.BundleExecParams) (contracts/BundleRouter.sol#194-276) has a high cyclomatic complexity (12).
+LaunchFactory.createLaunch(LaunchFactory.LaunchConfig) (contracts/LaunchFactory.sol#158-248) has a high cyclomatic complexity (12).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+
+Detector: low-level-calls
+Low level call in BundleRouter.executeBundle(BundleRouter.BundleExecParams) (contracts/BundleRouter.sol#194-276):
+	- (ok,None) = address(TIP_RECEIVER).call{value: p.tipBnb}() (contracts/BundleRouter.sol#249)
+	- (sweepOk,None) = address(DEAD).call{value: dust}() (contracts/BundleRouter.sol#260)
+Low level call in LaunchVault.withdraw(uint256) (contracts/LaunchVault.sol#203-217):
+	- (ok,None) = address(msg.sender).call{value: refundAmount}() (contracts/LaunchVault.sol#214)
+Low level call in LaunchVault.withdrawAll() (contracts/LaunchVault.sol#219-233):
+	- (ok,None) = address(msg.sender).call{value: refundAmount}() (contracts/LaunchVault.sol#230)
+Low level call in LaunchVault.pullBnbForLaunch(uint256) (contracts/LaunchVault.sol#253-263):
+	- (ok,None) = address(router).call{value: amount}() (contracts/LaunchVault.sol#260)
+Low level call in LaunchVault.refund() (contracts/LaunchVault.sol#310-328):
+	- (ok,None) = address(msg.sender).call{value: refundAmount}() (contracts/LaunchVault.sol#325)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+
+Detector: missing-inheritance
+LaunchVault (contracts/LaunchVault.sol#36-398) should inherit from ILaunchVaultRouterCallbacks (contracts/BundleRouter.sol#21-24)
+LaunchVault (contracts/LaunchVault.sol#36-398) should inherit from IVaultRouterSetter (contracts/LaunchFactory.sol#26-28)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-inheritance
+
+Detector: naming-convention
+Variable BundleRouter.WBNB (contracts/BundleRouter.sol#72) is not in mixedCase
+Variable BundleRouter.PCS_FACTORY (contracts/BundleRouter.sol#73) is not in mixedCase
+Variable BundleRouter.PCS_ROUTER (contracts/BundleRouter.sol#74) is not in mixedCase
+Variable BundleRouter.FLAP_PORTAL (contracts/BundleRouter.sol#75) is not in mixedCase
+Variable BundleRouter.TIP_RECEIVER (contracts/BundleRouter.sol#76) is not in mixedCase
+Variable LaunchFactory.WBNB (contracts/LaunchFactory.sol#66) is not in mixedCase
+Variable LaunchFactory.PCS_FACTORY (contracts/LaunchFactory.sol#67) is not in mixedCase
+Variable LaunchFactory.PCS_ROUTER (contracts/LaunchFactory.sol#68) is not in mixedCase
+Variable LaunchFactory.INIT_CODE_HASH (contracts/LaunchFactory.sol#69) is not in mixedCase
+Variable LaunchFactory.FLAP_PORTAL (contracts/LaunchFactory.sol#70) is not in mixedCase
+Variable LaunchFactory.TOKEN_IMPL_TAXED_V3 (contracts/LaunchFactory.sol#71) is not in mixedCase
+Variable LaunchFactory.TIP_RECEIVER (contracts/LaunchFactory.sol#72) is not in mixedCase
+Parameter LaunchVault.setRouter(address)._router (contracts/LaunchVault.sol#178) is not in mixedCase
+Parameter LaunchVault.distribute(address,uint256)._token (contracts/LaunchVault.sol#267) is not in mixedCase
+Parameter LaunchVault.distribute(address,uint256)._presalerShare (contracts/LaunchVault.sol#267) is not in mixedCase
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conformance-to-solidity-naming-conventions
+
+Detector: redundant-statements
+Redundant expression "sweepOk (contracts/BundleRouter.sol#261)" inBundleRouter (contracts/BundleRouter.sol#49-347)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#redundant-statements
+. analyzed (62 contracts with 101 detectors), 48 result(s) found
