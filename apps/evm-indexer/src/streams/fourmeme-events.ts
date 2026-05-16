@@ -58,8 +58,9 @@ async function pollFourMemeEventsOnce(
 					txHash: event.txHash,
 					error: handlerError instanceof Error ? handlerError.message : String(handlerError),
 				},
-				"four.meme event handler failed, skipping event",
+				"four.meme event handler failed; cursor will retry this event",
 			);
+			break;
 		}
 		await runtime.cursors.advance(cursorId, getFourMemeEventCursorPosition(event));
 	}
