@@ -286,9 +286,11 @@ describe("Wave H bundle flow e2e", () => {
 			// Total token Y ~= curve + V2 = 800M + (16/32/48/144 BNB * 1M tokens/BNB) for tier
 			const expectedV2Tokens = (V2_BUY_BNB[tier] * ethers.parseEther("1000000")) / ethers.parseEther("1");
 			const expectedY = ethers.parseEther("800000000") + expectedV2Tokens;
-			// Burn = 50%, treasury = 10%, vault = 40%
-			expect(deadBal).to.equal(expectedY / 2n);
-			expect(treasuryBal).to.equal(expectedY / 10n);
+			// Router-side split = 62.5 / 12.5 / 25 of totalY, which resolves to
+			// 50 / 10 / 20 of TOTAL supply (curve gives router 80% of supply,
+			// remaining 20% lives in the flap-created PCS V2 LP).
+			expect(deadBal).to.equal((expectedY * 6250n) / 10_000n);
+			expect(treasuryBal).to.equal((expectedY * 1250n) / 10_000n);
 			expect(vaultBal).to.equal(expectedY - deadBal - treasuryBal);
 
 			// Depositors claim.
@@ -686,9 +688,9 @@ describe("Wave H bundle flow e2e", () => {
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
-		// Tier 80 has v2BuyBnb=0, totalY = 800M, treasury = 80M.
+		// Tier 80 has v2BuyBnb=0, totalY = 800M, treasury = 12.5% of router = 100M.
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);
-		expect(await token.balanceOf(addrs.treasuryLp)).to.equal(ethers.parseEther("80000000"));
+		expect(await token.balanceOf(addrs.treasuryLp)).to.equal(ethers.parseEther("100000000"));
 
 		// Router registers the managed token immediately after treasury transfer.
 		expect(await treasuryLp.managedToken()).to.equal(predicted);
@@ -732,13 +734,19 @@ describe("Wave H bundle flow e2e", () => {
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
+		// Splits on 800M router balance: burn=62.5%=500M, treasury=12.5%=100M, vault=25%=200M.
+		// With a 10% transfer tax, the receiving side gets 90% of each chunk:
+		//   vault receives 180M, treasury receives 90M.
+		// Alice (sole depositor, tier 80 = 100% TGE) claims all 180M, receives 162M post-tax.
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);
 		const actualVaultBalance = await token.balanceOf(addrs.vault);
-		expect(actualVaultBalance).to.equal(ethers.parseEther("288000000"));
+		expect(actualVaultBalance).to.equal(ethers.parseEther("180000000"));
 		expect(await vault.presalerTokenBalance()).to.equal(actualVaultBalance);
 		expect(await treasuryLp.managedToken()).to.equal(predicted);
-		expect(await treasuryLp.balance()).to.equal(ethers.parseEther("72000000"));
+		expect(await treasuryLp.balance()).to.equal(ethers.parseEther("90000000"));
 		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
+		// Alice gross allocation = aliceShare / cap * actualVaultBalance.
+		// Claim transfer applies the same 10% tax, so alice receives 90% of gross.
 		const aliceGross = (aliceShare * actualVaultBalance) / cap;
 		expect(await token.balanceOf(alice.address)).to.equal(aliceGross - aliceGross / 10n);
 	});

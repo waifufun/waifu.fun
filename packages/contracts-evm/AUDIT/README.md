@@ -7,7 +7,7 @@ v5.14.1 on BSC. depositors fund a per-launch `LaunchVault` with BNB during an
 open window. once the cap is met, a per-launch `BundleRouter` runs a single
 atomic transaction that calls flap's `newTokenV6` to mint a tax-token (and
 optionally graduate it to PancakeSwap V2), optionally follow-up-buys from
-that V2 pool, then splits the resulting tokens 50/10/40 between a burn
+that V2 pool, then splits the resulting tokens 50/10/20 between a burn
 address, a `TreasuryLP` custody contract, and the `LaunchVault` for
 pro-rata presaler distribution. atomic-or-bust: any revert inside
 `executeBundle` rolls everything back and the vault BNB is preserved for a

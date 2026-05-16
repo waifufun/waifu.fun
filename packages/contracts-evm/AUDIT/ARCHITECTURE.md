@@ -13,7 +13,7 @@ BNB into a per-launch `LaunchVault` during an open window. once the cap is met,
 a per-launch `BundleRouter` runs a single atomic transaction that calls flap's
 `newTokenV6` to mint a tax-token and (optionally) graduate it to pancakeswap v2,
 optionally follow-up-buys from that v2 pool, and splits the resulting tokens
-50/10/40 between a burn address, a `TreasuryLP` custody contract, and the
+50/10/20 between a burn address, a `TreasuryLP` custody contract, and the
 `LaunchVault` for pro-rata presaler distribution. atomic-or-bust: any revert
 inside `executeBundle` rolls everything back and the vault BNB is preserved
 for a refund.
@@ -150,7 +150,7 @@ sequenceDiagram
 note for tier 80: `quoteAmt = 16 BNB` (curve only, no graduation). `v2BuyBnb = 0`.
 `pair == address(0)` after `newTokenV6`. router skips the V2 follow-up buy and
 emits `BundleExecuted` with `pool = address(0)` and `openMcBnb = 0`. presalers
-get 40% of the 800M curve allocation. the token sits in flap's `Tradable` status
+get 25% of the 800M curve allocation (= 20% of total supply). the token sits in flap's `Tradable` status
 until organic buyers push it past graduation (when one of them sends a buy that
 crosses the four-fifths threshold, flap auto-graduates to v2).
 
@@ -249,9 +249,9 @@ within a single successful `executeBundle` call (tier 90+):
   - any dust to `0x...dEaD`
 - BNB net at router: 0 (no persistent custody)
 - token out: 100% of `IERC20(token).balanceOf(router)` distributed in same tx
-  - 50% to `0x...dEaD`
-  - 10% to `TreasuryLP`
-  - ~40% to `LaunchVault` (rounding remainder included)
+  - 62.5% (=50% of total supply) to `0x...dEaD`
+  - 12.5% (=10% of total supply) to `TreasuryLP`
+  - ~25% (=~20% of total supply) to `LaunchVault` (rounding remainder included)
 - vault token holdings: presaler share, distributed pro-rata via `claim()`
 - LP-side at PCS V2 pair (held by portal's migrator, locked LP):
   - tier 90: ~100M tokens / ~16 BNB
