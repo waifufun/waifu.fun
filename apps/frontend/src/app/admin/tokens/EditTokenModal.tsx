@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sanitizeSocialLinks } from "@/lib/url-safety";
 import React, { useState } from "react";
 
 interface EditTokenModalProps {
@@ -49,15 +50,7 @@ export default function EditTokenModal({ open, onClose, token, onSave, loading }
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		await onSave(
-			{
-				twitter: form.twitter,
-				telegram: form.telegram,
-				discord: form.discord,
-				website: form.website,
-			},
-			form.description,
-		);
+		await onSave(sanitizeSocialLinks(form), form.description);
 	};
 
 	if (!open) return null;

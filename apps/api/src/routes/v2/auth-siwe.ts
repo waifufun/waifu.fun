@@ -43,7 +43,11 @@ function nonceKey(patronId: string, address: string): string {
 
 function setNonce(patronId: string, address: string): string {
 	const nonce = generateNonce();
-	NONCE_STORE.set(nonceKey(patronId, address), { nonce, address: address.toLowerCase(), expiresAt: Date.now() + NONCE_TTL_MS });
+	NONCE_STORE.set(nonceKey(patronId, address), {
+		nonce,
+		address: address.toLowerCase(),
+		expiresAt: Date.now() + NONCE_TTL_MS,
+	});
 	return nonce;
 }
 

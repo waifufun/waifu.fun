@@ -17,4 +17,14 @@ describe("twitter login route", () => {
 
 		expect(response.headers.get("location")).toBe("https://api.waifu.fun/auth/twitter/login?return_to=%2Fpatron");
 	});
+
+	it("rejects encoded slash and backslash return targets", () => {
+		for (const returnTo of ["/%2fevil.test", "/%5cevil.test"]) {
+			const response = GET(
+				new NextRequest(`https://www.waifu.fun/auth/twitter/login?return_to=${encodeURIComponent(returnTo)}`),
+			);
+
+			expect(response.headers.get("location")).toBe("https://api.waifu.fun/auth/twitter/login?return_to=%2Fpatron");
+		}
+	});
 });

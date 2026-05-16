@@ -10,8 +10,12 @@
  * URL (fetched here) or a raw buffer/base64 string.
  */
 
+import { SafeFetchError, safeFetchBytes } from "../../lib/safe-url-fetch.js";
 import { FourMemeError } from "./errors.js";
 import { FOURMEME_API_BASE } from "./fourmeme-auth.js";
+
+const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024;
+const IMAGE_URL_TIMEOUT_MS = 10_000;
 
 export interface FourMemeUploadInput {
 	/** One of imageUrl or imageBase64 (may be `data:...;base64,...` or raw base64). */
@@ -24,6 +28,7 @@ export interface FourMemeUploadInput {
 export interface FourMemeUploadOptions {
 	baseUrl?: string | undefined;
 	fetchImpl?: typeof fetch | undefined;
+	lookupIpAddresses?: ((hostname: string) => Promise<string[]>) | undefined;
 }
 
 export interface FourMemeUploadResult {
@@ -34,6 +39,7 @@ export interface FourMemeUploadResult {
 async function resolveBlob(
 	input: FourMemeUploadInput,
 	fetchImpl: typeof fetch,
+	lookupIpAddresses?: (hostname: string) => Promise<string[]>,
 ): Promise<{ blob: Blob; filename: string; mimeType: string }> {
 	if (!input.imageUrl && !input.imageBase64) {
 		throw new FourMemeError("upload: imageUrl or imageBase64 required", 0);
@@ -53,6 +59,12 @@ async function resolveBlob(
 		}
 		const bytes = Buffer.from(raw, "base64");
 		const mimeType: string = input.mimeType ?? mimeFromHeader ?? "image/png";
+		if (!mimeType.toLowerCase().startsWith("image/")) {
+			throw new FourMemeError(`upload: unsupported image content-type ${mimeType}`, 0);
+		}
+		if (bytes.byteLength > MAX_IMAGE_UPLOAD_BYTES) {
+			throw new FourMemeError(`upload: image is larger than ${MAX_IMAGE_UPLOAD_BYTES} bytes`, 0);
+		}
 		const filename: string = input.filename ?? `upload.${guessExt(mimeType)}`;
 		return {
 			blob: new Blob([bytes], { type: mimeType }),
@@ -63,16 +75,30 @@ async function resolveBlob(
 
 	// --- URL path ---
 	const url = input.imageUrl as string;
-	const res = await fetchImpl(url);
-	if (!res.ok) {
-		throw new FourMemeError(`upload: failed to fetch imageUrl (${res.status})`, res.status);
+	let fetched: Awaited<ReturnType<typeof safeFetchBytes>>;
+	try {
+		fetched = await safeFetchBytes(url, {
+			fetchImpl,
+			lookupIpAddresses,
+			maxBytes: MAX_IMAGE_UPLOAD_BYTES,
+			timeoutMs: IMAGE_URL_TIMEOUT_MS,
+			allowedContentTypes: ["image/"],
+			accept: "image/*",
+		});
+	} catch (error) {
+		if (error instanceof SafeFetchError) {
+			throw new FourMemeError(`upload: failed to fetch imageUrl (${error.code})`, error.status, {
+				message: error.message,
+			});
+		}
+		throw error;
 	}
-	const contentType = res.headers.get("content-type") ?? "";
-	const derivedMime = contentType.startsWith("image/")
-		? (contentType.split(";")[0]?.trim() ?? "image/png")
-		: "image/png";
+	const derivedMime = fetched.contentType || "image/png";
 	const mimeType: string = input.mimeType ?? derivedMime;
-	const bytes = new Uint8Array(await res.arrayBuffer());
+	if (!mimeType.toLowerCase().startsWith("image/")) {
+		throw new FourMemeError(`upload: unsupported image content-type ${mimeType}`, 0);
+	}
+	const bytes = fetched.bytes;
 	const filename =
 		input.filename ??
 		(() => {
@@ -112,7 +138,7 @@ export async function fourMemeUploadImage(
 	const baseUrl = (opts.baseUrl ?? FOURMEME_API_BASE).replace(/\/+$/, "");
 	const fetchImpl = opts.fetchImpl ?? globalThis.fetch.bind(globalThis);
 
-	const { blob, filename } = await resolveBlob(input, fetchImpl);
+	const { blob, filename } = await resolveBlob(input, fetchImpl, opts.lookupIpAddresses);
 
 	const form = new FormData();
 	form.append("file", blob, filename);

@@ -54,9 +54,11 @@ function launchFixture(overrides: Partial<AgentLaunchRow> = {}): AgentLaunchRow 
 	} as AgentLaunchRow;
 }
 
-function makeDb(options: {
-	walletRow?: { address: string; encrypted_pk: string } | null;
-} = {}): { db: Database; updates: Record<string, unknown>[] } {
+function makeDb(
+	options: {
+		walletRow?: { address: string; encrypted_pk: string } | null;
+	} = {},
+): { db: Database; updates: Record<string, unknown>[] } {
 	let launchClaimed = false;
 	const updates: Record<string, unknown>[] = [];
 
@@ -66,15 +68,12 @@ function makeDb(options: {
 				updates.push(values);
 				return {
 					where() {
+						if (values.bundleStatus !== "submitting") return Promise.resolve();
 						return {
 							returning: async () => {
-								if (values.bundleStatus !== "submitting") return [{ id: "updated" }];
 								if (launchClaimed) return [];
 								launchClaimed = true;
 								return [{ id: "00000000-0000-0000-0000-000000000001" }];
-							},
-							then(resolve: (value: void) => void) {
-								resolve();
 							},
 						};
 					},
@@ -128,8 +127,7 @@ describe("bundle-bot submitter safety", () => {
 
 		await assert.rejects(
 			() => submitLaunchBundle(db, launchFixture(), { dryRun: false, useWalletPool: true }),
-			(error: unknown) =>
-				error instanceof BundleSubmitterError && error.code === "PLAINTEXT_BUNDLE_BOT_PK_DISABLED",
+			(error: unknown) => error instanceof BundleSubmitterError && error.code === "PLAINTEXT_BUNDLE_BOT_PK_DISABLED",
 		);
 		assert.equal(updates.length, 0);
 	});

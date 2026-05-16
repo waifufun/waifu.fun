@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { type UserAgent, deleteAgent, getUserAgents, restartAgent, stopAgent } from "@/lib/api";
+import { sanitizeExternalUrl } from "@/lib/url-safety";
 import { cn, shortenAddress } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Bot, ExternalLink, Loader2, RefreshCw, Square, Trash2 } from "lucide-react";
@@ -66,6 +67,7 @@ function StatusPill({ status }: { status: string }) {
 function AgentRow({ agent }: { agent: UserAgent }) {
 	const queryClient = useQueryClient();
 	const [confirmDelete, setConfirmDelete] = useState(false);
+	const containerUrl = sanitizeExternalUrl(agent.containerUrl);
 
 	const restartMut = useMutation({
 		mutationFn: () => restartAgent(agent.agentId),
@@ -137,9 +139,9 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 
 				{/* Actions */}
 				<div className="flex items-center gap-1.5 shrink-0">
-					{agent.containerUrl && (
+					{containerUrl && (
 						<a
-							href={agent.containerUrl}
+							href={containerUrl}
 							target="_blank"
 							rel="noreferrer"
 							className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-white/8 text-[#a1a1aa] hover:text-[#00ff87] hover:border-[#00ff87]/30 transition-colors"

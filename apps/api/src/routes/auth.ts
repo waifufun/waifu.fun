@@ -146,18 +146,18 @@ export function createAuthRoutes() {
 
 		if (isProductionAuth()) {
 			let verified: Awaited<ReturnType<typeof verifySiweMessage>> | undefined;
-				try {
-					verified = await verifySiweMessage(input.message, input.signature);
-				} catch (err) {
-					throw badRequest("SIWE_VERIFICATION_FAILED", err instanceof Error ? err.message : "SIWE verification failed");
-				}
-				const contextError = validateSiweContext(input.message, { expectedChainId: 56 });
-				if (contextError) {
-					throw badRequest("SIWE_CONTEXT_INVALID", contextError);
-				}
+			try {
+				verified = await verifySiweMessage(input.message, input.signature);
+			} catch (err) {
+				throw badRequest("SIWE_VERIFICATION_FAILED", err instanceof Error ? err.message : "SIWE verification failed");
+			}
+			const contextError = validateSiweContext(input.message, { expectedChainId: 56 });
+			if (contextError) {
+				throw badRequest("SIWE_CONTEXT_INVALID", contextError);
+			}
 
-				if (!consumeNonce(verified.nonce)) {
-					throw badRequest("INVALID_NONCE", "Nonce is invalid or expired. Request a new one via GET /auth/nonce.");
+			if (!consumeNonce(verified.nonce)) {
+				throw badRequest("INVALID_NONCE", "Nonce is invalid or expired. Request a new one via GET /auth/nonce.");
 			}
 
 			const profile = await deps.db.getCreatorProfile(verified.address);
@@ -197,9 +197,9 @@ export function createAuthRoutes() {
 			throw unauthorized("Invalid refresh token");
 		}
 
-			if (isProductionAuth()) {
-				throw unauthorized("Legacy compat refresh tokens are disabled in production");
-			}
+		if (isProductionAuth()) {
+			throw unauthorized("Legacy compat refresh tokens are disabled in production");
+		}
 
 		return respondOk(c, {
 			accessToken: `dev:${address}:creator`,

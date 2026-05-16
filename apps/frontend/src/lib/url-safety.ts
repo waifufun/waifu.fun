@@ -1,11 +1,18 @@
 const DEFAULT_REDIRECT_PATH = "/patron";
 const MAX_REDIRECT_LENGTH = 200;
 const MAX_EXTERNAL_URL_LENGTH = 2048;
-const CONTROL_OR_SPACE = /[\u0000-\u001f\u007f\s]/;
+
+function hasControlOrSpace(value: string): boolean {
+	for (const char of value) {
+		const code = char.charCodeAt(0);
+		if (code <= 0x20 || code === 0x7f) return true;
+	}
+	return false;
+}
 
 export function sanitizeRedirectPath(raw: string | null | undefined, fallback = DEFAULT_REDIRECT_PATH): string {
 	if (typeof raw !== "string" || raw.length === 0 || raw.length > MAX_REDIRECT_LENGTH) return fallback;
-	if (raw !== raw.trim() || CONTROL_OR_SPACE.test(raw)) return fallback;
+	if (raw !== raw.trim() || hasControlOrSpace(raw)) return fallback;
 	if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\") || raw.includes("\\")) {
 		return fallback;
 	}
@@ -25,7 +32,7 @@ export function sanitizeRedirectPath(raw: string | null | undefined, fallback = 
 export function sanitizeExternalUrl(raw: string | null | undefined): string | null {
 	if (typeof raw !== "string") return null;
 	const value = raw.trim();
-	if (!value || value.length > MAX_EXTERNAL_URL_LENGTH || CONTROL_OR_SPACE.test(value)) return null;
+	if (!value || value.length > MAX_EXTERNAL_URL_LENGTH || hasControlOrSpace(value)) return null;
 
 	try {
 		const parsed = new URL(value);

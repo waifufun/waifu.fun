@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateTokenSocialsOwner } from "@/lib/api";
+import { sanitizeSocialLinks } from "@/lib/url-safety";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -37,12 +38,18 @@ export default function UpdateSocialsModal({ open, onClose, token, onSuccess }: 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
+		const socials = sanitizeSocialLinks(form);
 		try {
 			await updateTokenSocialsOwner({
 				chain: token.chain,
 				chainId: token.chainId,
 				contractAddress: token.contractAddress,
-				socials: form,
+				socials: {
+					twitter: socials.twitter ?? "",
+					telegram: socials.telegram ?? "",
+					discord: socials.discord ?? "",
+					website: socials.website ?? "",
+				},
 			});
 			toast.success("Socials updated successfully");
 			onClose();

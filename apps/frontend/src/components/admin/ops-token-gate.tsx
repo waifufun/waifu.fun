@@ -95,7 +95,8 @@ function OpsTokenGate({ children }: { children: React.ReactNode }) {
 						</h2>
 						<p className="text-xs text-neutral-400 leading-relaxed">
 							Paste your operator token. It is kept for this browser session and sent as
-							<code className="text-red-300"> Authorization: Bearer ...</code> on every admin call. Internal tooling only.
+							<code className="text-red-300"> Authorization: Bearer ...</code> on every admin call. Internal tooling
+							only.
 						</p>
 					</div>
 					<div className="space-y-2">

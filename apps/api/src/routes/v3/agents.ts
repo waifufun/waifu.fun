@@ -151,7 +151,8 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 					: slugifyAgentId(name);
 
 		const patron = c.get("patron");
-		const ownerAddress = patron.primaryAddress && isAddress(patron.primaryAddress) ? getAddress(patron.primaryAddress) : null;
+		const ownerAddress =
+			patron.primaryAddress && isAddress(patron.primaryAddress) ? patron.primaryAddress.toLowerCase() : null;
 
 		const persona = await agentPersonaQueries.createAgentPersona(db, {
 			agentId,

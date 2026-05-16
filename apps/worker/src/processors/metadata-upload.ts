@@ -4,9 +4,12 @@ import { uploadFlapMetadata } from "@waifufun/flap";
 import { type MetadataUploadJob, parseJobPayload } from "@waifufun/queue";
 
 import { emitAgentEvent } from "../lib/emit.js";
+import { safeFetchBytes } from "../lib/safe-url-fetch.js";
 import type { WorkerContext } from "../lib/types.js";
 
 const MAX_UPLOAD_ATTEMPTS = 3;
+const MAX_METADATA_IMAGE_BYTES = 10 * 1024 * 1024;
+const METADATA_IMAGE_TIMEOUT_MS = 10_000;
 
 export function createMetadataUploadProcessor(context: WorkerContext) {
 	return async (job: Job<MetadataUploadJob>) => {
@@ -54,14 +57,13 @@ export function createMetadataUploadProcessor(context: WorkerContext) {
 		}
 
 		try {
-			// Fetch the image from the URL
-			const imageResponse = await fetch(payload.metadata.imageUrl);
-
-			if (!imageResponse.ok) {
-				throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
-			}
-
-			const imageBlob = await imageResponse.blob();
+			const imageResponse = await safeFetchBytes(payload.metadata.imageUrl, {
+				maxBytes: MAX_METADATA_IMAGE_BYTES,
+				timeoutMs: METADATA_IMAGE_TIMEOUT_MS,
+				allowedContentTypes: ["image/"],
+				accept: "image/*",
+			});
+			const imageBlob = new Blob([imageResponse.bytes], { type: imageResponse.contentType || "image/png" });
 
 			// Build metadata record for Flap
 			const metadata = {

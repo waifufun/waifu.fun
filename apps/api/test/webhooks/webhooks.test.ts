@@ -1,23 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createWebhookRoutes } from "../../src/routes/v2/webhooks.js";
+import { createWebhookRoutes, signWebhookPayload } from "../../src/routes/v2/webhooks.js";
 
-const VALID_PAYLOAD = {
-	event: "agent.claimed",
-	timestamp: "2026-04-24T12:00:00.000Z",
-	agentId: "waifu-demo-01",
-	data: { claimedByXHandle: "eliza" },
-	idempotencyKey: "evt_1",
-};
+function validPayload(idempotencyKey = "evt_1") {
+	return {
+		event: "agent.claimed",
+		timestamp: new Date().toISOString(),
+		agentId: "waifu-demo-01",
+		data: { claimedByXHandle: "eliza" },
+		idempotencyKey,
+	};
+}
 
-test("POST /agent-events requires X-Waifu-Webhook-Secret", async () => {
+test("POST /agent-events requires a signed webhook body", async () => {
 	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
+	const payload = validPayload();
 
 	const response = await app.request("/agent-events", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
-		body: JSON.stringify(VALID_PAYLOAD),
+		body: JSON.stringify(payload),
 	});
 
 	assert.equal(response.status, 401);
@@ -25,18 +28,38 @@ test("POST /agent-events requires X-Waifu-Webhook-Secret", async () => {
 
 test("POST /agent-events validates payload shape", async () => {
 	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
+	const payload = { ...validPayload(), data: [] };
 
 	const response = await app.request("/agent-events", {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			"X-Waifu-Webhook-Secret": "secret",
+			"X-Waifu-Webhook-Signature": signBody(payload),
 		},
-		body: JSON.stringify({ ...VALID_PAYLOAD, data: [] }),
+		body: JSON.stringify(payload),
 	});
 
 	assert.equal(response.status, 400);
 	assert.match(await response.text(), /data must be an object/);
+});
+
+test("POST /agent-events rejects stale signed payloads", async () => {
+	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
+	const payload = { ...validPayload(), timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() };
+	const response = await post(app, payload);
+
+	assert.equal(response.status, 401);
+	assert.match(await response.text(), /timestamp/);
+});
+
+test("POST /agent-events requires idempotencyKey to prevent replay dispatch", async () => {
+	const app = createWebhookRoutes({ secret: "secret", db: fakeDb() });
+	const payload: Record<string, unknown> = validPayload();
+	delete payload.idempotencyKey;
+	const response = await post(app, payload);
+
+	assert.equal(response.status, 401);
+	assert.match(await response.text(), /idempotencyKey/);
 });
 
 test("POST /agent-events is idempotent by idempotencyKey", async () => {
@@ -56,25 +79,33 @@ test("POST /agent-events is idempotent by idempotencyKey", async () => {
 		},
 	});
 
-	const first = await post(app, VALID_PAYLOAD);
+	const payload = validPayload();
+	const first = await post(app, payload);
 	assert.equal(first.status, 202);
 	assert.deepEqual(await first.json(), { status: "accepted", duplicate: false });
 
-	const second = await post(app, VALID_PAYLOAD);
+	const second = await post(app, payload);
 	assert.equal(second.status, 200);
 	assert.deepEqual(await second.json(), { status: "ok", duplicate: true });
 	assert.deepEqual(calls, ["waifu-demo-01"]);
 });
 
 function post(app: ReturnType<typeof createWebhookRoutes>, payload: unknown) {
+	const body = JSON.stringify(payload);
 	return app.request("/agent-events", {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			"X-Waifu-Webhook-Secret": "secret",
+			"X-Waifu-Webhook-Signature": signBody(payload, body),
 		},
-		body: JSON.stringify(payload),
+		body,
 	});
+}
+
+function signBody(payload: unknown, body = JSON.stringify(payload)): string {
+	const timestamp = (payload as { timestamp?: unknown }).timestamp;
+	if (typeof timestamp !== "string") throw new Error("test payload timestamp missing");
+	return signWebhookPayload(body, timestamp, "secret");
 }
 
 function fakeDb() {

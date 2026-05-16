@@ -64,9 +64,9 @@ export async function verifyStewardJwt(token: string): Promise<StewardAuthPrinci
 			return null;
 		}
 
-			if (tenantId !== EXPECTED_TENANT()) {
-				return null;
-			}
+		if (tenantId !== EXPECTED_TENANT()) {
+			return null;
+		}
 
 		return {
 			userId: userId as string,

@@ -31,9 +31,12 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import autoFunAbi from "./evm/abis/WaifuFun.json";
 import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun";
+import { safeFetchJson } from "./safe-url-fetch";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
+const MAX_TOKEN_METADATA_BYTES = 1024 * 1024;
+const TOKEN_METADATA_TIMEOUT_MS = 10_000;
 
 export class EVMRpcProvider {
 	public client: PublicClient;
@@ -491,7 +494,7 @@ export class SolanaRpcProvider extends EventEmitter {
 				const decimals = parsedData?.info?.decimals || 0;
 
 				if (!uri) throw new Error("No URI found in token metadata extension.");
-				const uriData = (await fetch(uri).then(async (resp) => await resp.json())) as {
+				const uriData = await safeFetchJson<{
 					name: string;
 					symbol: string;
 					description: string;
@@ -502,7 +505,10 @@ export class SolanaRpcProvider extends EventEmitter {
 					website: string;
 					telegram: string;
 					discord: string;
-				};
+				}>(uri, {
+					maxBytes: MAX_TOKEN_METADATA_BYTES,
+					timeoutMs: TOKEN_METADATA_TIMEOUT_MS,
+				});
 				return {
 					name: name || uriData.name,
 					symbol: symbol || uriData.symbol,
@@ -529,7 +535,7 @@ export class SolanaRpcProvider extends EventEmitter {
 
 		if (!uri) throw new Error("No URI could be determined for token.");
 
-		const uriData = (await fetch(uri).then(async (resp) => await resp.json())) as {
+		const uriData = await safeFetchJson<{
 			name: string;
 			symbol: string;
 			description: string;
@@ -540,7 +546,10 @@ export class SolanaRpcProvider extends EventEmitter {
 			website: string;
 			telegram: string;
 			discord: string;
-		};
+		}>(uri, {
+			maxBytes: MAX_TOKEN_METADATA_BYTES,
+			timeoutMs: TOKEN_METADATA_TIMEOUT_MS,
+		});
 
 		return {
 			...metadata?.json,

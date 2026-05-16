@@ -86,7 +86,11 @@ function HeaderAuthInner() {
 				<LogIn className="size-4 mr-1.5" />
 				{t("wallet.signIn") ?? "sign in"}
 			</Button>
-			<ConnectModal open={loginOpen} onOpenChange={setLoginOpen} returnTo={sanitizeRedirectPath(params.get("return_to"))} />
+			<ConnectModal
+				open={loginOpen}
+				onOpenChange={setLoginOpen}
+				returnTo={sanitizeRedirectPath(params.get("return_to"))}
+			/>
 		</>
 	);
 }

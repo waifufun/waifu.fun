@@ -19,6 +19,25 @@ function resetPatronAuthMocks() {
 	__setRequirePatronStewardParserForTest(undefined);
 }
 
+function installCreatePatronAuth() {
+	__setRequirePatronDbForTest({
+		select() {
+			return {
+				from: () => ({
+					where: () => ({
+						limit: async () => [{ id: "patron-1", stewardUserId: "steward-1", primaryEmail: null }],
+					}),
+				}),
+			};
+		},
+	} as never);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-1",
+		tenantId: "waifu",
+		address: OWNER,
+	}));
+}
+
 function makeFourMemeTaxAdapter(overrides: Partial<LaunchpadAdapter> = {}): LaunchpadAdapter {
 	const adapter: LaunchpadAdapter = {
 		descriptor: {
@@ -59,6 +78,9 @@ function makeFourMemeTaxAdapter(overrides: Partial<LaunchpadAdapter> = {}): Laun
 }
 
 test("v3 launchpad picker defaults validate, reject prod bounds, and feed POST /v3/agents", async () => {
+	installCreatePatronAuth();
+	test.after(resetPatronAuthMocks);
+
 	const inserted: unknown[] = [];
 	const app = createV3Routes({
 		db: {
@@ -109,7 +131,7 @@ test("v3 launchpad picker defaults validate, reject prod bounds, and feed POST /
 
 	const createRes = await app.request("/agents", {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: { authorization: "Bearer test", "content-type": "application/json" },
 		body: JSON.stringify({
 			agent_id: "waifu-picker-flow",
 			name: "Picker Flow",
@@ -122,6 +144,8 @@ test("v3 launchpad picker defaults validate, reject prod bounds, and feed POST /
 	assert.equal(createRes.status, 201);
 	assert.deepEqual(inserted[0], {
 		agentId: "waifu-picker-flow",
+		ownerStewardUserId: "steward-1",
+		ownerAddress: OWNER,
 		name: "Picker Flow",
 		bio: null,
 		avatarUrl: null,

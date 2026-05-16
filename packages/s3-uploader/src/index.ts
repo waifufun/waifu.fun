@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import mime from "mime-types";
 import sharp from "sharp";
 import { getS3Client } from "./s3Client";
+import { safeFetchBytes } from "./safe-url-fetch";
 
 dotenv.config();
 const { PUBLIC_STORAGE_BASE_URL, S3_BUCKET_NAME: bucketName } = process.env;
@@ -15,6 +16,8 @@ if (!PUBLIC_STORAGE_BASE_URL || !bucketName) {
 }
 
 export const publicBaseUrl = `${PUBLIC_STORAGE_BASE_URL.replace(/\/$/, "")}/${bucketName}`;
+const MAX_IMAGE_FETCH_BYTES = 10 * 1024 * 1024;
+const IMAGE_FETCH_TIMEOUT_MS = 10_000;
 
 export const getFileUrl = (fileName: string, bucket: string): TURLLike => {
 	return `${process.env.PUBLIC_STORAGE_BASE_URL}/${bucket}/${fileName}` as TURLLike;
@@ -133,6 +136,9 @@ export const getBase64Buffer = (image: string | undefined | null) => {
 	if (!image) return null;
 	const imageSplit = String(image).split(";base64,").pop();
 	const imgBuffer = Buffer.from(String(imageSplit), "base64");
+	if (imgBuffer.byteLength > MAX_IMAGE_FETCH_BYTES) {
+		throw new Error(`Base64 image is larger than ${MAX_IMAGE_FETCH_BYTES} bytes`);
+	}
 	return imgBuffer;
 };
 
@@ -203,14 +209,13 @@ export const uploadImageFromUrl = async (
 	width?: number,
 	height?: number,
 ): Promise<TURLLike> => {
-	const response = await fetch(imageUrl);
-
-	if (!response.ok) {
-		throw new Error(`Failed to fetch image from URL: ${imageUrl}, status: ${response.status}`);
-	}
-
-	const imageArrayBuffer = await response.arrayBuffer();
-	const imageBuffer = Buffer.from(imageArrayBuffer);
+	const response = await safeFetchBytes(imageUrl, {
+		maxBytes: MAX_IMAGE_FETCH_BYTES,
+		timeoutMs: IMAGE_FETCH_TIMEOUT_MS,
+		allowedContentTypes: ["image/"],
+		accept: "image/*",
+	});
+	const imageBuffer = Buffer.from(response.bytes);
 
 	const compressed = await sharp(imageBuffer)
 		.resize({ height: height || 750, width: width || 750 })

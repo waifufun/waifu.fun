@@ -24,6 +24,13 @@ function serverAgentApiBase(): string {
 const API_BASE = serverAgentApiBase();
 const FOURMEME_BASE = "https://four.meme/token";
 
+function unwrapApiData<T = unknown>(payload: unknown): T {
+	if (payload && typeof payload === "object" && "data" in payload) {
+		return (payload as { data: T }).data;
+	}
+	return payload as T;
+}
+
 /**
  * Backend shape (AgentDetail) doesn't match AgentData; do the same kind of
  * mapping we do in agents-api.ts for list items, but with the extra fields
@@ -109,28 +116,40 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 			next: { revalidate: 30 },
 		});
 		if (!res.ok) return null;
-		const token = await res.json();
+		const token = unwrapApiData<Record<string, unknown>>(await res.json());
+		const tokenAddress =
+			typeof token.contractAddress === "string"
+				? token.contractAddress
+				: typeof token.address === "string"
+					? token.address
+					: typeof token.tokenAddress === "string"
+						? token.tokenAddress
+						: address;
 		const shaped: AgentData = {
-			tokenAddress: token.contractAddress,
-			name: token.name,
-			ticker: token.ticker,
+			tokenAddress,
+			name: typeof token.name === "string" ? token.name : "unknown",
+			ticker: typeof token.ticker === "string" ? token.ticker : typeof token.symbol === "string" ? token.symbol : "",
 			status: token.status === "migrated" || token.status === "locked" ? "graduated" : "active",
 			raisedToken: "BNB",
-			fourMemeUrl: `https://four.meme/token/${token.contractAddress}`,
+			fourMemeUrl: `https://four.meme/token/${tokenAddress}`,
 		};
-		if (token.creator) shaped.walletAddress = token.creator;
-		if (token.bondingCurveAddress) shaped.treasuryAddress = token.bondingCurveAddress;
-		if (token.image) shaped.image = token.image;
-		if (token.description) shaped.description = token.description;
-		if (token.curveProgress !== undefined) shaped.curveProgress = token.curveProgress;
-		if (token.curveLimit !== undefined) shaped.curveLimit = token.curveLimit;
-		if (token.reserveAmount !== undefined) shaped.waifuBonded = token.reserveAmount;
-		if (token.socials?.twitter) {
-			const handle = token.socials.twitter.split("/").pop()?.replace("@", "");
+		if (typeof token.creator === "string") shaped.walletAddress = token.creator;
+		if (typeof token.creatorAddress === "string") shaped.walletAddress = token.creatorAddress;
+		if (typeof token.bondingCurveAddress === "string") shaped.treasuryAddress = token.bondingCurveAddress;
+		if (typeof token.poolAddress === "string") shaped.treasuryAddress = token.poolAddress;
+		if (typeof token.image === "string") shaped.image = token.image;
+		if (typeof token.description === "string") shaped.description = token.description;
+		if (token.curveProgress !== undefined) shaped.curveProgress = Number(token.curveProgress);
+		if (token.progressPercent !== undefined) shaped.curveProgress = Number(token.progressPercent);
+		if (token.curveLimit !== undefined) shaped.curveLimit = Number(token.curveLimit);
+		if (token.reserveAmount !== undefined) shaped.waifuBonded = Number(token.reserveAmount);
+		const socials = token.socials as { twitter?: unknown } | undefined;
+		if (typeof socials?.twitter === "string") {
+			const handle = socials.twitter.split("/").pop()?.replace("@", "");
 			if (handle) shaped.twitterHandle = handle;
 		}
-		if (token.pool) {
-			shaped.pancakeSwapUrl = `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}`;
+		if (token.pool || token.poolAddress) {
+			shaped.pancakeSwapUrl = `https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`;
 		}
 		return shaped;
 	} catch (e) {
@@ -166,15 +185,23 @@ async function fetchTrades(address: string): Promise<AgentTrade[]> {
 			next: { revalidate: 10 },
 		});
 		if (!res.ok) return [];
-		const data = await res.json();
-		const docs = Array.isArray(data) ? data : (data.docs ?? []);
-		return docs.slice(0, 20).map((t: Record<string, unknown>) => ({
-			txId: String(t.txId ?? ""),
-			type: (t.type === "sell" ? "sell" : "buy") as "buy" | "sell",
-			address: String(t.address ?? ""),
-			amount: String(t.toAmount ?? t.fromAmount ?? ""),
-			timestamp: typeof t.timestamp === "number" ? t.timestamp : Date.now(),
-		}));
+		const data = unwrapApiData<Record<string, unknown> | unknown[]>(await res.json());
+		const docs = Array.isArray(data) ? data : data && "docs" in data && Array.isArray(data.docs) ? data.docs : [];
+		return docs.slice(0, 20).map((t) => {
+			const trade = t as Record<string, unknown>;
+			return {
+				txId: String(trade.txId ?? trade.txHash ?? ""),
+				type: (trade.type === "sell" || trade.side === "sell" ? "sell" : "buy") as "buy" | "sell",
+				address: String(trade.address ?? trade.traderAddress ?? ""),
+				amount: String(trade.toAmount ?? trade.amountOut ?? trade.fromAmount ?? trade.amountIn ?? ""),
+				timestamp:
+					typeof trade.timestamp === "number"
+						? trade.timestamp
+						: typeof trade.timestamp === "string"
+							? Date.parse(trade.timestamp)
+							: Date.now(),
+			};
+		});
 	} catch (e) {
 		console.error("fallback trades fetch failed", e);
 		return [];
