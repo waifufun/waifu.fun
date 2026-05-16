@@ -2,7 +2,7 @@ import {
 	type AgentEventPayload,
 	ExternalPullRuntimeAdapter,
 	ExternalWebhookRuntimeAdapter,
-	MiladyCloudRuntimeAdapter,
+	ElizaCloudRuntimeAdapter,
 	type RuntimeAdapter,
 	type RuntimeKind,
 	createRuntimeAdapterMap,
@@ -10,7 +10,7 @@ import {
 import { agentPersonaQueries, getDatabase } from "@waifufun/db";
 
 import { emitAgentEvent } from "./events/emit.js";
-import { getMiladyClient } from "./milady-client.js";
+import { getElizaClient } from "./eliza-client.js";
 
 let registry: Map<RuntimeKind, RuntimeAdapter> | null = null;
 
@@ -18,7 +18,7 @@ export function getRuntimeRegistry(): Map<RuntimeKind, RuntimeAdapter> {
 	if (registry) return registry;
 
 	const created = createRuntimeAdapterMap([
-		new MiladyCloudRuntimeAdapter({ client: getMiladyClient() }),
+		new ElizaCloudRuntimeAdapter({ client: getElizaClient() }),
 		new ExternalWebhookRuntimeAdapter({
 			getRegistration: async (agentId) => {
 				const persona = await getPersona(agentId);

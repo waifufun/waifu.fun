@@ -10,8 +10,8 @@ test("GET /v2/agents/:id/runtime returns seeded runtime state", async () => {
 			assert.equal(agentId, "waifu-demo-01");
 			return {
 				state: "live",
-				containerId: "milady-agent-01",
-				containerUrl: "https://milady.example/agents/milady-agent-01",
+				containerId: "eliza-agent-01",
+				containerUrl: "https://eliza.example/agents/eliza-agent-01",
 				lastEventAt: "2026-04-24T12:00:00.000Z",
 			};
 		},
@@ -22,8 +22,8 @@ test("GET /v2/agents/:id/runtime returns seeded runtime state", async () => {
 	assert.equal(response.status, 200);
 	assert.deepEqual(await response.json(), {
 		state: "live",
-		containerId: "milady-agent-01",
-		containerUrl: "https://milady.example/agents/milady-agent-01",
+		containerId: "eliza-agent-01",
+		containerUrl: "https://eliza.example/agents/eliza-agent-01",
 		lastEventAt: "2026-04-24T12:00:00.000Z",
 	});
 });

@@ -560,7 +560,7 @@ export default function RuntimeConnectionPanel({ agent, isLoading }: Props) {
 
 	const kind: AgentRuntimeKind | undefined = agent.runtimeKind ?? agent.runtime?.kind;
 
-	if (!kind || kind === "milady-cloud") {
+	if (!kind || kind === "eliza-cloud") {
 		// managed runtime: route to ping-us placeholder rather than silent null
 		return <ManagedPlaceholder />;
 	}

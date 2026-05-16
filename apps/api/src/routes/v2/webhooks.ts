@@ -3,7 +3,7 @@ import { Hono } from "hono";
 
 import { getDatabase, webhookInbox } from "@waifufun/db";
 
-import { type MiladyCloudClient, createMiladyCloudClient } from "../../services/milady-client.js";
+import { type ElizaCloudClient, createElizaCloudClient } from "../../services/eliza-client.js";
 import { type WebhookConsumerEvent, dispatchEvent } from "../../services/webhook-consumer/index.js";
 
 type Logger = Console;
@@ -12,7 +12,7 @@ type Db = ReturnType<typeof getDatabase>["db"];
 type WebhookRoutesOptions = {
 	db?: Db;
 	secret?: string;
-	miladyCloud?: MiladyCloudClient;
+	elizaCloud?: ElizaCloudClient;
 	logger?: Logger;
 	dispatch?: typeof dispatchEvent;
 };
@@ -52,16 +52,16 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 			}
 
 			const logger = options.logger ?? console;
-			const miladyCloud =
-				options.miladyCloud ??
-				createMiladyCloudClient({
-					baseUrl: process.env.MILADY_CLOUD_BASE_URL ?? "",
-					apiKey: process.env.MILADY_CLOUD_API_KEY ?? "",
+			const elizaCloud =
+				options.elizaCloud ??
+				createElizaCloudClient({
+					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? "",
+					apiKey: process.env.ELIZA_CLOUD_API_KEY ?? "",
 					logger,
 				});
 
 			try {
-				await (options.dispatch ?? dispatchEvent)(payload, { miladyCloud, logger });
+				await (options.dispatch ?? dispatchEvent)(payload, { elizaCloud, logger });
 			} catch (err) {
 				logger.error?.("[webhooks] internal dispatch failed", {
 					event: payload.event,

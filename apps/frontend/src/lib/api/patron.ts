@@ -33,7 +33,7 @@ export type AgentEvent = {
 	data?: Record<string, unknown>;
 };
 
-export type AgentRuntimeKind = "milady-cloud" | "third-party-webhook" | "third-party-pull";
+export type AgentRuntimeKind = "eliza-cloud" | "third-party-webhook" | "third-party-pull";
 
 export type AgentRuntimeDetail = {
 	kind: AgentRuntimeKind;

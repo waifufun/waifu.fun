@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 
 import {
-	MiladyCloudRuntimeAdapter,
+	ElizaCloudRuntimeAdapter,
 	type ProvisionOptions,
 	type ProvisionResult,
 	type RuntimeAdapter,
@@ -21,7 +21,7 @@ import type { Database } from "@waifufun/db/client";
 
 import { generateRuntimeApiKey, hashRuntimeApiKey } from "../middleware/agent-pull-auth.js";
 import { emitAgentEvent } from "./events/emit.js";
-import type { CreateAgentInput, MiladyClient } from "./milady-client.js";
+import type { CreateAgentInput, ElizaClient } from "./eliza-client.js";
 import { getRuntimeRegistry } from "./runtime-registry.js";
 
 export interface Logger {
@@ -33,7 +33,7 @@ export interface Logger {
 
 export interface ProvisionClaimedAgentDeps {
 	db?: Database;
-	miladyClient?: MiladyClient;
+	elizaClient?: ElizaClient;
 	runtimeRegistry?: Map<RuntimeKind, RuntimeAdapter>;
 	logger?: Logger;
 	emitEvent?: typeof emitAgentEvent;
@@ -413,14 +413,14 @@ async function mergePersonaProvisioningMetadata(
 }
 
 function legacyRegistryFromDeps(deps: ProvisionClaimedAgentDeps): Map<RuntimeKind, RuntimeAdapter> | null {
-	if (!deps.miladyClient) return null;
-	const adapter = new MiladyCloudRuntimeAdapter({ client: deps.miladyClient });
+	if (!deps.elizaClient) return null;
+	const adapter = new ElizaCloudRuntimeAdapter({ client: deps.elizaClient });
 	return new Map([[adapter.kind, adapter]]);
 }
 
 function runtimeKindFrom(data: Record<string, unknown>, fallback: string | null): RuntimeKind {
-	const value = stringField(data, "runtimeKind") ?? fallback ?? "milady-cloud";
-	if (value === "milady-cloud" || value === "third-party-webhook" || value === "third-party-pull") {
+	const value = stringField(data, "runtimeKind") ?? fallback ?? "eliza-cloud";
+	if (value === "eliza-cloud" || value === "third-party-webhook" || value === "third-party-pull") {
 		return value;
 	}
 	throw new Error(`unsupported runtime kind: ${value}`);

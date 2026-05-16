@@ -7,7 +7,7 @@ const VALID_PAYLOAD = {
 	event: "agent.claimed",
 	timestamp: "2026-04-24T12:00:00.000Z",
 	agentId: "waifu-demo-01",
-	data: { claimedByXHandle: "milady" },
+	data: { claimedByXHandle: "eliza" },
 	idempotencyKey: "evt_1",
 };
 
@@ -45,7 +45,7 @@ test("POST /agent-events is idempotent by idempotencyKey", async () => {
 	const app = createWebhookRoutes({
 		secret: "secret",
 		db,
-		miladyCloud: {
+		elizaCloud: {
 			async provisionAgent(input) {
 				calls.push(input.agentId);
 				return { containerId: "container-1" };

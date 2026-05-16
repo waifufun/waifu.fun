@@ -1,9 +1,9 @@
 /**
- * Milady Cloud API client — service-account bridge.
+ * Eliza Cloud API client — service-account bridge.
  *
- * waifu-core acts as a gateway: the frontend never talks to milady-cloud
+ * waifu-core acts as a gateway: the frontend never talks to eliza-cloud
  * directly. This client signs requests with a service JWT that has admin
- * access to the milady-cloud backend running on the same host.
+ * access to the eliza-cloud backend running on the same host.
  */
 
 import * as jose from "jose";
@@ -11,7 +11,7 @@ import type { Address } from "viem";
 
 // ─── Types ────────────────────────────────────────────────────────
 
-export interface MiladyAvailability {
+export interface ElizaAvailability {
 	totalSlots: number;
 	usedSlots: number;
 	availableSlots: number;
@@ -42,7 +42,7 @@ export interface ProvisionAgentInput {
 	spec: AgentSpec;
 }
 
-export interface MiladyAgent {
+export interface ElizaAgent {
 	agent_id: string;
 	agent_name: string;
 	status: string;
@@ -54,7 +54,7 @@ export interface MiladyAgent {
 	[key: string]: unknown;
 }
 
-export interface MiladyJob {
+export interface ElizaJob {
 	id: string;
 	name: string;
 	state: string;
@@ -64,7 +64,7 @@ export interface MiladyJob {
 	[key: string]: unknown;
 }
 
-export interface MiladyCreateResult {
+export interface ElizaCreateResult {
 	agentId: string;
 	agentName: string;
 	jobId: string;
@@ -73,7 +73,7 @@ export interface MiladyCreateResult {
 	message: string;
 }
 
-export interface MiladyJobResult {
+export interface ElizaJobResult {
 	jobId: string;
 	status: string;
 	message: string;
@@ -81,33 +81,33 @@ export interface MiladyJobResult {
 
 // ─── Client ───────────────────────────────────────────────────────
 
-export interface MiladyClientConfig {
+export interface ElizaClientConfig {
 	baseUrl: string;
 	jwtSecret?: string | undefined;
 	apiKey?: string | undefined;
 	logger?: Logger | undefined;
-	/** Service-account user ID in milady-cloud (created lazily). */
+	/** Service-account user ID in eliza-cloud (created lazily). */
 	serviceUserId?: string | undefined;
 }
 
-export class MiladyClient {
+export class ElizaClient {
 	private readonly baseUrl: string;
 	private readonly jwtSecret: Uint8Array;
 	private cachedToken: string | null = null;
 	private tokenExpiresAt = 0;
 
-	constructor(private readonly config: MiladyClientConfig) {
+	constructor(private readonly config: ElizaClientConfig) {
 		this.baseUrl = config.baseUrl.replace(/\/+$/, "");
 		this.jwtSecret = new TextEncoder().encode(config.jwtSecret ?? "");
 	}
 
 	/**
-	 * Generate a service-account JWT compatible with milady-cloud's
+	 * Generate a service-account JWT compatible with eliza-cloud's
 	 * `validateAuth` middleware. Signs with HS256 and includes `userId`.
 	 */
 	private async getServiceToken(): Promise<string> {
 		if (!this.config.jwtSecret) {
-			throw new MiladyCloudNotConfiguredError("MILADY_JWT_SECRET is not configured");
+			throw new ElizaCloudNotConfiguredError("ELIZA_JWT_SECRET is not configured");
 		}
 
 		const now = Math.floor(Date.now() / 1000);
@@ -145,7 +145,7 @@ export class MiladyClient {
 		},
 	): Promise<T> {
 		if (!this.baseUrl) {
-			throw new MiladyCloudNotConfiguredError();
+			throw new ElizaCloudNotConfiguredError();
 		}
 
 		const url = `${this.baseUrl}${path}`;
@@ -177,14 +177,14 @@ export class MiladyClient {
 
 		if (!res.ok) {
 			const text = await res.text().catch(() => "");
-			const message = `milady-cloud ${method} ${path}: ${res.status} ${text}`;
+			const message = `eliza-cloud ${method} ${path}: ${res.status} ${text}`;
 			const meta = { status: res.status, method, path, body: text };
 			if (res.status === 404 || res.status >= 500) {
 				this.config.logger?.error?.(message, meta);
 			} else {
 				this.config.logger?.warn?.(message, meta);
 			}
-			throw new MiladyApiError(res.status, message, { method, path });
+			throw new ElizaApiError(res.status, message, { method, path });
 		}
 
 		if (res.status === 204) {
@@ -203,7 +203,7 @@ export class MiladyClient {
 		}
 
 		if (!json.success) {
-			throw new MiladyApiError(res.status, json.error ?? "Unknown milady-cloud error", {
+			throw new ElizaApiError(res.status, json.error ?? "Unknown eliza-cloud error", {
 				method,
 				path,
 			});
@@ -214,7 +214,7 @@ export class MiladyClient {
 
 	private async generateUserToken(userId: string): Promise<string> {
 		if (!this.config.jwtSecret) {
-			throw new MiladyCloudNotConfiguredError("MILADY_JWT_SECRET is not configured");
+			throw new ElizaCloudNotConfiguredError("ELIZA_JWT_SECRET is not configured");
 		}
 
 		const now = Math.floor(Date.now() / 1000);
@@ -231,21 +231,21 @@ export class MiladyClient {
 
 	// ── Public API ──────────────────────────────────────────────────
 
-	async getAvailability(): Promise<MiladyAvailability> {
-		return this.request<MiladyAvailability>("GET", "/api/availability", {
+	async getAvailability(): Promise<ElizaAvailability> {
+		return this.request<ElizaAvailability>("GET", "/api/availability", {
 			authenticated: false,
 		});
 	}
 
-	async createAgent(userId: string, data: CreateAgentInput): Promise<MiladyCreateResult> {
-		return this.request<MiladyCreateResult>("POST", "/api/agents", {
+	async createAgent(userId: string, data: CreateAgentInput): Promise<ElizaCreateResult> {
+		return this.request<ElizaCreateResult>("POST", "/api/agents", {
 			body: data,
 			asUserId: userId,
 		});
 	}
 
 	/** Compatibility alias for the W3.7 webhook bridge. */
-	async provisionAgent(input: ProvisionAgentInput): Promise<MiladyCreateResult> {
+	async provisionAgent(input: ProvisionAgentInput): Promise<ElizaCreateResult> {
 		return this.createAgent(input.agentId, {
 			agentName: input.agentId,
 			agentConfig: {
@@ -257,44 +257,44 @@ export class MiladyClient {
 		});
 	}
 
-	async getAgents(userId: string): Promise<MiladyAgent[]> {
-		return this.request<MiladyAgent[]>("GET", "/api/agents", {
+	async getAgents(userId: string): Promise<ElizaAgent[]> {
+		return this.request<ElizaAgent[]>("GET", "/api/agents", {
 			asUserId: userId,
 		});
 	}
 
-	async getAgent(userId: string, agentId: string): Promise<MiladyAgent> {
-		return this.request<MiladyAgent>("GET", `/api/agents/${agentId}`, {
+	async getAgent(userId: string, agentId: string): Promise<ElizaAgent> {
+		return this.request<ElizaAgent>("GET", `/api/agents/${agentId}`, {
 			asUserId: userId,
 		});
 	}
 
-	async getJobStatus(jobId: string): Promise<MiladyJob> {
-		return this.request<MiladyJob>("GET", `/api/jobs/${jobId}`);
+	async getJobStatus(jobId: string): Promise<ElizaJob> {
+		return this.request<ElizaJob>("GET", `/api/jobs/${jobId}`);
 	}
 
-	async deleteAgent(userId: string, agentId: string): Promise<MiladyJobResult> {
-		return this.request<MiladyJobResult>("DELETE", `/api/agents/${agentId}`, {
+	async deleteAgent(userId: string, agentId: string): Promise<ElizaJobResult> {
+		return this.request<ElizaJobResult>("DELETE", `/api/agents/${agentId}`, {
 			asUserId: userId,
 		});
 	}
 
-	async restartAgent(userId: string, agentId: string): Promise<MiladyJobResult> {
-		return this.request<MiladyJobResult>("POST", `/api/agents/${agentId}/restart`, {
+	async restartAgent(userId: string, agentId: string): Promise<ElizaJobResult> {
+		return this.request<ElizaJobResult>("POST", `/api/agents/${agentId}/restart`, {
 			asUserId: userId,
 		});
 	}
 
-	async pauseAgent(agentId: string): Promise<MiladyJobResult> {
-		return this.request<MiladyJobResult>("POST", `/api/agents/${encodeURIComponent(agentId)}/pause`);
+	async pauseAgent(agentId: string): Promise<ElizaJobResult> {
+		return this.request<ElizaJobResult>("POST", `/api/agents/${encodeURIComponent(agentId)}/pause`);
 	}
 
-	async resumeAgent(agentId: string): Promise<MiladyJobResult> {
-		return this.request<MiladyJobResult>("POST", `/api/agents/${encodeURIComponent(agentId)}/resume`);
+	async resumeAgent(agentId: string): Promise<ElizaJobResult> {
+		return this.request<ElizaJobResult>("POST", `/api/agents/${encodeURIComponent(agentId)}/resume`);
 	}
 
-	async deprovisionAgent(agentId: string): Promise<MiladyJobResult> {
-		return this.request<MiladyJobResult>("DELETE", `/api/agents/${encodeURIComponent(agentId)}`);
+	async deprovisionAgent(agentId: string): Promise<ElizaJobResult> {
+		return this.request<ElizaJobResult>("DELETE", `/api/agents/${encodeURIComponent(agentId)}`);
 	}
 
 	async topUpCredits(agentId: string, amount: number): Promise<void> {
@@ -310,8 +310,8 @@ export class MiladyClient {
 	}
 }
 
-export interface MiladyCloudClient {
-	provisionAgent(input: ProvisionAgentInput): Promise<MiladyCreateResult | { containerId: string }>;
+export interface ElizaCloudClient {
+	provisionAgent(input: ProvisionAgentInput): Promise<ElizaCreateResult | { containerId: string }>;
 	pauseAgent(agentId: string): Promise<unknown>;
 	resumeAgent(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
@@ -320,7 +320,7 @@ export interface MiladyCloudClient {
 
 // ─── Error classes ────────────────────────────────────────────────
 
-export class MiladyApiError extends Error {
+export class ElizaApiError extends Error {
 	readonly method: string | undefined;
 	readonly path: string | undefined;
 
@@ -330,46 +330,46 @@ export class MiladyApiError extends Error {
 		opts: { method?: string; path?: string } = {},
 	) {
 		super(message);
-		this.name = "MiladyApiError";
+		this.name = "ElizaApiError";
 		this.method = opts.method;
 		this.path = opts.path;
 	}
 }
 
-export const MiladyCloudError = MiladyApiError;
+export const ElizaCloudError = ElizaApiError;
 
-export class MiladyCloudNotConfiguredError extends Error {
-	constructor(message = "MILADY_CLOUD_BASE_URL is not configured") {
+export class ElizaCloudNotConfiguredError extends Error {
+	constructor(message = "ELIZA_CLOUD_BASE_URL is not configured") {
 		super(message);
-		this.name = "MiladyCloudNotConfiguredError";
+		this.name = "ElizaCloudNotConfiguredError";
 	}
 }
 
 // ─── Singleton factory ────────────────────────────────────────────
 
-let _instance: MiladyClient | null = null;
+let _instance: ElizaClient | null = null;
 
-export function getMiladyClient(): MiladyClient {
+export function getElizaClient(): ElizaClient {
 	if (!_instance) {
-		const baseUrl = process.env.MILADY_API_URL ?? "http://localhost:3000";
-		const jwtSecret = process.env.MILADY_JWT_SECRET;
+		const baseUrl = process.env.ELIZA_API_URL ?? "http://localhost:3000";
+		const jwtSecret = process.env.ELIZA_JWT_SECRET;
 
 		if (!jwtSecret) {
-			throw new Error("MILADY_JWT_SECRET env var is required for the agent bridge");
+			throw new Error("ELIZA_JWT_SECRET env var is required for the agent bridge");
 		}
 
-		_instance = new MiladyClient({ baseUrl, jwtSecret });
+		_instance = new ElizaClient({ baseUrl, jwtSecret });
 	}
 
 	return _instance;
 }
 
-export function createMiladyCloudClient(opts: {
+export function createElizaCloudClient(opts: {
 	baseUrl: string;
 	apiKey: string;
 	logger: Logger;
-}): MiladyCloudClient {
-	return new MiladyClient({
+}): ElizaCloudClient {
+	return new ElizaClient({
 		baseUrl: opts.baseUrl.trim().replace(/\/+$/, ""),
 		apiKey: opts.apiKey,
 		logger: opts.logger,

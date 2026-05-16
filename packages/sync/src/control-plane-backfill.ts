@@ -1721,7 +1721,7 @@ function pickRuntimeProvider(
 	desired: ControlPlaneRuntimeProvider | undefined,
 ): ControlPlaneRuntimeProvider {
 	if (!existing || existing === "unknown") {
-		return desired ?? existing ?? "milady-cloud";
+		return desired ?? existing ?? "eliza-cloud";
 	}
 	return existing;
 }
@@ -1839,9 +1839,9 @@ function normalizeRuntimeProvider(
 	cloudAgentId: string | undefined,
 ): ControlPlaneRuntimeProvider {
 	const normalized = value?.trim().toLowerCase();
-	if (normalized?.includes("milady")) return "milady-cloud";
+	if (normalized?.includes("eliza")) return "eliza-cloud";
 	if (normalized === "unknown") return "unknown";
-	return cloudAgentId ? "milady-cloud" : "unknown";
+	return cloudAgentId ? "eliza-cloud" : "unknown";
 }
 
 function normalizeAgentStatus(value: string | undefined): ControlPlaneAgentStatus {
@@ -2315,7 +2315,7 @@ function createDryRunTokenRuntimeRow(
 		contract_address: payload.contract_address,
 		normalized_contract_address: payload.normalized_contract_address,
 		cloud_agent_id: payload.cloud_agent_id ?? null,
-		runtime_provider: payload.runtime_provider ?? "milady-cloud",
+		runtime_provider: payload.runtime_provider ?? "eliza-cloud",
 		agent_status: payload.agent_status ?? "none",
 		lifecycle_state: payload.lifecycle_state ?? null,
 		billing_mode: payload.billing_mode ?? null,

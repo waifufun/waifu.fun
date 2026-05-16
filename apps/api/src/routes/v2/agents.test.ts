@@ -30,7 +30,7 @@ test("resurrectAgent tops up credits, clears dormant fields, and emits resurrect
 
 	const result = await resurrectAgent("waifu-demo-01", 2500, {
 		db,
-		miladyClient: {
+		elizaClient: {
 			async topUpCredits(agentId, amount) {
 				toppedUp.push({ agentId, amount });
 			},

@@ -1,5 +1,6 @@
 "use client";
 import { generateMedia, generateMediaForToken, generateMetadata, generateRemoteMetadata } from "@/lib/api";
+import type { TokenMetadata } from "@/lib/token-metadata";
 import { curveLimitConst } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import type { TChain, TChainId } from "@waifufun/types";
@@ -78,20 +79,6 @@ export type TokenFormData = {
 	description: string;
 	symbol: string;
 	buyAmount: number;
-	curveLimit: number;
-	delayForTrade: number;
-	tradeLimitSol: number;
-};
-
-export type TokenMetadata = {
-	name: string;
-	symbol: string;
-	description: string;
-	image: string;
-	/** Salt for CREATE2 address derivation on BSC */
-	launchSalt: string;
-	buyAmount: number;
-	metadataUrl: string;
 	curveLimit: number;
 	delayForTrade: number;
 	tradeLimitSol: number;

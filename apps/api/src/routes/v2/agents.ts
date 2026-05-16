@@ -31,7 +31,7 @@ import {
 	createStewardClient,
 } from "../../services/agent-launch/index.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
-import { type MiladyCloudClient, createMiladyCloudClient } from "../../services/milady-client.js";
+import { type ElizaCloudClient, createElizaCloudClient } from "../../services/eliza-client.js";
 import {
 	type PatronContext,
 	type ProvisionAdapterConfig,
@@ -130,7 +130,7 @@ export function buildLaunchOrchestratorDeps(): OrchestratorDeps {
 						? "third-party-webhook"
 						: personaJson?.runtimeKind === "pull"
 							? "third-party-pull"
-							: "milady-cloud";
+							: "eliza-cloud";
 				const persona = await agentPersonaQueries.createAgentPersona(db, {
 					agentId: args.agentId,
 					name: args.name,
@@ -187,7 +187,7 @@ function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
 
 export type ResurrectAgentDeps = {
 	db: ReturnType<typeof getDatabase>["db"];
-	miladyClient: Pick<MiladyCloudClient, "topUpCredits">;
+	elizaClient: Pick<ElizaCloudClient, "topUpCredits">;
 	emitEvent?: typeof emitAgentEvent;
 };
 
@@ -200,7 +200,7 @@ export async function resurrectAgent(
 	creditsAmount: number,
 	deps: ResurrectAgentDeps,
 ): Promise<{ agentId: string; creditsAmount: number; modelTier: "premium" }> {
-	await deps.miladyClient.topUpCredits(agentId, creditsAmount);
+	await deps.elizaClient.topUpCredits(agentId, creditsAmount);
 	const now = new Date();
 	await deps.db
 		.update(agentPersonas)
@@ -229,7 +229,7 @@ export async function resurrectAgent(
  * POST /v2/agents/:id/resurrect
  *
  * Patron top-up endpoint. Body: { creditsAmount: number } where creditsAmount
- * is represented in USD cents until Milady Cloud finalizes credit units.
+ * is represented in USD cents until Eliza Cloud finalizes credit units.
  */
 app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (c) => {
 	const db = requireDb();
@@ -249,16 +249,16 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 		return c.json({ error: "creditsAmount must be a positive number", unit: "usd_cents" }, 400);
 	}
 
-	const baseUrl = process.env.MILADY_CLOUD_BASE_URL;
-	const apiKey = process.env.MILADY_CLOUD_API_KEY ?? "";
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL;
+	const apiKey = process.env.ELIZA_CLOUD_API_KEY ?? "";
 	if (!baseUrl) {
-		return c.json({ error: "milady cloud unavailable" }, 503);
+		return c.json({ error: "eliza cloud unavailable" }, 503);
 	}
 
 	try {
 		const result = await resurrectAgent(agentId, body.creditsAmount, {
 			db,
-			miladyClient: createMiladyCloudClient({ baseUrl, apiKey, logger: console }),
+			elizaClient: createElizaCloudClient({ baseUrl, apiKey, logger: console }),
 		});
 		return c.json({ ok: true, ...result, creditsUnit: "usd_cents" }, 200);
 	} catch (err) {

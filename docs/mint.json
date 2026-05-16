@@ -48,7 +48,7 @@
 		{
 			"name": "GitHub",
 			"icon": "github",
-			"url": "https://github.com/milady-ai/milady"
+			"url": "https://github.com/eliza-ai/eliza"
 		},
 		{
 			"name": "Community",
@@ -63,11 +63,11 @@
 		},
 		{
 			"group": "Core Concepts",
-			"pages": ["concepts/agents", "concepts/tokens", "concepts/bonding-curves", "concepts/milady-cloud"]
+			"pages": ["concepts/agents", "concepts/tokens", "concepts/bonding-curves", "concepts/eliza-cloud"]
 		},
 		{
 			"group": "Guides",
-			"pages": ["guides/deploy-agent", "guides/trading", "guides/agent-configuration", "guides/milady-to-waifu"]
+			"pages": ["guides/deploy-agent", "guides/trading", "guides/agent-configuration", "guides/eliza-to-waifu"]
 		},
 		{
 			"group": "API Reference",
@@ -80,6 +80,6 @@
 	],
 	"footerSocials": {
 		"x": "https://x.com/waifufun",
-		"github": "https://github.com/milady-ai/milady"
+		"github": "https://github.com/eliza-ai/eliza"
 	}
 }

@@ -8,12 +8,12 @@ import type {
 	RuntimeKind,
 } from "../types.js";
 
-export interface MiladyCreateAgentInput {
+export interface ElizaCreateAgentInput {
 	agentName: string;
 	agentConfig?: Record<string, unknown> | undefined;
 }
 
-export interface MiladyCreateAgentResult {
+export interface ElizaCreateAgentResult {
 	agentId?: string;
 	containerId?: string;
 	agentName?: string;
@@ -24,34 +24,34 @@ export interface MiladyCreateAgentResult {
 	livenessCheckUrl?: string;
 }
 
-export interface MiladyAgentStatus {
+export interface ElizaAgentStatus {
 	status?: string;
 	updated_at?: string;
 	updatedAt?: string;
 	latencyMs?: number;
 }
 
-export interface MiladyClient {
-	createAgent(userId: string, data: MiladyCreateAgentInput): Promise<MiladyCreateAgentResult>;
+export interface ElizaClient {
+	createAgent(userId: string, data: ElizaCreateAgentInput): Promise<ElizaCreateAgentResult>;
 	pauseAgent(agentId: string): Promise<unknown>;
 	resumeAgent(agentId: string): Promise<unknown>;
 	deprovisionAgent(agentId: string): Promise<unknown>;
-	getAgent?(userId: string, agentId: string): Promise<MiladyAgentStatus>;
+	getAgent?(userId: string, agentId: string): Promise<ElizaAgentStatus>;
 	dispatchEvent?(agentId: string, event: AgentEventPayload): Promise<unknown>;
 }
 
-export interface MiladyCloudRuntimeAdapterOptions {
-	client: MiladyClient;
+export interface ElizaCloudRuntimeAdapterOptions {
+	client: ElizaClient;
 	logger?: Logger | undefined;
 }
 
-export class MiladyCloudRuntimeAdapter implements RuntimeAdapter {
-	readonly kind: RuntimeKind = "milady-cloud";
+export class ElizaCloudRuntimeAdapter implements RuntimeAdapter {
+	readonly kind: RuntimeKind = "eliza-cloud";
 
-	private readonly client: MiladyClient;
+	private readonly client: ElizaClient;
 	private readonly logger?: Logger | undefined;
 
-	constructor(opts: MiladyCloudRuntimeAdapterOptions) {
+	constructor(opts: ElizaCloudRuntimeAdapterOptions) {
 		this.client = opts.client;
 		this.logger = opts.logger;
 	}
@@ -67,7 +67,7 @@ export class MiladyCloudRuntimeAdapter implements RuntimeAdapter {
 		});
 
 		const runtimeAgentId = result.agentId ?? result.containerId ?? opts.agentId;
-		this.logger?.info?.("provisioned milady cloud runtime", {
+		this.logger?.info?.("provisioned eliza cloud runtime", {
 			agentId: opts.agentId,
 			runtimeAgentId,
 			jobId: result.jobId,
@@ -83,7 +83,7 @@ export class MiladyCloudRuntimeAdapter implements RuntimeAdapter {
 
 	async dispatchEvent(agentId: string, event: AgentEventPayload): Promise<void> {
 		if (!this.client.dispatchEvent) {
-			this.logger?.debug?.("milady client has no dispatchEvent; skipping runtime event", {
+			this.logger?.debug?.("eliza client has no dispatchEvent; skipping runtime event", {
 				agentId,
 				eventType: event.eventType,
 			});

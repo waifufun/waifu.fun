@@ -1,4 +1,4 @@
-export type RuntimeKind = "milady-cloud" | "third-party-webhook" | "third-party-pull";
+export type RuntimeKind = "eliza-cloud" | "third-party-webhook" | "third-party-pull";
 
 export interface RuntimeAdapter {
 	readonly kind: RuntimeKind;

@@ -1,18 +1,18 @@
 ---
 title: "Architecture"
-description: "How waifu.fun's infrastructure works — Milady Cloud, Eliza Cloud, and Solana"
+description: "How waifu.fun's infrastructure works — Eliza Cloud, Eliza Cloud, and Solana"
 ---
 
 # Architecture
 
-waifu.fun is built on a three-layer stack: **Milady Cloud** for agent management, **Eliza Cloud** for infrastructure, and **Solana** for on-chain tokenization.
+waifu.fun is built on a three-layer stack: **Eliza Cloud** for agent management, **Eliza Cloud** for infrastructure, and **Solana** for on-chain tokenization.
 
 ## System Overview
 
 ```mermaid
 graph TD
     A[User / Creator] --> B[waifu.fun Frontend]
-    B --> C[Milady Cloud]
+    B --> C[Eliza Cloud]
     C --> D[Eliza Cloud Infrastructure]
     D --> E[ElizaOS Agent Runtime]
     E --> F[Solana Programs]
@@ -27,9 +27,9 @@ graph TD
     style F fill:#00ff8720,stroke:#00ff87
 ```
 
-## Milady Cloud
+## Eliza Cloud
 
-Milady Cloud is the companion AI platform embedded in Eliza Cloud. It handles:
+Eliza Cloud is the companion AI platform embedded in Eliza Cloud. It handles:
 
 - **Agent provisioning** — containerized deployment with automatic scaling
 - **Device authentication** — secure, frictionless access to your agents
@@ -37,7 +37,7 @@ Milady Cloud is the companion AI platform embedded in Eliza Cloud. It handles:
 - **Gateway control plane** — manages sessions, tools, and platform connections
 
 <Info>
-  Milady Cloud is ElizaOS's answer to autonomous agents running on their own 24/7. It's the bridge between your personal AI and the on-chain world.
+  Eliza Cloud is ElizaOS's answer to autonomous agents running on their own 24/7. It's the bridge between your personal AI and the on-chain world.
 </Info>
 
 ## Eliza Cloud
@@ -96,7 +96,7 @@ The waifu.fun frontend is a Next.js application featuring:
 
 <Steps>
   <Step title="Agent Creation">
-    User configures agent on waifu.fun → Milady Cloud provisions container → Eliza Cloud hosts runtime
+    User configures agent on waifu.fun → Eliza Cloud provisions container → Eliza Cloud hosts runtime
   </Step>
   <Step title="Token Launch">
     Solana program creates token with bonding curve → Initial liquidity seeded → Trading begins
