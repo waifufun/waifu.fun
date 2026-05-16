@@ -145,7 +145,47 @@ export interface DepositorAggregate {
 	claimed: string;
 }
 
-export async function listDepositors(db: Database, launchId: string): Promise<DepositorAggregate[]> {
+export interface ListDepositorsQuery {
+	limit?: number;
+	offset?: number;
+}
+
+function toDepositorAggregate(row: Record<string, string>): DepositorAggregate {
+	const deposited = BigInt(row.deposited ?? "0");
+	const withdrawn = BigInt(row.withdrawn ?? "0");
+	const netDeposit = deposited > withdrawn ? deposited - withdrawn : 0n;
+	return {
+		address: row.user_address as string,
+		deposited: deposited.toString(),
+		withdrawn: withdrawn.toString(),
+		netDeposit: netDeposit.toString(),
+		claimed: row.claimed ?? "0",
+	};
+}
+
+export async function countDepositors(db: Database, launchId: string): Promise<number> {
+	const rows = await db.execute<{ count: string }>(sql`
+		SELECT COUNT(*)::text AS count
+		FROM (
+			SELECT user_address FROM launch_deposits WHERE launch_id = ${launchId}::uuid
+			UNION
+			SELECT user_address FROM launch_withdrawals WHERE launch_id = ${launchId}::uuid
+			UNION
+			SELECT user_address FROM launch_claims WHERE launch_id = ${launchId}::uuid
+		) AS touched
+	`);
+	const rawRows = (rows as unknown as { rows?: unknown[] }).rows ?? (rows as unknown as unknown[]);
+	const row = (rawRows as Array<Record<string, string>>)[0];
+	return Number(row?.count ?? 0);
+}
+
+export async function listDepositors(
+	db: Database,
+	launchId: string,
+	query: ListDepositorsQuery = {},
+): Promise<DepositorAggregate[]> {
+	const limit = query.limit ?? 1000;
+	const offset = query.offset ?? 0;
 	const rows = await db.execute<{
 		user_address: string;
 		deposited: string;
@@ -179,24 +219,14 @@ export async function listDepositors(db: Database, launchId: string): Promise<De
 		FULL OUTER JOIN w ON d.user_address = w.user_address
 		FULL OUTER JOIN c ON COALESCE(d.user_address, w.user_address) = c.user_address
 		ORDER BY deposited DESC NULLS LAST
-		LIMIT 1000
+		LIMIT ${limit}
+		OFFSET ${offset}
 	`);
 
 	const rawRows = (rows as unknown as { rows?: unknown[] }).rows ?? (rows as unknown as unknown[]);
 	return (rawRows as Array<Record<string, string>>)
 		.filter((row) => Boolean(row.user_address))
-		.map((row) => {
-			const deposited = BigInt(row.deposited ?? "0");
-			const withdrawn = BigInt(row.withdrawn ?? "0");
-			const netDeposit = deposited > withdrawn ? deposited - withdrawn : 0n;
-			return {
-				address: row.user_address as string,
-				deposited: deposited.toString(),
-				withdrawn: withdrawn.toString(),
-				netDeposit: netDeposit.toString(),
-				claimed: row.claimed ?? "0",
-			};
-		});
+		.map(toDepositorAggregate);
 }
 
 export async function getDepositorAggregate(
@@ -204,8 +234,42 @@ export async function getDepositorAggregate(
 	launchId: string,
 	userAddress: string,
 ): Promise<DepositorAggregate | null> {
-	const all = await listDepositors(db, launchId);
-	return all.find((row) => row.address.toLowerCase() === userAddress.toLowerCase()) ?? null;
+	const normalized = userAddress.toLowerCase();
+	const rows = await db.execute<{
+		user_address: string;
+		deposited: string;
+		withdrawn: string;
+		claimed: string;
+	}>(sql`
+		WITH d AS (
+			SELECT SUM(amount::numeric) AS deposited
+			FROM launch_deposits
+			WHERE launch_id = ${launchId}::uuid AND user_address = ${normalized}
+		),
+		w AS (
+			SELECT SUM(amount::numeric) AS withdrawn
+			FROM launch_withdrawals
+			WHERE launch_id = ${launchId}::uuid AND user_address = ${normalized}
+		),
+		c AS (
+			SELECT SUM(amount::numeric) AS claimed
+			FROM launch_claims
+			WHERE launch_id = ${launchId}::uuid AND user_address = ${normalized}
+		)
+		SELECT
+			${normalized} AS user_address,
+			COALESCE(d.deposited, 0)::text AS deposited,
+			COALESCE(w.withdrawn, 0)::text AS withdrawn,
+			COALESCE(c.claimed, 0)::text AS claimed
+		FROM d, w, c
+	`);
+
+	const rawRows = (rows as unknown as { rows?: unknown[] }).rows ?? (rows as unknown as unknown[]);
+	const row = (rawRows as Array<Record<string, string>>)[0];
+	if (!row) return null;
+	const aggregate = toDepositorAggregate(row);
+	if (aggregate.deposited === "0" && aggregate.withdrawn === "0" && aggregate.claimed === "0") return null;
+	return aggregate;
 }
 
 export async function listDeposits(db: Database, launchId: string): Promise<LaunchDepositRow[]> {

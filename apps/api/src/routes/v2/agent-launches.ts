@@ -103,6 +103,11 @@ const listQuerySchema = z.object({
 	offset: z.coerce.number().int().min(0).default(0),
 });
 
+const depositorListQuerySchema = z.object({
+	limit: z.coerce.number().int().min(1).max(5000).default(1000),
+	offset: z.coerce.number().int().min(0).default(0),
+});
+
 export interface AgentLaunchRoutesOptions {
 	db?: Database;
 	launchService?: LaunchService;
@@ -430,11 +435,20 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 	// GET /v2/launches/:id/depositors — full depositor list (with claimables).
 	app.get("/:id{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/depositors", async (c) => {
 		const id = c.req.param("id");
+		const url = new URL(c.req.url);
+		const parsed = depositorListQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+		if (!parsed.success) {
+			throw badRequest("INVALID_QUERY", "Invalid query parameters", parsed.error.flatten());
+		}
 		const db = resolveDb();
 		const row = await launchRepo.getLaunchById(db, id);
 		if (!row) throw notFound("LAUNCH_NOT_FOUND", "Launch not found");
 
-		const aggregates = await launchRepo.listDepositors(db, id);
+		const { limit, offset } = parsed.data;
+		const [aggregates, total] = await Promise.all([
+			launchRepo.listDepositors(db, id, { limit, offset }),
+			launchRepo.countDepositors(db, id),
+		]);
 
 		// Optionally enrich with on-chain claimable state. If the service is
 		// not configured, we return aggregates with claimable=null.
@@ -464,7 +478,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			}),
 		);
 
-		return respondOk(c, { depositors: enriched, count: enriched.length });
+		return respondOk(c, { depositors: enriched, count: enriched.length, total, limit, offset });
 	});
 
 	// GET /v2/launches/:id/depositors/:address — single user position.

@@ -1,9 +1,8 @@
-# V3 Stack Retroactive Review — Consolidated Summary
+# V3 Stack Retroactive Review - Consolidated Summary
 
 **Date:** 2026-05-09
-**Reviewer:** codex-cli 0.124.0 / gpt-5.5 (sandbox: danger-full-access)
-**Trigger:** V3 audit H-5 finding — codex auth was broken for ~24h while ~21 PRs landed.
 **Scope:** 8 highest-risk PRs (W33, W33b, W37, W38, W40, W41, W42, W43).
+**Status:** Historical triage notes. Later Wave H hardening commits address the launch-wiring, auth, Puissant, vault-boundary, and token-fee findings. This PR cleanup adds the remaining depositor pagination and targeted single-address aggregate fix.
 
 ---
 
@@ -92,15 +91,13 @@
 
 ---
 
-## Process Notes / Lessons
+## Process Notes
 
-- Codex sandbox default is locked-down (loopback restricted in bubblewrap). For workspaces under `~/projects/...` we need `-c sandbox_mode='"danger-full-access"'` for `codex review` to function. Consider configuring `sandbox_mode` default in `~/.codex/config.toml` or wrapping `codex review` in a Sol script that sets it.
-- All 8 PRs landed in ~24h with no codex review at merge time. The findings here are exactly the kind of issues codex normally surfaces pre-merge. **Strongly recommend:** block merges of contract-touching or signer-touching PRs until codex review passes. The W42 unauthenticated POST is the most damning — that is a textbook codex-catchable issue.
-- gpt-5.5 reviews ran 60-300s each; in parallel, total wall-time was ~4 minutes for all 8. Cost-efficient and high-signal.
+- Treat contract-touching and signer-touching PRs as deploy blockers until security review, tests, and a concrete rollout owner are attached.
+- Keep review artifacts focused on product risk and remediation status. Avoid local worktree paths, transient tooling details, and "raw output" labels unless the complete raw artifact is actually checked in.
 
 ---
 
 ## Artifacts
 - `INDEX.md` — per-PR finding index
-- `PR485_review.md` ... `PR491_review.md` — raw codex outputs
-- Branch `sol/wave-codex-retro-review` at `/home/shad0w/projects/waifu.fun-wt/codex-retro-review` (working tree)
+- `PR485_review.md` ... `PR491_review.md` — per-PR review notes

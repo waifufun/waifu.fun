@@ -1,10 +1,8 @@
-# Codex Retroactive Review - V3 Stack
+# V3 Stack Retroactive Review
 
-Generated: 2026-05-09 by Sol (subagent: codex-retro-review)
-Tool: `codex-cli 0.124.0` with `gpt-5.5` (sandbox: `danger-full-access`)
-Scope: 8 critical PRs that landed during ~24h codex-broken window
-
-> **Sandbox note:** default codex sandbox blocks loopback networking (`bwrap RTM_NEWADDR Operation not permitted`). All reviews here ran with `-c sandbox_mode='"danger-full-access"'`. The retro-review worktree is at `/home/shad0w/projects/waifu.fun-wt/codex-retro-review` on branch `sol/wave-codex-retro-review`.
+Generated: 2026-05-09
+Scope: 8 high-risk V3 launch PRs (W33, W33b, W37, W38, W40, W41, W42, W43)
+Status: historical review notes. Later Wave H hardening commits address the launch-wiring, auth, Puissant, vault-boundary, and token-fee findings; PR #499 cleanup adds the remaining depositor pagination/targeted aggregate fix.
 
 ---
 
@@ -69,7 +67,7 @@ Scope: 8 critical PRs that landed during ~24h codex-broken window
 ---
 
 ## Per-PR review files
-- `PR485_review.md` — full codex output
+- `PR485_review.md` — factory/router ownership and parked allocation
 - `PR486_review.md`
 - `PR483_review.md`
 - `PR484_review.md`
