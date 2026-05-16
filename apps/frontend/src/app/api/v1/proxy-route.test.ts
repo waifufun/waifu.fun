@@ -20,9 +20,7 @@ describe("frontend API proxy route", () => {
 
 		expect(response.status).toBe(202);
 		const init = vi.mocked(fetch).mock.calls.at(-1)?.[1] as RequestInit;
-		expect(String(vi.mocked(fetch).mock.calls.at(-1)?.[0])).toBe(
-			"http://89.167.63.246:3100/v2/agents?limit=5",
-		);
+		expect(String(vi.mocked(fetch).mock.calls.at(-1)?.[0])).toBe("http://89.167.63.246:3100/v2/agents?limit=5");
 		expect(init).toMatchObject({ method: "GET", redirect: "manual" });
 		expect(init.headers).toBeInstanceOf(Headers);
 		expect((init.headers as Headers).get("x-forwarded-host")).toBe("www.waifu.fun");
