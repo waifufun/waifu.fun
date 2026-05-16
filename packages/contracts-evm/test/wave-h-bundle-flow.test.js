@@ -32,17 +32,19 @@ describe("Wave H bundle flow e2e", () => {
 		[TIER_95]: ethers.parseEther("64"),
 		[TIER_98]: ethers.parseEther("160"),
 	};
-	// Real tier math (per LaunchFactory.tierConfig):
-	// - quoteAmt = 16 BNB for TIER_80 (curve only, no graduation),
-	//   17 BNB for graduating tiers on Portal v5.14.3 (16.8 BNB empirical
-	//   threshold, 17 BNB has small headroom margin).
-	// - v2BuyBnb is leftover BNB swapped through V2 after graduation
-	//   (presaleCap - quoteAmt).
+	// Real tier math (per LaunchFactory.tierBudget + TierMath.calibratedQuoteAmt):
+	// - quoteAmt = 16 BNB for TIER_80 (curve only, no graduation).
+	// - For graduating tiers, quoteAmt = ceil(16e18 * (10000 + 100) / (10000 - 100 - buyTaxBps))
+	//   where the FLAP 1% fee + buyTax are deducted before the curve sees the BNB.
+	//   At default buyTaxBps=300, quoteAmt = ceil(16e18 * 10100 / 9600) =
+	//   16833333333333333334 wei = ~16.833 BNB.
+	// - v2BuyBnb = presaleCap - quoteAmt (leftover BNB swapped through V2).
+	const QUOTE_AMT_TAX300 = 16833333333333333334n;
 	const V2_BUY_BNB = {
 		[TIER_80]: 0n,
-		[TIER_90]: ethers.parseEther("15"),
-		[TIER_95]: ethers.parseEther("47"),
-		[TIER_98]: ethers.parseEther("143"),
+		[TIER_90]: ethers.parseEther("32") - QUOTE_AMT_TAX300,
+		[TIER_95]: ethers.parseEther("64") - QUOTE_AMT_TAX300,
+		[TIER_98]: ethers.parseEther("160") - QUOTE_AMT_TAX300,
 	};
 
 	function computeInitCodeHash(creationCode, name, symbol) {

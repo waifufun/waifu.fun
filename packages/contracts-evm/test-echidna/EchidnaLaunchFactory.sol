@@ -66,7 +66,7 @@ contract EchidnaLaunchFactory {
     function echidna_tier_table_total() public view returns (bool) {
         for (uint8 i = 0; i < 4; i++) {
             (uint256 cap, uint256 quote, uint256 v2, ) =
-                factory.tierConfig(LaunchFactory.LaunchTier(i));
+                factory.tierBudget(LaunchFactory.LaunchTier(i), 300);
             if (cap == 0 || quote == 0) return false;
             if (quote + v2 > cap) return false;
         }
