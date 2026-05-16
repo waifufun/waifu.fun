@@ -1,8 +1,8 @@
 // import { Connection, PublicKey } from "@solana/web3.js";
 // import { AnchorProvider } from "@coral-xyz/anchor";
-// import { MigrationService } from "../services/migration-service";
+// import { MigrationService } from "../services/migration-service.js";
 // import type { IMigration, SolanaAddressLike } from "@waifufun/types";
-// import { expect, sinon } from "./setup";
+// import { expect, sinon } from "./setup.js";
 // import { describe, it, beforeEach, afterEach } from "mocha";
 // import Mongoose from "mongoose";
 

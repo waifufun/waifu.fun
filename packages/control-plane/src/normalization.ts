@@ -7,7 +7,7 @@ import type {
 	ControlPlaneTokenKeyInput,
 	ControlPlaneWalletKey,
 	ControlPlaneWalletKeyInput,
-} from "./types";
+} from "./types.js";
 
 function requireNonEmpty(value: string, field: string): string {
 	const trimmed = value.trim();

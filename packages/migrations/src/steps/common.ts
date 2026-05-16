@@ -1,5 +1,5 @@
-import type { MigrationContext, MigrationStep } from "../types";
-import { collectProtocolFees, sendNftToManager, withdrawLiquidity } from "../utils/protocol-utils";
+import type { MigrationContext, MigrationStep } from "../types.js";
+import { collectProtocolFees, sendNftToManager, withdrawLiquidity } from "../utils/protocol-utils.js";
 
 export const commonWithdrawStep: MigrationStep = {
 	name: "withdraw",

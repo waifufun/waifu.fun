@@ -221,7 +221,7 @@ describe("Wave H bundle flow e2e", () => {
 		it(`${tierName}: full happy path (deposit -> close -> bundle -> claim)`, async () => {
 			const ctx = await deployStack();
 			const { alice, bob, bundleBot } = ctx;
-			const { config, salt, predicted, addrs } = await createLaunch(ctx, tier);
+			const { config, rawSalt, predicted, addrs } = await createLaunch(ctx, tier);
 			const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 			const router = await ethers.getContractAt("BundleRouter", addrs.router);
 			const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
@@ -242,7 +242,7 @@ describe("Wave H bundle flow e2e", () => {
 			// Bundle bot executes.
 			const deadline = (await currentTs()) + 600n;
 			const params = await bundleParams(ctx, deadline);
-			params.vanitySalt = salt;
+			params.vanitySalt = rawSalt;
 			// minV2TokensOut: leave at 0 — happy path doesn't gate on slippage.
 
 			const tx = await router.connect(bundleBot).executeBundle(params);
@@ -365,7 +365,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("reverts when non-bundleBot calls router.executeBundle", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
@@ -373,7 +373,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(ctx.creator).close();
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 
 		await expect(router.connect(alice).executeBundle(params)).to.be.revertedWithCustomError(router, "NotBundleBot");
 	});
@@ -381,7 +381,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("reverts when router.executeBundle called twice (one-shot guard)", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
@@ -389,7 +389,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(ctx.creator).close();
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
 			router,
@@ -414,6 +414,32 @@ describe("Wave H bundle flow e2e", () => {
 			ctx.factory,
 			"SaltAlreadyUsed",
 		);
+	});
+
+	it("router derives the effective CREATE2 salt from the raw vanity salt", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, portal } = ctx;
+		const okLaunch = await createLaunch(ctx, TIER_80);
+		const okVault = await ethers.getContractAt("LaunchVault", okLaunch.addrs.vault);
+		const okRouter = await ethers.getContractAt("BundleRouter", okLaunch.addrs.router);
+
+		await okVault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await okVault.connect(ctx.creator).close();
+
+		const okParams = await bundleParams(ctx, (await currentTs()) + 600n);
+		okParams.vanitySalt = okLaunch.rawSalt;
+		await okRouter.connect(bundleBot).executeBundle(okParams);
+		expect(await portal.lastDeployed()).to.equal(okLaunch.predicted);
+
+		const mismatchLaunch = await createLaunch(ctx, TIER_80);
+		const mismatchRouter = await ethers.getContractAt("BundleRouter", mismatchLaunch.addrs.router);
+		const mismatchParams = await bundleParams(ctx, (await currentTs()) + 600n);
+		mismatchParams.vanitySalt = mismatchLaunch.salt;
+		await expect(mismatchRouter.connect(bundleBot).executeBundle(mismatchParams)).to.be.revertedWithCustomError(
+			mismatchRouter,
+			"LaunchParamsMismatch",
+		);
+		expect(await mismatchRouter.executed()).to.equal(false);
 	});
 
 	it("factory reverts on closeTimestamp in the past", async () => {
@@ -565,7 +591,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("bundle revert leaves vault BNB intact (atomic-or-bust via EVM rollback)", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, portal } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
@@ -579,7 +605,7 @@ describe("Wave H bundle flow e2e", () => {
 		await portal.setShouldRevert(true);
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.reverted;
 
 		// Vault state should still be CLOSED (EVM rolled back the state flip),
@@ -592,7 +618,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("portal salt preconsumption leaves vault closed and recoverable after grace period", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, portal } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, salt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
@@ -604,7 +630,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(ctx.creator).close();
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.reverted;
 		expect(await vault.state()).to.equal(1n);
 		expect(await router.executed()).to.equal(false);
@@ -622,7 +648,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("treasury allocation goes to TreasuryLP exactly and recordManagedToken locks in", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot } = ctx;
-		const { salt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
@@ -630,7 +656,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(ctx.creator).close();
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
 		// Tier 80 has v2BuyBnb=0, totalY = 800M, treasury = 80M.
@@ -644,7 +670,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("records actual vault token balance when token transfers take a fee", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, portal } = ctx;
-		const { salt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
@@ -654,7 +680,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(ctx.creator).close();
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);
@@ -670,7 +696,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("tipBnb stays disabled for factory-created launches", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, tipReceiver, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
@@ -679,7 +705,7 @@ describe("Wave H bundle flow e2e", () => {
 
 		const trBefore = await ethers.provider.getBalance(tipReceiver.address);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		params.tipBnb = ethers.parseEther("0.05");
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
 			router,
@@ -696,14 +722,14 @@ describe("Wave H bundle flow e2e", () => {
 	it("tier-90 vesting: TGE = 50%, linear over 24h reaches 100%", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot } = ctx;
-		const { salt, predicted, addrs } = await createLaunch(ctx, TIER_90);
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_90] });
 		await vault.connect(ctx.creator).close();
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);
@@ -739,7 +765,7 @@ describe("Wave H bundle flow e2e", () => {
 	it("three depositors get correct pro-rata shares", async () => {
 		const ctx = await deployStack();
 		const { alice, bob, carol, bundleBot } = ctx;
-		const { salt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
@@ -754,7 +780,7 @@ describe("Wave H bundle flow e2e", () => {
 
 		await vault.connect(ctx.creator).close();
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
-		params.vanitySalt = salt;
+		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
 		const presalerBal = await vault.presalerTokenBalance();

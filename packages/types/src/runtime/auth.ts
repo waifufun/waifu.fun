@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { hexAddressSchema } from "./common";
-import { creatorRoleSchema } from "./creator";
+import { hexAddressSchema } from "./common.js";
+import { creatorRoleSchema } from "./creator.js";
 
 export const roleSchema = creatorRoleSchema;
 export type Role = z.infer<typeof roleSchema>;

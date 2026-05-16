@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { hexAddressSchema } from "./common";
+import { hexAddressSchema } from "./common.js";
 
 export const creatorRoleSchema = z.enum(["anon", "user", "creator", "admin", "superadmin"]);
 export type CreatorRole = z.infer<typeof creatorRoleSchema>;

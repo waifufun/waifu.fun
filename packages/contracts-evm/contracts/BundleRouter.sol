@@ -48,7 +48,7 @@ contract BundleRouter {
     using SafeERC20 for IERC20;
 
     struct BundleExecParams {
-        bytes32 vanitySalt;
+        bytes32 vanitySalt; // raw vanity salt; router derives the creator-scoped CREATE2 salt
         string name;
         string symbol;
         string meta; // IPFS CID
@@ -279,12 +279,13 @@ contract BundleRouter {
     // ---------------------------------------------------------------------
 
     function _callPortal(BundleExecParams calldata p) internal returns (address token) {
+        bytes32 salt = _effectiveSalt(creator, p.vanitySalt);
         FlapTypes.NewTokenV6Params memory params = FlapTypes.NewTokenV6Params({
             name: p.name,
             symbol: p.symbol,
             meta: p.meta,
             dexThresh: FlapTypes.DexThreshType.FOUR_FIFTHS,
-            salt: p.vanitySalt,
+            salt: salt,
             migratorType: FlapTypes.MigratorType.V2_MIGRATOR,
             quoteToken: address(0), // native BNB
             quoteAmt: quoteAmt,
@@ -310,10 +311,10 @@ contract BundleRouter {
         token = IFlapPortal(FLAP_PORTAL).newTokenV6{value: quoteAmt}(params);
     }
 
-    function _launchParamsHash(BundleExecParams calldata p) internal pure returns (bytes32) {
+    function _launchParamsHash(BundleExecParams calldata p) internal view returns (bytes32) {
         return keccak256(
             abi.encode(
-                p.vanitySalt,
+                _effectiveSalt(creator, p.vanitySalt),
                 p.name,
                 p.symbol,
                 p.meta,
@@ -324,6 +325,10 @@ contract BundleRouter {
                 p.commissionReceiver
             )
         );
+    }
+
+    function _effectiveSalt(address saltCreator, bytes32 vanitySalt) internal pure returns (bytes32) {
+        return keccak256(abi.encode(saltCreator, vanitySalt));
     }
 
     function _v2FollowUpBuy(address token, uint256 minOut, uint256 deadline) internal {

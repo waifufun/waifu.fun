@@ -8,8 +8,8 @@ import {
 } from "@meteora-ag/cp-amm-sdk";
 import * as spl from "@solana/spl-token";
 import type { MeteoraVaultTypes } from "@waifufun/programs";
-import { retryOperation } from "../utils";
-import { getEventAuthority, getNftTokenFaucet, getUserPosition, getVaultConfig } from "./meteroaPdas";
+import { retryOperation } from "../utils.js";
+import { getEventAuthority, getNftTokenFaucet, getUserPosition, getVaultConfig } from "./meteroaPdas.js";
 
 export async function depositToMeteora(
 	provider: anchor.AnchorProvider,

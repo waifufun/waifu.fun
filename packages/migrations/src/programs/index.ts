@@ -1,6 +1,6 @@
 import { type AnchorProvider, web3 } from "@coral-xyz/anchor";
 import type { Keypair } from "@solana/web3.js";
-import { Wallet } from "../utils/customWallet";
+import { Wallet } from "../utils/customWallet.js";
 
 import type { Program } from "@coral-xyz/anchor";
 import {

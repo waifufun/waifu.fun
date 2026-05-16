@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { SafeFetchError, safeFetchBytes } from "./safe-url-fetch";
+import { SafeFetchError, safeFetchBytes } from "./safe-url-fetch.js";
 
 test("s3 safeFetchBytes blocks DNS that resolves to private ranges", async () => {
 	await assert.rejects(

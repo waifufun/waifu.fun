@@ -42,6 +42,9 @@ class FakeAlreadySent implements AlreadySentLookup {
 	has(launchId: string, eventType: string, channel: string, dedupeKey: string): boolean {
 		return this.set.has(`${launchId}:${eventType}:${channel}:${dedupeKey}`);
 	}
+	hasNoSubscriberSentinel(_launchId: string, _eventType: string, _dedupeKey: string): boolean {
+		return false;
+	}
 }
 
 const TRANCHES = [2_500, 5_000, 7_500, 10_000];

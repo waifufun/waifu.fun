@@ -102,19 +102,22 @@ describe("pollOnce", () => {
 		const logger = makeLogger();
 		const launch = makeLaunch();
 		let capturedDryRun: boolean | null = null;
+		let capturedMaxAttempts: number | null = null;
 		const result = await pollOnce({
 			db: {} as never,
-			config: makeConfig({ dryRun: true }),
+			config: makeConfig({ dryRun: true, maxAttempts: 5 }),
 			logger,
 			listReady: async () => [launch],
 			submit: async (_db, _launch, opts) => {
 				capturedDryRun = opts.dryRun;
+				capturedMaxAttempts = opts.maxAttempts;
 				return { status: "submitted", attempt: 1, txHash: "0xabc" };
 			},
 		});
 		assert.equal(result.submitted, 1);
 		assert.equal(result.scanned, 1);
 		assert.equal(capturedDryRun, true);
+		assert.equal(capturedMaxAttempts, 5);
 	});
 
 	it("counts errors when submit throws", async () => {

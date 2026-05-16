@@ -6,12 +6,7 @@ import { Connection, LAMPORTS_PER_SOL, PublicKey, type VersionedBlockResponse } 
 import { updateCryptoPrices } from "@waifufun/codex";
 import { CHAINID_TO_VIEM_CHAIN, EVM_RPC_URLS, SOLANA_RPC_URLS } from "@waifufun/constants";
 import logger from "@waifufun/logger";
-import {
-	type CurrentAutofunTypes,
-	type LegacyAutofunTypes,
-	createCurrentAutofunProgramWithProvider,
-	createLegacyAutofunProgramWithProvider,
-} from "@waifufun/programs";
+import type { CurrentAutofunTypes, LegacyAutofunTypes } from "@waifufun/programs";
 import type { AddressLike, EvmAddressLike, EvmChainIds, TURLLike } from "@waifufun/types";
 import type { SolanaNetworkIds } from "@waifufun/types";
 import type { SlotInfo } from "@waifufun/types";
@@ -29,9 +24,9 @@ import {
 	getAddress,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import autoFunAbi from "./evm/abis/WaifuFun.json";
-import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun";
-import { safeFetchJson } from "./safe-url-fetch";
+import autoFunAbi from "./evm/abis/WaifuFun.json" with { type: "json" };
+import type { WaifuFunLaunchParams, WaifuFunSwapParameter } from "./evm/types/WaifuFun.js";
+import { safeFetchJson } from "./safe-url-fetch.js";
 
 type Erc20FunctionName = ReadContractParameters<typeof erc20Abi>["functionName"];
 type Erc20Args = ReadContractParameters<typeof erc20Abi>["args"];
@@ -280,8 +275,8 @@ function withFallBack<TArgs extends unknown[], TResult>(
 export class SolanaRpcProvider extends EventEmitter {
 	public connection;
 	public client;
-	private program: Program<CurrentAutofunTypes>;
-	public program_legacy: Program<LegacyAutofunTypes>;
+	private program?: Program<CurrentAutofunTypes>;
+	public program_legacy?: Program<LegacyAutofunTypes>;
 	public networkId: SolanaNetworkIds;
 	private static currentRpc: SolanaRpcProvider | null = null;
 	public static currentRpcIndex = 0;
@@ -296,17 +291,27 @@ export class SolanaRpcProvider extends EventEmitter {
 		this.connection = new Connection(rpc, "confirmed");
 		this.client = createSolanaRpc(rpc);
 		this.networkId = networkId;
+	}
 
+	private async getAutofunProgram(version?: number): Promise<Program<CurrentAutofunTypes> | Program<LegacyAutofunTypes>> {
+		const {
+			createCurrentAutofunProgramWithProvider,
+			createLegacyAutofunProgramWithProvider,
+		} = await import("@waifufun/programs");
 		const dummyWallet = {
 			publicKey: new PublicKey("11111111111111111111111111111111"),
 			signTransaction: async (tx: any) => tx,
 			signAllTransactions: async (txs: any[]) => txs,
 		};
-
 		const provider = new AnchorProvider(this.connection, dummyWallet as Wallet, {});
 
-		this.program = createCurrentAutofunProgramWithProvider(provider);
-		this.program_legacy = createLegacyAutofunProgramWithProvider(provider);
+		if (version === 1) {
+			this.program_legacy ??= createLegacyAutofunProgramWithProvider(provider);
+			return this.program_legacy;
+		}
+
+		this.program ??= createCurrentAutofunProgramWithProvider(provider);
+		return this.program;
 	}
 
 	public subscribeSlot = withFallBack(async (callback: (slotInfo: SlotInfo) => void): Promise<number> => {
@@ -580,7 +585,7 @@ export class SolanaRpcProvider extends EventEmitter {
 		if (!tokenMints || tokenMints?.length === 0) return [];
 
 		// Use legacy program for version 1, current program for other versions
-		const programToUse = version === 1 ? this.program_legacy : this.program;
+		const programToUse = await this.getAutofunProgram(version);
 		const PROGRAM_ID = programToUse.programId;
 
 		const bondingCurvePDAs = await Promise.all(

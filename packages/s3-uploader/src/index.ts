@@ -5,8 +5,8 @@ import dotenv from "dotenv";
 // @ts-ignore
 import mime from "mime-types";
 import sharp from "sharp";
-import { getS3Client } from "./s3Client";
-import { safeFetchBytes } from "./safe-url-fetch";
+import { getS3Client } from "./s3Client.js";
+import { safeFetchBytes } from "./safe-url-fetch.js";
 
 dotenv.config();
 const { PUBLIC_STORAGE_BASE_URL, S3_BUCKET_NAME: bucketName } = process.env;

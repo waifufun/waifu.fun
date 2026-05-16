@@ -6,7 +6,7 @@ import {
 	isoDateTimeSchema,
 	numericStringSchema,
 	supportedChainIdSchema,
-} from "./common";
+} from "./common.js";
 
 export const launchStatusSchema = z.enum([
 	"draft",

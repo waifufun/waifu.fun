@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const stashRoot = join(root, "..", ".frontend-static-export-stash");
+const nextBin = join(root, "node_modules/.bin/next");
 const pagesDir = join(root, "src/pages");
 const pagesApp = join(pagesDir, "_app.tsx");
 
@@ -84,7 +85,7 @@ try {
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
-	const result = spawnSync("npx", ["next", "build"], {
+	const result = spawnSync(nextBin, ["build"], {
 		cwd: root,
 		stdio: "inherit",
 		env,

@@ -42,7 +42,7 @@ contract LaunchFactory {
         uint64 taxDuration; // 365 days default
         uint64 antiFarmerDuration; // 1 hour default
         uint256 closeTimestamp; // presale end
-        bytes32 vanitySalt; // mined off-chain
+        bytes32 vanitySalt; // raw salt mined off-chain; scoped by creator before CREATE2
         address predictedTokenAddress; // must match CREATE2 derivation; on-chain reconciliation check
     }
 
@@ -78,7 +78,7 @@ contract LaunchFactory {
     // events
     // ---------------------------------------------------------------------
 
-    event LaunchCreated( // keccak256(creator, salt)
+    event LaunchCreated( // indexed by creator-scoped effective salt
         bytes32 indexed launchId,
         address indexed creator,
         address indexed predictedToken,

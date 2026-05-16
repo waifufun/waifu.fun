@@ -1,28 +1,22 @@
 import { AnchorProvider } from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import DB from "@waifufun/database";
 import type { SolanaNetworkIds } from "@waifufun/types";
 import * as dotenv from "dotenv";
 import { Wallet } from "../utils/customWallet.js";
-import { getRpcUrl } from "../utils/getRpcUrl";
-import { claimPositionFee } from "./meteoraVault";
-import { claim } from "./raydiumVault";
+import { getRpcUrl } from "../utils/getRpcUrl.js";
+import { claimPositionFee } from "./meteoraVault.js";
+import { claim } from "./raydiumVault.js";
 dotenv.config();
 
-import {
-	type MeteoraVaultTypes,
-	type RaydiumVaultTypes,
-	createMeteoraVaultProgramWithProvider,
-	createRaydiumVaultProgramWithProvider,
-} from "@waifufun/programs";
+import type { MeteoraVaultTypes, RaydiumVaultTypes } from "@waifufun/programs";
 
 export class Claimer {
 	private connection: Connection;
 	private provider: AnchorProvider;
 	private wallet: Wallet;
-	private raydiumVaultProgram: Program<RaydiumVaultTypes>;
-	private meteoraVaultProgram: Program<MeteoraVaultTypes>;
+	private raydiumVaultProgram?: Program<RaydiumVaultTypes>;
+	private meteoraVaultProgram?: Program<MeteoraVaultTypes>;
 	private SolAddress: PublicKey = new PublicKey("So11111111111111111111111111111111111111112");
 
 	constructor(chainId: SolanaNetworkIds) {
@@ -33,13 +27,23 @@ export class Claimer {
 			Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.EXECUTOR_PRIVATE_KEY || "[]"))),
 		);
 		this.provider = new AnchorProvider(this.connection, this.wallet, AnchorProvider.defaultOptions());
+	}
 
-		// Initialize programs using centralized package
-		this.raydiumVaultProgram = createRaydiumVaultProgramWithProvider(this.provider);
-		this.meteoraVaultProgram = createMeteoraVaultProgramWithProvider(this.provider);
+	private async getPrograms() {
+		const { createMeteoraVaultProgramWithProvider, createRaydiumVaultProgramWithProvider } = await import(
+			"@waifufun/programs"
+		);
+		this.raydiumVaultProgram ??= createRaydiumVaultProgramWithProvider(this.provider);
+		this.meteoraVaultProgram ??= createMeteoraVaultProgramWithProvider(this.provider);
+		return {
+			raydiumVaultProgram: this.raydiumVaultProgram,
+			meteoraVaultProgram: this.meteoraVaultProgram,
+		};
 	}
 
 	async claimMeteora(tokenMint: string): Promise<string> {
+		const { default: DB } = await import("@waifufun/database");
+		const { meteoraVaultProgram } = await this.getPrograms();
 		const migration = await DB.Migration.findOne({ contractAddress: tokenMint });
 		if (!migration?.primaryNftMint || !migration.marketId) {
 			throw new Error("No NFT found for claiming");
@@ -48,7 +52,7 @@ export class Claimer {
 		const result = await claimPositionFee(
 			this.provider,
 			this.wallet.payer as Keypair,
-			this.meteoraVaultProgram,
+			meteoraVaultProgram,
 			new PublicKey(migration.primaryNftMint),
 			new PublicKey(migration.marketId),
 			new PublicKey(tokenMint),
@@ -59,6 +63,8 @@ export class Claimer {
 	}
 
 	async claimRaydium(tokenMint: string): Promise<string> {
+		const { default: DB } = await import("@waifufun/database");
+		const { raydiumVaultProgram } = await this.getPrograms();
 		const migration = await DB.Migration.findOne({ contractAddress: tokenMint });
 		if (!migration) {
 			throw new Error("Migration not found for the provided token mint");
@@ -71,7 +77,7 @@ export class Claimer {
 		}
 
 		const result = await claim(
-			this.raydiumVaultProgram,
+			raydiumVaultProgram,
 			this.wallet.payer as Keypair,
 			new PublicKey(primaryNftMint),
 			new PublicKey(migration.marketId),

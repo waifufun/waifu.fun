@@ -7,7 +7,7 @@ import {
 	isoDateTimeSchema,
 	numericStringSchema,
 	supportedChainIdSchema,
-} from "./common";
+} from "./common.js";
 
 export const tradeSideSchema = z.enum(["buy", "sell"]);
 export type TradeSide = z.infer<typeof tradeSideSchema>;

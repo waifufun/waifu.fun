@@ -15,6 +15,7 @@ import type {
 	NotificationLogInput,
 	SubscriptionRecord,
 } from "./types.js";
+import { normalizeNoSubscribersDedupeKey } from "./types.js";
 
 export interface NotificationsRepository {
 	listLaunches(limit: number): Promise<LaunchSnapshot[]>;
@@ -69,9 +70,15 @@ function rowToSnapshot(row: AgentLaunchRowSelect): LaunchSnapshot {
 }
 
 class DrizzleSet implements AlreadySentLookup {
-	constructor(private readonly keys: Set<string>) {}
+	constructor(
+		private readonly keys: Set<string>,
+		private readonly noSubscriberKeys: Set<string>,
+	) {}
 	has(launchId: string, eventType: EventType, channel: Channel, dedupeKey: string): boolean {
 		return this.keys.has(`${launchId}:${eventType}:${channel}:${dedupeKey}`);
+	}
+	hasNoSubscriberSentinel(launchId: string, eventType: EventType, dedupeKey: string): boolean {
+		return this.noSubscriberKeys.has(`${launchId}:${eventType}:${dedupeKey}`);
 	}
 }
 
@@ -124,21 +131,29 @@ export class DrizzleNotificationsRepository implements NotificationsRepository {
 	}
 
 	async loadAlreadySent(launchIds: string[]): Promise<AlreadySentLookup> {
-		if (launchIds.length === 0) return new DrizzleSet(new Set());
+		if (launchIds.length === 0) return new DrizzleSet(new Set(), new Set());
 		const rows = await this.db
 			.select({
 				launchId: schema.launchNotifications.launchId,
 				eventType: schema.launchNotifications.eventType,
 				channel: schema.launchNotifications.channel,
 				dedupeKey: schema.launchNotifications.dedupeKey,
+				status: schema.launchNotifications.status,
+				errorMessage: schema.launchNotifications.errorMessage,
+				payload: schema.launchNotifications.payload,
 			})
 			.from(schema.launchNotifications)
 			.where(inArray(schema.launchNotifications.launchId, launchIds));
 		const keys = new Set<string>();
+		const noSubscriberKeys = new Set<string>();
 		for (const row of rows) {
+			if (isNoSubscriberSentinel(row)) {
+				noSubscriberKeys.add(`${row.launchId}:${row.eventType}:${normalizeNoSubscribersDedupeKey(row.dedupeKey)}`);
+				continue;
+			}
 			keys.add(`${row.launchId}:${row.eventType}:${row.channel}:${row.dedupeKey}`);
 		}
-		return new DrizzleSet(keys);
+		return new DrizzleSet(keys, noSubscriberKeys);
 	}
 
 	async recordSend(input: NotificationLogInput): Promise<void> {
@@ -155,8 +170,35 @@ export class DrizzleNotificationsRepository implements NotificationsRepository {
 				errorMessage: input.errorMessage,
 				payload: input.payload,
 			})
-			.onConflictDoNothing();
+			.onConflictDoUpdate({
+				target: [
+					schema.launchNotifications.launchId,
+					schema.launchNotifications.eventType,
+					schema.launchNotifications.channel,
+					schema.launchNotifications.dedupeKey,
+				],
+				set: {
+					webhookUrl: input.webhookUrl,
+					status: input.status,
+					statusCode: input.statusCode,
+					errorMessage: input.errorMessage,
+					payload: input.payload,
+					sentAt: new Date(),
+				},
+			});
 	}
+}
+
+function isNoSubscriberSentinel(row: {
+	dedupeKey: string;
+	status: string;
+	errorMessage: string | null;
+	payload: Record<string, unknown>;
+}): boolean {
+	return (
+		row.dedupeKey.startsWith("__no_subscribers__:") ||
+		(row.status === "skipped" && (row.errorMessage === "no subscribers" || row.payload.reason === "no_subscribers"))
+	);
 }
 
 function parseEventFilter(filter: unknown): ReadonlyArray<EventType> | null {

@@ -311,7 +311,7 @@ describe("Wave H real-fork integration", function () {
 		// Step 4: bundleBot triggers executeBundle. Builder tips are disabled
 		// in this contract version and must be funded outside the vault flow.
 		const execParams = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: config.name,
 			symbol: config.symbol,
 			meta: config.metaCid,
@@ -481,7 +481,7 @@ describe("Wave H real-fork integration", function () {
 
 		// 4. executeBundle
 		const execParams = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: config.name,
 			symbol: config.symbol,
 			meta: config.metaCid,

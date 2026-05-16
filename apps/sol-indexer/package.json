@@ -9,7 +9,7 @@
 		"require": "./dist/index.js"
 	},
 	"scripts": {
-		"test": "node -e \"process.exit(0)\"",
+		"test": "tsx --test --test-reporter=spec tests/*.test.ts",
 		"dev": "tsx watch src/index.ts",
 		"start": "node dist/index.js",
 		"tests": "tsx watch tests/signatures.ts",

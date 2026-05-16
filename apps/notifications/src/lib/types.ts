@@ -80,4 +80,17 @@ export interface NotificationLogInput {
 
 export interface AlreadySentLookup {
 	has(launchId: string, eventType: EventType, channel: Channel, dedupeKey: string): boolean;
+	hasNoSubscriberSentinel(launchId: string, eventType: EventType, dedupeKey: string): boolean;
+}
+
+export const NO_SUBSCRIBERS_DEDUPE_PREFIX = "__no_subscribers__:";
+
+export function noSubscribersDedupeKey(dedupeKey: string): string {
+	return `${NO_SUBSCRIBERS_DEDUPE_PREFIX}${dedupeKey}`;
+}
+
+export function normalizeNoSubscribersDedupeKey(dedupeKey: string): string {
+	return dedupeKey.startsWith(NO_SUBSCRIBERS_DEDUPE_PREFIX)
+		? dedupeKey.slice(NO_SUBSCRIBERS_DEDUPE_PREFIX.length)
+		: dedupeKey;
 }

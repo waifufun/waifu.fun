@@ -1,8 +1,14 @@
 import { z } from "zod";
 
-import { DEFAULT_CHAIN_ID, hexAddressSchema, hexDataSchema, isoDateTimeSchema, supportedChainIdSchema } from "./common";
-import { launchTokenTypeSchema } from "./launch";
-import { flapTokenMetadataSchema } from "./token";
+import {
+	DEFAULT_CHAIN_ID,
+	hexAddressSchema,
+	hexDataSchema,
+	isoDateTimeSchema,
+	supportedChainIdSchema,
+} from "./common.js";
+import { launchTokenTypeSchema } from "./launch.js";
+import { flapTokenMetadataSchema } from "./token.js";
 
 export const queueNameSchema = z.enum(["launch", "metadata", "salt", "index", "cache", "notify", "reconcile"]);
 export type QueueName = z.infer<typeof queueNameSchema>;

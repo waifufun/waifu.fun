@@ -1,6 +1,6 @@
 import { type SupabaseClient, createClient } from "@supabase/supabase-js";
-import { getControlPlaneSupabaseEnv } from "./env";
-import type { ControlPlaneDatabase } from "./types";
+import { getControlPlaneSupabaseEnv } from "./env.js";
+import type { ControlPlaneDatabase } from "./types.js";
 
 export type ControlPlaneClient = SupabaseClient<ControlPlaneDatabase>;
 

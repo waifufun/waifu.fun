@@ -203,14 +203,14 @@ describe("Wave H adversarial / edge cases", () => {
 	it("double claim is gated by claimed-tracking and reverts NothingToClaim", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(creator).close();
 		const closeTs = (await currentTs()) + 600n;
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -435,10 +435,10 @@ describe("Wave H adversarial / edge cases", () => {
 	it("executeBundle from non-bundleBot reverts NotBundleBot", async () => {
 		const ctx = await deployStack();
 		const { alice } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -457,14 +457,14 @@ describe("Wave H adversarial / edge cases", () => {
 	it("executeBundle cannot launch a cap-filled vault before close", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp: (await currentTs()) + 3600n });
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp: (await currentTs()) + 3600n });
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		expect(await vault.requestLaunch()).to.equal(false);
 
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -484,13 +484,13 @@ describe("Wave H adversarial / edge cases", () => {
 	it("executeBundle twice reverts AlreadyExecuted", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(creator).close();
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -513,13 +513,13 @@ describe("Wave H adversarial / edge cases", () => {
 	it("executeBundle after deadline reverts Expired", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(creator).close();
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -538,13 +538,13 @@ describe("Wave H adversarial / edge cases", () => {
 	it("executeBundle rejects params that differ from the factory-approved launch config", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(creator).close();
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmMutated",
@@ -567,13 +567,13 @@ describe("Wave H adversarial / edge cases", () => {
 	it("executeBundle rejects unapproved tip funding", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(creator).close();
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -761,7 +761,7 @@ describe("Wave H adversarial / edge cases", () => {
 	it("three depositors get correct pro-rata shares", async () => {
 		const ctx = await deployStack();
 		const { alice, bob, carol, bundleBot, creator } = ctx;
-		const { salt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const a = ethers.parseEther("8");
@@ -772,7 +772,7 @@ describe("Wave H adversarial / edge cases", () => {
 		await vault.connect(carol).deposit({ value: c });
 		await vault.connect(creator).close();
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",
@@ -804,7 +804,7 @@ describe("Wave H adversarial / edge cases", () => {
 	it("bundle revert leaves vault BNB intact (atomic EVM rollback)", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot, creator, portal } = ctx;
-		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
@@ -812,7 +812,7 @@ describe("Wave H adversarial / edge cases", () => {
 		const balBefore = await ethers.provider.getBalance(addrs.vault);
 		await portal.setShouldRevert(true);
 		const params = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: ctx.name,
 			symbol: ctx.symbol,
 			meta: "QmTestCid",

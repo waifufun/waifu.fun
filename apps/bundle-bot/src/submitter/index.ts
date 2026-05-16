@@ -43,6 +43,7 @@ export interface BundleSubmitterConfig {
 	allowSingleWalletFallback?: boolean;
 	allowPlaintextWalletKeys?: boolean;
 	dryRun?: boolean;
+	maxAttempts?: number;
 }
 
 export interface SubmitBundleResult {
@@ -65,6 +66,12 @@ function getRpcUrl(chainId: number): string {
 	if (process.env.ALCHEMY_BSC_URL) return process.env.ALCHEMY_BSC_URL;
 	if (process.env.ALCHEMY_BSC_KEY) return `https://bnb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_BSC_KEY}`;
 	return chainId === 97 ? "https://data-seed-prebsc-1-s1.binance.org:8545" : "https://bsc-dataseed.binance.org";
+}
+
+function resolveMaxAttempts(configured?: number): number {
+	const value = configured ?? Number(process.env.BUNDLE_BOT_MAX_ATTEMPTS ?? 3);
+	if (!Number.isFinite(value) || value < 1) return 3;
+	return Math.floor(value);
 }
 
 export function nextBundleTipBnb(attempt: number, current?: string | null): string {
@@ -115,6 +122,7 @@ export async function submitLaunchBundle(
 	}
 
 	const attempt = launch.bundleAttempt + 1;
+	const maxAttempts = resolveMaxAttempts(config.maxAttempts);
 	const tipBnb = nextBundleTipBnb(launch.bundleAttempt, launch.bundleTipBnb);
 	const chainId = config.chainId ?? Number(process.env.BSC_CHAIN_ID ?? 56);
 	const chain = chainId === 97 ? bscTestnet : bsc;
@@ -234,7 +242,7 @@ export async function submitLaunchBundle(
 		return { status: "submitted", txHash, attempt };
 	} catch (error) {
 		if (selectedPoolWallet && !privateTxAccepted) await releaseWallet(db, selectedPoolWallet.address);
-		const terminal = attempt >= 3;
+		const terminal = attempt >= maxAttempts;
 		const reason = error instanceof Error ? error.message : String(error);
 		const status = terminal ? "failed_terminal" : "failed_retry";
 		await db
@@ -255,9 +263,15 @@ export async function markBundleReceipt(
 	db: Database,
 	launch: AgentLaunchRow,
 	receipt: { status: "success" | "reverted" },
+	config: Pick<BundleSubmitterConfig, "maxAttempts"> = {},
 ): Promise<AgentLaunchRow["bundleStatus"]> {
+	const maxAttempts = resolveMaxAttempts(config.maxAttempts);
 	const status =
-		receipt.status === "success" ? "confirmed" : launch.bundleAttempt >= 3 ? "failed_terminal" : "failed_retry";
+		receipt.status === "success"
+			? "confirmed"
+			: launch.bundleAttempt >= maxAttempts
+				? "failed_terminal"
+				: "failed_retry";
 	await db
 		.update(schema.agentLaunches)
 		.set({ bundleStatus: status, updatedAt: new Date() })

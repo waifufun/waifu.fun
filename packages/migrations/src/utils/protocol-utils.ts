@@ -18,9 +18,9 @@ import {
 } from "@solana/web3.js";
 import DB from "@waifufun/database";
 import BN from "bn.js";
-import type { MigrationContext } from "../types";
-import type { ProtocolState } from "../types";
-import { derivePositionNftAccount } from "../vaults/meteroaPdas";
+import type { MigrationContext } from "../types.js";
+import type { ProtocolState } from "../types.js";
+import { derivePositionNftAccount } from "../vaults/meteroaPdas.js";
 
 export interface WithdrawLog {
 	sol: number;

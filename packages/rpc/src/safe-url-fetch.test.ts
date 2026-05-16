@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { SafeFetchError, safeFetchJson } from "./safe-url-fetch";
+import { SafeFetchError, safeFetchJson } from "./safe-url-fetch.js";
 
 test("rpc safeFetchJson blocks unsupported URI schemes", async () => {
 	await assert.rejects(

@@ -4,7 +4,7 @@ import { afterEach, describe, it } from "node:test";
 import type { AgentLaunchRow } from "@waifufun/db";
 import type { Database } from "@waifufun/db/client";
 
-import { BundleSubmitterError, submitLaunchBundle } from "./index.js";
+import { BundleSubmitterError, markBundleReceipt, submitLaunchBundle } from "./index.js";
 import { decryptBundleWalletPk } from "./wallet-pool.js";
 
 const TEST_PK = `0x${"11".repeat(32)}` as const;
@@ -152,6 +152,68 @@ describe("bundle-bot submitter safety", () => {
 		assert.equal(fetchCalled, false);
 		assert.ok(updates.some((update) => update.bundleStatus === "submitting"));
 		assert.ok(updates.some((update) => update.bundleStatus === "failed_retry"));
+	});
+
+	it("uses configured maxAttempts when deciding whether submit failures are terminal", async () => {
+		const retryDb = makeDb({ walletRow: { address: TEST_WALLET, encrypted_pk: TEST_PK } });
+
+		const retryResult = await submitLaunchBundle(
+			retryDb.db,
+			launchFixture({ id: "00000000-0000-0000-0000-000000000002", bundleAttempt: 2 }),
+			{
+				dryRun: false,
+				useWalletPool: true,
+				rpcUrl: "http://rpc.example",
+				privateRpcUrl: "http://puissant.example",
+				maxAttempts: 5,
+			},
+		);
+
+		assert.equal(retryResult.status, "failed_retry");
+		assert.ok(retryDb.updates.some((update) => update.bundleStatus === "failed_retry" && update.bundleAttempt === 3));
+
+		const terminalDb = makeDb({ walletRow: { address: TEST_WALLET, encrypted_pk: TEST_PK } });
+
+		const terminalResult = await submitLaunchBundle(
+			terminalDb.db,
+			launchFixture({ id: "00000000-0000-0000-0000-000000000003", bundleAttempt: 4 }),
+			{
+				dryRun: false,
+				useWalletPool: true,
+				rpcUrl: "http://rpc.example",
+				privateRpcUrl: "http://puissant.example",
+				maxAttempts: 5,
+			},
+		);
+
+		assert.equal(terminalResult.status, "failed_terminal");
+		assert.ok(
+			terminalDb.updates.some((update) => update.bundleStatus === "failed_terminal" && update.bundleAttempt === 5),
+		);
+	});
+
+	it("uses configured maxAttempts when terminalizing reverted receipts", async () => {
+		const { db, updates } = makeDb();
+
+		const retryStatus = await markBundleReceipt(
+			db,
+			launchFixture({ bundleAttempt: 3 }),
+			{ status: "reverted" },
+			{
+				maxAttempts: 5,
+			},
+		);
+		const terminalStatus = await markBundleReceipt(
+			db,
+			launchFixture({ bundleAttempt: 5 }),
+			{ status: "reverted" },
+			{ maxAttempts: 5 },
+		);
+
+		assert.equal(retryStatus, "failed_retry");
+		assert.equal(terminalStatus, "failed_terminal");
+		assert.ok(updates.some((update) => update.bundleStatus === "failed_retry"));
+		assert.ok(updates.some((update) => update.bundleStatus === "failed_terminal"));
 	});
 
 	it("rejects plaintext private key envelopes unless explicitly allowed for non-live tooling", () => {

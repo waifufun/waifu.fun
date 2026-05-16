@@ -13,6 +13,7 @@ import type { NotificationsConfig } from "./config.js";
 import { type FormatContext, formatMessage } from "./format.js";
 import type { NotificationsRepository } from "./repository.js";
 import type {
+	AlreadySentLookup,
 	Channel,
 	DeliveryResult,
 	EventType,
@@ -20,6 +21,7 @@ import type {
 	PendingEvent,
 	SubscriptionRecord,
 } from "./types.js";
+import { noSubscribersDedupeKey } from "./types.js";
 
 export interface ChannelSender {
 	send(args: {
@@ -166,18 +168,23 @@ export async function dispatchEvent(
 	deps: DispatcherDeps,
 	event: PendingEvent,
 	subscriptions: SubscriptionRecord[],
+	alreadySent?: AlreadySentLookup,
 ): Promise<{ sent: number; failed: number; skipped: number; noSubscribers: boolean }> {
+	const dedupeKey = dedupeKeyFor(event);
 	const eligible = subscriptions.filter((s) => s.launchId === event.launch.id && !isFilteredOut(s, event.eventType));
+	const pending = alreadySent
+		? eligible.filter((s) => !alreadySent.has(event.launch.id, event.eventType, s.channel, dedupeKey))
+		: eligible;
 
 	if (eligible.length === 0) {
 		// Nothing to send – record a single sentinel row so we don't re-detect
-		// this event every tick. Channel is recorded as "discord" arbitrarily;
-		// the dedupe key keeps us idempotent.
+		// this event every tick. Keep the sentinel out of normal channel dedupe
+		// space so a later subscriber can still receive the event.
 		await deps.repo.recordSend({
 			launchId: event.launch.id,
 			eventType: event.eventType,
 			channel: "discord",
-			dedupeKey: dedupeKeyFor(event),
+			dedupeKey: noSubscribersDedupeKey(dedupeKey),
 			webhookUrl: null,
 			status: "skipped",
 			statusCode: "0",
@@ -190,7 +197,7 @@ export async function dispatchEvent(
 	let sent = 0;
 	let failed = 0;
 	let skipped = 0;
-	for (const sub of eligible) {
+	for (const sub of pending) {
 		const out = await deps.sender.send({
 			channel: sub.channel,
 			subscription: sub,
@@ -202,7 +209,7 @@ export async function dispatchEvent(
 			launchId: event.launch.id,
 			eventType: event.eventType,
 			channel: sub.channel,
-			dedupeKey: dedupeKeyFor(event),
+			dedupeKey,
 			webhookUrl: out.webhookUrl,
 			status: out.result.status,
 			statusCode: out.result.statusCode,
