@@ -78,7 +78,7 @@ contract BundleRouter {
     address public immutable predictedToken; // 0x..7777, must match CREATE2
     address public immutable creator;
     uint256 public immutable presaleCap;
-    uint256 public immutable quoteAmt; // BNB to Portal (16e18 for Tier 80 curve-only, 20e18 for graduating tiers)
+    uint256 public immutable quoteAmt; // BNB to Portal (16e18 for Tier 80 curve-only, 17e18 for graduating tiers on Portal v5.14.3)
     uint256 public immutable v2BuyBnb; // BNB for V2 follow-up
     uint256 public immutable closeTimestamp;
     bytes32 public immutable launchParamsHash;
@@ -215,8 +215,9 @@ contract BundleRouter {
         //    Tradable on Flap's curve, no PCS V2 pair yet. That is the intended
         //    Tier 80 outcome: token is curve-only until organic buyers push it
         //    past graduation. For Tiers 90/95/98 (v2BuyBnb > 0), Portal MUST
-        //    have auto-graduated since `quoteAmt + v2BuyBnb >= 32 ether > 20 ether`,
-        //    which is the empirical graduation threshold.
+        //    have auto-graduated since `quoteAmt = 17 ether > 16.8 ether`,
+        //    which is the empirical graduation threshold on Portal v5.14.3
+        //    (calibrated 2026-05-16, fork block 98651857).
         address pair = address(0);
         if (v2BuyBnb > 0) {
             pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
