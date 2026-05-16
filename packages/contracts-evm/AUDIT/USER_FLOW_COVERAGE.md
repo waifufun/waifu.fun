@@ -202,7 +202,7 @@ salt-miner job filling it in. the frontend polls.
 - the salt-miner is in-process (`apps/api/src/services/salt-miner.ts` uses
   `setTimeout(..., 0)`). under api crash / restart, a row with
   `vanitySalt = null` is never re-enqueued. should the indexer or a
-  cron sweeper re-pick orphans? **TODO follow-up wave.**
+  cron sweeper re-pick orphans? **follow-up wave.**
 - the API trusts the IPFS CID returned by `funcs.flap.sh` without
   fetching it back to check content-hash. minor concern only because
   flap is the only consumer of the CID on-chain.

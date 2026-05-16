@@ -46,6 +46,10 @@ function computeCreate2Addr(deployer, salt, initCodeHash) {
 	return ethers.getCreate2Address(deployer, salt, initCodeHash);
 }
 
+function effectiveSalt(creator, vanitySalt) {
+	return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, vanitySalt]));
+}
+
 async function deployStack() {
 	const [owner, creator, bundleBot, tipReceiver, alice, bob, carol] = await ethers.getSigners();
 
@@ -99,7 +103,8 @@ async function deployStack() {
 
 async function createLaunch(ctx, tier, overrides = {}) {
 	const { factory, portal, creator, bundleBot, initCodeHash, name, symbol } = ctx;
-	const salt = overrides.salt ?? ethers.id(`salt-${tier}-${Math.random()}`);
+	const rawSalt = overrides.salt ?? ethers.id(`salt-${tier}-${Math.random()}`);
+	const salt = effectiveSalt(creator.address, rawSalt);
 	const predicted = computeCreate2Addr(await portal.getAddress(), salt, initCodeHash);
 	const closeTimestamp = overrides.closeTimestamp ?? (await currentTs()) + 3600n;
 
@@ -116,14 +121,14 @@ async function createLaunch(ctx, tier, overrides = {}) {
 		taxDuration: 365 * 24 * 60 * 60,
 		antiFarmerDuration: 3600,
 		closeTimestamp,
-		vanitySalt: salt,
+		vanitySalt: rawSalt,
 		predictedTokenAddress: overrides.predictedTokenAddress ?? predicted,
 	};
 
-	const addrs = await factory.createLaunch.staticCall(config);
-	const tx = await factory.createLaunch(config);
+	const addrs = await factory.connect(creator).createLaunch.staticCall(config);
+	const tx = await factory.connect(creator).createLaunch(config);
 	await tx.wait();
-	return { config, salt, predicted, addrs };
+	return { config, rawSalt, salt, predicted, addrs };
 }
 
 describe("Wave H adversarial / edge cases", () => {
@@ -231,7 +236,8 @@ describe("Wave H adversarial / edge cases", () => {
 	it("createLaunch reverts with creator == address(0)", async () => {
 		const ctx = await deployStack();
 		const { factory, bundleBot, creator: c } = ctx;
-		const salt = ethers.id("test-salt-creator-zero");
+		const rawSalt = ethers.id("test-salt-creator-zero");
+		const salt = effectiveSalt(c.address, rawSalt);
 		const closeTs = (await currentTs()) + 3600n;
 		const predicted = computeCreate2Addr(await ctx.portal.getAddress(), salt, ctx.initCodeHash);
 		const config = {
@@ -247,10 +253,10 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			closeTimestamp: closeTs,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
-		await expect(factory.createLaunch(config)).to.be.revertedWithCustomError(factory, "InvalidCreator");
+		await expect(factory.connect(c).createLaunch(config)).to.be.revertedWithCustomError(factory, "InvalidCreator");
 	});
 
 	it("createLaunch reverts with closeTimestamp in past", async () => {
@@ -285,6 +291,65 @@ describe("Wave H adversarial / edge cases", () => {
 		);
 	});
 
+	it("createLaunch rejects an already-occupied predicted token address", async () => {
+		const ctx = await deployStack();
+		const { factory, portal, creator, bundleBot, initCodeHash } = ctx;
+		const rawSalt = ethers.id("preconsumed-before-create");
+		const salt = effectiveSalt(creator.address, rawSalt);
+		const predicted = computeCreate2Addr(await portal.getAddress(), salt, initCodeHash);
+		await portal.newTokenV6(
+			{
+				name: ctx.name,
+				symbol: ctx.symbol,
+				meta: "QmTestCid",
+				dexThresh: 1,
+				salt,
+				migratorType: 1,
+				quoteToken: ethers.ZeroAddress,
+				quoteAmt: ethers.parseEther("16"),
+				beneficiary: creator.address,
+				permitData: "0x",
+				extensionID: ethers.ZeroHash,
+				extensionData: "0x",
+				dexId: 0,
+				lpFeeProfile: 0,
+				buyTaxRate: 300,
+				sellTaxRate: 300,
+				taxDuration: 31536000,
+				antiFarmerDuration: 3600,
+				mktBps: 10000,
+				deflationBps: 0,
+				dividendBps: 0,
+				lpBps: 0,
+				minimumShareBalance: 0,
+				dividendToken: ethers.ZeroAddress,
+				commissionReceiver: creator.address,
+				tokenVersion: 0,
+			},
+			{ value: ethers.parseEther("16") },
+		);
+
+		const closeTimestamp = (await currentTs()) + 3600n;
+		await expect(
+			factory.connect(creator).createLaunch({
+				name: ctx.name,
+				symbol: ctx.symbol,
+				metaCid: "QmTestCid",
+				creator: creator.address,
+				bundleBot: bundleBot.address,
+				commissionReceiver: creator.address,
+				tier: TIER_80,
+				buyTaxBps: 300,
+				sellTaxBps: 300,
+				taxDuration: 31536000,
+				antiFarmerDuration: 3600,
+				closeTimestamp,
+				vanitySalt: rawSalt,
+				predictedTokenAddress: predicted,
+			}),
+		).to.be.revertedWithCustomError(factory, "PredictedAddressAlreadyDeployed");
+	});
+
 	it("createLaunch with same salt twice reverts SaltAlreadyUsed", async () => {
 		const ctx = await deployStack();
 		const fixedSalt = ethers.id("dup-salt-test");
@@ -292,6 +357,74 @@ describe("Wave H adversarial / edge cases", () => {
 		await expect(createLaunch(ctx, TIER_80, { salt: fixedSalt })).to.be.revertedWithCustomError(
 			ctx.factory,
 			"SaltAlreadyUsed",
+		);
+	});
+
+	it("same raw vanity salt is scoped per creator", async () => {
+		const ctx = await deployStack();
+		const rawSalt = ethers.id("creator-scoped-salt");
+		const attackerSalt = effectiveSalt(ctx.alice.address, rawSalt);
+		const victimSalt = effectiveSalt(ctx.creator.address, rawSalt);
+		const attackerPredicted = computeCreate2Addr(await ctx.portal.getAddress(), attackerSalt, ctx.initCodeHash);
+		const victimPredicted = computeCreate2Addr(await ctx.portal.getAddress(), victimSalt, ctx.initCodeHash);
+		expect(attackerPredicted).to.not.equal(victimPredicted);
+
+		const common = {
+			name: ctx.name,
+			symbol: ctx.symbol,
+			metaCid: "Qm",
+			bundleBot: ctx.bundleBot.address,
+			commissionReceiver: ctx.creator.address,
+			tier: TIER_80,
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31536000,
+			antiFarmerDuration: 3600,
+			closeTimestamp: (await currentTs()) + 3600n,
+			vanitySalt: rawSalt,
+		};
+
+		await ctx.factory.connect(ctx.alice).createLaunch({
+			...common,
+			creator: ctx.alice.address,
+			commissionReceiver: ctx.alice.address,
+			predictedTokenAddress: attackerPredicted,
+		});
+		await expect(
+			ctx.factory.connect(ctx.creator).createLaunch({
+				...common,
+				creator: ctx.creator.address,
+				predictedTokenAddress: victimPredicted,
+			}),
+		).to.not.be.reverted;
+		expect(await ctx.factory.usedSalts(attackerSalt)).to.equal(true);
+		expect(await ctx.factory.usedSalts(victimSalt)).to.equal(true);
+	});
+
+	it("createLaunch reverts when caller is not the configured creator", async () => {
+		const ctx = await deployStack();
+		const rawSalt = ethers.id("not-creator-salt");
+		const salt = effectiveSalt(ctx.creator.address, rawSalt);
+		const predicted = computeCreate2Addr(await ctx.portal.getAddress(), salt, ctx.initCodeHash);
+		const config = {
+			name: ctx.name,
+			symbol: ctx.symbol,
+			metaCid: "Qm",
+			creator: ctx.creator.address,
+			bundleBot: ctx.bundleBot.address,
+			commissionReceiver: ctx.creator.address,
+			tier: TIER_80,
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31536000,
+			antiFarmerDuration: 3600,
+			closeTimestamp: (await currentTs()) + 3600n,
+			vanitySalt: rawSalt,
+			predictedTokenAddress: predicted,
+		};
+		await expect(ctx.factory.connect(ctx.alice).createLaunch(config)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"NotCreator",
 		);
 	});
 
@@ -308,7 +441,7 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: salt,
 			name: ctx.name,
 			symbol: ctx.symbol,
-			meta: "Qm",
+			meta: "QmTestCid",
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31536000,
@@ -319,6 +452,33 @@ describe("Wave H adversarial / edge cases", () => {
 			deadline: (await currentTs()) + 600n,
 		};
 		await expect(router.connect(alice).executeBundle(params)).to.be.revertedWithCustomError(router, "NotBundleBot");
+	});
+
+	it("executeBundle cannot launch a cap-filled vault before close", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, creator } = ctx;
+		const { salt, addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp: (await currentTs()) + 3600n });
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		expect(await vault.requestLaunch()).to.equal(false);
+
+		const params = {
+			vanitySalt: salt,
+			name: ctx.name,
+			symbol: ctx.symbol,
+			meta: "QmTestCid",
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31536000,
+			antiFarmerDuration: 3600,
+			commissionReceiver: creator.address,
+			minV2TokensOut: 0,
+			tipBnb: 0,
+			deadline: (await currentTs()) + 600n,
+		};
+		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(vault, "InvalidState");
+		expect(await vault.state()).to.equal(0n);
 	});
 
 	it("executeBundle twice reverts AlreadyExecuted", async () => {
@@ -333,7 +493,7 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: salt,
 			name: ctx.name,
 			symbol: ctx.symbol,
-			meta: "Qm",
+			meta: "QmTestCid",
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31536000,
@@ -362,7 +522,7 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: salt,
 			name: ctx.name,
 			symbol: ctx.symbol,
-			meta: "Qm",
+			meta: "QmTestCid",
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31536000,
@@ -373,6 +533,64 @@ describe("Wave H adversarial / edge cases", () => {
 			deadline: (await currentTs()) - 1n,
 		};
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(router, "Expired");
+	});
+
+	it("executeBundle rejects params that differ from the factory-approved launch config", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, creator } = ctx;
+		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(creator).close();
+		const params = {
+			vanitySalt: salt,
+			name: ctx.name,
+			symbol: ctx.symbol,
+			meta: "QmMutated",
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31536000,
+			antiFarmerDuration: 3600,
+			commissionReceiver: creator.address,
+			minV2TokensOut: 0,
+			tipBnb: 0,
+			deadline: (await currentTs()) + 600n,
+		};
+		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
+			router,
+			"LaunchParamsMismatch",
+		);
+		expect(await router.executed()).to.equal(false);
+	});
+
+	it("executeBundle rejects unapproved tip funding", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, creator } = ctx;
+		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(creator).close();
+		const params = {
+			vanitySalt: salt,
+			name: ctx.name,
+			symbol: ctx.symbol,
+			meta: "QmTestCid",
+			buyTaxBps: 300,
+			sellTaxBps: 300,
+			taxDuration: 31536000,
+			antiFarmerDuration: 3600,
+			commissionReceiver: creator.address,
+			minV2TokensOut: 0,
+			tipBnb: ethers.parseEther("0.01"),
+			deadline: (await currentTs()) + 600n,
+		};
+		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
+			router,
+			"TipNotAllowed",
+		);
+		expect(await router.executed()).to.equal(false);
 	});
 
 	// =========================================================================
@@ -399,6 +617,34 @@ describe("Wave H adversarial / edge cases", () => {
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
 		await vault.connect(creator).close();
 		await expect(vault.connect(alice).enableRefundBundleFailed()).to.be.revertedWithCustomError(vault, "NotBundleBot");
+	});
+
+	it("enableRefundBundleFailed by bundleBot is grace-period gated", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, creator } = ctx;
+		const { addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(creator).close();
+		await expect(vault.connect(bundleBot).enableRefundBundleFailed()).to.be.revertedWithCustomError(
+			vault,
+			"WindowClosed",
+		);
+	});
+
+	it("permissionless launch-expired refund opens after the bundle grace period", async () => {
+		const ctx = await deployStack();
+		const { alice, creator } = ctx;
+		const closeTimestamp = (await currentTs()) + 60n;
+		const { addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp });
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(creator).close();
+
+		await expect(vault.connect(alice).enableRefundLaunchExpired()).to.be.revertedWithCustomError(vault, "WindowClosed");
+		await advanceTo(closeTimestamp + 86400n);
+		await vault.connect(alice).enableRefundLaunchExpired();
+		expect(await vault.state()).to.equal(3n); // REFUND
 	});
 
 	it("refund() in non-REFUND state reverts InvalidState", async () => {
@@ -441,28 +687,50 @@ describe("Wave H adversarial / edge cases", () => {
 		const ctx = await deployStack();
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const treasury = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
-		await expect(treasury.recordManagedToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+		await ctx.owner.sendTransaction({ to: addrs.router, value: ethers.parseEther("0.1") });
+		const routerSigner = await ethers.getImpersonatedSigner(addrs.router);
+		await expect(treasury.connect(routerSigner).recordManagedToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
 			treasury,
 			"ZeroAddress",
 		);
 	});
 
-	it("recordManagedToken twice with different tokens reverts MultipleTokens", async () => {
-		const ctx = await deployStack();
-		const { alice, bob } = ctx;
-		const { addrs } = await createLaunch(ctx, TIER_80);
-		const treasury = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
-		await treasury.recordManagedToken(alice.address);
-		await expect(treasury.recordManagedToken(bob.address)).to.be.revertedWithCustomError(treasury, "MultipleTokens");
-	});
-
-	it("recordManagedToken twice with same token is idempotent (no revert)", async () => {
+	it("recordManagedToken rejects unauthorized callers before router registration", async () => {
 		const ctx = await deployStack();
 		const { alice } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const treasury = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
-		await treasury.recordManagedToken(alice.address);
-		await expect(treasury.recordManagedToken(alice.address)).to.not.be.reverted;
+		await expect(treasury.connect(alice).recordManagedToken(alice.address)).to.be.revertedWithCustomError(
+			treasury,
+			"NotAuthorized",
+		);
+	});
+
+	it("recordManagedToken requires the token to have a treasury balance", async () => {
+		const ctx = await deployStack();
+		const { addrs } = await createLaunch(ctx, TIER_80);
+		const treasury = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const token = await Token.deploy();
+		await ctx.owner.sendTransaction({ to: addrs.router, value: ethers.parseEther("0.1") });
+		const routerSigner = await ethers.getImpersonatedSigner(addrs.router);
+		await expect(
+			treasury.connect(routerSigner).recordManagedToken(await token.getAddress()),
+		).to.be.revertedWithCustomError(treasury, "NoTokenBalance");
+	});
+
+	it("recordManagedToken rejects creator pre-registration even with token dust", async () => {
+		const ctx = await deployStack();
+		const { addrs } = await createLaunch(ctx, TIER_80);
+		const treasury = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const token = await Token.deploy();
+		await token.mint(addrs.treasuryLp, 1n);
+
+		await expect(
+			treasury.connect(ctx.creator).recordManagedToken(await token.getAddress()),
+		).to.be.revertedWithCustomError(treasury, "NotAuthorized");
+		expect(await treasury.managedToken()).to.equal(ethers.ZeroAddress);
 	});
 
 	it("sweep by non-owner reverts NotOwner", async () => {
@@ -507,7 +775,7 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: salt,
 			name: ctx.name,
 			symbol: ctx.symbol,
-			meta: "Qm",
+			meta: "QmTestCid",
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31536000,
@@ -547,7 +815,7 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: salt,
 			name: ctx.name,
 			symbol: ctx.symbol,
-			meta: "Qm",
+			meta: "QmTestCid",
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31536000,

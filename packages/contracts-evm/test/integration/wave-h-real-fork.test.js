@@ -46,18 +46,24 @@ function predictCreate2(deployer, salt, codeHash) {
 	return ethers.getCreate2Address(deployer, salt, codeHash);
 }
 
-function mineVanitySalt(deployer, codeHash, label) {
+function effectiveSalt(creator, rawSalt) {
+	return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, rawSalt]));
+}
+
+function mineVanitySalt(deployer, codeHash, creator, label) {
 	// Mine a salt where predicted addr ends in 7777
-	let salt = ethers.keccak256(ethers.toUtf8Bytes(`wave-h-fork ${label} ${Date.now()} ${Math.random()}`));
+	let rawSalt = ethers.keccak256(ethers.toUtf8Bytes(`wave-h-fork ${label} ${Date.now()} ${Math.random()}`));
+	let salt = effectiveSalt(creator, rawSalt);
 	let i = 0;
 	while (!predictCreate2(deployer, salt, codeHash).toLowerCase().endsWith("7777")) {
-		salt = ethers.keccak256(salt);
+		rawSalt = ethers.keccak256(rawSalt);
+		salt = effectiveSalt(creator, rawSalt);
 		i += 1;
 		if (i > 500_000) {
 			throw new Error("salt mining exceeded 500k iterations");
 		}
 	}
-	return { salt, predicted: predictCreate2(deployer, salt, codeHash), iterations: i };
+	return { rawSalt, salt, predicted: predictCreate2(deployer, salt, codeHash), iterations: i };
 }
 
 describe("Wave H real-fork integration", function () {
@@ -103,7 +109,7 @@ describe("Wave H real-fork integration", function () {
 	it("createLaunch deploys vault + router + treasuryLp, addresses recorded", async () => {
 		// Mine a vanity salt for an address ending in 7777
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted } = mineVanitySalt(PORTAL, codeHash, "tier80-A");
+		const { rawSalt, salt, predicted } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-A");
 		console.log(`    [salt] predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -121,7 +127,7 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: 31_536_000, // 365 days
 			antiFarmerDuration: 86_400, // 1 day (Portal min)
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
 
@@ -148,7 +154,7 @@ describe("Wave H real-fork integration", function () {
 
 	it("createLaunch reverts on duplicate salt", async () => {
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted } = mineVanitySalt(PORTAL, codeHash, "tier80-B");
+		const { rawSalt, predicted } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-B");
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
@@ -164,7 +170,7 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
 
@@ -176,7 +182,7 @@ describe("Wave H real-fork integration", function () {
 
 	it("createLaunch reverts on predictedTokenAddress mismatch", async () => {
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt } = mineVanitySalt(PORTAL, codeHash, "tier80-C");
+		const { rawSalt } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-C");
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
@@ -192,7 +198,7 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			// WRONG addr — factory should reject
 			predictedTokenAddress: "0xdead000000000000000000000000000000007777",
 		};
@@ -202,7 +208,7 @@ describe("Wave H real-fork integration", function () {
 
 	it("vault accepts deposits up to presaleCap (tier 80 = 16 BNB)", async () => {
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted } = mineVanitySalt(PORTAL, codeHash, "tier80-D");
+		const { rawSalt, predicted } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-D");
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
@@ -218,7 +224,7 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
 
@@ -251,7 +257,12 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live] depositorA=${freshDepositorA.address}`);
 
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, "live-bundle");
+		const { rawSalt, salt, predicted, iterations } = mineVanitySalt(
+			PORTAL,
+			codeHash,
+			freshDepositorA.address,
+			"live-bundle",
+		);
 		console.log(`    [live] mined salt in ${iterations} iters; predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -269,7 +280,7 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
 
@@ -298,9 +309,8 @@ describe("Wave H real-fork integration", function () {
 		await closeTx.wait();
 		console.log("    [live] vault closed");
 
-		// Step 4: bundleBot triggers executeBundle
-		// Tip = 0.05 BNB (mid-range per PUISSANT_TIP_RESEARCH.md)
-		// Send extra to bundleBot so it can cover the tip (vault pulls quoteAmt+v2BuyBnb+tipBnb)
+		// Step 4: bundleBot triggers executeBundle. Builder tips are disabled
+		// in this contract version and must be funded outside the vault flow.
 		const execParams = {
 			vanitySalt: salt,
 			name: config.name,
@@ -312,7 +322,7 @@ describe("Wave H real-fork integration", function () {
 			antiFarmerDuration: config.antiFarmerDuration,
 			commissionReceiver: config.commissionReceiver,
 			minV2TokensOut: 0,
-			tipBnb: 0, // tier 80 has no V2 buy and no tip overhead in fork mode
+			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};
 
@@ -417,7 +427,12 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live ${tierLabel}] depositorB=${freshDepositorB.address}`);
 
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, `live-${tierLabel}`);
+		const { rawSalt, salt, predicted, iterations } = mineVanitySalt(
+			PORTAL,
+			codeHash,
+			freshDepositorA.address,
+			`live-${tierLabel}`,
+		);
 		console.log(`    [live ${tierLabel}] mined salt in ${iterations} iters; predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -435,7 +450,7 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
 

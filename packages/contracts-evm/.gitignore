@@ -5,3 +5,9 @@ artifacts
 .env
 coverage
 coverage.json
+
+# foundry / echidna
+out-foundry
+crytic-export
+echidna-corpus
+AUDIT/echidna/results

@@ -13,7 +13,7 @@ const { ethers } = require("hardhat");
 //     -> token.transfer(treasuryLp, 10%)
 //     -> token.transfer(vault, ~40%)
 //     -> vault.distribute(token, vaultAmt)
-//     -> tipReceiver.call{value: tipBnb}
+//     -> explicit zero-tip check (builder tips are outside vault funding in this version)
 //   depositors --claim--> tokens
 //
 // All wired up by LaunchFactory.createLaunch. Mocks substitute Portal +
@@ -51,6 +51,10 @@ describe("Wave H bundle flow e2e", () => {
 
 	function computeCreate2Addr(deployer, salt, initCodeHash) {
 		return ethers.getCreate2Address(deployer, salt, initCodeHash);
+	}
+
+	function effectiveSalt(creator, vanitySalt) {
+		return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, vanitySalt]));
 	}
 
 	async function deployStack() {
@@ -110,7 +114,8 @@ describe("Wave H bundle flow e2e", () => {
 
 	async function createLaunch(ctx, tier, overrides = {}) {
 		const { factory, portal, creator, bundleBot, initCodeHash, name, symbol } = ctx;
-		const salt = overrides.salt ?? ethers.id(`salt-${tier}-${Math.random()}`);
+		const rawSalt = overrides.salt ?? ethers.id(`salt-${tier}-${Math.random()}`);
+		const salt = effectiveSalt(creator.address, rawSalt);
 		const predicted = computeCreate2Addr(await portal.getAddress(), salt, initCodeHash);
 
 		const closeTimestamp = overrides.closeTimestamp ?? (await currentTs()) + 3600n;
@@ -128,15 +133,16 @@ describe("Wave H bundle flow e2e", () => {
 			taxDuration: 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: overrides.predictedTokenAddress ?? predicted,
 		};
 
-		const txOrAddrs = await factory.createLaunch.staticCall(config);
-		const tx = await factory.createLaunch(config);
+		const txOrAddrs = await factory.connect(creator).createLaunch.staticCall(config);
+		const tx = await factory.connect(creator).createLaunch(config);
 		await tx.wait();
 		return {
 			config,
+			rawSalt,
 			salt,
 			predicted,
 			addrs: txOrAddrs, // vault/router/treasuryLp/predictedTokenAddress
@@ -168,6 +174,37 @@ describe("Wave H bundle flow e2e", () => {
 			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline,
+		};
+	}
+
+	function portalParams(ctx, salt, quoteAmt, beneficiary) {
+		return {
+			name: ctx.name,
+			symbol: ctx.symbol,
+			meta: "QmTestCidWaveH",
+			dexThresh: 1,
+			salt,
+			migratorType: 1,
+			quoteToken: ethers.ZeroAddress,
+			quoteAmt,
+			beneficiary,
+			permitData: "0x",
+			extensionID: ethers.ZeroHash,
+			extensionData: "0x",
+			dexId: 0,
+			lpFeeProfile: 0,
+			buyTaxRate: 300,
+			sellTaxRate: 300,
+			taxDuration: 365 * 24 * 60 * 60,
+			antiFarmerDuration: 3600,
+			mktBps: 10000,
+			deflationBps: 0,
+			dividendBps: 0,
+			lpBps: 0,
+			minimumShareBalance: 0,
+			dividendToken: ethers.ZeroAddress,
+			commissionReceiver: ctx.creator.address,
+			tokenVersion: 6,
 		};
 	}
 
@@ -391,7 +428,8 @@ describe("Wave H bundle flow e2e", () => {
 	it("factory reverts on empty name/symbol/meta", async () => {
 		const ctx = await deployStack();
 		// Force-build a config with empty fields without going through createLaunch helper.
-		const salt = ethers.id("salt-empty");
+		const rawSalt = ethers.id("salt-empty");
+		const salt = effectiveSalt(ctx.creator.address, rawSalt);
 		const predicted = computeCreate2Addr(await ctx.portal.getAddress(), salt, ctx.initCodeHash);
 		const closeTs = (await currentTs()) + 3600n;
 		const base = {
@@ -407,18 +445,18 @@ describe("Wave H bundle flow e2e", () => {
 			taxDuration: 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
 			closeTimestamp: closeTs,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 		};
-		await expect(ctx.factory.createLaunch({ ...base, name: "" })).to.be.revertedWithCustomError(
+		await expect(ctx.factory.connect(ctx.creator).createLaunch({ ...base, name: "" })).to.be.revertedWithCustomError(
 			ctx.factory,
 			"EmptyName",
 		);
-		await expect(ctx.factory.createLaunch({ ...base, symbol: "" })).to.be.revertedWithCustomError(
+		await expect(ctx.factory.connect(ctx.creator).createLaunch({ ...base, symbol: "" })).to.be.revertedWithCustomError(
 			ctx.factory,
 			"EmptySymbol",
 		);
-		await expect(ctx.factory.createLaunch({ ...base, metaCid: "" })).to.be.revertedWithCustomError(
+		await expect(ctx.factory.connect(ctx.creator).createLaunch({ ...base, metaCid: "" })).to.be.revertedWithCustomError(
 			ctx.factory,
 			"EmptyMetaCid",
 		);
@@ -457,10 +495,11 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await ethers.provider.getBalance(addrs.vault)).to.equal(0n);
 	});
 
-	it("bundle-failed refund: bundleBot enables refund after close", async () => {
+	it("bundle-failed refund: bundleBot enables refund only after grace period", async () => {
 		const ctx = await deployStack();
 		const { alice, bundleBot } = ctx;
-		const { addrs } = await createLaunch(ctx, TIER_80);
+		const closeTimestamp = (await currentTs()) + 60n;
+		const { addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp });
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
@@ -468,6 +507,11 @@ describe("Wave H bundle flow e2e", () => {
 
 		// Only bundleBot may flip after fully subscribed + closed.
 		await expect(vault.connect(alice).enableRefundBundleFailed()).to.be.revertedWithCustomError(vault, "NotBundleBot");
+		await expect(vault.connect(bundleBot).enableRefundBundleFailed()).to.be.revertedWithCustomError(
+			vault,
+			"WindowClosed",
+		);
+		await advanceTo(closeTimestamp + 86400n);
 		await vault.connect(bundleBot).enableRefundBundleFailed();
 		expect(await vault.state()).to.equal(3n); // REFUND
 
@@ -545,8 +589,34 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await router.executed()).to.equal(false);
 	});
 
+	it("portal salt preconsumption leaves vault closed and recoverable after grace period", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, portal } = ctx;
+		const { salt, addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+
+		await portal
+			.connect(alice)
+			.newTokenV6(portalParams(ctx, salt, ethers.parseEther("16"), alice.address), { value: ethers.parseEther("16") });
+
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(ctx.creator).close();
+
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = salt;
+		await expect(router.connect(bundleBot).executeBundle(params)).to.be.reverted;
+		expect(await vault.state()).to.equal(1n);
+		expect(await router.executed()).to.equal(false);
+		expect(await ethers.provider.getBalance(addrs.vault)).to.equal(PRESALE_CAPS[TIER_80]);
+
+		await advanceTo((await vault.closeTimestamp()) + 86400n);
+		await vault.enableRefundLaunchExpired();
+		expect(await vault.state()).to.equal(3n);
+	});
+
 	// =========================================================================
-	// treasury allocation + tip
+	// treasury allocation + tip guard
 	// =========================================================================
 
 	it("treasury allocation goes to TreasuryLP exactly and recordManagedToken locks in", async () => {
@@ -567,52 +637,55 @@ describe("Wave H bundle flow e2e", () => {
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);
 		expect(await token.balanceOf(addrs.treasuryLp)).to.equal(ethers.parseEther("80000000"));
 
-		// recordManagedToken locks to the launched token.
-		await treasuryLp.recordManagedToken(predicted);
+		// Router registers the managed token immediately after treasury transfer.
 		expect(await treasuryLp.managedToken()).to.equal(predicted);
 	});
 
-	it("tip transfer goes to TIP_RECEIVER when tipBnb > 0", async () => {
+	it("records actual vault token balance when token transfers take a fee", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, tipReceiver } = ctx;
+		const { alice, bundleBot, portal } = ctx;
+		const { salt, predicted, addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
+
+		await portal.setTokenTransferTaxBps(1000); // 10% transfer fee in the mock token.
+		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await vault.connect(ctx.creator).close();
+
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = salt;
+		await router.connect(bundleBot).executeBundle(params);
+
+		const token = await ethers.getContractAt("BundleFlowToken", predicted);
+		const actualVaultBalance = await token.balanceOf(addrs.vault);
+		expect(actualVaultBalance).to.equal(ethers.parseEther("288000000"));
+		expect(await vault.presalerTokenBalance()).to.equal(actualVaultBalance);
+		expect(await treasuryLp.managedToken()).to.equal(predicted);
+		expect(await treasuryLp.balance()).to.equal(ethers.parseEther("72000000"));
+		await expect(vault.connect(alice).claim()).to.be.revertedWithCustomError(vault, "TokenBalanceTooLow");
+	});
+
+	it("tipBnb stays disabled for factory-created launches", async () => {
+		const ctx = await deployStack();
+		const { alice, bundleBot, tipReceiver, creator } = ctx;
 		const { salt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
-		// Over-deposit (above quoteAmt+v2BuyBnb) so vault has BNB for the tip.
 		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await vault.connect(creator).close();
 
-		const tipBnb = ethers.parseEther("0.05"); // covered by bonus pool? no, by extra cap.
-		// TIER_80: cap=16, quote=16, v2=0. needed = 16 + 0 + tip = 16.05 > cap.
-		// pullBnbForLaunch enforces amount <= totalDeposited + bonusPool.
-		// To make the tip case payable, push the math to fit: use a custom higher cap.
-		// Simpler approach: deposit + create a vault that has slack. Use TIER_90 with smaller tip.
-
-		// Skip and run a separate tier-90 path with tip.
-		const ctx2 = await deployStack();
-		const { alice: a2, bundleBot: bb2, tipReceiver: tr2 } = ctx2;
-		const { salt: s2, addrs: a2addrs } = await createLaunch(ctx2, TIER_90);
-		const vault2 = await ethers.getContractAt("LaunchVault", a2addrs.vault);
-		const router2 = await ethers.getContractAt("BundleRouter", a2addrs.router);
-
-		await vault2.connect(a2).deposit({ value: PRESALE_CAPS[TIER_90] });
-		await vault2.connect(ctx2.creator).close();
-
-		// tier 90: cap=32, quote=16, v2=16. needed = 32 = cap. no slack for tip
-		// from the cap. tip must come from bonus pool (empty here). zero tip path covered.
-		const trBefore = await ethers.provider.getBalance(tr2.address);
-		const params2 = await bundleParams(ctx2, (await currentTs()) + 600n);
-		params2.vanitySalt = s2;
-		params2.tipBnb = 0n;
-		await router2.connect(bb2).executeBundle(params2);
-		const trAfter = await ethers.provider.getBalance(tr2.address);
-		expect(trAfter - trBefore).to.equal(0n); // tip=0 path
-
-		// Tip > 0 path is covered by the BundleRouter unit tests in phase 2A.
-		// (We don't have a way to fund the tip out of vault since needed > cap revert
-		// fires. Operationally, tipBnb comes out of the bonus pool or the vault
-		// is over-subscribed past cap — both handled in fork tests / live ops.)
+		const trBefore = await ethers.provider.getBalance(tipReceiver.address);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = salt;
+		params.tipBnb = ethers.parseEther("0.05");
+		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
+			router,
+			"TipNotAllowed",
+		);
+		expect(await router.executed()).to.equal(false);
+		expect(await ethers.provider.getBalance(tipReceiver.address)).to.equal(trBefore);
 	});
 
 	// =========================================================================

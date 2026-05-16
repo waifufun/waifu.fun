@@ -1,0 +1,32 @@
+# foundry.toml
+# echidna/foundry sibling layout. hardhat remains the primary test runner;
+# this exists so echidna 2.x can find a compilable solidity project for
+# property-based fuzzing of the wave H contracts.
+
+[profile.default]
+src = "contracts"
+out = "out-foundry"
+libs = ["node_modules", "lib"]
+test = "test-echidna"
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+auto_detect_solc = false
+remappings = [
+  "forge-std/=lib/forge-std/src/",
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/",
+]
+
+[fuzz]
+runs = 10000
+
+[invariant]
+runs = 256
+depth = 64
+fail_on_revert = false
+
+# alt profile: drop viaIR if echidna hangs on the IR pipeline.
+[profile.no_via_ir]
+via_ir = false

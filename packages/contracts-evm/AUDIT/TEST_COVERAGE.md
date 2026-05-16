@@ -86,7 +86,7 @@ Wave H bundle flow e2e
   ✔ refund() reverts second time from same address (idempotent NoDeposit)
   ✔ bundle revert leaves vault BNB intact (atomic-or-bust via EVM rollback)
   ✔ treasury allocation goes to TreasuryLP exactly and recordManagedToken locks in
-  ✔ tip transfer goes to TIP_RECEIVER when tipBnb > 0
+  ✔ nonzero tipBnb is rejected until an explicit external tip-funding model exists
   ✔ tier-90 vesting: TGE = 50%, linear over 24h reaches 100%
   ✔ three depositors get correct pro-rata shares
   ✔ withdraw with penalty=0 returns full amount; bonusPool stays zero
@@ -182,9 +182,10 @@ revert, not our code. operational concern, not a contract behavior.
 
 ### 3. fuzz / invariant property tests
 
-current suite is example-based. foundry invariant runners are recommended
-for a follow-up wave to prove the vault state-machine invariants in
-`THREAT_MODEL.md` section 2.4 hold under random caller sequences.
+covered by Echidna, Medusa, Foundry invariants, Scribble instrumentation, and
+Halmos over the vault state-machine surface. Remaining gap: deeper Certora-style
+cross-contract rules over factory/router/vault accounting and a higher-depth
+symbolic budget for all vesting/refund interleavings.
 
 ### 4. gas regression baselines
 

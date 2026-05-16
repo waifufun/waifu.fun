@@ -1,0 +1,16 @@
+testMode: property
+testLimit: 5000
+seqLen: 100
+shrinkLimit: 2000
+deployer: "0x30000"
+sender: ["0x10000", "0x20000", "0x30000"]
+balanceContract: 1000000000000000000000
+balanceAddr: 1000000000000000000000
+coverage: true
+corpusDir: "echidna-corpus"
+format: "text"
+prefix: "echidna_"
+allContracts: false
+filterFunctions: []
+solcArgs: "--via-ir --optimize --optimize-runs 200"
+cryticArgs: ["--solc-remaps", "@openzeppelin/=node_modules/@openzeppelin/", "--compile-force-framework", "foundry"]

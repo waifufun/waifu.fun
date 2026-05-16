@@ -133,7 +133,7 @@ runbook).
 
 ### L3. tax stream stats
 - [ ] live splitter balance visible
-- [ ] 24h tax volume + lifetime tax distributed (or TODO marker if indexer not wired yet)
+- [ ] 24h tax volume + lifetime tax distributed (or placeholder marker if indexer not wired yet)
 - [ ] breakdown by destination: dividends, deflation, LP, market
 
 ### L4. trade activity feed
