@@ -15,26 +15,31 @@ type LoadState =
 	| { status: "ready"; token: string; info: ClaimInfo };
 
 export default function ClaimTokenClient({ token }: { token: string }) {
-	const [state, setState] = useState<LoadState>(() => (token ? { status: "loading" } : { status: "not-found" }));
+	const [runtimeToken] = useState(() => {
+		if (token && token !== "_") return token;
+		if (typeof window === "undefined") return token;
+		return decodeURIComponent(window.location.pathname.split("/").filter(Boolean).at(1) ?? "");
+	});
+	const [state, setState] = useState<LoadState>(() => (runtimeToken ? { status: "loading" } : { status: "not-found" }));
 
 	useEffect(() => {
-		if (!token) {
+		if (!runtimeToken) {
 			setState({ status: "not-found" });
 			return;
 		}
 
 		let cancelled = false;
-		void fetchClaimInfo(token).then(({ info, expired }) => {
+		void fetchClaimInfo(runtimeToken).then(({ info, expired }) => {
 			if (cancelled) return;
 			if (expired || info?.claimStatus === "expired") setState({ status: "expired" });
 			else if (!info) setState({ status: "not-found" });
-			else setState({ status: "ready", token, info });
+			else setState({ status: "ready", token: runtimeToken, info });
 		});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [token]);
+	}, [runtimeToken]);
 
 	if (state.status === "loading") {
 		return (

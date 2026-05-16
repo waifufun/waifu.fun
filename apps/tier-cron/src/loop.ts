@@ -273,7 +273,14 @@ export async function processOnce(deps: ProcessOnceDeps): Promise<RoundResult> {
 				continue;
 			}
 			if (deps.bundleSubmitter) {
-				await deps.bundleSubmitter(launch.id);
+				try {
+					await deps.bundleSubmitter(launch.id);
+				} catch (error) {
+					deps.logger.error(
+						{ launchId: launch.id, err: errorMessage(error) },
+						"bundle submission failed; continuing round",
+					);
+				}
 				continue;
 			}
 			deps.logger.info(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { bsc } from "wagmi/chains";
@@ -25,7 +25,12 @@ type Props = {
 };
 
 export default function LaunchPageClient({ id }: Props) {
-	const meta = useLaunchMeta(id);
+	const [runtimeId] = useState(() => {
+		if (id && id !== "_" && id !== "placeholder") return id;
+		if (typeof window === "undefined") return id;
+		return decodeURIComponent(window.location.pathname.split("/").filter(Boolean).at(1) ?? "");
+	});
+	const meta = useLaunchMeta(runtimeId);
 	const queryClient = useQueryClient();
 
 	const vaultAddress = useMemo<Address | undefined>(() => {
@@ -33,9 +38,9 @@ export default function LaunchPageClient({ id }: Props) {
 		if (typeof fromMeta === "string" && isAddress(fromMeta)) return fromMeta;
 		// `id` itself is sometimes a vault address (the page accepts UUID *or*
 		// vault contract address; backend should resolve UUIDs to vaults).
-		if (id && isAddress(id)) return id as Address;
+		if (runtimeId && isAddress(runtimeId)) return runtimeId as Address;
 		return undefined;
-	}, [meta.data?.vaultAddress, id]);
+	}, [meta.data?.vaultAddress, runtimeId]);
 
 	const snapshot = useVaultSnapshot(vaultAddress);
 	const snap = snapshot.data;
@@ -70,14 +75,14 @@ export default function LaunchPageClient({ id }: Props) {
 	const claimable = useClaimable(vaultAddress, displayState);
 
 	const refresh = () => {
-		void queryClient.invalidateQueries({ queryKey: ["launch-meta", id] });
-		void queryClient.invalidateQueries({ queryKey: ["launch-depositors", id] });
+		void queryClient.invalidateQueries({ queryKey: ["launch-meta", runtimeId] });
+		void queryClient.invalidateQueries({ queryKey: ["launch-depositors", runtimeId] });
 		void queryClient.invalidateQueries({ queryKey: ["vault-events-fallback", vaultAddress ?? null] });
 		void snapshot.refetch();
 	};
 
-	if (!id || id === "_" || id === "placeholder") {
-		return <NotFound id={id} reason="missing launch id" />;
+	if (!runtimeId || runtimeId === "_" || runtimeId === "placeholder") {
+		return <NotFound id={runtimeId} reason="missing launch id" />;
 	}
 
 	if (meta.isLoading && !meta.data) {
@@ -98,7 +103,7 @@ export default function LaunchPageClient({ id }: Props) {
 	}
 
 	if (!meta.data && !vaultAddress) {
-		return <NotFound id={id} reason="launch not found" />;
+		return <NotFound id={runtimeId} reason="launch not found" />;
 	}
 
 	const capWeiResolved = apiCapWei ?? capFromTier(tier.presaleCapBnb);
@@ -132,7 +137,7 @@ export default function LaunchPageClient({ id }: Props) {
 					/>
 					<LaunchFAQ tier={tier} />
 					<LaunchTerms penaltyBps={snap?.penaltyBps ?? null} />
-					<ActivityFeed launchId={id} vaultAddress={vaultAddress} />
+					<ActivityFeed launchId={runtimeId} vaultAddress={vaultAddress} />
 				</div>
 				<aside className="hidden lg:block">
 					{displayState === "refunding" ? (

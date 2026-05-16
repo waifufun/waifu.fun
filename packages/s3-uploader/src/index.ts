@@ -103,7 +103,9 @@ export const extractObjectKeyFromUrl = (metadataUrl: string): string => {
 
 	if (metadataUrl.startsWith(`${publicBaseUrl}/`)) {
 		// Check primary case: starts with current base URL
-		return new URL(metadataUrl).pathname.substring(publicBaseUrl.length + 1);
+		const basePath = new URL(publicBaseUrl).pathname.replace(/^\/+|\/+$/g, "");
+		const path = new URL(metadataUrl).pathname.replace(/^\/+/, "");
+		return basePath && path.startsWith(`${basePath}/`) ? path.substring(basePath.length + 1) : path;
 	}
 	if (metadataUrl.startsWith(expectedR2Prefix)) {
 		// Check legacy/hardcoded R2 prefix
