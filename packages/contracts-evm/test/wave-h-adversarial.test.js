@@ -132,6 +132,23 @@ async function createLaunch(ctx, tier, overrides = {}) {
 	return { config, rawSalt, salt, predicted, addrs };
 }
 
+async function depositFullCap(vault, tier, alice, bob) {
+	const cap = PRESALE_CAPS[tier];
+	const aliceShare = (cap * 60n) / 100n;
+	const bobShare = cap - aliceShare;
+	await vault.connect(alice).deposit({ value: aliceShare });
+	await vault.connect(bob).deposit({ value: bobShare });
+	return { cap, aliceShare, bobShare };
+}
+
+async function closeSubscribedVault(vault, closer) {
+	const now = await currentTs();
+	const closeTimestamp = await vault.closeTimestamp();
+	const minOpenReady = now + 901n;
+	await advanceTo(minOpenReady < closeTimestamp ? minOpenReady : closeTimestamp + 1n);
+	await vault.connect(closer).close();
+}
+
 describe("Wave H adversarial / edge cases", () => {
 	// =========================================================================
 	// vault state machine
@@ -139,31 +156,31 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("deposit reverts in CLOSED state", async () => {
 		const ctx = await deployStack();
-		const { alice, creator } = ctx;
+		const { alice, bob, creator } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		await expect(vault.connect(alice).deposit({ value: 1n })).to.be.revertedWithCustomError(vault, "InvalidState");
 	});
 
 	it("withdraw reverts in CLOSED state", async () => {
 		const ctx = await deployStack();
-		const { alice, creator } = ctx;
+		const { alice, bob, creator } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		await expect(vault.connect(alice).withdrawAll()).to.be.revertedWithCustomError(vault, "InvalidState");
 	});
 
 	it("close reverts twice", async () => {
 		const ctx = await deployStack();
-		const { alice, creator } = ctx;
+		const { alice, bob, creator } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		await expect(vault.connect(creator).close()).to.be.revertedWithCustomError(vault, "InvalidState");
 	});
 
@@ -203,12 +220,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("double claim is gated by claimed-tracking and reverts NothingToClaim", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		const closeTs = (await currentTs()) + 600n;
 		const params = {
 			vanitySalt: rawSalt,
@@ -480,11 +497,11 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("executeBundle cannot launch a cap-filled vault before close", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp: (await currentTs()) + 3600n });
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await depositFullCap(vault, TIER_80, alice, bob);
 		expect(await vault.requestLaunch()).to.equal(false);
 
 		const params = {
@@ -507,12 +524,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("executeBundle twice reverts AlreadyExecuted", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		const params = {
 			vanitySalt: rawSalt,
 			name: ctx.name,
@@ -536,12 +553,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("executeBundle after deadline reverts Expired", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		const params = {
 			vanitySalt: rawSalt,
 			name: ctx.name,
@@ -561,12 +578,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("executeBundle rejects params that differ from the factory-approved launch config", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		const params = {
 			vanitySalt: rawSalt,
 			name: ctx.name,
@@ -590,12 +607,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("executeBundle rejects unapproved tip funding", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		const params = {
 			vanitySalt: rawSalt,
 			name: ctx.name,
@@ -635,21 +652,21 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("enableRefundBundleFailed by non-bundleBot reverts NotBundleBot", async () => {
 		const ctx = await deployStack();
-		const { alice, creator } = ctx;
+		const { alice, bob, creator } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		await expect(vault.connect(alice).enableRefundBundleFailed()).to.be.revertedWithCustomError(vault, "NotBundleBot");
 	});
 
 	it("enableRefundBundleFailed by bundleBot is grace-period gated", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		await expect(vault.connect(bundleBot).enableRefundBundleFailed()).to.be.revertedWithCustomError(
 			vault,
 			"WindowClosed",
@@ -658,12 +675,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("permissionless launch-expired refund opens after the bundle grace period", async () => {
 		const ctx = await deployStack();
-		const { alice, creator } = ctx;
+		const { alice, bob, creator } = ctx;
 		const closeTimestamp = (await currentTs()) + 60n;
 		const { addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp });
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 
 		await expect(vault.connect(alice).enableRefundLaunchExpired()).to.be.revertedWithCustomError(vault, "WindowClosed");
 		await advanceTo(closeTimestamp + 86400n);
@@ -794,7 +811,7 @@ describe("Wave H adversarial / edge cases", () => {
 		await vault.connect(alice).deposit({ value: a });
 		await vault.connect(bob).deposit({ value: b });
 		await vault.connect(carol).deposit({ value: c });
-		await vault.connect(creator).close();
+		await closeSubscribedVault(vault, creator);
 		const params = {
 			vanitySalt: rawSalt,
 			name: ctx.name,
@@ -827,12 +844,12 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("bundle revert leaves vault BNB intact (atomic EVM rollback)", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator, portal } = ctx;
+		const { alice, bob, bundleBot, creator, portal } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 		const balBefore = await ethers.provider.getBalance(addrs.vault);
 		await portal.setShouldRevert(true);
 		const params = {
@@ -862,13 +879,13 @@ describe("Wave H adversarial / edge cases", () => {
 
 	it("requestLaunch returns true only when CLOSED + cap-met", async () => {
 		const ctx = await deployStack();
-		const { alice, creator } = ctx;
+		const { alice, bob, creator } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		expect(await vault.requestLaunch()).to.equal(false);
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await depositFullCap(vault, TIER_80, alice, bob);
 		expect(await vault.requestLaunch()).to.equal(false);
-		await vault.connect(creator).close();
+		await closeSubscribedVault(vault, creator);
 		expect(await vault.requestLaunch()).to.equal(true);
 	});
 });

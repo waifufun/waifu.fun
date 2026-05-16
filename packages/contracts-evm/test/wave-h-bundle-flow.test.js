@@ -160,6 +160,23 @@ describe("Wave H bundle flow e2e", () => {
 		await ethers.provider.send("evm_mine", []);
 	}
 
+	async function depositFullCap(vault, tier, alice, bob) {
+		const cap = PRESALE_CAPS[tier];
+		const aliceShare = (cap * 60n) / 100n;
+		const bobShare = cap - aliceShare;
+		await vault.connect(alice).deposit({ value: aliceShare });
+		await vault.connect(bob).deposit({ value: bobShare });
+		return { cap, aliceShare, bobShare };
+	}
+
+	async function closeSubscribedVault(vault, closer) {
+		const now = await currentTs();
+		const closeTimestamp = await vault.closeTimestamp();
+		const minOpenReady = now + 901n;
+		await advanceTo(minOpenReady < closeTimestamp ? minOpenReady : closeTimestamp + 1n);
+		await vault.connect(closer).close();
+	}
+
 	async function bundleParams(ctx, deadline) {
 		const { name, symbol } = ctx;
 		return {
@@ -228,16 +245,12 @@ describe("Wave H bundle flow e2e", () => {
 			const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
 
 			// Two depositors split presale 60/40.
-			const cap = PRESALE_CAPS[tier];
-			const aliceShare = (cap * 60n) / 100n;
-			const bobShare = cap - aliceShare;
-			await vault.connect(alice).deposit({ value: aliceShare });
-			await vault.connect(bob).deposit({ value: bobShare });
+			const { cap, aliceShare, bobShare } = await depositFullCap(vault, tier, alice, bob);
 
 			expect(await vault.totalDeposited()).to.equal(cap);
 
 			// Close via creator.
-			await vault.connect(ctx.creator).close();
+			await closeSubscribedVault(vault, ctx.creator);
 			expect(await vault.state()).to.equal(1n);
 
 			// Bundle bot executes.
@@ -347,8 +360,8 @@ describe("Wave H bundle flow e2e", () => {
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 
-		await vault.connect(alice).deposit({ value: ethers.parseEther("10") });
-		await expect(vault.connect(alice).deposit({ value: ethers.parseEther("10") })).to.be.revertedWithCustomError(
+		await vault.connect(alice).deposit({ value: ethers.parseEther("9") });
+		await expect(vault.connect(alice).deposit({ value: ethers.parseEther("8") })).to.be.revertedWithCustomError(
 			vault,
 			"CapExceeded",
 		);
@@ -365,13 +378,13 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("reverts when non-bundleBot calls router.executeBundle", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot } = ctx;
+		const { alice, bob, bundleBot } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
@@ -381,13 +394,13 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("reverts when router.executeBundle called twice (one-shot guard)", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot } = ctx;
+		const { alice, bob, bundleBot } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
@@ -419,13 +432,13 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("router derives the effective CREATE2 salt from the raw vanity salt", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, portal } = ctx;
+		const { alice, bob, bundleBot, portal } = ctx;
 		const okLaunch = await createLaunch(ctx, TIER_80);
 		const okVault = await ethers.getContractAt("LaunchVault", okLaunch.addrs.vault);
 		const okRouter = await ethers.getContractAt("BundleRouter", okLaunch.addrs.router);
 
-		await okVault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await okVault.connect(ctx.creator).close();
+		await depositFullCap(okVault, TIER_80, alice, bob);
+		await closeSubscribedVault(okVault, ctx.creator);
 
 		const okParams = await bundleParams(ctx, (await currentTs()) + 600n);
 		okParams.vanitySalt = okLaunch.rawSalt;
@@ -524,13 +537,13 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("bundle-failed refund: bundleBot enables refund only after grace period", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot } = ctx;
+		const { alice, bob, bundleBot } = ctx;
 		const closeTimestamp = (await currentTs()) + 60n;
 		const { addrs } = await createLaunch(ctx, TIER_80, { closeTimestamp });
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		const { aliceShare } = await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 
 		// Only bundleBot may flip after fully subscribed + closed.
 		await expect(vault.connect(alice).enableRefundBundleFailed()).to.be.revertedWithCustomError(vault, "NotBundleBot");
@@ -547,7 +560,7 @@ describe("Wave H bundle flow e2e", () => {
 		const r = await tx.wait();
 		const aliceAfter = await ethers.provider.getBalance(alice.address);
 		const gas = r.gasUsed * r.gasPrice;
-		expect(aliceAfter + gas - aliceBefore).to.equal(PRESALE_CAPS[TIER_80]);
+		expect(aliceAfter + gas - aliceBefore).to.equal(aliceShare);
 	});
 
 	it("admin emergency refund: factory.owner must schedule before flipping OPEN or CLOSED state to REFUND", async () => {
@@ -602,13 +615,13 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("bundle revert leaves vault BNB intact (atomic-or-bust via EVM rollback)", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, portal } = ctx;
+		const { alice, bob, bundleBot, portal } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 
 		const vaultBalBefore = await ethers.provider.getBalance(addrs.vault);
 		expect(vaultBalBefore).to.equal(PRESALE_CAPS[TIER_80]);
@@ -629,7 +642,7 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("portal salt preconsumption leaves vault closed and recoverable after grace period", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, portal } = ctx;
+		const { alice, bob, bundleBot, portal } = ctx;
 		const { rawSalt, salt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
@@ -638,8 +651,8 @@ describe("Wave H bundle flow e2e", () => {
 			.connect(alice)
 			.newTokenV6(portalParams(ctx, salt, ethers.parseEther("16"), alice.address), { value: ethers.parseEther("16") });
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
@@ -659,14 +672,14 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("treasury allocation goes to TreasuryLP exactly and recordManagedToken locks in", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot } = ctx;
+		const { alice, bob, bundleBot } = ctx;
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
@@ -681,14 +694,14 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("creator cannot sweep the managed treasury allocation", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, creator } = ctx;
+		const { alice, bob, bundleBot, creator } = ctx;
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
@@ -703,15 +716,15 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("records actual vault token balance when token transfers take a fee", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, portal } = ctx;
+		const { alice, bob, bundleBot, portal } = ctx;
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
 
 		await portal.setTokenTransferTaxBps(1000); // 10% transfer fee in the mock token.
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(ctx.creator).close();
+		const { cap, aliceShare } = await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
@@ -724,7 +737,8 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await treasuryLp.managedToken()).to.equal(predicted);
 		expect(await treasuryLp.balance()).to.equal(ethers.parseEther("72000000"));
 		await expect(vault.connect(alice).claim()).to.emit(vault, "Claimed");
-		expect(await token.balanceOf(alice.address)).to.equal(ethers.parseEther("259200000"));
+		const aliceGross = (aliceShare * actualVaultBalance) / cap;
+		expect(await token.balanceOf(alice.address)).to.equal(aliceGross - aliceGross / 10n);
 	});
 
 	it("fee-on-transfer token claims do not strand later presalers", async () => {
@@ -742,7 +756,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(alice).deposit({ value: a });
 		await vault.connect(bob).deposit({ value: b });
 		await vault.connect(carol).deposit({ value: c });
-		await vault.connect(creator).close();
+		await closeSubscribedVault(vault, creator);
 
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
@@ -765,15 +779,15 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("fee-on-transfer token claims remain claimable across vesting tranches", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, portal } = ctx;
+		const { alice, bob, bundleBot, portal } = ctx;
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 		const taxBps = 1000n;
 
 		await portal.setTokenTransferTaxBps(Number(taxBps));
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_90] });
-		await vault.connect(ctx.creator).close();
+		await depositFullCap(vault, TIER_90, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
@@ -793,19 +807,20 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await token.balanceOf(alice.address)).to.equal(
 			expectedNet(firstGrossClaimed) + expectedNet(secondGrossClaimed),
 		);
-		expect(await token.balanceOf(addrs.vault)).to.equal(0n);
+		const bobUnclaimed = await vault.claimableOf(bob.address);
+		expect(await token.balanceOf(addrs.vault)).to.equal(bobUnclaimed);
 		await expect(vault.connect(alice).claim()).to.be.revertedWithCustomError(vault, "NothingToClaim");
 	});
 
 	it("tipBnb stays disabled for factory-created launches", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot, tipReceiver, creator } = ctx;
+		const { alice, bob, bundleBot, tipReceiver, creator } = ctx;
 		const { rawSalt, addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
-		await vault.connect(creator).close();
+		await depositFullCap(vault, TIER_80, alice, bob);
+		await closeSubscribedVault(vault, creator);
 
 		const trBefore = await ethers.provider.getBalance(tipReceiver.address);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
@@ -825,32 +840,33 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("tier-90 vesting: TGE = 50%, linear over 24h reaches 100%", async () => {
 		const ctx = await deployStack();
-		const { alice, bundleBot } = ctx;
+		const { alice, bob, bundleBot } = ctx;
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_90] });
-		await vault.connect(ctx.creator).close();
+		const { cap, aliceShare } = await depositFullCap(vault, TIER_90, alice, bob);
+		await closeSubscribedVault(vault, ctx.creator);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);
 		const presalerBal = await vault.presalerTokenBalance();
+		const aliceAlloc = (aliceShare * presalerBal) / cap;
 
 		// TGE: ~50% (a few seconds may have elapsed between launch and this claim;
 		// allow a small tolerance equal to ~10 seconds of linear vesting).
 		await vault.connect(alice).claim();
-		const tgeTolerance = (presalerBal / 2n / 86400n) * 10n;
-		expect(await token.balanceOf(alice.address)).to.be.closeTo(presalerBal / 2n, tgeTolerance);
+		const tgeTolerance = (aliceAlloc / 2n / 86400n) * 10n;
+		expect(await token.balanceOf(alice.address)).to.be.closeTo(aliceAlloc / 2n, tgeTolerance);
 
 		// Advance 12 hours: ~75%
 		const launchTs = await vault.launchTimestamp();
 		await advanceTo(launchTs + 12n * 3600n);
 		await vault.connect(alice).claim();
-		const half = presalerBal / 2n;
-		const quarter = presalerBal / 4n;
+		const half = aliceAlloc / 2n;
+		const quarter = aliceAlloc / 4n;
 		const got12h = await token.balanceOf(alice.address);
 		// Allow tolerance for the 1-2 seconds drift between block timestamp
 		// and the exact 12h mark.
@@ -859,7 +875,7 @@ describe("Wave H bundle flow e2e", () => {
 		// Advance to 24h end: 100%
 		await advanceTo(launchTs + 24n * 3600n + 1n);
 		await vault.connect(alice).claim();
-		expect(await token.balanceOf(alice.address)).to.equal(presalerBal);
+		expect(await token.balanceOf(alice.address)).to.equal(aliceAlloc);
 	});
 
 	// =========================================================================
@@ -882,7 +898,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(carol).deposit({ value: c });
 		expect(await vault.totalDeposited()).to.equal(PRESALE_CAPS[TIER_80]);
 
-		await vault.connect(ctx.creator).close();
+		await closeSubscribedVault(vault, ctx.creator);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
@@ -927,16 +943,16 @@ describe("Wave H bundle flow e2e", () => {
 
 	it("requestLaunch returns true only when CLOSED + funded + router wired", async () => {
 		const ctx = await deployStack();
-		const { alice } = ctx;
+		const { alice, bob } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 
 		expect(await vault.requestLaunch()).to.equal(false); // OPEN
 
-		await vault.connect(alice).deposit({ value: PRESALE_CAPS[TIER_80] });
+		await depositFullCap(vault, TIER_80, alice, bob);
 		expect(await vault.requestLaunch()).to.equal(false); // still OPEN
 
-		await vault.connect(ctx.creator).close();
+		await closeSubscribedVault(vault, ctx.creator);
 		expect(await vault.requestLaunch()).to.equal(true); // CLOSED + funded + router set
 	});
 
