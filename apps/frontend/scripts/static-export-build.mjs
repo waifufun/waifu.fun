@@ -125,7 +125,6 @@ try {
 	ensurePagesManifest();
 	ensureAppPathsManifest();
 	keepPagesAlive = setInterval(() => {
-		if (!hadPagesApp || !hadPages404) ensurePagesFiles();
 		ensurePagesManifest();
 		ensureAppPathsManifest();
 	}, 10);
