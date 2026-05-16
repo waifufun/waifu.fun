@@ -22,7 +22,6 @@
 	},
 	"dependencies": {
 		"@waifufun/codex": "workspace:*",
-		"@waifufun/constants": "workspace:*",
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/programs": "workspace:*",
 		"@coral-xyz/anchor": "^0.31.1",
