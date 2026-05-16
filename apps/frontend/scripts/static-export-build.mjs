@@ -14,12 +14,14 @@
  * `opengraph-image.tsx` the same way as `page.tsx`, so static export would fail otherwise.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const stashRoot = join(root, "..", ".frontend-static-export-stash");
+const pagesDir = join(root, "src/pages");
+const pagesApp = join(pagesDir, "_app.tsx");
 
 const moves = [
 	["src/app/api", "app-api"],
@@ -61,8 +63,24 @@ function restoreAll() {
 
 stashAll();
 let exitCode = 1;
+const hadPagesDir = existsSync(pagesDir);
+const hadPagesApp = existsSync(pagesApp);
 try {
 	rmSync(join(root, ".next"), { recursive: true, force: true });
+	if (!hadPagesApp) {
+		mkdirSync(pagesDir, { recursive: true });
+		writeFileSync(
+			pagesApp,
+			[
+				'import type { AppProps } from "next/app";',
+				"",
+				"export default function App({ Component, pageProps }: AppProps) {",
+				"\treturn <Component {...pageProps} />;",
+				"}",
+				"",
+			].join("\n"),
+		);
+	}
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
@@ -74,6 +92,8 @@ try {
 	});
 	exitCode = result.status ?? 1;
 } finally {
+	if (!hadPagesApp) rmSync(pagesApp, { force: true });
+	if (!hadPagesDir) rmSync(pagesDir, { recursive: true, force: true });
 	restoreAll();
 }
 process.exit(exitCode);
