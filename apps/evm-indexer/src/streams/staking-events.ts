@@ -32,6 +32,7 @@ async function pollStakingEventsOnce(
 		maxBlocks: options.maxBlocksPerPoll,
 	});
 
+	let handlerFailed = false;
 	for (const event of result.events) {
 		try {
 			await processStakingEvent(runtime, event);
@@ -45,12 +46,13 @@ async function pollStakingEventsOnce(
 				},
 				"VeWaifuStaking event handler failed; cursor will retry this event",
 			);
+			handlerFailed = true;
 			break;
 		}
 		await runtime.cursors.advance(STAKING_CURSOR_ID, getStakingEventCursorPosition(event));
 	}
 
-	if (result.scannedToBlock > cursor.lastBlock) {
+	if (!handlerFailed && result.scannedToBlock > cursor.lastBlock) {
 		await runtime.cursors.advance(STAKING_CURSOR_ID, {
 			blockNumber: result.scannedToBlock,
 			logIndex: 0,

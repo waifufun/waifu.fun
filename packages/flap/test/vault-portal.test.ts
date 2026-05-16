@@ -99,6 +99,8 @@ test("native quote writes default value to quoteAmt", () => {
 		vaultFactory: FACTORY,
 		vaultData: "0x",
 		quoteAmt: 456n,
+		buyTaxRate: 100,
+		sellTaxRate: 100,
 	});
 	assert.equal(buildNewTokenV6WithVaultWrite({ params: v6, network: "bsc" }).value, 456n);
 });
