@@ -103,8 +103,4 @@ schema.statics.markGenesisComplete = async function (programId: string, networkI
 
 const Model = Mongoose.model<IEventsMeta, IEventsMetaModel>("EventsMeta", schema);
 
-if (process.env.MONGO_URI) {
-	Model.createIndexes();
-}
-
 export default Model;

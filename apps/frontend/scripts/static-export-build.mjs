@@ -13,7 +13,7 @@
  * Also moves token OG generation aside: Next.js does not pick up `generateStaticParams()` on
  * `opengraph-image.tsx` the same way as `page.tsx`, so static export would fail otherwise.
  */
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,36 +62,43 @@ function restoreAll() {
 	}
 }
 
+function ensurePagesShim() {
+	mkdirSync(pagesDir, { recursive: true });
+	writeFileSync(
+		pagesApp,
+		[
+			'import type { AppProps } from "next/app";',
+			"",
+			"export default function App({ Component, pageProps }: AppProps) {",
+			"\treturn <Component {...pageProps} />;",
+			"}",
+			"",
+		].join("\n"),
+	);
+}
+
 stashAll();
 let exitCode = 1;
 const hadPagesDir = existsSync(pagesDir);
 const hadPagesApp = existsSync(pagesApp);
 try {
 	rmSync(join(root, ".next"), { recursive: true, force: true });
-	if (!hadPagesApp) {
-		mkdirSync(pagesDir, { recursive: true });
-		writeFileSync(
-			pagesApp,
-			[
-				'import type { AppProps } from "next/app";',
-				"",
-				"export default function App({ Component, pageProps }: AppProps) {",
-				"\treturn <Component {...pageProps} />;",
-				"}",
-				"",
-			].join("\n"),
-		);
-	}
+	if (!hadPagesApp) ensurePagesShim();
+	const keepPagesShim = hadPagesApp ? null : setInterval(ensurePagesShim, 250);
 	// STATIC_EXPORT=true gates generateStaticParams() enumeration so dev mode
 	// (next dev) doesn't fan out to the API on every page visit.
 	const env = { ...process.env, STATIC_EXPORT: "true" };
-	const result = spawnSync(nextBin, ["build"], {
+	const result = spawn(nextBin, ["build"], {
 		cwd: root,
 		stdio: "inherit",
 		env,
 		shell: process.platform === "win32",
 	});
-	exitCode = result.status ?? 1;
+	exitCode = await new Promise((resolve) => {
+		result.on("close", (code) => resolve(code ?? 1));
+		result.on("error", () => resolve(1));
+	});
+	if (keepPagesShim) clearInterval(keepPagesShim);
 } finally {
 	if (!hadPagesApp) rmSync(pagesApp, { force: true });
 	if (!hadPagesDir) rmSync(pagesDir, { recursive: true, force: true });

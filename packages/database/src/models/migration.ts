@@ -42,8 +42,4 @@ schema.index({ marketId: 1 });
 
 const Model = Mongoose.model<IMigration, MongooseModel<IMigration>>("Migration", schema);
 
-if (process.env.MONGO_URI) {
-	Model.createIndexes();
-}
-
 export default Model;
