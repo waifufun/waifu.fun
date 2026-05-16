@@ -43,8 +43,9 @@ async function pollStakingEventsOnce(
 					txHash: event.txHash,
 					error: handlerError instanceof Error ? handlerError.message : String(handlerError),
 				},
-				"VeWaifuStaking event handler failed, skipping event",
+				"VeWaifuStaking event handler failed; cursor will retry this event",
 			);
+			break;
 		}
 		await runtime.cursors.advance(STAKING_CURSOR_ID, getStakingEventCursorPosition(event));
 	}
