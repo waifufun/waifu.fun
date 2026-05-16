@@ -9,6 +9,13 @@
 		"duplicates": "off"
 	},
 	"ignoreDependencies": ["@semantic-release/github"],
+	"ignoreUnresolved": [
+		"../services/eliza-client.js",
+		"../../services/eliza-client.js",
+		"./eliza-client.js",
+		"../eliza-client.js",
+		"./adapters/eliza-cloud.js"
+	],
 	"workspaces": {
 		".": {
 			"ignoreFiles": ["probe/**/*.cjs", "scripts/**/*.ts"]

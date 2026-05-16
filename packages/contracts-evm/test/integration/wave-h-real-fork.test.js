@@ -52,28 +52,17 @@ function effectiveSalt(creator, rawSalt) {
 
 function mineVanitySalt(deployer, codeHash, creator, label) {
 	// Mine a salt where predicted addr ends in 7777
-	const maxIterations = 2_000_000;
+	const maxIterations = 4_000_000;
+	let rawSalt = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string", "address"], [label, creator]));
 	for (let i = 0; i < maxIterations; i += 1) {
-		const rawSalt = ethers.keccak256(
-			ethers.AbiCoder.defaultAbiCoder().encode(["string", "address", "uint256"], [label, creator, i]),
-		);
 		const salt = effectiveSalt(creator, rawSalt);
 		const predicted = predictCreate2(deployer, salt, codeHash);
 		if (predicted.toLowerCase().endsWith("7777")) {
 			return { rawSalt, salt, predicted, iterations: i };
 		}
-	}
-
-	let rawSalt = ethers.keccak256(ethers.toUtf8Bytes(`wave-h-fork ${label} ${creator}`));
-	for (let i = maxIterations; i < maxIterations * 2; i += 1) {
 		rawSalt = ethers.keccak256(rawSalt);
-		salt = effectiveSalt(creator, rawSalt);
-		const predicted = predictCreate2(deployer, salt, codeHash);
-		if (predicted.toLowerCase().endsWith("7777")) {
-			return { rawSalt, salt, predicted, iterations: i };
-		}
 	}
-	throw new Error(`salt mining exceeded ${maxIterations * 2} iterations`);
+	throw new Error(`salt mining exceeded ${maxIterations} iterations`);
 }
 
 describe("Wave H real-fork integration", function () {
