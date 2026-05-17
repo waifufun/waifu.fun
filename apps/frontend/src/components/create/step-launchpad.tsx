@@ -2,6 +2,7 @@
 
 import { DEFAULT_FLAP, DEFAULT_FOUR_MEME_REGULAR, DEFAULT_FOUR_MEME_TAX } from "@/lib/launchpad/fee-defaults";
 import type { FlapFeeConfig, FourMemeTaxFeeConfig, LaunchpadDescriptor } from "@/lib/launchpad/types";
+import { useEffect } from "react";
 import FlapConfig from "./launchpad/fee-config/flap-config";
 import FourMemeRegularConfig from "./launchpad/fee-config/four-meme-regular-config";
 import FourMemeTaxConfig from "./launchpad/fee-config/four-meme-tax-config";
@@ -12,6 +13,20 @@ export default function StepLaunchpad() {
 	const { state, patchLaunchpad } = useWizard();
 	const selectedId = state.launchpad.selectedId;
 	const feeConfig = state.launchpad.feeConfig;
+
+	// Wave H: FLAP is the only live launchpad. Auto-select on mount so users land
+	// on a valid configuration without an extra click. four-meme-* are kept in
+	// tree but render as coming-soon (see mock-descriptors + coming-soon-copy).
+	useEffect(() => {
+		if (selectedId === null && feeConfig === null) {
+			patchLaunchpad({
+				selectedId: "flap",
+				selectedChain: "bsc",
+				feeConfig: DEFAULT_FLAP,
+			});
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleSelect = (descriptor: LaunchpadDescriptor) => {
 		// switch fee config to the picked launchpad's default if the kind shifts.
@@ -54,7 +69,7 @@ export default function StepLaunchpad() {
 
 			{feeConfig === null && selectedId === null ? (
 				<p className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-					pick a launchpad above to configure fees.
+					select flap above to configure fees.
 				</p>
 			) : null}
 		</div>
