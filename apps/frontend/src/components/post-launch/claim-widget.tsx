@@ -18,6 +18,7 @@ type Props = {
 	ticker: string;
 	vestingEnabled: boolean;
 	launchTimestamp: number | null;
+	onClaimed?: () => void;
 };
 
 const TOKEN_DECIMALS = 18;
@@ -34,7 +35,7 @@ const VESTING_WINDOW_SECS = 24 * 60 * 60; // 24h linear
  * "claim now" amount; we derive locked/vested using the same constants
  * to render the timeline copy.
  */
-export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp }: Props) {
+export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, onClaimed }: Props) {
 	const { address, isConnected } = useAccount();
 	const chainId = useChainId();
 	const { switchChain } = useSwitchChain();
@@ -47,9 +48,10 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp }: 
 	useEffect(() => {
 		if (receipt.isSuccess) {
 			void claim.refetch();
+			onClaimed?.();
 			reset();
 		}
-	}, [receipt.isSuccess, claim, reset]);
+	}, [receipt.isSuccess, claim, onClaimed, reset]);
 
 	if (!vault) {
 		return <Card>vault not deployed</Card>;
