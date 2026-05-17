@@ -129,6 +129,7 @@ async function createLaunch(ctx, tier, overrides = {}) {
 		closeTimestamp,
 		vanitySalt: rawSalt,
 		predictedTokenAddress: overrides.predictedTokenAddress ?? predicted,
+		noBurn: false,
 	};
 
 	const addrs = await factory.connect(creator).createLaunch.staticCall(config);
@@ -277,6 +278,7 @@ describe("Wave H adversarial / edge cases", () => {
 			closeTimestamp: closeTs,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 		await expect(factory.connect(c).createLaunch(config)).to.be.revertedWithCustomError(factory, "InvalidCreator");
 	});
@@ -392,6 +394,7 @@ describe("Wave H adversarial / edge cases", () => {
 				closeTimestamp,
 				vanitySalt: rawSalt,
 				predictedTokenAddress: predicted,
+				noBurn: false,
 			}),
 		).to.be.revertedWithCustomError(factory, "PredictedAddressAlreadyDeployed");
 	});
@@ -434,12 +437,14 @@ describe("Wave H adversarial / edge cases", () => {
 			...common,
 			creator: ctx.alice.address,
 			predictedTokenAddress: attackerPredicted,
+			noBurn: false,
 		});
 		await expect(
 			ctx.factory.connect(ctx.creator).createLaunch({
 				...common,
 				creator: ctx.creator.address,
 				predictedTokenAddress: victimPredicted,
+				noBurn: false,
 			}),
 		).to.not.be.reverted;
 		expect(await ctx.factory.usedSalts(attackerSalt)).to.equal(true);
@@ -466,6 +471,7 @@ describe("Wave H adversarial / edge cases", () => {
 			closeTimestamp: (await currentTs()) + 3600n,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 		await expect(ctx.factory.connect(ctx.alice).createLaunch(config)).to.be.revertedWithCustomError(
 			ctx.factory,

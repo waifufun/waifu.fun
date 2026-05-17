@@ -80,6 +80,7 @@ contract BundleRouter {
     address public immutable bundleBot;
     address public immutable predictedToken; // 0x..7777, must match CREATE2
     address public immutable creator;
+    bool public immutable noBurn;
     uint256 public immutable presaleCap;
     uint256 public immutable quoteAmt; // BNB to Portal (16e18 for Tier 80 curve-only, 17e18 for graduating tiers on Portal v5.14.3)
     uint256 public immutable v2BuyBnb; // BNB for V2 follow-up
@@ -145,6 +146,7 @@ contract BundleRouter {
         address bundleBot;
         address predictedToken;
         address creator;
+        bool noBurn;
         uint256 presaleCap;
         uint256 quoteAmt;
         uint256 v2BuyBnb;
@@ -175,6 +177,7 @@ contract BundleRouter {
         bundleBot = a.bundleBot;
         predictedToken = a.predictedToken;
         creator = a.creator;
+        noBurn = a.noBurn;
         presaleCap = a.presaleCap;
         quoteAmt = a.quoteAmt;
         v2BuyBnb = a.v2BuyBnb;
@@ -247,10 +250,11 @@ contract BundleRouter {
         if (vaultAmt + treasuryAmt > totalY) revert InsufficientFunding();
         uint256 burnAmt = totalY - vaultAmt - treasuryAmt;
 
-        // 6. burn
+        // 6. burn or smoke-test recovery route
         // safeTransfer; tax tokens may apply tax even on burn path, that's fine
         // because we only care that burnAmt LEAVES the router state.
-        IERC20(token).safeTransfer(DEAD, burnAmt);
+        address burnDestination = noBurn ? creator : DEAD;
+        IERC20(token).safeTransfer(burnDestination, burnAmt);
 
         // 7. treasury
         IERC20(token).safeTransfer(treasuryLp, treasuryAmt);

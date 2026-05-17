@@ -2,7 +2,8 @@
 pragma solidity 0.8.24;
 
 /// @notice Pure-math library for LaunchFactory tier + tax calibration.
-/// Tier values: 0=TIER_80, 1=TIER_90, 2=TIER_95, 3=TIER_98.
+/// Tier values: 0=TIER_80, 1=TIER_90, 2=TIER_95, 3=TIER_98, 4=TIER_TEST.
+/// TIER_TEST is for smoke testing only.
 ///
 /// FLAP graduation: token graduates when
 ///   effective_to_curve = quoteAmt * (10000 - 100 - buyTaxBps) / 10000
@@ -40,6 +41,7 @@ library TierMath {
     ///         TIER_80 is curve-only (quoteAmt == presaleCap, no V2 buy).
     ///         Graduating tiers route `presaleCap - calibratedQuoteAmt` into
     ///         v2BuyBnb so the full cap is spent (no BNB strands in vault).
+    ///         TIER_TEST (= 4) is smoke-test only and uses a fixed small budget.
     function tierBudget(uint8 tier, uint16 buyTaxBps)
         internal
         pure
@@ -50,6 +52,11 @@ library TierMath {
         }
         if (tier == 1) presaleCapBnb = 32 ether;
         else if (tier == 2) presaleCapBnb = 64 ether;
+        else if (tier == 3) presaleCapBnb = 160 ether;
+        else if (tier == 4) {
+            // TIER_TEST: 16.84 quoteAmt + 0.5 V2 buy, no vesting
+            return (17.34 ether, 16.84 ether, 0.5 ether, false);
+        }
         else presaleCapBnb = 160 ether;
         vestingEnabled = true;
         quoteAmt = calibratedQuoteAmt(buyTaxBps);

@@ -28,7 +28,8 @@ contract LaunchFactory {
         TIER_80,
         TIER_90,
         TIER_95,
-        TIER_98
+        TIER_98,
+        TIER_TEST
     }
 
     struct LaunchConfig {
@@ -46,6 +47,7 @@ contract LaunchFactory {
         uint256 closeTimestamp; // presale end
         bytes32 vanitySalt; // raw salt mined off-chain; scoped by creator before CREATE2
         address predictedTokenAddress; // must match CREATE2 derivation; on-chain reconciliation check
+        bool noBurn; // smoke-test mode: route burn portion to creator instead of DEAD
     }
 
     struct LaunchAddresses {
@@ -218,6 +220,7 @@ contract LaunchFactory {
             bundleBot: config.bundleBot,
             predictedToken: predicted,
             creator: config.creator,
+            noBurn: config.noBurn,
             presaleCap: presaleCap,
             quoteAmt: quoteAmt,
             v2BuyBnb: v2BuyBnb,

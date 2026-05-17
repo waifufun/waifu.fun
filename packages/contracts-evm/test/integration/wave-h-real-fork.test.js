@@ -149,6 +149,7 @@ describe("Wave H real-fork integration", function () {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 
 		const tx = await factory.connect(creator).createLaunch(config);
@@ -192,6 +193,7 @@ describe("Wave H real-fork integration", function () {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 
 		// First call succeeds
@@ -221,6 +223,7 @@ describe("Wave H real-fork integration", function () {
 			vanitySalt: rawSalt,
 			// WRONG addr — factory should reject
 			predictedTokenAddress: "0xdead000000000000000000000000000000007777",
+			noBurn: false,
 		};
 
 		await expect(factory.connect(creator).createLaunch(config)).to.be.reverted;
@@ -246,6 +249,7 @@ describe("Wave H real-fork integration", function () {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 
 		await factory.connect(creator).createLaunch(config);
@@ -302,6 +306,7 @@ describe("Wave H real-fork integration", function () {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 
 		// Step 1: createLaunch deploys vault + router + treasuryLp
@@ -470,6 +475,7 @@ describe("Wave H real-fork integration", function () {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 
 		// 1. createLaunch
