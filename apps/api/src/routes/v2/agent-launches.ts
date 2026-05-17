@@ -318,7 +318,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 
 			const onchain = await service.createLaunchOnchain(input);
 
-			const tierConfig = getLaunchTierConfigSnapshot(tier);
+			const tierConfig = getLaunchTierConfigSnapshot(tier, input.buyTaxBps);
 
 			const row = await launchRepo.insertLaunch(db, {
 				tokenAddress: onchain.token,
