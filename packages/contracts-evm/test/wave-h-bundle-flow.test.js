@@ -25,12 +25,14 @@ describe("Wave H bundle flow e2e", () => {
 	const TIER_90 = 1;
 	const TIER_95 = 2;
 	const TIER_98 = 3;
+	const TIER_TEST = 4;
 
 	const PRESALE_CAPS = {
 		[TIER_80]: ethers.parseEther("16"),
 		[TIER_90]: ethers.parseEther("32"),
 		[TIER_95]: ethers.parseEther("64"),
 		[TIER_98]: ethers.parseEther("160"),
+		[TIER_TEST]: ethers.parseEther("17.34"),
 	};
 	// Real tier math (per LaunchFactory.tierBudget + TierMath.calibratedQuoteAmt):
 	// - quoteAmt = 16 BNB for TIER_80 (curve only, no graduation).
@@ -45,6 +47,7 @@ describe("Wave H bundle flow e2e", () => {
 		[TIER_90]: ethers.parseEther("32") - QUOTE_AMT_TAX300,
 		[TIER_95]: ethers.parseEther("64") - QUOTE_AMT_TAX300,
 		[TIER_98]: ethers.parseEther("160") - QUOTE_AMT_TAX300,
+		[TIER_TEST]: ethers.parseEther("0.5"),
 	};
 
 	function computeInitCodeHash(creationCode, name, symbol) {
@@ -145,6 +148,7 @@ describe("Wave H bundle flow e2e", () => {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: overrides.predictedTokenAddress ?? predicted,
+			noBurn: overrides.noBurn ?? false,
 		};
 
 		const txOrAddrs = await factory.connect(creator).createLaunch.staticCall(config);
@@ -243,6 +247,7 @@ describe("Wave H bundle flow e2e", () => {
 		["tier-90", TIER_90],
 		["tier-95", TIER_95],
 		["tier-98", TIER_98],
+		["tier-test", TIER_TEST],
 	]) {
 		it(`${tierName}: full happy path (deposit -> close -> bundle -> claim)`, async () => {
 			const ctx = await deployStack();
@@ -316,7 +321,7 @@ describe("Wave H bundle flow e2e", () => {
 			const aliceGot = aliceTokensAfter - aliceTokensBefore;
 
 			const aliceAlloc = (aliceShare * presalerBal) / cap;
-			const vestingEnabled = tier !== TIER_80;
+			const vestingEnabled = tier !== TIER_80 && tier !== TIER_TEST;
 			if (!vestingEnabled) {
 				// 100% TGE — full allocation claimable immediately.
 				expect(aliceGot).to.equal(aliceAlloc);
@@ -354,6 +359,47 @@ describe("Wave H bundle flow e2e", () => {
 			expect(events.length).to.equal(1);
 		});
 	}
+
+	it("TIER_TEST budget returns (17.34, 16.84, 0.5, false)", async () => {
+		const ctx = await deployStack();
+		const budget = await ctx.factory.tierBudget(TIER_TEST, 300);
+		expect(budget[0]).to.equal(ethers.parseEther("17.34"));
+		expect(budget[1]).to.equal(ethers.parseEther("16.84"));
+		expect(budget[2]).to.equal(ethers.parseEther("0.5"));
+		expect(budget[3]).to.equal(false);
+	});
+
+	it("noBurn=true sends burn portion to creator, not DEAD", async () => {
+		const ctx = await deployStack();
+		const { alice, bob, bundleBot, creator } = ctx;
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_TEST, { noBurn: true });
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+		const router = await ethers.getContractAt("BundleRouter", addrs.router);
+
+		await depositFullCap(vault, TIER_TEST, alice, bob);
+		await closeSubscribedVault(vault, creator);
+
+		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		params.vanitySalt = rawSalt;
+		const tx = await router.connect(bundleBot).executeBundle(params);
+		const receipt = await tx.wait();
+
+		const token = await ethers.getContractAt("BundleFlowToken", predicted);
+		const iface = router.interface;
+		const event = receipt.logs
+			.map((l) => {
+				try {
+					return iface.parseLog(l);
+				} catch {
+					return null;
+				}
+			})
+			.find((e) => e && e.name === "BundleExecuted");
+
+		expect(event).to.not.equal(undefined);
+		expect(await token.balanceOf(creator.address)).to.equal(event.args.tokensBurned);
+		expect(await token.balanceOf(DEAD)).to.equal(0n);
+	});
 
 	// =========================================================================
 	// negative paths
@@ -539,6 +585,7 @@ describe("Wave H bundle flow e2e", () => {
 			closeTimestamp: closeTs,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
 		};
 		await expect(ctx.factory.connect(ctx.creator).createLaunch({ ...base, name: "" })).to.be.revertedWithCustomError(
 			ctx.factory,
