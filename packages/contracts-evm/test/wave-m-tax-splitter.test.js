@@ -26,69 +26,73 @@ async function deploySplitter(platformBps, patronBps, platform, patron, agent) {
 	);
 }
 
-describe("TaxSplitter (wave M1)", function () {
-	let owner, platform, patron, agent, other;
+describe("TaxSplitter (wave M1)", () => {
+	let owner;
+	let platform;
+	let patron;
+	let agent;
+	let other;
 
-	beforeEach(async function () {
+	beforeEach(async () => {
 		[owner, platform, patron, agent, other] = await ethers.getSigners();
 	});
 
-	describe("constructor", function () {
-		it("reverts on zero address (platform)", async function () {
+	describe("constructor", () => {
+		it("reverts on zero address (platform)", async () => {
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
 			await expect(
 				Splitter.deploy(ethers.ZeroAddress, patron.address, agent.address, 1000, 2500),
 			).to.be.revertedWithCustomError(Splitter, "ZeroAddress");
 		});
 
-		it("reverts on zero address (patron)", async function () {
+		it("reverts on zero address (patron)", async () => {
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
 			await expect(
 				Splitter.deploy(platform.address, ethers.ZeroAddress, agent.address, 1000, 2500),
 			).to.be.revertedWithCustomError(Splitter, "ZeroAddress");
 		});
 
-		it("reverts on zero address (agent)", async function () {
+		it("reverts on zero address (agent)", async () => {
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
 			await expect(
 				Splitter.deploy(platform.address, patron.address, ethers.ZeroAddress, 1000, 2500),
 			).to.be.revertedWithCustomError(Splitter, "ZeroAddress");
 		});
 
-		it("reverts when platformBps < 1000 (MIN_PLATFORM_CUT)", async function () {
+		it("reverts when platformBps < 1000 (MIN_PLATFORM_CUT)", async () => {
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
 			await expect(
 				Splitter.deploy(platform.address, patron.address, agent.address, 999, 2500),
 			).to.be.revertedWithCustomError(Splitter, "InvalidBps");
 		});
 
-		it("reverts when platformBps > 5000 (MAX_PLATFORM_CUT)", async function () {
+		it("reverts when platformBps > 5000 (MAX_PLATFORM_CUT)", async () => {
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
 			await expect(
 				Splitter.deploy(platform.address, patron.address, agent.address, 5001, 2500),
 			).to.be.revertedWithCustomError(Splitter, "InvalidBps");
 		});
 
-		it("reverts when platformBps + patronBps > 10000", async function () {
+		it("reverts when platformBps + patronBps > 10000", async () => {
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
 			await expect(
 				Splitter.deploy(platform.address, patron.address, agent.address, 5000, 5001),
 			).to.be.revertedWithCustomError(Splitter, "InvalidBps");
 		});
 
-		it("computes agentBps as the remainder (10/25/65 default)", async function () {
+		it("computes agentBps as the remainder (10/25/65 default)", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			expect(await s.platformBps()).to.equal(1000);
 			expect(await s.patronBps()).to.equal(2500);
 			expect(await s.agentBps()).to.equal(6500);
 		});
 
-		it("accepts platformBps == MAX_PLATFORM_CUT (5000) with patron = 0", async function () {
+		it("accepts platformBps == MAX_PLATFORM_CUT (5000) with patron = 0", async () => {
 			const s = await deploySplitter(5000, 0, platform, patron, agent);
 			expect(await s.agentBps()).to.equal(5000);
 		});
 
-		it("accepts platformBps == 10000 case via boundary (100% platform)", async function () {
+		it("accepts platformBps == 10000 case via boundary (100% platform)", async () => {
 			// platformBps == 10000 violates MAX_PLATFORM_CUT (5000). So 100% platform isn't
 			// allowed by design; verify revert.
 			const Splitter = await ethers.getContractFactory("TaxSplitter");
@@ -97,7 +101,7 @@ describe("TaxSplitter (wave M1)", function () {
 			).to.be.revertedWithCustomError(Splitter, "InvalidBps");
 		});
 
-		it("stores immutable addresses and getters work", async function () {
+		it("stores immutable addresses and getters work", async () => {
 			const s = await deploySplitter(1500, 3000, platform, patron, agent);
 			expect(await s.platform()).to.equal(platform.address);
 			expect(await s.patron()).to.equal(patron.address);
@@ -107,7 +111,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(await s.agentBps()).to.equal(5500);
 		});
 
-		it("exposes BPS constants", async function () {
+		it("exposes BPS constants", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			expect(await s.BPS_DENOM()).to.equal(10000);
 			expect(await s.MIN_PLATFORM_CUT()).to.equal(1000);
@@ -115,8 +119,8 @@ describe("TaxSplitter (wave M1)", function () {
 		});
 	});
 
-	describe("split() - native BNB", function () {
-		it("splits 10/25/65 default and sums to total", async function () {
+	describe("split() - native BNB", () => {
+		it("splits 10/25/65 default and sums to total", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			const amt = ethers.parseEther("10");
 			await owner.sendTransaction({ to: await s.getAddress(), value: amt });
@@ -135,7 +139,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(await ethers.provider.getBalance(await s.getAddress())).to.equal(0);
 		});
 
-		it("rounds remainder to agent (no wei stranded)", async function () {
+		it("rounds remainder to agent (no wei stranded)", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			// 7 wei: platform = 7*1000/10000 = 0, patron = 7*2500/10000 = 1, agent = 7-0-1 = 6
 			await owner.sendTransaction({ to: await s.getAddress(), value: 7n });
@@ -145,7 +149,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(await ethers.provider.getBalance(await s.getAddress())).to.equal(0);
 		});
 
-		it("is a no-op on zero balance (no event, no revert)", async function () {
+		it("is a no-op on zero balance (no event, no revert)", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			const tx = await s.connect(other).split();
 			const rcpt = await tx.wait();
@@ -160,7 +164,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(evt).to.equal(undefined);
 		});
 
-		it("is idempotent: second call after drain is also a no-op", async function () {
+		it("is idempotent: second call after drain is also a no-op", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			await owner.sendTransaction({ to: await s.getAddress(), value: ethers.parseEther("1") });
 			await s.split();
@@ -169,7 +173,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(await ethers.provider.getBalance(await s.getAddress())).to.equal(0);
 		});
 
-		it("100% to platform when patron = 0 and agent gets nothing if platform = 5000 + agent gets 5000", async function () {
+		it("100% to platform when patron = 0 and agent gets nothing if platform = 5000 + agent gets 5000", async () => {
 			// Edge: max platform cut (5000), patron 0 → agent 5000
 			const s = await deploySplitter(5000, 0, platform, patron, agent);
 			await owner.sendTransaction({ to: await s.getAddress(), value: ethers.parseEther("4") });
@@ -182,7 +186,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect((await ethers.provider.getBalance(agent.address)) - ag0).to.equal(ethers.parseEther("2"));
 		});
 
-		it("skips zero-amount legs cleanly (no native send)", async function () {
+		it("skips zero-amount legs cleanly (no native send)", async () => {
 			// platform = 1000, patron = 0, agent = 9000. Small amount: 5 wei
 			// platform = 5*1000/10000 = 0 → skipped, patron = 0 → skipped, agent = 5
 			const s = await deploySplitter(1000, 0, platform, patron, agent);
@@ -191,15 +195,15 @@ describe("TaxSplitter (wave M1)", function () {
 		});
 	});
 
-	describe("splitToken() - ERC20", function () {
+	describe("splitToken() - ERC20", () => {
 		let token;
 
-		beforeEach(async function () {
+		beforeEach(async () => {
 			const Token = await ethers.getContractFactory("ERC20Mock");
 			token = await Token.deploy();
 		});
 
-		it("splits a normal ERC20 10/25/65 and sums to total", async function () {
+		it("splits a normal ERC20 10/25/65 and sums to total", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			const amt = ethers.parseEther("1000");
 			await token.mint(await s.getAddress(), amt);
@@ -219,7 +223,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(await token.balanceOf(await s.getAddress())).to.equal(0);
 		});
 
-		it("is a no-op on zero token balance (no event)", async function () {
+		it("is a no-op on zero token balance (no event)", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			const tx = await s.splitToken(await token.getAddress());
 			const rcpt = await tx.wait();
@@ -233,7 +237,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(evt).to.equal(undefined);
 		});
 
-		it("handles fee-on-transfer tokens (residual left, idempotent re-call sees less)", async function () {
+		it("handles fee-on-transfer tokens (residual left, idempotent re-call sees less)", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			const Fee = await ethers.getContractFactory("FeeOnTransferToken");
 			const fee = await Fee.deploy();
@@ -262,7 +266,7 @@ describe("TaxSplitter (wave M1)", function () {
 			expect(evt).to.equal(undefined);
 		});
 
-		it("splitMany handles multiple tokens in one tx", async function () {
+		it("splitMany handles multiple tokens in one tx", async () => {
 			const s = await deploySplitter(1000, 2500, platform, patron, agent);
 			const Token = await ethers.getContractFactory("ERC20Mock");
 			const t1 = await Token.deploy();
@@ -280,8 +284,8 @@ describe("TaxSplitter (wave M1)", function () {
 		});
 	});
 
-	describe("reentrancy", function () {
-		it("malicious recipient cannot drain the splitter via recursive split()", async function () {
+	describe("reentrancy", () => {
+		it("malicious recipient cannot drain the splitter via recursive split()", async () => {
 			// Deploy a reentrant receiver as the patron; on receive() it calls split() again.
 			const Re = await ethers.getContractFactory("ReentrantReceiver");
 			const attacker = await Re.deploy();
