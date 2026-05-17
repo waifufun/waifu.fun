@@ -8,10 +8,9 @@ import {BundleRouter} from "./BundleRouter.sol";
 ///         of LaunchFactory's deployed bytecode (which is near the EIP-170
 ///         24576 byte cap due to embedded child init code).
 ///
-///         Anyone can call this, but the BundleRouter's `factory` field in
-///         its constructor args binds it to the calling LaunchFactory, so a
-///         router deployed via this helper is only meaningfully callable from
-///         that factory's call graph.
+///         Anyone can call this helper, but LaunchFactory only records routers
+///         it asks this helper to deploy and only those routers are wired into
+///         their launch vaults.
 contract RouterDeployer {
     function deploy(BundleRouter.ConstructorArgs calldata args) external returns (address) {
         return address(new BundleRouter(args));

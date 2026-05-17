@@ -72,7 +72,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     address public immutable creator; // SIWE launcher
     address public immutable bundleBot; // authorized executor
     uint256 public immutable presaleCap; // BNB cap (== totalBnb to spend)
-    uint256 public immutable quoteAmt; // BNB sent to Portal.newTokenV6 (always 16 BNB)
+    uint256 public immutable quoteAmt; // BNB sent to Portal.newTokenV6 (tier/tax calibrated)
     uint256 public immutable v2BuyBnb; // BNB for V2 follow-up (tier-dependent)
     uint256 public immutable closeTimestamp;
     uint256 public immutable penaltyBps; // capped at MAX_PENALTY_BPS

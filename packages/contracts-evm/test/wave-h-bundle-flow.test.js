@@ -99,7 +99,7 @@ describe("Wave H bundle flow e2e", () => {
 			creator.address, // TOKEN_IMPL_TAXED_V3 (only used as immutable; not exercised by mock portal)
 			tipReceiver.address,
 			creator.address,
-		await routerDeployer.getAddress(),
+			await routerDeployer.getAddress(),
 		);
 
 		return {
@@ -296,8 +296,7 @@ describe("Wave H bundle flow e2e", () => {
 			const lpBnbReserve = ethers.parseEther("16");
 			const v2In = V2_BUY_BNB[tier];
 			const ainFee = v2In * 9975n;
-			const expectedV2Tokens = v2In === 0n ? 0n :
-				(ainFee * lpTokenReserve) / (lpBnbReserve * 10000n + ainFee);
+			const expectedV2Tokens = v2In === 0n ? 0n : (ainFee * lpTokenReserve) / (lpBnbReserve * 10000n + ainFee);
 			const expectedY = ethers.parseEther("800000000") + expectedV2Tokens;
 			// Flat allocation: vault = 20% of total supply (200M), treasury = 10% (100M).
 			// Burn absorbs everything else (~50% of supply for tier 80, plus the V2 follow-up
@@ -839,18 +838,23 @@ describe("Wave H bundle flow e2e", () => {
 	it("fee-on-transfer token claims remain claimable across vesting tranches", async () => {
 		const ctx = await deployStack();
 		const { alice, bob, bundleBot, portal } = ctx;
-		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
+		const taxBps = 1000n;
+		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90, {
+			buyTaxBps: Number(taxBps),
+			sellTaxBps: Number(taxBps),
+		});
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		// Capped at 100 (1%) because the V2 follow-up buy uses our in-contract
-		// 2% slippage tolerance. A 10% transfer tax would correctly trip V2BuySlippage().
-		const taxBps = 100n;
+		// Matches the launch buyTaxBps. The V2 follow-up buy computes minOut
+		// after configured buy tax, then applies the 2% market slippage tolerance.
 
 		await portal.setTokenTransferTaxBps(Number(taxBps));
 		await depositFullCap(vault, TIER_90, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
 		const params = await bundleParams(ctx, (await currentTs()) + 600n);
 		params.vanitySalt = rawSalt;
+		params.buyTaxBps = Number(taxBps);
+		params.sellTaxBps = Number(taxBps);
 		await router.connect(bundleBot).executeBundle(params);
 
 		const token = await ethers.getContractAt("BundleFlowToken", predicted);

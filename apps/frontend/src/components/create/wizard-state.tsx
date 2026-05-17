@@ -14,14 +14,7 @@ export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER
 export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "runtime" | "safe" | "review";
 
 export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "safe", "review"];
-export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = [
-	"persona",
-	"metadata",
-	"tier",
-	"launchpad",
-	"safe",
-	"review",
-];
+export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "launchpad", "safe", "review"];
 
 export const WIZARD_STEPS: WizardStep[] = LAUNCHPAD_PICKER_ENABLED ? LAUNCHPAD_WIZARD_STEPS : LEGACY_WIZARD_STEPS;
 

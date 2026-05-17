@@ -120,6 +120,7 @@ describe("Wave H real-fork integration", function () {
 			TOKEN_TAXED_V3_IMPL,
 			TIP_RECEIVER,
 			owner.address,
+			await routerDeployer.getAddress(),
 		);
 		await factory.waitForDeployment();
 		console.log(`    [fork] LaunchFactory deployed at ${await factory.getAddress()}`);

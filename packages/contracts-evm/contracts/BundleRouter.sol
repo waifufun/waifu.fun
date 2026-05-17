@@ -226,8 +226,9 @@ contract BundleRouter {
             pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
             if (pair == address(0)) revert PairNotCreated();
             // compute minOut in-contract from post-graduation reserves to close
-            // the MEV pre-computation window. Slippage tolerance fixed at 2%.
-            uint256 minOut = _computeMinV2Out(pair, token, v2BuyBnb);
+            // the MEV pre-computation window. Allow configured buy tax, then
+            // apply a fixed 2% market-slippage tolerance.
+            uint256 minOut = _computeMinV2Out(pair, token, v2BuyBnb, p.buyTaxBps);
             _v2FollowUpBuy(token, minOut, p.deadline);
         }
 
@@ -359,9 +360,10 @@ contract BundleRouter {
         if (received < minOut) revert V2BuySlippage();
     }
 
-    /// @notice V2 swap minOut from current pair reserves with 2% slippage tolerance.
-    ///         Uses PancakeSwap V2's 0.25% fee (9975 multiplier of 10000).
-    function _computeMinV2Out(address pair, address token, uint256 amountIn)
+    /// @notice V2 swap minOut from current pair reserves with launch buy-tax
+    ///         allowance plus 2% slippage tolerance. Uses PancakeSwap V2's
+    ///         0.25% fee (9975 multiplier of 10000).
+    function _computeMinV2Out(address pair, address token, uint256 amountIn, uint16 buyTaxBps)
         internal
         view
         returns (uint256)
@@ -371,7 +373,8 @@ contract BundleRouter {
             IPancakePair(pair).token0() == token ? (uint256(r1), uint256(r0)) : (uint256(r0), uint256(r1));
         uint256 ainFee = amountIn * 9975;
         uint256 expectedOut = (ainFee * reserveOut) / (reserveIn * 10000 + ainFee);
-        return (expectedOut * 9800) / 10000;  // 2% slippage tolerance
+        uint256 postTaxOut = (expectedOut * (10000 - uint256(buyTaxBps))) / 10000;
+        return (postTaxOut * 9800) / 10000; // 2% market slippage tolerance after expected buy tax
     }
 
     function _computeOpenMcBnb(address token, address pair) internal view returns (uint256) {

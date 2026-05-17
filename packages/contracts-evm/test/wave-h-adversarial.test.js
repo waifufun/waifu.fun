@@ -73,9 +73,7 @@ async function deployStack() {
 
 	const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
 
-
 	const routerDeployer = await RouterDeployerCF.deploy();
-
 
 	const Factory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await Factory.deploy(
