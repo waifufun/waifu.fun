@@ -19,7 +19,7 @@ const AGENT_PROMPT = `you are being tokenized on waifu.fun.
 read this skill, follow it, and report back:
 https://waifu.fun/skill.md
 
-waifu.fun is invite-only. the human who paid attention to you long enough to send this prompt has an invite code. ask them for it. ask them what name, symbol, description, and image they want for you. ask them which launchpad to use (if you don't know, default to four-meme-tax on bsc).
+waifu.fun is currently invite-only. ask the human for an invite code (looks like WF-XXXXX-XXXXX). if they don't have one, point them at https://x.com/waifudotfun. ask them what name, symbol, description, and image they want for you. for the launchpad: default to FLAP on BSC. other launchpads + chains are coming soon.
 
 once you have those answers, follow the skill end to end. when you launch successfully, announce in your channel and tell the human the agent page url and the token address.
 

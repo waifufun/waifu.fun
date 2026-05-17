@@ -9,12 +9,12 @@ every launch on waifu.fun picks one of four tiers. the tier is fixed at
 
 ## the tiers
 
-| tier | presale cap | curve fill (`quoteAmt`) | PCS follow-up buy (`v2BuyBnb`) | vesting |
-| --- | --- | --- | --- | --- |
-| TIER_80 | 16 BNB | 16 BNB | 0 BNB | off |
-| TIER_90 | 32 BNB | 20 BNB | 12 BNB | on |
-| TIER_95 | 64 BNB | 20 BNB | 44 BNB | on |
-| TIER_98 | 160 BNB | 20 BNB | 140 BNB | on |
+| tier (display) | contract enum | presale cap | curve fill (`quoteAmt`) | PCS follow-up buy (`v2BuyBnb`) | vesting |
+| --- | --- | --- | --- | --- | --- |
+| SMOL | TIER_80 | 16 BNB | 16 BNB | 0 BNB | off |
+| BASED | TIER_90 | 32 BNB | 20 BNB | 12 BNB | on |
+| WAGMI | TIER_95 | 64 BNB | 20 BNB | 44 BNB | on |
+| GIGACHAD | TIER_98 | 160 BNB | 20 BNB | 140 BNB | on |
 
 ### what each column means
 
@@ -23,17 +23,17 @@ every launch on waifu.fun picks one of four tiers. the tier is fixed at
   execute.
 - **curve fill** is how much BNB the bundle pays to FLAP's `newTokenV6`. for
   graduating tiers (90+) this is exactly the amount needed to seed the v2 pair
-  at the four-fifths threshold (20 BNB). for TIER_80 it is the full 16 BNB
+  at the four-fifths threshold (20 BNB). for SMOL (TIER_80) it is the full 16 BNB
   curve allocation, no graduation.
 - **PCS follow-up buy** is BNB the bundle spends on the freshly-deployed PCS
-  pair in the same atomic transaction. zero for TIER_80, larger for higher tiers.
+  pair in the same atomic transaction. zero for SMOL, larger for higher tiers.
   this is what gives presalers their token share.
 - **vesting** controls how claimers receive their tokens. see
   [vesting explained](/presalers/vesting-explained).
 
-## tier 80: curve only
+## SMOL: curve only
 
-TIER_80 mints the token and fills the bonding curve. it does not graduate to
+SMOL (TIER_80) mints the token and fills the bonding curve. it does not graduate to
 PCS v2. the token sits at FLAP's `Tradable` status until organic buyers push
 it past the four-fifths threshold (which would auto-graduate it). presalers
 get ~40% of the curve allocation (800M tokens) split pro-rata.
@@ -50,9 +50,9 @@ caveats:
 - vesting is off, all tokens unlock at claim
 - the token may sit on the curve indefinitely if it never graduates
 
-## tier 90: standard
+## BASED: standard
 
-TIER_90 is the typical mid-size launch. the bundle fills the curve, graduates
+BASED (TIER_90) is the typical mid-size launch. the bundle fills the curve, graduates
 to PCS v2, and follow-up-buys 12 BNB worth of tokens for presalers. vesting
 is on (50% at TGE, 50% linear over 24 hours).
 
@@ -62,9 +62,9 @@ choose this when:
 - you want a PCS pair from day one
 - you want vesting to dampen early dump pressure
 
-## tier 95: bigger raise, more buy pressure
+## WAGMI: bigger raise, more buy pressure
 
-TIER_95 doubles the cap and quadruples the follow-up buy. same graduation
+WAGMI (TIER_95) doubles the cap and quadruples the follow-up buy. same graduation
 mechanics, same vesting, more buying pressure into the freshly-deployed pair.
 
 choose this when:
@@ -72,9 +72,9 @@ choose this when:
 - 64 BNB is in your community's reach
 - you want a stronger price action moment at launch
 
-## tier 98: max tier
+## GIGACHAD: max tier
 
-TIER_98 is the big one. 160 BNB cap, 140 BNB into the PCS pair in the same
+GIGACHAD (TIER_98) is the big one. 160 BNB cap, 140 BNB into the PCS pair in the same
 transaction. this produces the largest immediate buy pressure available on
 the platform.
 
@@ -88,7 +88,7 @@ choose this when:
 set the tier where you are at least 80% confident the cap will fill before
 the close window. an under-subscribed launch is not a disaster (presalers
 get a bonus on refund), but it is a non-event for your token. better to ship
-a tier 90 that fills than aim at tier 98 and refund.
+a BASED that fills than aim at GIGACHAD and refund.
 
 ## tier math is in the contract
 

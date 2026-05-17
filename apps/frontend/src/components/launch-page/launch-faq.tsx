@@ -15,7 +15,7 @@ type Props = {
 
 /**
  * "What happens at launch" FAQ. Inline accordion below the deposit widget on
- * desktop, full-width on mobile. Copy is tier-aware so tier 80 doesn't
+ * desktop, full-width on mobile. Copy is tier-aware so SMOL doesn't
  * mention pcs v2 graduation or vesting.
  */
 export function LaunchFAQ({ tier }: Props) {

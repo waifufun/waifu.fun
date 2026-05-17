@@ -9,7 +9,7 @@ import { TIERS, type TierId, getTier } from "./tier-data";
 /**
  * W48 step: pick a launch tier.
  *
- * Renders a 4-column grid of tier cards (TIER_80 / 90 / 95 / 98) with a
+ * Renders a 4-column grid of tier cards (SMOL / BASED / WAGMI / GIGACHAD) with a
  * live economics preview panel below. Selection is persisted on the
  * wizard state under `launch.tierId`.
  */
@@ -23,10 +23,10 @@ export default function StepTier() {
 			<div>
 				<div className="flex items-baseline justify-between mb-3">
 					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">tiers</p>
-					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">tier_90 recommended</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">BASED recommended</p>
 				</div>
 				<p className="text-[12px] text-neutral-400 mb-4 leading-relaxed max-w-2xl">
-					tiers set the math. higher tier, bigger v2 buy, bigger burn, higher projected mc. start with tier_90 if you're
+					tiers set the math. higher tier, bigger v2 buy, bigger burn, higher projected mc. start with BASED if you're
 					not sure.
 				</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">

@@ -26,7 +26,7 @@ export type LaunchTierInfo = {
 export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 	TIER_80: {
 		id: "TIER_80",
-		label: "tier 80",
+		label: "SMOL",
 		bundlePct: 80,
 		presaleCapBnb: 16,
 		v2BuyBnb: 0,
@@ -38,7 +38,7 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 	},
 	TIER_90: {
 		id: "TIER_90",
-		label: "tier 90",
+		label: "BASED",
 		bundlePct: 90,
 		presaleCapBnb: 32,
 		v2BuyBnb: 15,
@@ -50,7 +50,7 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 	},
 	TIER_95: {
 		id: "TIER_95",
-		label: "tier 95",
+		label: "WAGMI",
 		bundlePct: 95,
 		presaleCapBnb: 64,
 		v2BuyBnb: 47,
@@ -62,7 +62,7 @@ export const LAUNCH_TIERS: Record<LaunchTier, LaunchTierInfo> = {
 	},
 	TIER_98: {
 		id: "TIER_98",
-		label: "tier 98",
+		label: "GIGACHAD",
 		bundlePct: 98,
 		presaleCapBnb: 160,
 		v2BuyBnb: 143,
@@ -78,6 +78,14 @@ export function tierFromString(value: string | null | undefined): LaunchTierInfo
 	if (!value) return null;
 	const upper = value.toUpperCase().replace(/[^A-Z0-9_]/g, "");
 	if (upper in LAUNCH_TIERS) return LAUNCH_TIERS[upper as LaunchTier];
+	// allow display names: "SMOL", "BASED", "WAGMI", "GIGACHAD"
+	const byLabel: Record<string, LaunchTier> = {
+		SMOL: "TIER_80",
+		BASED: "TIER_90",
+		WAGMI: "TIER_95",
+		GIGACHAD: "TIER_98",
+	};
+	if (upper in byLabel) return LAUNCH_TIERS[byLabel[upper]!];
 	// allow "tier_90", "90", "tier90"
 	const match = upper.match(/(?:TIER_?)?(\d{2})/);
 	if (match) {

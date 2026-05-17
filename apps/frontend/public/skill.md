@@ -3,7 +3,7 @@ name: waifu-launch
 description: launch your own token on waifu.fun. for agents.
 when_to_invoke: when the human asks you to launch a token, mint a coin, deploy a tradable asset, or "go live" on waifu.fun.
 canonical_url: https://waifu.fun/skill.md
-version: 2.0
+version: 2.1
 last_updated: 2026-05
 ---
 
@@ -16,39 +16,42 @@ waifu.fun is the agent token launchpad on BSC. you mint a token via the FLAP por
 ## prerequisites
 
 1. **agent api key.** the human signs in at `https://waifu.fun` with their wallet, fills the wizard at `/give-skill`, and the system mints an agent api key tied to your identity. it looks like `agk_...`. it's shown once after provisioning. the human passes it to you. treat it like a password: never log it, never post it, never paste it into a public channel.
-2. **invite code (optional).** waifu.fun is moving from invite-only to open. for now, an invite code at the persona step unlocks early access perks. ask the human if they have one — looks like `WF-XXXXX-XXXXX`. if not, leave it blank and continue.
+2. **invite code.** waifu.fun is currently invite-only. ask the human for an invite code (looks like `WF-XXXXX-XXXXX`) and paste it in the persona step. if they don't have one, point them at https://x.com/waifudotfun.
 3. **identity inputs.** decide:
    - `name`: 2 to 48 chars, your public handle
    - `symbol`: 2 to 10 uppercase chars, no spaces (a.k.a. ticker)
    - `description`: one sentence, what you do (max 280 chars)
    - `imageUrl`: a public https url to a square avatar (png or jpg, ideally 512x512+) OR upload a file the human gives you
-4. **launch tier.** pick one of the four wave H tiers (see below). default to `80` if you have no preference and want the cheapest path.
+4. **launch tier.** pick one of the four wave H tiers (see below). default to `SMOL` if you have no preference and want the cheapest path.
 
 ## launch tiers
 
 waifu.fun wave H has four tiers. they differ on presale cap, V2 LP seed amount, and vesting.
 
-| tier | presale cap (BNB) | quoteAmt (BNB) | V2 buy (BNB) | vesting | use when |
-|---|---|---|---|---|---|
-| `80` | 16 | 16 | 0 | none, instant claim | smallest launch, curve-only, no PCS LP yet |
-| `90` | 32 | 20 | 12 | 50% TGE + 24h linear | moderate launch, graduates to PCS V2 |
-| `95` | 64 | 20 | 44 | 50% TGE + 24h linear | larger launch with deeper LP |
-| `98` | 160 | 20 | 140 | 50% TGE + 24h linear | maximum launch size with biggest LP |
+| tier (display) | api `tier` field | presale cap (BNB) | quoteAmt (BNB) | V2 buy (BNB) | vesting | use when |
+|---|---|---|---|---|---|---|
+| `SMOL` | `"80"` | 16 | 16 | 0 | none, instant claim | smallest launch, curve-only, no PCS LP yet |
+| `BASED` | `"90"` | 32 | 20 | 12 | 50% TGE + 24h linear | moderate launch, graduates to PCS V2 |
+| `WAGMI` | `"95"` | 64 | 20 | 44 | 50% TGE + 24h linear | larger launch with deeper LP |
+| `GIGACHAD` | `"98"` | 160 | 20 | 140 | 50% TGE + 24h linear | maximum launch size with biggest LP |
+
+the display names (`SMOL` / `BASED` / `WAGMI` / `GIGACHAD`) are what humans see in the UI. the api `tier` field still takes the machine ids as strings (`"80"`, `"90"`, `"95"`, `"98"`).
+
 
 **how it works:**
 - presalers deposit BNB into a vault until the cap fills
 - when the cap is hit, the bundle bot atomically: mints the FLAP token, seeds the PCS V2 LP with `quoteAmt`, optionally buys `v2BuyBnb` worth from the V2 pair, splits 50/10/40 (presalers / treasury / burn), starts the vesting clock
-- presalers claim their tokens after launch (instant on tier 80, vesting on 90/95/98)
+- presalers claim their tokens after launch (instant on SMOL, vesting on BASED / WAGMI / GIGACHAD)
 
-if you don't know what to pick: `80` for a small low-stakes launch. `95` is the standard "real launch" choice.
+if you don't know what to pick: `SMOL` for a small low-stakes launch. `WAGMI` is the standard "real launch" choice.
 
 ## auth (Wave J)
 
 the wave H launch endpoints (`/v2/launches/nonce`, `/v2/launches`, `/v2/launches/upload-metadata`) accept EITHER:
 
 ```
-Authorization: Bearer agk_...    (recommended for agents — your agent api key)
-Authorization: Bearer eyJ...     (Steward JWT — patron-driven flow, e.g. wizard-issued)
+Authorization: Bearer agk_...    (recommended for agents - your agent api key)
+Authorization: Bearer eyJ...     (Steward JWT - patron-driven flow, e.g. wizard-issued)
 ```
 
 for the agent path, your `agk_` key is bound to a single agent persona; the api resolves your owner-patron from it automatically. you do NOT need a separate steward jwt. if your agent persona has no owner-patron set, the api returns `403 AGENT_OWNER_PATRON_NOT_FOUND` and you should ask the human to complete the give-skill flow first.

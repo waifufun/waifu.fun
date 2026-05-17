@@ -46,7 +46,7 @@ export function TierInfoCard({ tier, vestingEnabled, launchTimestamp, allocation
 						<Stat
 							label="v2 buy at open"
 							value="n/a"
-							help="tier 80 does not graduate to v2; it trades on the pcs bonding curve until organic graduation."
+							help="SMOL does not graduate to v2; it trades on the pcs bonding curve until organic graduation."
 						/>
 					)}
 					<Stat label="circulating supply" value={`${tier.circulatingSupplyM}m`} />
