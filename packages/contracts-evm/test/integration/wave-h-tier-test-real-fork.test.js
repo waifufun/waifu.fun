@@ -51,17 +51,13 @@ function predictCreate2(deployer, salt, codeHash) {
 }
 
 function effectiveSalt(creator, rawSalt) {
-	return ethers.keccak256(
-		ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, rawSalt]),
-	);
+	return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, rawSalt]));
 }
 
 // Mine a salt where the CREATE2 predicted address ends in the 4-nibble suffix.
 function mineVanitySalt(deployer, codeHash, creator, label, suffix = "7777") {
 	const maxIterations = 4_000_000;
-	let rawSalt = ethers.keccak256(
-		ethers.AbiCoder.defaultAbiCoder().encode(["string", "address"], [label, creator]),
-	);
+	let rawSalt = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string", "address"], [label, creator]));
 	for (let i = 0; i < maxIterations; i += 1) {
 		const salt = effectiveSalt(creator, rawSalt);
 		const predicted = predictCreate2(deployer, salt, codeHash);
@@ -189,7 +185,7 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 
 		// Sanity: router exposes noBurn=true.
 		expect(await router.noBurn()).to.equal(true);
-		console.log(`    [tier-test] router.noBurn() = true confirmed`);
+		console.log("    [tier-test] router.noBurn() = true confirmed");
 
 		// 4. Fill the 17.34 BNB cap, respecting 60% wallet cap (= 10.404 BNB).
 		//    creator deposits 10.4 BNB; depositor2 deposits 6.94 BNB.
@@ -208,7 +204,7 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 
 		// 5. close (cap hit, but the 15-minute min-open window applies).
 		await closeSubscribedVault(vault, bundleBot);
-		console.log(`    [tier-test] vault closed`);
+		console.log("    [tier-test] vault closed");
 
 		// 6. bundleBot.executeBundle.
 		const execParams = {
@@ -258,7 +254,7 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		// (e) DEAD balance is zero. THIS IS THE NOBURN PROOF.
 		const deadBalance = await token.balanceOf(DEAD);
 		expect(deadBalance).to.equal(0n);
-		console.log(`    [tier-test] DEAD balance = 0 (noBurn proof confirmed)`);
+		console.log("    [tier-test] DEAD balance = 0 (noBurn proof confirmed)");
 
 		// (f) Creator received the would-burn portion.
 		//     Splits: vault=200M, treasury=100M, V2 LP held by pair (~200M),
@@ -268,9 +264,7 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		//     slice into the pair and refunds the rest to the router beneficiary.
 		const creatorTokenBalance = await token.balanceOf(creator.address);
 		expect(creatorTokenBalance).to.be.gt(0n);
-		console.log(
-			`    [tier-test] creator (noBurn destination) balance: ${ethers.formatUnits(creatorTokenBalance, 18)}`,
-		);
+		console.log(`    [tier-test] creator (noBurn destination) balance: ${ethers.formatUnits(creatorTokenBalance, 18)}`);
 
 		// (g) PCS V2 pair MUST exist (TIER_TEST quoteAmt=16.84 BNB clears the
 		//     ~16.8 BNB graduation threshold on Portal v5.14.3).
@@ -354,16 +348,16 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 
 		// ---- Summary ----
 		console.log("\n    ====== Wave H TIER_TEST + noBurn Summary ======");
-		console.log(`    Tier:               TIER_TEST (4)`);
-		console.log(`    noBurn:             true`);
-		console.log(`    presaleCap:         17.34 BNB (10.4 + 6.94)`);
-		console.log(`    quoteAmt:           16.84 BNB`);
-		console.log(`    v2BuyBnb:           0.5 BNB`);
+		console.log("    Tier:               TIER_TEST (4)");
+		console.log("    noBurn:             true");
+		console.log("    presaleCap:         17.34 BNB (10.4 + 6.94)");
+		console.log("    quoteAmt:           16.84 BNB");
+		console.log("    v2BuyBnb:           0.5 BNB");
 		console.log(`    createLaunch gas:   ${createReceipt.gasUsed}`);
 		console.log(`    executeBundle gas:  ${execReceipt.gasUsed}`);
 		console.log(`    Token:              ${predicted}`);
 		console.log(`    V2 pair:            ${pair}`);
-		console.log(`    DEAD balance:       0 (noBurn confirmed)`);
+		console.log("    DEAD balance:       0 (noBurn confirmed)");
 		console.log(`    creator balance:    ${ethers.formatUnits(creatorTokenBalance, 18)} (would-burn destination)`);
 		console.log(`    vault balance:      ${ethers.formatUnits(vaultTokenBalance, 18)} (20%)`);
 		console.log(`    treasury balance:   ${ethers.formatUnits(treasuryTokenBalance, 18)} (10%)`);
