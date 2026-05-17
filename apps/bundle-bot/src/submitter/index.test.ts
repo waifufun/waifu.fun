@@ -23,6 +23,8 @@ function launchFixture(overrides: Partial<AgentLaunchRow> = {}): AgentLaunchRow 
 		presaleCap: "16000000000000000000",
 		v2BuyBnb: "0",
 		vestingEnabled: 0,
+		buyTaxBps: 500,
+		sellTaxBps: 700,
 		closeTimestamp: 1n,
 		metadataUri: null,
 		predictedTokenAddress: "0x0000000000000000000000000000000000007777",
@@ -231,6 +233,8 @@ describe("bundle-bot submitter safety", () => {
 		assert.equal(params.name, "Test Waifu");
 		assert.equal(params.symbol, "TWAIFU");
 		assert.equal(params.meta, "bafy-test");
+		assert.equal(params.buyTaxBps, 500);
+		assert.equal(params.sellTaxBps, 700);
 		assert.equal(params.tipBnb, 0n);
 	});
 });

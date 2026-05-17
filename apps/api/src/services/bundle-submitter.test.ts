@@ -49,6 +49,8 @@ function launchFixture(): AgentLaunchRow {
 		bundleStatus: "pending",
 		bundleAttempt: 0,
 		bundleTipBnb: "0.03",
+		buyTaxBps: 450,
+		sellTaxBps: 650,
 		bundleTxHash: null,
 		metadata: { name: "Test Waifu", symbol: "TWAIFU" },
 		creator: "0x0000000000000000000000000000000000000001",
@@ -132,5 +134,7 @@ test("buildBundleExecParams passes raw vanity salt and contract-compatible metad
 	assert.equal(params.name, "Test Waifu");
 	assert.equal(params.symbol, "TWAIFU");
 	assert.equal(params.meta, "bafy-test");
+	assert.equal(params.buyTaxBps, 450);
+	assert.equal(params.sellTaxBps, 650);
 	assert.equal(params.tipBnb, 0n);
 });

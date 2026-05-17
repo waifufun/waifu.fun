@@ -93,6 +93,8 @@ export interface InsertLaunchInput {
 	presaleCap: string;
 	v2BuyBnb: string;
 	vestingEnabled: boolean;
+	buyTaxBps?: number;
+	sellTaxBps?: number;
 	closeTimestamp: bigint;
 	metadata?: Record<string, unknown>;
 	metadataUri?: string | null;
@@ -118,6 +120,8 @@ export async function insertLaunch(db: Database, input: InsertLaunchInput): Prom
 			presaleCap: input.presaleCap,
 			v2BuyBnb: input.v2BuyBnb,
 			vestingEnabled: input.vestingEnabled ? 1 : 0,
+			buyTaxBps: input.buyTaxBps ?? 300,
+			sellTaxBps: input.sellTaxBps ?? 300,
 			closeTimestamp: input.closeTimestamp,
 			metadata: input.metadata ?? {},
 			metadataUri: input.metadataUri ?? null,

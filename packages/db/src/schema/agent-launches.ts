@@ -65,6 +65,8 @@ export const agentLaunches = pgTable(
 		presaleCap: text("presale_cap").notNull(),
 		v2BuyBnb: text("v2_buy_bnb").notNull().default("0"),
 		vestingEnabled: integer("vesting_enabled").notNull().default(0),
+		buyTaxBps: integer("buy_tax_bps").notNull().default(300),
+		sellTaxBps: integer("sell_tax_bps").notNull().default(300),
 
 		// Lifecycle state.
 		state: text("state").$type<AgentLaunchState>().notNull().default("open"),
