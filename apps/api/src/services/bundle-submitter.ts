@@ -113,13 +113,15 @@ export function buildBundleExecParams(launch: AgentLaunchRow, config: BundleSubm
 	if (!name || !symbol) {
 		throw new BundleSubmitterError("BUNDLE_METADATA_MISSING", "launch metadata is missing name or symbol");
 	}
+	const launchBuyTaxBps = launch.buyTaxBps ?? Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300);
+	const launchSellTaxBps = launch.sellTaxBps ?? Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300);
 	return {
 		vanitySalt: launch.vanitySalt as Hex,
 		name,
 		symbol,
 		meta: launch.flapMetaCid as string,
-		buyTaxBps: Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
-		sellTaxBps: Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),
+		buyTaxBps: launchBuyTaxBps,
+		sellTaxBps: launchSellTaxBps,
 		taxDuration: BigInt(Number(process.env.LAUNCH_TAX_DURATION_SECONDS ?? 365 * 24 * 60 * 60)),
 		antiFarmerDuration: BigInt(Number(process.env.LAUNCH_ANTI_FARMER_DURATION_SECONDS ?? 60 * 60)),
 		commissionReceiver:
