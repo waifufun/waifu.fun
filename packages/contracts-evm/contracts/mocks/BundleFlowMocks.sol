@@ -106,11 +106,15 @@ contract BundleFlowTokenReentrant is ERC20 {
 }
 
 /// @title MockSimplePCSRouter
-/// @notice simpler PCS router stand-in: holds its own token balance, releases
-///         on swap. avoids the transferFrom + pre-approval dance.
+/// @notice simpler PCS router stand-in. Two modes:
+///         - AMM mode (when pair is set): proper Uniswap V2 getAmountOut math.
+///         - legacy rate mode: msg.value * tokensPerBnb / 1e18.
+///         Tests should call setPair(...) to get AMM behavior that matches
+///         what BundleRouter._computeMinV2Out computes from the same reserves.
 contract MockSimplePCSRouter {
-    uint256 public tokensPerBnb; // 1e18 scale
+    uint256 public tokensPerBnb;
     bool public shouldRevert;
+    address public pair;
 
     function setRate(uint256 r) external {
         tokensPerBnb = r;
@@ -118,6 +122,10 @@ contract MockSimplePCSRouter {
 
     function setShouldRevert(bool v) external {
         shouldRevert = v;
+    }
+
+    function setPair(address p) external {
+        pair = p;
     }
 
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
@@ -131,7 +139,16 @@ contract MockSimplePCSRouter {
         require(path.length == 2, "MockSimplePCSRouter: bad path");
         require(msg.value > 0, "MockSimplePCSRouter: zero ETH");
         address token = path[1];
-        uint256 out = (msg.value * tokensPerBnb) / 1 ether;
+        uint256 out;
+        if (pair != address(0)) {
+            (uint112 r0, uint112 r1,) = MockBundlePair(pair).getReserves();
+            (uint256 reserveIn, uint256 reserveOut) =
+                MockBundlePair(pair).token0() == token ? (uint256(r1), uint256(r0)) : (uint256(r0), uint256(r1));
+            uint256 ainFee = msg.value * 9975;
+            out = (ainFee * reserveOut) / (reserveIn * 10000 + ainFee);
+        } else {
+            out = (msg.value * tokensPerBnb) / 1 ether;
+        }
         require(out >= amountOutMin, "MockSimplePCSRouter: slippage");
         bool ok = IERC20(token).transfer(to, out);
         require(ok, "MockSimplePCSRouter: transfer failed");
@@ -225,6 +242,10 @@ contract MockFlapPortalCREATE2 {
         // seed V2 pair.
         MockBundlePair pair = new MockBundlePair(token, wbnb, lpTokenReserve, lpBnbReserve);
         pcsFactory.setPair(token, wbnb, address(pair));
+        // point pcsRouter at this new pair so its AMM math matches our reserves.
+        if (address(pcsRouter) != address(0)) {
+            pcsRouter.setPair(address(pair));
+        }
 
         // seed simple PCS router with a bag.
         if (address(pcsRouter) != address(0) && bagTokensForV2 > 0) {

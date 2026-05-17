@@ -43,7 +43,6 @@ export const bundleRouterAbi = [
 					{ name: "taxDuration", type: "uint64" },
 					{ name: "antiFarmerDuration", type: "uint64" },
 					{ name: "commissionReceiver", type: "address" },
-					{ name: "minV2TokensOut", type: "uint256" },
 					{ name: "tipBnb", type: "uint256" },
 					{ name: "deadline", type: "uint256" },
 				],
@@ -134,7 +133,6 @@ export function buildBundleExecParams(launch: AgentLaunchRow, config: BundleSubm
 			config.commissionReceiver ??
 			readAddressEnv("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ??
 			(launch.creator as Address),
-		minV2TokensOut: 0n,
 		tipBnb: 0n,
 		deadline: BigInt(Math.floor(Date.now() / 1000) + (config.deadlineSeconds ?? 10 * 60)),
 	} as const;

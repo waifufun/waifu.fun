@@ -71,6 +71,12 @@ async function deployStack() {
 	const symbol = "FLOW";
 	const initCodeHash = computeInitCodeHash(TokenArtifact.bytecode, name, symbol);
 
+	const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+
+	const routerDeployer = await RouterDeployerCF.deploy();
+
+
 	const Factory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await Factory.deploy(
 		wbnb,
@@ -81,6 +87,7 @@ async function deployStack() {
 		creator.address,
 		tipReceiver.address,
 		creator.address,
+		await routerDeployer.getAddress(),
 	);
 
 	return {
@@ -237,7 +244,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: closeTs,
 		};
@@ -488,7 +494,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: ctx.creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -514,7 +519,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -540,7 +544,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -569,7 +572,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) - 1n,
 		};
@@ -594,7 +596,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -623,7 +624,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: ethers.parseEther("0.01"),
 			deadline: (await currentTs()) + 600n,
 		};
@@ -822,7 +822,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -862,7 +861,6 @@ describe("Wave H adversarial / edge cases", () => {
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
 			commissionReceiver: creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
