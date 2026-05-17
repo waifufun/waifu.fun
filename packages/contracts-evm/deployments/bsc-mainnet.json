@@ -2,9 +2,11 @@
   "network": "bscMainnet",
   "chainId": 56,
   "deployer": "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC",
-  "deployedAt": "2026-05-15T19:46:10.875Z",
+  "factoryOwner": "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC",
+  "deployedAt": "2026-05-17T13:45:38.083Z",
   "contracts": {
-    "LaunchFactory": "0x54f250Ea490239E7C3B1672283607213B5fA2459"
+    "LaunchFactory": "0xCc4135aCbb433FE38E128dF1DF8CF436583aDefd",
+    "RouterDeployer": "0xd4b0130E5c2C439B37Ca68c887FAD15A27c43Dba"
   },
   "constructorArgs": {
     "wbnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
@@ -13,7 +15,9 @@
     "initCodeHash": "0x2f7f413fcc6c3812c665c15bd4a012e663f567d626112a81d401066fd5a771b4",
     "flapPortal": "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
     "tokenImplTaxedV3": "0x024f18294970B5c76c0691b87f138A0317156422",
-    "tipReceiver": "0x4848489f0b2BEdd788c696e2D79b6b69D7484848"
+    "tipReceiver": "0x4848489f0b2BEdd788c696e2D79b6b69D7484848",
+    "platformCommissionReceiver": "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC",
+    "routerDeployer": "0xd4b0130E5c2C439B37Ca68c887FAD15A27c43Dba"
   },
-  "platformCommissionReceiver": null
+  "platformCommissionReceiver": "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC"
 }
