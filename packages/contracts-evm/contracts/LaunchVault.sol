@@ -208,18 +208,27 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         if (state != State.OPEN) revert InvalidState();
         if (block.timestamp > closeTimestamp) revert WindowClosed();
         if (msg.value == 0) revert ZeroAmount();
-        uint256 newTotal = totalDeposited + msg.value;
-        if (newTotal > presaleCap) revert CapExceeded();
+        // Truncate the deposit to whatever's left in the cap. The user can
+        // safely send more than the gap and we'll refund the surplus, so the
+        // final presaler doesn't have to compute the exact wei remaining.
+        uint256 remaining = presaleCap - totalDeposited;
+        if (remaining == 0) revert CapExceeded();
+        uint256 accepted = msg.value > remaining ? remaining : msg.value;
+        uint256 surplus = msg.value - accepted;
         Depositor storage d = depositors[msg.sender];
-        uint256 newUserDeposit = d.deposited + msg.value;
+        uint256 newUserDeposit = d.deposited + accepted;
         if (newUserDeposit > (presaleCap * MAX_WALLET_DEPOSIT_BPS) / BPS_DENOM) revert CapExceeded();
         if (!d.seen) {
             d.seen = true;
             depositorCount += 1;
         }
         d.deposited = newUserDeposit;
-        totalDeposited = newTotal;
-        emit Deposited(msg.sender, msg.value, newTotal);
+        totalDeposited += accepted;
+        if (surplus > 0) {
+            (bool ok,) = payable(msg.sender).call{value: surplus}("");
+            if (!ok) revert TransferFailed();
+        }
+        emit Deposited(msg.sender, accepted, totalDeposited);
     }
 
     function withdraw(uint256 amount) external nonReentrant {

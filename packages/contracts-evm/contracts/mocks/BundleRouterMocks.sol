@@ -16,7 +16,6 @@ interface IBundleRouterForReentry {
 		uint64 taxDuration;
 		uint64 antiFarmerDuration;
 		address commissionReceiver;
-		uint256 minV2TokensOut;
 		uint256 tipBnb;
 		uint256 deadline;
 	}

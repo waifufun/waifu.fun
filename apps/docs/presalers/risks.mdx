@@ -68,7 +68,7 @@ model. {/* TODO verify URL */}
 
 ## PCS slippage and MEV
 
-the follow-up buy uses PCS v2. `minV2TokensOut` is a slippage guard set at
+the follow-up buy uses PCS v2. the V2 follow-up buy uses a fixed 2% slippage tolerance computed in-contract from
 bundle build time. if MEV bots sandwich the bundle:
 
 - worst case: the slippage guard reverts the bundle (refund path)

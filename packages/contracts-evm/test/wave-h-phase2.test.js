@@ -17,6 +17,10 @@ describe("Wave H phase 2 smoke", () => {
 	}
 
 	async function deployFactory(placeholderAddr) {
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		return await Factory.deploy(
 			placeholderAddr, // _wbnb
@@ -27,6 +31,7 @@ describe("Wave H phase 2 smoke", () => {
 			placeholderAddr, // _tokenImplTaxedV3
 			placeholderAddr, // _tipReceiver
 			placeholderAddr, // _platformCommissionReceiver
+			await routerDeployer.getAddress(), // _routerDeployer
 		);
 	}
 
@@ -173,6 +178,10 @@ describe("Wave H phase 2 smoke", () => {
 
 	it("Wave H contracts compile + deploy with phase-2 impls", async () => {
 		// All four new artifacts have non-empty bytecode (impl, not stubs).
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		const Vault = await ethers.getContractFactory("LaunchVault");
 		const Router = await ethers.getContractFactory("BundleRouter");

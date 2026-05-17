@@ -21,6 +21,7 @@ import {BundleRouter} from "./BundleRouter.sol";
 import {TreasuryLP} from "./TreasuryLP.sol";
 import {IVaultRouterSetter} from "./interfaces/IVaultRouterSetter.sol";
 import {TierMath} from "./TierMath.sol";
+import {RouterDeployer} from "./RouterDeployer.sol";
 
 contract LaunchFactory {
     enum LaunchTier {
@@ -118,6 +119,8 @@ contract LaunchFactory {
     // constructor
     // ---------------------------------------------------------------------
 
+    RouterDeployer public immutable ROUTER_DEPLOYER;
+
     constructor(
         address _wbnb,
         address _pcsFactory,
@@ -126,13 +129,15 @@ contract LaunchFactory {
         address _flapPortal,
         address _tokenImplTaxedV3,
         address _tipReceiver,
-        address _platformCommissionReceiver
+        address _platformCommissionReceiver,
+        address _routerDeployer
     ) {
         if (
             _wbnb == address(0) || _pcsFactory == address(0) || _pcsRouter == address(0) || _flapPortal == address(0)
                 || _tokenImplTaxedV3 == address(0) || _tipReceiver == address(0)
-                || _platformCommissionReceiver == address(0)
+                || _platformCommissionReceiver == address(0) || _routerDeployer == address(0)
         ) revert ZeroAddress();
+        ROUTER_DEPLOYER = RouterDeployer(_routerDeployer);
 
         WBNB = _wbnb;
         PCS_FACTORY = _pcsFactory;
@@ -219,7 +224,7 @@ contract LaunchFactory {
             closeTimestamp: config.closeTimestamp,
             launchParamsHash: launchParamsHash(config)
         });
-        BundleRouter router = new BundleRouter(routerArgs);
+        BundleRouter router = BundleRouter(payable(ROUTER_DEPLOYER.deploy(routerArgs)));
 
         // 8. mark salt + store BEFORE any third-party call (defensive CEI).
         //     setRouter targets a vault we just deployed (trusted), but we keep

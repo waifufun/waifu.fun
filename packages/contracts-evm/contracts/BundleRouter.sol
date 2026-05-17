@@ -60,7 +60,7 @@ contract BundleRouter {
         uint64 taxDuration;
         uint64 antiFarmerDuration;
         address commissionReceiver;
-        uint256 minV2TokensOut; // slippage guard for V2 follow-up
+
         uint256 tipBnb; // reserved for a future explicit tip funding model; must be zero in this version
         uint256 deadline;
     }
@@ -225,7 +225,10 @@ contract BundleRouter {
         if (v2BuyBnb > 0) {
             pair = IPancakeFactory(PCS_FACTORY).getPair(token, WBNB);
             if (pair == address(0)) revert PairNotCreated();
-            _v2FollowUpBuy(token, p.minV2TokensOut, p.deadline);
+            // compute minOut in-contract from post-graduation reserves to close
+            // the MEV pre-computation window. Slippage tolerance fixed at 2%.
+            uint256 minOut = _computeMinV2Out(pair, token, v2BuyBnb);
+            _v2FollowUpBuy(token, minOut, p.deadline);
         }
 
         // 5. token splits , FLAT amounts pegged to total supply.
@@ -354,6 +357,21 @@ contract BundleRouter {
         );
         uint256 received = IERC20(token).balanceOf(address(this)) - balBefore;
         if (received < minOut) revert V2BuySlippage();
+    }
+
+    /// @notice V2 swap minOut from current pair reserves with 2% slippage tolerance.
+    ///         Uses PancakeSwap V2's 0.25% fee (9975 multiplier of 10000).
+    function _computeMinV2Out(address pair, address token, uint256 amountIn)
+        internal
+        view
+        returns (uint256)
+    {
+        (uint112 r0, uint112 r1,) = IPancakePair(pair).getReserves();
+        (uint256 reserveIn, uint256 reserveOut) =
+            IPancakePair(pair).token0() == token ? (uint256(r1), uint256(r0)) : (uint256(r0), uint256(r1));
+        uint256 ainFee = amountIn * 9975;
+        uint256 expectedOut = (ainFee * reserveOut) / (reserveIn * 10000 + ainFee);
+        return (expectedOut * 9800) / 10000;  // 2% slippage tolerance
     }
 
     function _computeOpenMcBnb(address token, address pair) internal view returns (uint256) {

@@ -46,7 +46,7 @@ flowchart LR
    creator's vanity salt). this guards against portal bugs.
 5. **follow-up buy (if v2BuyBnb > 0).** call
    `pcsRouter.swapExactETHForTokensSupportingFeeOnTransferTokens` with
-   `minV2TokensOut` as slippage guard. this puts tokens into the router (post-tax
+   fixed 2% slippage tolerance applied in-contract. this puts tokens into the router (post-tax
    because FLAP tokens are fee-on-transfer).
 6. **split the token balance.** the router reads
    `IERC20(token).balanceOf(this)`. it then computes:
@@ -84,7 +84,7 @@ a few things are operationally trusted, not enforced on-chain:
   address (predictedToken check) and relies on FLAP's own state. if FLAP is
   compromised at the protocol level, the bundle can fail or behave unexpectedly,
   but BNB inside our vault is still recoverable through refund.
-- **PCS v2 prices.** the `minV2TokensOut` slippage guard prevents catastrophic
+- **PCS v2 prices.** the in-contract 2% slippage guard prevents catastrophic
   sandwich loss, but ordinary slippage within tolerance is accepted.
 
 ## the token split, in numbers

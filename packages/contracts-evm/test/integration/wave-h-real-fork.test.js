@@ -106,6 +106,10 @@ describe("Wave H real-fork integration", function () {
 		[owner, creator, bundleBot, depositor1, depositor2] = await ethers.getSigners();
 
 		// Deploy LaunchFactory pointing at real BSC infra
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		factory = await Factory.deploy(
 			WBNB,
@@ -335,7 +339,6 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: config.taxDuration,
 			antiFarmerDuration: config.antiFarmerDuration,
 			commissionReceiver: config.commissionReceiver,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};
@@ -504,7 +507,6 @@ describe("Wave H real-fork integration", function () {
 			taxDuration: config.taxDuration,
 			antiFarmerDuration: config.antiFarmerDuration,
 			commissionReceiver: config.commissionReceiver,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};

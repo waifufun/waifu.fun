@@ -70,7 +70,7 @@ describe("Wave H bundle flow e2e", () => {
 
 		const PCSRouter = await ethers.getContractFactory("MockSimplePCSRouter");
 		const pcsRouter = await PCSRouter.deploy();
-		await pcsRouter.setRate(ethers.parseEther("1000000")); // 1M tokens per BNB (toy rate)
+		await pcsRouter.setRate(ethers.parseEther("1000000")); // legacy rate fallback; AMM mode is set automatically when portal creates the pair
 
 		const wbnb = "0x0000000000000000000000000000000000000B0B";
 
@@ -85,6 +85,10 @@ describe("Wave H bundle flow e2e", () => {
 		const initCodeHash = computeInitCodeHash(TokenArtifact.bytecode, name, symbol);
 
 		// Factory with portal as the "FLAP_PORTAL" immutable.
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		const factory = await Factory.deploy(
 			wbnb,
@@ -95,6 +99,7 @@ describe("Wave H bundle flow e2e", () => {
 			creator.address, // TOKEN_IMPL_TAXED_V3 (only used as immutable; not exercised by mock portal)
 			tipReceiver.address,
 			creator.address,
+		await routerDeployer.getAddress(),
 		);
 
 		return {
@@ -193,7 +198,6 @@ describe("Wave H bundle flow e2e", () => {
 			taxDuration: 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
 			commissionReceiver: ctx.creator.address,
-			minV2TokensOut: 0,
 			tipBnb: 0,
 			deadline,
 		};
@@ -261,7 +265,6 @@ describe("Wave H bundle flow e2e", () => {
 			const deadline = (await currentTs()) + 600n;
 			const params = await bundleParams(ctx, deadline);
 			params.vanitySalt = rawSalt;
-			// minV2TokensOut: leave at 0 — happy path doesn't gate on slippage.
 
 			const tx = await router.connect(bundleBot).executeBundle(params);
 			const receipt = await tx.wait();
@@ -285,8 +288,16 @@ describe("Wave H bundle flow e2e", () => {
 			const presalerBal = await vault.presalerTokenBalance();
 			expect(vaultBal).to.equal(presalerBal);
 
-			// Total token Y ~= curve + V2 = 800M + (16/32/48/144 BNB * 1M tokens/BNB) for tier
-			const expectedV2Tokens = (V2_BUY_BNB[tier] * ethers.parseEther("1000000")) / ethers.parseEther("1");
+			// Total token Y = curve (800M) + V2 buy proceeds. The mock router uses
+			// real Uniswap V2 getAmountOut against the mock pair's reserves
+			// (200M tokens / 16 BNB), so expectedV2Tokens follows the same formula
+			// BundleRouter._computeMinV2Out uses.
+			const lpTokenReserve = ethers.parseEther("200000000");
+			const lpBnbReserve = ethers.parseEther("16");
+			const v2In = V2_BUY_BNB[tier];
+			const ainFee = v2In * 9975n;
+			const expectedV2Tokens = v2In === 0n ? 0n :
+				(ainFee * lpTokenReserve) / (lpBnbReserve * 10000n + ainFee);
 			const expectedY = ethers.parseEther("800000000") + expectedV2Tokens;
 			// Flat allocation: vault = 20% of total supply (200M), treasury = 10% (100M).
 			// Burn absorbs everything else (~50% of supply for tier 80, plus the V2 follow-up
@@ -364,14 +375,46 @@ describe("Wave H bundle flow e2e", () => {
 		await expect(vault.connect(alice).deposit({ value: ethers.parseEther("1") })).to.be.reverted;
 	});
 
-	it("reverts when deposit overshoots presale cap", async () => {
+	it("reverts when single-wallet deposit would exceed 60% wallet cap", async () => {
 		const ctx = await deployStack();
 		const { alice } = ctx;
 		const { addrs } = await createLaunch(ctx, TIER_80);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 
+		// Alice at 9 BNB (56% of 16 cap). Adding even 1 BNB more pushes to 62.5% > 60% wallet cap.
 		await vault.connect(alice).deposit({ value: ethers.parseEther("9") });
 		await expect(vault.connect(alice).deposit({ value: ethers.parseEther("8") })).to.be.revertedWithCustomError(
+			vault,
+			"CapExceeded",
+		);
+	});
+
+	it("deposit truncates and refunds surplus when overshooting presale cap", async () => {
+		const ctx = await deployStack();
+		const { alice, bob, carol } = ctx;
+		const { addrs } = await createLaunch(ctx, TIER_80);
+		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
+
+		// fill up to 15 BNB across alice, bob, carol (under 60% wallet cap each)
+		await vault.connect(alice).deposit({ value: ethers.parseEther("9") });
+		await vault.connect(bob).deposit({ value: ethers.parseEther("4") });
+		await vault.connect(carol).deposit({ value: ethers.parseEther("2") });
+		expect(await vault.totalDeposited()).to.equal(ethers.parseEther("15"));
+
+		// Bob sends 5 BNB but only 1 is needed to fill the 16 cap. Contract
+		// accepts 1, refunds 4 surplus to bob in the same tx.
+		const bobBalBefore = await ethers.provider.getBalance(bob.address);
+		const tx = await vault.connect(bob).deposit({ value: ethers.parseEther("5") });
+		const rcpt = await tx.wait();
+		const gasSpent = rcpt.gasUsed * rcpt.gasPrice;
+		const bobBalAfter = await ethers.provider.getBalance(bob.address);
+
+		expect(await vault.totalDeposited()).to.equal(ethers.parseEther("16"));
+		// bob spent gas + only 1 BNB (the accepted amount), 4 came back
+		expect(bobBalBefore - bobBalAfter - gasSpent).to.equal(ethers.parseEther("1"));
+
+		// further deposits when cap is already reached should still revert
+		await expect(vault.connect(carol).deposit({ value: ethers.parseEther("1") })).to.be.revertedWithCustomError(
 			vault,
 			"CapExceeded",
 		);
@@ -799,7 +842,9 @@ describe("Wave H bundle flow e2e", () => {
 		const { rawSalt, predicted, addrs } = await createLaunch(ctx, TIER_90);
 		const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 		const router = await ethers.getContractAt("BundleRouter", addrs.router);
-		const taxBps = 1000n;
+		// Capped at 100 (1%) because the V2 follow-up buy uses our in-contract
+		// 2% slippage tolerance. A 10% transfer tax would correctly trip V2BuySlippage().
+		const taxBps = 100n;
 
 		await portal.setTokenTransferTaxBps(Number(taxBps));
 		await depositFullCap(vault, TIER_90, alice, bob);

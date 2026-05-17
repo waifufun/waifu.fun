@@ -221,7 +221,7 @@ per-launch executor. one-shot. owns no persistent state post-bundle.
   the rollback property.
 - the bundle bot has already verified off-chain that the curve fill + V2
   buy slippage parameters are sane. on-chain we accept `tipBnb`,
-  `minV2TokensOut`, and `deadline` as caller-supplied.
+  `deadline` as caller-supplied (slippage is contract-enforced at 2%).
 - portal honors its documented `newTokenV6` semantics for the parameters
   we pass. specifically: `beneficiary = address(this)` results in
   `msg.sender == address(this)` receiving the curve-buy tokens. verified
@@ -237,7 +237,7 @@ per-launch executor. one-shot. owns no persistent state post-bundle.
     such that `quoteAmt + v2BuyBnb + tipBnb > vault.balance` would trip
     the `pullBnbForLaunch` `TokenBalanceTooLow` revert OR the router's
     `InsufficientFunding` revert. so the cap on tip is the vault balance.
-  - low `minV2TokensOut` → bot sandwiches itself with garbage slippage,
+  - (resolved: slippage is now contract-enforced at 2%, was: low minOut with garbage slippage,
     losing tokens to an MEV bot in the same block. mitigation: bundle is
     submitted via 48 Club Puissant private mempool, not public. an
     attacker who controls the bot key can still set bad slippage, but
@@ -386,7 +386,7 @@ per-launch custody for the 10% bundle slice. owner-sweepable.
   (their `tx.origin` would already be in cooldown) OR a salt-collision
   revert. no portable front-run vector found in empirical probing.
 - the V2 follow-up buy uses `swapExactETHForTokensSupportingFeeOnTransferTokens`
-  with `minV2TokensOut` slippage guard. slippage is bot-supplied; default
+  with contract-enforced 2% slippage guard. slippage is fixed in BundleRouter; default
   5% off the pre-tax expected amount.
 - there is NO public mempool fallback if Puissant fails. after 3 retries,
   the bot enables refund.

@@ -74,7 +74,6 @@ contract EchidnaBundleRouter {
             taxDuration: 365 days,
             antiFarmerDuration: 1 hours,
             commissionReceiver: address(0x1),
-            minV2TokensOut: 0,
             tipBnb: tip,
             deadline: deadline
         });
