@@ -48,11 +48,21 @@ export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
 				))}
 			</div>
 
-			{source === "mock" ? (
-				<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-					note: api unavailable, using local list.
+			<div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+				<p
+					className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500"
+					data-testid="chain-roadmap-hint"
+				>
+					<span className="text-neutral-300">bsc</span>
+					<span className="text-neutral-600"> / </span>
+					more chains coming soon
 				</p>
-			) : null}
+				{source === "mock" ? (
+					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
+						note: api unavailable, using local list.
+					</p>
+				) : null}
+			</div>
 
 			<LaunchpadComingSoonModal
 				descriptor={waitlistFor}

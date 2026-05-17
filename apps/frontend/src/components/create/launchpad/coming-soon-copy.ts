@@ -24,6 +24,32 @@ const DEFAULT_COPY: ComingSoonCopy = {
 };
 
 export const COMING_SOON_COPY: Partial<Record<LaunchpadId, ComingSoonCopy>> = {
+	"four-meme-tax": {
+		label: "paused for launch",
+		readiness: "parallel four.meme route is paused while FLAP is the primary launch rail.",
+		modalTitle: "four.meme tax waitlist",
+		modalIntro:
+			"The four.meme tax route is paused while we focus on FLAP as the primary BSC launch rail. Join the waitlist and we will notify you when this path is re-enabled.",
+		creatorReasons: [
+			"You want a configurable trade tax split across treasury, holders, burn, and LP.",
+			"You need the four.meme route specifically for compatibility with your community.",
+			"You can help us validate the parallel adapter before we re-enable it.",
+		],
+		waitlistHelper: "We will email when the four.meme tax route is re-enabled.",
+	},
+	"four-meme-regular": {
+		label: "paused for launch",
+		readiness: "parallel four.meme route is paused while FLAP is the primary launch rail.",
+		modalTitle: "four.meme regular waitlist",
+		modalIntro:
+			"The four.meme regular route is paused while we focus on FLAP as the primary BSC launch rail. Join the waitlist and we will notify you when this path is re-enabled.",
+		creatorReasons: [
+			"You want the simplest bonding curve with no creator-side tax.",
+			"You need the four.meme route specifically for compatibility with your community.",
+			"You can help us validate the parallel adapter before we re-enable it.",
+		],
+		waitlistHelper: "We will email when the four.meme regular route is re-enabled.",
+	},
 	"pump-fun": {
 		label: "solana demand track",
 		readiness: "made for creators with an existing Solana audience.",
