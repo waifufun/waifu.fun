@@ -76,11 +76,6 @@ type ProvisionWizardState = {
 		avatarTemplateId: string | null;
 		avatarDataUrl: string | null;
 	};
-	runtime: {
-		kind: "hosted" | "webhook" | "pull";
-		webhookUrl: string;
-		webhookSecret: string;
-	};
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;

@@ -10,8 +10,14 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
  */
 export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
 
-/** Wizard step identifiers. URL-synced via `?step=`. */
-export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "runtime" | "safe" | "review";
+/**
+ * Wizard step identifiers. URL-synced via `?step=`.
+ *
+ * The wizard is the hosted Eliza Cloud path. BYO (webhook/pull) runtimes
+ * are intentionally absent here; those users go through `/give-skill`
+ * instead and never touch this flow.
+ */
+export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "safe" | "review";
 
 export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "safe", "review"];
 export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "launchpad", "safe", "review"];
@@ -23,12 +29,9 @@ export const STEP_LABELS: Record<WizardStep, string> = {
 	metadata: "metadata",
 	tier: "tier",
 	launchpad: "launchpad",
-	runtime: "runtime",
 	safe: "safe & policies",
 	review: "review",
 };
-
-export type RuntimeKind = "hosted" | "webhook" | "pull";
 
 export type WizardState = {
 	/**
@@ -62,11 +65,6 @@ export type WizardState = {
 		website: string;
 		metaCid: string | null;
 		metaUri: string | null;
-	};
-	runtime: {
-		kind: RuntimeKind;
-		webhookUrl: string;
-		webhookSecret: string;
 	};
 	safe: {
 		taxAgentBps: number;
@@ -124,11 +122,6 @@ export const DEFAULT_STATE: WizardState = {
 		metaCid: null,
 		metaUri: null,
 	},
-	runtime: {
-		kind: "hosted",
-		webhookUrl: "",
-		webhookSecret: "",
-	},
 	safe: {
 		taxAgentBps: 8000,
 		taxPatronBps: 2000,
@@ -155,7 +148,6 @@ type Action =
 	| { type: "patch_invite_code"; code: string }
 	| { type: "patch_persona"; patch: Partial<WizardState["persona"]> }
 	| { type: "patch_flap"; patch: Partial<WizardState["flap"]> }
-	| { type: "patch_runtime"; patch: Partial<WizardState["runtime"]> }
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
 	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
 	| { type: "patch_launchpad"; patch: Partial<WizardState["launchpad"]> }
@@ -174,8 +166,6 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, flap: { ...state.flap, ...action.patch } };
 		case "patch_vanity":
 			return { ...state, vanity: { ...state.vanity, ...action.patch } };
-		case "patch_runtime":
-			return { ...state, runtime: { ...state.runtime, ...action.patch } };
 		case "patch_safe":
 			return { ...state, safe: { ...state.safe, ...action.patch } };
 		case "patch_safe_adapters":
@@ -200,7 +190,6 @@ type Ctx = {
 	patchInviteCode: (code: string) => void;
 	patchPersona: (p: Partial<WizardState["persona"]>) => void;
 	patchFlap: (p: Partial<WizardState["flap"]>) => void;
-	patchRuntime: (p: Partial<WizardState["runtime"]>) => void;
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
 	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
 	patchLaunchpad: (p: Partial<WizardState["launchpad"]>) => void;
@@ -210,19 +199,6 @@ type Ctx = {
 };
 
 const WizardContext = createContext<Ctx | null>(null);
-
-/** Generate a 32-char hex secret without depending on Node's crypto types. */
-function generateSecret(): string {
-	const bytes = new Uint8Array(16);
-	if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-		window.crypto.getRandomValues(bytes);
-	} else {
-		for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-	}
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
-}
 
 export function WizardStateProvider({ children }: { children: React.ReactNode }) {
 	const [state, dispatch] = useReducer(reducer, DEFAULT_STATE);
@@ -239,7 +215,6 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 					inviteCode: typeof parsed.inviteCode === "string" ? parsed.inviteCode : DEFAULT_STATE.inviteCode,
 					persona: { ...DEFAULT_STATE.persona, ...(parsed.persona ?? {}) },
 					flap: { ...DEFAULT_STATE.flap, ...(parsed.flap ?? {}) },
-					runtime: { ...DEFAULT_STATE.runtime, ...(parsed.runtime ?? {}) },
 					safe: {
 						...DEFAULT_STATE.safe,
 						...(parsed.safe ?? {}),
@@ -287,20 +262,12 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 		}
 	}, [state]);
 
-	// Auto-generate webhook secret when user switches to webhook runtime and lacks one.
-	useEffect(() => {
-		if (state.runtime.kind === "webhook" && !state.runtime.webhookSecret) {
-			dispatch({ type: "patch_runtime", patch: { webhookSecret: generateSecret() } });
-		}
-	}, [state.runtime.kind, state.runtime.webhookSecret]);
-
 	const value = useMemo<Ctx>(
 		() => ({
 			state,
 			patchInviteCode: (code) => dispatch({ type: "patch_invite_code", code }),
 			patchPersona: (patch) => dispatch({ type: "patch_persona", patch }),
 			patchFlap: (patch) => dispatch({ type: "patch_flap", patch }),
-			patchRuntime: (patch) => dispatch({ type: "patch_runtime", patch }),
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
 			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
 			patchLaunchpad: (patch) => dispatch({ type: "patch_launchpad", patch }),
@@ -362,19 +329,6 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			if (fee.kind === "flap" && fee.recipient === "custom-vault") {
 				if (!/^0x[a-fA-F0-9]{40}$/.test(fee.customVaultAddress?.trim() ?? "")) {
 					return "vault address must be a valid 0x address";
-				}
-			}
-			return null;
-		}
-		case "runtime": {
-			if (state.runtime.kind === "webhook") {
-				const url = state.runtime.webhookUrl.trim();
-				if (!url) return "webhook url required";
-				try {
-					const u = new URL(url);
-					if (u.protocol !== "https:" && u.protocol !== "http:") return "url must be http(s)";
-				} catch {
-					return "invalid url";
 				}
 			}
 			return null;
