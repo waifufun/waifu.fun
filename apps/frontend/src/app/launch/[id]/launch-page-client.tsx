@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { bsc } from "wagmi/chains";
@@ -14,6 +14,7 @@ import { LaunchTerms } from "@/components/launch-page/launch-terms";
 import { RefundWidget } from "@/components/launch-page/refund-widget";
 import { StateBanner } from "@/components/launch-page/state-banner";
 import { TierInfoCard } from "@/components/launch-page/tier-info-card";
+import { ClaimWidget } from "@/components/post-launch/claim-widget";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLaunchMeta, useVaultSnapshot, useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
@@ -72,14 +73,23 @@ export default function LaunchPageClient({ id }: Props) {
 	// User position is used by the vesting timeline post-launch.
 	const userPosition = useVaultUserPosition(vaultAddress);
 	const launchTimestamp = useLaunchTimestamp(vaultAddress, displayState);
-	const claimable = useClaimable(vaultAddress, displayState);
+	const claimableQuery = useClaimable(vaultAddress, displayState);
+	const claimable = claimableQuery.value;
+	const showClaimWidget = displayState === "launched" && claimable > 0n;
+	const launchTimestampNumber = launchTimestamp ? Number(launchTimestamp) : null;
 
-	const refresh = () => {
+	const refresh = useCallback(() => {
 		void queryClient.invalidateQueries({ queryKey: ["launch-meta", runtimeId] });
 		void queryClient.invalidateQueries({ queryKey: ["launch-depositors", runtimeId] });
 		void queryClient.invalidateQueries({ queryKey: ["vault-events-fallback", vaultAddress ?? null] });
 		void snapshot.refetch();
-	};
+	}, [queryClient, runtimeId, snapshot, vaultAddress]);
+
+	const refreshAfterClaim = useCallback(() => {
+		refresh();
+		void userPosition.refetch();
+		void claimableQuery.refetch();
+	}, [claimableQuery, refresh, userPosition]);
 
 	if (!runtimeId || runtimeId === "_" || runtimeId === "placeholder") {
 		return <NotFound id={runtimeId} reason="missing launch id" />;
@@ -140,7 +150,15 @@ export default function LaunchPageClient({ id }: Props) {
 					<ActivityFeed launchId={runtimeId} vaultAddress={vaultAddress} />
 				</div>
 				<aside className="hidden lg:block">
-					{displayState === "refunding" ? (
+					{showClaimWidget ? (
+						<ClaimWidget
+							vault={vaultAddress}
+							ticker={meta.data?.tokenTicker ?? "tokens"}
+							vestingEnabled={snap?.vestingEnabled ?? true}
+							launchTimestamp={launchTimestampNumber}
+							onClaimed={refreshAfterClaim}
+						/>
+					) : displayState === "refunding" ? (
 						<RefundWidget
 							vault={vaultAddress}
 							totalDeposited={totalDeposited}
@@ -165,7 +183,15 @@ export default function LaunchPageClient({ id }: Props) {
 
 			{/* Mobile sticky widget. Renders below the lg breakpoint only. */}
 			<div className="lg:hidden">
-				{displayState === "refunding" ? (
+				{showClaimWidget ? (
+					<ClaimWidget
+						vault={vaultAddress}
+						ticker={meta.data?.tokenTicker ?? "tokens"}
+						vestingEnabled={snap?.vestingEnabled ?? true}
+						launchTimestamp={launchTimestampNumber}
+						onClaimed={refreshAfterClaim}
+					/>
+				) : displayState === "refunding" ? (
 					<RefundWidget
 						vault={vaultAddress}
 						totalDeposited={totalDeposited}
@@ -259,7 +285,7 @@ function useLaunchTimestamp(vault: Address | undefined, displayState: LaunchDisp
 	return value;
 }
 
-function useClaimable(vault: Address | undefined, displayState: LaunchDisplayState): bigint {
+function useClaimable(vault: Address | undefined, displayState: LaunchDisplayState) {
 	const { address } = useAccount();
 	const enabled = Boolean(vault) && Boolean(address) && displayState === "launched";
 	const r = useReadContract({
@@ -270,5 +296,8 @@ function useClaimable(vault: Address | undefined, displayState: LaunchDisplaySta
 		chainId: bsc.id,
 		query: { enabled, refetchInterval: 15_000 },
 	});
-	return (r.data as bigint | undefined) ?? 0n;
+	return {
+		value: (r.data as bigint | undefined) ?? 0n,
+		refetch: r.refetch,
+	};
 }
