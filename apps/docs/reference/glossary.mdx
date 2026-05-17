@@ -72,9 +72,9 @@ configurable buy/sell bps, mkt/burn/dividend/lp splits, anti-farmer
 duration. all launches on waifu.fun use this template.
 
 ### graduating tier
-TIER_90, TIER_95, TIER_98. these tiers buy enough on the curve (`quoteAmt`)
-to push the FLAP bonding curve past the four-fifths threshold, which
-auto-graduates the token to PCS v2.
+BASED, WAGMI, GIGACHAD (TIER_90, TIER_95, TIER_98). these tiers buy enough on
+the curve (`quoteAmt`) to push the FLAP bonding curve past the four-fifths
+threshold, which auto-graduates the token to PCS v2.
 
 ### IPFS
 the InterPlanetary File System. content-addressed storage. waifu.fun pins
@@ -150,8 +150,10 @@ balances are allocated. for waifu.fun, TGE == bundle execution == `LAUNCHED`
 state.
 
 ### tier
-one of TIER_80, TIER_90, TIER_95, TIER_98. determines cap, graduation
-budget, follow-up buy, vesting. fixed at `createLaunch`.
+one of SMOL (TIER_80), BASED (TIER_90), WAGMI (TIER_95), GIGACHAD (TIER_98).
+determines cap, graduation budget, follow-up buy, vesting. fixed at
+`createLaunch`. display names live in the UI; the contract enum stays as
+TIER_xx.
 
 ### tip
 the BNB sent to the 48 club builder EOA inside the bundle. pays for
@@ -170,7 +172,7 @@ short for `LaunchVault`. the per-launch escrow.
 
 ### vesting
 the 50% TGE + 50% linear over 24 hours unlock schedule on graduating tiers.
-not applied to TIER_80.
+not applied to SMOL (TIER_80).
 
 ### WBNB
 wrapped BNB. ERC-20 representation of native BNB on PCS. address

@@ -38,10 +38,10 @@ describe("buildLaunchFaq", () => {
 		expect(claim).toMatch(/50% unlocks/);
 	});
 
-	it("tier 98 surfaces its tier number in burn copy", () => {
+	it("tier 98 surfaces its display name in burn copy", () => {
 		const items = buildLaunchFaq(LAUNCH_TIERS.TIER_98);
 		const burn = items.find((i) => i.q === "what gets burned?")?.a ?? "";
-		expect(burn).toMatch(/tier 98/);
+		expect(burn).toMatch(/GIGACHAD/);
 		expect(burn).toMatch(/320m/);
 	});
 

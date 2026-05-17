@@ -58,7 +58,7 @@ transaction:
 1. pull BNB from the vault (`quoteAmt + v2BuyBnb + tipBnb`)
 2. call `FlapPortal.newTokenV6(...)` with `quoteAmt`, which mints the token
    and seeds the bonding curve
-3. if the curve graduates (tier 90+), PCS v2 pair gets created automatically
+3. if the curve graduates (BASED or higher), PCS v2 pair gets created automatically
 4. if `v2BuyBnb > 0`, follow-up buy from the PCS pair (post-tax)
 5. read `balanceOf(router)`, split: 50% burn, 10% TreasuryLP, ~40% vault
 6. call `vault.distribute(token, share)` so claims can compute pro-rata

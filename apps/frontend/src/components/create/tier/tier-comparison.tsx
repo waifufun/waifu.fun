@@ -9,7 +9,7 @@ import { useState } from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { TIERS, type TierId, type TierPreset, formatUsdMarketCap, totalBnb } from "./tier-data";
+import { TIERS, type TierId, type TierPreset, formatUsdMarketCap, tierDisplayName, totalBnb } from "./tier-data";
 
 type Props = {
 	selectedId: TierId | null | undefined;
@@ -81,7 +81,7 @@ function Row({ tier, active }: { tier: TierPreset; active: boolean }) {
 	return (
 		<tr className={cn("text-neutral-200 transition-colors", active ? "bg-accent/[0.06]" : "hover:bg-white/[0.02]")}>
 			<td className={cn("py-2 pr-3 font-mono", active ? "text-accent" : "text-neutral-300")}>
-				tier_{tier.id}
+				{tierDisplayName(tier.id)}
 				{active ? <span className="ml-1.5 text-[9px] uppercase tracking-[0.2em]">selected</span> : null}
 			</td>
 			<td className="py-2 pr-3">{tier.cap} BNB</td>

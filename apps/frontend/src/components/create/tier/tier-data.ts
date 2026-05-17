@@ -85,6 +85,21 @@ export function tierLabel(id: TierId): string {
 	return `tier_${id}`;
 }
 
+/**
+ * Display name surfaced in UI. Lowercase machine id is kept available
+ * via tierLabel(); this helper is the user-facing brand label.
+ */
+export const TIER_DISPLAY_NAME: Record<TierId, string> = {
+	80: "SMOL",
+	90: "BASED",
+	95: "WAGMI",
+	98: "GIGACHAD",
+};
+
+export function tierDisplayName(id: TierId): string {
+	return TIER_DISPLAY_NAME[id];
+}
+
 export function marketCapUsd(marketCapBnb: number, bnbUsd = BNB_USD_FALLBACK): number {
 	return marketCapBnb * bnbUsd;
 }
