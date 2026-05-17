@@ -163,7 +163,7 @@ async function main() {
 	// Use this as a safety check before mainnet ops.
 	if (process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1") {
 		console.log("=== DRY_RUN mode: NOT broadcasting transaction ===");
-		console.log("Would deploy LaunchFactory with the args above.");
+		console.log("Would deploy RouterDeployer, then LaunchFactory with the args above.");
 		if (factoryOwner.toLowerCase() !== deployer.address.toLowerCase()) {
 			console.log(`Would transfer LaunchFactory ownership to ${factoryOwner}.`);
 		}
@@ -171,6 +171,18 @@ async function main() {
 		return;
 	}
 
+	// 1. Deploy RouterDeployer (stateless helper that deploys BundleRouter
+	//    instances on behalf of LaunchFactory to keep LaunchFactory under EIP-170).
+	console.log("Deploying RouterDeployer ...");
+	const RouterDeployer = await ethers.getContractFactory("RouterDeployer");
+	const routerDeployer = await RouterDeployer.deploy();
+	await routerDeployer.waitForDeployment();
+	const routerDeployerAddress = await routerDeployer.getAddress();
+	console.log("RouterDeployer deployed at:", routerDeployerAddress);
+	console.log("");
+
+	// 2. Deploy LaunchFactory with the RouterDeployer address as the 9th arg.
+	console.log("Deploying LaunchFactory ...");
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await LaunchFactory.deploy(
 		book.WBNB,
@@ -181,6 +193,7 @@ async function main() {
 		book.TOKEN_IMPL_TAXED_V3,
 		book.TIP_RECEIVER,
 		platformCommissionReceiver,
+		routerDeployerAddress,
 	);
 	await factory.waitForDeployment();
 	const factoryAddress = await factory.getAddress();
@@ -208,6 +221,7 @@ async function main() {
 		["FLAP_PORTAL", await factory.FLAP_PORTAL(), book.FLAP_PORTAL],
 		["TOKEN_IMPL_TAXED_V3", await factory.TOKEN_IMPL_TAXED_V3(), book.TOKEN_IMPL_TAXED_V3],
 		["TIP_RECEIVER", await factory.TIP_RECEIVER(), book.TIP_RECEIVER],
+		["ROUTER_DEPLOYER", await factory.ROUTER_DEPLOYER(), routerDeployerAddress],
 		["owner", await factory.owner(), factoryOwner],
 	];
 	let ok = true;
@@ -237,6 +251,7 @@ async function main() {
 		deployedAt: new Date().toISOString(),
 		contracts: {
 			LaunchFactory: factoryAddress,
+			RouterDeployer: routerDeployerAddress,
 		},
 		constructorArgs: {
 			wbnb: book.WBNB,
@@ -247,6 +262,7 @@ async function main() {
 			tokenImplTaxedV3: book.TOKEN_IMPL_TAXED_V3,
 			tipReceiver: book.TIP_RECEIVER,
 			platformCommissionReceiver,
+			routerDeployer: routerDeployerAddress,
 		},
 		platformCommissionReceiver,
 	};
