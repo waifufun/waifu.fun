@@ -231,7 +231,6 @@ function WizardInner() {
 					metadata: <StepMetadata />,
 					tier: <StepTier />,
 					launchpad: LAUNCHPAD_PICKER_ENABLED ? <StepLaunchpad /> : null,
-					runtime: null,
 					safe: <StepSafe />,
 					review: <StepReview />,
 				}}

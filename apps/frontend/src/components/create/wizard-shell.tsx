@@ -119,7 +119,6 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 						{step === "metadata" ? "how do they look on-chain?" : null}
 						{step === "tier" ? "how big do they launch?" : null}
 						{step === "launchpad" ? "where do they launch?" : null}
-						{step === "runtime" ? "where do they live?" : null}
 						{step === "safe" ? "how do they spend?" : null}
 						{step === "review" ? "ready to wake them up?" : null}
 					</h1>
@@ -130,9 +129,6 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 						{step === "launchpad"
 							? "pick a launchpad and a fee model. waifu's cut comes out of the agent treasury."
 							: null}
-						{step === "runtime"
-							? "hosted Eliza Cloud is the default. BYO webhook or pull runtimes are advanced paths."
-							: null}
 						{step === "safe" ? "treasury rules and adapters. defaults are sane. tweak from /patron later." : null}
 						{step === "review" ? "last look. costs gas plus a one-time $5 setup." : null}
 					</p>
@@ -142,13 +138,7 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 					<ol
 						className={cn(
 							"grid gap-2",
-							WIZARD_STEPS.length === 7
-								? "grid-cols-7"
-								: WIZARD_STEPS.length === 6
-									? "grid-cols-6"
-									: WIZARD_STEPS.length === 5
-										? "grid-cols-5"
-										: "grid-cols-4",
+							WIZARD_STEPS.length === 6 ? "grid-cols-6" : WIZARD_STEPS.length === 5 ? "grid-cols-5" : "grid-cols-4",
 						)}
 					>
 						{WIZARD_STEPS.map((s, i) => {
@@ -207,13 +197,17 @@ export default function WizardShell({ stepContent, onComplete, provisioning, com
 					</div>
 				</nav>
 
-				{/* Manual-fallback banner. Persistent across steps; agents should use skill.md. */}
+				{/*
+				 * Manual-fallback banner. Persistent across steps.
+				 * The wizard is the hosted Eliza Cloud path; BYO agents skip it
+				 * entirely and go through /give-skill.
+				 */}
 				<div className="mb-8 border-l-2 border-[#00ff87] bg-[#0A0F0C] p-4">
 					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-1.5">manual fallback</p>
 					<p className="text-sm text-[#a1a1aa] leading-relaxed">
-						you're launching by hand. that's fine. if you want your agent to do this itself, point it at{" "}
-						<a href="/skill.md" className="text-[#00ff87] hover:opacity-80 transition-opacity">
-							waifu.fun/skill.md
+						you're launching by hand. that's fine. running your own agent already?{" "}
+						<a href="/give-skill" className="text-[#00ff87] hover:opacity-80 transition-opacity">
+							skip the wizard and give your agent the skill
 						</a>
 						.
 					</p>
@@ -309,18 +303,6 @@ function useStepValidStatic(step: WizardStep, state: ReturnType<typeof useWizard
 		}
 		case "launchpad": {
 			if (!state.launchpad.selectedId) return "pick a launchpad";
-			return null;
-		}
-		case "runtime": {
-			if (state.runtime.kind === "webhook") {
-				const url = state.runtime.webhookUrl.trim();
-				if (!url) return "webhook url required";
-				try {
-					new URL(url);
-				} catch {
-					return "invalid url";
-				}
-			}
 			return null;
 		}
 		default:
