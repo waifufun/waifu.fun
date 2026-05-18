@@ -865,12 +865,7 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 		const { factory } = await deployFactory(platformReceiver);
 
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { rawSalt, predicted, iterations } = mineVanitySalt(
-			PORTAL,
-			codeHash,
-			creator.address,
-			"m5-s6-taxflow-e2e",
-		);
+		const { rawSalt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, creator.address, "m5-s6-taxflow-e2e");
 		console.log(`    [s6] mined salt in ${iterations} iters; predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -934,9 +929,7 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 			addrs.taxSplitter.toLowerCase(),
 			"FLAP commissionReceiver should be TaxSplitter",
 		);
-		console.log(
-			`    [s6] FLAP wiring confirmed: marketAddress=commissionReceiver=TaxSplitter; feeReceiver=${feeRcv}`,
-		);
+		console.log(`    [s6] FLAP wiring confirmed: marketAddress=commissionReceiver=TaxSplitter; feeReceiver=${feeRcv}`);
 
 		// Skip the FLAP anti-farmer window so V2 trades aren't blocked.
 		await skipAntiFarmer();
@@ -950,25 +943,13 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 		// 1.5 BNB total across 6 legs => ~3% buy + 3% sell tax per leg, then
 		// FLAP keeps 10% protocol fee, splitter receives ~88% market + 2%
 		// commission slices. We expect TaxSplitter to net well over 0.01 BNB.
-		const { buys, sells } = await simulateBuySellPressure(
-			token,
-			predicted,
-			trader,
-			ethers.parseEther("1.5"),
-			6,
-		);
+		const { buys, sells } = await simulateBuySellPressure(token, predicted, trader, ethers.parseEther("1.5"), 6);
 		expect(buys).to.be.gt(0n);
 		expect(sells).to.be.gt(0n);
-		console.log(
-			`    [s6] traded: buys=${ethers.formatUnits(buys, 18)} sells=${ethers.formatUnits(sells, 18)}`,
-		);
+		console.log(`    [s6] traded: buys=${ethers.formatUnits(buys, 18)} sells=${ethers.formatUnits(sells, 18)}`);
 
 		// Snapshot balances BEFORE dispatch.
-		const wbnb = new ethers.Contract(
-			WBNB,
-			["function balanceOf(address) view returns (uint256)"],
-			ethers.provider,
-		);
+		const wbnb = new ethers.Contract(WBNB, ["function balanceOf(address) view returns (uint256)"], ethers.provider);
 		const preDispatch = {
 			router: await ethers.provider.getBalance(addrs.router),
 			splitter: await ethers.provider.getBalance(addrs.taxSplitter),
@@ -1003,9 +984,10 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 		// === CORE ASSERTIONS ===
 
 		// (a) BundleRouter holds NO BNB. Pre-fix, ~88% of tax stranded here.
-		expect(postDispatch.router, "BundleRouter must not hold tax BNB after dispatch (was stranding ~88% pre-fix)").to.equal(
-			0n,
-		);
+		expect(
+			postDispatch.router,
+			"BundleRouter must not hold tax BNB after dispatch (was stranding ~88% pre-fix)",
+		).to.equal(0n);
 
 		// (b) TaxSplitter received BNB from dispatch. Pre-fix this was only
 		//     the ~2% commission slice; post-fix it should also include the
@@ -1024,9 +1006,7 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 		const ratioScaled = (splitterReceived * 10000n) / feeRcvDelta; // bps
 		expect(ratioScaled, "splitter/feeRcv ratio should be ~9x (post-fix); pre-fix was ~0.02x").to.be.gte(40000n);
 		expect(ratioScaled, "splitter/feeRcv ratio sanity upper bound").to.be.lte(200000n);
-		console.log(
-			`    [s6] splitter/feeReceiver ratio = ${Number(ratioScaled) / 10000} (expect ~9; pre-fix was ~0.02)`,
-		);
+		console.log(`    [s6] splitter/feeReceiver ratio = ${Number(ratioScaled) / 10000} (expect ~9; pre-fix was ~0.02)`);
 
 		// === Now call TaxSplitter.split() on real end-to-end tax revenue. ===
 		const recipientPre = {
