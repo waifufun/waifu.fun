@@ -49,10 +49,10 @@ describe("Wave N TreasuryLP4 :: real PCS V3 NPM fork", () => {
 	let treasury;
 
 	async function buildArgs(overrides) {
-		const lowers = (overrides && overrides.lowers) || [2000, 6000, 10000, 14000];
-		const uppers = (overrides && overrides.uppers) || [4000, 8000, 12000, 16000];
-		const minEpochs = (overrides && overrides.minEpochs) || [2, 2, 3, 3];
-		const targetMc = (overrides && overrides.targetMc) || [1n, 2n, 3n, 4n];
+		const lowers = overrides?.lowers || [2000, 6000, 10000, 14000];
+		const uppers = overrides?.uppers || [4000, 8000, 12000, 16000];
+		const minEpochs = overrides?.minEpochs || [2, 2, 3, 3];
+		const targetMc = overrides?.targetMc || [1n, 2n, 3n, 4n];
 		const tiers = [];
 		for (let i = 0; i < 4; i++) {
 			tiers.push({
@@ -77,7 +77,7 @@ describe("Wave N TreasuryLP4 :: real PCS V3 NPM fork", () => {
 			agentSafe: agentSafe.address,
 			platformReceiver: platform.address,
 			patronReceiver: patron.address,
-			bnbUsdFeed: (overrides && overrides.bnbUsdFeed) || CHAINLINK_BNB_USD,
+			bnbUsdFeed: overrides?.bnbUsdFeed || CHAINLINK_BNB_USD,
 			buybackBps: 1000,
 			platformBps: 500,
 			patronBps: 2000,

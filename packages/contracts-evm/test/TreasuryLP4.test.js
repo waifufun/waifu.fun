@@ -190,9 +190,7 @@ describe("TreasuryLP4 :: Wave N", () => {
 	it("rejects bad bps sum (>= 10000)", async () => {
 		const ctx = await deployFixture();
 		await expectError(
-			ethers.deployContract("TreasuryLP4", [
-				{ ...ctx.args, buybackBps: 1500, platformBps: 4000, patronBps: 4500 },
-			]),
+			ethers.deployContract("TreasuryLP4", [{ ...ctx.args, buybackBps: 1500, platformBps: 4000, patronBps: 4500 }]),
 			"bad_bps_sum",
 		);
 	});
@@ -232,7 +230,10 @@ describe("TreasuryLP4 :: Wave N", () => {
 	it("setFlapV2Pair rejects pair with wrong tokens", async () => {
 		const ctx = await deployFixture();
 		const otherToken = await ethers.deployContract("ERC20Mock");
-		const badPair = await ethers.deployContract("MockFlapV2Pair", [await otherToken.getAddress(), await ctx.wbnb.getAddress()]);
+		const badPair = await ethers.deployContract("MockFlapV2Pair", [
+			await otherToken.getAddress(),
+			await ctx.wbnb.getAddress(),
+		]);
 		await expectError(ctx.treasury.connect(ctx.owner).setFlapV2Pair(await badPair.getAddress()), "bad_pair");
 	});
 
@@ -369,7 +370,11 @@ describe("TreasuryLP4 :: Wave N", () => {
 		const rcpt = await tx.wait();
 		const ev = rcpt.logs
 			.map((l) => {
-				try { return treasury.interface.parseLog(l); } catch { return null; }
+				try {
+					return treasury.interface.parseLog(l);
+				} catch {
+					return null;
+				}
 			})
 			.find((e) => e && e.name === "BnbClaimed");
 		assert.ok(ev, "BnbClaimed event missing");
@@ -425,7 +430,6 @@ describe("TreasuryLP4 :: Wave N", () => {
 		assert.equal(await ctx.treasury.buybackBps(), 1500n);
 	});
 
-
 	it("uses live token supply in market-cap math", async () => {
 		const ctx = await deployFixture();
 		await setupPair(ctx);
@@ -440,4 +444,6 @@ describe("TreasuryLP4 :: Wave N", () => {
 });
 
 // Tiny helper so the `nextTierIndex` test reads better.
-function ctx_or(t) { return t; }
+function ctx_or(t) {
+	return t;
+}
