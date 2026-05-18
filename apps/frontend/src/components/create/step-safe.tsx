@@ -7,6 +7,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ShieldIcon } from "./wizard-icons";
 import { useWizard } from "./wizard-state";
 
+function isEvmAddress(value: string): boolean {
+	return /^0x[a-fA-F0-9]{40}$/.test(value.trim());
+}
+
 const ADAPTER_PREVIEWS = [
 	{
 		slug: "pancake" as const,
@@ -40,6 +44,9 @@ function uniqueAddresses(addresses: string[]): string[] {
 
 export default function StepSafe() {
 	const { state, patchSafe } = useWizard();
+	const [advancedOpen, setAdvancedOpen] = useState(false);
+	const [coOwnerDraft, setCoOwnerDraft] = useState("");
+	const [coOwnerError, setCoOwnerError] = useState<string | null>(null);
 	const auth = useWaifuAuth();
 	const linked = useLinkedEoa();
 	const [linking, setLinking] = useState(false);
@@ -71,7 +78,11 @@ export default function StepSafe() {
 			if (!linked.isLinkedToPatron) {
 				await linked.link();
 			}
-			patchSafe({ owners: uniqueAddresses([...owners, address]), threshold: 1 });
+			const nextOwners = uniqueAddresses([...owners, address]);
+			patchSafe({
+				owners: nextOwners,
+				threshold: Math.max(1, Math.min(state.safe.threshold || 1, nextOwners.length)),
+			});
 		} finally {
 			setLinking(false);
 		}
@@ -105,6 +116,11 @@ export default function StepSafe() {
 			? uniqueAddresses([...owners, address])
 			: owners.filter((owner) => !sameAddress(owner, address));
 		patchSafe({ owners: next, threshold: Math.max(1, Math.min(threshold, next.length || 1)) });
+	}
+
+	function updateThreshold(value: number) {
+		const clamped = Math.max(1, Math.min(value, Math.max(owners.length, 1)));
+		patchSafe({ threshold: clamped });
 	}
 
 	return (
@@ -160,8 +176,25 @@ export default function StepSafe() {
 						</div>
 						<div className="grid grid-cols-[140px_1fr] py-3 gap-3 items-center">
 							<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">threshold</dt>
-							<dd className="text-sm font-mono text-neutral-200">
-								{threshold} of {owners.length || 1}
+							<dd className="text-sm font-mono text-neutral-200 flex items-center gap-3">
+								{owners.length > 1 ? (
+									<>
+										<input
+											type="number"
+											min={1}
+											max={owners.length}
+											value={threshold}
+											onChange={(event) => updateThreshold(Number(event.target.value))}
+											className="w-16 bg-black/30 border border-white/10 px-2 py-1 text-sm font-mono text-white tabular-nums focus:outline-none focus:border-accent/50"
+											aria-label="safe signature threshold"
+										/>
+										<span className="text-neutral-500">of {owners.length}</span>
+									</>
+								) : (
+									<span>
+										{threshold} of {owners.length || 1}
+									</span>
+								)}
 							</dd>
 						</div>
 					</dl>
@@ -210,6 +243,55 @@ export default function StepSafe() {
 								{linkError}
 							</p>
 						) : null}
+
+						<div className="pt-2 border-t border-white/5">
+							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">co-owners (optional)</p>
+							<p className="mt-1 text-xs text-neutral-500">
+								add any extra EVM addresses you want on the agent Safe. raise the threshold above to require co-signs.
+							</p>
+							<div className="mt-3 flex gap-2">
+								<input
+									type="text"
+									value={coOwnerDraft}
+									onChange={(event) => {
+										setCoOwnerDraft(event.target.value);
+										setCoOwnerError(null);
+									}}
+									placeholder="0x..."
+									spellCheck={false}
+									className="flex-1 min-w-0 bg-black/30 border border-white/10 px-3 py-2 text-sm font-mono text-white placeholder:text-neutral-600 focus:outline-none focus:border-accent/50"
+									aria-label="co-owner EVM address"
+								/>
+								<button
+									type="button"
+									onClick={() => {
+										const candidate = coOwnerDraft.trim();
+										if (!isEvmAddress(candidate)) {
+											setCoOwnerError("address must be a valid 0x EVM address");
+											return;
+										}
+										if (owners.some((existing) => sameAddress(existing, candidate))) {
+											setCoOwnerError("address already a safe owner");
+											return;
+										}
+										const nextOwners = uniqueAddresses([...owners, candidate]);
+										patchSafe({
+											owners: nextOwners,
+											threshold: Math.max(1, Math.min(state.safe.threshold || 1, nextOwners.length)),
+										});
+										setCoOwnerDraft("");
+									}}
+									className="px-3 py-2 text-[11px] font-mono uppercase tracking-[0.18em] border border-white/15 text-neutral-200 hover:border-accent/40 hover:text-accent"
+								>
+									add
+								</button>
+							</div>
+							{coOwnerError ? (
+								<p className="mt-2 text-xs text-[#f87171]" role="alert">
+									{coOwnerError}
+								</p>
+							) : null}
+						</div>
 					</div>
 				</div>
 			</section>
@@ -217,33 +299,115 @@ export default function StepSafe() {
 			<section>
 				<header className="flex items-baseline justify-between mb-3">
 					<h2 className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400">tax routing</h2>
-					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">v1 default</span>
+					<span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">wave M default</span>
 				</header>
 
 				<div className="border border-white/8 bg-white/[0.012] p-5">
-					<div className="flex items-end gap-2 mb-3">
-						<div className="flex-1 min-w-0">
-							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">agent treasury</p>
-							<p className="mt-1 text-2xl font-medium text-white tabular-nums">{agentPct}%</p>
-						</div>
-						<div className="text-right">
-							<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">patron</p>
-							<p className="mt-1 text-2xl font-medium text-neutral-300 tabular-nums">{patronPct}%</p>
-						</div>
-					</div>
+					{(() => {
+						const platformPct = state.patronPlatform.platformBps / 100;
+						const patronSharePct = state.patronPlatform.patronBps / 100;
+						const agentSharePct = Math.max(0, 100 - platformPct - patronSharePct);
+						return (
+							<>
+								<div className="grid grid-cols-3 gap-3 mb-3">
+									<div>
+										<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">platform</p>
+										<p className="mt-1 text-2xl font-medium text-neutral-200 tabular-nums">{platformPct}%</p>
+									</div>
+									<div>
+										<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">patron</p>
+										<p className="mt-1 text-2xl font-medium text-neutral-300 tabular-nums">{patronSharePct}%</p>
+									</div>
+									<div className="text-right">
+										<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">agent</p>
+										<p className="mt-1 text-2xl font-medium text-white tabular-nums">{agentSharePct}%</p>
+									</div>
+								</div>
 
-					<div
-						className="relative h-2 w-full bg-white/5 overflow-hidden"
-						role="img"
-						aria-label={`tax split: ${agentPct}% to agent, ${patronPct}% to patron`}
+								<div
+									className="relative h-2 w-full bg-white/5 overflow-hidden"
+									role="img"
+									aria-label={`tax split: ${platformPct}% platform, ${patronSharePct}% patron, ${agentSharePct}% agent`}
+								>
+									<div className="absolute inset-y-0 left-0 bg-white/30" style={{ width: `${platformPct}%` }} />
+									<div
+										className="absolute inset-y-0 bg-white/50"
+										style={{ left: `${platformPct}%`, width: `${patronSharePct}%` }}
+									/>
+									<div
+										className="absolute inset-y-0 bg-accent"
+										style={{ left: `${platformPct + patronSharePct}%`, width: `${agentSharePct}%` }}
+									/>
+								</div>
+
+								<p className="mt-3 text-xs text-neutral-500 leading-relaxed">
+									wave M default. tax flows on-chain through a CREATE2 TaxSplitter to the platform Safe, the patron, and
+									the agent Safe. splits are locked per launch; expand &ldquo;advanced&rdquo; to audit the on-chain
+									config.
+								</p>
+							</>
+						);
+					})()}
+				</div>
+
+				<div className="mt-3 border border-white/8 bg-white/[0.012]">
+					<button
+						type="button"
+						onClick={() => setAdvancedOpen((open) => !open)}
+						aria-expanded={advancedOpen}
+						className="w-full flex items-center justify-between px-5 py-3 text-[11px] font-mono uppercase tracking-[0.18em] text-neutral-400 hover:text-neutral-200"
 					>
-						<div className="absolute inset-y-0 left-0 bg-accent" style={{ width: `${agentPct}%` }} />
-						<div className="absolute inset-y-0 bg-white/30" style={{ left: `${agentPct}%`, width: `${patronPct}%` }} />
-					</div>
-
-					<p className="mt-3 text-xs text-neutral-500 leading-relaxed">
-						locked to 80/20 for v1. tax flows on-chain through a CREATE2 splitter. editable later when v2 ships.
-					</p>
+						<span>advanced &middot; patron &amp; platform</span>
+						<span aria-hidden>{advancedOpen ? "\u2212" : "+"}</span>
+					</button>
+					{advancedOpen ? (
+						<dl className="divide-y divide-white/5 border-t border-white/5">
+							<div className="grid grid-cols-[160px_1fr] py-3 px-5 gap-3 items-center">
+								<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">platform receiver</dt>
+								<dd>
+									<input
+										type="text"
+										readOnly
+										value={state.patronPlatform.platformReceiver}
+										className="w-full bg-black/30 border border-white/10 px-2 py-1 text-xs font-mono text-neutral-300 tabular-nums"
+										aria-label="platform receiver address (read only)"
+									/>
+								</dd>
+							</div>
+							<div className="grid grid-cols-[160px_1fr] py-3 px-5 gap-3 items-center">
+								<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">patron</dt>
+								<dd>
+									<input
+										type="text"
+										readOnly
+										value={state.patronPlatform.patron ?? "defaults to creator wallet"}
+										className="w-full bg-black/30 border border-white/10 px-2 py-1 text-xs font-mono text-neutral-300 tabular-nums"
+										aria-label="patron address (read only)"
+									/>
+								</dd>
+							</div>
+							<div className="grid grid-cols-[160px_1fr] py-3 px-5 gap-3 items-center">
+								<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">platform bps</dt>
+								<dd className="text-sm font-mono text-neutral-300 tabular-nums">
+									{state.patronPlatform.platformBps} ({state.patronPlatform.platformBps / 100}%)
+								</dd>
+							</div>
+							<div className="grid grid-cols-[160px_1fr] py-3 px-5 gap-3 items-center">
+								<dt className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">patron bps</dt>
+								<dd className="text-sm font-mono text-neutral-300 tabular-nums">
+									{state.patronPlatform.patronBps} ({state.patronPlatform.patronBps / 100}%)
+								</dd>
+							</div>
+							<div className="py-3 px-5">
+								<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">notes</p>
+								<p className="mt-1 text-xs text-neutral-500 leading-relaxed">
+									platform receiver is operator-controlled; values are locked in v1. set
+									<code className="px-1 text-neutral-400">NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS</code>
+									and the bps env vars to override per environment.
+								</p>
+							</div>
+						</dl>
+					) : null}
 				</div>
 			</section>
 

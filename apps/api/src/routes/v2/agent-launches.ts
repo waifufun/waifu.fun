@@ -60,6 +60,7 @@ const agentSafeOwnersSchema = z
 	.transform((owners) => Array.from(new Set(owners)) as `0x${string}`[]);
 
 const waveMSplitBodySchema = {
+	platformReceiver: addressSchema.optional(),
 	platformBps: z.coerce.number().int().min(1000).max(5000).default(1000),
 	patronBps: z.coerce.number().int().min(0).max(9000).default(2500),
 	patron: addressSchema.optional(),
@@ -67,7 +68,7 @@ const waveMSplitBodySchema = {
 	agentSafeThreshold: z.coerce.number().int().min(1).max(10).default(1),
 } as const;
 
-const createLaunchBodySchema = z
+export const createLaunchBodySchema = z
 	.object({
 		name: z.string().trim().min(1).max(64),
 		symbol: z
@@ -343,7 +344,9 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			const commissionReceiver =
 				readLaunchAddress("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ?? creator;
 			const platformReceiver =
-				readLaunchAddress("PLATFORM_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ?? commissionReceiver;
+				(body.platformReceiver as `0x${string}` | undefined) ??
+				readLaunchAddress("PLATFORM_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ??
+				commissionReceiver;
 			const patronAddress = (body.patron ?? creator) as `0x${string}`;
 			const agentSafeOwners = (body.agentSafeOwners ?? [creator]) as `0x${string}`[];
 			const mineInput: MineSaltInput = { creator };
@@ -413,6 +416,9 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				id: row.id,
 				status: "created",
 				token: row.tokenAddress,
+				// `tokenAddress` alias kept so older FE clients reading the
+				// pre-Wave M response shape keep working through the rollout.
+				tokenAddress: row.tokenAddress,
 				predictedTokenAddress: row.predictedTokenAddress,
 				vault: row.vaultAddress,
 				router: row.routerAddress,
@@ -420,6 +426,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				agentSafe: row.agentSafeAddress ?? null,
 				taxSplit: buildTaxSplit(row.platformBps, row.patronBps),
 				agentSafeConfig: buildAgentSafeConfig(row.agentSafeOwners, row.agentSafeThreshold),
+				platformReceiver,
 				treasuryReserve: onchain.treasuryReserve,
 				presaleUrl: onchain.presaleUrl,
 				txHash: onchain.txHash,
