@@ -1,0 +1,14 @@
+{
+  "filter_paths": "node_modules,lib,out-foundry,artifacts,cache,contracts/mocks,contracts/probe,test-echidna,contracts/flap,contracts/uniswap,contracts/libraries/TickMath.sol",
+  "exclude_dependencies": true,
+  "exclude_informational": false,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "exclude_optimization": false,
+  "solc_remaps": [
+    "@openzeppelin/=node_modules/@openzeppelin/"
+  ],
+  "compile_force_framework": "hardhat",
+  "disable_color": true
+}

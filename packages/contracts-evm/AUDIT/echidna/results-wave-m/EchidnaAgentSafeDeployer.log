@@ -1,0 +1,53 @@
+[2026-05-18 05:55:39.57] Compiling `test-echidna/EchidnaAgentSafeDeployer.sol`... Done! (2.978097216s)
+Analyzing contract: /code/packages/contracts-evm/test-echidna/EchidnaAgentSafeDeployer.sol:EchidnaAgentSafeDeployer
+[2026-05-18 05:55:42.59] Running slither on `test-echidna/EchidnaAgentSafeDeployer.sol`... WARNING: Running slither failed. Echidna will continue, however fuzzing will likely be less effective.
+
+Done! (0.385841238s)
+Loaded 0 transaction sequences from echidna-corpus/reproducers
+Loaded 6 transaction sequences from echidna-corpus/coverage
+[2026-05-18 05:55:43.04] [Worker 2] Sequence replayed from corpus file 2214840376397641011.txt (1/2)
+[2026-05-18 05:55:43.04] [Worker 0] Sequence replayed from corpus file 2427388380118790991.txt (1/2)
+[2026-05-18 05:55:43.04] [Worker 1] New coverage: 3002 instr, 5 contracts, 1 seqs in corpus
+[2026-05-18 05:55:43.04] [Worker 1] Sequence replayed from corpus file 2606928778102047714.txt (1/2)
+[2026-05-18 05:55:43.06] [Worker 0] Sequence replayed from corpus file 8027266302577828530.txt (2/2)
+[2026-05-18 05:55:43.06] [Worker 1] Sequence replayed from corpus file 3631071676352051747.txt (2/2)
+[2026-05-18 05:55:43.06] [Worker 2] Sequence replayed from corpus file 4626904258036070970.txt (2/2)
+[2026-05-18 05:55:43.26] [Worker 0] New coverage: 3909 instr, 5 contracts, 2 seqs in corpus
+[2026-05-18 05:55:43.27]  Saved reproducer to echidna-corpus/coverage/3235307587333843247.txt
+[2026-05-18 05:55:43.40] [Worker 2] New coverage: 3909 instr, 5 contracts, 3 seqs in corpus
+[2026-05-18 05:55:43.41]  Saved reproducer to echidna-corpus/coverage/8214675443483788150.txt
+[2026-05-18 05:55:43.55] [Worker 3] New coverage: 3909 instr, 5 contracts, 4 seqs in corpus
+[2026-05-18 05:55:43.55]  Saved reproducer to echidna-corpus/coverage/1465060360196038988.txt
+[2026-05-18 05:55:43.87] [Worker 1] New coverage: 3913 instr, 5 contracts, 5 seqs in corpus
+[2026-05-18 05:55:43.87]  Saved reproducer to echidna-corpus/coverage/1395848137176534496.txt
+[2026-05-18 05:55:46.03] [status] tests: 0/4, fuzzing: 5179/50000, values: [], cov: 3913, corpus: 5, gas/s: 7562893720
+[2026-05-18 05:55:49.03] [status] tests: 0/4, fuzzing: 9535/50000, values: [], cov: 3913, corpus: 5, gas/s: 8821071724
+[2026-05-18 05:55:52.03] [status] tests: 0/4, fuzzing: 14061/50000, values: [], cov: 3913, corpus: 5, gas/s: 8386309712
+[2026-05-18 05:55:55.03] [status] tests: 0/4, fuzzing: 18523/50000, values: [], cov: 3913, corpus: 5, gas/s: 7962623443
+[2026-05-18 05:55:58.04] [status] tests: 0/4, fuzzing: 22872/50000, values: [], cov: 3913, corpus: 5, gas/s: 8676788653
+[2026-05-18 05:56:01.04] [status] tests: 0/4, fuzzing: 27552/50000, values: [], cov: 3913, corpus: 5, gas/s: 8107373832
+[2026-05-18 05:56:04.04] [status] tests: 0/4, fuzzing: 31710/50000, values: [], cov: 3913, corpus: 5, gas/s: 8148732462
+[2026-05-18 05:56:07.05] [status] tests: 0/4, fuzzing: 35739/50000, values: [], cov: 3913, corpus: 5, gas/s: 7871523298
+[2026-05-18 05:56:10.05] [status] tests: 0/4, fuzzing: 39940/50000, values: [], cov: 3913, corpus: 5, gas/s: 8010847288
+[2026-05-18 05:56:13.05] [status] tests: 0/4, fuzzing: 44241/50000, values: [], cov: 3913, corpus: 5, gas/s: 8405643577
+[2026-05-18 05:56:15.46] [Worker 3] Test limit reached. Stopping.
+[2026-05-18 05:56:16.06] [status] tests: 0/4, fuzzing: 48276/50000, values: [], cov: 3913, corpus: 5, gas/s: 8204205082
+[2026-05-18 05:56:16.64] [Worker 0] Test limit reached. Stopping.
+[2026-05-18 05:56:17.52] [Worker 1] Test limit reached. Stopping.
+[2026-05-18 05:56:18.75] [Worker 2] Test limit reached. Stopping.
+[2026-05-18 05:56:18.75] [status] tests: 0/4, fuzzing: 50152/50000, values: [], cov: 3913, corpus: 5, gas/s: 2733914054
+echidna_deployer_is_not_owner: passing
+echidna_deployed_safe_has_correct_threshold: passing
+echidna_deployed_safe_has_correct_owners: passing
+echidna_deployer_immutables_constant: passing
+
+Unique instructions: 3913
+Unique codehashes: 5
+Corpus size: 5
+Seed: 5067831124116579535
+Total calls: 50152
+
+[2026-05-18 05:56:18.75] Saving test reproducers... Done! (0.000001412s)
+[2026-05-18 05:56:18.75] Saving corpus... Done! (0.000393857s)
+[2026-05-18 05:56:18.75] Saving foundry reproducers... Done! (0.000027994s)
+[2026-05-18 05:56:18.75] Saving coverage... Done! (0.169782386s)

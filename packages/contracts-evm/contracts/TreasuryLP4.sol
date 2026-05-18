@@ -94,8 +94,8 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
     uint32 public lastMcTimestamp;
 
     uint16 public buybackBps;
-    uint16 public platformBps;
-    uint16 public patronBps;
+    uint16 public immutable platformBps;
+    uint16 public immutable patronBps;
     uint32 public epochLength = 14400;
 
     event OraclePoked(uint256 price0CumulativeLast, uint32 blockTimestampLast);
@@ -225,25 +225,25 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
     ///         TWAP oracle snapshot, and sets tier 0's epoch start clock.
     /// @dev    Owner is the LaunchFactory (or its finalizer) until ownership
     ///         is handed off to the agent Safe inside the same transaction.
-    function setFlapV2Pair(address _pair) external onlyOwner {
+    function setFlapV2Pair(address pair_) external onlyOwner {
         if (address(flapV2Pair) != address(0)) revert pair_already_set();
-        if (_pair == address(0)) revert zero_address();
+        if (pair_ == address(0)) revert zero_address();
 
-        address pairToken0 = IFlapV2Pair(_pair).token0();
-        address pairToken1 = IFlapV2Pair(_pair).token1();
-        address _token = address(token);
-        address _wbnb = wbnb;
-        bool isPairToken0 = pairToken0 == _token && pairToken1 == _wbnb;
-        bool isPairToken1 = pairToken1 == _token && pairToken0 == _wbnb;
+        address pairToken0 = IFlapV2Pair(pair_).token0();
+        address pairToken1 = IFlapV2Pair(pair_).token1();
+        address tokenAddr = address(token);
+        address wbnbAddr = wbnb;
+        bool isPairToken0 = pairToken0 == tokenAddr && pairToken1 == wbnbAddr;
+        bool isPairToken1 = pairToken1 == tokenAddr && pairToken0 == wbnbAddr;
         if (!isPairToken0 && !isPairToken1) revert bad_pair();
 
         // Now that the token contract exists, verify its decimals match the
         // 18-decimal market-cap math used by _mcUSDFrom.
-        if (IERC20Metadata(_token).decimals() != 18) revert bad_decimals();
+        if (IERC20Metadata(tokenAddr).decimals() != 18) revert bad_decimals();
 
-        flapV2Pair = IFlapV2Pair(_pair);
+        flapV2Pair = IFlapV2Pair(pair_);
         tokenIsPair0 = isPairToken0;
-        emit FlapV2PairSet(_pair, isPairToken0);
+        emit FlapV2PairSet(pair_, isPairToken0);
 
         // Bootstrap the TWAP oracle and start tier 0's epoch clock.
         _oraclePokeInternal();
