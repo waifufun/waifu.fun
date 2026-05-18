@@ -16,6 +16,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ITreasuryLPRegistry} from "./interfaces/ITreasuryLPRegistry.sol";
 
+/// @notice DEPRECATED: Wave N replaced this custodial-only treasury
+///         with TreasuryLP4 (real PCS V3 NPM + 4-way LP-drain split).
+///         Kept compiling for back-compat with legacy deploy scripts; new
+///         launches go through TreasuryLP4 via LaunchFactory.
 /// @title TreasuryLP
 /// @notice custodial treasury holder. receives the 10% bundle-slice of the
 ///         new token and holds it. The launch token is locked once registered;

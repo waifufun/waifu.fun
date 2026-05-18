@@ -56,6 +56,16 @@ async function deployStack() {
 	const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
 	const routerDeployer = await RouterDeployerCF.deploy();
 
+	const TreasuryDeployerCF = await ethers.getContractFactory("TreasuryLP4Deployer");
+	const treasuryLp4Deployer = await TreasuryDeployerCF.deploy();
+
+	const V3FactoryCF = await ethers.getContractFactory("MockV3Factory");
+	const mockV3Factory = await V3FactoryCF.deploy();
+	const NPMCF = await ethers.getContractFactory("MockNonfungiblePositionManager");
+	const mockNpm = await NPMCF.deploy(wbnb);
+	const FeedCF = await ethers.getContractFactory("MockBnbUsdFeed");
+	const mockFeed = await FeedCF.deploy(600n * 100000000n);
+
 	const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
 	const safeSingleton = await SafeSingletonCF.deploy();
 	const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
@@ -81,6 +91,10 @@ async function deployStack() {
 		platformReceiver,
 		await routerDeployer.getAddress(),
 		await agentSafeDeployer.getAddress(),
+		await treasuryLp4Deployer.getAddress(),
+		await mockNpm.getAddress(),
+		await mockV3Factory.getAddress(),
+		await mockFeed.getAddress(),
 	);
 
 	return {
@@ -133,6 +147,8 @@ function buildConfig(ctx, overrides = {}) {
 				agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
 				platformBps: overrides.platformBps ?? 1000,
 				patronBps: overrides.patronBps ?? 2500,
+				treasuryTickLowers: overrides.treasuryTickLowers ?? [2000, 6000, 10000, 14000],
+				treasuryTickUppers: overrides.treasuryTickUppers ?? [4000, 8000, 12000, 16000],
 			};
 		},
 	};
@@ -370,6 +386,10 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 					placeholder,
 					await rd.getAddress(),
 					ethers.ZeroAddress, // agentSafeDeployer
+					placeholder,
+					placeholder,
+					placeholder,
+					placeholder,
 				),
 			).to.be.revertedWithCustomError(Factory, "ZeroAddress");
 		});
