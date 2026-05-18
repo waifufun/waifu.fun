@@ -110,6 +110,13 @@ describe("Wave H real-fork integration", function () {
 
 		const routerDeployer = await RouterDeployerCF.deploy();
 
+		// Wave M3: AgentSafeDeployer wraps Gnosis Safe v1.4.1 canonical addresses
+		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+		const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
+			"0x29fcB43b46531BcA003ddC8FCB67FFE91900C762", // Safe singleton v1.4.1
+			"0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67", // Safe ProxyFactory v1.4.1
+		);
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		factory = await Factory.deploy(
 			WBNB,
@@ -121,6 +128,7 @@ describe("Wave H real-fork integration", function () {
 			TIP_RECEIVER,
 			owner.address,
 			await routerDeployer.getAddress(),
+			await agentSafeDeployer.getAddress(),
 		);
 		await factory.waitForDeployment();
 		console.log(`    [fork] LaunchFactory deployed at ${await factory.getAddress()}`);
@@ -140,7 +148,12 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkA",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0, // TIER_80
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -184,7 +197,12 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkB",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -213,7 +231,12 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkC",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -240,7 +263,12 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkD",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -297,7 +325,12 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmLiveTestPlaceholderCid",
 			creator: freshDepositorA.address,
 			bundleBot: freshBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: freshDepositorA.address,
+			agentSafeOwners: [freshDepositorA.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0, // TIER_80
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -344,7 +377,7 @@ describe("Wave H real-fork integration", function () {
 			sellTaxBps: config.sellTaxBps,
 			taxDuration: config.taxDuration,
 			antiFarmerDuration: config.antiFarmerDuration,
-			commissionReceiver: config.commissionReceiver,
+			commissionReceiver: launchAddrs.taxSplitter,
 			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};
@@ -466,7 +499,12 @@ describe("Wave H real-fork integration", function () {
 			metaCid: `QmLiveTestCid${tierLabel}`,
 			creator: freshDepositorA.address,
 			bundleBot: freshBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: freshDepositorA.address,
+			agentSafeOwners: [freshDepositorA.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: tierEnum,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -513,7 +551,7 @@ describe("Wave H real-fork integration", function () {
 			sellTaxBps: config.sellTaxBps,
 			taxDuration: config.taxDuration,
 			antiFarmerDuration: config.antiFarmerDuration,
-			commissionReceiver: config.commissionReceiver,
+			commissionReceiver: launchAddrs.taxSplitter,
 			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};
