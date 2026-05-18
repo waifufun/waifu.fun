@@ -11,7 +11,13 @@ type PublicLaunchRow = {
 	creatorAddress: string | null;
 	tokenAddress: string | null;
 	taxRecipientAddress: string | null;
-	taxSplit: { splitterAddress?: string } | null;
+	taxSplitterAddress: string | null;
+	agentSafeAddress: string | null;
+	platformBps: number | null;
+	patronBps: number | null;
+	agentSafeOwners: string[] | null;
+	agentSafeThreshold: number | null;
+	taxSplit: { splitterAddress?: string; platformBps?: number; patronBps?: number; agentBps?: number } | null;
 	firstBuyWei: string;
 	launchAuthorizedAt: Date | null;
 	launchAuthorizedBy: string | null;
@@ -25,6 +31,10 @@ export type PublicLaunchResponse = {
 	creatorAddress: string | null;
 	tokenAddress: string | null;
 	taxRecipient: string | null;
+	taxSplitter: string | null;
+	agentSafe: string | null;
+	taxSplit: { platformBps: number; patronBps: number; agentBps: number } | null;
+	agentSafeConfig: { owners: string[]; threshold: number } | null;
 	firstBuyWei: string;
 	launchAuthorizedAt: string | null;
 	launchAuthorizedBy: string | null;
@@ -32,13 +42,24 @@ export type PublicLaunchResponse = {
 };
 
 export function serializePublicLaunch(row: PublicLaunchRow): PublicLaunchResponse {
+	const platformBps = row.platformBps ?? row.taxSplit?.platformBps ?? null;
+	const patronBps = row.patronBps ?? row.taxSplit?.patronBps ?? null;
+	const taxSplit =
+		platformBps === null || patronBps === null
+			? null
+			: { platformBps, patronBps, agentBps: row.taxSplit?.agentBps ?? Math.max(0, 10_000 - platformBps - patronBps) };
+	const owners = Array.isArray(row.agentSafeOwners) ? row.agentSafeOwners : null;
 	return {
 		launchId: row.id,
 		agentId: row.agentId,
 		status: row.status,
 		creatorAddress: row.creatorAddress,
 		tokenAddress: row.tokenAddress,
-		taxRecipient: row.taxRecipientAddress ?? row.taxSplit?.splitterAddress ?? null,
+		taxRecipient: row.taxRecipientAddress ?? row.taxSplitterAddress ?? row.taxSplit?.splitterAddress ?? null,
+		taxSplitter: row.taxSplitterAddress ?? row.taxSplit?.splitterAddress ?? null,
+		agentSafe: row.agentSafeAddress ?? null,
+		taxSplit,
+		agentSafeConfig: owners && row.agentSafeThreshold !== null ? { owners, threshold: row.agentSafeThreshold } : null,
 		firstBuyWei: row.firstBuyWei,
 		launchAuthorizedAt: row.launchAuthorizedAt?.toISOString() ?? null,
 		launchAuthorizedBy: row.launchAuthorizedBy,
@@ -55,6 +76,12 @@ export async function getPublicLaunch(db: Database, id: string): Promise<PublicL
 			creatorAddress: launches.creatorAddress,
 			tokenAddress: launches.tokenAddress,
 			taxRecipientAddress: launches.taxRecipientAddress,
+			taxSplitterAddress: launches.taxSplitterAddress,
+			agentSafeAddress: launches.agentSafeAddress,
+			platformBps: launches.platformBps,
+			patronBps: launches.patronBps,
+			agentSafeOwners: launches.agentSafeOwners,
+			agentSafeThreshold: launches.agentSafeThreshold,
 			taxSplit: launches.taxSplit,
 			firstBuyWei: launches.firstBuyWei,
 			launchAuthorizedAt: launches.launchAuthorizedAt,

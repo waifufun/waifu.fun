@@ -57,6 +57,11 @@ export const agentLaunches = pgTable(
 		vaultAddress: varchar("vault_address", { length: 42 }).notNull(),
 		routerAddress: varchar("router_address", { length: 42 }).notNull(),
 		taxSplitterAddress: varchar("tax_splitter_address", { length: 42 }),
+		agentSafeAddress: varchar("agent_safe_address", { length: 42 }),
+		platformBps: integer("platform_bps"),
+		patronBps: integer("patron_bps"),
+		agentSafeOwners: jsonb("agent_safe_owners").$type<string[]>(),
+		agentSafeThreshold: integer("agent_safe_threshold"),
 		treasuryLpAddress: varchar("treasury_lp_address", { length: 42 }),
 		creator: varchar("creator", { length: 42 }).notNull(),
 		tier: smallint("tier").notNull(),
@@ -117,6 +122,9 @@ export const agentLaunches = pgTable(
 		predictedTokenIdx: index("idx_agent_launches_predicted_token").on(table.predictedTokenAddress),
 		flapTokenIdx: index("idx_agent_launches_flap_token").on(table.flapTokenAddress),
 		bundleStatusIdx: index("idx_agent_launches_bundle_status").on(table.bundleStatus),
+		agentSafeIdx: index("idx_agent_launches_agent_safe")
+			.on(table.agentSafeAddress)
+			.where(sql`${table.agentSafeAddress} is not null`),
 	}),
 );
 

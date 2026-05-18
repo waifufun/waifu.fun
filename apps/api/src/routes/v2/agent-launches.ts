@@ -53,6 +53,20 @@ const nonceBodySchema = z.object({
 	address: addressSchema,
 });
 
+const agentSafeOwnersSchema = z
+	.array(addressSchema)
+	.min(1, "agentSafeOwners must include at least one owner")
+	.max(10, "agentSafeOwners may include at most 10 owners")
+	.transform((owners) => Array.from(new Set(owners)) as `0x${string}`[]);
+
+const waveMSplitBodySchema = {
+	platformBps: z.coerce.number().int().min(1000).max(5000).default(1000),
+	patronBps: z.coerce.number().int().min(0).max(9000).default(2500),
+	patron: addressSchema.optional(),
+	agentSafeOwners: agentSafeOwnersSchema.optional(),
+	agentSafeThreshold: z.coerce.number().int().min(1).max(10).default(1),
+} as const;
+
 const createLaunchBodySchema = z
 	.object({
 		name: z.string().trim().min(1).max(64),
@@ -70,11 +84,29 @@ const createLaunchBodySchema = z
 		buyTaxBps: z.coerce.number().int().min(0).max(10_000).optional(),
 		sellTaxBps: z.coerce.number().int().min(0).max(10_000).optional(),
 		closeTimestamp: z.coerce.number().int().positive().optional(),
+		...waveMSplitBodySchema,
 		siwe: siweProofSchema,
 	})
 	.refine((body) => Boolean(body.flapMetaCid ?? body.flap_meta_cid ?? body.metadataURI), {
 		message: "flapMetaCid or metadataURI is required",
 		path: ["flapMetaCid"],
+	})
+	.superRefine((body, ctx) => {
+		const owners = body.agentSafeOwners ?? [body.creator];
+		if (body.agentSafeThreshold > owners.length) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["agentSafeThreshold"],
+				message: "agentSafeThreshold cannot exceed agentSafeOwners length",
+			});
+		}
+		if (body.platformBps + body.patronBps > 10_000) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["patronBps"],
+				message: "platformBps + patronBps cannot exceed 10000",
+			});
+		}
 	});
 
 const previewBodySchema = z.object({
@@ -173,6 +205,20 @@ function readLaunchAddress(...names: string[]): `0x${string}` | null {
 	return null;
 }
 
+function buildTaxSplit(platformBps: number | null | undefined, patronBps: number | null | undefined) {
+	if (platformBps == null || patronBps == null) return null;
+	return {
+		platformBps,
+		patronBps,
+		agentBps: Math.max(0, 10_000 - platformBps - patronBps),
+	};
+}
+
+function buildAgentSafeConfig(owners: string[] | null | undefined, threshold: number | null | undefined) {
+	if (!Array.isArray(owners) || threshold == null) return null;
+	return { owners, threshold };
+}
+
 /**
  * Serialize agent_launches row to the public API shape (the `state` document
  * in the spec). bigints become strings; addresses are returned as stored
@@ -188,7 +234,10 @@ export function serializeAgentLaunch(
 		token: row.tokenAddress,
 		vault: row.vaultAddress,
 		router: row.routerAddress,
-		taxSplitter: row.taxSplitterAddress,
+		taxSplitter: row.taxSplitterAddress ?? null,
+		agentSafe: row.agentSafeAddress ?? null,
+		taxSplit: buildTaxSplit(row.platformBps, row.patronBps),
+		agentSafeConfig: buildAgentSafeConfig(row.agentSafeOwners, row.agentSafeThreshold),
 		treasuryLp: row.treasuryLpAddress,
 		creator: row.creator,
 		tier: row.tier,
@@ -293,6 +342,10 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			const bundleBot = readLaunchAddress("BUNDLE_BOT_ADDRESS", "LAUNCH_BUNDLE_BOT_ADDRESS") ?? creator;
 			const commissionReceiver =
 				readLaunchAddress("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ?? creator;
+			const platformReceiver =
+				readLaunchAddress("PLATFORM_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ?? commissionReceiver;
+			const patronAddress = (body.patron ?? creator) as `0x${string}`;
+			const agentSafeOwners = (body.agentSafeOwners ?? [creator]) as `0x${string}`[];
 			const mineInput: MineSaltInput = { creator };
 			if (process.env.LAUNCH_VANITY_SUFFIX !== undefined) mineInput.suffix = process.env.LAUNCH_VANITY_SUFFIX;
 			if (process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS !== undefined) {
@@ -308,6 +361,12 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				creator: creator as `0x${string}`,
 				bundleBot: bundleBot as `0x${string}`,
 				commissionReceiver: commissionReceiver as `0x${string}`,
+				platformReceiver: platformReceiver as `0x${string}`,
+				patron: patronAddress,
+				agentSafeOwners,
+				agentSafeThreshold: body.agentSafeThreshold,
+				platformBps: body.platformBps,
+				patronBps: body.patronBps,
 				tier,
 				buyTaxBps: body.buyTaxBps ?? Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
 				sellTaxBps: body.sellTaxBps ?? Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),
@@ -327,6 +386,11 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				vaultAddress: onchain.vault,
 				routerAddress: onchain.router,
 				taxSplitterAddress: onchain.taxSplitter,
+				agentSafeAddress: onchain.agentSafe,
+				platformBps: input.platformBps,
+				patronBps: input.patronBps,
+				agentSafeOwners: input.agentSafeOwners,
+				agentSafeThreshold: input.agentSafeThreshold,
 				creator: input.creator,
 				tier: Number(tier),
 				presaleCap: tierConfig.presaleCap,
@@ -352,7 +416,10 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 				predictedTokenAddress: row.predictedTokenAddress,
 				vault: row.vaultAddress,
 				router: row.routerAddress,
-				taxSplitter: row.taxSplitterAddress,
+				taxSplitter: row.taxSplitterAddress ?? null,
+				agentSafe: row.agentSafeAddress ?? null,
+				taxSplit: buildTaxSplit(row.platformBps, row.patronBps),
+				agentSafeConfig: buildAgentSafeConfig(row.agentSafeOwners, row.agentSafeThreshold),
 				treasuryReserve: onchain.treasuryReserve,
 				presaleUrl: onchain.presaleUrl,
 				txHash: onchain.txHash,
