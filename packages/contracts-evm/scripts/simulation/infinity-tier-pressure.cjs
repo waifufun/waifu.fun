@@ -230,12 +230,27 @@ async function main() {
 	await network.provider.request({ method: "hardhat_stopImpersonatingAccount", params: [launches.agentSafe] });
 	const npm = new ethers.Contract(BSC.PCS_V3_NPM, ["function positions(uint256) view returns (uint96 nonce,address operator,address token0,address token1,uint24 fee,int24 tickLower,int24 tickUpper,uint128 liquidity,uint256 feeGrowthInside0LastX128,uint256 feeGrowthInside1LastX128,uint128 tokensOwed0,uint128 tokensOwed1)"], ethers.provider);
 	const deployedIds = [];
+	const extraBuyers = [t1, t2, t3, t4, t5];
+	const tierBoostBnb = [0, 80, 600, 4000];
 	for (let i = 0; i < 4; i += 1) {
 		const tier = await treasury.tiers(i);
+		// Wave O.0.2 — each tier deploy triggers TaxedTokenV3 state-flip kick
+		// (transfer-0 to mainPool) which incidentally liquidates accumulated
+		// FLAP sell-tax tokens into the V2 pair, depressing MC. Pump V2 price
+		// up between tiers so the next target is re-cleared.
+		if (tierBoostBnb[i] > 0) {
+			const booster = extraBuyers[i % extraBuyers.length];
+			await (await pcsRouter.connect(booster).swapExactETHForTokensSupportingFeeOnTransferTokens(0, [BSC.WBNB, mined.predicted], booster.address, await latestDeadline(), { value: ethers.parseEther(String(tierBoostBnb[i])) })).wait();
+			const snap2 = await pairSnapshot(pair, token, wbnb);
+			log(`pre-tier-${i} pump ${tierBoostBnb[i]} BNB -> MC ${fmtM(snap2.mcUsd)}`);
+		}
+		let safety = 0;
 		while ((await treasury.tiers(i)).epochsAbove < tier.minEpochs) {
 			await increase(3600);
 			await refreshFeed(feed);
 			await (await treasury.checkAndAdvance()).wait();
+			safety += 1;
+			if (safety > 12) throw new Error(`tier ${i} failed to advance after 12 epochs; MC may be too low after liquidation kick`);
 		}
 		const afterTier = await treasury.tiers(i);
 		expect(afterTier.deployed).to.equal(true);

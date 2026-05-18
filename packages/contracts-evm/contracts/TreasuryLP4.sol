@@ -483,14 +483,55 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         // Off-chain code in LaunchFactory._buildTiers is responsible for
         // producing ticks in V3's native convention so this branch holds.
         if (idx == 0) {
-            int24 spacing = v3TickSpacing;
-            int24 anchorTick = isToken0 ? tier.tickLower - spacing : tier.tickUpper + spacing;
+            // Anchor the V3 pool's initial sqrtPriceX96 AT the boundary of
+            // the tier-0 single-sided position so it begins with active
+            // liquidity. PCS V3 LiquidityAmounts treats `sqrtCurrent ==
+            // sqrtLower` (token0 case) as OOR-below the position, which is
+            // exactly the single-sided regime we want for the mint. The
+            // pool stays empty until the first V3 buy crosses into the
+            // tier-0 range.
+            int24 anchorTick = isToken0 ? tier.tickLower : tier.tickUpper;
             uint160 initSqrtPriceX96 = TickMath.getSqrtRatioAtTick(anchorTick);
             address pool = npm.createAndInitializePoolIfNecessary(
                 isToken0 ? _token : _wbnb, isToken0 ? _wbnb : _token, v3Fee, initSqrtPriceX96
             );
             v3Pool = pool;
             emit V3PoolInitialized(pool, initSqrtPriceX96, anchorTick);
+        }
+
+        // Wave O.0.2 — FLAP TaxedTokenV3 state-transition kick.
+        //
+        // FLAP's TaxedTokenV3 tracks all known pools (V2 pair + every V3 pool
+        // the launcher pre-registered) in a `pools` mapping. In state
+        // `TaxEnforcedAntiFarmer` (state == 2), transfers to ANY address in
+        // `pools` are taxed (3% sell tax in our config). The NPM mint flow
+        // does `transferFrom(treasury, v3Pool, amount)` to satisfy the
+        // V3 pool's M0 invariant `balance0Before + amount0 <= balance0()`.
+        // If that transfer is taxed, the V3 pool receives 97% of `amount0`
+        // and M0 reverts.
+        //
+        // The state ONLY transitions from `TaxEnforcedAntiFarmer` to
+        // `TaxEnforced` inside `_liquidateTax(to)` when `to == mainPool`.
+        // In `TaxEnforced` state, only the mainPool (V2 pair) is taxed; V3
+        // pool transfers are tax-free. None of our V2 pressure buys trigger
+        // this transition because they have `to == buyer`, not
+        // `to == mainPool`.
+        //
+        // Fix: issue a zero-amount transfer to the V2 pair (= mainPool) to
+        // force `_liquidateTax(mainPool)` to fire and flip the state to
+        // `TaxEnforced`. The transfer itself moves no tokens and incurs no
+        // tax (amount * sellTax / 10000 = 0).
+        //
+        // Idempotent: in `TaxEnforced` / `TaxFree` / non-tax states the
+        // liquidator either no-ops or skips the state branch entirely.
+        // Reverts in `BondingCurve` state, but `deployTier` is unreachable
+        // pre-graduation because `currentMcUSD` requires the pair to be
+        // wired AND emitting price updates.
+        address pairAddr = address(flapV2Pair);
+        if (pairAddr != address(0)) {
+            // SafeERC20 to tolerate non-standard return-value behaviours.
+            // The recipient is mainPool; amount is 0, so no tokens move.
+            token.safeTransfer(pairAddr, 0);
         }
 
         uint256 tokenBalanceBefore = token.balanceOf(address(this));
