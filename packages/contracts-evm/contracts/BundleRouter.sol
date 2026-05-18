@@ -310,7 +310,11 @@ contract BundleRouter {
             migratorType: FlapTypes.MigratorType.V2_MIGRATOR,
             quoteToken: address(0), // native BNB
             quoteAmt: quoteAmt,
-            beneficiary: address(this),
+            // beneficiary is the FLAP-side TaxProcessor.marketAddress, which
+            // receives the mktBps slice (~88% of every tax dispatch after the
+            // 10% protocol fee + 2% commission). We point it at the TaxSplitter
+            // so post-launch tax BNB flows through our 10/25/65 split logic.
+            beneficiary: p.commissionReceiver,
             permitData: "",
             extensionID: bytes32(0),
             extensionData: "",
