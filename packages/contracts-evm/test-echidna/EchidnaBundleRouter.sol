@@ -47,6 +47,7 @@ contract EchidnaBundleRouter {
             bundleBot: BUNDLE_BOT,
             predictedToken: PREDICTED_TOKEN,
             creator: CREATOR,
+            noBurn: false,
             presaleCap: PRESALE_CAP,
             quoteAmt: QUOTE_AMT,
             v2BuyBnb: V2_BUY,

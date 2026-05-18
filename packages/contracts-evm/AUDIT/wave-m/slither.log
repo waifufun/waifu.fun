@@ -1,0 +1,115 @@
+'npx hardhat clean' running (wd: /home/shad0w/projects/waifu.fun-wt/security-wave-m-audit/packages/contracts-evm)
+'npx hardhat clean --global' running (wd: /home/shad0w/projects/waifu.fun-wt/security-wave-m-audit/packages/contracts-evm)
+'npx hardhat compile --force' running (wd: /home/shad0w/projects/waifu.fun-wt/security-wave-m-audit/packages/contracts-evm)
+
+Detector: arbitrary-send-eth
+TaxSplitter._sendNative(address,uint256) (contracts/TaxSplitter.sol#144-147) sends eth to arbitrary user
+	Dangerous calls:
+	- (ok,None) = address(to).call{value: amount}() (contracts/TaxSplitter.sol#145)
+TreasuryLP4._sendBnb(address,uint256) (contracts/TreasuryLP4.sol#387-390) sends eth to arbitrary user
+	Dangerous calls:
+	- (ok,None) = address(to).call{value: amount}() (contracts/TreasuryLP4.sol#388)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+
+Detector: divide-before-multiply
+BundleRouter._computeMinV2Out(address,address,uint256,uint16) (contracts/BundleRouter.sol#374-386) performs a multiplication on the result of a division:
+	- expectedOut = (ainFee * reserveOut) / (reserveIn * 10000 + ainFee) (contracts/BundleRouter.sol#383)
+	- postTaxOut = (expectedOut * (10000 - uint256(buyTaxBps))) / 10000 (contracts/BundleRouter.sol#384)
+BundleRouter._computeMinV2Out(address,address,uint256,uint16) (contracts/BundleRouter.sol#374-386) performs a multiplication on the result of a division:
+	- postTaxOut = (expectedOut * (10000 - uint256(buyTaxBps))) / 10000 (contracts/BundleRouter.sol#384)
+	- (postTaxOut * 9800) / 10000 (contracts/BundleRouter.sol#385)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+
+Detector: incorrect-equality
+TaxSplitter.split() (contracts/TaxSplitter.sol#91-106) uses a dangerous strict equality:
+	- bal == 0 (contracts/TaxSplitter.sol#93)
+TaxSplitter.splitToken(address) (contracts/TaxSplitter.sol#115-130) uses a dangerous strict equality:
+	- bal == 0 (contracts/TaxSplitter.sol#117)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+
+Detector: reentrancy-no-eth
+Reentrancy in LaunchFactory.createLaunch(LaunchFactory.LaunchConfig) (contracts/LaunchFactory.sol#226-330):
+	External calls:
+	- agentSafe = AGENT_SAFE_DEPLOYER.deployAgentSafe(config.agentSafeOwners,config.agentSafeThreshold,saltNonce) (contracts/LaunchFactory.sol#260-262)
+	- treasuryLp = TREASURY_LP4_DEPLOYER.deploy(_buildTreasuryArgs(config,predicted,agentSafe)) (contracts/LaunchFactory.sol#269-271)
+	- router = BundleRouter(address(ROUTER_DEPLOYER.deploy(BundleRouter.ConstructorArgs({factory:address(this),wbnb:WBNB,pcsFactory:PCS_FACTORY,pcsRouter:PCS_ROUTER,flapPortal:FLAP_PORTAL,tipReceiver:TIP_RECEIVER,vault:address(address(vault)),treasuryLp:treasuryLp,bundleBot:config.bundleBot,predictedToken:predicted,creator:config.creator,noBurn:config.noBurn,presaleCap:presaleCap,quoteAmt:quoteAmt,v2BuyBnb:v2BuyBnb,closeTimestamp:config.closeTimestamp,launchParamsHash:_launchParamsHash(config,address(taxSplitter))})))) (contracts/LaunchFactory.sol#274-298)
+	State variables written after the call(s):
+	- usedSalts[salt] = true (contracts/LaunchFactory.sol#301)
+	LaunchFactory.usedSalts (contracts/LaunchFactory.sol#111) can be used in cross function reentrancies:
+	- LaunchFactory.usedSalts (contracts/LaunchFactory.sol#111)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+
+Detector: unused-return
+BundleRouter._computeMinV2Out(address,address,uint256,uint16) (contracts/BundleRouter.sol#374-386) ignores return value by (r0,r1,None) = IPancakePair(pair).getReserves() (contracts/BundleRouter.sol#379)
+LaunchFactory.tierBudget(LaunchFactory.LaunchTier,uint16) (contracts/LaunchFactory.sol#358-364) ignores return value by TierMath.tierBudget(uint8(tier),buyTaxBps) (contracts/LaunchFactory.sol#363)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
+Detector: calls-loop
+TaxSplitter.splitToken(address) (contracts/TaxSplitter.sol#115-130) has external calls inside a loop: bal = IERC20(token).balanceOf(address(this)) (contracts/TaxSplitter.sol#116)
+	Calls stack containing the loop:
+		TaxSplitter.splitMany(address[])
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+
+Detector: reentrancy-benign
+Reentrancy in LaunchFactory.createLaunch(LaunchFactory.LaunchConfig) (contracts/LaunchFactory.sol#226-330):
+	External calls:
+	- agentSafe = AGENT_SAFE_DEPLOYER.deployAgentSafe(config.agentSafeOwners,config.agentSafeThreshold,saltNonce) (contracts/LaunchFactory.sol#260-262)
+	- treasuryLp = TREASURY_LP4_DEPLOYER.deploy(_buildTreasuryArgs(config,predicted,agentSafe)) (contracts/LaunchFactory.sol#269-271)
+	- router = BundleRouter(address(ROUTER_DEPLOYER.deploy(BundleRouter.ConstructorArgs({factory:address(this),wbnb:WBNB,pcsFactory:PCS_FACTORY,pcsRouter:PCS_ROUTER,flapPortal:FLAP_PORTAL,tipReceiver:TIP_RECEIVER,vault:address(address(vault)),treasuryLp:treasuryLp,bundleBot:config.bundleBot,predictedToken:predicted,creator:config.creator,noBurn:config.noBurn,presaleCap:presaleCap,quoteAmt:quoteAmt,v2BuyBnb:v2BuyBnb,closeTimestamp:config.closeTimestamp,launchParamsHash:_launchParamsHash(config,address(taxSplitter))})))) (contracts/LaunchFactory.sol#274-298)
+	State variables written after the call(s):
+	- allLaunches.push(predicted) (contracts/LaunchFactory.sol#311)
+	- launches[predicted] = addrs (contracts/LaunchFactory.sol#310)
+Reentrancy in TreasuryLP4.deployTier(uint256) (contracts/TreasuryLP4.sol#452-527):
+	External calls:
+	- pool = npm.createAndInitializePoolIfNecessary(_token,_wbnb,v3Fee,initSqrtPriceX96) (contracts/TreasuryLP4.sol#482-484)
+	- pool = npm.createAndInitializePoolIfNecessary(_wbnb,_token,v3Fee,initSqrtPriceX96) (contracts/TreasuryLP4.sol#482-484)
+	State variables written after the call(s):
+	- v3Pool = pool (contracts/TreasuryLP4.sol#485)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+Detector: reentrancy-events
+Reentrancy in AgentSafeDeployer.deployAgentSafe(address[],uint256,uint256) (contracts/AgentSafeDeployer.sol#61-77):
+	External calls:
+	- safeAddress = ISafeProxyFactory(safeProxyFactory).createProxyWithNonce(safeSingleton,initializer,saltNonce) (contracts/AgentSafeDeployer.sol#70-74)
+	Event emitted after the call(s):
+	- SafeDeployed(safeAddress,saltNonce,owners,threshold) (contracts/AgentSafeDeployer.sol#76)
+Reentrancy in TaxSplitter.split() (contracts/TaxSplitter.sol#91-106):
+	External calls:
+	- _sendNative(platform,platformAmt) (contracts/TaxSplitter.sol#101)
+		- (ok,None) = address(to).call{value: amount}() (contracts/TaxSplitter.sol#145)
+	- _sendNative(patron,patronAmt) (contracts/TaxSplitter.sol#102)
+		- (ok,None) = address(to).call{value: amount}() (contracts/TaxSplitter.sol#145)
+	- _sendNative(agent,agentAmt) (contracts/TaxSplitter.sol#103)
+		- (ok,None) = address(to).call{value: amount}() (contracts/TaxSplitter.sol#145)
+	Event emitted after the call(s):
+	- Split(address(0),platformAmt,patronAmt,agentAmt) (contracts/TaxSplitter.sol#105)
+Reentrancy in TaxSplitter.splitToken(address) (contracts/TaxSplitter.sol#115-130):
+	External calls:
+	- IERC20(token).safeTransfer(platform,platformAmt) (contracts/TaxSplitter.sol#125)
+	- IERC20(token).safeTransfer(patron,patronAmt) (contracts/TaxSplitter.sol#126)
+	- IERC20(token).safeTransfer(agent,agentAmt) (contracts/TaxSplitter.sol#127)
+	Event emitted after the call(s):
+	- Split(token,platformAmt,patronAmt,agentAmt) (contracts/TaxSplitter.sol#129)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+
+Detector: timestamp
+VeWaifuStaking.lastTimeRewardApplicable() (contracts/VeWaifuStaking.sol#79-81) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < periodFinish (contracts/VeWaifuStaking.sol#80)
+VeWaifuStaking.claimReward() (contracts/VeWaifuStaking.sol#113-120) uses timestamp for comparisons
+	Dangerous comparisons:
+	- reward > 0 (contracts/VeWaifuStaking.sol#115)
+VeWaifuStaking.exit() (contracts/VeWaifuStaking.sol#122-140) uses timestamp for comparisons
+	Dangerous comparisons:
+	- reward > 0 (contracts/VeWaifuStaking.sol#129)
+	- reward > 0 (contracts/VeWaifuStaking.sol#136)
+VeWaifuStaking.notifyRewardAmount(uint256) (contracts/VeWaifuStaking.sol#142-159) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp >= periodFinish (contracts/VeWaifuStaking.sol#149)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Detector: low-level-calls
+Low level call in TaxSplitter._sendNative(address,uint256) (contracts/TaxSplitter.sol#144-147):
+	- (ok,None) = address(to).call{value: amount}() (contracts/TaxSplitter.sol#145)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+. analyzed (84 contracts with 101 detectors), 20 result(s) found

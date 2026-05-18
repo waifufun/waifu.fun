@@ -11,3 +11,10 @@ out-foundry
 crytic-export
 echidna-corpus
 AUDIT/echidna/results
+AUDIT/echidna/results-wave-m
+
+# Foundry forge-std dependency (cloned in CI)
+lib/forge-std
+
+# Foundry build artifacts
+foundry.lock

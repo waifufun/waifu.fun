@@ -25,12 +25,13 @@ import {RouterDeployer} from "./RouterDeployer.sol";
 import {TaxSplitter} from "./TaxSplitter.sol";
 import {AgentSafeDeployer} from "./AgentSafeDeployer.sol";
 import {TreasuryLP4Deployer} from "./TreasuryLP4Deployer.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IPCSV2Factory {
     function getPair(address tokenA, address tokenB) external view returns (address);
 }
 
-contract LaunchFactory {
+contract LaunchFactory is ReentrancyGuard {
     enum LaunchTier {
         TIER_80,
         TIER_90,
@@ -111,7 +112,7 @@ contract LaunchFactory {
     mapping(address => LaunchAddresses) public launches; // keyed by predictedToken
     mapping(address => bool) public finalized; // wave N: tracks finalizeLaunch idempotency
     address[] public allLaunches;
-    address private platformCommissionReceiver;
+    address private immutable platformCommissionReceiver;
 
     // ---------------------------------------------------------------------
     // events
@@ -222,7 +223,7 @@ contract LaunchFactory {
     ///      finalizeLaunch(token) is callable by anyone once the V2 pair exists,
     ///      idempotent, and wires the pair + transfers TreasuryLP4 ownership to
     ///      the agent Safe.
-    function createLaunch(LaunchConfig calldata config) external returns (LaunchAddresses memory addrs) {
+    function createLaunch(LaunchConfig calldata config) external nonReentrant returns (LaunchAddresses memory addrs) {
         _validateConfig(config);
 
         bytes32 salt = effectiveSalt(config.creator, config.vanitySalt);
@@ -337,7 +338,7 @@ contract LaunchFactory {
     ///         the V2 pair exists on PCS_FACTORY; idempotent (reverts on a
     ///         second call). Cannot be griefed because it requires the V2
     ///         pair to exist, which only the bundle path can create.
-    function finalizeLaunch(address predictedToken) external {
+    function finalizeLaunch(address predictedToken) external nonReentrant {
         LaunchAddresses memory addrs = launches[predictedToken];
         if (addrs.treasuryLp == address(0)) revert UnknownLaunch();
         if (finalized[predictedToken]) revert AlreadyFinalized();
