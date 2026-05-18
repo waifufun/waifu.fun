@@ -47,6 +47,7 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
     uint256 private constant ORACLE_STALE_AFTER = 1 hours;
     uint256 private constant TIER_COUNT = 4;
     uint256 private constant TREASURY_ALLOCATION = 100_000_000 ether;
+    int24 internal constant MAX_TICK_PCS_V3_1PCT = 887200;
 
     IERC20 public immutable token;
     IFlapV2Router public immutable flapV2Router;
@@ -196,7 +197,6 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         uint256 totalTierTokens = 0;
         for (uint256 i = 0; i < TIER_COUNT; i++) {
             _validateTier(args.tiers[i], spacing);
-            if (i > 0 && args.tiers[i].tickLower < args.tiers[i - 1].tickUpper) revert bad_tier();
             tiers[i] = args.tiers[i];
             totalTierTokens += args.tiers[i].tokenAmount;
         }
@@ -563,6 +563,7 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
     function _validateTier(Tier memory tier, int24 spacing) internal pure {
         if (tier.targetMcUSD == 0 || tier.tokenAmount == 0 || tier.minEpochs == 0) revert bad_tier();
         if (tier.tickLower >= tier.tickUpper) revert bad_tier();
+        if (tier.tickUpper > MAX_TICK_PCS_V3_1PCT) revert bad_tier();
         if (tier.tickLower % spacing != 0 || tier.tickUpper % spacing != 0) revert bad_tier();
         if (
             tier.epochsAbove != 0 || tier.lastEpochTimestamp != 0 || tier.deployed || tier.paused

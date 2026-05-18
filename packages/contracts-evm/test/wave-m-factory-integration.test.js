@@ -13,6 +13,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 const TIER_80 = 0;
+const MAX_TICK_PCS_V3_1PCT = 887200;
 
 function computeInitCodeHash(creationCode, name, symbol) {
 	const encoded = ethers.AbiCoder.defaultAbiCoder().encode(["string", "string"], [name, symbol]);
@@ -344,6 +345,59 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 			await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
 				ctx.factory,
 				"InvalidAgentSafeConfig",
+			);
+		});
+
+		it("accepts all uppers = MAX_TICK_PCS_V3_1PCT", async () => {
+			const ctx = await deployStack();
+			const builder = buildConfig(ctx, {
+				treasuryTickUppers: [
+					MAX_TICK_PCS_V3_1PCT,
+					MAX_TICK_PCS_V3_1PCT,
+					MAX_TICK_PCS_V3_1PCT,
+					MAX_TICK_PCS_V3_1PCT,
+				],
+			});
+			const cfg = await builder.config();
+			const addrs = await ctx.factory.connect(ctx.creator).createLaunch.staticCall(cfg);
+			await (await ctx.factory.connect(ctx.creator).createLaunch(cfg)).wait();
+			expect(addrs.treasuryLp).to.not.equal(ethers.ZeroAddress);
+		});
+
+		it("accepts tier[1].lower < tier[0].upper", async () => {
+			const ctx = await deployStack();
+			const builder = buildConfig(ctx, {
+				treasuryTickLowers: [2000, 2000, 10000, 14000],
+				treasuryTickUppers: [4000, 8000, 12000, 16000],
+			});
+			const cfg = await builder.config();
+			const addrs = await ctx.factory.connect(ctx.creator).createLaunch.staticCall(cfg);
+			await (await ctx.factory.connect(ctx.creator).createLaunch(cfg)).wait();
+			expect(addrs.treasuryLp).to.not.equal(ethers.ZeroAddress);
+		});
+
+		it("rejects upper > MAX_TICK_PCS_V3_1PCT", async () => {
+			const ctx = await deployStack();
+			const builder = buildConfig(ctx, {
+				treasuryTickUppers: [4000, 8000, 12000, MAX_TICK_PCS_V3_1PCT + 200],
+			});
+			const cfg = await builder.config();
+			await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+				ctx.factory,
+				"InvalidTickRange",
+			);
+		});
+
+		it("still rejects tier.lower >= tier.upper", async () => {
+			const ctx = await deployStack();
+			const builder = buildConfig(ctx, {
+				treasuryTickLowers: [2000, 8000, 10000, 14000],
+				treasuryTickUppers: [4000, 8000, 12000, 16000],
+			});
+			const cfg = await builder.config();
+			await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+				ctx.factory,
+				"InvalidTickRange",
 			);
 		});
 	});

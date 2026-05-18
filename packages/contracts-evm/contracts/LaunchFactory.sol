@@ -84,6 +84,7 @@ contract LaunchFactory is ReentrancyGuard {
     uint16 public constant TREASURY_PLATFORM_BPS = 500;
     uint16 public constant TREASURY_PATRON_BPS = 2000;
     uint24 public constant TREASURY_V3_FEE = 10000; // 1% tier, tickSpacing 200 on PCS V3
+    int24 internal constant MAX_TICK_PCS_V3_1PCT = 887200;
 
     // ---------------------------------------------------------------------
     // immutables
@@ -464,7 +465,7 @@ contract LaunchFactory is ReentrancyGuard {
             int24 lo = config.treasuryTickLowers[i];
             int24 hi = config.treasuryTickUppers[i];
             if (lo >= hi) revert InvalidTickRange();
-            if (i > 0 && lo < config.treasuryTickUppers[i - 1]) revert InvalidTickRange();
+            if (hi > MAX_TICK_PCS_V3_1PCT) revert InvalidTickRange();
         }
     }
 
