@@ -1,9 +1,12 @@
 /**
- * deploy-wave-h.js — deploy LaunchFactory for Wave H.
+ * deploy-wave-h.js — deploy LaunchFactory for Wave H / M.
  *
- * Wave H deploys exactly one contract from this package: the per-protocol
- * LaunchFactory. Per-launch contracts (LaunchVault, BundleRouter, TreasuryLP)
- * are created by the factory inside createLaunch() at launch time, not here.
+ * Deploys the LaunchFactory plus its two stateless helpers:
+ *   - RouterDeployer    (factors BundleRouter init code out of LaunchFactory)
+ *   - AgentSafeDeployer (Wave M: wraps Gnosis Safe v1.4.1 ProxyFactory)
+ * Per-launch contracts (LaunchVault, BundleRouter, TreasuryLP, TaxSplitter,
+ * AgentSafe) are created by the factory inside createLaunch() at launch
+ * time, not here.
  *
  * Usage:
  *   NETWORK=bscMainnet \
@@ -20,6 +23,9 @@
  * Optional env:
  *   WBNB, PCS_FACTORY, PCS_ROUTER, FLAP_PORTAL, TOKEN_IMPL_TAXED_V3,
  *   TIP_RECEIVER — override the BSC mainnet address book defaults
+ *   SAFE_SINGLETON, SAFE_PROXY_FACTORY — override canonical Safe v1.4.1
+ *                                       addresses (BSC mainnet defaults
+ *                                       baked in)
  *
  * Output:
  *   deployments/{network}.json — full deployment record incl. factory address,
@@ -40,6 +46,9 @@ const BSC_MAINNET = {
 	FLAP_PORTAL: "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
 	TOKEN_IMPL_TAXED_V3: "0x024f18294970B5c76c0691b87f138A0317156422",
 	TIP_RECEIVER: "0x4848489f0b2BEdd788c696e2D79b6b69D7484848",
+	// Canonical Safe v1.4.1 deployments on BSC mainnet (Wave M).
+	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
+	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
 };
 
 // BSC testnet placeholder address book. Mostly real PCS V2 testnet
@@ -53,6 +62,9 @@ const BSC_TESTNET = {
 	FLAP_PORTAL: "0x0000000000000000000000000000000000000000",
 	TOKEN_IMPL_TAXED_V3: "0x0000000000000000000000000000000000000000",
 	TIP_RECEIVER: "0x0000000000000000000000000000000000000000",
+	// Same Safe v1.4.1 canonical addresses ship on BSC testnet.
+	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
+	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
 };
 
 /**
@@ -87,6 +99,8 @@ function resolveAddressBook(networkName) {
 		FLAP_PORTAL: process.env.FLAP_PORTAL || def.FLAP_PORTAL,
 		TOKEN_IMPL_TAXED_V3: process.env.TOKEN_IMPL_TAXED_V3 || def.TOKEN_IMPL_TAXED_V3,
 		TIP_RECEIVER: process.env.TIP_RECEIVER || def.TIP_RECEIVER,
+		SAFE_SINGLETON: process.env.SAFE_SINGLETON || def.SAFE_SINGLETON,
+		SAFE_PROXY_FACTORY: process.env.SAFE_PROXY_FACTORY || def.SAFE_PROXY_FACTORY,
 	};
 
 	// LaunchFactory rejects zero/null in its constructor; fail fast here
@@ -181,7 +195,19 @@ async function main() {
 	console.log("RouterDeployer deployed at:", routerDeployerAddress);
 	console.log("");
 
-	// 2. Deploy LaunchFactory with the RouterDeployer address as the 9th arg.
+	// 1b. Deploy AgentSafeDeployer (Wave M; wraps Safe v1.4.1 ProxyFactory so
+	//     LaunchFactory can create the per-launch agent Safe atomically).
+	console.log("Deploying AgentSafeDeployer ...");
+	console.log("  Safe singleton:    ", book.SAFE_SINGLETON);
+	console.log("  Safe proxy factory:", book.SAFE_PROXY_FACTORY);
+	const AgentSafeDeployer = await ethers.getContractFactory("AgentSafeDeployer");
+	const agentSafeDeployer = await AgentSafeDeployer.deploy(book.SAFE_SINGLETON, book.SAFE_PROXY_FACTORY);
+	await agentSafeDeployer.waitForDeployment();
+	const agentSafeDeployerAddress = await agentSafeDeployer.getAddress();
+	console.log("AgentSafeDeployer deployed at:", agentSafeDeployerAddress);
+	console.log("");
+
+	// 2. Deploy LaunchFactory with both helpers wired in.
 	console.log("Deploying LaunchFactory ...");
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await LaunchFactory.deploy(
@@ -194,6 +220,7 @@ async function main() {
 		book.TIP_RECEIVER,
 		platformCommissionReceiver,
 		routerDeployerAddress,
+		agentSafeDeployerAddress,
 	);
 	await factory.waitForDeployment();
 	const factoryAddress = await factory.getAddress();
@@ -222,6 +249,7 @@ async function main() {
 		["TOKEN_IMPL_TAXED_V3", await factory.TOKEN_IMPL_TAXED_V3(), book.TOKEN_IMPL_TAXED_V3],
 		["TIP_RECEIVER", await factory.TIP_RECEIVER(), book.TIP_RECEIVER],
 		["ROUTER_DEPLOYER", await factory.ROUTER_DEPLOYER(), routerDeployerAddress],
+		["AGENT_SAFE_DEPLOYER", await factory.AGENT_SAFE_DEPLOYER(), agentSafeDeployerAddress],
 		["owner", await factory.owner(), factoryOwner],
 	];
 	let ok = true;
@@ -252,6 +280,7 @@ async function main() {
 		contracts: {
 			LaunchFactory: factoryAddress,
 			RouterDeployer: routerDeployerAddress,
+			AgentSafeDeployer: agentSafeDeployerAddress,
 		},
 		constructorArgs: {
 			wbnb: book.WBNB,
@@ -263,6 +292,11 @@ async function main() {
 			tipReceiver: book.TIP_RECEIVER,
 			platformCommissionReceiver,
 			routerDeployer: routerDeployerAddress,
+			agentSafeDeployer: agentSafeDeployerAddress,
+		},
+		safeAddressBook: {
+			singleton: book.SAFE_SINGLETON,
+			proxyFactory: book.SAFE_PROXY_FACTORY,
 		},
 		platformCommissionReceiver,
 	};
@@ -280,7 +314,8 @@ async function main() {
 	console.log(`       "${book.WBNB}" "${book.PCS_FACTORY}" "${book.PCS_ROUTER}" \\`);
 	console.log(`       "${initCodeHash}" "${book.FLAP_PORTAL}" \\`);
 	console.log(`       "${book.TOKEN_IMPL_TAXED_V3}" "${book.TIP_RECEIVER}" \\`);
-	console.log(`       "${platformCommissionReceiver}"`);
+	console.log(`       "${platformCommissionReceiver}" "${routerDeployerAddress}" \\`);
+	console.log(`       "${agentSafeDeployerAddress}"`);
 	console.log("  2. set LAUNCH_FACTORY_ADDRESS in the API + indexer env");
 	console.log("  3. see WAVE_H_OPERATIONAL_PLAN.md for bundle-bot setup");
 }

@@ -21,6 +21,19 @@ describe("Wave H phase 2 smoke", () => {
 
 		const routerDeployer = await RouterDeployerCF.deploy();
 
+		// Wave M3: AgentSafeDeployer constructor arg requires non-zero singleton +
+		// proxy factory; use the test mocks rather than the placeholder so the
+		// deployer itself is valid (smoke test never calls deployAgentSafe).
+		const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
+		const safeSingleton = await SafeSingletonCF.deploy();
+		const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
+		const safeProxyFactory = await SafeProxyFactoryCF.deploy();
+		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+		const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
+			await safeSingleton.getAddress(),
+			await safeProxyFactory.getAddress(),
+		);
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		return await Factory.deploy(
 			placeholderAddr, // _wbnb
@@ -32,6 +45,7 @@ describe("Wave H phase 2 smoke", () => {
 			placeholderAddr, // _tipReceiver
 			placeholderAddr, // _platformCommissionReceiver
 			await routerDeployer.getAddress(), // _routerDeployer
+			await agentSafeDeployer.getAddress(), // _agentSafeDeployer
 		);
 	}
 

@@ -92,6 +92,22 @@ describe("Wave H bundle flow e2e", () => {
 
 		const routerDeployer = await RouterDeployerCF.deploy();
 
+		// Wave M3: AgentSafeDeployer + Safe v1.4.1 mocks so LaunchFactory can
+		// deploy the agent safe alongside the rest of the quintet.
+		const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
+		const safeSingleton = await SafeSingletonCF.deploy();
+		const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
+		const safeProxyFactory = await SafeProxyFactoryCF.deploy();
+		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+		const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
+			await safeSingleton.getAddress(),
+			await safeProxyFactory.getAddress(),
+		);
+
+		// Platform receiver doubles as the platformCommissionReceiver immutable;
+		// the factory enforces config.platformReceiver == platformCommissionReceiver.
+		const platformReceiver = creator.address;
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		const factory = await Factory.deploy(
 			wbnb,
@@ -101,8 +117,9 @@ describe("Wave H bundle flow e2e", () => {
 			await portal.getAddress(),
 			creator.address, // TOKEN_IMPL_TAXED_V3 (only used as immutable; not exercised by mock portal)
 			tipReceiver.address,
-			creator.address,
+			platformReceiver,
 			await routerDeployer.getAddress(),
+			await agentSafeDeployer.getAddress(),
 		);
 
 		return {
@@ -122,6 +139,10 @@ describe("Wave H bundle flow e2e", () => {
 			name,
 			symbol,
 			TokenArtifact,
+			agentSafeDeployer,
+			safeSingleton,
+			safeProxyFactory,
+			platformReceiver,
 		};
 	}
 
@@ -139,16 +160,22 @@ describe("Wave H bundle flow e2e", () => {
 			metaCid: overrides.metaCid ?? "QmTestCidWaveH",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: overrides.commissionReceiver ?? creator.address,
 			tier,
 			buyTaxBps: overrides.buyTaxBps ?? 300,
 			sellTaxBps: overrides.sellTaxBps ?? 300,
-			taxDuration: 365 * 24 * 60 * 60,
+			taxDuration: overrides.taxDuration ?? 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: overrides.predictedTokenAddress ?? predicted,
 			noBurn: overrides.noBurn ?? false,
+			// Wave M3 quintet fields
+			platformReceiver: overrides.platformReceiver ?? ctx.platformReceiver,
+			patron: overrides.patron ?? creator.address,
+			agentSafeOwners: overrides.agentSafeOwners ?? [creator.address],
+			agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
+			platformBps: overrides.platformBps ?? 1000,
+			patronBps: overrides.patronBps ?? 2500,
 		};
 
 		const txOrAddrs = await factory.connect(creator).createLaunch.staticCall(config);
@@ -190,10 +217,14 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(closer).close();
 	}
 
-	async function bundleParams(ctx, deadline) {
+	async function bundleParams(ctx, deadline, opts = {}) {
 		const { name, symbol } = ctx;
+		// Wave M3: BundleRouter's launchParamsHash now embeds the TaxSplitter
+		// address (not the platform wallet). The splitter is per-launch and gets
+		// passed in via opts.commissionReceiver; tests that build params before
+		// the splitter exists can leave it undefined and hit the mismatch path.
 		return {
-			vanitySalt: ethers.ZeroHash, // unused — set per launch below
+			vanitySalt: ethers.ZeroHash, // unused; per-launch caller overrides
 			name,
 			symbol,
 			meta: "QmTestCidWaveH",
@@ -201,7 +232,7 @@ describe("Wave H bundle flow e2e", () => {
 			sellTaxBps: 300,
 			taxDuration: 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
-			commissionReceiver: ctx.creator.address,
+			commissionReceiver: opts.commissionReceiver ?? ctx.creator.address,
 			tipBnb: 0,
 			deadline,
 		};
@@ -268,7 +299,7 @@ describe("Wave H bundle flow e2e", () => {
 
 			// Bundle bot executes.
 			const deadline = (await currentTs()) + 600n;
-			const params = await bundleParams(ctx, deadline);
+			const params = await bundleParams(ctx, deadline, { commissionReceiver: addrs.taxSplitter });
 			params.vanitySalt = rawSalt;
 
 			const tx = await router.connect(bundleBot).executeBundle(params);
@@ -379,7 +410,7 @@ describe("Wave H bundle flow e2e", () => {
 		await depositFullCap(vault, TIER_TEST, alice, bob);
 		await closeSubscribedVault(vault, creator);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		const tx = await router.connect(bundleBot).executeBundle(params);
 		const receipt = await tx.wait();
@@ -484,7 +515,7 @@ describe("Wave H bundle flow e2e", () => {
 		await depositFullCap(vault, TIER_80, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 
 		await expect(router.connect(alice).executeBundle(params)).to.be.revertedWithCustomError(router, "NotBundleBot");
@@ -500,7 +531,7 @@ describe("Wave H bundle flow e2e", () => {
 		await depositFullCap(vault, TIER_80, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
@@ -538,14 +569,14 @@ describe("Wave H bundle flow e2e", () => {
 		await depositFullCap(okVault, TIER_80, alice, bob);
 		await closeSubscribedVault(okVault, ctx.creator);
 
-		const okParams = await bundleParams(ctx, (await currentTs()) + 600n);
+		const okParams = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: okLaunch.addrs.taxSplitter });
 		okParams.vanitySalt = okLaunch.rawSalt;
 		await okRouter.connect(bundleBot).executeBundle(okParams);
 		expect(await portal.lastDeployed()).to.equal(okLaunch.predicted);
 
 		const mismatchLaunch = await createLaunch(ctx, TIER_80);
 		const mismatchRouter = await ethers.getContractAt("BundleRouter", mismatchLaunch.addrs.router);
-		const mismatchParams = await bundleParams(ctx, (await currentTs()) + 600n);
+		const mismatchParams = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: mismatchLaunch.addrs.taxSplitter });
 		mismatchParams.vanitySalt = mismatchLaunch.salt;
 		await expect(mismatchRouter.connect(bundleBot).executeBundle(mismatchParams)).to.be.revertedWithCustomError(
 			mismatchRouter,
@@ -576,7 +607,6 @@ describe("Wave H bundle flow e2e", () => {
 			metaCid: "QmCid",
 			creator: ctx.creator.address,
 			bundleBot: ctx.bundleBot.address,
-			commissionReceiver: ctx.creator.address,
 			tier: TIER_80,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -586,6 +616,12 @@ describe("Wave H bundle flow e2e", () => {
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 			noBurn: false,
+			platformReceiver: ctx.platformReceiver,
+			patron: ctx.creator.address,
+			agentSafeOwners: [ctx.creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 		};
 		await expect(ctx.factory.connect(ctx.creator).createLaunch({ ...base, name: "" })).to.be.revertedWithCustomError(
 			ctx.factory,
@@ -728,7 +764,7 @@ describe("Wave H bundle flow e2e", () => {
 		// Force portal revert.
 		await portal.setShouldRevert(true);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.reverted;
 
@@ -753,7 +789,7 @@ describe("Wave H bundle flow e2e", () => {
 		await depositFullCap(vault, TIER_80, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.reverted;
 		expect(await vault.state()).to.equal(1n);
@@ -779,7 +815,7 @@ describe("Wave H bundle flow e2e", () => {
 
 		await depositFullCap(vault, TIER_80, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
@@ -801,7 +837,7 @@ describe("Wave H bundle flow e2e", () => {
 
 		await depositFullCap(vault, TIER_80, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
@@ -825,7 +861,7 @@ describe("Wave H bundle flow e2e", () => {
 		const { cap, aliceShare } = await depositFullCap(vault, TIER_80, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
@@ -863,7 +899,7 @@ describe("Wave H bundle flow e2e", () => {
 		await vault.connect(carol).deposit({ value: c });
 		await closeSubscribedVault(vault, creator);
 
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
@@ -898,7 +934,7 @@ describe("Wave H bundle flow e2e", () => {
 		await portal.setTokenTransferTaxBps(Number(taxBps));
 		await depositFullCap(vault, TIER_90, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		params.buyTaxBps = Number(taxBps);
 		params.sellTaxBps = Number(taxBps);
@@ -935,7 +971,7 @@ describe("Wave H bundle flow e2e", () => {
 		await closeSubscribedVault(vault, creator);
 
 		const trBefore = await ethers.provider.getBalance(tipReceiver.address);
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		params.tipBnb = ethers.parseEther("0.05");
 		await expect(router.connect(bundleBot).executeBundle(params)).to.be.revertedWithCustomError(
@@ -959,7 +995,7 @@ describe("Wave H bundle flow e2e", () => {
 
 		const { cap, aliceShare } = await depositFullCap(vault, TIER_90, alice, bob);
 		await closeSubscribedVault(vault, ctx.creator);
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
@@ -1011,7 +1047,7 @@ describe("Wave H bundle flow e2e", () => {
 		expect(await vault.totalDeposited()).to.equal(PRESALE_CAPS[TIER_80]);
 
 		await closeSubscribedVault(vault, ctx.creator);
-		const params = await bundleParams(ctx, (await currentTs()) + 600n);
+		const params = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: addrs.taxSplitter });
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 

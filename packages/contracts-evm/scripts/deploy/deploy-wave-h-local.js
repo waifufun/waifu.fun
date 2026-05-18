@@ -73,6 +73,30 @@ async function main() {
 	const platformCommissionReceiver = process.env.PLATFORM_COMMISSION_RECEIVER || deployer.address;
 	const initCodeHash = ethers.ZeroHash;
 
+	console.log("deploying RouterDeployer + AgentSafeDeployer helpers...");
+	const RouterDeployer = await ethers.getContractFactory("RouterDeployer");
+	const routerDeployer = await RouterDeployer.deploy();
+	await routerDeployer.waitForDeployment();
+	const routerDeployerAddress = await routerDeployer.getAddress();
+
+	// Local mode: use the in-package Safe v1.4.1 mocks so AgentSafeDeployer's
+	// non-zero constructor checks pass without needing canonical bytecode.
+	const SafeSingleton = await ethers.getContractFactory("MockSafeSingleton");
+	const safeSingleton = await SafeSingleton.deploy();
+	await safeSingleton.waitForDeployment();
+	const SafeProxyFactory = await ethers.getContractFactory("MockSafeProxyFactory");
+	const safeProxyFactory = await SafeProxyFactory.deploy();
+	await safeProxyFactory.waitForDeployment();
+	const AgentSafeDeployer = await ethers.getContractFactory("AgentSafeDeployer");
+	const agentSafeDeployer = await AgentSafeDeployer.deploy(
+		await safeSingleton.getAddress(),
+		await safeProxyFactory.getAddress(),
+	);
+	await agentSafeDeployer.waitForDeployment();
+	const agentSafeDeployerAddress = await agentSafeDeployer.getAddress();
+	console.log("  RouterDeployer:    ", routerDeployerAddress);
+	console.log("  AgentSafeDeployer: ", agentSafeDeployerAddress);
+
 	console.log("deploying LaunchFactory...");
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await LaunchFactory.deploy(
@@ -84,6 +108,8 @@ async function main() {
 		SENTINEL_IMPL,
 		SENTINEL_TIP,
 		platformCommissionReceiver,
+		routerDeployerAddress,
+		agentSafeDeployerAddress,
 	);
 	await factory.waitForDeployment();
 	const factoryAddress = await factory.getAddress();
