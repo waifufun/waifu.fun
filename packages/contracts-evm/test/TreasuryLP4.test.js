@@ -402,10 +402,16 @@ describe("TreasuryLP4 :: Wave N", () => {
 		assert.equal(tier0.deployed, true, "tier 0 must be deployed before setTokensOwed");
 		assert.ok(tier0.positionId > 0n, "tier 0 positionId must be > 0");
 
-		// Set tokensOwed1 (WBNB side because token is token0) = 42, on the
-		// ACTUAL positionId that the tier deployment minted (not hardcoded 1n).
+		// The deployFixture retry loop tries to make `token` be token0 but bails
+		// after 30 attempts. In CI fork mode the retry occasionally lands with
+		// token = token1 instead, so we must read tokenIsToken0 from the deployed
+		// treasury (not assume) and seed tokensOwed on the matching WBNB side.
+		// claimable() reads owed1 when tokenIsToken0, owed0 otherwise.
+		const tokenIsToken0 = await treasury.tokenIsToken0();
 		const owed = ethers.parseEther("42");
-		await npm.setTokensOwed(tier0.positionId, 0, owed);
+		const owed0 = tokenIsToken0 ? 0n : owed;
+		const owed1 = tokenIsToken0 ? owed : 0n;
+		await npm.setTokensOwed(tier0.positionId, owed0, owed1);
 
 		const [total, perTier] = await treasury.claimable();
 		assert.equal(total, owed);
