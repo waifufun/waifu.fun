@@ -395,9 +395,17 @@ describe("TreasuryLP4 :: Wave N", () => {
 		await readyOracle();
 		await advanceOneEpoch(treasury, feed);
 
-		// Set tokensOwed1 (WBNB side because token is token0) = 42.
+		// Sanity: tier 0 must be deployed and have a real positionId before we
+		// try to set tokensOwed. CI fork mode previously caused position 0 reads
+		// because the tier deployment was silently failing.
+		const tier0 = await treasury.tiers(0);
+		assert.equal(tier0.deployed, true, "tier 0 must be deployed before setTokensOwed");
+		assert.ok(tier0.positionId > 0n, "tier 0 positionId must be > 0");
+
+		// Set tokensOwed1 (WBNB side because token is token0) = 42, on the
+		// ACTUAL positionId that the tier deployment minted (not hardcoded 1n).
 		const owed = ethers.parseEther("42");
-		await npm.setTokensOwed(1n, 0, owed);
+		await npm.setTokensOwed(tier0.positionId, 0, owed);
 
 		const [total, perTier] = await treasury.claimable();
 		assert.equal(total, owed);
