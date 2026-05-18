@@ -11,7 +11,10 @@ out-foundry
 crytic-export
 echidna-corpus
 AUDIT/echidna/results
-AUDIT/echidna/results-wave-m
+
+# Echidna corpus (regenerated each run)
+AUDIT/echidna/results-wave-m/corpus*
+AUDIT/echidna/results-wave-m/reproducers*
 
 # Foundry forge-std dependency (cloned in CI)
 lib/forge-std

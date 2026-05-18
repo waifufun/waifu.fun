@@ -1,0 +1,260 @@
+==> running wave M+N echidna sweep (limit=50000 per harness)
+
+==> EchidnaTaxSplitter
+[2026-05-18 05:55:11.81] Compiling `test-echidna/EchidnaTaxSplitter.sol`... Done! (3.646342635s)
+Analyzing contract: /code/packages/contracts-evm/test-echidna/EchidnaTaxSplitter.sol:EchidnaTaxSplitter
+[2026-05-18 05:55:15.53] Running slither on `test-echidna/EchidnaTaxSplitter.sol`... WARNING: Running slither failed. Echidna will continue, however fuzzing will likely be less effective.
+
+Done! (0.411599386s)
+Loaded 0 transaction sequences from echidna-corpus/reproducers
+Loaded 0 transaction sequences from echidna-corpus/coverage
+[2026-05-18 05:55:16.23] [Worker 1] New coverage: 2502 instr, 3 contracts, 1 seqs in corpus
+[2026-05-18 05:55:16.23] [Worker 3] New coverage: 2502 instr, 3 contracts, 2 seqs in corpus
+[2026-05-18 05:55:16.23]  Saved reproducer to echidna-corpus/coverage/2606928778102047714.txt
+[2026-05-18 05:55:16.24]  Saved reproducer to echidna-corpus/coverage/4626904258036070970.txt
+[2026-05-18 05:55:16.24] [Worker 2] New coverage: 2502 instr, 3 contracts, 3 seqs in corpus
+[2026-05-18 05:55:16.25]  Saved reproducer to echidna-corpus/coverage/2427388380118790991.txt
+[2026-05-18 05:55:16.26] [Worker 0] New coverage: 2502 instr, 3 contracts, 4 seqs in corpus
+[2026-05-18 05:55:16.26]  Saved reproducer to echidna-corpus/coverage/8027266302577828530.txt
+[2026-05-18 05:55:16.49] [Worker 2] New coverage: 2506 instr, 3 contracts, 5 seqs in corpus
+[2026-05-18 05:55:16.49]  Saved reproducer to echidna-corpus/coverage/3631071676352051747.txt
+[2026-05-18 05:55:18.96] [status] tests: 0/8, fuzzing: 6435/50000, values: [], cov: 2506, corpus: 5, gas/s: 113823900
+[2026-05-18 05:55:21.97] [status] tests: 0/8, fuzzing: 13170/50000, values: [], cov: 2506, corpus: 5, gas/s: 118825324
+[2026-05-18 05:55:22.30] [Worker 2] New coverage: 2510 instr, 3 contracts, 6 seqs in corpus
+[2026-05-18 05:55:22.31]  Saved reproducer to echidna-corpus/coverage/2214840376397641011.txt
+[2026-05-18 05:55:24.97] [status] tests: 0/8, fuzzing: 19695/50000, values: [], cov: 2510, corpus: 6, gas/s: 111148042
+[2026-05-18 05:55:27.98] [status] tests: 0/8, fuzzing: 26587/50000, values: [], cov: 2510, corpus: 6, gas/s: 115685363
+[2026-05-18 05:55:30.98] [status] tests: 0/8, fuzzing: 33132/50000, values: [], cov: 2510, corpus: 6, gas/s: 111237678
+[2026-05-18 05:55:33.99] [status] tests: 0/8, fuzzing: 39498/50000, values: [], cov: 2510, corpus: 6, gas/s: 108459048
+[2026-05-18 05:55:36.99] [status] tests: 0/8, fuzzing: 46220/50000, values: [], cov: 2510, corpus: 6, gas/s: 115659971
+[2026-05-18 05:55:38.40] [Worker 2] Test limit reached. Stopping.
+[2026-05-18 05:55:38.57] [Worker 0] Test limit reached. Stopping.
+[2026-05-18 05:55:38.75] [Worker 1] Test limit reached. Stopping.
+[2026-05-18 05:55:38.76] [Worker 3] Test limit reached. Stopping.
+[2026-05-18 05:55:38.76] [status] tests: 0/8, fuzzing: 50122/50000, values: [], cov: 2510, corpus: 6, gas/s: 99042593
+echidna_token_recipients_sum_bounded: passing
+echidna_native_no_blowup: passing
+echidna_recipients_immutable: passing
+echidna_recipients_sum_bounded: passing
+echidna_agent_bps_remainder: passing
+echidna_token_no_blowup: passing
+echidna_bps_constants: passing
+echidna_bps_invariant: passing
+
+Unique instructions: 2510
+Unique codehashes: 3
+Corpus size: 6
+Seed: 4571471077541438589
+Total calls: 50122
+
+[2026-05-18 05:55:38.76] Saving test reproducers... Done! (0.000001293s)
+[2026-05-18 05:55:38.76] Saving corpus... Done! (0.0004568s)
+[2026-05-18 05:55:38.76] Saving foundry reproducers... Done! (0.000170181s)
+[2026-05-18 05:55:38.76] Saving coverage... Done! (0.298990125s)
+
+==> EchidnaAgentSafeDeployer
+[2026-05-18 05:55:39.57] Compiling `test-echidna/EchidnaAgentSafeDeployer.sol`... Done! (2.978097216s)
+Analyzing contract: /code/packages/contracts-evm/test-echidna/EchidnaAgentSafeDeployer.sol:EchidnaAgentSafeDeployer
+[2026-05-18 05:55:42.59] Running slither on `test-echidna/EchidnaAgentSafeDeployer.sol`... WARNING: Running slither failed. Echidna will continue, however fuzzing will likely be less effective.
+
+Done! (0.385841238s)
+Loaded 0 transaction sequences from echidna-corpus/reproducers
+Loaded 6 transaction sequences from echidna-corpus/coverage
+[2026-05-18 05:55:43.04] [Worker 2] Sequence replayed from corpus file 2214840376397641011.txt (1/2)
+[2026-05-18 05:55:43.04] [Worker 0] Sequence replayed from corpus file 2427388380118790991.txt (1/2)
+[2026-05-18 05:55:43.04] [Worker 1] New coverage: 3002 instr, 5 contracts, 1 seqs in corpus
+[2026-05-18 05:55:43.04] [Worker 1] Sequence replayed from corpus file 2606928778102047714.txt (1/2)
+[2026-05-18 05:55:43.06] [Worker 0] Sequence replayed from corpus file 8027266302577828530.txt (2/2)
+[2026-05-18 05:55:43.06] [Worker 1] Sequence replayed from corpus file 3631071676352051747.txt (2/2)
+[2026-05-18 05:55:43.06] [Worker 2] Sequence replayed from corpus file 4626904258036070970.txt (2/2)
+[2026-05-18 05:55:43.26] [Worker 0] New coverage: 3909 instr, 5 contracts, 2 seqs in corpus
+[2026-05-18 05:55:43.27]  Saved reproducer to echidna-corpus/coverage/3235307587333843247.txt
+[2026-05-18 05:55:43.40] [Worker 2] New coverage: 3909 instr, 5 contracts, 3 seqs in corpus
+[2026-05-18 05:55:43.41]  Saved reproducer to echidna-corpus/coverage/8214675443483788150.txt
+[2026-05-18 05:55:43.55] [Worker 3] New coverage: 3909 instr, 5 contracts, 4 seqs in corpus
+[2026-05-18 05:55:43.55]  Saved reproducer to echidna-corpus/coverage/1465060360196038988.txt
+[2026-05-18 05:55:43.87] [Worker 1] New coverage: 3913 instr, 5 contracts, 5 seqs in corpus
+[2026-05-18 05:55:43.87]  Saved reproducer to echidna-corpus/coverage/1395848137176534496.txt
+[2026-05-18 05:55:46.03] [status] tests: 0/4, fuzzing: 5179/50000, values: [], cov: 3913, corpus: 5, gas/s: 7562893720
+[2026-05-18 05:55:49.03] [status] tests: 0/4, fuzzing: 9535/50000, values: [], cov: 3913, corpus: 5, gas/s: 8821071724
+[2026-05-18 05:55:52.03] [status] tests: 0/4, fuzzing: 14061/50000, values: [], cov: 3913, corpus: 5, gas/s: 8386309712
+[2026-05-18 05:55:55.03] [status] tests: 0/4, fuzzing: 18523/50000, values: [], cov: 3913, corpus: 5, gas/s: 7962623443
+[2026-05-18 05:55:58.04] [status] tests: 0/4, fuzzing: 22872/50000, values: [], cov: 3913, corpus: 5, gas/s: 8676788653
+[2026-05-18 05:56:01.04] [status] tests: 0/4, fuzzing: 27552/50000, values: [], cov: 3913, corpus: 5, gas/s: 8107373832
+[2026-05-18 05:56:04.04] [status] tests: 0/4, fuzzing: 31710/50000, values: [], cov: 3913, corpus: 5, gas/s: 8148732462
+[2026-05-18 05:56:07.05] [status] tests: 0/4, fuzzing: 35739/50000, values: [], cov: 3913, corpus: 5, gas/s: 7871523298
+[2026-05-18 05:56:10.05] [status] tests: 0/4, fuzzing: 39940/50000, values: [], cov: 3913, corpus: 5, gas/s: 8010847288
+[2026-05-18 05:56:13.05] [status] tests: 0/4, fuzzing: 44241/50000, values: [], cov: 3913, corpus: 5, gas/s: 8405643577
+[2026-05-18 05:56:15.46] [Worker 3] Test limit reached. Stopping.
+[2026-05-18 05:56:16.06] [status] tests: 0/4, fuzzing: 48276/50000, values: [], cov: 3913, corpus: 5, gas/s: 8204205082
+[2026-05-18 05:56:16.64] [Worker 0] Test limit reached. Stopping.
+[2026-05-18 05:56:17.52] [Worker 1] Test limit reached. Stopping.
+[2026-05-18 05:56:18.75] [Worker 2] Test limit reached. Stopping.
+[2026-05-18 05:56:18.75] [status] tests: 0/4, fuzzing: 50152/50000, values: [], cov: 3913, corpus: 5, gas/s: 2733914054
+echidna_deployer_is_not_owner: passing
+echidna_deployed_safe_has_correct_threshold: passing
+echidna_deployed_safe_has_correct_owners: passing
+echidna_deployer_immutables_constant: passing
+
+Unique instructions: 3913
+Unique codehashes: 5
+Corpus size: 5
+Seed: 5067831124116579535
+Total calls: 50152
+
+[2026-05-18 05:56:18.75] Saving test reproducers... Done! (0.000001412s)
+[2026-05-18 05:56:18.75] Saving corpus... Done! (0.000393857s)
+[2026-05-18 05:56:18.75] Saving foundry reproducers... Done! (0.000027994s)
+[2026-05-18 05:56:18.75] Saving coverage... Done! (0.169782386s)
+
+==> EchidnaWaveMFactory
+[2026-05-18 05:56:19.41] Compiling `test-echidna/EchidnaWaveMFactory.sol`... Done! (40.489112955s)
+Analyzing contract: /code/packages/contracts-evm/test-echidna/EchidnaWaveMFactory.sol:EchidnaWaveMFactory
+[2026-05-18 05:57:00.19] Running slither on `test-echidna/EchidnaWaveMFactory.sol`... WARNING: Running slither failed. Echidna will continue, however fuzzing will likely be less effective.
+
+Done! (0.409458469s)
+Loaded 0 transaction sequences from echidna-corpus/reproducers
+Loaded 10 transaction sequences from echidna-corpus/coverage
+[2026-05-18 05:57:00.70] [Worker 1] New coverage: 1206 instr, 7 contracts, 1 seqs in corpus
+[2026-05-18 05:57:00.70] [Worker 1] Sequence replayed from corpus file 8027266302577828530.txt (1/3)
+[2026-05-18 05:57:00.70] [Worker 3] Sequence replayed from corpus file 4626904258036070970.txt (1/1)
+[2026-05-18 05:57:00.70] [Worker 0] New coverage: 1206 instr, 7 contracts, 2 seqs in corpus
+[2026-05-18 05:57:00.70] [Worker 0] Sequence replayed from corpus file 3235307587333843247.txt (1/3)
+[2026-05-18 05:57:00.70] [Worker 2] Sequence replayed from corpus file 3631071676352051747.txt (1/3)
+[2026-05-18 05:57:00.71] [Worker 1] Sequence replayed from corpus file 1465060360196038988.txt (2/3)
+[2026-05-18 05:57:00.71] [Worker 0] Sequence replayed from corpus file 8214675443483788150.txt (2/3)
+[2026-05-18 05:57:00.72] [Worker 1] Sequence replayed from corpus file 2606928778102047714.txt (3/3)
+[2026-05-18 05:57:00.73] [Worker 2] Sequence replayed from corpus file 1395848137176534496.txt (2/3)
+[2026-05-18 05:57:00.73] [Worker 0] Sequence replayed from corpus file 2427388380118790991.txt (3/3)
+[2026-05-18 05:57:00.75] [Worker 2] Sequence replayed from corpus file 2214840376397641011.txt (3/3)
+[2026-05-18 05:57:01.26] [Worker 3] New coverage: 1934 instr, 8 contracts, 3 seqs in corpus
+[2026-05-18 05:57:01.27]  Saved reproducer to echidna-corpus/coverage/1795667982504868041.txt
+[2026-05-18 05:57:03.68] [status] tests: 0/8, fuzzing: 3923/50000, values: [], cov: 1934, corpus: 3, gas/s: 97726658
+[2026-05-18 05:57:06.68] [status] tests: 0/8, fuzzing: 6807/50000, values: [], cov: 1934, corpus: 3, gas/s: 91147826
+[2026-05-18 05:57:09.68] [status] tests: 0/8, fuzzing: 9883/50000, values: [], cov: 1934, corpus: 3, gas/s: 99971583
+[2026-05-18 05:57:12.69] [status] tests: 0/8, fuzzing: 12888/50000, values: [], cov: 1934, corpus: 3, gas/s: 94639886
+[2026-05-18 05:57:15.69] [status] tests: 0/8, fuzzing: 16092/50000, values: [], cov: 1934, corpus: 3, gas/s: 93692177
+[2026-05-18 05:57:18.69] [status] tests: 0/8, fuzzing: 19144/50000, values: [], cov: 1934, corpus: 3, gas/s: 103635367
+[2026-05-18 05:57:21.70] [status] tests: 0/8, fuzzing: 22140/50000, values: [], cov: 1934, corpus: 3, gas/s: 94588182
+[2026-05-18 05:57:24.70] [status] tests: 0/8, fuzzing: 25081/50000, values: [], cov: 1934, corpus: 3, gas/s: 94704236
+[2026-05-18 05:57:27.70] [status] tests: 0/8, fuzzing: 28260/50000, values: [], cov: 1934, corpus: 3, gas/s: 101400874
+[2026-05-18 05:57:30.71] [status] tests: 0/8, fuzzing: 31325/50000, values: [], cov: 1934, corpus: 3, gas/s: 95322378
+[2026-05-18 05:57:33.71] [status] tests: 0/8, fuzzing: 34280/50000, values: [], cov: 1934, corpus: 3, gas/s: 96967994
+[2026-05-18 05:57:36.71] [status] tests: 0/8, fuzzing: 37182/50000, values: [], cov: 1934, corpus: 3, gas/s: 95894873
+[2026-05-18 05:57:39.72] [status] tests: 0/8, fuzzing: 40455/50000, values: [], cov: 1934, corpus: 3, gas/s: 96990371
+[2026-05-18 05:57:42.72] [status] tests: 0/8, fuzzing: 43474/50000, values: [], cov: 1934, corpus: 3, gas/s: 98271003
+[2026-05-18 05:57:45.72] [status] tests: 0/8, fuzzing: 46312/50000, values: [], cov: 1934, corpus: 3, gas/s: 95513150
+[2026-05-18 05:57:48.73] [status] tests: 0/8, fuzzing: 49325/50000, values: [], cov: 1934, corpus: 3, gas/s: 97336567
+[2026-05-18 05:57:48.94] [Worker 1] Test limit reached. Stopping.
+[2026-05-18 05:57:49.39] [Worker 3] Test limit reached. Stopping.
+[2026-05-18 05:57:49.57] [Worker 0] Test limit reached. Stopping.
+[2026-05-18 05:57:49.64] [Worker 2] Test limit reached. Stopping.
+[2026-05-18 05:57:49.64] [status] tests: 0/8, fuzzing: 50221/50000, values: [], cov: 1934, corpus: 3, gas/s: 86413532
+echidna_owner_nonzero: passing
+echidna_tier_mc_monotonic: passing
+echidna_launch_count_zero: passing
+echidna_treasury_bps_room_for_agent: passing
+echidna_immutables_constant: passing
+echidna_tier_table_total: passing
+echidna_no_used_salts: passing
+echidna_treasury_split_constants: passing
+
+Unique instructions: 1934
+Unique codehashes: 8
+Corpus size: 3
+Seed: 2578285823814695425
+Total calls: 50221
+
+[2026-05-18 05:57:49.64] Saving test reproducers... Done! (0.000001062s)
+[2026-05-18 05:57:49.64] Saving corpus... Done! (0.000245157s)
+[2026-05-18 05:57:49.64] Saving foundry reproducers... Done! (0.000020239s)
+[2026-05-18 05:57:49.64] Saving coverage... Done! (0.760157467s)
+
+==> EchidnaTreasuryLP4
+[2026-05-18 05:57:50.87] Compiling `test-echidna/EchidnaTreasuryLP4.sol`... Done! (24.514933871s)
+Analyzing contract: /code/packages/contracts-evm/test-echidna/EchidnaTreasuryLP4.sol:EchidnaTreasuryLP4
+[2026-05-18 05:58:15.56] Running slither on `test-echidna/EchidnaTreasuryLP4.sol`... WARNING: Running slither failed. Echidna will continue, however fuzzing will likely be less effective.
+
+Done! (0.413952794s)
+Loaded 0 transaction sequences from echidna-corpus/reproducers
+Loaded 11 transaction sequences from echidna-corpus/coverage
+[2026-05-18 05:58:16.07] [Worker 3] New coverage: 5306 instr, 10 contracts, 1 seqs in corpus
+[2026-05-18 05:58:16.07] [Worker 3] Sequence replayed from corpus file 2214840376397641011.txt (1/2)
+[2026-05-18 05:58:16.08] [Worker 2] Sequence replayed from corpus file 2606928778102047714.txt (1/3)
+[2026-05-18 05:58:16.08] [Worker 1] Sequence replayed from corpus file 8027266302577828530.txt (1/3)
+[2026-05-18 05:58:16.09] [Worker 0] Sequence replayed from corpus file 3235307587333843247.txt (1/3)
+[2026-05-18 05:58:16.10] [Worker 3] Sequence replayed from corpus file 4626904258036070970.txt (2/2)
+[2026-05-18 05:58:16.10] [Worker 2] Sequence replayed from corpus file 3631071676352051747.txt (2/3)
+[2026-05-18 05:58:16.10] [Worker 1] Sequence replayed from corpus file 1465060360196038988.txt (2/3)
+[2026-05-18 05:58:16.12] [Worker 2] Sequence replayed from corpus file 1395848137176534496.txt (3/3)
+[2026-05-18 05:58:16.12] [Worker 1] Sequence replayed from corpus file 1795667982504868041.txt (3/3)
+[2026-05-18 05:58:16.13] [Worker 0] Sequence replayed from corpus file 8214675443483788150.txt (2/3)
+[2026-05-18 05:58:16.15] [Worker 0] Sequence replayed from corpus file 2427388380118790991.txt (3/3)
+[2026-05-18 05:58:16.27] [Worker 1] New coverage: 6875 instr, 10 contracts, 2 seqs in corpus
+[2026-05-18 05:58:16.28]  Saved reproducer to echidna-corpus/coverage/7984682193609752717.txt
+[2026-05-18 05:58:16.40] [Worker 0] New coverage: 6875 instr, 10 contracts, 3 seqs in corpus
+[2026-05-18 05:58:16.40]  Saved reproducer to echidna-corpus/coverage/7653548961140220400.txt
+[2026-05-18 05:58:16.44] [Worker 2] New coverage: 6875 instr, 10 contracts, 4 seqs in corpus
+[2026-05-18 05:58:16.45]  Saved reproducer to echidna-corpus/coverage/6690392781248428845.txt
+[2026-05-18 05:58:16.54] [Worker 3] New coverage: 6947 instr, 10 contracts, 5 seqs in corpus
+[2026-05-18 05:58:16.55]  Saved reproducer to echidna-corpus/coverage/5375283917751657698.txt
+[2026-05-18 05:58:16.65] [Worker 1] New coverage: 6964 instr, 10 contracts, 6 seqs in corpus
+[2026-05-18 05:58:16.65]  Saved reproducer to echidna-corpus/coverage/586076282315214102.txt
+[2026-05-18 05:58:16.75] [Worker 0] New coverage: 6964 instr, 10 contracts, 7 seqs in corpus
+[2026-05-18 05:58:16.75]  Saved reproducer to echidna-corpus/coverage/7645047601784888380.txt
+[2026-05-18 05:58:17.15] [Worker 1] New coverage: 7021 instr, 10 contracts, 8 seqs in corpus
+[2026-05-18 05:58:17.16]  Saved reproducer to echidna-corpus/coverage/3958883852854054998.txt
+[2026-05-18 05:58:17.30] [Worker 2] New coverage: 7121 instr, 10 contracts, 9 seqs in corpus
+[2026-05-18 05:58:17.30]  Saved reproducer to echidna-corpus/coverage/2133915229493074401.txt
+[2026-05-18 05:58:17.47] [Worker 0] New coverage: 7132 instr, 10 contracts, 10 seqs in corpus
+[2026-05-18 05:58:17.48]  Saved reproducer to echidna-corpus/coverage/9151837773924849292.txt
+[2026-05-18 05:58:17.92] [Worker 2] New coverage: 7222 instr, 10 contracts, 11 seqs in corpus
+[2026-05-18 05:58:17.92]  Saved reproducer to echidna-corpus/coverage/6930456691524885946.txt
+[2026-05-18 05:58:18.32] [Worker 3] New coverage: 7226 instr, 10 contracts, 12 seqs in corpus
+[2026-05-18 05:58:18.33]  Saved reproducer to echidna-corpus/coverage/7543647416291701974.txt
+[2026-05-18 05:58:18.45] [Worker 2] New coverage: 7309 instr, 10 contracts, 13 seqs in corpus
+[2026-05-18 05:58:18.46]  Saved reproducer to echidna-corpus/coverage/7295828901015125859.txt
+[2026-05-18 05:58:19.06] [status] tests: 0/10, fuzzing: 5884/50000, values: [], cov: 7309, corpus: 13, gas/s: 67394000
+[2026-05-18 05:58:19.49] [Worker 0] New coverage: 7313 instr, 10 contracts, 14 seqs in corpus
+[2026-05-18 05:58:19.50]  Saved reproducer to echidna-corpus/coverage/2010888958467918502.txt
+[2026-05-18 05:58:21.36] [Worker 3] New coverage: 7317 instr, 10 contracts, 15 seqs in corpus
+[2026-05-18 05:58:21.36]  Saved reproducer to echidna-corpus/coverage/2543754803594516767.txt
+[2026-05-18 05:58:22.06] [status] tests: 0/10, fuzzing: 10691/50000, values: [], cov: 7317, corpus: 15, gas/s: 60590644
+[2026-05-18 05:58:23.58] [Worker 0] New coverage: 7358 instr, 10 contracts, 16 seqs in corpus
+[2026-05-18 05:58:23.58]  Saved reproducer to echidna-corpus/coverage/3904114600232666112.txt
+[2026-05-18 05:58:25.06] [status] tests: 0/10, fuzzing: 15531/50000, values: [], cov: 7358, corpus: 16, gas/s: 61260708
+[2026-05-18 05:58:28.07] [status] tests: 0/10, fuzzing: 20422/50000, values: [], cov: 7358, corpus: 16, gas/s: 62425928
+[2026-05-18 05:58:31.07] [status] tests: 0/10, fuzzing: 25236/50000, values: [], cov: 7358, corpus: 16, gas/s: 61872857
+[2026-05-18 05:58:34.07] [status] tests: 0/10, fuzzing: 29757/50000, values: [], cov: 7358, corpus: 16, gas/s: 58558734
+[2026-05-18 05:58:37.08] [status] tests: 0/10, fuzzing: 34673/50000, values: [], cov: 7358, corpus: 16, gas/s: 63231431
+[2026-05-18 05:58:40.08] [status] tests: 0/10, fuzzing: 39291/50000, values: [], cov: 7358, corpus: 16, gas/s: 60485164
+[2026-05-18 05:58:43.08] [status] tests: 0/10, fuzzing: 44258/50000, values: [], cov: 7358, corpus: 16, gas/s: 64270119
+[2026-05-18 05:58:46.09] [status] tests: 0/10, fuzzing: 48783/50000, values: [], cov: 7358, corpus: 16, gas/s: 59250973
+[2026-05-18 05:58:46.39] [Worker 1] Test limit reached. Stopping.
+[2026-05-18 05:58:46.80] [Worker 2] Test limit reached. Stopping.
+[2026-05-18 05:58:47.18] [Worker 3] Test limit reached. Stopping.
+[2026-05-18 05:58:47.45] [Worker 0] Test limit reached. Stopping.
+[2026-05-18 05:58:47.45] [status] tests: 0/10, fuzzing: 50143/50000, values: [], cov: 7358, corpus: 16, gas/s: 53923431
+echidna_dead_constant: passing
+echidna_immutables_constant: passing
+echidna_bps_room_for_agent: passing
+echidna_split_bps_fixed_for_non_buyback: passing
+echidna_buyback_bps_bounded: passing
+echidna_no_tiers_deployed: passing
+echidna_recipients_immutable: passing
+echidna_pair_not_set: passing
+echidna_epoch_length_bounded: passing
+echidna_owner_is_harness: passing
+
+Unique instructions: 7358
+Unique codehashes: 10
+Corpus size: 16
+Seed: 312397015717293730
+Total calls: 50143
+
+[2026-05-18 05:58:47.45] Saving test reproducers... Done! (0.000001313s)
+[2026-05-18 05:58:47.45] Saving corpus... Done! (0.000779797s)
+[2026-05-18 05:58:47.46] Saving foundry reproducers... Done! (0.000013627s)
+[2026-05-18 05:58:47.46] Saving coverage... Done! (4.818103718s)
+
+==> sweep complete. logs under AUDIT/echidna/results-wave-m/

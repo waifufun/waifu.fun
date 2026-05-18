@@ -1,0 +1,275 @@
+$ hardhat test
+Compiled 43 Solidity files successfully (evm target: paris).
+
+
+  TreasuryLP4 :: Wave N
+    ✔ deploys with exactly 4 tiers and exposes immutables (789ms)
+    ✔ rejects access to tier 4 (out of bounds) (164ms)
+    ✔ sum of tier amounts is 100M (10% of supply) (126ms)
+    ✔ rejects tier schedules above the 100M treasury allocation (97ms)
+    ✔ rejects ticks not aligned to v3 spacing (200) (97ms)
+    ✔ rejects overlapping tier ranges (125ms)
+    ✔ rejects bad bps sum (>= 10000) (108ms)
+    ✔ rejects unknown fee tier (93ms)
+    ✔ rejects non-8-decimal BNB/USD feeds (270ms)
+    ✔ nextTierIndex starts at 0 (68ms)
+    ✔ oraclePoke reverts before setFlapV2Pair (74ms)
+    ✔ checkAndAdvance reverts before setFlapV2Pair (65ms)
+    ✔ setFlapV2Pair is one-shot and owner-only (104ms)
+    ✔ setFlapV2Pair rejects pair with wrong tokens (88ms)
+    ✔ deployTier(0) initializes V3 pool + mints single-sided position (79ms)
+    ✔ rejects mock that lies about WBNB-side amount in mint (82ms)
+    ✔ rejects mock that lies about spent amount in mint (FoT-like) (88ms)
+    ✔ claim forwards token-side V3 fees to the agentSafe (265ms)
+    ✔ claim 4-way split: 10% buyback / 5% platform / 20% patron / 65% agent (167ms)
+    ✔ claim emits BnbClaimed with all 4 amounts (142ms)
+    ✔ claimable() reads tokensOwed from NPM.positions per tier (74ms)
+    ✔ claim() reverts if no tiers deployed (90ms)
+    ✔ claim() reverts if called by non-safe (72ms)
+    ✔ setBuybackBps respects BUYBACK_BPS_MAX cap (261ms)
+    ✔ uses live token supply in market-cap math (114ms)
+
+  VeWaifuStaking
+    ✔ rejects zero token deployment
+    ✔ should stake WAIFU
+    ✔ should withdraw WAIFU
+    ✔ should revert on zero stake
+    ✔ should distribute rewards to single staker
+    ✔ should distribute rewards proportionally to multiple stakers
+    ✔ does not let a stake immediately before notify capture rewards
+    ✔ should claim rewards
+    ✔ should exit (withdraw all + claim)
+    ✔ should revert notifyRewardAmount from non-distributor
+    ✔ should revert notifyRewardAmount with no stakers
+    ✔ should revert notifyRewardAmount when distributor has not approved reward funding
+    ✔ credits fee-on-transfer stakes by received balance
+    ✔ distributes fee-on-transfer rewards by received balance
+
+  Wave H deploy: INIT_CODE_HASH derivation
+    ✔ matches the canonical EIP-1167 minimal proxy hash for V3 impl
+    ✔ returns ZeroHash for the zero address impl (testnet placeholder)
+    ✔ derived hash predicts the same address as Flap Portal does for a known mainnet token
+
+  FLAP curve calibration v5.14.3
+    - requires FORK_BSC=true
+
+  Wave H real-fork integration
+    - requires FORK_BSC=true
+
+  Wave H TIER_TEST + noBurn real-fork integration
+    - requires FORK_BSC=true
+
+  Wave N TreasuryLP4 :: real PCS V3 NPM fork
+    - requires FORK_BSC=true
+
+  LaunchVault admin refund controls
+    ✔ requires factory owner schedule plus delay before emergency refund
+
+  Wave H adversarial / edge cases
+    ✔ deposit reverts in CLOSED state (123ms)
+    ✔ withdraw reverts in CLOSED state (138ms)
+    ✔ close reverts twice (132ms)
+    ✔ close before window + below cap reverts WindowClosed (126ms)
+    ✔ pullBnbForLaunch from non-router reverts NotRouter (121ms)
+    ✔ distribute from non-router reverts NotRouter (119ms)
+    ✔ claim before distribute reverts InvalidState (152ms)
+    ✔ double claim is gated by claimed-tracking and reverts NothingToClaim (139ms)
+    ✔ createLaunch reverts with creator == address(0) (126ms)
+    ✔ createLaunch reverts with closeTimestamp in past (149ms)
+    ✔ createLaunch reverts with buyTaxBps > 10000 (109ms)
+    ✔ createLaunch rejects tax values above platform policy bounds (133ms)
+    ✔ createLaunch rejects non-platform platformReceiver (148ms)
+    ✔ createLaunch reverts with empty metaCid (151ms)
+    ✔ createLaunch reverts with predictedTokenAddress != CREATE2(salt) (124ms)
+    ✔ createLaunch rejects an already-occupied predicted token address (119ms)
+    ✔ createLaunch with same salt twice reverts SaltAlreadyUsed (136ms)
+    ✔ same raw vanity salt is scoped per creator (168ms)
+    ✔ createLaunch reverts when caller is not the configured creator (137ms)
+    ✔ executeBundle from non-bundleBot reverts NotBundleBot (171ms)
+    ✔ executeBundle cannot launch a cap-filled vault before close (187ms)
+    ✔ executeBundle twice reverts AlreadyExecuted (155ms)
+    ✔ executeBundle after deadline reverts Expired (132ms)
+    ✔ executeBundle rejects params that differ from the factory-approved launch config (140ms)
+    ✔ executeBundle rejects unapproved tip funding (156ms)
+    ✔ enableRefundUnderSubscribed before closeTimestamp reverts WindowClosed (143ms)
+    ✔ enableRefundBundleFailed by non-bundleBot reverts NotBundleBot (122ms)
+    ✔ enableRefundBundleFailed by bundleBot is grace-period gated (137ms)
+    ✔ permissionless launch-expired refund opens after the bundle grace period (154ms)
+    ✔ refund() in non-REFUND state reverts InvalidState (129ms)
+    ✔ refund() drains bonusPool exactly via principal == totalDeposited shortcut (147ms)
+    - recordManagedToken with zero addr reverts ZeroAddress
+    - recordManagedToken rejects unauthorized callers before router registration
+    - recordManagedToken requires the token to have a treasury balance
+    - recordManagedToken rejects creator pre-registration even with token dust
+    - sweep by non-owner reverts NotOwner
+    - treasury rejects raw BNB via receive()
+    ✔ three depositors get correct pro-rata shares (162ms)
+    ✔ bundle revert leaves vault BNB intact (atomic EVM rollback) (209ms)
+    ✔ requestLaunch returns true only when CLOSED + cap-met (187ms)
+
+  Wave H bundle flow e2e
+    ✔ tier-80: full happy path (deposit -> close -> bundle -> claim) (180ms)
+    ✔ tier-90: full happy path (deposit -> close -> bundle -> claim) (209ms)
+    ✔ tier-95: full happy path (deposit -> close -> bundle -> claim) (167ms)
+    ✔ tier-98: full happy path (deposit -> close -> bundle -> claim) (163ms)
+    ✔ tier-test: full happy path (deposit -> close -> bundle -> claim) (183ms)
+    ✔ TIER_TEST budget returns (17.34, 16.84, 0.5, false) (109ms)
+    ✔ noBurn=true sends burn portion to creator, not DEAD (152ms)
+    ✔ reverts when depositing after close (132ms)
+    ✔ reverts when single-wallet deposit would exceed 60% wallet cap (127ms)
+    ✔ deposit truncates and refunds surplus when overshooting presale cap (138ms)
+    ✔ reverts when non-router calls vault.pullBnbForLaunch (135ms)
+    ✔ reverts when non-bundleBot calls router.executeBundle (163ms)
+    ✔ reverts when router.executeBundle called twice (one-shot guard) (145ms)
+    ✔ factory reverts on predictedTokenAddress mismatch (105ms)
+    ✔ factory reverts on salt reuse (113ms)
+    ✔ router derives the effective CREATE2 salt from the raw vanity salt (160ms)
+    ✔ factory reverts on closeTimestamp in the past (104ms)
+    ✔ factory reverts on empty name/symbol/meta (110ms)
+    ✔ undersubscribed: enable refund + each depositor refunds principal (127ms)
+    ✔ bundle-failed refund: bundleBot enables refund only after grace period (134ms)
+    ✔ admin emergency refund: factory.owner must schedule before flipping OPEN or CLOSED state to REFUND (135ms)
+    ✔ refund() reverts second time from same address (idempotent NoDeposit) (126ms)
+    ✔ bundle revert leaves vault BNB intact (atomic-or-bust via EVM rollback) (164ms)
+    ✔ portal salt preconsumption leaves vault closed and recoverable after grace period (152ms)
+    - treasury allocation goes to TreasuryLP exactly and recordManagedToken locks in
+    - creator cannot sweep the managed treasury allocation
+    - records actual vault token balance when token transfers take a fee
+    ✔ fee-on-transfer token claims do not strand later presalers (188ms)
+    ✔ fee-on-transfer token claims remain claimable across vesting tranches (153ms)
+    ✔ tipBnb stays disabled for factory-created launches (159ms)
+    ✔ tier-90 vesting: TGE = 50%, linear over 24h reaches 100% (158ms)
+    ✔ three depositors get correct pro-rata shares (177ms)
+    ✔ withdraw with penalty=0 returns full amount; bonusPool stays zero (146ms)
+    ✔ requestLaunch returns true only when CLOSED + funded + router wired (153ms)
+    ✔ distribute reverts when not in LAUNCHED state (135ms)
+    ✔ claim reverts pre-distribute (InvalidState) (144ms)
+
+  Wave H phase 2 smoke
+    ✔ LaunchFactory deploys with constructor (53ms)
+    ✔ LaunchVault deposit succeeds in OPEN state
+    ✔ LaunchVault deposit reverts above presale cap
+    ✔ LaunchVault deposit enforces per-wallet presale cap
+    ✔ LaunchVault cannot close a filled cap before the minimum open duration
+    ✔ TreasuryLP recordManagedToken succeeds once
+    ✔ TreasuryLP recordManagedToken reverts on different second token
+    ✔ TreasuryLP owner can only rescue non-managed tokens
+    ✔ Wave H contracts compile + deploy with phase-2 impls (41ms)
+
+  Wave M adversarial :: TaxSplitter
+    ✔ RevertingRecipient: native split reverts atomically when any recipient reverts
+    ✔ ReentrantRecipient: recursive split() inside receive() is bounded; no inflation possible (63ms)
+    ✔ SplitterCollision: deploying two splitters via the same factory works because address depends on creator nonce
+    ✔ TaxFlowAdversarial: patron == DEAD still routes platform + agent slices correctly
+    ✔ splitMany cannot drain native via a re-entry into split() across token loop
+
+  Wave M adversarial :: AgentSafeDeployer
+    ✔ MaliciousSafeOwner: 2/2 safe with one griefing owner — funds are locked (known Safe limitation) (38ms)
+    ✔ CREATE2 collision: redeploy same (owners, threshold, saltNonce) reverts cleanly
+    ✔ Predicted address matches actual for 1/1 / 1/2 / 2/2 / 2/3 / 3/3 shapes (55ms)
+    ✔ Empty owner list reverts InvalidOwners
+    ✔ Threshold > owner count reverts InvalidThreshold
+    ✔ Zero threshold reverts InvalidThreshold
+    ✔ Deployer is NEVER an owner of the resulting Safe
+
+  Wave M adversarial :: LaunchFactory
+    ✔ FactoryGriefing: front-run with same vanitySalt from different EOA does NOT collide (creator-scoped salt) (135ms)
+    ✔ Same creator + same vanitySalt: second createLaunch reverts SaltAlreadyUsed (141ms)
+    ✔ msg.sender != config.creator reverts NotCreator (135ms)
+    ✔ platformReceiver != factory.platformCommissionReceiver reverts InvalidPlatformReceiver (135ms)
+    ✔ patron == zero reverts InvalidPatron (121ms)
+    ✔ Predicted token address mismatch reverts InvalidPredictedAddress (108ms)
+    ✔ agentSafeThreshold == 0 reverts InvalidAgentSafeConfig (106ms)
+    ✔ Empty agentSafeOwners reverts InvalidAgentSafeConfig (113ms)
+    ✔ Tax-flow rerouting attack: launchParamsHash binds router to splitter; bundle bot cannot swap commissionReceiver (147ms)
+
+  Wave M2 :: AgentSafeDeployer (BSC fork)
+    - stores singleton + factory as immutables
+    - rejects zero-address singleton / factory in constructor
+    - rejects empty owners array
+    - rejects threshold = 0
+    - rejects threshold > owners.length
+    - deploys a 1/1 Safe with a single owner
+    - deploys a 2/2 Safe with two owners
+    - deploys a 2/3 Safe with three owners
+    - different saltNonce produces a different Safe address
+    - reverts when deploying the same (args + saltNonce) twice (CREATE2 collision)
+
+  Wave M2 :: AgentSafeDeployer
+    - requires FORK_BSC=true to run (uses canonical Safe v1.4.1)
+
+  Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration
+    happy path
+      ✔ createLaunch deploys all 5 contracts and records their addresses (128ms)
+      ✔ BundleRouter.commissionReceiver bound via launchParamsHash == TaxSplitter address (118ms)
+      ✔ TaxSplitter is configured with platform / patron / agent + bps (110ms)
+      ✔ AgentSafe has the configured owners and threshold (138ms)
+      ✔ emits LaunchCreated with the new addresses (117ms)
+    validation
+      ✔ reverts InvalidPlatformReceiver on zero (101ms)
+      ✔ reverts InvalidPlatformReceiver when not equal to immutable (103ms)
+      ✔ reverts InvalidPatron on zero (98ms)
+      ✔ reverts InvalidPlatformBps below 1000 (10% floor) (129ms)
+      ✔ reverts InvalidPlatformBps above 5000 (50% ceiling) (97ms)
+      ✔ reverts InvalidPlatformBps when platform + patron > 10000 (103ms)
+      ✔ reverts InvalidAgentSafeConfig on empty owners (106ms)
+      ✔ reverts InvalidAgentSafeConfig on threshold zero (115ms)
+      ✔ reverts InvalidAgentSafeConfig on threshold > owners.length (115ms)
+    CREATE2 determinism
+      ✔ same creator + same vanity salt reverts cleanly on second deploy (108ms)
+    constructor validation
+      ✔ LaunchFactory reverts on zero AgentSafeDeployer (118ms)
+
+  TaxSplitter (wave M1)
+    constructor
+      ✔ reverts on zero address (platform)
+      ✔ reverts on zero address (patron)
+      ✔ reverts on zero address (agent)
+      ✔ reverts when platformBps < 1000 (MIN_PLATFORM_CUT)
+      ✔ reverts when platformBps > 5000 (MAX_PLATFORM_CUT)
+      ✔ reverts when platformBps + patronBps > 10000
+      ✔ computes agentBps as the remainder (10/25/65 default)
+      ✔ accepts platformBps == MAX_PLATFORM_CUT (5000) with patron = 0
+      ✔ accepts platformBps == 10000 case via boundary (100% platform)
+      ✔ stores immutable addresses and getters work
+      ✔ exposes BPS constants
+    split() - native BNB
+      ✔ splits 10/25/65 default and sums to total
+      ✔ rounds remainder to agent (no wei stranded)
+      ✔ is a no-op on zero balance (no event, no revert)
+      ✔ is idempotent: second call after drain is also a no-op
+      ✔ 100% to platform when patron = 0 and agent gets nothing if platform = 5000 + agent gets 5000
+      ✔ skips zero-amount legs cleanly (no native send)
+    splitToken() - ERC20
+      ✔ splits a normal ERC20 10/25/65 and sums to total
+      ✔ is a no-op on zero token balance (no event)
+      ✔ handles fee-on-transfer tokens (residual left, idempotent re-call sees less)
+      ✔ splitMany handles multiple tokens in one tx
+    reentrancy
+      ✔ malicious recipient cannot drain the splitter via recursive split()
+
+  Wave N adversarial :: TreasuryLP4 4-way split
+    ✔ split math: 10/5/20/65 routes correctly under direct fund into a deployed tier (102ms)
+    ✔ buyback target is DEAD; treasury allocation never re-enters circulating supply via buyback (98ms)
+    ✔ claim() on a fresh treasury with no tiers reverts no_tiers_deployed (72ms)
+    ✔ non-owner cannot setFlapV2Pair (69ms)
+    ✔ non-owner cannot setBuybackBps / setEpochLength / pauseTier (71ms)
+    ✔ non-agent cannot claim (71ms)
+    ✔ setFlapV2Pair is one-shot (60ms)
+    ✔ setFlapV2Pair rejects pair where neither token0 nor token1 is the treasury's token (67ms)
+    ✔ setFlapV2Pair rejects zero address (63ms)
+    ✔ setBuybackBps cannot exceed BUYBACK_BPS_MAX (1500) (81ms)
+    ✔ epoch length bounds are enforced (69ms)
+
+  Wave N adversarial :: TreasuryLP4Deployer + LaunchFactory.finalizeLaunch griefing
+    ✔ TreasuryLP4Deployer transfers ownership of the deployed treasury to the caller (LaunchFactory) (112ms)
+    ✔ finalizeLaunch reverts UnknownLaunch for arbitrary garbage tokens (125ms)
+
+  Wave N adversarial :: TickMath vendored library bounds
+    ✔ a tick range at the max aligned boundary is accepted (64ms)
+    ✔ a tick range with negative ticks aligned to spacing is accepted (73ms)
+
+
+  193 passing (21s)
+  24 pending
+
