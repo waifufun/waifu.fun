@@ -464,20 +464,27 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         // Lazy pool init on tier 0. V3 price is always quoted as token1/token0.
         // We want the pool to start with our LP single-sided (100% token).
         //
+        // PCS V3 LiquidityManagement rejects a single-sided deposit if the
+        // pool's current tick equals the position's tickLower (token0 case)
+        // or tickUpper (token1 case), because the position is then considered
+        // to straddle the price and BOTH sides are required. We therefore
+        // anchor the pool ONE spacing step OUTSIDE the range so the current
+        // tick sits strictly below (token0) or strictly above (token1) the
+        // range bounds, which keeps the mint truly single-sided.
+        //
         // Case A (token is token0): higher tick = more BNB per token = higher
-        //   MC. Tier ranges sit ABOVE current price; anchor at tier.tickLower
-        //   so the pool's initial tick is at the bottom of our range and the
-        //   position is 100% token0.
+        //   MC. Tier ranges sit ABOVE current price; anchor one spacing below
+        //   tier.tickLower so the position is 100% token0.
         //
         // Case B (token is token1): higher tick = more token per BNB = LOWER
-        //   MC. Tier ranges sit BELOW current price; anchor at tier.tickUpper
-        //   so the pool's initial tick is at the top of our range and the
-        //   position is 100% token1.
+        //   MC. Tier ranges sit BELOW current price; anchor one spacing above
+        //   tier.tickUpper so the position is 100% token1.
         //
         // Off-chain code in LaunchFactory._buildTiers is responsible for
         // producing ticks in V3's native convention so this branch holds.
         if (idx == 0) {
-            int24 anchorTick = isToken0 ? tier.tickLower : tier.tickUpper;
+            int24 spacing = v3TickSpacing;
+            int24 anchorTick = isToken0 ? tier.tickLower - spacing : tier.tickUpper + spacing;
             uint160 initSqrtPriceX96 = TickMath.getSqrtRatioAtTick(anchorTick);
             address pool = npm.createAndInitializePoolIfNecessary(
                 isToken0 ? _token : _wbnb, isToken0 ? _wbnb : _token, v3Fee, initSqrtPriceX96
@@ -497,8 +504,10 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
             tickUpper: tier.tickUpper,
             amount0Desired: isToken0 ? tier.tokenAmount : 0,
             amount1Desired: isToken0 ? 0 : tier.tokenAmount,
-            amount0Min: isToken0 ? tier.tokenAmount : 0,
-            amount1Min: isToken0 ? 0 : tier.tokenAmount,
+            // Allow 0.1% slippage: PCS V3 may round the deposited side down by
+            // a few wei when converting tokenAmount into liquidity units.
+            amount0Min: isToken0 ? (tier.tokenAmount * 999) / 1000 : 0,
+            amount1Min: isToken0 ? 0 : (tier.tokenAmount * 999) / 1000,
             recipient: address(this),
             deadline: block.timestamp + 60
         });
@@ -510,9 +519,12 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         uint256 wbnbSide = isToken0 ? amount1 : amount0;
         uint256 actualSpent = tokenBalanceBefore - token.balanceOf(address(this));
 
-        // Single-sided guard: WBNB side must be exactly zero, token side must
-        // exactly match what we asked for (no FoT, no partial fill).
-        if (tokenId == 0 || liquidity == 0 || wbnbSide != 0 || spent != tier.tokenAmount || actualSpent != spent) {
+        // Single-sided guard: WBNB side must be exactly zero. The token side
+        // is allowed to undershoot by V3's rounding tolerance (already capped
+        // by amount{0,1}Min at 99.9%) but MUST NEVER overshoot the budgeted
+        // tier.tokenAmount, and the actual balance delta MUST match what the
+        // NPM reports as spent (catches FoT and any lying mock).
+        if (tokenId == 0 || liquidity == 0 || wbnbSide != 0 || spent > tier.tokenAmount || actualSpent != spent) {
             revert bad_tier();
         }
 
