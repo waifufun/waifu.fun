@@ -155,7 +155,6 @@ export class LaunchService {
 			metaCid: input.metaCid,
 			creator: input.creator,
 			bundleBot: input.bundleBot,
-			commissionReceiver: input.commissionReceiver,
 			tier: tierEnum,
 			buyTaxBps: input.buyTaxBps,
 			sellTaxBps: input.sellTaxBps,
@@ -164,6 +163,13 @@ export class LaunchService {
 			closeTimestamp: BigInt(input.closeTimestamp),
 			vanitySalt: input.vanitySalt,
 			predictedTokenAddress: input.predictedTokenAddress,
+			noBurn: input.noBurn ?? false,
+			platformReceiver: input.platformReceiver,
+			patron: input.patron,
+			agentSafeOwners: input.agentSafeOwners,
+			agentSafeThreshold: BigInt(input.agentSafeThreshold),
+			platformBps: input.platformBps,
+			patronBps: input.patronBps,
 		} as const;
 
 		// Simulate first so failures surface a clean error before broadcast.
@@ -197,13 +203,19 @@ export class LaunchService {
 				vault: Address;
 				router: Address;
 				treasuryLp: Address;
+				taxSplitter: Address;
+				agentSafe: Address;
 			};
 		};
 
+		const nonZeroOrNull = (addr: Address): `0x${string}` | null =>
+			addr.toLowerCase() === "0x0000000000000000000000000000000000000000" ? null : (addr as `0x${string}`);
 		const tokenAddress = decoded.args.predictedToken as `0x${string}`;
 		const vaultAddress = decoded.args.vault as `0x${string}`;
 		const routerAddress = decoded.args.router as `0x${string}`;
 		const treasuryLpAddress = decoded.args.treasuryLp as `0x${string}`;
+		const taxSplitterAddress = nonZeroOrNull(decoded.args.taxSplitter);
+		const agentSafeAddress = nonZeroOrNull(decoded.args.agentSafe);
 		const presaleUrl = this.buildPresaleUrl(tokenAddress);
 		return {
 			// id is supplied by the DB layer; the route handler stitches them together.
@@ -211,7 +223,8 @@ export class LaunchService {
 			token: tokenAddress,
 			vault: vaultAddress,
 			router: routerAddress,
-			taxSplitter: null,
+			taxSplitter: taxSplitterAddress,
+			agentSafe: agentSafeAddress,
 			treasuryReserve: treasuryLpAddress,
 			presaleUrl,
 			txHash,

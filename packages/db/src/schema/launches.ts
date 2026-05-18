@@ -46,6 +46,12 @@ export const launches = pgTable(
 		taxRate: integer("tax_rate").notNull().default(0),
 		creatorAddress: text("creator_address"),
 		taxRecipientAddress: text("tax_recipient_address"),
+		taxSplitterAddress: text("tax_splitter_address"),
+		agentSafeAddress: text("agent_safe_address"),
+		platformBps: integer("platform_bps"),
+		patronBps: integer("patron_bps"),
+		agentSafeOwners: jsonb("agent_safe_owners").$type<string[]>(),
+		agentSafeThreshold: integer("agent_safe_threshold"),
 		firstBuyWei: text("first_buy_wei").default("0").notNull(),
 		launchAuthorizedAt: timestamp("launch_authorized_at", { withTimezone: true }),
 		launchAuthorizedBy: text("launch_authorized_by"),
@@ -70,5 +76,8 @@ export const launches = pgTable(
 		statusIdx: index("idx_launches_status").on(table.status),
 		agentIdx: index("idx_launches_agent_id").on(table.agentId),
 		tokenIdx: index("idx_launches_token").on(table.tokenAddress).where(sql`${table.tokenAddress} is not null`),
+		agentSafeIdx: index("idx_launches_agent_safe")
+			.on(table.agentSafeAddress)
+			.where(sql`${table.agentSafeAddress} is not null`),
 	}),
 );

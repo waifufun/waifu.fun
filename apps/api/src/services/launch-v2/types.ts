@@ -38,6 +38,12 @@ export interface CreateLaunchInput {
 	creator: `0x${string}`;
 	bundleBot: `0x${string}`;
 	commissionReceiver: `0x${string}`;
+	platformReceiver: `0x${string}`;
+	patron: `0x${string}`;
+	agentSafeOwners: `0x${string}`[];
+	agentSafeThreshold: number;
+	platformBps: number;
+	patronBps: number;
 	tier: LaunchTierString;
 	buyTaxBps: number;
 	sellTaxBps: number;
@@ -46,15 +52,20 @@ export interface CreateLaunchInput {
 	closeTimestamp: number;
 	vanitySalt: `0x${string}`;
 	predictedTokenAddress: `0x${string}`;
+	noBurn?: boolean;
 }
 
-export interface CreateLaunchResult {
-	id: string;
+export interface LaunchAddresses {
 	token: `0x${string}`;
 	vault: `0x${string}`;
 	router: `0x${string}`;
 	taxSplitter: `0x${string}` | null;
+	agentSafe: `0x${string}` | null;
 	treasuryReserve: `0x${string}`;
+}
+
+export interface CreateLaunchResult extends LaunchAddresses {
+	id: string;
 	presaleUrl: string;
 	txHash: `0x${string}`;
 	blockNumber: bigint;

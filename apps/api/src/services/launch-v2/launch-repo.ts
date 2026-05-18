@@ -87,6 +87,11 @@ export interface InsertLaunchInput {
 	vaultAddress: string;
 	routerAddress: string;
 	taxSplitterAddress?: string | null;
+	agentSafeAddress?: string | null;
+	platformBps?: number | null;
+	patronBps?: number | null;
+	agentSafeOwners?: string[] | null;
+	agentSafeThreshold?: number | null;
 	treasuryLpAddress?: string | null;
 	creator: string;
 	tier: number;
@@ -114,6 +119,11 @@ export async function insertLaunch(db: Database, input: InsertLaunchInput): Prom
 			vaultAddress: input.vaultAddress.toLowerCase(),
 			routerAddress: input.routerAddress.toLowerCase(),
 			taxSplitterAddress: input.taxSplitterAddress?.toLowerCase() ?? null,
+			agentSafeAddress: input.agentSafeAddress?.toLowerCase() ?? null,
+			platformBps: input.platformBps ?? null,
+			patronBps: input.patronBps ?? null,
+			agentSafeOwners: input.agentSafeOwners?.map((owner) => owner.toLowerCase()) ?? null,
+			agentSafeThreshold: input.agentSafeThreshold ?? null,
 			treasuryLpAddress: input.treasuryLpAddress?.toLowerCase() ?? null,
 			creator: input.creator.toLowerCase(),
 			tier: input.tier,

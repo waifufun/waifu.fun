@@ -23,6 +23,12 @@ test("insertLaunch persists per-launch tax bps", async () => {
 		vaultAddress: "0x0000000000000000000000000000000000000003",
 		routerAddress: "0x0000000000000000000000000000000000000004",
 		creator: "0x0000000000000000000000000000000000000005",
+		taxSplitterAddress: "0x00000000000000000000000000000000000000AA",
+		agentSafeAddress: "0x00000000000000000000000000000000000000BB",
+		platformBps: 1000,
+		patronBps: 2500,
+		agentSafeOwners: ["0x00000000000000000000000000000000000000CC"],
+		agentSafeThreshold: 1,
 		tier: 80,
 		presaleCap: "16000000000000000000",
 		v2BuyBnb: "0",
@@ -34,6 +40,12 @@ test("insertLaunch persists per-launch tax bps", async () => {
 
 	assert.equal(inserted?.buyTaxBps, 500);
 	assert.equal(inserted?.sellTaxBps, 700);
+	assert.equal(inserted?.taxSplitterAddress, "0x00000000000000000000000000000000000000aa");
+	assert.equal(inserted?.agentSafeAddress, "0x00000000000000000000000000000000000000bb");
+	assert.equal(inserted?.platformBps, 1000);
+	assert.equal(inserted?.patronBps, 2500);
+	assert.deepEqual(inserted?.agentSafeOwners, ["0x00000000000000000000000000000000000000cc"]);
+	assert.equal(inserted?.agentSafeThreshold, 1);
 	assert.equal(row.buyTaxBps, 500);
 	assert.equal(row.sellTaxBps, 700);
 });
