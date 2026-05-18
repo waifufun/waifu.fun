@@ -569,14 +569,18 @@ describe("Wave H bundle flow e2e", () => {
 		await depositFullCap(okVault, TIER_80, alice, bob);
 		await closeSubscribedVault(okVault, ctx.creator);
 
-		const okParams = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: okLaunch.addrs.taxSplitter });
+		const okParams = await bundleParams(ctx, (await currentTs()) + 600n, {
+			commissionReceiver: okLaunch.addrs.taxSplitter,
+		});
 		okParams.vanitySalt = okLaunch.rawSalt;
 		await okRouter.connect(bundleBot).executeBundle(okParams);
 		expect(await portal.lastDeployed()).to.equal(okLaunch.predicted);
 
 		const mismatchLaunch = await createLaunch(ctx, TIER_80);
 		const mismatchRouter = await ethers.getContractAt("BundleRouter", mismatchLaunch.addrs.router);
-		const mismatchParams = await bundleParams(ctx, (await currentTs()) + 600n, { commissionReceiver: mismatchLaunch.addrs.taxSplitter });
+		const mismatchParams = await bundleParams(ctx, (await currentTs()) + 600n, {
+			commissionReceiver: mismatchLaunch.addrs.taxSplitter,
+		});
 		mismatchParams.vanitySalt = mismatchLaunch.salt;
 		await expect(mismatchRouter.connect(bundleBot).executeBundle(mismatchParams)).to.be.revertedWithCustomError(
 			mismatchRouter,
