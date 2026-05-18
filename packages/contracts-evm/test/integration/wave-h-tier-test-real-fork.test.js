@@ -114,6 +114,13 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 			"0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67", // Safe ProxyFactory v1.4.1
 		);
 
+		// Wave N1: TreasuryLP4Deployer + PCS V3 NPM + Chainlink BNB/USD feed
+		const TreasuryLp4DeployerCF = await ethers.getContractFactory("TreasuryLP4Deployer");
+		const treasuryLp4Deployer = await TreasuryLp4DeployerCF.deploy();
+		const PCS_V3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
+		const PCS_V3_FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865";
+		const BNB_USD_FEED = "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE";
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		factory = await Factory.deploy(
 			WBNB,
@@ -126,6 +133,10 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 			owner.address,
 			await routerDeployer.getAddress(),
 			await agentSafeDeployer.getAddress(),
+			await treasuryLp4Deployer.getAddress(),
+			PCS_V3_NPM,
+			PCS_V3_FACTORY,
+			BNB_USD_FEED,
 		);
 		await factory.waitForDeployment();
 		console.log(`    [fork] LaunchFactory deployed at ${await factory.getAddress()}`);
@@ -177,7 +188,9 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 			closeTimestamp,
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
-			noBurn: true, // <- THE KEY NEW FIELD
+			noBurn: true, // <- THE KEY NEW FIELD (from Wave H TIER_TEST)
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		// 3. createLaunch: deploys vault, router, treasuryLp.
