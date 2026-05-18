@@ -75,6 +75,20 @@ async function deployStack() {
 
 	const routerDeployer = await RouterDeployerCF.deploy();
 
+	// Wave M3: Safe v1.4.1 mocks + AgentSafeDeployer so LaunchFactory can
+	// deploy the per-launch agent safe.
+	const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
+	const safeSingleton = await SafeSingletonCF.deploy();
+	const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
+	const safeProxyFactory = await SafeProxyFactoryCF.deploy();
+	const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+	const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
+		await safeSingleton.getAddress(),
+		await safeProxyFactory.getAddress(),
+	);
+
+	const platformReceiver = creator.address;
+
 	const Factory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await Factory.deploy(
 		wbnb,
@@ -84,8 +98,9 @@ async function deployStack() {
 		await portal.getAddress(),
 		creator.address,
 		tipReceiver.address,
-		creator.address,
+		platformReceiver,
 		await routerDeployer.getAddress(),
+		await agentSafeDeployer.getAddress(),
 	);
 
 	return {
@@ -104,6 +119,10 @@ async function deployStack() {
 		initCodeHash,
 		name,
 		symbol,
+		agentSafeDeployer,
+		safeSingleton,
+		safeProxyFactory,
+		platformReceiver,
 	};
 }
 
@@ -120,7 +139,6 @@ async function createLaunch(ctx, tier, overrides = {}) {
 		metaCid: overrides.metaCid ?? "QmTestCid",
 		creator: creator.address,
 		bundleBot: bundleBot.address,
-		commissionReceiver: overrides.commissionReceiver ?? creator.address,
 		tier,
 		buyTaxBps: overrides.buyTaxBps ?? 300,
 		sellTaxBps: overrides.sellTaxBps ?? 300,
@@ -130,6 +148,13 @@ async function createLaunch(ctx, tier, overrides = {}) {
 		vanitySalt: rawSalt,
 		predictedTokenAddress: overrides.predictedTokenAddress ?? predicted,
 		noBurn: false,
+		// Wave M3 quintet fields
+		platformReceiver: overrides.platformReceiver ?? ctx.platformReceiver,
+		patron: overrides.patron ?? creator.address,
+		agentSafeOwners: overrides.agentSafeOwners ?? [creator.address],
+		agentSafeThreshold: overrides.agentSafeThreshold ?? 1,
+		platformBps: overrides.platformBps ?? 1000,
+		patronBps: overrides.patronBps ?? 2500,
 	};
 
 	const addrs = await factory.connect(creator).createLaunch.staticCall(config);
@@ -242,7 +267,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 365 * 24 * 60 * 60,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: closeTs,
 		};
@@ -269,7 +294,6 @@ describe("Wave H adversarial / edge cases", () => {
 			metaCid: "Qm",
 			creator: ethers.ZeroAddress,
 			bundleBot: bundleBot.address,
-			commissionReceiver: c.address,
 			tier: TIER_80,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -279,6 +303,12 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 			noBurn: false,
+			platformReceiver: ctx.platformReceiver,
+			patron: c.address,
+			agentSafeOwners: [c.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 		};
 		await expect(factory.connect(c).createLaunch(config)).to.be.revertedWithCustomError(factory, "InvalidCreator");
 	});
@@ -314,11 +344,14 @@ describe("Wave H adversarial / edge cases", () => {
 		);
 	});
 
-	it("createLaunch rejects non-platform commission receivers", async () => {
+	it("createLaunch rejects non-platform platformReceiver", async () => {
+		// Wave M3: TaxSplitter replaces the old commissionReceiver field; the
+		// factory now enforces that the per-launch platformReceiver matches the
+		// platformCommissionReceiver immutable.
 		const ctx = await deployStack();
-		await expect(createLaunch(ctx, TIER_80, { commissionReceiver: ctx.alice.address })).to.be.revertedWithCustomError(
+		await expect(createLaunch(ctx, TIER_80, { platformReceiver: ctx.alice.address })).to.be.revertedWithCustomError(
 			ctx.factory,
-			"InvalidCommissionReceiver",
+			"InvalidPlatformReceiver",
 		);
 	});
 
@@ -385,7 +418,6 @@ describe("Wave H adversarial / edge cases", () => {
 				metaCid: "QmTestCid",
 				creator: creator.address,
 				bundleBot: bundleBot.address,
-				commissionReceiver: creator.address,
 				tier: TIER_80,
 				buyTaxBps: 300,
 				sellTaxBps: 300,
@@ -395,6 +427,12 @@ describe("Wave H adversarial / edge cases", () => {
 				vanitySalt: rawSalt,
 				predictedTokenAddress: predicted,
 				noBurn: false,
+				platformReceiver: ctx.platformReceiver,
+				patron: creator.address,
+				agentSafeOwners: [creator.address],
+				agentSafeThreshold: 1,
+				platformBps: 1000,
+				patronBps: 2500,
 			}),
 		).to.be.revertedWithCustomError(factory, "PredictedAddressAlreadyDeployed");
 	});
@@ -423,7 +461,6 @@ describe("Wave H adversarial / edge cases", () => {
 			symbol: ctx.symbol,
 			metaCid: "Qm",
 			bundleBot: ctx.bundleBot.address,
-			commissionReceiver: ctx.creator.address,
 			tier: TIER_80,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -431,11 +468,17 @@ describe("Wave H adversarial / edge cases", () => {
 			antiFarmerDuration: 3600,
 			closeTimestamp: (await currentTs()) + 3600n,
 			vanitySalt: rawSalt,
+			platformReceiver: ctx.platformReceiver,
+			agentSafeOwners: [ctx.creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 		};
 
 		await ctx.factory.connect(ctx.alice).createLaunch({
 			...common,
 			creator: ctx.alice.address,
+			patron: ctx.alice.address,
 			predictedTokenAddress: attackerPredicted,
 			noBurn: false,
 		});
@@ -443,6 +486,7 @@ describe("Wave H adversarial / edge cases", () => {
 			ctx.factory.connect(ctx.creator).createLaunch({
 				...common,
 				creator: ctx.creator.address,
+				patron: ctx.creator.address,
 				predictedTokenAddress: victimPredicted,
 				noBurn: false,
 			}),
@@ -462,7 +506,6 @@ describe("Wave H adversarial / edge cases", () => {
 			metaCid: "Qm",
 			creator: ctx.creator.address,
 			bundleBot: ctx.bundleBot.address,
-			commissionReceiver: ctx.creator.address,
 			tier: TIER_80,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
@@ -472,6 +515,12 @@ describe("Wave H adversarial / edge cases", () => {
 			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
 			noBurn: false,
+			platformReceiver: ctx.platformReceiver,
+			patron: ctx.creator.address,
+			agentSafeOwners: [ctx.creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 		};
 		await expect(ctx.factory.connect(ctx.alice).createLaunch(config)).to.be.revertedWithCustomError(
 			ctx.factory,
@@ -497,7 +546,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: ctx.creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -522,7 +571,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -547,7 +596,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -575,7 +624,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) - 1n,
 		};
@@ -599,7 +648,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -627,7 +676,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: ethers.parseEther("0.01"),
 			deadline: (await currentTs()) + 600n,
 		};
@@ -825,7 +874,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
@@ -864,7 +913,7 @@ describe("Wave H adversarial / edge cases", () => {
 			sellTaxBps: 300,
 			taxDuration: 31536000,
 			antiFarmerDuration: 3600,
-			commissionReceiver: creator.address,
+			commissionReceiver: addrs.taxSplitter,
 			tipBnb: 0,
 			deadline: (await currentTs()) + 600n,
 		};
