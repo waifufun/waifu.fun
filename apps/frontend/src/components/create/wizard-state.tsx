@@ -11,6 +11,34 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
 export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
 
 /**
+ * Wave M tax + safe defaults.
+ *
+ * The platform receiver is the operator-controlled Safe that captures the
+ * platform tax share. We hardcode a burner placeholder for local dev and
+ * accept `NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS` as the production override.
+ *
+ * The bps splits are intentionally locked here. Shadow spec calls for a
+ * 10% platform / 25% patron / 65% agent split; we let env overrides exist
+ * so we can rebalance without a redeploy, but the wizard UI does not let
+ * end users change these.
+ */
+function parseEnvBps(raw: string | undefined, fallback: number): number {
+	if (!raw) return fallback;
+	const parsed = Number(raw);
+	if (!Number.isFinite(parsed) || parsed < 0 || parsed > 10_000) return fallback;
+	return Math.round(parsed);
+}
+
+const BURNER_PLATFORM_RECEIVER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
+export const PLATFORM_RECEIVER_DEFAULT =
+	process.env.NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS &&
+	/^0x[a-fA-F0-9]{40}$/.test(process.env.NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS)
+		? process.env.NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS
+		: BURNER_PLATFORM_RECEIVER;
+export const PLATFORM_BPS_DEFAULT = parseEnvBps(process.env.NEXT_PUBLIC_PLATFORM_BPS, 1000);
+export const PATRON_BPS_DEFAULT = parseEnvBps(process.env.NEXT_PUBLIC_PATRON_BPS, 2500);
+
+/**
  * Wizard step identifiers. URL-synced via `?step=`.
  *
  * The wizard is the hosted Eliza Cloud path. BYO (webhook/pull) runtimes
@@ -75,6 +103,28 @@ export type WizardState = {
 		adapters: { pancake: boolean; venus: boolean };
 	};
 	/**
+	 * Wave M tax routing + Safe config sent in the `POST /v2/launches` body.
+	 *
+	 * Defaults are sourced from environment so we can adjust per-launch later
+	 * without code changes. The wizard exposes a collapsed advanced panel
+	 * (`patronPlatform`) where power users can audit and, eventually, override
+	 * these values. Today only `agentSafeOwners` and `agentSafeThreshold`
+	 * are user-editable via the safe step; the other fields are locked.
+	 *
+	 * Field meaning:
+	 * - platformReceiver: address that receives the platform tax share.
+	 * - patron: launch patron (recipient of the patron tax share).
+	 * - platformBps: platform tax share in basis points (1000 = 10%).
+	 * - patronBps: patron tax share in basis points (2500 = 25%).
+	 * The agent gets whatever is left over (10000 - platformBps - patronBps).
+	 */
+	patronPlatform: {
+		platformReceiver: string;
+		patron: string | null;
+		platformBps: number;
+		patronBps: number;
+	};
+	/**
 	 * Launchpad selection + per-launchpad fee config.
 	 * Populated only when LAUNCHPAD_PICKER_ENABLED. Legacy flow ignores this.
 	 * W2.B will read this slice in the final provision payload.
@@ -123,12 +173,18 @@ export const DEFAULT_STATE: WizardState = {
 		metaUri: null,
 	},
 	safe: {
-		taxAgentBps: 8000,
-		taxPatronBps: 2000,
+		taxAgentBps: 6500,
+		taxPatronBps: 2500,
 		owners: [],
 		threshold: 1,
 		firstBuyFundingSource: null,
 		adapters: { pancake: true, venus: true },
+	},
+	patronPlatform: {
+		platformReceiver: PLATFORM_RECEIVER_DEFAULT,
+		patron: null,
+		platformBps: PLATFORM_BPS_DEFAULT,
+		patronBps: PATRON_BPS_DEFAULT,
 	},
 	launchpad: {
 		selectedId: null,
@@ -150,6 +206,7 @@ type Action =
 	| { type: "patch_flap"; patch: Partial<WizardState["flap"]> }
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
 	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
+	| { type: "patch_patron_platform"; patch: Partial<WizardState["patronPlatform"]> }
 	| { type: "patch_launchpad"; patch: Partial<WizardState["launchpad"]> }
 	| { type: "patch_launch"; patch: Partial<WizardState["launch"]> }
 	| { type: "patch_vanity"; patch: Partial<WizardState["vanity"]> }
@@ -170,6 +227,8 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, safe: { ...state.safe, ...action.patch } };
 		case "patch_safe_adapters":
 			return { ...state, safe: { ...state.safe, adapters: { ...state.safe.adapters, ...action.patch } } };
+		case "patch_patron_platform":
+			return { ...state, patronPlatform: { ...state.patronPlatform, ...action.patch } };
 		case "patch_launchpad":
 			return { ...state, launchpad: { ...state.launchpad, ...action.patch } };
 		case "patch_launch":
@@ -192,6 +251,7 @@ type Ctx = {
 	patchFlap: (p: Partial<WizardState["flap"]>) => void;
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
 	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
+	patchPatronPlatform: (p: Partial<WizardState["patronPlatform"]>) => void;
 	patchLaunchpad: (p: Partial<WizardState["launchpad"]>) => void;
 	patchLaunch: (p: Partial<WizardState["launch"]>) => void;
 	patchVanity: (p: Partial<WizardState["vanity"]>) => void;
@@ -223,6 +283,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 					launchpad: { ...DEFAULT_STATE.launchpad, ...(parsed.launchpad ?? {}) },
 					launch: { ...DEFAULT_STATE.launch, ...(parsed.launch ?? {}) },
 					vanity: { ...DEFAULT_STATE.vanity, ...(parsed.vanity ?? {}) },
+					patronPlatform: { ...DEFAULT_STATE.patronPlatform, ...(parsed.patronPlatform ?? {}) },
 				};
 				dispatch({ type: "hydrate", state: merged });
 			}
@@ -270,6 +331,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 			patchFlap: (patch) => dispatch({ type: "patch_flap", patch }),
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
 			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
+			patchPatronPlatform: (patch) => dispatch({ type: "patch_patron_platform", patch }),
 			patchLaunchpad: (patch) => dispatch({ type: "patch_launchpad", patch }),
 			patchLaunch: (patch) => dispatch({ type: "patch_launch", patch }),
 			patchVanity: (patch) => dispatch({ type: "patch_vanity", patch }),

@@ -27,6 +27,20 @@ export type CreateLaunchRequest = {
 		firstBuyFundingSource: string | null;
 		adapters: Array<{ slug: "pancake" | "venus"; enabled: boolean }>;
 	};
+	/**
+	 * Wave M tax routing + Safe config.
+	 *
+	 * These map 1:1 to the `POST /v2/launches` body fields and end up in
+	 * the on-chain TaxSplitter + AgentSafe deployments.
+	 */
+	patronPlatform?: {
+		platformReceiver: string;
+		patron?: string | null;
+		platformBps: number;
+		patronBps: number;
+		agentSafeOwners: string[];
+		agentSafeThreshold: number;
+	};
 	launchAuthorization: {
 		creator: string;
 		siwe: { message: string; signature: string };
@@ -58,6 +72,10 @@ export type CreateLaunchResult =
 			id: string;
 			agentId?: string | null;
 			status?: LaunchStatus;
+			/**
+			 * Deployed token address. The v2 route returns this as `token`; we
+			 * also accept the legacy `tokenAddress` key for forward compat.
+			 */
 			tokenAddress?: string | null;
 	  }
 	| {
@@ -76,16 +94,26 @@ export type CreateLaunchResult =
  */
 export async function createLaunch(payload: CreateLaunchRequest, signal?: AbortSignal): Promise<CreateLaunchResult> {
 	try {
+		const body: Record<string, unknown> = {
+			name: payload.persona.name,
+			symbol: payload.persona.ticker,
+			metadataURI: `waifu://create/${encodeURIComponent(payload.inviteCode || payload.persona.ticker || payload.persona.name)}`,
+			creator: payload.launchAuthorization.creator,
+			tier: String(payload.tier),
+			siwe: payload.launchAuthorization.siwe,
+		};
+		if (payload.patronPlatform) {
+			const pp = payload.patronPlatform;
+			body.platformReceiver = pp.platformReceiver;
+			body.platformBps = pp.platformBps;
+			body.patronBps = pp.patronBps;
+			if (pp.patron) body.patron = pp.patron;
+			if (pp.agentSafeOwners.length > 0) body.agentSafeOwners = pp.agentSafeOwners;
+			body.agentSafeThreshold = pp.agentSafeThreshold;
+		}
 		const init: RequestInit = {
 			method: "POST",
-			body: JSON.stringify({
-				name: payload.persona.name,
-				symbol: payload.persona.ticker,
-				metadataURI: `waifu://create/${encodeURIComponent(payload.inviteCode || payload.persona.ticker || payload.persona.name)}`,
-				creator: payload.launchAuthorization.creator,
-				tier: String(payload.tier),
-				siwe: payload.launchAuthorization.siwe,
-			}),
+			body: JSON.stringify(body),
 		};
 		if (signal) init.signal = signal;
 		const raw = await apiFetch<unknown>("/v2/launches", init);
@@ -96,11 +124,16 @@ export async function createLaunch(payload: CreateLaunchRequest, signal?: AbortS
 		const obj = data;
 		const id = typeof obj.id === "string" ? obj.id : typeof obj.launchId === "string" ? obj.launchId : null;
 		if (!id) return { ok: false, reason: "server", message: "no launch id in response" };
+		// v2 route returns the deployed token address as `token`. Older code
+		// expected `tokenAddress`; we accept either for resilience while the
+		// API redeploy lands.
+		const tokenAddress =
+			typeof obj.token === "string" ? obj.token : typeof obj.tokenAddress === "string" ? obj.tokenAddress : null;
 		const base = {
 			ok: true as const,
 			id,
 			agentId: typeof obj.agentId === "string" ? obj.agentId : null,
-			tokenAddress: typeof obj.tokenAddress === "string" ? obj.tokenAddress : null,
+			tokenAddress,
 		};
 		return typeof obj.status === "string" ? { ...base, status: obj.status as LaunchStatus } : base;
 	} catch (err) {

@@ -83,6 +83,13 @@ function WizardInner() {
 		async (launchAuthorization: { creator: string; siwe: { message: string; signature: string } }) => {
 			if (launchPromise.current) return;
 			if (!state.launch.tierId) return;
+			// Wave M tax + Safe config. The safe step collects owners + threshold;
+			// the patron defaults to the creator wallet (most launches are
+			// self-patroned); the platform receiver + bps splits come from the
+			// locked defaults wired through env in wizard-state.
+			const safeOwners = (state.safe.owners ?? []).filter((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim()));
+			const safeThreshold = Math.max(1, Math.min(state.safe.threshold ?? 1, Math.max(safeOwners.length, 1)));
+			const patronAddress = state.patronPlatform.patron ?? launchAuthorization.creator;
 			const promise = createLaunch({
 				inviteCode: state.inviteCode.trim(),
 				persona: {
@@ -105,6 +112,14 @@ function WizardInner() {
 						{ slug: "pancake", enabled: state.safe.adapters.pancake },
 						{ slug: "venus", enabled: state.safe.adapters.venus },
 					],
+				},
+				patronPlatform: {
+					platformReceiver: state.patronPlatform.platformReceiver,
+					patron: patronAddress,
+					platformBps: state.patronPlatform.platformBps,
+					patronBps: state.patronPlatform.patronBps,
+					agentSafeOwners: safeOwners,
+					agentSafeThreshold: safeThreshold,
 				},
 				launchAuthorization,
 			});
