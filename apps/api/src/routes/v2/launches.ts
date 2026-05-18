@@ -59,8 +59,7 @@ export function serializePublicLaunch(row: PublicLaunchRow): PublicLaunchRespons
 		taxSplitter: row.taxSplitterAddress ?? row.taxSplit?.splitterAddress ?? null,
 		agentSafe: row.agentSafeAddress ?? null,
 		taxSplit,
-		agentSafeConfig:
-			owners && row.agentSafeThreshold !== null ? { owners, threshold: row.agentSafeThreshold } : null,
+		agentSafeConfig: owners && row.agentSafeThreshold !== null ? { owners, threshold: row.agentSafeThreshold } : null,
 		firstBuyWei: row.firstBuyWei,
 		launchAuthorizedAt: row.launchAuthorizedAt?.toISOString() ?? null,
 		launchAuthorizedBy: row.launchAuthorizedBy,
