@@ -30,9 +30,7 @@ function computeCreate2Addr(deployer, salt, initCodeHash) {
 }
 
 function effectiveSalt(creator, vanitySalt) {
-	return ethers.keccak256(
-		ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, vanitySalt]),
-	);
+	return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, vanitySalt]));
 }
 
 async function currentTs() {
@@ -41,8 +39,7 @@ async function currentTs() {
 }
 
 async function deployStack() {
-	const [owner, creator, bundleBot, tipReceiver, patron, agentCoOwner, otherUser] =
-		await ethers.getSigners();
+	const [owner, creator, bundleBot, tipReceiver, patron, agentCoOwner, otherUser] = await ethers.getSigners();
 
 	const PCSFactory = await ethers.getContractFactory("MockBundlePCSFactory");
 	const pcsFactory = await PCSFactory.deploy();
@@ -166,7 +163,11 @@ function buildConfig(ctx, overrides = {}) {
 // =====================================================================
 
 describe("Wave M adversarial :: TaxSplitter", () => {
-	let owner, platform, patron, agent, other;
+	let owner;
+	let platform;
+	let patron;
+	let agent;
+	let other;
 
 	beforeEach(async () => {
 		[owner, platform, patron, agent, other] = await ethers.getSigners();
@@ -192,9 +193,7 @@ describe("Wave M adversarial :: TaxSplitter", () => {
 		expect(patronAfter).to.equal(patronBefore);
 		expect(agentAfter).to.equal(agentBefore);
 		// All the funds are still inside the splitter.
-		expect(await ethers.provider.getBalance(await s.getAddress())).to.equal(
-			ethers.parseEther("10"),
-		);
+		expect(await ethers.provider.getBalance(await s.getAddress())).to.equal(ethers.parseEther("10"));
 	});
 
 	it("ReentrantRecipient: recursive split() inside receive() is bounded; no inflation possible", async () => {
@@ -247,9 +246,9 @@ describe("Wave M adversarial :: TaxSplitter", () => {
 
 		await s.split();
 
-		expect(await ethers.provider.getBalance(platform.address) - platformBefore).to.equal(seed / 10n);
-		expect(await ethers.provider.getBalance(dead) - deadBefore).to.equal((seed * 25n) / 100n);
-		expect(await ethers.provider.getBalance(agent.address) - agentBefore).to.equal((seed * 65n) / 100n);
+		expect((await ethers.provider.getBalance(platform.address)) - platformBefore).to.equal(seed / 10n);
+		expect((await ethers.provider.getBalance(dead)) - deadBefore).to.equal((seed * 25n) / 100n);
+		expect((await ethers.provider.getBalance(agent.address)) - agentBefore).to.equal((seed * 65n) / 100n);
 	});
 
 	it("splitMany cannot drain native via a re-entry into split() across token loop", async () => {
@@ -279,7 +278,8 @@ describe("Wave M adversarial :: TaxSplitter", () => {
 // =====================================================================
 
 describe("Wave M adversarial :: AgentSafeDeployer", () => {
-	let owner, attacker;
+	let owner;
+	let attacker;
 
 	beforeEach(async () => {
 		[owner, attacker] = await ethers.getSigners();
@@ -319,8 +319,16 @@ describe("Wave M adversarial :: AgentSafeDeployer", () => {
 			{ owners: [owner.address], threshold: 1, salt: 1 },
 			{ owners: [owner.address, attacker.address], threshold: 1, salt: 2 },
 			{ owners: [owner.address, attacker.address], threshold: 2, salt: 3 },
-			{ owners: [owner.address, attacker.address, "0x000000000000000000000000000000000000beef"], threshold: 2, salt: 4 },
-			{ owners: [owner.address, attacker.address, "0x000000000000000000000000000000000000beef"], threshold: 3, salt: 5 },
+			{
+				owners: [owner.address, attacker.address, "0x000000000000000000000000000000000000beef"],
+				threshold: 2,
+				salt: 4,
+			},
+			{
+				owners: [owner.address, attacker.address, "0x000000000000000000000000000000000000beef"],
+				threshold: 3,
+				salt: 5,
+			},
 		];
 		for (const s of shapes) {
 			const predicted = await deployer.predictAgentSafe(s.owners, s.threshold, s.salt);
@@ -332,24 +340,23 @@ describe("Wave M adversarial :: AgentSafeDeployer", () => {
 
 	it("Empty owner list reverts InvalidOwners", async () => {
 		const { deployer } = await deployBare();
-		await expect(deployer.deployAgentSafe([], 1, 1)).to.be.revertedWithCustomError(
-			deployer,
-			"InvalidOwners",
-		);
+		await expect(deployer.deployAgentSafe([], 1, 1)).to.be.revertedWithCustomError(deployer, "InvalidOwners");
 	});
 
 	it("Threshold > owner count reverts InvalidThreshold", async () => {
 		const { deployer } = await deployBare();
-		await expect(
-			deployer.deployAgentSafe([owner.address], 2, 1),
-		).to.be.revertedWithCustomError(deployer, "InvalidThreshold");
+		await expect(deployer.deployAgentSafe([owner.address], 2, 1)).to.be.revertedWithCustomError(
+			deployer,
+			"InvalidThreshold",
+		);
 	});
 
 	it("Zero threshold reverts InvalidThreshold", async () => {
 		const { deployer } = await deployBare();
-		await expect(
-			deployer.deployAgentSafe([owner.address], 0, 1),
-		).to.be.revertedWithCustomError(deployer, "InvalidThreshold");
+		await expect(deployer.deployAgentSafe([owner.address], 0, 1)).to.be.revertedWithCustomError(
+			deployer,
+			"InvalidThreshold",
+		);
 	});
 
 	it("Deployer is NEVER an owner of the resulting Safe", async () => {
@@ -377,15 +384,14 @@ describe("Wave M adversarial :: LaunchFactory", () => {
 		await ctx.factory.connect(ctx.creator).createLaunch(cfg1);
 
 		// otherUser tries the same vanitySalt. Different effectiveSalt (creator-scoped).
-		const builder2 = buildConfig({ ...ctx, creator: ctx.otherUser, platformReceiver: ctx.platformReceiver }, { salt: sharedSalt });
+		const builder2 = buildConfig(
+			{ ...ctx, creator: ctx.otherUser, platformReceiver: ctx.platformReceiver },
+			{ salt: sharedSalt },
+		);
 		const cfg2 = await builder2.config();
 		// re-target predictedTokenAddress to ctx.otherUser scope.
 		const otherScopedSalt = effectiveSalt(ctx.otherUser.address, sharedSalt);
-		const predictedForOther = computeCreate2Addr(
-			await ctx.portal.getAddress(),
-			otherScopedSalt,
-			ctx.initCodeHash,
-		);
+		const predictedForOther = computeCreate2Addr(await ctx.portal.getAddress(), otherScopedSalt, ctx.initCodeHash);
 		cfg2.creator = ctx.otherUser.address;
 		cfg2.predictedTokenAddress = predictedForOther;
 		// The factory enforces msg.sender == creator and creator-scoped salt; the
@@ -403,36 +409,40 @@ describe("Wave M adversarial :: LaunchFactory", () => {
 
 		const builder2 = buildConfig(ctx, { salt: sharedSalt });
 		const cfg2 = await builder2.config();
-		await expect(
-			ctx.factory.connect(ctx.creator).createLaunch(cfg2),
-		).to.be.revertedWithCustomError(ctx.factory, "SaltAlreadyUsed");
+		await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg2)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"SaltAlreadyUsed",
+		);
 	});
 
 	it("msg.sender != config.creator reverts NotCreator", async () => {
 		const ctx = await deployStack();
 		const builder = buildConfig(ctx);
 		const cfg = await builder.config();
-		await expect(
-			ctx.factory.connect(ctx.otherUser).createLaunch(cfg),
-		).to.be.revertedWithCustomError(ctx.factory, "NotCreator");
+		await expect(ctx.factory.connect(ctx.otherUser).createLaunch(cfg)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"NotCreator",
+		);
 	});
 
 	it("platformReceiver != factory.platformCommissionReceiver reverts InvalidPlatformReceiver", async () => {
 		const ctx = await deployStack();
 		const builder = buildConfig(ctx, { platformReceiver: ctx.otherUser.address });
 		const cfg = await builder.config();
-		await expect(
-			ctx.factory.connect(ctx.creator).createLaunch(cfg),
-		).to.be.revertedWithCustomError(ctx.factory, "InvalidPlatformReceiver");
+		await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidPlatformReceiver",
+		);
 	});
 
 	it("patron == zero reverts InvalidPatron", async () => {
 		const ctx = await deployStack();
 		const builder = buildConfig(ctx, { patron: ethers.ZeroAddress });
 		const cfg = await builder.config();
-		await expect(
-			ctx.factory.connect(ctx.creator).createLaunch(cfg),
-		).to.be.revertedWithCustomError(ctx.factory, "InvalidPatron");
+		await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidPatron",
+		);
 	});
 
 	it("Predicted token address mismatch reverts InvalidPredictedAddress", async () => {
@@ -441,27 +451,30 @@ describe("Wave M adversarial :: LaunchFactory", () => {
 			predictedTokenAddress: ethers.getAddress("0xdead000000000000000000000000000000000001"),
 		});
 		const cfg = await builder.config();
-		await expect(
-			ctx.factory.connect(ctx.creator).createLaunch(cfg),
-		).to.be.revertedWithCustomError(ctx.factory, "InvalidPredictedAddress");
+		await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidPredictedAddress",
+		);
 	});
 
 	it("agentSafeThreshold == 0 reverts InvalidAgentSafeConfig", async () => {
 		const ctx = await deployStack();
 		const builder = buildConfig(ctx, { agentSafeThreshold: 0 });
 		const cfg = await builder.config();
-		await expect(
-			ctx.factory.connect(ctx.creator).createLaunch(cfg),
-		).to.be.revertedWithCustomError(ctx.factory, "InvalidAgentSafeConfig");
+		await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidAgentSafeConfig",
+		);
 	});
 
 	it("Empty agentSafeOwners reverts InvalidAgentSafeConfig", async () => {
 		const ctx = await deployStack();
 		const builder = buildConfig(ctx, { agentSafeOwners: [] });
 		const cfg = await builder.config();
-		await expect(
-			ctx.factory.connect(ctx.creator).createLaunch(cfg),
-		).to.be.revertedWithCustomError(ctx.factory, "InvalidAgentSafeConfig");
+		await expect(ctx.factory.connect(ctx.creator).createLaunch(cfg)).to.be.revertedWithCustomError(
+			ctx.factory,
+			"InvalidAgentSafeConfig",
+		);
 	});
 
 	it("Tax-flow rerouting attack: launchParamsHash binds router to splitter; bundle bot cannot swap commissionReceiver", async () => {

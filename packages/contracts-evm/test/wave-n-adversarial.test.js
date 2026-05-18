@@ -82,10 +82,7 @@ async function deployTreasury(overrides = {}) {
 	}
 	await token.mint(owner.address, ethers.parseEther("1000000000"));
 	const router = await ethers.deployContract("MockFlapV2Router", [await wbnb.getAddress()]);
-	const pair = await ethers.deployContract("MockFlapV2Pair", [
-		await token.getAddress(),
-		await wbnb.getAddress(),
-	]);
+	const pair = await ethers.deployContract("MockFlapV2Pair", [await token.getAddress(), await wbnb.getAddress()]);
 	const feed = await ethers.deployContract("MockBnbUsdFeed", [600n * 100000000n]);
 	const v3Factory = await ethers.deployContract("MockV3Factory");
 	const npm = await ethers.deployContract("MockNonfungiblePositionManager", [await wbnb.getAddress()]);
@@ -110,7 +107,22 @@ async function deployTreasury(overrides = {}) {
 		tiers,
 	};
 	const treasury = await ethers.deployContract("TreasuryLP4", [args]);
-	return { owner, agentSafe, platform, patron, attacker, token, wbnb, router, pair, feed, npm, v3Factory, treasury, args };
+	return {
+		owner,
+		agentSafe,
+		platform,
+		patron,
+		attacker,
+		token,
+		wbnb,
+		router,
+		pair,
+		feed,
+		npm,
+		v3Factory,
+		treasury,
+		args,
+	};
 }
 
 describe("Wave N adversarial :: TreasuryLP4 4-way split", () => {
@@ -172,17 +184,14 @@ describe("Wave N adversarial :: TreasuryLP4 4-way split", () => {
 
 	it("claim() on a fresh treasury with no tiers reverts no_tiers_deployed", async () => {
 		const ctx = await deployTreasury();
-		await assert.rejects(
-			ctx.treasury.connect(ctx.agentSafe).claim(),
-			(err) => String(err).includes("no_tiers_deployed"),
+		await assert.rejects(ctx.treasury.connect(ctx.agentSafe).claim(), (err) =>
+			String(err).includes("no_tiers_deployed"),
 		);
 	});
 
 	it("non-owner cannot setFlapV2Pair", async () => {
 		const ctx = await deployTreasury();
-		await assert.rejects(
-			ctx.treasury.connect(ctx.attacker).setFlapV2Pair(await ctx.pair.getAddress()),
-		);
+		await assert.rejects(ctx.treasury.connect(ctx.attacker).setFlapV2Pair(await ctx.pair.getAddress()));
 	});
 
 	it("non-owner cannot setBuybackBps / setEpochLength / pauseTier", async () => {
@@ -203,9 +212,8 @@ describe("Wave N adversarial :: TreasuryLP4 4-way split", () => {
 	it("setFlapV2Pair is one-shot", async () => {
 		const ctx = await deployTreasury();
 		await ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress());
-		await assert.rejects(
-			ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()),
-			(err) => String(err).includes("pair_already_set"),
+		await assert.rejects(ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()), (err) =>
+			String(err).includes("pair_already_set"),
 		);
 	});
 
@@ -214,37 +222,32 @@ describe("Wave N adversarial :: TreasuryLP4 4-way split", () => {
 		const dummyA = "0x1000000000000000000000000000000000001001";
 		const dummyB = "0x2000000000000000000000000000000000001002";
 		const wrong = await ethers.deployContract("MockFlapV2Pair", [dummyA, dummyB]);
-		await assert.rejects(
-			ctx.treasury.connect(ctx.owner).setFlapV2Pair(await wrong.getAddress()),
-			(err) => String(err).includes("bad_pair"),
+		await assert.rejects(ctx.treasury.connect(ctx.owner).setFlapV2Pair(await wrong.getAddress()), (err) =>
+			String(err).includes("bad_pair"),
 		);
 	});
 
 	it("setFlapV2Pair rejects zero address", async () => {
 		const ctx = await deployTreasury();
-		await assert.rejects(
-			ctx.treasury.connect(ctx.owner).setFlapV2Pair(ethers.ZeroAddress),
-			(err) => String(err).includes("zero_address"),
+		await assert.rejects(ctx.treasury.connect(ctx.owner).setFlapV2Pair(ethers.ZeroAddress), (err) =>
+			String(err).includes("zero_address"),
 		);
 	});
 
 	it("setBuybackBps cannot exceed BUYBACK_BPS_MAX (1500)", async () => {
 		const ctx = await deployTreasury();
-		await assert.rejects(
-			ctx.treasury.connect(ctx.owner).setBuybackBps(1501),
-			(err) => String(err).includes("bad_buyback_bps"),
+		await assert.rejects(ctx.treasury.connect(ctx.owner).setBuybackBps(1501), (err) =>
+			String(err).includes("bad_buyback_bps"),
 		);
 	});
 
 	it("epoch length bounds are enforced", async () => {
 		const ctx = await deployTreasury();
-		await assert.rejects(
-			ctx.treasury.connect(ctx.owner).setEpochLength(3599),
-			(err) => String(err).includes("bad_epoch_length"),
+		await assert.rejects(ctx.treasury.connect(ctx.owner).setEpochLength(3599), (err) =>
+			String(err).includes("bad_epoch_length"),
 		);
-		await assert.rejects(
-			ctx.treasury.connect(ctx.owner).setEpochLength(86401),
-			(err) => String(err).includes("bad_epoch_length"),
+		await assert.rejects(ctx.treasury.connect(ctx.owner).setEpochLength(86401), (err) =>
+			String(err).includes("bad_epoch_length"),
 		);
 		await ctx.treasury.connect(ctx.owner).setEpochLength(3600);
 		assert.equal(await ctx.treasury.epochLength(), 3600n);
@@ -301,7 +304,7 @@ describe("Wave N adversarial :: TreasuryLP4Deployer + LaunchFactory.finalizeLaun
 			wbnb,
 			await pcsFactory.getAddress(),
 			await pcsRouter.getAddress(),
-			"0x" + "00".repeat(32),
+			`0x${"00".repeat(32)}`,
 			"0x000000000000000000000000000000000000fa01",
 			"0x0000000000000000000000000000000000000007",
 			"0x0000000000000000000000000000000000000008",
