@@ -12,23 +12,27 @@
 //   call TaxSplitter.split() + splitToken() and check the recipient cut math
 //   Safe.getOwners()/getThreshold() match the configured agentSafe layout
 //
-// IMPORTANT FINDING (Wave M5 fork run, BSC block 98929455):
-//   FLAP's TOKEN_TAXED_V3 collects buy/sell tax into a per-token internal
-//   swap helper (CREATE2'd on first tax flush). That helper holds an
-//   immutable `commissionReceiver` baked at deploy time by the FLAP Portal,
-//   which does NOT honor the `commissionReceiver` field we pass through
-//   newTokenV6 - it points at FLAP's own fee wallet.
+// Tax-flow rootcause (resolved in feat/wave-m3-factory-integration @ 01375c62):
+//   The earlier M5 run thought FLAP ignored our `commissionReceiver` field.
+//   That was a misread. Actual rootcause was that BundleRouter passed
+//   `beneficiary = address(this)` (the BundleRouter itself) instead of
+//   `beneficiary = p.commissionReceiver` (the TaxSplitter). FLAP's
+//   TaxProcessor.marketAddress maps from `beneficiary` and receives the
+//   ~88% marketing slice, so on the buggy path the marketing tax sat stuck
+//   in BundleRouter while TaxSplitter only got the 2% commission slice.
 //
-//   This means tax BNB collected post-launch DOES NOT automatically flow to
-//   the TaxSplitter we deploy. Routing it requires a separate mechanism
-//   (Wave M4+ frontend / bot calling a transfer / FLAP coordinating an
-//   off-chain payout, or future contract work to wrap the helper).
+//   One-line fix in BundleRouter._callPortal flips `beneficiary` to the
+//   TaxSplitter. Now ~90% of every tax BNB (88% market + 2% commission)
+//   flows through TaxSplitter into the 10/25/65 platform/patron/agent
+//   split. Scenario 6 verifies this end-to-end against the live FLAP
+//   TaxProcessor on a BSC fork.
 //
-//   For end-to-end determinism this test therefore proves the splitter's
-//   math by seeding it directly (native BNB + ERC20) and exercising
-//   split() / splitToken(). The buy/sell pressure step is still run to
-//   prove the launched token actually trades on the real PCS V2 pair, and
-//   the helper's collected WBNB is logged for visibility.
+//   See ~/.moltbot/projects/waifu/wave-m/TAX_FLOW_ROOTCAUSE.md for the
+//   full on-chain analysis and probe results.
+//
+//   Scenarios 1-5 still seed the splitter directly with native BNB / ERC20
+//   to prove the split math in isolation (deterministic, no PCS slippage
+//   noise). Scenario 6 proves the wiring works end-to-end.
 //
 // Run with:
 //   LATEST_HEX=$(curl -s -X POST -H 'Content-Type: application/json' \
@@ -334,6 +338,7 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 	// Scenarios 2/3/4 only deploy contracts (no Portal call) and share one.
 	let creatorS1;
 	let creatorS5;
+	let creatorS6;
 	let creatorSafeOnly;
 	// Dedicated funder for seedSplitterNative -- MUST be distinct from
 	// platformReceiver, patron, and agentSafe so the seeding spend doesn't
@@ -359,6 +364,7 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 
 		creatorS1 = signers[0]; // bundle-running
 		creatorS5 = signers[1]; // bundle-running
+		creatorS6 = signers[3]; // bundle-running (scenario 6 tax-flow E2E)
 		creatorSafeOnly = signers[21]; // no Portal call: scenarios 2/3/4
 		seedFunder = signers[2]; // dedicated seed funder, not a recipient anywhere
 	});
@@ -836,5 +842,218 @@ describe("Wave M5 :: real-fork quintet end-to-end", function () {
 
 		// splitMany passthrough sanity: empty array + zero-balance entry is a no-op.
 		await (await taxSplitter.connect(bundleBot).splitMany([predicted])).wait();
+	});
+
+	// -----------------------------------------------------------------
+	// Scenario 6: end-to-end tax flow through real FLAP TaxProcessor.
+	//
+	// Proves the BundleRouter `beneficiary = p.commissionReceiver` fix:
+	//   1. Run the full quintet (createLaunch + bundle).
+	//   2. Generate real buy/sell pressure on the live PCS V2 pair so the
+	//      FLAP TaxProcessor accrues tax.
+	//   3. Call TaxProcessor.dispatch() and assert:
+	//        - TaxSplitter BNB > 0 (now receives BOTH the ~88% marketing
+	//          slice AND the ~2% commission slice — used to only get 2%)
+	//        - BundleRouter BNB == 0 (used to strand ~88% of tax here)
+	//        - feeReceiver (FLAP protocol) got its 10% cut
+	//   4. Call TaxSplitter.split() and verify the 10/25/65 distribution
+	//      on the actual end-to-end-collected balance.
+	// -----------------------------------------------------------------
+	it("[scenario 6] tax-flow end-to-end: TaxSplitter accrues marketing + commission slices, split() distributes per BPS", async () => {
+		const creator = creatorS6;
+		const platformReceiver = owner.address;
+		const { factory } = await deployFactory(platformReceiver);
+
+		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
+		const { rawSalt, predicted, iterations } = mineVanitySalt(
+			PORTAL,
+			codeHash,
+			creator.address,
+			"m5-s6-taxflow-e2e",
+		);
+		console.log(`    [s6] mined salt in ${iterations} iters; predicted=${predicted}`);
+
+		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+		const cfg = buildConfig({
+			name: "Wave M5 S6",
+			symbol: "WM5F",
+			metaCid: "QmM5S6TaxFlow",
+			creator: creator.address,
+			bundleBot: bundleBot.address,
+			closeTimestamp,
+			rawSalt,
+			predicted,
+			platformReceiver,
+			patron: patron.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
+		});
+
+		await (await factory.connect(creator).createLaunch(cfg)).wait();
+		const addrs = await factory.launches(predicted);
+		const taxSplitter = await ethers.getContractAt("TaxSplitter", addrs.taxSplitter);
+
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const vault = Vault.attach(addrs.vault);
+		const Router = await ethers.getContractFactory("BundleRouter");
+		const router = Router.attach(addrs.router);
+
+		await fundVaultToCap(vault, creator, depositor2);
+		await closeSubscribedVault(vault, bundleBot);
+		await executeBundle(router, bundleBot, cfg, addrs.taxSplitter);
+
+		const token = new ethers.Contract(
+			predicted,
+			[...TOKEN_ABI, "function taxProcessor() view returns (address)"],
+			ethers.provider,
+		);
+		const taxProcessorAddr = await token.taxProcessor();
+		expect(taxProcessorAddr).to.not.equal(ethers.ZeroAddress);
+
+		// Verify FLAP wiring matches our beneficiary-fix expectation: both
+		// marketAddress and commissionReceiver point at our TaxSplitter.
+		const TP_ABI = [
+			"function marketAddress() view returns (address)",
+			"function commissionReceiver() view returns (address)",
+			"function feeReceiver() view returns (address)",
+			"function dispatch()",
+		];
+		const taxProc = new ethers.Contract(taxProcessorAddr, TP_ABI, owner);
+		const [marketAddr, commRcv, feeRcv] = await Promise.all([
+			taxProc.marketAddress(),
+			taxProc.commissionReceiver(),
+			taxProc.feeReceiver(),
+		]);
+		expect(marketAddr.toLowerCase()).to.equal(
+			addrs.taxSplitter.toLowerCase(),
+			"FLAP marketAddress should be TaxSplitter (post-fix wiring)",
+		);
+		expect(commRcv.toLowerCase()).to.equal(
+			addrs.taxSplitter.toLowerCase(),
+			"FLAP commissionReceiver should be TaxSplitter",
+		);
+		console.log(
+			`    [s6] FLAP wiring confirmed: marketAddress=commissionReceiver=TaxSplitter; feeReceiver=${feeRcv}`,
+		);
+
+		// Skip the FLAP anti-farmer window so V2 trades aren't blocked.
+		await skipAntiFarmer();
+
+		// Pair must exist + have liquidity.
+		const pcsFactory = new ethers.Contract(PCS_FACTORY, PCS_FACTORY_ABI, ethers.provider);
+		const pair = await pcsFactory.getPair(predicted, WBNB);
+		expect(pair).to.not.equal(ethers.ZeroAddress);
+
+		// Generate enough buy/sell tax to be measurably above rounding/dust.
+		// 1.5 BNB total across 6 legs => ~3% buy + 3% sell tax per leg, then
+		// FLAP keeps 10% protocol fee, splitter receives ~88% market + 2%
+		// commission slices. We expect TaxSplitter to net well over 0.01 BNB.
+		const { buys, sells } = await simulateBuySellPressure(
+			token,
+			predicted,
+			trader,
+			ethers.parseEther("1.5"),
+			6,
+		);
+		expect(buys).to.be.gt(0n);
+		expect(sells).to.be.gt(0n);
+		console.log(
+			`    [s6] traded: buys=${ethers.formatUnits(buys, 18)} sells=${ethers.formatUnits(sells, 18)}`,
+		);
+
+		// Snapshot balances BEFORE dispatch.
+		const wbnb = new ethers.Contract(
+			WBNB,
+			["function balanceOf(address) view returns (uint256)"],
+			ethers.provider,
+		);
+		const preDispatch = {
+			router: await ethers.provider.getBalance(addrs.router),
+			splitter: await ethers.provider.getBalance(addrs.taxSplitter),
+			taxProc: await ethers.provider.getBalance(taxProcessorAddr),
+			taxProcWbnb: await wbnb.balanceOf(taxProcessorAddr),
+			feeRcvBnb: await ethers.provider.getBalance(feeRcv),
+			feeRcvWbnb: await wbnb.balanceOf(feeRcv),
+		};
+		console.log(
+			`    [s6] pre-dispatch: router=${ethers.formatEther(preDispatch.router)}BNB splitter=${ethers.formatEther(preDispatch.splitter)}BNB taxProc=${ethers.formatEther(preDispatch.taxProc)}BNB taxProc.WBNB=${ethers.formatUnits(preDispatch.taxProcWbnb, 18)}`,
+		);
+
+		// Flush accumulated tax. Dispatch is permissionless; anyone can call.
+		await (await taxProc.connect(owner).dispatch()).wait();
+
+		const postDispatch = {
+			router: await ethers.provider.getBalance(addrs.router),
+			splitter: await ethers.provider.getBalance(addrs.taxSplitter),
+			taxProc: await ethers.provider.getBalance(taxProcessorAddr),
+			taxProcWbnb: await wbnb.balanceOf(taxProcessorAddr),
+			feeRcvBnb: await ethers.provider.getBalance(feeRcv),
+			feeRcvWbnb: await wbnb.balanceOf(feeRcv),
+		};
+		// FLAP TaxProcessor pays the protocol fee in either BNB or WBNB
+		// depending on the quote-token / isWeth path; sum both for accuracy.
+		const feeRcvDelta =
+			postDispatch.feeRcvBnb - preDispatch.feeRcvBnb + (postDispatch.feeRcvWbnb - preDispatch.feeRcvWbnb);
+		console.log(
+			`    [s6] post-dispatch: router=${ethers.formatEther(postDispatch.router)}BNB splitter=${ethers.formatEther(postDispatch.splitter)}BNB taxProc=${ethers.formatEther(postDispatch.taxProc)}BNB feeRcv+=${ethers.formatEther(feeRcvDelta)}`,
+		);
+
+		// === CORE ASSERTIONS ===
+
+		// (a) BundleRouter holds NO BNB. Pre-fix, ~88% of tax stranded here.
+		expect(postDispatch.router, "BundleRouter must not hold tax BNB after dispatch (was stranding ~88% pre-fix)").to.equal(
+			0n,
+		);
+
+		// (b) TaxSplitter received BNB from dispatch. Pre-fix this was only
+		//     the ~2% commission slice; post-fix it should also include the
+		//     ~88% marketing slice.
+		const splitterReceived = postDispatch.splitter - preDispatch.splitter;
+		expect(splitterReceived, "TaxSplitter must receive BNB from FLAP dispatch").to.be.gt(0n);
+		console.log(`    [s6] splitter received ${ethers.formatEther(splitterReceived)} BNB from dispatch`);
+
+		// (c) FLAP protocol fee wallet got its cut (10% off the top, paid in
+		//     either native BNB or WBNB depending on the quote-token path).
+		expect(feeRcvDelta, "FLAP feeReceiver must receive its 10% protocol fee (BNB or WBNB)").to.be.gt(0n);
+
+		// (d) Sanity-check the ratio: splitter (market + commission slices)
+		//     should be roughly 9x the FLAP protocol fee (90% / 10%, modulo
+		//     swap slippage on the internal tax-to-BNB swap). Tolerate 4–20x.
+		const ratioScaled = (splitterReceived * 10000n) / feeRcvDelta; // bps
+		expect(ratioScaled, "splitter/feeRcv ratio should be ~9x (post-fix); pre-fix was ~0.02x").to.be.gte(40000n);
+		expect(ratioScaled, "splitter/feeRcv ratio sanity upper bound").to.be.lte(200000n);
+		console.log(
+			`    [s6] splitter/feeReceiver ratio = ${Number(ratioScaled) / 10000} (expect ~9; pre-fix was ~0.02)`,
+		);
+
+		// === Now call TaxSplitter.split() on real end-to-end tax revenue. ===
+		const recipientPre = {
+			platform: await ethers.provider.getBalance(platformReceiver),
+			patron: await ethers.provider.getBalance(patron.address),
+			agent: await ethers.provider.getBalance(addrs.agentSafe),
+		};
+		const splitterBalBeforeSplit = await ethers.provider.getBalance(addrs.taxSplitter);
+		expect(splitterBalBeforeSplit).to.equal(splitterReceived); // started empty
+
+		await (await taxSplitter.connect(bundleBot).split()).wait();
+
+		const recipientPost = {
+			platform: await ethers.provider.getBalance(platformReceiver),
+			patron: await ethers.provider.getBalance(patron.address),
+			agent: await ethers.provider.getBalance(addrs.agentSafe),
+		};
+
+		expectSplitShares(splitterBalBeforeSplit, recipientPre, recipientPost, [
+			{ label: "platform", bps: 1000 },
+			{ label: "patron", bps: 2500 },
+			{ label: "agent", bps: 6500 },
+		]);
+		expect(await ethers.provider.getBalance(addrs.taxSplitter)).to.equal(0n);
+
+		console.log(
+			`    [s6] E2E split OK: total=${ethers.formatEther(splitterBalBeforeSplit)}BNB -> platform+${ethers.formatEther(recipientPost.platform - recipientPre.platform)} patron+${ethers.formatEther(recipientPost.patron - recipientPre.patron)} agent+${ethers.formatEther(recipientPost.agent - recipientPre.agent)}`,
+		);
 	});
 });
