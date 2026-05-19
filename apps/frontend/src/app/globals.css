@@ -162,13 +162,13 @@ html.dark body {
 	--wf-surface-3: #111114;
 	--wf-surface-input: #0e0e12;
 	--wf-stroke-1: rgba(255, 255, 255, 0.06);
-	--wf-stroke-2: rgba(255, 255, 255, 0.10);
+	--wf-stroke-2: rgba(255, 255, 255, 0.1);
 	--wf-stroke-3: rgba(255, 255, 255, 0.16);
-	--wf-stroke-accent: rgba(0, 255, 135, 0.30);
+	--wf-stroke-accent: rgba(0, 255, 135, 0.3);
 	--wf-text-1: #e4e4e7;
 	--wf-text-2: rgba(255, 255, 255, 0.65);
 	--wf-text-3: rgba(255, 255, 255, 0.45);
-	--wf-text-4: rgba(255, 255, 255, 0.30);
+	--wf-text-4: rgba(255, 255, 255, 0.3);
 	--wf-accent: #00ff87;
 	--wf-accent-dim: #00cc6a;
 	--wf-accent-wash: rgba(0, 255, 135, 0.06);
