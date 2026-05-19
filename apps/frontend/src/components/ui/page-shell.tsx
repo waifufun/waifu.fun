@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 type PageShellProps = {
 	children: React.ReactNode;
 	className?: string;
-	maxWidth?: "default" | "wide" | "narrow";
+	maxWidth?: "default" | "wide" | "narrow" | "xl";
 	padded?: boolean;
 };
 
@@ -20,6 +20,8 @@ const MAX_WIDTHS = {
 	default: "max-w-5xl",
 	wide: "max-w-6xl",
 	narrow: "max-w-3xl",
+	/** Single-column form / claim flow width. */
+	xl: "max-w-xl",
 } as const;
 
 export function PageShell({ children, className, maxWidth = "default", padded = true }: PageShellProps) {

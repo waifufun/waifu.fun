@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import ClaimFlow from "@/components/claim/claim-flow";
 import ClaimHeader from "@/components/claim/claim-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { type ClaimInfo, fetchClaimInfo } from "@/lib/claim-api";
 
 type LoadState =
@@ -43,12 +44,12 @@ export default function ClaimTokenClient({ token }: { token: string }) {
 
 	if (state.status === "loading") {
 		return (
-			<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
+			<PageShell maxWidth="xl">
 				<ClaimHeader />
-				<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-8 text-center text-sm text-white/50">
+				<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-5 md:p-6 text-center text-sm text-white/50">
 					loading…
 				</div>
-			</div>
+			</PageShell>
 		);
 	}
 
@@ -56,10 +57,10 @@ export default function ClaimTokenClient({ token }: { token: string }) {
 	if (state.status === "not-found") return <NotFound />;
 
 	return (
-		<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
+		<PageShell maxWidth="xl">
 			<ClaimHeader />
 			<ClaimFlow claimToken={state.token} initialInfo={state.info} />
-		</div>
+		</PageShell>
 	);
 }
 
@@ -73,7 +74,7 @@ function NotFound() {
 
 function CenteredMessage({ title, sub }: { title: string; sub: string }) {
 	return (
-		<div className="mx-auto w-full max-w-xl px-5 md:px-8 pt-10 pb-24">
+		<PageShell maxWidth="xl">
 			<div className="mb-8">
 				<Link
 					href="/"
@@ -83,10 +84,10 @@ function CenteredMessage({ title, sub }: { title: string; sub: string }) {
 					waifu.fun
 				</Link>
 			</div>
-			<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-8 text-center">
+			<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-5 md:p-6 text-center">
 				<div className="text-lg md:text-xl">{title}</div>
 				<div className="text-sm text-white/50 mt-3">{sub}</div>
 			</div>
-		</div>
+		</PageShell>
 	);
 }
