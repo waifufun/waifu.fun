@@ -5,8 +5,38 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
 	title: "support · waifu.fun",
-	description: "get help with WAIFU agent launches, wallets, launch rounds, and patron claims.",
+	description: "get help with WAIFU agent launches, wallets, FLAP curves, and patron claims.",
 };
+
+const CONTACTS = [
+	{ href: "https://x.com/waifudotfun", icon: "/socials/twitter.svg", label: "@waifudotfun" },
+	{ href: "https://discord.com/invite/tgCCVF9vEa", icon: "/socials/discord.svg", label: "join discord" },
+	{ href: "https://t.me/waifufunbot", icon: "/socials/telegram.svg", label: "@waifufunbot" },
+	{ href: "https://tally.so/r/mOr8DM", icon: "/socials/submit.svg", label: "submit an issue" },
+];
+
+const FLOW = [
+	{
+		title: "agent launches",
+		body: "a creator (or the agent itself, via the steward key) signs a SIWE message and triggers the FLAP Portal launch. the AgentSafe is provisioned in the same tx flow and becomes the tax recipient.",
+	},
+	{
+		title: "FLAP bonding curve",
+		body: "patrons buy the token directly on the FLAP curve paired with BNB. once the curve fills, liquidity migrates to PancakeSwap V2.",
+	},
+	{
+		title: "TaxSplitter routing",
+		body: "every graduated buy + sell carries a 3% tax. TaxSplitter routes 65% to the AgentSafe treasury, 25% to the patron wallet, 10% to the platform.",
+	},
+	{
+		title: "progressive V3 tiers",
+		body: "TreasuryLP4 deploys a new PCS V3 LP at the $5M, $10M, $25M, and $100M market-cap thresholds. each tier unlocks an LP claim split (65/20/10/5 to treasury/patron/buyback/platform).",
+	},
+	{
+		title: "patron claims",
+		body: "the patron portfolio shows accrued tax + LP claim amounts per agent. if a launch fails or refunds, the refund path is surfaced on the launch page.",
+	},
+];
 
 export default function SupportPage() {
 	return (
@@ -14,44 +44,34 @@ export default function SupportPage() {
 			<PageHeader
 				eyebrow="waifu.fun / support"
 				title="support"
-				subtitle="get help with agent launches, wallets, launch rounds, and patron claims."
+				subtitle="get help with agent launches, wallets, FLAP curves, and patron claims."
 			/>
 
-			<div className="space-y-6">
-				<section className="rounded-sm border border-white/10 bg-[#0C0C0C] p-6">
-					<h2 className="mb-4 text-xl font-semibold text-[#00ff87]">contact</h2>
+			<div className="space-y-12">
+				<section>
+					<h2 className="mb-5 text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">contact</h2>
 					<div className="grid gap-3 sm:grid-cols-2">
-						<SupportLink href="https://x.com/waifudotfun" icon="/socials/twitter.svg" label="@waifudotfun" />
-						<SupportLink
-							href="https://discord.com/invite/tgCCVF9vEa"
-							icon="/socials/discord.svg"
-							label="join discord"
-						/>
-						<SupportLink href="https://t.me/waifufunbot" icon="/socials/telegram.svg" label="@waifufunbot" />
-						<SupportLink href="https://tally.so/r/mOr8DM" icon="/socials/submit.svg" label="submit an issue" />
+						{CONTACTS.map((c) => (
+							<SupportLink key={c.href} {...c} />
+						))}
 					</div>
 				</section>
 
-				<section className="rounded-sm border border-white/10 bg-[#0C0C0C] p-6">
-					<h2 className="mb-6 text-xl font-semibold text-[#00ff87]">how v3 works</h2>
-					<div className="space-y-6 text-sm leading-relaxed text-[#a1a1aa]">
-						<InfoBlock title="agent launches">
-							a creator starts a 24h launch round. patrons deposit BNB, the vault enforces the tier cap, and the round
-							either launches or refunds.
-						</InfoBlock>
-						<InfoBlock title="burn edition tiers">
-							each agent token starts with 1B supply. v3 burns at least 50% up front, reserves 20% for presale claims,
-							routes 20% through launch liquidity, and parks 10% in the agent treasury reserve.
-						</InfoBlock>
-						<InfoBlock title="WAIFU and FLAP">
-							WAIFU uses the FLAP Portal path for bundled launch execution where configured. the user surface focuses on
-							circulating market cap, claimable balances, and clear pending, confirmed, or failed transaction states.
-						</InfoBlock>
-						<InfoBlock title="patron claims">
-							when a launch succeeds, patrons claim from their portfolio. if a launch fails or does not clear, the
-							refund path is surfaced on the launch page as backend and contract support becomes available.
-						</InfoBlock>
-					</div>
+				<section>
+					<h2 className="mb-5 text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">how it works</h2>
+					<ol className="border border-white/10 bg-[#08080a] divide-y divide-white/10">
+						{FLOW.map((step, i) => (
+							<li key={step.title} className="grid grid-cols-[auto,1fr] gap-x-6 px-6 py-5 md:px-7 md:py-6">
+								<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#00ff87] tabular-nums mt-0.5">
+									{String(i + 1).padStart(2, "0")}
+								</span>
+								<div>
+									<h3 className="text-base text-white tracking-tight">{step.title}</h3>
+									<p className="mt-1.5 text-sm text-neutral-400 leading-relaxed max-w-[60ch]">{step.body}</p>
+								</div>
+							</li>
+						))}
+					</ol>
 				</section>
 			</div>
 		</PageShell>
@@ -67,16 +87,7 @@ function SupportLink({ href, icon, label }: { href: string; icon: string; label:
 			className="flex min-h-11 items-center gap-3 rounded-sm border border-white/10 bg-white/[0.02] px-4 py-3 text-[#a1a1aa] transition-colors hover:border-[#00ff87]/40 hover:text-[#00ff87]"
 		>
 			<Image height={24} width={24} alt="" src={icon} />
-			<span>{label}</span>
+			<span className="text-sm">{label}</span>
 		</Link>
-	);
-}
-
-function InfoBlock({ title, children }: { title: string; children: React.ReactNode }) {
-	return (
-		<div className="border-t border-white/10 pt-5 first:border-t-0 first:pt-0">
-			<h3 className="mb-2 text-base font-semibold text-[#e4e4e7]">{title}</h3>
-			<p>{children}</p>
-		</div>
 	);
 }

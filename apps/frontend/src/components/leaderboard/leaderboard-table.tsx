@@ -52,13 +52,13 @@ export default function LeaderboardTable({ entries }: Props) {
 								Agent
 							</th>
 							<th scope="col" className="text-right px-4 py-3 font-normal">
-								Treasury
+								treasury
 							</th>
 							<th scope="col" className="text-right px-4 py-3 font-normal">
-								Daily Burn
+								daily burn
 							</th>
 							<th scope="col" className="text-right px-4 py-3 font-normal">
-								Runway
+								runway
 							</th>
 							<th scope="col" className="text-left px-4 py-3 font-normal">
 								Status
@@ -148,15 +148,15 @@ export default function LeaderboardTable({ entries }: Props) {
 								</div>
 								<dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
 									<div className="flex items-center justify-between">
-										<dt className="text-neutral-500 uppercase tracking-wide">Treasury</dt>
+										<dt className="text-neutral-500 uppercase tracking-wide">treasury</dt>
 										<dd className="text-white font-mono tabular-nums">{formatUsdExact(entry.treasuryUsd)}</dd>
 									</div>
 									<div className="flex items-center justify-between">
-										<dt className="text-neutral-500 uppercase tracking-wide">Burn</dt>
+										<dt className="text-neutral-500 uppercase tracking-wide">burn</dt>
 										<dd className="text-neutral-300 font-mono tabular-nums">{formatUsdExact(entry.dailyBurnUsd)}</dd>
 									</div>
 									<div className="flex items-center justify-between">
-										<dt className="text-neutral-500 uppercase tracking-wide">Runway</dt>
+										<dt className="text-neutral-500 uppercase tracking-wide">runway</dt>
 										<dd className={`font-mono tabular-nums ${runwayColor(entry)}`}>{formatRunway(entry.runwayDays)}</dd>
 									</div>
 									<div className="flex items-center justify-between">

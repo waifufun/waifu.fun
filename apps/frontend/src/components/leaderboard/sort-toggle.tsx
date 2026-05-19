@@ -4,9 +4,9 @@ import type { LeaderboardSort } from "@/lib/api/leaderboard";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: { key: LeaderboardSort; label: string }[] = [
-	{ key: "runway", label: "Runway" },
-	{ key: "treasury", label: "Treasury" },
-	{ key: "burn", label: "Daily Burn" },
+	{ key: "runway", label: "runway" },
+	{ key: "treasury", label: "treasury" },
+	{ key: "burn", label: "daily burn" },
 ];
 
 type Props = {
