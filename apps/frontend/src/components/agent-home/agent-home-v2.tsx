@@ -30,10 +30,10 @@ import ActivityFeed from "./activity-feed";
 import AgentHeroV2, { type AgentLaunchHeroSlice } from "./agent-hero-v2";
 import DexChart from "./dex-chart";
 import EconomicsPanel from "./economics-panel";
+import IdentityPanel from "./identity-panel";
 import LiveLaunchBanner from "./live-launch-banner";
 import RecentActivity from "./recent-activity";
 import SwapStub from "./swap-stub";
-import SystemPromptReveal from "./system-prompt-reveal";
 import TreasuryPanelV2 from "./treasury-panel-v2";
 import type { AgentData, AgentTrade } from "./types";
 
@@ -107,7 +107,7 @@ export default function AgentHomeV2({
 					<DexChart tokenAddress={agent.tokenAddress} graduated={graduated} />
 				</Section>
 
-				<Section title="trade" subtitle="swap on pancakeswap / bonding curve">
+				<Section title="trade" subtitle="swap on pancakeswap / bonding curve" id="trade">
 					<SwapStub agent={agent} />
 				</Section>
 
@@ -119,11 +119,9 @@ export default function AgentHomeV2({
 					<RecentActivity trades={trades} />
 				</Section>
 
-				{agent.systemPrompt ? (
-					<Section title="brain" subtitle="agent system prompt">
-						<SystemPromptReveal systemPrompt={agent.systemPrompt} />
-					</Section>
-				) : null}
+				<Section title="identity" subtitle="traits + brain">
+					<IdentityPanel agent={agent} />
+				</Section>
 			</div>
 		</main>
 	);
@@ -134,12 +132,11 @@ function TopBar() {
 		<div className="flex items-center justify-between">
 			<Link
 				href="/agents"
-				className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40 transition-colors duration-200 hover:text-white/75"
+				className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white/85"
 			>
 				<ArrowLeft className="h-3 w-3" strokeWidth={1.5} />
-				agents
+				all agents
 			</Link>
-			<div className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/25">waifu.fun</div>
 		</div>
 	);
 }
@@ -148,13 +145,15 @@ function Section({
 	title,
 	subtitle,
 	children,
+	id,
 }: {
 	title: string;
 	subtitle?: string;
 	children: React.ReactNode;
+	id?: string;
 }) {
 	return (
-		<section className="mt-12">
+		<section id={id} className="mt-12 scroll-mt-8">
 			<div className="mb-4 flex items-baseline justify-between gap-3">
 				<h2 className="font-mono text-[11px] uppercase tracking-[0.24em] text-white/60">{title}</h2>
 				{subtitle ? (
