@@ -87,27 +87,27 @@ function AgentsDiscoverInner() {
 				<FilterBar status={status} sort={sort} />
 			</div>
 
-				<div className="mt-8">
-					{loading ? (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-							{Array.from({ length: 9 }).map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
-								<AgentCardV2Skeleton key={i} />
-							))}
-						</div>
-					) : error ? (
-						<AgentsListError onRetry={() => setReloadKey((k) => k + 1)} />
-					) : agents.length === 0 ? (
-						<EmptyState
-							title={status === "all" ? "no agents yet." : `no ${status} agents.`}
-							subtitle={status === "all" ? "be the first." : "try a different filter, or launch one."}
-							ctaHref="/create/wizard"
-							ctaLabel="launch yours"
-						/>
-					) : (
-						<AgentGrid agents={agents} />
-					)}
-				</div>
+			<div className="mt-8">
+				{loading ? (
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+						{Array.from({ length: 9 }).map((_, i) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
+							<AgentCardV2Skeleton key={i} />
+						))}
+					</div>
+				) : error ? (
+					<AgentsListError onRetry={() => setReloadKey((k) => k + 1)} />
+				) : agents.length === 0 ? (
+					<EmptyState
+						title={status === "all" ? "no agents yet." : `no ${status} agents.`}
+						subtitle={status === "all" ? "be the first." : "try a different filter, or launch one."}
+						ctaHref="/create/wizard"
+						ctaLabel="launch yours"
+					/>
+				) : (
+					<AgentGrid agents={agents} />
+				)}
+			</div>
 
 			{!loading ? <PaginationBar page={page} pageSize={PAGE_SIZE} total={total} /> : null}
 		</PageShell>
