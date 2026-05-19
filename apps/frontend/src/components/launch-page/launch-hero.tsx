@@ -1,6 +1,7 @@
 "use client";
 
 import { Users } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
@@ -16,6 +17,18 @@ import { cn } from "@/lib/utils";
 
 import { LaunchCountdown } from "./launch-countdown";
 import { PresaleProgress } from "./presale-progress";
+
+/**
+ * Internal trade URL on waifu.fun. BSC tokens land on `/agent/[address]`
+ * via the `/token/bsc/56/...` layout redirect (see
+ * `apps/frontend/src/app/token/[chain]/[chainId]/[contractAddress]/layout.tsx`),
+ * so we route straight there to skip the round-trip.
+ */
+function tradeOnWaifuUrl(tokenAddress: string | null | undefined): string | null {
+	if (typeof tokenAddress !== "string") return null;
+	if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) return null;
+	return `/agent/${tokenAddress}`;
+}
 
 type Props = {
 	meta: PublicLaunchExtended | null;
@@ -138,6 +151,15 @@ export function LaunchHero({ meta, tier, totalDeposited, depositorCount, closeTi
 								) : null}
 								{tokenAddress ? (
 									<span className="flex items-center gap-2 text-[#00ff87]">
+										{tradeOnWaifuUrl(tokenAddress) ? (
+											<Link
+												href={tradeOnWaifuUrl(tokenAddress) as string}
+												className="hover:opacity-80 underline-offset-2 hover:underline"
+												data-testid="launch-hero-trade-link"
+											>
+												trade on waifu →
+											</Link>
+										) : null}
 										{bscscan ? (
 											<a href={bscscan} target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
 												bscscan ↗
