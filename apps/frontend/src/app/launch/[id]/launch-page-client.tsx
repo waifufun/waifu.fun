@@ -175,6 +175,7 @@ export default function LaunchPageClient({ id }: Props) {
 							presaleTokens={snap?.presaleTokens ?? null}
 							tokenSymbol={meta.data?.tokenTicker ?? null}
 							tier={tier}
+							closeTimestamp={closeTimestamp}
 							onUserStateChanged={refresh}
 						/>
 					)}
@@ -209,6 +210,7 @@ export default function LaunchPageClient({ id }: Props) {
 						presaleTokens={snap?.presaleTokens ?? null}
 						tokenSymbol={meta.data?.tokenTicker ?? null}
 						tier={tier}
+						closeTimestamp={closeTimestamp}
 						onUserStateChanged={refresh}
 						sticky="bottom"
 					/>

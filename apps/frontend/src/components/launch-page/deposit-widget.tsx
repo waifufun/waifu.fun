@@ -25,6 +25,14 @@ type Props = {
 	presaleTokens: bigint | null;
 	tokenSymbol: string | null;
 	tier: LaunchTierInfo;
+	/**
+	 * Unix seconds when the presale window closes. Used to lock deposits the
+	 * moment the timer elapses, before the vault flips its on-chain `state`
+	 * to CLOSED (which only happens once the bundle bot or someone else calls
+	 * `close()`). Without this guard the deposit CTA stays clickable past the
+	 * window and the contract reverts with `WindowClosed`.
+	 */
+	closeTimestamp?: bigint | null;
 	onUserStateChanged?: () => void;
 	/** Mobile-only sticky positioning. Desktop sidebar uses sticky-top instead. */
 	sticky?: "top" | "bottom";
@@ -40,6 +48,7 @@ export function DepositWidget({
 	presaleTokens,
 	tokenSymbol,
 	tier,
+	closeTimestamp,
 	onUserStateChanged,
 	sticky = "top",
 	className,
@@ -50,7 +59,12 @@ export function DepositWidget({
 
 	const position = useVaultUserPosition(vault);
 	const wrongChain = isConnected && chainId !== bsc.id;
-	const roundOpen = state === VaultState.OPEN;
+	// Vault state can lag behind the wall-clock close because the OPEN -> CLOSED
+	// transition happens in a separate tx. Treat the round as closed the second
+	// the close timestamp elapses so we do not ship users into a guaranteed revert.
+	const nowSec = BigInt(Math.floor(Date.now() / 1000));
+	const windowElapsed = typeof closeTimestamp === "bigint" && closeTimestamp > 0n && nowSec >= closeTimestamp;
+	const roundOpen = state === VaultState.OPEN && !windowElapsed;
 	const capHit = capWei > 0n && totalDeposited >= capWei;
 	const remainingToCap = capWei > totalDeposited ? capWei - totalDeposited : 0n;
 
@@ -112,11 +126,13 @@ export function DepositWidget({
 							address={address as Address}
 							disabled={!roundOpen || capHit}
 							disabledReason={
-								!roundOpen
-									? "round closed. deposits locked."
-									: capHit
-										? "cap reached. catch it on the secondary market."
-										: undefined
+								windowElapsed && state === VaultState.OPEN
+									? "window elapsed. waiting on the bundle bot to close the round."
+									: !roundOpen
+										? "round closed. deposits locked."
+										: capHit
+											? "cap reached. catch it on the secondary market."
+											: undefined
 							}
 							remainingToCapWei={remainingToCap}
 							presaleTokens={presaleTokens}
