@@ -1,8 +1,13 @@
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { timeAgo } from "@/lib/utils";
-import { ArrowUpRight, Brain } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import type { AgentListItem } from "./types";
+
+function shortAddress(addr: string): string {
+	if (!addr || addr.length < 11) return addr || "";
+	return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
 
 export default function AgentCard({ agent }: { agent: AgentListItem }) {
 	const graduated = agent.status === "graduated";
@@ -40,17 +45,18 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 						{agent.description || "no description."}
 					</p>
 
-					{/* runtime microcopy: brain + last action */}
+					{/* identity strip: short token address + last activity. Replaces
+					    the v1 brain/framework chip which exposed implementation
+					    detail no buyer cares about. */}
 					<div className="flex items-center justify-between gap-2 text-[9px] font-mono uppercase tracking-[0.14em] text-white/30">
-						<span className="inline-flex items-center gap-1 min-w-0 truncate">
-							<Brain className="w-2.5 h-2.5 shrink-0" strokeWidth={1.5} />
-							<span className="truncate">{agent.framework ?? "–"}</span>
+						<span className="inline-flex items-center gap-1 min-w-0 truncate" title={agent.tokenAddress}>
+							<span className="truncate">{shortAddress(agent.tokenAddress)}</span>
 						</span>
 						{agent.lastActionAt ? (
 							<span className="inline-flex items-center gap-1 shrink-0">
 								<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
 								<span>
-									{agent.lastActionType || "action"} · {timeAgo(agent.lastActionAt)}
+									{agent.lastActionType || "action"} {timeAgo(agent.lastActionAt)}
 								</span>
 							</span>
 						) : (

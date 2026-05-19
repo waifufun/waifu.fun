@@ -14,7 +14,17 @@
  * `opengraph-image.tsx` the same way as `page.tsx`, so static export would fail otherwise.
  */
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	readdirSync,
+	renameSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -144,4 +154,37 @@ try {
 } finally {
 	cleanup();
 }
+
+// Cloudflare Pages expects the Functions directory at the deploy-root
+// (i.e. inside `out/`) so the rewrite catch-all in `functions/[[path]].js`
+// runs for dynamic routes like `/launch/<id>` and `/claim/<token>`. Without
+// this copy, CF Pages serves the static 404.html for any path that isn't
+// pre-generated, including every real launch id.
+if (exitCode === 0) {
+	try {
+		const fnSrc = join(root, "functions");
+		const fnDest = join(root, "out", "functions");
+		if (existsSync(fnSrc)) {
+			copyDirRecursive(fnSrc, fnDest);
+		}
+	} catch (err) {
+		console.error("[static-export] failed to copy Cloudflare Pages Functions into out/:", err);
+		exitCode = 1;
+	}
+}
+
 process.exit(exitCode);
+
+function copyDirRecursive(src, dest) {
+	mkdirSync(dest, { recursive: true });
+	for (const name of readdirSync(src)) {
+		const s = join(src, name);
+		const d = join(dest, name);
+		const stat = statSync(s);
+		if (stat.isDirectory()) {
+			copyDirRecursive(s, d);
+		} else if (stat.isFile()) {
+			copyFileSync(s, d);
+		}
+	}
+}
