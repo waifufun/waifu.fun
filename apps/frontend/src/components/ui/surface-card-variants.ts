@@ -11,8 +11,7 @@ export const surfaceCardVariants = cva(
 		variants: {
 			variant: {
 				default: "border-white/10 bg-[#08080a]",
-				interactive:
-					"group border-white/10 bg-[#08080a] hover:border-[#00ff87]/30 hover:bg-[#0a0a0c] cursor-pointer",
+				interactive: "group border-white/10 bg-[#08080a] hover:border-[#00ff87]/30 hover:bg-[#0a0a0c] cursor-pointer",
 				accent: "border-[#00ff87]/30 bg-[#00ff87]/[0.03]",
 				danger: "border-red-500/25 bg-red-500/[0.03]",
 			},

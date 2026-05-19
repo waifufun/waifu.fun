@@ -76,13 +76,7 @@ function SurfaceCardBody({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 }
 
 function SurfaceCardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-	return (
-		<div
-			data-slot="surface-card-footer"
-			className={cn("mt-auto flex items-center pt-3", className)}
-			{...props}
-		/>
-	);
+	return <div data-slot="surface-card-footer" className={cn("mt-auto flex items-center pt-3", className)} {...props} />;
 }
 
 export { surfaceCardVariants } from "./surface-card-variants";
