@@ -1,4 +1,5 @@
-import { cn, timeAgo } from "@/lib/utils";
+import { SurfaceCard } from "@/components/ui/surface-card";
+import { timeAgo } from "@/lib/utils";
 import { ArrowUpRight, Brain } from "lucide-react";
 import Link from "next/link";
 import type { AgentListItem } from "./types";
@@ -8,15 +9,10 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 	const pending = agent.status === "pending";
 
 	return (
-		<Link
-			href={`/agent/${agent.tokenAddress}`}
-			className={cn(
-				"group relative flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden",
-				"transition-colors duration-200 hover:border-[#00ff87]/40",
-			)}
-		>
+		<SurfaceCard variant="interactive" padding="none" asChild className="overflow-hidden">
+			<Link href={`/agent/${agent.tokenAddress}`}>
 			{/* image */}
-			<div className="relative aspect-square w-full bg-black/40 border-b border-white/5 overflow-hidden">
+			<div className="relative aspect-square w-full bg-black/40 border-b border-white/10 overflow-hidden">
 				{/* eslint-disable-next-line @next/next/no-img-element */}
 				<img
 					src={agent.image ?? "/brand/icon/icon_on_black_512.png"}
@@ -62,7 +58,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 					)}
 				</div>
 
-				<div className="flex items-center justify-between pt-2 mt-1 border-t border-white/5">
+				<div className="flex items-center justify-between pt-2 mt-1 border-t border-white/10">
 					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/30">
 						{pending ? "pending" : graduated ? "on pancakeswap" : "on curve"}
 					</div>
@@ -75,7 +71,8 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 					</div>
 				</div>
 			</div>
-		</Link>
+			</Link>
+		</SurfaceCard>
 	);
 }
 

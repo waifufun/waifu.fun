@@ -10,6 +10,7 @@ import { Users } from "lucide-react";
 import Link from "next/link";
 
 import { LaunchCountdown } from "@/components/launch-page/launch-countdown";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import {
 	type LaunchListItem,
 	getLaunchImage,
@@ -53,13 +54,8 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 	const dotClass = STATE_DOT[launch.state] ?? "bg-white/40";
 
 	return (
-		<Link
-			href={`/launch/${encodeURIComponent(launch.id)}`}
-			className={cn(
-				"group relative flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden transition-colors duration-150 ease-out",
-				"hover:border-[#00ff87]/30 hover:bg-[#0a0a0c] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00ff87]/40",
-			)}
-		>
+		<SurfaceCard variant="interactive" padding="none" asChild className="relative overflow-hidden">
+			<Link href={`/launch/${encodeURIComponent(launch.id)}`}>
 			<div className={cn("flex items-start gap-3", compact ? "p-3" : "p-4")}>
 				<LaunchAvatar image={image} compact={compact} />
 
@@ -121,7 +117,8 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 					</div>
 				</div>
 			)}
-		</Link>
+			</Link>
+		</SurfaceCard>
 	);
 }
 
@@ -152,7 +149,7 @@ function LaunchAvatar({ image, compact }: { image: string | null; compact: boole
 export function LaunchCardSkeleton({ variant = "default" }: { variant?: "default" | "compact" }) {
 	const compact = variant === "compact";
 	return (
-		<div className="flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden">
+		<SurfaceCard padding="none" className="overflow-hidden">
 			<div className={cn("flex items-start gap-3 relative overflow-hidden", compact ? "p-3" : "p-4")}>
 				<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
 				<div className={cn("shrink-0 rounded-sm bg-white/5", compact ? "w-10 h-10" : "w-12 h-12")} />
@@ -168,7 +165,7 @@ export function LaunchCardSkeleton({ variant = "default" }: { variant?: "default
 			<div className={cn("px-4 pb-3", compact && "px-3 pb-2.5")}>
 				<div className="h-1 w-full bg-white/5 rounded-sm" />
 			</div>
-		</div>
+		</SurfaceCard>
 	);
 }
 
