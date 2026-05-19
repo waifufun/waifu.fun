@@ -10,6 +10,8 @@ coverage.json
 out-foundry
 crytic-export
 echidna-corpus
+echidna-corpus-wave-o
+echidna-corpus-wave-o-factory
 AUDIT/echidna/results
 
 # Echidna corpus (regenerated each run)

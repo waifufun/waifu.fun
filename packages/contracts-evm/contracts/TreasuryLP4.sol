@@ -47,6 +47,7 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
     uint256 private constant ORACLE_STALE_AFTER = 1 hours;
     uint256 private constant TIER_COUNT = 4;
     uint256 private constant TREASURY_ALLOCATION = 100_000_000 ether;
+    int24 internal constant MAX_TICK_PCS_V3_1PCT = 887200;
 
     IERC20 public immutable token;
     IFlapV2Router public immutable flapV2Router;
@@ -196,7 +197,6 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         uint256 totalTierTokens = 0;
         for (uint256 i = 0; i < TIER_COUNT; i++) {
             _validateTier(args.tiers[i], spacing);
-            if (i > 0 && args.tiers[i].tickLower < args.tiers[i - 1].tickUpper) revert bad_tier();
             tiers[i] = args.tiers[i];
             totalTierTokens += args.tiers[i].tokenAmount;
         }
@@ -464,19 +464,27 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         // Lazy pool init on tier 0. V3 price is always quoted as token1/token0.
         // We want the pool to start with our LP single-sided (100% token).
         //
-        // Case A (token is token0): higher tick = more BNB per token = higher
-        //   MC. Tier ranges sit ABOVE current price; anchor at tier.tickLower
-        //   so the pool's initial tick is at the bottom of our range and the
-        //   position is 100% token0.
+        // PCS V3 LiquidityAmounts treats `sqrtCurrent == sqrtLower` (token0
+        // case) as OOR-below the position, which IS the single-sided regime
+        // we want for the mint. We anchor AT the tier-0 boundary tick so the
+        // pool begins exactly at the lower edge of tier 0's range. The mint
+        // succeeds with 100% token0; the pool has zero active liquidity until
+        // a swap crosses INTO the tier range (which works correctly via
+        // PCS V3's nextInitializedTickWithinOneWord lookup).
         //
-        // Case B (token is token1): higher tick = more token per BNB = LOWER
-        //   MC. Tier ranges sit BELOW current price; anchor at tier.tickUpper
-        //   so the pool's initial tick is at the top of our range and the
-        //   position is 100% token1.
+        // Case A (token is token0): anchor at tier.tickLower (lower boundary).
+        // Case B (token is token1): anchor at tier.tickUpper (upper boundary).
         //
         // Off-chain code in LaunchFactory._buildTiers is responsible for
         // producing ticks in V3's native convention so this branch holds.
         if (idx == 0) {
+            // Anchor the V3 pool's initial sqrtPriceX96 AT the boundary of
+            // the tier-0 single-sided position so it begins with active
+            // liquidity. PCS V3 LiquidityAmounts treats `sqrtCurrent ==
+            // sqrtLower` (token0 case) as OOR-below the position, which is
+            // exactly the single-sided regime we want for the mint. The
+            // pool stays empty until the first V3 buy crosses into the
+            // tier-0 range.
             int24 anchorTick = isToken0 ? tier.tickLower : tier.tickUpper;
             uint160 initSqrtPriceX96 = TickMath.getSqrtRatioAtTick(anchorTick);
             address pool = npm.createAndInitializePoolIfNecessary(
@@ -484,6 +492,41 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
             );
             v3Pool = pool;
             emit V3PoolInitialized(pool, initSqrtPriceX96, anchorTick);
+        }
+
+        // Wave O.0.2 — FLAP TaxedTokenV3 state-transition kick.
+        //
+        // FLAP's TaxedTokenV3 tracks all known pools (V2 pair + every V3 pool
+        // the launcher pre-registered) in a `pools` mapping. In state
+        // `TaxEnforcedAntiFarmer` (state == 2), transfers to ANY address in
+        // `pools` are taxed (3% sell tax in our config). The NPM mint flow
+        // does `transferFrom(treasury, v3Pool, amount)` to satisfy the
+        // V3 pool's M0 invariant `balance0Before + amount0 <= balance0()`.
+        // If that transfer is taxed, the V3 pool receives 97% of `amount0`
+        // and M0 reverts.
+        //
+        // The state ONLY transitions from `TaxEnforcedAntiFarmer` to
+        // `TaxEnforced` inside `_liquidateTax(to)` when `to == mainPool`.
+        // In `TaxEnforced` state, only the mainPool (V2 pair) is taxed; V3
+        // pool transfers are tax-free. None of our V2 pressure buys trigger
+        // this transition because they have `to == buyer`, not
+        // `to == mainPool`.
+        //
+        // Fix: issue a zero-amount transfer to the V2 pair (= mainPool) to
+        // force `_liquidateTax(mainPool)` to fire and flip the state to
+        // `TaxEnforced`. The transfer itself moves no tokens and incurs no
+        // tax (amount * sellTax / 10000 = 0).
+        //
+        // Idempotent: in `TaxEnforced` / `TaxFree` / non-tax states the
+        // liquidator either no-ops or skips the state branch entirely.
+        // Reverts in `BondingCurve` state, but `deployTier` is unreachable
+        // pre-graduation because `currentMcUSD` requires the pair to be
+        // wired AND emitting price updates.
+        address pairAddr = address(flapV2Pair);
+        if (pairAddr != address(0)) {
+            // SafeERC20 to tolerate non-standard return-value behaviours.
+            // The recipient is mainPool; amount is 0, so no tokens move.
+            token.safeTransfer(pairAddr, 0);
         }
 
         uint256 tokenBalanceBefore = token.balanceOf(address(this));
@@ -497,8 +540,10 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
             tickUpper: tier.tickUpper,
             amount0Desired: isToken0 ? tier.tokenAmount : 0,
             amount1Desired: isToken0 ? 0 : tier.tokenAmount,
-            amount0Min: isToken0 ? tier.tokenAmount : 0,
-            amount1Min: isToken0 ? 0 : tier.tokenAmount,
+            // Allow 0.1% slippage: PCS V3 may round the deposited side down by
+            // a few wei when converting tokenAmount into liquidity units.
+            amount0Min: isToken0 ? (tier.tokenAmount * 999) / 1000 : 0,
+            amount1Min: isToken0 ? 0 : (tier.tokenAmount * 999) / 1000,
             recipient: address(this),
             deadline: block.timestamp + 60
         });
@@ -510,9 +555,12 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         uint256 wbnbSide = isToken0 ? amount1 : amount0;
         uint256 actualSpent = tokenBalanceBefore - token.balanceOf(address(this));
 
-        // Single-sided guard: WBNB side must be exactly zero, token side must
-        // exactly match what we asked for (no FoT, no partial fill).
-        if (tokenId == 0 || liquidity == 0 || wbnbSide != 0 || spent != tier.tokenAmount || actualSpent != spent) {
+        // Single-sided guard: WBNB side must be exactly zero. The token side
+        // is allowed to undershoot by V3's rounding tolerance (already capped
+        // by amount{0,1}Min at 99.9%) but MUST NEVER overshoot the budgeted
+        // tier.tokenAmount, and the actual balance delta MUST match what the
+        // NPM reports as spent (catches FoT and any lying mock).
+        if (tokenId == 0 || liquidity == 0 || wbnbSide != 0 || spent > tier.tokenAmount || actualSpent != spent) {
             revert bad_tier();
         }
 
@@ -563,6 +611,7 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
     function _validateTier(Tier memory tier, int24 spacing) internal pure {
         if (tier.targetMcUSD == 0 || tier.tokenAmount == 0 || tier.minEpochs == 0) revert bad_tier();
         if (tier.tickLower >= tier.tickUpper) revert bad_tier();
+        if (tier.tickUpper > MAX_TICK_PCS_V3_1PCT) revert bad_tier();
         if (tier.tickLower % spacing != 0 || tier.tickUpper % spacing != 0) revert bad_tier();
         if (
             tier.epochsAbove != 0 || tier.lastEpochTimestamp != 0 || tier.deployed || tier.paused

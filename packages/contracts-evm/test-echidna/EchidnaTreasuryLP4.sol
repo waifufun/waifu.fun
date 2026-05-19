@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// Property-based fuzz harness for TreasuryLP4 (wave N).
+// Property-based fuzz harness for TreasuryLP4 (wave N + wave O).
 //
 // The full claim() / tier-deploy lifecycle requires a live PCS V3 pool, NPM,
 // FLAP V2 pair, Chainlink feed and 100M token seed; that is exercised in the
@@ -14,6 +14,15 @@ pragma solidity ^0.8.24;
 //   - claim() reverts for non-agent callers
 //   - oracle / advance functions revert pre-setFlapV2Pair
 //   - setFlapV2Pair is owner-only and one-shot
+//
+// Wave O update (overlapping infinity tier model):
+//   - REMOVED implicit assumption that tiers are non-overlapping
+//   - ADDED per-tier tickUpper <= MAX_TICK_PCS_V3_1PCT (887200) bound
+//   - ADDED per-tier tickLower < tickUpper invariant
+//   - ADDED tick spacing alignment invariant (lower%200==0, upper%200==0)
+//   - ADDED total token allocation bound (sum tokenAmount <= 100M)
+//   - The boot ladder now uses overlapping [low, MAX_TICK] ranges to prove
+//     the constructor accepts the new model.
 
 import {TreasuryLP4} from "../contracts/TreasuryLP4.sol";
 import {TreasuryLP4Deployer} from "../contracts/TreasuryLP4Deployer.sol";
@@ -41,6 +50,9 @@ contract EchidnaTreasuryLP4 {
     uint16 internal constant PLATFORM_BPS = 500;
     uint16 internal constant PATRON_BPS = 2000;
     uint24 internal constant V3_FEE = 10000;
+    int24 internal constant MAX_TICK_PCS_V3_1PCT = 887200;
+    int24 internal constant TICK_SPACING_1PCT = 200;
+    uint256 internal constant TREASURY_ALLOCATION = 100_000_000 ether;
 
     constructor() payable {
         tok = new ERC20Mock();
@@ -52,15 +64,17 @@ contract EchidnaTreasuryLP4 {
         deployer = new TreasuryLP4Deployer();
 
         TreasuryLP4.Tier[4] memory ts;
-        // Tier spacing is 200 for V3_FEE=10000; align to that.
-        // Build a strictly stacked ladder so the constructor validators pass.
-        int24[5] memory edges = [int24(-1000), int24(-200), int24(400), int24(800), int24(1200)];
+        // Wave O: overlapping infinity-range tiers. All four upper bounds
+        // sit at MAX_TICK_PCS_V3_1PCT, lowers are spacing-aligned and
+        // increasing but tier i's lower is FAR below tier i-1's upper, so
+        // ranges deliberately overlap. The constructor must accept this.
+        int24[4] memory lowers = [int24(-1000), int24(-200), int24(400), int24(800)];
         for (uint256 i = 0; i < 4; i++) {
             ts[i] = TreasuryLP4.Tier({
                 targetMcUSD: (i + 1) * 1_000_000 * 1e8,
                 tokenAmount: 25_000_000 ether,
-                tickLower: edges[i],
-                tickUpper: edges[i + 1],
+                tickLower: lowers[i],
+                tickUpper: MAX_TICK_PCS_V3_1PCT,
                 minEpochs: i < 2 ? 2 : 3,
                 epochsAbove: 0,
                 lastEpochTimestamp: 0,
@@ -208,6 +222,88 @@ contract EchidnaTreasuryLP4 {
     /// DEAD address invariance.
     function echidna_dead_constant() public view returns (bool) {
         return lp.DEAD() == address(0x000000000000000000000000000000000000dEaD);
+    }
+
+    // -----------------------------------------------------------------
+    // Wave O properties: overlapping infinity-range tier model
+    // -----------------------------------------------------------------
+
+    /// Every tier upper bound must sit at or below the PCS V3 1% fee tier
+    /// spacing-floored MAX_TICK (887200). The constructor validates this;
+    /// since the Tier struct is push-only at construction it never mutates.
+    function echidna_tickUpperWithinBounds() public view returns (bool) {
+        for (uint256 i = 0; i < 4; i++) {
+            (, , , int24 upper, , , , , , ) = lp.tiers(i);
+            if (upper > MAX_TICK_PCS_V3_1PCT) return false;
+        }
+        return true;
+    }
+
+    /// Per-tier range validity: lower must be strictly less than upper.
+    /// This is enforced at construction and must hold for the deployed
+    /// instance regardless of how the harness pokes at it.
+    function echidna_tickRangeValid() public view returns (bool) {
+        for (uint256 i = 0; i < 4; i++) {
+            (, , int24 lower, int24 upper, , , , , , ) = lp.tiers(i);
+            if (lower >= upper) return false;
+        }
+        return true;
+    }
+
+    /// Tick spacing alignment: every lower and upper must be a multiple of
+    /// the V3 fee tier spacing (200 for 1% on PCS V3).
+    function echidna_tickSpacingAligned() public view returns (bool) {
+        int24 spacing = lp.v3TickSpacing();
+        if (spacing != TICK_SPACING_1PCT) return false;
+        for (uint256 i = 0; i < 4; i++) {
+            (, , int24 lower, int24 upper, , , , , , ) = lp.tiers(i);
+            if (lower % spacing != 0) return false;
+            if (upper % spacing != 0) return false;
+        }
+        return true;
+    }
+
+    /// Overlapping tier ranges are now ALLOWED. The boot config places all
+    /// four uppers at MAX_TICK with increasing lowers; this asserts that
+    /// tier i.tickLower < tier i-1.tickUpper for i in 1..3 (i.e. tiers
+    /// truly overlap as configured).
+    function echidna_overlappingAllowed() public view returns (bool) {
+        for (uint256 i = 1; i < 4; i++) {
+            (, , int24 lower, , , , , , , ) = lp.tiers(i);
+            (, , , int24 prevUpper, , , , , , ) = lp.tiers(i - 1);
+            if (lower >= prevUpper) return false; // not overlapping -> harness misconfigured
+        }
+        return true;
+    }
+
+    /// Sum of tokenAmount across all 4 tiers must be <= TREASURY_ALLOCATION
+    /// (100M). This was an implicit invariant under the old model and stays
+    /// under the new one.
+    function echidna_totalAllocationBounded() public view returns (bool) {
+        uint256 total;
+        for (uint256 i = 0; i < 4; i++) {
+            (, uint256 amt, , , , , , , , ) = lp.tiers(i);
+            total += amt;
+        }
+        return total <= TREASURY_ALLOCATION;
+    }
+
+    /// Every tier's targetMcUSD is strictly positive (constructor rejects 0).
+    function echidna_tierTargetsPositive() public view returns (bool) {
+        for (uint256 i = 0; i < 4; i++) {
+            (uint256 mc, , , , , , , , , ) = lp.tiers(i);
+            if (mc == 0) return false;
+        }
+        return true;
+    }
+
+    /// Every tier's minEpochs is strictly positive (constructor rejects 0).
+    function echidna_tierMinEpochsPositive() public view returns (bool) {
+        for (uint256 i = 0; i < 4; i++) {
+            (, , , , uint8 me, , , , , ) = lp.tiers(i);
+            if (me == 0) return false;
+        }
+        return true;
     }
 }
 

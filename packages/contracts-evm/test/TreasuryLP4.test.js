@@ -14,6 +14,7 @@ const { strict: assert } = require("node:assert");
 
 // PCS V3 1% fee tier on BSC has tickSpacing 200. The mock factory matches.
 const TICK_SPACING = 200;
+const MAX_TICK_PCS_V3_1PCT = 887200;
 
 function tier(targetMcUSD, tickLower, tickUpper, minEpochs = 2) {
 	return {
@@ -30,7 +31,7 @@ function tier(targetMcUSD, tickLower, tickUpper, minEpochs = 2) {
 	};
 }
 
-// Build a tick ladder: 4 non-overlapping ranges, all multiples of 200.
+// Build a tick ladder: 4 ranges, all multiples of 200.
 // We intentionally pick the ladder above 0 so token-is-token0 paths anchor
 // the pool at tier 0 lower tick.
 function defaultTiers() {
@@ -171,18 +172,50 @@ describe("TreasuryLP4 :: Wave N", () => {
 		await expectError(ethers.deployContract("TreasuryLP4", [args]), "bad_tier");
 	});
 
-	it("rejects ticks not aligned to v3 spacing (200)", async () => {
+	it("accepts all uppers = MAX_TICK_PCS_V3_1PCT", async () => {
 		const ctx = await deployFixture();
 		const tiers = defaultTiers();
-		tiers[1].tickLower = tiers[1].tickLower + 60; // not aligned to 200
+		for (const t of tiers) t.tickUpper = MAX_TICK_PCS_V3_1PCT;
+		const args = { ...ctx.args, tiers };
+		const treasury = await ethers.deployContract("TreasuryLP4", [args]);
+		for (let i = 0; i < 4; i++) {
+			assert.equal((await treasury.tiers(i)).tickUpper, BigInt(MAX_TICK_PCS_V3_1PCT));
+		}
+	});
+
+	it("rejects upper > MAX_TICK_PCS_V3_1PCT", async () => {
+		const ctx = await deployFixture();
+		const tiers = defaultTiers();
+		tiers[3].tickUpper = MAX_TICK_PCS_V3_1PCT + TICK_SPACING;
 		const args = { ...ctx.args, tiers };
 		await expectError(ethers.deployContract("TreasuryLP4", [args]), "bad_tier");
 	});
 
-	it("rejects overlapping tier ranges", async () => {
+	it("accepts tier[1].lower < tier[0].upper", async () => {
 		const ctx = await deployFixture();
 		const tiers = defaultTiers();
-		tiers[1].tickLower = tiers[0].tickLower; // overlap with tier 0
+		tiers[1].tickLower = tiers[0].tickLower;
+		const args = { ...ctx.args, tiers };
+		const treasury = await ethers.deployContract("TreasuryLP4", [args]);
+		assert.equal((await treasury.tiers(1)).tickLower, BigInt(tiers[0].tickLower));
+	});
+
+	it("still rejects non-spacing-aligned ticks", async () => {
+		const ctx = await deployFixture();
+		const tiers = defaultTiers();
+		tiers[1].tickLower = tiers[1].tickLower + 60;
+		const args = { ...ctx.args, tiers };
+		await expectError(ethers.deployContract("TreasuryLP4", [args]), "bad_tier");
+
+		const tiersWithBadUpper = defaultTiers();
+		tiersWithBadUpper[1].tickUpper = tiersWithBadUpper[1].tickUpper + 60;
+		await expectError(ethers.deployContract("TreasuryLP4", [{ ...ctx.args, tiers: tiersWithBadUpper }]), "bad_tier");
+	});
+
+	it("still rejects tier.lower >= tier.upper", async () => {
+		const ctx = await deployFixture();
+		const tiers = defaultTiers();
+		tiers[1].tickLower = tiers[1].tickUpper;
 		const args = { ...ctx.args, tiers };
 		await expectError(ethers.deployContract("TreasuryLP4", [args]), "bad_tier");
 	});
