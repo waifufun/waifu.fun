@@ -28,6 +28,11 @@ export interface ExtractSwapAmountOutInput {
 /**
  * Sum the tokenOut delivered to `recipient` across the receipt's Transfer logs.
  *
+ * Assumes `recipient` is a passive holder (agent Safe / EOA), not a contract
+ * that re-emits Transfer events to itself in the same tx — for that case the
+ * multi-hop summing would double-count. Callers should pass the terminal
+ * recipient, not an intermediate router.
+ *
  * Returns `null` if no matching Transfer is found (e.g. native-out unwrap path,
  * which the caller should handle separately via the WBNB Withdrawal event).
  */

@@ -61,6 +61,9 @@ export const venusAdapter: AdapterImpl<typeof venusSpec> = {
 					abi: vTokenAbi,
 					functionName: "underlying",
 				});
+				// Assumes standard BEP20 approve semantics. The four whitelisted underlyings
+				// (BUSD/USDT/USDC/ETH on BSC) qualify. Revisit if a future vToken backs an
+				// underlying with non-standard approve (e.g. Ethereum-USDT approve-from-nonzero).
 				await ctx.signAndSend(encodeErc20Approve(underlying, supply.vToken, supply.amount));
 			}
 
