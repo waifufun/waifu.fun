@@ -1,5 +1,6 @@
-import AgentHome from "@/components/agent-home/agent-home";
+import AgentHomeV2 from "@/components/agent-home/agent-home-v2";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
+import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -260,6 +261,28 @@ export async function generateMetadata({
 	};
 }
 
+/**
+ * Best-effort fetch of the wave-M agent_launches row keyed by token
+ * address. Returns null on 404 (legacy / non-v3 launches) or on any
+ * network failure so the page degrades gracefully.
+ */
+async function fetchLaunch(address: string): Promise<AgentLaunchByToken | null> {
+	try {
+		const res = await fetch(`${API_BASE}/v2/launches/by-token/${encodeURIComponent(address.toLowerCase())}`, {
+			next: { revalidate: 30 },
+		});
+		if (!res.ok) return null;
+		const json = (await res.json()) as unknown;
+		if (json && typeof json === "object" && "data" in (json as Record<string, unknown>)) {
+			return (json as { data: AgentLaunchByToken }).data ?? null;
+		}
+		return json as AgentLaunchByToken;
+	} catch (e) {
+		console.error("launch fetch failed", e);
+		return null;
+	}
+}
+
 export default async function AgentPage({
 	params,
 }: {
@@ -267,11 +290,11 @@ export default async function AgentPage({
 }) {
 	const { address } = await params;
 
-	const [agent, trades] = await Promise.all([fetchAgent(address), fetchTrades(address)]);
+	const [agent, trades, launch] = await Promise.all([fetchAgent(address), fetchTrades(address), fetchLaunch(address)]);
 
 	if (!agent) {
 		notFound();
 	}
 
-	return <AgentHome agent={agent} trades={trades} />;
+	return <AgentHomeV2 agent={agent} trades={trades} launch={launch} />;
 }
