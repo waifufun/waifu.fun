@@ -149,6 +149,35 @@ html.dark body {
 	--sidebar-accent-foreground: oklch(0.918 0.003 286);
 	--sidebar-border: oklch(1 0 0 / 6%);
 	--sidebar-ring: oklch(0.85 0.25 155);
+
+	/*
+	 * Canonical `wf` design tokens. CSS variables so non-Tailwind contexts
+	 * (third-party widgets, inline styles, dynamic theming) can read them.
+	 * Keep these in lockstep with the `wf` color block in tailwind.config.js.
+	 * Change one variable, propagate everywhere.
+	 */
+	--wf-bg: #08080a;
+	--wf-surface-1: #08080a;
+	--wf-surface-2: #0a0a0c;
+	--wf-surface-3: #111114;
+	--wf-surface-input: #0e0e12;
+	--wf-stroke-1: rgba(255, 255, 255, 0.06);
+	--wf-stroke-2: rgba(255, 255, 255, 0.1);
+	--wf-stroke-3: rgba(255, 255, 255, 0.16);
+	--wf-stroke-accent: rgba(0, 255, 135, 0.3);
+	--wf-text-1: #e4e4e7;
+	--wf-text-2: rgba(255, 255, 255, 0.65);
+	--wf-text-3: rgba(255, 255, 255, 0.45);
+	--wf-text-4: rgba(255, 255, 255, 0.3);
+	--wf-accent: #00ff87;
+	--wf-accent-dim: #00cc6a;
+	--wf-accent-wash: rgba(0, 255, 135, 0.06);
+	--wf-warning: #facc15;
+	--wf-success: #00ff87;
+	--wf-danger: #f87171;
+	--wf-radius-sm: 2px;
+	--wf-radius-md: 4px;
+	--wf-radius-lg: 8px;
 }
 
 @layer base {
