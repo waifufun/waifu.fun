@@ -71,6 +71,31 @@ module.exports = {
 				"surface-card": "#111114",
 				"surface-muted": "#0c0c0e",
 				"surface-elevated": "#0a0a0c",
+				// Canonical design token namespace `wf`. The single source of truth for
+				// surfaces, strokes, text, and accent. New components should use these;
+				// existing components migrate incrementally in follow-up PRs.
+				wf: {
+					bg: "#08080a", // page background
+					"surface-1": "#08080a", // card background (matches launch-card)
+					"surface-2": "#0a0a0c", // hover / slightly elevated
+					"surface-3": "#111114", // elevated surface / nested
+					"surface-input": "#0e0e12", // form input background
+					"stroke-1": "rgba(255, 255, 255, 0.06)", // hairline border
+					"stroke-2": "rgba(255, 255, 255, 0.10)", // default card border
+					"stroke-3": "rgba(255, 255, 255, 0.16)", // emphasized border
+					"stroke-accent": "rgba(0, 255, 135, 0.30)", // hover / active accent border
+					"text-1": "#e4e4e7", // primary text
+					"text-2": "rgba(255, 255, 255, 0.65)", // secondary text
+					"text-3": "rgba(255, 255, 255, 0.45)", // tertiary text / mono labels
+					"text-4": "rgba(255, 255, 255, 0.30)", // disabled / faint
+					accent: "#00ff87",
+					"accent-dim": "#00cc6a",
+					"accent-wash": "rgba(0, 255, 135, 0.06)",
+					"accent-ring": "rgba(0, 255, 135, 0.30)",
+					warning: "#facc15",
+					success: "#00ff87",
+					danger: "#f87171",
+				},
 				waifu: {
 					green: "#00FF87",
 					"green-dim": "#00CC6A",
@@ -88,6 +113,9 @@ module.exports = {
 						input: "#0e0e12",
 						elevated: "#0a0a0c",
 						muted: "#0c0c0e",
+						// Previously referenced by table.tsx but never defined. Mapped
+						// to the canonical accent so the class actually renders.
+						"action-highlight": "#00ff87",
 					},
 					stroke: {
 						primary: "rgba(255, 255, 255, 0.06)",
@@ -99,6 +127,10 @@ module.exports = {
 						secondary: "#a1a1aa",
 						tertiary: "#52525b",
 						link: "#00ff87",
+						// Previously referenced by button + table + input but never
+						// defined. Maps to the canonical accent so default buttons
+						// stop rendering with a transparent background.
+						highlight: "#00ff87",
 					},
 					accent: {
 						green: "#00ff87",
