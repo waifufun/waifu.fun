@@ -10,6 +10,7 @@ import { Users } from "lucide-react";
 import Link from "next/link";
 
 import { LaunchCountdown } from "@/components/launch-page/launch-countdown";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import {
 	type LaunchListItem,
 	getLaunchImage,
@@ -53,75 +54,71 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 	const dotClass = STATE_DOT[launch.state] ?? "bg-white/40";
 
 	return (
-		<Link
-			href={`/launch/${encodeURIComponent(launch.id)}`}
-			className={cn(
-				"group relative flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden transition-colors duration-150 ease-out",
-				"hover:border-[#00ff87]/30 hover:bg-[#0a0a0c] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00ff87]/40",
-			)}
-		>
-			<div className={cn("flex items-start gap-3", compact ? "p-3" : "p-4")}>
-				<LaunchAvatar image={image} compact={compact} />
+		<SurfaceCard variant="interactive" padding="none" asChild className="relative overflow-hidden">
+			<Link href={`/launch/${encodeURIComponent(launch.id)}`}>
+				<div className={cn("flex items-start gap-3", compact ? "p-3" : "p-4")}>
+					<LaunchAvatar image={image} compact={compact} />
 
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2 flex-wrap">
-						<span className={cn("text-white truncate", compact ? "text-sm" : "text-base")}>{name}</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">${symbol}</span>
-					</div>
-					<div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-						<span
-							className={cn(
-								"inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm border text-[9px] font-mono uppercase tracking-[0.2em]",
-								stateClass,
-							)}
-						>
-							<span className={cn("w-1 h-1 rounded-full", dotClass)} />
-							{launch.state}
-						</span>
-						{launch.tier ? (
-							<span className="inline-flex items-center px-1.5 py-0.5 rounded-sm border border-white/10 text-[9px] font-mono uppercase tracking-[0.2em] text-white/55">
-								tier {launch.tier}
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2 flex-wrap">
+							<span className={cn("text-white truncate", compact ? "text-sm" : "text-base")}>{name}</span>
+							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">${symbol}</span>
+						</div>
+						<div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+							<span
+								className={cn(
+									"inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm border text-[9px] font-mono uppercase tracking-[0.2em]",
+									stateClass,
+								)}
+							>
+								<span className={cn("w-1 h-1 rounded-full", dotClass)} />
+								{launch.state}
 							</span>
-						) : null}
-						{launch.depositorCount !== undefined && launch.depositorCount > 0 ? (
-							<span className="inline-flex items-center gap-1 text-[10px] text-white/45">
-								<Users className="w-2.5 h-2.5" strokeWidth={1.5} />
-								{launch.depositorCount}
-							</span>
-						) : null}
+							{launch.tier ? (
+								<span className="inline-flex items-center px-1.5 py-0.5 rounded-sm border border-white/10 text-[9px] font-mono uppercase tracking-[0.2em] text-white/55">
+									tier {launch.tier}
+								</span>
+							) : null}
+							{launch.depositorCount !== undefined && launch.depositorCount > 0 ? (
+								<span className="inline-flex items-center gap-1 text-[10px] text-white/45">
+									<Users className="w-2.5 h-2.5" strokeWidth={1.5} />
+									{launch.depositorCount}
+								</span>
+							) : null}
+						</div>
 					</div>
 				</div>
-			</div>
 
-			{/* progress + countdown bar */}
-			{launch.state === "open" ? (
-				<div className={cn("mt-auto px-4 pb-3 pt-1", compact && "px-3 pb-2.5")}>
-					<div className="flex items-baseline justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-white/45 mb-1.5">
-						<span className="tabular-nums">{pct.toFixed(1)}% raised</span>
-						<LaunchCountdown
-							closeTimestampSec={launch.closeTimestamp ?? null}
-							compact
-							className="tabular-nums text-white/55"
-						/>
+				{/* progress + countdown bar */}
+				{launch.state === "open" ? (
+					<div className={cn("mt-auto px-4 pb-3 pt-1", compact && "px-3 pb-2.5")}>
+						<div className="flex items-baseline justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-white/45 mb-1.5">
+							<span className="tabular-nums">{pct.toFixed(1)}% raised</span>
+							<LaunchCountdown
+								closeTimestampSec={launch.closeTimestamp ?? null}
+								compact
+								className="tabular-nums text-white/55"
+							/>
+						</div>
+						<div className="h-1 w-full overflow-hidden border border-white/10 bg-[#111114] rounded-sm">
+							<div className="h-full bg-[#00ff87] transition-[width] duration-500" style={{ width: `${pct}%` }} />
+						</div>
 					</div>
-					<div className="h-1 w-full overflow-hidden border border-white/10 bg-[#111114] rounded-sm">
-						<div className="h-full bg-[#00ff87] transition-[width] duration-500" style={{ width: `${pct}%` }} />
+				) : (
+					<div className={cn("mt-auto px-4 pb-3", compact && "px-3 pb-2.5")}>
+						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+							{launch.state === "launched"
+								? "live on dex"
+								: launch.state === "closed"
+									? "awaiting bundle"
+									: launch.state === "failed"
+										? "refundable"
+										: "view details"}
+						</div>
 					</div>
-				</div>
-			) : (
-				<div className={cn("mt-auto px-4 pb-3", compact && "px-3 pb-2.5")}>
-					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
-						{launch.state === "launched"
-							? "live on dex"
-							: launch.state === "closed"
-								? "awaiting bundle"
-								: launch.state === "failed"
-									? "refundable"
-									: "view details"}
-					</div>
-				</div>
-			)}
-		</Link>
+				)}
+			</Link>
+		</SurfaceCard>
 	);
 }
 
@@ -152,7 +149,7 @@ function LaunchAvatar({ image, compact }: { image: string | null; compact: boole
 export function LaunchCardSkeleton({ variant = "default" }: { variant?: "default" | "compact" }) {
 	const compact = variant === "compact";
 	return (
-		<div className="flex flex-col border border-white/10 bg-[#08080a] rounded-sm overflow-hidden">
+		<SurfaceCard padding="none" className="overflow-hidden">
 			<div className={cn("flex items-start gap-3 relative overflow-hidden", compact ? "p-3" : "p-4")}>
 				<div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
 				<div className={cn("shrink-0 rounded-sm bg-white/5", compact ? "w-10 h-10" : "w-12 h-12")} />
@@ -168,7 +165,7 @@ export function LaunchCardSkeleton({ variant = "default" }: { variant?: "default
 			<div className={cn("px-4 pb-3", compact && "px-3 pb-2.5")}>
 				<div className="h-1 w-full bg-white/5 rounded-sm" />
 			</div>
-		</div>
+		</SurfaceCard>
 	);
 }
 
