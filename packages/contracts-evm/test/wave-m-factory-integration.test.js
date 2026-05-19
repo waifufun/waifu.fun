@@ -351,12 +351,7 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 		it("accepts all uppers = MAX_TICK_PCS_V3_1PCT", async () => {
 			const ctx = await deployStack();
 			const builder = buildConfig(ctx, {
-				treasuryTickUppers: [
-					MAX_TICK_PCS_V3_1PCT,
-					MAX_TICK_PCS_V3_1PCT,
-					MAX_TICK_PCS_V3_1PCT,
-					MAX_TICK_PCS_V3_1PCT,
-				],
+				treasuryTickUppers: [MAX_TICK_PCS_V3_1PCT, MAX_TICK_PCS_V3_1PCT, MAX_TICK_PCS_V3_1PCT, MAX_TICK_PCS_V3_1PCT],
 			});
 			const cfg = await builder.config();
 			const addrs = await ctx.factory.connect(ctx.creator).createLaunch.staticCall(cfg);

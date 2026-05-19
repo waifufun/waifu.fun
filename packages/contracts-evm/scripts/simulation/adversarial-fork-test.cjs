@@ -293,7 +293,8 @@ function buildConfig({ creator, bundleBot, platformSafe, label, predicted, vanit
 
 async function fullBootstrap({ factory, feed, platformSafeAddress, creator, bundleBot, depositors, label, preMined }) {
 	// Use pre-mined vanity salt when supplied; otherwise mine on demand.
-	const mined = preMined || mineToken0Salt(BSC.FLAP_PORTAL, initCodeHash(BSC.TOKEN_IMPL_TAXED_V3), creator.address, label);
+	const mined =
+		preMined || mineToken0Salt(BSC.FLAP_PORTAL, initCodeHash(BSC.TOKEN_IMPL_TAXED_V3), creator.address, label);
 	const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 	const cfg = buildConfig({
 		creator: creator.address,
@@ -413,11 +414,26 @@ async function main() {
 	log("");
 	log("Pre-mining vanity salts (mined once, reused via evm_snapshot / evm_revert)...");
 	const t0 = Date.now();
-	const sharedAGMine = mineToken0Salt(BSC.FLAP_PORTAL, initCodeHash(BSC.TOKEN_IMPL_TAXED_V3), creator.address, "adv-AG-shared");
+	const sharedAGMine = mineToken0Salt(
+		BSC.FLAP_PORTAL,
+		initCodeHash(BSC.TOKEN_IMPL_TAXED_V3),
+		creator.address,
+		"adv-AG-shared",
+	);
 	log(`  A/G  -> ${sharedAGMine.predicted} (${sharedAGMine.iterations} iters)`);
-	const sharedBootMine = mineToken0Salt(BSC.FLAP_PORTAL, initCodeHash(BSC.TOKEN_IMPL_TAXED_V3), creator.address, "adv-boot");
+	const sharedBootMine = mineToken0Salt(
+		BSC.FLAP_PORTAL,
+		initCodeHash(BSC.TOKEN_IMPL_TAXED_V3),
+		creator.address,
+		"adv-boot",
+	);
 	log(`  boot -> ${sharedBootMine.predicted} (${sharedBootMine.iterations} iters)`);
-	const sharedBMine = mineToken0Salt(BSC.FLAP_PORTAL, initCodeHash(BSC.TOKEN_IMPL_TAXED_V3), creator.address, "adv-B-shared");
+	const sharedBMine = mineToken0Salt(
+		BSC.FLAP_PORTAL,
+		initCodeHash(BSC.TOKEN_IMPL_TAXED_V3),
+		creator.address,
+		"adv-B-shared",
+	);
 	log(`  B    -> ${sharedBMine.predicted} (${sharedBMine.iterations} iters)`);
 	log(`pre-mine done in ${Math.round((Date.now() - t0) / 1000)}s`);
 
@@ -447,8 +463,7 @@ async function main() {
 		Cgroup,
 		1,
 		"platformBps+patronBps > 10000 reverts",
-		async () =>
-			await factory.connect(creator).createLaunch({ ...baseCfg, platformBps: 5000, patronBps: 5001 }),
+		async () => await factory.connect(creator).createLaunch({ ...baseCfg, platformBps: 5000, patronBps: 5001 }),
 		{ errorName: "InvalidPlatformBps" },
 	);
 	await revert(c1Snap);
@@ -669,7 +684,12 @@ async function main() {
 		const diff = gotBack - depAmt;
 		const absdiff = diff < 0n ? -diff : diff;
 		if (absdiff < ethers.parseEther("0.0001")) {
-			pass(Agroup, 2, "withdraw during OPEN returns full amount (penaltyBps=0)", `gotBack ${ethers.formatEther(gotBack)} BNB`);
+			pass(
+				Agroup,
+				2,
+				"withdraw during OPEN returns full amount (penaltyBps=0)",
+				`gotBack ${ethers.formatEther(gotBack)} BNB`,
+			);
 		} else {
 			fail(Agroup, 2, "withdraw amount mismatch", `expected ${depAmt} got ${gotBack}`);
 		}
@@ -709,13 +729,9 @@ async function main() {
 		await increase(Math.max(closeTs - now + 60, 60));
 		await (await vault.connect(dA).enableRefundUnderSubscribed()).wait();
 		await (await vault.connect(dA).refund()).wait();
-		await expectRevert(
-			Agroup,
-			4,
-			"second refund() reverts NoDeposit",
-			async () => await vault.connect(dA).refund(),
-			{ errorName: "NoDeposit" },
-		);
+		await expectRevert(Agroup, 4, "second refund() reverts NoDeposit", async () => await vault.connect(dA).refund(), {
+			errorName: "NoDeposit",
+		});
 		await revert(snap);
 	}
 
@@ -853,7 +869,9 @@ async function main() {
 		label: "adv-boot",
 		preMined: sharedBootMine,
 	});
-	log(`bootstrapped token ${boot.mined.predicted}, agentSafe ${boot.addrs.agentSafe}, treasuryLp ${boot.addrs.treasuryLp}`);
+	log(
+		`bootstrapped token ${boot.mined.predicted}, agentSafe ${boot.addrs.agentSafe}, treasuryLp ${boot.addrs.treasuryLp}`,
+	);
 	const POST_BOOT = await snapshot();
 
 	// ---------------------------------------------------------------
@@ -1363,7 +1381,9 @@ async function main() {
 		const splitterTokDelta = splitterTokAfterBuy - splitterTokBefore;
 		const splitterBnbDelta = splitterBalAfterBuy - splitterBalBefore;
 		const totalTaxCaptured = tokenSelfDelta + splitterTokDelta + splitterBnbDelta;
-		log(`    E1 telemetry: buyer received ${ethers.formatUnits(buyerReceived, 18)} tok, token-self +${ethers.formatUnits(tokenSelfDelta, 18)}, splitter +${ethers.formatUnits(splitterTokDelta, 18)} tok / ${ethers.formatEther(splitterBnbDelta)} BNB`);
+		log(
+			`    E1 telemetry: buyer received ${ethers.formatUnits(buyerReceived, 18)} tok, token-self +${ethers.formatUnits(tokenSelfDelta, 18)}, splitter +${ethers.formatUnits(splitterTokDelta, 18)} tok / ${ethers.formatEther(splitterBnbDelta)} BNB`,
+		);
 		if (totalTaxCaptured > 0n) {
 			pass(
 				Egroup,
@@ -1408,7 +1428,9 @@ async function main() {
 			const tokenSelfDelta2 = tokenSelfAfterSell - tokenSelfBeforeSell; // may be negative if liquidated
 			const splitterBnbDelta2 = splitterBnbAfterSell - splitterBnbBeforeSell;
 			const splitterTokDelta2 = splitterTokAfterSell - splitterTokBeforeSell;
-			log(`    E2 telemetry: token-self ${tokenSelfDelta2 >= 0n ? "+" : ""}${ethers.formatUnits(tokenSelfDelta2, 18)}, splitter +${ethers.formatUnits(splitterTokDelta2, 18)} tok / ${ethers.formatEther(splitterBnbDelta2)} BNB`);
+			log(
+				`    E2 telemetry: token-self ${tokenSelfDelta2 >= 0n ? "+" : ""}${ethers.formatUnits(tokenSelfDelta2, 18)}, splitter +${ethers.formatUnits(splitterTokDelta2, 18)} tok / ${ethers.formatEther(splitterBnbDelta2)} BNB`,
+			);
 			const movement = abs(tokenSelfDelta2) + splitterTokDelta2 + splitterBnbDelta2;
 			if (movement > 0n) {
 				pass(
@@ -1524,7 +1546,9 @@ async function main() {
 	log("- Default penaltyBps in LaunchFactory.createLaunch is 0 → A2 verifies no penalty math");
 	log("- C1 spec asked for sum > 9000; contract validates only sum > 10000. C1b documents the gap.");
 	log("- B5 N/A: predictedToken is router immutable, can't be passed in BundleExecParams");
-	log("- D2 N/A: deploying full tier ladder is the happy-path test; we exercise the 'already deployed' guard via pauseTier in D6 instead");
+	log(
+		"- D2 N/A: deploying full tier ladder is the happy-path test; we exercise the 'already deployed' guard via pauseTier in D6 instead",
+	);
 
 	fs.mkdirSync(path.dirname(REPORT), { recursive: true });
 	fs.writeFileSync(REPORT, `${lines.join("\n")}\n`);
