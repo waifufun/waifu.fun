@@ -48,6 +48,10 @@ export const venusContracts = {
 	vUSDT: "0xfD5840Cd36d94D7229439859C0112a4185BC0255",
 	vUSDC: "0xecA88125a5ADbe82614ffC12D0DB554E2e2867C8",
 	vETH: "0xf508fCbF6Daba4772C7d9e7f6C39fc6a14Cb60b5",
+	BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+	USDT: "0x55d398326f99059fF775485246999027B3197955",
+	USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+	ETH: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
 } as const satisfies Record<string, Address>;
 
 const erc20VTokenContracts = [
@@ -55,6 +59,13 @@ const erc20VTokenContracts = [
 	venusContracts.vUSDT,
 	venusContracts.vUSDC,
 	venusContracts.vETH,
+] as const;
+
+const underlyingErc20Contracts = [
+	venusContracts.BUSD,
+	venusContracts.USDT,
+	venusContracts.USDC,
+	venusContracts.ETH,
 ] as const;
 
 const allVTokenContracts = [venusContracts.vBNB, ...erc20VTokenContracts] as const;
@@ -88,8 +99,13 @@ export const venusSpec = {
 					target,
 					selectors: ["0xa0712d68" as const],
 				})),
+				...underlyingErc20Contracts.map((target) => ({
+					label: "Approve underlying for vToken supply",
+					target,
+					selectors: ["0x095ea7b3" as const],
+				})),
 			],
-			cost: { gasEstimate: 180_000n },
+			cost: { gasEstimate: 240_000n },
 		},
 		redeem: {
 			name: "redeem",

@@ -46,6 +46,47 @@ describe("venus adapter writes", () => {
 		]);
 	});
 
+	it("supplies an ERC20 vToken by approving underlying then minting", async () => {
+		const submitted: Array<{ to: Address; data: Hex; value?: bigint }> = [];
+		const reads: Array<{ address: Address; functionName: string }> = [];
+		const ctx = makeContext({
+			publicClient: {
+				readContract: async (parameters: { address: Address; functionName: string }) => {
+					reads.push({ address: parameters.address, functionName: parameters.functionName });
+					return venusContracts.USDT;
+				},
+			},
+			signAndSend: async (tx) => {
+				submitted.push(tx);
+				return { hash };
+			},
+		});
+
+		const output = await venusAdapter.calls.supply(ctx, {
+			vToken: venusContracts.vUSDT,
+			amount: 789n,
+		});
+
+		assert.deepEqual(output, { hash });
+		assert.deepEqual(reads, [{ address: venusContracts.vUSDT, functionName: "underlying" }]);
+		assert.equal(submitted.length, 2);
+		assert.equal(submitted[0]?.to, venusContracts.USDT);
+		assert.equal(submitted[0]?.value, 0n);
+		assert.ok(submitted[0]?.data.startsWith("0x095ea7b3"));
+		assert.ok(submitted[0]?.data.toLowerCase().includes(venusContracts.vUSDT.slice(2).toLowerCase()));
+		assert.equal(submitted[1]?.to, venusContracts.vUSDT);
+		assert.equal(submitted[1]?.value, 0n);
+		assert.ok(submitted[1]?.data.startsWith("0xa0712d68"));
+	});
+
+	it("rejects ERC20 supply without a publicClient", async () => {
+		const ctx = makeContext({ publicClient: undefined });
+		await assert.rejects(
+			venusAdapter.calls.supply(ctx, { vToken: venusContracts.vUSDT, amount: 1n }),
+			/requires ctx\.publicClient\.readContract/,
+		);
+	});
+
 	it("borrows from a vToken with borrow(amount)", async () => {
 		const submitted: Array<{ to: Address; data: Hex; value?: bigint }> = [];
 		const ctx = makeContext({
