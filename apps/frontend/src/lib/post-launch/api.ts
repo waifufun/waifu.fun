@@ -13,11 +13,30 @@ import { apiFetch, isApiError } from "@/lib/api/_fetcher";
 
 export type AgentLaunchState = "open" | "closed" | "launched" | "failed";
 
+export interface AgentLaunchTaxSplit {
+	platformBps: number;
+	patronBps: number;
+	agentBps: number;
+}
+
+export interface AgentSafeConfig {
+	owners: string[];
+	threshold: number;
+}
+
 export interface AgentLaunchByToken {
 	id: string;
 	token: string;
 	vault: string;
 	router: string;
+	/** wave M: per-launch TaxSplitter (10/25/65 default split) */
+	taxSplitter: string | null;
+	/** wave M: per-launch Gnosis Safe controlled by patron */
+	agentSafe: string | null;
+	/** wave M: numeric tax split bps. null when legacy launch row predates wave M */
+	taxSplit: AgentLaunchTaxSplit | null;
+	/** wave M: AgentSafe owners + threshold, when configured */
+	agentSafeConfig: AgentSafeConfig | null;
 	treasuryLp: string | null;
 	creator: string;
 	tier: number;
