@@ -129,14 +129,18 @@ function flushReport(extraTrailer = "") {
 		"",
 	];
 	const finalVerdict = computeFinalVerdict();
-	const verdictBlock = [
+	const verdictBlock = ["", "## FINAL VERDICT", "", `> ${finalVerdict}`, ""];
+	const body = [
+		...head,
+		...passFailBlock,
+		...numbersBlock,
+		...verdictBlock,
+		"## Full log",
 		"",
-		"## FINAL VERDICT",
-		"",
-		`> ${finalVerdict}`,
-		"",
+		"```text",
+		...lines,
+		"```",
 	];
-	const body = [...head, ...passFailBlock, ...numbersBlock, ...verdictBlock, "## Full log", "", "```text", ...lines, "```"];
 	if (extraTrailer) body.push("", extraTrailer);
 	fs.mkdirSync(path.dirname(REPORT), { recursive: true });
 	fs.writeFileSync(REPORT, `${body.join("\n")}\n`);
@@ -151,7 +155,7 @@ function computeFinalVerdict() {
 
 const bnb = (w) => `${ethers.formatEther(w || 0n)} BNB`;
 const tok = (w) => `${ethers.formatUnits(w || 0n, 18)} SUKI`;
-const pct = (n, d) => (d === 0n ? "0" : ((Number((n * 10000n) / d) / 100).toFixed(2)));
+const pct = (n, d) => (d === 0n ? "0" : (Number((n * 10000n) / d) / 100).toFixed(2));
 
 // =====================================================================
 // FLAP CREATE2 + vanity mining
@@ -162,16 +166,12 @@ function initCodeHash(impl) {
 	);
 }
 function effectiveSalt(creator, rawSalt) {
-	return ethers.keccak256(
-		ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, rawSalt]),
-	);
+	return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, rawSalt]));
 }
 // Mine for: ends in 7777 AND token address < WBNB (so token is token0 in the
 // V2 + V3 pairs, which is what TreasuryLP4 expects for its tick math).
 function mineVanity(deployer, codeHash, creator, label) {
-	let rawSalt = ethers.keccak256(
-		ethers.AbiCoder.defaultAbiCoder().encode(["string", "address"], [label, creator]),
-	);
+	let rawSalt = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string", "address"], [label, creator]));
 	const wbnbLower = BSC.WBNB.toLowerCase();
 	for (let i = 0; i < 8_000_000; i += 1) {
 		const salt = effectiveSalt(creator, rawSalt);
@@ -267,14 +267,7 @@ async function main() {
 	realNumbers.chainId = Number(net.chainId);
 
 	const signers = await ethers.getSigners();
-	const [
-		deployer,
-		psOwner,
-		creator,
-		dA, dB, dC, dD, dE, dF, dG, dH,
-		bundleBot,
-		t1, t2, t3, t4, t5,
-	] = signers;
+	const [deployer, psOwner, creator, dA, dB, dC, dD, dE, dF, dG, dH, bundleBot, t1, t2, t3, t4, t5] = signers;
 
 	// -----------------------------------------------------------------
 	// STEP 1: Platform Safe (real Gnosis Safe via SafeProxyFactory)
@@ -294,8 +287,14 @@ async function main() {
 			"function setup(address[] _owners,uint256 _threshold,address to,bytes data,address fallbackHandler,address paymentToken,uint256 payment,address paymentReceiver)",
 		]);
 		const setupData = safeIface.encodeFunctionData("setup", [
-			[psOwner.address], 1, ethers.ZeroAddress, "0x",
-			ethers.ZeroAddress, ethers.ZeroAddress, 0, ethers.ZeroAddress,
+			[psOwner.address],
+			1,
+			ethers.ZeroAddress,
+			"0x",
+			ethers.ZeroAddress,
+			ethers.ZeroAddress,
+			0,
+			ethers.ZeroAddress,
 		]);
 		const receipt = await (
 			await safeProxyFactory.createProxyWithNonce(BSC.SAFE_SINGLETON, setupData, Date.now())
@@ -398,7 +397,16 @@ async function main() {
 			if (!match) allOk = false;
 		}
 		// Bytecode sanity on key real-world contract addresses.
-		for (const addr of [BSC.PCS_FACTORY, BSC.PCS_ROUTER, BSC.PCS_V3_FACTORY, BSC.PCS_V3_NPM, BSC.WBNB, BSC.FLAP_PORTAL, BSC.SAFE_SINGLETON, BSC.SAFE_PROXY_FACTORY]) {
+		for (const addr of [
+			BSC.PCS_FACTORY,
+			BSC.PCS_ROUTER,
+			BSC.PCS_V3_FACTORY,
+			BSC.PCS_V3_NPM,
+			BSC.WBNB,
+			BSC.FLAP_PORTAL,
+			BSC.SAFE_SINGLETON,
+			BSC.SAFE_PROXY_FACTORY,
+		]) {
 			const c = await ethers.provider.getCode(addr);
 			if (c === "0x") {
 				allOk = false;
@@ -614,19 +622,21 @@ async function main() {
 			ethers.provider,
 		);
 		const closeTs = (await ethers.provider.getBlock("latest")).timestamp;
-		const tx = await router.connect(bundleBot).executeBundle([
-			mined.rawSalt,
-			SUKI.name,
-			SUKI.symbol,
-			SUKI.metaCid,
-			SUKI.buyTaxBps,
-			SUKI.sellTaxBps,
-			SUKI.taxDuration,
-			SUKI.antiFarmerDuration,
-			launches.taxSplitter,
-			0n,
-			closeTs + 3600,
-		]);
+		const tx = await router
+			.connect(bundleBot)
+			.executeBundle([
+				mined.rawSalt,
+				SUKI.name,
+				SUKI.symbol,
+				SUKI.metaCid,
+				SUKI.buyTaxBps,
+				SUKI.sellTaxBps,
+				SUKI.taxDuration,
+				SUKI.antiFarmerDuration,
+				launches.taxSplitter,
+				0n,
+				closeTs + 3600,
+			]);
 		const receipt = await tx.wait();
 		kv("executeBundle gas", receipt.gasUsed.toString());
 		realNumbers.executeBundleGas = receipt.gasUsed.toString();
@@ -817,13 +827,15 @@ async function main() {
 			const trader = buyTraders[i % buyTraders.length];
 			const amt = ethers.parseEther(String(ladder[i]));
 			await (
-				await pcsRouter.connect(trader).swapExactETHForTokensSupportingFeeOnTransferTokens(
-					0,
-					[BSC.WBNB, mined.predicted],
-					trader.address,
-					await latestDeadline(),
-					{ value: amt },
-				)
+				await pcsRouter
+					.connect(trader)
+					.swapExactETHForTokensSupportingFeeOnTransferTokens(
+						0,
+						[BSC.WBNB, mined.predicted],
+						trader.address,
+						await latestDeadline(),
+						{ value: amt },
+					)
 			).wait();
 			const snap = await pairSnapshotMc(pair, token, wbnb);
 			kv(`buy ${ladder[i]} BNB -> MC`, `$${snap.mcUsd.toFixed(0)}`);
@@ -893,7 +905,10 @@ async function main() {
 		if (pos.liquidity === 0n) throw new Error("V3 position has zero liquidity");
 		realNumbers.tier0Liquidity = pos.liquidity.toString();
 		endBanner();
-		pass(10, `tier 0 deployed: NFT #${tier0PositionId}, liquidity ${pos.liquidity}, ticks [${tier0Final.tickLower}, ${MAX_TICK}]`);
+		pass(
+			10,
+			`tier 0 deployed: NFT #${tier0PositionId}, liquidity ${pos.liquidity}, ticks [${tier0Final.tickLower}, ${MAX_TICK}]`,
+		);
 	} catch (e) {
 		endBanner();
 		fail(10, `tier 0 deploy failed: ${e.shortMessage || e.message}`);
@@ -916,29 +931,33 @@ async function main() {
 		await (await wbnb.connect(t1).deposit({ value: ethers.parseEther("60") })).wait();
 		await (await wbnb.connect(t1).approve(BSC.PCS_V3_SWAP_ROUTER, ethers.MaxUint256)).wait();
 		await (
-			await v3Router.connect(t1).exactInputSingle([
-				BSC.WBNB,
-				mined.predicted,
-				10000,
-				t1.address,
-				await latestDeadline(),
-				ethers.parseEther("35"),
-				0,
-				0,
-			])
+			await v3Router
+				.connect(t1)
+				.exactInputSingle([
+					BSC.WBNB,
+					mined.predicted,
+					10000,
+					t1.address,
+					await latestDeadline(),
+					ethers.parseEther("35"),
+					0,
+					0,
+				])
 		).wait();
 		// And a smaller follow-up to make sure fees accumulate.
 		await (
-			await v3Router.connect(t1).exactInputSingle([
-				BSC.WBNB,
-				mined.predicted,
-				10000,
-				t1.address,
-				await latestDeadline(),
-				ethers.parseEther("10"),
-				0,
-				0,
-			])
+			await v3Router
+				.connect(t1)
+				.exactInputSingle([
+					BSC.WBNB,
+					mined.predicted,
+					10000,
+					t1.address,
+					await latestDeadline(),
+					ethers.parseEther("10"),
+					0,
+					0,
+				])
 		).wait();
 
 		const [claimablePre] = await treasury.claimable();
@@ -999,7 +1018,10 @@ async function main() {
 			if (platformInRange && patronInRange && agentInRange && burnedTokens > 0n) {
 				pass(11, `claim split P:${pP}% / Patron:${pA}% / Agent:${pG}% with ${tok(burnedTokens)} burned`);
 			} else {
-				investigate(11, `split ratios drift from 5.56/22.22/72.22 spec: got P:${pP}% Patron:${pA}% Agent:${pG}% burned:${tok(burnedTokens)}`);
+				investigate(
+					11,
+					`split ratios drift from 5.56/22.22/72.22 spec: got P:${pP}% Patron:${pA}% Agent:${pG}% burned:${tok(burnedTokens)}`,
+				);
 			}
 		} else {
 			endBanner();
@@ -1042,13 +1064,15 @@ async function main() {
 		await (await token.connect(seller).approve(BSC.PCS_ROUTER, sellAmt)).wait();
 		const sellerBnbBefore = await ethers.provider.getBalance(seller.address);
 		const sellReceipt = await (
-			await pcsRouter.connect(seller).swapExactTokensForETHSupportingFeeOnTransferTokens(
-				sellAmt,
-				0,
-				[mined.predicted, BSC.WBNB],
-				seller.address,
-				await latestDeadline(),
-			)
+			await pcsRouter
+				.connect(seller)
+				.swapExactTokensForETHSupportingFeeOnTransferTokens(
+					sellAmt,
+					0,
+					[mined.predicted, BSC.WBNB],
+					seller.address,
+					await latestDeadline(),
+				)
 		).wait();
 		const sellerBnbAfter = await ethers.provider.getBalance(seller.address);
 		const sellGasCost = sellReceipt.gasUsed * (sellReceipt.gasPrice ?? 1n);
@@ -1112,8 +1136,7 @@ async function main() {
 			const pA = pct(paGot, total);
 			const pG = pct(aGot, total);
 			// Spec: 10% platform, 25% patron, 65% agent.
-			const inSpec =
-				Math.abs(Number(pP) - 10) < 2 && Math.abs(Number(pA) - 25) < 3 && Math.abs(Number(pG) - 65) < 3;
+			const inSpec = Math.abs(Number(pP) - 10) < 2 && Math.abs(Number(pA) - 25) < 3 && Math.abs(Number(pG) - 65) < 3;
 			if (inSpec) {
 				pass(12, `tax split clean: ${pP}% platform / ${pA}% patron / ${pG}% agent (10/25/65 spec)`);
 			} else {
