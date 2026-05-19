@@ -117,7 +117,9 @@ async function main() {
 	const gwei3 = 3n;
 	for (const r of gasReport) {
 		const cost5 = BigInt(r.gasUsed) * gwei5 * 10n ** 9n;
-		console.log(`  ${r.name.padEnd(22)} ${r.gasUsed.toString().padStart(8)} gas  @5gwei=${ethers.formatEther(cost5)} BNB`);
+		console.log(
+			`  ${r.name.padEnd(22)} ${r.gasUsed.toString().padStart(8)} gas  @5gwei=${ethers.formatEther(cost5)} BNB`,
+		);
 	}
 	const totalCost5 = BigInt(totalGas) * gwei5 * 10n ** 9n;
 	const totalCost3 = BigInt(totalGas) * gwei3 * 10n ** 9n;
