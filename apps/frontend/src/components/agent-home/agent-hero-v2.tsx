@@ -1,18 +1,20 @@
 /**
  * AgentHeroV2. The premium hero for the wave-M+ agent page.
  *
- * Layout (lg+): asymmetric 5/7 split. Poster image on the left, identity
+ * Layout (lg+): asymmetric 4/8 split. Poster image on the left, identity
  * stack on the right. On mobile it collapses to a single column with the
  * poster on top.
  *
- * What's surfaced:
- *   - large image, framed (inner ring + tinted shadow) so it reads as a
- *     poster, not a thumbnail
- *   - name (display weight, tracking-tight, balanced wrap)
- *   - ticker pill, tier badge, status dot
- *   - identity block: token / patron / creator address with copy + scan
- *   - a single secondary line below for the description (max 2 lines,
- *     pretty wrap, kept calm)
+ * What's surfaced (top to bottom on the right):
+ *   - name (display weight, tracking-tight) + ticker pill
+ *   - description (pretty-wrapped, max 60ch, contrast-bumped from v1)
+ *   - primary actions row (trade / swap / share / scan)
+ *   - identity block: token / patron / creator addresses, hairline-divided
+ *
+ * The actions sit inside the hero so the right column doesn't dead-air
+ * down the middle of the page on tokens with sparse address data
+ * (legacy / no-patron rows). Premium products lead with what you can do,
+ * then back-fill with provenance.
  *
  * Style discipline: variance 6 / motion 4 / density 4.
  * Single accent. No purple. No glow. tabular-nums for ids.
@@ -27,6 +29,7 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils";
 
 import AddressRow from "./address-row";
+import PrimaryActions from "./primary-actions";
 
 const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
@@ -89,24 +92,27 @@ export default function AgentHeroV2({ agent, launch }: AgentHeroV2Props) {
 			</div>
 
 			{/* identity */}
-			<div className="flex flex-col gap-5 lg:col-span-7">
-				<div className="flex flex-col gap-3">
+			<div className="flex flex-col gap-6 lg:col-span-8">
+				<div className="flex flex-col gap-3.5">
 					<div className="flex items-baseline gap-3 flex-wrap">
-						<h1 className="text-3xl md:text-4xl text-white leading-[1.05] tracking-tight text-balance">{agent.name}</h1>
+						<h1 className="text-4xl md:text-5xl text-white leading-[1] tracking-tight text-balance">{agent.name}</h1>
 						<span className="inline-flex h-7 items-center rounded-sm border border-white/15 bg-white/[0.03] px-2 font-mono text-[12px] tracking-wider text-white/70">
 							${agent.ticker}
 						</span>
 					</div>
 
 					{agent.description ? (
-						<p className="text-[13px] md:text-sm text-white/55 leading-relaxed max-w-[60ch] text-pretty">
+						<p className="text-sm md:text-[15px] text-white/70 leading-relaxed max-w-[60ch] text-pretty">
 							{agent.description}
 						</p>
 					) : null}
 				</div>
 
-				{/* address block. Three rows, hairline-divided. No big stat
-				    cards here; this is identity, not data. */}
+				{/* primary actions sit inside the hero so the right column
+				    isn't a tall narrow strip of metadata. */}
+				<PrimaryActions agent={agent} />
+
+				{/* address block. Hairline-divided. */}
 				<SurfaceCard padding="none" className="overflow-hidden">
 					<div className="divide-y divide-white/[0.06]">
 						<AddressRow label="token" address={agent.tokenAddress} />
