@@ -464,21 +464,16 @@ contract TreasuryLP4 is Ownable, ReentrancyGuard, ITreasuryLPRegistry {
         // Lazy pool init on tier 0. V3 price is always quoted as token1/token0.
         // We want the pool to start with our LP single-sided (100% token).
         //
-        // PCS V3 LiquidityManagement rejects a single-sided deposit if the
-        // pool's current tick equals the position's tickLower (token0 case)
-        // or tickUpper (token1 case), because the position is then considered
-        // to straddle the price and BOTH sides are required. We therefore
-        // anchor the pool ONE spacing step OUTSIDE the range so the current
-        // tick sits strictly below (token0) or strictly above (token1) the
-        // range bounds, which keeps the mint truly single-sided.
+        // PCS V3 LiquidityAmounts treats `sqrtCurrent == sqrtLower` (token0
+        // case) as OOR-below the position, which IS the single-sided regime
+        // we want for the mint. We anchor AT the tier-0 boundary tick so the
+        // pool begins exactly at the lower edge of tier 0's range. The mint
+        // succeeds with 100% token0; the pool has zero active liquidity until
+        // a swap crosses INTO the tier range (which works correctly via
+        // PCS V3's nextInitializedTickWithinOneWord lookup).
         //
-        // Case A (token is token0): higher tick = more BNB per token = higher
-        //   MC. Tier ranges sit ABOVE current price; anchor one spacing below
-        //   tier.tickLower so the position is 100% token0.
-        //
-        // Case B (token is token1): higher tick = more token per BNB = LOWER
-        //   MC. Tier ranges sit BELOW current price; anchor one spacing above
-        //   tier.tickUpper so the position is 100% token1.
+        // Case A (token is token0): anchor at tier.tickLower (lower boundary).
+        // Case B (token is token1): anchor at tier.tickUpper (upper boundary).
         //
         // Off-chain code in LaunchFactory._buildTiers is responsible for
         // producing ticks in V3's native convention so this branch holds.
