@@ -94,6 +94,8 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit = {})
 			try {
 				parsed = JSON.parse(text) as ParsedError;
 			} catch {
+				// Non-JSON error body (e.g. HTML 404 from a CDN). Keep going,
+				// just don't pretend it's a structured error.
 				parsed = null;
 			}
 		}
@@ -101,7 +103,7 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit = {})
 			status: res.status,
 			message: parsed?.error || parsed?.message || res.statusText || `HTTP ${res.status}`,
 			...(parsed?.code ? { code: parsed.code } : {}),
-			...(parsed ? { details: parsed } : text ? { details: text } : {}),
+			...(parsed ? { details: parsed } : text ? { details: text.slice(0, 500) } : {}),
 		};
 		throw err;
 	}

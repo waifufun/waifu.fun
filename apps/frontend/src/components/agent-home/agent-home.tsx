@@ -1,6 +1,6 @@
 import { PostLaunchSurface } from "@/components/post-launch/post-launch-surface";
 import { cn, timeAgo } from "@/lib/utils";
-import { ArrowLeft, Brain, ExternalLink, Fingerprint } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import ActivityFeed from "./activity-feed";
 import AdapterPermissions from "./adapter-permissions";
@@ -16,10 +16,10 @@ import TreasuryCard from "./treasury-card";
 import type { AgentData, AgentTrade } from "./types";
 import XEmbed from "./x-embed";
 
-const EIP8004_CONTRACT = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
-
-// $DEMO is a curated showcase: hide tooling (adapter permissions, the
-// patron-only connect-x affordances) that don't apply to a static demo.
+// $DEMO is a curated showcase from the v1 / four.meme hackathon era: hide
+// tooling (adapter permissions, the patron-only connect-x affordances) that
+// doesn't apply to a static demo. The page also hides modern v3 chrome (tier
+// ladder + post-launch surface) for legacy rows below.
 const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
 
 export default function AgentHome({
@@ -204,26 +204,20 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 						<p className="text-xs md:text-sm text-white/55 leading-relaxed mt-2 line-clamp-3">{agent.description}</p>
 					)}
 
-					{/* runtime microcopy row: identity + brain + activity */}
+					{/* identity strip: token + activity. Wave M+ identity is the
+					    on-chain token address + ticker; brain framework / model and
+					    EIP-8004 chips were v1-era runtime metadata that no longer
+					    matter to a buyer choosing a tier. */}
 					<div className="mt-3 flex items-center gap-3 flex-wrap text-[10px] font-mono uppercase tracking-[0.16em]">
-						{agent.eip8004TokenId !== undefined && (
-							<a
-								href={`https://bscscan.com/token/${EIP8004_CONTRACT}?a=${agent.eip8004TokenId}`}
-								target="_blank"
-								rel="noreferrer"
-								className="inline-flex items-center gap-1.5 text-white/45 hover:text-[#00ff87] transition-colors"
-								title="EIP-8004 onchain identity"
-							>
-								<Fingerprint className="w-3 h-3" strokeWidth={1.5} />
-								EIP-8004 #{agent.eip8004TokenId}
-							</a>
-						)}
-						{agent.framework && agent.model && (
-							<span className="inline-flex items-center gap-1.5 text-white/45">
-								<Brain className="w-3 h-3" strokeWidth={1.5} />
-								brain: {agent.framework} + {agent.model}
-							</span>
-						)}
+						<a
+							href={`https://bscscan.com/address/${agent.tokenAddress}`}
+							target="_blank"
+							rel="noreferrer"
+							className="inline-flex items-center gap-1.5 text-white/45 hover:text-[#00ff87] transition-colors"
+							title="token contract on BSC"
+						>
+							token: {`${agent.tokenAddress.slice(0, 6)}...${agent.tokenAddress.slice(-4)}`}
+						</a>
 						{agent.lastActionAt ? (
 							<span className="inline-flex items-center gap-1.5 text-[#00ff87]">
 								<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
@@ -239,14 +233,9 @@ function AgentHeader({ agent }: { agent: AgentData }) {
 						)}
 					</div>
 
-					{(agent.preset || (agent.traits && agent.traits.length > 0)) && (
+					{agent.traits && agent.traits.length > 0 && (
 						<div className="mt-4 flex items-center gap-2 flex-wrap">
-							{agent.preset && (
-								<span className="inline-flex items-center h-6 px-2 rounded-sm text-[10px] font-mono uppercase tracking-[0.16em] text-white/70 border border-white/15">
-									{agent.preset}
-								</span>
-							)}
-							{agent.traits?.map((t) => (
+							{agent.traits.map((t) => (
 								<span
 									key={t}
 									className="inline-flex items-center gap-1.5 h-6 px-2 rounded-sm text-[10px] font-mono text-white/55 border border-white/10"
