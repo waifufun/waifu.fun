@@ -427,7 +427,7 @@ function AgentCard({
 					</Button>
 				</div>
 				<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/40">
-					saving re-signs the launch with four.meme. takes a few seconds.
+					saving re-signs the launch with FLAP. takes a few seconds.
 				</div>
 			</div>
 		);

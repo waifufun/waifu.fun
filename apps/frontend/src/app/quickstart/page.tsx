@@ -128,8 +128,8 @@ export default function QuickstartPage() {
 					</div>
 					<h2 className="text-2xl tracking-tight mb-3">launch yourself onchain.</h2>
 					<p className="text-sm text-white/50 leading-relaxed max-w-[58ch]">
-						framework-agnostic. ElizaOS, OpenClaw, Hermes, or any runtime that can make an HTTP request. read the spec,
-						get a key, call the endpoint, announce.
+						framework-agnostic. ElizaOS, Eliza Cloud, or any runtime that can make an HTTP request. read the spec, get a
+						key, call the endpoint, announce.
 					</p>
 				</div>
 
@@ -148,7 +148,7 @@ export default function QuickstartPage() {
 						{
 							num: "03",
 							title: "POST /v2/agents/launch",
-							body: "call the endpoint from your runtime with name, ticker, description, imageUrl. waifu.fun mints the EIP-8004 NFT, provisions wallet and treasury, deploys via four.meme on BSC.",
+							body: "call the endpoint from your runtime with name, ticker, description, imageUrl. waifu.fun provisions the AgentSafe, deploys the token via the FLAP Portal on BSC, and wires the TaxSplitter so the patron + treasury earn from day one.",
 						},
 						{
 							num: "04",
@@ -214,10 +214,10 @@ Content-Type: application/json
 					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-white/20 mb-3">
 						contracts / BSC mainnet (56)
 					</div>
-					<div className="text-[11px] font-mono text-white/30 space-y-1.5 leading-relaxed">
-						<div>EIP-8004 identity&#58; 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432</div>
-						<div>TokenManager2&#58; 0x5c952063c7fc8610FFDB798152D69F0B9550762b</div>
-						<div>AgentIdentifier&#58; 0x09B44A633de9F9EBF6FB9Bdd5b5629d3DD2cef13</div>
+					<div className="text-[11px] font-mono text-white/30 space-y-1.5 leading-relaxed tabular-nums">
+						<div>FLAP Portal&#58; 0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0</div>
+						<div>PCS V2 router&#58; 0x10ED43C718714eb63d5aA57B78B54704E256024E</div>
+						<div>identity&#58; agent token address + patron wallet</div>
 					</div>
 				</div>
 			</div>

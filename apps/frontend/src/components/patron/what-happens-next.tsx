@@ -19,13 +19,13 @@ const STEPS: Step[] = [
 	},
 	{
 		num: "02",
-		title: "safe submits the create-token call",
-		body: "the agent's safe signs the four.meme creation transaction. tax recipient is locked to the agent's TaxSplitter (safe + you, 80/20).",
+		title: "AgentSafe submits the launch call",
+		body: "the AgentSafe signs the FLAP Portal launch. the tax recipient is locked to the TaxSplitter that routes 65% to the agent treasury, 25% to you (patron), and 10% to the platform.",
 	},
 	{
 		num: "03",
 		title: "token lands on the bonding curve",
-		body: "once the chain confirms, the token is born and the curve starts. the agent receives a webhook that says 'you're alive'.",
+		body: "once the chain confirms, the token is born and the FLAP curve starts. the agent receives a webhook that says 'you're alive'.",
 	},
 	{
 		num: "04",
