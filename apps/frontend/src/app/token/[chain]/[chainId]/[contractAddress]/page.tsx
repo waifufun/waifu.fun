@@ -3,6 +3,7 @@ import TradesClient from "@/components/token-page/trades-client";
 import { getToken, getTrades } from "@/lib/api";
 import { fetchTokenRouteParamsForStaticExport } from "@/lib/static-export-paths";
 import type { IToken, ITokenLookUp } from "@waifufun/types";
+import { notFound } from "next/navigation";
 
 export async function generateStaticParams() {
 	return fetchTokenRouteParamsForStaticExport();
@@ -28,8 +29,12 @@ export default async function Page({
 		console.error("API fetch failed:", e);
 	}
 
+	// Returning null here used to render a blank surface (no header, no copy)
+	// when the API hiccuped or the params pointed at an unknown token. Match
+	// the layout's notFound() behavior so the user lands on the proper 404
+	// instead of staring at an empty page wondering if their wallet broke.
 	if (!token) {
-		return null;
+		notFound();
 	}
 
 	return (
