@@ -4,7 +4,7 @@
  *  - hyperliquid perps (pending fund)
  *  - polymarket predictions (pending fund)
  *
- * Honest empty-states: "pending fund" not "—".
+ * Honest empty-states: "pending fund" not blank placeholders.
  */
 
 import { SOL_BURNER } from "./holdings";

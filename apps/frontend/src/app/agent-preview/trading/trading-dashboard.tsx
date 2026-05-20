@@ -3,7 +3,7 @@
 /**
  * /agent-preview/trading
  *
- * Sol's trading surface. Cards differ by trade TYPE — each gets its own
+ * Sol's trading surface. Cards differ by trade TYPE, each gets its own
  * visual primitive. All venues unfunded at launch; cards render empty
  * states that show the structure so when accounts go live, the data
  * just slots in.

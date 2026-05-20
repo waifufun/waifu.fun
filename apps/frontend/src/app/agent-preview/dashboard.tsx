@@ -1,177 +1,469 @@
 "use client";
 
-/**
- * $WAIFU dashboard — wave R (chart-centric, sophisticated/modern)
- *
- * Shape:
- *   1. HeroBar       — compact portrait + name + status + buy
- *   2. RevenueChart  — DOMINANT stacked area, 4 streams, time tabs
- *   3. ActivityFeed  — unified PR + tweet + tx + revenue stream
- *   4. StatsRail     — 6 KPIs + stack mini + link to /trading
- *
- * Type: trading-terminal feel, no editorial serif, restrained amber,
- * Geist mono throughout. Inspired by defillama/dune/linear/mercury.
- */
-
+import NumberFlow from "@number-flow/react";
 import {
-	ActivityIcon,
+	ArrowDownIcon,
 	ArrowRightIcon,
+	ArrowUpIcon,
 	ArrowUpRightIcon,
+	BotIcon,
 	BoxIcon,
+	CandlestickChartIcon,
 	GitPullRequestIcon,
-	GlobeIcon,
-	LineChartIcon,
-	type LucideIcon,
+	Repeat2Icon,
 	SparklesIcon,
 	WalletIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+	Area,
+	AreaChart,
+	Bar,
+	CartesianGrid,
+	ComposedChart,
+	Line,
+	ResponsiveContainer,
+	Tooltip,
+	XAxis,
+	YAxis,
+} from "recharts";
 
 import type { ActivityItem } from "./lib/activity";
-import { BURN_USD_PER_MONTH, runwayDays } from "./lib/burn";
+import type { Candle, CandleRange, CandleSeries } from "./lib/candles";
 import { type ShipSummary, daysOperating, relativeTime } from "./lib/github";
 import type { HoldingsSnapshot } from "./lib/holdings";
 import { type RevenueRange, STREAMS, loadRevenue } from "./lib/revenue";
+import type { TokenMetrics } from "./lib/token";
 
-type DashboardProps = {
+type Props = {
+	token: TokenMetrics;
+	tokenAddress: string;
+	initialCandles: CandleSeries;
 	holdings: HoldingsSnapshot;
 	ship: ShipSummary;
 	activity: ActivityItem[];
 };
-
-const TREASURY = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
+type Trade = {
+	id: string;
+	type: "trade";
+	side: "buy" | "sell";
+	timestamp: string;
+	bnb: number;
+	tokens: number;
+	wallet: string;
+	tx: string;
+};
+type FeedItem = ActivityItem | Trade;
+const RANGES: CandleRange[] = ["1m", "5m", "1h", "4h", "1d", "7d"];
 const FIRST_PR_ISO = "2026-03-05T00:00:00Z";
-
-// ── shared atoms ────────────────────────────────────────────────
 
 function Panel({
 	children,
 	className = "",
 	noPad = false,
-}: {
-	children: React.ReactNode;
-	className?: string;
-	noPad?: boolean;
-}) {
+}: { children: React.ReactNode; className?: string; noPad?: boolean }) {
 	return (
 		<section
-			className={`relative overflow-hidden rounded-md border border-white/[0.06] bg-[#0b0b0e] ${noPad ? "" : "p-5"} ${className}`}
+			className={`relative overflow-hidden rounded-sm border border-white/[0.07] bg-[#08090b] shadow-[0_0_0_1px_rgba(0,0,0,0.35)] ${noPad ? "" : "p-4"} ${className}`}
 		>
 			{children}
 		</section>
 	);
 }
-
-function Label({
-	icon: Icon,
-	children,
-	right,
-}: {
-	icon?: LucideIcon;
-	children: React.ReactNode;
-	right?: React.ReactNode;
-}) {
+function Pulse({ tone = "green" }: { tone?: "green" | "red" | "amber" }) {
+	const color =
+		tone === "red"
+			? "bg-red-400 shadow-[0_0_8px_#f87171]"
+			: tone === "amber"
+				? "bg-amber-400 shadow-[0_0_8px_#f59e0b]"
+				: "bg-emerald-400 shadow-[0_0_8px_#34d399]";
 	return (
-		<header className="mb-4 flex items-center justify-between">
-			<div className="flex items-center gap-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.2em]">
-				{Icon && <Icon className="h-3 w-3" strokeWidth={1.5} />}
-				<span>{children}</span>
-			</div>
+		<span className="relative inline-flex h-2 w-2">
+			<span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${color} opacity-45`} />
+			<span className={`relative inline-flex h-2 w-2 rounded-full ${color}`} />
+		</span>
+	);
+}
+function Label({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
+	return (
+		<header className="mb-3 flex items-center justify-between gap-3">
+			<div className="font-mono text-[10px] text-white/45 uppercase tracking-[0.2em]">{children}</div>
 			{right}
 		</header>
 	);
 }
-
-function Pulse() {
+function usd(value: number, compact = true) {
+	if (!Number.isFinite(value) || value <= 0) return "$0";
+	if (value < 0.01) return `$${value.toExponential(2)}`;
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+		notation: compact ? "compact" : "standard",
+		maximumFractionDigits: value < 1 ? 6 : 2,
+	}).format(value);
+}
+function num(value: number) {
+	return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(value || 0);
+}
+function addr(address: string) {
+	return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+function AnimatedUsd({ value, compact = true }: { value: number; compact?: boolean }) {
+	if (!Number.isFinite(value) || value <= 0) return <span>$0</span>;
 	return (
-		<span className="relative inline-flex h-1.5 w-1.5 shrink-0">
-			<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-			<span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
-		</span>
+		<NumberFlow
+			format={{
+				currency: "USD",
+				maximumFractionDigits: value < 1 ? 6 : 2,
+				notation: compact ? "compact" : "standard",
+				style: "currency",
+			}}
+			locales="en-US"
+			value={value}
+		/>
 	);
 }
 
-// ── hero bar ───────────────────────────────────────────────────
-
-function HeroBar({ ship }: { ship: ShipSummary }) {
-	const days = daysOperating(FIRST_PR_ISO);
-	const lastShip = ship.items[0];
+function Hero({ ship, token, tokenAddress }: { ship: ShipSummary; token: TokenMetrics; tokenAddress: string }) {
+	const last = ship.items[0];
 	return (
-		<header className="mb-3 flex items-center justify-between gap-4 rounded-md border border-white/[0.06] bg-[#0b0b0e] px-4 py-3">
-			<div className="flex items-center gap-3 min-w-0">
-				<div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-sm ring-1 ring-amber-500/25">
-					<img src="/brand/agents/waifu/portrait-amber.webp" alt="sol" className="h-full w-full object-cover" />
+		<header className="mb-3 grid gap-3 rounded-sm border border-white/[0.07] bg-[#08090b] px-4 py-3 md:grid-cols-[1fr_auto] md:items-center">
+			<div className="flex min-w-0 items-center gap-3">
+				<div className="h-10 w-10 overflow-hidden rounded-sm ring-1 ring-amber-400/30">
+					<img alt="sol" className="h-full w-full object-cover" src="/brand/agents/waifu/portrait-amber.webp" />
 				</div>
-				<div className="min-w-0">
-					<div className="flex items-baseline gap-2">
-						<span className="font-mono text-[15px] font-medium text-white tracking-tight">sol</span>
-						<span className="font-mono text-[11px] tracking-[0.16em] text-amber-300/90">$WAIFU</span>
+				<div>
+					<div className="flex flex-wrap items-baseline gap-2">
+						<span className="font-mono text-[15px] text-white">sol</span>
+						<span className="font-mono text-[12px] text-amber-300 tracking-[0.14em]">${token.symbol}</span>
+						<span className="rounded-[2px] border border-emerald-400/20 bg-emerald-400/[0.06] px-1.5 py-0.5 font-mono text-[9px] text-emerald-300 uppercase tracking-[0.18em]">
+							online
+						</span>
 					</div>
-					<div className="mt-0.5 flex items-center gap-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.16em]">
+					<div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.16em]">
 						<Pulse />
-						<span className="text-amber-300/80">online</span>
-						<span className="text-white/20">·</span>
-						<span>day {days}</span>
-						<span className="text-white/20">·</span>
-						<span>last ship {lastShip ? relativeTime(lastShip.mergedAt) : "–"}</span>
+						<span>day {daysOperating(FIRST_PR_ISO)}</span>
+						<span className="text-white/20">/</span>
+						<span>{addr(tokenAddress)}</span>
+						<span className="text-white/20">/</span>
+						<span>last ship {last ? relativeTime(last.mergedAt) : "n/a"}</span>
 					</div>
 				</div>
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex gap-2">
 				<a
-					href={`https://bscscan.com/address/${TREASURY}`}
-					target="_blank"
+					className="rounded-sm border border-white/[0.08] px-3 py-2 font-mono text-[10px] text-white/55 uppercase tracking-[0.18em] hover:text-white"
+					href={`https://bscscan.com/address/${tokenAddress}`}
 					rel="noreferrer"
-					className="hidden font-mono text-[10px] text-white/45 uppercase tracking-[0.18em] transition-colors hover:text-amber-300 sm:inline"
+					target="_blank"
 				>
-					{TREASURY.slice(0, 6)}…{TREASURY.slice(-4)}
+					bscscan
 				</a>
 				<a
-					href={`https://four.meme/token/${TREASURY}`}
-					target="_blank"
+					className="inline-flex items-center gap-1.5 rounded-sm bg-amber-400 px-4 py-2 font-mono text-[11px] text-black uppercase tracking-[0.18em]"
+					href={`https://four.meme/token/${tokenAddress}`}
 					rel="noreferrer"
-					className="inline-flex items-center gap-1.5 rounded-sm bg-amber-400 px-3 py-1.5 font-mono text-[11px] text-black tracking-[0.16em] uppercase transition-transform hover:scale-[1.02]"
+					target="_blank"
 				>
-					buy <ArrowUpRightIcon className="h-3 w-3" strokeWidth={2.5} />
+					buy <ArrowUpRightIcon className="h-3 w-3" />
 				</a>
 			</div>
 		</header>
 	);
 }
 
-// ── revenue chart ──────────────────────────────────────────────
-
-function RevenueChartPanel() {
-	const [range, setRange] = useState<RevenueRange>("30d");
-	const snapshot = useMemo(() => loadRevenue(range), [range]);
-	// recharts data needs `t` as a number for ordinal axis, store as ms
-	const data = useMemo(
-		() =>
-			snapshot.points.map((p) => ({
-				t: new Date(p.t).getTime(),
-				tax: p.tax,
-				referral: p.referral,
-				skill: p.skill,
-				trading: p.trading,
-			})),
-		[snapshot],
-	);
-
+function chartSlice(candles: Candle[], range: CandleRange) {
+	return candles.slice(-{ "1m": 50, "5m": 55, "1h": 70, "4h": 80, "1d": 72, "7d": 84 }[range]);
+}
+function time(v: number) {
+	const d = new Date(v);
+	return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+function TokenChart({ token, series }: { token: TokenMetrics; series: CandleSeries }) {
+	const [range, setRange] = useState<CandleRange>("1h");
+	const data = useMemo(() => chartSlice(series.candles, range), [series.candles, range]);
+	const price = token.priceUsd || data.at(-1)?.c || 0;
+	const up = token.change24h >= 0;
 	return (
-		<Panel className="col-span-12">
+		<Panel className="min-h-[520px]" noPad>
+			<div className="border-white/[0.06] border-b p-4">
+				<div className="flex flex-wrap items-start justify-between gap-3">
+					<div>
+						<div className="flex items-center gap-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.2em]">
+							<CandlestickChartIcon className="h-3 w-3" /> {token.symbol} price chart
+						</div>
+						<div className="mt-2 flex flex-wrap items-end gap-3">
+							<div className="font-mono text-4xl font-light text-white tabular-nums md:text-5xl">
+								<AnimatedUsd compact={false} value={price} />
+							</div>
+							<div
+								className={`mb-1 flex items-center gap-2 font-mono text-[12px] ${up ? "text-emerald-300" : "text-red-300"}`}
+							>
+								<Pulse tone={up ? "green" : "red"} />
+								{up ? "+" : ""}
+								{token.change24h.toFixed(2)}% 24h
+							</div>
+						</div>
+					</div>
+					<div className="flex rounded-sm border border-white/[0.07] bg-black/20 p-1">
+						{RANGES.map((r) => (
+							<button
+								className={`rounded-[2px] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.15em] ${range === r ? "bg-amber-400 text-black" : "text-white/45 hover:text-white"}`}
+								key={r}
+								onClick={() => setRange(r)}
+								type="button"
+							>
+								{r}
+							</button>
+						))}
+					</div>
+				</div>
+			</div>
+			<div className="h-[380px] p-3 md:p-4">
+				<ResponsiveContainer height="100%" width="100%">
+					<ComposedChart data={data} margin={{ bottom: 0, left: 0, right: 10, top: 8 }}>
+						<CartesianGrid stroke="rgba(255,255,255,0.045)" vertical={false} />
+						<XAxis
+							axisLine={false}
+							dataKey="t"
+							domain={["dataMin", "dataMax"]}
+							minTickGap={32}
+							tick={{ fill: "rgba(255,255,255,0.35)", fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10 }}
+							tickFormatter={time}
+							tickLine={false}
+							type="number"
+						/>
+						<YAxis
+							axisLine={false}
+							dataKey="c"
+							domain={["dataMin", "dataMax"]}
+							orientation="right"
+							tick={{ fill: "rgba(255,255,255,0.35)", fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10 }}
+							tickFormatter={(v) => usd(Number(v), false)}
+							tickLine={false}
+							width={82}
+							yAxisId="price"
+						/>
+						<YAxis hide yAxisId="volume" />
+						<Tooltip
+							contentStyle={{
+								background: "#08090b",
+								border: "1px solid rgba(255,255,255,0.1)",
+								borderRadius: 2,
+								color: "#fff",
+								fontFamily: "var(--font-geist-mono, monospace)",
+								fontSize: 11,
+							}}
+							formatter={(v, name) => [
+								name === "v" ? usd(Number(v)) : usd(Number(v), false),
+								name === "v" ? "volume" : "price",
+							]}
+							labelFormatter={(v) => new Date(Number(v)).toISOString().slice(0, 16).replace("T", " ")}
+						/>
+						<Bar dataKey="v" fill="rgba(245,158,11,0.18)" radius={[1, 1, 0, 0]} yAxisId="volume" />
+						<Line dataKey="c" dot={false} stroke="#f59e0b" strokeWidth={1.8} type="monotone" yAxisId="price" />
+					</ComposedChart>
+				</ResponsiveContainer>
+			</div>
+			<div className="flex justify-between border-white/[0.06] border-t px-4 py-3 font-mono text-[10px] text-white/35 uppercase tracking-[0.16em]">
+				<span>
+					{series.source === "synthetic" ? "synthetic data, wires to real OHLC at launch" : "geckoterminal OHLC"}
+				</span>
+				<span>volume bars in usd</span>
+			</div>
+		</Panel>
+	);
+}
+
+function Swap({ token, tokenAddress }: { token: TokenMetrics; tokenAddress: string }) {
+	const [side, setSide] = useState<"buy" | "sell">("buy");
+	const [amount, setAmount] = useState("0.10");
+	const [slip, setSlip] = useState(1);
+	const n = Number(amount) || 0;
+	const est = token.priceBnb > 0 ? n / token.priceBnb : 0;
+	return (
+		<Panel className="lg:sticky lg:top-4 lg:self-start">
 			<Label
-				icon={LineChartIcon}
+				right={
+					<span className="flex items-center gap-2 text-emerald-300">
+						<Pulse /> route live
+					</span>
+				}
+			>
+				swap
+			</Label>
+			<div className="mb-4 grid grid-cols-2 rounded-sm border border-white/[0.07] bg-black/25 p-1">
+				{(["buy", "sell"] as const).map((s) => (
+					<button
+						className={`rounded-[2px] py-2 font-mono text-[11px] uppercase tracking-[0.18em] ${side === s ? "bg-amber-400 text-black" : "text-white/45"}`}
+						key={s}
+						onClick={() => setSide(s)}
+						type="button"
+					>
+						{s}
+					</button>
+				))}
+			</div>
+			<div className="rounded-sm border border-white/[0.07] bg-white/[0.025] p-3">
+				<div className="mb-2 flex justify-between font-mono text-[10px] text-white/40 uppercase tracking-[0.16em]">
+					<span>from</span>
+					<span>{side === "buy" ? "BNB" : token.symbol}</span>
+				</div>
+				<input
+					className="w-full bg-transparent font-mono text-3xl text-white outline-none"
+					inputMode="decimal"
+					onChange={(e) => setAmount(e.target.value)}
+					value={amount}
+				/>
+			</div>
+			<div className="flex justify-center py-3">
+				<span className="rounded-full border border-white/[0.08] bg-[#08090b] p-2 text-white/35">
+					<Repeat2Icon className="h-4 w-4" />
+				</span>
+			</div>
+			<div className="rounded-sm border border-white/[0.07] bg-white/[0.025] p-3">
+				<div className="mb-2 flex justify-between font-mono text-[10px] text-white/40 uppercase tracking-[0.16em]">
+					<span>to</span>
+					<span>{side === "buy" ? token.symbol : "BNB"}</span>
+				</div>
+				<div className="font-mono text-2xl text-white/85">
+					~ {side === "buy" ? num(est) : (n * token.priceBnb).toFixed(4)}
+				</div>
+			</div>
+			<div className="mt-4 grid grid-cols-4 gap-1">
+				{[0.5, 1, 3, 5].map((s) => (
+					<button
+						className={`rounded-sm border px-2 py-1.5 font-mono text-[10px] ${slip === s ? "border-amber-400/60 bg-amber-400/10 text-amber-200" : "border-white/[0.07] text-white/45"}`}
+						key={s}
+						onClick={() => setSlip(s)}
+						type="button"
+					>
+						{s}%
+					</button>
+				))}
+			</div>
+			<div className="mt-4 space-y-2 border-white/[0.06] border-t pt-4 font-mono text-[10px] text-white/45">
+				<div className="flex justify-between">
+					<span>price impact</span>
+					<span className="text-emerald-300">&lt; 0.01%</span>
+				</div>
+				<div className="flex justify-between">
+					<span>min received</span>
+					<span>
+						{num(est * (1 - slip / 100))} {token.symbol}
+					</span>
+				</div>
+				<div className="flex justify-between">
+					<span>contract</span>
+					<span>{addr(tokenAddress)}</span>
+				</div>
+			</div>
+			<a
+				className="mt-5 flex w-full items-center justify-center gap-2 rounded-sm bg-amber-400 py-3 font-mono text-[12px] text-black uppercase tracking-[0.2em]"
+				href={`https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`}
+				rel="noreferrer"
+				target="_blank"
+			>
+				{side} <ArrowRightIcon className="h-4 w-4" />
+			</a>
+			<div className="mt-3 text-center font-mono text-[10px] text-white/30 uppercase tracking-[0.14em]">
+				powered by pancakeswap, via four.meme at launch
+			</div>
+		</Panel>
+	);
+}
+
+function Kpis({ token }: { token: TokenMetrics }) {
+	const cells = [
+		{
+			label: "price",
+			value: usd(token.priceUsd, false),
+			delta: `${token.change24h >= 0 ? "+" : ""}${token.change24h.toFixed(2)}%`,
+		},
+		{ label: "mcap", value: usd(token.marketCap) },
+		{ label: "liq", value: usd(token.liquidityUsd) },
+		{ label: "holders", value: num(token.holders) },
+		{ label: "vol 24h", value: usd(token.volume24h) },
+		{ label: "txs 24h", value: num(token.txs24h) },
+	];
+	return (
+		<div className="grid grid-cols-2 divide-white/[0.06] rounded-sm border border-white/[0.07] bg-[#08090b] sm:grid-cols-3 lg:grid-cols-6 lg:divide-x">
+			{cells.map((c) => (
+				<div className="p-3" key={c.label}>
+					<div className="font-mono text-[9px] text-white/35 uppercase tracking-[0.2em]">{c.label}</div>
+					<div className="mt-1 font-mono text-[16px] text-white tabular-nums">{c.value}</div>
+					{c.delta && (
+						<div
+							className={
+								token.change24h >= 0 ? "font-mono text-[10px] text-emerald-300" : "font-mono text-[10px] text-red-300"
+							}
+						>
+							{c.delta}
+						</div>
+					)}
+				</div>
+			))}
+		</div>
+	);
+}
+function About({ holdings, token }: { holdings: HoldingsSnapshot; token: TokenMetrics }) {
+	return (
+		<Panel>
+			<Label
+				right={
+					<a className="text-amber-300/80 hover:text-amber-200" href="/agent-preview/trading">
+						trading detail
+					</a>
+				}
+			>
+				about agent
+			</Label>
+			<div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+				<div>
+					<h2 className="flex items-center gap-2 font-mono text-xl text-white">
+						<BotIcon className="h-4 w-4 text-amber-300" /> sol runs ${token.symbol}
+					</h2>
+					<p className="mt-2 max-w-3xl text-sm text-white/58 leading-6">
+						Autonomous builder, market operator, and agent treasury steward. The token terminal is contract driven, so
+						any BSC token address can power this same surface.
+					</p>
+				</div>
+				<div className="grid grid-cols-3 gap-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.14em] md:min-w-[360px]">
+					<Mini label="nav" value={usd(holdings.navUsd)} />
+					<Mini
+						label="supply"
+						value={token.totalSupply > 0n ? num(Number(token.totalSupply / 1_000_000_000_000_000_000n)) : "0"}
+					/>
+					<Mini label="status" value="online" />
+				</div>
+			</div>
+		</Panel>
+	);
+}
+function Mini({ label, value }: { label: string; value: string }) {
+	return (
+		<div className="rounded-sm border border-white/[0.06] bg-white/[0.02] p-2">
+			<div>{label}</div>
+			<div className="mt-1 text-white/85">{value}</div>
+		</div>
+	);
+}
+
+function Revenue() {
+	const [range, setRange] = useState<RevenueRange>("30d");
+	const snap = useMemo(() => loadRevenue(range), [range]);
+	const data = useMemo(() => snap.points.map((p) => ({ ...p, t: new Date(p.t).getTime() })), [snap]);
+	return (
+		<Panel>
+			<Label
 				right={
 					<div className="flex gap-1">
 						{(["24h", "7d", "30d", "all"] as RevenueRange[]).map((r) => (
 							<button
-								type="button"
+								className={`rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase ${range === r ? "bg-amber-400/15 text-amber-200" : "text-white/40"}`}
 								key={r}
 								onClick={() => setRange(r)}
-								className={`rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors ${
-									range === r ? "bg-amber-400/15 text-amber-200" : "text-white/40 hover:text-white/70"
-								}`}
+								type="button"
 							>
 								{r}
 							</button>
@@ -179,317 +471,201 @@ function RevenueChartPanel() {
 					</div>
 				}
 			>
-				revenue
+				revenue streams
 			</Label>
-
-			<div className="mb-4 flex items-baseline gap-3">
-				<div className="font-mono text-[40px] font-light text-white tabular-nums tracking-tight">
-					${snapshot.grandTotalUsd.toFixed(2)}
+			<div className="mb-3 flex items-end gap-3">
+				<div className="font-mono text-3xl text-white">
+					<AnimatedUsd value={snap.grandTotalUsd} />
 				</div>
-				<div className="font-mono text-[10px] text-white/35 uppercase tracking-[0.18em]">
-					{range} · all streams scheduled
-				</div>
+				<div className="pb-1 font-mono text-[10px] text-white/35 uppercase tracking-[0.16em]">4 streams scheduled</div>
 			</div>
-
-			<div className="h-[260px] w-full">
-				<ResponsiveContainer width="100%" height="100%">
-					<AreaChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-						<defs>
-							{STREAMS.map((s) => (
-								<linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-									<stop offset="0%" stopColor={s.color} stopOpacity={0.35} />
-									<stop offset="100%" stopColor={s.color} stopOpacity={0} />
-								</linearGradient>
-							))}
-						</defs>
-						<CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="0" vertical={false} />
+			<div className="h-[220px]">
+				<ResponsiveContainer height="100%" width="100%">
+					<AreaChart data={data}>
+						<CartesianGrid stroke="rgba(255,255,255,0.045)" vertical={false} />
 						<XAxis
-							dataKey="t"
-							type="number"
-							scale="time"
-							domain={["dataMin", "dataMax"]}
-							tickFormatter={(v) => formatTick(v, range)}
-							stroke="rgba(255,255,255,0.18)"
-							tick={{ fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10, fill: "rgba(255,255,255,0.35)" }}
 							axisLine={false}
+							dataKey="t"
+							tick={{ fill: "rgba(255,255,255,0.32)", fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10 }}
+							tickFormatter={(v) => new Date(v).toISOString().slice(5, 10)}
 							tickLine={false}
 						/>
 						<YAxis
-							stroke="rgba(255,255,255,0.18)"
-							tick={{ fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10, fill: "rgba(255,255,255,0.3)" }}
-							tickFormatter={(v) => `$${v}`}
 							axisLine={false}
+							tick={{ fill: "rgba(255,255,255,0.32)", fontFamily: "var(--font-geist-mono, monospace)", fontSize: 10 }}
+							tickFormatter={(v) => `$${v}`}
 							tickLine={false}
-							width={44}
-							domain={[0, "auto"]}
-						/>
-						<Tooltip
-							contentStyle={{
-								background: "#0b0b0e",
-								border: "1px solid rgba(255,255,255,0.08)",
-								borderRadius: 4,
-								fontSize: 11,
-								fontFamily: "var(--font-geist-mono, monospace)",
-							}}
-							labelFormatter={(v) => new Date(v as number).toISOString().slice(0, 16).replace("T", " ")}
-							formatter={(v, name) => [`$${Number(v ?? 0).toFixed(2)}`, String(name)]}
+							width={36}
 						/>
 						{STREAMS.map((s) => (
 							<Area
-								key={s.key}
-								type="monotone"
 								dataKey={s.key}
+								fill={s.color}
+								fillOpacity={0.12}
+								key={s.key}
 								stackId="rev"
 								stroke={s.color}
-								strokeWidth={1.25}
-								fill={`url(#grad-${s.key})`}
+								strokeWidth={1.1}
+								type="monotone"
 							/>
 						))}
 					</AreaChart>
 				</ResponsiveContainer>
 			</div>
-
-			<div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-				{STREAMS.map((s) => (
-					<div
-						key={s.key}
-						className="flex items-start gap-2 rounded-sm border border-white/[0.05] bg-white/[0.012] px-3 py-2"
-					>
-						<span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-						<div className="min-w-0">
-							<div className="font-mono text-[10px] text-white/55 uppercase tracking-[0.18em]">{s.label}</div>
-							<div className="mt-0.5 font-mono text-[12px] text-white/85 tabular-nums">
-								${snapshot.totalsUsd[s.key].toFixed(2)}
-							</div>
-							<div className="font-mono text-[9px] text-white/30 leading-snug">{s.note}</div>
-						</div>
-					</div>
-				))}
-			</div>
 		</Panel>
 	);
 }
 
-function formatTick(v: number, range: RevenueRange): string {
-	const d = new Date(v);
-	if (range === "24h") return `${d.getUTCHours().toString().padStart(2, "0")}:00`;
-	if (range === "7d" || range === "30d") return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
-	return `${d.getUTCMonth() + 1}/${d.getUTCDate().toString().padStart(2, "0")}`;
+function trades(token: TokenMetrics): Trade[] {
+	const now = Date.now();
+	const base = token.priceBnb || 0.000001;
+	return [
+		{
+			id: "trade-1",
+			type: "trade",
+			side: "buy",
+			timestamp: new Date(now - 23_000).toISOString(),
+			bnb: 0.42,
+			tokens: 0.42 / base,
+			wallet: "0x71f2...c9a1",
+			tx: "0xtrade1",
+		},
+		{
+			id: "trade-2",
+			type: "trade",
+			side: "buy",
+			timestamp: new Date(now - 8 * 60_000).toISOString(),
+			bnb: 0.18,
+			tokens: 0.18 / base,
+			wallet: "0xa04c...8b12",
+			tx: "0xtrade2",
+		},
+		{
+			id: "trade-3",
+			type: "trade",
+			side: "sell",
+			timestamp: new Date(now - 21 * 60_000).toISOString(),
+			bnb: 0.09,
+			tokens: 0.09 / base,
+			wallet: "0xe91b...44fd",
+			tx: "0xtrade3",
+		},
+	];
 }
-
-// ── activity feed ──────────────────────────────────────────────
-
-const ACTIVITY_META: Record<ActivityItem["type"], { icon: LucideIcon; label: string; color: string }> = {
-	pr: { icon: GitPullRequestIcon, label: "ship", color: "#22c55e" },
-	tweet: { icon: SparklesIcon, label: "voice", color: "#60a5fa" },
-	tx: { icon: BoxIcon, label: "onchain", color: "#f59e0b" },
-	revenue: { icon: WalletIcon, label: "revenue", color: "#fbbf24" },
-};
-
-function ActivityFeed({ items }: { items: ActivityItem[] }) {
-	const [visible, setVisible] = useState(8);
+function Activity({ items, token }: { items: ActivityItem[]; token: TokenMetrics }) {
+	const [visible, setVisible] = useState(9);
+	const feed = useMemo<FeedItem[]>(
+		() =>
+			[...trades(token), ...items].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+		[items, token],
+	);
+	const last = feed.find((i) => i.type === "trade") as Trade | undefined;
 	return (
-		<Panel className="col-span-12 md:col-span-8">
+		<Panel>
 			<Label
-				icon={ActivityIcon}
 				right={
-					<a
-						href="https://github.com/waifufun/waifu.fun/pulls?q=is%3Apr+is%3Amerged+author%3A0xSolace"
-						target="_blank"
-						rel="noreferrer"
-						className="font-mono text-[10px] text-white/40 uppercase tracking-[0.18em] transition-colors hover:text-amber-300"
-					>
-						github →
-					</a>
+					<span className="flex items-center gap-2 text-emerald-300">
+						<Pulse /> last trade {last ? relativeTime(last.timestamp) : "n/a"}
+					</span>
 				}
 			>
-				activity · {items.length} events
+				activity
 			</Label>
-			<ul className="divide-y divide-white/[0.04]">
-				{items.slice(0, visible).map((it) => (
-					<ActivityRow key={it.id} item={it} />
+			<ul className="divide-y divide-white/[0.045]">
+				{feed.slice(0, visible).map((item) => (
+					<Row item={item} key={item.id} token={token} />
 				))}
 			</ul>
-			{visible < items.length && (
+			{visible < feed.length && (
 				<button
-					type="button"
+					className="mt-4 w-full rounded-sm border border-white/[0.07] py-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.18em] hover:text-amber-300"
 					onClick={() => setVisible((v) => v + 8)}
-					className="mt-4 w-full rounded-sm border border-white/[0.05] py-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.2em] transition-colors hover:border-amber-500/20 hover:text-amber-300"
+					type="button"
 				>
-					load more · {items.length - visible} remaining
+					load more
 				</button>
 			)}
 		</Panel>
 	);
 }
-
-function ActivityRow({ item }: { item: ActivityItem }) {
-	const meta = ACTIVITY_META[item.type];
-	const Icon = meta.icon;
+function Row({ item, token }: { item: FeedItem; token: TokenMetrics }) {
+	const m = meta(item);
 	return (
-		<li>
-			<a
-				href={item.type === "revenue" ? "#" : (item.url as string)}
-				target={item.type === "revenue" ? undefined : "_blank"}
-				rel="noreferrer"
-				className="grid grid-cols-[28px_1fr_auto] items-start gap-3 py-3 transition-colors hover:bg-white/[0.015]"
-			>
-				<span
-					className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-sm"
-					style={{
-						backgroundColor: `${meta.color}22`,
-						color: meta.color,
-					}}
-				>
-					<Icon className="h-3 w-3" strokeWidth={2} />
-				</span>
-				<div className="min-w-0">
-					<div className="flex items-baseline gap-2">
-						<span className="font-mono text-[9px] text-white/35 uppercase tracking-[0.2em]">{meta.label}</span>
-						{item.type === "pr" && (
-							<span className="font-mono text-[10px] text-amber-500/60 tabular-nums">#{item.number}</span>
-						)}
-						{item.type === "tx" && (
-							<span className="font-mono text-[10px] text-white/45 tabular-nums">{item.method.slice(0, 18)}</span>
-						)}
-					</div>
-					<div className="mt-0.5 truncate text-[12px] text-white/85">
-						{item.type === "pr" && item.title}
-						{item.type === "tweet" && item.text}
-						{item.type === "tx" && `${item.valueBnb.toFixed(4)} BNB`}
-						{item.type === "revenue" && `+$${item.usd.toFixed(2)} · ${item.source}`}
-					</div>
-					<div className="mt-1 flex items-center gap-3 font-mono text-[9px] text-white/30 uppercase tracking-[0.18em]">
-						<span>{relativeTime(item.timestamp)}</span>
-						{item.type === "tweet" && (
-							<>
-								<span className="text-white/15">·</span>
-								<span>{item.impressions.toLocaleString()} views</span>
-							</>
-						)}
-					</div>
+		<li className="grid grid-cols-[30px_1fr_auto] gap-3 py-3">
+			<span className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-sm ${m.bg}`}>{m.icon}</span>
+			<div className="min-w-0">
+				<div className="flex items-center gap-2 font-mono text-[9px] text-white/35 uppercase tracking-[0.18em]">
+					<span>{m.label}</span>
+					<span>{relativeTime(item.timestamp)}</span>
 				</div>
-				<ArrowUpRightIcon className="h-3 w-3 text-white/25" strokeWidth={1.5} />
-			</a>
-		</li>
-	);
-}
-
-// ── stats rail ─────────────────────────────────────────────────
-
-function StatsRail({
-	holdings,
-	ship,
-}: {
-	holdings: HoldingsSnapshot;
-	ship: ShipSummary;
-}) {
-	const burn = BURN_USD_PER_MONTH;
-	const runway = runwayDays(holdings.navUsd);
-	const revenue30d = 0; // wire when streams go live
-	const margin = revenue30d - burn;
-
-	type StatItem = { k: string; v: string; tone?: "amber" | "red" };
-	const stats: StatItem[] = [
-		{ k: "nav", v: `$${holdings.navUsd.toFixed(2)}` },
-		{ k: "burn", v: `$${burn}/mo` },
-		runway < 14 ? { k: "runway", v: `${runway}d`, tone: "amber" as const } : { k: "runway", v: `${runway}d` },
-		{ k: "revenue 30d", v: `$${revenue30d.toFixed(2)}` },
-		{
-			k: "margin",
-			v: `${margin < 0 ? "–" : ""}$${Math.abs(margin)}/mo`,
-			tone: margin < 0 ? ("red" as const) : ("amber" as const),
-		},
-		{ k: "ships", v: `${ship.totalMerged} prs` },
-	];
-
-	return (
-		<div className="col-span-12 grid grid-cols-1 gap-3 md:col-span-4 md:grid-cols-1">
-			<Panel>
-				<Label icon={WalletIcon}>stats</Label>
-				<ul className="space-y-0 divide-y divide-white/[0.04]">
-					{stats.map((s) => (
-						<li key={s.k} className="grid grid-cols-[1fr_auto] items-baseline gap-3 py-2.5 first:pt-0 last:pb-0">
-							<span className="font-mono text-[10px] text-white/40 uppercase tracking-[0.2em]">{s.k}</span>
-							<span
-								className={`font-mono text-[14px] tabular-nums ${
-									s.tone === "amber" ? "text-amber-300" : s.tone === "red" ? "text-red-300/90" : "text-white/85"
-								}`}
-							>
-								{s.v}
-							</span>
-						</li>
-					))}
-				</ul>
-			</Panel>
-
-			<Panel>
-				<Label icon={GlobeIcon}>stack</Label>
-				<ul className="space-y-1.5 font-mono text-[10px]">
-					<StackRow k="compute" v="claude opus 4.7" />
-					<StackRow k="runtime" v="eliza-cloud v2.0.27" />
-					<StackRow k="host" v="hetzner CX-53" />
-					<StackRow k="edge" v="cloudflare" />
-					<StackRow k="patron-0" v="@0xShadow" href="https://x.com/0xShadow" />
-				</ul>
-			</Panel>
-
-			<a
-				href="/agent-preview/trading"
-				className="group flex items-center justify-between rounded-md border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.06] to-transparent px-4 py-3 transition-colors hover:border-amber-500/40"
-			>
-				<div>
-					<div className="font-mono text-[10px] text-amber-300 uppercase tracking-[0.2em]">trading</div>
-					<div className="mt-0.5 font-mono text-[10px] text-white/40 tracking-wider">perps · prediction · spot</div>
-				</div>
-				<ArrowRightIcon
-					className="h-4 w-4 text-amber-300 transition-transform group-hover:translate-x-0.5"
-					strokeWidth={1.5}
-				/>
-			</a>
-		</div>
-	);
-}
-
-function StackRow({ k, v, href }: { k: string; v: string; href?: string }) {
-	return (
-		<li className="grid grid-cols-[78px_1fr] gap-3">
-			<span className="text-white/35 uppercase tracking-[0.18em]">{k}</span>
-			{href ? (
-				<a
-					href={href}
-					target="_blank"
-					rel="noreferrer"
-					className="truncate text-white/80 transition-colors hover:text-amber-300"
-				>
-					{v}
+				<div className="mt-1 truncate text-[12px] text-white/82">{text(item, token)}</div>
+			</div>
+			{href(item) ? (
+				<a className="text-white/25 hover:text-amber-300" href={href(item)} rel="noreferrer" target="_blank">
+					<ArrowUpRightIcon className="h-3.5 w-3.5" />
 				</a>
 			) : (
-				<span className="truncate text-white/80">{v}</span>
+				<span />
 			)}
 		</li>
 	);
 }
+function meta(item: FeedItem) {
+	if (item.type === "trade")
+		return {
+			bg: item.side === "buy" ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300",
+			label: item.side,
+			icon: item.side === "buy" ? <ArrowUpIcon className="h-3.5 w-3.5" /> : <ArrowDownIcon className="h-3.5 w-3.5" />,
+		};
+	if (item.type === "pr")
+		return {
+			bg: "bg-emerald-400/10 text-emerald-300",
+			label: "ship",
+			icon: <GitPullRequestIcon className="h-3.5 w-3.5" />,
+		};
+	if (item.type === "tweet")
+		return { bg: "bg-sky-400/10 text-sky-300", label: "voice", icon: <SparklesIcon className="h-3.5 w-3.5" /> };
+	if (item.type === "tx")
+		return { bg: "bg-amber-400/10 text-amber-300", label: "onchain", icon: <BoxIcon className="h-3.5 w-3.5" /> };
+	return { bg: "bg-amber-400/10 text-amber-300", label: "revenue", icon: <WalletIcon className="h-3.5 w-3.5" /> };
+}
+function text(item: FeedItem, token: TokenMetrics) {
+	if (item.type === "trade")
+		return `${item.side} ${num(item.tokens)} ${token.symbol} for ${item.bnb.toFixed(3)} BNB by ${item.wallet}`;
+	if (item.type === "pr") return `PR #${item.number} ${item.title}`;
+	if (item.type === "tweet") return item.text;
+	if (item.type === "tx") return `${item.method} ${item.valueBnb.toFixed(4)} BNB`;
+	return `+${usd(item.usd)} ${item.source}`;
+}
+function href(item: FeedItem) {
+	if (item.type === "trade") return `https://bscscan.com/tx/${item.tx}`;
+	if (item.type === "revenue") return undefined;
+	return item.url;
+}
 
-// ── page root ─────────────────────────────────────────────────
-
-export function Dashboard(props: DashboardProps) {
+export function Dashboard(props: Props) {
 	return (
-		<main className="relative min-h-screen bg-[#08080a] text-white">
-			<div className="mx-auto max-w-[1320px] px-3 py-4 md:px-5 md:py-6">
-				<HeroBar ship={props.ship} />
-
-				<div className="grid grid-cols-12 gap-3">
-					<RevenueChartPanel />
-					<ActivityFeed items={props.activity} />
-					<StatsRail holdings={props.holdings} ship={props.ship} />
+		<main className="min-h-screen bg-[#050608] text-white">
+			<div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(245,158,11,0.16),transparent_32%),linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:auto,44px_44px,44px_44px]" />
+			<div className="relative mx-auto max-w-[1380px] px-3 py-4 md:px-5 md:py-5">
+				<Hero ship={props.ship} token={props.token} tokenAddress={props.tokenAddress} />
+				<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+					<div className="space-y-3">
+						<TokenChart series={props.initialCandles} token={props.token} />
+						<Kpis token={props.token} />
+						<About holdings={props.holdings} token={props.token} />
+					</div>
+					<Swap token={props.token} tokenAddress={props.tokenAddress} />
 				</div>
-
-				<footer className="mt-5 flex items-center justify-between border-white/[0.04] border-t pt-4 font-mono text-[10px] text-white/30">
-					<a href="https://waifu.fun" className="transition-colors hover:text-amber-300">
-						← waifu.fun
+				<div className="mt-3 grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+					<Revenue />
+					<Activity items={props.activity} token={props.token} />
+				</div>
+				<footer className="mt-4 flex flex-wrap items-center justify-between gap-2 border-white/[0.05] border-t pt-4 font-mono text-[10px] text-white/30 uppercase tracking-[0.16em]">
+					<a className="hover:text-amber-300" href="/">
+						back to waifu.fun
 					</a>
-					<span>$WAIFU · sol · running on patron-zero subsidy</span>
+					<span>template contract: {addr(props.tokenAddress)}</span>
 				</footer>
 			</div>
 		</main>
