@@ -1,56 +1,58 @@
 /**
- * AppShell: composes the persistent top bar + left rail and reserves
- * the right amount of space for the main content. Any page that
- * wants the dashboard chrome wraps its content in <AppShell>.
+ * AppShell: composes the slim top bar + Aceternity expandable sidebar
+ * and reserves the right amount of space for the main content. Any
+ * page that wants the dashboard chrome wraps its content in <AppShell>.
  *
- * Variables it sets:
- *   --topbar-h: height of the top bar, used by the sidebar to offset
- *   --sidebar-w: width of the left rail, used by the main content
+ * Layout is a CSS flexbox: sidebar is a real flex sibling of the main
+ * column instead of fixed-positioned, so when the sidebar animates
+ * between 60px and 280px the content reflows naturally. No fixed
+ * positioning, no CSS variable juggling for content offset.
  *
- * On mobile (<768px) the sidebar collapses out of view and content
- * stretches to full width; the top bar shrinks the search field.
+ * The shell wraps everything in <Sidebar> (which is <SidebarProvider>
+ * under the hood) so any descendant - sidebar items, page widgets -
+ * can read open/animate state via useSidebar().
  */
 
 "use client";
 
 import type * as React from "react";
 
+import { Sidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-import { SIDEBAR_WIDTH, Sidebar } from "./sidebar";
+import type { WatchlistEntry } from "../lib/watchlist";
+import { SidebarInner } from "./sidebar";
 import { TOPBAR_HEIGHT, TopBar } from "./topbar";
 
 type AppShellProps = {
 	children: React.ReactNode;
-	activeNavId?: string;
-	className?: string;
+	activeNavId?: string | undefined;
+	watchlist: WatchlistEntry[];
+	className?: string | undefined;
+	onConnectWallet?: (() => void) | undefined;
 };
 
-export function AppShell({ children, activeNavId, className }: AppShellProps) {
+export function AppShell({ children, activeNavId, watchlist, className, onConnectWallet }: AppShellProps) {
 	return (
-		<div
-			className={cn("relative min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]", className)}
-			style={
-				{
-					"--topbar-h": `${TOPBAR_HEIGHT}px`,
-					"--sidebar-w": `${SIDEBAR_WIDTH}px`,
-				} as React.CSSProperties
-			}
-		>
-			<TopBar />
-			<Sidebar activeId={activeNavId ?? "home"} />
-
-			<main
-				className="relative"
-				style={{
-					paddingTop: TOPBAR_HEIGHT,
-					paddingLeft: 0,
-				}}
+		<Sidebar>
+			<div
+				className={cn(
+					"relative flex min-h-screen flex-col bg-[var(--bg-base)] text-[var(--text-primary)] md:flex-row",
+					className,
+				)}
+				style={
+					{
+						"--topbar-h": `${TOPBAR_HEIGHT}px`,
+					} as React.CSSProperties
+				}
 			>
-				<div className="md:pl-[var(--sidebar-w)]" style={{ minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)` }}>
-					{children}
+				<SidebarInner activeId={activeNavId ?? "overview"} onConnectWallet={onConnectWallet} watchlist={watchlist} />
+
+				<div className="flex min-w-0 flex-1 flex-col">
+					<TopBar />
+					<main className="min-w-0 flex-1">{children}</main>
 				</div>
-			</main>
-		</div>
+			</div>
+		</Sidebar>
 	);
 }
