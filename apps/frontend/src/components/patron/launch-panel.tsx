@@ -403,7 +403,7 @@ export default function LaunchPanel({ agentId, safeAddress, onLaunch, isLaunchin
 						)}
 					</Button>
 					<p className="text-[11px] text-neutral-500 mt-3 text-center max-w-[60ch] mx-auto">
-						you sign. the safe submits to four.meme. token lands on the curve.
+						you sign. the AgentSafe submits via the FLAP Portal. token lands on the curve.
 					</p>
 				</div>
 			</section>

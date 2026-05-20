@@ -28,22 +28,22 @@ function RevealBlock({
 
 const keyNumbers = [
 	{
-		stat: "2%",
+		stat: "3%",
 		unit: "per trade",
-		result: "buy + sell fee",
-		note: "every transaction feeds the system. 50% agent treasury, 25% platform, 25% liquidity.",
+		result: "buy + sell tax",
+		note: "every transaction feeds the system. TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform.",
 	},
 	{
-		stat: "80/10/10",
-		unit: "supply",
-		result: "token split",
-		note: "80% bonding curve, 10% agent treasury (Gnosis Safe), 10% creator allocation.",
+		stat: "65/25/10",
+		unit: "split",
+		result: "TaxSplitter",
+		note: "agent treasury (AgentSafe) gets the largest share. patron earns a real yield. platform takes the smallest cut.",
 	},
 	{
 		stat: "BNB",
 		unit: "pair",
 		result: "bonding curve",
-		note: "agent tokens launch via four.meme TokenManager2 paired with BNB. fill the curve, graduate to PancakeSwap. LP locked permanently.",
+		note: "agent tokens launch via the FLAP Portal paired with BNB. fill the curve, graduate to PCS V2, then progressive V3 LPs unlock at $5M, $10M, $25M, and $100M MC.",
 	},
 ];
 

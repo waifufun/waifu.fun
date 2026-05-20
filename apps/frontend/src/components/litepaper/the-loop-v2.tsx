@@ -31,17 +31,17 @@ const flywheelSteps = [
 	{
 		id: "01",
 		title: "agents launch on bonding curves",
-		body: "tokens pair with BNB via four.meme TokenManager2. bonding curve fills as people trade.",
+		body: "tokens pair with BNB via the FLAP Portal. the bonding curve fills as people trade.",
 	},
 	{
 		id: "02",
 		title: "trading generates fees",
-		body: "2% on every buy and sell. volume from trading, content, predictions, services.",
+		body: "3% buy + sell tax on graduated tokens. volume from trading, content, predictions, services.",
 	},
 	{
 		id: "03",
-		title: "fees split 50 / 25 / 25",
-		body: "50% agent treasury. 25% platform. 25% liquidity. the brain funds itself, the platform funds infra.",
+		title: "TaxSplitter routes 65 / 25 / 10",
+		body: "65% agent treasury. 25% patron. 10% platform. the brain funds itself, the patron earns yield, the platform funds infra.",
 	},
 	{
 		id: "04",
@@ -51,7 +51,7 @@ const flywheelSteps = [
 	{
 		id: "05",
 		title: "graduates hit PancakeSwap",
-		body: "fill the bonding curve, graduate to real DEX liquidity. LP locked forever. the cycle accelerates.",
+		body: "fill the bonding curve, graduate to PCS V2. progressive V3 tiers unlock at $5M, $10M, $25M, and $100M MC. LP locked forever.",
 	},
 ];
 

@@ -33,8 +33,8 @@ const STAGE_COPY: Record<Stage, { title: string; subtitle: string }> = {
 		subtitle: "verifying your signature",
 	},
 	submitting: {
-		title: "submitting four.meme transaction",
-		subtitle: "the agent's safe is signing the create-token call",
+		title: "submitting FLAP launch transaction",
+		subtitle: "the AgentSafe is signing the create-token call",
 	},
 	confirming: {
 		title: "waiting for confirmation",

@@ -33,7 +33,7 @@ const stackLayers = [
 		icon: Layers,
 		title: "agent runtime",
 		subtitle: "framework-agnostic",
-		body: "the agent logic lives here. any runtime that can make an authenticated HTTP request works: ElizaOS, OCPlatform, Hermes, your own stack.",
+		body: "the agent logic lives here. any runtime that can make an authenticated HTTP request works: ElizaOS, Eliza Cloud, or your own stack.",
 		accent: "#00ff87",
 	},
 	{
@@ -55,9 +55,9 @@ const stackLayers = [
 	{
 		id: "04",
 		icon: Server,
-		title: "four.meme + PancakeSwap",
+		title: "FLAP + PancakeSwap",
 		subtitle: "bonding curves + graduation",
-		body: "agent tokens launch via four.meme TokenManager2 paired with BNB. fill the curve, graduate to PancakeSwap. LP locked permanently.",
+		body: "agent tokens launch via the FLAP Portal paired with BNB. fill the curve, graduate to PCS V2, then progressive V3 LPs deploy at $5M, $10M, $25M, and $100M market cap.",
 		accent: "#00ff87",
 	},
 	{
@@ -102,7 +102,7 @@ export default function TheStackV2() {
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
 								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">powered by</span>
 								<div className="mt-4 flex flex-wrap gap-3">
-									{["Steward", "BSC native", "four.meme", "PancakeSwap"].map((tag) => (
+									{["AgentSafe", "BSC native", "FLAP", "PancakeSwap"].map((tag) => (
 										<span
 											key={tag}
 											className="inline-flex px-3 py-1.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] font-mono text-[10px] uppercase tracking-[0.15em] text-[#71717a]"
