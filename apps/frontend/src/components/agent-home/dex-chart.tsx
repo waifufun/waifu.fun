@@ -22,7 +22,7 @@ export default function DexChart({
 	graduated: boolean;
 }) {
 	if (!graduated) {
-		// Pre-graduation the token trades via the four.meme bonding curve.
+		// Pre-graduation the token trades on the FLAP bonding curve.
 		// DexScreener won't have a pair until the curve fills + migrates to
 		// PancakeSwap. Show an informational state rather than a broken iframe.
 		return (

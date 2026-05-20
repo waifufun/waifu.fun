@@ -161,7 +161,7 @@ function Hero({ ship, token, tokenAddress }: { ship: ShipSummary; token: TokenMe
 				</a>
 				<a
 					className="inline-flex items-center gap-1.5 rounded-sm bg-amber-400 px-4 py-2 font-mono text-[11px] text-black uppercase tracking-[0.18em]"
-					href={`https://four.meme/token/${tokenAddress}`}
+					href={`https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`}
 					rel="noreferrer"
 					target="_blank"
 				>
@@ -367,7 +367,7 @@ function Swap({ token, tokenAddress }: { token: TokenMetrics; tokenAddress: stri
 				{side} <ArrowRightIcon className="h-4 w-4" />
 			</a>
 			<div className="mt-3 text-center font-mono text-[10px] text-white/30 uppercase tracking-[0.14em]">
-				powered by pancakeswap, via four.meme at launch
+				routes via pancakeswap · launched on FLAP
 			</div>
 		</Panel>
 	);

@@ -23,7 +23,7 @@ function serverAgentApiBase(): string {
 }
 
 const API_BASE = serverAgentApiBase();
-const FOURMEME_BASE = "https://four.meme/token";
+const TRADE_BASE = "https://pancakeswap.finance/swap?outputCurrency=";
 
 function unwrapApiData<T = unknown>(payload: unknown): T {
 	if (payload && typeof payload === "object" && "data" in payload) {
@@ -73,7 +73,7 @@ function mapAgentDetail(raw: unknown): AgentData | null {
 		name,
 		ticker,
 		status,
-		fourMemeUrl: `${FOURMEME_BASE}/${tokenAddress}`,
+		tradeUrl: `${TRADE_BASE}${tokenAddress}`,
 	};
 	const image = typeof r.image === "string" ? r.image : typeof r.avatarUrl === "string" ? r.avatarUrl : undefined;
 	if (image) shaped.image = image;
@@ -151,7 +151,7 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 			ticker: typeof token.ticker === "string" ? token.ticker : typeof token.symbol === "string" ? token.symbol : "",
 			status: token.status === "migrated" || token.status === "locked" ? "graduated" : "active",
 			raisedToken: "BNB",
-			fourMemeUrl: `https://four.meme/token/${tokenAddress}`,
+			tradeUrl: `https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`,
 		};
 		if (typeof token.creator === "string") shaped.walletAddress = token.creator;
 		if (typeof token.creatorAddress === "string") shaped.walletAddress = token.creatorAddress;
@@ -228,7 +228,7 @@ export async function generateMetadata({
 	const title = `${agent.name} ($${agent.ticker}) · waifu.fun`;
 	const description =
 		agent.description ??
-		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.";
+		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. trade on pancakeswap, launched via FLAP.";
 	// Per-agent OG image disabled: the nested /agent/[address]/opengraph-image
 	// route inherits the wagmi/viem module graph from the app layout and 500s
 	// with 'indexedDB is not defined'. Falls back to the root /opengraph-image
