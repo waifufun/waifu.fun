@@ -56,6 +56,11 @@ export default function AgentHomeV2({
 				tier: launch.tier ?? null,
 				creator: launch.creator ?? null,
 				agentSafe: launch.agentSafe ?? null,
+				taxSplit: launch.taxSplit ?? null,
+				state: typeof launch.state === "string" ? launch.state : null,
+				launchTimestamp: launch.launchTimestamp ?? null,
+				closeTimestamp: launch.closeTimestamp ?? null,
+				depositorCount: typeof launch.depositorCount === "number" ? launch.depositorCount : null,
 			}
 		: null;
 
