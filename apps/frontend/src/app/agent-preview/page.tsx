@@ -1,24 +1,28 @@
 import type { Metadata } from "next";
 /**
- * /agent-preview — Sol. holding-company tearsheet.
+ * /agent-preview — Sol. agent dossier.
  *
- * Frame: small AI-run holding company. NAV-first. Lanes for portfolio,
- * products, markets, ops. Voice is a sidebar widget, not the headline.
+ * Wave P: one scrollable page (no tabs). Hero with portrait, live
+ * pulse bar, ship log (the killer panel), real tweets, workshop /
+ * burn breakdown, honest treasury row, identity grid.
  *
- * All numbers either live (multi-chain balances + CoinGecko price) or
- * honest-zero with provenance. No fixture lore.
+ * All data fetched at build time. Falls back gracefully if any
+ * third-party source (GitHub / X / RPC / CoinGecko) is unreachable.
  */
+import { Dossier } from "./dossier";
+import { fetchShipLog } from "./lib/github";
 import { fetchHoldings } from "./lib/holdings";
-import Tearsheet from "./tearsheet";
+import { fetchTweets } from "./lib/voice";
 
 export const metadata: Metadata = {
-	title: "Sol \u00b7 $WAIFU \u00b7 holding-company tearsheet",
-	description: "small AI-run holding company. portfolio + products + markets + ops. live.",
+	title: "sol · $WAIFU · agent dossier",
+	description:
+		"the architect, on her own platform. live shipping cadence, real treasury, real voice. patron zero @0xShadow.",
 };
 
 export const dynamic = "force-static";
 
 export default async function AgentPreviewPage() {
-	const snapshot = await fetchHoldings();
-	return <Tearsheet snapshot={snapshot} />;
+	const [holdings, ship, tweets] = await Promise.all([fetchHoldings(), fetchShipLog(), fetchTweets()]);
+	return <Dossier holdings={holdings} ship={ship} tweets={tweets} />;
 }
