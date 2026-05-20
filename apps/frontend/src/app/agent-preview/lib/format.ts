@@ -63,6 +63,48 @@ export function formatTokenPrice(price: number): FormattedPrice {
 	};
 }
 
+/**
+ * Chart-friendly price formatter. Picks decimal precision based on magnitude:
+ *   >= 1       -> 2 decimals  ($612.40)
+ *   >= 0.01    -> 4 decimals  ($0.1842)
+ *   >= 0.0001  -> 6 decimals  ($0.001842)
+ *   < 0.0001   -> 8 decimals, trailing zeros trimmed ($0.00000428)
+ *
+ * Wider than formatTokenPrice on purpose: lightweight-charts Y-axis tick
+ * labels and crosshair tooltips need plain decimal strings, not the
+ * dexscreener subscript glyph. Caller chooses subscript form separately.
+ */
+export function formatChartPrice(price: number): string {
+	if (!Number.isFinite(price)) return "$0.00";
+	if (price <= 0) return "$0.00";
+	if (price >= 1) {
+		return `$${price.toLocaleString("en-US", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		})}`;
+	}
+	if (price >= 0.01) return `$${price.toFixed(4)}`;
+	if (price >= 0.0001) return `$${price.toFixed(6)}`;
+	// Very small caps: 8 decimals, trim trailing zeros but keep at least one.
+	const eight = price.toFixed(8).replace(/0+$/, "");
+	const trimmed = eight.endsWith(".") ? `${eight}0` : eight;
+	return `$${trimmed}`;
+}
+
+/**
+ * Pick `minMove` / `precision` for lightweight-charts per-series priceFormat.
+ * The library uses these to render axis ticks and the floating price line
+ * label. `precision` is decimal places; `minMove` is the smallest tick step.
+ */
+export function pickChartPricePrecision(sampleValue: number): { precision: number; minMove: number } {
+	const abs = Math.abs(sampleValue);
+	if (!Number.isFinite(abs) || abs <= 0) return { precision: 2, minMove: 0.01 };
+	if (abs >= 1) return { precision: 2, minMove: 0.01 };
+	if (abs >= 0.01) return { precision: 4, minMove: 0.0001 };
+	if (abs >= 0.0001) return { precision: 6, minMove: 0.000001 };
+	return { precision: 8, minMove: 0.00000001 };
+}
+
 export function formatPercent(pct: number): string {
 	const sign = pct > 0 ? "+" : pct < 0 ? "" : "";
 	return `${sign}${pct.toFixed(2)}%`;

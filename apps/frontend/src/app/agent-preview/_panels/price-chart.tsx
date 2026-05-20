@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 
 import type { Candle, CandleRange, CandleSeries } from "../lib/candles";
 import { fetchCandleSeries } from "../lib/candles";
+import { formatChartPrice, pickChartPricePrecision } from "../lib/format";
 import type { TokenMetrics } from "../lib/token";
 import { Panel, Pulse } from "./_primitives";
 
@@ -43,18 +44,19 @@ const RANGE_TABS: { key: CandleRange; label: string }[] = [
 	{ key: "7d", label: "7D" },
 ];
 
-function fmtPrice(price: number): string {
-	if (!Number.isFinite(price) || price <= 0) return "$0.00";
-	if (price >= 1) {
-		return price.toLocaleString("en-US", {
-			style: "currency",
-			currency: "USD",
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 4,
-		});
-	}
-	if (price >= 0.0001) return `$${price.toFixed(6)}`;
-	return `$${price.toExponential(3)}`;
+/**
+ * Pick the number of decimals NumberFlow should animate to for the big
+ * header price. Mirrors formatChartPrice's magnitude buckets so the header
+ * and Y-axis agree on precision: 2 for >= 1, 4 for >= 0.01, 6 for >= 0.0001,
+ * 8 for everything smaller. NumberFlow tolerates trailing zeros on display
+ * because Intl.NumberFormat is forgiving with minimumFractionDigits.
+ */
+function headerPriceDecimals(price: number): number {
+	if (!Number.isFinite(price) || price <= 0) return 2;
+	if (price >= 1) return 2;
+	if (price >= 0.01) return 4;
+	if (price >= 0.0001) return 6;
+	return 8;
 }
 
 function toLwc(c: Candle) {
@@ -87,6 +89,7 @@ export function PriceChart({
 	const last = candles.at(-1);
 	const price = token.priceUsd > 0 ? token.priceUsd : (last?.c ?? 0);
 	const up = token.change24h >= 0;
+	const priceDecimals = headerPriceDecimals(price);
 
 	// fetch new range when user clicks a tab. initial range stays as the
 	// SSR-prefetched series so the chart paints immediately.
@@ -117,6 +120,12 @@ export function PriceChart({
 				fontFamily: "var(--font-geist-mono, ui-monospace, monospace)",
 				fontSize: 10,
 			},
+			localization: {
+				// Drives Y-axis tick labels and crosshair tooltips. Per-series
+				// priceFormat below additionally controls the floating last-price
+				// pill on the right edge.
+				priceFormatter: formatChartPrice,
+			},
 			grid: {
 				vertLines: { color: "rgba(255, 255, 255, 0.04)" },
 				horzLines: { color: "rgba(255, 255, 255, 0.04)" },
@@ -146,6 +155,9 @@ export function PriceChart({
 			borderVisible: false,
 			priceLineColor: "#00ff87",
 			priceLineWidth: 1,
+			// Initial precision; refined per series load below once we know
+			// the actual candle magnitudes.
+			priceFormat: { type: "price", precision: 2, minMove: 0.01 },
 		});
 
 		const v = chart.addSeries(HistogramSeries, {
@@ -172,10 +184,18 @@ export function PriceChart({
 	// push data whenever series changes
 	useEffect(() => {
 		if (!candleRef.current || !volumeRef.current) return;
+		// Refine candle priceFormat to match the magnitude of the current
+		// dataset. Small-cap tokens (price < $0.01) otherwise show $0.00 on
+		// the right-edge price line and crosshair label.
+		const sample = candles.at(-1)?.c ?? price;
+		const { precision, minMove } = pickChartPricePrecision(sample);
+		candleRef.current.applyOptions({
+			priceFormat: { type: "price", precision, minMove },
+		});
 		candleRef.current.setData(candles.map(toLwc));
 		volumeRef.current.setData(candles.map(toVol));
 		chartRef.current?.timeScale().fitContent();
-	}, [candles]);
+	}, [candles, price]);
 
 	const sourceLabel = useMemo(
 		() =>
@@ -195,18 +215,19 @@ export function PriceChart({
 					</div>
 					<div className="mt-1.5 flex flex-wrap items-end gap-3">
 						<div className="font-sans text-[34px] font-light leading-none text-[var(--text-primary)] tabular-nums md:text-[40px]">
-							{price >= 0.0001 ? (
+							{price > 0 ? (
 								<NumberFlow
 									format={{
 										style: "currency",
 										currency: "USD",
-										maximumFractionDigits: price < 1 ? 6 : 2,
+										minimumFractionDigits: priceDecimals,
+										maximumFractionDigits: priceDecimals,
 									}}
 									locales="en-US"
 									value={price}
 								/>
 							) : (
-								<span>{fmtPrice(price)}</span>
+								<span>{formatChartPrice(price)}</span>
 							)}
 						</div>
 						<div
