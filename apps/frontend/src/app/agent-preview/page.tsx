@@ -9,6 +9,7 @@ import { fetchMarkets } from "./lib/markets";
 import { fetchPositions } from "./lib/positions";
 import { fetchTokenMetrics } from "./lib/token";
 import { fetchTweets } from "./lib/voice";
+import { fetchWatchlist } from "./lib/watchlist";
 
 // placeholder until $WAIFU launches: render the live ElizaOS token on BSC
 // (real DEX pair, real volume, real OHLC). Set NEXT_PUBLIC_AGENT_PREVIEW_TOKEN_ADDRESS
@@ -24,7 +25,7 @@ export const dynamic = "force-static";
 
 export default async function AgentPreviewPage() {
 	const tokenAddress = process.env.NEXT_PUBLIC_AGENT_PREVIEW_TOKEN_ADDRESS?.trim() || DEFAULT_TOKEN_ADDRESS;
-	const [holdings, ship, tweets, markets, token, initialCandles, positions] = await Promise.all([
+	const [holdings, ship, tweets, markets, token, initialCandles, positions, watchlist] = await Promise.all([
 		fetchHoldings(),
 		fetchShipLog(),
 		fetchTweets(),
@@ -32,6 +33,7 @@ export default async function AgentPreviewPage() {
 		fetchTokenMetrics(tokenAddress),
 		fetchCandleSeries(tokenAddress, "1h"),
 		fetchPositions(),
+		fetchWatchlist(),
 	]);
 	const activity = buildActivity({ prs: ship.items, tweets, markets });
 	return (
@@ -43,6 +45,7 @@ export default async function AgentPreviewPage() {
 			ship={ship}
 			token={token}
 			tokenAddress={tokenAddress}
+			watchlist={watchlist}
 		/>
 	);
 }
