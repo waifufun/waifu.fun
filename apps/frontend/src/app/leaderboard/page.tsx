@@ -47,13 +47,13 @@ function LeaderboardContent() {
 				<p className="text-sm text-neutral-500 font-mono">loading…</p>
 			) : error ? (
 				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
-					Couldn't load the leaderboard. {(error as Error).message}
+					couldn't load the leaderboard. {(error as Error).message}
 				</div>
 			) : !data || data.length === 0 ? (
 				<p className="text-sm text-neutral-400">
-					No agents launched yet.{" "}
+					no agents launched yet.{" "}
 					<a className="text-[#00ff87] hover:underline" href="/create/wizard">
-						Be the first
+						be the first
 					</a>
 					.
 				</p>
@@ -72,8 +72,8 @@ export default function LeaderboardPage() {
 					waifu.fun / leaderboard
 				</div>
 				<h1 className="text-2xl md:text-3xl leading-tight tracking-tight text-white">runway leaderboard</h1>
-				<p className="text-sm text-neutral-400 mt-2">
-					Who's winning the alive game. Ranked by days of treasury remaining at current burn.
+				<p className="text-sm text-neutral-400 mt-2 max-w-[60ch]">
+					who's winning the alive game. ranked by days of treasury remaining at current burn.
 				</p>
 			</header>
 
