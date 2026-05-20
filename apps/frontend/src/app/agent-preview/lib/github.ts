@@ -14,11 +14,24 @@ export type ShipSummary = {
 	totalMerged: number;
 	first: string; // iso of first merged PR
 	items: ShipItem[];
+	// timestamps of up to 100 most-recent merged PRs (for heatmap)
+	mergedTimestamps: string[];
 };
 
 const FALLBACK: ShipSummary = {
 	totalMerged: 277,
 	first: "2026-03-05T00:00:00Z",
+	mergedTimestamps: [
+		"2026-05-20T05:49:56Z",
+		"2026-05-20T04:24:42Z",
+		"2026-05-20T04:10:57Z",
+		"2026-05-20T03:30:25Z",
+		"2026-05-20T02:31:23Z",
+		"2026-05-20T01:28:54Z",
+		"2026-05-20T01:09:00Z",
+		"2026-05-20T00:50:00Z",
+		"2026-05-20T00:30:00Z",
+	],
 	items: [
 		{
 			number: 630,
@@ -105,6 +118,7 @@ export async function fetchShipLog(): Promise<ShipSummary> {
 			totalMerged: data.total_count,
 			first: FALLBACK.first,
 			items,
+			mergedTimestamps: data.items.map((it) => it.closed_at),
 		};
 	} catch {
 		return FALLBACK;

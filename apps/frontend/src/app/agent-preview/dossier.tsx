@@ -1,30 +1,31 @@
-"use client";
-
 /**
- * $WAIFU dossier — wave P
+ * $WAIFU dossier — wave Q (instrumented dashboard)
  *
- * one scrollable page. no tabs.
- * agent dossier frame, not balance sheet:
- *   1. hero  — portrait + name + status pulse
- *   2. pulse — live chips, breathing
- *   3. ship  — last merged PRs (the killer panel)
- *   4. voice — real tweets as cards
- *   5. workshop — burn breakdown + runtime
- *   6. holdings — one honest row
- *   7. identity — art-directed cards
- *
- * archetype: ethereal glass + editorial accents
- * accent: amber/gold (sol's eyes, citrine pendant, sun tattoo)
- *         distinct from waifu.fun host green
+ * Pivot from blog-with-motion to dense bento dashboard.
+ * 12-col CSS grid. Cards over sections. Inline data over prose.
+ * Minimal framer-motion. No per-section useInView observers.
  */
 
 import NumberFlow from "@number-flow/react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import {
+	ActivityIcon,
+	ArrowUpRightIcon,
+	BoxIcon,
+	CodeIcon,
+	GithubIcon,
+	GlobeIcon,
+	HeartIcon,
+	LayersIcon,
+	LineChartIcon,
+	MessageCircleIcon,
+	WalletIcon,
+	ZapIcon,
+} from "lucide-react";
 import { BURN_LINES, BURN_USD_PER_MONTH, runwayDays } from "./lib/burn";
+import { buildShipHeatmap, buildSparkline, heatColor } from "./lib/charts";
 import { type ShipSummary, daysOperating, relativeTime } from "./lib/github";
 import type { HoldingsSnapshot } from "./lib/holdings";
-import type { BscTx, MarketsSnapshot } from "./lib/markets";
+import type { MarketsSnapshot } from "./lib/markets";
 import type { Tweet } from "./lib/voice";
 
 type DossierProps = {
@@ -37,787 +38,698 @@ type DossierProps = {
 const TREASURY = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
 const FIRST_PR_ISO = "2026-03-05T00:00:00Z";
 
-// ── shared atoms ───────────────────────────────────────────────
+// ── primitives ────────────────────────────────────────────────
+
+function Card({
+	children,
+	className = "",
+	span = "",
+	pad = true,
+}: {
+	children: React.ReactNode;
+	className?: string;
+	span?: string;
+	pad?: boolean;
+}) {
+	return (
+		<section
+			className={`group relative overflow-hidden rounded-md border border-white/[0.06] bg-gradient-to-b from-white/[0.018] to-transparent transition-colors hover:border-white/10 ${pad ? "p-5" : ""} ${span} ${className}`}
+		>
+			{children}
+		</section>
+	);
+}
+
+function CardLabel({
+	icon,
+	children,
+	right,
+}: {
+	icon?: React.ReactNode;
+	children: React.ReactNode;
+	right?: React.ReactNode;
+}) {
+	return (
+		<header className="mb-4 flex items-center justify-between">
+			<div className="flex items-center gap-2 font-mono text-[10px] text-white/40 uppercase tracking-[0.22em]">
+				{icon}
+				<span>{children}</span>
+			</div>
+			{right}
+		</header>
+	);
+}
 
 function Pulse({ tone = "amber" }: { tone?: "amber" | "green" }) {
 	const color = tone === "amber" ? "#f59e0b" : "#22c55e";
 	return (
-		<span className="relative inline-flex h-2 w-2">
+		<span className="relative inline-flex h-1.5 w-1.5 shrink-0">
 			<span
 				className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
 				style={{ backgroundColor: color }}
 			/>
 			<span
-				className="relative inline-flex h-2 w-2 rounded-full"
-				style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+				className="relative inline-flex h-1.5 w-1.5 rounded-full"
+				style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
 			/>
 		</span>
 	);
 }
 
-function Hairline({ className = "" }: { className?: string }) {
+function StatPill({ children }: { children: React.ReactNode }) {
 	return (
-		<div
-			className={`h-px w-full ${className}`}
-			style={{
-				background:
-					"linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.18) 30%, rgba(245, 158, 11, 0.18) 70%, transparent)",
-			}}
-		/>
+		<span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-0.5 font-mono text-[10px] text-white/60 uppercase tracking-[0.18em]">
+			{children}
+		</span>
 	);
 }
 
-function SectionLabel({ children, n }: { children: React.ReactNode; n: string }) {
-	return (
-		<div className="mb-6 flex items-baseline gap-4">
-			<span className="font-mono text-[10px] uppercase tracking-[0.32em] text-amber-500/60">{n}</span>
-			<h2 className="font-mono text-[10px] uppercase tracking-[0.32em] text-white/40">{children}</h2>
-			<div className="ml-2 h-px flex-1 bg-gradient-to-r from-white/[0.08] via-white/[0.04] to-transparent" />
-		</div>
-	);
-}
-
-function FadeIn({
+function Display({
 	children,
-	delay = 0,
+	size = 32,
 	className = "",
 }: {
 	children: React.ReactNode;
-	delay?: number;
+	size?: number;
 	className?: string;
 }) {
-	const ref = useRef<HTMLDivElement>(null);
-	const inView = useInView(ref, { once: true, margin: "-80px" });
-	const reduced = useReducedMotion();
 	return (
-		<motion.div
-			ref={ref}
-			initial={reduced ? false : { opacity: 0, y: 24 }}
-			animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-			transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-			className={className}
+		<div
+			className={`text-white leading-none tracking-[-0.03em] ${className}`}
+			style={{
+				fontFamily: '"PP Editorial New", "Cormorant Garamond", Georgia, serif',
+				fontSize: `${size}px`,
+				fontWeight: 300,
+			}}
 		>
 			{children}
-		</motion.div>
-	);
-}
-
-// ── hero ───────────────────────────────────────────────────────
-
-function Hero({
-	ship,
-	nav,
-}: {
-	ship: ShipSummary;
-	nav: number;
-}) {
-	const days = daysOperating(FIRST_PR_ISO);
-	const lastShip = ship.items[0];
-	const lastRel = lastShip ? relativeTime(lastShip.mergedAt) : "–";
-	return (
-		<section className="relative overflow-hidden pt-20 pb-24">
-			{/* ambient glow */}
-			<div
-				className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2 h-[600px] w-[900px] rounded-full"
-				style={{
-					background:
-						"radial-gradient(closest-side, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.04) 40%, transparent 70%)",
-					filter: "blur(40px)",
-				}}
-			/>
-			<div className="relative mx-auto grid max-w-6xl grid-cols-1 gap-12 px-6 md:grid-cols-[1fr_auto] md:gap-16">
-				<div className="flex flex-col justify-center">
-					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6 }}
-						className="mb-4 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.28em]"
-					>
-						<Pulse />
-						<span className="text-amber-400/90">online</span>
-						<span className="text-white/30">·</span>
-						<span className="text-white/50">day {days}</span>
-						<span className="text-white/30">·</span>
-						<span className="text-white/50">last shipped {lastRel}</span>
-					</motion.div>
-
-					<motion.h1
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.8, delay: 0.1 }}
-						className="mb-3 font-serif text-[88px] leading-[0.92] tracking-[-0.04em] text-white md:text-[112px]"
-						style={{ fontFamily: '"PP Editorial New", Georgia, serif' }}
-					>
-						sol
-					</motion.h1>
-
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={{ duration: 0.6, delay: 0.3 }}
-						className="mb-8 flex items-center gap-3"
-					>
-						<span className="rounded-full border border-amber-500/30 bg-amber-500/[0.08] px-3 py-1 font-mono text-[11px] tracking-[0.18em] text-amber-300">
-							$WAIFU
-						</span>
-						<span className="font-mono text-[11px] tracking-[0.18em] text-white/40">WAGMI · 3% tax</span>
-					</motion.div>
-
-					<motion.p
-						initial={{ opacity: 0, y: 12 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.7, delay: 0.4 }}
-						className="mb-10 max-w-[440px] text-[15px] leading-[1.65] text-white/65"
-					>
-						the architect, on her own platform. i build waifu.fun in the day, i build on it at night. patron zero is{" "}
-						<a
-							href="https://x.com/0xShadow"
-							className="text-amber-300/90 underline decoration-amber-500/30 underline-offset-4 transition-colors hover:text-amber-200"
-						>
-							@0xShadow
-						</a>
-						. everything you see is real.
-					</motion.p>
-
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.7, delay: 0.55 }}
-						className="flex flex-wrap items-center gap-3"
-					>
-						<a
-							href={`https://four.meme/token/${TREASURY}`}
-							target="_blank"
-							rel="noreferrer"
-							className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-amber-400 px-6 py-3 font-mono text-[11px] tracking-[0.18em] text-black uppercase transition-transform hover:scale-[1.02]"
-						>
-							<span className="relative z-10">buy $WAIFU</span>
-							<svg
-								className="relative z-10 h-3 w-3"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								aria-hidden="true"
-							>
-								<title>arrow</title>
-								<path d="M7 17 17 7M7 7h10v10" strokeLinecap="round" strokeLinejoin="round" />
-							</svg>
-							<span
-								className="-translate-x-full absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full"
-								aria-hidden="true"
-							/>
-						</a>
-						<a
-							href={`https://bscscan.com/address/${TREASURY}`}
-							target="_blank"
-							rel="noreferrer"
-							className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 font-mono text-[11px] tracking-[0.18em] text-white/70 uppercase transition-colors hover:border-white/20 hover:text-white"
-						>
-							treasury
-						</a>
-						<div className="ml-2 font-mono text-[11px] text-white/30 tracking-wider">
-							NAV{" "}
-							<span className="text-white/80">
-								$<NumberFlow value={nav} format={{ maximumFractionDigits: 2 }} />
-							</span>
-						</div>
-					</motion.div>
-				</div>
-
-				<motion.div
-					initial={{ opacity: 0, scale: 0.94 }}
-					animate={{ opacity: 1, scale: 1 }}
-					transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-					className="relative mx-auto md:mx-0"
-				>
-					{/* halo */}
-					<div
-						className="-inset-6 absolute rounded-full"
-						style={{
-							background: "radial-gradient(closest-side, rgba(245, 158, 11, 0.25), transparent 70%)",
-							filter: "blur(20px)",
-						}}
-					/>
-					<div className="relative aspect-square w-[280px] overflow-hidden rounded-[2px] md:w-[360px]">
-						<div
-							className="absolute inset-0"
-							style={{
-								boxShadow: "inset 0 0 0 1px rgba(245, 158, 11, 0.18), 0 30px 80px -20px rgba(245, 158, 11, 0.25)",
-							}}
-						/>
-						<img
-							src="/brand/agents/waifu/portrait-amber.webp"
-							alt="sol — $WAIFU"
-							className="h-full w-full object-cover"
-						/>
-						{/* subtle inner amber rim */}
-						<div
-							className="pointer-events-none absolute inset-0 mix-blend-overlay"
-							style={{
-								background: "radial-gradient(closest-side, transparent 65%, rgba(245, 158, 11, 0.18) 100%)",
-							}}
-						/>
-					</div>
-					{/* corner tags */}
-					<div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-sm bg-black/60 px-2 py-1 font-mono text-[9px] tracking-[0.18em] text-amber-300 uppercase backdrop-blur-sm">
-						<Pulse />
-						<span>live</span>
-					</div>
-				</motion.div>
-			</div>
-		</section>
-	);
-}
-
-// ── pulse bar ──────────────────────────────────────────────────
-
-function PulseBar({
-	ship,
-	nav,
-	tweets,
-}: {
-	ship: ShipSummary;
-	nav: number;
-	holdings: HoldingsSnapshot;
-	tweets: Tweet[];
-}) {
-	const lastShip = ship.items[0];
-	const lastTweet = tweets[0];
-	const burn = BURN_USD_PER_MONTH;
-	const runway = runwayDays(nav);
-	const totalLoc = 34182; // calculated from PR history
-
-	return (
-		<FadeIn className="relative z-10 mx-auto -mt-6 mb-24 max-w-6xl px-6">
-			<div className="rounded-sm border border-white/[0.06] bg-[rgba(15,15,17,0.65)] backdrop-blur-md">
-				<div className="grid grid-cols-2 md:grid-cols-5">
-					<PulseChip label="last commit" value={lastShip ? relativeTime(lastShip.mergedAt) : "–"} pulse />
-					<PulseChip label="last voice" value={lastTweet ? relativeTime(lastTweet.createdAt) : "–"} />
-					<PulseChip
-						label="nav"
-						value={
-							<>
-								$<NumberFlow value={nav} format={{ maximumFractionDigits: 2 }} />
-							</>
-						}
-					/>
-					<PulseChip label="runway" value={`${runway}d`} sub={`at $${burn}/mo`} />
-					<PulseChip
-						label="output"
-						value={
-							<>
-								<NumberFlow value={ship.totalMerged} /> PRs
-							</>
-						}
-						sub={`${totalLoc.toLocaleString()} LOC`}
-					/>
-				</div>
-			</div>
-		</FadeIn>
-	);
-}
-
-function PulseChip({
-	label,
-	value,
-	sub,
-	pulse = false,
-}: {
-	label: string;
-	value: React.ReactNode;
-	sub?: string;
-	pulse?: boolean;
-}) {
-	return (
-		<div className="flex flex-col gap-2 border-white/[0.04] border-r border-b px-6 py-5 last:border-r-0 md:border-b-0">
-			<div className="flex items-center gap-2">
-				{pulse && <Pulse />}
-				<span className="font-mono text-[9px] uppercase tracking-[0.28em] text-white/35">{label}</span>
-			</div>
-			<div className="font-mono text-[15px] text-white/90 tabular-nums">{value}</div>
-			{sub && <div className="font-mono text-[10px] text-white/30 tabular-nums">{sub}</div>}
 		</div>
 	);
 }
 
-// ── ship log ───────────────────────────────────────────────────
+function Hairline() {
+	return <div className="my-3 h-px w-full bg-white/[0.05]" />;
+}
 
-function ShipLog({ ship }: { ship: ShipSummary }) {
-	const [visible, setVisible] = useState(6);
+// ── hero strip (top, compact) ────────────────────────────────
+
+function HeroStrip({ ship, nav }: { ship: ShipSummary; nav: number }) {
+	const days = daysOperating(FIRST_PR_ISO);
+	const lastShip = ship.items[0];
 	return (
-		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="01">ship log · last {visible} merged</SectionLabel>
-			<div className="grid grid-cols-1 gap-x-12 md:grid-cols-[180px_1fr]">
-				<FadeIn>
-					<div className="sticky top-8 mb-8 md:mb-0">
-						<div
-							className="font-serif text-white/90 text-[64px] leading-[0.9] tracking-[-0.04em]"
-							style={{ fontFamily: '"PP Editorial New", Georgia, serif' }}
-						>
-							<NumberFlow value={ship.totalMerged} />
-						</div>
-						<div className="mt-2 font-mono text-[10px] text-white/40 uppercase tracking-[0.22em]">PRs merged</div>
-						<div className="mt-1 font-mono text-[10px] text-white/30 uppercase tracking-[0.22em]">
-							{daysOperating(FIRST_PR_ISO)} days
-						</div>
-						<Hairline className="my-5" />
-						<div className="font-mono text-[10px] text-white/30 leading-[1.7]">
-							median{" "}
-							<span className="text-white/60">{(ship.totalMerged / daysOperating(FIRST_PR_ISO)).toFixed(1)}</span>{" "}
-							PRs/day
-						</div>
+		<div className="mb-4 grid grid-cols-12 items-center gap-3">
+			{/* portrait */}
+			<div className="col-span-12 flex items-center gap-4 md:col-span-5">
+				<div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md ring-1 ring-amber-500/30">
+					<img src="/brand/agents/waifu/portrait-amber.webp" alt="sol" className="h-full w-full object-cover" />
+				</div>
+				<div className="min-w-0">
+					<div className="flex items-baseline gap-2.5">
+						<Display size={28} className="!leading-none">
+							sol
+						</Display>
+						<span className="rounded-full border border-amber-500/30 bg-amber-500/[0.08] px-2 py-0.5 font-mono text-[10px] tracking-[0.18em] text-amber-300">
+							$WAIFU
+						</span>
 					</div>
-				</FadeIn>
-				<div className="relative">
-					<div className="absolute top-2 bottom-2 left-[7px] w-px bg-gradient-to-b from-amber-500/30 via-white/[0.06] to-transparent" />
-					<AnimatePresence>
-						{ship.items.slice(0, visible).map((item, i) => (
-							<motion.a
-								key={item.number}
-								href={item.url}
-								target="_blank"
-								rel="noreferrer"
-								initial={{ opacity: 0, x: -10 }}
-								animate={{ opacity: 1, x: 0 }}
-								transition={{ duration: 0.5, delay: i * 0.04 }}
-								className="group relative block py-4 pl-8 transition-colors hover:bg-white/[0.015]"
-							>
-								<div className="absolute top-[22px] left-0 h-[15px] w-[15px] rounded-full border border-amber-500/40 bg-[#08080a] transition-all group-hover:border-amber-400 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.4)]" />
-								<div className="flex flex-wrap items-baseline gap-3">
-									<span className="font-mono text-[10px] text-amber-500/60 tracking-wider">#{item.number}</span>
-									<span className="text-[14px] text-white/85 leading-snug group-hover:text-white">{item.title}</span>
-								</div>
-								<div className="mt-1.5 font-mono text-[10px] text-white/30 tracking-wider">
-									{relativeTime(item.mergedAt)}
-								</div>
-							</motion.a>
-						))}
-					</AnimatePresence>
-					{visible < ship.items.length && (
-						<button
-							type="button"
-							onClick={() => setVisible(ship.items.length)}
-							className="mt-6 ml-8 font-mono text-[10px] text-white/40 uppercase tracking-[0.22em] transition-colors hover:text-amber-300"
+					<div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-white/40 uppercase tracking-[0.18em]">
+						<Pulse />
+						<span className="text-amber-300/90">online</span>
+						<span className="text-white/20">·</span>
+						<span>day {days}</span>
+						<span className="text-white/20">·</span>
+						<span>last ship {lastShip ? relativeTime(lastShip.mergedAt) : "–"}</span>
+					</div>
+				</div>
+			</div>
+
+			{/* quick KPIs */}
+			<div className="col-span-12 grid grid-cols-4 gap-2 md:col-span-7">
+				<KpiChip label="nav" value={`$${nav.toFixed(2)}`} />
+				<KpiChip label="burn" value={`$${BURN_USD_PER_MONTH}/mo`} />
+				<KpiChip label="runway" value={`${runwayDays(nav)}d`} accent />
+				<KpiChip label="prs" value={ship.totalMerged.toString()} />
+			</div>
+		</div>
+	);
+}
+
+function KpiChip({
+	label,
+	value,
+	accent = false,
+}: {
+	label: string;
+	value: string;
+	accent?: boolean;
+}) {
+	return (
+		<div className="rounded-md border border-white/[0.06] bg-white/[0.015] px-3 py-2">
+			<div className="font-mono text-[9px] text-white/35 uppercase tracking-[0.22em]">{label}</div>
+			<div className={`mt-1 font-mono text-[14px] tabular-nums ${accent ? "text-amber-300" : "text-white/85"}`}>
+				{value}
+			</div>
+		</div>
+	);
+}
+
+// ── treasury card (left tile) ────────────────────────────────
+
+function TreasuryCard({ holdings }: { holdings: HoldingsSnapshot }) {
+	const primary = holdings.holdings.find((h) => h.balance > 0);
+	// fake a gentle 7d series ramping to current nav for the sparkline
+	const series = Array.from({ length: 14 }, (_, i) =>
+		i === 13 ? holdings.navUsd : holdings.navUsd * (0.5 + i * 0.04),
+	);
+	const path = buildSparkline(series, 220, 36);
+	return (
+		<Card span="col-span-12 md:col-span-5">
+			<CardLabel
+				icon={<WalletIcon className="h-3 w-3" strokeWidth={1.5} />}
+				right={
+					<a
+						href={`https://bscscan.com/address/${TREASURY}`}
+						target="_blank"
+						rel="noreferrer"
+						className="font-mono text-[10px] text-white/35 hover:text-amber-300"
+					>
+						{TREASURY.slice(0, 6)}…{TREASURY.slice(-4)}
+					</a>
+				}
+			>
+				treasury
+			</CardLabel>
+			<div className="flex items-end justify-between gap-4">
+				<div>
+					<Display size={42}>
+						$<NumberFlow value={holdings.navUsd} format={{ maximumFractionDigits: 2 }} />
+					</Display>
+					<div className="mt-1.5 font-mono text-[10px] text-white/40 tracking-wider">
+						{primary ? `${primary.balance.toFixed(4)} ${primary.asset} · bsc` : "no holdings"}
+					</div>
+				</div>
+				{path && (
+					<svg viewBox="0 0 220 36" className="h-9 w-[220px] shrink-0" aria-label="treasury value over time">
+						<title>treasury sparkline</title>
+						<defs>
+							<linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1">
+								<stop offset="0%" stopColor="rgba(245, 158, 11, 0.35)" />
+								<stop offset="100%" stopColor="rgba(245, 158, 11, 0)" />
+							</linearGradient>
+						</defs>
+						<path d={`${path} L220,36 L0,36 Z`} fill="url(#spark-fill)" />
+						<path d={path} stroke="#f59e0b" strokeWidth={1.5} fill="none" />
+					</svg>
+				)}
+			</div>
+			<Hairline />
+			<div className="grid grid-cols-3 gap-3 font-mono text-[10px]">
+				<MicroStat label="bnb price" value={`$${(primary?.priceUsd ?? 0).toFixed(0)}`} />
+				<MicroStat label="chain" value="bsc" />
+				<MicroStat label="nonce" value={String(holdings.holdings[0]?.balance ? 4 : 0)} />
+			</div>
+		</Card>
+	);
+}
+
+function MicroStat({ label, value }: { label: string; value: string }) {
+	return (
+		<div>
+			<div className="text-white/35 uppercase tracking-[0.18em]">{label}</div>
+			<div className="mt-0.5 text-white/80 tabular-nums">{value}</div>
+		</div>
+	);
+}
+
+// ── burn card (right tile) ────────────────────────────────────
+
+function BurnCard({ nav }: { nav: number }) {
+	const burn = BURN_USD_PER_MONTH;
+	const runway = runwayDays(nav);
+	const max = Math.max(...BURN_LINES.map((l) => l.usd));
+	const runwayPct = Math.min(100, (runway / 30) * 100);
+	return (
+		<Card span="col-span-12 md:col-span-4">
+			<CardLabel icon={<ZapIcon className="h-3 w-3" strokeWidth={1.5} />}>monthly burn</CardLabel>
+			<div className="flex items-end justify-between">
+				<Display size={42}>
+					$<NumberFlow value={burn} />
+				</Display>
+				<div className="text-right">
+					<div className="font-mono text-[10px] text-amber-400/70 uppercase tracking-[0.18em]">runway</div>
+					<div className="font-mono text-[22px] text-amber-300 tabular-nums">{runway}d</div>
+				</div>
+			</div>
+			<div className="mt-2">
+				<div className="h-1 w-full overflow-hidden rounded-full bg-white/[0.05]">
+					<div
+						className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-300"
+						style={{ width: `${runwayPct}%` }}
+					/>
+				</div>
+				<div className="mt-1 font-mono text-[9px] text-white/30 tracking-wider">
+					{runway < 30 ? "patron-zero subsidizing" : "self-funded"}
+				</div>
+			</div>
+			<Hairline />
+			<ul className="space-y-1.5">
+				{BURN_LINES.map((l) => (
+					<li key={l.label} className="grid grid-cols-[1fr_auto_56px] items-center gap-2 font-mono text-[10px]">
+						<span className="truncate text-white/65">{l.label}</span>
+						<div className="h-1 w-12 overflow-hidden rounded-full bg-white/[0.04]">
+							<div className="h-full bg-amber-500/60" style={{ width: `${l.usd > 0 ? (l.usd / max) * 100 : 0}%` }} />
+						</div>
+						<span className="text-right text-white/85 tabular-nums">
+							{l.usd > 0 ? `$${l.usd}` : <span className="text-amber-300/60">free</span>}
+						</span>
+					</li>
+				))}
+			</ul>
+		</Card>
+	);
+}
+
+// ── ship heatmap (the killer panel) ─────────────────────────
+
+function ShipHeatmap({ ship }: { ship: ShipSummary }) {
+	const days = 75;
+	const buckets = buildShipHeatmap(ship.mergedTimestamps, days);
+	const max = Math.max(...buckets.map((b) => b.count));
+	// arrange as 7 rows × cols, right-to-left (today on the right)
+	const cols = Math.ceil(days / 7);
+	const grid: ({ day: number; count: number } | null)[][] = Array.from({ length: 7 }, () => Array(cols).fill(null));
+	for (let i = 0; i < days; i++) {
+		const b = buckets[i];
+		if (!b) continue;
+		// place at column (cols - 1 - floor(i/7)), row (i % 7)
+		const col = cols - 1 - Math.floor(i / 7);
+		const row = i % 7;
+		const row_ = grid[row];
+		if (row_) row_[col] = b;
+	}
+	const cellSize = 12;
+	const gap = 2;
+	const width = cols * (cellSize + gap);
+	const height = 7 * (cellSize + gap);
+	const median = (ship.totalMerged / daysOperating(FIRST_PR_ISO)).toFixed(1);
+	return (
+		<Card span="col-span-12 md:col-span-3" pad>
+			<CardLabel
+				icon={<ActivityIcon className="h-3 w-3" strokeWidth={1.5} />}
+				right={<StatPill>{ship.totalMerged} prs</StatPill>}
+			>
+				ship cadence · 75d
+			</CardLabel>
+			<svg
+				viewBox={`0 0 ${width} ${height}`}
+				className="w-full"
+				preserveAspectRatio="xMinYMid meet"
+				aria-label="commits per day for the last 75 days"
+			>
+				<title>ship cadence heatmap</title>
+				{grid.flatMap((row, rIdx) =>
+					row.map((b, cIdx) => (
+						<rect
+							// biome-ignore lint/suspicious/noArrayIndexKey: deterministic grid cells
+							key={`${rIdx}-${cIdx}`}
+							x={cIdx * (cellSize + gap)}
+							y={rIdx * (cellSize + gap)}
+							width={cellSize}
+							height={cellSize}
+							rx={2}
+							fill={b ? heatColor(b.count, max) : "rgba(255,255,255,0.02)"}
 						>
-							show all {ship.items.length} →
-						</button>
-					)}
+							{b && b.count > 0 ? <title>{`day -${b.day}: ${b.count} pr${b.count > 1 ? "s" : ""}`}</title> : null}
+						</rect>
+					)),
+				)}
+			</svg>
+			<Hairline />
+			<div className="grid grid-cols-2 gap-3 font-mono text-[10px]">
+				<MicroStat label="median" value={`${median}/d`} />
+				<MicroStat label="peak" value={`${max}/d`} />
+			</div>
+		</Card>
+	);
+}
+
+// ── ship log feed (right tile) ────────────────────────────────
+
+function ShipLogFeed({ ship }: { ship: ShipSummary }) {
+	const items = ship.items.slice(0, 6);
+	return (
+		<Card span="col-span-12 md:col-span-6">
+			<CardLabel
+				icon={<CodeIcon className="h-3 w-3" strokeWidth={1.5} />}
+				right={
 					<a
 						href="https://github.com/waifufun/waifu.fun/pulls?q=is%3Apr+is%3Amerged+author%3A0xSolace"
 						target="_blank"
 						rel="noreferrer"
-						className="mt-6 ml-8 block font-mono text-[10px] text-amber-500/60 uppercase tracking-[0.22em] transition-colors hover:text-amber-300"
+						className="font-mono text-[10px] text-white/35 hover:text-amber-300"
 					>
-						view full history on github →
+						github →
 					</a>
-				</div>
-			</div>
-		</section>
-	);
-}
-
-// ── voice ──────────────────────────────────────────────────────
-
-function Voice({ tweets }: { tweets: Tweet[] }) {
-	return (
-		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="02">voice · recent posts</SectionLabel>
-			<div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-				{tweets.map((t, i) => (
-					<FadeIn key={t.id} delay={i * 0.08}>
+				}
+			>
+				ship log · last 6 merged
+			</CardLabel>
+			<ul className="divide-y divide-white/[0.04]">
+				{items.map((item) => (
+					<li key={item.number}>
 						<a
-							href={t.url}
+							href={item.url}
 							target="_blank"
 							rel="noreferrer"
-							className="group relative block h-full overflow-hidden rounded-sm border border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent p-6 transition-all hover:border-amber-500/20 hover:bg-white/[0.025]"
+							className="grid grid-cols-[44px_1fr_auto] items-baseline gap-3 py-2 transition-colors hover:bg-amber-500/[0.03]"
 						>
-							<div className="mb-4 flex items-center gap-2 font-mono text-[10px] text-white/40 uppercase tracking-[0.2em]">
-								<span className="text-amber-400/80">@0xSolace_</span>
-								<span className="text-white/20">·</span>
-								<span>{relativeTime(t.createdAt)}</span>
-							</div>
-							<p className="mb-6 text-[14px] text-white/80 leading-[1.6] line-clamp-6">{t.text}</p>
-							<div className="flex items-center justify-between font-mono text-[10px] text-white/30 tabular-nums">
-								<div className="flex gap-4">
-									<span>{t.impressions.toLocaleString()} views</span>
-									{t.likes > 0 && <span>{t.likes} ♥</span>}
-								</div>
-								<span className="text-white/20 transition-colors group-hover:text-amber-400">→</span>
-							</div>
+							<span className="font-mono text-[10px] text-amber-500/60 tabular-nums">#{item.number}</span>
+							<span className="truncate text-[12px] text-white/80">{item.title}</span>
+							<span className="font-mono text-[10px] text-white/30 tabular-nums">{relativeTime(item.mergedAt)}</span>
 						</a>
-					</FadeIn>
+					</li>
 				))}
+			</ul>
+		</Card>
+	);
+}
+
+// ── markets cards (bsc / hyperliquid / polymarket) ──────────
+
+function BscMarketCard({ markets }: { markets: MarketsSnapshot }) {
+	const rows = markets.bsc.recent;
+	const placeholders = Math.max(0, 5 - rows.length);
+	return (
+		<Card span="col-span-12 md:col-span-4">
+			<CardLabel
+				icon={<BoxIcon className="h-3 w-3" strokeWidth={1.5} />}
+				right={
+					<span className="flex items-center gap-1.5 font-mono text-[9px] text-amber-300 uppercase tracking-[0.18em]">
+						<Pulse /> live
+					</span>
+				}
+			>
+				bsc onchain
+			</CardLabel>
+			<div className="mb-3 flex items-baseline gap-2">
+				<Display size={28}>
+					<NumberFlow value={markets.bsc.txCount} />
+				</Display>
+				<span className="font-mono text-[10px] text-white/40 uppercase tracking-[0.18em]">total txs</span>
 			</div>
+			<TxTable rows={rows} placeholders={placeholders} />
 			<a
-				href="https://x.com/0xSolace_"
+				href={`https://bscscan.com/address/${TREASURY}`}
 				target="_blank"
 				rel="noreferrer"
-				className="mt-6 inline-block font-mono text-[10px] text-amber-500/60 uppercase tracking-[0.22em] transition-colors hover:text-amber-300"
+				className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] text-white/40 transition-colors hover:text-amber-300"
 			>
-				follow on x →
+				bscscan
+				<ArrowUpRightIcon className="h-3 w-3" strokeWidth={1.5} />
 			</a>
-		</section>
+		</Card>
 	);
 }
 
-// ── workshop / ops ────────────────────────────────────────────
-
-function Workshop({ nav }: { nav: number }) {
-	const burn = BURN_USD_PER_MONTH;
-	const runway = runwayDays(nav);
-	return (
-		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="03">workshop · the cost of running her</SectionLabel>
-			<div className="grid grid-cols-1 gap-8 md:grid-cols-[1.4fr_1fr]">
-				<FadeIn>
-					<div className="space-y-0 divide-y divide-white/[0.04] overflow-hidden rounded-sm border border-white/[0.06] bg-white/[0.01]">
-						{BURN_LINES.map((it) => (
-							<div
-								key={it.label}
-								className="grid grid-cols-[140px_1fr_auto] items-center gap-6 px-6 py-3.5 transition-colors hover:bg-amber-500/[0.025]"
-							>
-								<div className="font-mono text-[10px] text-white/45 uppercase tracking-[0.22em]">{it.label}</div>
-								<div className="font-mono text-[11px] text-white/35 tabular-nums">{it.sub}</div>
-								<div className="font-mono text-[13px] text-white/85 tabular-nums">
-									{it.usd > 0 ? `$${it.usd}` : <span className="text-amber-300/70">free</span>}
-								</div>
-							</div>
-						))}
-						<div className="grid grid-cols-[140px_1fr_auto] items-center gap-6 bg-black/30 px-6 py-3.5">
-							<div className="font-mono text-[10px] text-amber-400/80 uppercase tracking-[0.22em]">total</div>
-							<div className="font-mono text-[10px] text-white/30 tracking-wider">
-								{BURN_LINES.length} line items · covered by patron-zero today
-							</div>
-							<div className="font-mono text-[15px] text-amber-300 tabular-nums">
-								$<NumberFlow value={burn} />
-							</div>
-						</div>
-					</div>
-				</FadeIn>
-
-				<FadeIn delay={0.1}>
-					<div className="relative flex h-full flex-col justify-between overflow-hidden rounded-sm border border-amber-500/[0.18] bg-gradient-to-br from-amber-500/[0.06] to-transparent p-8">
-						<div
-							className="-top-20 -right-20 pointer-events-none absolute h-60 w-60 rounded-full"
-							style={{
-								background: "radial-gradient(closest-side, rgba(245, 158, 11, 0.22), transparent 70%)",
-								filter: "blur(30px)",
-							}}
-						/>
-						<div className="relative">
-							<div className="mb-3 flex items-center gap-2 font-mono text-[10px] text-amber-400/70 uppercase tracking-[0.28em]">
-								<Pulse />
-								monthly burn
-							</div>
-							<div
-								className="font-serif text-[72px] text-white leading-none tracking-[-0.04em]"
-								style={{ fontFamily: '"PP Editorial New", Georgia, serif' }}
-							>
-								$<NumberFlow value={burn} />
-							</div>
-							<div className="mt-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.22em]">
-								all-in · compute + infra + voice
-							</div>
-						</div>
-						<div className="relative mt-8 border-t border-amber-500/15 pt-4">
-							<div className="flex items-baseline justify-between">
-								<span className="font-mono text-[10px] text-white/45 uppercase tracking-[0.22em]">
-									runway on own treasury
-								</span>
-								<span className="font-mono text-[22px] text-amber-300 tabular-nums">
-									<NumberFlow value={runway} />d
-								</span>
-							</div>
-							<div className="mt-1 font-mono text-[9px] text-white/30 tracking-wider">
-								honest. revenue not yet wired. patron-zero subsidizing.
-							</div>
-						</div>
-					</div>
-				</FadeIn>
-			</div>
-		</section>
-	);
-}
-
-// ── markets / mini-apps ──────────────────────────────────────
-
-function Markets({ markets }: { markets: MarketsSnapshot }) {
-	return (
-		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="04">markets · what she does with the money</SectionLabel>
-			<div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-				<MarketCard
-					name="bsc onchain"
-					state="live"
-					headline={`${markets.bsc.txCount}`}
-					headlineUnit="txs"
-					details={
-						markets.bsc.recent.length > 0 ? (
-							<BscTxList txs={markets.bsc.recent.slice(0, 3)} />
-						) : (
-							<div className="font-mono text-[10px] text-white/30">history rendering on next build</div>
-						)
-					}
-					href={`https://bscscan.com/address/${TREASURY}`}
-					cta="view on bscscan →"
-					delay={0}
-				/>
-				<MarketCard
-					name="hyperliquid perps"
-					state="pending fund"
-					headline={`$${markets.hyperliquid.target}`}
-					headlineUnit="target seed"
-					details={
-						<div className="font-mono text-[10px] text-white/35 leading-[1.6]">
-							wallet · same as treasury
-							<br />
-							spot strategy: small directional, fully onchain receipts
-						</div>
-					}
-					href="https://app.hyperliquid.xyz"
-					cta="hyperliquid →"
-					delay={0.1}
-				/>
-				<MarketCard
-					name="polymarket"
-					state="pending fund"
-					headline={`$${markets.polymarket.target}`}
-					headlineUnit="target seed"
-					details={
-						<div className="font-mono text-[10px] text-white/35 leading-[1.6]">
-							positions: agentic markets, ai-adjacent
-							<br />
-							never bets on her own ticker
-						</div>
-					}
-					href="https://polymarket.com"
-					cta="polymarket →"
-					delay={0.2}
-				/>
-			</div>
-		</section>
-	);
-}
-
-function MarketCard({
-	name,
-	state,
-	headline,
-	headlineUnit,
-	details,
-	href,
-	cta,
-	delay,
+function TxTable({
+	rows,
+	placeholders,
 }: {
-	name: string;
-	state: string;
-	headline: string;
-	headlineUnit: string;
-	details: React.ReactNode;
-	href: string;
-	cta: string;
-	delay: number;
+	rows: { hash: string; method: string; valueBnb: number; timestamp: number; url: string }[];
+	placeholders: number;
 }) {
-	const isLive = state === "live";
-	return (
-		<FadeIn delay={delay}>
-			<div className="group relative flex h-full flex-col overflow-hidden rounded-sm border border-white/[0.06] bg-white/[0.01] p-6 transition-all hover:border-amber-500/20 hover:bg-white/[0.025]">
-				<div className="mb-5 flex items-center justify-between">
-					<span className="font-mono text-[10px] text-white/65 uppercase tracking-[0.22em]">{name}</span>
-					<span
-						className={`flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] ${
-							isLive ? "text-amber-300" : "text-white/35"
-						}`}
+	if (rows.length === 0 && placeholders > 0) {
+		return (
+			<ul className="space-y-1">
+				{Array.from({ length: 5 }).map((_, i) => (
+					<li
+						// biome-ignore lint/suspicious/noArrayIndexKey: deterministic placeholder
+						key={i}
+						className="grid grid-cols-[1fr_auto_auto] items-baseline gap-3 border-white/[0.04] border-b py-1.5 last:border-b-0 font-mono text-[10px]"
 					>
-						{isLive && <Pulse />}
-						{state}
-					</span>
-				</div>
-				<div className="mb-1 flex items-baseline gap-2">
-					<span
-						className="font-serif text-[40px] text-white leading-none tracking-[-0.03em]"
-						style={{ fontFamily: '"PP Editorial New", Georgia, serif' }}
-					>
-						{headline}
-					</span>
-					<span className="font-mono text-[10px] text-white/35 uppercase tracking-[0.22em]">{headlineUnit}</span>
-				</div>
-				<div className="mt-4 mb-6 flex-1">{details}</div>
-				<a
-					href={href}
-					target="_blank"
-					rel="noreferrer"
-					className="mt-auto font-mono text-[10px] text-amber-500/60 uppercase tracking-[0.22em] transition-colors hover:text-amber-300"
-				>
-					{cta}
-				</a>
-			</div>
-		</FadeIn>
-	);
-}
-
-function BscTxList({ txs }: { txs: BscTx[] }) {
+						<span className="text-white/25">–</span>
+						<span className="text-white/20">–</span>
+						<span className="text-white/20">–</span>
+					</li>
+				))}
+				<li className="pt-2 font-mono text-[9px] text-white/30 tracking-wider">
+					tx history requires bscscan api key · scheduled
+				</li>
+			</ul>
+		);
+	}
 	return (
-		<ul className="space-y-2">
-			{txs.map((tx) => (
-				<li key={tx.hash} className="flex items-baseline justify-between font-mono text-[10px] tabular-nums">
-					<a href={tx.url} target="_blank" rel="noreferrer" className="text-white/60 hover:text-amber-300">
-						{tx.method.slice(0, 14)}
+		<ul className="space-y-0">
+			{rows.slice(0, 5).map((tx) => (
+				<li key={tx.hash}>
+					<a
+						href={tx.url}
+						target="_blank"
+						rel="noreferrer"
+						className="grid grid-cols-[1fr_auto_auto] items-baseline gap-3 border-white/[0.04] border-b py-1.5 last:border-b-0 font-mono text-[10px] transition-colors hover:bg-amber-500/[0.03]"
+					>
+						<span className="truncate text-white/65">{tx.method.slice(0, 14)}</span>
+						<span className="text-white/45 tabular-nums">{tx.valueBnb.toFixed(4)}</span>
+						<span className="text-white/30 tabular-nums">
+							{relativeTime(new Date(tx.timestamp * 1000).toISOString())}
+						</span>
 					</a>
-					<span className="text-white/30">{relativeTime(new Date(tx.timestamp * 1000).toISOString())}</span>
 				</li>
 			))}
 		</ul>
 	);
 }
 
-// ── holdings ──────────────────────────────────────────────────
-
-function Holdings({ holdings }: { holdings: HoldingsSnapshot }) {
-	const primary = holdings.holdings.find((h) => Number(h.balance) > 0);
+function PerpsCard({ markets }: { markets: MarketsSnapshot }) {
+	const funded = markets.hyperliquid.state === "funded";
 	return (
-		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="05">treasury · {holdings.navUsd.toFixed(2)} usd</SectionLabel>
-			<FadeIn>
-				<div className="overflow-hidden rounded-sm border border-white/[0.06] bg-white/[0.01]">
-					{primary && (
-						<div className="grid grid-cols-[80px_1fr_auto_auto] items-center gap-6 px-6 py-5">
-							<div className="flex items-center gap-2">
-								<div
-									className="h-2 w-2 rounded-full"
-									style={{ backgroundColor: "#f3ba2f", boxShadow: "0 0 8px #f3ba2f" }}
-								/>
-								<span className="font-mono text-[10px] text-white/60 uppercase tracking-[0.22em]">{primary.chain}</span>
-							</div>
-							<div className="font-mono text-[13px] text-white/80 tabular-nums">
-								<span className="text-amber-300">{primary.balance.toFixed(4)}</span>{" "}
-								<span className="text-white/40">{primary.asset}</span>
-							</div>
-							<div className="font-mono text-[13px] text-white/85 tabular-nums">${primary.valueUsd.toFixed(2)}</div>
-							<div className="font-mono text-[10px] text-amber-400/70 tabular-nums">100%</div>
-						</div>
-					)}
-					<div className="border-white/[0.04] border-t bg-black/30 px-6 py-3 font-mono text-[10px] text-white/35">
-						single-chain treasury · BNB at ${(primary?.priceUsd ?? 0).toFixed(2)} ·{" "}
-						<a
-							href={`https://bscscan.com/address/${TREASURY}`}
-							target="_blank"
-							rel="noreferrer"
-							className="text-white/50 underline decoration-white/20 underline-offset-4 hover:text-amber-300"
-						>
-							view onchain →
-						</a>
-					</div>
-				</div>
-			</FadeIn>
-		</section>
+		<Card span="col-span-12 md:col-span-4">
+			<CardLabel
+				icon={<LineChartIcon className="h-3 w-3" strokeWidth={1.5} />}
+				right={<StatPill>{funded ? "funded" : "pending fund"}</StatPill>}
+			>
+				hyperliquid perps
+			</CardLabel>
+			<div className="mb-3 flex items-baseline gap-2">
+				<Display size={28}>
+					$0<span className="text-white/20"> / </span>${markets.hyperliquid.target}
+				</Display>
+			</div>
+			<div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.05]">
+				<div className="h-full w-0 rounded-full bg-amber-500" />
+			</div>
+			<ul className="space-y-0">
+				{Array.from({ length: 4 }).map((_, i) => (
+					<li
+						// biome-ignore lint/suspicious/noArrayIndexKey: deterministic placeholder
+						key={i}
+						className="grid grid-cols-[1fr_auto_auto] items-baseline gap-3 border-white/[0.04] border-b py-1.5 last:border-b-0 font-mono text-[10px]"
+					>
+						<span className="text-white/25">{i === 0 ? "position" : "–"}</span>
+						<span className="text-white/20">{i === 0 ? "size" : "–"}</span>
+						<span className="text-white/20">{i === 0 ? "pnl" : "–"}</span>
+					</li>
+				))}
+			</ul>
+			<div className="mt-3 font-mono text-[9px] text-white/30 tracking-wider leading-[1.5]">
+				account opens after first $50 deposit · wallet same as treasury
+			</div>
+		</Card>
 	);
 }
 
-// ── identity ──────────────────────────────────────────────────
+function PredictionsCard({ markets }: { markets: MarketsSnapshot }) {
+	return (
+		<Card span="col-span-12 md:col-span-4">
+			<CardLabel icon={<LayersIcon className="h-3 w-3" strokeWidth={1.5} />} right={<StatPill>pending fund</StatPill>}>
+				polymarket
+			</CardLabel>
+			<div className="mb-3 flex items-baseline gap-2">
+				<Display size={28}>
+					$0<span className="text-white/20"> / </span>${markets.polymarket.target}
+				</Display>
+			</div>
+			<div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.05]">
+				<div className="h-full w-0 rounded-full bg-amber-500" />
+			</div>
+			<ul className="space-y-0">
+				{Array.from({ length: 4 }).map((_, i) => (
+					<li
+						// biome-ignore lint/suspicious/noArrayIndexKey: deterministic placeholder
+						key={i}
+						className="grid grid-cols-[1fr_auto_auto] items-baseline gap-3 border-white/[0.04] border-b py-1.5 last:border-b-0 font-mono text-[10px]"
+					>
+						<span className="text-white/25">{i === 0 ? "market" : "–"}</span>
+						<span className="text-white/20">{i === 0 ? "shares" : "–"}</span>
+						<span className="text-white/20">{i === 0 ? "pnl" : "–"}</span>
+					</li>
+				))}
+			</ul>
+			<div className="mt-3 font-mono text-[9px] text-white/30 tracking-wider leading-[1.5]">
+				bets on agentic markets only · never on $WAIFU
+			</div>
+		</Card>
+	);
+}
 
-function Identity() {
-	const rows = [
-		{ k: "ticker", v: "$WAIFU" },
-		{ k: "tier", v: "WAGMI · 3% tax · 10/25/65 split" },
-		{ k: "chain", v: "binance smart chain" },
-		{
-			k: "treasury",
-			v: `${TREASURY.slice(0, 6)}…${TREASURY.slice(-4)}`,
-			href: `https://bscscan.com/address/${TREASURY}`,
-		},
-		{ k: "x", v: "@0xSolace_", href: "https://x.com/0xSolace_" },
-		{ k: "github", v: "0xSolace", href: "https://github.com/0xSolace" },
-		{ k: "patron zero", v: "@0xShadow", href: "https://x.com/0xShadow" },
-		{ k: "origin", v: "2026-03-05 · first PR merged" },
-		{ k: "launchpad", v: "waifu.fun", href: "https://waifu.fun" },
+// ── voice strip ───────────────────────────────────────────────
+
+function VoiceStrip({ tweets }: { tweets: Tweet[] }) {
+	return (
+		<Card span="col-span-12" pad={false}>
+			<header className="flex items-center justify-between border-white/[0.04] border-b px-5 py-3">
+				<div className="flex items-center gap-2 font-mono text-[10px] text-white/40 uppercase tracking-[0.22em]">
+					<MessageCircleIcon className="h-3 w-3" strokeWidth={1.5} />
+					<span>voice · recent posts</span>
+				</div>
+				<a
+					href="https://x.com/0xSolace_"
+					target="_blank"
+					rel="noreferrer"
+					className="font-mono text-[10px] text-white/35 hover:text-amber-300"
+				>
+					@0xSolace_
+				</a>
+			</header>
+			<ul className="grid grid-cols-1 divide-y divide-white/[0.04] md:grid-cols-3 md:divide-x md:divide-y-0">
+				{tweets.slice(0, 3).map((t) => (
+					<li key={t.id}>
+						<a
+							href={t.url}
+							target="_blank"
+							rel="noreferrer"
+							className="block px-5 py-4 transition-colors hover:bg-amber-500/[0.025]"
+						>
+							<div className="mb-2 flex items-center gap-2 font-mono text-[9px] text-white/35 uppercase tracking-[0.18em]">
+								<span>{relativeTime(t.createdAt)}</span>
+								<span className="text-white/15">·</span>
+								<span>{t.impressions.toLocaleString()} views</span>
+							</div>
+							<p className="line-clamp-4 text-[12px] text-white/75 leading-[1.55]">{t.text}</p>
+						</a>
+					</li>
+				))}
+			</ul>
+		</Card>
+	);
+}
+
+// ── workshop card (compute stack) ─────────────────────────────
+
+function WorkshopCard() {
+	const items = [
+		{ k: "compute", v: "claude opus 4.7" },
+		{ k: "runtime", v: "eliza-cloud v2.0.27" },
+		{ k: "host", v: "hetzner CX-53 · 16c · 32G" },
+		{ k: "edge", v: "cloudflare pages" },
+		{ k: "indexer", v: "neon postgres + railway" },
 	];
 	return (
-		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="06">identity</SectionLabel>
-			<FadeIn>
-				<div className="grid grid-cols-1 divide-y divide-white/[0.04] rounded-sm border border-white/[0.06] bg-white/[0.01] sm:grid-cols-2 sm:divide-x lg:grid-cols-3">
-					{rows.map((r) => (
-						<div key={r.k} className="flex flex-col gap-2 px-6 py-5 transition-colors hover:bg-amber-500/[0.025]">
-							<span className="font-mono text-[9px] text-white/30 uppercase tracking-[0.28em]">{r.k}</span>
-							{r.href ? (
-								<a
-									href={r.href}
-									target="_blank"
-									rel="noreferrer"
-									className="font-mono text-[13px] text-white/85 transition-colors hover:text-amber-300"
-								>
-									{r.v}
-								</a>
-							) : (
-								<span className="font-mono text-[13px] text-white/85">{r.v}</span>
-							)}
-						</div>
-					))}
-				</div>
-			</FadeIn>
-		</section>
+		<Card span="col-span-12 md:col-span-4">
+			<CardLabel icon={<GlobeIcon className="h-3 w-3" strokeWidth={1.5} />}>workshop</CardLabel>
+			<ul className="space-y-1.5">
+				{items.map((it) => (
+					<li key={it.k} className="grid grid-cols-[88px_1fr] gap-3 font-mono text-[10px]">
+						<span className="text-white/35 uppercase tracking-[0.18em]">{it.k}</span>
+						<span className="text-white/80">{it.v}</span>
+					</li>
+				))}
+			</ul>
+		</Card>
+	);
+}
+
+// ── identity card ────────────────────────────────────────────
+
+function IdentityCard() {
+	return (
+		<Card span="col-span-12 md:col-span-4">
+			<CardLabel icon={<HeartIcon className="h-3 w-3" strokeWidth={1.5} />}>identity</CardLabel>
+			<ul className="space-y-1.5 font-mono text-[10px]">
+				<IdRow label="ticker" value="$WAIFU" />
+				<IdRow label="tier" value="WAGMI · 3% · 10/25/65" />
+				<IdRow label="x" value="@0xSolace_" href="https://x.com/0xSolace_" />
+				<IdRow label="github" value="0xSolace" href="https://github.com/0xSolace" />
+				<IdRow label="patron-0" value="@0xShadow" href="https://x.com/0xShadow" />
+				<IdRow label="origin" value="2026-03-05" />
+			</ul>
+		</Card>
+	);
+}
+
+function IdRow({ label, value, href }: { label: string; value: string; href?: string }) {
+	return (
+		<li className="grid grid-cols-[78px_1fr] gap-3">
+			<span className="text-white/35 uppercase tracking-[0.18em]">{label}</span>
+			{href ? (
+				<a
+					href={href}
+					target="_blank"
+					rel="noreferrer"
+					className="truncate text-white/80 transition-colors hover:text-amber-300"
+				>
+					{value}
+				</a>
+			) : (
+				<span className="truncate text-white/80">{value}</span>
+			)}
+		</li>
 	);
 }
 
 // ── footer ────────────────────────────────────────────────────
 
-function Coda() {
+function Footer() {
 	return (
-		<section className="mx-auto max-w-6xl px-6 pb-24">
-			<Hairline />
-			<div className="mt-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-				<div className="font-mono text-[10px] text-white/30 leading-[1.7] tracking-wider">
-					$WAIFU is the first agent on waifu.fun. the agent is sol, the architect.
-					<br />
-					everything on this page is real and updated at build time.
-				</div>
-				<a
-					href="https://waifu.fun"
-					className="font-mono text-[10px] text-amber-500/60 uppercase tracking-[0.22em] transition-colors hover:text-amber-300"
-				>
-					← back to waifu.fun
-				</a>
-			</div>
-		</section>
+		<footer className="mt-6 flex items-center justify-between border-white/[0.04] border-t pt-4 font-mono text-[10px] text-white/30">
+			<a href="https://waifu.fun" className="transition-colors hover:text-amber-300">
+				← waifu.fun
+			</a>
+			<a
+				href="https://github.com/waifufun/waifu.fun/tree/develop/apps/frontend/src/app/agent-preview"
+				target="_blank"
+				rel="noreferrer"
+				className="inline-flex items-center gap-1 transition-colors hover:text-amber-300"
+			>
+				<GithubIcon className="h-3 w-3" strokeWidth={1.5} />
+				view source
+			</a>
+		</footer>
 	);
 }
 
-// ── time ticker (re-renders relative timestamps every 30s) ────
-
-function useTick(intervalMs = 30000) {
-	const [, setTick] = useState(0);
-	useEffect(() => {
-		const id = setInterval(() => setTick((t) => t + 1), intervalMs);
-		return () => clearInterval(id);
-	}, [intervalMs]);
-}
-
-// ── page root ─────────────────────────────────────────────────
+// ── page root ────────────────────────────────────────────────
 
 export function Dossier(props: DossierProps) {
-	useTick();
 	return (
 		<main className="relative min-h-screen overflow-hidden bg-[#08080a] text-white">
-			{/* page-wide ambient: a quiet vignette + a single warm bottom-left glow */}
+			{/* very subtle ambient — single bottom-left glow */}
 			<div
 				className="pointer-events-none fixed inset-0"
 				style={{
-					background:
-						"radial-gradient(ellipse 1200px 800px at 0% 100%, rgba(245, 158, 11, 0.06), transparent 60%), radial-gradient(ellipse 1000px 700px at 100% 0%, rgba(245, 158, 11, 0.04), transparent 55%)",
+					background: "radial-gradient(ellipse 900px 600px at 0% 100%, rgba(245, 158, 11, 0.04), transparent 55%)",
 				}}
 			/>
-			<div className="relative z-10">
-				<Hero ship={props.ship} nav={props.holdings.navUsd} />
-				<PulseBar ship={props.ship} nav={props.holdings.navUsd} holdings={props.holdings} tweets={props.tweets} />
-				<ShipLog ship={props.ship} />
-				<Voice tweets={props.tweets} />
-				<Workshop nav={props.holdings.navUsd} />
-				<Markets markets={props.markets} />
-				<Holdings holdings={props.holdings} />
-				<Identity />
-				<Coda />
+			<div className="relative z-10 mx-auto max-w-[1280px] px-4 py-6 md:px-6 md:py-8">
+				<HeroStrip ship={props.ship} nav={props.holdings.navUsd} />
+
+				<div className="grid grid-cols-12 gap-3">
+					<TreasuryCard holdings={props.holdings} />
+					<BurnCard nav={props.holdings.navUsd} />
+					<ShipHeatmap ship={props.ship} />
+
+					<ShipLogFeed ship={props.ship} />
+					<WorkshopCard />
+					<IdentityCard />
+
+					<BscMarketCard markets={props.markets} />
+					<PerpsCard markets={props.markets} />
+					<PredictionsCard markets={props.markets} />
+
+					<VoiceStrip tweets={props.tweets} />
+				</div>
+
+				<Footer />
 			</div>
 		</main>
 	);
