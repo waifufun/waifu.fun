@@ -251,15 +251,6 @@ export default function Hero() {
 					>
 						flap
 					</a>
-					<span>·</span>
-					<a
-						href="https://four.meme"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="transition-colors duration-200 hover:text-[#71717a]"
-					>
-						four.meme
-					</a>
 				</motion.div>
 			</div>
 
