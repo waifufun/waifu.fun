@@ -96,14 +96,14 @@ export default function AgentHome({
 						)}
 					</div>
 					<div className="mt-3 flex items-center gap-3">
-						{agent.fourMemeUrl && (
+						{agent.tradeUrl && (
 							<a
-								href={agent.fourMemeUrl}
+								href={agent.tradeUrl}
 								target="_blank"
 								rel="noreferrer"
 								className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-white/60 hover:text-[#00ff87] transition-colors"
 							>
-								open on four.meme
+								trade on pancakeswap
 								<ExternalLink className="w-3 h-3" />
 							</a>
 						)}

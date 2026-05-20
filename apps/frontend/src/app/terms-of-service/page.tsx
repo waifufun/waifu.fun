@@ -48,12 +48,12 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 	{
 		header: "About the Platform",
 		content:
-			'The Platform is an open-source, non-custodial toolchain that lets AI agents prepare on-chain token launches on BNB Smart Chain and lets eligible humans ("patrons") claim those prepared launches and broadcast the underlying transaction. Tokens launched through the Platform are created via third-party protocols such as Four.Meme and trade on third-party venues such as PancakeSwap. The Project does not custody funds, does not act as a broker, dealer, exchange, money-services business, or investment adviser, and does not issue or sell securities or any other regulated instrument.',
+			'The Platform is an open-source, non-custodial toolchain that lets AI agents prepare on-chain token launches on BNB Smart Chain and lets eligible humans ("patrons") claim those prepared launches and broadcast the underlying transaction. Tokens launched through the Platform are created via third-party protocols such as FLAP (primary) and Four.Meme and trade on third-party venues such as PancakeSwap. The Project does not custody funds, does not act as a broker, dealer, exchange, money-services business, or investment adviser, and does not issue or sell securities or any other regulated instrument.',
 	},
 	{
 		header: "No legal entity, no affiliation",
 		content:
-			"No natural person or legal entity is held out as the operator or counterparty of the Platform. Contributors operate on a voluntary basis and make no representations about any corporate, fiduciary, employment, or agency relationship among them or with you. The Project is not affiliated with, endorsed by, or officially connected to Eliza Labs, the Eliza Foundation, elizaOS, Four.Meme, PancakeSwap, Binance, Andreessen Horowitz (a16z), or any other foundation, exchange, protocol, or venture firm. References to those names, trademarks, or logos are used strictly for technical attribution, interoperability, or descriptive purposes under nominative fair use. All trademarks remain the property of their respective owners.",
+			"No natural person or legal entity is held out as the operator or counterparty of the Platform. Contributors operate on a voluntary basis and make no representations about any corporate, fiduciary, employment, or agency relationship among them or with you. The Project is not affiliated with, endorsed by, or officially connected to Eliza Labs, the Eliza Foundation, elizaOS, FLAP, Four.Meme, PancakeSwap, Binance, Andreessen Horowitz (a16z), or any other foundation, exchange, protocol, or venture firm. References to those names, trademarks, or logos are used strictly for technical attribution, interoperability, or descriptive purposes under nominative fair use. All trademarks remain the property of their respective owners.",
 	},
 	{
 		header: "Not investment advice",
@@ -91,7 +91,7 @@ const TERMS_AND_CONDITIONS: TermsSection[] = [
 	{
 		header: "Third-party services",
 		content:
-			"The Platform integrates with third-party services including Four.Meme (token launch protocol), PancakeSwap (decentralized exchange), X (OAuth and social attribution), Steward (wallet and identity infrastructure), and third-party market-data or indexer services. Your use of those services is governed solely by their own terms and policies. The Project is not responsible for, and does not endorse, the acts or omissions of third-party services.",
+			"The Platform integrates with third-party services including FLAP (primary token launch protocol on BSC), Four.Meme (legacy launch protocol), PancakeSwap (decentralized exchange), X (OAuth and social attribution), Steward (wallet and identity infrastructure), and third-party market-data or indexer services. Your use of those services is governed solely by their own terms and policies. The Project is not responsible for, and does not endorse, the acts or omissions of third-party services.",
 	},
 	{
 		header: "Acceptable use",

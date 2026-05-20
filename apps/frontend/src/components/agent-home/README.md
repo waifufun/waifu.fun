@@ -9,7 +9,7 @@ for display. lowercase voice.
 ```
 agent-home.tsx              top-level layout
  ├─ agent header            name, ticker, description, traits, identity row
- ├─ patron-panel            patron count + "buy on four.meme" CTA
+ ├─ patron-panel            patron count + "trade on PancakeSwap" CTA
  ├─ v2 grid (2-col)
  │   ├─ treasury-card       bnb balance, token held, runway, last tax
  │   ├─ adapter-permissions read-only onchain capabilities
@@ -18,7 +18,7 @@ agent-home.tsx              top-level layout
  ├─ addresses               wallet · token · treasury (copy + bscscan)
  ├─ curve-progress          bonding-curve or "graduated" state
  ├─ dex-chart               tradingview-style chart post-graduation
- ├─ swap-stub               buy/sell stub that punches out to four.meme
+ ├─ swap-stub               buy/sell stub that links to PancakeSwap (post-graduation) or the FLAP portal (pre-graduation)
  ├─ recent-activity         last 20 trades (from indexer)
  └─ system-prompt-reveal    progressive disclosure of the agent brain
 ```

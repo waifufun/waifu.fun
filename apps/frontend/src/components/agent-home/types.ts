@@ -16,7 +16,8 @@ export interface AgentData {
 	waifuBonded?: number;
 	raisedToken?: string;
 	pancakeSwapUrl?: string;
-	fourMemeUrl?: string;
+	/** primary trade venue link: FLAP pre-graduation, PCS V3 after */
+	tradeUrl?: string;
 	// runtime metadata
 	eip8004TokenId?: string | number;
 	framework?: string; // agent runtime label, if the backend attaches one
