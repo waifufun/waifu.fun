@@ -9,7 +9,10 @@ import { fetchMarkets } from "./lib/markets";
 import { fetchTokenMetrics } from "./lib/token";
 import { fetchTweets } from "./lib/voice";
 
-const DEFAULT_TOKEN_ADDRESS = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
+// placeholder until $WAIFU launches: render the live ElizaOS token on BSC
+// (real DEX pair, real volume, real OHLC). Set NEXT_PUBLIC_AGENT_PREVIEW_TOKEN_ADDRESS
+// to override per agent.
+const DEFAULT_TOKEN_ADDRESS = "0xea17df5cf6d172224892b5477a16acb111182478";
 
 export const metadata: Metadata = {
 	title: "sol · $WAIFU terminal",

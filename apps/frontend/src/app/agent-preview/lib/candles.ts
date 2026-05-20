@@ -5,6 +5,30 @@ export type CandleSeries = { candles: Candle[]; source: "geckoterminal" | "synth
 type GeckoResponse = {
 	data?: { attributes?: { ohlcv_list?: Array<[number, number, number, number, number, number]> } };
 };
+
+type DexScreenerPair = {
+	chainId?: string;
+	dexId?: string;
+	pairAddress?: string;
+	liquidity?: { usd?: number };
+};
+
+type DexScreenerResponse = { pairs?: DexScreenerPair[] };
+
+/** Resolve the BSC pool with the deepest liquidity for a token. */
+async function resolvePool(contract: string): Promise<string | null> {
+	try {
+		const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${contract}`, { next: { revalidate: 300 } });
+		if (!res.ok) return null;
+		const data = (await res.json()) as DexScreenerResponse;
+		const bscPairs = (data.pairs ?? []).filter((p) => p.chainId === "bsc" && p.pairAddress);
+		if (bscPairs.length === 0) return null;
+		bscPairs.sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
+		return bscPairs[0]?.pairAddress ?? null;
+	} catch {
+		return null;
+	}
+}
 const CONFIG: Record<CandleRange, { unit: "minute" | "hour"; aggregate: number; limit: number; stepMs: number }> = {
 	"1m": { unit: "minute", aggregate: 1, limit: 60, stepMs: 60_000 },
 	"5m": { unit: "minute", aggregate: 5, limit: 72, stepMs: 300_000 },
@@ -44,9 +68,9 @@ function synthetic(contract: string, range: CandleRange): Candle[] {
 	});
 }
 
-async function fetchGecko(contract: string, range: CandleRange): Promise<Candle[] | null> {
+async function fetchGeckoPool(pool: string, range: CandleRange): Promise<Candle[] | null> {
 	const cfg = CONFIG[range];
-	const url = new URL(`https://api.geckoterminal.com/api/v2/networks/bsc/tokens/${contract}/ohlcv/${cfg.unit}`);
+	const url = new URL(`https://api.geckoterminal.com/api/v2/networks/bsc/pools/${pool}/ohlcv/${cfg.unit}`);
 	url.searchParams.set("aggregate", String(cfg.aggregate));
 	url.searchParams.set("limit", String(cfg.limit));
 	url.searchParams.set("currency", "usd");
@@ -59,6 +83,12 @@ async function fetchGecko(contract: string, range: CandleRange): Promise<Candle[
 	} catch {
 		return null;
 	}
+}
+
+async function fetchGecko(contract: string, range: CandleRange): Promise<Candle[] | null> {
+	const pool = await resolvePool(contract);
+	if (!pool) return null;
+	return fetchGeckoPool(pool, range);
 }
 
 export async function fetchCandleSeries(contract: string, range: CandleRange = "1h"): Promise<CandleSeries> {
