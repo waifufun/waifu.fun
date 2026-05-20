@@ -9,7 +9,7 @@ export default function SwapStub({ agent }: { agent: AgentData }) {
 	const [side, setSide] = useState<"buy" | "sell">("buy");
 	const [amount, setAmount] = useState("");
 
-	const fourMemeUrl = agent.fourMemeUrl ?? `https://four.meme/token/${agent.tokenAddress}`;
+	const pcsUrl = `https://pancakeswap.finance/swap?outputCurrency=${agent.tokenAddress}`;
 
 	const payLabel = side === "buy" ? (agent.raisedToken ?? "BNB") : `$${agent.ticker}`;
 	const getLabel = side === "buy" ? `$${agent.ticker}` : (agent.raisedToken ?? "BNB");
@@ -52,12 +52,12 @@ export default function SwapStub({ agent }: { agent: AgentData }) {
 			</div>
 
 			<a
-				href={fourMemeUrl}
+				href={pcsUrl}
 				target="_blank"
 				rel="noreferrer"
 				className="mt-4 w-full inline-flex items-center justify-center gap-2 h-11 rounded-sm bg-[#00ff87] text-black hover:bg-[#00ff87]/90 text-[11px] uppercase tracking-[0.2em] font-mono transition-colors"
 			>
-				trade on four.meme
+				trade on PCS
 				<ExternalLink className="w-3.5 h-3.5" />
 			</a>
 
