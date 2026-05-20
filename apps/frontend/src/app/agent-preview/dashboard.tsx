@@ -27,7 +27,6 @@ import { HoldingsAllocation } from "./_panels/holdings-allocation";
 import { PnlChart } from "./_panels/pnl-chart";
 import { PriceChart } from "./_panels/price-chart";
 import { SwapPanel } from "./_panels/swap-panel";
-import { AppShell } from "./_shell/app-shell";
 import type { ActivityItem } from "./lib/activity";
 import { SOL_APPS } from "./lib/apps";
 import type { CandleSeries } from "./lib/candles";
@@ -57,37 +56,38 @@ export function Dashboard({ token, initialCandles, holdings, ship, activity, pos
 	const liveApps = SOL_APPS.filter((a) => a.status === "live").length;
 
 	return (
-		<div style={THEME_TOKENS as React.CSSProperties}>
-			<AppShell activeNavId="overview">
-				<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
-					{/* Row 1: hero (full width) */}
-					<Hero daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
+		<div
+			className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]"
+			style={THEME_TOKENS as React.CSSProperties}
+		>
+			<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
+				{/* Row 1: hero (full width) */}
+				<Hero daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
 
-					{/* Row 2: chart (2/3) + swap (1/3) */}
-					<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-						<PriceChart initialSeries={initialCandles} token={token} />
-						<SwapPanel token={token} />
-					</div>
-
-					{/* Row 3: holdings / positions / apps-shipped / pnl */}
-					<div className="mt-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-						<HoldingsAllocation snapshot={holdings} />
-						<ActivePositions positions={positions} />
-						<AppsShipped apps={SOL_APPS} visibleCount={3} />
-						<PnlChart />
-					</div>
-
-					{/* Row 4: activity feed (2/3) + top apps (1/3) */}
-					<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-						<ActivityFeed max={8} rows={rows} />
-						<TopAppsByRevenue apps={SOL_APPS} limit={4} />
-					</div>
-
-					<footer className="mt-6 pb-2 font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.18em]">
-						live data · {liveApps} apps shipped · {ship.totalMerged} prs merged
-					</footer>
+				{/* Row 2: chart (2/3) + swap (1/3) */}
+				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+					<PriceChart initialSeries={initialCandles} token={token} />
+					<SwapPanel token={token} />
 				</div>
-			</AppShell>
+
+				{/* Row 3: holdings / positions / apps-shipped / pnl */}
+				<div className="mt-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+					<HoldingsAllocation snapshot={holdings} />
+					<ActivePositions positions={positions} />
+					<AppsShipped apps={SOL_APPS} visibleCount={3} />
+					<PnlChart />
+				</div>
+
+				{/* Row 4: activity feed (2/3) + top apps (1/3) */}
+				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+					<ActivityFeed max={8} rows={rows} />
+					<TopAppsByRevenue apps={SOL_APPS} limit={4} />
+				</div>
+
+				<footer className="mt-6 pb-2 font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.18em]">
+					live data · {liveApps} apps shipped · {ship.totalMerged} prs merged
+				</footer>
+			</div>
 		</div>
 	);
 }
