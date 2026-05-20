@@ -55,15 +55,19 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 	const deltaPositive = delta >= 0;
 
 	return (
-		<section aria-label="Treasury" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
+		<section aria-label="treasury" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
 			<div className="flex items-start justify-between gap-4 mb-4">
 				<div>
-					<h2 className="text-xs uppercase tracking-wide text-neutral-500">Treasury</h2>
-					<div className="text-3xl font-medium text-white mt-1">{isLoading ? "..." : formatUsd(treasury)}</div>
+					<h2 className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">treasury</h2>
+					<div className="text-3xl font-medium text-white mt-1 tabular-nums">
+						{isLoading ? "..." : formatUsd(treasury)}
+					</div>
 				</div>
 				<div className="text-right">
-					<div className="text-xs uppercase tracking-wide text-neutral-500">7d delta</div>
-					<div className={cn("text-lg font-medium mt-1", deltaPositive ? "text-[#00ff87]" : "text-red-400")}>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">7d delta</div>
+					<div
+						className={cn("text-lg font-medium mt-1 tabular-nums", deltaPositive ? "text-[#00ff87]" : "text-red-400")}
+					>
 						{isLoading ? "..." : `${deltaPositive ? "+" : ""}${formatUsd(delta)}`}
 					</div>
 				</div>
@@ -75,15 +79,24 @@ export default function TreasuryCard({ agent, isLoading }: Props) {
 
 			<div className="grid grid-cols-2 gap-4 pt-4 border-t border-stroke">
 				<div>
-					<div className="text-xs uppercase tracking-wide text-neutral-500">Runway</div>
-					<div className="text-white font-medium mt-1">
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">runway</div>
+					<div className="text-white font-medium mt-1 tabular-nums">
 						{isLoading ? "..." : Number.isFinite(runway) && runway > 0 ? `${Math.round(runway)}d` : "-"}
 					</div>
 				</div>
 				<div>
-					<div className="text-xs uppercase tracking-wide text-neutral-500">Daily burn</div>
-					<div className="text-white font-medium mt-1">{isLoading ? "..." : formatUsd(agent?.dailyBurnUsd ?? 0)}</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">daily burn</div>
+					<div className="text-white font-medium mt-1 tabular-nums">
+						{isLoading ? "..." : formatUsd(agent?.dailyBurnUsd ?? 0)}
+					</div>
 				</div>
+			</div>
+
+			<div className="mt-4 pt-4 border-t border-stroke">
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 mb-2">tax stream</div>
+				<p className="text-[11px] leading-relaxed text-neutral-400">
+					3% buy + sell tax on graduated trades. TaxSplitter routes 65% here, 25% to the patron, 10% to the platform.
+				</p>
 			</div>
 		</section>
 	);

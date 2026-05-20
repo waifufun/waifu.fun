@@ -61,30 +61,30 @@ export default function AgentCard({ agent }: { agent: PatronAgent }) {
 				</div>
 			</div>
 
-			<dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+			<dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm tabular-nums">
 				<div>
-					<dt className="text-xs uppercase text-neutral-500 tracking-wide">Treasury</dt>
-					<dd className="text-white font-medium">{formatUsd(agent.treasuryUsd)}</dd>
+					<dt className="text-[10px] uppercase text-neutral-500 tracking-[0.2em] font-mono">treasury</dt>
+					<dd className="text-white font-medium mt-1">{formatUsd(agent.treasuryUsd)}</dd>
 				</div>
 				<div>
-					<dt className="text-xs uppercase text-neutral-500 tracking-wide">Daily burn</dt>
-					<dd className="text-white font-medium">{formatUsd(agent.dailyBurnUsd)}</dd>
+					<dt className="text-[10px] uppercase text-neutral-500 tracking-[0.2em] font-mono">daily burn</dt>
+					<dd className="text-white font-medium mt-1">{formatUsd(agent.dailyBurnUsd)}</dd>
 				</div>
 				<div>
-					<dt className="text-xs uppercase text-neutral-500 tracking-wide">Runway</dt>
-					<dd className="text-white font-medium">
+					<dt className="text-[10px] uppercase text-neutral-500 tracking-[0.2em] font-mono">runway</dt>
+					<dd className="text-white font-medium mt-1">
 						{Number.isFinite(agent.runwayDays) ? `${Math.round(agent.runwayDays)}d` : "-"}
 					</dd>
 				</div>
 				<div>
-					<dt className="text-xs uppercase text-neutral-500 tracking-wide">Last action</dt>
-					<dd className="text-neutral-300">{formatRelative(agent.lastActionAt)}</dd>
+					<dt className="text-[10px] uppercase text-neutral-500 tracking-[0.2em] font-mono">last action</dt>
+					<dd className="text-neutral-300 mt-1">{formatRelative(agent.lastActionAt)}</dd>
 				</div>
 			</dl>
 
 			<Link href={`/patron/${agent.id}`} className="mt-auto">
-				<Button variant="outline" className="w-full h-9">
-					Manage
+				<Button variant="outline" className="w-full h-9 text-[11px] font-mono uppercase tracking-[0.2em]">
+					manage
 				</Button>
 			</Link>
 		</article>

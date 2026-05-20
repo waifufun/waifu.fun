@@ -198,7 +198,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 						<ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
-						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Webhook runtime</h2>
+						<h2 className="text-sm font-medium uppercase tracking-wide text-white">webhook runtime</h2>
 						<p className="mt-1 text-xs text-[#71717a]">
 							We POST signed events to your URL. Verify the signature using the secret below.
 						</p>
@@ -379,7 +379,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 						<Antenna className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
-						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Pull runtime</h2>
+						<h2 className="text-sm font-medium uppercase tracking-wide text-white">pull runtime</h2>
 						<p className="mt-1 text-xs text-[#71717a]">
 							Your agent calls us. Works behind firewalls. pulse at{" "}
 							<code className="font-mono text-[#a1a1aa]">~30s</code> and pull events on a cursor.
@@ -520,7 +520,7 @@ function ManagedPlaceholder({ agent }: { agent: AgentDetail }) {
 						<Cloud className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
-						<h2 className="text-sm font-medium uppercase tracking-wide text-white">Eliza Cloud runtime</h2>
+						<h2 className="text-sm font-medium uppercase tracking-wide text-white">eliza cloud runtime</h2>
 						<p className="mt-1 text-xs text-[#71717a]">
 							Hosted runtime provisioned by waifu. No webhook or polling setup required.
 						</p>
