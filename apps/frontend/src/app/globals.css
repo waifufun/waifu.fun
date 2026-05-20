@@ -172,6 +172,20 @@ html.dark body {
 	--wf-accent: #00ff87;
 	--wf-accent-dim: #00cc6a;
 	--wf-accent-wash: rgba(0, 255, 135, 0.06);
+	/* agent-preview dashboard theme (Wave T). Override on root container for per-agent themes. */
+	--accent: #00ff87;
+	--accent-soft: rgba(0, 255, 135, 0.12);
+	--accent-dim: #00cc6a;
+	--bg-base: #08080a;
+	--bg-panel: #0b0b0e;
+	--bg-panel-hi: #111114;
+	--border-soft: rgba(255, 255, 255, 0.05);
+	--border-mid: rgba(255, 255, 255, 0.08);
+	--text-primary: #e8e8eb;
+	--text-secondary: rgba(255, 255, 255, 0.55);
+	--text-tertiary: rgba(255, 255, 255, 0.32);
+	--positive: #6dd668;
+	--negative: #ff5b5b;
 	--wf-warning: #facc15;
 	--wf-success: #00ff87;
 	--wf-danger: #f87171;
