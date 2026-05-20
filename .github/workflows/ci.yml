@@ -158,7 +158,7 @@ jobs:
           # Wave M+N validated against this block (M5 verbose fork run + Nubs sim).
           # Bump quarterly to stay within Alchemy cache window; FLAP Portal evolves
           # state-side and old pinned blocks can trigger VanityAddressRequirementNotMet.
-          FORK_BSC_BLOCK: "98965012"
+          FORK_BSC_BLOCK: "99073955"
           REQUIRE_BSC_FORK: "true"
         run: >-
           bunx turbo run test build
