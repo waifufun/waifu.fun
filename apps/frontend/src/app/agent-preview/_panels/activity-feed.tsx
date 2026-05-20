@@ -17,23 +17,24 @@
 import { ChevronRightIcon } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
-import {
-	BnbChainIcon,
-	EthereumIcon,
-	GithubIcon,
-	HyperliquidIcon,
-	PancakeSwapIcon,
-	PolymarketIcon,
-	StewardIcon,
-	WaifuIcon,
-	XIcon,
-} from "@/components/brand-icons";
+import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
 import type { ActivityItem } from "../lib/activity";
 import { formatCompactNum, formatCompactUsd } from "../lib/format";
 import { relativeTime } from "../lib/github";
-import { Label, Panel } from "./_primitives";
+import type { TokenChain } from "../lib/token-logo";
+import { venueIdOf } from "../lib/venues";
+import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
+
+function chainFromVenue(venue: string): TokenChain {
+	const v = venue.toLowerCase();
+	if (v.includes("bsc") || v.includes("pancake") || v.includes("four")) return "bsc";
+	if (v.includes("polygon")) return "polygon";
+	if (v.includes("solana") || v.includes("drift")) return "solana";
+	if (v.includes("base")) return "base";
+	return "ethereum";
+}
 
 // ── Extended row model ────────────────────────────────────────────
 
@@ -146,11 +147,7 @@ type Visual = {
 };
 
 function pickVenueIcon(venue: string): ReactNode {
-	const v = venue.toLowerCase();
-	if (v.includes("pancake")) return <PancakeSwapIcon className="h-3.5 w-3.5" />;
-	if (v.includes("hyperliquid")) return <HyperliquidIcon className="h-3.5 w-3.5" />;
-	if (v.includes("polymarket")) return <PolymarketIcon className="h-3.5 w-3.5" />;
-	if (v.includes("ethereum") || v.includes("eth")) return <EthereumIcon className="h-3.5 w-3.5" />;
+	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
 	return <BnbChainIcon className="h-3.5 w-3.5" />;
 }
 
@@ -217,9 +214,12 @@ function visualFor(row: ActivityRowInput): Visual {
 				title: `${positive ? "Bought" : "Sold"} ${row.asset}`,
 				sub: `${formatCompactNum(row.amount)} ${row.asset} at ${row.priceBnb.toFixed(6)} BNB via ${row.venue}`,
 				right: (
-					<span className={cn("tabular-nums", positive ? "text-[var(--positive)]" : "text-[var(--negative)]")}>
-						{positive ? "+" : "-"}
-						{formatCompactNum(row.amount)} {row.asset}
+					<span className="inline-flex items-center gap-1.5 tabular-nums">
+						<TokenIcon address="" chain={chainFromVenue(row.venue)} size={12} symbol={row.asset} />
+						<span className={cn(positive ? "text-[var(--positive)]" : "text-[var(--negative)]")}>
+							{positive ? "+" : "-"}
+							{formatCompactNum(row.amount)} {row.asset}
+						</span>
 					</span>
 				),
 				url: row.url,
@@ -253,7 +253,7 @@ function visualFor(row: ActivityRowInput): Visual {
 						? "border-[var(--negative)]/40 bg-[var(--negative)]/10 text-[var(--negative)]"
 						: "border-[var(--border-mid)] bg-white/[0.02] text-[var(--text-secondary)]";
 			return {
-				icon: <PolymarketIcon className="h-3.5 w-3.5" />,
+				icon: <VenueIcon size={14} venue={row.market} />,
 				tint: "text-fuchsia-300",
 				bg: "bg-fuchsia-300/10",
 				title: row.result === "open" ? "Placed prediction" : "Prediction settled",

@@ -10,9 +10,12 @@
 
 "use client";
 
-import type * as React from "react";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
+
+import { type TokenChain, resolveTokenLogo } from "../lib/token-logo";
+import { getVenueLogo, getVenueMeta } from "../lib/venues";
 
 // ── theme tokens (consumed via CSS vars, set in dashboard.tsx root) ─
 
@@ -165,4 +168,153 @@ export function MicroStat({
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
 	return <h3 className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--text-tertiary)]">{children}</h3>;
+}
+
+// ── Token + Venue icons ────────────────────────────────────────
+//
+// TokenIcon renders an asynchronously-resolved token logo with a stable
+// fallback gradient circle so it never causes layout shift. It is
+// static-export safe: resolution only fires inside useEffect, so SSG
+// renders the fallback and the browser swaps in the real image on mount.
+//
+// VenueIcon is sync (mapped to a local SVG) and falls back to the venue's
+// primary brand color in a tinted circle when the SVG fails to load.
+
+function hashHue(input: string): number {
+	let h = 0;
+	for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) >>> 0;
+	return h % 360;
+}
+
+function GradientCircle({
+	seed,
+	label,
+	size,
+}: {
+	seed: string;
+	label: string;
+	size: number;
+}) {
+	const hue = hashHue(seed || label || "x");
+	const hueB = (hue + 40) % 360;
+	const bg = `linear-gradient(135deg, hsl(${hue} 70% 38%), hsl(${hueB} 70% 22%))`;
+	return (
+		<span
+			aria-hidden
+			className="inline-flex shrink-0 items-center justify-center rounded-full font-mono uppercase text-white/85"
+			style={{
+				width: size,
+				height: size,
+				fontSize: Math.max(8, Math.round(size * 0.45)),
+				background: bg,
+				boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
+			}}
+		>
+			{(label || "?").slice(0, 1)}
+		</span>
+	);
+}
+
+export type TokenIconProps = {
+	chain: TokenChain;
+	address: string;
+	symbol?: string;
+	size?: number;
+	className?: string;
+};
+
+export function TokenIcon({ chain, address, symbol, size = 16, className }: TokenIconProps) {
+	const [src, setSrc] = React.useState<string | null>(null);
+	const [failed, setFailed] = React.useState(false);
+
+	React.useEffect(() => {
+		let alive = true;
+		setFailed(false);
+		resolveTokenLogo({ chain, address, ...(symbol ? { symbol } : {}) })
+			.then((url) => {
+				if (alive) setSrc(url);
+			})
+			.catch(() => {
+				if (alive) setSrc(null);
+			});
+		return () => {
+			alive = false;
+		};
+	}, [chain, address, symbol]);
+
+	if (!src || failed) {
+		return (
+			<span className={className}>
+				<GradientCircle seed={`${chain}:${address}`} label={symbol ?? "?"} size={size} />
+			</span>
+		);
+	}
+
+	return (
+		// eslint-disable-next-line @next/next/no-img-element
+		<img
+			alt={symbol ? `${symbol} logo` : "token logo"}
+			className={cn("inline-block shrink-0 rounded-full bg-black/20", className)}
+			height={size}
+			onError={() => setFailed(true)}
+			src={src}
+			style={{ width: size, height: size }}
+			width={size}
+		/>
+	);
+}
+
+export function VenueIcon({
+	venue,
+	size = 16,
+	className,
+	withLabel = false,
+}: {
+	venue: string;
+	size?: number;
+	className?: string;
+	withLabel?: boolean;
+}) {
+	const meta = getVenueMeta(venue);
+	const src = meta?.logo ?? getVenueLogo(venue);
+	const [failed, setFailed] = React.useState(false);
+	const label = meta?.label ?? venue;
+
+	if (!src || failed) {
+		return (
+			<span className={cn("inline-flex items-center gap-1.5", className)}>
+				<span
+					aria-hidden
+					className="inline-flex shrink-0 items-center justify-center rounded-full font-mono uppercase"
+					style={{
+						width: size,
+						height: size,
+						fontSize: Math.max(8, Math.round(size * 0.45)),
+						background: meta ? `${meta.color}22` : "rgba(255,255,255,0.06)",
+						color: meta?.accent ?? "rgba(255,255,255,0.7)",
+						boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)",
+					}}
+				>
+					{label.slice(0, 1)}
+				</span>
+				{withLabel ? <span className="text-[var(--text-secondary)]">{label}</span> : null}
+			</span>
+		);
+	}
+
+	return (
+		<span className={cn("inline-flex items-center gap-1.5", className)}>
+			{/* eslint-disable-next-line @next/next/no-img-element */}
+			<img
+				alt={`${label} logo`}
+				className="inline-block shrink-0 rounded-full bg-black/20"
+				height={size}
+				onError={() => setFailed(true)}
+				src={src}
+				style={{ width: size, height: size }}
+				width={size}
+			/>
+			{withLabel ? <span className="text-[var(--text-secondary)]">{label}</span> : null}
+		</span>
+	);
 }

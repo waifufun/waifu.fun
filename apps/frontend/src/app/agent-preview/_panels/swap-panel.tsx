@@ -24,7 +24,9 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
 import type { TokenMetrics } from "../lib/token";
-import { Label, Panel } from "./_primitives";
+import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
+
+const BNB_NATIVE_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c";
 
 const PERCENT_BUTTONS = [25, 50, 75, 100] as const;
 
@@ -46,23 +48,17 @@ function fmtImpact(impact: number): string {
 
 function TokenSelector({
 	symbol,
-	logoSrc,
+	address,
 }: {
 	symbol: string;
-	logoSrc?: string;
+	address: string;
 }) {
 	return (
 		<button
 			className="inline-flex items-center gap-2 rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] px-2.5 py-1.5 text-left hover:border-[var(--border-mid)]"
 			type="button"
 		>
-			<span
-				aria-hidden
-				className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[9px] uppercase text-[var(--accent)]"
-				style={logoSrc ? { backgroundImage: `url(${logoSrc})`, backgroundSize: "cover" } : undefined}
-			>
-				{logoSrc ? "" : symbol.slice(0, 1)}
-			</span>
+			<TokenIcon address={address} chain="bsc" size={20} symbol={symbol} />
 			<span className="font-mono text-[12px] text-[var(--text-primary)]">{symbol}</span>
 			<ChevronDownIcon className="h-3 w-3 text-[var(--text-tertiary)]" />
 		</button>
@@ -149,7 +145,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 					</span>
 				</div>
 				<div className="flex items-center gap-2">
-					<TokenSelector symbol={fromSymbol} />
+					<TokenSelector address={BNB_NATIVE_ADDRESS} symbol={fromSymbol} />
 					<input
 						aria-label="from amount"
 						className="ml-auto w-full bg-transparent text-right font-mono text-[22px] text-[var(--text-primary)] tabular-nums outline-none placeholder:text-[var(--text-tertiary)]"
@@ -197,7 +193,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 					</span>
 				</div>
 				<div className="flex items-center gap-2">
-					<TokenSelector symbol={toSymbol} />
+					<TokenSelector address={token.contract || ""} symbol={toSymbol} />
 					<div className="ml-auto font-mono text-[22px] text-[var(--text-primary)]/85 tabular-nums">
 						{toAmount > 0 ? fmtBalance(toAmount, toAmount > 1 ? 2 : 6) : "0.0"}
 					</div>
@@ -208,7 +204,10 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			<dl className="mt-3 space-y-1.5 rounded-md border border-[var(--border-soft)] bg-black/10 p-3 font-mono text-[10px] text-[var(--text-tertiary)]">
 				<div className="flex justify-between">
 					<dt>route</dt>
-					<dd className="text-[var(--text-secondary)]">via PancakeSwap</dd>
+					<dd className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+						<VenueIcon size={14} venue="pancakeswap" />
+						<span>via PancakeSwap</span>
+					</dd>
 				</div>
 				<div className="flex justify-between">
 					<dt>slippage</dt>

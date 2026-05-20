@@ -19,7 +19,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 
 import type { ChainHolding, HoldingsSnapshot } from "../lib/holdings";
-import { Label, Panel } from "./_primitives";
+import type { TokenChain } from "../lib/token-logo";
+import { Label, Panel, TokenIcon } from "./_primitives";
 
 const SLICE_COLORS = [
 	"var(--accent)",
@@ -54,6 +55,15 @@ type Slice = {
 	valueUsd: number;
 	pct: number;
 	color: string;
+	chain: TokenChain;
+};
+
+const CHAIN_KEY_TO_TOKEN_CHAIN: Record<string, TokenChain> = {
+	bsc: "bsc",
+	eth: "ethereum",
+	arb: "ethereum",
+	base: "base",
+	op: "ethereum",
 };
 
 function toSlices(holdings: ChainHolding[], navUsd: number): Slice[] {
@@ -69,6 +79,7 @@ function toSlices(holdings: ChainHolding[], navUsd: number): Slice[] {
 		valueUsd: h.valueUsd,
 		pct: navUsd > 0 ? (h.valueUsd / navUsd) * 100 : 0,
 		color: SLICE_COLORS[i % SLICE_COLORS.length] ?? "var(--accent)",
+		chain: CHAIN_KEY_TO_TOKEN_CHAIN[h.chain] ?? "ethereum",
 	}));
 }
 
@@ -127,6 +138,7 @@ export function HoldingsAllocation({ snapshot }: { snapshot: HoldingsSnapshot })
 										className="inline-block h-2 w-2 shrink-0 rounded-full"
 										style={{ backgroundColor: s.color }}
 									/>
+									<TokenIcon address="" chain={s.chain} size={14} symbol={s.label} />
 									<span className="truncate text-[var(--text-primary)]">{s.label}</span>
 									<span className="truncate text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
 										{s.sub}
