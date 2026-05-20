@@ -35,7 +35,6 @@ import { type ShipSummary, daysOperating } from "./lib/github";
 import type { HoldingsSnapshot } from "./lib/holdings";
 import type { Position } from "./lib/positions";
 import type { TokenMetrics } from "./lib/token";
-import type { WatchlistEntry } from "./lib/watchlist";
 
 type Props = {
 	token: TokenMetrics;
@@ -45,10 +44,9 @@ type Props = {
 	ship: ShipSummary;
 	activity: ActivityItem[];
 	positions: Position[];
-	watchlist: WatchlistEntry[];
 };
 
-export function Dashboard({ token, initialCandles, holdings, ship, activity, positions, watchlist }: Props) {
+export function Dashboard({ token, initialCandles, holdings, ship, activity, positions }: Props) {
 	const navUsd = holdings.navUsd;
 	const days = daysOperating(ship.first);
 
@@ -60,7 +58,7 @@ export function Dashboard({ token, initialCandles, holdings, ship, activity, pos
 
 	return (
 		<div style={THEME_TOKENS as React.CSSProperties}>
-			<AppShell activeNavId="overview" watchlist={watchlist}>
+			<AppShell activeNavId="overview">
 				<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
 					{/* Row 1: hero (full width) */}
 					<Hero daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
