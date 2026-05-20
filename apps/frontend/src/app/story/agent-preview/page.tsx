@@ -201,7 +201,7 @@ function makeGraduated(): { agent: AgentData; trades: AgentTrade[]; launch: Agen
 
 function PreviewBody() {
 	const params = useSearchParams();
-	const personaRaw = params.get("persona");
+	const personaRaw = params?.get("persona") ?? null;
 	if (process.env.NODE_ENV === "production") notFound();
 
 	const showAll = !personaRaw;
