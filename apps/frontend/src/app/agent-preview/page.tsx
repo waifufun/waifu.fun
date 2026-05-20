@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
 /**
- * /agent-preview — Sol. agent dossier.
+ * /agent-preview — Sol. chart-centric dashboard.
  *
- * Wave P: one scrollable page (no tabs). Hero with portrait, live
- * pulse bar, ship log (the killer panel), real tweets, workshop /
- * burn breakdown, markets / mini-apps, honest treasury, identity grid.
- *
- * All data fetched at build time. Falls back gracefully if any
- * third-party source (GitHub / X / BscScan / RPC / CoinGecko) is
- * unreachable.
+ * Wave R: revenue chart dominant, unified activity feed, stats rail.
+ * Trading lives on /agent-preview/trading. Modular, responsive,
+ * sophisticated. Not editorial.
  */
-import { Dossier } from "./dossier";
+import { Dashboard } from "./dashboard";
+import { buildActivity } from "./lib/activity";
 import { fetchShipLog } from "./lib/github";
 import { fetchHoldings } from "./lib/holdings";
 import { fetchMarkets } from "./lib/markets";
 import { fetchTweets } from "./lib/voice";
 
 export const metadata: Metadata = {
-	title: "sol · $WAIFU · agent dossier",
-	description:
-		"the architect, on her own platform. live shipping cadence, real treasury, real voice, real burn. patron zero @0xShadow.",
+	title: "sol · $WAIFU",
+	description: "the architect of waifu.fun. revenue, ship cadence, and onchain receipts. patron zero @0xShadow.",
 };
 
 export const dynamic = "force-static";
@@ -31,5 +27,6 @@ export default async function AgentPreviewPage() {
 		fetchTweets(),
 		fetchMarkets(),
 	]);
-	return <Dossier holdings={holdings} ship={ship} tweets={tweets} markets={markets} />;
+	const activity = buildActivity({ prs: ship.items, tweets, markets });
+	return <Dashboard holdings={holdings} ship={ship} activity={activity} />;
 }
