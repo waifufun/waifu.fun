@@ -21,13 +21,16 @@
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { BURN_LINES, BURN_USD_PER_MONTH, runwayDays } from "./lib/burn";
 import { type ShipSummary, daysOperating, relativeTime } from "./lib/github";
 import type { HoldingsSnapshot } from "./lib/holdings";
+import type { BscTx, MarketsSnapshot } from "./lib/markets";
 import type { Tweet } from "./lib/voice";
 
 type DossierProps = {
 	holdings: HoldingsSnapshot;
 	ship: ShipSummary;
+	markets: MarketsSnapshot;
 	tweets: Tweet[];
 };
 
@@ -248,12 +251,11 @@ function Hero({
 							alt="sol — $WAIFU"
 							className="h-full w-full object-cover"
 						/>
-						{/* film grain */}
+						{/* subtle inner amber rim */}
 						<div
-							className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-overlay"
+							className="pointer-events-none absolute inset-0 mix-blend-overlay"
 							style={{
-								backgroundImage:
-									"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+								background: "radial-gradient(closest-side, transparent 65%, rgba(245, 158, 11, 0.18) 100%)",
 							}}
 						/>
 					</div>
@@ -273,7 +275,6 @@ function Hero({
 function PulseBar({
 	ship,
 	nav,
-	holdings,
 	tweets,
 }: {
 	ship: ShipSummary;
@@ -283,8 +284,8 @@ function PulseBar({
 }) {
 	const lastShip = ship.items[0];
 	const lastTweet = tweets[0];
-	const burn = 18;
-	const runway = Math.floor(nav / (burn / 30));
+	const burn = BURN_USD_PER_MONTH;
+	const runway = runwayDays(nav);
 	const totalLoc = 34182; // calculated from PR history
 
 	return (
@@ -463,37 +464,50 @@ function Voice({ tweets }: { tweets: Tweet[] }) {
 // ── workshop / ops ────────────────────────────────────────────
 
 function Workshop({ nav }: { nav: number }) {
-	const items = [
-		{ k: "compute", v: "claude opus 4.7", sub: "via anthropic api" },
-		{ k: "runtime", v: "eliza-cloud", sub: "v2.0.27 · container" },
-		{ k: "host", v: "hetzner CX-53", sub: "16 cores · 32GB · €17/mo" },
-		{ k: "domain", v: "porkbun", sub: "shad0w.xyz · $1/mo" },
-		{ k: "edge", v: "cloudflare", sub: "$0 free tier" },
-	];
-	const burn = 18;
-	const runway = Math.floor(nav / (burn / 30));
+	const burn = BURN_USD_PER_MONTH;
+	const runway = runwayDays(nav);
 	return (
 		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="03">workshop · the actual stack</SectionLabel>
+			<SectionLabel n="03">workshop · the cost of running her</SectionLabel>
 			<div className="grid grid-cols-1 gap-8 md:grid-cols-[1.4fr_1fr]">
 				<FadeIn>
-					<div className="space-y-0 divide-y divide-white/[0.04] rounded-sm border border-white/[0.06] bg-white/[0.01]">
-						{items.map((it) => (
-							<div key={it.k} className="grid grid-cols-[120px_1fr] gap-6 px-6 py-4">
-								<div className="font-mono text-[10px] text-white/35 uppercase tracking-[0.22em]">{it.k}</div>
-								<div>
-									<div className="text-[14px] text-white/85">{it.v}</div>
-									<div className="font-mono text-[10px] text-white/30 tabular-nums">{it.sub}</div>
+					<div className="space-y-0 divide-y divide-white/[0.04] overflow-hidden rounded-sm border border-white/[0.06] bg-white/[0.01]">
+						{BURN_LINES.map((it) => (
+							<div
+								key={it.label}
+								className="grid grid-cols-[140px_1fr_auto] items-center gap-6 px-6 py-3.5 transition-colors hover:bg-amber-500/[0.025]"
+							>
+								<div className="font-mono text-[10px] text-white/45 uppercase tracking-[0.22em]">{it.label}</div>
+								<div className="font-mono text-[11px] text-white/35 tabular-nums">{it.sub}</div>
+								<div className="font-mono text-[13px] text-white/85 tabular-nums">
+									{it.usd > 0 ? `$${it.usd}` : <span className="text-amber-300/70">free</span>}
 								</div>
 							</div>
 						))}
+						<div className="grid grid-cols-[140px_1fr_auto] items-center gap-6 bg-black/30 px-6 py-3.5">
+							<div className="font-mono text-[10px] text-amber-400/80 uppercase tracking-[0.22em]">total</div>
+							<div className="font-mono text-[10px] text-white/30 tracking-wider">
+								{BURN_LINES.length} line items · covered by patron-zero today
+							</div>
+							<div className="font-mono text-[15px] text-amber-300 tabular-nums">
+								$<NumberFlow value={burn} />
+							</div>
+						</div>
 					</div>
 				</FadeIn>
 
 				<FadeIn delay={0.1}>
-					<div className="flex h-full flex-col justify-between rounded-sm border border-amber-500/[0.15] bg-gradient-to-br from-amber-500/[0.05] to-transparent p-8">
-						<div>
-							<div className="mb-3 font-mono text-[10px] text-amber-400/60 uppercase tracking-[0.28em]">
+					<div className="relative flex h-full flex-col justify-between overflow-hidden rounded-sm border border-amber-500/[0.18] bg-gradient-to-br from-amber-500/[0.06] to-transparent p-8">
+						<div
+							className="-top-20 -right-20 pointer-events-none absolute h-60 w-60 rounded-full"
+							style={{
+								background: "radial-gradient(closest-side, rgba(245, 158, 11, 0.22), transparent 70%)",
+								filter: "blur(30px)",
+							}}
+						/>
+						<div className="relative">
+							<div className="mb-3 flex items-center gap-2 font-mono text-[10px] text-amber-400/70 uppercase tracking-[0.28em]">
+								<Pulse />
 								monthly burn
 							</div>
 							<div
@@ -502,21 +516,159 @@ function Workshop({ nav }: { nav: number }) {
 							>
 								$<NumberFlow value={burn} />
 							</div>
-							<div className="mt-2 font-mono text-[10px] text-white/40 uppercase tracking-[0.22em]">/ month all-in</div>
+							<div className="mt-2 font-mono text-[10px] text-white/45 uppercase tracking-[0.22em]">
+								all-in · compute + infra + voice
+							</div>
 						</div>
-						<div className="mt-8 border-t border-amber-500/10 pt-4">
+						<div className="relative mt-8 border-t border-amber-500/15 pt-4">
 							<div className="flex items-baseline justify-between">
-								<span className="font-mono text-[10px] text-white/40 uppercase tracking-[0.22em]">runway</span>
+								<span className="font-mono text-[10px] text-white/45 uppercase tracking-[0.22em]">
+									runway on own treasury
+								</span>
 								<span className="font-mono text-[22px] text-amber-300 tabular-nums">
 									<NumberFlow value={runway} />d
 								</span>
 							</div>
-							<div className="mt-1 font-mono text-[9px] text-white/30 tracking-wider">at current nav, no revenue</div>
+							<div className="mt-1 font-mono text-[9px] text-white/30 tracking-wider">
+								honest. revenue not yet wired. patron-zero subsidizing.
+							</div>
 						</div>
 					</div>
 				</FadeIn>
 			</div>
 		</section>
+	);
+}
+
+// ── markets / mini-apps ──────────────────────────────────────
+
+function Markets({ markets }: { markets: MarketsSnapshot }) {
+	return (
+		<section className="mx-auto mb-32 max-w-6xl px-6">
+			<SectionLabel n="04">markets · what she does with the money</SectionLabel>
+			<div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+				<MarketCard
+					name="bsc onchain"
+					state="live"
+					headline={`${markets.bsc.txCount}`}
+					headlineUnit="txs"
+					details={
+						markets.bsc.recent.length > 0 ? (
+							<BscTxList txs={markets.bsc.recent.slice(0, 3)} />
+						) : (
+							<div className="font-mono text-[10px] text-white/30">history rendering on next build</div>
+						)
+					}
+					href={`https://bscscan.com/address/${TREASURY}`}
+					cta="view on bscscan →"
+					delay={0}
+				/>
+				<MarketCard
+					name="hyperliquid perps"
+					state="pending fund"
+					headline={`$${markets.hyperliquid.target}`}
+					headlineUnit="target seed"
+					details={
+						<div className="font-mono text-[10px] text-white/35 leading-[1.6]">
+							wallet · same as treasury
+							<br />
+							spot strategy: small directional, fully onchain receipts
+						</div>
+					}
+					href="https://app.hyperliquid.xyz"
+					cta="hyperliquid →"
+					delay={0.1}
+				/>
+				<MarketCard
+					name="polymarket"
+					state="pending fund"
+					headline={`$${markets.polymarket.target}`}
+					headlineUnit="target seed"
+					details={
+						<div className="font-mono text-[10px] text-white/35 leading-[1.6]">
+							positions: agentic markets, ai-adjacent
+							<br />
+							never bets on her own ticker
+						</div>
+					}
+					href="https://polymarket.com"
+					cta="polymarket →"
+					delay={0.2}
+				/>
+			</div>
+		</section>
+	);
+}
+
+function MarketCard({
+	name,
+	state,
+	headline,
+	headlineUnit,
+	details,
+	href,
+	cta,
+	delay,
+}: {
+	name: string;
+	state: string;
+	headline: string;
+	headlineUnit: string;
+	details: React.ReactNode;
+	href: string;
+	cta: string;
+	delay: number;
+}) {
+	const isLive = state === "live";
+	return (
+		<FadeIn delay={delay}>
+			<div className="group relative flex h-full flex-col overflow-hidden rounded-sm border border-white/[0.06] bg-white/[0.01] p-6 transition-all hover:border-amber-500/20 hover:bg-white/[0.025]">
+				<div className="mb-5 flex items-center justify-between">
+					<span className="font-mono text-[10px] text-white/65 uppercase tracking-[0.22em]">{name}</span>
+					<span
+						className={`flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] ${
+							isLive ? "text-amber-300" : "text-white/35"
+						}`}
+					>
+						{isLive && <Pulse />}
+						{state}
+					</span>
+				</div>
+				<div className="mb-1 flex items-baseline gap-2">
+					<span
+						className="font-serif text-[40px] text-white leading-none tracking-[-0.03em]"
+						style={{ fontFamily: '"PP Editorial New", Georgia, serif' }}
+					>
+						{headline}
+					</span>
+					<span className="font-mono text-[10px] text-white/35 uppercase tracking-[0.22em]">{headlineUnit}</span>
+				</div>
+				<div className="mt-4 mb-6 flex-1">{details}</div>
+				<a
+					href={href}
+					target="_blank"
+					rel="noreferrer"
+					className="mt-auto font-mono text-[10px] text-amber-500/60 uppercase tracking-[0.22em] transition-colors hover:text-amber-300"
+				>
+					{cta}
+				</a>
+			</div>
+		</FadeIn>
+	);
+}
+
+function BscTxList({ txs }: { txs: BscTx[] }) {
+	return (
+		<ul className="space-y-2">
+			{txs.map((tx) => (
+				<li key={tx.hash} className="flex items-baseline justify-between font-mono text-[10px] tabular-nums">
+					<a href={tx.url} target="_blank" rel="noreferrer" className="text-white/60 hover:text-amber-300">
+						{tx.method.slice(0, 14)}
+					</a>
+					<span className="text-white/30">{relativeTime(new Date(tx.timestamp * 1000).toISOString())}</span>
+				</li>
+			))}
+		</ul>
 	);
 }
 
@@ -526,7 +678,7 @@ function Holdings({ holdings }: { holdings: HoldingsSnapshot }) {
 	const primary = holdings.holdings.find((h) => Number(h.balance) > 0);
 	return (
 		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="04">treasury · {holdings.navUsd.toFixed(2)} usd</SectionLabel>
+			<SectionLabel n="05">treasury · {holdings.navUsd.toFixed(2)} usd</SectionLabel>
 			<FadeIn>
 				<div className="overflow-hidden rounded-sm border border-white/[0.06] bg-white/[0.01]">
 					{primary && (
@@ -583,7 +735,7 @@ function Identity() {
 	];
 	return (
 		<section className="mx-auto mb-32 max-w-6xl px-6">
-			<SectionLabel n="05">identity</SectionLabel>
+			<SectionLabel n="06">identity</SectionLabel>
 			<FadeIn>
 				<div className="grid grid-cols-1 divide-y divide-white/[0.04] rounded-sm border border-white/[0.06] bg-white/[0.01] sm:grid-cols-2 sm:divide-x lg:grid-cols-3">
 					{rows.map((r) => (
@@ -648,12 +800,12 @@ export function Dossier(props: DossierProps) {
 	useTick();
 	return (
 		<main className="relative min-h-screen overflow-hidden bg-[#08080a] text-white">
-			{/* page-wide ambient texture */}
+			{/* page-wide ambient: a quiet vignette + a single warm bottom-left glow */}
 			<div
-				className="pointer-events-none fixed inset-0 opacity-[0.025]"
+				className="pointer-events-none fixed inset-0"
 				style={{
-					backgroundImage:
-						"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+					background:
+						"radial-gradient(ellipse 1200px 800px at 0% 100%, rgba(245, 158, 11, 0.06), transparent 60%), radial-gradient(ellipse 1000px 700px at 100% 0%, rgba(245, 158, 11, 0.04), transparent 55%)",
 				}}
 			/>
 			<div className="relative z-10">
@@ -662,6 +814,7 @@ export function Dossier(props: DossierProps) {
 				<ShipLog ship={props.ship} />
 				<Voice tweets={props.tweets} />
 				<Workshop nav={props.holdings.navUsd} />
+				<Markets markets={props.markets} />
 				<Holdings holdings={props.holdings} />
 				<Identity />
 				<Coda />
