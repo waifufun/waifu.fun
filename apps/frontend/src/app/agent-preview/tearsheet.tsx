@@ -110,9 +110,7 @@ function Header() {
 				</div>
 				<div className="flex flex-col leading-none gap-0.5">
 					<span className="text-[15px] tracking-tight text-white">Sol</span>
-					<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
-						$WAIFU \u00b7 holdings
-					</span>
+					<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">$WAIFU · holdings</span>
 				</div>
 			</div>
 			<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
@@ -198,7 +196,7 @@ function Nav({
 				/>
 				<SecondaryStat
 					label="runway"
-					value={runwayDays > 0 ? `${runwayDays}d` : "\u2014"}
+					value={runwayDays > 0 ? `${runwayDays}d` : "–"}
 					caption={runwayDays > 0 ? `at \$${MONTHLY_BURN_USD}/mo burn` : "fund the burner"}
 					accent={runwayDays > 0 && runwayDays < 60}
 				/>
@@ -245,28 +243,28 @@ function LanesSection({ snapshot }: { snapshot: HoldingsSnapshot }) {
 			className="mt-12 md:mt-16"
 		>
 			<Tabs defaultValue="portfolio">
-				<TabsList className="bg-transparent p-0 gap-1.5">
+				<TabsList className="inline-flex bg-transparent border-0 p-0 gap-1.5 h-auto">
 					<TabsTrigger
 						value="portfolio"
-						className="font-mono text-[11px] uppercase tracking-[0.18em] data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
+						className="font-mono text-[11px] uppercase tracking-[0.18em] px-3 h-9 data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
 					>
 						portfolio
 					</TabsTrigger>
 					<TabsTrigger
 						value="products"
-						className="font-mono text-[11px] uppercase tracking-[0.18em] data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
+						className="font-mono text-[11px] uppercase tracking-[0.18em] px-3 h-9 data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
 					>
 						products
 					</TabsTrigger>
 					<TabsTrigger
 						value="markets"
-						className="font-mono text-[11px] uppercase tracking-[0.18em] data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
+						className="font-mono text-[11px] uppercase tracking-[0.18em] px-3 h-9 data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
 					>
 						markets
 					</TabsTrigger>
 					<TabsTrigger
 						value="ops"
-						className="font-mono text-[11px] uppercase tracking-[0.18em] data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
+						className="font-mono text-[11px] uppercase tracking-[0.18em] px-3 h-9 data-[state=active]:bg-white/[0.06] data-[state=active]:text-white"
 					>
 						ops
 					</TabsTrigger>
@@ -319,13 +317,13 @@ function PortfolioPanel({ snapshot }: { snapshot: HoldingsSnapshot }) {
 								<td className="px-4 py-3 md:px-6">{r.chainName.toLowerCase()}</td>
 								<td className="px-4 py-3 md:px-6">{r.asset}</td>
 								<td className="px-4 py-3 text-right tabular-nums md:px-6">
-									{r.balance > 0 ? r.balance.toFixed(4) : "\u2014"}
+									{r.balance > 0 ? r.balance.toFixed(4) : "–"}
 								</td>
 								<td className="px-4 py-3 text-right tabular-nums md:px-6">
-									{r.valueUsd > 0 ? `$${r.valueUsd.toFixed(2)}` : "\u2014"}
+									{r.valueUsd > 0 ? `$${r.valueUsd.toFixed(2)}` : "–"}
 								</td>
 								<td className="hidden px-4 py-3 text-right tabular-nums md:table-cell md:px-6">
-									{pct > 0 ? `${pct.toFixed(0)}%` : "\u2014"}
+									{pct > 0 ? `${pct.toFixed(0)}%` : "–"}
 								</td>
 							</tr>
 						);
@@ -373,13 +371,13 @@ function ProductsPanel() {
 						<div>
 							<div>rev 7d</div>
 							<div className="mt-1 text-[14px] tracking-tight text-white/85 tabular-nums">
-								{p.rev7d > 0 ? `$${p.rev7d}` : "\u2014"}
+								{p.rev7d > 0 ? `$${p.rev7d}` : "–"}
 							</div>
 						</div>
 						<div>
 							<div>all-time</div>
 							<div className="mt-1 text-[14px] tracking-tight text-white/85 tabular-nums">
-								{p.revAll > 0 ? `$${p.revAll}` : "\u2014"}
+								{p.revAll > 0 ? `$${p.revAll}` : "–"}
 							</div>
 						</div>
 						<div>
@@ -433,7 +431,7 @@ function MarketsPanel() {
 							<td className="px-4 py-3 md:px-6">{v.name}</td>
 							<td className="hidden px-4 py-3 sm:table-cell md:px-6">{v.category}</td>
 							<td className="px-4 py-3 text-right md:px-6">{v.note}</td>
-							<td className="px-4 py-3 text-right tabular-nums md:px-6">\u2014</td>
+							<td className="px-4 py-3 text-right tabular-nums md:px-6">–</td>
 						</tr>
 					))}
 				</tbody>
@@ -471,9 +469,7 @@ function OpsPanel({ nav }: { nav: number }) {
 							className="border-b border-white/[0.04] font-mono text-[12px] text-white/75 last:border-b-0"
 						>
 							<td className="px-4 py-3 md:px-6">{r.label}</td>
-							<td className="px-4 py-3 text-right tabular-nums md:px-6">
-								{r.monthly > 0 ? `$${r.monthly}` : "\u2014"}
-							</td>
+							<td className="px-4 py-3 text-right tabular-nums md:px-6">{r.monthly > 0 ? `$${r.monthly}` : "–"}</td>
 							<td className="hidden px-4 py-3 text-right text-white/40 md:table-cell md:px-6">{r.note}</td>
 						</tr>
 					))}
@@ -483,7 +479,7 @@ function OpsPanel({ nav }: { nav: number }) {
 						<td className="px-4 py-3 text-left uppercase tracking-[0.18em] text-[10px] text-white/45 md:px-6">burn</td>
 						<td className="px-4 py-3 text-right tabular-nums md:px-6">${total}/mo</td>
 						<td className="hidden px-4 py-3 text-right text-white/40 md:table-cell md:px-6">
-							{runwayMonths > 0 ? `runway ${runwayMonths.toFixed(1)} months` : "\u2014"}
+							{runwayMonths > 0 ? `runway ${runwayMonths.toFixed(1)} months` : "–"}
 						</td>
 					</tr>
 				</tfoot>
@@ -557,12 +553,12 @@ function Identity() {
 					value={`@${PATRON_HANDLE}`}
 					href={`https://x.com/${PATRON_HANDLE}`}
 				/>
-				<IdRow label="runtime" value="claude opus 4.7 \u00b7 hetzner" />
-				<IdRow label="origin" value="2026-03-05 \u00b7 first PR" />
+				<IdRow label="runtime" value="claude opus 4.7 · hetzner" />
+				<IdRow label="origin" value="2026-03-05 · first PR" />
 			</div>
 			<div className="mt-6 text-center font-mono text-[10px] tracking-[0.22em] text-white/25 uppercase">
 				<Link href="/" className="hover:text-white/45 transition-colors">
-					\u2190 back to waifu.fun
+					← back to waifu.fun
 				</Link>
 			</div>
 		</motion.section>
