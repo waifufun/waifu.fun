@@ -16,9 +16,8 @@
  * between sections is `mt-12` so it breathes.
  *
  * Legacy / pre-wave-M agents still render: the economics + treasury
- * panels fall back to quiet 'not configured' placeholders. The DEMO
- * token (legacy four.meme hackathon row) hides the v2 economics + adapter
- * permissions chrome that doesn't apply to a static demo.
+ * panels fall back to quiet 'not configured' placeholders so every
+ * agent (including \$DEMO) shows the full v2 surface.
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -37,8 +36,6 @@ import SwapStub from "./swap-stub";
 import TreasuryPanelV2 from "./treasury-panel-v2";
 import type { AgentData, AgentTrade } from "./types";
 
-const DEMO_TOKEN_ADDRESS = "0xc05dde3f113a57260f1839abd3b5a0eac1314444";
-
 export default function AgentHomeV2({
 	agent,
 	trades,
@@ -54,7 +51,6 @@ export default function AgentHomeV2({
 	launch: AgentLaunchByToken | null;
 }) {
 	const graduated = agent.status === "graduated";
-	const isDemo = agent.tokenAddress.toLowerCase() === DEMO_TOKEN_ADDRESS.toLowerCase();
 	const heroSlice: AgentLaunchHeroSlice | null = launch
 		? {
 				tier: launch.tier ?? null,
@@ -78,21 +74,17 @@ export default function AgentHomeV2({
 					<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 				</div>
 
-				{!isDemo ? (
-					<>
-						<Section title="economics" subtitle="tier ladder + tax routing">
-							<EconomicsPanel launch={launch} />
-						</Section>
+				<Section title="economics" subtitle="tier ladder + tax routing">
+					<EconomicsPanel launch={launch} />
+				</Section>
 
-						<Section title="treasury" subtitle="onchain handles + balances">
-							<TreasuryPanelV2
-								treasuryLp={launch?.treasuryLp ?? null}
-								agentSafe={launch?.agentSafe ?? null}
-								taxSplitter={launch?.taxSplitter ?? null}
-							/>
-						</Section>
-					</>
-				) : null}
+				<Section title="treasury" subtitle="onchain handles + balances">
+					<TreasuryPanelV2
+						treasuryLp={launch?.treasuryLp ?? null}
+						agentSafe={launch?.agentSafe ?? null}
+						taxSplitter={launch?.taxSplitter ?? null}
+					/>
+				</Section>
 
 				{/* v3 post-launch chrome (burn counter, claim widget, tax
 				    stream, trade feed). Only renders for v3 launches in the
