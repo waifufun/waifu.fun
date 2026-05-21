@@ -232,7 +232,9 @@ export async function onRequest(context) {
 		if (originHeader) host = new URL(originHeader).hostname;
 	} catch {}
 	if (!host && refererHeader) {
-		try { host = new URL(refererHeader).hostname; } catch {}
+		try {
+			host = new URL(refererHeader).hostname;
+		} catch {}
 	}
 	if (!host) host = hostHeader.split(":")[0] || url.hostname;
 
