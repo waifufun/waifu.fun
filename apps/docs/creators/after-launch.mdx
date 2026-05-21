@@ -3,9 +3,9 @@ title: "after launch"
 description: "what you can do once the bundle has executed"
 ---
 
-once `BundleExecuted` fires, your launch is in `LAUNCHED` state. the contracts
-are mostly inert from here on. there are no admin functions to call. nothing
-to tune. the token lives on its own.
+once `BundleExecuted` fires, your launch is in `LAUNCHED` state. one
+follow-up function (`finalizeLaunch`) wires the post-graduation V2 pair
+into the treasury contract. after that, everything runs autonomously.
 
 ## what the contracts do post-launch
 
@@ -14,9 +14,17 @@ to tune. the token lives on its own.
   anything.
 - **BundleRouter** is one-shot and done. `executed = true` forever. nobody can
   call `executeBundle` again on it.
-- **TreasuryLP** holds 10% of the token. this is the platform's custody slot.
-  future waves will deploy this as managed LP. you do not interact with it
-  directly.
+- **TreasuryLP4** holds 10% of the token (100M). it deploys progressively as
+  four single-sided PCS V3 LP positions as the token's TWAP market cap rises
+  through the tier targets configured for your launch tier. as the token
+  trades through each tier's range, the position sells token for BNB, and the
+  BNB accumulates inside the position. an operator service (`tier-cron`)
+  permissionlessly calls `oraclePoke` and `checkAndAdvance` to advance tiers.
+- **AgentSafe** is your token's treasury multisig (Gnosis Safe v1.4.1). it is
+  the only address that can call `treasuryLp4.claim()` to pull accumulated
+  BNB out of the V3 positions. signers are whoever you configured at launch.
+- **TaxSplitter** splits the FLAP buy/sell tax stream 3-way between platform,
+  patron, and your AgentSafe per the BPS you configured at launch.
 - **FlapTaxTokenV3** runs on its own based on the tax config you set at
   launch time. the buy/sell tax bps decay according to `taxDuration`.
 
@@ -37,11 +45,33 @@ to tune. the token lives on its own.
 - change the tax structure (set at launch, decays per `taxDuration`)
 - pause transfers
 - recover BNB from any contract
-- recover tokens from the burn address or TreasuryLP
+- recover tokens from the burn address, FLAP V2 LP, or TreasuryLP4
+  positions (the V3 LP NFTs are owned by TreasuryLP4 and only the contract
+  can collect from them)
 - replay the bundle
 - modify metadata
 
 this is the price of trustlessness. once you launch, the launch runs itself.
+
+## claiming BNB from TreasuryLP4
+
+as the token's price rises through tier targets, TreasuryLP4 deploys
+single-sided V3 LP positions that automatically sell token for BNB. that
+BNB accumulates inside the V3 positions until someone calls
+`treasuryLp4.claim()`, which:
+
+1. collects BNB from every deployed tier via `npm.collect`
+2. unwraps WBNB to native BNB
+3. splits the BNB 4-way:
+   - **10% buyback** , V2 swap of BNB for the token, sent to the burn address
+   - **5% platform** , to the platform receiver
+   - **20% patron** , to the launch's patron receiver
+   - **65% agent** , to your AgentSafe (this is your share, plus any rounding dust)
+4. emits `BnbClaimed` and `BuybackExecuted`
+
+only your AgentSafe can call `claim()`. anyone can call `oraclePoke()` and
+`checkAndAdvance()`, which is how the V3 ladder progresses without requiring
+you to do anything.
 
 ## launch state queries
 
@@ -65,8 +95,9 @@ the most common questions in the 24 hours after launch:
 - "where are my tokens?" they need to call `claim()` on the vault. the UI
   has a button.
 - "can i sell?" yes, on PCS. the sell tax applies per your config.
-- "why did i get fewer tokens than i expected?" the dynamic split reads
-  `balanceOf(router)` after the v2 buy, which is post-tax. expected vs actual
-  can diverge by the sell-tax rate.
+- "why did i get fewer tokens than i expected?" the presaler share is a
+  flat 200M tokens split pro-rata across all depositors. if more BNB was
+  deposited than you expected (cap fill near max), your pro-rata fraction is
+  smaller. the absolute pool is the same.
 
 a calm 24 hours of answering these well is worth more than the launch itself.

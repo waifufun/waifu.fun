@@ -31,15 +31,18 @@ the social side and the API are operated by the waifu.fun team.
 
 ### how much does it cost to launch
 
-the gas to deploy three contracts (`LaunchVault`, `BundleRouter`,
-`TreasuryLP`) plus a platform creation fee. exact BNB amount shown in the
-UI before you confirm. expect roughly the same range as a typical FLAP mint
-plus our cut.
+the gas to deploy five contracts (`LaunchVault`, `BundleRouter`,
+`TreasuryLP4`, `TaxSplitter`, and a Gnosis Safe v1.4.1 `AgentSafe`) plus a
+platform creation fee. exact BNB amount shown in the UI before you confirm.
+expect roughly the same range as a typical FLAP mint plus our cut.
 
 ### do i get tokens at TGE
 
-no. the creator does not receive a token allocation. the dynamic split is
-50% burn, 10% TreasuryLP, ~40% to presalers. zero to the creator.
+no. the creator does not receive a token allocation. the supply split is
+flat: 50% burn, 10% TreasuryLP4 (V3 LP ladder), 20% presalers (vault claims),
+20% locked in the FLAP V2 LP at graduation. zero to the creator. the creator
+does own the `AgentSafe` which receives 65% of TreasuryLP4 BNB claims plus a
+share of the FLAP tax stream per the launch's configured TaxSplitter BPS.
 
 ### can i change the metadata after launch
 

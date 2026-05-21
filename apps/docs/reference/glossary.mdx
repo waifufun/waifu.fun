@@ -129,7 +129,11 @@ reduces sandwich risk. the builder tip (`tipBnb`) pays for inclusion.
 
 ### `quoteAmt`
 the BNB the bundle sends to FLAP's `newTokenV6`. seeds the bonding curve.
-for graduating tiers, this is exactly 20 BNB (the four-fifths threshold).
+for graduating tiers, this is dynamically calibrated against the buy tax
+(via `TierMath.calibratedQuoteAmt`) so the effective curve fill stays at or
+above 16 BNB plus a 1% safety margin. with default 3% buy tax this is
+~16.84 BNB. for SMOL (TIER_80) it is exactly 16 BNB and the token does not
+graduate.
 
 ### refund
 the terminal sad state. presalers withdraw their BNB plus bonus. one
@@ -159,9 +163,12 @@ TIER_xx.
 the BNB sent to the 48 club builder EOA inside the bundle. pays for
 inclusion in the puissant private mempool. configurable per-bundle.
 
-### `TreasuryLP`
-per-launch custody contract for the 10% platform LP cut. holds tokens until
-a future "LP deployer" wave deploys managed LP.
+### `TreasuryLP4`
+per-launch contract holding 100M tokens (10% of supply) that progressively
+deploys as four single-sided PCS V3 LP positions as the token's TWAP market
+cap rises through tier targets. BNB collected from the V3 positions splits
+4-way: 10% buyback (to burn), 5% platform, 20% patron, 65% to the agent's
+Gnosis Safe. owned by the agent's Safe after `finalizeLaunch`.
 
 ### V2 buy
 the follow-up buy the bundle does on the freshly-graduated PCS v2 pair.
@@ -173,6 +180,24 @@ short for `LaunchVault`. the per-launch escrow.
 ### vesting
 the 50% TGE + 50% linear over 24 hours unlock schedule on graduating tiers.
 not applied to SMOL (TIER_80).
+
+### `AgentSafe`
+the Gnosis Safe v1.4.1 deployed per launch as the token treasury multisig.
+deployed by `AgentSafeDeployer` inside `createLaunch`. signers and threshold
+are chosen by the creator at launch time. receives 65% of TreasuryLP4 BNB
+claims and its configured share of the TaxSplitter stream.
+
+### `TaxSplitter`
+immutable 3-way splitter for native BNB and ERC20 tokens. receives the FLAP
+buy/sell tax stream from every swap and splits it between platform, patron,
+and the agent's Safe per the launch's configured BPS. set as the
+`commissionReceiver` on the launched FlapTaxTokenV3.
+
+### `finalizeLaunch`
+public idempotent function on `LaunchFactory` that wires the FLAP-created V2
+pair into `TreasuryLP4` and transfers TreasuryLP4 ownership to the agent's
+Safe. callable by anyone once the V2 pair exists. cannot be griefed because
+the V2 pair can only be created by the bundle path.
 
 ### WBNB
 wrapped BNB. ERC-20 representation of native BNB on PCS. address

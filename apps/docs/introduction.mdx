@@ -37,8 +37,10 @@ underneath that shape.
   (SMOL, BASED, WAGMI, GIGACHAD; contract enum TIER_80/90/95/98) with pre-set cap, graduation budget,
   and follow-up buy. the math is in the contract, not in a database.
 - **no founder allocation.** the creator does not get tokens at TGE. tokens
-  are split 50% burned, 10% to TREASURY_LP, ~40% to presalers pro-rata. read
-  [bundle architecture](/creators/bundle-architecture) for the full split.
+  are split 50% burned, 10% to TreasuryLP4 (4-tier single-sided PCS V3 LP
+  ladder that drips BNB to the agent treasury), 20% to presalers pro-rata.
+  the remaining 20% is locked in the FLAP-created PCS V2 LP at graduation.
+  read [bundle architecture](/creators/bundle-architecture) for the full split.
 
 ## the contracts
 
@@ -47,8 +49,14 @@ underneath that shape.
   distributes tokens after launch, handles refunds.
 - `BundleRouter` is the per-launch atomic executor. one-shot. calls FLAP,
   optionally buys on PCS, splits tokens.
-- `TreasuryLP` is the per-launch 10% custody vault. future waves will deploy
-  managed LP from here.
+- `TreasuryLP4` is the per-launch 10% allocation that deploys progressively
+  as four single-sided PCS V3 LP positions, each at a higher market-cap target.
+  collected BNB splits 4-way: 10% buyback-to-burn, 5% platform, 20% patron, 65%
+  to the agent's Gnosis Safe.
+- `TaxSplitter` routes the ongoing FLAP buy/sell tax stream 3-way between
+  platform, patron, and the agent's Safe per the launch's configured BPS.
+- `AgentSafeDeployer` deploys a Gnosis Safe v1.4.1 per launch as the agent's
+  treasury multisig. owned by the creator's chosen signers.
 
 addresses live at [reference/contract-addresses](/reference/contract-addresses).
 

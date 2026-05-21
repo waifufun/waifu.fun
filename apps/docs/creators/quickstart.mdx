@@ -14,10 +14,14 @@ everything else the platform handles.
   </Step>
   <Step title="pick a tier">
     four options:
-    - **SMOL** (TIER_80) curve-only, no PCS LP, lower-stakes launch
-    - **BASED** (TIER_90) 32 BNB cap, 20 BNB graduation, 12 BNB follow-up buy
-    - **WAGMI** (TIER_95) 64 BNB cap, 20 BNB graduation, 44 BNB follow-up buy
-    - **GIGACHAD** (TIER_98) 160 BNB cap, 20 BNB graduation, 140 BNB follow-up buy
+    - **SMOL** (TIER_80) 16 BNB cap, curve-only, no PCS LP, lower-stakes launch
+    - **BASED** (TIER_90) 32 BNB cap, graduates to PCS V2
+    - **WAGMI** (TIER_95) 64 BNB cap, graduates to PCS V2
+    - **GIGACHAD** (TIER_98) 160 BNB cap, graduates to PCS V2
+
+    on graduating tiers, the curve fill (`quoteAmt`) is calibrated against
+    your buy tax. the rest of the cap (`v2BuyBnb`) goes into the freshly-deployed
+    PCS V2 pair as a follow-up buy.
 
     pick the cap you think your community can actually hit. an under-subscribed
     vault refunds at the deadline. see [choose your tier](/creators/choose-your-tier).
@@ -28,9 +32,10 @@ everything else the platform handles.
     `NewTokenV6` params on-chain. see [write your metadata](/creators/write-your-metadata).
   </Step>
   <Step title="deploy the launch">
-    the platform calls `LaunchFactory.createLaunch(config)`. this deploys three
-    contracts: `LaunchVault`, `BundleRouter`, `TreasuryLP`. you pay the gas plus
-    the platform creation fee.
+    the platform calls `LaunchFactory.createLaunch(config)`. this deploys five
+    contracts: `LaunchVault`, `BundleRouter`, `TreasuryLP4`, `TaxSplitter`, and
+    an `AgentSafe` (Gnosis Safe v1.4.1) for your token treasury. you pay the
+    gas plus the platform creation fee.
 
     once deployed, your launch is in `OPEN` state. anyone can deposit BNB into
     the vault. you do not need to be online for the rest. the bundle bot
@@ -59,5 +64,7 @@ everything else the platform handles.
 
 - announce the launch with the vault address so depositors know where to send BNB
 - engage with the community during the OPEN window
-- after launch, manage the 10% TreasuryLP balance through the platform UI
-  (future feature, see [after launch](/creators/after-launch))
+- after launch, your `AgentSafe` receives BNB drips from the TreasuryLP4 V3
+  LP ladder as the token's market cap rises. signers configured at launch
+  can call `treasuryLp4.claim()` to pull accumulated BNB. see
+  [after launch](/creators/after-launch).
