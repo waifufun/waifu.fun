@@ -14,7 +14,9 @@ export type PatronStatus = {
 	patronSince: string | null;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL || "https://api.waifu.fun";
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API = SAME_ORIGIN_API;
 
 // $DEMO (four.meme hackathon agent) doesn't have real patrons in the
 // production DB. Hardcode @waifudotfun as the showcase patron so the
