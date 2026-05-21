@@ -236,45 +236,6 @@ export async function onRequest(context) {
 	}
 	if (!host) host = hostHeader.split(":")[0] || url.hostname;
 
-	// DEBUG (REMOVE AFTER ZERION DIAGNOSIS): two endpoints for diagnosing mobile WebView cookie behavior.
-	// /debug/echo — JSON of what the function received (cookies, headers).
-	// /debug/cookie-test — HTML page that runs an XHR to /debug/echo, shows BOTH the navigation
-	//   cookie state (top-level) AND the XHR cookie state. Compare to determine if the WebView
-	//   strips cookies on XHR.
-	if (url.pathname === "/debug/echo") {
-		return json({
-			ok: true,
-			method: request.method,
-			origin: originHeader || null,
-			referer: refererHeader || null,
-			hostHeader: hostHeader || null,
-			resolvedHost: host,
-			cookie: request.headers.get("cookie") || null,
-			cookieLen: (request.headers.get("cookie") || "").length,
-			userAgent: request.headers.get("user-agent") || null,
-			secFetchSite: request.headers.get("sec-fetch-site") || null,
-			secFetchMode: request.headers.get("sec-fetch-mode") || null,
-			secFetchDest: request.headers.get("sec-fetch-dest") || null,
-		});
-	}
-	if (url.pathname === "/debug/cookie-test") {
-		const pageCookieRaw = request.headers.get("cookie") || "";
-		const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>cookie diag</title><style>body{font-family:system-ui;background:#000;color:#0f0;padding:16px;font-size:13px;line-height:1.4}h1{font-size:14px;color:#fff}pre{background:#111;padding:8px;border:1px solid #333;white-space:pre-wrap;word-break:break-all;font-size:11px}.row{margin-bottom:12px}.label{color:#aaa}</style></head><body>
-<h1>cookie diag (zerion / mobile webview)</h1>
-<div class="row"><div class="label">[1] navigation cookies (what the browser sent on this page load):</div><pre id="nav-cookie">${pageCookieRaw.replace(/</g, "&lt;")}</pre><div class="label">document.cookie (client-visible only, no HttpOnly):</div><pre id="doc-cookie"></pre></div>
-<div class="row"><div class="label">[2] xhr to /debug/echo with credentials:include (same-origin):</div><pre id="xhr-include">running...</pre></div>
-<div class="row"><div class="label">[3] xhr to /debug/echo with credentials:same-origin:</div><pre id="xhr-same-origin">running...</pre></div>
-<div class="row"><div class="label">[4] xhr to /debug/echo with credentials:omit (control — should show no cookie):</div><pre id="xhr-omit">running...</pre></div>
-<script>
-document.getElementById("doc-cookie").textContent = document.cookie || "(empty)";
-async function run(id, opts){try{const r=await fetch("/debug/echo",opts);const j=await r.json();document.getElementById(id).textContent=JSON.stringify(j,null,2);}catch(e){document.getElementById(id).textContent="ERROR: "+e.message;}}
-run("xhr-include",{credentials:"include"});
-run("xhr-same-origin",{credentials:"same-origin"});
-run("xhr-omit",{credentials:"omit"});
-<\/script>
-</body></html>`;
-		return new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
-	}
 	if (url.pathname === "/api/auth/finalize" && request.method === "POST") return handleFinalize(request, env, host);
 	if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleLogout(request, env, host);
 	if (url.pathname === "/auth/twitter/login" && request.method === "GET") return handleTwitterLogin(request, env);
