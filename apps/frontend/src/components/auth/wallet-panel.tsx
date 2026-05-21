@@ -6,6 +6,7 @@ import { useAuth as useStewardAuth } from "@stwd/react";
 import type { StewardAuthResult } from "@stwd/sdk";
 import { Loader2, Wallet } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { getAddress } from "viem";
 import type { Connector } from "wagmi";
 import { useAccount, useConnect, useDisconnect, useSignMessage } from "wagmi";
 
@@ -173,9 +174,22 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 			onError?.(err, "evm");
 			return;
 		}
+		// SIWE backend enforces EIP-55 checksum on the address line. Wagmi's
+		// useAccount() returns the wallet-reported casing (lower-case for most
+		// adapters), which the siwe lib rejects with "invalid EIP-55 address".
+		// Checksum before building the SIWE message so the verify call passes.
+		let checksummed: `0x${string}`;
+		try {
+			checksummed = getAddress(address);
+		} catch {
+			const err = new Error(`invalid EVM address: ${address}`);
+			setError(err.message);
+			onError?.(err, "evm");
+			return;
+		}
 		setSigning(true);
 		try {
-			const result = await auth.signInWithSIWE(address, async (msg: string) => {
+			const result = await auth.signInWithSIWE(checksummed, async (msg: string) => {
 				return await signMessageAsync({ message: msg });
 			});
 			onSuccess?.(result, "evm");
