@@ -19,7 +19,23 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 import type { Position } from "../lib/positions";
-import { Label, Panel } from "./_primitives";
+import type { TokenChain } from "../lib/token-logo";
+import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
+
+function chainOfVenue(venue: string): TokenChain {
+	const v = venue.toLowerCase();
+	if (v.includes("bsc") || v.includes("pancake") || v.includes("four")) return "bsc";
+	if (v.includes("polygon")) return "polygon";
+	if (v.includes("solana") || v.includes("drift")) return "solana";
+	if (v.includes("base")) return "base";
+	return "ethereum";
+}
+
+function primaryAssetOf(asset: string): string {
+	// "BNB/USDT" -> "BNB", "BTC-USD" -> "BTC"
+	const m = asset.match(/^[A-Z0-9]+/);
+	return m ? m[0] : asset;
+}
 
 type ScheduledVenue = {
 	id: string;
@@ -94,10 +110,16 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 								<tr className="text-[var(--text-primary)]" key={p.id}>
 									<td className="py-2 pr-2">
 										<span className="inline-flex items-center gap-1.5">
+											<TokenIcon address="" chain={chainOfVenue(p.venue)} size={14} symbol={primaryAssetOf(p.asset)} />
 											<span className="text-[var(--text-primary)]">{p.asset}</span>
 										</span>
 									</td>
-									<td className="py-2 pr-2 text-[var(--text-secondary)]">{p.venue}</td>
+									<td className="py-2 pr-2 text-[var(--text-secondary)]">
+										<span className="inline-flex items-center gap-1.5">
+											<VenueIcon size={14} venue={p.venue} />
+											<span>{p.venue}</span>
+										</span>
+									</td>
 									<td className="py-2 pr-2 text-right tabular-nums">{fmtUsd(p.valueUsd)}</td>
 									<td
 										className={cn(
@@ -128,9 +150,15 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 						})}
 						{SCHEDULED.map((s) => (
 							<tr className="text-[var(--text-tertiary)]" key={s.id}>
-								<td className="py-2 pr-2">{s.asset}</td>
 								<td className="py-2 pr-2">
 									<span className="inline-flex items-center gap-1.5">
+										<TokenIcon address="" chain={chainOfVenue(s.venue)} size={14} symbol={primaryAssetOf(s.asset)} />
+										<span>{s.asset}</span>
+									</span>
+								</td>
+								<td className="py-2 pr-2">
+									<span className="inline-flex items-center gap-1.5">
+										<VenueIcon size={14} venue={s.venue} />
 										<span>{s.venue}</span>
 										<span className="rounded-full border border-[var(--border-soft)] px-1.5 py-0 text-[8px] uppercase tracking-[0.18em]">
 											scheduled
