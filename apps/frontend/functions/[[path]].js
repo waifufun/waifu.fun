@@ -98,6 +98,11 @@ async function handleFinalize(request, env, host) {
 	}
 
 	const out = json(parsed, { status: upstream.status });
+	// DEBUG: expose host vars to diagnose cookie strip on dev subdomain.
+	out.headers.set("x-debug-host", host);
+	out.headers.set("x-debug-host-header", request.headers.get("host") ?? "<none>");
+	out.headers.set("x-debug-url-host", new URL(request.url).hostname);
+	out.headers.set("x-debug-mirror-test", host.endsWith(".waifu.fun") || host === "waifu.fun" ? "keep" : "strip");
 	appendUpstreamCookies(out, upstream, host);
 	if (upstream.ok) {
 		// Keep Domain=.waifu.fun for any *.waifu.fun host. Only strip for raw
