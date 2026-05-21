@@ -167,12 +167,27 @@ async function handleApiV1Proxy(request, env) {
 export async function onRequest(context) {
 	const { request, env } = context;
 	const url = new URL(request.url);
-	// Prefer the Host header (user-facing CNAME like dev.waifu.fun) over
-	// url.hostname (which can be the underlying *.pages.dev when CF routes
-	// through the worker domain). This decides whether cookie Domain=.waifu.fun
-	// is preserved.
+	// CF Pages with custom domain alias (dev.waifu.fun → develop.waifu-fun.pages.dev):
+	// Host header / url.hostname / request.url all show the underlying *.pages.dev
+	// domain, not the user-facing CNAME. We need the public hostname to decide
+	// cookie Domain attribute. The browser sets Origin header to the page's
+	// origin on cross-origin POST (which finalize always is, from a fetch call).
+	//   - On dev.waifu.fun: Origin = "https://dev.waifu.fun" → host = dev.waifu.fun
+	//   - On waifu.fun:     Origin = "https://waifu.fun"     → host = waifu.fun
+	//   - Direct *.pages.dev: Origin = "https://*.pages.dev" → host = *.pages.dev
+	// If Origin is missing (rare for browsers, common for curl/tools), fall
+	// back to the Host header.
+	const originHeader = request.headers.get("origin") ?? "";
+	const refererHeader = request.headers.get("referer") ?? "";
 	const hostHeader = request.headers.get("host") ?? "";
-	const host = hostHeader.split(":")[0] || url.hostname;
+	let host = "";
+	try {
+		if (originHeader) host = new URL(originHeader).hostname;
+	} catch {}
+	if (!host && refererHeader) {
+		try { host = new URL(refererHeader).hostname; } catch {}
+	}
+	if (!host) host = hostHeader.split(":")[0] || url.hostname;
 
 	if (url.pathname === "/api/auth/finalize" && request.method === "POST") return handleFinalize(request, env, host);
 	if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleLogout(request, env, host);
