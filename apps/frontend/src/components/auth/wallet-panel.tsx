@@ -296,3 +296,4 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 		</div>
 	);
 }
+
