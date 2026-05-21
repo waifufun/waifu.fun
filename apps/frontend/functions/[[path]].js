@@ -31,9 +31,12 @@ const getSetCookies = (headers) => {
 };
 
 const mirrorCookieForHost = (cookie, host) => {
-	// Cloudflare preview URLs cannot accept Domain=.waifu.fun cookies. Keep
-	// production cookies untouched, but strip Domain on pages.dev so auth UI can
-	// at least store first-party preview cookies during smoke tests.
+	// Cloudflare preview URLs (raw *.pages.dev) cannot accept Domain=.waifu.fun
+	// cookies. Strip Domain only when the user-facing host is itself a
+	// .pages.dev domain. For any *.waifu.fun alias (waifu.fun, dev.waifu.fun,
+	// www.waifu.fun) keep the Domain attribute so the wf_session cookie
+	// reaches api.waifu.fun on subsequent fetch() calls.
+	if (host.endsWith(".waifu.fun") || host === "waifu.fun") return cookie;
 	if (!host.endsWith(".pages.dev")) return cookie;
 	return cookie.replace(/;\s*Domain=[^;]+/i, "");
 };
@@ -97,7 +100,10 @@ async function handleFinalize(request, env, host) {
 	const out = json(parsed, { status: upstream.status });
 	appendUpstreamCookies(out, upstream, host);
 	if (upstream.ok) {
-		const domain = host.endsWith(".pages.dev") ? "" : "; Domain=.waifu.fun";
+		// Keep Domain=.waifu.fun for any *.waifu.fun host. Only strip for raw
+		// *.pages.dev preview URLs where the .waifu.fun parent isn't valid.
+		const useWaifuDomain = host.endsWith(".waifu.fun") || host === "waifu.fun";
+		const domain = useWaifuDomain ? "; Domain=.waifu.fun" : "";
 		// Cosmetic frontend hint only. Backend authorization must always come
 		// from upstream's HttpOnly wf_session cookie or an Authorization bearer.
 		out.headers.append("Set-Cookie", `wf_authed=1; Max-Age=2592000; Path=/; SameSite=Lax${domain}; Secure`);
@@ -116,7 +122,8 @@ async function handleLogout(request, env, host) {
 	for (const result of [oauth, twitter]) {
 		if (result.status === "fulfilled") appendUpstreamCookies(out, result.value, host);
 	}
-	const domain = host.endsWith(".pages.dev") ? "" : "; Domain=.waifu.fun";
+	const useWaifuDomain = host.endsWith(".waifu.fun") || host === "waifu.fun";
+	const domain = useWaifuDomain ? "; Domain=.waifu.fun" : "";
 	out.headers.append("Set-Cookie", `wf_authed=; Max-Age=0; Path=/; SameSite=Lax${domain}; Secure`);
 	return out;
 }
@@ -155,7 +162,12 @@ async function handleApiV1Proxy(request, env) {
 export async function onRequest(context) {
 	const { request, env } = context;
 	const url = new URL(request.url);
-	const host = url.hostname;
+	// Prefer the Host header (user-facing CNAME like dev.waifu.fun) over
+	// url.hostname (which can be the underlying *.pages.dev when CF routes
+	// through the worker domain). This decides whether cookie Domain=.waifu.fun
+	// is preserved.
+	const hostHeader = request.headers.get("host") ?? "";
+	const host = hostHeader.split(":")[0] || url.hostname;
 
 	if (url.pathname === "/api/auth/finalize" && request.method === "POST") return handleFinalize(request, env, host);
 	if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleLogout(request, env, host);
