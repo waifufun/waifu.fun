@@ -11,6 +11,7 @@ import { fetchHoldings } from "@/lib/wave-t/holdings";
 import { fetchMarkets } from "@/lib/wave-t/markets";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
+import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
@@ -383,15 +384,28 @@ export default async function AgentPage({
 		activityP,
 	]);
 
-	if (!agent) {
-		notFound();
+	let renderAgent = agent;
+	let renderTrades = trades;
+	let renderLaunch = launch;
+
+	if (!renderAgent) {
+		// Until $WAIFU mints, the architect agent is not seeded in the DB.
+		// Fall back to a fixture so /agent/sol renders Sol's surface instead
+		// of the generic not-found state. Real DB record wins when present.
+		if (isSolAgent) {
+			renderAgent = buildSolFixtureAgent();
+			renderTrades = buildSolFixtureTrades();
+			renderLaunch = buildSolFixtureLaunch();
+		} else {
+			notFound();
+		}
 	}
 
 	return (
 		<AgentHomeV2
-			agent={agent}
-			trades={trades}
-			launch={launch}
+			agent={renderAgent}
+			trades={renderTrades}
+			launch={renderLaunch}
 			token={token}
 			candles={candles}
 			holdings={holdings}
