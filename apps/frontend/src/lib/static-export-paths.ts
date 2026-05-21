@@ -115,6 +115,9 @@ export async function fetchAgentAddressesForStaticExport(): Promise<{ address: s
 
 	// Always include Sol's canonical address so /agent/sol redirect lands on a pre-rendered page.
 	addresses.add(SOL_AGENT_ADDRESS_STATIC);
+	// Always include the zero-address placeholder so the e2e route-smoke suite (which navigates
+	// to /patron/0x000…0, etc) has a generated page to land on.
+	addresses.add(STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS);
 
 	return ensureNonEmptyAddresses([...addresses].map((address) => ({ address })));
 }
