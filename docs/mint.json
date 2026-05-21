@@ -2,10 +2,14 @@
 	"$schema": "https://mintlify.com/schema.json",
 	"name": "waifu.fun",
 	"logo": {
-		"dark": "/logo/dark.svg",
-		"light": "/logo/light.svg"
+		"dark": "/logo/dark.png",
+		"light": "/logo/light.png"
 	},
-	"favicon": "/favicon.svg",
+	"favicon": "/favicon.png",
+	"metadata": {
+		"og:image": "/brand/og.png",
+		"twitter:image": "/brand/og.png"
+	},
 	"colors": {
 		"primary": "#00ff87",
 		"light": "#22c55e",
