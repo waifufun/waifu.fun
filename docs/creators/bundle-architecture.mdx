@@ -20,7 +20,6 @@ flowchart LR
   Router -- safeTransfer 100M --> Treasury[TreasuryLP4]
   Router -- safeTransfer remainder --> Burn[0x...dEaD]
   Vault -- distribute --> Vault
-  Router -- tipBnb --> Tip[48 Club EOA]
 ```
 
 ## what happens inside executeBundle, in order
@@ -28,9 +27,16 @@ flowchart LR
 1. **set executed = true.** the router is one-shot. this flag flips before any
    third-party call to block reentry from a malicious token transfer hook.
 2. **pull BNB from the vault.** the router calls
-   `vault.pullBnbForLaunch(quoteAmt + v2BuyBnb + tipBnb)`. the vault transitions
+   `vault.pullBnbForLaunch(quoteAmt + v2BuyBnb)`. the vault transitions
    `OPEN/CLOSED` to `LAUNCHED` here, so even if downstream steps revert, the
    state is consistent.
+
+   <Note>
+     the current `BundleRouter` revokes any nonzero `tipBnb` with
+     `TipNotAllowed()`. an explicit builder-tip funding model is reserved
+     for a future revision but is not active today, so the vault pull is
+     exactly `quoteAmt + v2BuyBnb`.
+   </Note>
 
    <Note>
      a revert inside `executeBundle` rolls back the LAUNCHED transition. that
@@ -62,10 +68,16 @@ flowchart LR
    call `vault.distribute(token, vaultAmt)` so claims can compute pro-rata,
    and `treasuryLp4.recordManagedToken(token)` to lock the launch token in
    the treasury contract.
-8. **tip the builder.** raw call to the 48 club EOA with `tipBnb`. this pays
-   for inclusion in the puissant private mempool.
-9. **dust sweep.** any leftover BNB at the router goes to `0x...dEaD`. the
+8. **dust sweep.** any leftover BNB at the router goes to `0x...dEaD`. the
    router never holds custody between transactions.
+
+<Note>
+  builder-tipping (paying the 48 club EOA for puissant private-mempool
+  inclusion) is handled out-of-band by the bundle bot's own EOA today,
+  not by `BundleRouter`. the contract reserves a `tipBnb` parameter for a
+  future on-chain tip flow but rejects nonzero values in the current
+  version.
+</Note>
 
 ## what is atomic
 

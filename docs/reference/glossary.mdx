@@ -125,7 +125,10 @@ amount. bonus refunds are pro-rata by principal.
 
 ### puissant
 the private mempool the bundle bot submits through. operated by the 48 club.
-reduces sandwich risk. the builder tip (`tipBnb`) pays for inclusion.
+reduces sandwich risk. the bundle-bot EOA pays a builder tip out-of-band
+for inclusion; the `BundleRouter` itself does not currently forward a tip
+from the vault (the `tipBnb` parameter is reserved for a future revision
+and must be zero in the current version, see `TipNotAllowed()`).
 
 ### `quoteAmt`
 the BNB the bundle sends to FLAP's `newTokenV6`. seeds the bonding curve.

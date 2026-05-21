@@ -69,9 +69,13 @@ from the bundle is approximately:
 ```
 quoteAmt   = ~16.84 BNB  (calibrated curve fill + graduation seed, goes to FLAP)
 v2BuyBnb   = ~15.16 BNB  (PCS follow-up buy = presaleCap - quoteAmt, goes to the pair)
-tipBnb     = ~0.03 BNB    (builder tip for inclusion)
-gas        = ~0.005 BNB   (BSC gas, low)
+gas        = ~0.005 BNB  (BSC gas, low)
 ```
+
+the bundle bot's own EOA pays a separate out-of-band builder tip
+(~0.03 BNB) to the 48 club for puissant private-mempool inclusion. that
+tip does not come out of the vault; the current `BundleRouter` enforces
+`tipBnb == 0` and reverts with `TipNotAllowed()` otherwise.
 
 exact `quoteAmt` depends on buyTax via `TierMath.calibratedQuoteAmt`. the
 full 32 BNB presale cap is always spent; `v2BuyBnb = presaleCap - quoteAmt`
@@ -99,7 +103,7 @@ so no BNB strands.
 | `0x...dEaD` (burn) | 500M tokens (50% of supply), plus BNB dust |
 | `TreasuryLP4` (V3 LP ladder) | 100M tokens (10% of supply) |
 | `LaunchVault` (presalers, pro-rata) | 200M tokens (20% of supply) |
-| 48 club EOA (builder tip) | `tipBnb` |
+| 48 club EOA (builder tip) | paid out-of-band by the bundle-bot EOA, not from the vault |
 | `TaxSplitter` (platform + patron + agent BPS) | FLAP commission + ongoing buy/sell tax cut over time |
 
 the creator does not get tokens at TGE. they get the agent treasury (Gnosis

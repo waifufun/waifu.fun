@@ -56,7 +56,7 @@ four user-visible states on the vault:
 the heart of the system is `BundleRouter.executeBundle()`. inside that one
 transaction:
 
-1. pull BNB from the vault (`quoteAmt + v2BuyBnb + tipBnb`)
+1. pull BNB from the vault (`quoteAmt + v2BuyBnb`)
 2. call `FlapPortal.newTokenV6(...)` with `quoteAmt`, which mints the token
    and seeds the bonding curve
 3. if the curve graduates (BASED or higher), PCS v2 pair gets created automatically

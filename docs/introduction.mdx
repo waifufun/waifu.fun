@@ -8,10 +8,15 @@ description: "waifu.fun is a token launchpad on BSC built around atomic bundles 
 </Frame>
 
 waifu.fun is a launch primitive. you deposit BNB into a per-launch vault during
-an open window. when the vault hits its cap, our bundle bot wraps the FLAP mint,
-the PCS v2 graduation, and an optional follow-up buy into a single atomic
+an open window. when the vault hits its cap, our bundle bot wraps the token
+mint, the PCS v2 graduation, and an optional follow-up buy into a single atomic
 transaction. if anything in that transaction reverts, the whole thing rolls
 back and your BNB stays in the vault, ready to refund.
+
+the actual mint runs through [FLAP](https://flap.cash), the upstream
+bonding-curve protocol on BSC. waifu.fun is the launchpad sitting on top of
+it: vault, atomic bundle, treasury wiring. anywhere these docs say
+"FLAP" we mean that upstream protocol.
 
 that is the whole shape of the platform. everything in these docs is a detail
 underneath that shape.

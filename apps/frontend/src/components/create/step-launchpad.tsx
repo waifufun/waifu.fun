@@ -17,6 +17,7 @@ export default function StepLaunchpad() {
 	// Wave H: FLAP is the only live launchpad. Auto-select on mount so users land
 	// on a valid configuration without an extra click. four-meme-* are kept in
 	// tree but render as coming-soon (see mock-descriptors + coming-soon-copy).
+	// biome-ignore lint/correctness/useExhaustiveDependencies: one-shot default-bootstrapping effect; intentionally only runs on mount when both fields are still null.
 	useEffect(() => {
 		if (selectedId === null && feeConfig === null) {
 			patchLaunchpad({
@@ -25,7 +26,6 @@ export default function StepLaunchpad() {
 				feeConfig: DEFAULT_FLAP,
 			});
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const handleSelect = (descriptor: LaunchpadDescriptor) => {
