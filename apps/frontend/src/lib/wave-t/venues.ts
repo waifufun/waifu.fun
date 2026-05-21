@@ -6,15 +6,10 @@
  * letterform, kept small and license-safe. If a venue rebrands or wants their
  * official mark used, swap the SVG in place; no code changes needed.
  *
- * Sources used as reference for color and shape:
- *   pancakeswap : pancakeswap.finance press kit (teal + cream bunny)
- *   hyperliquid : hyperliquid.xyz favicon and wave motif (teal on near-black)
- *   polymarket  : polymarket.com favicon (blue P on navy)
- *   drift       : drift.trade brand page (purple gradient D)
- *   aevo        : aevo.xyz favicon (white A on black)
- *   gmx         : gmx.io brand mark (blue G triangle on navy)
- *   four-meme   : four.meme favicon (4M yellow on black)
- *   flap        : in-house FLAP terminal mark (green)
+ * Real brand assets (apple-touch-icon.png at 180×180+) from each venue's
+ * official site, downloaded 2026-05-21. Drift kept as SVG (their favicon is
+ * a real SVG with the D-arrow mark). FLAP is the in-house waifu green mark.
+ * If a venue rebrands, just swap the file in place; no code changes needed.
  *
  * Adding a venue:
  *   1. drop `apps/frontend/public/venue-logos/{id}.svg`
@@ -39,23 +34,23 @@ const VENUES: Record<VenueId, VenueMeta> = {
 	pancakeswap: {
 		id: "pancakeswap",
 		label: "PancakeSwap",
-		color: "#1FC7D4",
-		accent: "#D1884F",
-		logo: "/venue-logos/pancakeswap.svg",
+		color: "#D1884F",
+		accent: "#FEDC90",
+		logo: "/venue-logos/pancakeswap.png",
 	},
 	hyperliquid: {
 		id: "hyperliquid",
 		label: "Hyperliquid",
-		color: "#50D2C1",
-		accent: "#50D2C1",
-		logo: "/venue-logos/hyperliquid.svg",
+		color: "#97FCE4",
+		accent: "#0F1B1A",
+		logo: "/venue-logos/hyperliquid.png",
 	},
 	polymarket: {
 		id: "polymarket",
 		label: "Polymarket",
 		color: "#2D9CDB",
 		accent: "#2D9CDB",
-		logo: "/venue-logos/polymarket.svg",
+		logo: "/venue-logos/polymarket.png",
 	},
 	drift: {
 		id: "drift",
@@ -69,21 +64,21 @@ const VENUES: Record<VenueId, VenueMeta> = {
 		label: "Aevo",
 		color: "#F5F5F7",
 		accent: "#F5F5F7",
-		logo: "/venue-logos/aevo.svg",
+		logo: "/venue-logos/aevo.png",
 	},
 	gmx: {
 		id: "gmx",
 		label: "GMX",
 		color: "#4FA3E3",
 		accent: "#4FA3E3",
-		logo: "/venue-logos/gmx.svg",
+		logo: "/venue-logos/gmx.png",
 	},
 	"four-meme": {
 		id: "four-meme",
 		label: "four.meme",
 		color: "#FACC15",
 		accent: "#FACC15",
-		logo: "/venue-logos/four-meme.svg",
+		logo: "/venue-logos/four-meme.png",
 	},
 	flap: {
 		id: "flap",
