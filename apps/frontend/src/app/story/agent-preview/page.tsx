@@ -18,6 +18,28 @@ import { Suspense } from "react";
 import AgentHomeV2 from "@/components/agent-home/agent-home-v2";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
+import type { CandleSeries } from "@/lib/wave-t/candles";
+import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
+import type { TokenMetrics } from "@/lib/wave-t/token";
+
+const MOCK_CANDLES: CandleSeries = { candles: [], source: "synthetic", note: "story fixture" };
+const MOCK_HOLDINGS: HoldingsSnapshot = { holdings: [], navUsd: 0, fetchedAt: Date.now() };
+function mockToken(agent: AgentData): TokenMetrics {
+	return {
+		contract: agent.tokenAddress,
+		symbol: agent.ticker,
+		name: agent.name,
+		priceUsd: 0,
+		priceBnb: 0,
+		marketCap: 0,
+		liquidityUsd: 0,
+		holders: 0,
+		volume24h: 0,
+		txs24h: 0,
+		change24h: 0,
+		totalSupply: 0n,
+	};
+}
 
 type Persona = "early" | "active" | "graduated";
 
@@ -220,7 +242,17 @@ function PreviewBody() {
 								</span>
 							</div>
 						) : null}
-						<AgentHomeV2 agent={data.agent} trades={data.trades} launch={data.launch} />
+						<AgentHomeV2
+							agent={data.agent}
+							trades={data.trades}
+							launch={data.launch}
+							token={mockToken(data.agent)}
+							candles={MOCK_CANDLES}
+							holdings={MOCK_HOLDINGS}
+							positions={[]}
+							activity={[]}
+							apps={[]}
+						/>
 					</div>
 				);
 			})}

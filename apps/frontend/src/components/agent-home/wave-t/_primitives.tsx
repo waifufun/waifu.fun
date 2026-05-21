@@ -1,5 +1,5 @@
 /**
- * Shared visual primitives for the agent-preview dashboard.
+ * Shared visual primitives for the Wave T agent home panels.
  * All panels (Worker A/B/C/D) compose from these to keep a
  * consistent look and a single point of theming control.
  *
@@ -14,8 +14,8 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-import { type TokenChain, resolveTokenLogo } from "../lib/token-logo";
-import { getVenueLogo, getVenueMeta } from "../lib/venues";
+import { type TokenChain, resolveTokenLogo } from "@/lib/wave-t/token-logo";
+import { getVenueLogo, getVenueMeta } from "@/lib/wave-t/venues";
 
 // ── theme tokens (consumed via CSS vars, set in dashboard.tsx root) ─
 

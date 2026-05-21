@@ -1,81 +1,170 @@
 /**
- * AgentHomeV2. The premium wave-M+ agent surface.
+ * AgentHomeV2: sprint 2 consolidation.
  *
- * Page rhythm (top to bottom):
- *   1. slim back nav
- *   2. HERO          asymmetric poster + identity + addresses
- *   3. ECONOMICS     tier ladder + tax split bar
- *   4. TREASURY      treasuryLp / agentSafe / taxSplitter rows
- *   5. (legacy v3 surface, when graduated)  burn counter, claim,
- *                    tax stream, trade activity
- *   6. ACTIVITY      event feed (existing component)
- *   7. IDENTITY      description + system prompt reveal (when present)
+ * The canonical agent surface at `/agent/[address]`. Sprint 2 folded the
+ * Wave T panel set into this page so there is exactly one place that
+ * renders an agent:
  *
- * Each major section is its own SurfaceCard so the page reads as a
- * sequence of premium panels, not a sea of stat boxes. Macro-whitespace
- * between sections is `mt-12` so it breathes.
+ *   row 1 (Wave T)   Hero strip: portrait, treasury value, 24h pnl, status
+ *   row 2 (Wave T)   PriceChart (2/3)        | SwapPanel (1/3)
+ *   row 3 (Wave T)   HoldingsAllocation | ActivePositions | PnlChart | (AppsShipped if Sol)
+ *   row 4 (Wave T)   ActivityFeed (2/3)      | TopAppsByRevenue (1/3, Sol-only)
  *
- * Legacy / pre-wave-M agents still render: the economics + treasury
- * panels fall back to quiet 'not configured' placeholders so every
- * agent (including \$DEMO) shows the full v2 surface.
+ *   then the wave-M chrome (kept as-is):
+ *     LiveLaunchBanner, EconomicsPanel, TreasuryPanelV2,
+ *     PostLaunchSurface (when graduated), RecentActivity (legacy trades),
+ *     IdentityPanel.
+ *
+ * Wave T panels are themed with their own CSS-vars scope (THEME_TOKENS)
+ * applied at the wave-t container; everything below it falls back to the
+ * existing AgentHomeV2 chrome. This keeps wave-M panels visually intact.
+ *
+ * Non-Sol agents still render the apps-revenue panels but in collapsed /
+ * empty mode (TopAppsByRevenue + AppsShipped show the empty state). The
+ * AppsShipped slot is hidden when the apps list is empty so the row 3
+ * grid stays balanced (3-up instead of 4-up).
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import type * as React from "react";
 
 import { PostLaunchSurface } from "@/components/post-launch/post-launch-surface";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
+import type { App } from "@/lib/wave-t/apps";
+import type { CandleSeries } from "@/lib/wave-t/candles";
+import { daysOperating } from "@/lib/wave-t/github";
+import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
+import type { Position } from "@/lib/wave-t/positions";
+import type { TokenMetrics } from "@/lib/wave-t/token";
 
-import ActivityFeed from "./activity-feed";
-import AgentHeroV2, { type AgentLaunchHeroSlice } from "./agent-hero-v2";
-import DexChart from "./dex-chart";
 import EconomicsPanel from "./economics-panel";
 import IdentityPanel from "./identity-panel";
 import LiveLaunchBanner from "./live-launch-banner";
 import RecentActivity from "./recent-activity";
-import SwapStub from "./swap-stub";
 import TreasuryPanelV2 from "./treasury-panel-v2";
 import type { AgentData, AgentTrade } from "./types";
+import { THEME_TOKENS } from "./wave-t/_primitives";
+import { ActivePositions } from "./wave-t/active-positions";
+import { type ActivityRowInput, ActivityFeed as WaveTActivityFeed } from "./wave-t/activity-feed";
+import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
+import { Hero, type HeroIdentity } from "./wave-t/hero";
+import { HoldingsAllocation } from "./wave-t/holdings-allocation";
+import { PnlChart } from "./wave-t/pnl-chart";
+import { PriceChart } from "./wave-t/price-chart";
+import { SwapPanel } from "./wave-t/swap-panel";
 
+export interface AgentHomeV2Props {
+	agent: AgentData;
+	trades: AgentTrade[];
+	/**
+	 * Pre-fetched wave-M launch row. Null when the token is legacy or
+	 * pre-wave-M; the page still renders, just without economics or
+	 * treasury chrome.
+	 */
+	launch: AgentLaunchByToken | null;
+	/** Wave T fetched data; null/undefined slots fall back to empty states. */
+	token: TokenMetrics;
+	candles: CandleSeries;
+	holdings: HoldingsSnapshot;
+	positions: Position[];
+	activity: ActivityRowInput[];
+	apps: App[];
+	/**
+	 * Optional override for hero days-operating. Defaults to a derived value
+	 * from the agent's launch timestamp, or 1 when missing.
+	 */
+	daysOperating?: number;
+}
+
+/**
+ * AgentHomeV2 is the canonical agent page surface. Sprint 2 folded the
+ * Wave T panel set into it; existing economics/treasury/identity panels
+ * are kept below.
+ */
 export default function AgentHomeV2({
 	agent,
 	trades,
 	launch,
-}: {
-	agent: AgentData;
-	trades: AgentTrade[];
-	/**
-	 * Pre-fetched wave-M launch row. Null when the token is legacy /
-	 * pre-wave-M; the page still renders, just without economics +
-	 * treasury chrome.
-	 */
-	launch: AgentLaunchByToken | null;
-}) {
+	token,
+	candles,
+	holdings,
+	positions,
+	activity,
+	apps,
+	daysOperating: daysOperatingOverride,
+}: AgentHomeV2Props) {
 	const graduated = agent.status === "graduated";
-	const heroSlice: AgentLaunchHeroSlice | null = launch
-		? {
-				tier: launch.tier ?? null,
-				creator: launch.creator ?? null,
-				agentSafe: launch.agentSafe ?? null,
-				taxSplit: launch.taxSplit ?? null,
-				state: typeof launch.state === "string" ? launch.state : null,
-				launchTimestamp: launch.launchTimestamp ?? null,
-				closeTimestamp: launch.closeTimestamp ?? null,
-				depositorCount: typeof launch.depositorCount === "number" ? launch.depositorCount : null,
-			}
-		: null;
+
+	const heroIdentity: HeroIdentity = {
+		name: agent.name,
+		ticker: agent.ticker,
+		description: agent.description,
+		image: agent.image,
+		verified: true,
+	};
+
+	const navUsd = holdings.navUsd;
+	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
+	const liveApps = apps.filter((a) => a.status === "live").length;
+	const hasApps = apps.length > 0;
 
 	return (
 		<main className="min-h-[100dvh] text-white">
-			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-8 pb-24">
-				<TopBar />
+			{/* Wave T scope: CSS vars applied here so nested panels resolve
+			    var(--accent), var(--bg-panel), etc. */}
+			<section
+				aria-label="agent surface"
+				className="bg-[var(--bg-base)] text-[var(--text-primary)]"
+				style={THEME_TOKENS as React.CSSProperties}
+			>
+				<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
+					<TopBar />
 
-				<div className="mt-8">
-					<AgentHeroV2 agent={agent} launch={heroSlice} />
+					{/* Row 1: Hero (full width) */}
+					<div className="mt-4">
+						<Hero identity={heroIdentity} daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
+					</div>
+
+					{/* Row 2: chart (2/3) + swap (1/3) */}
+					<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
+						<PriceChart initialSeries={candles} token={token} />
+						<SwapPanel token={token} />
+					</div>
+
+					{/* Row 3: holdings / positions / pnl (+ apps-shipped if Sol) */}
+					<div
+						className={
+							hasApps
+								? "mt-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+								: "mt-4 grid gap-4 grid-cols-1 md:grid-cols-3"
+						}
+					>
+						<HoldingsAllocation snapshot={holdings} />
+						<ActivePositions positions={positions} />
+						<PnlChart />
+						{hasApps ? <AppsShipped apps={apps} visibleCount={3} /> : null}
+					</div>
+
+					{/* Row 4: activity feed (2/3) + top apps (1/3, Sol-only) */}
+					<div
+						className={hasApps ? "mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" : "mt-4 grid gap-4"}
+						id="activity"
+					>
+						<WaveTActivityFeed max={8} rows={activity} />
+						{hasApps ? <TopAppsByRevenue apps={apps} limit={4} /> : null}
+					</div>
+
+					<footer className="mt-6 pb-2 font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.18em]">
+						{hasApps ? `live data · ${liveApps} apps shipped` : "live data · onchain feed"}
+					</footer>
 				</div>
+			</section>
 
+			{/* Wave-M chrome (kept as-is): economics / treasury / identity */}
+			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pb-24">
 				{/* live launch banner sits above the economics if there's a
 				    deposit window currently open or recently closed. */}
-				<div className="mt-6">
+				<div className="mt-12">
 					<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 				</div>
 
@@ -100,18 +189,6 @@ export default function AgentHomeV2({
 					</div>
 				)}
 
-				<Section title="chart" subtitle="dex price feed">
-					<DexChart tokenAddress={agent.tokenAddress} graduated={graduated} />
-				</Section>
-
-				<Section title="trade" subtitle="swap on pancakeswap / bonding curve" id="trade">
-					<SwapStub agent={agent} />
-				</Section>
-
-				<Section title="activity" subtitle="recent agent events">
-					<ActivityFeed agentId={agent.tokenAddress} />
-				</Section>
-
 				<Section title="last 20 trades">
 					<RecentActivity trades={trades} />
 				</Section>
@@ -122,6 +199,23 @@ export default function AgentHomeV2({
 			</div>
 		</main>
 	);
+}
+
+/**
+ * Best-effort derivation of an operating-days number for the hero
+ * StatusCard. Uses the launch timestamp when available, else the
+ * lastActionAt, else 1.
+ */
+function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null): number {
+	const ts = launch?.launchTimestamp;
+	if (typeof ts === "number" && ts > 0) {
+		return Math.max(1, daysOperating(new Date(ts * 1000).toISOString()));
+	}
+	const last = agent.lastActionAt;
+	if (typeof last === "number" && last > 0) {
+		return Math.max(1, daysOperating(new Date(last).toISOString()));
+	}
+	return 1;
 }
 
 function TopBar() {

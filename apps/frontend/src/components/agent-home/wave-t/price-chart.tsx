@@ -31,10 +31,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import type { Candle, CandleRange, CandleSeries } from "../lib/candles";
-import { fetchCandleSeries } from "../lib/candles";
-import { formatChartPrice, pickChartPricePrecision } from "../lib/format";
-import type { TokenMetrics } from "../lib/token";
+import type { Candle, CandleRange, CandleSeries } from "@/lib/wave-t/candles";
+import { fetchCandleSeries } from "@/lib/wave-t/candles";
+import { formatChartPrice, pickChartPricePrecision } from "@/lib/wave-t/format";
+import type { TokenMetrics } from "@/lib/wave-t/token";
 import { Panel, Pulse } from "./_primitives";
 
 const RANGE_TABS: { key: CandleRange; label: string }[] = [

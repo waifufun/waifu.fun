@@ -2,7 +2,7 @@
  * Apps Sol has shipped on / for waifu.fun.
  *
  * Real apps that exist and ship. Revenue is honest $0 today
- * (instrumentation pending — Steward billing not yet exposing
+ * (instrumentation pending, Steward billing not yet exposing
  * per-agent revenue, tax stream activates on launch).
  */
 
@@ -37,9 +37,18 @@ export const SOL_APPS: App[] = [
 	},
 ];
 
-export function fetchAppsForAgent(_agentId: string): Promise<App[]> {
-	// Today: hardcoded sol apps. Tomorrow: query DB / on-chain registry.
-	return Promise.resolve(SOL_APPS);
+/**
+ * Today: only Sol (the architect agent) has shipped apps. Every other
+ * agent gets an empty list, which the UI uses to gate the panel.
+ *
+ * The decision token here is `isSolAgent`: callers should pass true when
+ * the page is rendering for the architect agent. For now that's the
+ * ElizaOS placeholder until `$WAIFU` mints; the page resolver hides the
+ * apps panel for all other agents.
+ */
+export async function fetchAppsForAgent(opts: { isSolAgent: boolean }): Promise<App[]> {
+	if (opts.isSolAgent) return SOL_APPS;
+	return [];
 }
 
 export type AppsSummary = {

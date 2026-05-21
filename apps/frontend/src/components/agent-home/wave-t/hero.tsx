@@ -29,23 +29,35 @@ import { cn } from "@/lib/utils";
 import { Label, StatPill } from "./_primitives";
 import { StatusCard } from "./status-card";
 
+export type HeroIdentity = {
+	name: string;
+	ticker: string;
+	description?: string | undefined;
+	image?: string | undefined;
+	verified?: boolean;
+};
+
 export type HeroProps = {
+	identity: HeroIdentity;
 	navUsd: number;
 	daysOperating: number;
 	pnl24hUsd?: number;
 	pnl24hPct?: number;
 	version?: string;
+	status?: "online" | "offline";
 	className?: string;
 };
 
-const PORTRAIT_SRC = "/brand/agents/waifu/portrait-amber.webp";
+const FALLBACK_PORTRAIT = "/brand/agents/waifu/portrait-amber.webp";
 
 export function Hero({
+	identity,
 	navUsd,
 	daysOperating,
 	pnl24hUsd = 0,
 	pnl24hPct = 0,
 	version = "v0.1.0",
+	status = "online",
 	className,
 }: HeroProps) {
 	return (
@@ -58,7 +70,7 @@ export function Hero({
 				className,
 			)}
 		>
-			<IdentityBlock version={version} />
+			<IdentityBlock identity={identity} version={version} />
 			<HeroCell>
 				<TreasuryBlock navUsd={navUsd} />
 			</HeroCell>
@@ -70,7 +82,7 @@ export function Hero({
 					className="border-0 bg-transparent hover:border-transparent"
 					daysOperating={daysOperating}
 					otherAgents={4}
-					status="online"
+					status={status}
 				/>
 			</HeroCell>
 		</section>
@@ -94,7 +106,12 @@ function HeroCell({ children, className }: { children: React.ReactNode; classNam
 
 // ── Identity ────────────────────────────────────────────────────
 
-function IdentityBlock({ version }: { version: string }) {
+function IdentityBlock({ identity, version }: { identity: HeroIdentity; version: string }) {
+	const portrait = identity.image && identity.image.length > 0 ? identity.image : FALLBACK_PORTRAIT;
+	const displayName = identity.name || "unknown";
+	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
+	const description = identity.description;
+	const verified = identity.verified ?? true;
 	return (
 		<div className="flex items-center gap-4 px-5 py-5 md:py-6">
 			<div className="relative shrink-0">
@@ -106,10 +123,10 @@ function IdentityBlock({ version }: { version: string }) {
 					}}
 				/>
 				<img
-					alt="sol portrait"
+					alt={`${displayName} portrait`}
 					className="relative h-[124px] w-[124px] rounded-md object-cover md:h-[132px] md:w-[132px]"
 					height={132}
-					src={PORTRAIT_SRC}
+					src={portrait}
 					width={132}
 				/>
 			</div>
@@ -117,20 +134,22 @@ function IdentityBlock({ version }: { version: string }) {
 			<div className="flex min-w-0 flex-col gap-1.5">
 				<div className="flex items-center gap-1.5">
 					<h1 className="font-medium text-[22px] text-[var(--text-primary)] leading-none lowercase tracking-tight md:text-[24px]">
-						sol
+						{displayName.toLowerCase()}
 					</h1>
-					<CheckCircle2Icon
-						aria-label="Verified agent"
-						className="h-[18px] w-[18px]"
-						strokeWidth={2}
-						style={{ color: "var(--accent)" }}
-					/>
+					{verified ? (
+						<CheckCircle2Icon
+							aria-label="Verified agent"
+							className="h-[18px] w-[18px]"
+							strokeWidth={2}
+							style={{ color: "var(--accent)" }}
+						/>
+					) : null}
 				</div>
-				<p className="max-w-[40ch] text-[12px] text-[var(--text-secondary)] leading-relaxed">
-					the architect of waifu.fun. builds the platform, ships on it, earns from it.
-				</p>
+				{description ? (
+					<p className="max-w-[40ch] text-[12px] text-[var(--text-secondary)] leading-relaxed">{description}</p>
+				) : null}
 				<div className="mt-1 flex flex-wrap items-center gap-1.5">
-					<StatPill tone="accent">$WAIFU</StatPill>
+					{ticker ? <StatPill tone="accent">{ticker}</StatPill> : null}
 					<StatPill tone="neutral">{version}</StatPill>
 				</div>
 			</div>
