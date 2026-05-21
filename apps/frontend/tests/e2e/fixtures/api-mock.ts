@@ -1,11 +1,18 @@
 /**
  * API mocking helpers.
  *
- * The frontend talks to `NEXT_PUBLIC_API_URL`, which we point at a
- * closed loopback port (`http://127.0.0.1:65535`) for tests (see
- * `playwright.config.ts`). Routes are intercepted via `page.route` so
- * no live API is touched, and any un-mocked request fails fast with
- * ECONNREFUSED instead of hanging on DNS resolution.
+ * Historical context: the frontend talked to `NEXT_PUBLIC_API_URL`, which
+ * we point at a closed loopback port (`http://127.0.0.1:65535`) for tests
+ * (see `playwright.config.ts`). After the 2026-05-21 mobile WebView fix
+ * (PR #662), credentialed XHR call sites use `SAME_ORIGIN_API` (empty
+ * string), so paths resolve same-origin against the test base URL
+ * (`http://127.0.0.1:3100`).
+ *
+ * Each helper registers a route on a glob that matches BOTH the legacy
+ * absolute URL (`http://127.0.0.1:65535/v2/...`) AND the same-origin
+ * relative path (`http://127.0.0.1:3100/v2/...`). The `**` prefix is
+ * what makes it work: Playwright route globs match against the full
+ * URL, so `**\/v2/launches**` catches either origin.
  *
  * Each helper installs a route handler for a single endpoint. Compose
  * them per-test for fine-grained control over what data the UI sees.
@@ -26,7 +33,7 @@ const json = (route: Route, body: unknown, status = 200): Promise<void> =>
  * Empty array = the /launches page shows its empty state.
  */
 export async function mockLaunchesList(page: Page, launches: Array<Record<string, unknown>> = []): Promise<void> {
-	await page.route(`${API_HOST}/v2/launches**`, (route) =>
+	await page.route("**/v2/launches**", (route) =>
 		json(route, {
 			ok: true,
 			data: {
@@ -44,7 +51,7 @@ export async function mockLaunchesList(page: Page, launches: Array<Record<string
  * aggregate. Default is empty so portfolio shows empty state.
  */
 export async function mockPortfolio(page: Page, entries: Array<Record<string, unknown>> = []): Promise<void> {
-	await page.route(`${API_HOST}/v2/users/**`, (route) =>
+	await page.route("**/v2/users/**", (route) =>
 		json(route, { ok: true, data: { launches: entries, count: entries.length } }),
 	);
 }
@@ -53,7 +60,7 @@ export async function mockPortfolio(page: Page, entries: Array<Record<string, un
  * Stub `GET /v2/agents`, used by the landing page agent grid.
  */
 export async function mockAgents(page: Page, agents: Array<Record<string, unknown>> = []): Promise<void> {
-	await page.route(`${API_HOST}/v2/agents**`, (route) =>
+	await page.route("**/v2/agents**", (route) =>
 		json(route, {
 			ok: true,
 			data: { agents, total: agents.length, stats: null },
@@ -66,10 +73,8 @@ export async function mockAgents(page: Page, agents: Array<Record<string, unknow
  * Returns a deterministic nonce and a fake launch row on submit.
  */
 export async function mockLaunchCreate(page: Page): Promise<void> {
-	await page.route(`${API_HOST}/v2/launches/nonce`, (route) =>
-		json(route, { ok: true, data: { nonce: "test-nonce-12345" } }),
-	);
-	await page.route(`${API_HOST}/v2/launches`, (route, request) => {
+	await page.route("**/v2/launches/nonce", (route) => json(route, { ok: true, data: { nonce: "test-nonce-12345" } }));
+	await page.route("**/v2/launches", (route, request) => {
 		if (request.method() !== "POST") return route.fallback();
 		return json(route, {
 			ok: true,
@@ -87,7 +92,7 @@ export async function mockLaunchCreate(page: Page): Promise<void> {
  * real provisioning pipeline.
  */
 export async function mockAgentProvision(page: Page): Promise<void> {
-	await page.route(`${API_HOST}/v2/agents/provision`, (route, request) => {
+	await page.route("**/v2/agents/provision", (route, request) => {
 		if (request.method() !== "POST") return route.fallback();
 		return json(route, {
 			ok: true,
@@ -108,7 +113,14 @@ export async function mockAgentProvision(page: Page): Promise<void> {
  * mocks then take precedence; this is the safety net for anything else.
  */
 export async function mockApiFallback(page: Page): Promise<void> {
+	// Legacy absolute base (matches any FE code that still uses
+	// NEXT_PUBLIC_API_URL directly, e.g. SSG-only paths).
 	await page.route(`${API_HOST}/**`, (route) => json(route, { ok: false, error: "not-mocked" }, 404));
+	// Same-origin paths used by SAME_ORIGIN_API credentialed XHR. Scope to
+	// the API path prefixes (/v2/, /v3/) so we don't intercept the page
+	// HTML / static asset requests served from the same origin.
+	await page.route("**/v2/**", (route) => json(route, { ok: false, error: "not-mocked" }, 404));
+	await page.route("**/v3/**", (route) => json(route, { ok: false, error: "not-mocked" }, 404));
 }
 
 /**

@@ -12,7 +12,6 @@
  *      "authenticated" state without hitting the real auth backend.
  */
 import type { BrowserContext, Page } from "@playwright/test";
-import { API_HOST } from "./api-mock";
 import { TEST_ADDRESS } from "./wallet";
 
 export const TEST_PATRON_ID = "patron-test-1";
@@ -38,7 +37,7 @@ export async function mockPatronMe(
 ): Promise<void> {
 	const address = overrides.address ?? TEST_ADDRESS;
 	const agentCount = overrides.agentCount ?? 0;
-	await page.route(`${API_HOST}/v3/patron/me`, (route) =>
+	await page.route("**/v3/patron/me", (route) =>
 		route.fulfill({
 			status: 200,
 			contentType: "application/json",
