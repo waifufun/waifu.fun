@@ -2,10 +2,14 @@
 	"$schema": "https://mintlify.com/schema.json",
 	"name": "waifu.fun",
 	"logo": {
-		"dark": "/logo/dark.svg",
-		"light": "/logo/light.svg"
+		"dark": "/logo/dark.png",
+		"light": "/logo/light.png"
 	},
-	"favicon": "/favicon.svg",
+	"favicon": "/favicon.png",
+	"metadata": {
+		"og:image": "/brand/og.png",
+		"twitter:image": "/brand/og.png"
+	},
 	"colors": {
 		"primary": "#00ff87",
 		"light": "#22c55e",
@@ -26,29 +30,34 @@
 	},
 	"topbarLinks": [
 		{
-			"name": "Launch App",
-			"url": "https://www.waifu.fun"
+			"name": "app",
+			"url": "https://waifu.fun"
 		}
 	],
 	"topbarCtaButton": {
-		"name": "Deploy Agent",
-		"url": "https://www.waifu.fun/create"
+		"name": "launch a token",
+		"url": "https://waifu.fun/create"
 	},
-	"tabs": [
+	"anchors": [
 		{
-			"name": "Guides",
-			"url": "guides"
+			"name": "creators",
+			"icon": "rocket",
+			"url": "creators"
 		},
 		{
-			"name": "API Reference",
-			"url": "api-reference"
-		}
-	],
-	"anchors": [
+			"name": "presalers",
+			"icon": "coins",
+			"url": "presalers"
+		},
+		{
+			"name": "reference",
+			"icon": "book",
+			"url": "reference"
+		},
 		{
 			"name": "GitHub",
 			"icon": "github",
-			"url": "https://github.com/eliza-ai/eliza"
+			"url": "https://github.com/waifufun/waifu.fun"
 		},
 		{
 			"name": "Community",
@@ -58,28 +67,50 @@
 	],
 	"navigation": [
 		{
-			"group": "Getting Started",
-			"pages": ["introduction", "quickstart", "architecture"]
+			"group": "get started",
+			"pages": [
+				"introduction",
+				"what-is-an-agent-launch"
+			]
 		},
 		{
-			"group": "Core Concepts",
-			"pages": ["concepts/agents", "concepts/tokens", "concepts/bonding-curves", "concepts/eliza-cloud"]
+			"group": "creators",
+			"pages": [
+				"creators/quickstart",
+				"creators/choose-your-tier",
+				"creators/write-your-metadata",
+				"creators/bundle-architecture",
+				"creators/fees-and-taxes",
+				"creators/after-launch"
+			]
 		},
 		{
-			"group": "Guides",
-			"pages": ["guides/deploy-agent", "guides/trading", "guides/agent-configuration", "guides/eliza-to-waifu"]
+			"group": "presalers",
+			"pages": [
+				"presalers/quickstart",
+				"presalers/how-presale-works",
+				"presalers/vesting-explained",
+				"presalers/refund-safety",
+				"presalers/risks"
+			]
 		},
 		{
-			"group": "API Reference",
-			"pages": ["api-reference/overview", "api-reference/tokens", "api-reference/agents", "api-reference/trades"]
+			"group": "reference",
+			"pages": [
+				"reference/contract-addresses",
+				"reference/api",
+				"reference/glossary"
+			]
 		},
 		{
-			"group": "Resources",
-			"pages": ["resources/faq", "resources/glossary", "resources/support"]
+			"group": "help",
+			"pages": [
+				"faq"
+			]
 		}
 	],
 	"footerSocials": {
 		"x": "https://x.com/waifufun",
-		"github": "https://github.com/eliza-ai/eliza"
+		"github": "https://github.com/waifufun/waifu.fun"
 	}
 }

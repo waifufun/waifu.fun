@@ -1,0 +1,136 @@
+---
+title: "choose your tier"
+description: "the four tiers, what they cost, what they ship with"
+---
+
+every launch on waifu.fun picks one of four tiers. the tier is fixed at
+`createLaunch()` and cannot be changed. tier math lives in the contract
+(`LaunchFactory.tierBudget`, delegating to the `TierMath` library) as a pure
+function, not a config table.
+
+## the tiers
+
+| tier (display) | contract enum | presale cap | curve fill (`quoteAmt`) | PCS follow-up buy (`v2BuyBnb`) | vesting |
+| --- | --- | --- | --- | --- | --- |
+| SMOL | TIER_80 | 16 BNB | 16 BNB | 0 BNB | off |
+| BASED | TIER_90 | 32 BNB | calibrated (~17 BNB) | cap minus quoteAmt | on |
+| WAGMI | TIER_95 | 64 BNB | calibrated (~17 BNB) | cap minus quoteAmt | on |
+| GIGACHAD | TIER_98 | 160 BNB | calibrated (~17 BNB) | cap minus quoteAmt | on |
+
+### what each column means
+
+- **presale cap** is the maximum BNB the vault will accept before deposits get
+  rejected. once the cap is hit, the window can close and the bundle bot can
+  execute.
+- **curve fill (`quoteAmt`)** is how much BNB the bundle pays to FLAP's
+  `newTokenV6`. it is dynamically calibrated against the buy tax rate so the
+  effective curve fill (after FLAP's 1% protocol fee and the configured buyTax)
+  stays at or above 16 BNB plus a 1% safety margin. with default 3% buy tax
+  this works out to ~16.84 BNB. SMOL is the exception, it spends exactly
+  16 BNB on the curve and does not graduate.
+- **PCS follow-up buy (`v2BuyBnb`)** is BNB the bundle spends on the
+  freshly-deployed PCS pair in the same atomic transaction. it equals
+  `presaleCap minus quoteAmt` so the full cap is spent and no BNB strands
+  in the vault. zero for SMOL.
+- **vesting** controls how claimers receive their tokens. see
+  [vesting explained](/presalers/vesting-explained).
+
+## SMOL: curve only
+
+SMOL (TIER_80) mints the token and fills the bonding curve. it does not graduate to
+PCS v2. the token sits at FLAP's `Tradable` status until organic buyers push
+it past the four-fifths threshold (which would auto-graduate it). presalers
+get a flat 200M tokens (20% of supply) split pro-rata, same as every other tier.
+
+choose this when:
+
+- you want a lower-stakes launch
+- you do not want to commit BNB to seeding v2 liquidity
+- you trust organic demand to graduate the token
+
+caveats:
+
+- no PCS pair at launch, so no immediate price discovery on a public AMM
+- vesting is off, all tokens unlock at claim
+- the token may sit on the curve indefinitely if it never graduates
+
+## BASED: standard
+
+BASED (TIER_90) is the typical mid-size launch. the bundle fills the curve, graduates
+to PCS v2, and follow-up-buys 12 BNB worth of tokens for presalers. vesting
+is on (50% at TGE, 50% linear over 24 hours).
+
+choose this when:
+
+- you have a community that can fill 32 BNB
+- you want a PCS pair from day one
+- you want vesting to dampen early dump pressure
+
+## WAGMI: bigger raise, more buy pressure
+
+WAGMI (TIER_95) doubles the cap and quadruples the follow-up buy. same graduation
+mechanics, same vesting, more buying pressure into the freshly-deployed pair.
+
+choose this when:
+
+- 64 BNB is in your community's reach
+- you want a stronger price action moment at launch
+
+## GIGACHAD: max tier
+
+GIGACHAD (TIER_98) is the big one. 160 BNB cap, 140 BNB into the PCS pair in the same
+transaction. this produces the largest immediate buy pressure available on
+the platform.
+
+choose this when:
+
+- you have a serious community and serious demand
+- you can stomach an under-subscribed refund if the cap does not fill
+
+## how to pick
+
+set the tier where you are at least 80% confident the cap will fill before
+the close window. an under-subscribed launch is not a disaster (presalers
+get a bonus on refund), but it is a non-event for your token. better to ship
+a BASED that fills than aim at GIGACHAD and refund.
+
+## tier math is in the contract
+
+```solidity
+// from TierMath.sol (called by LaunchFactory.tierBudget)
+function tierBudget(uint8 tier, uint16 buyTaxBps)
+    internal
+    pure
+    returns (uint256 presaleCapBnb, uint256 quoteAmt, uint256 v2BuyBnb, bool vestingEnabled)
+{
+    if (tier == 0) return (16 ether, 16 ether, 0, false); // TIER_80 (SMOL)
+    if (tier == 1) presaleCapBnb = 32 ether;              // TIER_90 (BASED)
+    else if (tier == 2) presaleCapBnb = 64 ether;         // TIER_95 (WAGMI)
+    else if (tier == 3) presaleCapBnb = 160 ether;        // TIER_98 (GIGACHAD)
+    vestingEnabled = true;
+    quoteAmt = calibratedQuoteAmt(buyTaxBps);             // ~17 BNB at 3% buyTax
+    v2BuyBnb = presaleCapBnb - quoteAmt;
+}
+```
+
+there is no admin function to change these. if waifu.fun wants new tiers we
+deploy a new factory.
+
+## treasury LP ladder
+
+every graduating tier also configures a four-step single-sided PCS V3 LP
+ladder via `TreasuryLP4`. the 100M tokens (10% of supply) sent to the
+treasury get progressively deployed as four overlapping infinity-range V3
+positions as the token's TWAP market cap rises through tier targets:
+
+| launch tier | tier 0 entry | tier 1 entry | tier 2 entry | tier 3 entry |
+| --- | --- | --- | --- | --- |
+| SMOL | $250k | $1M | $5M | $25M |
+| BASED | $1M | $5M | $10M | $25M |
+| WAGMI | $5M | $10M | $25M | $100M |
+| GIGACHAD | $10M | $25M | $100M | $1B |
+
+those MC values are USD targets; the contract uses a Chainlink BNB/USD feed
+plus a TWAP from the FLAP V2 pair to gate tier deployment. see
+[after launch](/creators/after-launch) for what happens to the BNB collected
+by those LPs.

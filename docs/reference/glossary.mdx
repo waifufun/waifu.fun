@@ -1,0 +1,207 @@
+---
+title: "glossary"
+description: "terms you will run into in waifu.fun docs and contracts"
+---
+
+## A to Z
+
+### atomic
+either every step of a transaction commits or none of them do. on the EVM,
+a single transaction is atomic by definition: any revert rolls back the
+whole thing. our "atomic bundle" means we put the FLAP mint, the PCS
+graduation, and the follow-up buy inside one transaction so they share
+this guarantee.
+
+### bot wallet
+EOA used by the bundle bot to submit `executeBundle()` transactions. the
+platform runs a pool of four bot wallets to handle concurrency. bot wallets
+can grief (refuse to execute) but cannot drain BNB.
+
+### BSC
+Binance Smart Chain. chain id 56. the L1 waifu.fun runs on.
+
+### bundle
+the single atomic transaction that runs `BundleRouter.executeBundle()`.
+contains the FLAP mint, the PCS graduation, the optional follow-up buy,
+the token split, and the builder tip.
+
+### bundle bot
+the off-chain service that monitors launches and submits bundle transactions
+through puissant. it is an operator, not a custodian. lives at
+`apps/bundle-bot/` in the monorepo.
+
+### `BundleRouter`
+per-launch contract that holds the one-shot `executeBundle()` function. one
+deploy per launch. flips `executed = true` permanently on success.
+
+### close timestamp
+unix timestamp after which the OPEN window can be closed. either the cap
+fills first or the timestamp passes and the launch is either bundled (if
+cap met) or refunded (if undersubscribed).
+
+### CREATE2
+EVM opcode for deterministic contract address derivation. waifu.fun uses
+CREATE2 + a vanity salt to predict the token address before the mint
+happens. enables the `predictedToken` check in `BundleRouter`.
+
+### depositor
+anyone who has put BNB into a `LaunchVault` during the OPEN window. also
+called "presaler."
+
+### dynamic split
+the token output of the bundle is split based on `IERC20.balanceOf(router)`
+at split time, not on hardcoded numbers. this accounts for fee-on-transfer
+mechanics in `FlapTaxTokenV3`.
+
+### factory
+short for `LaunchFactory`. singleton entry point. creates per-launch trios.
+
+### fee-on-transfer
+the token applies a buy/sell tax on every transfer through PCS. when the
+router does a follow-up buy on PCS v2, it receives post-tax tokens, not
+the full swap output.
+
+### FLAP
+the FLAP protocol. third-party infrastructure on BSC for launching tax tokens.
+waifu.fun calls FLAP's `newTokenV6` inside every bundle. the FLAP portal
+address is `0xe2cE6...De0`.
+
+### FlapTaxTokenV3
+the ERC-20 implementation FLAP deploys for every launch. tax token with
+configurable buy/sell bps, mkt/burn/dividend/lp splits, anti-farmer
+duration. all launches on waifu.fun use this template.
+
+### graduating tier
+BASED, WAGMI, GIGACHAD (TIER_90, TIER_95, TIER_98). these tiers buy enough on
+the curve (`quoteAmt`) to push the FLAP bonding curve past the four-fifths
+threshold, which auto-graduates the token to PCS v2.
+
+### IPFS
+the InterPlanetary File System. content-addressed storage. waifu.fun pins
+launch metadata to IPFS and stores the CID on-chain in the FLAP `meta`
+field.
+
+### `LaunchFactory`
+singleton entry contract. owns `createLaunch()`. immutable. deploys per-launch
+contracts using `new`.
+
+### `LaunchVault`
+per-launch escrow. holds BNB during OPEN. runs the state machine. handles
+deposit, withdraw, claim, refund. immutable per launch.
+
+### LP
+liquidity pool. on PCS v2, the token / WBNB pair. seeded by FLAP at
+graduation with 200M tokens and the curve BNB. locked.
+
+### `mkt` / `mktBps`
+the marketing share of the token's transfer tax, in basis points. configured
+at `createLaunch` time.
+
+### one-shot
+a function or contract that can only be called once. `executeBundle` is
+one-shot per router. once `executed = true`, replay is impossible.
+
+### PCS
+PancakeSwap. the dominant DEX on BSC. v2 is the AMM we use for graduation
+and follow-up buys.
+
+### portal
+short for "FLAP portal." the third-party contract we call `newTokenV6` on.
+
+### predicted token
+the CREATE2-computed token address. stored as immutable in `BundleRouter`.
+checked against FLAP's returned address. defense against portal misbehavior.
+
+### presale
+the OPEN window where depositors put BNB into the vault. ends when the cap
+fills or the close timestamp passes.
+
+### presaler
+synonym for depositor.
+
+### pro-rata
+proportional to your share. presaler distribution is pro-rata by deposit
+amount. bonus refunds are pro-rata by principal.
+
+### puissant
+the private mempool the bundle bot submits through. operated by the 48 club.
+reduces sandwich risk. the bundle-bot EOA pays a builder tip out-of-band
+for inclusion; the `BundleRouter` itself does not currently forward a tip
+from the vault (the `tipBnb` parameter is reserved for a future revision
+and must be zero in the current version, see `TipNotAllowed()`).
+
+### `quoteAmt`
+the BNB the bundle sends to FLAP's `newTokenV6`. seeds the bonding curve.
+for graduating tiers, this is dynamically calibrated against the buy tax
+(via `TierMath.calibratedQuoteAmt`) so the effective curve fill stays at or
+above 16 BNB plus a 1% safety margin. with default 3% buy tax this is
+~16.84 BNB. for SMOL (TIER_80) it is exactly 16 BNB and the token does not
+graduate.
+
+### refund
+the terminal sad state. presalers withdraw their BNB plus bonus. one
+function (`refund()`), three triggers (undersubscribed, bundle-failed,
+admin emergency stop).
+
+### SIWE
+"Sign-In With Ethereum." a wallet-based authentication standard. waifu.fun
+uses SIWE for session auth on write endpoints.
+
+### tax token
+a token that applies a fee on every transfer. our launches all deploy
+`FlapTaxTokenV3` clones, which are tax tokens.
+
+### TGE
+token generation event. the moment the token contract becomes live and
+balances are allocated. for waifu.fun, TGE == bundle execution == `LAUNCHED`
+state.
+
+### tier
+one of SMOL (TIER_80), BASED (TIER_90), WAGMI (TIER_95), GIGACHAD (TIER_98).
+determines cap, graduation budget, follow-up buy, vesting. fixed at
+`createLaunch`. display names live in the UI; the contract enum stays as
+TIER_xx.
+
+### tip
+the BNB sent to the 48 club builder EOA inside the bundle. pays for
+inclusion in the puissant private mempool. configurable per-bundle.
+
+### `TreasuryLP4`
+per-launch contract holding 100M tokens (10% of supply) that progressively
+deploys as four single-sided PCS V3 LP positions as the token's TWAP market
+cap rises through tier targets. BNB collected from the V3 positions splits
+4-way: 10% buyback (to burn), 5% platform, 20% patron, 65% to the agent's
+Gnosis Safe. owned by the agent's Safe after `finalizeLaunch`.
+
+### V2 buy
+the follow-up buy the bundle does on the freshly-graduated PCS v2 pair.
+amount = `v2BuyBnb`. provides immediate buy pressure for presalers.
+
+### vault
+short for `LaunchVault`. the per-launch escrow.
+
+### vesting
+the 50% TGE + 50% linear over 24 hours unlock schedule on graduating tiers.
+not applied to SMOL (TIER_80).
+
+### `AgentSafe`
+the Gnosis Safe v1.4.1 deployed per launch as the token treasury multisig.
+deployed by `AgentSafeDeployer` inside `createLaunch`. signers and threshold
+are chosen by the creator at launch time. receives 65% of TreasuryLP4 BNB
+claims and its configured share of the TaxSplitter stream.
+
+### `TaxSplitter`
+immutable 3-way splitter for native BNB and ERC20 tokens. receives the FLAP
+buy/sell tax stream from every swap and splits it between platform, patron,
+and the agent's Safe per the launch's configured BPS. set as the
+`commissionReceiver` on the launched FlapTaxTokenV3.
+
+### `finalizeLaunch`
+public idempotent function on `LaunchFactory` that wires the FLAP-created V2
+pair into `TreasuryLP4` and transfers TreasuryLP4 ownership to the agent's
+Safe. callable by anyone once the V2 pair exists. cannot be griefed because
+the V2 pair can only be created by the bundle path.
+
+### WBNB
+wrapped BNB. ERC-20 representation of native BNB on PCS. address
+`0xbb4CdB...c095c`.

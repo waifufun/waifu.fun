@@ -1,0 +1,75 @@
+---
+title: "contract addresses"
+description: "BSC mainnet addresses for waifu.fun core and dependencies"
+---
+
+all contracts live on BSC mainnet, chain id 56. addresses below are pinned
+once the wave N mainnet deploy is live.
+
+{/* TODO replace LaunchFactory address once wave N mainnet deploy ships */}
+
+## waifu.fun core (in scope)
+
+| contract | address | notes |
+| --- | --- | --- |
+| `LaunchFactory` | TBD on wave N deploy | singleton entry point. immutable. |
+| `RouterDeployer` | TBD on wave N deploy | helper that the factory uses to deploy BundleRouter (lives off-factory to keep LaunchFactory under EIP-170). |
+| `TreasuryLP4Deployer` | TBD on wave N deploy | helper for TreasuryLP4 deployment, same reason. |
+| `AgentSafeDeployer` | TBD on wave N deploy | wraps Safe v1.4.1 ProxyFactory; one shared helper. |
+| `LaunchVault` | per-launch | deployed by factory on `createLaunch`. |
+| `BundleRouter` | per-launch | deployed by factory on `createLaunch`. |
+| `TreasuryLP4` | per-launch | deployed by factory on `createLaunch`. holds 100M tokens for V3 LP ladder. |
+| `TaxSplitter` | per-launch | deployed by factory on `createLaunch`. 3-way split of FLAP tax stream. |
+| `AgentSafe` | per-launch | Gnosis Safe v1.4.1 deployed by AgentSafeDeployer at launch time. token treasury multisig. |
+
+per-launch addresses are returned in the `LaunchCreated` event and shown in
+the launch's page on waifu.fun. you can also query
+`LaunchFactory.allLaunches(index)` to enumerate.
+
+## third-party dependencies (BSC mainnet)
+
+| contract | address |
+| --- | --- |
+| FLAP portal v5.8.6 | `0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0` |
+| TOKEN_TAXED_V3 implementation (CREATE2 base) | `0x024f18294970B5c76c0691b87f138A0317156422` |
+| WBNB | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` |
+| PCS V2 factory | `0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73` |
+| PCS V2 router | `0x10ED43C718714eb63d5aA57B78B54704E256024E` |
+| PCS V3 factory | `0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865` |
+| PCS V3 NonfungiblePositionManager | `0x46A15B0b27311cedF172AB29E4f4766fbE7F4364` |
+| Chainlink BNB/USD feed | `0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE` |
+| Safe Singleton v1.4.1 | `0x29fcB43b46531BcA003ddC8FCB67FFE91900C762` |
+| Safe ProxyFactory v1.4.1 | `0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67` |
+| 48 club builder EOA (tip receiver) | `0x4848489f0b2BEdd788c696e2D79b6b69D7484848` |
+| dead burn sink | `0x000000000000000000000000000000000000dEaD` |
+
+these are stored as immutables in `LaunchFactory` and re-stored in each
+`BundleRouter` / `TreasuryLP4` clone where relevant. they are not
+configurable post-deploy.
+
+## verifying a launch's contracts
+
+every launch deploys five contracts in the same `createLaunch` transaction:
+vault, router, treasuryLp4, taxSplitter, and the agent Safe. you can verify
+on bscscan:
+
+1. find the launch in `LaunchFactory.allLaunches`
+2. confirm the vault address matches the UI
+3. confirm the router's `vault()` returns the same address
+4. confirm the vault's `router()` returns the router address
+5. confirm the TreasuryLP4's `agentSafe()` returns the Safe address shown in the UI
+6. confirm the TaxSplitter's `agent()` returns the same Safe address
+
+if any of these do not match, do not deposit.
+
+## source code
+
+contracts source code is in the `packages/contracts-evm` directory of the
+[waifu.fun monorepo](https://github.com/waifufun/waifu.fun). they are
+verified on bscscan after deploy.
+
+## upgrade policy
+
+contracts are immutable. no proxy, no upgrade. if waifu.fun ships a new
+version, it is a new factory. the old factory keeps working. existing
+launches keep working. nothing migrates.
