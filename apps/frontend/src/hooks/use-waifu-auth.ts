@@ -1,5 +1,6 @@
 "use client";
 
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -36,7 +37,12 @@ export interface WaifuMe {
 	linkedWallets: LinkedWallet[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
+// Same-origin path: mobile in-app browser WebViews (zerion, MM mobile, Trust)
+// block cookies on cross-origin XHR even within the same registrable domain.
+// /v2/* and /v3/* paths are intercepted by the CF Pages function in
+// functions/[[path]].js and proxied server-to-server to api.waifu.fun. See
+// src/lib/same-origin-api.ts.
+const API_URL = SAME_ORIGIN_API;
 
 export function hasWaifuAuthCookie(cookie = typeof document === "undefined" ? "" : document.cookie): boolean {
 	return cookie.split(";").some((c) => c.trim() === "wf_authed=1");

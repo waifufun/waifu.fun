@@ -164,6 +164,53 @@ async function handleApiV1Proxy(request, env) {
 	});
 }
 
+/**
+ * Same-origin transparent proxy for /v2/* and /v3/* API calls.
+ *
+ * Why: mobile in-app browser WebViews (zerion, MM mobile, trust, etc) block
+ * cookies on cross-origin XHR even within the same registrable domain. A
+ * fetch() from waifu.fun → api.waifu.fun with credentials:include refuses to
+ * send the HttpOnly wf_session cookie under WebView privacy rules. Top-level
+ * navigation (typing api.waifu.fun in the address bar) works fine — only XHR
+ * is blocked. Confirmed via zerion 2026-05-21.
+ *
+ * Fix: route /v2/* and /v3/* through this function as same-origin. Function
+ * then forwards server-to-server with the user's cookies attached. Browser
+ * never has to send a cross-origin cookie.
+ *
+ * Companion change: credentialed FE call sites (lib/api/_fetcher.ts,
+ * hooks/use-waifu-auth.ts, lib/{patron,claim}-api.ts, hooks/use-launchpads.ts,
+ * hooks/use-linked-eoa.ts, components/agent-home/*) now read API_URL from
+ * src/lib/same-origin-api.ts (empty string) so paths resolve same-origin.
+ * Cross-origin URLs (OAuth start/finalize redirects, twitter login top-level
+ * navigation, public SSG agent reads) are unchanged.
+ */
+async function handleVersionedApiProxy(request, env) {
+	const incomingUrl = new URL(request.url);
+	// Preserve the leading slash and the version prefix. Backend mounts
+	// routes at /v2/... and /v3/... directly.
+	const path = incomingUrl.pathname;
+	const target = new URL(`${getApiUrl(env)}${path}`);
+	target.search = incomingUrl.search;
+
+	const headers = new Headers(request.headers);
+	for (const header of hopByHopHeaders) headers.delete(header);
+	headers.set("x-forwarded-host", incomingUrl.host);
+	headers.set("x-forwarded-proto", incomingUrl.protocol.replace(":", ""));
+
+	const init = { method: request.method, headers, redirect: "manual" };
+	if (request.method !== "GET" && request.method !== "HEAD") init.body = await request.text();
+
+	const upstream = await fetch(target, init);
+	const outHeaders = new Headers(upstream.headers);
+	for (const header of hopByHopHeaders) outHeaders.delete(header);
+	return new Response(upstream.body, {
+		status: upstream.status,
+		statusText: upstream.statusText,
+		headers: outHeaders,
+	});
+}
+
 export async function onRequest(context) {
 	const { request, env } = context;
 	const url = new URL(request.url);
@@ -193,6 +240,9 @@ export async function onRequest(context) {
 	if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleLogout(request, env, host);
 	if (url.pathname === "/auth/twitter/login" && request.method === "GET") return handleTwitterLogin(request, env);
 	if (url.pathname.startsWith("/api/v1/")) return handleApiV1Proxy(request, env);
+	// Same-origin proxy for /v2/* and /v3/* — fixes mobile WebView XHR cookie
+	// blocking. See handleVersionedApiProxy comment.
+	if (url.pathname.startsWith("/v2/") || url.pathname.startsWith("/v3/")) return handleVersionedApiProxy(request, env);
 	if (request.method === "GET" || request.method === "HEAD") {
 		if (/^\/launch\/[^/]+\/?$/.test(url.pathname)) {
 			url.pathname = "/launch/_";

@@ -4,7 +4,9 @@ import { LAUNCHPAD_DISPLAY_ORDER, MOCK_LAUNCHPADS } from "@/lib/launchpad/mock-d
 import type { LaunchpadDescriptor, LaunchpadId } from "@/lib/launchpad/types";
 import { useEffect, useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API_URL = SAME_ORIGIN_API;
 
 export type UseLaunchpads = {
 	launchpads: LaunchpadDescriptor[];

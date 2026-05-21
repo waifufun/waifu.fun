@@ -6,7 +6,9 @@ import { ArrowUpRight } from "lucide-react";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.waifu.fun";
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API_BASE = SAME_ORIGIN_API;
 
 // $DEMO is a static showcase. The token-address-keyed agentId for the demo
 // short-circuits to the @waifudotfun X timeline so the page reads as a

@@ -32,7 +32,9 @@ export interface ClaimInfo {
 	launchEnabled?: boolean;
 }
 
-const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun").replace(/\/$/, "");
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API = SAME_ORIGIN_API;
 
 /** Fetch claim metadata by raw token. Returns null if 404 or 410 (expired). */
 export async function fetchClaimInfo(token: string): Promise<{ info: ClaimInfo | null; expired: boolean }> {

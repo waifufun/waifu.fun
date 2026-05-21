@@ -8,7 +8,9 @@ import type { Address } from "viem";
 import { formatBnb } from "./event-copy";
 import type { AgentEvent } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.waifu.fun";
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API_BASE = SAME_ORIGIN_API;
 
 type TreasuryMeta = {
 	/** token balance held by the agent itself (e.g. 10% pre-buy), if backend exposes it */

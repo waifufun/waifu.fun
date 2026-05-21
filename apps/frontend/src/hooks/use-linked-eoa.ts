@@ -5,7 +5,9 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useCallback, useMemo } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API_URL = SAME_ORIGIN_API;
 
 export function buildLinkedEoaMessage(address: string): string {
 	return `Link ${address} to your waifu.fun patron account.`;
