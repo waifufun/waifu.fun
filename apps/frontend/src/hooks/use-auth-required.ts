@@ -11,10 +11,13 @@ import { useWaifuAuth } from "./use-waifu-auth";
  * /create/* and /patron/*, but it can't catch a session that expires
  * while the user is sitting on a page.
  *
- * Auth detection: useWaifuAuth may use the writable `wf_authed` cookie to
- * decide whether to call /v3/patron/me, but the authenticated state only
- * becomes true after that backend session check succeeds. The actual JWT stays
- * in the HttpOnly `wf_session` cookie.
+ * Auth detection: useWaifuAuth always calls /v3/patron/me on mount; the
+ * authenticated state becomes true only after that backend session check
+ * succeeds. The cosmetic `wf_authed` cookie is no longer consulted because
+ * mobile WebViews (zerion, MM mobile) don't expose stored cookies via
+ * `document.cookie` even when the HttpOnly `wf_session` cookie is intact
+ * and sent on requests. The actual JWT stays in the HttpOnly `wf_session`
+ * cookie.
  *
  * @stwd/react's useAuth() is NOT used here because it tracks Steward's
  * own localStorage-based session, not our HttpOnly-cookie-based one.

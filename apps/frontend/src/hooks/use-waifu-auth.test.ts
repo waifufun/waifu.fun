@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { fetchWaifuMe, hasWaifuAuthCookie } from "./use-waifu-auth";
 
 describe("useWaifuAuth helpers", () => {
-	it("treats a missing cookie as unauthenticated", () => {
+	// hasWaifuAuthCookie is now a perf hint only — the authoritative auth
+	// state lives in the /v3/patron/me response. These tests still pin
+	// the helper's contract so existing call sites (cosmetic UI hints,
+	// best-effort cleanup) keep working.
+	it("returns false when wf_authed=1 is absent", () => {
 		expect(hasWaifuAuthCookie("other=1")).toBe(false);
 	});
 
@@ -12,9 +16,13 @@ describe("useWaifuAuth helpers", () => {
 		expect(hasWaifuAuthCookie("other=1; wf_authed=1")).toBe(true);
 	});
 
-	it("treats a present cookie with a failing me request as unauthenticated", async () => {
+	it("fetchWaifuMe returns null when the patron lookup fails (zerion-style: cookies sent but server says 5xx)", async () => {
 		const fetcher = vi.fn(async () => new Response(JSON.stringify({ error: "nope" }), { status: 500 }));
-		expect(hasWaifuAuthCookie("wf_authed=1")).toBe(true);
+		await expect(fetchWaifuMe(fetcher as unknown as typeof fetch)).resolves.toBeNull();
+	});
+
+	it("fetchWaifuMe returns null on 401 (dead session)", async () => {
+		const fetcher = vi.fn(async () => new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }));
 		await expect(fetchWaifuMe(fetcher as unknown as typeof fetch)).resolves.toBeNull();
 	});
 
