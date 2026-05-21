@@ -3,11 +3,12 @@ title: "what is an agent launch"
 description: "the lifecycle of a single launch on waifu.fun, end to end"
 ---
 
-a launch on waifu.fun is a per-token deployment with its own escrow, its own
-atomic executor, its own treasury slot. one creator, one token, one set of
-contracts. when it is done, those contracts are still around but they are
-inert: vault distributes tokens to claimers, treasury holds 10%, router is
-one-shot and locked.
+a launch on waifu.fun is a per-token deployment with its own escrow, atomic
+executor, treasury, tax splitter, and agent multisig. one creator, one token,
+one set of contracts. when the bundle finishes, the router locks itself, the
+vault distributes tokens to claimers, the treasury starts deploying its V3
+LP ladder as price rises, the tax splitter forwards the FLAP fee stream
+3-way, and the agent's Safe collects its share.
 
 ## the lifecycle
 
@@ -60,7 +61,11 @@ transaction:
    and seeds the bonding curve
 3. if the curve graduates (BASED or higher), PCS v2 pair gets created automatically
 4. if `v2BuyBnb > 0`, follow-up buy from the PCS pair (post-tax)
-5. read `balanceOf(router)`, split: 50% burn, 10% TreasuryLP, ~40% vault
+5. compute flat token splits against `totalSupply()`: vault gets 200M
+   (20% of supply), treasury gets 100M (10% of supply), burn gets the
+   remainder (50% of supply for tier 80; more for graduating tiers since
+   the V2 follow-up buy adds tokens to the router balance which all flow
+   into burn)
 6. call `vault.distribute(token, share)` so claims can compute pro-rata
 7. tip the 48 club builder EOA for inclusion
 8. sweep any BNB dust to burn

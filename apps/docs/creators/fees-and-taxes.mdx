@@ -12,12 +12,17 @@ whole map.
 - **creation fee.** charged when the creator calls `createLaunch()`. covers
   contract deployment gas plus a small platform cut. flat BNB amount, shown
   in the UI before you confirm.
-- **platform LP cut.** when the bundle runs, 10% of the dynamic token split
-  goes to `TreasuryLP`. this is the platform's revenue share, locked in a
-  per-launch custody contract. future waves will deploy this as managed LP.
-- **commission receiver.** on the FLAP side, `commissionReceiver` is set to
-  the platform's fee wallet. this collects FLAP's protocol fee on swaps. this
-  is FLAP's revenue mechanic, not ours.
+- **treasury LP allocation.** when the bundle runs, a flat 100M tokens (10% of
+  supply) goes to `TreasuryLP4`. these tokens get progressively deployed as
+  four single-sided PCS V3 LP positions that sell token for BNB as the price
+  rises. the collected BNB splits 4-way: 10% buyback (to burn), 5% platform,
+  20% patron, 65% to the agent's Safe.
+- **tax stream cut.** on every FLAP buy/sell, the configured tax bps gets
+  routed through a per-launch `TaxSplitter` that distributes 3-way between
+  platform, patron, and the agent's Safe per the launch-configured BPS.
+- **commission receiver.** on the FLAP side, the TaxSplitter address is set
+  as the `commissionReceiver`. this collects FLAP's protocol fee on swaps and
+  feeds it into the 3-way split.
 
 ## token tax (FlapTaxTokenV3)
 
@@ -58,16 +63,19 @@ configurable. it applies to:
 
 ## the cost of one launch, end to end
 
-for a BASED (TIER_90) launch, the BNB outflow from the bundle is:
+for a BASED (TIER_90) launch with the default 3% buy tax, the BNB outflow
+from the bundle is approximately:
 
 ```
-quoteAmt   = 20 BNB  (curve fill + graduation seed, goes to FLAP)
-v2BuyBnb   = 12 BNB  (PCS follow-up buy, goes to the pair)
-tipBnb     = ~0.03 BNB (builder tip for inclusion)
-gas        = ~0.005 BNB (BSC gas, low)
+quoteAmt   = ~16.84 BNB  (calibrated curve fill + graduation seed, goes to FLAP)
+v2BuyBnb   = ~15.16 BNB  (PCS follow-up buy = presaleCap - quoteAmt, goes to the pair)
+tipBnb     = ~0.03 BNB    (builder tip for inclusion)
+gas        = ~0.005 BNB   (BSC gas, low)
 ```
 
-total: ~32.03 BNB pulled from the vault. this is why the cap is 32 BNB.
+exact `quoteAmt` depends on buyTax via `TierMath.calibratedQuoteAmt`. the
+full 32 BNB presale cap is always spent; `v2BuyBnb = presaleCap - quoteAmt`
+so no BNB strands.
 
 ## what the creator pays out of pocket
 
@@ -87,13 +95,16 @@ total: ~32.03 BNB pulled from the vault. this is why the cap is 32 BNB.
 | recipient | what they get |
 | --- | --- |
 | FLAP portal | `quoteAmt` BNB, used to seed the curve and the PCS LP |
-| PCS v2 pair | `quoteAmt + v2BuyBnb` worth of liquidity, locked by the migrator |
-| `0x...dEaD` (burn) | 50% of the dynamic token split, plus BNB dust |
-| `TreasuryLP` (platform custody) | 10% of the dynamic token split |
-| `LaunchVault` (presalers, pro-rata) | ~40% of the dynamic token split |
+| PCS v2 pair | `quoteAmt + v2BuyBnb` worth of liquidity + 200M tokens (20% of supply) locked by the migrator |
+| `0x...dEaD` (burn) | 500M tokens (50% of supply), plus BNB dust |
+| `TreasuryLP4` (V3 LP ladder) | 100M tokens (10% of supply) |
+| `LaunchVault` (presalers, pro-rata) | 200M tokens (20% of supply) |
 | 48 club EOA (builder tip) | `tipBnb` |
-| `commissionReceiver` (platform fee wallet) | FLAP commission on swaps over time |
+| `TaxSplitter` (platform + patron + agent BPS) | FLAP commission + ongoing buy/sell tax cut over time |
 
-the creator does not get tokens at TGE. they get the social capital and the
-revenue from the token's tax structure (if `mktBps` points at their wallet,
-or if they participate as a depositor).
+the creator does not get tokens at TGE. they get the agent treasury (Gnosis
+Safe) which receives:
+
+- 65% of every BNB claim from `TreasuryLP4` as the V3 ladder deploys
+- their share of the ongoing TaxSplitter stream per the configured BPS
+- token-side fees from any V3 LP price re-entry from above

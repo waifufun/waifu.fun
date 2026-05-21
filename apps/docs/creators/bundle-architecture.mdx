@@ -16,9 +16,9 @@ flowchart LR
   Portal -- mint clone + curve fill --> Token[FlapTaxTokenV3]
   Portal -- auto-graduate --> PCS[PancakeSwap V2]
   Router -- swapExactETHForTokens --> PCS
-  Router -- safeTransfer Y/2 --> Burn[0x...dEaD]
-  Router -- safeTransfer Y/10 --> Treasury[TreasuryLP]
-  Router -- safeTransfer ~Y*0.4 --> Vault
+  Router -- safeTransfer 200M --> Vault
+  Router -- safeTransfer 100M --> Treasury[TreasuryLP4]
+  Router -- safeTransfer remainder --> Burn[0x...dEaD]
   Vault -- distribute --> Vault
   Router -- tipBnb --> Tip[48 Club EOA]
 ```
@@ -48,14 +48,20 @@ flowchart LR
    `pcsRouter.swapExactETHForTokensSupportingFeeOnTransferTokens` with
    fixed 2% slippage tolerance applied in-contract. this puts tokens into the router (post-tax
    because FLAP tokens are fee-on-transfer).
-6. **split the token balance.** the router reads
-   `IERC20(token).balanceOf(this)`. it then computes:
-   - `burn = Y / 2`
-   - `treasury = Y / 10`
-   - `vault = Y - burn - treasury` (rounding remainder goes to vault)
-7. **distribute the splits.** `safeTransfer` the burn share to `0x...dEaD`,
-   the treasury share to `TreasuryLP`, the vault share to `LaunchVault`. then
-   call `vault.distribute(token, vaultAmt)` so claims can compute pro-rata.
+6. **split the token balance.** the router reads `totalY = balanceOf(this)`
+   and `supply = totalSupply()`. it then computes FLAT amounts pegged to
+   total supply:
+   - `vault = supply / 5` (= 20% of supply = 200M tokens, for presalers)
+   - `treasury = supply / 10` (= 10% of supply = 100M tokens, for TreasuryLP4)
+   - `burn = totalY - vault - treasury` (= 50% of supply for tier 80; absorbs
+     V2 follow-up buy tokens for graduating tiers, plus any rounding crumbs)
+   the remaining 20% of supply lives in the FLAP-created PCS V2 LP at
+   graduation (the 200M that flap migrates as initial liquidity).
+7. **distribute the splits.** `safeTransfer` the vault share to `LaunchVault`,
+   the treasury share to `TreasuryLP4`, the burn share to `0x...dEaD`. then
+   call `vault.distribute(token, vaultAmt)` so claims can compute pro-rata,
+   and `treasuryLp4.recordManagedToken(token)` to lock the launch token in
+   the treasury contract.
 8. **tip the builder.** raw call to the 48 club EOA with `tipBnb`. this pays
    for inclusion in the puissant private mempool.
 9. **dust sweep.** any leftover BNB at the router goes to `0x...dEaD`. the
@@ -89,16 +95,36 @@ a few things are operationally trusted, not enforced on-chain:
 
 ## the token split, in numbers
 
-the dynamic split reads from `balanceOf` after the v2 buy, so exact numbers
-vary with fee-on-transfer rates and PCS slippage. for a BASED (TIER_90) launch with
-default 3% buy tax:
+splits are FLAT against total supply (1B), so they're identical across tiers:
 
-- portal sends router ~12 BNB worth of post-tax tokens from the v2 buy
-- ~50% of that gets burned
-- ~10% goes to TreasuryLP
-- ~40% goes to LaunchVault for presaler claims
+- 200M tokens (20% of supply) to `LaunchVault` for presaler claims, pro-rata
+- 100M tokens (10% of supply) to `TreasuryLP4` for the V3 LP ladder
+- 200M tokens (20% of supply) locked in the FLAP-created PCS V2 LP at graduation
+- 500M tokens (50% of supply) burned (= router balance minus vault minus
+  treasury; absorbs any V2 follow-up buy tokens for graduating tiers)
 
-the actual numbers are emitted in the `BundleExecuted` event so you can verify.
+presalers receive their pro-rata share of 200M based on BNB deposited
+relative to total deposits. exact amounts are emitted in the `BundleExecuted`
+event so you can verify on-chain.
+
+## after the bundle: post-graduation wiring
+
+`executeBundle` ends with the FLAP-created V2 pair live and 100M tokens
+sitting in `TreasuryLP4`. the treasury cannot run its oracle yet because
+at bundle time the V2 pair address is not yet known to the contract.
+
+that's solved by `LaunchFactory.finalizeLaunch(token)`, a separate
+idempotent function that anyone can call once the V2 pair exists:
+
+1. read the V2 pair from `pcsFactory.getPair(token, WBNB)` (must be non-zero)
+2. call `treasuryLp4.setFlapV2Pair(pair)` to wire the TWAP oracle source
+3. transfer ownership of the TreasuryLP4 from the factory to the agent's Safe
+4. emit `LaunchFinalized`
+
+after `finalizeLaunch`, the TreasuryLP4 is fully owned by the agent's Safe.
+the `tier-cron` operator service can now permissionlessly call `oraclePoke()`
+and `checkAndAdvance()` to deploy V3 LP tiers as the token's TWAP market cap
+rises through the configured ladder.
 
 ## the predicted token check
 

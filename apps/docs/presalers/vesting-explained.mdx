@@ -56,10 +56,10 @@ except gas.
 
 ## why vesting exists
 
-the dynamic split of post-bundle tokens to presalers is large (~40% of the
-post-tax token output). releasing all of that at once produces immediate sell
-pressure that crashes the freshly-deployed PCS pair. spreading it over 24
-hours dampens this and gives the token a chance at organic price discovery.
+the presaler allocation is large (a flat 200M tokens, 20% of total supply).
+releasing all of that at once produces immediate sell pressure that crashes
+the freshly-deployed PCS pair. spreading it over 24 hours dampens this and
+gives the token a chance at organic price discovery.
 
 it does not prevent dumping. it just spreads the dump curve over a day. read
 [risks](/risks) for what this means for you.
@@ -69,9 +69,10 @@ it does not prevent dumping. it just spreads the dump curve over a day. read
 SMOL (TIER_80) is curve-only. there is no PCS pair at launch. all of your tokens
 unlock at LAUNCHED and `claim()` returns the full allocation in one call.
 
-this is partly because SMOL has no follow-up buy, so the post-bundle token
-balance in the vault is whatever 40% of the bonding curve allocation produces.
-the social contract is different: SMOL is a curve play, not a v2 launch.
+this is partly because SMOL has no follow-up buy and trades on FLAP's curve
+until it organically graduates. the social contract is different: SMOL is a
+curve play, not a v2 launch. the absolute presaler allocation is the same
+200M tokens as any other tier.
 
 ## claim mechanics
 
