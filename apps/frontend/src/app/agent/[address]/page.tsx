@@ -1,6 +1,18 @@
 import AgentHomeV2 from "@/components/agent-home/agent-home-v2";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
+import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-feed";
+import { fetchOnchainHistory } from "@/lib/onchain-history";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
+import { buildActivity } from "@/lib/wave-t/activity";
+import { fetchAppsForAgent } from "@/lib/wave-t/apps";
+import { fetchCandleSeries } from "@/lib/wave-t/candles";
+import { fetchShipLog } from "@/lib/wave-t/github";
+import { fetchHoldings } from "@/lib/wave-t/holdings";
+import { fetchMarkets } from "@/lib/wave-t/markets";
+import { fetchPositions } from "@/lib/wave-t/positions";
+import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
+import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
+import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -283,6 +295,57 @@ async function fetchLaunch(address: string): Promise<AgentLaunchByToken | null> 
 	}
 }
 
+/**
+ * Build the Wave T activity feed. Combines the architect agent's ship log,
+ * tweets and on-chain transfers into one chronological stream. Non-Sol
+ * agents skip the ship/tweets path and just surface their on-chain
+ * activity.
+ */
+async function buildAgentActivity(opts: {
+	isSolAgent: boolean;
+	tokenAddress: string;
+}): Promise<ActivityRowInput[]> {
+	const [ship, tweets, markets, onchain] = await Promise.all([
+		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
+		opts.isSolAgent ? fetchTweets() : Promise.resolve([]),
+		fetchMarkets(),
+		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
+	]);
+
+	const foundation = buildActivity({ prs: ship.items, tweets, markets });
+
+	// Map on-chain transfers into the activity feed's `tx` row variant.
+	const onchainRows: ActivityRowInput[] = onchain.txs.slice(0, 12).map((tx) => ({
+		id: `onchain-${tx.hash}`,
+		type: "tx",
+		timestamp: tx.timestamp > 0 ? new Date(tx.timestamp * 1000).toISOString() : new Date().toISOString(),
+		method: tx.kind === "transfer" ? "ERC20 transfer" : tx.kind === "native" ? "BNB transfer" : tx.kind,
+		valueBnb: tx.valueNative,
+		url: `https://bscscan.com/tx/${tx.hash}`,
+	}));
+
+	const merged = [...foundation, ...onchainRows];
+	merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+	return merged;
+}
+
+function emptyTokenMetrics(address: string): TokenMetrics {
+	return {
+		contract: address,
+		symbol: "",
+		name: "",
+		priceUsd: 0,
+		priceBnb: 0,
+		marketCap: 0,
+		liquidityUsd: 0,
+		holders: 0,
+		volume24h: 0,
+		txs24h: 0,
+		change24h: 0,
+		totalSupply: 0n,
+	};
+}
+
 export default async function AgentPage({
 	params,
 }: {
@@ -290,11 +353,51 @@ export default async function AgentPage({
 }) {
 	const { address } = await params;
 
-	const [agent, trades, launch] = await Promise.all([fetchAgent(address), fetchTrades(address), fetchLaunch(address)]);
+	const agentP = fetchAgent(address);
+	const tradesP = fetchTrades(address);
+	const launchP = fetchLaunch(address);
+
+	// Wave T data in parallel. Each fetch handles its own failures and returns
+	// a sane empty default, so we never throw out of Promise.all.
+	const isSolAgent = isSolAgentAddress(address);
+	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
+	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
+		candles: [],
+		source: "synthetic" as const,
+		note: "no candle data available",
+	}));
+	const holdingsP = fetchHoldings().catch(() => ({ holdings: [], navUsd: 0, fetchedAt: Date.now() }));
+	const positionsP = fetchPositions().catch(() => []);
+	const appsP = fetchAppsForAgent({ isSolAgent }).catch(() => []);
+	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
+
+	const [agent, trades, launch, token, candles, holdings, positions, apps, activity] = await Promise.all([
+		agentP,
+		tradesP,
+		launchP,
+		tokenP,
+		candlesP,
+		holdingsP,
+		positionsP,
+		appsP,
+		activityP,
+	]);
 
 	if (!agent) {
 		notFound();
 	}
 
-	return <AgentHomeV2 agent={agent} trades={trades} launch={launch} />;
+	return (
+		<AgentHomeV2
+			agent={agent}
+			trades={trades}
+			launch={launch}
+			token={token}
+			candles={candles}
+			holdings={holdings}
+			positions={positions}
+			activity={activity}
+			apps={apps}
+		/>
+	);
 }

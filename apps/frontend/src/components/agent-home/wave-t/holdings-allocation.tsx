@@ -18,8 +18,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 import { cn } from "@/lib/utils";
 
-import type { ChainHolding, HoldingsSnapshot } from "../lib/holdings";
-import type { TokenChain } from "../lib/token-logo";
+import type { ChainHolding, HoldingsSnapshot } from "@/lib/wave-t/holdings";
+import type { TokenChain } from "@/lib/wave-t/token-logo";
 import { Label, Panel, TokenIcon } from "./_primitives";
 
 const SLICE_COLORS = [

@@ -23,7 +23,7 @@ import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-import type { TokenMetrics } from "../lib/token";
+import type { TokenMetrics } from "@/lib/wave-t/token";
 import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
 
 const BNB_NATIVE_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c";

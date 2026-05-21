@@ -1,5 +1,5 @@
 /**
- * Venue logo mapping for the agent-preview dashboard.
+ * Venue logo mapping for the Wave T agent home panels.
  *
  * Logos live in `apps/frontend/public/venue-logos/{id}.svg`. The marks are
  * simplified house-drawn renditions of each venue's brand color and primary

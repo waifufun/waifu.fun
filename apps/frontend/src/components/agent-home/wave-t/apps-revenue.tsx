@@ -26,8 +26,8 @@ import type * as React from "react";
 import { GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
-import type { App } from "../lib/apps";
-import { formatCompactUsd } from "../lib/format";
+import type { App } from "@/lib/wave-t/apps";
+import { formatCompactUsd } from "@/lib/wave-t/format";
 import { Label, Panel, SectionTitle } from "./_primitives";
 
 type IconComponent = (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
@@ -94,7 +94,7 @@ export function AppsShipped({
 
 			{remaining > 0 && (
 				<a
-					href="/agent-preview/apps"
+					href="#apps"
 					className={cn(
 						"mt-3 flex items-center justify-between border-t border-[var(--border-soft)] pt-3",
 						"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
@@ -183,7 +183,7 @@ export function TopAppsByRevenue({ apps, limit = 4 }: { apps: App[]; limit?: num
 			<Label
 				right={
 					<a
-						href="/agent-preview/apps"
+						href="#apps"
 						className={cn(
 							"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
 							"transition-colors hover:text-[var(--accent)]",
@@ -278,7 +278,7 @@ export function AppsRevenue({ apps, totalRevenue30d, totalChange30d, feesGenerat
 					<div className="mb-1 flex items-center justify-between">
 						<SectionTitle>Top Apps</SectionTitle>
 						<a
-							href="/agent-preview/apps"
+							href="#apps"
 							className={cn(
 								"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
 								"transition-colors hover:text-[var(--accent)]",

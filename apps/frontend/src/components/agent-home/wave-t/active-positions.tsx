@@ -18,8 +18,8 @@ import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
-import type { Position } from "../lib/positions";
-import type { TokenChain } from "../lib/token-logo";
+import type { Position } from "@/lib/wave-t/positions";
+import type { TokenChain } from "@/lib/wave-t/token-logo";
 import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
 
 function chainOfVenue(venue: string): TokenChain {

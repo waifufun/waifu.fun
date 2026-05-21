@@ -20,11 +20,11 @@ import { type ReactNode, useMemo, useState } from "react";
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
-import type { ActivityItem } from "../lib/activity";
-import { formatCompactNum, formatCompactUsd } from "../lib/format";
-import { relativeTime } from "../lib/github";
-import type { TokenChain } from "../lib/token-logo";
-import { venueIdOf } from "../lib/venues";
+import type { ActivityItem } from "@/lib/wave-t/activity";
+import { formatCompactNum, formatCompactUsd } from "@/lib/wave-t/format";
+import { relativeTime } from "@/lib/wave-t/github";
+import type { TokenChain } from "@/lib/wave-t/token-logo";
+import { venueIdOf } from "@/lib/wave-t/venues";
 import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
 
 function chainFromVenue(venue: string): TokenChain {
@@ -451,7 +451,7 @@ export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?
 			)}
 
 			<a
-				href="/agent-preview/activity"
+				href="#activity"
 				className={cn(
 					"mt-3 flex items-center justify-center gap-1.5 border-t border-[var(--border-soft)] pt-3",
 					"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
