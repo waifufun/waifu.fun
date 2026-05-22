@@ -29,6 +29,7 @@ import { useCallback, useState } from "react";
 
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { useLaunchByToken } from "@/hooks/use-post-launch";
+import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 
 import { formatNumberShort, formatUsdShort, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
@@ -61,7 +62,7 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 				<div className="relative aspect-square w-full overflow-hidden border-b border-white/10 bg-[#0a0a0c]">
 					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img
-						src={agent.image ?? "/brand/icon/icon_on_black_512.png"}
+						src={resolveImageUrl(agent.image) ?? "/brand/icon/icon_on_black_512.png"}
 						alt={`${agent.name} portrait`}
 						loading="lazy"
 						className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"

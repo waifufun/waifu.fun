@@ -26,7 +26,7 @@ import {
 	type Time,
 	createChart,
 } from "lightweight-charts";
-import { ExpandIcon, MaximizeIcon, MinusIcon, RulerIcon } from "lucide-react";
+import { ExpandIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -262,29 +262,10 @@ export function PriceChart({
 							</button>
 						))}
 					</div>
-					<div className="hidden items-center gap-0.5 rounded-md border border-[var(--border-soft)] bg-black/20 p-0.5 md:flex">
-						<button
-							aria-label="line tool"
-							className="rounded p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-							type="button"
-						>
-							<MinusIcon className="h-3.5 w-3.5" />
-						</button>
-						<button
-							aria-label="ruler tool"
-							className="rounded p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-							type="button"
-						>
-							<RulerIcon className="h-3.5 w-3.5" />
-						</button>
-						<button
-							aria-label="expand chart"
-							className="rounded p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-							type="button"
-						>
-							<MaximizeIcon className="h-3.5 w-3.5" />
-						</button>
-					</div>
+					{/* Drawing-tool toolbar (line / ruler / expand) deferred — the
+					    underlying chart library doesn't expose handlers yet, and
+					    rendering inert buttons here looked broken. Restore when
+					    the chart API is ready. */}
 				</div>
 			</header>
 			<div className="relative flex-1 px-2 pb-2 pt-1">
