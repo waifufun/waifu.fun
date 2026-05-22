@@ -1,0 +1,93 @@
+name: Auto-sync develop to main
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: auto-sync-develop-to-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  sync:
+    name: Open/update develop → main sync PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open/update sync PR and enable auto-merge
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_BRANCH: main
+          HEAD_BRANCH: develop
+          PR_TITLE: "chore(sync): develop → main"
+          PR_BODY: |
+            Automated promotion PR from `develop` to `main`.
+
+            This keeps production deploys flowing after CI is green. If this PR conflicts,
+            resolve it manually, merge it, and let the normal `main` deploy workflows run.
+
+            [skip back-sync]
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GH_TOKEN="${GH_PAT:-$GITHUB_TOKEN}"
+
+          compare_json=$(gh api "repos/$REPO/compare/$BASE_BRANCH...$HEAD_BRANCH")
+          ahead_by=$(jq -r '.ahead_by' <<<"$compare_json")
+          status=$(jq -r '.status' <<<"$compare_json")
+
+          if [ "$ahead_by" = "0" ] || [ "$status" = "identical" ]; then
+            echo "No commits to promote from $HEAD_BRANCH to $BASE_BRANCH."
+            exit 0
+          fi
+
+          pr_number=$(gh pr list \
+            --repo "$REPO" \
+            --base "$BASE_BRANCH" \
+            --head "$HEAD_BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -z "$pr_number" ]; then
+            gh pr create \
+              --repo "$REPO" \
+              --base "$BASE_BRANCH" \
+              --head "$HEAD_BRANCH" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+            pr_number=$(gh pr list \
+              --repo "$REPO" \
+              --base "$BASE_BRANCH" \
+              --head "$HEAD_BRANCH" \
+              --state open \
+              --json number \
+              --jq '.[0].number // empty')
+          else
+            gh pr edit "$pr_number" --repo "$REPO" --title "$PR_TITLE" --body "$PR_BODY"
+          fi
+
+          if [ -z "$pr_number" ]; then
+            echo "::error::Unable to find or create sync PR."
+            exit 1
+          fi
+
+          # Give GitHub a moment to calculate mergeability for a newly-created PR.
+          sleep 10
+          mergeable=$(gh pr view "$pr_number" --repo "$REPO" --json mergeable --jq '.mergeable')
+          if [ "$mergeable" = "CONFLICTING" ]; then
+            gh pr comment "$pr_number" --repo "$REPO" --body "@wakesync conflict — manual resolution needed"
+            echo "::warning::Sync PR #$pr_number has conflicts and needs manual resolution."
+            exit 0
+          fi
+
+          gh pr merge "$pr_number" --repo "$REPO" --auto --merge
+          echo "Auto-merge enabled for PR #$pr_number."
