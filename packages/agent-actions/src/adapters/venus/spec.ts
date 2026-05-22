@@ -48,14 +48,27 @@ export const venusContracts = {
 	vUSDT: "0xfD5840Cd36d94D7229439859C0112a4185BC0255",
 	vUSDC: "0xecA88125a5ADbe82614ffC12D0DB554E2e2867C8",
 	vETH: "0xf508fCbF6Daba4772C7d9e7f6C39fc6a14Cb60b5",
+	BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+	USDT: "0x55d398326f99059fF775485246999027B3197955",
+	USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+	ETH: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
 } as const satisfies Record<string, Address>;
 
-const erc20VTokenContracts = [
-	venusContracts.vBUSD,
-	venusContracts.vUSDT,
-	venusContracts.vUSDC,
-	venusContracts.vETH,
+/**
+ * Single source of truth for ERC20-backed Venus markets. Both the per-vToken
+ * mint() permission list and the per-underlying approve() permission list
+ * derive from this — adding a new market here wires both sides at once so
+ * they can't drift.
+ */
+const venusVTokenUnderlyings = [
+	{ vToken: venusContracts.vBUSD, underlying: venusContracts.BUSD },
+	{ vToken: venusContracts.vUSDT, underlying: venusContracts.USDT },
+	{ vToken: venusContracts.vUSDC, underlying: venusContracts.USDC },
+	{ vToken: venusContracts.vETH, underlying: venusContracts.ETH },
 ] as const;
+
+const erc20VTokenContracts = venusVTokenUnderlyings.map((m) => m.vToken);
+const underlyingErc20Contracts = venusVTokenUnderlyings.map((m) => m.underlying);
 
 const allVTokenContracts = [venusContracts.vBNB, ...erc20VTokenContracts] as const;
 
@@ -88,8 +101,13 @@ export const venusSpec = {
 					target,
 					selectors: ["0xa0712d68" as const],
 				})),
+				...underlyingErc20Contracts.map((target) => ({
+					label: "Approve underlying for vToken supply",
+					target,
+					selectors: ["0x095ea7b3" as const],
+				})),
 			],
-			cost: { gasEstimate: 180_000n },
+			cost: { gasEstimate: 260_000n },
 		},
 		redeem: {
 			name: "redeem",
