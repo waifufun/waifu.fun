@@ -23,7 +23,6 @@ type StatusCardProps = {
 	 */
 	runwayDays?: number | null;
 	className?: string;
-	otherAgents?: number;
 };
 
 export function StatusCard({ status = "online", daysOperating, runwayDays, className }: StatusCardProps) {
