@@ -54,22 +54,58 @@ export type DepositorsResponse = {
 	events: DepositorEvent[];
 };
 
+// The waifu-core v2 API wraps every response as `{ ok: true, data: T, requestId }`.
+// We must unwrap to expose the raw launch object to the React render layer
+// (LaunchPageClient reads `meta.data?.vaultAddress` etc — without unwrap these
+// are all undefined and the page renders the BASED/32 BNB/no-data fallback).
+// `apiFetch` itself stays envelope-agnostic; unwrapping is per-endpoint to
+// match the API surface contract (see launches-list.ts for the same pattern).
+type ApiEnvelope<T> = { ok: true; data: T; requestId?: string };
+
+function isEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"ok" in value &&
+		(value as { ok: unknown }).ok === true &&
+		"data" in value
+	);
+}
+
 export async function fetchPublicLaunch(id: string): Promise<PublicLaunchExtended | null> {
 	try {
-		return await apiFetch<PublicLaunchExtended>(`/v2/launches/${encodeURIComponent(id)}`);
+		const raw = await apiFetch<PublicLaunchExtended | ApiEnvelope<PublicLaunchExtended>>(
+			`/v2/launches/${encodeURIComponent(id)}`,
+		);
+		if (isEnvelope<PublicLaunchExtended>(raw)) return raw.data ?? null;
+		// Defensive: pre-envelope responses (older API revisions) come back
+		// flat. Return as-is so we don't regress if the wrapper is ever removed.
+		return (raw as PublicLaunchExtended) ?? null;
 	} catch (err) {
 		if (isApiError(err) && err.status === 404) return null;
 		throw err;
 	}
 }
 
+type DepositorsEnvelopePayload = {
+	depositors?: DepositorEvent[] | null;
+	events?: DepositorEvent[] | null;
+};
+
 export async function fetchDepositors(id: string): Promise<DepositorEvent[]> {
 	try {
-		const res = await apiFetch<DepositorsResponse | DepositorEvent[]>(
-			`/v2/launches/${encodeURIComponent(id)}/depositors`,
-		);
-		if (Array.isArray(res)) return res;
-		return res.events ?? [];
+		const raw = await apiFetch<
+			DepositorsResponse | DepositorEvent[] | ApiEnvelope<DepositorsEnvelopePayload | DepositorEvent[]>
+		>(`/v2/launches/${encodeURIComponent(id)}/depositors`);
+		const payload = isEnvelope<DepositorsEnvelopePayload | DepositorEvent[]>(raw) ? raw.data : raw;
+		if (Array.isArray(payload)) return payload;
+		if (payload && typeof payload === "object") {
+			const events = (payload as DepositorsEnvelopePayload).events;
+			if (Array.isArray(events)) return events;
+			const depositors = (payload as DepositorsEnvelopePayload).depositors;
+			if (Array.isArray(depositors)) return depositors;
+		}
+		return [];
 	} catch (err) {
 		// Endpoint may not exist yet, treat as empty so the on-chain event
 		// fallback can take over. Other errors bubble.
