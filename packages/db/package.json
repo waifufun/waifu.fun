@@ -32,6 +32,7 @@
 		"db:seed": "tsx src/seed.ts",
 		"test": "sh -c 'files=$(find test src -name \"*.test.ts\" -type f 2>/dev/null | sort | tr \"\\n\" \" \"); if [ -n \"$files\" ]; then tsx --test $files; else echo \"No tests found\"; fi'",
 		"db:backfill-patron-wallets": "tsx src/scripts/backfill-patron-wallets.ts",
+		"db:backfill-agent-wallets": "tsx src/scripts/backfill-agent-wallets.ts",
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
