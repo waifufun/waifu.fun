@@ -14,6 +14,7 @@ export * from "./trades.js";
 export * from "./staking-positions.js";
 export * from "./fee-distributions.js";
 export * from "./agent-wallets.js";
+export * from "./agent-wallet-registry.js";
 export * from "./agent-personas.js";
 export * from "./curve-state.js";
 export * from "./agent-events.js";
