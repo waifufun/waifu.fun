@@ -13,18 +13,18 @@ export type Position = {
 	status: "live" | "pending";
 };
 
+/**
+ * Return the live positions for the requested agent.
+ *
+ * Until the `/v2/agents/:address/positions` endpoint lands (P3, cross-venue
+ * enumeration via HyperLiquid + PCS LP), this fetcher returns no live rows.
+ * The `<ActivePositions>` panel still renders its scheduled-venue list below,
+ * which is intentional UX: it labels the venues sol intends to operate.
+ *
+ * Returning a real, empty list is more honest than the prior hardcoded
+ * `$18.66 BNB` fixture, which suggested the agent already had a funded spot
+ * position and leaked across every agent page.
+ */
 export function fetchPositions(): Promise<Position[]> {
-	// Hardcoded honest single live position (Sol burner BNB).
-	// Replace with real RPC + venue API queries when accounts fund.
-	return Promise.resolve([
-		{
-			id: "bnb-spot",
-			asset: "BNB",
-			venue: "spot · bsc",
-			valueUsd: 18.66,
-			pnl24h: 0,
-			pnl24hPct: 0,
-			status: "live",
-		},
-	]);
+	return Promise.resolve([]);
 }

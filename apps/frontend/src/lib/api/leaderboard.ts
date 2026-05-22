@@ -141,25 +141,43 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 }
 
 export function formatRunway(days: number): string {
-	// Non-finite happens when dailyBurnUsd is 0 (no agent activity yet). Math
-	// says "infinity", reality says "we have no burn data yet". The leaderboard
-	// renders "–" for unknown so the table reads as a clean placeholder rather
-	// than every fresh agent screaming "∞" on launch day. Once burn is wired
-	// the cell starts surfacing real day counts automatically. Matches the en-
-	// dash placeholder convention used across the homepage stat cells.
-	if (!Number.isFinite(days)) return "–";
-	if (days <= 0) return "0 days";
+	// Non-finite happens when dailyBurnUsd is 0 (no agent activity yet). The
+	// leaderboard surfaces "no burn" as honest copy in wave-t grammar rather
+	// than rendering an en-dash glyph. Once burn data lands the cell switches
+	// to real day counts automatically.
+	if (!Number.isFinite(days)) return "no burn";
+	if (days <= 0) return "0d";
 	if (days < 1) {
 		const hours = Math.max(1, Math.round(days * 24));
 		return `${hours}h`;
 	}
 	const rounded = Math.round(days);
-	return `${rounded.toLocaleString("en-US")} day${rounded === 1 ? "" : "s"}`;
+	if (rounded >= 1000) return `${(rounded / 1000).toFixed(1)}k d`;
+	return `${rounded}d`;
 }
 
 export function formatUsdExact(value: number | undefined | null): string {
 	if (value == null || Number.isNaN(value)) return "$0";
 	const sign = value < 0 ? "-" : "";
 	const abs = Math.abs(value);
+	return `${sign}$${Math.round(abs).toLocaleString("en-US")}`;
+}
+
+/**
+ * Compact USD for dense table cells. `$1.28M`, `$847k`, `$42`.
+ *
+ * Wave T grammar: numbers are always mono + tabular, copy is lowercase.
+ * Full precision belongs in tooltips, not in row cells. Returns `$0` for
+ * null/NaN; callers that want to render "no data yet" should branch on
+ * the source value, not on the formatted string.
+ */
+export function formatUsdCompact(value: number | undefined | null): string {
+	if (value == null || Number.isNaN(value)) return "$0";
+	const sign = value < 0 ? "-" : "";
+	const abs = Math.abs(value);
+	if (abs >= 1_000_000_000) return `${sign}$${(abs / 1_000_000_000).toFixed(2)}B`;
+	if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(2)}M`;
+	if (abs >= 10_000) return `${sign}$${(abs / 1_000).toFixed(1)}k`;
+	if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(2)}k`;
 	return `${sign}$${Math.round(abs).toLocaleString("en-US")}`;
 }

@@ -21,6 +21,7 @@ import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/compo
 import { cn } from "@/lib/utils";
 
 import type { ActivityItem } from "@/lib/wave-t/activity";
+import { EMPTY_ACTIVITY_COPY } from "@/lib/wave-t/activity-trades";
 import { formatCompactNum, formatCompactUsd } from "@/lib/wave-t/format";
 import { relativeTime } from "@/lib/wave-t/github";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
@@ -438,7 +439,7 @@ export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?
 
 			{visible.length === 0 ? (
 				<div className="py-6 text-center font-mono text-[11px] text-[var(--text-tertiary)]">
-					no {tab === "all" ? "events" : `${tab} events`} yet
+					{tab === "all" ? EMPTY_ACTIVITY_COPY : `no ${tab} events yet`}
 				</div>
 			) : (
 				<ul className="divide-y divide-[var(--border-soft)]">

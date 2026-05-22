@@ -9,6 +9,8 @@ import { eq, sql } from "drizzle-orm";
 import { NAV_CHAIN_CONFIG, isEvmNavChain } from "./chains.js";
 import { enumerateEvmErc20Balances } from "./enumerators/evm-erc20.js";
 import { enumerateEvmNativeBalance } from "./enumerators/evm-native.js";
+import { enumerateHyperliquid } from "./enumerators/hyperliquid.js";
+import { enumeratePcsV3Lp } from "./enumerators/pancake-v3-lp.js";
 import { fetchCoinGeckoNativePrices, fetchCoinGeckoTokenPrices } from "./pricing/coingecko.js";
 import { fetchPcsV3TwapPriceUsd } from "./pricing/pcs-v3-twap.js";
 import type {
@@ -21,7 +23,12 @@ import type {
 	TokenPrice,
 } from "./types.js";
 
-export type AgentWalletForNav = Pick<AgentWalletRegistryRow, "id" | "address" | "chain" | "role" | "label">;
+export type AgentWalletForNav = Pick<AgentWalletRegistryRow, "id" | "address" | "chain" | "role" | "label"> & {
+	venue?: string | null;
+};
+
+type NavEnumerator = "native" | "erc20" | "hyperliquid" | "pcs-v3-lp";
+type WalletHoldingBase = Pick<Holding, "walletId" | "walletAddress" | "walletLabel" | "walletRole" | "chain">;
 
 type RawHolding = {
 	wallet: AgentWalletForNav;
@@ -45,6 +52,8 @@ export type NavAggregatorDeps = {
 		chain: EvmNavChain,
 		agentTokenAddress: string,
 	) => Promise<{ holdings: Erc20Balance[]; stale: NavStaleSource[] }>;
+	enumerateHyperliquid?: (wallet: WalletHoldingBase) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
+	enumeratePcsV3Lp?: (wallet: WalletHoldingBase) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
 	fetchTokenPrices?: (chain: EvmNavChain, contracts: string[]) => Promise<Record<string, TokenPrice>>;
 	fetchNativePrices?: (chains: EvmNavChain[]) => Promise<Record<string, TokenPrice>>;
 	fetchPcsPrice?: (contract: string, decimals: number, bnbUsd: number | null) => Promise<TokenPrice>;
@@ -81,6 +90,7 @@ export async function listWalletsForNav(db: Database, agentTokenAddress: string)
 			chain: agentWalletRegistry.chain,
 			role: agentWalletRegistry.role,
 			label: agentWalletRegistry.label,
+			venue: agentWalletRegistry.venue,
 		})
 		.from(agentWalletRegistry)
 		.where(eq(agentWalletRegistry.agentTokenAddress, agentTokenAddress))
@@ -120,32 +130,79 @@ function emptySnapshot(agentTokenAddress: string, now: number, stale: NavStaleSo
 	};
 }
 
+export function enumeratorsFor(wallet: AgentWalletForNav): NavEnumerator[] {
+	const enumerators: NavEnumerator[] = [];
+	if (isEvmNavChain(wallet.chain)) {
+		enumerators.push("native", "erc20");
+		if (wallet.chain === "bsc" && (wallet.role === "agent-safe" || wallet.role === "agent-hot")) {
+			enumerators.push("pcs-v3-lp");
+		}
+	}
+	if (wallet.venue === "hyperliquid") enumerators.push("hyperliquid");
+	return enumerators;
+}
+
+function walletHoldingBase(wallet: AgentWalletForNav): WalletHoldingBase {
+	return {
+		walletId: wallet.id,
+		walletAddress: wallet.address,
+		walletLabel: wallet.label,
+		walletRole: wallet.role,
+		chain: wallet.chain,
+	};
+}
+
 async function enumerateWallet(
 	wallet: AgentWalletForNav,
 	agentTokenAddress: string,
 	deps: NavAggregatorDeps,
-): Promise<{ raw: RawHolding[]; stale: NavStaleSource[] }> {
-	if (!isEvmNavChain(wallet.chain))
-		return { raw: [], stale: [{ source: `${wallet.chain}:enumerator`, reason: "unsupported-chain" }] };
-	const enumerateNative = deps.enumerateNative ?? enumerateEvmNativeBalance;
-	const enumerateErc20 = deps.enumerateErc20 ?? enumerateEvmErc20Balances;
-	const [native, erc20] = await Promise.all([
-		enumerateNative(wallet.address, wallet.chain),
-		enumerateErc20(wallet.address, wallet.chain, agentTokenAddress),
-	]);
-	return {
-		raw: [
-			...native.holdings.map((item) => ({ wallet, asset: item.asset, contract: null, balance: item.balance })),
-			...erc20.holdings.map((item) => ({
-				wallet,
-				asset: item.symbol,
-				contract: item.contract.toLowerCase(),
-				balance: item.balance,
-				decimals: item.decimals,
-			})),
-		],
-		stale: [...native.stale, ...erc20.stale],
-	};
+): Promise<{ raw: RawHolding[]; direct: Holding[]; stale: NavStaleSource[] }> {
+	const stale: NavStaleSource[] = [];
+	const raw: RawHolding[] = [];
+	const direct: Holding[] = [];
+	const enumerators = enumeratorsFor(wallet);
+	if (enumerators.length === 0)
+		return { raw, direct, stale: [{ source: `${wallet.chain}:enumerator`, reason: "unsupported-chain" }] };
+
+	await Promise.all(
+		enumerators.map(async (enumerator) => {
+			if (enumerator === "native" && isEvmNavChain(wallet.chain)) {
+				const result = await (deps.enumerateNative ?? enumerateEvmNativeBalance)(wallet.address, wallet.chain);
+				raw.push(
+					...result.holdings.map((item) => ({ wallet, asset: item.asset, contract: null, balance: item.balance })),
+				);
+				stale.push(...result.stale);
+			}
+			if (enumerator === "erc20" && isEvmNavChain(wallet.chain)) {
+				const result = await (deps.enumerateErc20 ?? enumerateEvmErc20Balances)(
+					wallet.address,
+					wallet.chain,
+					agentTokenAddress,
+				);
+				raw.push(
+					...result.holdings.map((item) => ({
+						wallet,
+						asset: item.symbol,
+						contract: item.contract.toLowerCase(),
+						balance: item.balance,
+						decimals: item.decimals,
+					})),
+				);
+				stale.push(...result.stale);
+			}
+			if (enumerator === "hyperliquid") {
+				const result = await (deps.enumerateHyperliquid ?? enumerateHyperliquid)(walletHoldingBase(wallet));
+				direct.push(...result.holdings);
+				stale.push(...result.stale);
+			}
+			if (enumerator === "pcs-v3-lp") {
+				const result = await (deps.enumeratePcsV3Lp ?? enumeratePcsV3Lp)(walletHoldingBase(wallet));
+				direct.push(...result.holdings);
+				stale.push(...result.stale);
+			}
+		}),
+	);
+	return { raw, direct, stale };
 }
 
 export async function buildNavSnapshot(address: string, deps: NavAggregatorDeps = {}): Promise<NavSnapshot> {
@@ -162,8 +219,10 @@ export async function buildNavSnapshot(address: string, deps: NavAggregatorDeps 
 
 	const enumerated = await Promise.all(wallets.map((wallet) => enumerateWallet(wallet, agentTokenAddress, deps)));
 	const rawHoldings = enumerated.flatMap((item) => item.raw).filter((item) => item.balance > 0);
+	const directHoldings = enumerated.flatMap((item) => item.direct).filter((item) => item.balance > 0);
 	const stale = dedupeStale(enumerated.flatMap((item) => item.stale));
-	if (rawHoldings.length === 0) return emptySnapshot(agentTokenAddress, generatedAt, stale);
+	if (rawHoldings.length === 0 && directHoldings.length === 0)
+		return emptySnapshot(agentTokenAddress, generatedAt, stale);
 
 	const evmChains = [...new Set(rawHoldings.map((item) => item.wallet.chain).filter(isEvmNavChain))];
 	const fetchNativePrices = deps.fetchNativePrices ?? fetchCoinGeckoNativePrices;
@@ -193,7 +252,7 @@ export async function buildNavSnapshot(address: string, deps: NavAggregatorDeps 
 
 	const fetchPcsPrice = deps.fetchPcsPrice ?? fetchPcsV3TwapPriceUsd;
 	const bnbUsd = nativePrices[NAV_CHAIN_CONFIG.bsc.coingeckoNativeId]?.priceUsd ?? null;
-	const holdings: Holding[] = [];
+	const holdings: Holding[] = [...directHoldings];
 	for (const raw of rawHoldings) {
 		let price: TokenPrice | undefined;
 		if (!raw.contract && isEvmNavChain(raw.wallet.chain)) {

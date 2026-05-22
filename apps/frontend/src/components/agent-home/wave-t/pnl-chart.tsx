@@ -1,13 +1,15 @@
 /**
  * P&L 30D chart panel (Wave T worker B v2).
  *
- * Area chart of realized + unrealized PnL over the last 30 days. Until
- * trading instrumentation lands, we render a flat-at-zero series so the
- * visual structure is correct and the surface remains honest.
+ * Area chart of realized + unrealized PnL over the last 30 days. When
+ * the caller supplies a `series`, we render it; until a snapshot table
+ * exists upstream there is no series to render and the panel surfaces
+ * an honest empty state (no chart at all) rather than a flat-zero line
+ * that masquerades as data.
  *
- * Header: "P&L (30D)" + total $ + %% with green/red tone.
- * Body:   AreaChart with subtle accent gradient.
- * Footer: disclosure that instrumentation is pending.
+ * Header: "P&L (30D)" + total $ + %% with green/red tone (when data).
+ * Body:   AreaChart when data; otherwise centered empty notice.
+ * Footer: disclosure that snapshot instrumentation is pending.
  */
 
 "use client";
@@ -17,18 +19,9 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { cn } from "@/lib/utils";
 
-import { Label, Panel } from "./_primitives";
+import { Label, Panel, Pulse } from "./_primitives";
 
 type Point = { t: number; pnl: number };
-
-function buildFlatSeries(days = 30): Point[] {
-	const now = Date.now();
-	const day = 24 * 60 * 60 * 1000;
-	return Array.from({ length: days }, (_, i) => ({
-		t: now - (days - 1 - i) * day,
-		pnl: 0,
-	}));
-}
 
 function fmtUsdShort(v: number): string {
 	if (!Number.isFinite(v)) return "$0";
@@ -53,9 +46,13 @@ function fmtDayTick(ms: number): string {
 }
 
 export function PnlChart({ series }: { series?: Point[] }) {
-	const data = useMemo(() => series ?? buildFlatSeries(30), [series]);
-	const total = useMemo(() => (data.at(-1)?.pnl ?? 0) - (data.at(0)?.pnl ?? 0), [data]);
-	const pct = 0; // honest until instrumentation lands
+	const hasData = Array.isArray(series) && series.length > 0;
+	const data = useMemo(() => series ?? [], [series]);
+	const total = useMemo(() => {
+		if (!hasData) return 0;
+		return (data.at(-1)?.pnl ?? 0) - (data.at(0)?.pnl ?? 0);
+	}, [data, hasData]);
+	const pct = 0; // historical % derivation lands with snapshot backfill.
 
 	const tone = total > 0 ? "positive" : total < 0 ? "negative" : "neutral";
 	const strokeColor =
@@ -65,89 +62,104 @@ export function PnlChart({ series }: { series?: Point[] }) {
 		<Panel className="flex h-full flex-col">
 			<Label
 				right={
-					<span
-						className={cn(
-							"inline-flex items-center gap-2 font-mono text-[11px] tabular-nums",
-							tone === "positive"
-								? "text-[var(--positive)]"
-								: tone === "negative"
-									? "text-[var(--negative)]"
-									: "text-[var(--text-secondary)]",
-						)}
-					>
-						<span>{total === 0 ? "+$0.00" : fmtUsdSigned(total)}</span>
-						<span className="text-[var(--text-tertiary)]">
-							{pct >= 0 ? "+" : ""}
-							{pct.toFixed(2)}%
+					hasData ? (
+						<span
+							className={cn(
+								"inline-flex items-center gap-2 font-mono text-[11px] tabular-nums",
+								tone === "positive"
+									? "text-[var(--positive)]"
+									: tone === "negative"
+										? "text-[var(--negative)]"
+										: "text-[var(--text-secondary)]",
+							)}
+						>
+							<span>{total === 0 ? "+$0.00" : fmtUsdSigned(total)}</span>
+							<span className="text-[var(--text-tertiary)]">
+								{pct >= 0 ? "+" : ""}
+								{pct.toFixed(2)}%
+							</span>
 						</span>
-					</span>
+					) : (
+						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+							<Pulse />
+							awaiting data
+						</span>
+					)
 				}
 			>
 				p&amp;l (30d)
 			</Label>
 
-			<div className="-mx-1 h-[170px] flex-1">
-				<ResponsiveContainer height="100%" width="100%">
-					<AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-						<defs>
-							<linearGradient id="pnl-fill" x1="0" x2="0" y1="0" y2="1">
-								<stop offset="0%" stopColor={strokeColor} stopOpacity={0.35} />
-								<stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
-							</linearGradient>
-						</defs>
-						<CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-						<XAxis
-							axisLine={false}
-							dataKey="t"
-							minTickGap={32}
-							tick={{
-								fill: "rgba(255,255,255,0.32)",
-								fontFamily: "var(--font-geist-mono, monospace)",
-								fontSize: 9,
-							}}
-							tickFormatter={fmtDayTick}
-							tickLine={false}
-							type="number"
-							domain={["dataMin", "dataMax"]}
-						/>
-						<YAxis
-							axisLine={false}
-							tick={{
-								fill: "rgba(255,255,255,0.32)",
-								fontFamily: "var(--font-geist-mono, monospace)",
-								fontSize: 9,
-							}}
-							tickFormatter={fmtUsdShort}
-							tickLine={false}
-							width={44}
-							domain={["dataMin - 1", "dataMax + 1"]}
-						/>
-						<Tooltip
-							contentStyle={{
-								background: "var(--bg-panel)",
-								border: "1px solid var(--border-mid)",
-								borderRadius: 4,
-								color: "var(--text-primary)",
-								fontFamily: "var(--font-geist-mono, monospace)",
-								fontSize: 11,
-							}}
-							formatter={(v) => [fmtUsdSigned(Number(v)), "pnl"]}
-							labelFormatter={(v) => new Date(Number(v)).toISOString().slice(0, 10)}
-						/>
-						<Area
-							dataKey="pnl"
-							fill="url(#pnl-fill)"
-							isAnimationActive={false}
-							stroke={strokeColor}
-							strokeWidth={1.5}
-							type="monotone"
-						/>
-					</AreaChart>
-				</ResponsiveContainer>
-			</div>
+			{hasData ? (
+				<div className="-mx-1 h-[170px] flex-1">
+					<ResponsiveContainer height="100%" width="100%">
+						<AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+							<defs>
+								<linearGradient id="pnl-fill" x1="0" x2="0" y1="0" y2="1">
+									<stop offset="0%" stopColor={strokeColor} stopOpacity={0.35} />
+									<stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
+								</linearGradient>
+							</defs>
+							<CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+							<XAxis
+								axisLine={false}
+								dataKey="t"
+								minTickGap={32}
+								tick={{
+									fill: "rgba(255,255,255,0.32)",
+									fontFamily: "var(--font-geist-mono, monospace)",
+									fontSize: 9,
+								}}
+								tickFormatter={fmtDayTick}
+								tickLine={false}
+								type="number"
+								domain={["dataMin", "dataMax"]}
+							/>
+							<YAxis
+								axisLine={false}
+								tick={{
+									fill: "rgba(255,255,255,0.32)",
+									fontFamily: "var(--font-geist-mono, monospace)",
+									fontSize: 9,
+								}}
+								tickFormatter={fmtUsdShort}
+								tickLine={false}
+								width={44}
+								domain={["dataMin - 1", "dataMax + 1"]}
+							/>
+							<Tooltip
+								contentStyle={{
+									background: "var(--bg-panel)",
+									border: "1px solid var(--border-mid)",
+									borderRadius: 4,
+									color: "var(--text-primary)",
+									fontFamily: "var(--font-geist-mono, monospace)",
+									fontSize: 11,
+								}}
+								formatter={(v) => [fmtUsdSigned(Number(v)), "pnl"]}
+								labelFormatter={(v) => new Date(Number(v)).toISOString().slice(0, 10)}
+							/>
+							<Area
+								dataKey="pnl"
+								fill="url(#pnl-fill)"
+								isAnimationActive={false}
+								stroke={strokeColor}
+								strokeWidth={1.5}
+								type="monotone"
+							/>
+						</AreaChart>
+					</ResponsiveContainer>
+				</div>
+			) : (
+				<div className="flex h-[170px] flex-1 items-center justify-center">
+					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+						no pnl history yet
+					</span>
+				</div>
+			)}
 
 			<footer className="mt-2 border-t border-[var(--border-soft)] pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-				instrumentation pending · live once trading wires settle
+				{hasData ? "live pnl · 30 day window" : "snapshots backfill scheduled"}
 			</footer>
 		</Panel>
 	);

@@ -1,4 +1,5 @@
 export type AgentWalletRole = "agent-safe" | "agent-hot" | "patron" | "venue-bridge";
+export type HoldingKind = "spot" | "perp" | "lp" | "lend" | "borrow" | "prediction";
 
 export type Holding = {
 	walletId: string;
@@ -12,6 +13,15 @@ export type Holding = {
 	priceUsd: number | null;
 	valueUsd: number | null;
 	priced: boolean;
+	kind?: HoldingKind;
+	venue?: string;
+	side?: "long" | "short";
+	leverage?: number;
+	entryPriceUsd?: number;
+	unrealizedPnlUsd?: number;
+	liquidationPriceUsd?: number | null;
+	tokenId?: string;
+	metadata?: Record<string, unknown>;
 };
 
 export type NavSnapshot = {
