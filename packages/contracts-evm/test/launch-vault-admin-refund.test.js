@@ -106,17 +106,19 @@ describe("LaunchVault admin refund controls", () => {
 		it("B) instantAdminRefund reverts InvalidState on a non-TEST tier (TIER_95)", async () => {
 			const { owner, depositor, vault } = await deployVaultWithTier(TIER_95);
 			await vault.connect(depositor).deposit({ value: ethers.parseEther("1") });
-			await expect(
-				vault.connect(owner).instantAdminRefund("should-not-work"),
-			).to.be.revertedWithCustomError(vault, "InvalidState");
+			await expect(vault.connect(owner).instantAdminRefund("should-not-work")).to.be.revertedWithCustomError(
+				vault,
+				"InvalidState",
+			);
 			expect(await vault.state()).to.equal(0n); // still OPEN
 		});
 
 		it("C) instantAdminRefund reverts NotFactoryOwner when caller is not the factory owner", async () => {
 			const { depositor, vault } = await deployVaultWithTier(TIER_TEST);
-			await expect(
-				vault.connect(depositor).instantAdminRefund("not-owner"),
-			).to.be.revertedWithCustomError(vault, "NotFactoryOwner");
+			await expect(vault.connect(depositor).instantAdminRefund("not-owner")).to.be.revertedWithCustomError(
+				vault,
+				"NotFactoryOwner",
+			);
 		});
 
 		it("D) instantAdminRefund reverts InvalidState after LAUNCHED", async () => {
@@ -163,9 +165,10 @@ describe("LaunchVault admin refund controls", () => {
 			await vault.connect(bundleBot).pullBnbForLaunch(presaleCap);
 			expect(await vault.state()).to.equal(2n); // LAUNCHED
 
-			await expect(
-				vault.connect(owner).instantAdminRefund("too-late"),
-			).to.be.revertedWithCustomError(vault, "InvalidState");
+			await expect(vault.connect(owner).instantAdminRefund("too-late")).to.be.revertedWithCustomError(
+				vault,
+				"InvalidState",
+			);
 		});
 	});
 });
