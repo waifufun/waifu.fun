@@ -360,7 +360,12 @@ export default async function AgentPage({
 	const { address } = await params;
 
 	const agentP = fetchAgent(address);
-	const tradesP = isSolAgentAddress(address) ? fetchSolTrades(address) : fetchTrades(address);
+	// Activity feed shows the agent's OWN trades (initiated by agent-safe + agent-hot
+	// wallets), not all market activity on the token. fetchSolTrades reads the
+	// /activity-trades endpoint which filters by wallet registry; returns [] when
+	// the agent has not traded yet. Applies to every agent now that the wallet
+	// registry is in place — not just Sol.
+	const tradesP = fetchSolTrades(address).catch(() => fetchTrades(address));
 	const launchP = fetchLaunch(address);
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
