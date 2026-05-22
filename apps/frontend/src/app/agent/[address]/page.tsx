@@ -8,6 +8,7 @@ import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
 import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchSolTrades } from "@/lib/wave-t/agent-trades";
+import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
@@ -383,6 +384,7 @@ export default async function AgentPage({
 	// endpoint is unavailable (404 in prod today), in which case the hero
 	// renders "not yet measured" rather than inventing a number.
 	const burnRateP = fetchAgentBurnRateSnapshot(address).catch(() => null);
+	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
 	const appsP = fetchAppsForAgent({ isSolAgent }).catch(() => []);
 	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
@@ -396,6 +398,7 @@ export default async function AgentPage({
 		aggregatedHoldings,
 		legacyHoldings,
 		burnRate,
+		twitterStats,
 		positions,
 		apps,
 		activity,
@@ -408,6 +411,7 @@ export default async function AgentPage({
 		aggregatedHoldingsP,
 		legacyHoldingsP,
 		burnRateP,
+		twitterStatsP,
 		positionsP,
 		appsP,
 		activityP,
@@ -448,6 +452,7 @@ export default async function AgentPage({
 			holdings={holdings}
 			holdingsSource={holdingsSource}
 			runwayDays={burnRate?.runwayDays ?? null}
+			twitterStats={twitterStats}
 			positions={positions}
 			activity={activity}
 			apps={apps}

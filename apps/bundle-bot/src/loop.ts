@@ -36,10 +36,20 @@ export interface PollDeps {
 			rpcUrl: string;
 			privateRpcUrl: string;
 			dryRun: boolean;
+			dryRunWriteStatus: boolean;
 			allowSingleWalletFallback: boolean;
 			maxAttempts: number;
 		},
-	) => Promise<{ status: string; txHash?: string; attempt: number; reason?: string }>;
+	) => Promise<{
+		status: string;
+		txHash?: string;
+		attempt: number;
+		reason?: string;
+		dryRun?: boolean;
+		callData?: string;
+		routerAddress?: string;
+		tipBnb?: string;
+	}>;
 }
 
 export interface PollResult {
@@ -97,6 +107,7 @@ export async function pollOnce(deps: PollDeps): Promise<PollResult> {
 				rpcUrl: deps.config.rpcUrl,
 				privateRpcUrl: deps.config.puissantUrl,
 				dryRun: deps.config.dryRun,
+				dryRunWriteStatus: deps.config.dryRunWriteStatus,
 				allowSingleWalletFallback: !deps.config.walletPoolRequired,
 				maxAttempts: deps.config.maxAttempts,
 			});
@@ -109,6 +120,10 @@ export async function pollOnce(deps: PollDeps): Promise<PollResult> {
 					txHash: out.txHash,
 					reason: out.reason,
 					dryRun: deps.config.dryRun,
+					dryRunWriteStatus: deps.config.dryRunWriteStatus,
+					callData: out.callData,
+					routerAddress: out.routerAddress,
+					tipBnb: out.tipBnb,
 				},
 				"bundle submit attempted",
 			);

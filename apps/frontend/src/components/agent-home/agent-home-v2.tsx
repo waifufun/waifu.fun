@@ -43,6 +43,7 @@ import type * as React from "react";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { AgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
+import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 import type { App } from "@/lib/wave-t/apps";
 import type { CandleSeries } from "@/lib/wave-t/candles";
 import { daysOperating } from "@/lib/wave-t/github";
@@ -89,6 +90,8 @@ export interface AgentHomeV2Props {
 	 * shows "not yet measured" in both cases.
 	 */
 	runwayDays?: number | null;
+	/** Live or cached Twitter profile stats. Null when the agent has no Twitter handle. */
+	twitterStats?: TwitterStats | null;
 	positions: Position[];
 	activity: ActivityRowInput[];
 	apps: App[];
@@ -120,6 +123,7 @@ export default function AgentHomeV2({
 	holdings,
 	holdingsSource = "burner",
 	runwayDays = null,
+	twitterStats = null,
 	positions,
 	activity,
 	apps,
@@ -189,6 +193,7 @@ export default function AgentHomeV2({
 						pnl24hPct={0}
 						pnl24hUsd={0}
 						runwayDays={runwayDays}
+						twitterStats={twitterStats}
 						{...(treasuryOverride ? { treasuryValueOverride: treasuryOverride } : {})}
 					/>
 				</div>

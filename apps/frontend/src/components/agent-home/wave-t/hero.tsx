@@ -29,8 +29,9 @@ import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
 import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
+import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 
-import { Label, StatPill } from "./_primitives";
+import { Label, MicroStat, StatPill } from "./_primitives";
 import { StatusCard } from "./status-card";
 
 export type HeroIdentity = {
@@ -72,6 +73,8 @@ export type HeroProps = {
 	treasuryValueOverride?: HeroTreasuryOverride;
 	/** Estimated runway in days, from the burn-rate endpoint. Null when unmeasured. */
 	runwayDays?: number | null;
+	/** Live or cached Twitter stats. Followers are hidden when null. */
+	twitterStats?: TwitterStats | null;
 };
 
 const FALLBACK_PORTRAIT = "/brand/agents/waifu/portrait-amber.webp";
@@ -87,16 +90,21 @@ export function Hero({
 	className,
 	treasuryValueOverride,
 	runwayDays,
+	twitterStats,
 }: HeroProps) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
 	const treasurySource = treasuryValueOverride?.source ?? "burner";
+	const followers = twitterStats?.followers ?? null;
+	const showFollowers = followers !== null;
 	return (
 		<section
 			aria-label="Agent summary"
 			className={cn(
 				"relative grid gap-0 border-[var(--border-soft)] border-b bg-[var(--bg-base)]",
-				// Stack on mobile, two columns on tablet, four on desktop.
-				"grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.5fr_1fr_1fr_1.4fr]",
+				// Stack on mobile, two columns on tablet, four or five zones on desktop.
+				showFollowers
+					? "grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.45fr_1fr_1fr_0.6fr_1.25fr]"
+					: "grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.5fr_1fr_1fr_1.4fr]",
 				className,
 			)}
 		>
@@ -107,6 +115,11 @@ export function Hero({
 			<HeroCell>
 				<PnlBlock pct={pnl24hPct} usd={pnl24hUsd} />
 			</HeroCell>
+			{showFollowers ? (
+				<HeroCell>
+					<FollowersBlock followers={followers} source={twitterStats?.source ?? "cached"} />
+				</HeroCell>
+			) : null}
 			<HeroCell className="lg:border-l">
 				<StatusCard
 					className="border-0 bg-transparent hover:border-transparent"
@@ -252,6 +265,19 @@ function Sparkline({ series }: { series: { v: number }[] }) {
 	);
 }
 
+// ── Followers ───────────────────────────────────────────────────
+
+function FollowersBlock({ followers, source }: { followers: number; source: TwitterStats["source"] }) {
+	return (
+		<div className="flex min-h-[84px] flex-col justify-center gap-2">
+			<Label className="mb-0" right={<StatPill tone={source === "cached" ? "neutral" : "accent"}>live</StatPill>}>
+				twitter
+			</Label>
+			<MicroStat label="followers" tone="accent" value={formatCompactCount(followers)} />
+		</div>
+	);
+}
+
 // ── PnL ─────────────────────────────────────────────────────────
 
 function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
@@ -297,6 +323,15 @@ function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
  * Synthesize a plausible 12d sparkline ending at the current nav.
  * Deterministic across renders so SSR + client match.
  */
+function formatCompactCount(value: number): string {
+	return new Intl.NumberFormat("en", {
+		notation: "compact",
+		maximumFractionDigits: value >= 10_000 ? 1 : 1,
+	})
+		.format(value)
+		.toLowerCase();
+}
+
 function synthesizeSparkline(nav: number): { v: number }[] {
 	const end = Math.max(1, nav);
 	const start = end * 0.86;

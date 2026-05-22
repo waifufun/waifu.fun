@@ -61,6 +61,7 @@ export interface BundleSubmitterConfig {
 	allowSingleWalletFallback?: boolean;
 	allowPlaintextWalletKeys?: boolean;
 	dryRun?: boolean;
+	dryRunWriteStatus?: boolean;
 	maxAttempts?: number;
 	commissionReceiver?: Address;
 	deadlineSeconds?: number;
@@ -71,6 +72,10 @@ export interface SubmitBundleResult {
 	txHash?: Hex;
 	attempt: number;
 	reason?: string;
+	dryRun?: boolean;
+	callData?: Hex;
+	routerAddress?: Address;
+	tipBnb?: string;
 }
 
 export class BundleSubmitterError extends Error {
@@ -187,6 +192,7 @@ export async function submitLaunchBundle(
 	const chainId = config.chainId ?? Number(process.env.BSC_CHAIN_ID ?? 56);
 	const chain = chainId === 97 ? bscTestnet : bsc;
 	const dryRun = config.dryRun === true;
+	const dryRunWriteStatus = dryRun && config.dryRunWriteStatus === true;
 	const useWalletPool = config.useWalletPool ?? process.env.BUNDLE_WALLET_POOL_DISABLED !== "true";
 	if (!dryRun && !useWalletPool) {
 		throw new BundleSubmitterError(
@@ -202,6 +208,17 @@ export async function submitLaunchBundle(
 	}
 	const bundleParams = buildBundleExecParams(launch, config);
 	const data = encodeFunctionData({ abi: bundleRouterAbi, functionName: "executeBundle", args: [bundleParams] });
+	if (dryRun && !dryRunWriteStatus) {
+		return {
+			status: launch.bundleStatus,
+			attempt,
+			reason: "dry_run_noop",
+			dryRun: true,
+			callData: data,
+			routerAddress: launch.routerAddress as Address,
+			tipBnb,
+		};
+	}
 	if (!(await claimLaunchForBundleSubmission(db, launch))) {
 		return { status: "pending", attempt: launch.bundleAttempt, reason: "bundle_submission_already_claimed" };
 	}
