@@ -59,9 +59,15 @@ export const launchVaultAbi = [
 		outputs: [{ name: "", type: "bool" }],
 	},
 	{
+		// On-chain storage var is `uint256 public presalerTokenBalance` which
+		// auto-generates a `presalerTokenBalance()` getter. The previous ABI
+		// name `presaleTokens` did not exist on-chain and reverted every call,
+		// which (with allowFailure:false in useVaultSnapshot) killed the whole
+		// snapshot batch and left the launch page stuck in the `created`
+		// display state — blocking the claim widget post-launch.
 		type: "function",
 		stateMutability: "view",
-		name: "presaleTokens",
+		name: "presalerTokenBalance",
 		inputs: [],
 		outputs: [{ name: "", type: "uint256" }],
 	},
