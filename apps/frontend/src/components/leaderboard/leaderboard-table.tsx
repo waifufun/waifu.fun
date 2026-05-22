@@ -1,7 +1,13 @@
 "use client";
 
 import { Hairline, StatPill } from "@/components/agent-home/wave-t/_primitives";
-import { type LeaderboardEntry, type LeaderboardStatus, formatRunway, formatUsdCompact } from "@/lib/api/leaderboard";
+import {
+	type LeaderboardEntry,
+	type LeaderboardStatus,
+	formatDaysAlive,
+	formatRunway,
+	formatUsdCompact,
+} from "@/lib/api/leaderboard";
 import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -105,7 +111,7 @@ function Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
 				<StatusTag status={entry.status} />
 			</td>
 			<td className="hidden py-2.5 pr-4 text-right align-middle font-mono text-[12px] tabular-nums text-[var(--text-tertiary)] xl:table-cell">
-				{entry.daysAlive}d
+				{formatDaysAlive(entry.daysAlive)}
 			</td>
 		</tr>
 	);

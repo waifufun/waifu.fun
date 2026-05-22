@@ -73,15 +73,20 @@ function toStatus(raw?: string): LeaderboardStatus {
 	return "dormant";
 }
 
+/**
+ * Compute days since launch / creation. We keep the precision (decimal days)
+ * so the formatter can render sub-day ages as "today" / "Nh" instead of "0"
+ * — every fresh launch hits this case and "0" looks like a bug.
+ */
 function computeDaysAlive(raw: RawAgent): number {
-	if (typeof raw.daysAlive === "number") return Math.max(0, Math.floor(raw.daysAlive));
-	if (typeof raw.days_alive === "number") return Math.max(0, Math.floor(raw.days_alive));
+	if (typeof raw.daysAlive === "number") return Math.max(0, raw.daysAlive);
+	if (typeof raw.days_alive === "number") return Math.max(0, raw.days_alive);
 	const iso = raw.launchedAt ?? raw.launched_at ?? raw.createdAt;
 	if (!iso) return 0;
 	const t = new Date(iso).getTime();
 	if (Number.isNaN(t)) return 0;
 	const diff = Date.now() - t;
-	return Math.max(0, Math.floor(diff / (24 * 60 * 60 * 1000)));
+	return Math.max(0, diff / (24 * 60 * 60 * 1000));
 }
 
 function computeRunway(treasuryUsd: number, dailyBurnUsd: number, given?: number): number {
@@ -152,6 +157,23 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 		refetchInterval: 60_000,
 		retry: 1,
 	});
+}
+
+/**
+ * Days-alive cell formatter. Renders sub-day ages as "just now" / "Nh"
+ * because the leaderboard otherwise shows a giant "0d" for every fresh
+ * launch — every agent hits this on launch day and the 0 reads as
+ * "this is broken" rather than "this is brand new".
+ */
+export function formatDaysAlive(days: number): string {
+	if (!Number.isFinite(days) || days < 0) return "–";
+	if (days < 1 / 24) return "just now";
+	if (days < 1) {
+		const hours = Math.max(1, Math.floor(days * 24));
+		return `${hours}h`;
+	}
+	const rounded = Math.floor(days);
+	return `${rounded}d`;
 }
 
 export function formatRunway(days: number): string {
