@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatNumberShort, formatUsdShort, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
+import { formatNumberShort, formatUsdShort, resolveTierId, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
 
 describe("agent-card-v2 helpers", () => {
 	describe("shortAddress", () => {
@@ -68,6 +68,37 @@ describe("agent-card-v2 helpers", () => {
 		it("formats millions / thousands compactly", () => {
 			expect(formatNumberShort(2_300_000)).toBe("2.3m");
 			expect(formatNumberShort(4_500)).toBe("4.5k");
+		});
+	});
+
+	describe("resolveTierId", () => {
+		it("maps API string labels to numeric tier ids", () => {
+			expect(resolveTierId("TIER_80")).toBe(80);
+			expect(resolveTierId("TIER_90")).toBe(90);
+			expect(resolveTierId("TIER_95")).toBe(95);
+			expect(resolveTierId("TIER_98")).toBe(98);
+		});
+		it("keeps direct numeric tier ids 80/90/95/98 intact", () => {
+			expect(resolveTierId(80)).toBe(80);
+			expect(resolveTierId(95)).toBe(95);
+		});
+		it("returns null for on-chain enum index numbers (0..4)", () => {
+			// 0..4 are the on-chain agent_launches.tier enum indices but not
+			// what tierDisplay() consumes; resolveTierId returns null so we
+			// surface no badge rather than the wrong one.
+			expect(resolveTierId(0)).toBeNull();
+			expect(resolveTierId(2)).toBeNull();
+		});
+		it("accepts display labels (SMOL / WAGMI)", () => {
+			expect(resolveTierId("WAGMI")).toBe(95);
+			expect(resolveTierId("SMOL")).toBe(80);
+			expect(resolveTierId("GIGACHAD")).toBe(98);
+		});
+		it("returns null for null / undefined / unknown", () => {
+			expect(resolveTierId(null)).toBeNull();
+			expect(resolveTierId(undefined)).toBeNull();
+			expect(resolveTierId("")).toBeNull();
+			expect(resolveTierId("NOT_A_TIER")).toBeNull();
 		});
 	});
 });

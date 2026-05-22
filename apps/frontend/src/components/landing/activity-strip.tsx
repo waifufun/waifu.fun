@@ -15,6 +15,13 @@ function formatUsd(v: number) {
 	return `$${v.toFixed(0)}`;
 }
 
+// Pluralize a noun against a count: 1 → singular, anything else → plural.
+// Keeps the launch-day stat row readable ("1 agent launched" not
+// "1 agents launched"). lowercase TPOT voice is preserved by the consumer.
+function pluralize(count: number, singular: string, plural: string): string {
+	return count === 1 ? singular : plural;
+}
+
 export default async function ActivityStrip() {
 	const [stats, trades] = await Promise.all([fetchAgentStats(), fetchRecentTrades(8)]);
 
@@ -23,7 +30,10 @@ export default async function ActivityStrip() {
 			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-5">
 				{/* stats row */}
 				<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-mono uppercase tracking-[0.18em]">
-					<Stat value={stats.totalAgents.toLocaleString()} label="agents launched" />
+					<Stat
+						value={stats.totalAgents.toLocaleString()}
+						label={pluralize(stats.totalAgents, "agent launched", "agents launched")}
+					/>
 					<Divider />
 					<Stat value={stats.totalVolume > 0 ? formatUsd(stats.totalVolume) : "–"} label="total volume" />
 					<Divider />

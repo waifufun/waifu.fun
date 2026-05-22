@@ -3,10 +3,37 @@
  * under vitest's node env (no jsdom for component rendering).
  */
 import { TIER_DISPLAY_NAME, type TierId } from "@/components/create/tier/tier-data";
+import { tierFromString } from "@/lib/launch-vault/tiers";
 
 export function shortAddress(addr: string): string {
 	if (!addr || addr.length < 11) return addr || "";
 	return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
+/**
+ * Resolve the API's raw tier identifier to a numeric tier id (80/90/95/98)
+ * that {@link tierDisplay} understands.
+ *
+ * The agent_launches serialize emits the string label ("TIER_95") by
+ * default (see apps/api/src/routes/v2/agent-launches.ts:serializeAgentLaunch),
+ * not the numeric 95 that tierDisplay expects. Passing the raw string
+ * silently returned null and the tier badge vanished from the homepage
+ * agent card. Matches the PR #677 fix pattern used in launch-card.
+ */
+export function resolveTierId(raw: string | number | null | undefined): number | null {
+	if (raw === null || raw === undefined || raw === "") return null;
+	if (typeof raw === "number" && Number.isFinite(raw)) {
+		// Direct match against the public tier numbers; collapse anything
+		// else through the string parser so we never feed `tierDisplay` an
+		// unknown numeric (e.g. the on-chain enum index 2) and silently
+		// render nothing.
+		if (raw === 80 || raw === 90 || raw === 95 || raw === 98) return raw;
+	}
+	const info = tierFromString(typeof raw === "number" ? `tier_${raw}` : raw);
+	if (!info) return null;
+	const match = info.id.match(/^TIER_(\d{2})$/);
+	if (!match || !match[1]) return null;
+	return Number.parseInt(match[1], 10);
 }
 
 export interface TierBadgeMeta {
