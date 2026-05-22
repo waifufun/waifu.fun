@@ -73,7 +73,8 @@ describe("fetchAgentOwnTrades", () => {
 
 		const rows = mergeActivityWithTrades({ activity: [], trades, ticker: "WAIFU" });
 		expect(rows).toEqual([]);
-		expect(EMPTY_ACTIVITY_COPY).toBe("no activity yet · Sol hasn't traded or posted yet");
+		expect(EMPTY_ACTIVITY_COPY).toMatch(/no activity yet/);
+		expect(EMPTY_ACTIVITY_COPY).toMatch(/stream here once the agent acts on-chain/);
 	});
 
 	it("falls back to empty when the backend 404s", async () => {

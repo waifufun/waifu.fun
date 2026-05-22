@@ -154,7 +154,9 @@ export function PnlChart({ series }: { series?: Point[] }) {
 					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 						no pnl history yet
 					</span>
-					<span className="font-mono text-[11px] text-[var(--text-tertiary)]/70">snapshots backfill scheduled</span>
+					<span className="font-mono text-[11px] text-[var(--text-tertiary)]/70">
+						snapshots accumulate hourly · 30d window unlocks at hour 720
+					</span>
 				</div>
 			)}
 

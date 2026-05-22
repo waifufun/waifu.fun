@@ -83,10 +83,12 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 
 			<div className="flex-1 overflow-x-auto">
 				{live.length === 0 ? (
-					<div className="flex flex-col gap-1 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-						<span>no live positions</span>
-						<span className="text-[var(--text-tertiary)]/70 normal-case tracking-normal text-[11px]">
-							hyperliquid, pancake v3, astherus scheduled
+					<div className="flex flex-col gap-1.5 py-3 font-mono">
+						<span className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+							no live positions
+						</span>
+						<span className="text-[11px] leading-snug text-[var(--text-tertiary)]/70">
+							venues scheduled: hyperliquid (perp), pancake v3 (lp), polymarket (predictions), drift (perp)
 						</span>
 					</div>
 				) : (

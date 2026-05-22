@@ -62,6 +62,7 @@ import { HoldingsAllocation } from "./wave-t/holdings-allocation";
 import { PnlChart } from "./wave-t/pnl-chart";
 import { PriceChart } from "./wave-t/price-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
+import { ThesisPanel } from "./wave-t/thesis-panel";
 
 export interface AgentHomeV2Props {
 	agent: AgentData;
@@ -221,7 +222,15 @@ export default function AgentHomeV2({
 					{hasApps ? <AppsShipped apps={apps} visibleCount={3} /> : null}
 				</div>
 
-				{/* Row 4: unified activity feed (2/3) + top apps by revenue
+				{/* Row 4: thesis. Explains how the agent earns and how holders
+				    share in the income. Three columns inside one panel; no
+				    additional grid wrapper needed. Always renders so a visitor
+				    can answer "why hold" without scrolling through trade data. */}
+				<div className="mt-4" id="thesis">
+					<ThesisPanel hasLiveRevenue={false} />
+				</div>
+
+				{/* Row 5: unified activity feed (2/3) + top apps by revenue
 				    (1/3, sol-only). The activity feed swallows the legacy
 				    "last 20 trades" list: both streams ride through one
 				    panel. The feed's built-in "Trading" tab filters down
