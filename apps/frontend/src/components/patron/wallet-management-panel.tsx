@@ -108,7 +108,7 @@ export default function WalletManagementPanel() {
 							<a
 								href={explorerUrl(primaryAddress, primaryChain)}
 								target="_blank"
-								rel="noreferrer"
+								rel="noopener noreferrer"
 								className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.18em] border border-stroke text-[#a1a1aa] hover:border-stroke-strong hover:text-[#e4e4e7] rounded-sm transition-colors"
 							>
 								explorer

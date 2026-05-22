@@ -359,7 +359,7 @@ function Row({ row }: { row: ActivityRowInput }) {
 		return (
 			<a
 				href={v.url}
-				rel="noreferrer"
+				rel="noopener noreferrer"
 				target="_blank"
 				className="-mx-2 flex items-start gap-3 rounded px-2 py-3 transition-colors hover:bg-white/[0.025]"
 			>

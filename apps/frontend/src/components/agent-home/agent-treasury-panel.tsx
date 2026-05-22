@@ -260,7 +260,7 @@ function ScanLink({ address, label, compact }: { address: string; label?: string
 		<a
 			href={`https://bscscan.com/address/${address}`}
 			target="_blank"
-			rel="noreferrer"
+			rel="noopener noreferrer"
 			aria-label={label ? `open ${label} on bscscan` : "open on bscscan"}
 			className={cls}
 		>

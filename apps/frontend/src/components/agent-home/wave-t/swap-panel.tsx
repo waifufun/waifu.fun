@@ -8,19 +8,24 @@
  *   - Center swap-direction button
  *   - To (Estimate) row: token selector + computed amount + balance
  *   - Route detail rows (route / slippage / price impact / minimum received)
- *   - Full-width Connect Wallet CTA
+ *   - Full-width Connect Wallet / Trade CTA
  *   - Footer "Best route on BNB Chain" with green check
  *
- * Wallet integration is intentionally a stub: clicking Connect opens
- * PancakeSwap in a new tab so users can transact today. When the in-app
- * router lands this becomes a live form.
+ * Wallet flow follows the canonical site pattern (see deposit-widget.tsx):
+ *   - not connected → `<LinkedEoaCTA>` triggers the Steward sign-in modal
+ *     and links the EOA on success.
+ *   - connected → "trade on pancakeswap" external link, because the
+ *     in-app swap router isn't wired yet. When that lands this becomes
+ *     a real submit button.
  */
 
 "use client";
 
 import { ArrowDownIcon, CheckCircle2Icon, ChevronDownIcon, SettingsIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useAccount } from "wagmi";
 
+import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { cn } from "@/lib/utils";
 
 import type { TokenMetrics } from "@/lib/wave-t/token";
@@ -70,6 +75,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 	const [amount, setAmount] = useState<string>("");
 	const [slippage, setSlippage] = useState<number>(0.5);
 	const [reversed, setReversed] = useState<boolean>(false);
+	const { isConnected } = useAccount();
 
 	const baseSymbol = "BNB";
 	const quoteSymbol = token.symbol || "–";
@@ -246,15 +252,24 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 				</div>
 			</dl>
 
-			{/* CTA */}
-			<a
-				className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-[var(--accent)] py-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#03110b] transition-colors hover:bg-[var(--accent-dim)]"
-				href={pcsHref}
-				rel="noreferrer"
-				target="_blank"
-			>
-				connect wallet
-			</a>
+			{/* CTA. Same wallet-gated pattern as deposit-widget: not-connected
+			    flows through the Steward sign-in + linked EOA modal. Once
+			    connected, the in-app swap form above is still a preview, so
+			    the CTA falls back to opening the live PancakeSwap pair. */}
+			{isConnected ? (
+				<a
+					className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-[var(--accent)] py-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#03110b] transition-colors hover:bg-[var(--accent-dim)]"
+					href={pcsHref}
+					rel="noopener noreferrer"
+					target="_blank"
+				>
+					trade on pancakeswap
+				</a>
+			) : (
+				<LinkedEoaCTA className="mt-4 w-full justify-center rounded-md bg-[var(--accent)] py-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#03110b] hover:bg-[var(--accent-dim)]">
+					connect wallet
+				</LinkedEoaCTA>
+			)}
 
 			<div className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 				<CheckCircle2Icon className="h-3 w-3 text-[var(--positive)]" />
