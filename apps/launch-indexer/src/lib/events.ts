@@ -47,6 +47,8 @@ export type LaunchCreatedEvent = LaunchEventEnvelope<
 		vault: Address;
 		router: Address;
 		treasuryLp: Address;
+		taxSplitter: Address;
+		agentSafe: Address;
 		tier: number;
 		presaleCap: string;
 		v2BuyBnb: string;
