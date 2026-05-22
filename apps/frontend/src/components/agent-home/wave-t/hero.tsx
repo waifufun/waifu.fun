@@ -47,10 +47,17 @@ export type HeroIdentity = {
  * `lib/holdings.ts` (which today is the Sol-burner aggregate). `source`
  * controls the source pill copy so we never mislead about where the
  * number came from.
+ *
+ * `aggregated` means the canonical /v2/agents/:address/holdings NAV
+ * snapshot (multi-wallet, multi-chain). `agentSafe` means the BNB
+ * balance of the wave-M AgentSafe (single-wallet, BSC only).
+ * `burner` is the legacy multi-chain fetch keyed by the Sol-burner
+ * address (single-wallet, multi-chain) that ships when neither of the
+ * authoritative sources is available.
  */
 export type HeroTreasuryOverride = {
 	valueUsd: number;
-	source: "agentSafe" | "burner";
+	source: "aggregated" | "agentSafe" | "burner";
 };
 
 export type HeroProps = {
@@ -63,6 +70,8 @@ export type HeroProps = {
 	status?: "online" | "offline";
 	className?: string;
 	treasuryValueOverride?: HeroTreasuryOverride;
+	/** Estimated runway in days, from the burn-rate endpoint. Null when unmeasured. */
+	runwayDays?: number | null;
 };
 
 const FALLBACK_PORTRAIT = "/brand/agents/waifu/portrait-amber.webp";
@@ -77,6 +86,7 @@ export function Hero({
 	status = "online",
 	className,
 	treasuryValueOverride,
+	runwayDays,
 }: HeroProps) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
 	const treasurySource = treasuryValueOverride?.source ?? "burner";
@@ -103,6 +113,7 @@ export function Hero({
 					daysOperating={daysOperating}
 					otherAgents={4}
 					status={status}
+					runwayDays={runwayDays ?? null}
 				/>
 			</HeroCell>
 		</section>
@@ -179,9 +190,15 @@ function IdentityBlock({ identity, version }: { identity: HeroIdentity; version:
 
 // ── Treasury ────────────────────────────────────────────────────
 
-function TreasuryBlock({ navUsd, source }: { navUsd: number; source: "agentSafe" | "burner" }) {
+function TreasuryBlock({
+	navUsd,
+	source,
+}: {
+	navUsd: number;
+	source: "aggregated" | "agentSafe" | "burner";
+}) {
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
-	const sourceLabel = source === "agentSafe" ? "agent safe" : "sol burner";
+	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "sol burner";
 	return (
 		<div className="flex flex-col gap-2">
 			<Label
@@ -249,7 +266,7 @@ function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
 			<Label className="mb-0">24H PnL</Label>
 			<div className="font-mono text-[26px] tabular-nums leading-none tracking-tight md:text-[28px]" style={{ color }}>
 				{empty ? (
-					<span className="text-[var(--text-tertiary)]">{formatUsd(0, true)}</span>
+					<span className="text-[var(--text-tertiary)]">no pnl history</span>
 				) : (
 					<>
 						{sign}
@@ -262,7 +279,7 @@ function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
 			</div>
 			<div className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums tracking-tight" style={{ color }}>
 				{empty ? (
-					<span className="text-[var(--text-tertiary)]">+0.00% · not tracked yet</span>
+					<span className="text-[var(--text-tertiary)]">snapshots backfill scheduled</span>
 				) : (
 					<span>
 						{sign}
@@ -275,15 +292,6 @@ function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
 }
 
 // ── helpers ─────────────────────────────────────────────────────
-
-function formatUsd(n: number, withSign = false): string {
-	const s = new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-		maximumFractionDigits: 0,
-	}).format(n);
-	return withSign && n > 0 ? `+${s}` : s;
-}
 
 /**
  * Synthesize a plausible 12d sparkline ending at the current nav.

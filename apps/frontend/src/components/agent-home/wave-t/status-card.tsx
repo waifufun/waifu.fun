@@ -14,11 +14,19 @@ import { Panel, Pulse } from "./_primitives";
 type StatusCardProps = {
 	status?: "online" | "degraded" | "offline";
 	daysOperating: number;
+	/**
+	 * Estimated days of runway given current treasury and burn rate. Read
+	 * from the `/v2/agents/:address/burn-rate` endpoint upstream. Null when
+	 * the endpoint is unavailable or the agent has zero recent outflow
+	 * (effectively infinite runway, which is honest to surface as
+	 * "not yet measured" rather than ∞).
+	 */
+	runwayDays?: number | null;
 	className?: string;
 	otherAgents?: number;
 };
 
-export function StatusCard({ status = "online", daysOperating, className }: StatusCardProps) {
+export function StatusCard({ status = "online", daysOperating, runwayDays, className }: StatusCardProps) {
 	const isOnline = status === "online";
 	const tone = isOnline ? "positive" : status === "degraded" ? "accent" : "negative";
 	const statusLabel = isOnline ? "Operational" : status === "degraded" ? "Degraded" : "Offline";
@@ -42,9 +50,16 @@ export function StatusCard({ status = "online", daysOperating, className }: Stat
 							{statusLabel}
 						</span>
 					</div>
-					<p className="font-mono text-[11px] text-[var(--text-tertiary)] uppercase tracking-[0.14em]">
-						{isOnline ? "All systems normal" : "Investigating"}
-					</p>
+					<div className="flex items-baseline gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em]">
+						<span className="text-[var(--text-tertiary)]">runway</span>
+						{runwayDays == null ? (
+							<span className="text-[var(--text-tertiary)]">not yet measured</span>
+						) : (
+							<span className="tabular-nums text-[var(--text-primary)]">
+								{runwayDays >= 365 ? ">365" : Math.round(runwayDays)} days
+							</span>
+						)}
+					</div>
 				</div>
 			</div>
 		</Panel>

@@ -4,11 +4,13 @@ import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-f
 import { fetchOnchainHistory } from "@/lib/onchain-history";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { buildActivity } from "@/lib/wave-t/activity";
+import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
+import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
-import { fetchHoldings } from "@/lib/wave-t/holdings";
+import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
 import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
@@ -366,22 +368,50 @@ export default async function AgentPage({
 		source: "synthetic" as const,
 		note: "no candle data available",
 	}));
-	const holdingsP = fetchHoldings().catch(() => ({ holdings: [], navUsd: 0, fetchedAt: Date.now() }));
+	// Holdings: prefer the aggregated /v2/agents/:address/holdings endpoint
+	// (PR #712, NAV aggregator). Falls back to the legacy burner-stub when
+	// the endpoint is unavailable (404 in prod today) so the donut still
+	// renders something honest instead of empty.
+	const aggregatedHoldingsP = fetchAgentHoldingsSnapshot(address).catch(() => null);
+	const legacyHoldingsP = fetchHoldings().catch(
+		() => ({ holdings: [], navUsd: 0, fetchedAt: Date.now() }) as HoldingsSnapshot,
+	);
+	// Burn-rate snapshot powers the hero runway readout. Null when the
+	// endpoint is unavailable (404 in prod today), in which case the hero
+	// renders "not yet measured" rather than inventing a number.
+	const burnRateP = fetchAgentBurnRateSnapshot(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
 	const appsP = fetchAppsForAgent({ isSolAgent }).catch(() => []);
 	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
 
-	const [agent, trades, launch, token, candles, holdings, positions, apps, activity] = await Promise.all([
+	const [
+		agent,
+		trades,
+		launch,
+		token,
+		candles,
+		aggregatedHoldings,
+		legacyHoldings,
+		burnRate,
+		positions,
+		apps,
+		activity,
+	] = await Promise.all([
 		agentP,
 		tradesP,
 		launchP,
 		tokenP,
 		candlesP,
-		holdingsP,
+		aggregatedHoldingsP,
+		legacyHoldingsP,
+		burnRateP,
 		positionsP,
 		appsP,
 		activityP,
 	]);
+
+	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
+	const holdingsSource: "aggregated" | "burner" = aggregatedHoldings ? "aggregated" : "burner";
 
 	// AgentSafe BNB balance fetched after the launch row resolves (it
 	// supplies the safe address). Null on legacy launches or RPC blips;
@@ -413,6 +443,8 @@ export default async function AgentPage({
 			token={token}
 			candles={candles}
 			holdings={holdings}
+			holdingsSource={holdingsSource}
+			runwayDays={burnRate?.runwayDays ?? null}
 			positions={positions}
 			activity={activity}
 			apps={apps}

@@ -7,6 +7,8 @@
  * Source of truth: \`SOL_BURNER\` is the same address across every EVM chain.
  */
 
+import type { AgentHoldingsSnapshot } from "./agent-holdings";
+
 export const SOL_BURNER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
 
 export type ChainKey = "bsc" | "eth" | "arb" | "base" | "op";
@@ -71,6 +73,67 @@ export interface HoldingsSnapshot {
 	holdings: ChainHolding[];
 	navUsd: number;
 	fetchedAt: number;
+}
+
+/**
+ * Map the canonical `/v2/agents/:address/holdings` snapshot into the
+ * legacy `HoldingsSnapshot` shape consumed by `<HoldingsAllocation>`.
+ *
+ * We collapse rows by (chain, asset) so the donut renders one slice per
+ * (chain, asset) pair regardless of how many wallets contributed. Only
+ * priced rows (valueUsd != null) are projected; unpriced rows stay
+ * counted in `navUsd` but don't get their own slice.
+ */
+export function holdingsSnapshotFromApi(snapshot: AgentHoldingsSnapshot): HoldingsSnapshot {
+	const chainName: Record<string, string> = {
+		bsc: "BSC",
+		eth: "Ethereum",
+		ethereum: "Ethereum",
+		arb: "Arbitrum",
+		arbitrum: "Arbitrum",
+		base: "Base",
+		op: "Optimism",
+		optimism: "Optimism",
+		polygon: "Polygon",
+		solana: "Solana",
+	};
+	const chainKeyMap: Record<string, ChainKey> = {
+		bsc: "bsc",
+		eth: "eth",
+		ethereum: "eth",
+		arb: "arb",
+		arbitrum: "arb",
+		base: "base",
+		op: "op",
+		optimism: "op",
+	};
+
+	const grouped = new Map<string, ChainHolding>();
+	for (const h of snapshot.holdings) {
+		if (h.valueUsd == null) continue;
+		const chain = chainKeyMap[h.chain.toLowerCase()] ?? "bsc";
+		const key = `${chain}:${h.asset}`;
+		const existing = grouped.get(key);
+		if (existing) {
+			existing.balance += h.balance;
+			existing.valueUsd += h.valueUsd;
+		} else {
+			grouped.set(key, {
+				chain,
+				chainName: chainName[h.chain.toLowerCase()] ?? h.chain.toUpperCase(),
+				asset: h.asset,
+				balance: h.balance,
+				priceUsd: h.priceUsd ?? 0,
+				valueUsd: h.valueUsd,
+			});
+		}
+	}
+
+	return {
+		holdings: Array.from(grouped.values()),
+		navUsd: snapshot.navUsd,
+		fetchedAt: snapshot.generatedAt > 0 ? snapshot.generatedAt : Date.now(),
+	};
 }
 
 export async function fetchHoldings(): Promise<HoldingsSnapshot> {

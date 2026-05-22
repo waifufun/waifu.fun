@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 import type { Position } from "@/lib/wave-t/positions";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
-import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
+import { Label, Panel, Pulse, TokenIcon, VenueIcon } from "./_primitives";
 
 function chainOfVenue(venue: string): TokenChain {
 	const v = venue.toLowerCase();
@@ -81,12 +81,19 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 		<Panel className="flex h-full flex-col">
 			<Label
 				right={
-					<button
-						className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] hover:text-[var(--accent)]"
-						type="button"
-					>
-						view all
-					</button>
+					live.length === 0 ? (
+						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+							<Pulse />
+							awaiting deposit
+						</span>
+					) : (
+						<button
+							className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] hover:text-[var(--accent)]"
+							type="button"
+						>
+							view all
+						</button>
+					)
 				}
 			>
 				active positions
@@ -175,20 +182,24 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 			</div>
 
 			<footer className="mt-3 flex items-center justify-between border-t border-[var(--border-soft)] pt-3 font-mono text-[10px] uppercase tracking-[0.18em]">
-				<span className="text-[var(--text-tertiary)]">total unrealized p&amp;l</span>
-				<span
-					className={cn(
-						"inline-flex items-center gap-1.5 tabular-nums",
-						tone === "positive"
-							? "text-[var(--positive)]"
-							: tone === "negative"
-								? "text-[var(--negative)]"
-								: "text-[var(--text-secondary)]",
-					)}
-				>
-					{tone === "positive" && <TrendingUpIcon className="h-3 w-3" />}
-					{totalPnl === 0 ? "$0.00" : fmtUsd(totalPnl, { withSign: true })}
+				<span className="text-[var(--text-tertiary)]">
+					{live.length === 0 ? "no positions yet · awaiting first venue deposit" : "total unrealized p&l"}
 				</span>
+				{live.length > 0 ? (
+					<span
+						className={cn(
+							"inline-flex items-center gap-1.5 tabular-nums",
+							tone === "positive"
+								? "text-[var(--positive)]"
+								: tone === "negative"
+									? "text-[var(--negative)]"
+									: "text-[var(--text-secondary)]",
+						)}
+					>
+						{tone === "positive" && <TrendingUpIcon className="h-3 w-3" />}
+						{totalPnl === 0 ? "$0.00" : fmtUsd(totalPnl, { withSign: true })}
+					</span>
+				) : null}
 			</footer>
 		</Panel>
 	);
