@@ -14,7 +14,6 @@
 
 "use client";
 
-import { ChevronRightIcon } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
@@ -152,6 +151,13 @@ function pickVenueIcon(venue: string): ReactNode {
 	return <BnbChainIcon className="h-3.5 w-3.5" />;
 }
 
+// Single neutral chip styling for every row icon. The previous version
+// painted each row's icon container in a category-specific tint (sky for
+// X posts, amber for BSC tx, fuchsia for bets, etc) which broke the
+// single-accent brand rule. Sophistication pass: every row icon sits in
+// the same hairline neutral chip; the glyph itself carries the meaning.
+const NEUTRAL_ICON_CHIP = "border border-[var(--border-soft)] bg-white/[0.02] text-[var(--text-secondary)]";
+
 function deltaTone(delta: number): { cls: string; sign: string } {
 	if (delta > 0) return { cls: "text-[var(--positive)]", sign: "+" };
 	if (delta < 0) return { cls: "text-[var(--negative)]", sign: "" };
@@ -163,8 +169,8 @@ function visualFor(row: ActivityRowInput): Visual {
 		case "pr":
 			return {
 				icon: <GithubIcon className="h-3.5 w-3.5" />,
-				tint: "text-[var(--accent)]",
-				bg: "bg-[var(--accent-soft)]",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: `Merged PR #${row.number}`,
 				sub: row.title,
 				right: <span className="text-[var(--positive)]">merged</span>,
@@ -173,18 +179,20 @@ function visualFor(row: ActivityRowInput): Visual {
 		case "tweet":
 			return {
 				icon: <XIcon className="h-3.5 w-3.5" />,
-				tint: "text-sky-300",
-				bg: "bg-sky-300/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: "Posted on X",
 				sub: row.text.length > 64 ? `${row.text.slice(0, 64)}…` : row.text,
-				right: <span className="text-[var(--text-secondary)]">{formatCompactNum(row.impressions)} views</span>,
+				right: (
+					<span className="text-[var(--text-secondary)] tabular-nums">{formatCompactNum(row.impressions)} views</span>
+				),
 				url: row.url,
 			};
 		case "tx":
 			return {
 				icon: <BnbChainIcon className="h-3.5 w-3.5" />,
-				tint: "text-amber-300",
-				bg: "bg-amber-300/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: "Executed BSC tx",
 				sub: row.method,
 				right: <span className="text-[var(--text-primary)] tabular-nums">{row.valueBnb.toFixed(4)} BNB</span>,
@@ -194,8 +202,8 @@ function visualFor(row: ActivityRowInput): Visual {
 			const tone = deltaTone(row.usd);
 			return {
 				icon: <WaifuIcon className="h-3.5 w-3.5" />,
-				tint: "text-[var(--positive)]",
-				bg: "bg-[var(--positive)]/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: "Revenue collected",
 				sub: `${row.source} stream`,
 				right: (
@@ -210,8 +218,8 @@ function visualFor(row: ActivityRowInput): Visual {
 			const positive = row.side === "buy";
 			return {
 				icon: pickVenueIcon(row.venue),
-				tint: positive ? "text-[var(--positive)]" : "text-[var(--negative)]",
-				bg: positive ? "bg-[var(--positive)]/10" : "bg-[var(--negative)]/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: `${positive ? "Bought" : "Sold"} ${row.asset}`,
 				sub: `${formatCompactNum(row.amount)} ${row.asset} at ${row.priceBnb.toFixed(6)} BNB via ${row.venue}`,
 				right: (
@@ -232,8 +240,8 @@ function visualFor(row: ActivityRowInput): Visual {
 			const dir = row.direction === "long" ? "long" : "short";
 			return {
 				icon: pickVenueIcon(row.venue),
-				tint: row.direction === "long" ? "text-[var(--positive)]" : "text-[var(--negative)]",
-				bg: row.direction === "long" ? "bg-[var(--positive)]/10" : "bg-[var(--negative)]/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: `${verb} ${dir} position`,
 				sub: `${row.market}${row.leverage ? ` ${row.leverage}x` : ""} on ${row.venue}`,
 				right: (
@@ -255,8 +263,8 @@ function visualFor(row: ActivityRowInput): Visual {
 						: "border-[var(--border-mid)] bg-white/[0.02] text-[var(--text-secondary)]";
 			return {
 				icon: <VenueIcon size={14} venue={row.market} />,
-				tint: "text-fuchsia-300",
-				bg: "bg-fuchsia-300/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: row.result === "open" ? "Placed prediction" : "Prediction settled",
 				sub: row.question.length > 60 ? `${row.question.slice(0, 60)}…` : row.question,
 				right: (
@@ -295,8 +303,8 @@ function visualFor(row: ActivityRowInput): Visual {
 			const tone = deltaTone(row.revenueUsd ?? 0);
 			return {
 				icon,
-				tint: "text-[var(--accent)]",
-				bg: "bg-[var(--accent-soft)]",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: verb,
 				sub: row.version ? `${row.appName} ${row.version} is now live` : row.appName,
 				right:
@@ -317,8 +325,8 @@ function visualFor(row: ActivityRowInput): Visual {
 				row.action === "deposit" ? "Deposited to" : row.action === "withdraw" ? "Withdrew from" : "Converted on";
 			return {
 				icon: pickVenueIcon(row.to || row.from),
-				tint: "text-amber-300",
-				bg: "bg-amber-300/10",
+				tint: "text-[var(--text-secondary)]",
+				bg: NEUTRAL_ICON_CHIP,
 				title: `${verb} ${row.to || row.from}`,
 				sub: `${row.amount}`,
 				right: (
@@ -339,18 +347,18 @@ function Row({ row }: { row: ActivityRowInput }) {
 	const v = visualFor(row);
 	const body = (
 		<>
-			<span
-				className={cn("mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full", v.bg, v.tint)}
-			>
+			<span className={cn("mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md", v.bg, v.tint)}>
 				{v.icon}
 			</span>
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-[13px] text-[var(--text-primary)]">{v.title}</div>
-				<div className="mt-0.5 truncate text-[11.5px] text-[var(--text-secondary)]">{v.sub}</div>
+				<div className="truncate text-[12.5px] text-[var(--text-primary)]">{v.title}</div>
+				<div className="mt-0.5 truncate text-[11px] text-[var(--text-secondary)]">{v.sub}</div>
 			</div>
 			<div className="flex shrink-0 flex-col items-end gap-0.5">
-				<span className="font-mono text-[11px] text-[var(--text-tertiary)]">{relativeTime(row.timestamp)}</span>
-				<span className="font-mono text-[11.5px] tabular-nums">{v.right}</span>
+				<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
+					{relativeTime(row.timestamp)}
+				</span>
+				<span className="font-mono text-[11px] tabular-nums">{v.right}</span>
 			</div>
 		</>
 	);
@@ -361,13 +369,13 @@ function Row({ row }: { row: ActivityRowInput }) {
 				href={v.url}
 				rel="noreferrer"
 				target="_blank"
-				className="-mx-2 flex items-start gap-3 rounded px-2 py-3 transition-colors hover:bg-white/[0.025]"
+				className="-mx-2 flex items-start gap-3 rounded px-2 py-2.5 transition-colors hover:bg-white/[0.025]"
 			>
 				{body}
 			</a>
 		);
 	}
-	return <div className="-mx-2 flex items-start gap-3 rounded px-2 py-3">{body}</div>;
+	return <div className="-mx-2 flex items-start gap-3 rounded px-2 py-2.5">{body}</div>;
 }
 
 // ── Tab control ───────────────────────────────────────────────────
@@ -388,18 +396,18 @@ function TabPill({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
+				"inline-flex items-center gap-1.5 rounded-sm border px-2 py-1",
 				"font-mono text-[10px] uppercase tracking-[0.16em] transition-colors",
 				active
-					? "bg-[var(--accent-soft)] text-[var(--accent)]"
-					: "text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]",
+					? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)]"
+					: "border-[var(--border-soft)] text-[var(--text-secondary)] hover:border-[var(--border-mid)] hover:text-[var(--text-primary)]",
 			)}
 		>
 			{children}
 			{typeof count === "number" && count > 0 && (
 				<span
 					className={cn(
-						"rounded-full px-1 text-[9px] tabular-nums",
+						"rounded-sm px-1 text-[9px] tabular-nums",
 						active ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-white/[0.04] text-[var(--text-tertiary)]",
 					)}
 				>
@@ -438,7 +446,7 @@ export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?
 			</div>
 
 			{visible.length === 0 ? (
-				<div className="py-6 text-center font-mono text-[11px] text-[var(--text-tertiary)]">
+				<div className="py-4 font-mono text-[11px] text-[var(--text-tertiary)]">
 					{tab === "all" ? EMPTY_ACTIVITY_COPY : `no ${tab} events yet`}
 				</div>
 			) : (
@@ -450,18 +458,6 @@ export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?
 					))}
 				</ul>
 			)}
-
-			<a
-				href="#activity"
-				className={cn(
-					"mt-3 flex items-center justify-center gap-1.5 border-t border-[var(--border-soft)] pt-3",
-					"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
-					"transition-colors hover:text-[var(--accent)]",
-				)}
-			>
-				View all activity
-				<ChevronRightIcon className="h-3 w-3" />
-			</a>
 		</Panel>
 	);
 }

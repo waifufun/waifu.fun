@@ -139,7 +139,7 @@ function HeroCell({ children, className }: { children: React.ReactNode; classNam
 	return (
 		<div
 			className={cn(
-				"flex flex-col justify-center gap-2 border-[var(--border-soft)] px-5 py-5 md:border-l md:py-6",
+				"flex flex-col justify-center gap-2 border-[var(--border-soft)] px-5 py-4 md:border-l md:py-5",
 				className,
 			)}
 		>
@@ -157,33 +157,27 @@ function IdentityBlock({ identity, version }: { identity: HeroIdentity; version:
 	const description = identity.description;
 	const verified = identity.verified ?? true;
 	return (
-		<div className="flex items-center gap-4 px-5 py-5 md:py-6">
+		<div className="flex items-center gap-3 px-5 py-4 md:py-5">
 			<div className="relative shrink-0">
-				<div
-					aria-hidden
-					className="absolute inset-0 rounded-md"
-					style={{
-						boxShadow: "0 0 0 1px var(--border-mid), 0 18px 40px -22px rgba(0,255,135,0.35)",
-					}}
-				/>
 				<img
 					alt={`${displayName} portrait`}
-					className="relative h-[124px] w-[124px] rounded-md object-cover md:h-[132px] md:w-[132px]"
-					height={132}
+					className="relative h-[108px] w-[108px] rounded-md object-cover md:h-[116px] md:w-[116px]"
+					height={116}
 					src={portrait}
-					width={132}
+					style={{ boxShadow: "inset 0 0 0 1px var(--border-mid)" }}
+					width={116}
 				/>
 			</div>
 
 			<div className="flex min-w-0 flex-col gap-1.5">
 				<div className="flex items-center gap-1.5">
-					<h1 className="font-medium text-[22px] text-[var(--text-primary)] leading-none lowercase tracking-tight md:text-[24px]">
+					<h1 className="font-medium text-[20px] text-[var(--text-primary)] leading-none lowercase tracking-tight md:text-[22px]">
 						{displayName.toLowerCase()}
 					</h1>
 					{verified ? (
 						<CheckCircle2Icon
 							aria-label="Verified agent"
-							className="h-[18px] w-[18px]"
+							className="h-[16px] w-[16px]"
 							strokeWidth={2}
 							style={{ color: "var(--accent)" }}
 						/>
@@ -213,7 +207,7 @@ function TreasuryBlock({
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
 	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "sol burner";
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="flex flex-col gap-1.5">
 			<Label
 				className="mb-0"
 				right={
@@ -224,17 +218,19 @@ function TreasuryBlock({
 			>
 				Treasury Value
 			</Label>
-			<div className="font-mono text-[26px] text-[var(--text-primary)] tabular-nums leading-none tracking-tight md:text-[28px]">
-				<NumberFlow
-					format={{
-						style: "currency",
-						currency: "USD",
-						maximumFractionDigits: 0,
-					}}
-					value={Math.max(0, Math.round(navUsd))}
-				/>
+			<div className="flex items-end gap-3">
+				<div className="font-mono text-[22px] text-[var(--text-primary)] tabular-nums leading-none tracking-tight md:text-[24px]">
+					<NumberFlow
+						format={{
+							style: "currency",
+							currency: "USD",
+							maximumFractionDigits: 0,
+						}}
+						value={Math.max(0, Math.round(navUsd))}
+					/>
+				</div>
+				<Sparkline series={series} />
 			</div>
-			<Sparkline series={series} />
 		</div>
 	);
 }
@@ -242,7 +238,7 @@ function TreasuryBlock({
 function Sparkline({ series }: { series: { v: number }[] }) {
 	const id = useId();
 	return (
-		<div className="h-8 w-full max-w-[180px]">
+		<div className="h-6 w-full max-w-[96px] shrink-0">
 			<ResponsiveContainer height="100%" width="100%">
 				<AreaChart data={series} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
 					<defs>
@@ -288,11 +284,11 @@ function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
 	const sign = empty ? "" : usd > 0 ? "+" : "";
 
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="flex flex-col gap-1.5">
 			<Label className="mb-0">24H PnL</Label>
-			<div className="font-mono text-[26px] tabular-nums leading-none tracking-tight md:text-[28px]" style={{ color }}>
+			<div className="font-mono text-[22px] tabular-nums leading-none tracking-tight md:text-[24px]" style={{ color }}>
 				{empty ? (
-					<span className="text-[var(--text-tertiary)]">no pnl history</span>
+					<span className="text-[13px] text-[var(--text-tertiary)] md:text-[13px]">no pnl history</span>
 				) : (
 					<>
 						{sign}

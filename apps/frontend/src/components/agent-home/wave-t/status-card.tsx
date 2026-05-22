@@ -35,7 +35,7 @@ export function StatusCard({ status = "online", daysOperating, runwayDays, class
 
 	return (
 		<Panel className={cn("h-full", className)}>
-			<div className="flex h-full flex-col justify-between gap-4">
+			<div className="flex h-full flex-col justify-between gap-3">
 				<div className="flex items-center justify-between gap-3">
 					<span className="font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.22em]">Status</span>
 					<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums uppercase tracking-[0.18em]">
@@ -46,11 +46,11 @@ export function StatusCard({ status = "online", daysOperating, runwayDays, class
 				<div className="flex min-w-0 flex-col gap-1">
 					<div className="flex items-center gap-2">
 						<Pulse tone={tone} />
-						<span className="font-medium text-[14px]" style={{ color: statusColor }}>
-							{statusLabel}
+						<span className="font-mono text-[13px] tabular-nums" style={{ color: statusColor }}>
+							{statusLabel.toLowerCase()}
 						</span>
 					</div>
-					<div className="flex items-baseline gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em]">
+					<div className="flex items-baseline gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]">
 						<span className="text-[var(--text-tertiary)]">runway</span>
 						{runwayDays == null ? (
 							<span className="text-[var(--text-tertiary)]">not yet measured</span>

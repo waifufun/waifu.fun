@@ -1,14 +1,15 @@
 /**
- * Active Positions table (Wave T worker B v2).
+ * Active Positions table (Wave T, sophistication pass 2026-05-22).
  *
- * Lists all live positions across venues (spot, perps, LP). Honest empty
- * rows for venues that are scheduled but not yet funded – no fake PnL.
+ * Lists live positions across venues (spot, perps, LP). No more
+ * hardcoded SCHEDULED fixture rows; the empty state is honest and
+ * single-line. Em-dash glyph placeholders are gone (banned by
+ * .impeccable.md), replaced with a middot in empty cells.
  *
- * Columns: asset / venue / size / pnl ($) / pnl (%) / leverage badge
+ * Columns: asset / venue / size / pnl ($) / pnl (%).
  * Footer: total unrealized PnL summed across live rows.
  *
- * Data: \`lib/positions.ts\`. Currently returns one BNB spot position on
- * the Sol burner. Perps + LP positions will surface when accounts fund.
+ * Data: `lib/positions.ts`.
  */
 
 "use client";
@@ -20,7 +21,11 @@ import { cn } from "@/lib/utils";
 
 import type { Position } from "@/lib/wave-t/positions";
 import type { TokenChain } from "@/lib/wave-t/token-logo";
-import { Label, Panel, Pulse, TokenIcon, VenueIcon } from "./_primitives";
+import { Label, Panel, TokenIcon, VenueIcon } from "./_primitives";
+
+// Middot used for empty numeric cells. Never an em dash glyph (banned by
+// .impeccable.md), never an ASCII hyphen pretending to be a minus.
+const EMPTY_CELL = "·";
 
 function chainOfVenue(venue: string): TokenChain {
 	const v = venue.toLowerCase();
@@ -32,24 +37,9 @@ function chainOfVenue(venue: string): TokenChain {
 }
 
 function primaryAssetOf(asset: string): string {
-	// "BNB/USDT" -> "BNB", "BTC-USD" -> "BTC"
 	const m = asset.match(/^[A-Z0-9]+/);
 	return m ? m[0] : asset;
 }
-
-type ScheduledVenue = {
-	id: string;
-	asset: string;
-	venue: string;
-};
-
-// Venues Sol intends to operate but aren't funded yet. These render as
-// honest empty rows below the live positions.
-const SCHEDULED: ScheduledVenue[] = [
-	{ id: "perp-hl", asset: "BTC-USD", venue: "hyperliquid perp" },
-	{ id: "lp-pcs", asset: "BNB/USDT", venue: "pancake v3 lp" },
-	{ id: "vault-asth", asset: "USDC", venue: "astherus vault" },
-];
 
 function fmtUsd(v: number, opts: { withSign?: boolean } = {}): string {
 	if (!Number.isFinite(v)) return "$0.00";
@@ -82,108 +72,92 @@ export function ActivePositions({ positions }: { positions: Position[] }) {
 			<Label
 				right={
 					live.length === 0 ? (
-						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							<Pulse />
+						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 							awaiting deposit
 						</span>
-					) : (
-						<button
-							className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] hover:text-[var(--accent)]"
-							type="button"
-						>
-							view all
-						</button>
-					)
+					) : null
 				}
 			>
 				active positions
 			</Label>
 
 			<div className="flex-1 overflow-x-auto">
-				<table className="w-full border-collapse font-mono text-[11px]">
-					<thead>
-						<tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							<th className="pb-2 pr-2 font-normal">asset</th>
-							<th className="pb-2 pr-2 font-normal">venue</th>
-							<th className="pb-2 pr-2 text-right font-normal">size</th>
-							<th className="pb-2 pr-2 text-right font-normal">pnl</th>
-							<th className="pb-2 text-right font-normal">%</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-[var(--border-soft)]">
-						{live.map((p) => {
-							const rowTone = toneOfPnl(p.pnl24h);
-							return (
-								<tr className="text-[var(--text-primary)]" key={p.id}>
-									<td className="py-2 pr-2">
-										<span className="inline-flex items-center gap-1.5">
-											<TokenIcon address="" chain={chainOfVenue(p.venue)} size={14} symbol={primaryAssetOf(p.asset)} />
-											<span className="text-[var(--text-primary)]">{p.asset}</span>
-										</span>
-									</td>
-									<td className="py-2 pr-2 text-[var(--text-secondary)]">
-										<span className="inline-flex items-center gap-1.5">
-											<VenueIcon size={14} venue={p.venue} />
-											<span>{p.venue}</span>
-										</span>
-									</td>
-									<td className="py-2 pr-2 text-right tabular-nums">{fmtUsd(p.valueUsd)}</td>
-									<td
-										className={cn(
-											"py-2 pr-2 text-right tabular-nums",
-											rowTone === "positive"
-												? "text-[var(--positive)]"
-												: rowTone === "negative"
-													? "text-[var(--negative)]"
-													: "text-[var(--text-tertiary)]",
-										)}
-									>
-										{p.pnl24h === 0 ? "–" : fmtUsd(p.pnl24h, { withSign: true })}
-									</td>
-									<td
-										className={cn(
-											"py-2 text-right tabular-nums",
-											rowTone === "positive"
-												? "text-[var(--positive)]"
-												: rowTone === "negative"
-													? "text-[var(--negative)]"
-													: "text-[var(--text-tertiary)]",
-										)}
-									>
-										{p.pnl24hPct === 0 ? "–" : fmtPct(p.pnl24hPct)}
-									</td>
-								</tr>
-							);
-						})}
-						{SCHEDULED.map((s) => (
-							<tr className="text-[var(--text-tertiary)]" key={s.id}>
-								<td className="py-2 pr-2">
-									<span className="inline-flex items-center gap-1.5">
-										<TokenIcon address="" chain={chainOfVenue(s.venue)} size={14} symbol={primaryAssetOf(s.asset)} />
-										<span>{s.asset}</span>
-									</span>
-								</td>
-								<td className="py-2 pr-2">
-									<span className="inline-flex items-center gap-1.5">
-										<VenueIcon size={14} venue={s.venue} />
-										<span>{s.venue}</span>
-										<span className="rounded-full border border-[var(--border-soft)] px-1.5 py-0 text-[8px] uppercase tracking-[0.18em]">
-											scheduled
-										</span>
-									</span>
-								</td>
-								<td className="py-2 pr-2 text-right">–</td>
-								<td className="py-2 pr-2 text-right">–</td>
-								<td className="py-2 text-right">–</td>
+				{live.length === 0 ? (
+					<div className="flex flex-col gap-1 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+						<span>no live positions</span>
+						<span className="text-[var(--text-tertiary)]/70 normal-case tracking-normal text-[11px]">
+							hyperliquid, pancake v3, astherus scheduled
+						</span>
+					</div>
+				) : (
+					<table className="w-full border-collapse font-mono text-[11px]">
+						<thead>
+							<tr className="text-left text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+								<th className="pb-2 pr-2 font-normal">asset</th>
+								<th className="pb-2 pr-2 font-normal">venue</th>
+								<th className="pb-2 pr-2 text-right font-normal">size</th>
+								<th className="pb-2 pr-2 text-right font-normal">pnl</th>
+								<th className="pb-2 text-right font-normal">%</th>
 							</tr>
-						))}
-					</tbody>
-				</table>
+						</thead>
+						<tbody className="divide-y divide-[var(--border-soft)]">
+							{live.map((p) => {
+								const rowTone = toneOfPnl(p.pnl24h);
+								return (
+									<tr className="text-[var(--text-primary)]" key={p.id}>
+										<td className="py-2.5 pr-2">
+											<span className="inline-flex items-center gap-1.5">
+												<TokenIcon
+													address=""
+													chain={chainOfVenue(p.venue)}
+													size={14}
+													symbol={primaryAssetOf(p.asset)}
+												/>
+												<span className="text-[var(--text-primary)]">{p.asset}</span>
+											</span>
+										</td>
+										<td className="py-2.5 pr-2 text-[var(--text-secondary)]">
+											<span className="inline-flex items-center gap-1.5">
+												<VenueIcon size={14} venue={p.venue} />
+												<span>{p.venue}</span>
+											</span>
+										</td>
+										<td className="py-2.5 pr-2 text-right tabular-nums">{fmtUsd(p.valueUsd)}</td>
+										<td
+											className={cn(
+												"py-2.5 pr-2 text-right tabular-nums",
+												rowTone === "positive"
+													? "text-[var(--positive)]"
+													: rowTone === "negative"
+														? "text-[var(--negative)]"
+														: "text-[var(--text-tertiary)]",
+											)}
+										>
+											{p.pnl24h === 0 ? EMPTY_CELL : fmtUsd(p.pnl24h, { withSign: true })}
+										</td>
+										<td
+											className={cn(
+												"py-2.5 text-right tabular-nums",
+												rowTone === "positive"
+													? "text-[var(--positive)]"
+													: rowTone === "negative"
+														? "text-[var(--negative)]"
+														: "text-[var(--text-tertiary)]",
+											)}
+										>
+											{p.pnl24hPct === 0 ? EMPTY_CELL : fmtPct(p.pnl24hPct)}
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				)}
 			</div>
 
 			<footer className="mt-3 flex items-center justify-between border-t border-[var(--border-soft)] pt-3 font-mono text-[10px] uppercase tracking-[0.18em]">
 				<span className="text-[var(--text-tertiary)]">
-					{live.length === 0 ? "no positions yet · awaiting first venue deposit" : "total unrealized p&l"}
+					{live.length === 0 ? "awaiting first venue deposit" : "total unrealized p&l"}
 				</span>
 				{live.length > 0 ? (
 					<span

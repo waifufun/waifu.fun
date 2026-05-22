@@ -13,6 +13,7 @@ import { fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
+import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
 import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
@@ -59,11 +60,25 @@ function mapAgentTrade(raw: Record<string, unknown>): AgentTrade {
 					? Date.parse(raw.blockTime)
 					: Date.now();
 
+	// Backend trades surface `amountIn` (quote token, BNB) and `amountOut`
+	// (this agent's token) as raw wei strings. For the activity feed we
+	// want the agent's token amount in human units, so prefer
+	// `amountOut`/`toAmount` (buy side) and fall back to the in side.
+	const rawAmount =
+		(raw.type === "sell" || raw.side === "sell"
+			? (raw.amount ?? raw.amountIn ?? raw.fromAmount)
+			: (raw.amount ?? raw.amountOut ?? raw.toAmount)) ??
+		raw.amount ??
+		raw.amountOut ??
+		raw.amountIn ??
+		0;
+	const normalized = normalizeTokenAmount(rawAmount);
+
 	return {
 		txId: String(raw.txId ?? raw.txHash ?? ""),
 		type: (raw.type === "sell" || raw.side === "sell" ? "sell" : "buy") as "buy" | "sell",
 		address: String(raw.address ?? raw.trader ?? raw.traderAddress ?? ""),
-		amount: String(raw.amount ?? raw.amountOut ?? raw.toAmount ?? raw.amountIn ?? raw.fromAmount ?? ""),
+		amount: normalized,
 		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
 	};
 }
