@@ -152,4 +152,4 @@ MIT. Per-package SPDX headers.
 
 - **Twitter:** [@waifudotfun](https://x.com/waifudotfun)
 - **Issues:** [GitHub Issues](https://github.com/waifufun/waifu.fun/issues)
-- **PR base branch:** `develop`
+- **PR base branch:** `main` (see [CONTRIBUTING.md](CONTRIBUTING.md); `develop` is retired)

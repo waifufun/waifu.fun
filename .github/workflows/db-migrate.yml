@@ -11,7 +11,7 @@ on:
           - staging
           - production
       image_tag:
-        description: Image tag to run migrations with (defaults to develop for staging, latest for production)
+        description: Image tag to run migrations with (defaults to latest)
         required: false
         default: ""
 
@@ -46,11 +46,7 @@ jobs:
             set -euo pipefail
             cd "$DEPLOY_PATH"
 
-            if [ "$TARGET_ENV" = "staging" ]; then
-              IMAGE_TAG="${INPUT_IMAGE_TAG:-develop}"
-            else
-              IMAGE_TAG="${INPUT_IMAGE_TAG:-latest}"
-            fi
+            IMAGE_TAG="${INPUT_IMAGE_TAG:-latest}"
 
             echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
