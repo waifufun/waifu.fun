@@ -9,6 +9,7 @@ export * from "./invite-codes.js";
 export * from "./jobs.js";
 export * from "./launches.js";
 export * from "./token-snapshots.js";
+export * from "./twitter-stats.js";
 export * from "./tokens.js";
 export * from "./trades.js";
 export * from "./staking-positions.js";
