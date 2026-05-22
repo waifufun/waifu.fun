@@ -8,6 +8,7 @@ import { enumerateEvmNativeBalance } from "./nav/enumerators/evm-native.js";
 import { enumerateHyperliquid } from "./nav/enumerators/hyperliquid.js";
 import { enumeratePcsV3Lp } from "./nav/enumerators/pancake-v3-lp.js";
 import { clearCoinGeckoPriceCacheForTest, fetchCoinGeckoTokenPrices } from "./nav/pricing/coingecko.js";
+import { clearDexScreenerPriceCacheForTest, fetchDexScreenerTokenPrice } from "./nav/pricing/dexscreener.js";
 import { fetchPcsV3TwapPriceUsd } from "./nav/pricing/pcs-v3-twap.js";
 
 const DB = {} as Database;
@@ -15,7 +16,10 @@ const AGENT = "0x15fc00000000000000000000000000000000abcd";
 const WALLET = "0x0000000000000000000000000000000000000001";
 const TOKEN = "0x0000000000000000000000000000000000000002";
 
-test.afterEach(clearCoinGeckoPriceCacheForTest);
+test.afterEach(() => {
+	clearCoinGeckoPriceCacheForTest();
+	clearDexScreenerPriceCacheForTest();
+});
 
 test("NAV aggregator computes priced and unpriced holdings without failing whole snapshot", async () => {
 	const snapshot = await buildNavSnapshot(AGENT, {
@@ -232,6 +236,100 @@ test("PCS V3 LP enumerator skips empty wallets and emits one holding per NFT", a
 	assert.equal(rich.holdings[0]?.venue, "pancakeswap-v3");
 	assert.equal(rich.holdings[0]?.tokenId, "101");
 	assert.equal(rich.holdings[0]?.priced, false);
+
+test("DEXScreener pricing selects deepest liquid pair", async () => {
+	const price = await fetchDexScreenerTokenPrice("bsc", TOKEN, {
+		fetch: (async () =>
+			new Response(
+				JSON.stringify({
+					pairs: [
+						{
+							chainId: "bsc",
+							priceUsd: "0.00015",
+							liquidity: { usd: 5000 },
+							baseToken: { address: TOKEN },
+						},
+						{
+							chainId: "bsc",
+							priceUsd: "0.00012",
+							liquidity: { usd: 50000 },
+							baseToken: { address: TOKEN },
+						},
+					],
+				}),
+			)) as any,
+		now: () => 1000,
+	});
+	assert.deepEqual(price, { priceUsd: 0.00012, priced: true, source: "dexscreener" });
+});
+
+test("DEXScreener pricing returns unpriced for empty pairs and 404", async () => {
+	const empty = await fetchDexScreenerTokenPrice("bsc", TOKEN, {
+		fetch: (async () => new Response(JSON.stringify({ pairs: [] }))) as any,
+		now: () => 1000,
+	});
+	assert.deepEqual(empty, { priceUsd: null, priced: false, source: "unpriced" });
+
+	clearDexScreenerPriceCacheForTest();
+	const missing = await fetchDexScreenerTokenPrice("bsc", TOKEN, {
+		fetch: (async () => new Response("not found", { status: 404 })) as any,
+		now: () => 1000,
+	});
+	assert.deepEqual(missing, { priceUsd: null, priced: false, source: "unpriced" });
+});
+
+test("DEXScreener pricing caches successful results", async () => {
+	let calls = 0;
+	const deps = {
+		fetch: (async () => {
+			calls++;
+			return new Response(
+				JSON.stringify({
+					pairs: [{ chainId: "bsc", priceUsd: "0.00012", liquidity: { usd: 50000 }, baseToken: { address: TOKEN } }],
+				}),
+			);
+		}) as any,
+		now: () => 1000,
+	};
+	const first = await fetchDexScreenerTokenPrice("bsc", TOKEN, deps);
+	const second = await fetchDexScreenerTokenPrice("bsc", TOKEN, deps);
+	assert.equal(calls, 1);
+	assert.equal(first.priceUsd, 0.00012);
+	assert.deepEqual(second, first);
+});
+
+test("NAV aggregator falls back CoinGecko-unpriced tokens to DEXScreener before PCS", async () => {
+	let pcsCalls = 0;
+	const snapshot = await buildNavSnapshot(AGENT, {
+		db: DB,
+		now: () => 1779435600000,
+		getAgentTokenAddress: async () => AGENT,
+		listWallets: async () => [{ id: "w1", address: WALLET, chain: "bsc", role: "agent-safe", label: "safe" }],
+		enumerateNative: async () => ({ holdings: [], stale: [] }),
+		enumerateErc20: async () => ({
+			holdings: [
+				{
+					contract: TOKEN,
+					symbol: "WAIFU",
+					decimals: 18,
+					balance: 100_000_000,
+					raw: parseUnits("100000000", 18).toString(),
+				},
+			],
+			stale: [],
+		}),
+		fetchNativePrices: async () => ({ binancecoin: { priceUsd: 600, priced: true, source: "native" } }),
+		fetchTokenPrices: async () => ({ [TOKEN]: { priceUsd: null, priced: false, source: "unpriced" } }),
+		fetchDexScreenerPrice: async () => ({ priceUsd: 0.00012, priced: true, source: "dexscreener" }),
+		fetchPcsPrice: async () => {
+			pcsCalls++;
+			return { priceUsd: null, priced: false, source: "unpriced" };
+		},
+	});
+	assert.equal(snapshot.holdings[0]?.priceUsd, 0.00012);
+	assert.equal(snapshot.holdings[0]?.valueUsd, 12_000);
+	assert.equal(snapshot.navUsd, 12_000);
+	assert.equal(pcsCalls, 0);
 });
 
 test("pricing services cache CoinGecko and derive PCS V3 TWAP fallback", async () => {
