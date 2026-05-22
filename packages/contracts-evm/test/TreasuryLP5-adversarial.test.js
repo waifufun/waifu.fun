@@ -64,7 +64,8 @@ async function deployFixture(overrides = {}) {
 	const router = await ethers.deployContract("MockFlapV2Router", [await wbnb.getAddress()]);
 	const pair = await ethers.deployContract("MockFlapV2Pair", [await token.getAddress(), await wbnb.getAddress()]);
 	const v3Factory = await ethers.deployContract("MockV3Factory");
-	const npm = overrides.npm || (await ethers.deployContract("MockNonfungiblePositionManager", [await wbnb.getAddress()]));
+	const npm =
+		overrides.npm || (await ethers.deployContract("MockNonfungiblePositionManager", [await wbnb.getAddress()]));
 
 	const block = await ethers.provider.getBlock("latest");
 	await pair.setReserves(ethers.parseEther("1000000000"), ethers.parseEther("200"), Number(block.timestamp));
@@ -138,10 +139,7 @@ describe("TreasuryLP5 :: adversarial", () => {
 		it("#2 setFlapV2Pair reverts on second call with pair_already_set", async () => {
 			const ctx = await deployFixture();
 			await seedAndInit(ctx);
-			await expectError(
-				ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()),
-				"pair_already_set",
-			);
+			await expectError(ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()), "pair_already_set");
 		});
 
 		it("#3 setFlapV2Pair(address(0)) reverts with zero_address", async () => {
@@ -234,10 +232,7 @@ describe("TreasuryLP5 :: adversarial", () => {
 			const ctx = await deployFixture();
 			await ctx.token.mint(await ctx.treasury.getAddress(), ethers.parseEther("100000000"));
 			await ctx.npm.setLieAboutWbnbSide(true);
-			await expectError(
-				ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()),
-				"bad_tier",
-			);
+			await expectError(ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()), "bad_tier");
 			assert.equal(await ctx.treasury.initialized(), false);
 		});
 
@@ -245,10 +240,7 @@ describe("TreasuryLP5 :: adversarial", () => {
 			const ctx = await deployFixture();
 			await ctx.token.mint(await ctx.treasury.getAddress(), ethers.parseEther("100000000"));
 			await ctx.npm.setLieAboutSpent(true);
-			await expectError(
-				ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()),
-				"bad_tier",
-			);
+			await expectError(ctx.treasury.connect(ctx.owner).setFlapV2Pair(await ctx.pair.getAddress()), "bad_tier");
 			assert.equal(await ctx.treasury.initialized(), false);
 		});
 
@@ -258,7 +250,8 @@ describe("TreasuryLP5 :: adversarial", () => {
 			// ignores the sqrtPrice arg. TreasuryLP5 must tolerate this.
 			const [owner, agentSafe, platform, patron] = await ethers.getSigners();
 
-			let wbnb, token;
+			let wbnb;
+			let token;
 			let attempts = 0;
 			while (true) {
 				wbnb = await ethers.deployContract("MockWBNB");
@@ -273,7 +266,7 @@ describe("TreasuryLP5 :: adversarial", () => {
 			const pair = await ethers.deployContract("MockFlapV2Pair", [await token.getAddress(), await wbnb.getAddress()]);
 			const v3Factory = await ethers.deployContract("MockV3Factory");
 
-			const preExistingPool = ethers.getAddress("0x" + "ab".repeat(20));
+			const preExistingPool = ethers.getAddress(`0x${"ab".repeat(20)}`);
 			const npm = await ethers.deployContract("PreInitializedPoolNPMMock", [
 				await wbnb.getAddress(),
 				preExistingPool,
@@ -330,7 +323,8 @@ describe("TreasuryLP5 :: adversarial", () => {
 			const [owner, _agentSafe, platform, patron] = await ethers.getSigners();
 			const maliciousSafe = await ethers.deployContract("MaliciousReentrantSafe");
 
-			let wbnb, token;
+			let wbnb;
+			let token;
 			let attempts = 0;
 			while (true) {
 				wbnb = await ethers.deployContract("MockWBNB");
