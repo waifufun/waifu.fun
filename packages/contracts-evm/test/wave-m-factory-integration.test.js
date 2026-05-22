@@ -436,7 +436,6 @@ describe("Wave M3 :: LaunchFactory + TaxSplitter + AgentSafe integration", () =>
 					placeholder,
 					placeholder,
 					placeholder,
-					placeholder,
 				),
 			).to.be.revertedWithCustomError(Factory, "ZeroAddress");
 		});
