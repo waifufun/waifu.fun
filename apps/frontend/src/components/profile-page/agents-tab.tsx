@@ -143,7 +143,7 @@ function AgentRow({ agent }: { agent: UserAgent }) {
 						<a
 							href={containerUrl}
 							target="_blank"
-							rel="noreferrer"
+							rel="noopener noreferrer"
 							className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-white/8 text-[#a1a1aa] hover:text-[#00ff87] hover:border-[#00ff87]/30 transition-colors"
 						>
 							<ExternalLink className="size-3" />

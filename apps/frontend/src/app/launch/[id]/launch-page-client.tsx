@@ -34,7 +34,7 @@ export default function LaunchPageClient({ id }: Props) {
 	// `generateStaticParams`). The CF Pages function serves that shell for
 	// every `/launch/<real-id>` request, so the page mounts with `id="_"`
 	// and must re-derive the real id from the browser URL. The original
-	// implementation only ran this inside the `useState` initializer —
+	// implementation only ran this inside the `useState` initializer,
 	// which on the server-rendered hydration pass sees `typeof window`
 	// as undefined and locks in `"_"`, causing the "missing launch id"
 	// flash on hard refreshes. Move the URL fallback into an effect so

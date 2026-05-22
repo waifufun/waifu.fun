@@ -252,7 +252,7 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 				</div>
 			</dl>
 
-			{/* CTA — same wallet-gated pattern as deposit-widget: not-connected
+			{/* CTA. Same wallet-gated pattern as deposit-widget: not-connected
 			    flows through the Steward sign-in + linked EOA modal. Once
 			    connected, the in-app swap form above is still a preview, so
 			    the CTA falls back to opening the live PancakeSwap pair. */}
