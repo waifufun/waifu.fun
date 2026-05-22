@@ -16,7 +16,7 @@ export default function CurveProgress({ agent }: { agent: AgentData }) {
 						<a
 							href={agent.pancakeSwapUrl}
 							target="_blank"
-							rel="noreferrer"
+							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 h-9 px-4 rounded-sm border border-[#00ff87]/40 text-[#00ff87] hover:bg-[#00ff87]/5 text-[11px] font-mono uppercase tracking-[0.18em] transition-colors"
 						>
 							trade on pancakeswap

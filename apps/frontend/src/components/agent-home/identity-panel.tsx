@@ -53,7 +53,7 @@ export default function IdentityPanel({ agent }: IdentityPanelProps) {
 						<a
 							href={`https://x.com/${agent.twitterHandle}`}
 							target="_blank"
-							rel="noreferrer"
+							rel="noopener noreferrer"
 							className="ml-auto inline-flex h-6 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-white/55 transition-colors duration-200 hover:text-white/85"
 						>
 							@{agent.twitterHandle}

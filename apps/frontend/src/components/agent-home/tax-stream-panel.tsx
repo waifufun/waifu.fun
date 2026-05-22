@@ -105,7 +105,7 @@ export default function TaxStreamPanel({ launch }: TaxStreamPanelProps) {
 					<a
 						href={`https://bscscan.com/address/${taxSplitter}`}
 						target="_blank"
-						rel="noreferrer"
+						rel="noopener noreferrer"
 						className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
 						aria-label="open tax splitter on bscscan"
 					>

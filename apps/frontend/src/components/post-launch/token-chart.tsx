@@ -55,7 +55,7 @@ export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
 				<a
 					href={link}
 					target="_blank"
-					rel="noreferrer"
+					rel="noopener noreferrer"
 					className="text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
 					aria-label="open chart on dexscreener"
 				>

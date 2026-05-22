@@ -99,7 +99,7 @@ function EventRow({ event }: { event: DepositorEvent }) {
 				<a
 					href={explorerHref}
 					target="_blank"
-					rel="noreferrer"
+					rel="noopener noreferrer"
 					className="flex items-center justify-between px-6 py-3 transition-colors hover:bg-white/[0.02]"
 				>
 					{RowInner}

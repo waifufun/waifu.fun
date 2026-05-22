@@ -24,12 +24,22 @@ export type LeaderboardEntry = {
 };
 
 type RawAgent = {
+	// Identity: the public /v2/agents response uses `agentId` (string slug) +
+	// `tokenAddress` (BSC address). Older internal helpers used `id`/`address`.
+	// Accept all four so client-side renorm doesn't depend on which surface
+	// shipped first.
 	id?: string;
+	agentId?: string;
 	address?: string;
+	tokenAddress?: string;
 	name?: string;
 	ticker?: string;
 	symbol?: string;
+	// Avatar: /v2/agents exposes the already-resolved gateway URL as
+	// `avatarUrl`. Older shapes used `avatar` / `image` (sometimes a bare
+	// CID). `resolveImageUrl` at the render site handles either.
 	avatar?: string | null;
+	avatarUrl?: string | null;
 	image?: string | null;
 	treasuryUsd?: number;
 	treasury_usd?: number;
@@ -85,11 +95,15 @@ export function normalizeEntry(raw: RawAgent): LeaderboardEntry {
 	const treasuryUsd = Number(raw.treasuryUsd ?? raw.treasury_usd ?? 0) || 0;
 	const dailyBurnUsd = Number(raw.dailyBurnUsd ?? raw.daily_burn_usd ?? 0) || 0;
 	const runwayDays = computeRunway(treasuryUsd, dailyBurnUsd, raw.runwayDays ?? raw.runway_days);
+	// Prefer the token address for the row link since `/agent/[address]` is
+	// the canonical agent-detail route. Fall back through legacy fields so
+	// the leaderboard still renders against older API shapes.
+	const id = String(raw.tokenAddress ?? raw.address ?? raw.agentId ?? raw.id ?? "");
 	return {
-		id: String(raw.id ?? raw.address ?? ""),
+		id,
 		name: raw.name ?? "Unnamed",
 		ticker: raw.ticker ?? raw.symbol ?? "",
-		avatar: raw.avatar ?? raw.image ?? null,
+		avatar: raw.avatarUrl ?? raw.avatar ?? raw.image ?? null,
 		treasuryUsd,
 		dailyBurnUsd,
 		runwayDays,

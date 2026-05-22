@@ -203,7 +203,7 @@ function TreasuryAddress({ address }: { address: string }) {
 				<a
 					href={`https://bscscan.com/address/${address}`}
 					target="_blank"
-					rel="noreferrer"
+					rel="noopener noreferrer"
 					aria-label="open on bscscan"
 					className="inline-flex items-center justify-center w-7 h-7 rounded-sm border border-white/10 text-white/30 hover:border-white/25 hover:text-white/70 transition-colors"
 				>

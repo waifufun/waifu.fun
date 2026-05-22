@@ -166,7 +166,7 @@ function TimelineEmbed({ handle }: { handle: string }) {
 				<a
 					href={`https://x.com/${clean}`}
 					target="_blank"
-					rel="noreferrer"
+					rel="noopener noreferrer"
 					className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-[#00ff87] inline-flex items-center gap-1"
 				>
 					view on x
