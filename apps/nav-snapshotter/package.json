@@ -1,0 +1,29 @@
+{
+	"name": "@waifufun/nav-snapshotter",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"prestart": "bun run --filter @waifufun/db build",
+		"prebuild": "bun run --filter @waifufun/db build",
+		"pretypecheck": "bun run --filter @waifufun/db build",
+		"start": "bun src/index.ts",
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test": "tsx --test --test-reporter=spec --test-concurrency=1 $(find src -name '*.test.ts')",
+		"lint": "biome check src package.json tsconfig.json",
+		"check": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@waifufun/db": "workspace:*",
+		"@waifufun/logger": "workspace:*",
+		"drizzle-orm": "^0.36.4",
+		"viem": "^2.23.5"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.5",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2"
+	}
+}

@@ -202,6 +202,21 @@
         "typescript": "^5.7.3",
       },
     },
+    "apps/nav-snapshotter": {
+      "name": "@waifufun/nav-snapshotter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@waifufun/db": "workspace:*",
+        "@waifufun/logger": "workspace:*",
+        "drizzle-orm": "^0.36.4",
+        "viem": "^2.23.5",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.5",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2",
+      },
+    },
     "apps/notifications": {
       "name": "@waifufun/notifications",
       "version": "0.1.0",
@@ -2571,6 +2586,8 @@
     "@waifufun/metrics": ["@waifufun/metrics@workspace:packages/metrics"],
 
     "@waifufun/migrations": ["@waifufun/migrations@workspace:packages/migrations"],
+
+    "@waifufun/nav-snapshotter": ["@waifufun/nav-snapshotter@workspace:apps/nav-snapshotter"],
 
     "@waifufun/notifications": ["@waifufun/notifications@workspace:apps/notifications"],
 
