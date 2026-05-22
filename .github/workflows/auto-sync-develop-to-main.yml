@@ -19,6 +19,8 @@ jobs:
   sync:
     name: Open/update develop → main sync PR
     runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, 'chore(sync): main → develop') }}
     steps:
       - name: Open/update sync PR and enable auto-merge
         env:
@@ -35,7 +37,6 @@ jobs:
             This keeps production deploys flowing after CI is green. If this PR conflicts,
             resolve it manually, merge it, and let the normal `main` deploy workflows run.
 
-            [skip back-sync]
         shell: bash
         run: |
           set -euo pipefail
