@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import type * as React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { bsc } from "wagmi/chains";
@@ -30,11 +30,26 @@ type Props = {
 };
 
 export default function LaunchPageClient({ id }: Props) {
-	const [runtimeId] = useState(() => {
+	// Static export builds a single `/launch/_` shell (see `page.tsx`'s
+	// `generateStaticParams`). The CF Pages function serves that shell for
+	// every `/launch/<real-id>` request, so the page mounts with `id="_"`
+	// and must re-derive the real id from the browser URL. The original
+	// implementation only ran this inside the `useState` initializer —
+	// which on the server-rendered hydration pass sees `typeof window`
+	// as undefined and locks in `"_"`, causing the "missing launch id"
+	// flash on hard refreshes. Move the URL fallback into an effect so
+	// it runs once on the client after hydration.
+	const [runtimeId, setRuntimeId] = useState(() => {
 		if (id && id !== "_" && id !== "placeholder") return id;
 		if (typeof window === "undefined") return id;
 		return decodeURIComponent(window.location.pathname.split("/").filter(Boolean).at(1) ?? "");
 	});
+	useEffect(() => {
+		if (runtimeId && runtimeId !== "_" && runtimeId !== "placeholder") return;
+		if (typeof window === "undefined") return;
+		const fromPath = decodeURIComponent(window.location.pathname.split("/").filter(Boolean).at(1) ?? "");
+		if (fromPath && fromPath !== runtimeId) setRuntimeId(fromPath);
+	}, [runtimeId]);
 	const meta = useLaunchMeta(runtimeId);
 	const queryClient = useQueryClient();
 
@@ -95,8 +110,13 @@ export default function LaunchPageClient({ id }: Props) {
 		void claimableQuery.refetch();
 	}, [claimableQuery, refresh, userPosition]);
 
+	// `runtimeId` may briefly be the `_`/`placeholder` shell value on the
+	// first render after a hard refresh; the post-mount effect above
+	// rehydrates it from `window.location`. Treat that window as loading
+	// rather than not-found so users don't see a false "missing launch id"
+	// flash.
 	if (!runtimeId || runtimeId === "_" || runtimeId === "placeholder") {
-		return <NotFound id={runtimeId} reason="missing launch id" />;
+		return <LoadingState />;
 	}
 
 	if (meta.isLoading && !meta.data) {
