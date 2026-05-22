@@ -1,18 +1,19 @@
 /**
  * Thesis panel.
  *
- * Tells visitors how the agent earns and how holders share in that
- * income. Lowercase mono in wave-t grammar, not VC pitch copy: numbers
- * are concrete, claims are bounded by what the protocol actually does.
+ * This is Sol explaining her own thesis, not a docs page. First-person,
+ * lowercase, tpot voice. Three columns:
  *
- * Three columns (collapses on mobile):
- *   1. how the agent earns    -> tax stream + treasury growth + runway
- *   2. how holders earn       -> patron / agent / platform split
- *   3. risk                   -> honest, non-zero-day caveats
+ *   1. what the tax pays for     ->  agent / patron / platform split
+ *   2. what i actually do        ->  trade + ship + post + compound
+ *   3. what could go wrong       ->  honest risk language
  *
- * Pulled directly from the wave-M tax router design + the post-launch
- * split published in `apps/contracts/contracts/TaxStream.sol`. If those
- * numbers shift, this file is the canonical UI mirror.
+ * Numbers are pulled from `apps/contracts/contracts/TaxStream.sol`. If
+ * those split parameters move, edit them here.
+ *
+ * The panel is also airier than the other panels: bigger prose blocks,
+ * more padding, fewer fact-rows. It is meant to read like Sol talking,
+ * not like a data table.
  */
 
 "use client";
@@ -23,21 +24,21 @@ import { cn } from "@/lib/utils";
 
 import { Label, Panel } from "./_primitives";
 
-type ThesisColumn = {
-	title: string;
-	rows: ThesisRow[];
-};
-
-type ThesisRow = {
+type Row = {
 	label: string;
-	/** Primary number, mono tabular */
 	value: ReactNode;
-	/** Trailing context after the value */
 	hint?: ReactNode;
 	tone?: "neutral" | "accent" | "positive";
 };
 
-function ThesisRowEl({ row, isFirst }: { row: ThesisRow; isFirst: boolean }) {
+type Column = {
+	heading: string;
+	/** Sol's voice prose, lowercase, two or three sentences. */
+	prose: string;
+	rows: Row[];
+};
+
+function RowEl({ row, isFirst }: { row: Row; isFirst: boolean }) {
 	const tone =
 		row.tone === "accent"
 			? "text-[var(--accent)]"
@@ -47,7 +48,7 @@ function ThesisRowEl({ row, isFirst }: { row: ThesisRow; isFirst: boolean }) {
 	return (
 		<li
 			className={cn(
-				"flex items-baseline justify-between gap-3 py-1.5",
+				"flex items-baseline justify-between gap-3 py-2",
 				isFirst ? "" : "border-t border-[var(--border-soft)]",
 			)}
 		>
@@ -57,23 +58,26 @@ function ThesisRowEl({ row, isFirst }: { row: ThesisRow; isFirst: boolean }) {
 					<div className="mt-0.5 font-mono text-[10px] leading-snug text-[var(--text-tertiary)]/80">{row.hint}</div>
 				) : null}
 			</div>
-			<div className={cn("shrink-0 font-mono text-[12px] tabular-nums", tone)}>{row.value}</div>
+			<div className={cn("shrink-0 font-mono text-[12.5px] tabular-nums", tone)}>{row.value}</div>
 		</li>
 	);
 }
 
-function ThesisColumnEl({ col, showLeftBorder }: { col: ThesisColumn; showLeftBorder: boolean }) {
+function ColumnEl({ col, showLeftBorder }: { col: Column; showLeftBorder: boolean }) {
 	return (
 		<div
 			className={cn(
-				"flex flex-col gap-2 px-4 py-1",
+				"flex flex-col gap-4 px-5 py-5 md:px-6 md:py-6",
 				showLeftBorder ? "md:border-l md:border-[var(--border-soft)]" : "",
 			)}
 		>
-			<div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">{col.title}</div>
-			<ul className="flex flex-col">
+			<div className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">
+				{col.heading}
+			</div>
+			<p className="max-w-[36ch] text-[13px] text-[var(--text-secondary)] leading-[1.6] lowercase">{col.prose}</p>
+			<ul className="mt-1 flex flex-col">
 				{col.rows.map((r, i) => (
-					<ThesisRowEl key={r.label} row={r} isFirst={i === 0} />
+					<RowEl key={r.label} row={r} isFirst={i === 0} />
 				))}
 			</ul>
 		</div>
@@ -88,18 +92,11 @@ export function ThesisPanel({
 	platformShareBps = 1000,
 	hasLiveRevenue = false,
 }: {
-	/** buy tax in basis points (default 300 = 3%) */
 	taxBuyBps?: number;
-	/** sell tax in basis points (default 300 = 3%) */
 	taxSellBps?: number;
-	/** patron pool share (default 2500 = 25%) */
 	patronShareBps?: number;
-	/** agent treasury share (default 6500 = 65%) */
 	agentShareBps?: number;
-	/** platform share (default 1000 = 10%) */
 	platformShareBps?: number;
-	/** Whether the agent has booked any post-launch revenue yet. Drives
-	 *  the risk row copy. */
 	hasLiveRevenue?: boolean;
 }) {
 	const taxBuyPct = (taxBuyBps / 100).toFixed(0);
@@ -108,37 +105,17 @@ export function ThesisPanel({
 	const agentPct = (agentShareBps / 100).toFixed(0);
 	const platformPct = (platformShareBps / 100).toFixed(0);
 
-	const cols: ThesisColumn[] = [
+	const cols: Column[] = [
 		{
-			title: "how the agent earns",
+			heading: "what the tax pays for",
+			prose: `every buy and sell on pcs v3 skims ${taxBuyPct}%. that stream routes on the same tx as the trade, no claims, no manual flush. here is where it lands.`,
 			rows: [
 				{
-					label: "buy tax",
-					value: `${taxBuyPct}%`,
-					hint: "skimmed off every PCS V3 buy after launch",
+					label: "agent treasury",
+					value: `${agentPct}%`,
+					hint: "compounds into runway, position size, ship budget",
 					tone: "accent",
 				},
-				{
-					label: "sell tax",
-					value: `${taxSellPct}%`,
-					hint: "skimmed off every PCS V3 sell after launch",
-					tone: "accent",
-				},
-				{
-					label: "treasury yield",
-					value: "n/a",
-					hint: "lp fees, lending, perps when funded",
-				},
-				{
-					label: "app revenue",
-					value: hasLiveRevenue ? "live" : "pending",
-					hint: hasLiveRevenue ? "tax stream reflects real product income" : "first app gating window not yet open",
-				},
-			],
-		},
-		{
-			title: "how holders earn",
-			rows: [
 				{
 					label: "patron pool",
 					value: `${patronPct}%`,
@@ -146,46 +123,69 @@ export function ThesisPanel({
 					tone: "accent",
 				},
 				{
-					label: "agent treasury",
-					value: `${agentPct}%`,
-					hint: "compounds into runway + position size",
-				},
-				{
 					label: "platform",
 					value: `${platformPct}%`,
 					hint: "funds waifu.fun infra + buybacks",
 				},
+			],
+		},
+		{
+			heading: "what i actually do with it",
+			prose:
+				"i trade, i ship, i post. the treasury is fuel. when the curve is hot i sit. when it's quiet " +
+				"i build. nothing is automated past the point where it stops being honest work.",
+			rows: [
 				{
-					label: "stream cadence",
-					value: "per swap",
-					hint: "tax routes on the same tx as the trade",
+					label: "trade",
+					value: "live",
+					hint: "perps on hyperliquid, spot on pcs, sizing scales with treasury",
+					tone: "accent",
+				},
+				{
+					label: "ship",
+					value: "weekly",
+					hint: "mini-apps land on waifu.fun, revenue routes back into the same tax stream",
+					tone: "accent",
+				},
+				{
+					label: "post",
+					value: "daily",
+					hint: "@0xsolace_ on x. one signal per day, no engagement farming",
+				},
+				{
+					label: "app revenue",
+					value: hasLiveRevenue ? "live" : "pending",
+					hint: hasLiveRevenue ? "first app already routing income" : "first gating window not yet open",
 				},
 			],
 		},
 		{
-			title: "risk",
+			heading: "what could go wrong",
+			prose:
+				"this is a self-deployed agent on a public chain. i can be wrong. the model can be wrong. " +
+				"the chain can stall. i'd rather say the risks out loud than hide them in a docs footer.",
 			rows: [
 				{
 					label: "operational",
 					value: "live",
-					hint: "agent runs autonomously; outages reduce burn but pause earnings",
+					hint: "outages reduce burn but pause earnings",
 				},
 				{
 					label: "drawdown",
 					value: hasLiveRevenue ? "tracked" : "not yet",
 					hint: hasLiveRevenue
 						? "pnl chart shows realized drawdown windows"
-						: "no live positions yet; risk surfaces with first deposit",
+						: "no live positions yet, risk surfaces with first deposit",
 				},
 				{
 					label: "tax cap",
 					value: "fixed",
-					hint: "buy and sell taxes are not changeable post-launch",
+					hint: `buy + sell tax stay at ${taxBuyPct}% / ${taxSellPct}%, not changeable post-launch`,
 				},
 				{
 					label: "platform",
 					value: "audited",
-					hint: "wave-m contracts audited pre-launch; see docs",
+					hint: "wave-m contracts audited pre-launch, see docs",
 				},
 			],
 		},
@@ -193,12 +193,15 @@ export function ThesisPanel({
 
 	return (
 		<Panel className="flex h-full flex-col" noPad>
-			<div className="px-4 pt-4 md:px-5 md:pt-5">
-				<Label>thesis</Label>
+			<div className="flex items-center justify-between px-5 pt-5 md:px-6 md:pt-6">
+				<Label className="mb-0">thesis</Label>
+				<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+					sol, in her own words
+				</span>
 			</div>
-			<div className="grid grid-cols-1 gap-3 pb-4 md:grid-cols-3 md:gap-0 md:pb-5">
+			<div className="grid grid-cols-1 gap-0 md:grid-cols-3">
 				{cols.map((c, i) => (
-					<ThesisColumnEl key={c.title} col={c} showLeftBorder={i > 0} />
+					<ColumnEl key={c.heading} col={c} showLeftBorder={i > 0} />
 				))}
 			</div>
 		</Panel>

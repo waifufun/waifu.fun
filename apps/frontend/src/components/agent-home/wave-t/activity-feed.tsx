@@ -1,15 +1,15 @@
 /**
- * Worker C - Activity Feed (v2).
+ * Activity Feed - unified, typed stream of everything the agent does.
  *
- * Unified, typed stream of everything Sol does: trades, app ships,
- * treasury moves, market activity (predictions / positions), system
- * events. Tabs at the top filter by category. Each row carries its
- * own brand icon + tint so a skimmer can scan the feed visually.
+ * Tweets render as tweets (avatar + body text + meta). Trades render as
+ * tight scannable rows. Ships (merged PRs) render with a number badge.
+ * Different visual rhythm per kind so the feed stops reading like a
+ * wall of identical bullets.
  *
- * Accepts foundation `ActivityItem`s directly and additionally takes
- * a richer extended row type so the dashboard can stream events that
- * the bare foundation union does not model yet (deposits, position
- * opens, bet settlements, app ships).
+ * Accepts foundation `ActivityItem`s directly and additionally takes a
+ * richer extended row type so the dashboard can stream events that the
+ * bare foundation union does not model yet (deposits, position opens,
+ * bet settlements, app ships).
  */
 
 "use client";
@@ -19,6 +19,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { BnbChainIcon, GithubIcon, StewardIcon, WaifuIcon, XIcon } from "@/components/brand-icons";
 import { cn } from "@/lib/utils";
 
+import { resolveImageUrl } from "@/lib/image-url";
 import type { ActivityItem } from "@/lib/wave-t/activity";
 import { EMPTY_ACTIVITY_COPY } from "@/lib/wave-t/activity-trades";
 import { formatCompactNum, formatCompactUsd } from "@/lib/wave-t/format";
@@ -59,8 +60,8 @@ export type ActivityRowInput =
 			type: "position";
 			timestamp: string;
 			action: "open" | "close" | "adjust";
-			market: string; // "BTC-USD"
-			venue: string; // "Hyperliquid"
+			market: string;
+			venue: string;
 			leverage?: number;
 			direction: "long" | "short";
 			pnlUsd: number;
@@ -93,7 +94,7 @@ export type ActivityRowInput =
 			action: "deposit" | "withdraw" | "convert";
 			from: string;
 			to: string;
-			amount: string; // free-form "50,000 USDC"
+			amount: string;
 			deltaUsd: number;
 			url?: string;
 	  };
@@ -134,28 +135,8 @@ function categoryOf(row: ActivityRowInput): ActivityCategory {
 	}
 }
 
-// ── Visual presentation per row ──────────────────────────────────
+// ── Per-row visual variants ──────────────────────────────────────
 
-type Visual = {
-	icon: ReactNode;
-	tint: string;
-	bg: string;
-	title: string;
-	sub: string;
-	right: ReactNode;
-	url?: string | undefined;
-};
-
-function pickVenueIcon(venue: string): ReactNode {
-	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
-	return <BnbChainIcon className="h-3.5 w-3.5" />;
-}
-
-// Single neutral chip styling for every row icon. The previous version
-// painted each row's icon container in a category-specific tint (sky for
-// X posts, amber for BSC tx, fuchsia for bets, etc) which broke the
-// single-accent brand rule. Sophistication pass: every row icon sits in
-// the same hairline neutral chip; the glyph itself carries the meaning.
 const NEUTRAL_ICON_CHIP = "border border-[var(--border-soft)] bg-white/[0.02] text-[var(--text-secondary)]";
 
 function deltaTone(delta: number): { cls: string; sign: string } {
@@ -164,36 +145,135 @@ function deltaTone(delta: number): { cls: string; sign: string } {
 	return { cls: "text-[var(--text-tertiary)]", sign: "" };
 }
 
-function visualFor(row: ActivityRowInput): Visual {
+function pickVenueIcon(venue: string): ReactNode {
+	if (venueIdOf(venue)) return <VenueIcon size={14} venue={venue} />;
+	return <BnbChainIcon className="h-3.5 w-3.5" />;
+}
+
+// ── Tweet row (distinct visual) ──────────────────────────────────
+
+function TweetRow({
+	row,
+	avatarUrl,
+	handle,
+}: {
+	row: Extract<ActivityRowInput, { type: "tweet" }>;
+	avatarUrl: string;
+	handle: string | null;
+}) {
+	const body = (
+		<>
+			<div className="relative shrink-0">
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img
+					alt={handle ? `${handle} avatar` : "tweet avatar"}
+					className="h-9 w-9 rounded-full object-cover"
+					height={36}
+					src={avatarUrl}
+					style={{ boxShadow: "inset 0 0 0 1px var(--border-mid)" }}
+					width={36}
+				/>
+				{/* X glyph badge in the corner so it's unambiguous this is a
+				    tweet, not just an avatar floating in the feed. */}
+				<span className="absolute -bottom-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--border-mid)] bg-[var(--bg-panel)]">
+					<XIcon className="h-2.5 w-2.5" />
+				</span>
+			</div>
+			<div className="min-w-0 flex-1">
+				<div className="flex items-baseline gap-1.5">
+					{handle ? (
+						<span className="font-mono text-[11px] text-[var(--text-primary)] tracking-tight">
+							{handle.toLowerCase()}
+						</span>
+					) : (
+						<span className="font-mono text-[11px] text-[var(--text-primary)]">posted on x</span>
+					)}
+					<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
+						· {relativeTime(row.timestamp)}
+					</span>
+				</div>
+				<p className="mt-1 line-clamp-3 text-[12.5px] text-[var(--text-secondary)] leading-[1.55] lowercase">
+					{row.text}
+				</p>
+				<div className="mt-1.5 flex items-center gap-3 font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
+					<span>{formatCompactNum(row.impressions)} views</span>
+					{row.likes > 0 ? <span>{formatCompactNum(row.likes)} likes</span> : null}
+				</div>
+			</div>
+		</>
+	);
+
+	return (
+		<a
+			href={row.url}
+			rel="noopener noreferrer"
+			target="_blank"
+			className="-mx-2 flex items-start gap-3 rounded px-2 py-2.5 transition-colors hover:bg-white/[0.025]"
+		>
+			{body}
+		</a>
+	);
+}
+
+// ── PR (ship) row ────────────────────────────────────────────────
+
+function ShipRow({ row }: { row: Extract<ActivityRowInput, { type: "pr" }> }) {
+	const body = (
+		<>
+			<span
+				className={cn("mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md", NEUTRAL_ICON_CHIP)}
+			>
+				<GithubIcon className="h-3.5 w-3.5" />
+			</span>
+			<div className="min-w-0 flex-1">
+				<div className="flex items-center gap-2">
+					<span className="text-[12.5px] text-[var(--text-primary)]">shipped</span>
+					<span className="rounded-sm border border-[var(--border-soft)] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+						pr #{row.number}
+					</span>
+				</div>
+				<div className="mt-0.5 truncate text-[11.5px] text-[var(--text-secondary)] lowercase">{row.title}</div>
+			</div>
+			<div className="flex shrink-0 flex-col items-end gap-0.5">
+				<span className="font-mono text-[10px] text-[var(--text-tertiary)] tabular-nums">
+					{relativeTime(row.timestamp)}
+				</span>
+				<span className="font-mono text-[11px] text-[var(--positive)]">merged</span>
+			</div>
+		</>
+	);
+
+	return (
+		<a
+			href={row.url}
+			rel="noopener noreferrer"
+			target="_blank"
+			className="-mx-2 flex items-start gap-3 rounded px-2 py-2.5 transition-colors hover:bg-white/[0.025]"
+		>
+			{body}
+		</a>
+	);
+}
+
+// ── Generic compact row (trades, positions, treasury, etc) ──────
+
+type Visual = {
+	icon: ReactNode;
+	title: string;
+	sub: string;
+	right: ReactNode;
+	url?: string | undefined;
+};
+
+function visualForCompact(row: ActivityRowInput): Visual | null {
 	switch (row.type) {
 		case "pr":
-			return {
-				icon: <GithubIcon className="h-3.5 w-3.5" />,
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: `Merged PR #${row.number}`,
-				sub: row.title,
-				right: <span className="text-[var(--positive)]">merged</span>,
-				url: row.url,
-			};
 		case "tweet":
-			return {
-				icon: <XIcon className="h-3.5 w-3.5" />,
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: "Posted on X",
-				sub: row.text.length > 64 ? `${row.text.slice(0, 64)}…` : row.text,
-				right: (
-					<span className="text-[var(--text-secondary)] tabular-nums">{formatCompactNum(row.impressions)} views</span>
-				),
-				url: row.url,
-			};
+			return null; // handled by dedicated row components
 		case "tx":
 			return {
 				icon: <BnbChainIcon className="h-3.5 w-3.5" />,
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: "Executed BSC tx",
+				title: "executed bsc tx",
 				sub: row.method,
 				right: <span className="text-[var(--text-primary)] tabular-nums">{row.valueBnb.toFixed(4)} BNB</span>,
 				url: row.url,
@@ -202,9 +282,7 @@ function visualFor(row: ActivityRowInput): Visual {
 			const tone = deltaTone(row.usd);
 			return {
 				icon: <WaifuIcon className="h-3.5 w-3.5" />,
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: "Revenue collected",
+				title: "revenue collected",
 				sub: `${row.source} stream`,
 				right: (
 					<span className={cn("tabular-nums", tone.cls)}>
@@ -218,10 +296,8 @@ function visualFor(row: ActivityRowInput): Visual {
 			const positive = row.side === "buy";
 			return {
 				icon: pickVenueIcon(row.venue),
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: `${positive ? "Bought" : "Sold"} ${row.asset}`,
-				sub: `${formatCompactNum(row.amount)} ${row.asset} at ${row.priceBnb.toFixed(6)} BNB via ${row.venue}`,
+				title: `${positive ? "bought" : "sold"} ${row.asset.toLowerCase()}`,
+				sub: `${formatCompactNum(row.amount)} ${row.asset} at ${row.priceBnb.toFixed(6)} bnb via ${row.venue.toLowerCase()}`,
 				right: (
 					<span className="inline-flex items-center gap-1.5 tabular-nums">
 						<TokenIcon address="" chain={chainFromVenue(row.venue)} size={12} symbol={row.asset} />
@@ -236,18 +312,16 @@ function visualFor(row: ActivityRowInput): Visual {
 		}
 		case "position": {
 			const tone = deltaTone(row.pnlUsd);
-			const verb = row.action === "open" ? "Opened" : row.action === "close" ? "Closed" : "Adjusted";
+			const verb = row.action === "open" ? "opened" : row.action === "close" ? "closed" : "adjusted";
 			const dir = row.direction === "long" ? "long" : "short";
 			return {
 				icon: pickVenueIcon(row.venue),
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
 				title: `${verb} ${dir} position`,
-				sub: `${row.market}${row.leverage ? ` ${row.leverage}x` : ""} on ${row.venue}`,
+				sub: `${row.market}${row.leverage ? ` ${row.leverage}x` : ""} on ${row.venue.toLowerCase()}`,
 				right: (
 					<span className={cn("tabular-nums", tone.cls)}>
 						{tone.sign}
-						{formatCompactUsd(row.pnlUsd)} <span className="text-[var(--text-tertiary)]">P&L</span>
+						{formatCompactUsd(row.pnlUsd)} <span className="text-[var(--text-tertiary)]">p&l</span>
 					</span>
 				),
 				url: row.url,
@@ -263,9 +337,7 @@ function visualFor(row: ActivityRowInput): Visual {
 						: "border-[var(--border-mid)] bg-white/[0.02] text-[var(--text-secondary)]";
 			return {
 				icon: <VenueIcon size={14} venue={row.market} />,
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: row.result === "open" ? "Placed prediction" : "Prediction settled",
+				title: row.result === "open" ? "placed prediction" : "prediction settled",
 				sub: row.question.length > 60 ? `${row.question.slice(0, 60)}…` : row.question,
 				right: (
 					<span className="flex items-center gap-2">
@@ -290,7 +362,7 @@ function visualFor(row: ActivityRowInput): Visual {
 		}
 		case "app": {
 			const verb =
-				row.action === "shipped" ? "Shipped new app" : row.action === "updated" ? "Updated app" : "Deprecated app";
+				row.action === "shipped" ? "shipped new app" : row.action === "updated" ? "updated app" : "deprecated app";
 			const isWaifu = row.appName.toLowerCase().includes("waifu");
 			const isSteward = row.appName.toLowerCase().includes("steward");
 			const icon = isWaifu ? (
@@ -303,10 +375,8 @@ function visualFor(row: ActivityRowInput): Visual {
 			const tone = deltaTone(row.revenueUsd ?? 0);
 			return {
 				icon,
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
 				title: verb,
-				sub: row.version ? `${row.appName} ${row.version} is now live` : row.appName,
+				sub: row.version ? `${row.appName.toLowerCase()} ${row.version} is now live` : row.appName.toLowerCase(),
 				right:
 					row.revenueUsd && row.revenueUsd !== 0 ? (
 						<span className={cn("tabular-nums", tone.cls)}>
@@ -322,12 +392,10 @@ function visualFor(row: ActivityRowInput): Visual {
 		case "treasury": {
 			const tone = deltaTone(row.deltaUsd);
 			const verb =
-				row.action === "deposit" ? "Deposited to" : row.action === "withdraw" ? "Withdrew from" : "Converted on";
+				row.action === "deposit" ? "deposited to" : row.action === "withdraw" ? "withdrew from" : "converted on";
 			return {
 				icon: pickVenueIcon(row.to || row.from),
-				tint: "text-[var(--text-secondary)]",
-				bg: NEUTRAL_ICON_CHIP,
-				title: `${verb} ${row.to || row.from}`,
+				title: `${verb} ${(row.to || row.from).toLowerCase()}`,
 				sub: `${row.amount}`,
 				right: (
 					<span className={cn("tabular-nums", tone.cls)}>
@@ -341,17 +409,18 @@ function visualFor(row: ActivityRowInput): Visual {
 	}
 }
 
-// ── Row component ─────────────────────────────────────────────────
-
-function Row({ row }: { row: ActivityRowInput }) {
-	const v = visualFor(row);
+function CompactRow({ row }: { row: ActivityRowInput }) {
+	const v = visualForCompact(row);
+	if (!v) return null;
 	const body = (
 		<>
-			<span className={cn("mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md", v.bg, v.tint)}>
+			<span
+				className={cn("mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md", NEUTRAL_ICON_CHIP)}
+			>
 				{v.icon}
 			</span>
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-[12.5px] text-[var(--text-primary)]">{v.title}</div>
+				<div className="truncate text-[12.5px] text-[var(--text-primary)] lowercase">{v.title}</div>
 				<div className="mt-0.5 truncate text-[11px] text-[var(--text-secondary)]">{v.sub}</div>
 			</div>
 			<div className="flex shrink-0 flex-col items-end gap-0.5">
@@ -420,7 +489,27 @@ function TabPill({
 
 // ── Component ─────────────────────────────────────────────────────
 
-export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?: number }) {
+export type ActivityFeedAuthor = {
+	/** Avatar shown in tweet rows. */
+	avatarUrl?: string | undefined;
+	/** Twitter handle shown above tweet bodies. */
+	twitterHandle?: string | undefined;
+};
+
+const FALLBACK_AVATAR = "/brand/agents/waifu/portrait-amber.webp";
+
+export function ActivityFeed({
+	rows,
+	max = 8,
+	author,
+	live = false,
+}: {
+	rows: ActivityRowInput[];
+	max?: number;
+	author?: ActivityFeedAuthor;
+	/** When true, a tiny "live" pulse renders next to the panel header. */
+	live?: boolean;
+}) {
 	const [tab, setTab] = useState<Tab>("all");
 
 	const counts = useMemo(() => {
@@ -432,9 +521,29 @@ export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?
 	const filtered = useMemo(() => (tab === "all" ? rows : rows.filter((r) => categoryOf(r) === tab)), [rows, tab]);
 	const visible = filtered.slice(0, max);
 
+	const avatarUrl = resolveImageUrl(author?.avatarUrl) ?? FALLBACK_AVATAR;
+	const handle = author?.twitterHandle ? `@${author.twitterHandle.replace(/^@/, "")}` : null;
+
 	return (
 		<Panel>
-			<Label>Activity Feed</Label>
+			<Label
+				right={
+					live ? (
+						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+							<span className="relative inline-flex h-1.5 w-1.5">
+								<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-60" />
+								<span
+									className="relative inline-flex h-1.5 w-1.5 rounded-full"
+									style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 6px var(--accent)" }}
+								/>
+							</span>
+							live
+						</span>
+					) : undefined
+				}
+			>
+				Activity Feed
+			</Label>
 
 			{/* tabs */}
 			<div className="-mx-1 mb-2 flex flex-wrap items-center gap-1">
@@ -453,7 +562,13 @@ export function ActivityFeed({ rows, max = 8 }: { rows: ActivityRowInput[]; max?
 				<ul className="divide-y divide-[var(--border-soft)]">
 					{visible.map((r) => (
 						<li key={r.id}>
-							<Row row={r} />
+							{r.type === "tweet" ? (
+								<TweetRow row={r} avatarUrl={avatarUrl} handle={handle} />
+							) : r.type === "pr" ? (
+								<ShipRow row={r} />
+							) : (
+								<CompactRow row={r} />
+							)}
 						</li>
 					))}
 				</ul>

@@ -109,6 +109,23 @@ export function PriceChart({
 		};
 	}, [range, token.contract, initialSeries, series]);
 
+	// Live poll: the page is statically exported, so without this the
+	// chart freezes at the build-time snapshot. Refresh the current
+	// range every 30s; geckoterminal caches ~60s so this is conservative.
+	useEffect(() => {
+		if (!token.contract) return;
+		let cancelled = false;
+		const tick = async () => {
+			const next = await fetchCandleSeries(token.contract, range);
+			if (!cancelled && next.candles.length > 0) setSeries(next);
+		};
+		const id = window.setInterval(tick, 30_000);
+		return () => {
+			cancelled = true;
+			window.clearInterval(id);
+		};
+	}, [range, token.contract]);
+
 	// mount chart once
 	useEffect(() => {
 		if (!containerRef.current) return;

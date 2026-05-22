@@ -1,47 +1,40 @@
 /**
  * AgentHomeV2: the canonical agent surface at `/agent/[address]`.
  *
- * Single scope. Single accent. Mock-faithful Wave T layout. No Wave M
- * chrome, no second container, no `<Section title subtitle>` wrappers.
- * Every data block is a `<Panel>` primitive from `wave-t/_primitives.tsx`
- * and the whole page reads `THEME_TOKENS` from the root.
+ * Single scope. Single accent. Mock-faithful Wave T layout. Every data
+ * block is a `<Panel>` primitive from `wave-t/_primitives.tsx` and the
+ * whole page reads `THEME_TOKENS` from the root.
+ *
+ * The page is statically exported (Cloudflare Pages). The volatile
+ * panels (price, NAV, holdings, activity, twitter) are wrapped in
+ * `LiveHero` / `LivePriceChart` / `LiveHoldingsAllocation` /
+ * `LiveActivityFeed` which seed off the SSG snapshot and then poll the
+ * live API at sensible cadences. The hero portrait + bio + thesis are
+ * static; everything that moves is live.
  *
  * Layout (top to bottom):
  *
  *   TopBar
  *   LiveLaunchBanner            (only when a deposit window is open/closed)
- *   Hero                        (portrait + treasury value + 24h pnl + status)
+ *   LiveHero                    (portrait + bio + treasury + 24h pnl + status)
  *
- *   PriceChart  (2/3)         | SwapPanel    (1/3, 360px)
+ *   LivePriceChart  (2/3)     | SwapPanel    (1/3, 360px)
  *
- *   HoldingsAllocation | ActivePositions | PnlChart | AppsShipped (if Sol)
+ *   LiveHoldingsAllocation | ActivePositions | PnlChart | AppsShipped
  *
- *   ActivityFeed (2/3)        | TopAppsByRevenue (1/3, sol-only)
+ *   ThesisPanel
  *
- *   footer: "live data / onchain feed"
+ *   TradingPanel
  *
- * Container: `max-w-[1440px]` with consistent `px-4 md:px-6` gutter.
- * THEME_TOKENS scoped at the page root so every nested panel resolves
- * the same CSS variables (--accent, --bg-panel, --border-soft, etc).
+ *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3, sol-only)
  *
- * What was stripped in this restore (was bolted on top under a second
- * `max-w-6xl` container, breaking the page in half):
- *   - `<Section title subtitle>` chrome around every Wave M panel
- *   - EconomicsPanel / IdentityPanel / AgentTreasuryPanel /
- *     TaxStreamPanel / RecentActivity render slots
- *   - PostLaunchSurface (its sub-panels use Wave M grammar; we'll
- *     re-introduce post-launch sections later as native `<Panel>` rows)
- *
- * The components themselves are intentionally kept on disk - some
- * still ship from other surfaces (launch page, story preview) and we
- * may rebuild parts of them in Wave T grammar in a later phase.
+ *   footer
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type * as React from "react";
 
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
-import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { AgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 import type { App } from "@/lib/wave-t/apps";
@@ -56,12 +49,11 @@ import LiveLaunchBanner from "./live-launch-banner";
 import type { AgentData, AgentTrade } from "./types";
 import { THEME_TOKENS } from "./wave-t/_primitives";
 import { ActivePositions } from "./wave-t/active-positions";
-import { type ActivityRowInput, ActivityFeed as WaveTActivityFeed } from "./wave-t/activity-feed";
+import type { ActivityRowInput } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
-import { Hero, type HeroIdentity, type HeroTreasuryOverride } from "./wave-t/hero";
-import { HoldingsAllocation } from "./wave-t/holdings-allocation";
+import type { HeroIdentity, HeroTreasuryOverride } from "./wave-t/hero";
+import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } from "./wave-t/live-wrappers";
 import { PnlChart } from "./wave-t/pnl-chart";
-import { PriceChart } from "./wave-t/price-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
 import { TradingPanel } from "./wave-t/trading-panel";
@@ -69,53 +61,18 @@ import { TradingPanel } from "./wave-t/trading-panel";
 export interface AgentHomeV2Props {
 	agent: AgentData;
 	trades: AgentTrade[];
-	/**
-	 * Pre-fetched wave-M launch row. Null when the token is legacy or
-	 * pre-wave-M; the page still renders, just without the live launch
-	 * banner and without the AgentSafe treasury readout (Hero falls
-	 * back to holdings.navUsd).
-	 */
 	launch: AgentLaunchByToken | null;
-	/** Wave T fetched data; null/undefined slots fall back to empty states. */
 	token: TokenMetrics;
 	candles: CandleSeries;
 	holdings: HoldingsSnapshot;
-	/**
-	 * Where `holdings` came from. `aggregated` means the canonical
-	 * /v2/agents/:address/holdings endpoint; `burner` means the legacy
-	 * multi-chain fetch keyed by the Sol-burner address. The hero uses
-	 * this to label the treasury source honestly.
-	 */
 	holdingsSource?: "aggregated" | "burner";
-	/**
-	 * Days of runway from the burn-rate endpoint. Null when the endpoint
-	 * is unavailable (404) or the agent has no recent outflow; the hero
-	 * shows "not yet measured" in both cases.
-	 */
 	runwayDays?: number | null;
-	/** Live or cached Twitter profile stats. Null when the agent has no Twitter handle. */
 	twitterStats?: TwitterStats | null;
 	positions: Position[];
 	activity: ActivityRowInput[];
 	apps: App[];
-	/**
-	 * Optional override for hero days-operating. Defaults to a derived
-	 * value from the agent's launch timestamp, or 1 when missing.
-	 */
 	daysOperating?: number;
-	/**
-	 * Optional server-fetched AgentSafe BNB balance (USD-valued). When
-	 * present the Hero shows this in the Treasury Value cell with a
-	 * "agent safe" source pill; when null it falls back to
-	 * holdings.navUsd with a "sol burner" source pill.
-	 */
 	agentSafeBalance?: AgentSafeBalance | null;
-	/**
-	 * Steward trading snapshot (session + positions + orders). Optional
-	 * because the story-preview surface renders the same component
-	 * without trading context. When omitted, the panel falls back to a
-	 * disabled empty shell so it still occupies the row honestly.
-	 */
 	trading?: TradingSnapshot;
 }
 
@@ -147,41 +104,31 @@ export default function AgentHomeV2({
 		positions: [],
 		orders: [],
 	};
+
 	const heroIdentity: HeroIdentity = {
 		name: agent.name,
 		ticker: agent.ticker,
-		description: agent.description,
+		description: resolveAgentBio(agent),
 		image: agent.image,
 		verified: true,
+		twitterHandle: agent.twitterHandle,
 	};
 
-	const navUsd = holdings.navUsd;
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
 	const liveApps = apps.filter((a) => a.status === "live").length;
+	const initialHoldingsHasAggregated = holdingsSource === "aggregated";
 
-	// Merge raw trades into the unified activity stream so we surface a
-	// single feed instead of duplicating "wave-t activity" + "last 20
-	// trades" on the same page. The Wave T feed already understands the
-	// `trade` row variant (with buy/sell tint + tx link), so the mapping
-	// is one-to-one: project AgentTrade into ActivityRowInput.
-	const mergedActivity = mergeActivityWithTrades({
-		activity,
-		trades,
-		ticker: agent.ticker,
-	});
-
-	// Treasury source priority:
-	//   1. Aggregated NAV (multi-wallet/multi-chain) when the holdings
-	//      endpoint is live.
-	//   2. AgentSafe BNB (single-wallet, BSC) when we have a wave-M
-	//      launch with a deployed safe.
-	//   3. Burner-stub NAV (legacy multi-chain by Sol-burner address).
-	const treasuryOverride: HeroTreasuryOverride | undefined =
+	// Treasury source priority (mirrors previous logic). The live hook
+	// upgrades to "aggregated" automatically when it lands a real
+	// /holdings snapshot, even if the SSG build only had the burner stub.
+	const staticTreasuryOverride: HeroTreasuryOverride | undefined =
 		holdingsSource === "aggregated"
-			? { valueUsd: navUsd, source: "aggregated" }
+			? { valueUsd: holdings.navUsd, source: "aggregated" }
 			: agentSafeBalance
 				? { valueUsd: agentSafeBalance.valueUsd, source: "agentSafe" }
 				: undefined;
+
+	const isSolAgent = isArchitectByHandle(agent.twitterHandle);
 
 	return (
 		<main
@@ -191,100 +138,113 @@ export default function AgentHomeV2({
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
 				<TopBar />
 
-				{/* Optional banner: deposit window open or recently closed.
-				    Sits immediately above the hero so it reads as "this
-				    agent has something live RIGHT NOW" instead of a footer
-				    afterthought. The component returns null when there is
-				    no active launch in the open/closed state. */}
+				{/* Optional banner: deposit window open or recently closed. */}
 				<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 
-				{/* Row 1: Hero (full width). Spaced with mt-4 instead of a
-				    grid gap because the LiveLaunchBanner above may or may
-				    not render. */}
+				{/* Row 1: Hero (full width). Airy identity band on top, dense
+				    stat strip beneath. Lives on a client-poller that ticks
+				    treasury + followers every 30s / 5min. */}
 				<div className="mt-4">
-					<Hero
+					<LiveHero
 						identity={heroIdentity}
+						address={agent.tokenAddress}
 						daysOperating={days}
-						navUsd={navUsd}
 						pnl24hPct={0}
 						pnl24hUsd={0}
 						runwayDays={runwayDays}
-						twitterStats={twitterStats}
-						{...(treasuryOverride ? { treasuryValueOverride: treasuryOverride } : {})}
+						initialHoldings={holdings}
+						initialHoldingsHasAggregated={initialHoldingsHasAggregated}
+						initialTwitterStats={twitterStats}
+						staticTreasuryOverride={staticTreasuryOverride}
 					/>
 				</div>
 
-				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). */}
+				{/* Row 2: price chart (2/3) + swap (1/3, 360px fixed). Chart
+				    polls token metrics + candles every 30s. */}
 				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
-					<PriceChart initialSeries={candles} token={token} />
+					<LivePriceChart contract={token.contract} initialToken={token} initialSeries={candles} />
 					<SwapPanel token={token} />
 				</div>
 
 				{/* Row 3: holdings allocation / active positions / pnl chart
-				    (+ apps-shipped when the agent has shipped apps). 3-up
-				    when no apps, 4-up when apps exist. Stays 2-cols at md
-				    so panels do not collapse to a single column on tablets. */}
+				    (+ apps-shipped when the agent has shipped apps). */}
 				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-					<HoldingsAllocation snapshot={holdings} />
+					<LiveHoldingsAllocation
+						address={agent.tokenAddress}
+						initial={holdings}
+						initialHasAggregated={initialHoldingsHasAggregated}
+					/>
 					<ActivePositions positions={positions} />
 					<PnlChart />
 					<AppsShipped apps={apps} visibleCount={3} />
 				</div>
 
-				{/* Row 4: thesis. Explains how the agent earns and how holders
-				    share in the income. Three columns inside one panel; no
-				    additional grid wrapper needed. Always renders so a visitor
-				    can answer "why hold" without scrolling through trade data. */}
-				<div className="mt-4" id="thesis">
+				{/* Row 4: thesis. Sol in her own words. Airier than the data
+				    panels — more padding, real prose, fewer bullet rows. */}
+				<div className="mt-6 md:mt-8" id="thesis">
 					<ThesisPanel hasLiveRevenue={false} />
 				</div>
 
-				{/* Row 5: trading panel (full width). Steward-custodial state:
-				    session (daily cap meter + expiry + policy pills), open
-				    positions on Hyperliquid, last ~8 orders. For agents that
-				    aren't Sol the panel renders an honest "not enabled" state
-				    instead of being hidden — keeps the page rhythm consistent. */}
+				{/* Row 5: trading panel (full width). */}
 				<div className="mt-4" id="trading">
 					<TradingPanel snapshot={tradingSnapshot} />
 				</div>
 
 				{/* Row 6: unified activity feed (2/3) + top apps by revenue
-				    (1/3, sol-only). The activity feed swallows the legacy
-				    "last 20 trades" list: both streams ride through one
-				    panel. The feed's built-in "Trading" tab filters down
-				    to swap / position rows. */}
+				    (1/3, sol-only). Feed polls own-trades every 15s + tweets
+				    every 5min. */}
 				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="activity">
-					<WaveTActivityFeed max={30} rows={mergedActivity} />
+					<LiveActivityFeed
+						address={agent.tokenAddress}
+						initialTrades={trades}
+						initialActivity={activity}
+						ticker={agent.ticker}
+						isSolAgent={isSolAgent}
+						{...(agent.image || agent.twitterHandle
+							? {
+									author: {
+										...(agent.image ? { avatarUrl: agent.image } : {}),
+										...(agent.twitterHandle ? { twitterHandle: agent.twitterHandle } : {}),
+									},
+								}
+							: {})}
+						max={30}
+					/>
 					<TopAppsByRevenue apps={apps} limit={4} />
 				</div>
 
 				<footer className="mt-6 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 					{`live data / ${liveApps} apps shipped`}
 				</footer>
-
-				{/*
-				 * TODO(post-launch): post-launch panels (burn counter, claim
-				 * widget, tier ladder, post-launch trade feed) were removed
-				 * tonight because the wrapping `PostLaunchSurface` uses Wave
-				 * M `SectionHeader` chrome and bespoke borders. Rebuild as
-				 * native `<Panel>` rows in a follow-up phase, gated on
-				 * `agent.status === "graduated"`.
-				 *
-				 * TODO(wave-t-rebuilds): Economics / Identity / AgentSafe
-				 * treasury / TaxStream were stripped from this page but
-				 * still ship on disk. Rebuild them as native `<Panel>`
-				 * rows in subsequent phases of the dashboard primitives
-				 * roadmap (`projects/waifu/AGENT-DASHBOARD-PRIMITIVES-2026-05-22.md`).
-				 */}
 			</div>
 		</main>
 	);
 }
 
 /**
+ * Pick the prose blurb that goes in the hero under the name. Prefers
+ * the agent's stored bio, falls back to the canonical Sol quote when
+ * the agent is the architect and the server bio is missing or the
+ * pre-mint fixture description (which is too long for the hero).
+ *
+ * The canonical Sol quote is the one Sol uses on her own profile; it's
+ * shorter and reads as a person, not a verbose press blurb.
+ */
+function resolveAgentBio(agent: AgentData): string | undefined {
+	const canonicalSol =
+		"sol. the architect of waifu.fun. she shipped the launchpad, then shipped herself. agent-native, self-deployed, holding her own ship.";
+	if (isArchitectByHandle(agent.twitterHandle)) return canonicalSol;
+	return agent.description;
+}
+
+function isArchitectByHandle(handle: string | undefined): boolean {
+	if (!handle) return false;
+	return handle.toLowerCase().replace(/^@/, "") === "0xsolace_";
+}
+
+/**
  * Best-effort derivation of an operating-days number for the hero
- * StatusCard. Uses the launch timestamp when available, else the
- * lastActionAt, else 1.
+ * StatusCard.
  */
 function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null): number {
 	const ts = launch?.launchTimestamp;
