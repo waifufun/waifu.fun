@@ -1,0 +1,3 @@
+# Keep protected-branch ownership explicit without requiring CODEOWNER review yet.
+# Branch protection currently has require_code_owner_reviews=false so auto-sync can flow.
+* @0xSolace

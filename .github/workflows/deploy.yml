@@ -44,9 +44,10 @@ jobs:
           # Railway should pull the API image published above (configure service image to match).
           echo "::notice::Ensure Railway uses image $IMAGE_REF (or equivalent for your registry layout)."
           # Project tokens use Project-Access-Token header (not Authorization: Bearer).
+          # serviceInstanceDeployV2 starts a fresh image deployment; plain redeploy can reuse a cached :latest digest.
           curl -sSf -X POST https://backboard.railway.com/graphql/v2 \
             -H "Project-Access-Token: $RAILWAY_API_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"query\":\"mutation{serviceInstanceRedeploy(serviceId:\\\"$RAILWAY_SERVICE_ID\\\",environmentId:\\\"$RAILWAY_ENVIRONMENT_ID\\\")}\"}"
+            -d "{\"query\":\"mutation(\$serviceId:String!,\$environmentId:String!){serviceInstanceDeployV2(serviceId:\$serviceId,environmentId:\$environmentId)}\",\"variables\":{\"serviceId\":\"$RAILWAY_SERVICE_ID\",\"environmentId\":\"$RAILWAY_ENVIRONMENT_ID\"}}"
           echo ""
-          echo "Railway redeploy triggered for service $RAILWAY_SERVICE_ID"
+          echo "Railway deploy triggered for service $RAILWAY_SERVICE_ID"
