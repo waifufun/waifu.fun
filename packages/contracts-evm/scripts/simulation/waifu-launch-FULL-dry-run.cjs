@@ -1,21 +1,21 @@
-// SUKI Launch Day end-to-end dry-run on a BSC mainnet fork.
+// WAIFU Launch Day end-to-end dry-run on a BSC mainnet fork.
 //
 // Purpose: this is the FINAL go/no-go gate before real BNB hits the line.
-// It replays the entire production flow for the first waifu.fun launch:
+// It replays the entire production flow for the first waifu.fun launch (WAIFU re-rehearsal 2026-05-21):
 //
 //   1. Deploy the Wave N / O.0 factory + helpers (as deploy-wave-n.js would)
 //   2. Spin up a real Gnosis Safe to act as the Platform Safe
-//   3. createLaunch with the locked SUKI config (TIER_95, 3% / 3% tax, etc)
+//   3. createLaunch with the locked WAIFU config (TIER_95, 3% / 3% tax, etc)
 //   4. Multiple depositor EOAs fill the 64 BNB vault to the exact cap
 //   5. Bundle bot closes the vault and runs executeBundle
 //   6. finalizeLaunch deploys TreasuryLP5 and seeds the V3 pool
 //   7. Real PCS V2 buys + sells drive tax events on the token
 //   8. taxProcessor.dispatch() routes BNB through TaxSplitter
-//   9. Treasury epochs advance, tier 0 deploys, claim() splits cash 3-way
+//   9. Treasury claim() splits cash 3-way (LP5 mints all tiers at finalize)
 //
 // Every step is checked on chain (real PCS V2 + V3 + WBNB + Safe contracts
 // from the forked mainnet block), and the final report is written to
-//   /home/shad0w/.moltbot/projects/waifu/launch-day-2026-05-19/LAUNCH_FLOW_DRY_RUN_REPORT.md
+//   /home/shad0w/.moltbot/projects/waifu/launch-day-waifu-full/LAUNCH_FLOW_DRY_RUN_REPORT.md
 //
 // Run:
 //   cd packages/contracts-evm
@@ -43,13 +43,13 @@ const BSC = {
 	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
 };
 
-const REPORT = "/home/shad0w/.moltbot/projects/waifu/launch-day-2026-05-19/LAUNCH_FLOW_DRY_RUN_REPORT.md";
+const REPORT = "/home/shad0w/.moltbot/projects/waifu/launch-day-waifu-full/LAUNCH_FLOW_DRY_RUN_REPORT.md";
 
-// SUKI production config (locked by Shadow, 2026-05-19)
-const SUKI = {
-	name: "SUKI",
-	symbol: "SUKI",
-	metaCid: "QmSukiLaunchPlaceholderCidReplaceBeforeMainnet",
+// WAIFU production config (locked by Shadow, 2026-05-19)
+const WAIFU = {
+	name: "Waifu",
+	symbol: "WAIFU",
+	metaCid: "QmWaifuLaunchPlaceholderCidReplaceBeforeMainnet",
 	tier: 2, // TIER_95 (WAGMI)
 	buyTaxBps: 300, //  3%
 	sellTaxBps: 300, //  3%
@@ -75,9 +75,10 @@ const { computeTreasuryTicksFromMc, WAGMI_MC_TARGETS_USD } = require("../lib/mc-
 
 // Derive treasury ticks from the WAGMI MC ladder using the canonical
 // off-chain helper. Computed once at module load; the values flow into
-// the createLaunch config below.
-const { lowers: SUKI_TREASURY_TICK_LOWERS, uppers: SUKI_TREASURY_TICK_UPPERS } =
-	computeTreasuryTicksFromMc(0, SUKI.estimatedLaunchFdvUsd, SUKI.mcCheckpoints || WAGMI_MC_TARGETS_USD);
+// the createLaunch config below. estimatedLaunchTick = 0 because we feed
+// the helper a launch FDV directly (no need for a separate tick anchor).
+const { lowers: WAIFU_TREASURY_TICK_LOWERS, uppers: WAIFU_TREASURY_TICK_UPPERS } =
+	computeTreasuryTicksFromMc(0, WAIFU.estimatedLaunchFdvUsd, WAIFU.mcCheckpoints || WAGMI_MC_TARGETS_USD);
 
 // =====================================================================
 // Logging + reporting
@@ -115,7 +116,7 @@ function investigate(step, detail) {
 }
 function flushReport(extraTrailer = "") {
 	const head = [
-		"# SUKI Launch Day End-to-End Dry-Run Report",
+		"# WAIFU Launch Day End-to-End Dry-Run Report",
 		`Generated: ${new Date().toISOString()}`,
 		"Branch: chore/suki-launch-day-dry-run-2026-05-19 (off develop)",
 		"Script: packages/contracts-evm/scripts/simulation/suki-launch-day-dry-run.cjs",
@@ -158,11 +159,11 @@ function computeFinalVerdict() {
 	const investigates = stepResults.filter((r) => r.status === "INVESTIGATE").length;
 	if (fails > 0) return `BLOCKER: ${fails} step(s) failed. Do NOT launch until these are resolved.`;
 	if (investigates > 0) return `NEEDS-FIX: ${investigates} step(s) need investigation. Triage before launch.`;
-	return "SUKI-LAUNCH-READY: all steps passed against real BSC mainnet fork.";
+	return "WAIFU-LAUNCH-READY: all steps passed against real BSC mainnet fork.";
 }
 
 const bnb = (w) => `${ethers.formatEther(w || 0n)} BNB`;
-const tok = (w) => `${ethers.formatUnits(w || 0n, 18)} SUKI`;
+const tok = (w) => `${ethers.formatUnits(w || 0n, 18)} WAIFU`;
 const pct = (n, d) => (d === 0n ? "0" : (Number((n * 10000n) / d) / 100).toFixed(2));
 
 // =====================================================================
@@ -268,7 +269,7 @@ async function pairSnapshotMc(pair, token, wbnb) {
 async function main() {
 	const blockNumber = await ethers.provider.getBlockNumber();
 	const net = await ethers.provider.getNetwork();
-	log("# SUKI Launch Day end-to-end dry-run");
+	log("# WAIFU Launch Day end-to-end dry-run");
 	log(`Generated: ${new Date().toISOString()}`);
 	log(`Fork block: ${blockNumber} (BSC mainnet, chain ${net.chainId})`);
 	realNumbers.forkBlock = blockNumber;
@@ -280,49 +281,47 @@ async function main() {
 	// -----------------------------------------------------------------
 	// STEP 1: Platform Safe (real Gnosis Safe via SafeProxyFactory)
 	// -----------------------------------------------------------------
-	banner(1, "Spin up real Platform Safe");
-	let platformSafeAddress;
+	banner(1, "Use REAL prod Platform Safe (already deployed on BSC mainnet)");
+	const PROD_PLATFORM_SAFE = "0x0985cCC0fD7C568d493874D845471D5F4B1D9c3c";
+	const platformSafeAddress = PROD_PLATFORM_SAFE;
 	try {
-		const safeProxyFactory = new ethers.Contract(
-			BSC.SAFE_PROXY_FACTORY,
-			[
-				"function createProxyWithNonce(address singleton, bytes initializer, uint256 saltNonce) returns (address)",
-				"event ProxyCreation(address indexed proxy, address singleton)",
-			],
+		// Mine one block so we have a non-fork-point block to query against.
+		// Calling eth_call AT the fork block (no history before) fails on hardhat.
+		await ethers.provider.send("evm_mine", []);
+		const code = await ethers.provider.getCode(platformSafeAddress);
+		if (code === "0x")
+			throw new Error(`Real prod Safe ${platformSafeAddress} has no code on this fork — block too old?`);
+		kv("Platform Safe (REAL prod)", platformSafeAddress);
+		kv("Safe proxy code length", `${(code.length - 2) / 2} bytes`);
+
+		// Read owners + threshold from the REAL Safe to verify it matches expectations
+		const safe = new ethers.Contract(
+			platformSafeAddress,
+			["function getOwners() view returns (address[])", "function getThreshold() view returns (uint256)"],
 			psOwner,
 		);
-		const safeIface = new ethers.Interface([
-			"function setup(address[] _owners,uint256 _threshold,address to,bytes data,address fallbackHandler,address paymentToken,uint256 payment,address paymentReceiver)",
+		const owners = await safe.getOwners();
+		const threshold = await safe.getThreshold();
+		kv("Safe owners", owners.join(", "));
+		kv("Safe threshold", threshold.toString());
+		const expectedOwners = new Set([
+			"0xc9846a839c4e1d9050dc890a25661ab13224e9ec", // sol burner
+			"0xdc78e5230d5e55b98a199919109f126752c22ede", // shadow hot
+			"0x51d6db671d5f7d50e0636d5c1490994b9d1295ab", // shadow cold
 		]);
-		const setupData = safeIface.encodeFunctionData("setup", [
-			[psOwner.address],
-			1,
-			ethers.ZeroAddress,
-			"0x",
-			ethers.ZeroAddress,
-			ethers.ZeroAddress,
-			0,
-			ethers.ZeroAddress,
-		]);
-		const receipt = await (
-			await safeProxyFactory.createProxyWithNonce(BSC.SAFE_SINGLETON, setupData, Date.now())
-		).wait();
-		platformSafeAddress = safeProxyFactory.interface.parseLog(
-			receipt.logs.find((l) => {
-				try {
-					return safeProxyFactory.interface.parseLog(l)?.name === "ProxyCreation";
-				} catch {
-					return false;
-				}
-			}),
-		).args.proxy;
-		kv("Platform Safe", platformSafeAddress);
-		const code = await ethers.provider.getCode(platformSafeAddress);
-		if (code === "0x") throw new Error("Safe proxy has no code");
-		kv("Safe proxy code length", `${(code.length - 2) / 2} bytes`);
+		const actualOwners = new Set(owners.map((a) => a.toLowerCase()));
+		const ownersMatch = [...expectedOwners].every((a) => actualOwners.has(a)) && owners.length === 3;
+		if (!ownersMatch) {
+			throw new Error(`Safe owners mismatch: expected sol+shadow-hot+shadow-cold, got ${owners.join(",")}`);
+		}
+		if (threshold !== 2n) {
+			throw new Error(`Safe threshold expected 2, got ${threshold}`);
+		}
 		realNumbers.platformSafeAddress = platformSafeAddress;
+		realNumbers.platformSafeOwners = owners;
+		realNumbers.platformSafeThreshold = Number(threshold);
 		endBanner();
-		pass(1, `Platform Safe deployed at ${platformSafeAddress}`);
+		pass(1, `REAL prod Safe verified: ${platformSafeAddress} (3 owners, 2-of-3, Shadow controls 2 of 3)`);
 	} catch (e) {
 		endBanner();
 		fail(1, `Platform Safe deploy failed: ${e.shortMessage || e.message}`);
@@ -339,7 +338,8 @@ async function main() {
 		const codeHashCheck = initCodeHash(BSC.TOKEN_IMPL_TAXED_V3);
 		kv("Flap init code hash", codeHashCheck);
 		// Wave O.1: TreasuryLP5 dropped Chainlink BNB/USD entirely. No mock
-		// feed needed.
+		// feed needed. Every other component (PCS V2, PCS V3, WBNB, Safe,
+		// FLAP portal) is the real forked contract.
 		const Router = await ethers.getContractFactory("RouterDeployer", deployer);
 		const routerDeployer = await Router.deploy();
 		await routerDeployer.waitForDeployment();
@@ -427,7 +427,7 @@ async function main() {
 	let quoteAmt;
 	let v2BuyBnb;
 	try {
-		const [pCap, qAmt, v2Buy, vesting] = await factory.tierBudget(SUKI.tier, SUKI.buyTaxBps);
+		const [pCap, qAmt, v2Buy, vesting] = await factory.tierBudget(WAIFU.tier, WAIFU.buyTaxBps);
 		presaleCap = pCap;
 		quoteAmt = qAmt;
 		v2BuyBnb = v2Buy;
@@ -457,14 +457,14 @@ async function main() {
 	// -----------------------------------------------------------------
 	// STEP 4: Mine vanity salt with ...7777 suffix
 	// -----------------------------------------------------------------
-	banner(4, "Mine vanity salt for SUKI (suffix 7777, token0 < WBNB)");
+	banner(4, "Mine vanity salt for WAIFU (suffix 7777, token0 < WBNB)");
 	let mined;
 	try {
 		const codeHash = initCodeHash(BSC.TOKEN_IMPL_TAXED_V3);
 		const t0 = Date.now();
 		mined = mineVanity(BSC.FLAP_PORTAL, codeHash, creator.address, "suki-launch-day-2026-05-19");
 		const elapsedMs = Date.now() - t0;
-		kv("Predicted SUKI token", mined.predicted);
+		kv("Predicted WAIFU token", mined.predicted);
 		kv("Iterations", mined.iterations.toString());
 		kv("Elapsed ms", elapsedMs.toString());
 		realNumbers.sukiPredictedTokenAddress = mined.predicted;
@@ -479,35 +479,35 @@ async function main() {
 	}
 
 	// -----------------------------------------------------------------
-	// STEP 5: createLaunch with the exact SUKI production config
+	// STEP 5: createLaunch with the exact WAIFU production config
 	// -----------------------------------------------------------------
-	banner(5, "createLaunch SUKI on TIER_95");
+	banner(5, "createLaunch WAIFU on TIER_95");
 	let launches;
 	try {
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
-			name: SUKI.name,
-			symbol: SUKI.symbol,
-			metaCid: SUKI.metaCid,
+			name: WAIFU.name,
+			symbol: WAIFU.symbol,
+			metaCid: WAIFU.metaCid,
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			tier: SUKI.tier,
-			buyTaxBps: SUKI.buyTaxBps,
-			sellTaxBps: SUKI.sellTaxBps,
-			taxDuration: SUKI.taxDuration,
-			antiFarmerDuration: SUKI.antiFarmerDuration,
+			tier: WAIFU.tier,
+			buyTaxBps: WAIFU.buyTaxBps,
+			sellTaxBps: WAIFU.sellTaxBps,
+			taxDuration: WAIFU.taxDuration,
+			antiFarmerDuration: WAIFU.antiFarmerDuration,
 			closeTimestamp,
 			vanitySalt: mined.rawSalt,
 			predictedTokenAddress: mined.predicted,
-			noBurn: SUKI.noBurn,
+			noBurn: WAIFU.noBurn,
 			platformReceiver: platformSafeAddress,
 			patron: creator.address,
 			agentSafeOwners: [creator.address],
 			agentSafeThreshold: 1,
-			platformBps: SUKI.platformBps,
-			patronBps: SUKI.patronBps,
-			treasuryTickLowers: SUKI_TREASURY_TICK_LOWERS,
-			treasuryTickUppers: SUKI_TREASURY_TICK_UPPERS,
+			platformBps: WAIFU.platformBps,
+			patronBps: WAIFU.patronBps,
+			treasuryTickLowers: WAIFU_TREASURY_TICK_LOWERS,
+			treasuryTickUppers: WAIFU_TREASURY_TICK_UPPERS,
 		};
 		const tx = await factory.connect(creator).createLaunch(config);
 		const receipt = await tx.wait();
@@ -553,7 +553,7 @@ async function main() {
 			"function deposit() payable",
 			"function close()",
 			"function totalDeposited() view returns (uint256)",
-			"function deposits(address) view returns (uint256)",
+			"function depositors(address) view returns (uint256 deposited, uint256 claimed, bool seen)",
 		],
 		ethers.provider,
 	);
@@ -620,13 +620,13 @@ async function main() {
 			.connect(bundleBot)
 			.executeBundle([
 				mined.rawSalt,
-				SUKI.name,
-				SUKI.symbol,
-				SUKI.metaCid,
-				SUKI.buyTaxBps,
-				SUKI.sellTaxBps,
-				SUKI.taxDuration,
-				SUKI.antiFarmerDuration,
+				WAIFU.name,
+				WAIFU.symbol,
+				WAIFU.metaCid,
+				WAIFU.buyTaxBps,
+				WAIFU.sellTaxBps,
+				WAIFU.taxDuration,
+				WAIFU.antiFarmerDuration,
 				launches.taxSplitter,
 				0n,
 				closeTs + 3600,
@@ -637,9 +637,9 @@ async function main() {
 		// Token should now have bytecode at the predicted address.
 		const code = await ethers.provider.getCode(mined.predicted);
 		if (code === "0x") throw new Error(`token ${mined.predicted} not deployed after executeBundle`);
-		kv("SUKI token bytecode length", `${(code.length - 2) / 2} bytes`);
+		kv("WAIFU token bytecode length", `${(code.length - 2) / 2} bytes`);
 		endBanner();
-		pass(7, `executeBundle ok, SUKI token live at ${mined.predicted}`);
+		pass(7, `executeBundle ok, WAIFU token live at ${mined.predicted}`);
 	} catch (e) {
 		endBanner();
 		fail(7, `executeBundle failed: ${e.shortMessage || e.message}`);
@@ -688,7 +688,7 @@ async function main() {
 		realNumbers.v2PairAddress = pair;
 		const snap = await pairSnapshotMc(pair, token, wbnb);
 		kv("V2 pair WBNB", bnb(snap.pairWbnb));
-		kv("V2 pair SUKI", tok(snap.pairTokens));
+		kv("V2 pair WAIFU", tok(snap.pairTokens));
 		kv("V2 pair MC USD", `$${snap.mcUsd.toFixed(0)}`);
 		realNumbers.v2InitialMcUsd = `$${snap.mcUsd.toFixed(0)}`;
 		realNumbers.v2InitialWbnb = ethers.formatEther(snap.pairWbnb);
@@ -869,7 +869,7 @@ async function main() {
 			],
 			ethers.provider,
 		);
-		// Trader t1 wraps + approves + buys SUKI through V3 (1% fee tier).
+		// Trader t1 wraps + approves + buys WAIFU through V3 (1% fee tier).
 		await (await wbnb.connect(t1).deposit({ value: ethers.parseEther("60") })).wait();
 		await (await wbnb.connect(t1).approve(BSC.PCS_V3_SWAP_ROUTER, ethers.MaxUint256)).wait();
 		await (
@@ -1001,7 +1001,7 @@ async function main() {
 		// Pick a trader who holds tokens.
 		const seller = t1;
 		const sellerBalance = await token.balanceOf(seller.address);
-		if (sellerBalance === 0n) throw new Error("seller has no SUKI tokens");
+		if (sellerBalance === 0n) throw new Error("seller has no WAIFU tokens");
 		const sellAmt = sellerBalance / 2n;
 		await (await token.connect(seller).approve(BSC.PCS_ROUTER, sellAmt)).wait();
 		const sellerBnbBefore = await ethers.provider.getBalance(seller.address);
@@ -1118,6 +1118,307 @@ async function main() {
 	} catch (e) {
 		endBanner();
 		fail(13, `stranded check failed: ${e.shortMessage || e.message}`);
+	}
+
+	// Steps 14-17 — additional rehearsal coverage.
+	// Inserted before `flushReport();` at end of main().
+
+	// Pre-compute the FLAP code hash once for new launches
+	const flapCodeHash = initCodeHash(BSC.TOKEN_IMPL_TAXED_V3);
+
+	// Helper: build a createLaunch config given a label, with placeholderSafe as platformReceiver
+	function buildLaunchConfig(label, mined, closeTimestamp) {
+		return {
+			name: label,
+			symbol: label.slice(0, 6).toUpperCase(),
+			metaCid: `QmTest${label}Cid`,
+			creator: creator.address,
+			bundleBot: bundleBot.address,
+			tier: WAIFU.tier,
+			buyTaxBps: WAIFU.buyTaxBps,
+			sellTaxBps: WAIFU.sellTaxBps,
+			taxDuration: WAIFU.taxDuration,
+			antiFarmerDuration: WAIFU.antiFarmerDuration,
+			closeTimestamp,
+			vanitySalt: mined.rawSalt,
+			predictedTokenAddress: mined.predicted,
+			noBurn: WAIFU.noBurn,
+			platformReceiver: platformSafeAddress,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: WAIFU.platformBps,
+			patronBps: WAIFU.patronBps,
+			treasuryTickLowers: WAIFU_TREASURY_TICK_LOWERS,
+			treasuryTickUppers: WAIFU_TREASURY_TICK_UPPERS,
+		};
+	}
+
+	// -----------------------------------------------------------------
+	// STEP 14: Depositor withdraws BNB during OPEN state
+	// -----------------------------------------------------------------
+	banner(14, "Depositor withdraws during OPEN state (pre-close)");
+	try {
+		const mined14 = mineVanity(BSC.FLAP_PORTAL, flapCodeHash, creator.address, "withdrawtest");
+		const closeTs14 = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+		const cfg14 = buildLaunchConfig("WithdrawTest", mined14, closeTs14);
+		const tx14 = await factory.connect(creator).createLaunch(cfg14);
+		await tx14.wait();
+		const lr14 = await factory.launches(mined14.predicted);
+		const vault14 = new ethers.Contract(
+			lr14.vault,
+			[
+				"function deposit() payable",
+				"function withdraw(uint256 amount)",
+				"function withdrawAll()",
+				"function depositors(address) view returns (uint256 deposited, uint256 claimed, bool seen)",
+				"function totalDeposited() view returns (uint256)",
+				"function state() view returns (uint8)",
+			],
+			deployer,
+		);
+
+		// Two depositors put in some BNB
+		await (await vault14.connect(dA).deposit({ value: ethers.parseEther("3") })).wait();
+		await (await vault14.connect(dB).deposit({ value: ethers.parseEther("5") })).wait();
+		kv("total before withdraw", bnb(await vault14.totalDeposited()));
+
+		// dA withdraws partial (1 BNB out of 3)
+		const dABefore = await ethers.provider.getBalance(dA.address);
+		const wTx = await vault14.connect(dA).withdraw(ethers.parseEther("1"));
+		const wRcpt = await wTx.wait();
+		const gasW = wRcpt.gasUsed * wRcpt.gasPrice;
+		const dAAfter = await ethers.provider.getBalance(dA.address);
+		const netGain = dAAfter - dABefore + gasW;
+		kv("dA net recovered (after gas)", bnb(netGain));
+
+		// dB withdraws all
+		const dBDep = (await vault14.depositors(dB.address)).deposited;
+		await (await vault14.connect(dB).withdrawAll()).wait();
+		const dBDepAfter = (await vault14.depositors(dB.address)).deposited;
+		kv("dB deposit before/after withdrawAll", `${bnb(dBDep)} / ${bnb(dBDepAfter)}`);
+
+		const tot = await vault14.totalDeposited();
+		kv("total after withdraws", bnb(tot));
+		const expected = ethers.parseEther("2"); // dA: 3 - 1, dB: 0
+		if (tot !== expected) throw new Error(`expected ${bnb(expected)}, got ${bnb(tot)}`);
+		if (netGain < ethers.parseEther("0.999")) throw new Error(`dA recovery off: ${bnb(netGain)}`);
+		endBanner();
+		pass(14, `withdraw + withdrawAll OK; partial+full both work, BNB returned correctly`);
+	} catch (e) {
+		endBanner();
+		fail(14, `withdraw test failed: ${e.shortMessage || e.message}`);
+	}
+
+	// -----------------------------------------------------------------
+	// STEP 15: Under-subscribed refund path
+	// -----------------------------------------------------------------
+	banner(15, "Under-subscribed refund (cap not met -> refund)");
+	try {
+		const mined15 = mineVanity(BSC.FLAP_PORTAL, flapCodeHash, creator.address, "undersubtest");
+		const closeTs15 = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+		const cfg15 = buildLaunchConfig("UnderSubTest", mined15, closeTs15);
+		await (await factory.connect(creator).createLaunch(cfg15)).wait();
+		const lr15 = await factory.launches(mined15.predicted);
+		const vault15 = new ethers.Contract(
+			lr15.vault,
+			[
+				"function deposit() payable",
+				"function refund()",
+				"function depositors(address) view returns (uint256 deposited, uint256 claimed, bool seen)",
+				"function totalDeposited() view returns (uint256)",
+				"function state() view returns (uint8)",
+				"function enableRefundUnderSubscribed()",
+			],
+			deployer,
+		);
+		// Partial fill: 30 BNB total
+		await (await vault15.connect(dA).deposit({ value: ethers.parseEther("10") })).wait();
+		await (await vault15.connect(dB).deposit({ value: ethers.parseEther("12") })).wait();
+		await (await vault15.connect(dC).deposit({ value: ethers.parseEther("8") })).wait();
+		kv("total deposited", `${bnb(await vault15.totalDeposited())} / ${bnb(ethers.parseEther("64"))} cap`);
+
+		// Past close window
+		const now = (await ethers.provider.getBlock("latest")).timestamp;
+		await increase(Number(closeTs15) - now + 60);
+
+		// Anyone calls enableRefundUnderSubscribed
+		await (await vault15.connect(dA).enableRefundUnderSubscribed()).wait();
+		const state15 = await vault15.state();
+		if (state15 !== 3n) throw new Error(`expected REFUND state, got ${state15}`);
+		kv("state -> REFUND", "ok");
+
+		// Each depositor refunds
+		for (const w of [dA, dB, dC]) {
+			const dep = (await vault15.depositors(w.address)).deposited;
+			if (dep === 0n) continue;
+			const before = await ethers.provider.getBalance(w.address);
+			const tx = await vault15.connect(w).refund();
+			const rcpt = await tx.wait();
+			const gas = rcpt.gasUsed * rcpt.gasPrice;
+			const after = await ethers.provider.getBalance(w.address);
+			const net = after - before + gas;
+			kv(`${w.address.slice(0, 10)} refunded`, `${bnb(net)} (deposited ${bnb(dep)})`);
+			if (net < dep - ethers.parseEther("0.001")) throw new Error(`refund short for ${w.address}`);
+		}
+		endBanner();
+		pass(15, `under-subscribed refund OK; 3 depositors recovered exact deposits`);
+	} catch (e) {
+		endBanner();
+		fail(15, `under-subscribed refund failed: ${e.shortMessage || e.message}`);
+	}
+
+	// -----------------------------------------------------------------
+	// STEP 16: Bundle-failed refund path
+	//   Cap reached, vault closed, bundle never executes, 24h grace, refund.
+	// -----------------------------------------------------------------
+	banner(16, "Bundle-failed refund (cap met, no bundle, 24h grace -> refund)");
+	try {
+		const mined16 = mineVanity(BSC.FLAP_PORTAL, flapCodeHash, creator.address, "bundlefailtest");
+		const closeTs16 = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+		const cfg16 = buildLaunchConfig("BundleFailTest", mined16, closeTs16);
+		await (await factory.connect(creator).createLaunch(cfg16)).wait();
+		const lr16 = await factory.launches(mined16.predicted);
+		const vault16 = new ethers.Contract(
+			lr16.vault,
+			[
+				"function deposit() payable",
+				"function close()",
+				"function refund()",
+				"function depositors(address) view returns (uint256 deposited, uint256 claimed, bool seen)",
+				"function totalDeposited() view returns (uint256)",
+				"function state() view returns (uint8)",
+				"function enableRefundBundleFailed()",
+			],
+			deployer,
+		);
+		// Fill exactly to cap = 64 BNB across 8 wallets
+		const perWallet = ethers.parseEther("8");
+		for (const w of [dA, dB, dC, dD, dE, dF, dG, dH]) {
+			await (await vault16.connect(w).deposit({ value: perWallet })).wait();
+		}
+		kv("total deposited", bnb(await vault16.totalDeposited()));
+
+		// Advance past MIN_OPEN_DURATION (15 min) before early-close.
+		// LaunchVault.close() requires either (close window elapsed) OR
+		// (cap reached AND >=15 min since open).
+		await increase(16 * 60);
+
+		// anyone calls close (cap reached so anyone can)
+		await (await vault16.connect(dA).close()).wait();
+		kv("state after close", `${await vault16.state()} (2=CLOSED)`);
+
+		// Bundle bot DOES NOTHING — skip past close + 24h grace
+		const now16 = (await ethers.provider.getBlock("latest")).timestamp;
+		await increase(Number(closeTs16) - now16 + 86400 + 60);
+
+		// bundleBot calls enableRefundBundleFailed
+		await (await vault16.connect(bundleBot).enableRefundBundleFailed()).wait();
+		const state16 = await vault16.state();
+		if (state16 !== 3n) throw new Error(`expected REFUND, got ${state16}`);
+		kv("state after enableRefundBundleFailed", "REFUND ok");
+
+		// All 8 wallets refund
+		let totalRefunded = 0n;
+		for (const w of [dA, dB, dC, dD, dE, dF, dG, dH]) {
+			const dep = (await vault16.depositors(w.address)).deposited;
+			if (dep === 0n) continue;
+			const before = await ethers.provider.getBalance(w.address);
+			const tx = await vault16.connect(w).refund();
+			const rcpt = await tx.wait();
+			const gas = rcpt.gasUsed * rcpt.gasPrice;
+			const after = await ethers.provider.getBalance(w.address);
+			const net = after - before + gas;
+			if (net < dep - ethers.parseEther("0.001")) throw new Error(`refund short for ${w.address}`);
+			totalRefunded += net;
+		}
+		kv("total refunded", bnb(totalRefunded));
+		if (totalRefunded < ethers.parseEther("63.99"))
+			throw new Error(`expected ~64 BNB recovered, got ${bnb(totalRefunded)}`);
+		endBanner();
+		pass(16, `bundle-failed refund OK; 64 BNB across 8 wallets recovered via 24h grace`);
+	} catch (e) {
+		endBanner();
+		fail(16, `bundle-failed refund failed: ${e.shortMessage || e.message}`);
+	}
+
+	// -----------------------------------------------------------------
+	// STEP 17: Cap-exceeded protection
+	// -----------------------------------------------------------------
+	banner(17, "Cap-exceeded protection (deposit beyond cap reverts)");
+	try {
+		const mined17 = mineVanity(BSC.FLAP_PORTAL, flapCodeHash, creator.address, "captest");
+		const closeTs17 = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+		const cfg17 = buildLaunchConfig("CapTest", mined17, closeTs17);
+		await (await factory.connect(creator).createLaunch(cfg17)).wait();
+		const lr17 = await factory.launches(mined17.predicted);
+		const vault17 = new ethers.Contract(
+			lr17.vault,
+			["function deposit() payable", "function totalDeposited() view returns (uint256)"],
+			deployer,
+		);
+
+		// Fill to 60 BNB
+		for (const w of [dA, dB, dC, dD]) {
+			await (await vault17.connect(w).deposit({ value: ethers.parseEther("15") })).wait();
+		}
+		kv("total after 4x15 BNB", bnb(await vault17.totalDeposited()));
+
+		// Test 1: over-deposit — LaunchVault TRUNCATES to remaining cap and
+		// REFUNDS the surplus instead of reverting. Verify the surplus was
+		// actually refunded to the sender.
+		const dEBefore = await ethers.provider.getBalance(dE.address);
+		const overTx = await vault17.connect(dE).deposit({ value: ethers.parseEther("10") });
+		const overRcpt = await overTx.wait();
+		const gasCost = overRcpt.gasUsed * overRcpt.gasPrice;
+		const dEAfter = await ethers.provider.getBalance(dE.address);
+		const sent = ethers.parseEther("10");
+		const remainingBefore = ethers.parseEther("64") - ethers.parseEther("60");
+		const expectedSurplus = sent - remainingBefore;
+		const actualSpent = dEBefore - dEAfter - gasCost;
+		kv("sent", bnb(sent));
+		kv("remaining cap before tx", bnb(remainingBefore));
+		kv("expected surplus refund", bnb(expectedSurplus));
+		kv("actual spent (sent - refund - gas)", bnb(actualSpent));
+		if (
+			actualSpent < remainingBefore - ethers.parseEther("0.001") ||
+			actualSpent > remainingBefore + ethers.parseEther("0.001")
+		) {
+			throw new Error(`surplus refund off: expected ~${bnb(remainingBefore)} spent, got ${bnb(actualSpent)}`);
+		}
+		const final17 = await vault17.totalDeposited();
+		kv("total deposited after over-cap attempt", bnb(final17));
+		if (final17 !== ethers.parseEther("64")) throw new Error(`expected exact cap 64 BNB, got ${bnb(final17)}`);
+
+		// Test 2: per-wallet cap (MAX_WALLET_DEPOSIT_BPS=6000 = 60% of cap = 38.4 BNB)
+		// dF tries to deposit 40 BNB into a fresh vault.
+		const minedB = mineVanity(BSC.FLAP_PORTAL, flapCodeHash, creator.address, "perwallettest");
+		const closeTsB = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+		const cfgB = buildLaunchConfig("PerWalletTest", minedB, closeTsB);
+		await (await factory.connect(creator).createLaunch(cfgB)).wait();
+		const lrB = await factory.launches(minedB.predicted);
+		const vaultB = new ethers.Contract(
+			lrB.vault,
+			["function deposit() payable", "function totalDeposited() view returns (uint256)"],
+			deployer,
+		);
+		let perWalletReverted = false;
+		let perWalletReason = "";
+		try {
+			await (await vaultB.connect(dF).deposit({ value: ethers.parseEther("40") })).wait();
+		} catch (e) {
+			perWalletReverted = true;
+			perWalletReason = e.shortMessage || e.message;
+		}
+		if (!perWalletReverted) throw new Error("expected per-wallet 40 BNB deposit (over 38.4 cap) to revert");
+		kv("per-wallet over-cap reverted", "yes");
+		kv("per-wallet revert reason", perWalletReason.slice(0, 70));
+
+		endBanner();
+		pass(17, `cap protection OK: surplus refunded + per-wallet cap enforced (38.4 BNB max)`);
+	} catch (e) {
+		endBanner();
+		fail(17, `cap test failed: ${e.shortMessage || e.message}`);
 	}
 
 	flushReport();

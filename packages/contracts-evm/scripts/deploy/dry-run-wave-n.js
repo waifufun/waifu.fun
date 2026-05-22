@@ -1,5 +1,5 @@
 /**
- * dry-run-wave-n.js - fork-mainnet dry run of the Wave N deploy.
+ * dry-run-wave-n.js - fork-mainnet dry run of the Wave O.1 (LP5) deploy.
  *
  * Reuses BSC_MAINNET address book + deriveFlapInitCodeHash from deploy-wave-n.js,
  * then walks the exact same constructor sequence against a forked BSC node.
@@ -60,8 +60,8 @@ async function main() {
 		book.SAFE_PROXY_FACTORY,
 	]);
 
-	const TreasuryDeployer = await ethers.getContractFactory("TreasuryLP4Deployer");
-	const { addr: treasuryAddr } = await deployAndTrack("TreasuryLP4Deployer", TreasuryDeployer, []);
+	const TreasuryDeployer = await ethers.getContractFactory("TreasuryLP5Deployer");
+	const { addr: treasuryAddr } = await deployAndTrack("TreasuryLP5Deployer", TreasuryDeployer, []);
 
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factoryArgs = [
@@ -78,7 +78,6 @@ async function main() {
 		treasuryAddr,
 		book.PCS_V3_NPM,
 		book.PCS_V3_FACTORY,
-		book.BNB_USD_FEED,
 	];
 	const { inst: factory, addr: factoryAddr } = await deployAndTrack("LaunchFactory", LaunchFactory, factoryArgs);
 
@@ -94,10 +93,9 @@ async function main() {
 		["TIP_RECEIVER", await factory.TIP_RECEIVER(), book.TIP_RECEIVER],
 		["ROUTER_DEPLOYER", await factory.ROUTER_DEPLOYER(), routerAddr],
 		["AGENT_SAFE_DEPLOYER", await factory.AGENT_SAFE_DEPLOYER(), agentAddr],
-		["TREASURY_LP4_DEPLOYER", await factory.TREASURY_LP4_DEPLOYER(), treasuryAddr],
+		["TREASURY_LP5_DEPLOYER", await factory.TREASURY_LP5_DEPLOYER(), treasuryAddr],
 		["PCS_V3_NPM", await factory.PCS_V3_NPM(), book.PCS_V3_NPM],
 		["PCS_V3_FACTORY", await factory.PCS_V3_FACTORY(), book.PCS_V3_FACTORY],
-		["BNB_USD_FEED", await factory.BNB_USD_FEED(), book.BNB_USD_FEED],
 	];
 	let ok = true;
 	for (const [name, actual, expected] of checks) {

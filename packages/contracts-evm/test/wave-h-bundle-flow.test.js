@@ -92,16 +92,15 @@ describe("Wave H bundle flow e2e", () => {
 
 		const routerDeployer = await RouterDeployerCF.deploy();
 
-		const TreasuryDeployerCF = await ethers.getContractFactory("TreasuryLP4Deployer");
-		const treasuryLp4Deployer = await TreasuryDeployerCF.deploy();
+		// Wave O.1: TreasuryLP5Deployer (no Chainlink feed)
+		const TreasuryDeployerCF = await ethers.getContractFactory("TreasuryLP5Deployer");
+		const treasuryLp5Deployer = await TreasuryDeployerCF.deploy();
 		const V3FactoryCF = await ethers.getContractFactory("MockV3Factory");
 		const mockV3Factory = await V3FactoryCF.deploy();
 		const WbnbMockCF = await ethers.getContractFactory("MockWBNB");
 		const mockWbnbForN = await WbnbMockCF.deploy();
 		const NPMCF = await ethers.getContractFactory("MockNonfungiblePositionManager");
 		const mockNpm = await NPMCF.deploy(await mockWbnbForN.getAddress());
-		const FeedCF = await ethers.getContractFactory("MockBnbUsdFeed");
-		const mockFeed = await FeedCF.deploy(600n * 100000000n);
 
 		// Wave M3: AgentSafeDeployer + Safe v1.4.1 mocks so LaunchFactory can
 		// deploy the agent safe alongside the rest of the quintet.
@@ -131,10 +130,9 @@ describe("Wave H bundle flow e2e", () => {
 			platformReceiver,
 			await routerDeployer.getAddress(),
 			await agentSafeDeployer.getAddress(),
-			await treasuryLp4Deployer.getAddress(),
+			await treasuryLp5Deployer.getAddress(),
 			await mockNpm.getAddress(),
 			await mockV3Factory.getAddress(),
-			await mockFeed.getAddress(),
 		);
 
 		return {
