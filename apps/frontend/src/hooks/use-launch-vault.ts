@@ -33,8 +33,15 @@ export function useLaunchMeta(id: string | undefined) {
  */
 export function useVaultSnapshot(vault: Address | undefined) {
 	const enabled = Boolean(vault) && (vault ? isAddress(vault) : false);
+	// `allowFailure: true` is critical: an individual reverting view (e.g. an
+	// ABI/contract drift like the historical `presaleTokens` vs
+	// `presalerTokenBalance` mismatch) must NOT take down the whole snapshot.
+	// On a launched vault, killing the snapshot causes `state` to fall back to
+	// `null` and the display-state machine returns `"created"`, which hides
+	// the claim widget for all depositors. Per-row tolerance keeps the page
+	// rendering with whatever the chain returned.
 	const result = useReadContracts({
-		allowFailure: false,
+		allowFailure: true,
 		contracts: enabled
 			? [
 					{ address: vault as Address, abi: launchVaultAbi, functionName: "state", chainId: bsc.id },
@@ -44,7 +51,7 @@ export function useVaultSnapshot(vault: Address | undefined) {
 					{ address: vault as Address, abi: launchVaultAbi, functionName: "closeTimestamp", chainId: bsc.id },
 					{ address: vault as Address, abi: launchVaultAbi, functionName: "penaltyBps", chainId: bsc.id },
 					{ address: vault as Address, abi: launchVaultAbi, functionName: "vestingEnabled", chainId: bsc.id },
-					{ address: vault as Address, abi: launchVaultAbi, functionName: "presaleTokens", chainId: bsc.id },
+					{ address: vault as Address, abi: launchVaultAbi, functionName: "presalerTokenBalance", chainId: bsc.id },
 				]
 			: undefined,
 		query: {
@@ -52,24 +59,30 @@ export function useVaultSnapshot(vault: Address | undefined) {
 			refetchInterval: VAULT_REFRESH_MS,
 			select: (rows) => {
 				const [
-					stateRaw,
-					totalDeposited,
-					bonusPool,
-					depositorCount,
-					closeTimestamp,
-					penaltyBps,
-					vestingEnabled,
-					presaleTokens,
-				] = rows as [number, bigint, bigint, bigint, bigint, bigint, boolean, bigint];
+					stateRow,
+					totalDepositedRow,
+					bonusPoolRow,
+					depositorCountRow,
+					closeTimestampRow,
+					penaltyBpsRow,
+					vestingEnabledRow,
+					presaleTokensRow,
+				] = rows as ReadonlyArray<{ status: "success"; result: unknown } | { status: "failure"; error: Error }>;
+
+				const pick = <T,>(row: typeof stateRow, fallback: T | null = null): T | null => {
+					if (row && row.status === "success") return row.result as T;
+					return fallback;
+				};
+
 				return {
-					state: stateRaw,
-					totalDeposited,
-					bonusPool,
-					depositorCount,
-					closeTimestamp,
-					penaltyBps,
-					vestingEnabled,
-					presaleTokens,
+					state: pick<number>(stateRow),
+					totalDeposited: pick<bigint>(totalDepositedRow, 0n) ?? 0n,
+					bonusPool: pick<bigint>(bonusPoolRow, 0n) ?? 0n,
+					depositorCount: pick<bigint>(depositorCountRow, 0n) ?? 0n,
+					closeTimestamp: pick<bigint>(closeTimestampRow),
+					penaltyBps: pick<bigint>(penaltyBpsRow),
+					vestingEnabled: pick<boolean>(vestingEnabledRow),
+					presaleTokens: pick<bigint>(presaleTokensRow),
 				};
 			},
 		},
