@@ -37,7 +37,8 @@
 	},
 	"dependencies": {
 		"drizzle-orm": "^0.36.4",
-		"postgres": "^3.4.5"
+		"postgres": "^3.4.5",
+		"viem": "2.30.5"
 	},
 	"devDependencies": {
 		"drizzle-kit": "^0.30.6",

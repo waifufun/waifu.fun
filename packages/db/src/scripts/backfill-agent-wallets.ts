@@ -1,4 +1,6 @@
 import { or, sql } from "drizzle-orm";
+import { http, type Address, createPublicClient } from "viem";
+import { bsc } from "viem/chains";
 
 import { createDatabase } from "../client.js";
 import type { Database } from "../client.js";
@@ -12,6 +14,50 @@ import {
 } from "../schema/agent-wallet-registry.js";
 
 const SOL_HOT_BSC_ADDRESS = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
+const DEFAULT_BSC_RPC_URL = "https://bsc-dataseed.binance.org";
+
+const taxSplitterAbi = [
+	{
+		type: "function",
+		name: "patron",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		name: "platform",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		name: "agent",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+] as const;
+
+type TaxSplitterReadClient = {
+	readContract(args: {
+		address: Address;
+		abi: typeof taxSplitterAbi;
+		functionName: "patron" | "platform" | "agent";
+	}): Promise<Address>;
+};
+
+type TaxSplitterAddresses = {
+	patron: string;
+	platform: string;
+	agent: string;
+};
+
+export type BackfillAgentWalletsOptions = {
+	taxSplitterClient?: TaxSplitterReadClient;
+	rpcUrl?: string;
+};
 
 type WalletCandidate = {
 	agentTokenAddress: string;
@@ -32,6 +78,31 @@ export type BackfillAgentWalletsResult = {
 
 function normalizeEvmAddress(address: string): string {
 	return address.toLowerCase();
+}
+
+function getBscRpcUrl(options: BackfillAgentWalletsOptions): string {
+	return options.rpcUrl ?? process.env.BSC_RPC_URL ?? process.env.BNB_RPC_URL ?? DEFAULT_BSC_RPC_URL;
+}
+
+function createTaxSplitterClient(options: BackfillAgentWalletsOptions = {}): TaxSplitterReadClient {
+	return createPublicClient({
+		chain: bsc,
+		transport: http(getBscRpcUrl(options)),
+	});
+}
+
+async function readTaxSplitterAddresses(
+	client: TaxSplitterReadClient,
+	taxSplitterAddress: string,
+): Promise<TaxSplitterAddresses> {
+	const address = taxSplitterAddress as Address;
+	const [patron, platform, agent] = await Promise.all([
+		client.readContract({ address, abi: taxSplitterAbi, functionName: "patron" }),
+		client.readContract({ address, abi: taxSplitterAbi, functionName: "platform" }),
+		client.readContract({ address, abi: taxSplitterAbi, functionName: "agent" }),
+	]);
+
+	return { patron, platform, agent };
 }
 
 function metadataString(metadata: unknown, key: string): string | null {
@@ -64,6 +135,7 @@ function buildWalletCandidates(launch: {
 	tokenAddress: string;
 	agentSafeAddress: string | null;
 	creator: string;
+	patronAddress: string;
 	taxSplitterAddress: string | null;
 	metadata: unknown;
 }): WalletCandidate[] {
@@ -81,10 +153,10 @@ function buildWalletCandidates(launch: {
 		});
 	}
 
-	if (launch.creator) {
+	if (launch.patronAddress) {
 		wallets.push({
 			agentTokenAddress: token,
-			address: normalizeEvmAddress(launch.creator),
+			address: normalizeEvmAddress(launch.patronAddress),
 			chain: "bsc",
 			role: "patron",
 			label: `patron (${ticker})`,
@@ -116,7 +188,28 @@ function buildWalletCandidates(launch: {
 	return wallets;
 }
 
-export async function backfillAgentWallets(db: Database): Promise<BackfillAgentWalletsResult> {
+async function resolvePatronAddress(
+	launch: { creator: string; taxSplitterAddress: string | null },
+	taxSplitterClient: TaxSplitterReadClient,
+): Promise<string> {
+	if (!launch.taxSplitterAddress) return launch.creator;
+
+	try {
+		const addresses = await readTaxSplitterAddresses(taxSplitterClient, launch.taxSplitterAddress);
+		return addresses.patron;
+	} catch (error) {
+		console.warn(
+			`Failed to read TaxSplitter recipients for ${launch.taxSplitterAddress}; falling back to launch.creator as patron`,
+			error,
+		);
+		return launch.creator;
+	}
+}
+
+export async function backfillAgentWallets(
+	db: Database,
+	options: BackfillAgentWalletsOptions = {},
+): Promise<BackfillAgentWalletsResult> {
 	const launches = await db
 		.select({
 			tokenAddress: agentLaunches.tokenAddress,
@@ -136,9 +229,11 @@ export async function backfillAgentWallets(db: Database): Promise<BackfillAgentW
 
 	let candidates = 0;
 	let inserted = 0;
+	const taxSplitterClient = options.taxSplitterClient ?? createTaxSplitterClient(options);
 
 	for (const launch of launches) {
-		for (const wallet of buildWalletCandidates(launch)) {
+		const patronAddress = await resolvePatronAddress(launch, taxSplitterClient);
+		for (const wallet of buildWalletCandidates({ ...launch, patronAddress })) {
 			candidates += 1;
 			const row: NewAgentWalletRegistryRow = {
 				agentTokenAddress: wallet.agentTokenAddress,
