@@ -236,6 +236,7 @@ test("PCS V3 LP enumerator skips empty wallets and emits one holding per NFT", a
 	assert.equal(rich.holdings[0]?.venue, "pancakeswap-v3");
 	assert.equal(rich.holdings[0]?.tokenId, "101");
 	assert.equal(rich.holdings[0]?.priced, false);
+});
 
 test("DEXScreener pricing selects deepest liquid pair", async () => {
 	const price = await fetchDexScreenerTokenPrice("bsc", TOKEN, {
@@ -318,6 +319,7 @@ test("NAV aggregator falls back CoinGecko-unpriced tokens to DEXScreener before 
 			],
 			stale: [],
 		}),
+		enumeratePcsV3Lp: async () => ({ holdings: [], stale: [] }),
 		fetchNativePrices: async () => ({ binancecoin: { priceUsd: 600, priced: true, source: "native" } }),
 		fetchTokenPrices: async () => ({ [TOKEN]: { priceUsd: null, priced: false, source: "unpriced" } }),
 		fetchDexScreenerPrice: async () => ({ priceUsd: 0.00012, priced: true, source: "dexscreener" }),
