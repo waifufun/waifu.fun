@@ -146,9 +146,7 @@ type HoldingsSnapshotResponse = { ok: true; data: { navUsd: number } } | { navUs
 
 async function fetchAgentNavUsd(tokenAddress: string): Promise<number | null> {
 	try {
-		const raw = await apiFetch<HoldingsSnapshotResponse>(
-			`/v2/agents/${encodeURIComponent(tokenAddress)}/holdings`,
-		);
+		const raw = await apiFetch<HoldingsSnapshotResponse>(`/v2/agents/${encodeURIComponent(tokenAddress)}/holdings`);
 		const inner = raw && typeof raw === "object" && "ok" in raw && "data" in raw ? raw.data : raw;
 		const navUsd = typeof inner?.navUsd === "number" ? inner.navUsd : null;
 		return Number.isFinite(navUsd) ? navUsd : null;
