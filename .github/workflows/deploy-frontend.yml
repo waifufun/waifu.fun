@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
     paths:
       - 'apps/frontend/**'
       - 'packages/types/**'
@@ -16,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: Pages branch to deploy to (production = main, anything else is a preview)
+        description: Pages branch to deploy to (production = main; other values are manual previews)
         required: false
         default: main
 

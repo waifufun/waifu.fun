@@ -11,7 +11,7 @@ on:
       image_tag:
         description: Image tag to deploy to staging
         required: false
-        default: develop
+        default: latest
       run_migrations:
         description: Run database schema push before bringing services up
         required: false
@@ -26,11 +26,11 @@ jobs:
   deploy:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop')
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     uses: ./.github/workflows/reusable-ssh-deploy.yml
     secrets: inherit
     with:
       environment: staging
       healthcheck_label: staging
-      image_tag: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.image_tag || 'develop') || 'develop' }}
+      image_tag: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.image_tag || 'latest') || 'latest' }}
       run_migrations: ${{ github.event_name != 'workflow_dispatch' || inputs.run_migrations }}
