@@ -40,6 +40,10 @@ jobs:
             service_name: evm-indexer
           - service: launch-indexer
             service_name: launch-indexer
+          - service: bundle-bot
+            service_name: bundle-bot
+          - service: nav-snapshotter
+            service_name: nav-snapshotter
           - service: brain
             service_name: brain
 

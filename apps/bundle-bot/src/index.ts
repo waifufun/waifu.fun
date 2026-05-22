@@ -7,8 +7,9 @@
  *   - BUNDLE_BOT_RUN_ONCE=1: one round, exit. Cron-friendly.
  *
  * Safety:
- *   - BUNDLE_BOT_DRY_RUN defaults to TRUE. Set BUNDLE_BOT_DRY_RUN=false
- *     to enable real tx submission via Puissant.
+ *   - BUNDLE_BOT_DRY_RUN defaults to true in test and false otherwise.
+ *   - Dry-run mode logs what it would submit but does not sign, send, or
+ *     mutate DB state unless BUNDLE_BOT_DRY_RUN_WRITE_STATUS=true is set for tests.
  *   - Reuses the existing apps/api submitLaunchBundle + bundle-wallet-pool
  *     logic (FOR UPDATE SKIP LOCKED, KMS-decrypted private keys, 90s
  *     cooldown after each successful tx).
@@ -61,6 +62,7 @@ async function main(): Promise<void> {
 			maxAttempts: config.maxAttempts,
 			dryRun: config.dryRun,
 			walletPoolRequired: config.walletPoolRequired,
+			dryRunWriteStatus: config.dryRunWriteStatus,
 			runOnce,
 		},
 		"bundle-bot booting",
@@ -68,8 +70,8 @@ async function main(): Promise<void> {
 
 	if (config.dryRun) {
 		logger.warn(
-			{},
-			"BUNDLE_BOT_DRY_RUN is enabled (default). The bot will log bundle params but NOT submit real txs. Set BUNDLE_BOT_DRY_RUN=false to go live.",
+			{ dryRunWriteStatus: config.dryRunWriteStatus },
+			"BUNDLE_BOT_DRY_RUN is enabled. The bot will log bundle params but NOT submit real txs or mutate DB state unless BUNDLE_BOT_DRY_RUN_WRITE_STATUS=true.",
 		);
 	}
 

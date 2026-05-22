@@ -15,6 +15,7 @@ function makeConfig(overrides: Partial<BundleBotConfig> = {}): BundleBotConfig {
 		batchSize: 8,
 		maxAttempts: 3,
 		dryRun: true,
+		dryRunWriteStatus: false,
 		walletPoolRequired: false,
 		...overrides,
 	};
@@ -102,6 +103,7 @@ describe("pollOnce", () => {
 		const logger = makeLogger();
 		const launch = makeLaunch();
 		let capturedDryRun: boolean | null = null;
+		let capturedDryRunWriteStatus: boolean | null = null;
 		let capturedMaxAttempts: number | null = null;
 		const result = await pollOnce({
 			db: {} as never,
@@ -110,6 +112,7 @@ describe("pollOnce", () => {
 			listReady: async () => [launch],
 			submit: async (_db, _launch, opts) => {
 				capturedDryRun = opts.dryRun;
+				capturedDryRunWriteStatus = opts.dryRunWriteStatus;
 				capturedMaxAttempts = opts.maxAttempts;
 				return { status: "submitted", attempt: 1, txHash: "0xabc" };
 			},
@@ -117,6 +120,7 @@ describe("pollOnce", () => {
 		assert.equal(result.submitted, 1);
 		assert.equal(result.scanned, 1);
 		assert.equal(capturedDryRun, true);
+		assert.equal(capturedDryRunWriteStatus, false);
 		assert.equal(capturedMaxAttempts, 5);
 	});
 
@@ -187,19 +191,41 @@ describe("pollOnce", () => {
 });
 
 describe("config", () => {
-	it("dryRun defaults to true if BUNDLE_BOT_DRY_RUN is unset", async () => {
+	it("dryRun defaults to false outside NODE_ENV=test if BUNDLE_BOT_DRY_RUN is unset", async () => {
 		const { loadBundleBotConfig } = await import("./config.js");
-		const original = process.env.BUNDLE_BOT_DRY_RUN;
+		const originalDryRun = process.env.BUNDLE_BOT_DRY_RUN;
+		const originalNodeEnv = process.env.NODE_ENV;
 		delete process.env.BUNDLE_BOT_DRY_RUN;
+		process.env.NODE_ENV = "production";
+		try {
+			const c = loadBundleBotConfig();
+			assert.equal(c.dryRun, false);
+		} finally {
+			if (originalDryRun !== undefined) process.env.BUNDLE_BOT_DRY_RUN = originalDryRun;
+			else delete process.env.BUNDLE_BOT_DRY_RUN;
+			if (originalNodeEnv !== undefined) process.env.NODE_ENV = originalNodeEnv;
+			else delete process.env.NODE_ENV;
+		}
+	});
+
+	it("dryRun defaults to true under NODE_ENV=test", async () => {
+		const { loadBundleBotConfig } = await import("./config.js");
+		const originalDryRun = process.env.BUNDLE_BOT_DRY_RUN;
+		const originalNodeEnv = process.env.NODE_ENV;
+		delete process.env.BUNDLE_BOT_DRY_RUN;
+		process.env.NODE_ENV = "test";
 		try {
 			const c = loadBundleBotConfig();
 			assert.equal(c.dryRun, true);
 		} finally {
-			if (original !== undefined) process.env.BUNDLE_BOT_DRY_RUN = original;
+			if (originalDryRun !== undefined) process.env.BUNDLE_BOT_DRY_RUN = originalDryRun;
+			else delete process.env.BUNDLE_BOT_DRY_RUN;
+			if (originalNodeEnv !== undefined) process.env.NODE_ENV = originalNodeEnv;
+			else delete process.env.NODE_ENV;
 		}
 	});
 
-	it("dryRun is false only when explicitly set", async () => {
+	it("dryRun is false when explicitly disabled", async () => {
 		const { loadBundleBotConfig } = await import("./config.js");
 		const original = process.env.BUNDLE_BOT_DRY_RUN;
 		process.env.BUNDLE_BOT_DRY_RUN = "false";
@@ -209,6 +235,25 @@ describe("config", () => {
 		} finally {
 			if (original !== undefined) process.env.BUNDLE_BOT_DRY_RUN = original;
 			else delete process.env.BUNDLE_BOT_DRY_RUN;
+		}
+	});
+
+	it("dryRunWriteStatus only enables when dryRun is also enabled", async () => {
+		const { loadBundleBotConfig } = await import("./config.js");
+		const originalDryRun = process.env.BUNDLE_BOT_DRY_RUN;
+		const originalWriteStatus = process.env.BUNDLE_BOT_DRY_RUN_WRITE_STATUS;
+		try {
+			process.env.BUNDLE_BOT_DRY_RUN = "true";
+			process.env.BUNDLE_BOT_DRY_RUN_WRITE_STATUS = "true";
+			assert.equal(loadBundleBotConfig().dryRunWriteStatus, true);
+
+			process.env.BUNDLE_BOT_DRY_RUN = "false";
+			assert.equal(loadBundleBotConfig().dryRunWriteStatus, false);
+		} finally {
+			if (originalDryRun !== undefined) process.env.BUNDLE_BOT_DRY_RUN = originalDryRun;
+			else delete process.env.BUNDLE_BOT_DRY_RUN;
+			if (originalWriteStatus !== undefined) process.env.BUNDLE_BOT_DRY_RUN_WRITE_STATUS = originalWriteStatus;
+			else delete process.env.BUNDLE_BOT_DRY_RUN_WRITE_STATUS;
 		}
 	});
 });
