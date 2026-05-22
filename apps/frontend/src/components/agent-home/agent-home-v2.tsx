@@ -116,6 +116,11 @@ export default function AgentHomeV2({
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
 	const hasApps = apps.length > 0;
 
+	// Identity panel renders null when the agent has no traits / x handle /
+	// system prompt. When that's the case, EconomicsPanel takes the full
+	// row (otherwise it'd sit in the left column with an empty right slot).
+	const hasIdentity = !!((agent.traits && agent.traits.length > 0) || agent.twitterHandle || agent.systemPrompt);
+
 	// Merge raw trades into the unified activity stream so we surface a
 	// single feed instead of duplicating "wave-t activity" + "last 20
 	// trades" on the same page. The Wave T feed already understands the
@@ -178,9 +183,9 @@ export default function AgentHomeV2({
 					    Identity returns null when the agent has no traits / x
 					    handle / system prompt, in which case Economics will
 					    occupy the full column slot. */}
-					<div className="grid gap-4 md:grid-cols-2" id="economics">
+					<div className={hasIdentity ? "grid gap-4 md:grid-cols-2" : "grid gap-4"} id="economics">
 						<EconomicsPanel launch={launch} />
-						<IdentityPanel agent={agent} />
+						{hasIdentity ? <IdentityPanel agent={agent} /> : null}
 					</div>
 
 					{/* Unified activity feed (2/3) + top apps by revenue (1/3,
@@ -189,7 +194,7 @@ export default function AgentHomeV2({
 					    the same panel now. The feed's built-in "Trading" tab
 					    filters down to swap/position rows. */}
 					<div className={hasApps ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" : "grid gap-4"} id="activity">
-						<WaveTActivityFeed max={20} rows={mergedActivity} />
+						<WaveTActivityFeed max={30} rows={mergedActivity} />
 						{hasApps ? <TopAppsByRevenue apps={apps} limit={4} /> : null}
 					</div>
 
@@ -230,8 +235,10 @@ function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null
  * pass the agent's own ticker as the asset (every row in the trade
  * stream is a swap of THIS token).
  *
- * Sorted newest-first, dedupes by id just in case the upstream activity
- * already includes a row for the same hash.
+ * Sorted newest-first. Dedupes by underlying tx hash so that an onchain
+ * `tx` row (id `onchain-${hash}`) and a `trade` row (id `trade-${hash}-…`)
+ * for the same swap collapse to a single entry — the richer `trade` row
+ * wins because it carries buy/sell direction and amount.
  */
 function mergeActivityWithTrades(opts: {
 	activity: ActivityRowInput[];
@@ -256,16 +263,34 @@ function mergeActivityWithTrades(opts: {
 		return row;
 	});
 
+	// Trade rows take priority over generic onchain `tx` rows for the same
+	// hash. Build a hash key from either the bscscan url or the explicit
+	// onchain id; trade rows are concatenated FIRST so their hash claims
+	// the slot.
 	const seen = new Set<string>();
 	const out: ActivityRowInput[] = [];
-	for (const r of [...opts.activity, ...tradeRows]) {
-		const key = r.id;
+	for (const r of [...tradeRows, ...opts.activity]) {
+		const key = rowDedupeKey(r);
 		if (seen.has(key)) continue;
 		seen.add(key);
 		out.push(r);
 	}
 	out.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 	return out;
+}
+
+/**
+ * Best-effort tx-hash extractor. Pulls the hash off the bscscan url if the
+ * row has one (works for `trade`, `tx`, `treasury`, etc), otherwise falls
+ * back to the row id. Lowercased so 0xABC and 0xabc collapse.
+ */
+function rowDedupeKey(row: ActivityRowInput): string {
+	const url = (row as { url?: string }).url;
+	if (typeof url === "string") {
+		const m = url.match(/0x[a-fA-F0-9]{40,}/);
+		if (m) return `tx:${m[0].toLowerCase()}`;
+	}
+	return `id:${row.id}`;
 }
 
 function TopBar() {
