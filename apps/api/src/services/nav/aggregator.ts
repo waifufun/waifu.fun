@@ -12,6 +12,11 @@ import { enumerateEvmNativeBalance } from "./enumerators/evm-native.js";
 import { enumerateHyperliquid } from "./enumerators/hyperliquid.js";
 import { enumeratePcsV3Lp } from "./enumerators/pancake-v3-lp.js";
 import { fetchCoinGeckoNativePrices, fetchCoinGeckoTokenPrices } from "./pricing/coingecko.js";
+import {
+	type DexScreenerChain,
+	SUPPORTED_DEXSCREENER_CHAINS,
+	fetchDexScreenerTokenPrice,
+} from "./pricing/dexscreener.js";
 import { fetchPcsV3TwapPriceUsd } from "./pricing/pcs-v3-twap.js";
 import type {
 	Erc20Balance,
@@ -56,6 +61,7 @@ export type NavAggregatorDeps = {
 	enumeratePcsV3Lp?: (wallet: WalletHoldingBase) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
 	fetchTokenPrices?: (chain: EvmNavChain, contracts: string[]) => Promise<Record<string, TokenPrice>>;
 	fetchNativePrices?: (chains: EvmNavChain[]) => Promise<Record<string, TokenPrice>>;
+	fetchDexScreenerPrice?: (chain: DexScreenerChain, contract: string) => Promise<TokenPrice>;
 	fetchPcsPrice?: (contract: string, decimals: number, bnbUsd: number | null) => Promise<TokenPrice>;
 };
 
@@ -250,6 +256,7 @@ export async function buildNavSnapshot(address: string, deps: NavAggregatorDeps 
 		}),
 	);
 
+	const fetchDexPrice = deps.fetchDexScreenerPrice ?? fetchDexScreenerTokenPrice;
 	const fetchPcsPrice = deps.fetchPcsPrice ?? fetchPcsV3TwapPriceUsd;
 	const bnbUsd = nativePrices[NAV_CHAIN_CONFIG.bsc.coingeckoNativeId]?.priceUsd ?? null;
 	const holdings: Holding[] = [...directHoldings];
@@ -259,6 +266,8 @@ export async function buildNavSnapshot(address: string, deps: NavAggregatorDeps 
 			price = nativePrices[NAV_CHAIN_CONFIG[raw.wallet.chain as EvmNavChain]!.coingeckoNativeId];
 		} else if (raw.contract) {
 			price = tokenPricesByChain.get(raw.wallet.chain)?.[raw.contract.toLowerCase()];
+			if ((!price || !price.priced) && SUPPORTED_DEXSCREENER_CHAINS.has(raw.wallet.chain as DexScreenerChain))
+				price = await fetchDexPrice(raw.wallet.chain as DexScreenerChain, raw.contract);
 			if ((!price || !price.priced) && raw.wallet.chain === "bsc")
 				price = await fetchPcsPrice(raw.contract, raw.decimals ?? 18, bnbUsd);
 		}
