@@ -21,6 +21,10 @@ const LOW_BALANCE_WARN_BNB = 0.3;
 const ENVELOPE_PREFIX = "bwp:v1:";
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
+const PLAINTEXT_KEYS_DISABLED_MESSAGE =
+	"plaintext bundle wallet keys are disabled; re-encrypt existing bundle_wallet_pool.encrypted_pk rows with encryptBundleWalletPk after setting BUNDLE_KMS_KEY";
+const MISSING_PRODUCTION_KMS_MESSAGE =
+	"BUNDLE_KMS_KEY is required in production to encrypt bundle wallet keys; refusing to store plaintext private keys";
 
 export async function selectAvailableWallet(
 	db: Database,
@@ -136,7 +140,12 @@ export function normalizePrivateKey(privateKey: string): Hex {
 export function encryptBundleWalletPk(privateKey: string): string {
 	const normalized = normalizePrivateKey(privateKey);
 	const key = getBundleKmsKey();
-	if (!key) return normalized;
+	if (!key) {
+		if (process.env.NODE_ENV === "production") {
+			throw new Error(MISSING_PRODUCTION_KMS_MESSAGE);
+		}
+		return normalized;
+	}
 	const iv = randomBytes(IV_BYTES);
 	const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: TAG_BYTES });
 	const data = Buffer.concat([cipher.update(normalized, "utf8"), cipher.final()]);
@@ -146,8 +155,15 @@ export function encryptBundleWalletPk(privateKey: string): string {
 	).toString("base64url")}`;
 }
 
-export function decryptBundleWalletPk(encryptedPk: string): Hex {
+export interface DecryptBundleWalletPkOptions {
+	allowPlaintext?: boolean;
+}
+
+export function decryptBundleWalletPk(encryptedPk: string, options: DecryptBundleWalletPkOptions = {}): Hex {
 	if (encryptedPk.startsWith("0x") || /^[0-9a-fA-F]{64}$/u.test(encryptedPk)) {
+		if (!options.allowPlaintext) {
+			throw new Error(PLAINTEXT_KEYS_DISABLED_MESSAGE);
+		}
 		return normalizePrivateKey(encryptedPk);
 	}
 	if (!encryptedPk.startsWith(ENVELOPE_PREFIX)) {

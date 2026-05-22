@@ -7,14 +7,22 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const CODEX_API_KEY = process.env.CODEX_API_KEY;
+let codexClient: Codex | null = null;
 
-if (!CODEX_API_KEY) {
-	logger.error("Missing CODEX_API_KEY in enviroment variables");
-	process.exit(1);
+function getCodexClient(): Codex {
+	const apiKey = process.env.CODEX_API_KEY;
+	if (!apiKey) {
+		throw new Error("Missing CODEX_API_KEY in environment variables");
+	}
+	codexClient ??= new Codex(apiKey);
+	return codexClient;
 }
 
-export const codex = new Codex(CODEX_API_KEY);
+export const codex = new Proxy({} as Codex, {
+	get(_target, prop, receiver) {
+		return Reflect.get(getCodexClient(), prop, receiver);
+	},
+});
 
 export const updateCryptoPrices = async ({
 	cacheKey = "prices",
@@ -22,7 +30,7 @@ export const updateCryptoPrices = async ({
 	try {
 		const wrappedSol = "So11111111111111111111111111111111111111112";
 
-		const prices = await codex.queries.getTokenPrices({
+		const prices = await getCodexClient().queries.getTokenPrices({
 			inputs: [
 				{
 					address: WETH_ADDRESSES[EvmChainIds.EthereumMainnet],

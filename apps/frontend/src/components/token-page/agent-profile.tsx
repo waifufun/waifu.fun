@@ -3,6 +3,7 @@
 import { CopyButton } from "@/components/copy-button";
 import Verified from "@/components/verified";
 import { getExplorerAddressUrl } from "@/lib/explorer";
+import { getSocialLinkEntries } from "@/lib/url-safety";
 import { cn, fromNow, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
@@ -236,12 +237,14 @@ export default function AgentProfile({
 	const lastHeartbeat = runtimeToken.lastHeartbeatAt ? fromNow(runtimeToken.lastHeartbeatAt) : null;
 	const recentTimeLabel = lastActivity ?? lastHeartbeat;
 
-	const socialsWithLinks = socialsConfig
-		.map((s) => ({
-			...s,
-			href: token?.socials?.[s.key as keyof typeof token.socials] as string | undefined,
+	const socialEntries = getSocialLinkEntries(token?.socials);
+	const socialsWithLinks = socialEntries
+		.map((social) => ({
+			...social,
+			icon: socialsConfig.find((s) => s.key === social.key)?.icon,
 		}))
-		.filter((s): s is typeof s & { href: string } => Boolean(s.href));
+		.filter((social): social is typeof social & { href: string; icon: string } => Boolean(social.href && social.icon));
+	const socialsAsText = socialEntries.filter((social) => !social.href);
 
 	return (
 		<motion.div
@@ -345,8 +348,8 @@ export default function AgentProfile({
 							</div>
 						)}
 
-						{socialsWithLinks.length > 0 && (
-							<div className="flex items-center gap-1.5">
+						{(socialsWithLinks.length > 0 || socialsAsText.length > 0) && (
+							<div className="flex items-center gap-1.5 min-w-0">
 								{socialsWithLinks.map((social) => (
 									<Link
 										key={social.key}
@@ -357,6 +360,15 @@ export default function AgentProfile({
 									>
 										<Image src={social.icon} unoptimized width={13} height={13} alt={social.key} />
 									</Link>
+								))}
+								{socialsAsText.map((social) => (
+									<span
+										key={social.key}
+										className="max-w-[14rem] truncate font-mono text-zinc-700"
+										title={social.value}
+									>
+										{social.label}: {social.value}
+									</span>
 								))}
 							</div>
 						)}

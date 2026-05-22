@@ -61,6 +61,4 @@ schema.index({ name: "text", ticker: "text", contractAddress: "text" });
 schema.index({ createdAt: -1 });
 const Model = Mongoose.model<IToken, MongooseModel<IToken>>("Token", schema);
 
-Model.createIndexes();
-
 export default Model;

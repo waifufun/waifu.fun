@@ -1,4 +1,4 @@
-import AgentCardSkeleton from "@/components/agents-discover/agent-card-skeleton";
+import AgentCardV2Skeleton from "@/components/agents-discover/agent-card-v2-skeleton";
 
 export default function Loading() {
 	return (
@@ -14,10 +14,10 @@ export default function Loading() {
 					</div>
 				</div>
 				<div className="h-12 border-y border-white/10" />
-				<div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					{Array.from({ length: 9 }).map((_, i) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
-						<AgentCardSkeleton key={i} />
+						<AgentCardV2Skeleton key={i} />
 					))}
 				</div>
 			</div>

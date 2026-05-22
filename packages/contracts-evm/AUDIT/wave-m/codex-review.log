@@ -1,0 +1,19 @@
+OpenAI Codex v0.124.0 (research preview)
+--------
+workdir: /home/shad0w/projects/waifu.fun-wt/security-wave-m-audit/packages/contracts-evm
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /home/shad0w/.codex/memories]
+reasoning effort: none
+reasoning summaries: none
+session id: 019e39a8-7221-7b63-bab1-e28268e81fd4
+--------
+user
+changes against 'origin/develop'
+warning: Codex could not find bubblewrap on PATH. Install bubblewrap with your OS package manager. See the sandbox prerequisites: https://developers.openai.com/codex/concepts/sandboxing#prerequisites. Codex will use the vendored bubblewrap in the meantime.
+mcp: codex/list_mcp_resources started
+mcp: codex/list_mcp_resources (completed)
+codex
+Unable to inspect the diff because every shell command failed with `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`. No actionable findings can be reported without access to the changes.
+Unable to inspect the diff because every shell command failed with `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`. No actionable findings can be reported without access to the changes.

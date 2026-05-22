@@ -1,13 +1,13 @@
-export type { ControlPlaneClient, CreateControlPlaneClientOptions } from "./client";
-export { createControlPlaneServerClient, getControlPlaneServerClient } from "./client";
-export type { ControlPlaneSupabaseEnv } from "./env";
-export { SUPABASE_SERVICE_ROLE_KEY_ENV_KEY, SUPABASE_URL_ENV_KEY, getControlPlaneSupabaseEnv } from "./env";
+export type { ControlPlaneClient, CreateControlPlaneClientOptions } from "./client.js";
+export { createControlPlaneServerClient, getControlPlaneServerClient } from "./client.js";
+export type { ControlPlaneSupabaseEnv } from "./env.js";
+export { SUPABASE_SERVICE_ROLE_KEY_ENV_KEY, SUPABASE_URL_ENV_KEY, getControlPlaneSupabaseEnv } from "./env.js";
 export {
 	createControlPlaneInviteCode,
 	normalizeControlPlaneInviteCode,
 	normalizeControlPlaneTokenKey,
 	normalizeControlPlaneWalletKey,
-} from "./normalization";
+} from "./normalization.js";
 export {
 	addWalletToLaunchGateAllowlist,
 	createInviteCode,
@@ -15,18 +15,18 @@ export {
 	listLaunchGateAllowlist,
 	redeemInviteCode,
 	removeWalletFromLaunchGateAllowlist,
-} from "./launch-gate";
+} from "./launch-gate.js";
 export type {
 	AddLaunchGateAllowlistEntryInput,
 	CreateInviteCodeInput,
 	RedeemInviteCodeInput,
-} from "./launch-gate";
-export { getTokenOwnership, upsertTokenOwnership } from "./token-ownerships";
-export type { UpsertTokenOwnershipInput } from "./token-ownerships";
-export { getTokenRuntimeState, upsertTokenRuntimeState } from "./token-runtime";
-export type { UpsertTokenRuntimeStateInput } from "./token-runtime";
-export { getWalletIdentityByAddress, upsertWalletIdentity } from "./wallet-identities";
-export type { UpsertWalletIdentityInput } from "./wallet-identities";
+} from "./launch-gate.js";
+export { getTokenOwnership, upsertTokenOwnership } from "./token-ownerships.js";
+export type { UpsertTokenOwnershipInput } from "./token-ownerships.js";
+export { getTokenRuntimeState, upsertTokenRuntimeState } from "./token-runtime.js";
+export type { UpsertTokenRuntimeStateInput } from "./token-runtime.js";
+export { getWalletIdentityByAddress, upsertWalletIdentity } from "./wallet-identities.js";
+export type { UpsertWalletIdentityInput } from "./wallet-identities.js";
 export type {
 	ControlPlaneAgentStatus,
 	ControlPlaneBillingMode,
@@ -49,4 +49,4 @@ export type {
 	ControlPlaneWalletKeyInput,
 	ControlPlaneWalletLinkSource,
 	Json,
-} from "./types";
+} from "./types.js";

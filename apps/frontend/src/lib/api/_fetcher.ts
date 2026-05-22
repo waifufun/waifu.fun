@@ -1,4 +1,5 @@
 import { getStewardJwt } from "@/lib/api-auth";
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
 
 /**
  * Canonical fetch wrapper for the waifu-core API.
@@ -31,7 +32,12 @@ export function isApiError(value: unknown): value is ApiError {
 	);
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+// Same-origin path: mobile in-app browser WebViews (zerion, MM mobile, Trust)
+// block cookies on cross-origin XHR even within the same registrable domain.
+// /v2/* and /v3/* paths are intercepted by the CF Pages function in
+// functions/[[path]].js and proxied server-to-server to api.waifu.fun. See
+// src/lib/same-origin-api.ts.
+const BASE_URL = SAME_ORIGIN_API;
 
 /**
  * Resolve a request URL against `NEXT_PUBLIC_API_URL`.
@@ -94,6 +100,8 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit = {})
 			try {
 				parsed = JSON.parse(text) as ParsedError;
 			} catch {
+				// Non-JSON error body (e.g. HTML 404 from a CDN). Keep going,
+				// just don't pretend it's a structured error.
 				parsed = null;
 			}
 		}
@@ -101,7 +109,7 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit = {})
 			status: res.status,
 			message: parsed?.error || parsed?.message || res.statusText || `HTTP ${res.status}`,
 			...(parsed?.code ? { code: parsed.code } : {}),
-			...(parsed ? { details: parsed } : text ? { details: text } : {}),
+			...(parsed ? { details: parsed } : text ? { details: text.slice(0, 500) } : {}),
 		};
 		throw err;
 	}

@@ -40,13 +40,9 @@ export function LaunchCountdown({ closeTimestampSec, className, compact = false,
 	const remainingMs = Math.max(0, target - now);
 	if (remainingMs <= 0) {
 		return (
-			<div
-				className={className ?? "text-2xl font-semibold tabular-nums text-zinc-300"}
-				role="status"
-				aria-label="round closed"
-			>
+			<output className={className ?? "text-2xl font-semibold tabular-nums text-zinc-300"} aria-label="round closed">
 				{format === "humanized" ? "closed" : "round closed"}
-			</div>
+			</output>
 		);
 	}
 

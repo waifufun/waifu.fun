@@ -18,10 +18,10 @@ function StewardCallbackInner() {
 	const [usedFallback, setUsedFallback] = useState(false);
 	const ranRef = useRef(false);
 
-	const token = params.get("token") ?? params.get("code");
-	const stewardUserId = params.get("user_id") ?? params.get("uid");
-	const errorParam = params.get("error");
-	const errorDescription = params.get("error_description");
+	const token = params?.get("token") ?? params?.get("code");
+	const stewardUserId = params?.get("user_id") ?? params?.get("uid");
+	const errorParam = params?.get("error");
+	const errorDescription = params?.get("error_description");
 
 	useEffect(() => {
 		if (ranRef.current) return;

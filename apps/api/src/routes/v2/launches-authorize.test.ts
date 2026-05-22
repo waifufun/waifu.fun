@@ -22,7 +22,7 @@ function baseRow(overrides: Partial<Record<string, unknown>> = {}) {
 		chainId: 56,
 		portalAddress: "0x4444444444444444444444444444444444444444",
 		quoteToken: null,
-		tokenName: "Milady Agent",
+		tokenName: "Eliza Agent",
 		tokenTicker: "MLDY",
 		tokenDescription: "agent launch",
 		tokenImageUrl: "ipfs://image",

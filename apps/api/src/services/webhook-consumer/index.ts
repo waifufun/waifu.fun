@@ -2,13 +2,8 @@ import { agentPersonas, getDatabase } from "@waifufun/db";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 
+import { type AgentSpec, type ElizaCloudClient, ElizaCloudNotConfiguredError, type Logger } from "../eliza-client.js";
 import { emitAgentEvent } from "../events/emit.js";
-import {
-	type AgentSpec,
-	type Logger,
-	type MiladyCloudClient,
-	MiladyCloudNotConfiguredError,
-} from "../milady-client.js";
 import { type XClient, getAgentXClient } from "../x/agent-x-client.js";
 
 export type WebhookConsumerEvent = {
@@ -35,7 +30,7 @@ export type WebhookConsumerPersonaStore = {
 };
 
 export type WebhookConsumerDeps = {
-	miladyCloud: MiladyCloudClient;
+	elizaCloud: ElizaCloudClient;
 	logger: Logger;
 	emitEvent?: typeof emitAgentEvent;
 	personaStore?: WebhookConsumerPersonaStore;
@@ -52,7 +47,7 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] agent.claimed missing agentId", { event });
 					return;
 				}
-				await deps.miladyCloud.provisionAgent({
+				await deps.elizaCloud.provisionAgent({
 					agentId: event.agentId,
 					spec: buildAgentSpec(event.agentId, event.data),
 				});
@@ -80,7 +75,7 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] kill event missing agentId", { event });
 					return;
 				}
-				await deps.miladyCloud.pauseAgent(event.agentId);
+				await deps.elizaCloud.pauseAgent(event.agentId);
 				return;
 			}
 			case "agent.revived":
@@ -89,7 +84,7 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 					logger.warn?.("[webhook-consumer] revive event missing agentId", { event });
 					return;
 				}
-				await deps.miladyCloud.resumeAgent(event.agentId);
+				await deps.elizaCloud.resumeAgent(event.agentId);
 				return;
 			}
 			default:
@@ -97,8 +92,8 @@ export async function dispatchEvent(event: WebhookConsumerEvent, deps: WebhookCo
 				return;
 		}
 	} catch (err) {
-		if (err instanceof MiladyCloudNotConfiguredError) {
-			logger.warn?.("[webhook-consumer] milady cloud not configured; skipping", {
+		if (err instanceof ElizaCloudNotConfiguredError) {
+			logger.warn?.("[webhook-consumer] eliza cloud not configured; skipping", {
 				eventType: event.event,
 				agentId: event.agentId,
 			});

@@ -51,6 +51,27 @@ export function createTokenRoutes() {
 		});
 	});
 
+	app.post("/trades", async (c) => {
+		const deps = c.get("deps");
+		const body = await c.req.json().catch(() => null);
+		const result = tokenTradesQuerySchema.safeParse({
+			address: body?.contractAddress ?? body?.address,
+			limit: body?.limit,
+		});
+
+		if (!result.success) {
+			throw validationFailed(result.error);
+		}
+
+		const items = await deps.db.listTokenTrades(result.data);
+		return respondOk(c, {
+			docs: items,
+			items,
+			total: items.length,
+			limit: result.data.limit,
+		});
+	});
+
 	app.get("/:address/chart", async (c) => {
 		const deps = c.get("deps");
 		const address = c.req.param("address");

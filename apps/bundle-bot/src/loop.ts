@@ -37,6 +37,7 @@ export interface PollDeps {
 			privateRpcUrl: string;
 			dryRun: boolean;
 			allowSingleWalletFallback: boolean;
+			maxAttempts: number;
 		},
 	) => Promise<{ status: string; txHash?: string; attempt: number; reason?: string }>;
 }
@@ -97,6 +98,7 @@ export async function pollOnce(deps: PollDeps): Promise<PollResult> {
 				privateRpcUrl: deps.config.puissantUrl,
 				dryRun: deps.config.dryRun,
 				allowSingleWalletFallback: !deps.config.walletPoolRequired,
+				maxAttempts: deps.config.maxAttempts,
 			});
 			deps.logger.info(
 				{

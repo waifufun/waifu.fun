@@ -15,7 +15,35 @@ function resetPatronAuthMocks() {
 	__setRequirePatronStewardParserForTest(undefined);
 }
 
-test("POST /v3/agents creates a persona with launchpad fields", async () => {
+function installCreatePatronAuth() {
+	__setRequirePatronDbForTest({
+		select() {
+			return {
+				from: () => ({
+					where: () => ({
+						limit: async () => [
+							{
+								id: "patron-1",
+								stewardUserId: "steward-1",
+								primaryEmail: null,
+							},
+						],
+					}),
+				}),
+			};
+		},
+	} as never);
+	__setRequirePatronStewardParserForTest(async () => ({
+		userId: "steward-1",
+		tenantId: "waifu",
+		address: OWNER,
+	}));
+}
+
+test("POST /v3/agents creates a patron-owned persona and ignores caller-supplied IDs", async () => {
+	installCreatePatronAuth();
+	test.after(resetPatronAuthMocks);
+
 	const inserted: unknown[] = [];
 	const app = createV3Routes({
 		db: {
@@ -34,7 +62,7 @@ test("POST /v3/agents creates a persona with launchpad fields", async () => {
 
 	const res = await app.request("/agents", {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: { authorization: "Bearer test", "content-type": "application/json" },
 		body: JSON.stringify({
 			agent_id: "waifu-demo",
 			name: "Demo",
@@ -48,8 +76,13 @@ test("POST /v3/agents creates a persona with launchpad fields", async () => {
 	const json = (await res.json()) as { ok: boolean; agent: Record<string, unknown> };
 	assert.equal(json.ok, true);
 	assert.equal(json.agent.launchpadId, "four-meme-tax");
+	const createdAgentId = (inserted[0] as { agentId: string }).agentId;
+	assert.match(createdAgentId, /^waifu-aed96123ee-demo-[0-9a-f]{8}$/);
+	assert.notEqual(createdAgentId, "waifu-demo");
 	assert.deepEqual(inserted[0], {
-		agentId: "waifu-demo",
+		agentId: createdAgentId,
+		ownerStewardUserId: "steward-1",
+		ownerAddress: OWNER,
 		name: "Demo",
 		bio: null,
 		avatarUrl: null,
@@ -58,6 +91,16 @@ test("POST /v3/agents creates a persona with launchpad fields", async () => {
 		chain: "bsc",
 		metadata: null,
 	});
+});
+
+test("POST /v3/agents rejects anonymous persona creation", async () => {
+	const app = createV3Routes({ db: {} as never });
+	const res = await app.request("/agents", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ name: "Demo", chain: "bsc" }),
+	});
+	assert.equal(res.status, 401);
 });
 
 test("GET /v3/agents/:id/safe returns safe metadata", async () => {
@@ -93,10 +136,13 @@ test("GET /v3/agents/:id/safe returns safe metadata", async () => {
 });
 
 test("POST /v3/agents rejects unsupported chains", async () => {
+	installCreatePatronAuth();
+	test.after(resetPatronAuthMocks);
+
 	const app = createV3Routes({ db: {} as never });
 	const res = await app.request("/agents", {
 		method: "POST",
-		headers: { "content-type": "application/json" },
+		headers: { authorization: "Bearer test", "content-type": "application/json" },
 		body: JSON.stringify({ name: "Demo", chain: "arbitrum" }),
 	});
 	assert.equal(res.status, 400);

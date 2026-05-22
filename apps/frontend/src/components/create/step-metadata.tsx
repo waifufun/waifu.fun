@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { FlapMetadataUploadError, shortenCid, uploadFlapMetadata } from "@/lib/flap/metadata";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { type ChangeEvent, type DragEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import { CheckIcon, UploadIcon } from "./wizard-icons";

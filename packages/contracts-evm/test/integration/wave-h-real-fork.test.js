@@ -46,18 +46,38 @@ function predictCreate2(deployer, salt, codeHash) {
 	return ethers.getCreate2Address(deployer, salt, codeHash);
 }
 
-function mineVanitySalt(deployer, codeHash, label) {
+function effectiveSalt(creator, rawSalt) {
+	return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["address", "bytes32"], [creator, rawSalt]));
+}
+
+function mineVanitySalt(deployer, codeHash, creator, label) {
 	// Mine a salt where predicted addr ends in 7777
-	let salt = ethers.keccak256(ethers.toUtf8Bytes(`wave-h-fork ${label} ${Date.now()} ${Math.random()}`));
-	let i = 0;
-	while (!predictCreate2(deployer, salt, codeHash).toLowerCase().endsWith("7777")) {
-		salt = ethers.keccak256(salt);
-		i += 1;
-		if (i > 500_000) {
-			throw new Error("salt mining exceeded 500k iterations");
+	const maxIterations = 4_000_000;
+	let rawSalt = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["string", "address"], [label, creator]));
+	for (let i = 0; i < maxIterations; i += 1) {
+		const salt = effectiveSalt(creator, rawSalt);
+		const predicted = predictCreate2(deployer, salt, codeHash);
+		if (predicted.toLowerCase().endsWith("7777")) {
+			return { rawSalt, salt, predicted, iterations: i };
 		}
+		rawSalt = ethers.keccak256(rawSalt);
 	}
-	return { salt, predicted: predictCreate2(deployer, salt, codeHash), iterations: i };
+	throw new Error(`salt mining exceeded ${maxIterations} iterations`);
+}
+
+async function advanceTo(timestamp) {
+	const target = typeof timestamp === "bigint" ? Number(timestamp) : timestamp;
+	await ethers.provider.send("evm_setNextBlockTimestamp", [target]);
+	await ethers.provider.send("evm_mine", []);
+}
+
+async function closeSubscribedVault(vault, closer) {
+	const block = await ethers.provider.getBlock("latest");
+	const closeTimestamp = await vault.closeTimestamp();
+	const minOpenReady = BigInt(block.timestamp) + 901n;
+	await advanceTo(minOpenReady < closeTimestamp ? minOpenReady : closeTimestamp + 1n);
+	const closeTx = await vault.connect(closer).close();
+	return closeTx.wait();
 }
 
 describe("Wave H real-fork integration", function () {
@@ -86,6 +106,23 @@ describe("Wave H real-fork integration", function () {
 		[owner, creator, bundleBot, depositor1, depositor2] = await ethers.getSigners();
 
 		// Deploy LaunchFactory pointing at real BSC infra
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
+		// Wave M3: AgentSafeDeployer wraps Gnosis Safe v1.4.1 canonical addresses
+		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+		const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
+			"0x29fcB43b46531BcA003ddC8FCB67FFE91900C762", // Safe singleton v1.4.1
+			"0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67", // Safe ProxyFactory v1.4.1
+		);
+
+		// Wave O.1: TreasuryLP5Deployer + PCS V3 NPM (no Chainlink feed)
+		const TreasuryLp5DeployerCF = await ethers.getContractFactory("TreasuryLP5Deployer");
+		const treasuryLp5Deployer = await TreasuryLp5DeployerCF.deploy();
+		const PCS_V3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
+		const PCS_V3_FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865";
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		factory = await Factory.deploy(
 			WBNB,
@@ -95,6 +132,12 @@ describe("Wave H real-fork integration", function () {
 			PORTAL,
 			TOKEN_TAXED_V3_IMPL,
 			TIP_RECEIVER,
+			owner.address,
+			await routerDeployer.getAddress(),
+			await agentSafeDeployer.getAddress(),
+			await treasuryLp5Deployer.getAddress(),
+			PCS_V3_NPM,
+			PCS_V3_FACTORY,
 		);
 		await factory.waitForDeployment();
 		console.log(`    [fork] LaunchFactory deployed at ${await factory.getAddress()}`);
@@ -103,7 +146,7 @@ describe("Wave H real-fork integration", function () {
 	it("createLaunch deploys vault + router + treasuryLp, addresses recorded", async () => {
 		// Mine a vanity salt for an address ending in 7777
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted } = mineVanitySalt(PORTAL, codeHash, "tier80-A");
+		const { rawSalt, salt, predicted } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-A");
 		console.log(`    [salt] predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -114,15 +157,23 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkA",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0, // TIER_80
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31_536_000, // 365 days
 			antiFarmerDuration: 86_400, // 1 day (Portal min)
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		const tx = await factory.connect(creator).createLaunch(config);
@@ -148,7 +199,7 @@ describe("Wave H real-fork integration", function () {
 
 	it("createLaunch reverts on duplicate salt", async () => {
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted } = mineVanitySalt(PORTAL, codeHash, "tier80-B");
+		const { rawSalt, predicted } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-B");
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
@@ -157,15 +208,23 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkB",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		// First call succeeds
@@ -176,7 +235,7 @@ describe("Wave H real-fork integration", function () {
 
 	it("createLaunch reverts on predictedTokenAddress mismatch", async () => {
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt } = mineVanitySalt(PORTAL, codeHash, "tier80-C");
+		const { rawSalt } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-C");
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
@@ -185,16 +244,24 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkC",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			// WRONG addr — factory should reject
 			predictedTokenAddress: "0xdead000000000000000000000000000000007777",
+			noBurn: false,
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		await expect(factory.connect(creator).createLaunch(config)).to.be.reverted;
@@ -202,7 +269,7 @@ describe("Wave H real-fork integration", function () {
 
 	it("vault accepts deposits up to presaleCap (tier 80 = 16 BNB)", async () => {
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted } = mineVanitySalt(PORTAL, codeHash, "tier80-D");
+		const { rawSalt, predicted } = mineVanitySalt(PORTAL, codeHash, creator.address, "tier80-D");
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
@@ -211,15 +278,23 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmTestPlaceholderCidForkD",
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: creator.address,
+			agentSafeOwners: [creator.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		await factory.connect(creator).createLaunch(config);
@@ -251,7 +326,12 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live] depositorA=${freshDepositorA.address}`);
 
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, "live-bundle");
+		const { rawSalt, salt, predicted, iterations } = mineVanitySalt(
+			PORTAL,
+			codeHash,
+			freshDepositorA.address,
+			"live-bundle",
+		);
 		console.log(`    [live] mined salt in ${iterations} iters; predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -262,15 +342,23 @@ describe("Wave H real-fork integration", function () {
 			metaCid: "QmLiveTestPlaceholderCid",
 			creator: freshDepositorA.address,
 			bundleBot: freshBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: freshDepositorA.address,
+			agentSafeOwners: [freshDepositorA.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: 0, // TIER_80
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		// Step 1: createLaunch deploys vault + router + treasuryLp
@@ -287,22 +375,20 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live] vault=${launchAddrs.vault} router=${launchAddrs.router}`);
 
 		// Step 2: depositors fund vault to fill tier-80 cap (16 BNB total)
-		await vault.connect(freshDepositorA).deposit({ value: ethers.parseEther("10") });
-		await vault.connect(freshDepositorB).deposit({ value: ethers.parseEther("6") });
+		await vault.connect(freshDepositorA).deposit({ value: ethers.parseEther("9.6") });
+		await vault.connect(freshDepositorB).deposit({ value: ethers.parseEther("6.4") });
 		const totalDeposited = await vault.totalDeposited();
 		expect(totalDeposited).to.equal(ethers.parseEther("16"));
 		console.log(`    [live] vault funded: ${ethers.formatEther(totalDeposited)} BNB`);
 
 		// Step 3: close the presale (cap hit, anyone can call)
-		const closeTx = await vault.connect(freshBot).close();
-		await closeTx.wait();
+		await closeSubscribedVault(vault, freshBot);
 		console.log("    [live] vault closed");
 
-		// Step 4: bundleBot triggers executeBundle
-		// Tip = 0.05 BNB (mid-range per PUISSANT_TIP_RESEARCH.md)
-		// Send extra to bundleBot so it can cover the tip (vault pulls quoteAmt+v2BuyBnb+tipBnb)
+		// Step 4: bundleBot triggers executeBundle. Builder tips are disabled
+		// in this contract version and must be funded outside the vault flow.
 		const execParams = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: config.name,
 			symbol: config.symbol,
 			meta: config.metaCid,
@@ -310,9 +396,8 @@ describe("Wave H real-fork integration", function () {
 			sellTaxBps: config.sellTaxBps,
 			taxDuration: config.taxDuration,
 			antiFarmerDuration: config.antiFarmerDuration,
-			commissionReceiver: config.commissionReceiver,
-			minV2TokensOut: 0,
-			tipBnb: 0, // tier 80 has no V2 buy and no tip overhead in fork mode
+			commissionReceiver: launchAddrs.taxSplitter,
+			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};
 
@@ -398,14 +483,14 @@ describe("Wave H real-fork integration", function () {
 	// Tier 90 / 95 / 98 — graduating tiers with V2 follow-up buy
 	// ----------------------------------------------------------------
 	//
-	// Each test mints a fresh launch with quoteAmt=20 BNB (Portal graduation
+	// Each test mints a fresh launch with quoteAmt calibrated by TierMath against buyTaxBps (Portal graduation
 	// threshold) plus tier-specific v2BuyBnb. Signers rotated per test to dodge
 	// Portal's 90s tx.origin cooldown — bundleBot is tx.origin for the
 	// router -> Portal.newTokenV6 call.
 	//
-	// Tier 90: presaleCap=32, quoteAmt=20, v2BuyBnb=12  -> signers 8/9/10
-	// Tier 95: presaleCap=64, quoteAmt=20, v2BuyBnb=44  -> signers 11/12/13
-	// Tier 98: presaleCap=160, quoteAmt=20, v2BuyBnb=140 -> signers 14/15/16
+	// Tier 90: presaleCap=32, quoteAmt calibrated, v2BuyBnb dynamic  -> signers 8/9/10
+	// Tier 95: presaleCap=64, quoteAmt calibrated, v2BuyBnb dynamic  -> signers 11/12/13
+	// Tier 98: presaleCap=160, quoteAmt calibrated, v2BuyBnb dynamic -> signers 14/15/16
 
 	async function runGraduatingTierBundle({ tierEnum, tierLabel, presaleCapBnb, v2BuyBnb, signerOffset }) {
 		const signers = await ethers.getSigners();
@@ -417,7 +502,12 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live ${tierLabel}] depositorB=${freshDepositorB.address}`);
 
 		const codeHash = initCodeHash(TOKEN_TAXED_V3_IMPL);
-		const { salt, predicted, iterations } = mineVanitySalt(PORTAL, codeHash, `live-${tierLabel}`);
+		const { rawSalt, salt, predicted, iterations } = mineVanitySalt(
+			PORTAL,
+			codeHash,
+			freshDepositorA.address,
+			`live-${tierLabel}`,
+		);
 		console.log(`    [live ${tierLabel}] mined salt in ${iterations} iters; predicted=${predicted}`);
 
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
@@ -428,15 +518,23 @@ describe("Wave H real-fork integration", function () {
 			metaCid: `QmLiveTestCid${tierLabel}`,
 			creator: freshDepositorA.address,
 			bundleBot: freshBot.address,
-			commissionReceiver: owner.address,
+			platformReceiver: owner.address,
+			patron: freshDepositorA.address,
+			agentSafeOwners: [freshDepositorA.address],
+			agentSafeThreshold: 1,
+			platformBps: 1000,
+			patronBps: 2500,
 			tier: tierEnum,
 			buyTaxBps: 300,
 			sellTaxBps: 300,
 			taxDuration: 31_536_000,
 			antiFarmerDuration: 86_400,
 			closeTimestamp,
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			predictedTokenAddress: predicted,
+			noBurn: false,
+			treasuryTickLowers: [2000, 6000, 10000, 14000],
+			treasuryTickUppers: [4000, 8000, 12000, 16000],
 		};
 
 		// 1. createLaunch
@@ -461,13 +559,12 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    [live ${tierLabel}] vault funded: ${ethers.formatEther(capWei)} BNB`);
 
 		// 3. close
-		const closeTx = await vault.connect(freshBot).close();
-		await closeTx.wait();
+		await closeSubscribedVault(vault, freshBot);
 		console.log(`    [live ${tierLabel}] vault closed`);
 
 		// 4. executeBundle
 		const execParams = {
-			vanitySalt: salt,
+			vanitySalt: rawSalt,
 			name: config.name,
 			symbol: config.symbol,
 			meta: config.metaCid,
@@ -475,8 +572,7 @@ describe("Wave H real-fork integration", function () {
 			sellTaxBps: config.sellTaxBps,
 			taxDuration: config.taxDuration,
 			antiFarmerDuration: config.antiFarmerDuration,
-			commissionReceiver: config.commissionReceiver,
-			minV2TokensOut: 0,
+			commissionReceiver: launchAddrs.taxSplitter,
 			tipBnb: 0,
 			deadline: closeTimestamp + 1800,
 		};
@@ -490,7 +586,7 @@ describe("Wave H real-fork integration", function () {
 		const tokenCode = await ethers.provider.getCode(predicted);
 		expect(tokenCode.length).to.be.greaterThan(2);
 
-		// 6. PCS V2 pair MUST exist for graduating tiers (quoteAmt=20 BNB triggers it)
+		// 6. PCS V2 pair MUST exist for graduating tiers (quoteAmt calibrated by TierMath triggers it on Portal v5.14.3)
 		const PCSFactoryAbi = ["function getPair(address, address) view returns (address)"];
 		const pcsFactory = new ethers.Contract(PCS_FACTORY, PCSFactoryAbi, ethers.provider);
 		const pair = await pcsFactory.getPair(predicted, WBNB);
@@ -541,7 +637,7 @@ describe("Wave H real-fork integration", function () {
 		expect(claimed).to.be.greaterThan(0n);
 
 		console.log(`\n    ====== Wave H Live ${tierLabel} Summary ======`);
-		console.log(`    presaleCap:         ${presaleCapBnb} BNB (quoteAmt=20, v2BuyBnb=${v2BuyBnb})`);
+		console.log(`    presaleCap:         ${presaleCapBnb} BNB (v2BuyBnb=${v2BuyBnb} BNB)`);
 		console.log(`    createLaunch gas:   ${createReceipt.gasUsed}`);
 		console.log(`    executeBundle gas:  ${execReceipt.gasUsed}`);
 		console.log(`    claim gas:          ${claimReceipt.gasUsed}`);

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { MiladyCloudClient } from "../milady-client.js";
+import type { ElizaCloudClient } from "../eliza-client.js";
 import { type WebhookConsumerPersonaStore, dispatchEvent } from "./index.js";
 
-function miladyStub(): MiladyCloudClient {
+function elizaStub(): ElizaCloudClient {
 	return {
 		async provisionAgent() {
 			return { containerId: "container-1" };
@@ -39,7 +39,7 @@ test("agent.credits.low downgrades model tier and emits event", async () => {
 			data: {},
 		},
 		{
-			miladyCloud: miladyStub(),
+			elizaCloud: elizaStub(),
 			logger: {},
 			personaStore: store,
 			async emitEvent(input) {
@@ -90,7 +90,7 @@ test("agent.credits.low skips X post when no X client is connected", async () =>
 			data: {},
 		},
 		{
-			miladyCloud: miladyStub(),
+			elizaCloud: elizaStub(),
 			logger: {},
 			personaStore: store,
 			async emitEvent(input) {
@@ -133,7 +133,7 @@ test("agent.credits.depleted posts last words and freezes the persona", async ()
 			data: {},
 		},
 		{
-			miladyCloud: miladyStub(),
+			elizaCloud: elizaStub(),
 			logger: {},
 			personaStore: store,
 			async emitEvent(input) {

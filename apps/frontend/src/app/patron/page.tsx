@@ -19,7 +19,10 @@ export default function PatronPage() {
 
 	return (
 		<main className="py-6">
-			<PatronHeader title="your agents" subtitle="agents you've launched. treasuries, status, controls." />
+			<PatronHeader
+				title="your agents"
+				subtitle="agents you patron. treasuries, runways, TaxSplitter routing, controls."
+			/>
 
 			{agents && agents.length > 0 ? <AggregateStrip agents={agents} /> : null}
 			<AgentGrid agents={agents} isLoading={isLoading} error={error as Error | null} />

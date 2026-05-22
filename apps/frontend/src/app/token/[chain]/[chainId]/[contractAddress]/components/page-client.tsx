@@ -51,7 +51,7 @@ export default function PageClient({
 	tokenParams,
 	children,
 }: { initialData: IToken; children: ReactNode; tokenParams: ITokenLookUp }) {
-	const pathname = usePathname();
+	const pathname = usePathname() ?? `/token/${tokenParams.chain}/${tokenParams.chainId}/${tokenParams.contractAddress}`;
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const query = useQuery({
@@ -81,7 +81,7 @@ export default function PageClient({
 		return false;
 	}, [currentAddress, token?.creator]);
 	const [selectedTimeframe, setSelectedTimeframe] = useState<ChartTimeframe>("1d");
-	const searchParamViewMode: TokenDetailViewMode = searchParams.get("view") === "market" ? "market" : "agent";
+	const searchParamViewMode: TokenDetailViewMode = searchParams?.get("view") === "market" ? "market" : "agent";
 	const [viewMode, setViewMode] = useState<TokenDetailViewMode>(searchParamViewMode);
 	const [socialsModalOpen, setSocialsModalOpen] = useState(false);
 	const isPriceUp = true;
@@ -98,7 +98,7 @@ export default function PageClient({
 	const handleViewModeChange = (nextViewMode: TokenDetailViewMode) => {
 		setViewMode(nextViewMode);
 
-		const nextSearchParams = new URLSearchParams(searchParams.toString());
+		const nextSearchParams = new URLSearchParams(searchParams?.toString() ?? "");
 		if (nextViewMode === "market") {
 			nextSearchParams.set("view", "market");
 		} else {

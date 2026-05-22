@@ -33,6 +33,4 @@ schema.index({ adminPermissions: 1 });
 
 const Model = Mongoose.model<IUser, MongooseModel<IUser>>("User", schema);
 
-Model.createIndexes();
-
 export default Model;

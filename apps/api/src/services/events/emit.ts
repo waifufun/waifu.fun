@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 import {
 	type AgentEvent,
 	type AgentEventType,
@@ -7,19 +9,20 @@ import {
 	isAgentEventType,
 } from "@waifufun/db";
 import { logAgentEventToLoki } from "@waifufun/logger";
+import { agentActionsTotal, agentEventsTotal, agentInferenceCostUsdTotal, agentXPostsTotal } from "@waifufun/metrics";
 
 import { dispatchAgentEventAlert } from "../alerts/event-consumer.js";
-
-import { agentActionsTotal, agentEventsTotal, agentInferenceCostUsdTotal, agentXPostsTotal } from "@waifufun/metrics";
 
 export type EmitAgentEventInput = Omit<NewAgentEvent, "type" | "payload"> &
 	Partial<Pick<NewAgentEvent, "type" | "payload">>;
 
 export interface AgentEventWebhookPayload {
+	id: string;
 	event: AgentEventType;
 	timestamp: string;
 	agentId: string | null;
 	data: Record<string, unknown>;
+	idempotencyKey: string;
 }
 
 const LEGACY_QUEUE_TYPE_BY_EVENT_TYPE: Partial<Record<AgentEventType, string>> = {
@@ -38,10 +41,39 @@ export function parseWebhookUrls(raw = process.env.WEBHOOK_URLS ?? ""): string[]
 
 export function buildWebhookPayload(row: AgentEvent): AgentEventWebhookPayload {
 	return {
+		id: row.id,
 		event: row.eventType,
 		timestamp: row.createdAt.toISOString(),
 		agentId: row.agentId,
 		data: row.data,
+		idempotencyKey: row.id,
+	};
+}
+
+export function getWebhookSigningSecret(
+	raw = process.env.WEBHOOK_SIGNING_SECRET ?? process.env.WEBHOOK_RECEIVER_SECRET ?? "",
+): string | null {
+	const secret = raw.trim();
+	return secret.length > 0 ? secret : null;
+}
+
+export function signWebhookPayload(rawBody: string, timestamp: string, secret: string): string {
+	return `sha256=${createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex")}`;
+}
+
+export function buildWebhookHeaders(
+	payload: AgentEventWebhookPayload,
+	body: string,
+	secret: string,
+): Record<string, string> {
+	const signature = signWebhookPayload(body, payload.timestamp, secret);
+	return {
+		"content-type": "application/json",
+		"X-Waifu-Event": payload.event,
+		"X-Waifu-Event-Id": payload.id,
+		"X-Waifu-Timestamp": payload.timestamp,
+		"X-Waifu-Webhook-Signature": signature,
+		"X-Waifu-Signature": signature,
 	};
 }
 
@@ -159,15 +191,15 @@ async function fanoutWebhook(row: AgentEvent): Promise<void> {
 
 	const payload = buildWebhookPayload(row);
 	const body = JSON.stringify(payload);
+	const secret = getWebhookSigningSecret();
+	if (!secret) return;
+	const headers = buildWebhookHeaders(payload, body, secret);
 
 	await Promise.allSettled(
 		urls.map((url) =>
 			fetch(url, {
 				method: "POST",
-				headers: {
-					"content-type": "application/json",
-					"X-Waifu-Event": row.eventType,
-				},
+				headers,
 				body,
 			}),
 		),

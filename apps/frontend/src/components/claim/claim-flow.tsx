@@ -11,6 +11,7 @@ import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 import { ConnectXButton } from "@/components/auth/connect-x-button";
 import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { Button } from "@/components/ui/button";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { usePatronAuth } from "@/contexts/auth-context";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { type ClaimInfo, claimAgent, editClaim, fetchClaimInfo, launchClaimed } from "@/lib/claim-api";
@@ -161,14 +162,14 @@ export default function ClaimFlow({
 			{step === "launching" && <PendingCard label="launching..." sub="broadcasting to bsc. about 30 seconds." />}
 
 			{step === "done" && (
-				<div className="border border-[#00ff87]/30 bg-[#00ff87]/5 rounded-sm p-6 text-center">
+				<SurfaceCard variant="accent" padding="lg" className="text-center">
 					<Check className="w-6 h-6 text-[#00ff87] mx-auto mb-3" strokeWidth={1.5} />
 					<div className="text-sm text-[#00ff87]">live. taking you to the agent.</div>
-				</div>
+				</SurfaceCard>
 			)}
 
 			{step === "error" && (
-				<div className="border border-red-500/30 bg-red-500/5 rounded-sm p-5">
+				<SurfaceCard variant="danger" padding="md">
 					<div className="flex items-start gap-3">
 						<AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" strokeWidth={1.5} />
 						<div className="flex-1 min-w-0">
@@ -186,7 +187,7 @@ export default function ClaimFlow({
 							</button>
 						</div>
 					</div>
-				</div>
+				</SurfaceCard>
 			)}
 		</div>
 	);
@@ -426,7 +427,7 @@ function AgentCard({
 					</Button>
 				</div>
 				<div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/40">
-					saving re-signs the launch with four.meme. takes a few seconds.
+					saving re-signs the launch with FLAP. takes a few seconds.
 				</div>
 			</div>
 		);

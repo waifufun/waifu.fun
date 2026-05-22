@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DEFAULT_PLATFORM_CUT_BPS, fourMemeTaxTokenAdapter, toFourMemeTokenTaxInfo } from "../src/index.js";
+import {
+	DEFAULT_PLATFORM_CUT_BPS,
+	createFourMemeTaxTokenAdapter,
+	fourMemeTaxTokenAdapter,
+	toFourMemeTokenTaxInfo,
+} from "../src/index.js";
 import type { FourMemeTaxFeeConfig } from "../src/types.js";
 
 const validConfig = (overrides: Partial<FourMemeTaxFeeConfig> = {}): FourMemeTaxFeeConfig => {
@@ -81,12 +86,12 @@ test("four.meme tax skips platformCutBps bound enforcement in dev", () => {
 });
 
 test("four.meme tax allows creator to allocate full split however they want", () => {
-	// 25% platform cut → 75% remaining → split 50/30/10/10
+	// 25% platform cut -> 75% remaining, all rates serialize to whole percents.
 	const config: FourMemeTaxFeeConfig = {
 		kind: "four-meme-tax",
 		taxBps: 300,
 		platformCutBps: 2500,
-		allocation: { founderBps: 3750, holderBps: 2250, burnBps: 750, liquidityBps: 750 },
+		allocation: { founderBps: 3500, holderBps: 2000, burnBps: 1000, liquidityBps: 1000 },
 		minHolderBalance: "0",
 	};
 	assert.deepEqual(fourMemeTaxTokenAdapter.validateFeeConfig(config, "prod"), {
@@ -100,16 +105,37 @@ test("toFourMemeTokenTaxInfo merges platformCutBps into on-chain founder rate", 
 		kind: "four-meme-tax",
 		taxBps: 300,
 		platformCutBps: 2500,
-		allocation: { founderBps: 3750, holderBps: 2250, burnBps: 750, liquidityBps: 750 },
+		allocation: { founderBps: 3500, holderBps: 2000, burnBps: 1000, liquidityBps: 1000 },
 		minHolderBalance: "0",
 	};
 	const info = toFourMemeTokenTaxInfo(config, "0x1111111111111111111111111111111111111111");
 	// on-chain founder = creator's founder allocation + platform cut
-	// 3750 + 2500 = 6250 bps = 62.5
-	assert.equal(info.recipientRate, 62.5);
-	assert.equal(info.divideRate, 22.5);
-	assert.equal(info.burnRate, 7.5);
-	assert.equal(info.liquidityRate, 7.5);
+	// 3500 + 2500 = 6000 bps = 60
+	assert.equal(info.recipientRate, 60);
+	assert.equal(info.divideRate, 20);
+	assert.equal(info.burnRate, 10);
+	assert.equal(info.liquidityRate, 10);
 	// sums to 100
 	assert.equal(info.recipientRate + info.divideRate + info.burnRate + info.liquidityRate, 100);
+});
+
+test("four.meme tax rejects bps that would serialize to fractional API rates", () => {
+	const config: FourMemeTaxFeeConfig = {
+		kind: "four-meme-tax",
+		taxBps: 300,
+		platformCutBps: 1000,
+		allocation: { founderBps: 3333, holderBps: 3333, burnBps: 2333, liquidityBps: 1 },
+		minHolderBalance: "0",
+	};
+	const result = fourMemeTaxTokenAdapter.validateFeeConfig(config, "prod");
+	assert.equal(result.ok, false);
+	assert.match(result.errors.join("\n"), /whole percent/);
+});
+
+test("four.meme tax adapter passes client through to inherited read methods", async () => {
+	const adapter = createFourMemeTaxTokenAdapter({} as never);
+	await assert.rejects(
+		() => adapter.getTradeFeeBps("0x1111111111111111111111111111111111111111", "curve"),
+		/(readContract|client|function)/i,
+	);
 });

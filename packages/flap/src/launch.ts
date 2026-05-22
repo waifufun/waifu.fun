@@ -212,7 +212,7 @@ export const buildNewTokenV5Write = (input: {
 		address: input.portalAddress ?? getFlapPortalAddress({ network: network.key }),
 		functionName: "newTokenV5",
 		args: [input.params],
-		value: input.value ?? 0n,
+		value: input.value ?? (input.params.quoteToken === zeroAddress ? input.params.quoteAmt : 0n),
 		chain: network.chain,
 	} as const;
 };
@@ -234,7 +234,7 @@ export const buildNewTokenV6WithVaultWrite = (input: {
 		address: input.vaultPortalAddress ?? getFlapVaultPortalAddress({ network: network.key }),
 		functionName: "newTokenV6WithVault",
 		args: [input.params],
-		value: input.value ?? 0n,
+		value: input.value ?? (input.params.quoteToken === zeroAddress ? input.params.quoteAmt : 0n),
 		chain: network.chain,
 	} as const;
 };

@@ -20,6 +20,4 @@ schema.index({ contractAddress: 1, room: 1 });
 
 const Model = Mongoose.model<IChatMessage, MongooseModel<IChatMessage>>("ChatMessage", schema);
 
-Model.createIndexes();
-
 export default Model;

@@ -11,7 +11,8 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"clean": "rm -rf dist",
 		"check": "tsc -p tsconfig.json --noEmit",
-		"lint": "biome format . --write && biome lint . --fix"
+		"lint": "biome check .",
+		"test": "bun test src/*.test.ts"
 	},
 	"exports": {
 		".": {
@@ -21,7 +22,6 @@
 	},
 	"dependencies": {
 		"@waifufun/codex": "workspace:*",
-		"@waifufun/constants": "workspace:*",
 		"@waifufun/logger": "workspace:*",
 		"@waifufun/programs": "workspace:*",
 		"@coral-xyz/anchor": "^0.31.1",

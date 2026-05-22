@@ -5,7 +5,7 @@ create type public.control_plane_wallet_link_source as enum ('manual', 'self_cla
 create type public.control_plane_ownership_status as enum ('unclaimed', 'claimed', 'verified', 'disputed');
 create type public.control_plane_launch_type as enum ('native', 'imported');
 create type public.control_plane_launch_platform as enum ('pump', 'flap', 'external', 'unknown');
-create type public.control_plane_runtime_provider as enum ('milady-cloud', 'unknown');
+create type public.control_plane_runtime_provider as enum ('eliza-cloud', 'unknown');
 create type public.control_plane_agent_status as enum ('none', 'provisioning', 'running', 'suspended', 'failed', 'deleted');
 create type public.control_plane_lifecycle_state as enum ('birth', 'live', 'dormant', 'reviving');
 create type public.control_plane_billing_mode as enum ('owner_credits', 'waifu_treasury_subsidy', 'hybrid');
@@ -89,7 +89,7 @@ create table public.control_plane_token_runtime_states (
   contract_address text not null check (length(trim(contract_address)) > 0),
   normalized_contract_address text not null check (length(trim(normalized_contract_address)) > 0),
   cloud_agent_id text,
-  runtime_provider public.control_plane_runtime_provider not null default 'milady-cloud',
+  runtime_provider public.control_plane_runtime_provider not null default 'eliza-cloud',
   agent_status public.control_plane_agent_status not null default 'none',
   lifecycle_state public.control_plane_lifecycle_state,
   billing_mode public.control_plane_billing_mode,

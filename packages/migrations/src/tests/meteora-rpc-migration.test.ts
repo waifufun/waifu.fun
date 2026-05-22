@@ -17,11 +17,11 @@ import type { IMigration, SolanaAddressLike } from "@waifufun/types";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { afterEach, before, describe, it } from "mocha";
-import { buildMeteoraCustomPoolFees } from "../protocols/meteora/calls";
-import { MigrationService } from "../services/migration-service";
-import { claimPositionFee, depositToMeteora, emergencyWithdraw } from "../vaults/meteoraVault";
-import { derivePositionNftAccount } from "../vaults/meteroaPdas";
-import { expect, sinon } from "./setup";
+import { buildMeteoraCustomPoolFees } from "../protocols/meteora/calls.js";
+import { MigrationService } from "../services/migration-service.js";
+import { claimPositionFee, depositToMeteora, emergencyWithdraw } from "../vaults/meteoraVault.js";
+import { derivePositionNftAccount } from "../vaults/meteroaPdas.js";
+import { expect, sinon } from "./setup.js";
 
 function meteoraRpcMigrationIntegrationEnabled(): boolean {
 	const key = process.env.EXECUTOR_PRIVATE_KEY;

@@ -7,7 +7,7 @@ v5.14.1 on BSC. depositors fund a per-launch `LaunchVault` with BNB during an
 open window. once the cap is met, a per-launch `BundleRouter` runs a single
 atomic transaction that calls flap's `newTokenV6` to mint a tax-token (and
 optionally graduate it to PancakeSwap V2), optionally follow-up-buys from
-that V2 pool, then splits the resulting tokens 50/10/40 between a burn
+that V2 pool, then splits the resulting tokens 50/10/20 between a burn
 address, a `TreasuryLP` custody contract, and the `LaunchVault` for
 pro-rata presaler distribution. atomic-or-bust: any revert inside
 `executeBundle` rolls everything back and the vault BNB is preserved for a
@@ -25,6 +25,7 @@ paid in-tx to the 48 Club builder EOA.
 | `TEST_COVERAGE.md` | test inventory, per-contract solidity-coverage report, gaps + reproduction |
 | `KNOWN_ISSUES.md` | accepted risks, non-goals, follow-up wave plans |
 | `STATIC_ANALYSIS.md` | slither output + triage + accepted findings + defensive fix |
+| `SECURITY_HARDENING_2026-05-16.md` | latest local agent/tool hardening pass, implemented fixes, residual verification |
 
 ## commit hash + tag
 
@@ -87,7 +88,7 @@ cd packages/contracts-evm
 # compile
 bunx hardhat compile
 
-# run unit tests (49 tests, ~3s)
+# run unit tests (86 tests, ~4s; one gated fork test is pending unless FORK_BSC=true)
 bunx hardhat test
 
 # coverage report
@@ -159,6 +160,11 @@ all BSC mainnet, chainId 56:
 all four were fixed pre-audit. real-fork test is gated on `FORK_BSC=true`
 because of the 90s cooldown + RPC dependence. see `TEST_COVERAGE.md` for
 the operational gate policy.
+- 2026-05-16: local multi-agent hardening pass added creator-only launch
+  creation, factory-approved bundle param binding, fee-on-transfer distribution
+  accounting, restricted treasury token registration, permissionless
+  launch-expired refunds, staking reward funding enforcement, and updated tests.
+  see `SECURITY_HARDENING_2026-05-16.md`.
 
 ## contact
 

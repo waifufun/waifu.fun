@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { PasskeyError, loginWithPasskey, registerPasskey } from "@/lib/passkey";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { cn } from "@/lib/utils";
 import type { StewardAuthResult } from "@stwd/sdk";
 import { ArrowLeft, ArrowRight, CheckCircle2, Fingerprint, Loader2, Wallet } from "lucide-react";
@@ -107,14 +108,6 @@ function validEmail(email: string): boolean {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// Reject protocol-relative redirects (//evil.com, /\evil.com).
-function isSafeRelativePath(raw: string | null | undefined): raw is string {
-	if (!raw || raw.length > 200) return false;
-	if (!raw.startsWith("/")) return false;
-	if (raw.startsWith("//") || raw.startsWith("/\\")) return false;
-	return true;
-}
-
 export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps) {
 	const { isAuthenticated } = useWaifuAuth();
 	const [email, setEmail] = useState("");
@@ -127,14 +120,14 @@ export function ConnectModal({ open, onOpenChange, returnTo }: ConnectModalProps
 	const [walletPanel, setWalletPanel] = useState<WalletPanel>(null);
 
 	const resolvedReturnTo = useMemo(() => {
-		if (isSafeRelativePath(returnTo)) return returnTo;
 		if (typeof window === "undefined") return "/";
-		return window.location.pathname + window.location.search;
+		const fallback = window.location.pathname + window.location.search;
+		return sanitizeRedirectPath(returnTo, fallback);
 	}, [returnTo]);
 
 	const assignAfterAuth = useCallback((nextPath: string) => {
 		if (typeof window === "undefined") return;
-		window.location.assign(nextPath);
+		window.location.assign(sanitizeRedirectPath(nextPath));
 	}, []);
 
 	const handleProvider = useCallback(

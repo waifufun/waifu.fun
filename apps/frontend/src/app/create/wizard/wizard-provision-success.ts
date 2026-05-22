@@ -6,6 +6,10 @@ export function provisionSuccessStorageKey(result: ProvisionSuccessResult): stri
 	return `wf_agent_api_key:${result.tokenAddress ?? result.agentId}`;
 }
 
+export function provisionCloudStorageKey(result: ProvisionSuccessResult): string {
+	return `wf_cloud_provision:${result.tokenAddress ?? result.agentId}`;
+}
+
 export function provisionSuccessRoute(result: ProvisionSuccessResult): string {
 	return `/patron/${encodeURIComponent(result.tokenAddress ?? result.agentId)}?just_provisioned=true`;
 }

@@ -115,21 +115,18 @@ function sortEntries(entries: LeaderboardEntry[], sort: LeaderboardSort): Leader
 }
 
 /**
- * Hook for the public leaderboard. Prefers the dedicated endpoint; if that's
- * not live, falls back to `/v2/agents` and computes runway client-side.
+ * Hook for the public leaderboard.
+ *
+ * The dedicated `/v2/agents/leaderboard` endpoint is not yet implemented on
+ * the API. Calling it falls through to the `/v2/agents/:tokenAddress` catch-all
+ * which 400s with `invalid token address`, polluting the browser console on
+ * every home/leaderboard render. Skip the call entirely until the route ships
+ * and just compute the ranking client-side from `/v2/agents`.
  */
 export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 	return useQuery<LeaderboardEntry[]>({
 		queryKey: ["leaderboard", sort, limit],
 		queryFn: async () => {
-			try {
-				const data = await apiFetch<unknown>(`/v2/agents/leaderboard?sort=${encodeURIComponent(sort)}&limit=${limit}`);
-				const entries = pickArray(data).map(normalizeEntry);
-				if (entries.length > 0) return sortEntries(entries, sort);
-			} catch {
-				// fall through to the generic agents endpoint
-			}
-
 			try {
 				const data = await apiFetch<unknown>(`/v2/agents?limit=${limit}`);
 				const entries = pickArray(data).map(normalizeEntry);

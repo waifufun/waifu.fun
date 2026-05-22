@@ -1,9 +1,12 @@
 import logger from "@waifufun/logger";
 import dotenv from "dotenv";
-import IORedis from "ioredis";
+import IORedis, { type RedisOptions } from "ioredis";
+
+import { assertRedisUrlAllowed, redisOptionsFromEnv } from "./config.js";
 
 dotenv.config();
 
+const url = process.env.REDIS_URL;
 const port = process.env.REDIS_PORT;
 const host = process.env.REDIS_HOST;
 const username = process.env.REDIS_USERNAME;
@@ -11,23 +14,21 @@ const password = process.env.REDIS_PASSWORD;
 const db = process.env.REDIS_DB;
 
 if (process.env.NODE_ENV === "production") {
-	if (!port || !host || !username || !password) {
+	if (!url && (!port || !host || !password)) {
 		logger.error("Missing REDIS_* environment variables");
 		process.exit(1);
 	}
+	if (url) {
+		try {
+			assertRedisUrlAllowed(url);
+		} catch (error) {
+			logger.error(error instanceof Error ? error.message : "Invalid REDIS_URL");
+			process.exit(1);
+		}
+	}
 }
 
-const redis = new IORedis(
-	process.env.NODE_ENV === "production"
-		? {
-				port: Number(port),
-				host: String(host),
-				// username: String(username),
-				// password: String(password),
-				db: db ? Number(db) : 0,
-			}
-		: {},
-);
+const redis = url ? new IORedis(url, redisAuthOptions()) : new IORedis(redisHostOptions());
 
 redis.on("connecting", () => {
 	logger.info("Connecting to Redis");
@@ -38,7 +39,7 @@ redis.on("ready", () => {
 });
 
 redis.on("error", (e: Error) => {
-	logger.error(`Error from Redis: ${e.message}`);
+	logger.error(`Error from Redis: ${redactRedisErrorMessage(e.message)}`);
 });
 
 redis.on("reconnecting", () => {
@@ -46,3 +47,33 @@ redis.on("reconnecting", () => {
 });
 
 export default redis;
+
+function redisAuthOptions(): RedisOptions {
+	return redisOptionsFromEnv();
+}
+
+function redisHostOptions(): RedisOptions {
+	if (!host && process.env.NODE_ENV !== "production") return {};
+	return redisOptionsFromEnv(process.env, {
+		port: port ? Number(port) : 6379,
+		host: host ?? "127.0.0.1",
+		db: db ? Number(db) : 0,
+	});
+}
+
+function redactRedisErrorMessage(message: string): string {
+	let redacted = message;
+	for (const secret of [password, redisPasswordFromUrl(url)]) {
+		if (secret) redacted = redacted.split(secret).join("[REDACTED]");
+	}
+	return redacted;
+}
+
+function redisPasswordFromUrl(rawUrl: string | undefined): string | null {
+	if (!rawUrl) return null;
+	try {
+		return new URL(rawUrl).password || null;
+	} catch {
+		return null;
+	}
+}

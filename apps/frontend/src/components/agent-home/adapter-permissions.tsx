@@ -5,7 +5,9 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.waifu.fun";
+// Same-origin path for credentialed XHR — see src/lib/same-origin-api.ts.
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
+const API_BASE = SAME_ORIGIN_API;
 
 export type AdapterCap = {
 	maxPerTx?: string;

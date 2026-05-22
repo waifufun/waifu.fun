@@ -6,15 +6,6 @@ import type { LaunchpadDescriptor } from "./types";
  */
 export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 	{
-		id: "four-meme-tax",
-		status: "live",
-		chain: "bsc",
-		displayName: "four.meme tax",
-		shortDescription: "configurable trade tax that funds the agent's treasury, holders, burn, and LP.",
-		feeSummary: "1 / 3 / 5 / 10% trade tax. you split it.",
-		graduationTarget: "24 BNB → PancakeSwap V3",
-	},
-	{
 		id: "flap",
 		status: "live",
 		chain: "bsc",
@@ -22,16 +13,27 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 		shortDescription: "tax on every trade, curve and post-grad. routes to agent treasury or a custom vault.",
 		feeSummary: "configurable tax, curve + post-grad.",
 		graduationTarget: "PancakeSwap V3",
-		badges: ["advanced"],
+		badges: ["recommended"],
+	},
+	{
+		id: "four-meme-tax",
+		status: "coming-soon",
+		chain: "bsc",
+		displayName: "four.meme tax",
+		shortDescription: "configurable trade tax that funds the agent's treasury, holders, burn, and LP.",
+		feeSummary: "1 / 3 / 5 / 10% trade tax. you split it.",
+		graduationTarget: "24 BNB → PancakeSwap V3",
+		comingSoonNotes: "parallel four.meme route paused while FLAP is the primary launch rail.",
 	},
 	{
 		id: "four-meme-regular",
-		status: "live",
+		status: "coming-soon",
 		chain: "bsc",
 		displayName: "four.meme regular",
 		shortDescription: "no creator-side tax. simple bonding curve, no ongoing routing.",
 		feeSummary: "1% during curve, 0% post-graduation.",
 		graduationTarget: "24 BNB → PancakeSwap V3",
+		comingSoonNotes: "parallel four.meme route paused while FLAP is the primary launch rail.",
 	},
 	{
 		id: "meteora",
@@ -77,8 +79,8 @@ export const MOCK_LAUNCHPADS: LaunchpadDescriptor[] = [
 
 /** Fixed render order, regardless of API order. */
 export const LAUNCHPAD_DISPLAY_ORDER = [
-	"four-meme-tax",
 	"flap",
+	"four-meme-tax",
 	"four-meme-regular",
 	"meteora",
 	"pump-fun",

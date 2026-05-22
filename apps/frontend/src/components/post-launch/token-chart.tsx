@@ -49,11 +49,7 @@ export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
 	}, []);
 
 	return (
-		<div
-			className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden"
-			role="region"
-			aria-label="price chart"
-		>
+		<section className="border border-white/10 bg-[#08080a] rounded-sm overflow-hidden" aria-label="price chart">
 			<div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">price chart</div>
 				<a
@@ -72,6 +68,6 @@ export function TokenChart({ tokenAddress, pairAddress, pairUrl }: Props) {
 				className="w-full h-[320px] sm:h-[420px] border-0"
 				loading="lazy"
 			/>
-		</div>
+		</section>
 	);
 }

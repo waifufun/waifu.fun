@@ -1,7 +1,7 @@
 import logger from "@waifufun/logger";
 import dotenv from "dotenv";
 import Mongoose from "mongoose";
-import * as DB from "./models";
+import * as DB from "./models/index.js";
 
 dotenv.config();
 
@@ -9,18 +9,18 @@ Mongoose.set("strictQuery", false);
 
 logger.info("Attempting to connect to database..");
 
-/** @dev Shutdown server if we are not able to connect to server */
-if (!process.env.MONGO_URI) {
-	logger.error("Missing MONGO_URI from ENV");
-	process.exit(1);
-}
-
 /** @dev Connect to MongoDB */
-Mongoose.connect(process.env.MONGO_URI, {
-	socketTimeoutMS: 15_000,
-}).catch((e) => {
-	logger.info(`Unable to connect to database => ${e.message}`);
-});
+if (process.env.MONGO_URI && process.env.NODE_ENV !== "test" && process.env.DATABASE_AUTO_CONNECT !== "false") {
+	Mongoose.connect(process.env.MONGO_URI, {
+		socketTimeoutMS: 15_000,
+	}).catch((e) => {
+		logger.info(`Unable to connect to database => ${e.message}`);
+	});
+} else if (process.env.MONGO_URI) {
+	logger.warn("Skipping database connection because automatic connection is disabled.");
+} else {
+	logger.warn("Skipping database connection because MONGO_URI is not set.");
+}
 
 /** @dev MongoDB Event Listeners */
 Mongoose.connection.on("error", (err) => {

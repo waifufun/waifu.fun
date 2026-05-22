@@ -7,13 +7,13 @@ const persona = {
 	id: "11111111-1111-1111-1111-111111111111",
 	agentId: "waifu-demo-01",
 	name: "Demo Waifu",
-	claimedByXHandle: "milady",
+	claimedByXHandle: "eliza",
 	twitterHandle: null,
 	taxConfig: { feeRate: 3 },
 	metadata: {},
 };
 
-test("agent.claimed provisions milady agent and emits provisioning events", async () => {
+test("agent.claimed provisions eliza agent and emits provisioning events", async () => {
 	const events: { agentId: string | null; eventType: string; data: Record<string, unknown> }[] = [];
 	const createCalls: { userId: string; data: Record<string, unknown> }[] = [];
 
@@ -22,17 +22,17 @@ test("agent.claimed provisions milady agent and emits provisioning events", asyn
 			event: "agent.claimed",
 			timestamp: "2026-04-24T12:00:00.000Z",
 			agentId: "waifu-demo-01",
-			data: { claimedByXHandle: "milady" },
+			data: { claimedByXHandle: "eliza" },
 			idempotencyKey: "evt_provision_1",
 		},
 		{
 			db: fakeProvisioningDb() as never,
 			logger: console,
-			miladyClient: {
+			elizaClient: {
 				async createAgent(userId: string, data: Record<string, unknown>) {
 					createCalls.push({ userId, data });
 					return {
-						agentId: "milady-container-1",
+						agentId: "eliza-container-1",
 						agentName: "Demo Waifu",
 						jobId: "job-1",
 						status: "queued",
@@ -58,7 +58,7 @@ test("agent.claimed provisions milady agent and emits provisioning events", asyn
 		agentName: "Demo Waifu",
 		agentConfig: {
 			personaId: "waifu-demo-01",
-			xHandle: "milady",
+			xHandle: "eliza",
 			taxConfig: { feeRate: 3 },
 			safeAddress: "0x1111111111111111111111111111111111111111",
 		},
@@ -67,7 +67,7 @@ test("agent.claimed provisions milady agent and emits provisioning events", asyn
 		events.map((event) => event.eventType),
 		["agent.provisioning_started", "agent.provisioned"],
 	);
-	assert.equal(events[1]?.data.containerId, "milady-container-1");
+	assert.equal(events[1]?.data.containerId, "eliza-container-1");
 });
 
 function fakeProvisioningDb() {

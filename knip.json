@@ -6,17 +6,20 @@
 		"types": "off",
 		"nsTypes": "off",
 		"enumMembers": "off",
-		"classMembers": "off",
 		"duplicates": "off"
 	},
 	"ignoreDependencies": ["@semantic-release/github"],
 	"workspaces": {
 		".": {
-			"ignoreFiles": ["demo/**/*.ts", "scripts/**/*.ts"]
+			"ignoreFiles": ["probe/**/*.cjs", "scripts/**/*.ts"]
 		},
 		"apps/frontend": {
 			"entry": ["workers/**/*.ts"],
+			"ignoreFiles": ["functions/[[path]].js"],
 			"ignoreDependencies": ["buffer"]
+		},
+		"packages/agent-actions": {
+			"ignoreFiles": ["test/**/*.test.ts"]
 		},
 		"packages/contracts-evm": {
 			"entry": ["scripts/**/*.js", "test/**/*.js"],
@@ -28,6 +31,12 @@
 		},
 		"packages/rpc": {
 			"ignoreFiles": ["src/evm/types/WaifuFunToken.ts", "src/evm/types/WaifuFunTokenFactory.ts"]
+		},
+		"packages/flap": {
+			"ignoreDependencies": ["tsx"]
+		},
+		"packages/launchpad": {
+			"ignoreDependencies": ["tsx"]
 		}
 	}
 }

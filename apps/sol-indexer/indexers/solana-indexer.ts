@@ -5,6 +5,7 @@ import type { SolanaIndexerConfig } from "../types";
 import type { ProcessingStats } from "../types";
 import { SolanaTransactionProcessor } from "../utils/solana/tx-processor";
 import { BaseIndexer } from "./base-indexer";
+import { selectGenesisSignaturesToProcess } from "./genesis-batch";
 
 export class SolanaIndexer extends BaseIndexer {
 	private rpc: SolanaRpcProvider;
@@ -397,7 +398,7 @@ export class SolanaIndexer extends BaseIndexer {
 					logger.info(`Fetching batch ${batchNumber} of signatures...`);
 				}
 
-				const signatures = await this.getSignatures(beforeSignature);
+				let signatures = await this.getSignatures(beforeSignature);
 				if (signatures.length === 0) {
 					if (showLogs) {
 						logger.info("No more signatures found");
@@ -405,11 +406,25 @@ export class SolanaIndexer extends BaseIndexer {
 					break;
 				}
 
-				// For genesis sync: Check if we should stop based on target slot
-				if (isGenesisSync && targetMinSlot > 0 && this.shouldStopAtSlot(signatures)) {
-					const stoppedAtSlot = signatures.find((sig) => sig.slot <= targetMinSlot)?.slot;
+				let reachedGenesisMinSlot = false;
+
+				// For genesis sync: process the newer part of a crossing batch before stopping.
+				if (isGenesisSync && targetMinSlot > 0) {
+					const genesisBatch = selectGenesisSignaturesToProcess(signatures, targetMinSlot);
+					reachedGenesisMinSlot = genesisBatch.reachedMinSlot;
+					signatures = genesisBatch.signatures;
+
+					if (reachedGenesisMinSlot && showLogs) {
+						logger.info(
+							`Reached target slot ${genesisBatch.stoppedAtSlot} (target: ${targetMinSlot}), ` +
+								`processing ${signatures.length} newer signatures before stopping indexer`,
+						);
+					}
+				}
+
+				if (reachedGenesisMinSlot && signatures.length === 0) {
 					if (showLogs) {
-						logger.info(`Reached target slot ${stoppedAtSlot} (target: ${targetMinSlot}), stopping indexer`);
+						logger.info("No signatures newer than target slot remain in batch");
 					}
 					break;
 				}
@@ -467,7 +482,7 @@ export class SolanaIndexer extends BaseIndexer {
 					}
 
 					if (isGenesisSync) {
-						hasMoreSignatures = signatures.length >= maxSignatures;
+						hasMoreSignatures = !reachedGenesisMinSlot && signatures.length >= maxSignatures;
 						if (hasMoreSignatures) {
 							beforeSignature = signatures[signatures.length - 1].signature;
 						}
@@ -505,10 +520,6 @@ export class SolanaIndexer extends BaseIndexer {
 				throw error; // Re-throw for higher level handling
 			}
 		}
-	}
-
-	private shouldStopAtSlot(signatures: any[]): boolean {
-		return signatures.some((sig) => sig.slot && sig.slot <= this.STOP_AT_SLOT);
 	}
 
 	private logBatchProgress(

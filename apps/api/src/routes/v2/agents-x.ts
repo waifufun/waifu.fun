@@ -3,6 +3,7 @@ import RedisModule from "ioredis";
 import type { Redis, RedisOptions } from "ioredis";
 
 import { agentPersonas, agentXAccounts, getDatabase } from "@waifufun/db";
+import { getRedisUrl, redisOptionsFromEnv } from "@waifufun/redis/config";
 import { eq } from "drizzle-orm";
 
 import type { AppBindings } from "../../lib/bindings.js";
@@ -25,12 +26,15 @@ import type { RequireAgentOwnershipBindings } from "../../middleware/patron-auth
 const app = new Hono<AppBindings & PatronBindings & RequireAgentOwnershipBindings>();
 const STATE_TTL_SECONDS = 5 * 60;
 const RedisClient = RedisModule as unknown as new (url: string, options: RedisOptions) => Redis;
-const redis = new RedisClient(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
-	connectionName: "waifu-api:agent-x-oauth",
-	maxRetriesPerRequest: 2,
-	enableReadyCheck: false,
-	lazyConnect: true,
-});
+const redis = new RedisClient(
+	getRedisUrl(),
+	redisOptionsFromEnv(process.env, {
+		connectionName: "waifu-api:agent-x-oauth",
+		maxRetriesPerRequest: 2,
+		enableReadyCheck: false,
+		lazyConnect: true,
+	}),
+);
 
 interface AgentXOAuthState {
 	agentId: string;

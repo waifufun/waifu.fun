@@ -129,8 +129,8 @@ export const agentPersonas = pgTable(
 		creditsTopUpCount: integer("credits_top_up_count").default(0),
 
 		// Runtime connection (W6.1 + W6.4) -------------------------------
-		/** Runtime connection kind. "milady-cloud" (default), "third-party-webhook", "third-party-pull". */
-		runtimeKind: text("runtime_kind").notNull().default("milady-cloud"),
+		/** Runtime connection kind. "eliza-cloud" (default), "third-party-webhook", "third-party-pull". */
+		runtimeKind: text("runtime_kind").notNull().default("eliza-cloud"),
 		/** External webhook URL for push-mode runtimes. */
 		runtimeWebhookUrl: text("runtime_webhook_url"),
 		/** Bcrypt hash of the webhook secret. */

@@ -12,6 +12,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { schema } from "@waifufun/db";
 import { InMemoryCursorStore } from "./lib/cursor-store.js";
 import type {
 	BundleExecutedEvent,
@@ -20,14 +21,16 @@ import type {
 	ClosedEvent,
 	DepositedEvent,
 	DistributedEvent,
+	FlapLaunchedToDexEvent,
 	LaunchCreatedEvent,
 	LaunchEvent,
 	LaunchExecutedEvent,
+	PortalTokenCreatedEvent,
 	RefundEnabledEvent,
 	WithdrawnEvent,
 } from "./lib/events.js";
 import type { LaunchIndexerConfig, LaunchIndexerRuntime } from "./lib/runtime.js";
-import { factoryCursorId, routerCursorId, vaultCursorId } from "./lib/runtime.js";
+import { factoryCursorId, flapCursorId, portalCursorId, routerCursorId, vaultCursorId } from "./lib/runtime.js";
 import { pollOnce } from "./poller.js";
 
 // ---------------------------------------------------------------------------
@@ -233,6 +236,8 @@ const userA = "0x55555555555555555555555555555555555555aa" as const;
 const userB = "0x55555555555555555555555555555555555555bb" as const;
 const v2Pair = "0x6666666666666666666666666666666666666666" as const;
 const treasuryReserveAddress = "0x7777777777777777777777777777777777777777" as const;
+const defaultPortalAddress = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0" as const;
+const flapFactoryAddress = "0x8888888888888888888888888888888888888888" as const;
 
 function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 	return {
@@ -386,6 +391,44 @@ function claimedEvent(blockNumber: bigint, user: `0x${string}`): ClaimedEvent {
 	};
 }
 
+function portalTokenCreatedEvent(
+	blockNumber: bigint,
+	token = tokenAddress,
+	ts = "1715551200",
+): PortalTokenCreatedEvent {
+	return {
+		eventName: "TokenCreated",
+		chainId: 56,
+		contractAddress: defaultPortalAddress,
+		blockNumber,
+		txHash: `0x70${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
+		logIndex: 0,
+		blockTimestamp: new Date(),
+		data: {
+			ts,
+			creator: userA,
+			nonce: "42",
+			token,
+			name: "Test Token",
+			symbol: "TT",
+			meta: "ipfs://meta",
+		},
+	};
+}
+
+function flapLaunchedToDexEvent(blockNumber: bigint, pair: unknown = v2Pair): FlapLaunchedToDexEvent {
+	return {
+		eventName: "LaunchedToDEX",
+		chainId: 56,
+		contractAddress: flapFactoryAddress,
+		blockNumber,
+		txHash: `0x71${blockNumber.toString(16).padStart(62, "0")}` as `0x${string}`,
+		logIndex: 0,
+		blockTimestamp: new Date(),
+		data: { token: tokenAddress, pair: pair as `0x${string}`, quoteAmt: "5000000000000000000" },
+	};
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -393,6 +436,7 @@ function claimedEvent(blockNumber: bigint, user: `0x${string}`): ClaimedEvent {
 function buildRuntime(
 	events: LaunchEvent[],
 	latestBlock: bigint,
+	configOverrides: Partial<LaunchIndexerConfig> = {},
 ): {
 	runtime: LaunchIndexerRuntime;
 	db: FakeDb;
@@ -405,6 +449,7 @@ function buildRuntime(
 		pollIntervalMs: 1_000,
 		maxBlocksPerPoll: 1_000_000n,
 		confirmations: 0n,
+		...configOverrides,
 	};
 
 	const db = new FakeDb();
@@ -484,4 +529,50 @@ test("pollOnce: target_block = 0 when latest <= confirmations is a no-op", async
 	assert.equal(result.factoryEventCount, 0);
 	assert.equal(result.vaultEventCount, 0);
 	assert.equal(result.routerEventCount, 0);
+});
+
+test("pollOnce: does not advance factory cursor after LaunchCreated handler failure", async () => {
+	const badLaunchCreated = launchCreatedEvent(100n);
+	badLaunchCreated.data.closeTimestamp = "not-a-timestamp";
+	const { runtime } = buildRuntime([badLaunchCreated], 200n);
+
+	const result = await pollOnce(runtime);
+
+	assert.equal(result.factoryEventCount, 0);
+	const factoryCursor = await runtime.cursors.read(factoryCursorId(56, factoryAddress));
+	assert.equal(factoryCursor?.lastBlock, 0n);
+});
+
+test("pollOnce: does not advance portal cursor after TokenCreated handler failure", async () => {
+	const { runtime, db } = buildRuntime([portalTokenCreatedEvent(100n, tokenAddress, "not-a-timestamp")], 200n);
+	db.getTable(schema.agentLaunches).insert({
+		id: "launch-portal-failure",
+		predictedTokenAddress: tokenAddress,
+		vaultAddress,
+		routerAddress,
+	});
+
+	const result = await pollOnce(runtime);
+
+	assert.equal(result.portalEventCount, 0);
+	const portalCursor = await runtime.cursors.read(portalCursorId(56, defaultPortalAddress));
+	assert.equal(portalCursor?.lastBlock, 0n);
+});
+
+test("pollOnce: does not advance flap cursor after LaunchedToDEX handler failure", async () => {
+	const { runtime, db } = buildRuntime([flapLaunchedToDexEvent(100n, null)], 200n, {
+		flapTokenFactoryAddress: flapFactoryAddress,
+	});
+	db.getTable(schema.agentLaunches).insert({
+		id: "launch-flap-failure",
+		flapTokenAddress: tokenAddress,
+		vaultAddress,
+		routerAddress,
+	});
+
+	const result = await pollOnce(runtime);
+
+	assert.equal(result.flapEventCount, 0);
+	const flapCursor = await runtime.cursors.read(flapCursorId(56, flapFactoryAddress));
+	assert.equal(flapCursor?.lastBlock, 0n);
 });

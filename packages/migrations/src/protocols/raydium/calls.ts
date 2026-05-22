@@ -16,10 +16,10 @@ import * as spl from "@solana/spl-token";
 import { PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import DB from "@waifufun/database";
 import BN from "bn.js";
-import type { MigrationContext } from "../../types";
-import { retryOperation } from "../../utils";
-import { recordTransaction } from "../../utils/protocol-utils";
-import { depositToRaydiumVault } from "../../vaults/raydiumVault";
+import type { MigrationContext } from "../../types.js";
+import { retryOperation } from "../../utils.js";
+import { recordTransaction } from "../../utils/protocol-utils.js";
+import { depositToRaydiumVault } from "../../vaults/raydiumVault.js";
 
 interface CreatePoolParams {
 	tokenMint: string;

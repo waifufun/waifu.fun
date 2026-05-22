@@ -8,7 +8,7 @@ import { respondOk } from "./lib/http.js";
 import { logger as defaultLogger } from "./lib/logger.js";
 import { optionalAuth } from "./middleware/auth.js";
 import { apiErrorHandler, notFoundHandler } from "./middleware/error-handler.js";
-import { rateLimit } from "./middleware/rate-limit.js";
+import { type RateLimitStore, rateLimit } from "./middleware/rate-limit.js";
 import { attachRequestContext } from "./middleware/request-context.js";
 import { createAdminKeysRoutes } from "./routes/admin-keys.js";
 import { createAdminRoutes } from "./routes/admin.js";
@@ -27,23 +27,52 @@ import { createTradeRoutes } from "./routes/trades.js";
 import v2Routes from "./routes/v2/index.js";
 import v3Routes from "./routes/v3/index.js";
 
-export function createApp(deps: AppDependencies, logger: Logger = defaultLogger) {
+export interface CreateAppOptions {
+	rateLimitStore?: RateLimitStore;
+}
+
+export function createApp(deps: AppDependencies, logger: Logger = defaultLogger, options: CreateAppOptions = {}) {
 	const app = new Hono<AppBindings>();
+	const limit = (bucket: string) =>
+		rateLimit({ bucket, ...(options.rateLimitStore ? { store: options.rateLimitStore } : {}) });
 
 	app.use("*", attachRequestContext(deps, logger));
+
+	// Permissive CORS for Blink (Blockchain Link) discovery URLs. Wallets and
+	// third-party renderers fetch these from arbitrary origins, so the global
+	// allowlist below must NOT gate them. Mounted BEFORE the global cors so
+	// the wildcard handles `OPTIONS` preflight first.
 	app.use(
-		"*",
+		"/v2/agents/:token/blink",
 		cors({
-			origin: deps.config.app.corsOrigins,
-			allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-			allowHeaders: ["Content-Type", "Authorization", "X-User-Address", "X-User-Role"],
-			// Required so `fetch(..., { credentials: 'include' })` attaches the
-			// patron session cookie on cross-origin requests (www.waifu.fun →
-			// api.waifu.fun). Without this, browsers drop the cookie silently
-			// and /auth/twitter/me always returns { user: null }.
-			credentials: true,
+			origin: "*",
+			allowMethods: ["GET", "POST", "OPTIONS"],
+			allowHeaders: ["Content-Type", "Content-Encoding", "Accept-Encoding"],
 		}),
 	);
+
+	// The credentialled global cors must skip Blink paths. Combining
+	// `Access-Control-Allow-Origin: *` (set by the wildcard above) with
+	// `Access-Control-Allow-Credentials: true` (which Hono's cors emits
+	// unconditionally when `credentials: true`) is a CORS spec violation that
+	// browsers reject. Blink endpoints are public — they don't carry session
+	// cookies — so credentials handling is unnecessary there anyway.
+	const blinkPathRe = /^\/v2\/agents\/[^/]+\/blink$/;
+	const credentialedCors = cors({
+		origin: deps.config.app.corsOrigins,
+		allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+		allowHeaders: ["Content-Type", "Authorization", "X-User-Address", "X-User-Role"],
+		// Required so `fetch(..., { credentials: 'include' })` attaches the
+		// patron session cookie on cross-origin requests (www.waifu.fun →
+		// api.waifu.fun). Without this, browsers drop the cookie silently
+		// and /auth/twitter/me always returns { user: null }.
+		credentials: true,
+	});
+	app.use("*", async (c, next) => {
+		if (blinkPathRe.test(c.req.path)) return next();
+		return credentialedCors(c, next);
+	});
+
 	app.use("*", optionalAuth());
 
 	app.get("/", (c) =>
@@ -56,12 +85,22 @@ export function createApp(deps: AppDependencies, logger: Logger = defaultLogger)
 		}),
 	);
 
-	app.use("/auth/*", rateLimit({ bucket: "auth" }));
-	app.use("/launches/*", rateLimit({ bucket: "launch" }));
-	app.use("/trades/*", rateLimit({ bucket: "trade" }));
-	app.use("/agents/*", rateLimit({ bucket: "trade" }));
-	app.use("/jobs/*", rateLimit({ bucket: "trade" }));
-	app.use("/admin/*", rateLimit({ bucket: "admin" }));
+	app.use("/auth/*", limit("auth"));
+	app.use("/launches", limit("launch"));
+	app.use("/launches/*", limit("launch"));
+	app.use("/trades/*", limit("trade"));
+	app.use("/agents/*", limit("trade"));
+	app.use("/jobs/*", limit("trade"));
+	app.use("/admin/*", limit("admin"));
+	app.use("/v2/auth/*", limit("auth"));
+	app.use("/v2/admin/*", limit("admin"));
+	app.use("/v2/launches", limit("launch"));
+	app.use("/v2/launches/*", limit("launch"));
+	app.use("/v2/agents/prepare", limit("launch"));
+	app.use("/v2/agents/claim/*", limit("launch"));
+	app.use("/v2/webhooks/*", limit("webhook"));
+	app.use("/v3/agents", limit("v3-agent"));
+	app.use("/v3/agents/*", limit("v3-agent"));
 
 	app.route("/metrics", createMetricsRoutes());
 	app.route("/health", createHealthRoutes());

@@ -51,11 +51,11 @@ The factory stores `INIT_CODE_HASH` at construction. This is the keccak256 of th
 
 ## 5. LaunchFactory — salt-mining griefing window
 
-Anyone watching mempool can see a `createLaunch` tx, extract the salt, and front-run with their own `createLaunch` using the same salt. Their tx mines successfully; the original tx reverts with `SaltAlreadyUsed`. The griefer has now deployed a worthless launch (vault/router with no presale BNB) but blocked the legitimate creator.
+Anyone watching mempool can see a `createLaunch` tx and extract the raw vanity salt. The factory now derives `effectiveSalt = keccak256(abi.encode(creator, vanitySalt))` and requires `msg.sender == creator`, so copying the raw salt from another creator produces a different predicted token address and cannot burn the victim creator's salt.
 
-**Verdict: ACCEPT.** Mitigation: backend submits `createLaunch` via Puissant private mempool (same as `executeBundle`). Backend can also detect collision and re-mine + retry. Cost to griefer is ~3.3M gas + vanity mining time; cost to us is just retry. Not economically rational to grief at scale.
+**Verdict: FIXED.** Residual risk is limited to same-creator duplicate submission, which requires the creator key and is covered by the monotonic `usedSalts[effectiveSalt]` guard.
 
-**Follow-up:** Per `WAVE_H_OPERATIONAL_PLAN.md`, both `createLaunch` and `executeBundle` should go through Puissant. Verify backend implementation does this for both, not just executeBundle.
+**Follow-up:** external callers must pass the raw `vanitySalt`; the factory applies creator scoping internally.
 
 ## 6. LaunchVault — dust-deposit gas griefing
 

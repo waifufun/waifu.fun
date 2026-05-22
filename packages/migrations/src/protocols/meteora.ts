@@ -1,10 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 import DB from "@waifufun/database";
 import BN from "bn.js";
-import { commonCollectFeesStep, commonSendNftStep } from "../steps/common";
-import type { MigrationContext, MigrationStep } from "../types";
-import { withdrawLiquidity } from "../utils/protocol-utils";
-import { recordTransaction } from "../utils/protocol-utils";
+import { commonCollectFeesStep, commonSendNftStep } from "../steps/common.js";
+import type { MigrationContext, MigrationStep } from "../types.js";
+import { withdrawLiquidity } from "../utils/protocol-utils.js";
+import { recordTransaction } from "../utils/protocol-utils.js";
 import {
 	addLiquidity,
 	createPool,
@@ -12,7 +12,7 @@ import {
 	createPositionNft,
 	depositNftToMeteora,
 	finalizePositionNft,
-} from "./meteora/calls";
+} from "./meteora/calls.js";
 
 export type MeteoraMigrationContext = MigrationContext;
 

@@ -11,7 +11,7 @@ export function describeEvent(e: AgentEvent): string {
 	switch (e.eventType) {
 		case "token.created": {
 			const symbol = str(data.symbol);
-			return symbol ? `minted $${symbol} on four.meme` : "minted token on four.meme";
+			return symbol ? `minted $${symbol} via FLAP` : "minted token via FLAP";
 		}
 		case "token.purchased": {
 			const bnb = formatBnb(data.bnbIn);

@@ -1,5 +1,8 @@
+import { createHmac } from "node:crypto";
+
 import { type AgentEvent, type AgentEventType, agentEvents, isAgentEventType } from "@waifufun/db";
 import { logAgentEventToLoki } from "@waifufun/logger";
+
 import type { WorkerDbClient } from "./types.js";
 export interface EmitAgentEventInput {
 	db: WorkerDbClient;
@@ -7,7 +10,7 @@ export interface EmitAgentEventInput {
 	agentId?: string | null;
 	tokenAddress?: string | null;
 	data?: Record<string, unknown>;
-	status?: "pending" | "processing" | "done" | "failed";
+	status?: "pending" | "processing" | "done" | "failed" | "skipped";
 }
 export async function emitAgentEvent(input: EmitAgentEventInput): Promise<AgentEvent> {
 	if (!isAgentEventType(input.eventType)) throw new Error(`invalid agent event type: ${input.eventType}`);
@@ -31,17 +34,30 @@ export async function emitAgentEvent(input: EmitAgentEventInput): Promise<AgentE
 	fanoutAgentEventToLoki(row);
 	const urls = parseWebhookUrls();
 	if (urls.length > 0) {
-		const body = JSON.stringify({
+		const payload = {
+			id: row.id,
 			event: row.eventType,
 			timestamp: row.createdAt.toISOString(),
 			agentId: row.agentId,
 			data: row.data,
-		});
+			idempotencyKey: row.id,
+		};
+		const body = JSON.stringify(payload);
+		const secret = getWebhookSigningSecret();
+		if (!secret) return row;
+		const signature = signWebhookPayload(body, payload.timestamp, secret);
 		await Promise.allSettled(
 			urls.map((url) =>
 				fetch(url, {
 					method: "POST",
-					headers: { "content-type": "application/json", "X-Waifu-Event": row.eventType },
+					headers: {
+						"content-type": "application/json",
+						"X-Waifu-Event": row.eventType,
+						"X-Waifu-Event-Id": row.id,
+						"X-Waifu-Timestamp": payload.timestamp,
+						"X-Waifu-Webhook-Signature": signature,
+						"X-Waifu-Signature": signature,
+					},
 					body,
 				}),
 			),
@@ -85,6 +101,18 @@ function parseWebhookUrls(raw = process.env.WEBHOOK_URLS ?? ""): string[] {
 		.map((url) => url.trim())
 		.filter(Boolean);
 }
+
+export function getWebhookSigningSecret(
+	raw = process.env.WEBHOOK_SIGNING_SECRET ?? process.env.WEBHOOK_RECEIVER_SECRET ?? "",
+): string | null {
+	const secret = raw.trim();
+	return secret.length > 0 ? secret : null;
+}
+
+export function signWebhookPayload(rawBody: string, timestamp: string, secret: string): string {
+	return `sha256=${createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex")}`;
+}
+
 function stringField(data: Record<string, unknown>, key: string): string | null {
 	const value = data[key];
 	return typeof value === "string" ? value : null;

@@ -10,19 +10,45 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
  */
 export const LAUNCHPAD_PICKER_ENABLED = process.env.NEXT_PUBLIC_LAUNCHPAD_PICKER_ENABLED === "true";
 
-/** Wizard step identifiers. URL-synced via `?step=`. */
-export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "runtime" | "safe" | "review";
+/**
+ * Wave M tax + safe defaults.
+ *
+ * The platform receiver is the operator-controlled Safe that captures the
+ * platform tax share. We hardcode a burner placeholder for local dev and
+ * accept `NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS` as the production override.
+ *
+ * The bps splits are intentionally locked here. Shadow spec calls for a
+ * 10% platform / 25% patron / 65% agent split; we let env overrides exist
+ * so we can rebalance without a redeploy, but the wizard UI does not let
+ * end users change these.
+ */
+function parseEnvBps(raw: string | undefined, fallback: number): number {
+	if (!raw) return fallback;
+	const parsed = Number(raw);
+	if (!Number.isFinite(parsed) || parsed < 0 || parsed > 10_000) return fallback;
+	return Math.round(parsed);
+}
 
-export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "runtime", "safe", "review"];
-export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = [
-	"persona",
-	"metadata",
-	"tier",
-	"launchpad",
-	"runtime",
-	"safe",
-	"review",
-];
+const BURNER_PLATFORM_RECEIVER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
+export const PLATFORM_RECEIVER_DEFAULT =
+	process.env.NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS &&
+	/^0x[a-fA-F0-9]{40}$/.test(process.env.NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS)
+		? process.env.NEXT_PUBLIC_PLATFORM_SAFE_ADDRESS
+		: BURNER_PLATFORM_RECEIVER;
+export const PLATFORM_BPS_DEFAULT = parseEnvBps(process.env.NEXT_PUBLIC_PLATFORM_BPS, 1000);
+export const PATRON_BPS_DEFAULT = parseEnvBps(process.env.NEXT_PUBLIC_PATRON_BPS, 2500);
+
+/**
+ * Wizard step identifiers. URL-synced via `?step=`.
+ *
+ * The wizard is the hosted Eliza Cloud path. BYO (webhook/pull) runtimes
+ * are intentionally absent here; those users go through `/give-skill`
+ * instead and never touch this flow.
+ */
+export type WizardStep = "persona" | "metadata" | "tier" | "launchpad" | "safe" | "review";
+
+export const LEGACY_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "safe", "review"];
+export const LAUNCHPAD_WIZARD_STEPS: WizardStep[] = ["persona", "metadata", "tier", "launchpad", "safe", "review"];
 
 export const WIZARD_STEPS: WizardStep[] = LAUNCHPAD_PICKER_ENABLED ? LAUNCHPAD_WIZARD_STEPS : LEGACY_WIZARD_STEPS;
 
@@ -31,12 +57,9 @@ export const STEP_LABELS: Record<WizardStep, string> = {
 	metadata: "metadata",
 	tier: "tier",
 	launchpad: "launchpad",
-	runtime: "runtime",
 	safe: "safe & policies",
 	review: "review",
 };
-
-export type RuntimeKind = "hosted" | "webhook" | "pull";
 
 export type WizardState = {
 	/**
@@ -71,11 +94,6 @@ export type WizardState = {
 		metaCid: string | null;
 		metaUri: string | null;
 	};
-	runtime: {
-		kind: RuntimeKind;
-		webhookUrl: string;
-		webhookSecret: string;
-	};
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;
@@ -83,6 +101,28 @@ export type WizardState = {
 		threshold: number;
 		firstBuyFundingSource: string | null;
 		adapters: { pancake: boolean; venus: boolean };
+	};
+	/**
+	 * Wave M tax routing + Safe config sent in the `POST /v2/launches` body.
+	 *
+	 * Defaults are sourced from environment so we can adjust per-launch later
+	 * without code changes. The wizard exposes a collapsed advanced panel
+	 * (`patronPlatform`) where power users can audit and, eventually, override
+	 * these values. Today only `agentSafeOwners` and `agentSafeThreshold`
+	 * are user-editable via the safe step; the other fields are locked.
+	 *
+	 * Field meaning:
+	 * - platformReceiver: address that receives the platform tax share.
+	 * - patron: launch patron (recipient of the patron tax share).
+	 * - platformBps: platform tax share in basis points (1000 = 10%).
+	 * - patronBps: patron tax share in basis points (2500 = 25%).
+	 * The agent gets whatever is left over (10000 - platformBps - patronBps).
+	 */
+	patronPlatform: {
+		platformReceiver: string;
+		patron: string | null;
+		platformBps: number;
+		patronBps: number;
 	};
 	/**
 	 * Launchpad selection + per-launchpad fee config.
@@ -132,18 +172,19 @@ export const DEFAULT_STATE: WizardState = {
 		metaCid: null,
 		metaUri: null,
 	},
-	runtime: {
-		kind: "webhook",
-		webhookUrl: "",
-		webhookSecret: "",
-	},
 	safe: {
-		taxAgentBps: 8000,
-		taxPatronBps: 2000,
+		taxAgentBps: 6500,
+		taxPatronBps: 2500,
 		owners: [],
 		threshold: 1,
 		firstBuyFundingSource: null,
 		adapters: { pancake: true, venus: true },
+	},
+	patronPlatform: {
+		platformReceiver: PLATFORM_RECEIVER_DEFAULT,
+		patron: null,
+		platformBps: PLATFORM_BPS_DEFAULT,
+		patronBps: PATRON_BPS_DEFAULT,
 	},
 	launchpad: {
 		selectedId: null,
@@ -163,9 +204,9 @@ type Action =
 	| { type: "patch_invite_code"; code: string }
 	| { type: "patch_persona"; patch: Partial<WizardState["persona"]> }
 	| { type: "patch_flap"; patch: Partial<WizardState["flap"]> }
-	| { type: "patch_runtime"; patch: Partial<WizardState["runtime"]> }
 	| { type: "patch_safe"; patch: Partial<WizardState["safe"]> }
 	| { type: "patch_safe_adapters"; patch: Partial<WizardState["safe"]["adapters"]> }
+	| { type: "patch_patron_platform"; patch: Partial<WizardState["patronPlatform"]> }
 	| { type: "patch_launchpad"; patch: Partial<WizardState["launchpad"]> }
 	| { type: "patch_launch"; patch: Partial<WizardState["launch"]> }
 	| { type: "patch_vanity"; patch: Partial<WizardState["vanity"]> }
@@ -182,12 +223,12 @@ function reducer(state: WizardState, action: Action): WizardState {
 			return { ...state, flap: { ...state.flap, ...action.patch } };
 		case "patch_vanity":
 			return { ...state, vanity: { ...state.vanity, ...action.patch } };
-		case "patch_runtime":
-			return { ...state, runtime: { ...state.runtime, ...action.patch } };
 		case "patch_safe":
 			return { ...state, safe: { ...state.safe, ...action.patch } };
 		case "patch_safe_adapters":
 			return { ...state, safe: { ...state.safe, adapters: { ...state.safe.adapters, ...action.patch } } };
+		case "patch_patron_platform":
+			return { ...state, patronPlatform: { ...state.patronPlatform, ...action.patch } };
 		case "patch_launchpad":
 			return { ...state, launchpad: { ...state.launchpad, ...action.patch } };
 		case "patch_launch":
@@ -208,9 +249,9 @@ type Ctx = {
 	patchInviteCode: (code: string) => void;
 	patchPersona: (p: Partial<WizardState["persona"]>) => void;
 	patchFlap: (p: Partial<WizardState["flap"]>) => void;
-	patchRuntime: (p: Partial<WizardState["runtime"]>) => void;
 	patchSafe: (p: Partial<WizardState["safe"]>) => void;
 	patchAdapters: (p: Partial<WizardState["safe"]["adapters"]>) => void;
+	patchPatronPlatform: (p: Partial<WizardState["patronPlatform"]>) => void;
 	patchLaunchpad: (p: Partial<WizardState["launchpad"]>) => void;
 	patchLaunch: (p: Partial<WizardState["launch"]>) => void;
 	patchVanity: (p: Partial<WizardState["vanity"]>) => void;
@@ -218,19 +259,6 @@ type Ctx = {
 };
 
 const WizardContext = createContext<Ctx | null>(null);
-
-/** Generate a 32-char hex secret without depending on Node's crypto types. */
-function generateSecret(): string {
-	const bytes = new Uint8Array(16);
-	if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-		window.crypto.getRandomValues(bytes);
-	} else {
-		for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-	}
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
-}
 
 export function WizardStateProvider({ children }: { children: React.ReactNode }) {
 	const [state, dispatch] = useReducer(reducer, DEFAULT_STATE);
@@ -247,7 +275,6 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 					inviteCode: typeof parsed.inviteCode === "string" ? parsed.inviteCode : DEFAULT_STATE.inviteCode,
 					persona: { ...DEFAULT_STATE.persona, ...(parsed.persona ?? {}) },
 					flap: { ...DEFAULT_STATE.flap, ...(parsed.flap ?? {}) },
-					runtime: { ...DEFAULT_STATE.runtime, ...(parsed.runtime ?? {}) },
 					safe: {
 						...DEFAULT_STATE.safe,
 						...(parsed.safe ?? {}),
@@ -256,6 +283,7 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 					launchpad: { ...DEFAULT_STATE.launchpad, ...(parsed.launchpad ?? {}) },
 					launch: { ...DEFAULT_STATE.launch, ...(parsed.launch ?? {}) },
 					vanity: { ...DEFAULT_STATE.vanity, ...(parsed.vanity ?? {}) },
+					patronPlatform: { ...DEFAULT_STATE.patronPlatform, ...(parsed.patronPlatform ?? {}) },
 				};
 				dispatch({ type: "hydrate", state: merged });
 			}
@@ -295,22 +323,15 @@ export function WizardStateProvider({ children }: { children: React.ReactNode })
 		}
 	}, [state]);
 
-	// Auto-generate webhook secret when user switches to webhook runtime and lacks one.
-	useEffect(() => {
-		if (state.runtime.kind === "webhook" && !state.runtime.webhookSecret) {
-			dispatch({ type: "patch_runtime", patch: { webhookSecret: generateSecret() } });
-		}
-	}, [state.runtime.kind, state.runtime.webhookSecret]);
-
 	const value = useMemo<Ctx>(
 		() => ({
 			state,
 			patchInviteCode: (code) => dispatch({ type: "patch_invite_code", code }),
 			patchPersona: (patch) => dispatch({ type: "patch_persona", patch }),
 			patchFlap: (patch) => dispatch({ type: "patch_flap", patch }),
-			patchRuntime: (patch) => dispatch({ type: "patch_runtime", patch }),
 			patchSafe: (patch) => dispatch({ type: "patch_safe", patch }),
 			patchAdapters: (patch) => dispatch({ type: "patch_safe_adapters", patch }),
+			patchPatronPlatform: (patch) => dispatch({ type: "patch_patron_platform", patch }),
 			patchLaunchpad: (patch) => dispatch({ type: "patch_launchpad", patch }),
 			patchLaunch: (patch) => dispatch({ type: "patch_launch", patch }),
 			patchVanity: (patch) => dispatch({ type: "patch_vanity", patch }),
@@ -370,19 +391,6 @@ export function validateStep(step: WizardStep, state: WizardState): string | nul
 			if (fee.kind === "flap" && fee.recipient === "custom-vault") {
 				if (!/^0x[a-fA-F0-9]{40}$/.test(fee.customVaultAddress?.trim() ?? "")) {
 					return "vault address must be a valid 0x address";
-				}
-			}
-			return null;
-		}
-		case "runtime": {
-			if (state.runtime.kind === "webhook") {
-				const url = state.runtime.webhookUrl.trim();
-				if (!url) return "webhook url required";
-				try {
-					const u = new URL(url);
-					if (u.protocol !== "https:" && u.protocol !== "http:") return "url must be http(s)";
-				} catch {
-					return "invalid url";
 				}
 			}
 			return null;

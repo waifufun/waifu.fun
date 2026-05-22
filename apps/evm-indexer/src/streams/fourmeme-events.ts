@@ -47,6 +47,7 @@ async function pollFourMemeEventsOnce(
 		maxBlocks: options.maxBlocksPerPoll,
 	});
 
+	let handlerFailed = false;
 	for (const event of result.events) {
 		try {
 			await processFourMemeEvent(runtime, event);
@@ -58,13 +59,15 @@ async function pollFourMemeEventsOnce(
 					txHash: event.txHash,
 					error: handlerError instanceof Error ? handlerError.message : String(handlerError),
 				},
-				"four.meme event handler failed, skipping event",
+				"four.meme event handler failed; cursor will retry this event",
 			);
+			handlerFailed = true;
+			break;
 		}
 		await runtime.cursors.advance(cursorId, getFourMemeEventCursorPosition(event));
 	}
 
-	if (result.scannedToBlock > cursor.lastBlock) {
+	if (!handlerFailed && result.scannedToBlock > cursor.lastBlock) {
 		await runtime.cursors.advance(cursorId, {
 			blockNumber: result.scannedToBlock,
 			logIndex: 0,

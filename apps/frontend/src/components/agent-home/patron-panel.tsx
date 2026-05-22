@@ -72,7 +72,7 @@ export default function PatronPanel({ agent }: Props) {
 		setPatronLoading(false);
 	}, [agent.tokenAddress, agent.name, refresh]);
 
-	const fourMemeUrl = `https://four.meme/token/${agent.tokenAddress}`;
+	const pcsUrl = `https://pancakeswap.finance/swap?outputCurrency=${agent.tokenAddress}`;
 	const totalPatrons = patrons?.total ?? 0;
 	const visible = patrons?.patrons.slice(0, 6) ?? [];
 	const showClaimChrome = !isDemoAgent(agent.tokenAddress);
@@ -161,15 +161,15 @@ export default function PatronPanel({ agent }: Props) {
 				<p className="px-4 py-2 text-[10px] font-mono text-red-400/80 border-b border-white/5">{error}</p>
 			) : null}
 
-			{/* primary CTA: go to four.meme */}
+			{/* primary CTA: go to PancakeSwap */}
 			<div className="px-4 py-3">
 				<a
-					href={fourMemeUrl}
+					href={pcsUrl}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="inline-flex items-center justify-center gap-2 w-full h-10 px-4 rounded-sm bg-[#00ff87] text-black text-[11px] font-mono uppercase tracking-[0.18em] hover:bg-[#00ff87]/90 transition-colors"
 				>
-					buy ${agent.ticker || "TOKEN"} on four.meme
+					buy ${agent.ticker || "TOKEN"} on PCS
 					<ArrowUpRight className="w-3 h-3" />
 				</a>
 			</div>

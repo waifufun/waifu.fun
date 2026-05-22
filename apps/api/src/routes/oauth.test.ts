@@ -121,15 +121,22 @@ describe("GET /auth/oauth/start", () => {
 		assert.ok(cookieStr.includes("SameSite=Lax"));
 	});
 
-	it("rejects open-redirect return_to and falls back to /patron", async () => {
-		const res = await makeApp().request(
-			"http://x/auth/oauth/start?provider=github&return_to=https://evil.example/steal",
-		);
-		assert.equal(res.status, 302);
-		const cookies = res.headers.getSetCookie?.() ?? [];
-		const ret = cookies.find((c) => c.startsWith(`${OAUTH_RETURN_COOKIE}=`));
-		assert.ok(ret);
-		assert.ok(ret!.includes(encodeURIComponent("/patron")));
+	it("rejects open-redirect return_to variants and falls back to /patron", async () => {
+		for (const returnTo of [
+			"https://evil.example/steal",
+			"//evil.example/steal",
+			"/\\evil.example",
+			"/%2fevil.example",
+		]) {
+			const res = await makeApp().request(
+				`http://x/auth/oauth/start?provider=github&return_to=${encodeURIComponent(returnTo)}`,
+			);
+			assert.equal(res.status, 302);
+			const cookies = res.headers.getSetCookie?.() ?? [];
+			const ret = cookies.find((c) => c.startsWith(`${OAUTH_RETURN_COOKIE}=`));
+			assert.ok(ret);
+			assert.ok(ret!.includes(encodeURIComponent("/patron")), returnTo);
+		}
 	});
 
 	it("uses Steward email start path for email provider", async () => {
@@ -322,16 +329,18 @@ describe("POST /auth/oauth/finalize", () => {
 				},
 			}),
 		);
-		const res = await makeApp().request("http://x/auth/oauth/finalize", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				cookie: `${OAUTH_RETURN_COOKIE}=${encodeURIComponent("https://evil.example")}`,
-			},
-			body: JSON.stringify({ token: "stew-jwt" }),
-		});
-		assert.equal(res.status, 200);
-		const body = (await res.json()) as { data: { return_to: string } };
-		assert.equal(body.data.return_to, "/patron");
+		for (const returnTo of ["https://evil.example", "//evil.example", "/\\evil.example", "/%5cevil.example"]) {
+			const res = await makeApp().request("http://x/auth/oauth/finalize", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					cookie: `${OAUTH_RETURN_COOKIE}=${encodeURIComponent(returnTo)}`,
+				},
+				body: JSON.stringify({ token: "stew-jwt" }),
+			});
+			assert.equal(res.status, 200);
+			const body = (await res.json()) as { data: { return_to: string } };
+			assert.equal(body.data.return_to, "/patron", returnTo);
+		}
 	});
 });

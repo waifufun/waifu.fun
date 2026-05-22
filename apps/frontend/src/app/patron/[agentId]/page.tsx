@@ -1,5 +1,6 @@
 "use client";
 
+import { provisionCloudStorageKey } from "@/app/create/wizard/wizard-provision-success";
 import PromptBlock from "@/components/give-skill/prompt-block";
 import ActivityFeed from "@/components/patron/activity-feed";
 import AgentHero from "@/components/patron/agent-hero";
@@ -52,12 +53,25 @@ export default function PatronAgentDetailPage({
 	const [authorizeError, setAuthorizeError] = useState<string | null>(null);
 	const [pendingFirstBuy, setPendingFirstBuy] = useState<string | null>(null);
 	const [oneTimeAgentApiKey, setOneTimeAgentApiKey] = useState<string | null>(null);
+	const [cloudProvision, setCloudProvision] = useState<CloudProvisionNotice | null>(null);
 
 	useEffect(() => {
 		const storageKey = `wf_agent_api_key:${agentId}`;
 		const value = window.sessionStorage.getItem(storageKey);
 		if (!value) return;
 		setOneTimeAgentApiKey(value);
+		window.sessionStorage.removeItem(storageKey);
+	}, [agentId]);
+
+	useEffect(() => {
+		const storageKey = provisionCloudStorageKey({ ok: true, agentId });
+		const value = window.sessionStorage.getItem(storageKey);
+		if (!value) return;
+		try {
+			setCloudProvision(JSON.parse(value) as CloudProvisionNotice);
+		} catch {
+			// ignore corrupt one-time state
+		}
 		window.sessionStorage.removeItem(storageKey);
 	}, [agentId]);
 
@@ -123,6 +137,12 @@ export default function PatronAgentDetailPage({
 				</div>
 			) : null}
 
+			{cloudProvision ? (
+				<div className="mb-6">
+					<CloudProvisionBlock provision={cloudProvision} />
+				</div>
+			) : null}
+
 			{error ? (
 				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
 					Couldn't load agent. {(error as Error).message}
@@ -166,6 +186,50 @@ export default function PatronAgentDetailPage({
 				</div>
 			)}
 		</main>
+	);
+}
+
+type CloudProvisionNotice = {
+	cloudAgentId?: string;
+	cloudStatus?: string;
+	provisioningJobId?: string;
+	webUiUrl?: string;
+	logsUrl?: string;
+};
+
+function CloudProvisionBlock({ provision }: { provision: CloudProvisionNotice }) {
+	const links = [
+		provision.webUiUrl ? { label: "open cloud", href: provision.webUiUrl } : null,
+		provision.logsUrl ? { label: "logs", href: provision.logsUrl } : null,
+	].filter((link): link is { label: string; href: string } => Boolean(link));
+
+	return (
+		<section className="border border-[#00ff87]/30 bg-[#00ff87]/[0.04] p-4">
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">eliza cloud provisioning</p>
+			<p className="mt-2 text-sm text-neutral-300 leading-relaxed max-w-[68ch]">
+				hosted runtime request accepted
+				{provision.cloudStatus ? `: ${provision.cloudStatus.replace(/_/g, " ")}` : "."}
+			</p>
+			<div className="mt-3 grid gap-1 text-[11px] font-mono text-neutral-400">
+				{provision.cloudAgentId ? <p>cloud agent: {provision.cloudAgentId}</p> : null}
+				{provision.provisioningJobId ? <p>job: {provision.provisioningJobId}</p> : null}
+			</div>
+			{links.length > 0 ? (
+				<div className="mt-4 flex flex-wrap gap-2">
+					{links.map((link) => (
+						<a
+							key={link.href}
+							href={link.href}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center border border-[#00ff87]/30 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] text-[#00ff87] hover:bg-[#00ff87]/10"
+						>
+							{link.label}
+						</a>
+					))}
+				</div>
+			) : null}
+		</section>
 	);
 }
 

@@ -13,11 +13,6 @@ type TestProvisionState = {
 		avatarDataUrl: string | null;
 		avatarTemplateId: string | null;
 	};
-	runtime: {
-		kind: "hosted" | "webhook" | "pull";
-		webhookUrl: string;
-		webhookSecret: string;
-	};
 	safe: {
 		taxAgentBps: number;
 		taxPatronBps: number;
@@ -44,11 +39,6 @@ function stateWithLaunchpad(): TestProvisionState {
 			avatarDataUrl: null,
 			avatarTemplateId: "tessera",
 		},
-		runtime: {
-			kind: "hosted" as const,
-			webhookUrl: "",
-			webhookSecret: "",
-		},
 		safe: {
 			taxAgentBps: 8000,
 			taxPatronBps: 2000,
@@ -72,6 +62,7 @@ describe("buildProvisionPayload", () => {
 		expect(payload).not.toHaveProperty("launchpad");
 		expect(payload.inviteCode).toBe("WF-TEST1-TEST2");
 		expect(payload.persona).toMatchObject({ name: "Mika", ticker: "MIKA" });
+		expect(payload.runtime).toEqual({ kind: "hosted" });
 		expect(payload.safe.owners).toEqual([
 			"0x1111111111111111111111111111111111111111",
 			"0x2222222222222222222222222222222222222222",
@@ -103,5 +94,14 @@ describe("buildProvisionPayload", () => {
 		const payload = buildProvisionPayload(oldDraft, { launchpadPickerEnabled: true });
 
 		expect(payload.launchpad?.chain).toBe("bsc");
+	});
+
+	it("always sends hosted runtime in the wizard payload", () => {
+		// The wizard has no BYO toggle anymore; hosted is the only path.
+		// BYO users go through /give-skill, which uses the skill flow and
+		// hits the provision endpoint with webhook/pull from the agent side.
+		const payload = buildProvisionPayload(stateWithLaunchpad(), { launchpadPickerEnabled: false });
+
+		expect(payload.runtime).toEqual({ kind: "hosted" });
 	});
 });

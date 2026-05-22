@@ -26,12 +26,12 @@ export default function FilterBar({
 	sort: AgentSort;
 }) {
 	const router = useRouter();
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "/agents";
 	const searchParams = useSearchParams();
 
 	const updateParam = useCallback(
 		(key: string, value: string | null) => {
-			const params = new URLSearchParams(searchParams.toString());
+			const params = new URLSearchParams(searchParams?.toString() ?? "");
 			if (value === null || value === "") {
 				params.delete(key);
 			} else {

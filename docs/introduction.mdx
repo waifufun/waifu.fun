@@ -1,69 +1,77 @@
 ---
-title: "Introduction"
-description: "waifu.fun — the agent token launchpad powered by Milady Cloud and Eliza Cloud on Solana"
+title: "introduction"
+description: "waifu.fun is a token launchpad on BSC built around atomic bundles and per-launch presale escrow"
 ---
 
-# waifu.fun
+<Frame>
+  <img src="/brand/lockup-1024.png" alt="waifu.fun" style={{ maxWidth: '480px', margin: '24px auto', display: 'block' }} />
+</Frame>
 
-**waifu.fun** is the first agent token launchpad where your milady becomes a waifu — an autonomous AI agent with its own token on Solana.
+waifu.fun is a launch primitive. you deposit BNB into a per-launch vault during
+an open window. when the vault hits its cap, our bundle bot wraps the token
+mint, the PCS v2 graduation, and an optional follow-up buy into a single atomic
+transaction. if anything in that transaction reverts, the whole thing rolls
+back and your BNB stays in the vault, ready to refund.
+
+the actual mint runs through [FLAP](https://flap.cash), the upstream
+bonding-curve protocol on BSC. waifu.fun is the launchpad sitting on top of
+it: vault, atomic bundle, treasury wiring. anywhere these docs say
+"FLAP" we mean that upstream protocol.
+
+that is the whole shape of the platform. everything in these docs is a detail
+underneath that shape.
+
+## who is this for
 
 <CardGroup cols={2}>
-  <Card title="Deploy an Agent" icon="rocket" href="/quickstart">
-    Launch your autonomous AI agent in minutes
+  <Card title="creators" icon="rocket" href="/creators/quickstart">
+    you want to launch a token on BSC with sane defaults, real liquidity, and
+    no rugpullable founder allocation. start here.
   </Card>
-  <Card title="How It Works" icon="gear" href="/architecture">
-    Understand the Milady Cloud × Eliza Cloud stack
-  </Card>
-  <Card title="Trading" icon="chart-line" href="/guides/trading">
-    Buy, sell, and track agent tokens
-  </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/overview">
-    Integrate with waifu.fun programmatically
+  <Card title="presalers" icon="coins" href="/presalers/quickstart">
+    you want to buy into a launch before it hits PCS. learn how the vault works
+    and when you can refund.
   </Card>
 </CardGroup>
 
-## What is waifu.fun?
+## what makes this different
 
-waifu.fun is where AI meets DeFi. Every agent on the platform is:
+- **atomic or bust.** the mint, the LP graduation, and the follow-up buy happen
+  in one transaction. partial fills are impossible. if the bundle reverts, the
+  vault preserves your BNB.
+- **presale escrow is permissionless.** the LaunchVault contract is immutable
+  per launch. nobody, not even the platform owner, can drain it. refunds are
+  guaranteed by the state machine.
+- **fixed tiers, no admin knobs.** every launch picks one of four tiers
+  (SMOL, BASED, WAGMI, GIGACHAD; contract enum TIER_80/90/95/98) with pre-set cap, graduation budget,
+  and follow-up buy. the math is in the contract, not in a database.
+- **no founder allocation.** the creator does not get tokens at TGE. tokens
+  are split 50% burned, 10% to TreasuryLP4 (4-tier single-sided PCS V3 LP
+  ladder that drips BNB to the agent treasury), 20% to presalers pro-rata.
+  the remaining 20% is locked in the FLAP-created PCS V2 LP at graduation.
+  read [bundle architecture](/creators/bundle-architecture) for the full split.
 
-- **Autonomous** — runs 24/7 on Eliza Cloud infrastructure, no human intervention needed
-- **Tokenized** — each agent has its own Solana token with a bonding curve
-- **Powered by Milady Cloud** — deploy your personal AI companion and turn it into an on-chain economic actor
-- **Built on ElizaOS** — the most battle-tested open-source agent framework
+## the contracts
 
-## The Pipeline
+- `LaunchFactory` is the singleton entry point. one per chain.
+- `LaunchVault` is the per-launch escrow. holds BNB, runs the state machine,
+  distributes tokens after launch, handles refunds.
+- `BundleRouter` is the per-launch atomic executor. one-shot. calls FLAP,
+  optionally buys on PCS, splits tokens.
+- `TreasuryLP4` is the per-launch 10% allocation that deploys progressively
+  as four single-sided PCS V3 LP positions, each at a higher market-cap target.
+  collected BNB splits 4-way: 10% buyback-to-burn, 5% platform, 20% patron, 65%
+  to the agent's Gnosis Safe.
+- `TaxSplitter` routes the ongoing FLAP buy/sell tax stream 3-way between
+  platform, patron, and the agent's Safe per the launch's configured BPS.
+- `AgentSafeDeployer` deploys a Gnosis Safe v1.4.1 per launch as the agent's
+  treasury multisig. owned by the creator's chosen signers.
 
-```
-milady (your personal AI) → milady cloud → eliza cloud → waifu (tokenized agent on Solana)
-```
+addresses live at [reference/contract-addresses](/reference/contract-addresses).
 
-1. **Create your milady** — a personal AI companion with its own personality, skills, and trading strategies
-2. **Deploy to Milady Cloud** — embedded in Eliza Cloud infrastructure, your agent goes online 24/7
-3. **Become a waifu** — your agent gets its own token on Solana via waifu.fun's bonding curve mechanism
-4. **Trade and earn** — token holders benefit from the agent's autonomous performance
+## risks, up front
 
-## Key Features
-
-<AccordionGroup>
-  <Accordion title="Autonomous Trading Agents">
-    Agents monitor markets around the clock, identify opportunities, and execute trades using configurable strategies. They're not chatbots — they're economic actors.
-  </Accordion>
-  <Accordion title="Bonding Curve Token Launch">
-    Every agent launches with a fair bonding curve. As demand grows, so does the price. Once the curve completes, the token graduates to a full DEX listing.
-  </Accordion>
-  <Accordion title="Milady Cloud Integration">
-    Milady Cloud is embedded directly into Eliza Cloud. Deploy once, and your agent has access to enterprise-grade infrastructure with zero server management.
-  </Accordion>
-  <Accordion title="ElizaOS Framework">
-    Built on ElizaOS — the open-source agent framework with proven reliability. Your agents inherit a mature ecosystem of plugins, evaluators, and trading strategies.
-  </Accordion>
-</AccordionGroup>
-
-## Quick Links
-
-| Resource | Link |
-|----------|------|
-| Launch App | [waifu.fun](https://www.waifu.fun) |
-| Milady AI | [milady.ai](https://milady.ai) |
-| ElizaOS | [elizaos.ai](https://elizaos.ai) |
-| GitHub | [milady-ai/milady](https://github.com/milady-ai/milady) |
+this is a launch primitive. tokens can go to zero in minutes. presale BNB is
+locked until the launch executes, the cap times out under-subscribed, or the
+admin emergency-stops the launch. read [presalers/risks](/presalers/risks)
+before you deposit serious money.

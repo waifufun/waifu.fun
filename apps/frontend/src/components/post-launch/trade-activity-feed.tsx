@@ -40,7 +40,7 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 		/* TODO: needs indexer endpoint for individual buy / sell rows on the
 		   PCS V2 pair. Until then we surface the DEXScreener aggregate windows;
 		   the "full feed" link routes to DEXScreener for the granular tape. */
-		<div className="border border-white/10 bg-[#08080a] rounded-sm" role="region" aria-label="trade activity feed">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm" aria-label="trade activity feed">
 			<div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
 				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">trade activity</div>
 				<a
@@ -104,7 +104,7 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 					})}
 				</ul>
 			)}
-		</div>
+		</section>
 	);
 }
 

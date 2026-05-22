@@ -16,7 +16,6 @@
 		"check": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
-		"@waifufun/config": "workspace:*",
 		"@waifufun/db": "workspace:*",
 		"@waifufun/logger": "workspace:*",
 		"drizzle-orm": "^0.36.4",

@@ -3,7 +3,15 @@ import test from "node:test";
 
 import { metricsRegistry } from "@waifufun/metrics";
 
-import { buildWebhookPayload, normalizeAgentEventInput, parseWebhookUrls, recordAgentEventMetrics } from "./emit.js";
+import {
+	buildWebhookHeaders,
+	buildWebhookPayload,
+	getWebhookSigningSecret,
+	normalizeAgentEventInput,
+	parseWebhookUrls,
+	recordAgentEventMetrics,
+	signWebhookPayload,
+} from "./emit.js";
 
 test("parseWebhookUrls accepts comma and newline separated URLs", () => {
 	assert.deepEqual(parseWebhookUrls(" https://a.test/hook,\nhttps://b.test/hook ,, "), [
@@ -63,11 +71,37 @@ test("buildWebhookPayload emits the W1.7 webhook contract", () => {
 	});
 
 	assert.deepEqual(payload, {
+		id: "4efc9f5f-7d73-447d-9f0f-d842c8b75000",
 		event: "tax.split.configured",
 		timestamp: "2026-04-24T10:00:00.000Z",
 		agentId: "waifu-demo-01",
 		data: { feeRate: 5 },
+		idempotencyKey: "4efc9f5f-7d73-447d-9f0f-d842c8b75000",
 	});
+});
+
+test("buildWebhookHeaders signs outbound webhooks and exposes replay metadata", () => {
+	const payload = {
+		id: "4efc9f5f-7d73-447d-9f0f-d842c8b75000",
+		event: "tax.split.configured" as const,
+		timestamp: "2026-04-24T10:00:00.000Z",
+		agentId: "waifu-demo-01",
+		data: { feeRate: 5 },
+		idempotencyKey: "4efc9f5f-7d73-447d-9f0f-d842c8b75000",
+	};
+	const body = JSON.stringify(payload);
+	const headers = buildWebhookHeaders(payload, body, "secret") as Record<string, string>;
+	const expected = signWebhookPayload(body, payload.timestamp, "secret");
+
+	assert.equal(headers["X-Waifu-Event-Id"], payload.id);
+	assert.equal(headers["X-Waifu-Timestamp"], payload.timestamp);
+	assert.equal(headers["X-Waifu-Webhook-Signature"], expected);
+	assert.equal(headers["X-Waifu-Signature"], expected);
+});
+
+test("getWebhookSigningSecret prefers outbound secret and ignores blank secrets", () => {
+	assert.equal(getWebhookSigningSecret("  "), null);
+	assert.equal(getWebhookSigningSecret(" outbound-secret "), "outbound-secret");
 });
 
 test("recordAgentEventMetrics increments adapter action counters", async () => {

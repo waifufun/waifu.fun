@@ -7,6 +7,7 @@ import {
 	FLAP_PORTAL_ADDRESS,
 	TOKEN_IMPL_TAXED_V3,
 	cloneInitCode,
+	effectiveLaunchSalt,
 	mineVanitySalt,
 	predictFlapTokenAddress,
 } from "./salt-miner.js";
@@ -34,5 +35,13 @@ test("mineVanitySalt is deterministic for a fixed seed", () => {
 	const second = mineVanitySalt({ seed: "0x01", suffix: "77", maxIterations: 100_000 });
 	assert.deepEqual(second, first);
 	assert.ok(first.predictedTokenAddress.endsWith("77"));
-	assert.equal(predictFlapTokenAddress({ salt: first.salt }), first.predictedTokenAddress);
+	assert.equal(predictFlapTokenAddress({ salt: first.vanitySalt }), first.predictedTokenAddress);
+});
+
+test("creator-scoped mining stores raw vanity salt but predicts with effective salt", () => {
+	const creator = "0x000000000000000000000000000000000000dEaD";
+	const first = mineVanitySalt({ creator, seed: "0x01", suffix: "77", maxIterations: 100_000 });
+	assert.equal(first.effectiveSalt, effectiveLaunchSalt(creator, first.vanitySalt));
+	assert.equal(predictFlapTokenAddress({ creator, salt: first.vanitySalt }), first.predictedTokenAddress);
+	assert.notEqual(first.vanitySalt, first.effectiveSalt);
 });

@@ -1,14 +1,14 @@
 import type { PostgrestError } from "@supabase/supabase-js";
-import type { ControlPlaneClient } from "./client";
-import { getControlPlaneServerClient } from "./client";
-import { normalizeControlPlaneWalletKey } from "./normalization";
+import type { ControlPlaneClient } from "./client.js";
+import { getControlPlaneServerClient } from "./client.js";
+import { normalizeControlPlaneWalletKey } from "./normalization.js";
 import type {
 	ControlPlaneInsert,
 	ControlPlaneRow,
 	ControlPlaneWalletKeyInput,
 	ControlPlaneWalletLinkSource,
 	Json,
-} from "./types";
+} from "./types.js";
 
 function throwSupabaseError(context: string, error: PostgrestError | null): never {
 	throw new Error(`${context}: ${error?.message ?? "unknown Supabase error"}`);

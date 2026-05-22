@@ -204,6 +204,13 @@
       "when": 1778896800000,
       "tag": "0028_wave_h_bundle_wallet_pool",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1778900400000,
+      "tag": "0029_agent_launch_tax_bps",
+      "breakpoints": true
     }
   ]
 }

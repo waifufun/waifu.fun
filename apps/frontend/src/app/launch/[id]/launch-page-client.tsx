@@ -1,31 +1,41 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import type * as React from "react";
+import { useCallback, useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { bsc } from "wagmi/chains";
 
+import { THEME_TOKENS } from "@/components/agent-home/wave-t/_primitives";
 import { ActivityFeed } from "@/components/launch-page/activity-feed";
 import { DepositWidget } from "@/components/launch-page/deposit-widget";
 import { LaunchFAQ } from "@/components/launch-page/launch-faq";
-import { LaunchHero } from "@/components/launch-page/launch-hero";
+import { LaunchHeroV2 } from "@/components/launch-page/launch-hero-v2";
 import { LaunchTerms } from "@/components/launch-page/launch-terms";
 import { RefundWidget } from "@/components/launch-page/refund-widget";
 import { StateBanner } from "@/components/launch-page/state-banner";
 import { TierInfoCard } from "@/components/launch-page/tier-info-card";
+import { ClaimWidget } from "@/components/post-launch/claim-widget";
 import { ErrorState } from "@/components/ui/error-state";
 import { useLaunchMeta, useVaultSnapshot, useVaultUserPosition } from "@/hooks/use-launch-vault";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
-import { deriveLaunchDisplayState, type LaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
+import { type LaunchDisplayState, deriveLaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
 import { tierFromCapWei, tierFromString } from "@/lib/launch-vault/tiers";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 type Props = {
 	id: string;
 };
 
 export default function LaunchPageClient({ id }: Props) {
-	const meta = useLaunchMeta(id);
+	const [runtimeId] = useState(() => {
+		if (id && id !== "_" && id !== "placeholder") return id;
+		if (typeof window === "undefined") return id;
+		return decodeURIComponent(window.location.pathname.split("/").filter(Boolean).at(1) ?? "");
+	});
+	const meta = useLaunchMeta(runtimeId);
 	const queryClient = useQueryClient();
 
 	const vaultAddress = useMemo<Address | undefined>(() => {
@@ -33,9 +43,9 @@ export default function LaunchPageClient({ id }: Props) {
 		if (typeof fromMeta === "string" && isAddress(fromMeta)) return fromMeta;
 		// `id` itself is sometimes a vault address (the page accepts UUID *or*
 		// vault contract address; backend should resolve UUIDs to vaults).
-		if (id && isAddress(id)) return id as Address;
+		if (runtimeId && isAddress(runtimeId)) return runtimeId as Address;
 		return undefined;
-	}, [meta.data?.vaultAddress, id]);
+	}, [meta.data?.vaultAddress, runtimeId]);
 
 	const snapshot = useVaultSnapshot(vaultAddress);
 	const snap = snapshot.data;
@@ -67,17 +77,26 @@ export default function LaunchPageClient({ id }: Props) {
 	// User position is used by the vesting timeline post-launch.
 	const userPosition = useVaultUserPosition(vaultAddress);
 	const launchTimestamp = useLaunchTimestamp(vaultAddress, displayState);
-	const claimable = useClaimable(vaultAddress, displayState);
+	const claimableQuery = useClaimable(vaultAddress, displayState);
+	const claimable = claimableQuery.value;
+	const showClaimWidget = displayState === "launched" && claimable > 0n;
+	const launchTimestampNumber = launchTimestamp ? Number(launchTimestamp) : null;
 
-	const refresh = () => {
-		void queryClient.invalidateQueries({ queryKey: ["launch-meta", id] });
-		void queryClient.invalidateQueries({ queryKey: ["launch-depositors", id] });
+	const refresh = useCallback(() => {
+		void queryClient.invalidateQueries({ queryKey: ["launch-meta", runtimeId] });
+		void queryClient.invalidateQueries({ queryKey: ["launch-depositors", runtimeId] });
 		void queryClient.invalidateQueries({ queryKey: ["vault-events-fallback", vaultAddress ?? null] });
 		void snapshot.refetch();
-	};
+	}, [queryClient, runtimeId, snapshot, vaultAddress]);
 
-	if (!id || id === "_" || id === "placeholder") {
-		return <NotFound id={id} reason="missing launch id" />;
+	const refreshAfterClaim = useCallback(() => {
+		refresh();
+		void userPosition.refetch();
+		void claimableQuery.refetch();
+	}, [claimableQuery, refresh, userPosition]);
+
+	if (!runtimeId || runtimeId === "_" || runtimeId === "placeholder") {
+		return <NotFound id={runtimeId} reason="missing launch id" />;
 	}
 
 	if (meta.isLoading && !meta.data) {
@@ -98,49 +117,101 @@ export default function LaunchPageClient({ id }: Props) {
 	}
 
 	if (!meta.data && !vaultAddress) {
-		return <NotFound id={id} reason="launch not found" />;
+		return <NotFound id={runtimeId} reason="launch not found" />;
 	}
 
 	const capWeiResolved = apiCapWei ?? capFromTier(tier.presaleCapBnb);
 
 	return (
 		<main
-			className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6 pb-32 md:pb-8"
+			aria-label="launch surface"
+			className="min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
 			data-testid="launch-page"
+			style={THEME_TOKENS as React.CSSProperties}
 		>
-			<LaunchHero
-				meta={meta.data ?? null}
-				tier={tier}
-				totalDeposited={totalDeposited}
-				depositorCount={depositorCount}
-				closeTimestamp={closeTimestamp}
-				state={state}
-				bonusPool={bonusPool}
-			/>
+			<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
+				<TopBar />
 
-			<StateBanner state={displayState} />
-
-			<div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-				<div className="flex flex-col gap-6">
-					<TierInfoCard
+				<div className="mt-4">
+					<LaunchHeroV2
+						meta={meta.data ?? null}
 						tier={tier}
-						vestingEnabled={snap?.vestingEnabled ?? null}
-						launchTimestamp={launchTimestamp}
-						allocation={userPosition.allocation}
-						claimed={userPosition.claimed}
-						claimable={claimable}
+						totalDeposited={totalDeposited}
+						depositorCount={depositorCount}
+						closeTimestamp={closeTimestamp}
+						state={state}
+						bonusPool={bonusPool}
 					/>
-					<LaunchFAQ tier={tier} />
-					<LaunchTerms penaltyBps={snap?.penaltyBps ?? null} />
-					<ActivityFeed launchId={id} vaultAddress={vaultAddress} />
 				</div>
-				<aside className="hidden lg:block">
-					{displayState === "refunding" ? (
+
+				<div className="mt-4">
+					<StateBanner state={displayState} />
+				</div>
+
+				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] pb-32 md:pb-8">
+					<div className="flex flex-col gap-6">
+						<TierInfoCard
+							tier={tier}
+							vestingEnabled={snap?.vestingEnabled ?? null}
+							launchTimestamp={launchTimestamp}
+							allocation={userPosition.allocation}
+							claimed={userPosition.claimed}
+							claimable={claimable}
+						/>
+						<LaunchFAQ tier={tier} />
+						<LaunchTerms penaltyBps={snap?.penaltyBps ?? null} />
+						<ActivityFeed launchId={runtimeId} vaultAddress={vaultAddress} />
+					</div>
+					<aside className="hidden lg:block">
+						{showClaimWidget ? (
+							<ClaimWidget
+								vault={vaultAddress}
+								ticker={meta.data?.tokenTicker ?? "tokens"}
+								vestingEnabled={snap?.vestingEnabled ?? true}
+								launchTimestamp={launchTimestampNumber}
+								onClaimed={refreshAfterClaim}
+							/>
+						) : displayState === "refunding" ? (
+							<RefundWidget
+								vault={vaultAddress}
+								totalDeposited={totalDeposited}
+								bonusPool={bonusPool}
+								onUserStateChanged={refresh}
+							/>
+						) : (
+							<DepositWidget
+								vault={vaultAddress}
+								state={state}
+								totalDeposited={totalDeposited}
+								capWei={capWeiResolved}
+								penaltyBps={snap?.penaltyBps ?? null}
+								presaleTokens={snap?.presaleTokens ?? null}
+								tokenSymbol={meta.data?.tokenTicker ?? null}
+								tier={tier}
+								closeTimestamp={closeTimestamp}
+								onUserStateChanged={refresh}
+							/>
+						)}
+					</aside>
+				</div>
+
+				{/* Mobile sticky widget. Renders below the lg breakpoint only. */}
+				<div className="lg:hidden">
+					{showClaimWidget ? (
+						<ClaimWidget
+							vault={vaultAddress}
+							ticker={meta.data?.tokenTicker ?? "tokens"}
+							vestingEnabled={snap?.vestingEnabled ?? true}
+							launchTimestamp={launchTimestampNumber}
+							onClaimed={refreshAfterClaim}
+						/>
+					) : displayState === "refunding" ? (
 						<RefundWidget
 							vault={vaultAddress}
 							totalDeposited={totalDeposited}
 							bonusPool={bonusPool}
 							onUserStateChanged={refresh}
+							sticky="bottom"
 						/>
 					) : (
 						<DepositWidget
@@ -152,38 +223,28 @@ export default function LaunchPageClient({ id }: Props) {
 							presaleTokens={snap?.presaleTokens ?? null}
 							tokenSymbol={meta.data?.tokenTicker ?? null}
 							tier={tier}
+							closeTimestamp={closeTimestamp}
 							onUserStateChanged={refresh}
+							sticky="bottom"
 						/>
 					)}
-				</aside>
-			</div>
-
-			{/* Mobile sticky widget. Renders below the lg breakpoint only. */}
-			<div className="lg:hidden">
-				{displayState === "refunding" ? (
-					<RefundWidget
-						vault={vaultAddress}
-						totalDeposited={totalDeposited}
-						bonusPool={bonusPool}
-						onUserStateChanged={refresh}
-						sticky="bottom"
-					/>
-				) : (
-					<DepositWidget
-						vault={vaultAddress}
-						state={state}
-						totalDeposited={totalDeposited}
-						capWei={capWeiResolved}
-						penaltyBps={snap?.penaltyBps ?? null}
-						presaleTokens={snap?.presaleTokens ?? null}
-						tokenSymbol={meta.data?.tokenTicker ?? null}
-						tier={tier}
-						onUserStateChanged={refresh}
-						sticky="bottom"
-					/>
-				)}
+				</div>
 			</div>
 		</main>
+	);
+}
+
+function TopBar() {
+	return (
+		<div className="flex items-center justify-between">
+			<Link
+				className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white/85"
+				href="/launches"
+			>
+				<ArrowLeft className="h-3 w-3" strokeWidth={1.5} />
+				all launches
+			</Link>
+		</div>
 	);
 }
 
@@ -254,7 +315,7 @@ function useLaunchTimestamp(vault: Address | undefined, displayState: LaunchDisp
 	return value;
 }
 
-function useClaimable(vault: Address | undefined, displayState: LaunchDisplayState): bigint {
+function useClaimable(vault: Address | undefined, displayState: LaunchDisplayState) {
 	const { address } = useAccount();
 	const enabled = Boolean(vault) && Boolean(address) && displayState === "launched";
 	const r = useReadContract({
@@ -265,5 +326,8 @@ function useClaimable(vault: Address | undefined, displayState: LaunchDisplaySta
 		chainId: bsc.id,
 		query: { enabled, refetchInterval: 15_000 },
 	});
-	return (r.data as bigint | undefined) ?? 0n;
+	return {
+		value: (r.data as bigint | undefined) ?? 0n,
+		refetch: r.refetch,
+	};
 }

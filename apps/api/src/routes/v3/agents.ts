@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { type Context, Hono } from "hono";
 import { getAddress, isAddress, parseEther } from "viem";
 
@@ -43,13 +44,14 @@ function requireDb(options?: V3RouteOptions): Database | null {
 	return getDatabase(url).db;
 }
 
-function slugifyAgentId(name: string): string {
+function slugifyAgentId(name: string, ownerKey: string): string {
 	const slug = name
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-+|-+$/g, "")
 		.slice(0, 48);
-	return `waifu-${slug || "agent"}-${crypto.randomUUID().slice(0, 8)}`;
+	const ownerSegment = createHash("sha256").update(ownerKey).digest("hex").slice(0, 10);
+	return `waifu-${ownerSegment}-${slug || "agent"}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -124,7 +126,7 @@ function safeMetadata(row: NonNullable<Awaited<ReturnType<typeof agentSafeQuerie
 export function createV3AgentRoutes(options?: V3RouteOptions) {
 	const app = new Hono<RequireAgentOwnershipBindings>();
 
-	app.post("/", async (c) => {
+	app.post("/", requirePatron(), async (c) => {
 		const db = requireDb(options);
 		if (!db) return c.json({ error: "database unavailable" }, 503);
 
@@ -143,15 +145,15 @@ export function createV3AgentRoutes(options?: V3RouteOptions) {
 			return c.json({ error: "invalid chain", allowed: [...CHAINS] }, 400);
 		}
 
-		const agentId =
-			typeof body.agent_id === "string" && body.agent_id.trim()
-				? body.agent_id.trim()
-				: typeof body.agentId === "string" && body.agentId.trim()
-					? body.agentId.trim()
-					: slugifyAgentId(name);
+		const patron = c.get("patron");
+		const agentId = slugifyAgentId(name, patron.stewardUserId);
+		const ownerAddress =
+			patron.primaryAddress && isAddress(patron.primaryAddress) ? patron.primaryAddress.toLowerCase() : null;
 
 		const persona = await agentPersonaQueries.createAgentPersona(db, {
 			agentId,
+			ownerStewardUserId: patron.stewardUserId,
+			ownerAddress,
 			name,
 			bio: typeof body.bio === "string" ? body.bio : null,
 			avatarUrl: typeof body.avatar_url === "string" ? body.avatar_url : null,

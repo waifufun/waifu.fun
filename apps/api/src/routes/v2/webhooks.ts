@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { Hono } from "hono";
 
 import { getDatabase, webhookInbox } from "@waifufun/db";
 
-import { type MiladyCloudClient, createMiladyCloudClient } from "../../services/milady-client.js";
+import { type ElizaCloudClient, createElizaCloudClient } from "../../services/eliza-client.js";
 import { type WebhookConsumerEvent, dispatchEvent } from "../../services/webhook-consumer/index.js";
 
 type Logger = Console;
@@ -12,26 +13,29 @@ type Db = ReturnType<typeof getDatabase>["db"];
 type WebhookRoutesOptions = {
 	db?: Db;
 	secret?: string;
-	miladyCloud?: MiladyCloudClient;
+	maxSkewMs?: number;
+	elizaCloud?: ElizaCloudClient;
 	logger?: Logger;
 	dispatch?: typeof dispatchEvent;
 };
 
 const app = createWebhookRoutes();
+const DEFAULT_MAX_SKEW_MS = 5 * 60 * 1000;
+const SIGNATURE_PREFIX = "sha256=";
 
 export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 	const routes = new Hono();
 
 	routes.post("/agent-events", async (c) => {
 		const expectedSecret = options.secret ?? process.env.WEBHOOK_RECEIVER_SECRET;
-		const providedSecret = c.req.header("X-Waifu-Webhook-Secret");
-		if (!expectedSecret || providedSecret !== expectedSecret) {
+		if (!expectedSecret) {
 			return c.json({ error: "unauthorized" }, 401);
 		}
 
+		const rawBody = await c.req.text();
 		let payload: WebhookConsumerEvent;
 		try {
-			payload = validatePayload(await c.req.json());
+			payload = validatePayload(JSON.parse(rawBody));
 		} catch (err) {
 			return c.json(
 				{
@@ -40,6 +44,17 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 				},
 				400,
 			);
+		}
+
+		const authError = verifyWebhookRequest({
+			rawBody,
+			payload,
+			secret: expectedSecret,
+			signature: c.req.header("X-Waifu-Webhook-Signature"),
+			maxSkewMs: options.maxSkewMs ?? DEFAULT_MAX_SKEW_MS,
+		});
+		if (authError) {
+			return c.json({ error: "unauthorized", detail: authError }, 401);
 		}
 
 		const db = options.db ?? requireDb();
@@ -52,16 +67,17 @@ export function createWebhookRoutes(options: WebhookRoutesOptions = {}) {
 			}
 
 			const logger = options.logger ?? console;
-			const miladyCloud =
-				options.miladyCloud ??
-				createMiladyCloudClient({
-					baseUrl: process.env.MILADY_CLOUD_BASE_URL ?? "",
-					apiKey: process.env.MILADY_CLOUD_API_KEY ?? "",
+			const elizaCloud =
+				options.elizaCloud ??
+				createElizaCloudClient({
+					baseUrl: process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai",
+					apiKey: process.env.ELIZA_CLOUD_API_KEY ?? "",
+					serviceKey: process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "",
 					logger,
 				});
 
 			try {
-				await (options.dispatch ?? dispatchEvent)(payload, { miladyCloud, logger });
+				await (options.dispatch ?? dispatchEvent)(payload, { elizaCloud, logger });
 			} catch (err) {
 				logger.error?.("[webhooks] internal dispatch failed", {
 					event: payload.event,
@@ -92,19 +108,40 @@ function requireDb(): Db | null {
 }
 
 export async function insertInboxRow(db: Db, payload: WebhookConsumerEvent): Promise<boolean> {
-	const key = payload.idempotencyKey ?? null;
+	const key = payload.idempotencyKey;
+	if (!key) throw new Error("idempotencyKey is required");
 
-	if (key) {
-		const [existing] = await db
-			.select({ id: webhookInbox.id })
-			.from(webhookInbox)
-			.where(eq(webhookInbox.key, key))
-			.limit(1);
-		if (existing) return true;
-	}
+	const [inserted] = await db
+		.insert(webhookInbox)
+		.values({ key, eventType: payload.event })
+		.onConflictDoNothing({ target: webhookInbox.key })
+		.returning({ id: webhookInbox.id });
+	return !inserted;
+}
 
-	await db.insert(webhookInbox).values({ key, eventType: payload.event });
-	return false;
+export function signWebhookPayload(rawBody: string, timestamp: string, secret: string): string {
+	return `${SIGNATURE_PREFIX}${createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest("hex")}`;
+}
+
+function verifyWebhookRequest(args: {
+	rawBody: string;
+	payload: WebhookConsumerEvent;
+	secret: string;
+	signature: string | undefined;
+	maxSkewMs: number;
+}): string | null {
+	if (!args.payload.idempotencyKey) return "idempotencyKey is required";
+
+	const eventTime = Date.parse(args.payload.timestamp);
+	const skew = Math.abs(Date.now() - eventTime);
+	if (!Number.isFinite(eventTime) || skew > args.maxSkewMs) return "webhook timestamp is outside the allowed window";
+
+	if (!args.signature?.startsWith(SIGNATURE_PREFIX)) return "webhook signature is required";
+	const expected = signWebhookPayload(args.rawBody, args.payload.timestamp, args.secret);
+	const expectedBytes = Buffer.from(expected);
+	const actualBytes = Buffer.from(args.signature);
+	if (actualBytes.length !== expectedBytes.length) return "webhook signature is invalid";
+	return timingSafeEqual(actualBytes, expectedBytes) ? null : "webhook signature is invalid";
 }
 
 export function validatePayload(value: unknown): WebhookConsumerEvent {
@@ -133,6 +170,9 @@ export function validatePayload(value: unknown): WebhookConsumerEvent {
 	}
 	if (idempotencyKey !== undefined && typeof idempotencyKey !== "string") {
 		throw new Error("idempotencyKey must be a string when provided");
+	}
+	if (typeof idempotencyKey === "string" && idempotencyKey.trim().length === 0) {
+		throw new Error("idempotencyKey must be non-empty when provided");
 	}
 
 	return {

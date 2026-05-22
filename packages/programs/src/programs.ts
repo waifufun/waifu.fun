@@ -1,7 +1,5 @@
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import type { Connection, PublicKey } from "@solana/web3.js";
-import { getAutofunIdl, getVaultIdl } from "./idl-registry";
-import { getNetwork } from "./network";
 import type {
 	CurrentAutofunTypes,
 	GetAutofunTypes,
@@ -12,6 +10,8 @@ import type {
 	RaydiumVaultTypes,
 	VaultType,
 } from "./exported-types";
+import { getAutofunIdl, getVaultIdl } from "./idl-registry";
+import { getNetwork } from "./network";
 
 export type WalletLike = {
 	publicKey: PublicKey;

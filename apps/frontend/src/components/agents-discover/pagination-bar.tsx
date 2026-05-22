@@ -14,14 +14,14 @@ export default function PaginationBar({
 	pageSize: number;
 	total: number;
 }) {
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "/agents";
 	const searchParams = useSearchParams();
 
 	const hasPrev = page > 0;
 	const hasNext = (page + 1) * pageSize < total;
 
 	const buildHref = (targetPage: number) => {
-		const params = new URLSearchParams(searchParams.toString());
+		const params = new URLSearchParams(searchParams?.toString() ?? "");
 		if (targetPage <= 0) params.delete("page");
 		else params.set("page", String(targetPage));
 		const q = params.toString();

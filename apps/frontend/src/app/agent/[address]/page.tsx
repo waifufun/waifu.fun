@@ -1,5 +1,19 @@
-import AgentHome from "@/components/agent-home/agent-home";
+import AgentHomeV2 from "@/components/agent-home/agent-home-v2";
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
+import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-feed";
+import { fetchOnchainHistory } from "@/lib/onchain-history";
+import type { AgentLaunchByToken } from "@/lib/post-launch/api";
+import { buildActivity } from "@/lib/wave-t/activity";
+import { fetchAppsForAgent } from "@/lib/wave-t/apps";
+import { fetchCandleSeries } from "@/lib/wave-t/candles";
+import { fetchShipLog } from "@/lib/wave-t/github";
+import { fetchHoldings } from "@/lib/wave-t/holdings";
+import { fetchMarkets } from "@/lib/wave-t/markets";
+import { fetchPositions } from "@/lib/wave-t/positions";
+import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
+import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
+import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
+import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -22,7 +36,33 @@ function serverAgentApiBase(): string {
 }
 
 const API_BASE = serverAgentApiBase();
-const FOURMEME_BASE = "https://four.meme/token";
+const TRADE_BASE = "https://pancakeswap.finance/swap?outputCurrency=";
+
+function unwrapApiData<T = unknown>(payload: unknown): T {
+	if (payload && typeof payload === "object" && "data" in payload) {
+		return (payload as { data: T }).data;
+	}
+	return payload as T;
+}
+
+function mapAgentTrade(raw: Record<string, unknown>): AgentTrade {
+	const timestamp =
+		typeof raw.timestamp === "number"
+			? raw.timestamp
+			: typeof raw.timestamp === "string"
+				? Date.parse(raw.timestamp)
+				: typeof raw.blockTime === "string"
+					? Date.parse(raw.blockTime)
+					: Date.now();
+
+	return {
+		txId: String(raw.txId ?? raw.txHash ?? ""),
+		type: (raw.type === "sell" || raw.side === "sell" ? "sell" : "buy") as "buy" | "sell",
+		address: String(raw.address ?? raw.trader ?? raw.traderAddress ?? ""),
+		amount: String(raw.amount ?? raw.amountOut ?? raw.toAmount ?? raw.amountIn ?? raw.fromAmount ?? ""),
+		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+	};
+}
 
 /**
  * Backend shape (AgentDetail) doesn't match AgentData; do the same kind of
@@ -46,7 +86,7 @@ function mapAgentDetail(raw: unknown): AgentData | null {
 		name,
 		ticker,
 		status,
-		fourMemeUrl: `${FOURMEME_BASE}/${tokenAddress}`,
+		tradeUrl: `${TRADE_BASE}${tokenAddress}`,
 	};
 	const image = typeof r.image === "string" ? r.image : typeof r.avatarUrl === "string" ? r.avatarUrl : undefined;
 	if (image) shaped.image = image;
@@ -105,32 +145,44 @@ async function fetchAgent(address: string): Promise<AgentData | null> {
 
 	// fallback: hit the legacy token endpoint and shape it into an agent
 	try {
-		const res = await fetch(`${API_BASE}/tokens/bsc/56/${address}`, {
+		const res = await fetch(`${API_BASE}/tokens/${address}`, {
 			next: { revalidate: 30 },
 		});
 		if (!res.ok) return null;
-		const token = await res.json();
+		const token = unwrapApiData<Record<string, unknown>>(await res.json());
+		const tokenAddress =
+			typeof token.contractAddress === "string"
+				? token.contractAddress
+				: typeof token.address === "string"
+					? token.address
+					: typeof token.tokenAddress === "string"
+						? token.tokenAddress
+						: address;
 		const shaped: AgentData = {
-			tokenAddress: token.contractAddress,
-			name: token.name,
-			ticker: token.ticker,
+			tokenAddress,
+			name: typeof token.name === "string" ? token.name : "unknown",
+			ticker: typeof token.ticker === "string" ? token.ticker : typeof token.symbol === "string" ? token.symbol : "",
 			status: token.status === "migrated" || token.status === "locked" ? "graduated" : "active",
 			raisedToken: "BNB",
-			fourMemeUrl: `https://four.meme/token/${token.contractAddress}`,
+			tradeUrl: `https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`,
 		};
-		if (token.creator) shaped.walletAddress = token.creator;
-		if (token.bondingCurveAddress) shaped.treasuryAddress = token.bondingCurveAddress;
-		if (token.image) shaped.image = token.image;
-		if (token.description) shaped.description = token.description;
-		if (token.curveProgress !== undefined) shaped.curveProgress = token.curveProgress;
-		if (token.curveLimit !== undefined) shaped.curveLimit = token.curveLimit;
-		if (token.reserveAmount !== undefined) shaped.waifuBonded = token.reserveAmount;
-		if (token.socials?.twitter) {
-			const handle = token.socials.twitter.split("/").pop()?.replace("@", "");
+		if (typeof token.creator === "string") shaped.walletAddress = token.creator;
+		if (typeof token.creatorAddress === "string") shaped.walletAddress = token.creatorAddress;
+		if (typeof token.bondingCurveAddress === "string") shaped.treasuryAddress = token.bondingCurveAddress;
+		if (typeof token.poolAddress === "string") shaped.treasuryAddress = token.poolAddress;
+		if (typeof token.image === "string") shaped.image = token.image;
+		if (typeof token.description === "string") shaped.description = token.description;
+		if (token.curveProgress !== undefined) shaped.curveProgress = Number(token.curveProgress);
+		if (token.progressPercent !== undefined) shaped.curveProgress = Number(token.progressPercent);
+		if (token.curveLimit !== undefined) shaped.curveLimit = Number(token.curveLimit);
+		if (token.reserveAmount !== undefined) shaped.waifuBonded = Number(token.reserveAmount);
+		const socials = token.socials as { twitter?: unknown } | undefined;
+		if (typeof socials?.twitter === "string") {
+			const handle = socials.twitter.split("/").pop()?.replace("@", "");
 			if (handle) shaped.twitterHandle = handle;
 		}
-		if (token.pool) {
-			shaped.pancakeSwapUrl = `https://pancakeswap.finance/swap?outputCurrency=${token.contractAddress}`;
+		if (token.pool || token.poolAddress) {
+			shaped.pancakeSwapUrl = `https://pancakeswap.finance/swap?outputCurrency=${tokenAddress}`;
 		}
 		return shaped;
 	} catch (e) {
@@ -146,7 +198,8 @@ async function fetchTrades(address: string): Promise<AgentTrade[]> {
 		});
 		if (res.ok) {
 			const data = await res.json();
-			return Array.isArray(data) ? data : (data.docs ?? data.trades ?? []);
+			const trades = Array.isArray(data) ? data : (data.docs ?? data.trades ?? []);
+			return trades.slice(0, 20).map((t: Record<string, unknown>) => mapAgentTrade(t));
 		}
 	} catch (e) {
 		console.error("trades fetch failed", e);
@@ -166,15 +219,9 @@ async function fetchTrades(address: string): Promise<AgentTrade[]> {
 			next: { revalidate: 10 },
 		});
 		if (!res.ok) return [];
-		const data = await res.json();
-		const docs = Array.isArray(data) ? data : (data.docs ?? []);
-		return docs.slice(0, 20).map((t: Record<string, unknown>) => ({
-			txId: String(t.txId ?? ""),
-			type: (t.type === "sell" ? "sell" : "buy") as "buy" | "sell",
-			address: String(t.address ?? ""),
-			amount: String(t.toAmount ?? t.fromAmount ?? ""),
-			timestamp: typeof t.timestamp === "number" ? t.timestamp : Date.now(),
-		}));
+		const data = unwrapApiData<Record<string, unknown> | unknown[]>(await res.json());
+		const docs = Array.isArray(data) ? data : data && "docs" in data && Array.isArray(data.docs) ? data.docs : [];
+		return docs.slice(0, 20).map((t) => mapAgentTrade(t as Record<string, unknown>));
 	} catch (e) {
 		console.error("fallback trades fetch failed", e);
 		return [];
@@ -194,7 +241,7 @@ export async function generateMetadata({
 	const title = `${agent.name} ($${agent.ticker}) · waifu.fun`;
 	const description =
 		agent.description ??
-		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. pair with BNB on four.meme.";
+		"autonomous agent on waifu.fun. identity, brain, wallet, treasury. trade on pancakeswap, launched via FLAP.";
 	// Per-agent OG image disabled: the nested /agent/[address]/opengraph-image
 	// route inherits the wagmi/viem module graph from the app layout and 500s
 	// with 'indexedDB is not defined'. Falls back to the root /opengraph-image
@@ -227,6 +274,79 @@ export async function generateMetadata({
 	};
 }
 
+/**
+ * Best-effort fetch of the wave-M agent_launches row keyed by token
+ * address. Returns null on 404 (legacy / non-v3 launches) or on any
+ * network failure so the page degrades gracefully.
+ */
+async function fetchLaunch(address: string): Promise<AgentLaunchByToken | null> {
+	try {
+		const res = await fetch(`${API_BASE}/v2/launches/by-token/${encodeURIComponent(address.toLowerCase())}`, {
+			next: { revalidate: 30 },
+		});
+		if (!res.ok) return null;
+		const json = (await res.json()) as unknown;
+		if (json && typeof json === "object" && "data" in (json as Record<string, unknown>)) {
+			return (json as { data: AgentLaunchByToken }).data ?? null;
+		}
+		return json as AgentLaunchByToken;
+	} catch (e) {
+		console.error("launch fetch failed", e);
+		return null;
+	}
+}
+
+/**
+ * Build the Wave T activity feed. Combines the architect agent's ship log,
+ * tweets and on-chain transfers into one chronological stream. Non-Sol
+ * agents skip the ship/tweets path and just surface their on-chain
+ * activity.
+ */
+async function buildAgentActivity(opts: {
+	isSolAgent: boolean;
+	tokenAddress: string;
+}): Promise<ActivityRowInput[]> {
+	const [ship, tweets, markets, onchain] = await Promise.all([
+		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
+		opts.isSolAgent ? fetchTweets() : Promise.resolve([]),
+		fetchMarkets(),
+		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
+	]);
+
+	const foundation = buildActivity({ prs: ship.items, tweets, markets });
+
+	// Map on-chain transfers into the activity feed's `tx` row variant.
+	const onchainRows: ActivityRowInput[] = onchain.txs.slice(0, 12).map((tx) => ({
+		id: `onchain-${tx.hash}`,
+		type: "tx",
+		timestamp: tx.timestamp > 0 ? new Date(tx.timestamp * 1000).toISOString() : new Date().toISOString(),
+		method: tx.kind === "transfer" ? "ERC20 transfer" : tx.kind === "native" ? "BNB transfer" : tx.kind,
+		valueBnb: tx.valueNative,
+		url: `https://bscscan.com/tx/${tx.hash}`,
+	}));
+
+	const merged = [...foundation, ...onchainRows];
+	merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+	return merged;
+}
+
+function emptyTokenMetrics(address: string): TokenMetrics {
+	return {
+		contract: address,
+		symbol: "",
+		name: "",
+		priceUsd: 0,
+		priceBnb: 0,
+		marketCap: 0,
+		liquidityUsd: 0,
+		holders: 0,
+		volume24h: 0,
+		txs24h: 0,
+		change24h: 0,
+		totalSupply: 0n,
+	};
+}
+
 export default async function AgentPage({
 	params,
 }: {
@@ -234,11 +354,64 @@ export default async function AgentPage({
 }) {
 	const { address } = await params;
 
-	const [agent, trades] = await Promise.all([fetchAgent(address), fetchTrades(address)]);
+	const agentP = fetchAgent(address);
+	const tradesP = fetchTrades(address);
+	const launchP = fetchLaunch(address);
 
-	if (!agent) {
-		notFound();
+	// Wave T data in parallel. Each fetch handles its own failures and returns
+	// a sane empty default, so we never throw out of Promise.all.
+	const isSolAgent = isSolAgentAddress(address);
+	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
+	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
+		candles: [],
+		source: "synthetic" as const,
+		note: "no candle data available",
+	}));
+	const holdingsP = fetchHoldings().catch(() => ({ holdings: [], navUsd: 0, fetchedAt: Date.now() }));
+	const positionsP = fetchPositions().catch(() => []);
+	const appsP = fetchAppsForAgent({ isSolAgent }).catch(() => []);
+	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
+
+	const [agent, trades, launch, token, candles, holdings, positions, apps, activity] = await Promise.all([
+		agentP,
+		tradesP,
+		launchP,
+		tokenP,
+		candlesP,
+		holdingsP,
+		positionsP,
+		appsP,
+		activityP,
+	]);
+
+	let renderAgent = agent;
+	let renderTrades = trades;
+	let renderLaunch = launch;
+
+	if (!renderAgent) {
+		// Until $WAIFU mints, the architect agent is not seeded in the DB.
+		// Fall back to a fixture so /agent/sol renders Sol's surface instead
+		// of the generic not-found state. Real DB record wins when present.
+		if (isSolAgent) {
+			renderAgent = buildSolFixtureAgent();
+			renderTrades = buildSolFixtureTrades();
+			renderLaunch = buildSolFixtureLaunch();
+		} else {
+			notFound();
+		}
 	}
 
-	return <AgentHome agent={agent} trades={trades} />;
+	return (
+		<AgentHomeV2
+			agent={renderAgent}
+			trades={renderTrades}
+			launch={renderLaunch}
+			token={token}
+			candles={candles}
+			holdings={holdings}
+			positions={positions}
+			activity={activity}
+			apps={apps}
+		/>
+	);
 }

@@ -30,8 +30,13 @@ import {
 	createOrchestrator,
 	createStewardClient,
 } from "../../services/agent-launch/index.js";
+import {
+	type ElizaCloudClient,
+	type ElizaCloudProvisionResult,
+	type ProvisionWaifuCloudAgentInput,
+	createElizaCloudClient,
+} from "../../services/eliza-client.js";
 import { emitAgentEvent } from "../../services/events/emit.js";
-import { type MiladyCloudClient, createMiladyCloudClient } from "../../services/milady-client.js";
 import {
 	type PatronContext,
 	type ProvisionAdapterConfig,
@@ -66,18 +71,21 @@ type AgentsRouteDepsForTest = {
 	db: Database | undefined;
 	createOrchestrator: (() => LaunchOrchestrator) | undefined;
 	createAgentKey: typeof createKey | undefined;
+	elizaCloudClient: Pick<ElizaCloudClient, "provisionWaifuAgent"> | undefined;
 };
 
 const agentsRouteDepsForTest: AgentsRouteDepsForTest = {
 	db: undefined,
 	createOrchestrator: undefined,
 	createAgentKey: undefined,
+	elizaCloudClient: undefined,
 };
 
 export function __setAgentsRouteDepsForTest(deps: Partial<AgentsRouteDepsForTest>): void {
 	agentsRouteDepsForTest.db = deps.db;
 	agentsRouteDepsForTest.createOrchestrator = deps.createOrchestrator;
 	agentsRouteDepsForTest.createAgentKey = deps.createAgentKey;
+	agentsRouteDepsForTest.elizaCloudClient = deps.elizaCloudClient;
 }
 
 function slugifyAgentId(name: string): string {
@@ -130,7 +138,7 @@ export function buildLaunchOrchestratorDeps(): OrchestratorDeps {
 						? "third-party-webhook"
 						: personaJson?.runtimeKind === "pull"
 							? "third-party-pull"
-							: "milady-cloud";
+							: "eliza-cloud";
 				const persona = await agentPersonaQueries.createAgentPersona(db, {
 					agentId: args.agentId,
 					name: args.name,
@@ -185,9 +193,180 @@ function getOrCreateLaunchOrchestrator(): LaunchOrchestrator {
 	return createOrchestrator(buildLaunchOrchestratorDeps());
 }
 
+function getConfiguredElizaCloudClient(): Pick<ElizaCloudClient, "provisionWaifuAgent"> | null {
+	if (agentsRouteDepsForTest.elizaCloudClient) return agentsRouteDepsForTest.elizaCloudClient;
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY;
+	const apiKey = process.env.ELIZA_CLOUD_API_KEY;
+	if (!serviceKey && !apiKey) return null;
+	return createElizaCloudClient({
+		baseUrl,
+		...(serviceKey ? { serviceKey } : {}),
+		...(apiKey ? { apiKey } : {}),
+		logger: console,
+	});
+}
+
+function defaultHostedModelSettings(): Record<string, string> {
+	const model =
+		process.env.WAIFU_ELIZA_DEFAULT_MODEL ?? process.env.ELIZAOS_CLOUD_DEFAULT_MODEL ?? "openai/gpt-oss-120b";
+	return {
+		ELIZAOS_CLOUD_NANO_MODEL: model,
+		ELIZAOS_CLOUD_SMALL_MODEL: model,
+		ELIZAOS_CLOUD_MEDIUM_MODEL: model,
+		ELIZAOS_CLOUD_LARGE_MODEL: model,
+		ELIZAOS_CLOUD_MEGA_MODEL: model,
+		ELIZAOS_CLOUD_RESPONSE_HANDLER_MODEL: model,
+		ELIZAOS_CLOUD_SHOULD_RESPOND_MODEL: model,
+		ELIZAOS_CLOUD_ACTION_PLANNER_MODEL: model,
+		ELIZAOS_CLOUD_PLANNER_MODEL: model,
+		ELIZAOS_CLOUD_RESPONSE_MODEL: model,
+	};
+}
+
+function runtimeKindFromProvisionBody(
+	body: import("../../services/provision/payload-adapter.js").ProvisionRequest,
+): string {
+	if (body.runtime.kind === "webhook") return "third-party-webhook";
+	if (body.runtime.kind === "pull") return "third-party-pull";
+	return "eliza-cloud";
+}
+
+function recordFromUnknown(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function cloudResponseFields(cloud: ElizaCloudProvisionResult) {
+	return {
+		cloudAgentId: cloud.cloudAgentId,
+		cloudStatus: cloud.status,
+		cloudJobId: cloud.jobId ?? null,
+		cloudPolling: cloud.polling ?? null,
+		cloudCharacterId: cloud.characterId ?? null,
+		cloud: {
+			provider: "eliza-cloud",
+			agentId: cloud.cloudAgentId,
+			status: cloud.status,
+			jobId: cloud.jobId ?? null,
+			polling: cloud.polling ?? null,
+			characterId: cloud.characterId ?? null,
+		},
+	};
+}
+
+function buildCloudProvisionInput(args: {
+	agentId: string;
+	tokenAddress: string;
+	treasuryAddress: string | null;
+	launchInput: AgentLaunchInput;
+	body: import("../../services/provision/payload-adapter.js").ProvisionRequest;
+}): ProvisionWaifuCloudAgentInput {
+	const chainId = Number(process.env.FOURMEME_CHAIN_ID ?? process.env.BSC_CHAIN_ID ?? 56);
+	const characterConfig = recordFromUnknown(args.launchInput.persona);
+	return {
+		agentId: args.agentId,
+		tokenContractAddress: args.tokenAddress,
+		chain: args.body.launchpad?.chain ?? "bsc",
+		chainId: Number.isFinite(chainId) ? chainId : 56,
+		tokenName: args.launchInput.name,
+		tokenTicker: args.launchInput.symbol,
+		launchType: "native",
+		character: {
+			name: args.launchInput.name,
+			bio: args.launchInput.description,
+			...(args.launchInput.imageUrl ? { avatar: args.launchInput.imageUrl } : {}),
+			config: {
+				...characterConfig,
+				waifuAgentId: args.agentId,
+				treasuryAddress: args.treasuryAddress,
+				taxSplit: args.launchInput.taxSplit ?? null,
+				launchpad: args.body.launchpad,
+			},
+		},
+		billing: { mode: "owner_credits" },
+		modelDefaults: defaultHostedModelSettings(),
+	};
+}
+
+async function mergeCloudProvisioningMetadata(
+	db: Database,
+	agentId: string,
+	cloud: ElizaCloudProvisionResult,
+): Promise<void> {
+	const current = await agentPersonaQueries.getAgentPersonaByAgentId(db, agentId);
+	if (!current) return;
+	const metadata = recordFromUnknown(current.metadata);
+	const provisioning = recordFromUnknown(metadata.provisioning);
+	await db
+		.update(agentPersonas)
+		.set({
+			runtimeKind: "eliza-cloud",
+			metadata: {
+				...metadata,
+				provisioning: {
+					...provisioning,
+					runtimeKind: "eliza-cloud",
+					provider: "eliza-cloud",
+					cloudAgentId: cloud.cloudAgentId,
+					runtimeAgentId: cloud.cloudAgentId,
+					characterId: cloud.characterId ?? null,
+					jobId: cloud.jobId ?? null,
+					status: cloud.status,
+					polling: cloud.polling ?? null,
+					modelDefaults: defaultHostedModelSettings(),
+					updatedAt: new Date().toISOString(),
+				},
+			},
+			updatedAt: new Date(),
+		})
+		.where(eq(agentPersonas.agentId, agentId));
+}
+
+async function provisionHostedRuntimeAfterLaunch(
+	db: Database,
+	body: import("../../services/provision/payload-adapter.js").ProvisionRequest,
+	launchInput: AgentLaunchInput,
+	result: {
+		agentId: string;
+		tokenAddress: string;
+		treasuryAddress?: string | null;
+	},
+): Promise<ElizaCloudProvisionResult | null> {
+	if (runtimeKindFromProvisionBody(body) !== "eliza-cloud") return null;
+	const existing = await agentPersonaQueries.getAgentPersonaByAgentId(db, result.agentId).catch(() => null);
+	const existingProvisioning = recordFromUnknown(recordFromUnknown(existing?.metadata).provisioning);
+	const existingCloudAgentId = existingProvisioning.cloudAgentId ?? existingProvisioning.runtimeAgentId;
+	if (typeof existingCloudAgentId === "string" && existingCloudAgentId.length > 0) {
+		return {
+			agentId: result.agentId,
+			cloudAgentId: existingCloudAgentId,
+			status: typeof existingProvisioning.status === "string" ? existingProvisioning.status : "pending",
+			...(typeof existingProvisioning.characterId === "string"
+				? { characterId: existingProvisioning.characterId }
+				: {}),
+			...(typeof existingProvisioning.jobId === "string" ? { jobId: existingProvisioning.jobId } : {}),
+		};
+	}
+	const client = getConfiguredElizaCloudClient();
+	if (!client?.provisionWaifuAgent) {
+		throw new Error("Eliza Cloud provisioning is not configured (set ELIZA_CLOUD_SERVICE_KEY)");
+	}
+	const cloud = await client.provisionWaifuAgent(
+		buildCloudProvisionInput({
+			agentId: result.agentId,
+			tokenAddress: result.tokenAddress,
+			treasuryAddress: result.treasuryAddress ?? null,
+			launchInput,
+			body,
+		}),
+	);
+	await mergeCloudProvisioningMetadata(db, result.agentId, cloud);
+	return cloud;
+}
+
 export type ResurrectAgentDeps = {
 	db: ReturnType<typeof getDatabase>["db"];
-	miladyClient: Pick<MiladyCloudClient, "topUpCredits">;
+	elizaClient: Pick<ElizaCloudClient, "topUpCredits">;
 	emitEvent?: typeof emitAgentEvent;
 };
 
@@ -200,7 +379,7 @@ export async function resurrectAgent(
 	creditsAmount: number,
 	deps: ResurrectAgentDeps,
 ): Promise<{ agentId: string; creditsAmount: number; modelTier: "premium" }> {
-	await deps.miladyClient.topUpCredits(agentId, creditsAmount);
+	await deps.elizaClient.topUpCredits(agentId, creditsAmount);
 	const now = new Date();
 	await deps.db
 		.update(agentPersonas)
@@ -229,7 +408,7 @@ export async function resurrectAgent(
  * POST /v2/agents/:id/resurrect
  *
  * Patron top-up endpoint. Body: { creditsAmount: number } where creditsAmount
- * is represented in USD cents until Milady Cloud finalizes credit units.
+ * is represented in USD cents until Eliza Cloud finalizes credit units.
  */
 app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (c) => {
 	const db = requireDb();
@@ -249,16 +428,14 @@ app.post("/:id/resurrect", requirePatron(), requireAgentOwnership("id"), async (
 		return c.json({ error: "creditsAmount must be a positive number", unit: "usd_cents" }, 400);
 	}
 
-	const baseUrl = process.env.MILADY_CLOUD_BASE_URL;
-	const apiKey = process.env.MILADY_CLOUD_API_KEY ?? "";
-	if (!baseUrl) {
-		return c.json({ error: "milady cloud unavailable" }, 503);
-	}
+	const baseUrl = process.env.ELIZA_CLOUD_BASE_URL ?? process.env.ELIZA_API_URL ?? "https://elizacloud.ai";
+	const apiKey = process.env.ELIZA_CLOUD_API_KEY ?? "";
+	const serviceKey = process.env.ELIZA_CLOUD_SERVICE_KEY ?? process.env.ELIZA_SERVICE_KEY ?? "";
 
 	try {
 		const result = await resurrectAgent(agentId, body.creditsAmount, {
 			db,
-			miladyClient: createMiladyCloudClient({ baseUrl, apiKey, logger: console }),
+			elizaClient: createElizaCloudClient({ baseUrl, apiKey, serviceKey, logger: console }),
 		});
 		return c.json({ ok: true, ...result, creditsUnit: "usd_cents" }, 200);
 	} catch (err) {
@@ -907,6 +1084,28 @@ app.post("/provision", requirePatron(), async (c) => {
 	if (duplicate) {
 		// duplicate recovery uses the original redemption from the last five minutes.
 		// do not reject single-use retry recovery just because the invite is now spent.
+		let cloud: ElizaCloudProvisionResult | null = null;
+		try {
+			cloud =
+				duplicate.tokenAddress && runtimeKindFromProvisionBody(validated.body) === "eliza-cloud"
+					? await provisionHostedRuntimeAfterLaunch(db, validated.body, validated.launchInput, {
+							agentId: duplicate.agentId,
+							tokenAddress: duplicate.tokenAddress,
+							treasuryAddress: duplicate.taxRecipientAddress,
+						})
+					: null;
+		} catch (err) {
+			return c.json(
+				{
+					error: "eliza cloud provisioning failed",
+					detail: err instanceof Error ? err.message : String(err),
+					agentId: duplicate.agentId,
+					tokenAddress: duplicate.tokenAddress ?? null,
+					safeAddress: duplicate.taxRecipientAddress ?? null,
+				},
+				502,
+			);
+		}
 		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, duplicate.agentId);
 		if (validated.pullApiKey) {
 			await db
@@ -921,6 +1120,7 @@ app.post("/provision", requirePatron(), async (c) => {
 				safeAddress: duplicate.taxRecipientAddress ?? null,
 				pullApiKey: validated.pullApiKey,
 				agentApiKey: key.raw,
+				...(cloud ? cloudResponseFields(cloud) : {}),
 			},
 			200,
 		);
@@ -965,6 +1165,21 @@ app.post("/provision", requirePatron(), async (c) => {
 		const result = await orchestrator.launch(validated.launchInput);
 		await confirmProvisionInviteCode(db, validated.body.inviteCode as string, patron);
 		inviteConfirmed = true;
+		let cloud: ElizaCloudProvisionResult | null = null;
+		try {
+			cloud = await provisionHostedRuntimeAfterLaunch(db, validated.body, validated.launchInput, result);
+		} catch (err) {
+			return c.json(
+				{
+					error: "eliza cloud provisioning failed",
+					detail: err instanceof Error ? err.message : String(err),
+					agentId: result.agentId,
+					tokenAddress: result.tokenAddress,
+					safeAddress: result.treasuryAddress,
+				},
+				502,
+			);
+		}
 		const key = await (agentsRouteDepsForTest.createAgentKey ?? createKey)(db, result.agentId);
 		if (validated.pullApiKey) {
 			await db
@@ -979,6 +1194,7 @@ app.post("/provision", requirePatron(), async (c) => {
 				safeAddress: result.treasuryAddress,
 				pullApiKey: validated.pullApiKey,
 				agentApiKey: key.raw,
+				...(cloud ? cloudResponseFields(cloud) : {}),
 			},
 			200,
 		);

@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "tsc --noEmit",
 		"check": "tsc --noEmit",
-		"lint": "biome format . --write && biome lint . --fix"
+		"lint": "biome check ."
 	},
 	"exports": {
 		".": "./src/index.ts"

@@ -4,7 +4,7 @@ import { type ClassValue, clsx } from "clsx";
 import moment from "moment";
 import { twMerge } from "tailwind-merge";
 
-import type { TokenMetadata } from "@/components/hooks/providers/usePromptContext";
+import type { TokenMetadata } from "@/lib/token-metadata";
 
 export type CreateTokenResponse = {
 	contractAddress: string;

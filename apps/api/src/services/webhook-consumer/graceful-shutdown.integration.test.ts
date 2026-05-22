@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { resurrectAgent } from "../../routes/v2/agents.js";
-import type { MiladyCloudClient } from "../milady-client.js";
+import type { ElizaCloudClient } from "../eliza-client.js";
 import { type WebhookConsumerDeps, type WebhookConsumerPersonaStore, dispatchEvent } from "./index.js";
 
-function miladyStub(toppedUp: unknown[]): MiladyCloudClient {
+function elizaStub(toppedUp: unknown[]): ElizaCloudClient {
 	return {
 		async provisionAgent() {
 			return { containerId: "container-1" };
@@ -52,7 +52,7 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 	};
 
 	const deps: WebhookConsumerDeps = {
-		miladyCloud: miladyStub(toppedUp),
+		elizaCloud: elizaStub(toppedUp),
 		logger: {},
 		personaStore: store,
 		async emitEvent(input) {
@@ -107,7 +107,7 @@ test("full graceful-shutdown event cascade downgrades, sleeps, and resurrects", 
 
 	await resurrectAgent("waifu-demo-01", 2500, {
 		db,
-		miladyClient: miladyStub(toppedUp),
+		elizaClient: elizaStub(toppedUp),
 		async emitEvent(input) {
 			emitted.push({ eventType: input.eventType });
 			return {} as never;

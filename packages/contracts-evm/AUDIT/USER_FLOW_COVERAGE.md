@@ -74,8 +74,8 @@ source-of-truth for what is "covered" in tests is the inventory in
 
 - A2 ipfs metadata upload (frontend tested via mocks, no integration test
   against real `funcs.flap.sh`)
-- A5 salt mining triggered by API queue (backend unit-tested, no e2e
-  test asserting `queueSaltMining` actually fires from `POST /v2/launches`)
+- A5 salt mining before factory submission (backend unit-tested, no live
+  API-to-factory fork test)
 - A6 `createLaunch` factory submission (backend + contract tests pass;
   no fork test of the exact API → factory path)
 - B2 wallet connect + chain switch (frontend has no e2e wallet sim)
@@ -139,7 +139,7 @@ sequenceDiagram
   participant FE as frontend wizard
   participant API as POST /v2/launches
   participant Flap as funcs.flap.sh
-  participant SM as salt miner job
+  participant SM as salt miner
   participant Factory as LaunchFactory
   participant V as LaunchVault
   participant R as BundleRouter
@@ -155,25 +155,25 @@ sequenceDiagram
   C->>FE: review + sign SIWE
   FE->>API: POST /v2/launches { creator, tier, closeTs, metaCid, siwe }
   API->>API: validate siwe + tier + flapMetaCid
+  API->>SM: mineVanitySalt(creator)
+  SM-->>API: { vanitySalt, predictedTokenAddress }
   API->>Factory: createLaunchOnchain(input)
   Factory->>V: new LaunchVault(...)
   Factory->>T: new TreasuryLP(creator, factory)
   Factory->>R: new BundleRouter(routerArgs)
   Factory->>V: setRouter(router)
-  Factory-->>API: { token, vault, router, taxSplitter, txHash, blockNumber }
-  API->>API: insertLaunch row + queueSaltMining
-  SM->>API: mineVanitySalt() updates row with salt + predictedToken
-  API-->>FE: { id, status='created', predictedTokenAddress: null (pending), ... }
+  Factory-->>API: { token, vault, router, treasuryLp, txHash, blockNumber }
+  API->>API: insertLaunch row with raw vanity salt + predicted token
+  API-->>FE: { id, status='created', predictedTokenAddress, ... }
   IDX-->>API: handleLaunchCreated upserts row by tokenAddress
-  FE-->>C: launch page open (state=open, predictedToken polling)
+  FE-->>C: launch page open (state=open)
 ```
 
 note: in current code, the API uses `service.createLaunchOnchain(input)`
 which submits `createLaunch` to the on-chain factory and decodes
-`LaunchCreated`. the salt is mined ASYNC after row insert via
-`queueSaltMining`. there is a known race window between
-`POST /v2/launches` returning `predictedTokenAddress: null` and the
-salt-miner job filling it in. the frontend polls.
+`LaunchCreated`. the raw vanity salt is mined before factory submission
+because the current factory requires both the raw salt and the predicted token
+address in `LaunchConfig`.
 
 ### A2. coverage matrix
 
@@ -183,14 +183,14 @@ salt-miner job filling it in. the frontend polls.
 | A2 | creator uploads image + metadata to flap | n/a | `apps/api/src/services/flap-metadata.test.ts` | `components/create/step-metadata.tsx` + `lib/flap/metadata.ts` | n/a | partial: no real-network integration test |
 | A3 | creator signs SIWE nonce | n/a | `apps/api/src/routes/v2/auth-siwe.test.ts` | `step-review.tsx` + `linked-eoa-cta.tsx` | n/a | clean |
 | A4 | API validates tier + tax bps + closeTimestamp + metaCid | `wave-h-adversarial.test.js:256,263,271,279` (factory revert paths) + `wave-h-bundle-flow.test.js:382-391` | `agent-launches.test.ts` (route-level zod schema) | wizard `step-review.tsx` mirrors validation | n/a | clean |
-| A5 | API enqueues salt mining job | n/a | `salt-miner.test.ts` (predict + mine deterministic) | n/a | n/a | partial: no e2e test that POST `/v2/launches` triggers `queueSaltMining` |
+| A5 | API mines raw vanity salt before launch creation | n/a | `salt-miner.test.ts` (creator-scoped predict + mine deterministic) | n/a | n/a | partial: no live API-to-factory fork test |
 | A6 | API calls `LaunchFactory.createLaunch` on-chain | `wave-h-bundle-flow.test.js:184,224,265` (all four tiers) + real-fork `integration/wave-h-real-fork.test.js:103,129` | `services/launch-v2/launch-service.ts` (compile only) | n/a | n/a | partial: no fork-level test of API→factory path |
 | A7 | factory validates `predictedTokenAddress == CREATE2(salt)` | `wave-h-adversarial.test.js:279` + `wave-h-bundle-flow.test.js:363` + real-fork `:177` | n/a (deterministic, no DB row to validate) | n/a (server-supplied) | n/a | clean |
 | A8 | factory enforces `usedSalts[salt]` dedupe | `wave-h-adversarial.test.js:288` + `wave-h-bundle-flow.test.js:372` + real-fork `:149` | n/a | n/a | n/a | clean |
 | A9 | factory deploys vault + router + treasuryLp + wires setRouter | `wave-h-phase2.test.js` (smoke) + `wave-h-bundle-flow.test.js:131-160` (helper deploy) + real-fork `:120-148` | n/a | n/a | `handleLaunchCreated` (upserts row by token) | clean |
 | A10 | factory emits `LaunchCreated` | indirectly asserted in helper test bootstrap | n/a | n/a | `launch-indexer/src/poller.ts` + `handlers/launch-created.ts:18-87` | clean |
 | A11 | indexer reconciles row vs upsert by token | n/a | `apps/launch-indexer/src/poller.test.ts:393` | n/a | `handlers/launch-created.ts:31-58` (onConflictDoUpdate) | clean |
-| A12 | salt miner finishes + updates row | n/a | `salt-miner.test.ts:14,32` | wizard polls `GET /v2/launches/:id` (status flips to "ready") | n/a | partial: no e2e wiring test |
+| A12 | mined raw vanity salt and predicted token are persisted | n/a | `salt-miner.test.ts:14,32` + `agent-launches.test.ts` | wizard polls `GET /v2/launches/:id` | n/a | partial: no live API-to-factory fork test |
 | A13 | wizard renders predicted vanity address | n/a | n/a | `components/create/step-review.tsx` + `lib/launch-vault/vanity-address.test.ts` | n/a | clean |
 | A14 | invalid tier (out of {80,90,95,98}) → 400 | n/a (factory only accepts enum) | route zod schema | wizard restricts to 4 tier chips | n/a | clean |
 | A15 | empty name/symbol/meta → revert | `wave-h-bundle-flow.test.js:391` + `wave-h-adversarial.test.js:271` | route zod schema rejects empty | wizard input validation | n/a | clean |
@@ -199,10 +199,8 @@ salt-miner job filling it in. the frontend polls.
 
 ### A3. open questions
 
-- the salt-miner is in-process (`apps/api/src/services/salt-miner.ts` uses
-  `setTimeout(..., 0)`). under api crash / restart, a row with
-  `vanitySalt = null` is never re-enqueued. should the indexer or a
-  cron sweeper re-pick orphans? **TODO follow-up wave.**
+- launch creation now mines the raw vanity salt before submitting
+  `LaunchFactory.createLaunch`, so there is no post-insert orphan mining job.
 - the API trusts the IPFS CID returned by `funcs.flap.sh` without
   fetching it back to check content-hash. minor concern only because
   flap is the only consumer of the CID on-chain.
@@ -314,7 +312,7 @@ sequenceDiagram
   R->>Portal: newTokenV6 { value: quoteAmt }
   Portal->>PCS: createPair + addLiquidity (graduating tiers)
   R->>PCS: swapExactETHForTokensSupportingFeeOnTransferTokens (v2BuyBnb > 0)
-  R->>R: 50/10/40 split + burn + treasury + vault
+  R->>R: 50/10/20 split + burn + treasury + vault
   R->>V: distribute(token, vaultAmt)
   R->>R: tip + dust sweep
   R-->>IDX: BundleExecuted
@@ -340,7 +338,7 @@ sequenceDiagram
 | C11 | router asserts `token == predictedToken` | `wave-h-bundle-flow.test.js` (predicted in mocks) + real-fork `:323-340` | n/a | n/a | n/a | clean |
 | C12 | tier 80: pair stays `address(0)` | real-fork `:347-375` (skipped V2 leg explicitly) | n/a | FE `display-state.ts` knows tier 80 stays Tradable | `handlers/flap.ts:handleFlapLaunchedToDex` (skipped for tier 80) | clean |
 | C13 | tier 90+: PCS pair populated + V2 follow-up buy | real-fork `:561,572,583` (tier-90,95,98) + mocked `:184` | n/a | n/a | `handlers/router.ts:handleBundleExecuted:18-46` | clean |
-| C14 | router splits tokens 50/10/40 dynamically (post-tax) | `wave-h-bundle-flow.test.js:552` (treasury allocation) + real-fork `:333-370` | n/a | n/a | router event captures tokensFromV2 / tokensBurned | clean |
+| C14 | router splits tokens 50/10/20 dynamically (post-tax) | `wave-h-bundle-flow.test.js:552` (treasury allocation) + real-fork `:333-370` | n/a | n/a | router event captures tokensFromV2 / tokensBurned | clean |
 | C15 | router safeTransfer to DEAD / treasury / vault | `wave-h-bundle-flow.test.js:552` | n/a | n/a | indexer reads from `BundleExecuted` event payload | clean |
 | C16 | router calls `vault.distribute(token, vaultAmt)` | `wave-h-bundle-flow.test.js:743` (revert paths) + happy path :184 | n/a | n/a | `handlers/vault.ts:handleLaunched` indirectly | clean |
 | C17 | router tip transfer to 48 club EOA | `wave-h-bundle-flow.test.js:575` | n/a | n/a | indexer reads `tipPaid` from event | clean |

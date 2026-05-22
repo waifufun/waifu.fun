@@ -51,14 +51,7 @@ export default function LitepaperShell({
 						</Link>
 					</div>
 					<div className="flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
-						<a
-							href="https://four.meme"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="hover:text-[#71717a] transition-colors"
-						>
-							four.meme
-						</a>
+						<span>FLAP</span>
 						<span className="text-[#27272a]">&times;</span>
 						<a
 							href="https://pancakeswap.finance"
@@ -69,7 +62,7 @@ export default function LitepaperShell({
 							pancakeswap
 						</a>
 						<span className="text-[#27272a]">&times;</span>
-						<span>steward</span>
+						<span>AgentSafe</span>
 					</div>
 					<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#3f3f46]">
 						&copy; {new Date().getFullYear()}

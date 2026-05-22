@@ -62,7 +62,7 @@ const PRIVACY_POLICY: PolicySection[] = [
 	{
 		subheader: "On-chain data",
 		content:
-			"The Platform interacts with public smart contracts on BNB Smart Chain, including Four.Meme and PancakeSwap. All transactions you sign are written to a public blockchain. We do not control that data, do not store private keys, and cannot delete or alter on-chain history. When the Platform displays market data, trading pairs, or token statistics, that data is fetched from public on-chain sources or external indexers.",
+			"The Platform interacts with public smart contracts on BNB Smart Chain, primarily the FLAP launch protocol and PancakeSwap (and may interact with other launch protocols such as Four.Meme). All transactions you sign are written to a public blockchain. We do not control that data, do not store private keys, and cannot delete or alter on-chain history. When the Platform displays market data, trading pairs, or token statistics, that data is fetched from public on-chain sources or external indexers.",
 	},
 	{
 		header: "How we use information",
@@ -90,7 +90,7 @@ const PRIVACY_POLICY: PolicySection[] = [
 		content:
 			"The Platform integrates with services that process some data on our behalf or on yours. By using the relevant feature you also accept the privacy policy of that provider. Data handled by these services is subject to their own policies.",
 		subcontent: [
-			"Four.Meme: the on-chain token launch protocol we integrate with",
+			"FLAP: the on-chain token launch protocol we primarily integrate with on BSC",
 			"PancakeSwap: the decentralized exchange where graduated tokens trade",
 			"X (formerly Twitter): OAuth provider for the claim flow",
 			"Steward: wallet and identity infrastructure used during the prepare step",

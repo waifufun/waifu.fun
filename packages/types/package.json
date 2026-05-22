@@ -11,7 +11,7 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"clean": "rm -rf dist",
 		"check": "tsc -p tsconfig.json --noEmit",
-		"lint": "biome format . --write && biome lint . --fix"
+		"lint": "biome check ."
 	},
 	"exports": {
 		".": {

@@ -156,6 +156,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 			toBlock: factoryTo,
 		});
 
+		let factoryFailed = false;
 		for (const event of factoryEvents) {
 			if (event.eventName !== "LaunchCreated") continue;
 			try {
@@ -181,10 +182,12 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 					},
 					"LaunchCreated handler failed",
 				);
+				factoryFailed = true;
+				break;
 			}
 		}
 
-		await runtime.cursors.advance(factoryId, factoryTo);
+		if (!factoryFailed) await runtime.cursors.advance(factoryId, factoryTo);
 	}
 
 	// --- Phase 1b: Flap Portal TokenCreated -----------------------------------
@@ -204,6 +207,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 			fromBlock: portalFrom,
 			toBlock: portalTo,
 		});
+		let portalFailed = false;
 		for (const event of portalEvents) {
 			if (event.eventName !== "TokenCreated") continue;
 			try {
@@ -214,9 +218,11 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 					{ err: error instanceof Error ? error.message : String(error), tx: event.txHash },
 					"Portal TokenCreated handler failed",
 				);
+				portalFailed = true;
+				break;
 			}
 		}
-		await runtime.cursors.advance(portalId, portalTo);
+		if (!portalFailed) await runtime.cursors.advance(portalId, portalTo);
 	}
 
 	// --- Phase 1c: Flap graduation -------------------------------------------
@@ -236,6 +242,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				fromBlock: flapFrom,
 				toBlock: flapTo,
 			});
+			let flapFailed = false;
 			for (const event of flapEvents) {
 				if (event.eventName !== "LaunchedToDEX") continue;
 				try {
@@ -246,9 +253,11 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 						{ err: error instanceof Error ? error.message : String(error), tx: event.txHash },
 						"Flap LaunchedToDEX handler failed",
 					);
+					flapFailed = true;
+					break;
 				}
 			}
-			await runtime.cursors.advance(flapId, flapTo);
+			if (!flapFailed) await runtime.cursors.advance(flapId, flapTo);
 		}
 	}
 
@@ -275,6 +284,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				fromBlock,
 				toBlock,
 			});
+			let failed = false;
 			for (const event of events) {
 				if (
 					event.eventName === "LaunchCreated" ||
@@ -297,9 +307,11 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 						},
 						"vault handler failed",
 					);
+					failed = true;
+					break;
 				}
 			}
-			await runtime.cursors.advance(vCursorId, toBlock);
+			if (!failed) await runtime.cursors.advance(vCursorId, toBlock);
 		}
 
 		// Router
@@ -312,6 +324,7 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 				fromBlock,
 				toBlock,
 			});
+			let failed = false;
 			for (const event of events) {
 				if (event.eventName !== "BundleExecuted" && event.eventName !== "BundleFailed") continue;
 				try {
@@ -331,9 +344,11 @@ export async function pollOnce(runtime: LaunchIndexerRuntime, options: PollOnceO
 						},
 						"router handler failed",
 					);
+					failed = true;
+					break;
 				}
 			}
-			await runtime.cursors.advance(rCursorId, toBlock);
+			if (!failed) await runtime.cursors.advance(rCursorId, toBlock);
 		}
 	}
 

@@ -1,10 +1,8 @@
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { Connection, Keypair } from "@solana/web3.js";
-import { type ProgramContext, initializePrograms } from "./programs";
-import { meteoraMigrationSteps } from "./protocols/meteora";
-import { raydiumMigrationSteps } from "./protocols/raydium";
-import type { MigrationContext, ProtocolMigration } from "./types";
-import type { Wallet } from "./utils/customWallet";
+import type { ProgramContext } from "./programs/index.js";
+import type { MigrationContext, ProtocolMigration } from "./types.js";
+import type { Wallet } from "./utils/customWallet.js";
 
 export class MigrationManager {
 	private programContext: ProgramContext | null = null;
@@ -15,6 +13,7 @@ export class MigrationManager {
 	) {}
 
 	async initializePrograms(provider: AnchorProvider, keypair: Keypair): Promise<void> {
+		const { initializePrograms } = await import("./programs/index.js");
 		this.programContext = await initializePrograms(provider, keypair);
 	}
 
@@ -71,9 +70,11 @@ export class MigrationManager {
 
 	async getMigrationSteps(protocol: "raydium" | "meteora"): Promise<any[]> {
 		if (protocol === "meteora") {
+			const { meteoraMigrationSteps } = await import("./protocols/meteora.js");
 			return meteoraMigrationSteps;
 		}
 		if (protocol === "raydium") {
+			const { raydiumMigrationSteps } = await import("./protocols/raydium.js");
 			return raydiumMigrationSteps;
 		}
 		throw new Error(`Unsupported protocol: ${protocol}`);

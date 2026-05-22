@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useId } from "react";
 import { CheckIcon } from "../wizard-icons";
-import { type TierPreset, formatUsdMarketCap, totalBnb } from "./tier-data";
+import { type TierPreset, formatUsdMarketCap, tierDisplayName, totalBnb } from "./tier-data";
 
 type Props = {
 	tier: TierPreset;
@@ -42,7 +42,9 @@ export function TierCard({ tier, selected, onSelect }: Props) {
 		>
 			{/* top row: tier id + badge */}
 			<div className="flex items-start justify-between gap-2">
-				<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">tier_{tier.id}</span>
+				<span className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">
+					{tierDisplayName(tier.id)}
+				</span>
 				<div className="flex items-center gap-1.5 flex-wrap justify-end">
 					{recommended ? (
 						<span className="text-[9px] font-mono uppercase tracking-[0.24em] text-accent border border-accent/40 px-1.5 py-0.5">

@@ -4,7 +4,7 @@ import { CREATE_CPMM_POOL_PROGRAM, Raydium } from "@raydium-io/raydium-sdk-v2";
 import * as raydium_api from "@raydium-io/raydium-sdk-v2";
 import * as spl from "@solana/spl-token";
 import type { RaydiumVaultTypes } from "@waifufun/programs";
-import { retryOperation } from "../utils";
+import { retryOperation } from "../utils.js";
 import {
 	LOCKING_PROGRAM,
 	LOCK_CP_AUTH_SEED,
@@ -12,7 +12,7 @@ import {
 	getNftTokenFaucet,
 	getUserPosition,
 	getVaultConfig,
-} from "./pdas";
+} from "./pdas.js";
 
 export async function depositToRaydiumVault(
 	provider: anchor.AnchorProvider,

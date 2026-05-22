@@ -6,7 +6,6 @@ import StepLaunchpad from "@/components/create/step-launchpad";
 import StepMetadata from "@/components/create/step-metadata";
 import StepPersona from "@/components/create/step-persona";
 import StepReview from "@/components/create/step-review";
-import StepRuntime from "@/components/create/step-runtime";
 import StepSafe from "@/components/create/step-safe";
 import StepTier from "@/components/create/tier/step-tier";
 import WizardShell from "@/components/create/wizard-shell";
@@ -25,7 +24,11 @@ import { Suspense, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAccount, useSignMessage } from "wagmi";
 import { PROVISION_RESPONSE_TIMEOUT_MS } from "./wizard-constants";
-import { provisionSuccessRoute, provisionSuccessStorageKey } from "./wizard-provision-success";
+import {
+	provisionCloudStorageKey,
+	provisionSuccessRoute,
+	provisionSuccessStorageKey,
+} from "./wizard-provision-success";
 
 export { PROVISION_RESPONSE_TIMEOUT_MS };
 
@@ -80,6 +83,13 @@ function WizardInner() {
 		async (launchAuthorization: { creator: string; siwe: { message: string; signature: string } }) => {
 			if (launchPromise.current) return;
 			if (!state.launch.tierId) return;
+			// Wave M tax + Safe config. The safe step collects owners + threshold;
+			// the patron defaults to the creator wallet (most launches are
+			// self-patroned); the platform receiver + bps splits come from the
+			// locked defaults wired through env in wizard-state.
+			const safeOwners = (state.safe.owners ?? []).filter((addr) => /^0x[a-fA-F0-9]{40}$/.test(addr.trim()));
+			const safeThreshold = Math.max(1, Math.min(state.safe.threshold ?? 1, Math.max(safeOwners.length, 1)));
+			const patronAddress = state.patronPlatform.patron ?? launchAuthorization.creator;
 			const promise = createLaunch({
 				inviteCode: state.inviteCode.trim(),
 				persona: {
@@ -91,14 +101,7 @@ function WizardInner() {
 					hasAvatarUpload: Boolean(state.persona.avatarDataUrl),
 				},
 				tier: state.launch.tierId,
-				runtime:
-					state.runtime.kind === "webhook"
-						? {
-								kind: "webhook",
-								webhookUrl: state.runtime.webhookUrl.trim(),
-								webhookSecret: state.runtime.webhookSecret,
-							}
-						: { kind: state.runtime.kind },
+				runtime: { kind: "hosted" },
 				safe: {
 					taxAgentBps: state.safe.taxAgentBps,
 					taxPatronBps: state.safe.taxPatronBps,
@@ -109,6 +112,14 @@ function WizardInner() {
 						{ slug: "pancake", enabled: state.safe.adapters.pancake },
 						{ slug: "venus", enabled: state.safe.adapters.venus },
 					],
+				},
+				patronPlatform: {
+					platformReceiver: state.patronPlatform.platformReceiver,
+					patron: patronAddress,
+					platformBps: state.patronPlatform.platformBps,
+					patronBps: state.patronPlatform.patronBps,
+					agentSafeOwners: safeOwners,
+					agentSafeThreshold: safeThreshold,
 				},
 				launchAuthorization,
 			});
@@ -192,6 +203,9 @@ function WizardInner() {
 			if (result?.ok && result.agentApiKey) {
 				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
 			}
+			if (result?.ok) {
+				storeCloudProvision(result);
+			}
 			router.push(`/launch/${encodeURIComponent(launchResult.id)}`);
 			return;
 		}
@@ -200,6 +214,7 @@ function WizardInner() {
 			if (result.agentApiKey) {
 				window.sessionStorage.setItem(provisionSuccessStorageKey(result), result.agentApiKey);
 			}
+			storeCloudProvision(result);
 			router.push(provisionSuccessRoute(result));
 			return;
 		}
@@ -231,7 +246,6 @@ function WizardInner() {
 					metadata: <StepMetadata />,
 					tier: <StepTier />,
 					launchpad: LAUNCHPAD_PICKER_ENABLED ? <StepLaunchpad /> : null,
-					runtime: <StepRuntime />,
 					safe: <StepSafe />,
 					review: <StepReview />,
 				}}
@@ -244,6 +258,18 @@ function WizardInner() {
 			) : null}
 		</>
 	);
+}
+
+function storeCloudProvision(result: Extract<ProvisionResult, { ok: true }>) {
+	const cloud = {
+		cloudAgentId: result.cloudAgentId,
+		cloudStatus: result.cloudStatus,
+		provisioningJobId: result.provisioningJobId,
+		webUiUrl: result.webUiUrl,
+		logsUrl: result.logsUrl,
+	};
+	if (!Object.values(cloud).some(Boolean)) return;
+	window.sessionStorage.setItem(provisionCloudStorageKey(result), JSON.stringify(cloud));
 }
 
 function WizardGate() {

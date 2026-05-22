@@ -7,13 +7,14 @@
  * later in the dispatcher.
  */
 
-import type { AlreadySentLookup, EventDetail, EventType, LaunchSnapshot, PendingEvent } from "./types.js";
+import type { AlreadySentLookup, Channel, EventDetail, EventType, LaunchSnapshot, PendingEvent } from "./types.js";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1_000;
 
 export interface DetectOptions {
 	trancheBpsThresholds: readonly number[];
 	now: Date;
+	channelsForEvent?: (eventType: EventType) => readonly Channel[];
 }
 
 function hasReached(launch: LaunchSnapshot, bps: number): boolean {
@@ -26,14 +27,20 @@ function isCapHit(launch: LaunchSnapshot): boolean {
 	return launch.presaleCap > 0n && launch.totalDeposited >= launch.presaleCap;
 }
 
-function eventAlreadySentForAllChannels(
+function eventAlreadyHandled(
 	already: AlreadySentLookup,
 	launchId: string,
 	eventType: EventType,
 	dedupeKey: string,
+	channels: readonly Channel[] | undefined,
 ): boolean {
-	// We treat the event as "handled" if a row exists for any known channel.
-	// The per-channel dedupe index is the source of truth at write time.
+	if (channels) {
+		if (channels.length === 0) {
+			return already.hasNoSubscriberSentinel(launchId, eventType, dedupeKey);
+		}
+		return channels.every((channel) => already.has(launchId, eventType, channel, dedupeKey));
+	}
+
 	return (
 		already.has(launchId, eventType, "discord", dedupeKey) || already.has(launchId, eventType, "telegram", dedupeKey)
 	);
@@ -47,7 +54,7 @@ export function detectEvents(launch: LaunchSnapshot, already: AlreadySentLookup,
 	const out: PendingEvent[] = [];
 
 	// 1. round_opened: emit once per launch the first time we see it.
-	if (!eventAlreadySentForAllChannels(already, launch.id, "round_opened", "")) {
+	if (!eventAlreadyHandled(already, launch.id, "round_opened", "", opts.channelsForEvent?.("round_opened"))) {
 		out.push({
 			launch,
 			eventType: "round_opened",
@@ -62,7 +69,15 @@ export function detectEvents(launch: LaunchSnapshot, already: AlreadySentLookup,
 		if (!hasReached(launch, bps)) continue;
 		const trancheIndex = i + 1;
 		const trancheKey = `t${trancheIndex}`;
-		if (eventAlreadySentForAllChannels(already, launch.id, "tranche_deployed", trancheKey)) {
+		if (
+			eventAlreadyHandled(
+				already,
+				launch.id,
+				"tranche_deployed",
+				trancheKey,
+				opts.channelsForEvent?.("tranche_deployed"),
+			)
+		) {
 			continue;
 		}
 		out.push({
@@ -73,7 +88,7 @@ export function detectEvents(launch: LaunchSnapshot, already: AlreadySentLookup,
 	}
 
 	// 3. cap_hit: emit once when total >= cap.
-	if (isCapHit(launch) && !eventAlreadySentForAllChannels(already, launch.id, "cap_hit", "")) {
+	if (isCapHit(launch) && !eventAlreadyHandled(already, launch.id, "cap_hit", "", opts.channelsForEvent?.("cap_hit"))) {
 		out.push({
 			launch,
 			eventType: "cap_hit",
@@ -82,7 +97,10 @@ export function detectEvents(launch: LaunchSnapshot, already: AlreadySentLookup,
 	}
 
 	// 4. launched: emit once when state transitions to "launched".
-	if (launch.state === "launched" && !eventAlreadySentForAllChannels(already, launch.id, "launched", "")) {
+	if (
+		launch.state === "launched" &&
+		!eventAlreadyHandled(already, launch.id, "launched", "", opts.channelsForEvent?.("launched"))
+	) {
 		out.push({
 			launch,
 			eventType: "launched",
@@ -94,7 +112,7 @@ export function detectEvents(launch: LaunchSnapshot, already: AlreadySentLookup,
 	if (
 		launch.state === "launched" &&
 		launch.launchTimestamp != null &&
-		!eventAlreadySentForAllChannels(already, launch.id, "summary_24h", "")
+		!eventAlreadyHandled(already, launch.id, "summary_24h", "", opts.channelsForEvent?.("summary_24h"))
 	) {
 		const launchedAtMs = Number(launch.launchTimestamp) * 1_000;
 		if (opts.now.getTime() - launchedAtMs >= TWENTY_FOUR_HOURS_MS) {

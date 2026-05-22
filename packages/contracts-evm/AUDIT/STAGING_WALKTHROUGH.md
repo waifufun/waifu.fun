@@ -33,7 +33,7 @@ runbook).
 - [ ] all 4 tier cards render (80, 90, 95, 98)
 - [ ] economics preview updates per tier
 - [ ] tier 80 card: "presale → PCS curve" subtitle, no V2 LP mention
-- [ ] tier 90/95/98: "presale → PCS V2 LP · 50/10/40 split · 24h vesting"
+- [ ] tier 90/95/98: "presale → PCS V2 LP · 50/10/20 split · 24h vesting"
 - [ ] selected tier highlights; can switch back and forth
 
 ### C5. review step
@@ -133,7 +133,7 @@ runbook).
 
 ### L3. tax stream stats
 - [ ] live splitter balance visible
-- [ ] 24h tax volume + lifetime tax distributed (or TODO marker if indexer not wired yet)
+- [ ] 24h tax volume + lifetime tax distributed (or placeholder marker if indexer not wired yet)
 - [ ] breakdown by destination: dividends, deflation, LP, market
 
 ### L4. trade activity feed

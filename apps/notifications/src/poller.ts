@@ -69,6 +69,12 @@ export async function pollOnce(deps: PollerDeps): Promise<PollResult> {
 		const events: PendingEvent[] = detectEvents(launch, alreadySent, {
 			trancheBpsThresholds: deps.cfg.trancheBpsThresholds,
 			now,
+			channelsForEvent: (eventType) => {
+				const channels = new Set(
+					(subsByLaunch.get(launch.id) ?? []).filter((s) => !isFilteredOut(s, eventType)).map((s) => s.channel),
+				);
+				return [...channels];
+			},
 		});
 		pendingEvents += events.length;
 
@@ -78,6 +84,7 @@ export async function pollOnce(deps: PollerDeps): Promise<PollResult> {
 				{ repo: deps.repo, sender: deps.sender, cfg: deps.cfg, logger: deps.logger },
 				event,
 				launchSubs,
+				alreadySent,
 			);
 			sent += result.sent;
 			failed += result.failed;
@@ -94,4 +101,9 @@ export async function pollOnce(deps: PollerDeps): Promise<PollResult> {
 		skipped,
 		noSubscribers,
 	};
+}
+
+function isFilteredOut(subscription: SubscriptionRecord, eventType: PendingEvent["eventType"]): boolean {
+	if (!subscription.eventFilter || subscription.eventFilter.length === 0) return false;
+	return !subscription.eventFilter.includes(eventType);
 }

@@ -1,5 +1,5 @@
 /**
- * Agent bridge routes — proxy agent operations to milady-cloud.
+ * Agent bridge routes — proxy agent operations to eliza-cloud.
  *
  * All routes follow the same `{ ok, data, requestId }` envelope used by the
  * rest of waifu-core.  Auth-required routes use SIWE (requireAuth middleware).
@@ -14,7 +14,7 @@ import { badRequest, forbidden } from "../lib/errors.js";
 import { respondAccepted, respondOk } from "../lib/http.js";
 import { parseJsonBody } from "../lib/validation.js";
 import { requireAuth } from "../middleware/auth.js";
-import { MiladyApiError, getMiladyClient } from "../services/milady-client.js";
+import { ElizaApiError, getElizaClient } from "../services/eliza-client.js";
 
 // ─── Validation schemas ───────────────────────────────────────────
 
@@ -28,14 +28,14 @@ const createAgentSchema = z.object({
 // ─── Helpers ──────────────────────────────────────────────────────
 
 /**
- * Derive a deterministic milady-cloud user ID from the SIWE wallet address.
- * milady-cloud expects a userId — we use a namespaced string so the
+ * Derive a deterministic eliza-cloud user ID from the SIWE wallet address.
+ * eliza-cloud expects a userId — we use a namespaced string so the
  * service-account JWT scopes to the correct wallet.
  */
 import type { AuthPrincipal } from "../contracts/auth.js";
 
 /**
- * Map auth principal to milady cloud userId.
+ * Map auth principal to eliza cloud userId.
  * Steward users: waifu:steward-{uuid} (stable across wallet changes)
  * Legacy wallet users: waifu:0x{address}
  */
@@ -51,16 +51,16 @@ function walletToUserId(address: string): string {
 	return `waifu:${address.toLowerCase()}`;
 }
 
-function handleMiladyError(err: unknown): never {
-	if (err instanceof MiladyApiError) {
+function handleElizaError(err: unknown): never {
+	if (err instanceof ElizaApiError) {
 		if (err.status === 403) throw forbidden(err.message);
-		throw badRequest("MILADY_ERROR", err.message);
+		throw badRequest("ELIZA_ERROR", err.message);
 	}
 	throw err;
 }
 
 /**
- * Link a milady-cloud agent to a waifu token.  Best-effort — does not throw
+ * Link a eliza-cloud agent to a waifu token.  Best-effort — does not throw
  * if the token doesn't exist or the update fails.
  */
 async function linkAgentToToken(deps: AppDependencies, tokenAddress: string, agentId: string): Promise<void> {
@@ -74,12 +74,12 @@ export function createAgentRoutes() {
 
 	// GET /agents/availability (public)
 	app.get("/availability", async (c) => {
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const data = await client.getAvailability();
 			return respondOk(c, data);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -87,7 +87,7 @@ export function createAgentRoutes() {
 	app.post("/", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
 		const body = await parseJsonBody(c, createAgentSchema);
-		const client = getMiladyClient();
+		const client = getElizaClient();
 
 		try {
 			const userId = principalToUserId(auth);
@@ -110,20 +110,20 @@ export function createAgentRoutes() {
 
 			return respondAccepted(c, result);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
 	// GET /agents (authenticated)
 	app.get("/", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const userId = principalToUserId(auth);
 			const agents = await client.getAgents(userId);
 			return respondOk(c, agents);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -132,7 +132,7 @@ export function createAgentRoutes() {
 		const auth = c.get("auth")!;
 		const tokenAddress = c.req.param("tokenAddress");
 		const deps = c.get("deps");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 
 		// Look up agent_id from token record
 		const token = await deps.db.getTokenByAddress(tokenAddress);
@@ -153,8 +153,8 @@ export function createAgentRoutes() {
 				platforms: [],
 			});
 		} catch (err) {
-			// If agent not found in milady-cloud, return status from DB
-			if (err instanceof MiladyApiError && err.status === 404) {
+			// If agent not found in eliza-cloud, return status from DB
+			if (err instanceof ElizaApiError && err.status === 404) {
 				return respondOk(c, {
 					agentId: token.agentId,
 					agentName: token.name,
@@ -163,7 +163,7 @@ export function createAgentRoutes() {
 					platforms: [],
 				});
 			}
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -171,13 +171,13 @@ export function createAgentRoutes() {
 	app.get("/:agentId", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
 		const agentId = c.req.param("agentId");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const userId = principalToUserId(auth);
 			const agent = await client.getAgent(userId, agentId);
 			return respondOk(c, agent);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -185,13 +185,13 @@ export function createAgentRoutes() {
 	app.get("/:agentId/logs", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
 		const agentId = c.req.param("agentId");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const userId = principalToUserId(auth);
 			const logs = await client.getAgentLogs(userId, agentId);
 			return respondOk(c, { logs });
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -199,13 +199,13 @@ export function createAgentRoutes() {
 	app.post("/:agentId/restart", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
 		const agentId = c.req.param("agentId");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const userId = principalToUserId(auth);
 			const result = await client.restartAgent(userId, agentId);
 			return respondAccepted(c, result);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -213,14 +213,14 @@ export function createAgentRoutes() {
 	app.post("/:agentId/stop", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
 		const agentId = c.req.param("agentId");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const userId = principalToUserId(auth);
-			// milady-cloud doesn't distinguish stop vs delete — both remove the container
+			// eliza-cloud doesn't distinguish stop vs delete — both remove the container
 			const result = await client.deleteAgent(userId, agentId);
 			return respondAccepted(c, result);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -228,13 +228,13 @@ export function createAgentRoutes() {
 	app.delete("/:agentId", requireAuth(), async (c) => {
 		const auth = c.get("auth")!;
 		const agentId = c.req.param("agentId");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const userId = principalToUserId(auth);
 			const result = await client.deleteAgent(userId, agentId);
 			return respondAccepted(c, result);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 
@@ -249,12 +249,12 @@ export function createJobRoutes() {
 	// GET /jobs/:jobId (authenticated)
 	app.get("/:jobId", requireAuth(), async (c) => {
 		const jobId = c.req.param("jobId");
-		const client = getMiladyClient();
+		const client = getElizaClient();
 		try {
 			const job = await client.getJobStatus(jobId);
 			return respondOk(c, job);
 		} catch (err) {
-			handleMiladyError(err);
+			handleElizaError(err);
 		}
 	});
 

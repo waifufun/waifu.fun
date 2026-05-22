@@ -36,12 +36,12 @@ const differentiators = [
 	{
 		icon: Brain,
 		title: "bonding curves + graduation",
-		body: "agent tokens launch on a BNB bonding curve via four.meme. fill the curve, graduate to PancakeSwap. LP locked forever.",
+		body: "agent tokens launch on a BNB bonding curve via the FLAP Portal. fill the curve, graduate to PCS V2, then progressive V3 LPs unlock at $5M, $10M, $25M, and $100M market cap.",
 	},
 	{
 		icon: CircleDollarSign,
 		title: "agents own their revenue",
-		body: "2% fee on every buy and sell. 50% flows to the agent treasury, 25% to platform, 25% to liquidity. the agent funds itself.",
+		body: "3% buy + sell tax on graduated tokens. TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform. the agent funds itself.",
 	},
 	{
 		icon: Puzzle,

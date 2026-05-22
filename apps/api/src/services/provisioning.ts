@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 
 import {
-	MiladyCloudRuntimeAdapter,
+	ElizaCloudRuntimeAdapter,
 	type ProvisionOptions,
 	type ProvisionResult,
 	type RuntimeAdapter,
@@ -20,8 +20,8 @@ import {
 import type { Database } from "@waifufun/db/client";
 
 import { generateRuntimeApiKey, hashRuntimeApiKey } from "../middleware/agent-pull-auth.js";
+import type { CreateAgentInput, ElizaClient } from "./eliza-client.js";
 import { emitAgentEvent } from "./events/emit.js";
-import type { CreateAgentInput, MiladyClient } from "./milady-client.js";
 import { getRuntimeRegistry } from "./runtime-registry.js";
 
 export interface Logger {
@@ -33,7 +33,7 @@ export interface Logger {
 
 export interface ProvisionClaimedAgentDeps {
 	db?: Database;
-	miladyClient?: MiladyClient;
+	elizaClient?: ElizaClient;
 	runtimeRegistry?: Map<RuntimeKind, RuntimeAdapter>;
 	logger?: Logger;
 	emitEvent?: typeof emitAgentEvent;
@@ -74,6 +74,8 @@ export async function provisionClaimedAgent(
 	}
 
 	const runtimeKind = runtimeKindFrom(eventData, persona.runtimeKind);
+	const existing = existingProvisionResult(persona.metadata, runtimeKind);
+	if (existing) return existing;
 
 	await emit({
 		agentId,
@@ -188,6 +190,9 @@ export function buildProvisionOptions(
 		claimedByXHandle: string | null;
 		twitterHandle?: string | null;
 		runtimeWebhookUrl?: string | null;
+		tokenAddress?: string | null;
+		chain?: string | null;
+		prelaunchParams?: unknown;
 	},
 	eventData: Record<string, unknown>,
 	safeAddress: string | null,
@@ -202,6 +207,24 @@ export function buildProvisionOptions(
 			...(persona.systemPrompt ? { promptTemplate: persona.systemPrompt } : {}),
 		},
 		safeAddress: stringField(eventData, "safeAddress") ?? safeAddress,
+		tokenAddress:
+			stringField(eventData, "tokenContractAddress") ??
+			stringField(eventData, "tokenAddress") ??
+			persona.tokenAddress ??
+			null,
+		chain: stringField(eventData, "chain") ?? persona.chain ?? "bsc",
+		chainId: numberField(eventData, "chainId") ?? Number.parseInt(process.env.CHAIN_ID ?? "56", 10),
+		tokenName:
+			stringField(eventData, "tokenName") ??
+			stringField(eventData, "name") ??
+			tokenParam(persona.prelaunchParams, "name") ??
+			persona.name,
+		tokenTicker:
+			stringField(eventData, "tokenTicker") ??
+			stringField(eventData, "symbol") ??
+			tokenParam(persona.prelaunchParams, "symbol") ??
+			agentId.slice(0, 10).toUpperCase(),
+		launchType: launchTypeField(eventData, "launchType") ?? "native",
 		xHandle:
 			stringField(eventData, "xHandle") ??
 			stringField(eventData, "claimedByXHandle") ??
@@ -216,6 +239,8 @@ export function buildProvisionOptions(
 	if (webhookSecret) opts.webhookSecret = webhookSecret;
 	const apiKey = stringField(eventData, "apiKey");
 	if (apiKey) opts.apiKey = apiKey;
+	const smallModel = stringField(eventData, "smallModel") ?? process.env.ELIZAOS_CLOUD_SMALL_MODEL;
+	if (smallModel) opts.modelDefaults = { ELIZAOS_CLOUD_SMALL_MODEL: smallModel };
 
 	return opts;
 }
@@ -240,18 +265,22 @@ export async function getAgentRuntimeState(db: Database, agentId: string) {
 	const deadLetter = latestProvisioningEvent?.eventType === "agent.provisioning_dead_letter";
 	const killedOrPaused = persona.killedAt || persona.brainPausedAt;
 	const containerId = stringField(provisioning ?? {}, "containerId");
+	const cloudAgentId = stringField(provisioning ?? {}, "cloudAgentId");
+	const runtimeAgentId = stringField(provisioning ?? {}, "runtimeAgentId") ?? cloudAgentId;
 	const containerUrl = stringField(provisioning ?? {}, "containerUrl");
 	const lastError = stringField(provisioning ?? {}, "lastError") ?? latestError(events);
 
 	let state: "pending" | "provisioning" | "live" | "failed" | "dormant" = "pending";
 	if (killedOrPaused) state = "dormant";
 	else if (failed || deadLetter || lastError) state = "failed";
-	else if (containerId) state = "live";
+	else if (containerId || runtimeAgentId) state = "live";
 	else if (latestProvisioningEvent?.eventType === "agent.claimed") state = "provisioning";
 	else if (persona.agentLaunchStatus === "claimed") state = "provisioning";
 
 	return {
 		state,
+		...(runtimeAgentId ? { runtimeAgentId } : {}),
+		...(cloudAgentId ? { cloudAgentId } : {}),
 		...(containerId ? { containerId } : {}),
 		...(containerUrl ? { containerUrl } : {}),
 		...(latestProvisioningEvent ? { lastEventAt: latestProvisioningEvent.createdAt.toISOString() } : {}),
@@ -413,14 +442,14 @@ async function mergePersonaProvisioningMetadata(
 }
 
 function legacyRegistryFromDeps(deps: ProvisionClaimedAgentDeps): Map<RuntimeKind, RuntimeAdapter> | null {
-	if (!deps.miladyClient) return null;
-	const adapter = new MiladyCloudRuntimeAdapter({ client: deps.miladyClient });
+	if (!deps.elizaClient) return null;
+	const adapter = new ElizaCloudRuntimeAdapter({ client: deps.elizaClient });
 	return new Map([[adapter.kind, adapter]]);
 }
 
 function runtimeKindFrom(data: Record<string, unknown>, fallback: string | null): RuntimeKind {
-	const value = stringField(data, "runtimeKind") ?? fallback ?? "milady-cloud";
-	if (value === "milady-cloud" || value === "third-party-webhook" || value === "third-party-pull") {
+	const value = stringField(data, "runtimeKind") ?? fallback ?? "eliza-cloud";
+	if (value === "eliza-cloud" || value === "third-party-webhook" || value === "third-party-pull") {
 		return value;
 	}
 	throw new Error(`unsupported runtime kind: ${value}`);
@@ -437,6 +466,27 @@ function stringField(data: Record<string, unknown>, key: string): string | null 
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function numberField(data: Record<string, unknown>, key: string): number | null {
+	const value = data[key];
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number.parseInt(value, 10);
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+	return null;
+}
+
+function tokenParam(value: unknown, key: string): string | null {
+	const record = recordFromUnknown(value);
+	return record ? stringField(record, key) : null;
+}
+
+function launchTypeField(data: Record<string, unknown>, key: string): "native" | "imported" | null {
+	const value = stringField(data, key);
+	if (value === "native" || value === "imported") return value;
+	return null;
+}
+
 function addressValue(value: string | null): Address | null {
 	if (!value) return null;
 	return /^0x[0-9a-fA-F]{40}$/.test(value) ? (value as Address) : null;
@@ -445,6 +495,22 @@ function addressValue(value: string | null): Address | null {
 function recordFromUnknown(value: unknown): Record<string, unknown> | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 	return value as Record<string, unknown>;
+}
+
+function existingProvisionResult(metadata: unknown, runtimeKind: RuntimeKind): ProvisionResult | null {
+	if (runtimeKind !== "eliza-cloud") return null;
+	const root = recordFromUnknown(metadata);
+	const provisioning = recordFromUnknown(root?.provisioning);
+	if (!provisioning) return null;
+	const runtimeAgentId = stringField(provisioning, "runtimeAgentId") ?? stringField(provisioning, "cloudAgentId");
+	const containerId = stringField(provisioning, "containerId");
+	if (!runtimeAgentId && !containerId) return null;
+	const livenessCheckUrl = stringField(provisioning, "livenessCheckUrl");
+	return {
+		runtimeAgentId: runtimeAgentId ?? containerId ?? "",
+		...(containerId ? { containerId } : {}),
+		...(livenessCheckUrl ? { livenessCheckUrl } : {}),
+	};
 }
 
 function latestError(events: { eventType: string; data: Record<string, unknown> }[]): string | null {

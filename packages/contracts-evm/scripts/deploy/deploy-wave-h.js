@@ -1,9 +1,12 @@
 /**
- * deploy-wave-h.js — deploy LaunchFactory for Wave H.
+ * deploy-wave-h.js — deploy LaunchFactory for Wave H / M.
  *
- * Wave H deploys exactly one contract from this package: the per-protocol
- * LaunchFactory. Per-launch contracts (LaunchVault, BundleRouter, TreasuryLP)
- * are created by the factory inside createLaunch() at launch time, not here.
+ * Deploys the LaunchFactory plus its two stateless helpers:
+ *   - RouterDeployer    (factors BundleRouter init code out of LaunchFactory)
+ *   - AgentSafeDeployer (Wave M: wraps Gnosis Safe v1.4.1 ProxyFactory)
+ * Per-launch contracts (LaunchVault, BundleRouter, TreasuryLP, TaxSplitter,
+ * AgentSafe) are created by the factory inside createLaunch() at launch
+ * time, not here.
  *
  * Usage:
  *   NETWORK=bscMainnet \
@@ -13,13 +16,16 @@
  *
  * Required env:
  *   PRIVATE_KEY                  — deployer EOA, must hold enough BNB
- *   PLATFORM_COMMISSION_RECEIVER — (optional) recorded only; the factory
- *                                  does not take this as a constructor arg
- *                                  (per-launch field on BundleRouter)
+ *   FACTORY_OWNER                — production multisig/timelock contract that
+ *                                  receives LaunchFactory ownership
+ *   PLATFORM_COMMISSION_RECEIVER — platform fee wallet enforced by factory
  *
  * Optional env:
  *   WBNB, PCS_FACTORY, PCS_ROUTER, FLAP_PORTAL, TOKEN_IMPL_TAXED_V3,
  *   TIP_RECEIVER — override the BSC mainnet address book defaults
+ *   SAFE_SINGLETON, SAFE_PROXY_FACTORY — override canonical Safe v1.4.1
+ *                                       addresses (BSC mainnet defaults
+ *                                       baked in)
  *
  * Output:
  *   deployments/{network}.json — full deployment record incl. factory address,
@@ -40,6 +46,9 @@ const BSC_MAINNET = {
 	FLAP_PORTAL: "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0",
 	TOKEN_IMPL_TAXED_V3: "0x024f18294970B5c76c0691b87f138A0317156422",
 	TIP_RECEIVER: "0x4848489f0b2BEdd788c696e2D79b6b69D7484848",
+	// Canonical Safe v1.4.1 deployments on BSC mainnet (Wave M).
+	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
+	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
 };
 
 // BSC testnet placeholder address book. Mostly real PCS V2 testnet
@@ -53,6 +62,9 @@ const BSC_TESTNET = {
 	FLAP_PORTAL: "0x0000000000000000000000000000000000000000",
 	TOKEN_IMPL_TAXED_V3: "0x0000000000000000000000000000000000000000",
 	TIP_RECEIVER: "0x0000000000000000000000000000000000000000",
+	// Same Safe v1.4.1 canonical addresses ship on BSC testnet.
+	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
+	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
 };
 
 /**
@@ -87,6 +99,8 @@ function resolveAddressBook(networkName) {
 		FLAP_PORTAL: process.env.FLAP_PORTAL || def.FLAP_PORTAL,
 		TOKEN_IMPL_TAXED_V3: process.env.TOKEN_IMPL_TAXED_V3 || def.TOKEN_IMPL_TAXED_V3,
 		TIP_RECEIVER: process.env.TIP_RECEIVER || def.TIP_RECEIVER,
+		SAFE_SINGLETON: process.env.SAFE_SINGLETON || def.SAFE_SINGLETON,
+		SAFE_PROXY_FACTORY: process.env.SAFE_PROXY_FACTORY || def.SAFE_PROXY_FACTORY,
 	};
 
 	// LaunchFactory rejects zero/null in its constructor; fail fast here
@@ -103,6 +117,30 @@ function resolveAddressBook(networkName) {
 	return book;
 }
 
+async function resolveFactoryOwner(networkName, deployerAddress) {
+	const configuredOwner = process.env.FACTORY_OWNER;
+	if (!configuredOwner && networkName === "bscMainnet") {
+		throw new Error("FACTORY_OWNER is required on bscMainnet and must be a multisig/timelock contract.");
+	}
+
+	const owner = configuredOwner || deployerAddress;
+	if (!ethers.isAddress(owner)) {
+		throw new Error(`Invalid FACTORY_OWNER address: ${owner}`);
+	}
+
+	if (networkName === "bscMainnet") {
+		if (owner.toLowerCase() === deployerAddress.toLowerCase()) {
+			throw new Error("FACTORY_OWNER must not be the deployer EOA on bscMainnet.");
+		}
+		const code = await ethers.provider.getCode(owner);
+		if (code === "0x") {
+			throw new Error("FACTORY_OWNER must be a deployed multisig/timelock contract on bscMainnet.");
+		}
+	}
+
+	return ethers.getAddress(owner);
+}
+
 async function main() {
 	const netName = network.name;
 	const book = resolveAddressBook(netName);
@@ -110,10 +148,12 @@ async function main() {
 
 	const [deployer] = await ethers.getSigners();
 	const balance = await ethers.provider.getBalance(deployer.address);
+	const factoryOwner = await resolveFactoryOwner(netName, deployer.address);
 
 	console.log("=== Wave H deploy ===");
 	console.log("  network:           ", netName);
 	console.log("  deployer:          ", deployer.address);
+	console.log("  factory owner:     ", factoryOwner);
 	console.log("  balance (BNB):     ", ethers.formatEther(balance));
 	console.log("  WBNB:              ", book.WBNB);
 	console.log("  PCS factory:       ", book.PCS_FACTORY);
@@ -127,21 +167,48 @@ async function main() {
 	// resolveAddressBook() already fails fast on missing/zero addresses.
 
 	const platformCommissionReceiver = process.env.PLATFORM_COMMISSION_RECEIVER;
-	if (platformCommissionReceiver) {
-		console.log("  platform commission receiver:", platformCommissionReceiver);
-		console.log("  (recorded only; per-launch field on BundleRouter)");
-		console.log("");
+	if (!platformCommissionReceiver || platformCommissionReceiver === ethers.ZeroAddress) {
+		throw new Error("PLATFORM_COMMISSION_RECEIVER is required and must be non-zero.");
 	}
+	console.log("  platform commission receiver:", platformCommissionReceiver);
+	console.log("");
 
 	// DRY_RUN mode: print everything we WOULD do, abort before broadcast.
 	// Use this as a safety check before mainnet ops.
 	if (process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1") {
 		console.log("=== DRY_RUN mode: NOT broadcasting transaction ===");
-		console.log("Would deploy LaunchFactory with the args above.");
+		console.log("Would deploy RouterDeployer, then LaunchFactory with the args above.");
+		if (factoryOwner.toLowerCase() !== deployer.address.toLowerCase()) {
+			console.log(`Would transfer LaunchFactory ownership to ${factoryOwner}.`);
+		}
 		console.log("To actually deploy, unset DRY_RUN.");
 		return;
 	}
 
+	// 1. Deploy RouterDeployer (stateless helper that deploys BundleRouter
+	//    instances on behalf of LaunchFactory to keep LaunchFactory under EIP-170).
+	console.log("Deploying RouterDeployer ...");
+	const RouterDeployer = await ethers.getContractFactory("RouterDeployer");
+	const routerDeployer = await RouterDeployer.deploy();
+	await routerDeployer.waitForDeployment();
+	const routerDeployerAddress = await routerDeployer.getAddress();
+	console.log("RouterDeployer deployed at:", routerDeployerAddress);
+	console.log("");
+
+	// 1b. Deploy AgentSafeDeployer (Wave M; wraps Safe v1.4.1 ProxyFactory so
+	//     LaunchFactory can create the per-launch agent Safe atomically).
+	console.log("Deploying AgentSafeDeployer ...");
+	console.log("  Safe singleton:    ", book.SAFE_SINGLETON);
+	console.log("  Safe proxy factory:", book.SAFE_PROXY_FACTORY);
+	const AgentSafeDeployer = await ethers.getContractFactory("AgentSafeDeployer");
+	const agentSafeDeployer = await AgentSafeDeployer.deploy(book.SAFE_SINGLETON, book.SAFE_PROXY_FACTORY);
+	await agentSafeDeployer.waitForDeployment();
+	const agentSafeDeployerAddress = await agentSafeDeployer.getAddress();
+	console.log("AgentSafeDeployer deployed at:", agentSafeDeployerAddress);
+	console.log("");
+
+	// 2. Deploy LaunchFactory with both helpers wired in.
+	console.log("Deploying LaunchFactory ...");
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await LaunchFactory.deploy(
 		book.WBNB,
@@ -151,12 +218,23 @@ async function main() {
 		book.FLAP_PORTAL,
 		book.TOKEN_IMPL_TAXED_V3,
 		book.TIP_RECEIVER,
+		platformCommissionReceiver,
+		routerDeployerAddress,
+		agentSafeDeployerAddress,
 	);
 	await factory.waitForDeployment();
 	const factoryAddress = await factory.getAddress();
 
 	console.log("LaunchFactory deployed at:", factoryAddress);
 	console.log("");
+
+	if (factoryOwner.toLowerCase() !== deployer.address.toLowerCase()) {
+		console.log("Transferring LaunchFactory ownership to:", factoryOwner);
+		const transferTx = await factory.transferOwnership(factoryOwner);
+		await transferTx.wait();
+		console.log("Ownership transferred.");
+		console.log("");
+	}
 
 	// Post-deploy verification: read back every immutable and confirm it matches
 	// what we passed. Fails loudly if any address slipped (e.g. wrong env var,
@@ -170,7 +248,9 @@ async function main() {
 		["FLAP_PORTAL", await factory.FLAP_PORTAL(), book.FLAP_PORTAL],
 		["TOKEN_IMPL_TAXED_V3", await factory.TOKEN_IMPL_TAXED_V3(), book.TOKEN_IMPL_TAXED_V3],
 		["TIP_RECEIVER", await factory.TIP_RECEIVER(), book.TIP_RECEIVER],
-		["owner", await factory.owner(), deployer.address],
+		["ROUTER_DEPLOYER", await factory.ROUTER_DEPLOYER(), routerDeployerAddress],
+		["AGENT_SAFE_DEPLOYER", await factory.AGENT_SAFE_DEPLOYER(), agentSafeDeployerAddress],
+		["owner", await factory.owner(), factoryOwner],
 	];
 	let ok = true;
 	for (const [name, actual, expected] of checks) {
@@ -195,9 +275,12 @@ async function main() {
 		network: netName,
 		chainId: Number((await ethers.provider.getNetwork()).chainId),
 		deployer: deployer.address,
+		factoryOwner,
 		deployedAt: new Date().toISOString(),
 		contracts: {
 			LaunchFactory: factoryAddress,
+			RouterDeployer: routerDeployerAddress,
+			AgentSafeDeployer: agentSafeDeployerAddress,
 		},
 		constructorArgs: {
 			wbnb: book.WBNB,
@@ -207,8 +290,15 @@ async function main() {
 			flapPortal: book.FLAP_PORTAL,
 			tokenImplTaxedV3: book.TOKEN_IMPL_TAXED_V3,
 			tipReceiver: book.TIP_RECEIVER,
+			platformCommissionReceiver,
+			routerDeployer: routerDeployerAddress,
+			agentSafeDeployer: agentSafeDeployerAddress,
 		},
-		platformCommissionReceiver: platformCommissionReceiver || null,
+		safeAddressBook: {
+			singleton: book.SAFE_SINGLETON,
+			proxyFactory: book.SAFE_PROXY_FACTORY,
+		},
+		platformCommissionReceiver,
 	};
 
 	const fname = `${netName.toLowerCase().replace("bsc", "bsc-")}.json`;
@@ -223,14 +313,18 @@ async function main() {
 	console.log(`     bunx hardhat verify --network ${netName} ${factoryAddress} \\`);
 	console.log(`       "${book.WBNB}" "${book.PCS_FACTORY}" "${book.PCS_ROUTER}" \\`);
 	console.log(`       "${initCodeHash}" "${book.FLAP_PORTAL}" \\`);
-	console.log(`       "${book.TOKEN_IMPL_TAXED_V3}" "${book.TIP_RECEIVER}"`);
+	console.log(`       "${book.TOKEN_IMPL_TAXED_V3}" "${book.TIP_RECEIVER}" \\`);
+	console.log(`       "${platformCommissionReceiver}" "${routerDeployerAddress}" \\`);
+	console.log(`       "${agentSafeDeployerAddress}"`);
 	console.log("  2. set LAUNCH_FACTORY_ADDRESS in the API + indexer env");
 	console.log("  3. see WAVE_H_OPERATIONAL_PLAN.md for bundle-bot setup");
 }
 
-main().catch((err) => {
-	console.error(err);
-	process.exitCode = 1;
-});
+if (require.main === module) {
+	main().catch((err) => {
+		console.error(err);
+		process.exitCode = 1;
+	});
+}
 
 module.exports = { deriveFlapInitCodeHash, BSC_MAINNET, BSC_TESTNET };

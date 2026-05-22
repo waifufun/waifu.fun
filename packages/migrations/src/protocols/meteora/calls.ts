@@ -19,10 +19,10 @@ import { Keypair, PublicKey, type Transaction } from "@solana/web3.js";
 import DB from "@waifufun/database";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import type { MigrationContext } from "../../types";
-import { handleTransaction, parseWithdrawLogs, recordTransaction } from "../../utils/protocol-utils";
-import { depositToMeteora } from "../../vaults/meteoraVault";
-import { derivePositionNftAccount } from "../../vaults/meteroaPdas";
+import type { MigrationContext } from "../../types.js";
+import { handleTransaction, parseWithdrawLogs, recordTransaction } from "../../utils/protocol-utils.js";
+import { depositToMeteora } from "../../vaults/meteoraVault.js";
+import { derivePositionNftAccount } from "../../vaults/meteroaPdas.js";
 
 export function buildMeteoraCustomPoolFees(tokenBDecimal: number): PoolFeesParams {
 	const legacyFeeBps = feeNumeratorToBps(new BN(2_500_000));

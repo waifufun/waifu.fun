@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
 import { cn } from "@/lib/utils";
 
-import { buildLaunchFaq, type FaqItem } from "./launch-faq-data";
+import { type FaqItem, buildLaunchFaq } from "./launch-faq-data";
 
 type Props = {
 	tier: LaunchTierInfo;
@@ -15,7 +15,7 @@ type Props = {
 
 /**
  * "What happens at launch" FAQ. Inline accordion below the deposit widget on
- * desktop, full-width on mobile. Copy is tier-aware so tier 80 doesn't
+ * desktop, full-width on mobile. Copy is tier-aware so SMOL doesn't
  * mention pcs v2 graduation or vesting.
  */
 export function LaunchFAQ({ tier }: Props) {
@@ -52,15 +52,14 @@ export function LaunchFAQ({ tier }: Props) {
 										)}
 									/>
 								</button>
-								<div
+								<section
 									id={panelId}
-									role="region"
 									aria-labelledby={btnId}
 									hidden={!open}
 									className="px-4 pb-4 pt-0 text-[13px] leading-relaxed text-zinc-400"
 								>
 									{item.a}
-								</div>
+								</section>
 							</li>
 						);
 					})}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DEFAULT_CHAIN_ID, hexAddressSchema, numericStringSchema, supportedChainIdSchema } from "./common";
+import { DEFAULT_CHAIN_ID, hexAddressSchema, numericStringSchema, supportedChainIdSchema } from "./common.js";
 
 export const tokenLifecycleStatusSchema = z.enum(["active", "migrating", "migrated", "hidden", "delisted"]);
 export type TokenLifecycleStatus = z.infer<typeof tokenLifecycleStatusSchema>;

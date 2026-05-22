@@ -1,10 +1,25 @@
+import { randomBytes } from "node:crypto";
+
 import { Hono } from "hono";
 
 import { refreshTokenSchema, siweLoginSchema } from "../contracts/auth.js";
-import { consumeNonce, isProductionAuth, issueNonce, signJwt, verifySiweMessage } from "../lib/auth-service.js";
+import {
+	LEGACY_LOGIN_SIWE_STATEMENT,
+	LEGACY_LOGIN_SIWE_URI_PATH,
+	consumeNonce,
+	isProductionAuth,
+	issueNonce,
+	revokeRefreshTokenJti,
+	signJwt,
+	signRefreshToken,
+	validateSiweContext,
+	verifyRefreshToken,
+	verifySiweMessage,
+} from "../lib/auth-service.js";
 import type { AppBindings } from "../lib/bindings.js";
 import { badRequest, unauthorized } from "../lib/errors.js";
 import { respondOk } from "../lib/http.js";
+import { sanitizeAuthReturnTo } from "../lib/redirect-safety.js";
 import {
 	buildClearCookieHeader,
 	buildSessionCookieHeader,
@@ -59,6 +74,15 @@ setInterval(() => {
 const OAUTH_STATE_COOKIE = "wf_oauth_state";
 const OAUTH_VERIFIER_COOKIE = "wf_oauth_verifier";
 const OAUTH_RETURN_TO_COOKIE = "wf_oauth_return_to";
+const TWITTER_FINALIZE_CODE_TTL_MS = 60_000;
+
+interface TwitterFinalizeCode {
+	sessionToken: string;
+	returnToPath: string | null;
+	expiresAt: number;
+}
+
+const twitterFinalizeCodes = new Map<string, TwitterFinalizeCode>();
 
 function buildOAuthTempCookie(name: string, value: string, secure: boolean): string {
 	const parts = [
@@ -76,19 +100,6 @@ function clearOAuthTempCookie(name: string): string {
 	return `${name}=; Max-Age=0; Path=/auth/twitter; HttpOnly; SameSite=Lax`;
 }
 
-/**
- * Only allow same-origin redirect paths on the frontend. Rejects absolute
- * URLs, protocol-relative paths, and anything not starting with "/". This
- * stops the OAuth flow from being used as an open redirect.
- */
-function sanitizeReturnTo(raw: string | null | undefined): string | null {
-	if (!raw) return null;
-	if (raw.length > 200) return null;
-	// Reject absolute (with scheme), protocol-relative (//), backslash tricks.
-	if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return null;
-	return raw;
-}
-
 function getTwitterFinalizeUrl(): string | null {
 	const raw = process.env.TWITTER_FINALIZE_URL;
 	if (!raw) return null;
@@ -101,11 +112,47 @@ function getTwitterFinalizeUrl(): string | null {
 	}
 }
 
-function buildTwitterFinalizeRedirect(token: string, returnToPath: string | null): string | null {
+function pruneTwitterFinalizeCodes(now = Date.now()): void {
+	for (const [code, entry] of twitterFinalizeCodes) {
+		if (entry.expiresAt <= now) twitterFinalizeCodes.delete(code);
+	}
+}
+
+function issueTwitterFinalizeCode(sessionToken: string, returnToPath: string | null): string {
+	pruneTwitterFinalizeCodes();
+	const code = randomBytes(32).toString("base64url");
+	twitterFinalizeCodes.set(code, {
+		sessionToken,
+		returnToPath,
+		expiresAt: Date.now() + TWITTER_FINALIZE_CODE_TTL_MS,
+	});
+	return code;
+}
+
+function consumeTwitterFinalizeCode(code: string): TwitterFinalizeCode | null {
+	const entry = twitterFinalizeCodes.get(code);
+	twitterFinalizeCodes.delete(code);
+	if (!entry || entry.expiresAt <= Date.now()) return null;
+	return entry;
+}
+
+export function __issueTwitterFinalizeCodeForTest(sessionToken: string, returnToPath: string | null): string {
+	return issueTwitterFinalizeCode(sessionToken, returnToPath);
+}
+
+export function __clearTwitterFinalizeCodesForTest(): void {
+	twitterFinalizeCodes.clear();
+}
+
+export function __buildTwitterFinalizeRedirectForTest(code: string, returnToPath: string | null): string | null {
+	return buildTwitterFinalizeRedirect(code, returnToPath);
+}
+
+function buildTwitterFinalizeRedirect(code: string, returnToPath: string | null): string | null {
 	const finalizeUrl = getTwitterFinalizeUrl();
 	if (!finalizeUrl) return null;
 	const url = new URL(finalizeUrl);
-	url.searchParams.set("token", token);
+	url.searchParams.set("code", code);
 	if (returnToPath) url.searchParams.set("return_to", returnToPath);
 	return url.toString();
 }
@@ -129,7 +176,11 @@ export function createAuthRoutes() {
 	// ── Nonce endpoint (SIWE) ──────────────────────────────────────────────────
 	app.get("/nonce", (c) => {
 		const nonce = issueNonce();
-		return respondOk(c, { nonce });
+		return respondOk(c, {
+			nonce,
+			statement: LEGACY_LOGIN_SIWE_STATEMENT,
+			uriPath: LEGACY_LOGIN_SIWE_URI_PATH,
+		});
 	});
 
 	// ── SIWE Login ─────────────────────────────────────────────────────────────
@@ -144,6 +195,14 @@ export function createAuthRoutes() {
 			} catch (err) {
 				throw badRequest("SIWE_VERIFICATION_FAILED", err instanceof Error ? err.message : "SIWE verification failed");
 			}
+			const contextError = validateSiweContext(input.message, {
+				expectedChainId: 56,
+				expectedStatement: LEGACY_LOGIN_SIWE_STATEMENT,
+				expectedUriPath: LEGACY_LOGIN_SIWE_URI_PATH,
+			});
+			if (contextError) {
+				throw badRequest("SIWE_CONTEXT_INVALID", contextError);
+			}
 
 			if (!consumeNonce(verified.nonce)) {
 				throw badRequest("INVALID_NONCE", "Nonce is invalid or expired. Request a new one via GET /auth/nonce.");
@@ -154,10 +213,14 @@ export function createAuthRoutes() {
 				{ address: verified.address, role: "creator" },
 				deps.config.auth.accessTokenTtlSeconds,
 			);
+			const refreshToken = await signRefreshToken(
+				{ address: verified.address, role: "creator" },
+				deps.config.auth.refreshTokenTtlSeconds,
+			);
 
 			return respondOk(c, {
 				accessToken,
-				refreshToken: buildCompatRefreshToken(verified.address),
+				refreshToken,
 				expiresIn: deps.config.auth.accessTokenTtlSeconds,
 				profile,
 			});
@@ -180,19 +243,33 @@ export function createAuthRoutes() {
 
 	app.post("/refresh", async (c) => {
 		const input = await parseJsonBody(c, refreshTokenSchema);
-		const address = parseCompatRefreshToken(input.refreshToken);
-
-		if (!address) {
-			throw unauthorized("Invalid refresh token");
-		}
 
 		if (isProductionAuth()) {
-			const accessToken = await signJwt({ address, role: "creator" }, c.get("deps").config.auth.accessTokenTtlSeconds);
+			const deps = c.get("deps");
+			let payload: Awaited<ReturnType<typeof verifyRefreshToken>>;
+			try {
+				payload = await verifyRefreshToken(input.refreshToken);
+			} catch {
+				throw unauthorized("Invalid refresh token");
+			}
+
+			revokeRefreshTokenJti(payload.jti, payload.exp);
 
 			return respondOk(c, {
-				accessToken,
-				refreshToken: `compat-rotated:${address}`,
+				accessToken: await signJwt(
+					{ address: payload.address, role: payload.role },
+					deps.config.auth.accessTokenTtlSeconds,
+				),
+				refreshToken: await signRefreshToken(
+					{ address: payload.address, role: payload.role },
+					deps.config.auth.refreshTokenTtlSeconds,
+				),
 			});
+		}
+
+		const address = parseCompatRefreshToken(input.refreshToken);
+		if (!address) {
+			throw unauthorized("Invalid refresh token");
 		}
 
 		return respondOk(c, {
@@ -225,7 +302,7 @@ export function createAuthRoutes() {
 	 */
 	app.get("/twitter/login", (c) => {
 		const oauthConfig = getTwitterOAuthConfig();
-		const returnTo = sanitizeReturnTo(c.req.query("return_to"));
+		const returnTo = sanitizeAuthReturnTo(c.req.query("return_to"));
 
 		if (!oauthConfig) {
 			// Not configured yet — return 501 with a helpful message
@@ -316,7 +393,7 @@ export function createAuthRoutes() {
 		const storedVerifier = cookiePairs[OAUTH_VERIFIER_COOKIE];
 		const rawReturnTo = cookiePairs[OAUTH_RETURN_TO_COOKIE];
 		const decodedReturnTo = rawReturnTo ? decodeURIComponent(rawReturnTo) : null;
-		const returnToPath = sanitizeReturnTo(decodedReturnTo);
+		const returnToPath = sanitizeAuthReturnTo(decodedReturnTo);
 		const frontendUrl = process.env.FRONTEND_URL ?? "https://waifu.fun";
 
 		// Clear temp cookies regardless of outcome
@@ -384,7 +461,8 @@ export function createAuthRoutes() {
 			// otherwise fall back to the homepage with auth=success.
 			const successPath = returnToPath ?? "/?auth=success";
 
-			const finalizeRedirect = buildTwitterFinalizeRedirect(sessionToken, successPath);
+			const finalizeCode = getTwitterFinalizeUrl() ? issueTwitterFinalizeCode(sessionToken, successPath) : null;
+			const finalizeRedirect = finalizeCode ? buildTwitterFinalizeRedirect(finalizeCode, successPath) : null;
 			if (finalizeRedirect) {
 				const res = new Response(null, {
 					status: 302,
@@ -427,22 +505,28 @@ export function createAuthRoutes() {
 		}
 
 		if (!body || typeof body !== "object") {
-			return c.json({ ok: false, error: "BAD_REQUEST", message: "expected { token }" }, 400);
+			return c.json({ ok: false, error: "BAD_REQUEST", message: "expected { code }" }, 400);
 		}
 
-		const { token, return_to: rawReturnTo } = body as Record<string, unknown>;
-		if (typeof token !== "string" || token.length === 0 || token.length > 256) {
-			return c.json({ ok: false, error: "BAD_REQUEST", message: "expected { token: string }" }, 400);
+		const { code, return_to: rawReturnTo } = body as Record<string, unknown>;
+		if (typeof code !== "string" || code.length === 0 || code.length > 128) {
+			return c.json({ ok: false, error: "BAD_REQUEST", message: "expected { code: string }" }, 400);
 		}
 
-		const session = await validateSession(token).catch(() => null);
+		const pending = consumeTwitterFinalizeCode(code);
+		if (!pending) {
+			return c.json({ ok: false, error: "INVALID_CODE", message: "twitter finalize code is invalid or expired" }, 401);
+		}
+
+		const session = await validateSession(pending.sessionToken).catch(() => null);
 		if (!session) {
 			return c.json({ ok: false, error: "INVALID_SESSION", message: "twitter session token is invalid" }, 401);
 		}
 
-		const returnTo = sanitizeReturnTo(typeof rawReturnTo === "string" ? rawReturnTo : null) ?? "/patron";
+		const returnTo =
+			sanitizeAuthReturnTo(typeof rawReturnTo === "string" ? rawReturnTo : null) ?? pending.returnToPath ?? "/patron";
 		const cookieOpts = getCookieOptions();
-		const cookieToken = session.rotated && session.newToken ? session.newToken : token;
+		const cookieToken = session.rotated && session.newToken ? session.newToken : pending.sessionToken;
 
 		c.header("Set-Cookie", buildSessionCookieHeader(cookieToken, cookieOpts), { append: true });
 		return c.json({

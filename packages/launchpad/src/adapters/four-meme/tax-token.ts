@@ -1,3 +1,4 @@
+import type { FourMemeClient } from "@waifufun/fourmeme";
 import { getAddress, isAddress } from "viem";
 
 import { getDefaultPlatformCutBps, validatePlatformCutBps } from "../../platform-cut.js";
@@ -29,6 +30,8 @@ export const fourMemeTaxDescriptor: LaunchpadDescriptor = {
 };
 
 const validateTaxConfigShape = (c: LaunchpadFeeConfig): c is FourMemeTaxFeeConfig => c.kind === "four-meme-tax";
+
+const isWholePercentBps = (value: number): boolean => value % 100 === 0;
 
 /**
  * Map our (platformCut + 4-way) model to four.meme's on-chain TaxToken rates,
@@ -63,8 +66,8 @@ export const toFourMemeTokenTaxInfo = (config: FourMemeTaxFeeConfig, founderAddr
 	};
 };
 
-export const createFourMemeTaxTokenAdapter = (): LaunchpadAdapter => {
-	const regular = createFourMemeRegularAdapter();
+export const createFourMemeTaxTokenAdapter = (client?: FourMemeClient): LaunchpadAdapter => {
+	const regular = createFourMemeRegularAdapter(client);
 
 	return {
 		...regular,
@@ -73,14 +76,10 @@ export const createFourMemeTaxTokenAdapter = (): LaunchpadAdapter => {
 		getDefaultFeeConfig(): FourMemeTaxFeeConfig {
 			const platformCutBps = getDefaultPlatformCutBps();
 			const remaining = 10000 - platformCutBps;
-			// Default split of the post-platform-cut tax stream:
-			//   founder 53.3% / holder 26.7% / burn 10% / lp 10%
-			//   (which on a 75% remaining stream = 40/20/7.5/7.5 of total tax)
-			const founderBps = Math.round(remaining * 0.5333);
-			const holderBps = Math.round(remaining * 0.2667);
-			const burnBps = Math.round(remaining * 0.1);
-			let liquidityBps = remaining - founderBps - holderBps - burnBps;
-			if (liquidityBps < 0) liquidityBps = 0;
+			const holderBps = 2000;
+			const burnBps = 1000;
+			const liquidityBps = 1000;
+			const founderBps = remaining - holderBps - burnBps - liquidityBps;
 			return {
 				kind: "four-meme-tax",
 				taxBps: 300,
@@ -120,6 +119,17 @@ export const createFourMemeTaxTokenAdapter = (): LaunchpadAdapter => {
 			const expectedSum = 10000 - c.platformCutBps;
 			if (total !== expectedSum) {
 				errors.push(`allocation bps must sum to ${expectedSum} (10000 - platformCutBps); got ${total}`);
+			}
+			if (!isWholePercentBps(c.taxBps)) {
+				errors.push("taxBps must serialize to a whole percent");
+			}
+			if (!isWholePercentBps(c.platformCutBps + founderBps)) {
+				errors.push("platformCutBps + founderBps must serialize to a whole percent");
+			}
+			for (const [name, value] of Object.entries({ holderBps, burnBps, liquidityBps })) {
+				if (!isWholePercentBps(value)) {
+					errors.push(`${name} must serialize to a whole percent`);
+				}
 			}
 
 			try {

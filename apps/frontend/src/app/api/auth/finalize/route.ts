@@ -44,18 +44,17 @@ type FinalizeBody =
 	  }
 	| {
 			provider: "twitter";
-			token: string;
+			code: string;
 			return_to?: string;
 	  };
 
 function isFinalizeBody(value: unknown): value is FinalizeBody {
 	if (!value || typeof value !== "object") return false;
 	const v = value as Record<string, unknown>;
-	if (typeof v.token !== "string") return false;
 	if (v.provider === "email") return typeof v.email === "string";
-	if (v.provider === "passkey") return true;
-	if (v.provider === "oauth") return true;
-	if (v.provider === "twitter") return true;
+	if (v.provider === "passkey") return typeof v.token === "string";
+	if (v.provider === "oauth") return typeof v.token === "string";
+	if (v.provider === "twitter") return typeof v.code === "string";
 	return false;
 }
 
@@ -79,7 +78,7 @@ export async function POST(req: NextRequest) {
 			{
 				ok: false,
 				error: "BAD_REQUEST",
-				message: "expected { provider, token, ... }",
+				message: "expected { provider, token/code, ... }",
 			},
 			{ status: 400 },
 		);

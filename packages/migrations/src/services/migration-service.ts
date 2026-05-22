@@ -7,8 +7,8 @@ import redis from "@waifufun/redis";
 import { type IMigration, SolanaNetworkIds } from "@waifufun/types";
 import * as dotenv from "dotenv";
 import type { Model } from "mongoose";
-import { MigrationManager } from "../migrations";
-import type { ProtocolMigration, ProtocolState } from "../types";
+import { MigrationManager } from "../migrations.js";
+import type { ProtocolMigration, ProtocolState } from "../types.js";
 
 dotenv.config();
 

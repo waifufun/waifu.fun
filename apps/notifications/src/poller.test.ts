@@ -24,14 +24,21 @@ import type {
 	PendingEvent,
 	SubscriptionRecord,
 } from "./lib/types.js";
+import { normalizeNoSubscribersDedupeKey } from "./lib/types.js";
 import { pollOnce } from "./poller.js";
 
 const ONE_BNB = 10n ** 18n;
 
 class FakeAlreadySent implements AlreadySentLookup {
-	constructor(private readonly keys: Set<string>) {}
+	constructor(
+		private readonly keys: Set<string>,
+		private readonly noSubscriberKeys: Set<string>,
+	) {}
 	has(launchId: string, eventType: EventType, channel: Channel, dedupeKey: string): boolean {
 		return this.keys.has(`${launchId}:${eventType}:${channel}:${dedupeKey}`);
+	}
+	hasNoSubscriberSentinel(launchId: string, eventType: EventType, dedupeKey: string): boolean {
+		return this.noSubscriberKeys.has(`${launchId}:${eventType}:${dedupeKey}`);
 	}
 }
 
@@ -48,19 +55,34 @@ class FakeRepo implements NotificationsRepository {
 	}
 	async loadAlreadySent(_launchIds: string[]): Promise<AlreadySentLookup> {
 		const keys = new Set<string>();
+		const noSubscriberKeys = new Set<string>();
 		for (const row of this.sent) {
+			if (isNoSubscriberSentinel(row)) {
+				noSubscriberKeys.add(`${row.launchId}:${row.eventType}:${normalizeNoSubscribersDedupeKey(row.dedupeKey)}`);
+				continue;
+			}
 			keys.add(`${row.launchId}:${row.eventType}:${row.channel}:${row.dedupeKey}`);
 		}
-		return new FakeAlreadySent(keys);
+		return new FakeAlreadySent(keys, noSubscriberKeys);
 	}
 	async recordSend(input: NotificationLogInput): Promise<void> {
 		const key = `${input.launchId}:${input.eventType}:${input.channel}:${input.dedupeKey}`;
-		// Mirror the unique index – a duplicate insert is a no-op.
-		if (this.sent.some((r) => `${r.launchId}:${r.eventType}:${r.channel}:${r.dedupeKey}` === key)) {
+		const existingIndex = this.sent.findIndex(
+			(r) => `${r.launchId}:${r.eventType}:${r.channel}:${r.dedupeKey}` === key,
+		);
+		if (existingIndex >= 0) {
+			this.sent[existingIndex] = input;
 			return;
 		}
 		this.sent.push(input);
 	}
+}
+
+function isNoSubscriberSentinel(row: NotificationLogInput): boolean {
+	return (
+		row.dedupeKey.startsWith("__no_subscribers__:") ||
+		(row.status === "skipped" && (row.errorMessage === "no subscribers" || row.payload.reason === "no_subscribers"))
+	);
 }
 
 class RecordingSender implements ChannelSender {
@@ -191,11 +213,113 @@ test("no-subscriber events still record a sentinel skip row", async () => {
 	assert.equal(r1.noSubscribers, 1);
 	assert.equal(repo.sent.length, 1);
 	assert.equal(repo.sent[0]?.status, "skipped");
+	assert.equal(repo.sent[0]?.dedupeKey, "__no_subscribers__:");
 
 	// Re-detection doesn't fire a second sentinel because the row exists.
 	const r2 = await pollOnce({ repo, sender, cfg, logger: silentLogger });
 	assert.equal(r2.pendingEvents, 0);
 	assert.equal(repo.sent.length, 1);
+});
+
+test("no-subscriber sentinel does not suppress a later subscriber", async () => {
+	const repo = new FakeRepo();
+	repo.launches = [snapshot()];
+	const sender = new RecordingSender("sent");
+	const cfg = createNotificationsConfig({} as NodeJS.ProcessEnv);
+
+	const r1 = await pollOnce({ repo, sender, cfg, logger: silentLogger });
+	assert.equal(r1.noSubscribers, 1);
+	assert.equal(sender.calls.length, 0);
+
+	repo.subscriptions = [
+		{
+			launchId: "L1",
+			channel: "discord",
+			target: "https://discord.test/webhook",
+			botToken: null,
+			eventFilter: null,
+		},
+	];
+
+	const r2 = await pollOnce({ repo, sender, cfg, logger: silentLogger });
+	assert.equal(r2.pendingEvents, 1);
+	assert.equal(r2.sent, 1);
+	assert.equal(sender.calls.length, 1);
+	assert.equal(
+		repo.sent.some((r) => r.status === "sent" && r.channel === "discord" && r.dedupeKey === ""),
+		true,
+	);
+});
+
+test("legacy no-subscriber sentinel does not suppress a later subscriber", async () => {
+	const repo = new FakeRepo();
+	repo.launches = [snapshot()];
+	repo.sent = [
+		{
+			launchId: "L1",
+			eventType: "round_opened",
+			channel: "discord",
+			dedupeKey: "",
+			webhookUrl: null,
+			status: "skipped",
+			statusCode: "0",
+			errorMessage: "no subscribers",
+			payload: { reason: "no_subscribers" },
+		},
+	];
+	repo.subscriptions = [
+		{
+			launchId: "L1",
+			channel: "discord",
+			target: "https://discord.test/webhook",
+			botToken: null,
+			eventFilter: null,
+		},
+	];
+	const sender = new RecordingSender("sent");
+	const cfg = createNotificationsConfig({} as NodeJS.ProcessEnv);
+
+	const result = await pollOnce({ repo, sender, cfg, logger: silentLogger });
+	assert.equal(result.pendingEvents, 1);
+	assert.equal(result.sent, 1);
+	assert.equal(sender.calls.length, 1);
+	assert.equal(repo.sent.length, 1);
+	assert.equal(repo.sent[0]?.status, "sent");
+	assert.equal(repo.sent[0]?.dedupeKey, "");
+});
+
+test("a send on one channel does not suppress a new channel subscriber", async () => {
+	const repo = new FakeRepo();
+	repo.launches = [snapshot()];
+	repo.subscriptions = [
+		{
+			launchId: "L1",
+			channel: "discord",
+			target: "https://discord.test/webhook",
+			botToken: null,
+			eventFilter: null,
+		},
+	];
+	const sender = new RecordingSender("sent");
+	const cfg = createNotificationsConfig({} as NodeJS.ProcessEnv);
+
+	const r1 = await pollOnce({ repo, sender, cfg, logger: silentLogger });
+	assert.equal(r1.sent, 1);
+
+	repo.subscriptions.push({
+		launchId: "L1",
+		channel: "telegram",
+		target: "12345",
+		botToken: "token",
+		eventFilter: null,
+	});
+
+	const r2 = await pollOnce({ repo, sender, cfg, logger: silentLogger });
+	assert.equal(r2.pendingEvents, 1);
+	assert.equal(r2.sent, 1);
+	assert.equal(sender.calls.length, 2);
+	assert.equal(sender.calls[1]?.channel, "telegram");
+	assert.equal(repo.sent.filter((r) => r.eventType === "round_opened").length, 2);
 });
 
 test("event filter on subscription suppresses non-matching event types", async () => {

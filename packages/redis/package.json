@@ -11,12 +11,16 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"clean": "rm -rf dist",
 		"check": "tsc -p tsconfig.json --noEmit",
-		"lint": "biome format . --write && biome lint . --fix"
+		"lint": "biome check ."
 	},
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./config": {
+			"types": "./dist/config.d.ts",
+			"import": "./dist/config.js"
 		}
 	},
 	"dependencies": {

@@ -17,7 +17,8 @@ export const DEFAULT_EVM_RPC_URL =
 	process.env.NEXT_PUBLIC_EVM_RPC_URL?.trim() ||
 	"https://bsc-dataseed.binance.org/";
 
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
+const walletConnectProjectId =
+	process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() || process.env.NEXT_PUBLIC_PROJECT_ID?.trim();
 const hasWalletConnectProjectId = Boolean(walletConnectProjectId && walletConnectProjectId !== "waifu_fun_dev");
 const projectId = walletConnectProjectId || "waifu_fun_dev";
 

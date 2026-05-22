@@ -1,4 +1,4 @@
-export type RuntimeKind = "milady-cloud" | "third-party-webhook" | "third-party-pull";
+export type RuntimeKind = "eliza-cloud" | "third-party-webhook" | "third-party-pull";
 
 export interface RuntimeAdapter {
 	readonly kind: RuntimeKind;
@@ -16,9 +16,16 @@ export interface ProvisionOptions {
 	persona: { name: string; bio: string; image?: string; promptTemplate?: string };
 	safeAddress: string | null;
 	xHandle: string | null;
+	tokenAddress?: string | null;
+	chain?: string | null;
+	chainId?: number | null;
+	tokenName?: string | null;
+	tokenTicker?: string | null;
+	launchType?: "native" | "imported" | null;
 	webhookUrl?: string;
 	webhookSecret?: string;
 	apiKey?: string;
+	modelDefaults?: Record<string, string>;
 }
 
 export interface ProvisionResult {

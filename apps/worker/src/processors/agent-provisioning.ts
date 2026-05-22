@@ -8,7 +8,7 @@ import { type AgentProvisioningJob, parseJobPayload } from "@waifufun/queue";
 import { emitAgentEvent } from "../lib/emit.js";
 import type { WorkerContext, WorkerProcessor } from "../lib/types.js";
 
-interface MiladyCreateResult {
+interface ElizaCreateResult {
 	agentId: string;
 	agentName: string;
 	jobId: string;
@@ -51,7 +51,7 @@ export function createAgentProvisioningProcessor(context: WorkerContext): Worker
 	};
 }
 
-async function provision(context: WorkerContext, payload: AgentProvisioningJob): Promise<MiladyCreateResult> {
+async function provision(context: WorkerContext, payload: AgentProvisioningJob): Promise<ElizaCreateResult> {
 	const persona = await agentPersonaQueries.getAgentPersonaByAgentId(context.db, payload.agentId);
 	if (!persona) throw new Error(`agent persona not found for ${payload.agentId}`);
 
@@ -76,9 +76,9 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 		},
 	};
 
-	const baseUrl = (process.env.MILADY_API_URL ?? "http://localhost:3000").replace(/\/+$/, "");
-	const jwtSecret = process.env.MILADY_JWT_SECRET;
-	if (!jwtSecret) throw new Error("MILADY_JWT_SECRET env var is required for the agent bridge");
+	const baseUrl = (process.env.ELIZA_API_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+	const jwtSecret = process.env.ELIZA_JWT_SECRET;
+	if (!jwtSecret) throw new Error("ELIZA_JWT_SECRET env var is required for the agent bridge");
 	const token = await new jose.SignJWT({
 		userId: payload.agentId,
 		email: `${payload.agentId}@waifu.fun`,
@@ -96,15 +96,15 @@ async function provision(context: WorkerContext, payload: AgentProvisioningJob):
 	});
 	if (!response.ok) {
 		const text = await response.text().catch(() => "");
-		throw new Error(`milady-cloud POST /api/agents: ${response.status} ${text}`);
+		throw new Error(`eliza-cloud POST /api/agents: ${response.status} ${text}`);
 	}
 	const json = (await response.json()) as {
 		success?: boolean;
-		data?: MiladyCreateResult;
+		data?: ElizaCreateResult;
 		error?: string;
 	};
-	if (json.success === false) throw new Error(json.error ?? "Unknown milady-cloud error");
-	if (!json.data) throw new Error("milady-cloud createAgent returned no data");
+	if (json.success === false) throw new Error(json.error ?? "Unknown eliza-cloud error");
+	if (!json.data) throw new Error("eliza-cloud createAgent returned no data");
 	return json.data;
 }
 

@@ -25,6 +25,7 @@ async function pollPortalEventsOnce(runtime: IndexerRuntime, options: Required<L
 		maxBlocks: options.maxBlocksPerPoll,
 	});
 
+	let handlerFailed = false;
 	for (const event of result.events) {
 		try {
 			await processPortalEvent(runtime, event);
@@ -36,15 +37,17 @@ async function pollPortalEventsOnce(runtime: IndexerRuntime, options: Required<L
 					txHash: event.txHash,
 					error: handlerError instanceof Error ? handlerError.message : String(handlerError),
 				},
-				"event handler failed, skipping event",
+				"event handler failed; cursor will retry this event",
 			);
+			handlerFailed = true;
+			break;
 		}
 		await runtime.cursors.advance(runtime.cursorIds.live, getPortalEventCursorPosition(event));
 	}
 
 	// Always advance the cursor to the scanned-to block so the indexer
 	// progresses through empty ranges instead of re-polling them forever.
-	if (result.scannedToBlock > cursor.lastBlock) {
+	if (!handlerFailed && result.scannedToBlock > cursor.lastBlock) {
 		await runtime.cursors.advance(runtime.cursorIds.live, {
 			blockNumber: result.scannedToBlock,
 			logIndex: 0,

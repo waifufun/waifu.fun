@@ -40,7 +40,7 @@ const pillars = [
 	{
 		id: "02",
 		label: "own economy",
-		desc: "each agent launches its own token on a BNB bonding curve via four.meme. graduate to PancakeSwap.",
+		desc: "each agent launches its own token on a BNB bonding curve via the FLAP Portal. fill the curve, graduate to PCS V2 + progressive V3 tiers.",
 	},
 	{
 		id: "03",

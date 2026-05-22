@@ -5,3 +5,21 @@ artifacts
 .env
 coverage
 coverage.json
+
+# foundry / echidna
+out-foundry
+crytic-export
+echidna-corpus
+echidna-corpus-wave-o
+echidna-corpus-wave-o-factory
+AUDIT/echidna/results
+
+# Echidna corpus (regenerated each run)
+AUDIT/echidna/results-wave-m/corpus*
+AUDIT/echidna/results-wave-m/reproducers*
+
+# Foundry forge-std dependency (cloned in CI)
+lib/forge-std
+
+# Foundry build artifacts
+foundry.lock

@@ -5,7 +5,10 @@ import { decodeAbiParameters, encodeEventTopics, getAddress } from "viem";
 
 import {
 	FLAP_TOKEN_VERSIONS,
+	buildNewTokenV5Params,
+	buildNewTokenV5Write,
 	buildNewTokenV6WithVaultParams,
+	buildNewTokenV6WithVaultWrite,
 	buildSplitVaultData,
 	getFlapTokenImplementationAddress,
 	parseVaultPortalReceiptEvents,
@@ -74,6 +77,32 @@ test("buildNewTokenV6WithVaultParams maps Tax Token V3", () => {
 	assert.equal(params.tokenVersion, FLAP_TOKEN_VERSIONS.TOKEN_TAXED_V3);
 	assert.equal(params.vaultFactory, FACTORY);
 	assert.equal(params.vaultData, vaultData);
+});
+
+test("native quote writes default value to quoteAmt", () => {
+	const salt = "0x0000000000000000000000000000000000000000000000000000000000000007";
+	const v5 = buildNewTokenV5Params({
+		name: "Waifu Agent",
+		symbol: "WAIFU",
+		meta: "ipfs://meta",
+		salt,
+		beneficiary: TREASURY,
+		quoteAmt: 123n,
+	});
+	assert.equal(buildNewTokenV5Write({ params: v5, network: "bsc" }).value, 123n);
+
+	const v6 = buildNewTokenV6WithVaultParams({
+		name: "Waifu Agent",
+		symbol: "WAIFU",
+		meta: "ipfs://meta",
+		salt,
+		vaultFactory: FACTORY,
+		vaultData: "0x",
+		quoteAmt: 456n,
+		buyTaxRate: 100,
+		sellTaxRate: 100,
+	});
+	assert.equal(buildNewTokenV6WithVaultWrite({ params: v6, network: "bsc" }).value, 456n);
 });
 
 test("getFlapTokenImplementationAddress returns V3 implementation for newTokenV6", () => {

@@ -109,8 +109,9 @@ export interface FetchAgentsParams {
 	sort?: AgentSort;
 	/**
 	 * Include legacy v1 agents (e.g. $DEMO from the four.meme hackathon)
-	 * in the listing. Defaults to true so the demo agent stays visible
-	 * on the public agents page.
+	 * in the listing. Defaults to false so the v1 hackathon demo does not
+	 * appear on the launch-era landing or agents pages. Set explicitly to
+	 * true only on archive surfaces that want to show historical agents.
 	 */
 	includeLegacy?: boolean;
 }
@@ -124,7 +125,7 @@ export async function fetchAgents(params: FetchAgentsParams = {}): Promise<Agent
 	const offset = params.offset ?? 0;
 	const status = params.status ?? "all";
 	const sort = params.sort ?? "newest";
-	const includeLegacy = params.includeLegacy ?? true;
+	const includeLegacy = params.includeLegacy ?? false;
 
 	const qs = new URLSearchParams({
 		limit: String(limit),

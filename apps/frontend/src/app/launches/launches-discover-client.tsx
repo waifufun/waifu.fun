@@ -52,8 +52,8 @@ function parseTierFilter(v: string | null): LaunchListTier | "all" {
 
 function LaunchesInner() {
 	const searchParams = useSearchParams();
-	const state = parseStateFilter(searchParams.get("state"));
-	const tier = parseTierFilter(searchParams.get("tier"));
+	const state = parseStateFilter(searchParams?.get("state") ?? null);
+	const tier = parseTierFilter(searchParams?.get("tier") ?? null);
 
 	const params = useMemo<FetchLaunchesParams>(() => {
 		const p: FetchLaunchesParams = { limit: 30 };

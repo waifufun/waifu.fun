@@ -1,8 +1,8 @@
 import type { Program } from "@coral-xyz/anchor";
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { Connection } from "@solana/web3.js";
-import type { ProgramContext } from "./programs";
-import type { Wallet } from "./utils/customWallet";
+import type { ProgramContext } from "./programs/index.js";
+import type { Wallet } from "./utils/customWallet.js";
 
 import type { CurrentAutofunTypes, LegacyAutofunTypes, MeteoraVaultTypes, RaydiumVaultTypes } from "@waifufun/programs";
 

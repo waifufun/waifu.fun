@@ -31,6 +31,13 @@ const DEFAULT_INTERVAL_MS = 5_000;
 const DEFAULT_BATCH_SIZE = 10;
 const DEFAULT_RATE_LIMIT_MS = 5 * 60 * 1000;
 
+export interface ProcessEventDeps {
+	eventQueries?: Pick<typeof agentEventQueries, "markDone" | "markFailed" | "markSkipped">;
+	personaQueries?: Pick<typeof agentPersonaQueries, "getAgentPersonaByAgentId" | "getAgentPersonaByTokenAddress">;
+	rateLimitStore?: Map<string, number>;
+	nowMs?: () => number;
+}
+
 export async function runWorker(opts: WorkerOpts = {}): Promise<void> {
 	const intervalMs = opts.intervalMs ?? DEFAULT_INTERVAL_MS;
 	const batchSize = opts.batchSize ?? DEFAULT_BATCH_SIZE;
@@ -101,25 +108,31 @@ export async function runWorker(opts: WorkerOpts = {}): Promise<void> {
 	logger.info("brain: worker stopped");
 }
 
-async function processEvent(
+export async function processEvent(
 	db: ReturnType<typeof getDatabase>["db"],
 	event: AgentEventRow,
 	ctx: HandlerContext,
 	rateLimitMs: number,
+	deps: ProcessEventDeps = {},
 ): Promise<void> {
+	const eventQueries = deps.eventQueries ?? agentEventQueries;
+	const personaQueries = deps.personaQueries ?? agentPersonaQueries;
+	const rateLimitStore = deps.rateLimitStore ?? lastTweetAt;
+	const nowMs = deps.nowMs ?? Date.now;
+
 	const handler = resolveHandler(event.type);
 	if (!handler) {
 		ctx.logger.warn({ eventId: event.id, type: event.type }, "brain: no handler for event type");
-		await agentEventQueries.markFailed(db, event.id, `no handler for type ${event.type}`);
+		await eventQueries.markFailed(db, event.id, `no handler for type ${event.type}`);
 		return;
 	}
 
 	let persona: AgentPersonaRow | null = null;
 	try {
-		persona = await lookupPersona(db, event);
+		persona = await lookupPersona(db, event, personaQueries);
 	} catch (err) {
 		ctx.logger.error({ err, eventId: event.id }, "brain: persona lookup threw");
-		await agentEventQueries.markFailed(db, event.id, `persona lookup error: ${errMsg(err)}`);
+		await eventQueries.markFailed(db, event.id, `persona lookup error: ${errMsg(err)}`);
 		return;
 	}
 
@@ -133,28 +146,28 @@ async function processEvent(
 			},
 			"brain: no persona for event (orphan token) — marking failed",
 		);
-		await agentEventQueries.markFailed(db, event.id, "no persona for token/agent");
+		await eventQueries.markFailed(db, event.id, "no persona for token/agent");
 		return;
 	}
 
 	// Rate-limit: max 1 tweet per agent per window.
-	const now = Date.now();
-	const last = lastTweetAt.get(persona.agentId) ?? 0;
+	const now = nowMs();
+	const last = rateLimitStore.get(persona.agentId) ?? 0;
 	if (now - last < rateLimitMs) {
 		const waitMs = rateLimitMs - (now - last);
 		ctx.logger.info(
 			{ agentId: persona.agentId, eventId: event.id, type: event.type, waitMs },
 			"brain: rate-limited, skipping event",
 		);
-		await agentEventQueries.markFailed(db, event.id, `rate-limited (cooldown ${Math.ceil(waitMs / 1000)}s)`);
+		await eventQueries.markSkipped(db, event.id, `rate-limited (cooldown ${Math.ceil(waitMs / 1000)}s)`);
 		return;
 	}
 
 	try {
 		const result = await handler({ event, persona, ctx });
 		if (result.ok) {
-			lastTweetAt.set(persona.agentId, Date.now());
-			await agentEventQueries.markDone(db, event.id);
+			rateLimitStore.set(persona.agentId, nowMs());
+			await eventQueries.markDone(db, event.id);
 			ctx.logger.info(
 				{
 					eventId: event.id,
@@ -165,13 +178,19 @@ async function processEvent(
 				},
 				"brain: event handled",
 			);
+		} else if (result.skipped) {
+			await eventQueries.markSkipped(db, event.id, result.skipReason ?? result.errorMessage ?? "handler skipped");
+			ctx.logger.info(
+				{ eventId: event.id, type: event.type, reason: result.skipReason ?? result.errorMessage },
+				"brain: handler skipped event",
+			);
 		} else {
-			await agentEventQueries.markFailed(db, event.id, result.errorMessage ?? "handler returned ok=false");
+			await eventQueries.markFailed(db, event.id, result.errorMessage ?? "handler returned ok=false");
 			ctx.logger.warn({ eventId: event.id, type: event.type, error: result.errorMessage }, "brain: handler failed");
 		}
 	} catch (err) {
 		ctx.logger.error({ err, eventId: event.id, type: event.type, agentId: persona.agentId }, "brain: handler threw");
-		await agentEventQueries.markFailed(db, event.id, `handler threw: ${errMsg(err)}`);
+		await eventQueries.markFailed(db, event.id, `handler threw: ${errMsg(err)}`);
 	}
 }
 
@@ -182,13 +201,14 @@ async function processEvent(
 async function lookupPersona(
 	db: ReturnType<typeof getDatabase>["db"],
 	event: AgentEventRow,
+	personaQueries: Pick<typeof agentPersonaQueries, "getAgentPersonaByAgentId" | "getAgentPersonaByTokenAddress">,
 ): Promise<AgentPersonaRow | null> {
 	if (event.agentId) {
-		const row = await agentPersonaQueries.getAgentPersonaByAgentId(db, event.agentId);
+		const row = await personaQueries.getAgentPersonaByAgentId(db, event.agentId);
 		if (row) return row;
 	}
 	if (event.tokenAddress) {
-		const row = await agentPersonaQueries.getAgentPersonaByTokenAddress(db, event.tokenAddress);
+		const row = await personaQueries.getAgentPersonaByTokenAddress(db, event.tokenAddress);
 		if (row) return row;
 	}
 	return null;

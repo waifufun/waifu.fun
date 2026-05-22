@@ -1,0 +1,6 @@
+{
+	"$comment": "Hand-override registry for token logos. Keys are 'chain:address' (address lowercased) or 'symbol:SYMBOL' for chain-agnostic overrides. Values are public URLs or workspace-relative paths under /public. resolveTokenLogo() checks this map first, then cascades DexScreener, TrustWallet, CoinGecko. Use this to ship $WAIFU's logo the moment it mints, or to override an ugly auto-resolved icon. To enable an override, add the key here and ensure the file exists under apps/frontend/public.",
+	"symbol:BNB": "/chain-icons/bnb.svg",
+	"symbol:ETH": "/chain-icons/ethereum.svg",
+	"symbol:SOL": "/chain-icons/solana.svg"
+}

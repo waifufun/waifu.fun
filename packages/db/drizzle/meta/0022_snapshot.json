@@ -3143,7 +3143,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'milady-cloud'"
+          "default": "'eliza-cloud'"
         },
         "runtime_webhook_url": {
           "name": "runtime_webhook_url",

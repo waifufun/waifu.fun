@@ -1,6 +1,7 @@
 "use client";
 
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -21,6 +22,19 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "loading" | "error";
 
+function scrubCallbackUrl() {
+	if (typeof window === "undefined") return;
+	const url = new URL(window.location.href);
+	let changed = false;
+	for (const key of ["token", "email"]) {
+		if (url.searchParams.has(key)) {
+			url.searchParams.delete(key);
+			changed = true;
+		}
+	}
+	if (changed) window.history.replaceState(null, "", url.toString());
+}
+
 function VerifyInner() {
 	const router = useRouter();
 	const params = useSearchParams();
@@ -33,8 +47,9 @@ function VerifyInner() {
 		if (ranRef.current) return;
 		ranRef.current = true;
 
-		const token = params.get("token");
-		const email = params.get("email");
+		const token = params?.get("token");
+		const email = params?.get("email");
+		scrubCallbackUrl();
 
 		if (!token || !email) {
 			setPhase("error");
@@ -65,7 +80,7 @@ function VerifyInner() {
 					ok: boolean;
 					data: { return_to: string; patron: { stewardUserId: string; email: string | null } };
 				};
-				const returnTo = json?.data?.return_to ?? "/patron";
+				const returnTo = sanitizeRedirectPath(json?.data?.return_to);
 				// Use window.location.assign for a FULL page navigation rather than
 				// router.replace's client-side nav. The full nav guarantees the
 				// browser sends the freshly-set wf_session cookie on the next

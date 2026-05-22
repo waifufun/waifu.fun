@@ -252,7 +252,7 @@ export const jobDefinitions = {
 		jobName: "agent-provisioning",
 		queueKey: "provisioning",
 		schema: agentProvisioningJobSchema,
-		description: "Retry failed milady-cloud provisioning for claimed agents.",
+		description: "Retry failed eliza-cloud provisioning for claimed agents.",
 	},
 	"agent-rollup": {
 		jobName: "agent-rollup",

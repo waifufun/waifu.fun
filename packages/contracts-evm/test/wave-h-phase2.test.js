@@ -11,12 +11,29 @@ describe("Wave H phase 2 smoke", () => {
 	const ZERO_BYTES32 = `0x${"0".repeat(64)}`;
 
 	async function setup() {
-		const [owner, creator, bundleBot, depositor] = await ethers.getSigners();
+		const [owner, creator, bundleBot, depositor, depositor2] = await ethers.getSigners();
 		const placeholderAddr = owner.address;
-		return { owner, creator, bundleBot, depositor, placeholderAddr };
+		return { owner, creator, bundleBot, depositor, depositor2, placeholderAddr };
 	}
 
 	async function deployFactory(placeholderAddr) {
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
+		// Wave M3: AgentSafeDeployer constructor arg requires non-zero singleton +
+		// proxy factory; use the test mocks rather than the placeholder so the
+		// deployer itself is valid (smoke test never calls deployAgentSafe).
+		const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
+		const safeSingleton = await SafeSingletonCF.deploy();
+		const SafeProxyFactoryCF = await ethers.getContractFactory("MockSafeProxyFactory");
+		const safeProxyFactory = await SafeProxyFactoryCF.deploy();
+		const AgentSafeDeployerCF = await ethers.getContractFactory("AgentSafeDeployer");
+		const agentSafeDeployer = await AgentSafeDeployerCF.deploy(
+			await safeSingleton.getAddress(),
+			await safeProxyFactory.getAddress(),
+		);
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		return await Factory.deploy(
 			placeholderAddr, // _wbnb
@@ -26,6 +43,12 @@ describe("Wave H phase 2 smoke", () => {
 			placeholderAddr, // _flapPortal
 			placeholderAddr, // _tokenImplTaxedV3
 			placeholderAddr, // _tipReceiver
+			placeholderAddr, // _platformCommissionReceiver
+			await routerDeployer.getAddress(), // _routerDeployer
+			await agentSafeDeployer.getAddress(), // _agentSafeDeployer
+			placeholderAddr, // _treasuryLp5Deployer (placeholder; not exercised here)
+			placeholderAddr, // _pcsV3Npm
+			placeholderAddr, // _pcsV3Factory
 		);
 	}
 
@@ -50,6 +73,7 @@ describe("Wave H phase 2 smoke", () => {
 			2000000000, // _closeTimestamp (future)
 			0, // _penaltyBps
 			false, // _vestingEnabled
+			2, // _tier = LaunchTier.TIER_95
 		);
 
 		const tx = await vault.connect(depositor).deposit({ value: ethers.parseEther("1") });
@@ -74,32 +98,111 @@ describe("Wave H phase 2 smoke", () => {
 			2000000000,
 			0,
 			false,
+			2, // _tier = LaunchTier.TIER_95
 		);
 
 		await expect(vault.connect(depositor).deposit({ value: ethers.parseEther("33") })).to.be.reverted;
+	});
+
+	it("LaunchVault deposit enforces per-wallet presale cap", async () => {
+		const { owner, creator, bundleBot, depositor } = await setup();
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const vault = await Vault.deploy(
+			owner.address,
+			creator.address,
+			bundleBot.address,
+			ethers.parseEther("32"),
+			ethers.parseEther("16"),
+			0n,
+			2000000000,
+			0,
+			false,
+			2, // _tier = LaunchTier.TIER_95
+		);
+
+		await vault.connect(depositor).deposit({ value: ethers.parseEther("19.2") });
+		await expect(vault.connect(depositor).deposit({ value: 1n })).to.be.revertedWithCustomError(vault, "CapExceeded");
+	});
+
+	it("LaunchVault cannot close a filled cap before the minimum open duration", async () => {
+		const { owner, creator, bundleBot, depositor, depositor2 } = await setup();
+		const Vault = await ethers.getContractFactory("LaunchVault");
+		const now = BigInt((await ethers.provider.getBlock("latest")).timestamp);
+		const vault = await Vault.deploy(
+			owner.address,
+			creator.address,
+			bundleBot.address,
+			ethers.parseEther("32"),
+			ethers.parseEther("16"),
+			0n,
+			now + 3600n,
+			0,
+			false,
+			2, // _tier = LaunchTier.TIER_95
+		);
+
+		await vault.connect(depositor).deposit({ value: ethers.parseEther("19.2") });
+		await vault.connect(depositor2).deposit({ value: ethers.parseEther("12.8") });
+		await expect(vault.connect(creator).close()).to.be.revertedWithCustomError(vault, "WindowClosed");
+
+		await ethers.provider.send("evm_setNextBlockTimestamp", [Number(now + 900n)]);
+		await ethers.provider.send("evm_mine", []);
+		await expect(vault.connect(creator).close()).to.emit(vault, "Closed");
 	});
 
 	it("TreasuryLP recordManagedToken succeeds once", async () => {
 		const { owner, creator } = await setup();
 		const Treasury = await ethers.getContractFactory("TreasuryLP");
 		const treasury = await Treasury.deploy(creator.address, owner.address);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const token = await Token.deploy();
+		await token.mint(await treasury.getAddress(), 1n);
 
-		await expect(treasury.recordManagedToken(creator.address)).to.not.be.reverted;
-		expect(await treasury.managedToken()).to.equal(creator.address);
+		await expect(treasury.connect(owner).recordManagedToken(await token.getAddress())).to.not.be.reverted;
+		expect(await treasury.managedToken()).to.equal(await token.getAddress());
 	});
 
 	it("TreasuryLP recordManagedToken reverts on different second token", async () => {
-		const { owner, creator, bundleBot } = await setup();
+		const { owner, creator } = await setup();
 		const Treasury = await ethers.getContractFactory("TreasuryLP");
 		const treasury = await Treasury.deploy(creator.address, owner.address);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const tokenA = await Token.deploy();
+		const tokenB = await Token.deploy();
+		await tokenA.mint(await treasury.getAddress(), 1n);
+		await tokenB.mint(await treasury.getAddress(), 1n);
 
-		await treasury.recordManagedToken(creator.address);
+		await treasury.connect(owner).recordManagedToken(await tokenA.getAddress());
 		// Second call with different token must revert MultipleTokens
-		await expect(treasury.recordManagedToken(bundleBot.address)).to.be.reverted;
+		await expect(treasury.connect(owner).recordManagedToken(await tokenB.getAddress())).to.be.reverted;
+	});
+
+	it("TreasuryLP owner can only rescue non-managed tokens", async () => {
+		const { owner, creator } = await setup();
+		const Treasury = await ethers.getContractFactory("TreasuryLP");
+		const treasury = await Treasury.deploy(creator.address, owner.address);
+		const Token = await ethers.getContractFactory("ERC20Mock");
+		const managed = await Token.deploy();
+		const dust = await Token.deploy();
+		await managed.mint(await treasury.getAddress(), 100n);
+		await dust.mint(await treasury.getAddress(), 10n);
+
+		await treasury.connect(owner).recordManagedToken(await managed.getAddress());
+		await expect(
+			treasury.connect(creator).sweep(creator.address, await managed.getAddress(), 100n),
+		).to.be.revertedWithCustomError(treasury, "NotAuthorized");
+
+		await expect(treasury.connect(creator).sweep(creator.address, await dust.getAddress(), 10n)).to.not.be.reverted;
+		expect(await dust.balanceOf(creator.address)).to.equal(10n);
+		expect(await managed.balanceOf(await treasury.getAddress())).to.equal(100n);
 	});
 
 	it("Wave H contracts compile + deploy with phase-2 impls", async () => {
 		// All four new artifacts have non-empty bytecode (impl, not stubs).
+		const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
+
+		const routerDeployer = await RouterDeployerCF.deploy();
+
 		const Factory = await ethers.getContractFactory("LaunchFactory");
 		const Vault = await ethers.getContractFactory("LaunchVault");
 		const Router = await ethers.getContractFactory("BundleRouter");

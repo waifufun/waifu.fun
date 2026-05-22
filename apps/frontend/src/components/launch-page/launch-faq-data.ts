@@ -16,7 +16,7 @@ export function buildLaunchFaq(tier: LaunchTierInfo): FaqItem[] {
 		{
 			q: "what gets burned?",
 			a: graduates
-				? `the unsold supply (everything not bundled, including the platform's v2 buy) is burned at launch. it's why tier ${tier.bundlePct} ships with a smaller circulating supply (${tier.circulatingSupplyM}m).`
+				? `the unsold supply (everything not bundled, including the platform's v2 buy) is burned at launch. it's why ${tier.label} ships with a smaller circulating supply (${tier.circulatingSupplyM}m).`
 				: `the unsold portion of supply is burned at launch so what trades on pcs is what presalers + traders bought. circulating supply at open is ${tier.circulatingSupplyM}m.`,
 		},
 		{

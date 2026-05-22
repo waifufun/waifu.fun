@@ -1,5 +1,6 @@
 "use client";
 
+import { SAME_ORIGIN_API } from "@/lib/same-origin-api";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -36,10 +37,15 @@ export interface WaifuMe {
 	linkedWallets: LinkedWallet[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
+// Same-origin path: mobile in-app browser WebViews (zerion, MM mobile, Trust)
+// block cookies on cross-origin XHR even within the same registrable domain.
+// /v2/* and /v3/* paths are intercepted by the CF Pages function in
+// functions/[[path]].js and proxied server-to-server to api.waifu.fun. See
+// src/lib/same-origin-api.ts.
+const API_URL = SAME_ORIGIN_API;
 
 export function hasWaifuAuthCookie(cookie = typeof document === "undefined" ? "" : document.cookie): boolean {
-	return cookie.split(";").some((c) => c.trim().startsWith("wf_authed=1"));
+	return cookie.split(";").some((c) => c.trim() === "wf_authed=1");
 }
 
 function normalizeAddress(address: unknown): string | null {
@@ -64,6 +70,9 @@ async function readJson(res: Response): Promise<unknown> {
 }
 
 export async function fetchWaifuMe(fetcher: typeof fetch = fetch): Promise<WaifuMe | null> {
+	// `wf_authed` is a writable UI hint only. This request is the authoritative
+	// browser-session check because the backend validates the HttpOnly
+	// `wf_session` cookie or Authorization bearer.
 	const v3 = await fetcher(`${API_URL}/v3/patron/me`, { credentials: "include", cache: "no-store" });
 	if (v3.ok) {
 		const json = (await readJson(v3)) as {
@@ -132,11 +141,18 @@ function clearStaleAuthCookie(): void {
 }
 
 export function useWaifuAuth() {
-	const authed = hasWaifuAuthCookie();
+	// IMPORTANT: do NOT gate this query on `document.cookie`. Mobile in-app
+	// browser WebViews (zerion, MM mobile, Trust) store cookies set by
+	// Set-Cookie headers AND send them on subsequent requests, but refuse
+	// to expose them to `document.cookie` (returns empty). The cosmetic
+	// `wf_authed=1` hint cookie reads empty on those clients even when
+	// the HttpOnly `wf_session` is intact. Source of truth is the
+	// /v3/patron/me response. Always fire the query and let the response
+	// determine auth state. One extra unauth 401 per page load on a fresh
+	// browser is acceptable. See debug evidence in /debug/cookie-test.
 	const query = useQuery<WaifuMe | null, Error>({
 		queryKey: ["waifu-me"],
 		queryFn: () => fetchWaifuMe(),
-		enabled: authed,
 		staleTime: 30_000,
 		refetchOnWindowFocus: true,
 		// Don't retry: a 401 means the session is dead, retrying just keeps
@@ -145,18 +161,21 @@ export function useWaifuAuth() {
 		retry: false,
 	});
 
-	// If the cookie says we're authed but the patron lookup returns null /
-	// errors with 401, the session was invalidated server-side (logout, JWT
-	// expired, etc). Clear the stale cookie so the UI flips to unauth
-	// instead of being stuck in an "authed but no patron" limbo.
-	if (typeof document !== "undefined" && authed && (query.error || (query.isFetched && !query.data))) {
+	// Best-effort cleanup of the cosmetic wf_authed hint when the
+	// authoritative lookup says we're not authed. Mostly meaningful on
+	// desktop where document.cookie actually works; on mobile WebViews
+	// it's a no-op and that's fine.
+	const authedHint = hasWaifuAuthCookie();
+	if (typeof document !== "undefined" && authedHint && (query.error || (query.isFetched && !query.data))) {
 		clearStaleAuthCookie();
 	}
 
 	const primaryAddress = useMemo(() => query.data?.primaryAddress ?? null, [query.data?.primaryAddress]);
 	const primaryChain = useMemo(() => query.data?.primaryChain ?? null, [query.data?.primaryChain]);
-	const isAuthenticated = authed && Boolean(query.data?.primaryAddress) && !query.error;
-	const isLoading = authed && query.isLoading;
+	// Auth state is derived from the patron lookup, not from document.cookie.
+	// `isAuthenticated` is true iff the server confirmed a primary address.
+	const isAuthenticated = Boolean(query.data?.primaryAddress) && !query.error;
+	const isLoading = query.isLoading;
 
 	return {
 		isAuthenticated,

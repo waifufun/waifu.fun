@@ -20,7 +20,7 @@ export function TierInfoCard({ tier, vestingEnabled, launchTimestamp, allocation
 	const vestingActive = vestingEnabled ?? tier.vestingEnabled;
 	const graduates = tier.v2BuyBnb > 0;
 	const pathCopy = graduates
-		? "presale → pcs v2 lp · 50/10/40 split · 24h vesting"
+		? "presale → pcs v2 lp · 50/10/20 supply split · 24h vesting"
 		: "presale → pcs curve · no v2 lp graduation";
 
 	return (
@@ -40,13 +40,13 @@ export function TierInfoCard({ tier, vestingEnabled, launchTimestamp, allocation
 						<Stat
 							label="v2 buy at open"
 							value={`${tier.v2BuyBnb} bnb`}
-							help="bnb the platform adds to pcs v2 lp at graduation. split is 50% presaler bundle / 10% bonus pool / 40% v2 buy."
+							help="bnb the platform adds to pcs v2 lp at graduation. token supply split: 50% burn / 10% treasury lp / 20% presalers / 20% locked in pcs v2 lp."
 						/>
 					) : (
 						<Stat
 							label="v2 buy at open"
 							value="n/a"
-							help="tier 80 does not graduate to v2; it trades on the pcs bonding curve until organic graduation."
+							help="SMOL does not graduate to v2; it trades on the pcs bonding curve until organic graduation."
 						/>
 					)}
 					<Stat label="circulating supply" value={`${tier.circulatingSupplyM}m`} />

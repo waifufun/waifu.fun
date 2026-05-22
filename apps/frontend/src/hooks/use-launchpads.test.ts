@@ -39,7 +39,9 @@ describe("postWaitlistSignup", () => {
 		const result = await postWaitlistSignup("pump-fun", " Creator@Example.COM ");
 
 		expect(result).toEqual({ ok: true, status: "created", email: "creator@example.com" });
-		expect(fetchMock).toHaveBeenCalledWith("https://api.waifu.fun/v3/launchpads/pump-fun/waitlist", {
+		// Same-origin path (empty SAME_ORIGIN_API base) — see
+		// src/lib/same-origin-api.ts. Mobile WebView XHR cookie fix.
+		expect(fetchMock).toHaveBeenCalledWith("/v3/launchpads/pump-fun/waitlist", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			credentials: "include",

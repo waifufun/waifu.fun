@@ -10,6 +10,7 @@
  */
 
 import { Hono } from "hono";
+import type { Address } from "viem";
 import { z } from "zod";
 
 import { getDatabase } from "@waifufun/db";
@@ -32,7 +33,7 @@ import {
 	getLaunchTierConfigSnapshot,
 	launchRepo,
 } from "../../services/launch-v2/index.js";
-import { queueSaltMining } from "../../services/salt-miner.js";
+import { type MineSaltInput, mineVanitySalt } from "../../services/salt-miner.js";
 
 const addressRegex = /^0x[a-fA-F0-9]{40}$/;
 const addressSchema = z
@@ -52,7 +53,22 @@ const nonceBodySchema = z.object({
 	address: addressSchema,
 });
 
-const createLaunchBodySchema = z
+const agentSafeOwnersSchema = z
+	.array(addressSchema)
+	.min(1, "agentSafeOwners must include at least one owner")
+	.max(10, "agentSafeOwners may include at most 10 owners")
+	.transform((owners) => Array.from(new Set(owners)) as `0x${string}`[]);
+
+const waveMSplitBodySchema = {
+	platformReceiver: addressSchema.optional(),
+	platformBps: z.coerce.number().int().min(1000).max(5000).default(1000),
+	patronBps: z.coerce.number().int().min(0).max(9000).default(2500),
+	patron: addressSchema.optional(),
+	agentSafeOwners: agentSafeOwnersSchema.optional(),
+	agentSafeThreshold: z.coerce.number().int().min(1).max(10).default(1),
+} as const;
+
+export const createLaunchBodySchema = z
 	.object({
 		name: z.string().trim().min(1).max(64),
 		symbol: z
@@ -66,12 +82,32 @@ const createLaunchBodySchema = z
 		flap_meta_cid: z.string().trim().min(1).max(256).optional(),
 		creator: addressSchema,
 		tier: tierSchema,
+		buyTaxBps: z.coerce.number().int().min(0).max(10_000).optional(),
+		sellTaxBps: z.coerce.number().int().min(0).max(10_000).optional(),
 		closeTimestamp: z.coerce.number().int().positive().optional(),
+		...waveMSplitBodySchema,
 		siwe: siweProofSchema,
 	})
 	.refine((body) => Boolean(body.flapMetaCid ?? body.flap_meta_cid ?? body.metadataURI), {
 		message: "flapMetaCid or metadataURI is required",
 		path: ["flapMetaCid"],
+	})
+	.superRefine((body, ctx) => {
+		const owners = body.agentSafeOwners ?? [body.creator];
+		if (body.agentSafeThreshold > owners.length) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["agentSafeThreshold"],
+				message: "agentSafeThreshold cannot exceed agentSafeOwners length",
+			});
+		}
+		if (body.platformBps + body.patronBps > 10_000) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["patronBps"],
+				message: "platformBps + patronBps cannot exceed 10000",
+			});
+		}
 	});
 
 const previewBodySchema = z.object({
@@ -100,6 +136,11 @@ const listQuerySchema = z.object({
 		.refine((n) => [80, 90, 95, 98].includes(n))
 		.optional(),
 	limit: z.coerce.number().int().min(1).max(100).default(20),
+	offset: z.coerce.number().int().min(0).default(0),
+});
+
+const depositorListQuerySchema = z.object({
+	limit: z.coerce.number().int().min(1).max(5000).default(1000),
 	offset: z.coerce.number().int().min(0).default(0),
 });
 
@@ -157,6 +198,28 @@ function defaultService(): LaunchService | null {
 	return new LaunchService(config);
 }
 
+function readLaunchAddress(...names: string[]): `0x${string}` | null {
+	for (const name of names) {
+		const value = process.env[name];
+		if (value && addressRegex.test(value)) return value.toLowerCase() as `0x${string}`;
+	}
+	return null;
+}
+
+function buildTaxSplit(platformBps: number | null | undefined, patronBps: number | null | undefined) {
+	if (platformBps == null || patronBps == null) return null;
+	return {
+		platformBps,
+		patronBps,
+		agentBps: Math.max(0, 10_000 - platformBps - patronBps),
+	};
+}
+
+function buildAgentSafeConfig(owners: string[] | null | undefined, threshold: number | null | undefined) {
+	if (!Array.isArray(owners) || threshold == null) return null;
+	return { owners, threshold };
+}
+
 /**
  * Serialize agent_launches row to the public API shape (the `state` document
  * in the spec). bigints become strings; addresses are returned as stored
@@ -172,7 +235,10 @@ export function serializeAgentLaunch(
 		token: row.tokenAddress,
 		vault: row.vaultAddress,
 		router: row.routerAddress,
-		taxSplitter: row.taxSplitterAddress,
+		taxSplitter: row.taxSplitterAddress ?? null,
+		agentSafe: row.agentSafeAddress ?? null,
+		taxSplit: buildTaxSplit(row.platformBps, row.patronBps),
+		agentSafeConfig: buildAgentSafeConfig(row.agentSafeOwners, row.agentSafeThreshold),
 		treasuryLp: row.treasuryLpAddress,
 		creator: row.creator,
 		tier: row.tier,
@@ -259,60 +325,108 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 
 			const closeTs = body.closeTimestamp ?? Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 			const tier = body.tier as LaunchTierString;
+			const creator = body.creator as Address;
 
 			const flapMetaCid = body.flapMetaCid ?? body.flap_meta_cid;
 			let metadataUri = body.metadataURI ?? "";
+			let metadata: Record<string, unknown> = { name: body.name, symbol: body.symbol };
 			if (flapMetaCid) {
 				try {
 					const validated = await validateFlapMetadataCid(flapMetaCid);
 					metadataUri = validated.cid;
+					metadata = { ...validated.metadata, name: body.name, symbol: body.symbol };
 				} catch (error) {
 					if (error instanceof FlapMetadataError) throw badRequest(error.code, error.message);
 					throw error;
 				}
 			}
+			const bundleBot = readLaunchAddress("BUNDLE_BOT_ADDRESS", "LAUNCH_BUNDLE_BOT_ADDRESS") ?? creator;
+			const commissionReceiver =
+				readLaunchAddress("PLATFORM_COMMISSION_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ?? creator;
+			const platformReceiver =
+				(body.platformReceiver as `0x${string}` | undefined) ??
+				readLaunchAddress("PLATFORM_RECEIVER", "WAIFU_PLATFORM_FEE_WALLET") ??
+				commissionReceiver;
+			const patronAddress = (body.patron ?? creator) as `0x${string}`;
+			const agentSafeOwners = (body.agentSafeOwners ?? [creator]) as `0x${string}`[];
+			const mineInput: MineSaltInput = { creator };
+			if (process.env.LAUNCH_VANITY_SUFFIX !== undefined) mineInput.suffix = process.env.LAUNCH_VANITY_SUFFIX;
+			if (process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS !== undefined) {
+				mineInput.maxIterations = Number(process.env.LAUNCH_VANITY_MINING_MAX_ITERATIONS);
+			}
+			const mined = mineVanitySalt(mineInput);
 
 			const input: CreateLaunchInput = {
 				name: body.name,
 				symbol: body.symbol,
 				metadataURI: metadataUri,
-				creator: body.creator,
+				metaCid: flapMetaCid ?? metadataUri,
+				creator: creator as `0x${string}`,
+				bundleBot: bundleBot as `0x${string}`,
+				commissionReceiver: commissionReceiver as `0x${string}`,
+				platformReceiver: platformReceiver as `0x${string}`,
+				patron: patronAddress,
+				agentSafeOwners,
+				agentSafeThreshold: body.agentSafeThreshold,
+				platformBps: body.platformBps,
+				patronBps: body.patronBps,
 				tier,
+				buyTaxBps: body.buyTaxBps ?? Number(process.env.LAUNCH_BUY_TAX_BPS ?? 300),
+				sellTaxBps: body.sellTaxBps ?? Number(process.env.LAUNCH_SELL_TAX_BPS ?? 300),
+				taxDuration: Number(process.env.LAUNCH_TAX_DURATION_SECONDS ?? 365 * 24 * 60 * 60),
+				antiFarmerDuration: Number(process.env.LAUNCH_ANTI_FARMER_DURATION_SECONDS ?? 60 * 60),
 				closeTimestamp: closeTs,
+				vanitySalt: mined.vanitySalt,
+				predictedTokenAddress: mined.predictedTokenAddress as `0x${string}`,
 			};
 
 			const onchain = await service.createLaunchOnchain(input);
 
-			const tierConfig = getLaunchTierConfigSnapshot(tier);
+			const tierConfig = getLaunchTierConfigSnapshot(tier, input.buyTaxBps);
 
 			const row = await launchRepo.insertLaunch(db, {
 				tokenAddress: onchain.token,
 				vaultAddress: onchain.vault,
 				routerAddress: onchain.router,
 				taxSplitterAddress: onchain.taxSplitter,
+				agentSafeAddress: onchain.agentSafe,
+				platformBps: input.platformBps,
+				patronBps: input.patronBps,
+				agentSafeOwners: input.agentSafeOwners,
+				agentSafeThreshold: input.agentSafeThreshold,
 				creator: input.creator,
 				tier: Number(tier),
 				presaleCap: tierConfig.presaleCap,
 				v2BuyBnb: tierConfig.v2BuyBnb,
 				vestingEnabled: tierConfig.vestingEnabled,
+				buyTaxBps: input.buyTaxBps,
+				sellTaxBps: input.sellTaxBps,
 				closeTimestamp: BigInt(closeTs),
+				metadata,
 				metadataUri: input.metadataURI,
+				predictedTokenAddress: mined.predictedTokenAddress,
+				vanitySalt: mined.vanitySalt,
 				flapMetaCid: flapMetaCid ?? null,
 				bundleTipBnb: process.env.BUNDLE_TIP_BNB ?? "0.03",
 				createTxHash: onchain.txHash,
 				createBlockNumber: onchain.blockNumber,
 			});
 
-			queueSaltMining({ db, launchId: row.id });
-
 			return respondAccepted(c, {
 				id: row.id,
 				status: "created",
 				token: row.tokenAddress,
+				// `tokenAddress` alias kept so older FE clients reading the
+				// pre-Wave M response shape keep working through the rollout.
+				tokenAddress: row.tokenAddress,
 				predictedTokenAddress: row.predictedTokenAddress,
 				vault: row.vaultAddress,
 				router: row.routerAddress,
-				taxSplitter: row.taxSplitterAddress,
+				taxSplitter: row.taxSplitterAddress ?? null,
+				agentSafe: row.agentSafeAddress ?? null,
+				taxSplit: buildTaxSplit(row.platformBps, row.patronBps),
+				agentSafeConfig: buildAgentSafeConfig(row.agentSafeOwners, row.agentSafeThreshold),
+				platformReceiver,
 				treasuryReserve: onchain.treasuryReserve,
 				presaleUrl: onchain.presaleUrl,
 				txHash: onchain.txHash,
@@ -430,11 +544,20 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 	// GET /v2/launches/:id/depositors — full depositor list (with claimables).
 	app.get("/:id{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/depositors", async (c) => {
 		const id = c.req.param("id");
+		const url = new URL(c.req.url);
+		const parsed = depositorListQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+		if (!parsed.success) {
+			throw badRequest("INVALID_QUERY", "Invalid query parameters", parsed.error.flatten());
+		}
 		const db = resolveDb();
 		const row = await launchRepo.getLaunchById(db, id);
 		if (!row) throw notFound("LAUNCH_NOT_FOUND", "Launch not found");
 
-		const aggregates = await launchRepo.listDepositors(db, id);
+		const { limit, offset } = parsed.data;
+		const [aggregates, total] = await Promise.all([
+			launchRepo.listDepositors(db, id, { limit, offset }),
+			launchRepo.countDepositors(db, id),
+		]);
 
 		// Optionally enrich with on-chain claimable state. If the service is
 		// not configured, we return aggregates with claimable=null.
@@ -464,7 +587,7 @@ export function createAgentLaunchRoutes(options: AgentLaunchRoutesOptions = {}) 
 			}),
 		);
 
-		return respondOk(c, { depositors: enriched, count: enriched.length });
+		return respondOk(c, { depositors: enriched, count: enriched.length, total, limit, offset });
 	});
 
 	// GET /v2/launches/:id/depositors/:address — single user position.

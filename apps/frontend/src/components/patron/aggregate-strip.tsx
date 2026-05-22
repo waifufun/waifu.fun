@@ -8,11 +8,11 @@ function computeMetrics(agents: PatronAgent[]): Metric[] {
 	const combinedRunway = totalBurn > 0 ? totalTreasury / totalBurn : 0;
 
 	return [
-		{ label: "Agents", value: String(agents.length) },
-		{ label: "Total treasury", value: formatUsd(totalTreasury) },
-		{ label: "Daily burn", value: formatUsd(totalBurn) },
+		{ label: "agents", value: String(agents.length) },
+		{ label: "total treasury", value: formatUsd(totalTreasury) },
+		{ label: "daily burn", value: formatUsd(totalBurn) },
 		{
-			label: "Combined runway",
+			label: "combined runway",
 			value: totalBurn > 0 ? `${Math.round(combinedRunway)}d` : "-",
 		},
 	];
@@ -27,8 +27,8 @@ export default function AggregateStrip({ agents }: { agents: PatronAgent[] }) {
 		>
 			{metrics.map((m) => (
 				<div key={m.label} className="bg-[#0C0C0C] px-4 py-3">
-					<div className="text-xs uppercase tracking-wide text-neutral-500">{m.label}</div>
-					<div className="text-lg font-medium text-white mt-1">{m.value}</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">{m.label}</div>
+					<div className="text-lg font-medium text-white mt-1 tabular-nums">{m.value}</div>
 				</div>
 			))}
 		</section>

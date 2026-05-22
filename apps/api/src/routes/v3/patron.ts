@@ -16,15 +16,18 @@ type LinkedSiweResult = {
 	nonce: string;
 	domain: string;
 	uri: string;
+	statement?: string | null | undefined;
 	expirationTime?: string | null | undefined;
 };
 
 type LinkedSiweVerifier = (message: string, signature: string) => Promise<LinkedSiweResult>;
 
-type NonceEntry = { expiresAt: number };
+type NonceEntry = { nonce: string; address: string; expiresAt: number };
 
-const usedNonces = new Map<string, NonceEntry>();
+const linkNonces = new Map<string, NonceEntry>();
 const NONCE_TTL_MS = 10 * 60 * 1000;
+const WALLET_LINK_STATEMENT = "Link this wallet to your waifu.fun patron account.";
+const WALLET_LINK_URI_PATH = "/patron/wallets";
 
 let dbForTest: DbHandle | undefined;
 let verifierForTest: LinkedSiweVerifier | undefined;
@@ -38,7 +41,7 @@ export function __setPatronWalletsSiweVerifierForTest(verifier: LinkedSiweVerifi
 }
 
 export function __clearPatronWalletsNoncesForTest(): void {
-	usedNonces.clear();
+	linkNonces.clear();
 }
 
 function getDb(): DbHandle {
@@ -108,6 +111,10 @@ async function buildPatronMe(
 
 function expectedHosts(): Set<string> {
 	const hosts = new Set(["waifu.fun", "www.waifu.fun"]);
+	if (process.env.NODE_ENV !== "production") {
+		hosts.add("localhost:3000");
+		hosts.add("127.0.0.1:3000");
+	}
 	const raw = process.env.FRONTEND_URL ?? "https://waifu.fun";
 	try {
 		hosts.add(new URL(raw).host);
@@ -117,14 +124,31 @@ function expectedHosts(): Set<string> {
 	return hosts;
 }
 
-function consumeNonceOnce(patronId: string, address: string, nonce: string): boolean {
-	const now = Date.now();
-	for (const [key, entry] of usedNonces) {
-		if (entry.expiresAt <= now) usedNonces.delete(key);
+function nonceKey(patronId: string, address: string): string {
+	return `${patronId}:${address.toLowerCase()}`;
+}
+
+function pruneLinkNonces(now = Date.now()): void {
+	for (const [key, entry] of linkNonces) {
+		if (entry.expiresAt <= now) linkNonces.delete(key);
 	}
-	const key = `${patronId}:${address.toLowerCase()}:${nonce}`;
-	if (usedNonces.has(key)) return false;
-	usedNonces.set(key, { expiresAt: now + NONCE_TTL_MS });
+}
+
+function issueLinkNonce(patronId: string, address: string): string {
+	const now = Date.now();
+	pruneLinkNonces(now);
+	const nonce = crypto.randomUUID().replaceAll("-", "");
+	linkNonces.set(nonceKey(patronId, address), { nonce, address: address.toLowerCase(), expiresAt: now + NONCE_TTL_MS });
+	return nonce;
+}
+
+function consumeIssuedNonce(patronId: string, address: string, nonce: string): boolean {
+	pruneLinkNonces();
+	const key = nonceKey(patronId, address);
+	const entry = linkNonces.get(key);
+	if (!entry) return false;
+	if (entry.address !== address.toLowerCase() || entry.nonce !== nonce) return false;
+	linkNonces.delete(key);
 	return true;
 }
 
@@ -139,6 +163,7 @@ async function verifyLinkedSiwe(messageText: string, signature: string): Promise
 		nonce: result.data.nonce,
 		domain: result.data.domain,
 		uri: result.data.uri,
+		statement: result.data.statement,
 		expirationTime: result.data.expirationTime,
 	};
 }
@@ -153,10 +178,13 @@ function validateLinkedSiwe(verified: LinkedSiweResult, expectedAddress: `0x${st
 	} catch {
 		return "SIWE uri is invalid";
 	}
-	if (!expectedHosts().has(uri.host) || !uri.pathname.startsWith("/auth/")) {
-		return "SIWE uri must be an auth path on waifu.fun";
+	if (!expectedHosts().has(uri.host)) return "SIWE uri host is not allowed";
+	if (verified.statement !== WALLET_LINK_STATEMENT) return "SIWE statement is not allowed";
+	if (uri.pathname !== WALLET_LINK_URI_PATH) {
+		return "SIWE uri path is not allowed";
 	}
-	if (verified.expirationTime && Date.parse(verified.expirationTime) <= Date.now()) return "SIWE message expired";
+	if (!verified.expirationTime) return "SIWE expirationTime is required";
+	if (Date.parse(verified.expirationTime) <= Date.now()) return "SIWE message expired";
 	return null;
 }
 
@@ -173,6 +201,22 @@ export function createV3PatronRoutes() {
 
 	app.get("/me", async (c) => {
 		return c.json(await buildPatronMe(getDb(), c.get("patron")));
+	});
+
+	app.post("/wallets/link/nonce", async (c) => {
+		const body = await c.req.json().catch(() => null);
+		const parsed = z.object({ address: z.string().regex(/^0x[a-fA-F0-9]{40}$/) }).safeParse(body);
+		if (!parsed.success) return c.json({ ok: false, error: "INVALID_BODY", message: "invalid wallet nonce body" }, 400);
+		const patron = c.get("patron");
+		const address = lowerAddress(parsed.data.address);
+		const nonce = issueLinkNonce(patron.id, address);
+		return c.json({
+			ok: true,
+			nonce,
+			expiresInSeconds: NONCE_TTL_MS / 1000,
+			statement: WALLET_LINK_STATEMENT,
+			uriPath: WALLET_LINK_URI_PATH,
+		});
 	});
 
 	app.post("/wallets/link", async (c) => {
@@ -195,8 +239,8 @@ export function createV3PatronRoutes() {
 
 		const invalid = validateLinkedSiwe(verified, address);
 		if (invalid) return c.json({ ok: false, error: "INVALID_SIWE", message: invalid }, 400);
-		if (!consumeNonceOnce(patron.id, address, verified.nonce)) {
-			return c.json({ ok: false, error: "NONCE_REPLAY", message: "SIWE nonce already used" }, 400);
+		if (!consumeIssuedNonce(patron.id, address, verified.nonce)) {
+			return c.json({ ok: false, error: "INVALID_NONCE", message: "SIWE nonce was not issued or has expired" }, 400);
 		}
 
 		const db = getDb();

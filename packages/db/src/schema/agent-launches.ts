@@ -36,6 +36,7 @@ export type AgentLaunchState = (typeof agentLaunchStates)[number];
 
 export const launchBundleStatuses = [
 	"pending",
+	"submitting",
 	"submitted",
 	"confirmed",
 	"failed_retry",
@@ -56,6 +57,11 @@ export const agentLaunches = pgTable(
 		vaultAddress: varchar("vault_address", { length: 42 }).notNull(),
 		routerAddress: varchar("router_address", { length: 42 }).notNull(),
 		taxSplitterAddress: varchar("tax_splitter_address", { length: 42 }),
+		agentSafeAddress: varchar("agent_safe_address", { length: 42 }),
+		platformBps: integer("platform_bps"),
+		patronBps: integer("patron_bps"),
+		agentSafeOwners: jsonb("agent_safe_owners").$type<string[]>(),
+		agentSafeThreshold: integer("agent_safe_threshold"),
 		treasuryLpAddress: varchar("treasury_lp_address", { length: 42 }),
 		creator: varchar("creator", { length: 42 }).notNull(),
 		tier: smallint("tier").notNull(),
@@ -64,6 +70,8 @@ export const agentLaunches = pgTable(
 		presaleCap: text("presale_cap").notNull(),
 		v2BuyBnb: text("v2_buy_bnb").notNull().default("0"),
 		vestingEnabled: integer("vesting_enabled").notNull().default(0),
+		buyTaxBps: integer("buy_tax_bps").notNull().default(300),
+		sellTaxBps: integer("sell_tax_bps").notNull().default(300),
 
 		// Lifecycle state.
 		state: text("state").$type<AgentLaunchState>().notNull().default("open"),
@@ -86,8 +94,8 @@ export const agentLaunches = pgTable(
 		metadataUri: text("metadata_uri"),
 
 		// Wave H Flap-native launch flow. Flap mints the final token inside
-		// BundleRouter.executeBundle(); we pre-mine the CREATE2 salt here so the
-		// frontend can show the vanity address before the bundle lands.
+		// BundleRouter.executeBundle(); we store the raw vanity salt here. The
+		// contracts derive the creator-scoped CREATE2 salt from creator + raw salt.
 		predictedTokenAddress: varchar("predicted_token_address", { length: 42 }),
 		vanitySalt: varchar("vanity_salt", { length: 66 }),
 		flapMetaCid: text("flap_meta_cid"),
@@ -114,6 +122,9 @@ export const agentLaunches = pgTable(
 		predictedTokenIdx: index("idx_agent_launches_predicted_token").on(table.predictedTokenAddress),
 		flapTokenIdx: index("idx_agent_launches_flap_token").on(table.flapTokenAddress),
 		bundleStatusIdx: index("idx_agent_launches_bundle_status").on(table.bundleStatus),
+		agentSafeIdx: index("idx_agent_launches_agent_safe")
+			.on(table.agentSafeAddress)
+			.where(sql`${table.agentSafeAddress} is not null`),
 	}),
 );
 

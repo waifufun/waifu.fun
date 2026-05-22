@@ -1,6 +1,7 @@
 "use client";
 
 import { EASE_OUT_EXPO } from "@/lib/motion";
+import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -21,6 +22,30 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 type Phase = "loading" | "error";
 
+function scrubCallbackUrl() {
+	if (typeof window === "undefined") return;
+	const url = new URL(window.location.href);
+	let changed = false;
+	for (const key of ["token", "refreshToken"]) {
+		if (url.searchParams.has(key)) {
+			url.searchParams.delete(key);
+			changed = true;
+		}
+	}
+	if (url.hash) {
+		const hashParams = new URLSearchParams(url.hash.slice(1));
+		for (const key of ["token", "refreshToken"]) {
+			if (hashParams.has(key)) {
+				hashParams.delete(key);
+				changed = true;
+			}
+		}
+		const nextHash = hashParams.toString();
+		url.hash = nextHash ? `#${nextHash}` : "";
+	}
+	if (changed) window.history.replaceState(null, "", url.toString());
+}
+
 function CallbackInner() {
 	const router = useRouter();
 	const params = useSearchParams();
@@ -37,11 +62,12 @@ function CallbackInner() {
 			typeof window !== "undefined" && window.location.hash.startsWith("#")
 				? new URLSearchParams(window.location.hash.slice(1))
 				: new URLSearchParams();
-		const token = params.get("token") ?? hashParams.get("token");
+		const token = params?.get("token") ?? hashParams.get("token");
 		// Steward emits `?token=&refreshToken=`: it does NOT echo our state.
-		const refreshToken = params.get("refreshToken") ?? hashParams.get("refreshToken");
-		const errorParam = params.get("error") ?? hashParams.get("error");
-		const errorDescription = params.get("error_description") ?? hashParams.get("error_description");
+		const refreshToken = params?.get("refreshToken") ?? hashParams.get("refreshToken");
+		const errorParam = params?.get("error") ?? hashParams.get("error");
+		const errorDescription = params?.get("error_description") ?? hashParams.get("error_description");
+		scrubCallbackUrl();
 
 		// Steward (or the provider) returned an error before we even got the JWT.
 		if (errorParam) {
@@ -83,7 +109,7 @@ function CallbackInner() {
 						patron: { stewardUserId: string; email: string | null };
 					};
 				};
-				const returnTo = json?.data?.return_to ?? "/patron";
+				const returnTo = sanitizeRedirectPath(json?.data?.return_to);
 
 				// Popup-flow: notify the opener and self-close. Otherwise redirect.
 				if (typeof window !== "undefined" && window.opener && !window.opener.closed) {

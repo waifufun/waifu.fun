@@ -121,6 +121,20 @@ export const launchVaultAbi = [
 	{
 		type: "function",
 		stateMutability: "view",
+		name: "tier",
+		inputs: [],
+		outputs: [{ name: "", type: "uint8" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "factory",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
 		name: "getDepositorInfo",
 		inputs: [{ name: "user", type: "address" }],
 		outputs: [
@@ -181,6 +195,7 @@ export const launchVaultAbi = [
 		inputs: [],
 		outputs: [],
 	},
+
 	// events
 	{
 		type: "event",
@@ -245,7 +260,8 @@ export const launchVaultAbi = [
  *
  * REFUND is entered via `enableRefundUnderSubscribed` (anyone, post-close,
  * under-subscribed), `enableRefundBundleFailed` (bundle bot after a failed
- * bundle), or `adminEnableRefund` (factory owner kill switch).
+ * bundle), or delayed `scheduleAdminRefund` + `adminEnableRefund` calls from
+ * the factory owner.
  */
 export const VaultState = {
 	OPEN: 0,

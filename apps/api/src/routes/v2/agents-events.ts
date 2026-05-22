@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, ne } from "drizzle-orm";
 import { Hono } from "hono";
 
 import {
@@ -71,7 +71,7 @@ app.get("/:agentId/events", async (c) => {
 		}
 	}
 
-	const filters = [eq(agentEventsTable.agentId, agentId)];
+	const filters = [eq(agentEventsTable.agentId, agentId), ne(agentEventsTable.status, "skipped")];
 	if (cursorDate) filters.push(lt(agentEventsTable.createdAt, cursorDate));
 	if (types.length > 0) filters.push(inArray(agentEventsTable.eventType, types));
 

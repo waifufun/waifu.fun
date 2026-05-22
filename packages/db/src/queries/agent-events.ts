@@ -146,6 +146,24 @@ export async function markFailed(db: Database, id: string, errorMessage: string)
 }
 
 /**
+ * Mark a claimed event as intentionally skipped. This is terminal like `done`,
+ * but distinct from success so activity feeds do not treat it as an agent
+ * action and operators do not see normal cooldowns as errors.
+ */
+export async function markSkipped(db: Database, id: string, reason: string): Promise<AgentEventRow | null> {
+	const [row] = await db
+		.update(agentEvents)
+		.set({
+			status: "skipped",
+			errorMessage: reason.slice(0, 4000),
+			processedAt: new Date(),
+		})
+		.where(eq(agentEvents.id, id))
+		.returning();
+	return row ?? null;
+}
+
+/**
  * Return the most recent events for a given token address, newest first.
  * Used by the brain worker / admin UI to reconstruct an agent's story.
  */
