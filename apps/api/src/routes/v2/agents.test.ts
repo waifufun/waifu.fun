@@ -240,6 +240,117 @@ function resetProvisionDeps() {
 	__setAgentAuthDbForTest(undefined);
 }
 
+test("GET /v2/agents/:token/apps returns registry rows and revenue totals", async () => {
+	const rows = [
+		{
+			id: 1n,
+			agentTokenAddress: "0x15fc6086064afe50ccf4c70000c55cecb6e17777",
+			appId: "twitter-replies",
+			name: "twitter replies",
+			description: "Sol replies to mentions on @0xSolace_",
+			icon: null,
+			appUrl: null,
+			status: "scheduled",
+			shippedAt: null,
+			revenueLifetimeUsd: "0",
+			revenue24hUsd: "0",
+			revenue7dUsd: "0",
+			metadata: {},
+			createdAt: new Date("2026-05-22T12:00:00Z"),
+			updatedAt: new Date("2026-05-22T12:00:00Z"),
+		},
+		{
+			id: 2n,
+			agentTokenAddress: "0x15fc6086064afe50ccf4c70000c55cecb6e17777",
+			appId: "live-demo",
+			name: "live demo",
+			description: null,
+			icon: null,
+			appUrl: "https://example.com",
+			status: "live",
+			shippedAt: new Date("2026-05-20T12:00:00Z"),
+			revenueLifetimeUsd: "42.5",
+			revenue24hUsd: "2.5",
+			revenue7dUsd: "10.25",
+			metadata: { revenue7dDeltaPct: 12.5 },
+			createdAt: new Date("2026-05-19T12:00:00Z"),
+			updatedAt: new Date("2026-05-22T12:00:00Z"),
+		},
+	];
+	const db = {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								orderBy() {
+									return Promise.resolve(rows);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+	} as unknown as Database;
+
+	__setAgentsRouteDepsForTest({ db });
+	try {
+		const res = await app.request("/0x15fc6086064afe50ccf4c70000c55cecb6e17777/apps");
+		assert.equal(res.status, 200);
+		assert.equal(res.headers.get("cache-control"), "public, max-age=60, stale-while-revalidate=300");
+		const body = (await res.json()) as {
+			ok: boolean;
+			data: {
+				apps: Array<{ id: string; appId: string; revenue7dUsd: number }>;
+				totalRevenue7d: number;
+				totalLifetime: number;
+			};
+		};
+		assert.equal(body.ok, true);
+		assert.equal(body.data.apps.length, 2);
+		assert.deepEqual(
+			body.data.apps.map((appRow) => appRow.id),
+			["1", "2"],
+		);
+		assert.equal(body.data.apps[1]?.revenue7dUsd, 10.25);
+		assert.equal(body.data.totalRevenue7d, 10.25);
+		assert.equal(body.data.totalLifetime, 42.5);
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
+test("GET /v2/agents/:token/apps returns an honest empty registry", async () => {
+	const db = {
+		select() {
+			return {
+				from() {
+					return {
+						where() {
+							return {
+								orderBy() {
+									return Promise.resolve([]);
+								},
+							};
+						},
+					};
+				},
+			};
+		},
+	} as unknown as Database;
+
+	__setAgentsRouteDepsForTest({ db });
+	try {
+		const res = await app.request("/0x0000000000000000000000000000000000000001/apps");
+		assert.equal(res.status, 200);
+		assert.deepEqual(await res.json(), { ok: true, data: { apps: [], totalRevenue7d: 0, totalLifetime: 0 } });
+	} finally {
+		resetProvisionDeps();
+	}
+});
+
 test("buildLaunchOrchestratorDeps forwards tax splitter factory address", () => {
 	const previous = {
 		stewardUrl: process.env.STEWARD_API_URL,
