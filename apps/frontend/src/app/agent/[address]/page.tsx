@@ -7,6 +7,7 @@ import { buildActivity } from "@/lib/wave-t/activity";
 import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
 import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
+import { fetchSolTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
@@ -311,7 +312,9 @@ async function buildAgentActivity(opts: {
 	const [ship, tweets, onchain] = await Promise.all([
 		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
 		opts.isSolAgent ? fetchTweets() : Promise.resolve([]),
-		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
+		opts.isSolAgent
+			? Promise.resolve({ txs: [] })
+			: fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
 	]);
 
 	const foundation = buildActivity({ prs: ship.items, tweets });
@@ -356,7 +359,7 @@ export default async function AgentPage({
 	const { address } = await params;
 
 	const agentP = fetchAgent(address);
-	const tradesP = fetchTrades(address);
+	const tradesP = isSolAgentAddress(address) ? fetchSolTrades(address) : fetchTrades(address);
 	const launchP = fetchLaunch(address);
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns

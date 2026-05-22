@@ -32,6 +32,10 @@ export interface AgentTrade {
 	address: string;
 	amount: string | number;
 	timestamp: number;
+	tokenAddress?: string;
+	tokenSymbol?: string;
+	traderRole?: "agent-safe" | "agent-hot";
+	usdValue?: number;
 }
 
 /**
