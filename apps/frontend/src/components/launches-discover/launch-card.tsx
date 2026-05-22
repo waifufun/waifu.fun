@@ -19,7 +19,21 @@ import {
 	progressPct,
 	safeBigInt,
 } from "@/lib/api/launches-list";
+import { tierFromString } from "@/lib/launch-vault/tiers";
 import { cn } from "@/lib/utils";
+
+// Map a raw API tier identifier (e.g. "TIER_95") to a display label
+// (e.g. "WAGMI"). Falls back to a sanitized form ("95") if the tier isn't
+// in the known set so the badge never reads as "TIER TIER_95".
+function prettyTier(raw: string | number | null | undefined): string | null {
+	if (raw === null || raw === undefined || raw === "") return null;
+	const info = tierFromString(typeof raw === "number" ? `tier_${raw}` : raw);
+	if (info) return info.label;
+	const stripped = String(raw)
+		.replace(/^tier[_-]?/i, "")
+		.trim();
+	return stripped || null;
+}
 
 type Props = {
 	launch: LaunchListItem;
@@ -74,11 +88,14 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 								<span className={cn("w-1 h-1 rounded-full", dotClass)} />
 								{launch.state}
 							</span>
-							{launch.tier ? (
-								<span className="inline-flex items-center px-1.5 py-0.5 rounded-sm border border-white/10 text-[9px] font-mono uppercase tracking-[0.2em] text-white/55">
-									tier {launch.tier}
-								</span>
-							) : null}
+							{(() => {
+								const tierText = prettyTier(launch.tier);
+								return tierText ? (
+									<span className="inline-flex items-center px-1.5 py-0.5 rounded-sm border border-white/10 text-[9px] font-mono uppercase tracking-[0.2em] text-white/55">
+										{tierText}
+									</span>
+								) : null;
+							})()}
 							{launch.depositorCount !== undefined && launch.depositorCount > 0 ? (
 								<span className="inline-flex items-center gap-1 text-[10px] text-white/45">
 									<Users className="w-2.5 h-2.5" strokeWidth={1.5} />

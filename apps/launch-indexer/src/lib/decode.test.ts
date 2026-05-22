@@ -21,6 +21,8 @@ const tokenAddress = "0x4444444444444444444444444444444444444444" as const;
 const userAddress = "0x5555555555555555555555555555555555555555" as const;
 const poolAddress = "0x6666666666666666666666666666666666666666" as const;
 const treasuryLpAddress = "0x7777777777777777777777777777777777777777" as const;
+const taxSplitterAddress = "0x8888888888888888888888888888888888888888" as const;
+const agentSafeAddress = "0x9999999999999999999999999999999999999999" as const;
 const blockTimestamp = new Date("2026-05-08T00:00:00.000Z");
 
 function buildLog(input: {
@@ -55,12 +57,24 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 			{ name: "vault", type: "address" },
 			{ name: "router", type: "address" },
 			{ name: "treasuryLp", type: "address" },
+			{ name: "taxSplitter", type: "address" },
+			{ name: "agentSafe", type: "address" },
 			{ name: "tier", type: "uint8" },
 			{ name: "presaleCap", type: "uint256" },
 			{ name: "v2BuyBnb", type: "uint256" },
 			{ name: "closeTimestamp", type: "uint256" },
 		],
-		[vaultAddress, routerAddress, treasuryLpAddress, 90, 50_000n, 4_000n, 1_700_000_000n],
+		[
+			vaultAddress,
+			routerAddress,
+			treasuryLpAddress,
+			taxSplitterAddress,
+			agentSafeAddress,
+			90,
+			50_000n,
+			4_000n,
+			1_700_000_000n,
+		],
 	);
 
 	const decoded = decodeLaunchLog({
@@ -79,6 +93,8 @@ test("decodeLaunchLog: LaunchCreated round-trips", () => {
 	assert.equal(decoded.data.vault.toLowerCase(), vaultAddress);
 	assert.equal(decoded.data.router.toLowerCase(), routerAddress);
 	assert.equal(decoded.data.treasuryLp.toLowerCase(), treasuryLpAddress);
+	assert.equal(decoded.data.taxSplitter.toLowerCase(), taxSplitterAddress);
+	assert.equal(decoded.data.agentSafe.toLowerCase(), agentSafeAddress);
 	assert.equal(decoded.data.tier, 90);
 	assert.equal(decoded.data.presaleCap, "50000");
 	assert.equal(decoded.data.v2BuyBnb, "4000");

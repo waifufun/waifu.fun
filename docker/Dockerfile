@@ -33,6 +33,7 @@ RUN bunx turbo run build \
 	--filter=@waifufun/api \
 	--filter=@waifufun/worker \
 	--filter=@waifufun/evm-indexer \
+	--filter=@waifufun/launch-indexer \
 	--filter=@waifufun/brain \
 	--filter=@waifufun/mcp \
 	--filter=@waifufun/agent-actions

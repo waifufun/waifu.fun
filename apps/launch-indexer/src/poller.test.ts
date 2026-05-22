@@ -236,6 +236,8 @@ const userA = "0x55555555555555555555555555555555555555aa" as const;
 const userB = "0x55555555555555555555555555555555555555bb" as const;
 const v2Pair = "0x6666666666666666666666666666666666666666" as const;
 const treasuryReserveAddress = "0x7777777777777777777777777777777777777777" as const;
+const taxSplitterAddress = "0x8888888888888888888888888888888888888888" as const;
+const agentSafeAddress = "0x9999999999999999999999999999999999999999" as const;
 const defaultPortalAddress = "0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0" as const;
 const flapFactoryAddress = "0x8888888888888888888888888888888888888888" as const;
 
@@ -255,6 +257,8 @@ function launchCreatedEvent(blockNumber: bigint): LaunchCreatedEvent {
 			vault: vaultAddress,
 			router: routerAddress,
 			treasuryLp: treasuryReserveAddress,
+			taxSplitter: taxSplitterAddress,
+			agentSafe: agentSafeAddress,
 			tier: 90,
 			presaleCap: "1000000",
 			v2BuyBnb: "40000",

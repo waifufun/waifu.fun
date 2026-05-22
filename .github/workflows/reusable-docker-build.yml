@@ -38,6 +38,8 @@ jobs:
             service_name: worker
           - service: indexer
             service_name: evm-indexer
+          - service: launch-indexer
+            service_name: launch-indexer
           - service: brain
             service_name: brain
 
