@@ -256,9 +256,8 @@ contract BundleRouter {
         address burnDestination = noBurn ? creator : DEAD;
         IERC20(token).safeTransfer(burnDestination, burnAmt);
 
-        // 7. treasury
+        // 7. treasury (destination may be TreasuryLP5 or AgentSafe)
         IERC20(token).safeTransfer(treasuryLp, treasuryAmt);
-        ITreasuryLPRegistry(treasuryLp).recordManagedToken(token);
 
         // 8. vault distribution
         uint256 vaultBalanceBefore = IERC20(token).balanceOf(vault);

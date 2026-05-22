@@ -280,7 +280,7 @@ contract LaunchFactory is ReentrancyGuard {
                         flapPortal: FLAP_PORTAL,
                         tipReceiver: TIP_RECEIVER,
                         vault: payable(address(vault)),
-                        treasuryLp: treasuryLp,
+                        treasuryLp: agentSafe, // 10% → agent treasury (Safe), not LP5
                         bundleBot: config.bundleBot,
                         predictedToken: predicted,
                         creator: config.creator,
