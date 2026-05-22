@@ -75,7 +75,7 @@ export default function Header() {
 					</Link>
 
 					{/* Nav links - hidden on mobile */}
-					<nav className="hidden lg:flex items-center gap-6">
+					<nav className="hidden min-[1400px]:flex items-center gap-6">
 						{NAV_LINKS.map((link) => (
 							<Link
 								key={link.href}
@@ -106,13 +106,13 @@ export default function Header() {
 					>
 						{t("nav.launchAgent")}
 					</Link>
-					<div className="hidden lg:flex items-center gap-2">
+					<div className="hidden min-[1400px]:flex items-center gap-2">
 						<HeaderAuth />
 					</div>
 					{/* Mobile hamburger button */}
 					<button
 						type="button"
-						className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
+						className="min-[1400px]:hidden flex flex-col justify-center items-center w-10 h-10 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[rgba(17,17,20,0.4)]"
 						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 						aria-label={t("common.toggleMenu")}
 					>
@@ -144,7 +144,7 @@ export default function Header() {
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: -10 }}
 						transition={{ duration: 0.2 }}
-						className="lg:hidden absolute top-[60px] left-0 right-0 border-b border-[rgba(255,255,255,0.06)]"
+						className="min-[1400px]:hidden absolute top-[60px] left-0 right-0 border-b border-[rgba(255,255,255,0.06)]"
 						style={{
 							background: "rgba(8, 8, 10, 0.95)",
 							backdropFilter: "blur(20px)",
