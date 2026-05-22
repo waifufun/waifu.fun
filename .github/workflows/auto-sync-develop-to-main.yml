@@ -45,6 +45,12 @@ jobs:
           compare_json=$(gh api "repos/$REPO/compare/$BASE_BRANCH...$HEAD_BRANCH")
           ahead_by=$(jq -r '.ahead_by' <<<"$compare_json")
           status=$(jq -r '.status' <<<"$compare_json")
+          files_changed=$(jq -r '(.files // []) | length' <<<"$compare_json")
+
+          if [ "$files_changed" = "0" ]; then
+            echo "No file changes between $HEAD_BRANCH and $BASE_BRANCH; skipping no-op sync."
+            exit 0
+          fi
 
           if [ "$ahead_by" = "0" ] || [ "$status" = "identical" ]; then
             echo "No commits to promote from $HEAD_BRANCH to $BASE_BRANCH."
