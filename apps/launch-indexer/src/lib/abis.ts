@@ -12,7 +12,7 @@
 import { parseAbi } from "viem";
 
 export const launchFactoryEventsAbi = parseAbi([
-	"event LaunchCreated(bytes32 indexed launchId, address indexed creator, address indexed predictedToken, address vault, address router, address treasuryLp, uint8 tier, uint256 presaleCap, uint256 v2BuyBnb, uint256 closeTimestamp)",
+	"event LaunchCreated(bytes32 indexed launchId, address indexed creator, address indexed predictedToken, address vault, address router, address treasuryLp, address taxSplitter, address agentSafe, uint8 tier, uint256 presaleCap, uint256 v2BuyBnb, uint256 closeTimestamp)",
 ]);
 
 export const launchVaultEventsAbi = parseAbi([
