@@ -386,7 +386,9 @@ describeFn("Launch-day fork :: treasury -> AgentSafe (post-#672)", function () {
 		expect(decimals).to.equal(18);
 
 		const expectedTreasury = totalSupply / 10n; // 10%
-		console.log(`    [supply] totalSupply=${ethers.formatEther(totalSupply)}, expected 10%=${ethers.formatEther(expectedTreasury)}`);
+		console.log(
+			`    [supply] totalSupply=${ethers.formatEther(totalSupply)}, expected 10%=${ethers.formatEther(expectedTreasury)}`,
+		);
 
 		const agentSafeBalance = await token.balanceOf(this.addrs.agentSafe);
 		const treasuryLp5Balance = await token.balanceOf(this.addrs.treasuryLp);
@@ -503,7 +505,7 @@ describeFn("Launch-day fork :: treasury -> AgentSafe (post-#672)", function () {
 
 		await (await gummyVault.connect(deployer).instantAdminRefund("gummy-test")).wait();
 		expect(await gummyVault.state()).to.equal(3n); // REFUND
-		console.log(`    [gummy] instantAdminRefund executed, vault state -> REFUND`);
+		console.log("    [gummy] instantAdminRefund executed, vault state -> REFUND");
 
 		// Depositor calls refund() to retrieve BNB
 		const refundTx = await gummyVault.connect(depositor2).refund();
