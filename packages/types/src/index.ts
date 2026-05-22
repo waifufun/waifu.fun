@@ -72,6 +72,17 @@ export type TokenAgentStatus = "none" | "provisioning" | "running" | "suspended"
 export type TokenAgentLifecycleState = "birth" | "live" | "dormant" | "reviving";
 export type TokenBillingMode = "owner_credits" | "waifu_treasury_subsidy" | "hybrid";
 
+export type AgentWallet = {
+	id: string;
+	address: string;
+	chain: "bsc" | "eth" | "arb" | "base" | "op" | "polygon" | "solana" | string;
+	role: "agent-safe" | "agent-hot" | "patron" | "venue-bridge" | string;
+	venue: string | null;
+	label: string;
+	ownerType: "agent" | "patron" | "platform" | string;
+	addedAt: number;
+};
+
 export interface ITokenOwnerWallets {
 	solana?: string[];
 	evm?: string[];
