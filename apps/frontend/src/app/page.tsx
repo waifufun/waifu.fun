@@ -3,7 +3,6 @@ import EmptyState from "@/components/agents-discover/empty-state";
 import ActivityStrip from "@/components/landing/activity-strip";
 import Hero from "@/components/landing/hero";
 import LiveLaunchesRail from "@/components/launches-discover/live-launches-rail";
-import TopFiveWidget from "@/components/leaderboard/top-five-widget";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
 
@@ -53,8 +52,6 @@ export default async function Home() {
 			<Hero />
 
 			<LiveLaunchesRail />
-
-			<TopFiveWidget />
 
 			<ActivityStrip />
 
