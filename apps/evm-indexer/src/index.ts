@@ -6,12 +6,14 @@ import { startTokenSnapshotCron } from "./lib/snapshots.js";
 import { startFourMemeLiveStream } from "./streams/fourmeme-events.js";
 import { startPortalLiveStream } from "./streams/portal-events.js";
 import { startStakingLiveStream } from "./streams/staking-events.js";
+import { startV2PairSwapStream } from "./streams/v2-pair-swaps.js";
 
 const runtime = createIndexerRuntime();
 let stopLiveStream: () => void = () => {};
 let stopFourMemeStream: () => void = () => {};
 let stopStakingStream: () => void = () => {};
 let stopSnapshotCron: () => void = () => {};
+let stopV2PairSwapStream: () => void = () => {};
 
 async function main(): Promise<void> {
 	const runOnce = process.env.INDEXER_RUN_ONCE === "1";
@@ -23,6 +25,9 @@ async function main(): Promise<void> {
 
 	// VeWaifuStaking stream (still relevant for WAIFU staking)
 	stopStakingStream = await startStakingLiveStream(runtime, { runOnce });
+
+	// PancakeSwap V2 pair swaps for launched agents. Discovers pairs from agent_launches.v2_pair.
+	stopV2PairSwapStream = await startV2PairSwapStream(runtime, { runOnce });
 
 	if (!runOnce) {
 		stopSnapshotCron = startTokenSnapshotCron(runtime);
@@ -54,6 +59,7 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 	stopFourMemeStream();
 	stopStakingStream();
 	stopSnapshotCron();
+	stopV2PairSwapStream();
 	await closeRedisConnection();
 	process.exit(0);
 }
