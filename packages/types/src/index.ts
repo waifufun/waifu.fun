@@ -321,4 +321,4 @@ export interface IEventsMeta {
 	isActive: boolean;
 }
 
-export type { Holding, NavSnapshot } from "./nav.js";
+export type { Holding, HoldingKind, NavSnapshot } from "./nav.js";
