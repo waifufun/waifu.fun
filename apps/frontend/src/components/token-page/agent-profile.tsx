@@ -3,7 +3,7 @@
 import { CopyButton } from "@/components/copy-button";
 import Verified from "@/components/verified";
 import { getExplorerAddressUrl } from "@/lib/explorer";
-import { resolveImageUrlOr } from "@/lib/image-url";
+import { resolveImageUrl } from "@/lib/image-url";
 import { getSocialLinkEntries } from "@/lib/url-safety";
 import { cn, fromNow, shortenAddress } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
@@ -267,7 +267,7 @@ export default function AgentProfile({
 							{/* Thin accent border - gallery style */}
 							<div className="absolute inset-0 rounded-sm ring-1 ring-white/[0.06] overflow-hidden">
 								<Image
-									src={resolveImageUrlOr(token.image, "/brand/icon/icon_on_black_512.png")}
+									src={resolveImageUrl(token.image) ?? "/brand/icon/icon_on_black_512.png"}
 									fill
 									unoptimized
 									alt={token.name}

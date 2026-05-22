@@ -31,6 +31,7 @@ import Link from "next/link";
 import { formatEther } from "viem";
 
 import { Pulse, StatPill } from "@/components/agent-home/wave-t/_primitives";
+import { resolveImageUrl } from "@/lib/image-url";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
 import {
 	deriveLaunchDisplayState,
@@ -40,7 +41,6 @@ import {
 } from "@/lib/launch-vault/launch-display-state";
 import type { LaunchTierInfo } from "@/lib/launch-vault/tiers";
 import { bscscanTokenUrl, flapTokenUrl, formatVanityAddress, pancakeSwapUrl } from "@/lib/launch-vault/vanity-address";
-import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 
 import { LaunchCountdown } from "./launch-countdown";

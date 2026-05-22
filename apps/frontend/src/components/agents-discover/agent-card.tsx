@@ -1,5 +1,5 @@
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { resolveImageUrlOr } from "@/lib/image-url";
+import { resolveImageUrl } from "@/lib/image-url";
 import { timeAgo } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
@@ -21,7 +21,7 @@ export default function AgentCard({ agent }: { agent: AgentListItem }) {
 				<div className="relative aspect-square w-full bg-black/40 border-b border-white/10 overflow-hidden">
 					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img
-						src={resolveImageUrlOr(agent.image, "/brand/icon/icon_on_black_512.png")}
+						src={resolveImageUrl(agent.image) ?? "/brand/icon/icon_on_black_512.png"}
 						alt={`${agent.name} logo`}
 						loading="lazy"
 						className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"

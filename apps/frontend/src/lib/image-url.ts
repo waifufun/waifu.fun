@@ -6,9 +6,14 @@
  * they don't resolve as relative paths against the current host.
  *
  * Mirrors the fallback logic in `apps/api/src/routes/v2/agent-launches.ts`.
+ * The api uses `ipfs.io` as the fallback gateway when a bare CID lands in
+ * the DB; the team's primary gateway is `flap.mypinata.cloud/ipfs` (see
+ * `packages/flap/src/constants.ts:FLAP_IPFS_GATEWAY_URL` +
+ * `resolveFlapIpfsUrl`). Consolidating both sides on a single shared helper
+ * is tracked for a follow-up — this matches the api's existing behavior.
  *
- * Returns `null` when no usable URL can be produced — callers should render
- * a placeholder rather than passing `null` to an `<img>` src.
+ * Returns `null` when no usable URL can be produced; callers can chain
+ * `?? fallbackPath` to substitute a static brand image at the render site.
  */
 export function resolveImageUrl(raw: string | null | undefined): string | null {
 	if (!raw) return null;
@@ -18,13 +23,4 @@ export function resolveImageUrl(raw: string | null | undefined): string | null {
 	if (s.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${s.slice("ipfs://".length)}`;
 	if (s.startsWith("bafy") || s.startsWith("Qm")) return `https://ipfs.io/ipfs/${s}`;
 	return null;
-}
-
-/**
- * Same as `resolveImageUrl` but returns a fallback path when no usable URL
- * is found. Useful at render sites that want a static brand image instead
- * of a broken `<img>`.
- */
-export function resolveImageUrlOr(raw: string | null | undefined, fallback: string): string {
-	return resolveImageUrl(raw) ?? fallback;
 }
