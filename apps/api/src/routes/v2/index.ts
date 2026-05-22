@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import adapterTemplateRoutes from "./adapter-templates.js";
 import adminAgentRoutes from "./admin-agents.js";
+import agentHoldingsRoutes from "./agent-holdings.js";
 import agentLaunchRoutes from "./agent-launches.js";
 import agentPolicyRoutes from "./agent-policies.js";
 import agentPullRoutes from "./agent-pull.js";
@@ -51,6 +52,7 @@ v2.route("/agents", agentEventsRoutes);
 v2.route("/agents", agentXRoutes);
 v2.route("/agents", agentRuntimeRoutes);
 v2.route("/agents", agentWalletRoutes);
+v2.route("/agents", agentHoldingsRoutes);
 v2.route("/agents", agentBurnRateRoutes);
 v2.route("/agents", agentRoutes);
 v2.route("/launches", launchRoutes);

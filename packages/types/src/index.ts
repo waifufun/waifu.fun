@@ -320,3 +320,5 @@ export interface IEventsMeta {
 	lastSyncTimestamp: Date;
 	isActive: boolean;
 }
+
+export type { Holding, NavSnapshot } from "./nav.js";
