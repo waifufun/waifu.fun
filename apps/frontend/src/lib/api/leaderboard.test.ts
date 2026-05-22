@@ -3,20 +3,20 @@ import { describe, expect, it } from "vitest";
 import { formatRunway } from "./leaderboard";
 
 describe("formatRunway", () => {
-	it("returns an en-dash for non-finite runway (no burn data yet)", () => {
+	it("returns 'no burn' for non-finite runway (no burn data yet)", () => {
 		// Pre-launch agents and fresh launches report dailyBurnUsd=0, which the
-		// runway calc maps to +Infinity. Math-correct but visually noisy on a
-		// leaderboard with one entry. The dash reads as "no data" instead of
-		// "this agent lives forever". Matches the en-dash placeholder used on
-		// the homepage stat cells.
-		expect(formatRunway(Number.POSITIVE_INFINITY)).toBe("–");
-		expect(formatRunway(Number.NaN)).toBe("–");
+		// runway calc maps to +Infinity. The leaderboard surfaces honest "no burn"
+		// copy in wave-t grammar rather than infinity or a bare en-dash glyph.
+		expect(formatRunway(Number.POSITIVE_INFINITY)).toBe("no burn");
+		expect(formatRunway(Number.NaN)).toBe("no burn");
 	});
 
-	it("formats whole days with locale separators", () => {
-		expect(formatRunway(1)).toBe("1 day");
-		expect(formatRunway(2)).toBe("2 days");
-		expect(formatRunway(1_234)).toBe("1,234 days");
+	it("formats whole days in compact wave-t grammar", () => {
+		expect(formatRunway(1)).toBe("1d");
+		expect(formatRunway(2)).toBe("2d");
+		expect(formatRunway(999)).toBe("999d");
+		// >= 1000 days switches to k notation to keep cell width bounded
+		expect(formatRunway(1_234)).toBe("1.2k d");
 	});
 
 	it("falls back to hours when runway is under a day", () => {
@@ -26,8 +26,8 @@ describe("formatRunway", () => {
 		expect(formatRunway(1 / 24 / 60)).toBe("1h");
 	});
 
-	it("renders 0 days for zero runway", () => {
-		expect(formatRunway(0)).toBe("0 days");
-		expect(formatRunway(-1)).toBe("0 days");
+	it("renders 0d for zero or negative runway", () => {
+		expect(formatRunway(0)).toBe("0d");
+		expect(formatRunway(-1)).toBe("0d");
 	});
 });
