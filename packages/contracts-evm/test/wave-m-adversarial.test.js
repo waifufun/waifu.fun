@@ -61,15 +61,14 @@ async function deployStack() {
 	const RouterDeployerCF = await ethers.getContractFactory("RouterDeployer");
 	const routerDeployer = await RouterDeployerCF.deploy();
 
-	const TreasuryDeployerCF = await ethers.getContractFactory("TreasuryLP4Deployer");
-	const treasuryLp4Deployer = await TreasuryDeployerCF.deploy();
+	// Wave O.1: TreasuryLP5Deployer (no Chainlink feed)
+	const TreasuryDeployerCF = await ethers.getContractFactory("TreasuryLP5Deployer");
+	const treasuryLp5Deployer = await TreasuryDeployerCF.deploy();
 
 	const V3FactoryCF = await ethers.getContractFactory("MockV3Factory");
 	const mockV3Factory = await V3FactoryCF.deploy();
 	const NPMCF = await ethers.getContractFactory("MockNonfungiblePositionManager");
 	const mockNpm = await NPMCF.deploy(wbnb);
-	const FeedCF = await ethers.getContractFactory("MockBnbUsdFeed");
-	const mockFeed = await FeedCF.deploy(600n * 100000000n);
 
 	const SafeSingletonCF = await ethers.getContractFactory("MockSafeSingleton");
 	const safeSingleton = await SafeSingletonCF.deploy();
@@ -95,10 +94,9 @@ async function deployStack() {
 		platformReceiver,
 		await routerDeployer.getAddress(),
 		await agentSafeDeployer.getAddress(),
-		await treasuryLp4Deployer.getAddress(),
+		await treasuryLp5Deployer.getAddress(),
 		await mockNpm.getAddress(),
 		await mockV3Factory.getAddress(),
-		await mockFeed.getAddress(),
 	);
 
 	return {

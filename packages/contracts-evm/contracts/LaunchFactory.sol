@@ -18,14 +18,14 @@ pragma solidity ^0.8.24;
 
 import {LaunchVault} from "./LaunchVault.sol";
 import {BundleRouter} from "./BundleRouter.sol";
-import {TreasuryLP4} from "./TreasuryLP4.sol";
+import {TreasuryLP5} from "./TreasuryLP5.sol";
 import {IVaultRouterSetter} from "./interfaces/IVaultRouterSetter.sol";
 import {TierMath} from "./TierMath.sol";
 import {LaunchTier} from "./LaunchTier.sol";
 import {RouterDeployer} from "./RouterDeployer.sol";
 import {TaxSplitter} from "./TaxSplitter.sol";
 import {AgentSafeDeployer} from "./AgentSafeDeployer.sol";
-import {TreasuryLP4Deployer} from "./TreasuryLP4Deployer.sol";
+import {TreasuryLP5Deployer} from "./TreasuryLP5Deployer.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IPCSV2Factory {
@@ -98,10 +98,9 @@ contract LaunchFactory is ReentrancyGuard {
     address public immutable TIP_RECEIVER;
     RouterDeployer public immutable ROUTER_DEPLOYER;
     AgentSafeDeployer public immutable AGENT_SAFE_DEPLOYER;
-    TreasuryLP4Deployer public immutable TREASURY_LP4_DEPLOYER;
+    TreasuryLP5Deployer public immutable TREASURY_LP5_DEPLOYER;
     address public immutable PCS_V3_NPM;
     address public immutable PCS_V3_FACTORY;
-    address public immutable BNB_USD_FEED;
 
     // ---------------------------------------------------------------------
     // storage
@@ -176,22 +175,21 @@ contract LaunchFactory is ReentrancyGuard {
         address _platformCommissionReceiver,
         address _routerDeployer,
         address _agentSafeDeployer,
-        address _treasuryLp4Deployer,
+        address _treasuryLp5Deployer,
         address _pcsV3Npm,
-        address _pcsV3Factory,
-        address _bnbUsdFeed
+        address _pcsV3Factory
     ) {
         if (
             _wbnb == address(0) || _pcsFactory == address(0) || _pcsRouter == address(0)
                 || _flapPortal == address(0) || _tokenImplTaxedV3 == address(0)
                 || _tipReceiver == address(0) || _platformCommissionReceiver == address(0)
                 || _routerDeployer == address(0) || _agentSafeDeployer == address(0)
-                || _treasuryLp4Deployer == address(0) || _pcsV3Npm == address(0)
-                || _pcsV3Factory == address(0) || _bnbUsdFeed == address(0)
+                || _treasuryLp5Deployer == address(0) || _pcsV3Npm == address(0)
+                || _pcsV3Factory == address(0)
         ) revert ZeroAddress();
         ROUTER_DEPLOYER = RouterDeployer(_routerDeployer);
         AGENT_SAFE_DEPLOYER = AgentSafeDeployer(_agentSafeDeployer);
-        TREASURY_LP4_DEPLOYER = TreasuryLP4Deployer(_treasuryLp4Deployer);
+        TREASURY_LP5_DEPLOYER = TreasuryLP5Deployer(_treasuryLp5Deployer);
 
         WBNB = _wbnb;
         PCS_FACTORY = _pcsFactory;
@@ -203,7 +201,6 @@ contract LaunchFactory is ReentrancyGuard {
         platformCommissionReceiver = _platformCommissionReceiver;
         PCS_V3_NPM = _pcsV3Npm;
         PCS_V3_FACTORY = _pcsV3Factory;
-        BNB_USD_FEED = _bnbUsdFeed;
 
         owner = msg.sender;
         emit OwnershipTransferred(address(0), msg.sender);
@@ -218,10 +215,10 @@ contract LaunchFactory is ReentrancyGuard {
     ///      replacing the env-default platform wallet so per-launch revenue flows split
     ///      platform / patron / agent on every distribute.
     ///
-    ///      Wave N: TreasuryLP4 is deployed with the V3 NPM wired in but the FLAP
+    ///      Wave N: TreasuryLP5 is deployed with the V3 NPM wired in but the FLAP
     ///      V2 pair address is unknown at createLaunch time (graduates post-bundle).
     ///      finalizeLaunch(token) is callable by anyone once the V2 pair exists,
-    ///      idempotent, and wires the pair + transfers TreasuryLP4 ownership to
+    ///      idempotent, and wires the pair + transfers TreasuryLP5 ownership to
     ///      the agent Safe.
     function createLaunch(LaunchConfig calldata config) external nonReentrant returns (LaunchAddresses memory addrs) {
         _validateConfig(config);
@@ -266,8 +263,8 @@ contract LaunchFactory is ReentrancyGuard {
         TaxSplitter taxSplitter =
             new TaxSplitter(config.platformReceiver, config.patron, agentSafe, config.platformBps, config.patronBps);
 
-        // deploy TreasuryLP4 via deployer (creation bytecode lives off-factory to fit EIP-170)
-        address treasuryLp = TREASURY_LP4_DEPLOYER.deploy(
+        // deploy TreasuryLP5 via deployer (creation bytecode lives off-factory to fit EIP-170)
+        address treasuryLp = TREASURY_LP5_DEPLOYER.deploy(
             _buildTreasuryArgs(config, predicted, agentSafe)
         );
 
@@ -334,7 +331,7 @@ contract LaunchFactory is ReentrancyGuard {
     // external: finalizeLaunch (anyone, idempotent, post-graduation)
     // ---------------------------------------------------------------------
 
-    /// @notice Wire the post-graduation FLAP V2 pair into the TreasuryLP4 and
+    /// @notice Wire the post-graduation FLAP V2 pair into the TreasuryLP5 and
     ///         transfer ownership to the agent Safe. Callable by anyone once
     ///         the V2 pair exists on PCS_FACTORY; idempotent (reverts on a
     ///         second call). Cannot be griefed because it requires the V2
@@ -348,7 +345,9 @@ contract LaunchFactory is ReentrancyGuard {
         if (pair == address(0)) revert PairNotReady();
 
         finalized[predictedToken] = true;
-        TreasuryLP4 treasury = TreasuryLP4(payable(addrs.treasuryLp));
+        TreasuryLP5 treasury = TreasuryLP5(payable(addrs.treasuryLp));
+        // LP5's setFlapV2Pair also initializes the V3 pool and mints all 4
+        // tier positions single-sided in the same tx (tick-gated, no MC).
         treasury.setFlapV2Pair(pair);
         treasury.transferOwnership(addrs.agentSafe);
 
@@ -364,39 +363,6 @@ contract LaunchFactory is ReentrancyGuard {
         return TierMath.tierBudget(uint8(tier), buyTaxBps);
     }
 
-    /// @notice Per-launch-tier MC ladder (USD, no decimals), per Shadow's
-    ///         locked Wave N spec. Multiplied by 1e8 (Chainlink BNB/USD
-    ///         decimals) inside _buildTiers to feed TreasuryLP4.
-    function tierMcTargets(LaunchTier tier) public pure returns (uint256[4] memory mc) {
-        if (tier == LaunchTier.TIER_80) {
-            mc[0] = 250_000;
-            mc[1] = 1_000_000;
-            mc[2] = 5_000_000;
-            mc[3] = 25_000_000;
-        } else if (tier == LaunchTier.TIER_90) {
-            mc[0] = 1_000_000;
-            mc[1] = 5_000_000;
-            mc[2] = 10_000_000;
-            mc[3] = 25_000_000;
-        } else if (tier == LaunchTier.TIER_95) {
-            mc[0] = 5_000_000;
-            mc[1] = 10_000_000;
-            mc[2] = 25_000_000;
-            mc[3] = 100_000_000;
-        } else if (tier == LaunchTier.TIER_98) {
-            mc[0] = 10_000_000;
-            mc[1] = 25_000_000;
-            mc[2] = 100_000_000;
-            mc[3] = 1_000_000_000;
-        } else {
-            // TIER_TEST: tiny ladder for smoke tests
-            mc[0] = 1;
-            mc[1] = 2;
-            mc[2] = 3;
-            mc[3] = 4;
-        }
-    }
-
     function launchCount() external view returns (uint256) {
         return allLaunches.length;
     }
@@ -410,7 +376,7 @@ contract LaunchFactory is ReentrancyGuard {
     ///         the legacy `commissionReceiver` field so the bundle bot must pass
     ///         splitter address in BundleExecParams.commissionReceiver. Tick
     ///         arrays do NOT need to be in the hash because they are baked into
-    ///         the TreasuryLP4 constructor (immutable Tier[4] storage) and the
+    ///         the TreasuryLP5 constructor (immutable Tier[4] storage) and the
     ///         bundle bot cannot alter them post-deploy.
     function launchParamsHash(LaunchConfig calldata config, address taxSplitter)
         public
@@ -458,14 +424,15 @@ contract LaunchFactory is ReentrancyGuard {
             revert InvalidAgentSafeConfig();
         }
 
-        // --- wave N treasury tick range validation ---
-        // TreasuryLP4 re-checks spacing + ordering on its side but we fail fast
+        // --- wave O treasury tick range validation ---
+        // TreasuryLP5 re-checks spacing + ordering on its side but we fail fast
         // here with a clearer error for the wizard / bundle bot.
         for (uint8 i = 0; i < 4; i++) {
             int24 lo = config.treasuryTickLowers[i];
             int24 hi = config.treasuryTickUppers[i];
             if (lo >= hi) revert InvalidTickRange();
             if (hi > MAX_TICK_PCS_V3_1PCT) revert InvalidTickRange();
+            if (lo < -MAX_TICK_PCS_V3_1PCT) revert InvalidTickRange();
         }
     }
 
@@ -492,10 +459,10 @@ contract LaunchFactory is ReentrancyGuard {
     function _buildTreasuryArgs(LaunchConfig calldata config, address predicted, address agentSafe)
         internal
         view
-        returns (TreasuryLP4.ConstructorArgs memory args)
+        returns (TreasuryLP5.ConstructorArgs memory args)
     {
-        TreasuryLP4.Tier[4] memory ts = _buildTiers(config);
-        args = TreasuryLP4.ConstructorArgs({
+        TreasuryLP5.Tier[4] memory ts = _buildTiers(config);
+        args = TreasuryLP5.ConstructorArgs({
             token: predicted,
             flapV2Router: PCS_ROUTER,
             wbnb: WBNB,
@@ -504,7 +471,6 @@ contract LaunchFactory is ReentrancyGuard {
             agentSafe: agentSafe,
             platformReceiver: config.platformReceiver,
             patronReceiver: config.patron,
-            bnbUsdFeed: BNB_USD_FEED,
             buybackBps: TREASURY_BUYBACK_BPS,
             platformBps: TREASURY_PLATFORM_BPS,
             patronBps: TREASURY_PATRON_BPS,
@@ -513,17 +479,16 @@ contract LaunchFactory is ReentrancyGuard {
         });
     }
 
-    function _buildTiers(LaunchConfig calldata config) internal pure returns (TreasuryLP4.Tier[4] memory ts) {
-        uint256[4] memory mc = tierMcTargets(config.tier);
+    /// @notice Build the 4 tier ranges from the LaunchConfig's tick arrays.
+    ///         The caller (launch wizard / bundle bot) computes ticks from
+    ///         MC targets off-chain and passes them in. The contract only
+    ///         ever sees ticks, never MC.
+    function _buildTiers(LaunchConfig calldata config) internal pure returns (TreasuryLP5.Tier[4] memory ts) {
         for (uint8 i = 0; i < 4; i++) {
-            ts[i] = TreasuryLP4.Tier({
-                targetMcUSD: mc[i] * 1e8, // chainlink BNB/USD has 8 decimals
-                tokenAmount: 25_000_000 ether, // 25M per tier × 4 = 100M total
+            ts[i] = TreasuryLP5.Tier({
+                tokenAmount: 25_000_000 ether, // 25M per tier x 4 = 100M total
                 tickLower: config.treasuryTickLowers[i],
                 tickUpper: config.treasuryTickUppers[i],
-                minEpochs: i < 2 ? 2 : 3,
-                epochsAbove: 0,
-                lastEpochTimestamp: 0,
                 deployed: false,
                 paused: false,
                 positionId: 0

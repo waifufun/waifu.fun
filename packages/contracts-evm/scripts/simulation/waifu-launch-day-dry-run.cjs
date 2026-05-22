@@ -1,11 +1,11 @@
-// SUKI Launch Day end-to-end dry-run on a BSC mainnet fork.
+// WAIFU Launch Day end-to-end dry-run on a BSC mainnet fork.
 //
 // Purpose: this is the FINAL go/no-go gate before real BNB hits the line.
-// It replays the entire production flow for the first waifu.fun launch:
+// It replays the entire production flow for the first waifu.fun launch (WAIFU re-rehearsal 2026-05-21):
 //
 //   1. Deploy the Wave N / O.0 factory + helpers (as deploy-wave-n.js would)
 //   2. Spin up a real Gnosis Safe to act as the Platform Safe
-//   3. createLaunch with the locked SUKI config (TIER_95, 3% / 3% tax, etc)
+//   3. createLaunch with the locked WAIFU config (TIER_95, 3% / 3% tax, etc)
 //   4. Multiple depositor EOAs fill the 64 BNB vault to the exact cap
 //   5. Bundle bot closes the vault and runs executeBundle
 //   6. finalizeLaunch deploys TreasuryLP5 and seeds the V3 pool
@@ -15,7 +15,7 @@
 //
 // Every step is checked on chain (real PCS V2 + V3 + WBNB + Safe contracts
 // from the forked mainnet block), and the final report is written to
-//   /home/shad0w/.moltbot/projects/waifu/launch-day-2026-05-19/LAUNCH_FLOW_DRY_RUN_REPORT.md
+//   /home/shad0w/.moltbot/projects/waifu/launch-day-waifu/LAUNCH_FLOW_DRY_RUN_REPORT.md
 //
 // Run:
 //   cd packages/contracts-evm
@@ -43,13 +43,13 @@ const BSC = {
 	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
 };
 
-const REPORT = "/home/shad0w/.moltbot/projects/waifu/launch-day-2026-05-19/LAUNCH_FLOW_DRY_RUN_REPORT.md";
+const REPORT = "/home/shad0w/.moltbot/projects/waifu/launch-day-waifu/LAUNCH_FLOW_DRY_RUN_REPORT.md";
 
-// SUKI production config (locked by Shadow, 2026-05-19)
-const SUKI = {
-	name: "SUKI",
-	symbol: "SUKI",
-	metaCid: "QmSukiLaunchPlaceholderCidReplaceBeforeMainnet",
+// WAIFU production config (locked by Shadow, 2026-05-19)
+const WAIFU = {
+	name: "Waifu",
+	symbol: "WAIFU",
+	metaCid: "QmWaifuLaunchPlaceholderCidReplaceBeforeMainnet",
 	tier: 2, // TIER_95 (WAGMI)
 	buyTaxBps: 300, //  3%
 	sellTaxBps: 300, //  3%
@@ -76,8 +76,8 @@ const { computeTreasuryTicksFromMc, WAGMI_MC_TARGETS_USD } = require("../lib/mc-
 // Derive treasury ticks from the WAGMI MC ladder using the canonical
 // off-chain helper. Computed once at module load; the values flow into
 // the createLaunch config below.
-const { lowers: SUKI_TREASURY_TICK_LOWERS, uppers: SUKI_TREASURY_TICK_UPPERS } =
-	computeTreasuryTicksFromMc(0, SUKI.estimatedLaunchFdvUsd, SUKI.mcCheckpoints || WAGMI_MC_TARGETS_USD);
+const { lowers: WAIFU_TREASURY_TICK_LOWERS, uppers: WAIFU_TREASURY_TICK_UPPERS } =
+	computeTreasuryTicksFromMc(0, WAIFU.estimatedLaunchFdvUsd, WAIFU.mcCheckpoints || WAGMI_MC_TARGETS_USD);
 
 // =====================================================================
 // Logging + reporting
@@ -115,7 +115,7 @@ function investigate(step, detail) {
 }
 function flushReport(extraTrailer = "") {
 	const head = [
-		"# SUKI Launch Day End-to-End Dry-Run Report",
+		"# WAIFU Launch Day End-to-End Dry-Run Report",
 		`Generated: ${new Date().toISOString()}`,
 		"Branch: chore/suki-launch-day-dry-run-2026-05-19 (off develop)",
 		"Script: packages/contracts-evm/scripts/simulation/suki-launch-day-dry-run.cjs",
@@ -158,11 +158,11 @@ function computeFinalVerdict() {
 	const investigates = stepResults.filter((r) => r.status === "INVESTIGATE").length;
 	if (fails > 0) return `BLOCKER: ${fails} step(s) failed. Do NOT launch until these are resolved.`;
 	if (investigates > 0) return `NEEDS-FIX: ${investigates} step(s) need investigation. Triage before launch.`;
-	return "SUKI-LAUNCH-READY: all steps passed against real BSC mainnet fork.";
+	return "WAIFU-LAUNCH-READY: all steps passed against real BSC mainnet fork.";
 }
 
 const bnb = (w) => `${ethers.formatEther(w || 0n)} BNB`;
-const tok = (w) => `${ethers.formatUnits(w || 0n, 18)} SUKI`;
+const tok = (w) => `${ethers.formatUnits(w || 0n, 18)} WAIFU`;
 const pct = (n, d) => (d === 0n ? "0" : (Number((n * 10000n) / d) / 100).toFixed(2));
 
 // =====================================================================
@@ -268,7 +268,7 @@ async function pairSnapshotMc(pair, token, wbnb) {
 async function main() {
 	const blockNumber = await ethers.provider.getBlockNumber();
 	const net = await ethers.provider.getNetwork();
-	log("# SUKI Launch Day end-to-end dry-run");
+	log("# WAIFU Launch Day end-to-end dry-run");
 	log(`Generated: ${new Date().toISOString()}`);
 	log(`Fork block: ${blockNumber} (BSC mainnet, chain ${net.chainId})`);
 	realNumbers.forkBlock = blockNumber;
@@ -427,7 +427,7 @@ async function main() {
 	let quoteAmt;
 	let v2BuyBnb;
 	try {
-		const [pCap, qAmt, v2Buy, vesting] = await factory.tierBudget(SUKI.tier, SUKI.buyTaxBps);
+		const [pCap, qAmt, v2Buy, vesting] = await factory.tierBudget(WAIFU.tier, WAIFU.buyTaxBps);
 		presaleCap = pCap;
 		quoteAmt = qAmt;
 		v2BuyBnb = v2Buy;
@@ -457,14 +457,14 @@ async function main() {
 	// -----------------------------------------------------------------
 	// STEP 4: Mine vanity salt with ...7777 suffix
 	// -----------------------------------------------------------------
-	banner(4, "Mine vanity salt for SUKI (suffix 7777, token0 < WBNB)");
+	banner(4, "Mine vanity salt for WAIFU (suffix 7777, token0 < WBNB)");
 	let mined;
 	try {
 		const codeHash = initCodeHash(BSC.TOKEN_IMPL_TAXED_V3);
 		const t0 = Date.now();
 		mined = mineVanity(BSC.FLAP_PORTAL, codeHash, creator.address, "suki-launch-day-2026-05-19");
 		const elapsedMs = Date.now() - t0;
-		kv("Predicted SUKI token", mined.predicted);
+		kv("Predicted WAIFU token", mined.predicted);
 		kv("Iterations", mined.iterations.toString());
 		kv("Elapsed ms", elapsedMs.toString());
 		realNumbers.sukiPredictedTokenAddress = mined.predicted;
@@ -479,35 +479,35 @@ async function main() {
 	}
 
 	// -----------------------------------------------------------------
-	// STEP 5: createLaunch with the exact SUKI production config
+	// STEP 5: createLaunch with the exact WAIFU production config
 	// -----------------------------------------------------------------
-	banner(5, "createLaunch SUKI on TIER_95");
+	banner(5, "createLaunch WAIFU on TIER_95");
 	let launches;
 	try {
 		const closeTimestamp = (await ethers.provider.getBlock("latest")).timestamp + 3600;
 		const config = {
-			name: SUKI.name,
-			symbol: SUKI.symbol,
-			metaCid: SUKI.metaCid,
+			name: WAIFU.name,
+			symbol: WAIFU.symbol,
+			metaCid: WAIFU.metaCid,
 			creator: creator.address,
 			bundleBot: bundleBot.address,
-			tier: SUKI.tier,
-			buyTaxBps: SUKI.buyTaxBps,
-			sellTaxBps: SUKI.sellTaxBps,
-			taxDuration: SUKI.taxDuration,
-			antiFarmerDuration: SUKI.antiFarmerDuration,
+			tier: WAIFU.tier,
+			buyTaxBps: WAIFU.buyTaxBps,
+			sellTaxBps: WAIFU.sellTaxBps,
+			taxDuration: WAIFU.taxDuration,
+			antiFarmerDuration: WAIFU.antiFarmerDuration,
 			closeTimestamp,
 			vanitySalt: mined.rawSalt,
 			predictedTokenAddress: mined.predicted,
-			noBurn: SUKI.noBurn,
+			noBurn: WAIFU.noBurn,
 			platformReceiver: platformSafeAddress,
 			patron: creator.address,
 			agentSafeOwners: [creator.address],
 			agentSafeThreshold: 1,
-			platformBps: SUKI.platformBps,
-			patronBps: SUKI.patronBps,
-			treasuryTickLowers: SUKI_TREASURY_TICK_LOWERS,
-			treasuryTickUppers: SUKI_TREASURY_TICK_UPPERS,
+			platformBps: WAIFU.platformBps,
+			patronBps: WAIFU.patronBps,
+			treasuryTickLowers: WAIFU_TREASURY_TICK_LOWERS,
+			treasuryTickUppers: WAIFU_TREASURY_TICK_UPPERS,
 		};
 		const tx = await factory.connect(creator).createLaunch(config);
 		const receipt = await tx.wait();
@@ -620,13 +620,13 @@ async function main() {
 			.connect(bundleBot)
 			.executeBundle([
 				mined.rawSalt,
-				SUKI.name,
-				SUKI.symbol,
-				SUKI.metaCid,
-				SUKI.buyTaxBps,
-				SUKI.sellTaxBps,
-				SUKI.taxDuration,
-				SUKI.antiFarmerDuration,
+				WAIFU.name,
+				WAIFU.symbol,
+				WAIFU.metaCid,
+				WAIFU.buyTaxBps,
+				WAIFU.sellTaxBps,
+				WAIFU.taxDuration,
+				WAIFU.antiFarmerDuration,
 				launches.taxSplitter,
 				0n,
 				closeTs + 3600,
@@ -637,9 +637,9 @@ async function main() {
 		// Token should now have bytecode at the predicted address.
 		const code = await ethers.provider.getCode(mined.predicted);
 		if (code === "0x") throw new Error(`token ${mined.predicted} not deployed after executeBundle`);
-		kv("SUKI token bytecode length", `${(code.length - 2) / 2} bytes`);
+		kv("WAIFU token bytecode length", `${(code.length - 2) / 2} bytes`);
 		endBanner();
-		pass(7, `executeBundle ok, SUKI token live at ${mined.predicted}`);
+		pass(7, `executeBundle ok, WAIFU token live at ${mined.predicted}`);
 	} catch (e) {
 		endBanner();
 		fail(7, `executeBundle failed: ${e.shortMessage || e.message}`);
@@ -688,7 +688,7 @@ async function main() {
 		realNumbers.v2PairAddress = pair;
 		const snap = await pairSnapshotMc(pair, token, wbnb);
 		kv("V2 pair WBNB", bnb(snap.pairWbnb));
-		kv("V2 pair SUKI", tok(snap.pairTokens));
+		kv("V2 pair WAIFU", tok(snap.pairTokens));
 		kv("V2 pair MC USD", `$${snap.mcUsd.toFixed(0)}`);
 		realNumbers.v2InitialMcUsd = `$${snap.mcUsd.toFixed(0)}`;
 		realNumbers.v2InitialWbnb = ethers.formatEther(snap.pairWbnb);
@@ -869,7 +869,7 @@ async function main() {
 			],
 			ethers.provider,
 		);
-		// Trader t1 wraps + approves + buys SUKI through V3 (1% fee tier).
+		// Trader t1 wraps + approves + buys WAIFU through V3 (1% fee tier).
 		await (await wbnb.connect(t1).deposit({ value: ethers.parseEther("60") })).wait();
 		await (await wbnb.connect(t1).approve(BSC.PCS_V3_SWAP_ROUTER, ethers.MaxUint256)).wait();
 		await (
@@ -1001,7 +1001,7 @@ async function main() {
 		// Pick a trader who holds tokens.
 		const seller = t1;
 		const sellerBalance = await token.balanceOf(seller.address);
-		if (sellerBalance === 0n) throw new Error("seller has no SUKI tokens");
+		if (sellerBalance === 0n) throw new Error("seller has no WAIFU tokens");
 		const sellAmt = sellerBalance / 2n;
 		await (await token.connect(seller).approve(BSC.PCS_ROUTER, sellAmt)).wait();
 		const sellerBnbBefore = await ethers.provider.getBalance(seller.address);

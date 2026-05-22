@@ -163,13 +163,12 @@ async function deployFactory(platformReceiver) {
 	const agentSafeDeployer = await AgentSafeDeployerCF.deploy(SAFE_SINGLETON, SAFE_PROXY_FACTORY);
 	await agentSafeDeployer.waitForDeployment();
 
-	// Wave N1: TreasuryLP4Deployer + PCS V3 NPM + Chainlink BNB/USD feed
-	const TreasuryLp4DeployerCF = await ethers.getContractFactory("TreasuryLP4Deployer");
-	const treasuryLp4Deployer = await TreasuryLp4DeployerCF.deploy();
-	await treasuryLp4Deployer.waitForDeployment();
+	// Wave O.1: TreasuryLP5Deployer + PCS V3 NPM (no Chainlink feed)
+	const TreasuryLp5DeployerCF = await ethers.getContractFactory("TreasuryLP5Deployer");
+	const treasuryLp5Deployer = await TreasuryLp5DeployerCF.deploy();
+	await treasuryLp5Deployer.waitForDeployment();
 	const PCS_V3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
 	const PCS_V3_FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865";
-	const BNB_USD_FEED = "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE";
 
 	const Factory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await Factory.deploy(
@@ -183,13 +182,12 @@ async function deployFactory(platformReceiver) {
 		platformReceiver,
 		await routerDeployer.getAddress(),
 		await agentSafeDeployer.getAddress(),
-		await treasuryLp4Deployer.getAddress(),
+		await treasuryLp5Deployer.getAddress(),
 		PCS_V3_NPM,
 		PCS_V3_FACTORY,
-		BNB_USD_FEED,
 	);
 	await factory.waitForDeployment();
-	return { factory, routerDeployer, agentSafeDeployer, treasuryLp4Deployer };
+	return { factory, routerDeployer, agentSafeDeployer, treasuryLp5Deployer };
 }
 
 function buildConfig(args) {
