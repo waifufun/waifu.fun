@@ -59,6 +59,7 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 	const name = getLaunchName(launch);
 	const symbol = getLaunchSymbol(launch);
 	const image = getLaunchImage(launch);
+	const altText = `${name} logo`;
 
 	const deposited = safeBigInt(launch.totalDeposited);
 	const cap = safeBigInt(launch.capacity);
@@ -71,7 +72,7 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 		<SurfaceCard variant="interactive" padding="none" asChild className="relative overflow-hidden">
 			<Link href={`/launch/${encodeURIComponent(launch.id)}`}>
 				<div className={cn("flex items-start gap-3", compact ? "p-3" : "p-4")}>
-					<LaunchAvatar image={image} compact={compact} />
+					<LaunchAvatar image={image} alt={altText} compact={compact} />
 
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
@@ -106,8 +107,10 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 					</div>
 				</div>
 
-				{/* progress + countdown bar */}
-				{launch.state === "open" ? (
+				{/* progress + countdown bar — only when the curve is still live AND
+				    capacity is known. A 0% progress bar on a closed/launched card
+				    misleads users into thinking nothing was raised. */}
+				{launch.state === "open" && cap > 0n ? (
 					<div className={cn("mt-auto px-4 pb-3 pt-1", compact && "px-3 pb-2.5")}>
 						<div className="flex items-baseline justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-white/45 mb-1.5">
 							<span className="tabular-nums">{pct.toFixed(1)}% raised</span>
@@ -139,14 +142,14 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 	);
 }
 
-function LaunchAvatar({ image, compact }: { image: string | null; compact: boolean }) {
+function LaunchAvatar({ image, alt, compact }: { image: string | null; alt: string; compact: boolean }) {
 	const size = compact ? "w-10 h-10" : "w-12 h-12";
 	if (image) {
 		return (
 			// eslint-disable-next-line @next/next/no-img-element
 			<img
 				src={image}
-				alt=""
+				alt={alt}
 				className={cn(size, "shrink-0 rounded-sm border border-white/10 object-cover bg-black/40")}
 			/>
 		);

@@ -1,6 +1,7 @@
 "use client";
 
 import { type LeaderboardEntry, formatRunway, formatUsdExact } from "@/lib/api/leaderboard";
+import { resolveImageUrl } from "@/lib/image-url";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,10 +17,18 @@ function hrefFor(entry: LeaderboardEntry): string {
 }
 
 function AgentAvatar({ entry }: { entry: LeaderboardEntry }) {
+	const avatarUrl = resolveImageUrl(entry.avatar);
 	return (
 		<span className="w-6 h-6 rounded-sm overflow-hidden bg-[#141414] shrink-0 border border-white/10 block">
-			{entry.avatar ? (
-				<Image src={entry.avatar} alt="" width={24} height={24} className="object-cover w-full h-full" unoptimized />
+			{avatarUrl ? (
+				<Image
+					src={avatarUrl}
+					alt={`${entry.ticker ?? "agent"} avatar`}
+					width={24}
+					height={24}
+					className="object-cover w-full h-full"
+					unoptimized
+				/>
 			) : (
 				<span className="w-full h-full flex items-center justify-center text-[10px] text-neutral-500">
 					{entry.ticker?.[0] ?? "?"}

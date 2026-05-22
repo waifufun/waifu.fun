@@ -24,6 +24,7 @@ import { CheckCircle2Icon } from "lucide-react";
 import { useId, useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
+import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 
 import { Label, StatPill } from "./_primitives";
@@ -107,7 +108,7 @@ function HeroCell({ children, className }: { children: React.ReactNode; classNam
 // ── Identity ────────────────────────────────────────────────────
 
 function IdentityBlock({ identity, version }: { identity: HeroIdentity; version: string }) {
-	const portrait = identity.image && identity.image.length > 0 ? identity.image : FALLBACK_PORTRAIT;
+	const portrait = resolveImageUrl(identity.image) ?? FALLBACK_PORTRAIT;
 	const displayName = identity.name || "unknown";
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
 	const description = identity.description;
