@@ -1,15 +1,17 @@
 /**
- * deploy-wave-n.js - deploy LaunchFactory for Wave N (TreasuryLP4 + PCS V3 NPM).
+ * deploy-wave-n.js - deploy LaunchFactory for Wave O.1 (TreasuryLP5 + PCS V3 NPM).
  *
- * Wave N adds three new factory immutables on top of the Wave H / M3 args:
- *   - PCS_V3_NPM        : real PancakeSwap V3 NonfungiblePositionManager
- *   - PCS_V3_FACTORY    : real PancakeSwap V3 Factory
- *   - BNB_USD_FEED      : Chainlink BNB/USD aggregator (8 decimals)
+ * NOTE: file is still named `deploy-wave-n.js` for tooling continuity, but the
+ * factory it deploys now wires TreasuryLP5 (V3-tick-gated, no Chainlink/MC
+ * ladder) instead of the legacy TreasuryLP4. The Wave N → Wave O.1 swap
+ * dropped two things from the constructor:
+ *   - BNB_USD_FEED (Chainlink BNB/USD aggregator)
+ *   - TreasuryLP4Deployer (replaced by TreasuryLP5Deployer)
  *
- * Also deploys the new TreasuryLP4Deployer helper, which factors TreasuryLP4
- * creation bytecode out of LaunchFactory to keep it under EIP-170.
+ * LaunchFactory ctor is now 13 args (down from 14). PCS V3 NPM / PCS V3 Factory
+ * remain.
  *
- * Per-launch contracts (LaunchVault, BundleRouter, TreasuryLP4, TaxSplitter,
+ * Per-launch contracts (LaunchVault, BundleRouter, TreasuryLP5, TaxSplitter,
  * AgentSafe) are created by the factory inside createLaunch() at launch time,
  * not here.
  *
@@ -29,7 +31,7 @@
  * Optional env (override the BSC mainnet address book):
  *   WBNB, PCS_FACTORY, PCS_ROUTER, FLAP_PORTAL, TOKEN_IMPL_TAXED_V3,
  *   TIP_RECEIVER, SAFE_SINGLETON, SAFE_PROXY_FACTORY,
- *   PCS_V3_NPM, PCS_V3_FACTORY, BNB_USD_FEED
+ *   PCS_V3_NPM, PCS_V3_FACTORY
  *
  * Output:
  *   deployments/{network}-wave-n.json - full deployment record incl. factory
@@ -41,7 +43,8 @@ const path = require("node:path");
 const { ethers, network } = require("hardhat");
 
 // ---------------------------------------------------------------------
-// BSC mainnet address book (verified PCS V3 + Chainlink BNB/USD)
+// BSC mainnet address book (verified PCS V3)
+// BNB_USD_FEED dropped (Wave O.1 / TreasuryLP5 doesn't use Chainlink)
 // ---------------------------------------------------------------------
 const BSC_MAINNET = {
 	WBNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
@@ -52,10 +55,9 @@ const BSC_MAINNET = {
 	TIP_RECEIVER: "0x4848489f0b2BEdd788c696e2D79b6b69D7484848",
 	SAFE_SINGLETON: "0x29fcB43b46531BcA003ddC8FCB67FFE91900C762",
 	SAFE_PROXY_FACTORY: "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
-	// Wave N additions
+	// Wave N additions (PCS V3 only, no Chainlink)
 	PCS_V3_NPM: "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364",
 	PCS_V3_FACTORY: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
-	BNB_USD_FEED: "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
 };
 
 const BSC_TESTNET = {
@@ -70,7 +72,6 @@ const BSC_TESTNET = {
 	// PCS V3 testnet addresses (verified against pancakeswap docs)
 	PCS_V3_NPM: "0x427bF5b37357632377eCbEC9de3626C71A5396c1",
 	PCS_V3_FACTORY: "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865",
-	BNB_USD_FEED: "0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526",
 };
 
 function deriveFlapInitCodeHash(impl) {
@@ -100,7 +101,6 @@ function resolveAddressBook(networkName) {
 		SAFE_PROXY_FACTORY: process.env.SAFE_PROXY_FACTORY || def.SAFE_PROXY_FACTORY,
 		PCS_V3_NPM: process.env.PCS_V3_NPM || def.PCS_V3_NPM,
 		PCS_V3_FACTORY: process.env.PCS_V3_FACTORY || def.PCS_V3_FACTORY,
-		BNB_USD_FEED: process.env.BNB_USD_FEED || def.BNB_USD_FEED,
 	};
 	const missing = Object.entries(book)
 		.filter(([, v]) => !v || v === ethers.ZeroAddress)
@@ -141,7 +141,7 @@ async function main() {
 	const balance = await ethers.provider.getBalance(deployer.address);
 	const factoryOwner = await resolveFactoryOwner(netName, deployer.address);
 
-	console.log("=== Wave N deploy ===");
+	console.log("=== Wave O.1 (LP5) deploy ===");
 	console.log("  network:           ", netName);
 	console.log("  deployer:          ", deployer.address);
 	console.log("  factory owner:     ", factoryOwner);
@@ -151,7 +151,6 @@ async function main() {
 	console.log("  PCS router:        ", book.PCS_ROUTER);
 	console.log("  PCS V3 NPM:        ", book.PCS_V3_NPM);
 	console.log("  PCS V3 factory:    ", book.PCS_V3_FACTORY);
-	console.log("  BNB/USD feed:      ", book.BNB_USD_FEED);
 	console.log("  Flap portal:       ", book.FLAP_PORTAL);
 	console.log("  TaxToken V3 impl:  ", book.TOKEN_IMPL_TAXED_V3);
 	console.log("  tip receiver:      ", book.TIP_RECEIVER);
@@ -167,7 +166,7 @@ async function main() {
 
 	if (process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1") {
 		console.log("=== DRY_RUN mode: NOT broadcasting transaction ===");
-		console.log("Would deploy RouterDeployer + AgentSafeDeployer + TreasuryLP4Deployer + LaunchFactory.");
+		console.log("Would deploy RouterDeployer + AgentSafeDeployer + TreasuryLP5Deployer + LaunchFactory.");
 		if (factoryOwner.toLowerCase() !== deployer.address.toLowerCase()) {
 			console.log(`Would transfer LaunchFactory ownership to ${factoryOwner}.`);
 		}
@@ -190,16 +189,16 @@ async function main() {
 	const agentSafeDeployerAddress = await agentSafeDeployer.getAddress();
 	console.log("AgentSafeDeployer: ", agentSafeDeployerAddress);
 
-	// 3. TreasuryLP4Deployer (Wave N)
-	console.log("Deploying TreasuryLP4Deployer ...");
-	const TreasuryDeployer = await ethers.getContractFactory("TreasuryLP4Deployer");
+	// 3. TreasuryLP5Deployer (Wave O.1)
+	console.log("Deploying TreasuryLP5Deployer ...");
+	const TreasuryDeployer = await ethers.getContractFactory("TreasuryLP5Deployer");
 	const treasuryDeployer = await TreasuryDeployer.deploy();
 	await treasuryDeployer.waitForDeployment();
 	const treasuryDeployerAddress = await treasuryDeployer.getAddress();
-	console.log("TreasuryLP4Deployer:", treasuryDeployerAddress);
+	console.log("TreasuryLP5Deployer:", treasuryDeployerAddress);
 	console.log("");
 
-	// 4. LaunchFactory
+	// 4. LaunchFactory (13 args - BNB_USD_FEED dropped, LP4 → LP5)
 	console.log("Deploying LaunchFactory ...");
 	const LaunchFactory = await ethers.getContractFactory("LaunchFactory");
 	const factory = await LaunchFactory.deploy(
@@ -216,7 +215,6 @@ async function main() {
 		treasuryDeployerAddress,
 		book.PCS_V3_NPM,
 		book.PCS_V3_FACTORY,
-		book.BNB_USD_FEED,
 	);
 	await factory.waitForDeployment();
 	const factoryAddress = await factory.getAddress();
@@ -242,10 +240,9 @@ async function main() {
 		["TIP_RECEIVER", await factory.TIP_RECEIVER(), book.TIP_RECEIVER],
 		["ROUTER_DEPLOYER", await factory.ROUTER_DEPLOYER(), routerDeployerAddress],
 		["AGENT_SAFE_DEPLOYER", await factory.AGENT_SAFE_DEPLOYER(), agentSafeDeployerAddress],
-		["TREASURY_LP4_DEPLOYER", await factory.TREASURY_LP4_DEPLOYER(), treasuryDeployerAddress],
+		["TREASURY_LP5_DEPLOYER", await factory.TREASURY_LP5_DEPLOYER(), treasuryDeployerAddress],
 		["PCS_V3_NPM", await factory.PCS_V3_NPM(), book.PCS_V3_NPM],
 		["PCS_V3_FACTORY", await factory.PCS_V3_FACTORY(), book.PCS_V3_FACTORY],
-		["BNB_USD_FEED", await factory.BNB_USD_FEED(), book.BNB_USD_FEED],
 		["owner", await factory.owner(), factoryOwner],
 	];
 	let ok = true;
@@ -262,7 +259,7 @@ async function main() {
 	console.log("");
 
 	const out = {
-		wave: "N",
+		wave: "O.1",
 		network: netName,
 		chainId: Number((await ethers.provider.getNetwork()).chainId),
 		deployer: deployer.address,
@@ -272,7 +269,7 @@ async function main() {
 			LaunchFactory: factoryAddress,
 			RouterDeployer: routerDeployerAddress,
 			AgentSafeDeployer: agentSafeDeployerAddress,
-			TreasuryLP4Deployer: treasuryDeployerAddress,
+			TreasuryLP5Deployer: treasuryDeployerAddress,
 		},
 		constructorArgs: {
 			wbnb: book.WBNB,
@@ -285,10 +282,9 @@ async function main() {
 			platformCommissionReceiver,
 			routerDeployer: routerDeployerAddress,
 			agentSafeDeployer: agentSafeDeployerAddress,
-			treasuryLp4Deployer: treasuryDeployerAddress,
+			treasuryLp5Deployer: treasuryDeployerAddress,
 			pcsV3Npm: book.PCS_V3_NPM,
 			pcsV3Factory: book.PCS_V3_FACTORY,
-			bnbUsdFeed: book.BNB_USD_FEED,
 		},
 		safeAddressBook: {
 			singleton: book.SAFE_SINGLETON,
@@ -312,9 +308,9 @@ async function main() {
 	console.log(`       "${book.TOKEN_IMPL_TAXED_V3}" "${book.TIP_RECEIVER}" \\`);
 	console.log(`       "${platformCommissionReceiver}" "${routerDeployerAddress}" \\`);
 	console.log(`       "${agentSafeDeployerAddress}" "${treasuryDeployerAddress}" \\`);
-	console.log(`       "${book.PCS_V3_NPM}" "${book.PCS_V3_FACTORY}" "${book.BNB_USD_FEED}"`);
-	console.log("  2. set LAUNCH_FACTORY_ADDRESS in the API + indexer env (replace wave-H factory)");
-	console.log("  3. wizard must compute treasuryTickLowers/Uppers from live BNB/USD + supply");
+	console.log(`       "${book.PCS_V3_NPM}" "${book.PCS_V3_FACTORY}"`);
+	console.log("  2. set LAUNCH_FACTORY_ADDRESS in the API + indexer env (replace wave-N factory)");
+	console.log("  3. wizard computes treasuryTickLowers/Uppers from supply only (no Chainlink)");
 	console.log("  4. bundle bot must call factory.finalizeLaunch(predictedToken) post-graduation");
 }
 

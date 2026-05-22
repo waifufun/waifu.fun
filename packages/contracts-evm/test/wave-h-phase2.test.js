@@ -46,10 +46,9 @@ describe("Wave H phase 2 smoke", () => {
 			placeholderAddr, // _platformCommissionReceiver
 			await routerDeployer.getAddress(), // _routerDeployer
 			await agentSafeDeployer.getAddress(), // _agentSafeDeployer
-			placeholderAddr, // _treasuryLp4Deployer (placeholder; not exercised here)
+			placeholderAddr, // _treasuryLp5Deployer (placeholder; not exercised here)
 			placeholderAddr, // _pcsV3Npm
 			placeholderAddr, // _pcsV3Factory
-			placeholderAddr, // _bnbUsdFeed
 		);
 	}
 

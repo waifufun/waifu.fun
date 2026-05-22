@@ -79,7 +79,7 @@ async function main() {
 	console.log("  factory     :", art.contracts.LaunchFactory);
 	console.log("  router dep  :", art.contracts.RouterDeployer);
 	console.log("  agentsafe   :", art.contracts.AgentSafeDeployer);
-	console.log("  treasury    :", art.contracts.TreasuryLP4Deployer);
+	console.log("  treasury    :", art.contracts.TreasuryLP5Deployer);
 	console.log("");
 
 	const results = [];
@@ -100,13 +100,13 @@ async function main() {
 		),
 	});
 
-	// 3. TreasuryLP4Deployer (no constructor args)
+	// 3. TreasuryLP5Deployer (no constructor args)
 	results.push({
-		name: "TreasuryLP4Deployer",
-		ok: runVerify([...netFlag, art.contracts.TreasuryLP4Deployer], "TreasuryLP4Deployer"),
+		name: "TreasuryLP5Deployer",
+		ok: runVerify([...netFlag, art.contracts.TreasuryLP5Deployer], "TreasuryLP5Deployer"),
 	});
 
-	// 4. LaunchFactory (14 constructor args in exact order)
+	// 4. LaunchFactory (13 constructor args in exact order; BNB_USD_FEED dropped in Wave O.1)
 	const ca = art.constructorArgs;
 	results.push({
 		name: "LaunchFactory",
@@ -124,10 +124,9 @@ async function main() {
 				ca.platformCommissionReceiver,
 				ca.routerDeployer,
 				ca.agentSafeDeployer,
-				ca.treasuryLp4Deployer,
+				ca.treasuryLp5Deployer,
 				ca.pcsV3Npm,
 				ca.pcsV3Factory,
-				ca.bnbUsdFeed,
 			],
 			"LaunchFactory",
 		),

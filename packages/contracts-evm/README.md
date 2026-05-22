@@ -18,7 +18,8 @@ The `tier` field is set in the `LaunchVault` constructor (passed through from `L
 Two legacy contracts remain in the tree because they have active downstream consumers:
 
 - `VeWaifuStaking` — staking rewards for WAIFU holders, indexed by `apps/evm-indexer`.
-- `TreasuryLP4` — on ice, but still typechecked against by `apps/tier-cron`.
+- `TreasuryLP4` — legacy (Wave N1, Chainlink + MC ladder). Preserved for older deployments + still typechecked against by `apps/tier-cron`. Superseded by `TreasuryLP5`.
+- `TreasuryLP5` — Wave O.1, V3-tick-gated treasury LP. Active going forward. No Chainlink BNB/USD feed, no market-cap milestones, no epoch advances. setFlapV2Pair is one-shot and mints all 4 single-sided tier positions atomically; tier activation is driven by price-band tick ranges in the V3 pool rather than market-cap targets.
 
 Everything else from previous generations (V1 `WaifuFun*`, V2 `AgentToken*`, splitter/treasury/fee-router stack) was deleted in the Wave H comprehensive cleanup. Git history preserves them.
 
@@ -29,8 +30,11 @@ contracts/
   BundleRouter.sol        wave H per-launch atomic executor
   LaunchFactory.sol       wave H factory (one per protocol)
   LaunchVault.sol         wave H presale vault (one per launch)
-  TreasuryLP.sol          wave H custodial treasury holder
-  TreasuryLP4.sol         legacy, on ice
+  TreasuryLP.sol          wave H custodial treasury holder (legacy)
+  TreasuryLP4.sol         wave N1 legacy (Chainlink + MC ladder)
+  TreasuryLP4Deployer.sol legacy helper for TreasuryLP4
+  TreasuryLP5.sol         wave O.1 active (V3-tick-gated, single-side at launch)
+  TreasuryLP5Deployer.sol active helper for TreasuryLP5 (wired by LaunchFactory)
   VeWaifuStaking.sol      legacy, active indexer consumer
   flap/                   Flap Portal V6 types + interface
   uniswap/                trimmed PancakeSwap V2 surfaces
