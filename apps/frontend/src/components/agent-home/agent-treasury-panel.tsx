@@ -15,7 +15,7 @@
  */
 "use client";
 
-import { Check, Copy, ExternalLink, Shield } from "lucide-react";
+import { Check, Copy, ExternalLink, Shield, Wallet } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 
@@ -123,7 +123,10 @@ export default function AgentTreasuryPanel({
 					</div>
 					<AddressLine address={agentSafe as string} />
 				</div>
-				<ScanLink address={agentSafe as string} label="bscscan" />
+				<div className="flex items-center gap-2">
+					<SafeAppLink address={agentSafe as string} />
+					<ScanLink address={agentSafe as string} label="bscscan" />
+				</div>
 			</div>
 
 			{/* Holdings list */}
@@ -249,6 +252,27 @@ function AddressLine({ address }: { address: string }) {
 				{copied ? <Check className="h-3 w-3" strokeWidth={2} /> : <Copy className="h-3 w-3" strokeWidth={1.5} />}
 			</button>
 		</div>
+	);
+}
+
+/**
+ * Link to the Gnosis Safe web app for this safe. Pre-formatted with the
+ * `bsc:` chain prefix so the Safe app opens the BSC view directly. Gives
+ * viewers a one-click route to inspect signers, queued txs, and balances
+ * with full UX, not just bscscan's read-only contract view.
+ */
+function SafeAppLink({ address }: { address: string }) {
+	return (
+		<a
+			href={`https://app.safe.global/bsc:${address}`}
+			target="_blank"
+			rel="noreferrer"
+			aria-label="open in safe app"
+			title="open in safe app"
+			className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-white/10 text-white/35 transition-colors hover:border-white/25 hover:text-white/75"
+		>
+			<Wallet className="h-3.5 w-3.5" strokeWidth={1.5} />
+		</a>
 	);
 }
 
