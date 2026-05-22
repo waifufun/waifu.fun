@@ -246,14 +246,16 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 				</div>
 			</dl>
 
-			{/* CTA */}
+			{/* CTA — the swap form above is a preview only; the actual swap is
+			    executed on PancakeSwap until in-app routing lands. Label matches
+			    the action so the button is honest about where the click goes. */}
 			<a
 				className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-[var(--accent)] py-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#03110b] transition-colors hover:bg-[var(--accent-dim)]"
 				href={pcsHref}
-				rel="noreferrer"
+				rel="noopener noreferrer"
 				target="_blank"
 			>
-				connect wallet
+				trade on pancakeswap
 			</a>
 
 			<div className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
