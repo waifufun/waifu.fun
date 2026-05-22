@@ -121,6 +121,20 @@ export const launchVaultAbi = [
 	{
 		type: "function",
 		stateMutability: "view",
+		name: "tier",
+		inputs: [],
+		outputs: [{ name: "", type: "uint8" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "factory",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
 		name: "getDepositorInfo",
 		inputs: [{ name: "user", type: "address" }],
 		outputs: [
@@ -179,6 +193,13 @@ export const launchVaultAbi = [
 		stateMutability: "nonpayable",
 		name: "enableRefundBundleFailed",
 		inputs: [],
+		outputs: [],
+	},
+	{
+		type: "function",
+		stateMutability: "nonpayable",
+		name: "instantAdminRefund",
+		inputs: [{ name: "reason", type: "string" }],
 		outputs: [],
 	},
 	// events
@@ -256,3 +277,21 @@ export const VaultState = {
 } as const;
 
 export type VaultStateValue = (typeof VaultState)[keyof typeof VaultState];
+
+/**
+ * Mirror of `LaunchTier` from `contracts/LaunchTier.sol`.
+ * Ordering matches the on-chain enum exactly.
+ *
+ * `TIER_TEST` is the only tier eligible for `instantAdminRefund`
+ * (factory-owner-only). Real-money tiers retain the 24h-delayed admin
+ * refund via `scheduleAdminRefund` + `adminEnableRefund`.
+ */
+export const LaunchTier = {
+	TIER_80: 0,
+	TIER_90: 1,
+	TIER_95: 2,
+	TIER_98: 3,
+	TIER_TEST: 4,
+} as const;
+
+export type LaunchTierValue = (typeof LaunchTier)[keyof typeof LaunchTier];

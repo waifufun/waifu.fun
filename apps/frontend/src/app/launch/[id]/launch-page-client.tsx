@@ -7,6 +7,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { bsc } from "wagmi/chains";
 
 import { ActivityFeed } from "@/components/launch-page/activity-feed";
+import { AdminInstantRefundWidget } from "@/components/launch-page/admin-instant-refund-widget";
 import { DepositWidget } from "@/components/launch-page/deposit-widget";
 import { LaunchFAQ } from "@/components/launch-page/launch-faq";
 import { LaunchHero } from "@/components/launch-page/launch-hero";
@@ -147,6 +148,7 @@ export default function LaunchPageClient({ id }: Props) {
 					/>
 					<LaunchFAQ tier={tier} />
 					<LaunchTerms penaltyBps={snap?.penaltyBps ?? null} />
+					<AdminInstantRefundWidget vault={vaultAddress} state={state} onUserStateChanged={refresh} />
 					<ActivityFeed launchId={runtimeId} vaultAddress={vaultAddress} />
 				</div>
 				<aside className="hidden lg:block">

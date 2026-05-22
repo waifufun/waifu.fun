@@ -74,6 +74,7 @@ describe("Wave H phase 2 smoke", () => {
 			2000000000, // _closeTimestamp (future)
 			0, // _penaltyBps
 			false, // _vestingEnabled
+			2, // _tier = LaunchTier.TIER_95
 		);
 
 		const tx = await vault.connect(depositor).deposit({ value: ethers.parseEther("1") });
@@ -98,6 +99,7 @@ describe("Wave H phase 2 smoke", () => {
 			2000000000,
 			0,
 			false,
+			2, // _tier = LaunchTier.TIER_95
 		);
 
 		await expect(vault.connect(depositor).deposit({ value: ethers.parseEther("33") })).to.be.reverted;
@@ -116,6 +118,7 @@ describe("Wave H phase 2 smoke", () => {
 			2000000000,
 			0,
 			false,
+			2, // _tier = LaunchTier.TIER_95
 		);
 
 		await vault.connect(depositor).deposit({ value: ethers.parseEther("19.2") });
@@ -136,6 +139,7 @@ describe("Wave H phase 2 smoke", () => {
 			now + 3600n,
 			0,
 			false,
+			2, // _tier = LaunchTier.TIER_95
 		);
 
 		await vault.connect(depositor).deposit({ value: ethers.parseEther("19.2") });

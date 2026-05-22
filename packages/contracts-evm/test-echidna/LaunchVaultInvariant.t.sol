@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {StdInvariant} from "forge-std/StdInvariant.sol";
 import {Test} from "forge-std/Test.sol";
 import {LaunchVault} from "../contracts/LaunchVault.sol";
+import {LaunchTier} from "../contracts/LaunchTier.sol";
 import {ERC20Mock} from "../contracts/mocks/ERC20Mock.sol";
 
 contract VaultActor {
@@ -117,7 +118,8 @@ contract LaunchVaultInvariantTest is StdInvariant, Test {
             V2_BUY,
             block.timestamp + 7 days,
             500,
-            true
+            true,
+            LaunchTier.TIER_95
         );
         token = new ERC20Mock();
         handler = new LaunchVaultInvariantHandler(vault, token);

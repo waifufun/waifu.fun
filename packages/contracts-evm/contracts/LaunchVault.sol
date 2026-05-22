@@ -18,6 +18,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ILaunchVaultRouterCallbacks} from "./interfaces/ILaunchVaultRouterCallbacks.sol";
 import {IVaultRouterSetter} from "./interfaces/IVaultRouterSetter.sol";
+import {LaunchTier} from "./LaunchTier.sol";
 
 interface ILaunchFactoryOwner {
     function owner() external view returns (address);
@@ -77,6 +78,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
     uint256 public immutable closeTimestamp;
     uint256 public immutable penaltyBps; // capped at MAX_PENALTY_BPS
     bool public immutable vestingEnabled;
+    LaunchTier public immutable tier; // launch tier; gates TIER_TEST-only admin powers
     uint256 private immutable _openTimestamp;
 
     // ---------------------------------------------------------------------
@@ -163,7 +165,8 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         uint256 _v2BuyBnb,
         uint256 _closeTimestamp,
         uint256 _penaltyBps,
-        bool _vestingEnabled
+        bool _vestingEnabled,
+        LaunchTier _tier
     ) {
         if (_factory == address(0) || _creator == address(0) || _bundleBot == address(0)) {
             revert ZeroAddress();
@@ -183,6 +186,7 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         closeTimestamp = _closeTimestamp;
         penaltyBps = _penaltyBps;
         vestingEnabled = _vestingEnabled;
+        tier = _tier;
         state = State.OPEN;
     }
 
@@ -358,6 +362,21 @@ contract LaunchVault is ReentrancyGuard, IVaultRouterSetter, ILaunchVaultRouterC
         uint256 readyAt = adminRefundReadyAt;
         if (readyAt == 0) revert AdminRefundNotScheduled();
         if (block.timestamp < readyAt) revert AdminRefundDelayNotElapsed();
+        state = State.REFUND;
+        emit RefundEnabled(msg.sender, reason);
+    }
+
+    /// @notice instant admin refund. ONLY callable for TIER_TEST launches.
+    ///         Real-money tiers retain the 24h-delayed admin refund via
+    ///         scheduleAdminRefund + adminEnableRefund. This exists because
+    ///         TIER_TEST is an explicit smoke-test tier the architect can
+    ///         unwind at any time. Depositors of TIER_TEST launches are
+    ///         on notice that the launch is recoverable.
+    function instantAdminRefund(string calldata reason) external {
+        address factoryOwner = ILaunchFactoryOwner(factory).owner();
+        if (msg.sender != factoryOwner) revert NotFactoryOwner();
+        if (tier != LaunchTier.TIER_TEST) revert InvalidState();
+        if (state == State.LAUNCHED) revert InvalidState();
         state = State.REFUND;
         emit RefundEnabled(msg.sender, reason);
     }

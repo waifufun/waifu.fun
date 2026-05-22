@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {LaunchVault} from "../contracts/LaunchVault.sol";
+import {LaunchTier} from "../contracts/LaunchTier.sol";
 import {ERC20Mock} from "../contracts/mocks/ERC20Mock.sol";
 
 /// @title HarnessOwner
@@ -61,7 +62,8 @@ contract EchidnaLaunchVault {
             V2_BUY,
             block.timestamp + CLOSE_DELAY,
             PENALTY_BPS,
-            true // vesting enabled
+            true, // vesting enabled
+            LaunchTier.TIER_95
         );
         vault.setRouter(payable(address(this)));
 

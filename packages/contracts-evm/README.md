@@ -6,6 +6,15 @@ Hardhat package for waifu.fun's EVM contracts.
 
 Wave H is the active product. The launchpad is Flap-native: Flap mints the token via `Portal.newTokenV6` inside an atomic bundle, and our contracts handle presale escrow + bundle execution + supply distribution around it. Wave H consists of `LaunchFactory`, `LaunchVault`, `BundleRouter`, and `TreasuryLP`, plus shared `flap/` and `uniswap/` interfaces.
 
+### Admin refund: tier-dependent
+
+`LaunchVault` exposes two paths for the factory owner to flip a vault into REFUND state:
+
+- **Real tiers (TIER_80 / TIER_90 / TIER_95 / TIER_98):** `scheduleAdminRefund` + `adminEnableRefund`. A 24h public-notice delay separates the two calls. This ensures the global owner cannot instantly flip live vaults into REFUND without observable on-chain warning, which protects depositors and snipers monitoring for race conditions.
+- **TIER_TEST:** `instantAdminRefund` is callable by the factory owner at any time before LAUNCHED, with no delay. TIER_TEST is an explicit smoke-test tier the architect uses to dry-run launches end-to-end; depositors of a TIER_TEST launch are on notice that the launch is recoverable at the architect's discretion.
+
+The `tier` field is set in the `LaunchVault` constructor (passed through from `LaunchFactory.createLaunch`) and is immutable. The gate is enforced on-chain: `instantAdminRefund` reverts `InvalidState` for any non-TEST tier.
+
 Two legacy contracts remain in the tree because they have active downstream consumers:
 
 - `VeWaifuStaking` — staking rewards for WAIFU holders, indexed by `apps/evm-indexer`.
