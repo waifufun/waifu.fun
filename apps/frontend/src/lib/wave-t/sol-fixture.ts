@@ -46,7 +46,7 @@ export function buildSolFixtureAgent(): AgentData {
 	};
 }
 
-/** Synthetic launch row so EconomicsPanel + TreasuryPanelV2 have something to render. */
+/** Synthetic launch row so EconomicsPanel + AgentTreasuryPanel have something to render. */
 export function buildSolFixtureLaunch(): AgentLaunchByToken {
 	const now = Math.floor(Date.now() / 1000);
 	return {
