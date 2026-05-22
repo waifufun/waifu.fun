@@ -1,5 +1,6 @@
 import useAddress from "@/hooks/use-address";
 import { uploadAvatar } from "@/lib/api";
+import { resolveImageUrlOr } from "@/lib/image-url";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AddressLike } from "@waifufun/types";
 import { Check } from "lucide-react";
@@ -64,7 +65,7 @@ export default function AvatarImage({ address, image }: { address: AddressLike; 
 	return (
 		<div className="border border-[rgba(255,255,255,0.06)] rounded-sm h-fit relative w-[150px]">
 			<Image
-				src={preview || image || "/create/test-img.png"}
+				src={preview ?? resolveImageUrlOr(image, "/create/test-img.png")}
 				alt="Profile"
 				width={150}
 				height={150}

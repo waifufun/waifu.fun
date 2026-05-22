@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { type PatronAgent, formatUsd } from "@/lib/api/patron";
+import { resolveImageUrl } from "@/lib/image-url";
 import Image from "next/image";
 import Link from "next/link";
 import StatusBadge from "./status-badge";
@@ -20,13 +21,14 @@ function formatRelative(iso: string | null | undefined): string {
 }
 
 export default function AgentCard({ agent }: { agent: PatronAgent }) {
+	const avatarUrl = resolveImageUrl(agent.avatar);
 	return (
 		<article className="flex flex-col gap-4 p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C] hover:border-stroke-intense transition-colors">
 			<div className="flex items-start gap-3">
 				<div className="w-12 h-12 rounded-sm overflow-hidden bg-[#141414] shrink-0 border border-stroke">
-					{agent.avatar ? (
+					{avatarUrl ? (
 						<Image
-							src={agent.avatar}
+							src={avatarUrl}
 							alt={`${agent.name} avatar`}
 							width={48}
 							height={48}
