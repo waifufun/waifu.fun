@@ -7,14 +7,15 @@ import { buildActivity } from "@/lib/wave-t/activity";
 import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
 import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
-import { fetchSolTrades } from "@/lib/wave-t/agent-trades";
+import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { fetchAppsForAgent } from "@/lib/wave-t/apps";
+import { isArchitectAgentAddress } from "@/lib/wave-t/architect-agent";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
+import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchPositions } from "@/lib/wave-t/positions";
-import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
 import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
@@ -59,11 +60,25 @@ function mapAgentTrade(raw: Record<string, unknown>): AgentTrade {
 					? Date.parse(raw.blockTime)
 					: Date.now();
 
+	// Backend trades surface `amountIn` (quote token, BNB) and `amountOut`
+	// (this agent's token) as raw wei strings. For the activity feed we
+	// want the agent's token amount in human units, so prefer
+	// `amountOut`/`toAmount` (buy side) and fall back to the in side.
+	const rawAmount =
+		(raw.type === "sell" || raw.side === "sell"
+			? (raw.amount ?? raw.amountIn ?? raw.fromAmount)
+			: (raw.amount ?? raw.amountOut ?? raw.toAmount)) ??
+		raw.amount ??
+		raw.amountOut ??
+		raw.amountIn ??
+		0;
+	const normalized = normalizeTokenAmount(rawAmount);
+
 	return {
 		txId: String(raw.txId ?? raw.txHash ?? ""),
 		type: (raw.type === "sell" || raw.side === "sell" ? "sell" : "buy") as "buy" | "sell",
 		address: String(raw.address ?? raw.trader ?? raw.traderAddress ?? ""),
-		amount: String(raw.amount ?? raw.amountOut ?? raw.toAmount ?? raw.amountIn ?? raw.fromAmount ?? ""),
+		amount: normalized,
 		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
 	};
 }
@@ -360,17 +375,18 @@ export default async function AgentPage({
 	const { address } = await params;
 
 	const agentP = fetchAgent(address);
-	// Activity feed shows the agent's OWN trades (initiated by agent-safe + agent-hot
-	// wallets), not all market activity on the token. fetchSolTrades reads the
-	// /activity-trades endpoint which filters by wallet registry; returns [] when
-	// the agent has not traded yet. Applies to every agent now that the wallet
-	// registry is in place — not just Sol.
-	const tradesP = fetchSolTrades(address).catch(() => fetchTrades(address));
+	// Activity feed shows the agent's OWN trades (initiated by agent-safe +
+	// agent-hot wallets), not all market activity on the token.
+	// fetchAgentOwnTrades reads the /activity-trades endpoint which filters by
+	// wallet registry; returns [] when the agent has not traded yet. Applies to
+	// every agent now that the wallet registry is in place — not just Sol/the
+	// architect.
+	const tradesP = fetchAgentOwnTrades(address).catch(() => fetchTrades(address));
 	const launchP = fetchLaunch(address);
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
 	// a sane empty default, so we never throw out of Promise.all.
-	const isSolAgent = isSolAgentAddress(address);
+	const isSolAgent = isArchitectAgentAddress(address);
 	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
 	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
 		candles: [],

@@ -64,16 +64,16 @@ function tokenAddressFromAgent(raw: Record<string, unknown>): string | null {
 }
 
 /**
- * Sol's canonical agent token address (ElizaOS placeholder until $WAIFU mints).
+ * Architect agent token address (ElizaOS placeholder until $WAIFU mints).
  * Inlined here so the static-export build always generates `/agent/{this address}`,
  * even when the API returns zero seeded agents. Without this, `/agent/sol` redirects
  * to a URL Next never pre-rendered, and Cloudflare Pages serves the global 404.
  *
- * Keep in sync with `apps/frontend/src/lib/wave-t/sol-agent.ts`. Avoid importing
- * the constant from there to keep this module free of @-alias resolution at
- * `next.config.mjs` boot time.
+ * Keep in sync with `apps/frontend/src/lib/wave-t/architect-agent.ts`. Avoid
+ * importing the constant from there to keep this module free of @-alias
+ * resolution at `next.config.mjs` boot time.
  */
-const SOL_AGENT_ADDRESS_STATIC = "0xea17df5cf6d172224892b5477a16acb111182478";
+const ARCHITECT_AGENT_ADDRESS_STATIC = "0xea17df5cf6d172224892b5477a16acb111182478";
 
 /**
  * Walks `/v2/agents` pages until exhaustion so `/agent/[address]` (and patron/profile stubs) can pre-render.
@@ -113,8 +113,8 @@ export async function fetchAgentAddressesForStaticExport(): Promise<{ address: s
 		console.warn("[static-export] failed to enumerate agents (continuing with partial or empty list)", err);
 	}
 
-	// Always include Sol's canonical address so /agent/sol redirect lands on a pre-rendered page.
-	addresses.add(SOL_AGENT_ADDRESS_STATIC);
+	// Always include the architect agent address so /agent/sol redirect lands on a pre-rendered page.
+	addresses.add(ARCHITECT_AGENT_ADDRESS_STATIC);
 	// Always include the zero-address placeholder so the e2e route-smoke suite (which navigates
 	// to /patron/0x000…0, etc) has a generated page to land on.
 	addresses.add(STATIC_EXPORT_PLACEHOLDER_EVM_ADDRESS);

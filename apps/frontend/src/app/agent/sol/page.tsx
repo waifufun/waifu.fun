@@ -14,17 +14,17 @@
  *   2. An inline script that fires before hydration.
  *   3. The client component's useEffect on mount as the final fallback.
  *
- * When $WAIFU launches, swap `SOL_AGENT_ADDRESS` in
- * `apps/frontend/src/lib/wave-t/sol-agent.ts` for the real token address
- * and this route updates automatically.
+ * When $WAIFU launches, swap `ARCHITECT_AGENT_ADDRESS` in
+ * `apps/frontend/src/lib/wave-t/architect-agent.ts` for the real token
+ * address and this route updates automatically.
  */
 import type { Metadata } from "next";
 
-import { SOL_AGENT_ADDRESS } from "@/lib/wave-t/sol-agent";
+import { ARCHITECT_AGENT_ADDRESS } from "@/lib/wave-t/architect-agent";
 
 import { SolAgentRedirectClient } from "./redirect-client";
 
-const TARGET_PATH = `/agent/${SOL_AGENT_ADDRESS}`;
+const TARGET_PATH = `/agent/${ARCHITECT_AGENT_ADDRESS}`;
 
 export const dynamic = "force-static";
 

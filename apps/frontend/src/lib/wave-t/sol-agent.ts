@@ -1,10 +1,15 @@
 /**
- * Address of the architect agent (Sol). Live as $WAIFU on BSC since
- * the 2026-05-22 launch. Used by `/agent/sol` vanity redirect and any
- * Sol-specific UX paths.
+ * Address of the architect agent (Sol → $WAIFU).
+ *
+ * Re-exported under the legacy `SOL_AGENT_ADDRESS` name for one cycle so
+ * older callsites compile; new code should import `ARCHITECT_AGENT_ADDRESS`
+ * from `architect-agent.ts` directly.
+ *
+ * @deprecated Import from `./architect-agent` instead. This shim exists
+ * only to keep this rename PR mechanical; remove after one cycle.
  */
-export const SOL_AGENT_ADDRESS = "0x15fc6086064afe50ccf4c70000c55cecb6e17777";
 
-export function isSolAgentAddress(address: string): boolean {
-	return address.toLowerCase() === SOL_AGENT_ADDRESS.toLowerCase();
-}
+export {
+	ARCHITECT_AGENT_ADDRESS as SOL_AGENT_ADDRESS,
+	isArchitectAgentAddress as isSolAgentAddress,
+} from "./architect-agent";

@@ -1,7 +1,8 @@
 import type { AgentTrade } from "@/components/agent-home/types";
 import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-feed";
 
-export const EMPTY_ACTIVITY_COPY = "no activity yet · Sol hasn't traded or posted yet";
+export const EMPTY_ACTIVITY_COPY =
+	"no activity yet · swaps, ships, tweets, and treasury moves stream here once the agent acts on-chain";
 
 /**
  * Project raw AgentTrade swap events into the wave-T activity feed's
