@@ -1,4 +1,15 @@
+/**
+ * Fetcher for the agent's OWN trade history — swaps initiated by the
+ * agent's wallets (agent-safe / agent-hot), not user activity on the
+ * agent's token. Backed by `/v2/agents/:address/activity-trades`.
+ *
+ * Trade amounts come back as raw 18-decimal wei strings; we normalize
+ * them to human token units here so downstream UI surfaces never have
+ * to think about decimals.
+ */
 import type { AgentTrade } from "@/components/agent-home/types";
+
+import { normalizeTokenAmount } from "./normalize-amount";
 
 function serverAgentApiBase(): string {
 	const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -26,13 +37,14 @@ type AgentActivityTradeResponse = {
 	blockTimestamp: string;
 };
 
-function mapSolTrade(raw: AgentActivityTradeResponse): AgentTrade {
+function mapAgentOwnTrade(raw: AgentActivityTradeResponse): AgentTrade {
 	const timestamp = Date.parse(raw.blockTimestamp);
+	const rawAmount = raw.side === "buy" ? raw.amountOut : raw.amountIn;
 	const trade: AgentTrade = {
 		txId: raw.txHash,
 		type: raw.side,
 		address: raw.trader,
-		amount: raw.side === "buy" ? raw.amountOut : raw.amountIn,
+		amount: normalizeTokenAmount(rawAmount),
 		timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
 		tokenAddress: raw.tokenAddress,
 		traderRole: raw.traderRole,
@@ -42,7 +54,13 @@ function mapSolTrade(raw: AgentActivityTradeResponse): AgentTrade {
 	return trade;
 }
 
-export async function fetchSolTrades(address: string): Promise<AgentTrade[]> {
+/**
+ * Fetch the agent's own swap history.
+ *
+ * Returns an empty array on any error so the activity feed never throws
+ * from a missing endpoint.
+ */
+export async function fetchAgentOwnTrades(address: string): Promise<AgentTrade[]> {
 	try {
 		const res = await fetch(`${API_BASE}/v2/agents/${address}/activity-trades`, {
 			next: { revalidate: 15 },
@@ -50,9 +68,12 @@ export async function fetchSolTrades(address: string): Promise<AgentTrade[]> {
 		if (!res.ok) return [];
 		const data = (await res.json()) as unknown;
 		const trades = Array.isArray(data) ? data : [];
-		return trades.slice(0, 20).map((trade) => mapSolTrade(trade as AgentActivityTradeResponse));
+		return trades.slice(0, 20).map((trade) => mapAgentOwnTrade(trade as AgentActivityTradeResponse));
 	} catch (e) {
-		console.error("sol trades fetch failed", e);
+		console.error("agent own-trades fetch failed", e);
 		return [];
 	}
 }
+
+/** @deprecated Import `fetchAgentOwnTrades` instead. Kept for one cycle. */
+export const fetchSolTrades = fetchAgentOwnTrades;

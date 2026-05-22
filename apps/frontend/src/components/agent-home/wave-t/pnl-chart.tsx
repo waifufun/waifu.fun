@@ -19,7 +19,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { cn } from "@/lib/utils";
 
-import { Label, Panel, Pulse } from "./_primitives";
+import { Label, Panel } from "./_primitives";
 
 type Point = { t: number; pnl: number };
 
@@ -80,8 +80,7 @@ export function PnlChart({ series }: { series?: Point[] }) {
 							</span>
 						</span>
 					) : (
-						<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-							<Pulse />
+						<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 							awaiting data
 						</span>
 					)
@@ -151,16 +150,21 @@ export function PnlChart({ series }: { series?: Point[] }) {
 					</ResponsiveContainer>
 				</div>
 			) : (
-				<div className="flex h-[170px] flex-1 items-center justify-center">
+				<div className="flex h-[88px] flex-1 flex-col items-start justify-center gap-1 py-2">
 					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 						no pnl history yet
+					</span>
+					<span className="font-mono text-[11px] text-[var(--text-tertiary)]/70">
+						snapshots accumulate hourly · 30d window unlocks at hour 720
 					</span>
 				</div>
 			)}
 
-			<footer className="mt-2 border-t border-[var(--border-soft)] pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-				{hasData ? "live pnl · 30 day window" : "snapshots backfill scheduled"}
-			</footer>
+			{hasData ? (
+				<footer className="mt-2 border-t border-[var(--border-soft)] pt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+					live pnl · 30 day window
+				</footer>
+			) : null}
 		</Panel>
 	);
 }

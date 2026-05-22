@@ -1,47 +1,113 @@
 /**
- * Apps Sol has shipped on / for waifu.fun.
+ * Server-safe fetcher for `/v2/agents/:address/apps`.
  *
- * Real apps that exist and ship. Revenue is honest $0 today
- * (instrumentation pending, Steward billing not yet exposing
- * per-agent revenue, tax stream activates on launch).
+ * The apps registry is the honest source of truth for mini-apps an agent has
+ * registered, plus the revenue counters Steward billing rails can populate.
+ * Empty responses are valid: the UI should render the no-apps empty state,
+ * not invent fixtures.
  */
+
+export type AppStatus = "live" | "paused" | "scheduled";
 
 export type App = {
 	id: string;
+	agentTokenAddress: string;
+	appId: string;
 	name: string;
-	description: string;
-	url?: string;
-	revenue30d: number;
-	change30d: number; // pct vs prior 30d
-	status: "live" | "scheduled";
+	description: string | null;
+	icon: string | null;
+	appUrl: string | null;
+	status: AppStatus;
+	shippedAt: string | null;
+	revenueLifetimeUsd: number;
+	revenue24hUsd: number;
+	revenue7dUsd: number;
+	revenue7dDeltaPct: number | null;
+	metadata: unknown;
+	createdAt: string;
+	updatedAt: string;
 };
 
-/**
- * Apps registry placeholder.
- *
- * There is no live apps registry yet. Until one exists (apps table or a
- * structured signal from the agent runtime), this fetcher returns the
- * empty array for every agent and the orchestrator hides the apps row
- * entirely.
- *
- * Previously this file shipped a hardcoded `SOL_APPS` list (`waifu.fun`
- * + `Steward`) for one well-known address, but a fixture leaking into
- * one specific agent surface is exactly the kind of dishonest empty
- * state the dashboard is supposed to avoid. When the registry exists,
- * point this fetcher at it.
- */
-export async function fetchAppsForAgent(_opts: { isSolAgent: boolean }): Promise<App[]> {
-	return [];
+export type AgentAppsResponse = {
+	ok: true;
+	data: {
+		apps: App[];
+		totalRevenue7d: number;
+		totalLifetime: number;
+	};
+};
+
+function serverApiBase(): string {
+	const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+	if (configured?.startsWith("http://") || configured?.startsWith("https://")) {
+		return configured.replace(/\/+$/, "");
+	}
+	if (process.env.NODE_ENV !== "production") {
+		return "http://localhost:3100";
+	}
+	return "https://api.waifu.fun";
+}
+
+function toNumber(value: unknown): number {
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeApp(raw: unknown): App | null {
+	if (!raw || typeof raw !== "object") return null;
+	const row = raw as Record<string, unknown>;
+	const appId = typeof row.appId === "string" ? row.appId : "";
+	const name = typeof row.name === "string" ? row.name : "";
+	if (!appId || !name) return null;
+	const status =
+		row.status === "live" || row.status === "paused" || row.status === "scheduled" ? row.status : "scheduled";
+	return {
+		id: typeof row.id === "string" ? row.id : appId,
+		agentTokenAddress: typeof row.agentTokenAddress === "string" ? row.agentTokenAddress : "",
+		appId,
+		name,
+		description: typeof row.description === "string" ? row.description : null,
+		icon: typeof row.icon === "string" ? row.icon : null,
+		appUrl: typeof row.appUrl === "string" ? row.appUrl : null,
+		status,
+		shippedAt: typeof row.shippedAt === "string" ? row.shippedAt : null,
+		revenueLifetimeUsd: toNumber(row.revenueLifetimeUsd),
+		revenue24hUsd: toNumber(row.revenue24hUsd),
+		revenue7dUsd: toNumber(row.revenue7dUsd),
+		revenue7dDeltaPct:
+			row.revenue7dDeltaPct === null || row.revenue7dDeltaPct === undefined ? null : toNumber(row.revenue7dDeltaPct),
+		metadata: row.metadata ?? null,
+		createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
+		updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : "",
+	};
+}
+
+export async function fetchAppsForAgent(address: string): Promise<App[]> {
+	const base = serverApiBase();
+	try {
+		const res = await fetch(`${base}/v2/agents/${encodeURIComponent(address)}/apps`, {
+			next: { revalidate: 60 },
+		});
+		if (!res.ok) return [];
+		const json = (await res.json()) as unknown;
+		const data = json && typeof json === "object" && "data" in json ? (json as AgentAppsResponse).data : null;
+		if (!data || !Array.isArray(data.apps)) return [];
+		return data.apps.map(normalizeApp).filter((app): app is App => app !== null);
+	} catch {
+		return [];
+	}
 }
 
 export type AppsSummary = {
 	apps: App[];
-	totalRevenue30d: number;
-	totalChange30d: number;
+	totalRevenue7d: number;
+	totalLifetime: number;
 };
 
 export function summarizeApps(apps: App[]): AppsSummary {
-	const totalRevenue30d = apps.reduce((s, a) => s + a.revenue30d, 0);
-	const totalChange30d = 0; // no historical baseline yet
-	return { apps, totalRevenue30d, totalChange30d };
+	return {
+		apps,
+		totalRevenue7d: apps.reduce((sum, app) => sum + app.revenue7dUsd, 0),
+		totalLifetime: apps.reduce((sum, app) => sum + app.revenueLifetimeUsd, 0),
+	};
 }

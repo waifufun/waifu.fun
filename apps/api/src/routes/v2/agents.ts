@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Context, Next } from "hono";
 
 import {
+	agentApps,
 	agentPersonaQueries,
 	agentPersonas,
 	agentQueries,
@@ -63,6 +64,20 @@ function requireDb(): ReturnType<typeof getDatabase>["db"] | null {
 	const url = process.env.DATABASE_URL;
 	if (!url || url.length === 0) return null;
 	return getDatabase(url).db;
+}
+
+function numericToNumber(value: string | number | null | undefined): number {
+	if (value === null || value === undefined) return 0;
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function metadataNumber(metadata: unknown, key: string): number | null {
+	if (!metadata || typeof metadata !== "object" || !(key in metadata)) return null;
+	const value = (metadata as Record<string, unknown>)[key];
+	if (typeof value !== "number" && typeof value !== "string") return null;
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
 }
 
 type LaunchOrchestrator = ReturnType<typeof createOrchestrator>;
@@ -666,6 +681,73 @@ app.post("/:id/kill", requirePatron(), requireAgentOwnership("id"), async (c) =>
 
 	await emitAgentEvent({ agentId, eventType: "agent.killed", data: { reason } });
 	return c.json({ ok: true, data: serializeControlState(state ?? existing) });
+});
+
+/**
+ * GET /v2/agents/:tokenAddress/apps
+ *
+ * Registry of revenue-generating mini-apps associated with an agent token.
+ */
+app.get("/:token/apps", async (c) => {
+	const db = requireDb();
+	if (!db) {
+		return c.json({ error: "database unavailable" }, 503);
+	}
+
+	const token = c.req.param("token");
+	if (!ADDRESS_RE.test(token)) {
+		return c.json({ error: "invalid token address" }, 400);
+	}
+
+	try {
+		const rows = await db
+			.select()
+			.from(agentApps)
+			.where(eq(agentApps.agentTokenAddress, token.toLowerCase()))
+			.orderBy(desc(agentApps.revenue7dUsd));
+
+		const apps = rows.map((row) => {
+			const revenue24hUsd = numericToNumber(row.revenue24hUsd);
+			const revenue7dUsd = numericToNumber(row.revenue7dUsd);
+			const revenueLifetimeUsd = numericToNumber(row.revenueLifetimeUsd);
+			return {
+				id: row.id.toString(),
+				agentTokenAddress: row.agentTokenAddress,
+				appId: row.appId,
+				name: row.name,
+				description: row.description,
+				icon: row.icon,
+				appUrl: row.appUrl,
+				status: row.status,
+				shippedAt: row.shippedAt?.toISOString() ?? null,
+				revenueLifetimeUsd,
+				revenue24hUsd,
+				revenue7dUsd,
+				revenue7dDeltaPct: metadataNumber(row.metadata, "revenue7dDeltaPct"),
+				metadata: row.metadata,
+				createdAt: row.createdAt.toISOString(),
+				updatedAt: row.updatedAt.toISOString(),
+			};
+		});
+
+		c.header("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+		return c.json({
+			ok: true,
+			data: {
+				apps,
+				totalRevenue7d: apps.reduce((sum, app) => sum + app.revenue7dUsd, 0),
+				totalLifetime: apps.reduce((sum, app) => sum + app.revenueLifetimeUsd, 0),
+			},
+		});
+	} catch (err) {
+		return c.json(
+			{
+				error: "failed to load agent apps",
+				detail: err instanceof Error ? err.message : String(err),
+			},
+			500,
+		);
+	}
 });
 
 /**
