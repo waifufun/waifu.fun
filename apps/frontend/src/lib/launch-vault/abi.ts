@@ -121,6 +121,20 @@ export const launchVaultAbi = [
 	{
 		type: "function",
 		stateMutability: "view",
+		name: "tier",
+		inputs: [],
+		outputs: [{ name: "", type: "uint8" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
+		name: "factory",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+	{
+		type: "function",
+		stateMutability: "view",
 		name: "getDepositorInfo",
 		inputs: [{ name: "user", type: "address" }],
 		outputs: [
@@ -181,6 +195,7 @@ export const launchVaultAbi = [
 		inputs: [],
 		outputs: [],
 	},
+
 	// events
 	{
 		type: "event",

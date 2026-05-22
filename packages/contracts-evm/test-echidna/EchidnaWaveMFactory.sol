@@ -10,6 +10,7 @@ pragma solidity ^0.8.24;
 // that protect the wave M+N deployer wiring.
 
 import {LaunchFactory} from "../contracts/LaunchFactory.sol";
+import {LaunchTier} from "../contracts/LaunchTier.sol";
 import {RouterDeployer} from "../contracts/RouterDeployer.sol";
 import {AgentSafeDeployer} from "../contracts/AgentSafeDeployer.sol";
 import {TreasuryLP4Deployer} from "../contracts/TreasuryLP4Deployer.sol";
@@ -83,7 +84,7 @@ contract EchidnaWaveMFactory {
         for (uint8 t = 0; t < taxes.length; t++) {
             for (uint8 i = 0; i < 5; i++) {
                 (uint256 cap, uint256 quote, uint256 v2,) =
-                    factory.tierBudget(LaunchFactory.LaunchTier(i), taxes[t]);
+                    factory.tierBudget(LaunchTier(i), taxes[t]);
                 if (cap == 0 || quote == 0) return false;
                 if (quote + v2 > cap) return false;
             }
@@ -148,7 +149,7 @@ contract EchidnaWaveMFactory {
     /// flat ladders without breaking the smoke-test tier.
     function echidna_tier_mc_monotonic() public view returns (bool) {
         for (uint8 t = 0; t < 5; t++) {
-            uint256[4] memory mc = factory.tierMcTargets(LaunchFactory.LaunchTier(t));
+            uint256[4] memory mc = factory.tierMcTargets(LaunchTier(t));
             for (uint256 j = 1; j < 4; j++) {
                 if (mc[j] < mc[j - 1]) return false;
             }

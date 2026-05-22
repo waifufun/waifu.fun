@@ -21,6 +21,7 @@ import {BundleRouter} from "./BundleRouter.sol";
 import {TreasuryLP4} from "./TreasuryLP4.sol";
 import {IVaultRouterSetter} from "./interfaces/IVaultRouterSetter.sol";
 import {TierMath} from "./TierMath.sol";
+import {LaunchTier} from "./LaunchTier.sol";
 import {RouterDeployer} from "./RouterDeployer.sol";
 import {TaxSplitter} from "./TaxSplitter.sol";
 import {AgentSafeDeployer} from "./AgentSafeDeployer.sol";
@@ -32,13 +33,11 @@ interface IPCSV2Factory {
 }
 
 contract LaunchFactory is ReentrancyGuard {
-    enum LaunchTier {
-        TIER_80,
-        TIER_90,
-        TIER_95,
-        TIER_98,
-        TIER_TEST
-    }
+    /// @dev LaunchTier enum is defined in `LaunchTier.sol` and shared with
+    ///      `LaunchVault` so the vault can gate behavior on tier (e.g. the
+    ///      instant admin refund only available for TIER_TEST). External
+    ///      callers that used to reference `LaunchFactory.LaunchTier` should
+    ///      import the enum from `./LaunchTier.sol` directly.
 
     struct LaunchConfig {
         string name;
@@ -252,7 +251,8 @@ contract LaunchFactory is ReentrancyGuard {
             v2BuyBnb,
             config.closeTimestamp,
             0, // penaltyBps default 0
-            vestingEnabled
+            vestingEnabled,
+            config.tier
         );
 
         // deploy AgentSafe via the external deployer (deterministic CREATE2 inside Safe ProxyFactory)
