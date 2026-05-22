@@ -236,17 +236,9 @@ describeFn("TreasuryLP5 :: real PCS V3 NPM fork", function () {
 		await (await wbnb.approve(PCS_V2_ROUTER, ethers.MaxUint256)).wait();
 		const deadline = (await ethers.provider.getBlock("latest")).timestamp + 600;
 		await (
-			await v2Router.addLiquidity(
-				tokenAddr,
-				WBNB,
-				V2_TOKEN_RESERVE,
-				V2_WBNB_RESERVE,
-				0,
-				0,
-				owner.address,
-				deadline,
-				{ gasLimit: 5_000_000 },
-			)
+			await v2Router.addLiquidity(tokenAddr, WBNB, V2_TOKEN_RESERVE, V2_WBNB_RESERVE, 0, 0, owner.address, deadline, {
+				gasLimit: 5_000_000,
+			})
 		).wait();
 
 		const v2Factory = new ethers.Contract(
@@ -603,10 +595,7 @@ describeFn("TreasuryLP5 :: real PCS V3 NPM fork", function () {
 		expect(bnbClaimed, "BnbClaimed missing").to.not.be.undefined;
 
 		const collected =
-			bnbClaimed.args.bnbToAgent +
-			bnbClaimed.args.bnbBuyback +
-			bnbClaimed.args.bnbPlatform +
-			bnbClaimed.args.bnbPatron;
+			bnbClaimed.args.bnbToAgent + bnbClaimed.args.bnbBuyback + bnbClaimed.args.bnbPlatform + bnbClaimed.args.bnbPatron;
 		expect(collected).to.be.gt(0n);
 
 		// BPS shape — bps round-down on each split, agent absorbs dust.
@@ -783,17 +772,9 @@ describeFn("TreasuryLP5 :: real PCS V3 NPM fork", function () {
 
 		const deadline = (await ethers.provider.getBlock("latest")).timestamp + 600;
 		await (
-			await v2Router.addLiquidity(
-				tokenAddr,
-				WBNB,
-				V2_TOKEN_RESERVE,
-				V2_WBNB_RESERVE,
-				0,
-				0,
-				owner.address,
-				deadline,
-				{ gasLimit: 5_000_000 },
-			)
+			await v2Router.addLiquidity(tokenAddr, WBNB, V2_TOKEN_RESERVE, V2_WBNB_RESERVE, 0, 0, owner.address, deadline, {
+				gasLimit: 5_000_000,
+			})
 		).wait();
 
 		// Find the real V2 pair address from the PCS V2 factory.
@@ -834,6 +815,6 @@ describeFn("TreasuryLP5 :: real PCS V3 NPM fork", function () {
 
 		// Smoke: a swap can still happen from t=0 via the V3 pool.
 		await buyTokenViaV3(tokenAddr, ethers.parseEther("0.1"));
-		console.log(`    [10] t=0 V3 swap succeeded against the real-pair-anchored pool`);
+		console.log("    [10] t=0 V3 swap succeeded against the real-pair-anchored pool");
 	});
 });

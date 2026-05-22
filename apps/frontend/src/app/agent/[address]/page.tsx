@@ -8,7 +8,6 @@ import { fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { fetchHoldings } from "@/lib/wave-t/holdings";
-import { fetchMarkets } from "@/lib/wave-t/markets";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
 import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
@@ -306,14 +305,13 @@ async function buildAgentActivity(opts: {
 	isSolAgent: boolean;
 	tokenAddress: string;
 }): Promise<ActivityRowInput[]> {
-	const [ship, tweets, markets, onchain] = await Promise.all([
+	const [ship, tweets, onchain] = await Promise.all([
 		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
 		opts.isSolAgent ? fetchTweets() : Promise.resolve([]),
-		fetchMarkets(),
 		fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
 	]);
 
-	const foundation = buildActivity({ prs: ship.items, tweets, markets });
+	const foundation = buildActivity({ prs: ship.items, tweets });
 
 	// Map on-chain transfers into the activity feed's `tx` row variant.
 	const onchainRows: ActivityRowInput[] = onchain.txs.slice(0, 12).map((tx) => ({

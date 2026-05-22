@@ -7,7 +7,6 @@ import { usePostLaunchMarket } from "@/hooks/use-post-launch-market";
 
 import { BurnCounter } from "./burn-counter";
 import { ClaimWidget } from "./claim-widget";
-import { TaxStreamStats } from "./tax-stream-stats";
 import { TierLadder } from "./tier-ladder";
 import { TokenChart } from "./token-chart";
 import { TradeActivityFeed } from "./trade-activity-feed";
@@ -47,15 +46,6 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 	const treasuryLp = data.treasuryLp && isAddress(data.treasuryLp) ? (data.treasuryLp as Address) : undefined;
 	const token = tokenFromLaunch;
 
-	// Tax split metadata is stored on the legacy `launches` row, not the
-	// agent_launches one. The post-launch indexer ports the splitter address
-	// over via the metadata blob; until then we read it best-effort.
-	const meta = (data.metadata ?? {}) as Record<string, unknown>;
-	const taxSplitterRaw = typeof meta.taxSplitter === "string" ? meta.taxSplitter : null;
-	const agentBpsRaw = typeof meta.agentBps === "number" ? meta.agentBps : null;
-	const patronBpsRaw = typeof meta.patronBps === "number" ? meta.patronBps : null;
-	const taxSplitter = taxSplitterRaw && isAddress(taxSplitterRaw) ? (taxSplitterRaw as Address) : null;
-
 	return (
 		<section className="mt-10 flex flex-col gap-5" aria-label="post-launch surface" data-testid="post-launch-surface">
 			{token ? (
@@ -75,26 +65,17 @@ export function PostLaunchSurface({ tokenAddress, ticker }: Props) {
 			<SectionHeader>burn counter</SectionHeader>
 			<BurnCounter tokenAddress={token} ticker={ticker} />
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-				<div className="flex flex-col gap-3">
-					<SectionHeader>claim</SectionHeader>
-					<ClaimWidget
-						vault={vault}
-						ticker={ticker}
-						vestingEnabled={data.vestingEnabled}
-						launchTimestamp={data.launchTimestamp}
-					/>
-				</div>
-				<div className="flex flex-col gap-3">
-					<SectionHeader>tax stream</SectionHeader>
-					<TaxStreamStats
-						taxSplitter={taxSplitter ?? null}
-						treasuryLp={treasuryLp ?? null}
-						agentBps={agentBpsRaw ?? null}
-						patronBps={patronBpsRaw ?? null}
-					/>
-				</div>
-			</div>
+			{/* Tax stream panel moved to AgentHomeV2 (feat/agent-page-dynamic-2026-05-22)
+			    so it surfaces for every wave-M launch, not just graduated ones,
+			    and pulls split metadata from the typed launch row instead of the
+			    untyped metadata blob. */}
+			<SectionHeader>claim</SectionHeader>
+			<ClaimWidget
+				vault={vault}
+				ticker={ticker}
+				vestingEnabled={data.vestingEnabled}
+				launchTimestamp={data.launchTimestamp}
+			/>
 
 			{token ? (
 				<>
