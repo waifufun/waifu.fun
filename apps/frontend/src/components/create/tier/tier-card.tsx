@@ -13,10 +13,6 @@ type Props = {
 	onSelect: () => void;
 };
 
-function fmtBnb(n: number): string {
-	return `${n} BNB`;
-}
-
 export function TierCard({ tier, selected, onSelect }: Props) {
 	const headingId = useId();
 	const recommended = tier.id === 90;
@@ -85,15 +81,15 @@ export function TierCard({ tier, selected, onSelect }: Props) {
 			<dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
 				<div>
 					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">cap</dt>
-					<dd className="mt-0.5 text-neutral-200">{fmtBnb(tier.cap)}</dd>
+					<dd className="mt-0.5 text-neutral-200">{tier.cap} BNB</dd>
 				</div>
 				<div>
 					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">v2 buy</dt>
-					<dd className="mt-0.5 text-neutral-200">{fmtBnb(tier.v2Buy)}</dd>
+					<dd className="mt-0.5 text-neutral-200">{tier.v2Buy} BNB</dd>
 				</div>
 				<div>
 					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">total bnb</dt>
-					<dd className="mt-0.5 text-neutral-200">{fmtBnb(totalBnb(tier))}</dd>
+					<dd className="mt-0.5 text-neutral-200">{totalBnb(tier)} BNB</dd>
 				</div>
 				<div>
 					<dt className="font-mono uppercase tracking-[0.2em] text-neutral-600">burn</dt>

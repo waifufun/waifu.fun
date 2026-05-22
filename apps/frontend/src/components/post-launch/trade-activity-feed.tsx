@@ -46,7 +46,7 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 				<a
 					href={link}
 					target="_blank"
-					rel="noreferrer"
+					rel="noopener noreferrer"
 					className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
 					aria-label="open full trade feed on dexscreener"
 				>

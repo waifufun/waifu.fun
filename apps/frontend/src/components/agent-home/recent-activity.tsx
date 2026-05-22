@@ -18,7 +18,7 @@ export default function RecentActivity({ trades }: { trades: AgentTrade[] }) {
 					key={`${trade.txId || idx}-${trade.timestamp}`}
 					href={trade.txId ? `https://bscscan.com/tx/${trade.txId}` : undefined}
 					target="_blank"
-					rel="noreferrer"
+					rel="noopener noreferrer"
 					className={cn(
 						"flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] transition-colors text-[11px] font-mono",
 						!trade.txId && "pointer-events-none",

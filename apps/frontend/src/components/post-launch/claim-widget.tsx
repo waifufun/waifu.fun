@@ -142,7 +142,7 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 							<a
 								href={`https://bscscan.com/tx/${txHash}`}
 								target="_blank"
-								rel="noreferrer"
+								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1 text-white/55 hover:text-[#00ff87] transition-colors"
 								aria-label="view last claim transaction on bscscan"
 							>

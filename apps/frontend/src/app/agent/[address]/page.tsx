@@ -375,7 +375,13 @@ export default async function AgentPage({
 	const { address } = await params;
 
 	const agentP = fetchAgent(address);
-	const tradesP = isArchitectAgentAddress(address) ? fetchAgentOwnTrades(address) : fetchTrades(address);
+	// Activity feed shows the agent's OWN trades (initiated by agent-safe +
+	// agent-hot wallets), not all market activity on the token.
+	// fetchAgentOwnTrades reads the /activity-trades endpoint which filters by
+	// wallet registry; returns [] when the agent has not traded yet. Applies to
+	// every agent now that the wallet registry is in place — not just Sol/the
+	// architect.
+	const tradesP = fetchAgentOwnTrades(address).catch(() => fetchTrades(address));
 	const launchP = fetchLaunch(address);
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
@@ -401,7 +407,7 @@ export default async function AgentPage({
 	const burnRateP = fetchAgentBurnRateSnapshot(address).catch(() => null);
 	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
-	const appsP = fetchAppsForAgent({ isSolAgent }).catch(() => []);
+	const appsP = fetchAppsForAgent(address).catch(() => []);
 	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
 
 	const [

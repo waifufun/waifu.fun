@@ -142,7 +142,6 @@ export default function AgentHomeV2({
 	const navUsd = holdings.navUsd;
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
 	const liveApps = apps.filter((a) => a.status === "live").length;
-	const hasApps = apps.length > 0;
 
 	// Merge raw trades into the unified activity stream so we surface a
 	// single feed instead of duplicating "wave-t activity" + "last 20
@@ -209,17 +208,11 @@ export default function AgentHomeV2({
 				    (+ apps-shipped when the agent has shipped apps). 3-up
 				    when no apps, 4-up when apps exist. Stays 2-cols at md
 				    so panels do not collapse to a single column on tablets. */}
-				<div
-					className={
-						hasApps
-							? "mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
-							: "mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-					}
-				>
+				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 					<HoldingsAllocation snapshot={holdings} />
 					<ActivePositions positions={positions} />
 					<PnlChart />
-					{hasApps ? <AppsShipped apps={apps} visibleCount={3} /> : null}
+					<AppsShipped apps={apps} visibleCount={3} />
 				</div>
 
 				{/* Row 4: thesis. Explains how the agent earns and how holders
@@ -235,16 +228,13 @@ export default function AgentHomeV2({
 				    "last 20 trades" list: both streams ride through one
 				    panel. The feed's built-in "Trading" tab filters down
 				    to swap / position rows. */}
-				<div
-					className={hasApps ? "mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" : "mt-4 grid gap-4"}
-					id="activity"
-				>
+				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="activity">
 					<WaveTActivityFeed max={30} rows={mergedActivity} />
-					{hasApps ? <TopAppsByRevenue apps={apps} limit={4} /> : null}
+					<TopAppsByRevenue apps={apps} limit={4} />
 				</div>
 
 				<footer className="mt-6 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-					{hasApps ? `live data / ${liveApps} apps shipped` : "live data / onchain feed"}
+					{`live data / ${liveApps} apps shipped`}
 				</footer>
 
 				{/*

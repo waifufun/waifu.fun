@@ -7,12 +7,12 @@
  * the persona changes or the platform onboards a second architect-tier
  * agent, the role survives the rename.
  *
- * Until $WAIFU mints, the canonical agent page for `/agent/sol` points at
- * an ElizaOS placeholder token on BSC. When the real token launches, swap
- * this constant and both the `/agent/sol` vanity slug and any architect-
- * specific logic update in one place.
+ * Live as $WAIFU on BSC since the 2026-05-22 launch. Used by `/agent/sol`
+ * vanity redirect and any architect-specific UX paths. If the persona ever
+ * changes or the platform onboards a second architect-tier agent, the role
+ * survives the rename and only this constant moves.
  */
-export const ARCHITECT_AGENT_ADDRESS = "0xea17df5cf6d172224892b5477a16acb111182478";
+export const ARCHITECT_AGENT_ADDRESS = "0x15fc6086064afe50ccf4c70000c55cecb6e17777";
 
 export function isArchitectAgentAddress(address: string): boolean {
 	return address.toLowerCase() === ARCHITECT_AGENT_ADDRESS.toLowerCase();

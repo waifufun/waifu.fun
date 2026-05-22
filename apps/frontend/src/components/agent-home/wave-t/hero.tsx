@@ -124,7 +124,6 @@ export function Hero({
 				<StatusCard
 					className="border-0 bg-transparent hover:border-transparent"
 					daysOperating={daysOperating}
-					otherAgents={4}
 					status={status}
 					runwayDays={runwayDays ?? null}
 				/>
