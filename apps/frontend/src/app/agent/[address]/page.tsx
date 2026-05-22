@@ -18,6 +18,7 @@ import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchPositions } from "@/lib/wave-t/positions";
 import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
+import { fetchTradingSnapshot } from "@/lib/wave-t/trading";
 import { fetchTweets } from "@/lib/wave-t/voice";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -408,6 +409,12 @@ export default async function AgentPage({
 	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
 	const appsP = fetchAppsForAgent(address).catch(() => []);
+	const tradingP = fetchTradingSnapshot(address).catch(() => ({
+		enabled: false,
+		session: null,
+		positions: [],
+		orders: [],
+	}));
 	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
 
 	const [
@@ -423,6 +430,7 @@ export default async function AgentPage({
 		positions,
 		apps,
 		activity,
+		trading,
 	] = await Promise.all([
 		agentP,
 		tradesP,
@@ -436,6 +444,7 @@ export default async function AgentPage({
 		positionsP,
 		appsP,
 		activityP,
+		tradingP,
 	]);
 
 	const holdings: HoldingsSnapshot = aggregatedHoldings ? holdingsSnapshotFromApi(aggregatedHoldings) : legacyHoldings;
@@ -478,6 +487,7 @@ export default async function AgentPage({
 			activity={activity}
 			apps={apps}
 			agentSafeBalance={agentSafeBalance}
+			trading={trading}
 		/>
 	);
 }
