@@ -1,16 +1,17 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import type * as React from "react";
 import { useCallback, useMemo, useState } from "react";
 import { type Address, isAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { bsc } from "wagmi/chains";
 
+import { THEME_TOKENS } from "@/components/agent-home/wave-t/_primitives";
 import { ActivityFeed } from "@/components/launch-page/activity-feed";
-import { AdminInstantRefundWidget } from "@/components/launch-page/admin-instant-refund-widget";
 import { DepositWidget } from "@/components/launch-page/deposit-widget";
 import { LaunchFAQ } from "@/components/launch-page/launch-faq";
-import { LaunchHero } from "@/components/launch-page/launch-hero";
+import { LaunchHeroV2 } from "@/components/launch-page/launch-hero-v2";
 import { LaunchTerms } from "@/components/launch-page/launch-terms";
 import { RefundWidget } from "@/components/launch-page/refund-widget";
 import { StateBanner } from "@/components/launch-page/state-banner";
@@ -21,6 +22,8 @@ import { useLaunchMeta, useVaultSnapshot, useVaultUserPosition } from "@/hooks/u
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 import { type LaunchDisplayState, deriveLaunchDisplayState } from "@/lib/launch-vault/launch-display-state";
 import { tierFromCapWei, tierFromString } from "@/lib/launch-vault/tiers";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 type Props = {
 	id: string;
@@ -121,37 +124,79 @@ export default function LaunchPageClient({ id }: Props) {
 
 	return (
 		<main
-			className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6 pb-32 md:pb-8"
+			aria-label="launch surface"
+			className="min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
 			data-testid="launch-page"
+			style={THEME_TOKENS as React.CSSProperties}
 		>
-			<LaunchHero
-				meta={meta.data ?? null}
-				tier={tier}
-				totalDeposited={totalDeposited}
-				depositorCount={depositorCount}
-				closeTimestamp={closeTimestamp}
-				state={state}
-				bonusPool={bonusPool}
-			/>
+			<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
+				<TopBar />
 
-			<StateBanner state={displayState} />
-
-			<div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-				<div className="flex flex-col gap-6">
-					<TierInfoCard
+				<div className="mt-4">
+					<LaunchHeroV2
+						meta={meta.data ?? null}
 						tier={tier}
-						vestingEnabled={snap?.vestingEnabled ?? null}
-						launchTimestamp={launchTimestamp}
-						allocation={userPosition.allocation}
-						claimed={userPosition.claimed}
-						claimable={claimable}
+						totalDeposited={totalDeposited}
+						depositorCount={depositorCount}
+						closeTimestamp={closeTimestamp}
+						state={state}
+						bonusPool={bonusPool}
 					/>
-					<LaunchFAQ tier={tier} />
-					<LaunchTerms penaltyBps={snap?.penaltyBps ?? null} />
-					<AdminInstantRefundWidget vault={vaultAddress} state={state} onUserStateChanged={refresh} />
-					<ActivityFeed launchId={runtimeId} vaultAddress={vaultAddress} />
 				</div>
-				<aside className="hidden lg:block">
+
+				<div className="mt-4">
+					<StateBanner state={displayState} />
+				</div>
+
+				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] pb-32 md:pb-8">
+					<div className="flex flex-col gap-6">
+						<TierInfoCard
+							tier={tier}
+							vestingEnabled={snap?.vestingEnabled ?? null}
+							launchTimestamp={launchTimestamp}
+							allocation={userPosition.allocation}
+							claimed={userPosition.claimed}
+							claimable={claimable}
+						/>
+						<LaunchFAQ tier={tier} />
+						<LaunchTerms penaltyBps={snap?.penaltyBps ?? null} />
+						<ActivityFeed launchId={runtimeId} vaultAddress={vaultAddress} />
+					</div>
+					<aside className="hidden lg:block">
+						{showClaimWidget ? (
+							<ClaimWidget
+								vault={vaultAddress}
+								ticker={meta.data?.tokenTicker ?? "tokens"}
+								vestingEnabled={snap?.vestingEnabled ?? true}
+								launchTimestamp={launchTimestampNumber}
+								onClaimed={refreshAfterClaim}
+							/>
+						) : displayState === "refunding" ? (
+							<RefundWidget
+								vault={vaultAddress}
+								totalDeposited={totalDeposited}
+								bonusPool={bonusPool}
+								onUserStateChanged={refresh}
+							/>
+						) : (
+							<DepositWidget
+								vault={vaultAddress}
+								state={state}
+								totalDeposited={totalDeposited}
+								capWei={capWeiResolved}
+								penaltyBps={snap?.penaltyBps ?? null}
+								presaleTokens={snap?.presaleTokens ?? null}
+								tokenSymbol={meta.data?.tokenTicker ?? null}
+								tier={tier}
+								closeTimestamp={closeTimestamp}
+								onUserStateChanged={refresh}
+							/>
+						)}
+					</aside>
+				</div>
+
+				{/* Mobile sticky widget. Renders below the lg breakpoint only. */}
+				<div className="lg:hidden">
 					{showClaimWidget ? (
 						<ClaimWidget
 							vault={vaultAddress}
@@ -166,6 +211,7 @@ export default function LaunchPageClient({ id }: Props) {
 							totalDeposited={totalDeposited}
 							bonusPool={bonusPool}
 							onUserStateChanged={refresh}
+							sticky="bottom"
 						/>
 					) : (
 						<DepositWidget
@@ -179,46 +225,26 @@ export default function LaunchPageClient({ id }: Props) {
 							tier={tier}
 							closeTimestamp={closeTimestamp}
 							onUserStateChanged={refresh}
+							sticky="bottom"
 						/>
 					)}
-				</aside>
-			</div>
-
-			{/* Mobile sticky widget. Renders below the lg breakpoint only. */}
-			<div className="lg:hidden">
-				{showClaimWidget ? (
-					<ClaimWidget
-						vault={vaultAddress}
-						ticker={meta.data?.tokenTicker ?? "tokens"}
-						vestingEnabled={snap?.vestingEnabled ?? true}
-						launchTimestamp={launchTimestampNumber}
-						onClaimed={refreshAfterClaim}
-					/>
-				) : displayState === "refunding" ? (
-					<RefundWidget
-						vault={vaultAddress}
-						totalDeposited={totalDeposited}
-						bonusPool={bonusPool}
-						onUserStateChanged={refresh}
-						sticky="bottom"
-					/>
-				) : (
-					<DepositWidget
-						vault={vaultAddress}
-						state={state}
-						totalDeposited={totalDeposited}
-						capWei={capWeiResolved}
-						penaltyBps={snap?.penaltyBps ?? null}
-						presaleTokens={snap?.presaleTokens ?? null}
-						tokenSymbol={meta.data?.tokenTicker ?? null}
-						tier={tier}
-						closeTimestamp={closeTimestamp}
-						onUserStateChanged={refresh}
-						sticky="bottom"
-					/>
-				)}
+				</div>
 			</div>
 		</main>
+	);
+}
+
+function TopBar() {
+	return (
+		<div className="flex items-center justify-between">
+			<Link
+				className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/50 transition-colors duration-200 hover:text-white/85"
+				href="/launches"
+			>
+				<ArrowLeft className="h-3 w-3" strokeWidth={1.5} />
+				all launches
+			</Link>
+		</div>
 	);
 }
 
