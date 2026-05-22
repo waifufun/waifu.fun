@@ -141,7 +141,13 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 }
 
 export function formatRunway(days: number): string {
-	if (!Number.isFinite(days)) return "∞";
+	// Non-finite happens when dailyBurnUsd is 0 (no agent activity yet). Math
+	// says "infinity", reality says "we have no burn data yet". The leaderboard
+	// renders "–" for unknown so the table reads as a clean placeholder rather
+	// than every fresh agent screaming "∞" on launch day. Once burn is wired
+	// the cell starts surfacing real day counts automatically. Matches the en-
+	// dash placeholder convention used across the homepage stat cells.
+	if (!Number.isFinite(days)) return "–";
 	if (days <= 0) return "0 days";
 	if (days < 1) {
 		const hours = Math.max(1, Math.round(days * 24));

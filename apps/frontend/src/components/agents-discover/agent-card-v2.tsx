@@ -31,7 +31,7 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { useLaunchByToken } from "@/hooks/use-post-launch";
 import { cn } from "@/lib/utils";
 
-import { formatNumberShort, formatUsdShort, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
+import { formatNumberShort, formatUsdShort, resolveTierId, shortAddress, tierDisplay } from "./agent-card-v2.helpers";
 import type { AgentListItem } from "./types";
 
 // Premium ease curve (apple-ish). Used on the hero image scale so the
@@ -50,7 +50,7 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 	// chrome. 404 / non-v3 launches return null and we render the
 	// minimal card.
 	const launch = useLaunchByToken(agent.tokenAddress);
-	const tier = tierDisplay(launch.data?.tier ?? null);
+	const tier = tierDisplay(resolveTierId(launch.data?.tier ?? null));
 
 	return (
 		<SurfaceCard variant="interactive" padding="none" asChild className="group overflow-hidden">
@@ -126,7 +126,11 @@ function StatRow({ agent }: { agent: AgentListItem }) {
 			<StatCell label="mc" value={mc !== undefined ? formatUsdShort(mc) : "–"} align="start" />
 			<StatCell label="24h" value={vol !== undefined ? formatUsdShort(vol) : "–"} />
 			<StatCell label="holders" value={holders !== null ? formatNumberShort(holders) : "–"} />
-			<StatCell label="treasury" value={treasury !== null ? `${(treasury as number).toFixed(2)}` : "–"} suffix="bnb" />
+			{treasury !== null ? (
+				<StatCell label="treasury" value={`${(treasury as number).toFixed(2)}`} suffix="bnb" />
+			) : (
+				<StatCell label="treasury" value="–" />
+			)}
 		</div>
 	);
 }
