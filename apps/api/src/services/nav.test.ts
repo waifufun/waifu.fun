@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Database } from "@waifufun/db";
 import { parseEther, parseUnits } from "viem";
-import { buildNavSnapshot } from "./nav/aggregator.js";
+import { buildNavSnapshot, enumeratorsFor } from "./nav/aggregator.js";
 import { enumerateEvmErc20Balances } from "./nav/enumerators/evm-erc20.js";
 import { enumerateEvmNativeBalance } from "./nav/enumerators/evm-native.js";
+import { enumerateHyperliquid } from "./nav/enumerators/hyperliquid.js";
+import { enumeratePcsV3Lp } from "./nav/enumerators/pancake-v3-lp.js";
 import { clearCoinGeckoPriceCacheForTest, fetchCoinGeckoTokenPrices } from "./nav/pricing/coingecko.js";
 import { fetchPcsV3TwapPriceUsd } from "./nav/pricing/pcs-v3-twap.js";
 
@@ -38,6 +40,70 @@ test("NAV aggregator computes priced and unpriced holdings without failing whole
 	assert.equal(snapshot.byChain.bsc, 601);
 	assert.equal(snapshot.byWallet.w1, 601);
 	assert.equal(snapshot.stale[0]?.reason, "rate-limit");
+});
+
+test("NAV aggregator combines native, ERC20, HyperLiquid, and PCS V3 LP enumerators", async () => {
+	const wallet = {
+		id: "w1",
+		address: WALLET,
+		chain: "bsc",
+		role: "agent-safe",
+		label: "safe",
+		venue: "hyperliquid",
+	} as const;
+	assert.deepEqual(enumeratorsFor(wallet), ["native", "erc20", "pcs-v3-lp", "hyperliquid"]);
+	const snapshot = await buildNavSnapshot(AGENT, {
+		db: DB,
+		now: () => 1779435600000,
+		getAgentTokenAddress: async () => AGENT,
+		listWallets: async () => [wallet],
+		enumerateNative: async () => ({
+			holdings: [{ asset: "BNB", balance: 1, raw: parseEther("1").toString() }],
+			stale: [],
+		}),
+		enumerateErc20: async () => ({
+			holdings: [{ contract: TOKEN, symbol: "WAIFU", decimals: 18, balance: 2, raw: parseUnits("2", 18).toString() }],
+			stale: [],
+		}),
+		enumerateHyperliquid: async (base) => ({
+			holdings: [
+				{
+					...base,
+					asset: "USDC",
+					contract: null,
+					balance: 3,
+					priceUsd: 1,
+					valueUsd: 3,
+					priced: true,
+					kind: "spot",
+					venue: "hyperliquid",
+				},
+			],
+			stale: [],
+		}),
+		enumeratePcsV3Lp: async (base) => ({
+			holdings: [
+				{
+					...base,
+					asset: "PCS-V3-LP-1",
+					contract: "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364",
+					balance: 1,
+					priceUsd: null,
+					valueUsd: null,
+					priced: false,
+					kind: "lp",
+					venue: "pancakeswap-v3",
+					tokenId: "1",
+				},
+			],
+			stale: [],
+		}),
+		fetchNativePrices: async () => ({ binancecoin: { priceUsd: 10, priced: true, source: "native" } }),
+		fetchTokenPrices: async () => ({ [TOKEN]: { priceUsd: 5, priced: true, source: "coingecko" } }),
+	});
+	assert.equal(snapshot.holdings.length, 4);
+	assert.equal(snapshot.navUsd, 23);
+	assert.deepEqual(snapshot.unpriced.assets, ["PCS-V3-LP-1"]);
 });
 
 test("EVM native enumerator returns balance and degrades on RPC failure", async () => {
@@ -74,6 +140,98 @@ test("EVM ERC20 enumerator handles scanner discovery and 429 manual fallback", a
 	});
 	assert.equal(fallback.holdings[0]?.symbol, "TST");
 	assert.equal(fallback.stale[0]?.reason, "rate-limit");
+});
+
+test("HyperLiquid enumerator parses USDC margin and open perps", async () => {
+	const wallet = {
+		walletId: "hl1",
+		walletAddress: WALLET,
+		walletLabel: "hl",
+		walletRole: "agent-hot",
+		chain: "bsc",
+	} as const;
+	const result = await enumerateHyperliquid(wallet, {
+		fetch: async () =>
+			new Response(
+				JSON.stringify({
+					withdrawable: "12.34",
+					assetPositions: [
+						{
+							position: {
+								coin: "BTC",
+								szi: "0.5",
+								entryPx: "65000",
+								unrealizedPnl: "123.45",
+								liquidationPx: "50000",
+								leverage: { value: 2 },
+							},
+						},
+					],
+				}),
+			) as any,
+	});
+	assert.equal(result.holdings.length, 2);
+	assert.deepEqual(result.holdings[0], {
+		...wallet,
+		asset: "USDC",
+		contract: null,
+		balance: 12.34,
+		priceUsd: 1,
+		valueUsd: 12.34,
+		priced: true,
+		kind: "spot",
+		venue: "hyperliquid",
+	});
+	assert.equal(result.holdings[1]?.kind, "perp");
+	assert.equal(result.holdings[1]?.asset, "BTC-USD");
+	assert.equal(result.holdings[1]?.balance, 0.5);
+	assert.equal(result.holdings[1]?.side, "long");
+	assert.equal(result.holdings[1]?.entryPriceUsd, 65000);
+	assert.equal(result.holdings[1]?.unrealizedPnlUsd, 123.45);
+	assert.equal(result.holdings[1]?.liquidationPriceUsd, 50000);
+});
+
+test("PCS V3 LP enumerator skips empty wallets and emits one holding per NFT", async () => {
+	const wallet = {
+		walletId: "pcs1",
+		walletAddress: WALLET,
+		walletLabel: "safe",
+		walletRole: "agent-safe",
+		chain: "bsc",
+	} as const;
+	const empty = await enumeratePcsV3Lp(wallet, {
+		getClient: () => ({ readContract: async () => 0n }) as any,
+	});
+	assert.deepEqual(empty.holdings, []);
+
+	const rich = await enumeratePcsV3Lp(wallet, {
+		getClient: () =>
+			({
+				readContract: async ({ functionName, args }: any) => {
+					if (functionName === "balanceOf") return 2n;
+					if (functionName === "tokenOfOwnerByIndex") return args[1] === 0n ? 101n : 202n;
+					return [
+						0n,
+						"0x0000000000000000000000000000000000000000",
+						"0x0000000000000000000000000000000000000002",
+						"0x0000000000000000000000000000000000000003",
+						2500,
+						-100,
+						100,
+						123n,
+						0n,
+						0n,
+						4n,
+						5n,
+					];
+				},
+			}) as any,
+	});
+	assert.equal(rich.holdings.length, 2);
+	assert.equal(rich.holdings[0]?.kind, "lp");
+	assert.equal(rich.holdings[0]?.venue, "pancakeswap-v3");
+	assert.equal(rich.holdings[0]?.tokenId, "101");
+	assert.equal(rich.holdings[0]?.priced, false);
 });
 
 test("pricing services cache CoinGecko and derive PCS V3 TWAP fallback", async () => {
