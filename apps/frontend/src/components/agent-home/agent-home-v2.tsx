@@ -1,25 +1,34 @@
 /**
- * AgentHomeV2: canonical agent surface.
+ * AgentHomeV2: the canonical agent surface at `/agent/[address]`.
  *
- * Renders `/agent/[address]` as a single composed page:
+ * Renders as ONE cohesive page — single container width, single theme
+ * scope (THEME_TOKENS), single spacing rhythm. The wave-T dashboard and
+ * the wave-M chrome have been folded together (no more visual seam).
  *
- *   row 1 (Wave T)   Hero strip: portrait, treasury value, 24h pnl, status
- *   row 2 (Wave T)   PriceChart (2/3)        | SwapPanel (1/3)
- *   row 3            AppsShipped (Sol-only)  — used to also show
- *                    HoldingsAllocation / ActivePositions / PnlChart but
- *                    those rendered hardcoded fixture data so they were
- *                    removed in feat/agent-page-dynamic-2026-05-22; they
- *                    return once real instrumentation lands.
- *   row 4 (Wave T)   ActivityFeed (2/3)      | TopAppsByRevenue (1/3, Sol-only)
+ * Layout (top → bottom):
  *
- *   then the wave-M chrome:
- *     LiveLaunchBanner, EconomicsPanel, AgentTreasuryPanel,
- *     TaxStreamPanel, PostLaunchSurface (when graduated), RecentActivity
- *     (legacy trades), IdentityPanel.
+ *   TopBar
+ *   LiveLaunchBanner            (only when a deposit window is open/closed)
+ *   Hero                        (portrait + treasury value + pnl + days operating)
  *
- * Wave T panels are themed with their own CSS-vars scope (THEME_TOKENS)
- * applied at the wave-t container; everything below it falls back to the
- * existing AgentHomeV2 chrome.
+ *   PriceChart  (2/3)         | SwapPanel    (1/3, 360px)
+ *   AppsShipped                 (only when sol-only apps list non-empty)
+ *
+ *   AgentTreasuryPanel (1/2)  | TaxStreamPanel  (1/2)
+ *   EconomicsPanel     (1/2)  | IdentityPanel   (1/2)
+ *
+ *   ActivityFeed (2/3, includes recent trades)
+ *                             | TopAppsByRevenue (1/3, sol-only)
+ *
+ *   PostLaunchSurface           (only when graduated, full width)
+ *
+ * Container: `max-w-[1440px]` with consistent `px-4 md:px-6` gutter.
+ * Spacing: every row separated by `gap-4` inside a single grid, sections
+ * stacked with `space-y-4 md:space-y-6` on the parent.
+ *
+ * The previous version stitched a `max-w-[1440px]` wave-T section on top
+ * of a `max-w-6xl` wave-M section, with the theme tokens scoped only to
+ * the upper half — producing a hard seam mid-page. That's gone now.
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -38,7 +47,6 @@ import AgentTreasuryPanel from "./agent-treasury-panel";
 import EconomicsPanel from "./economics-panel";
 import IdentityPanel from "./identity-panel";
 import LiveLaunchBanner from "./live-launch-banner";
-import RecentActivity from "./recent-activity";
 import TaxStreamPanel from "./tax-stream-panel";
 import type { AgentData, AgentTrade } from "./types";
 import { THEME_TOKENS } from "./wave-t/_primitives";
@@ -78,9 +86,9 @@ export interface AgentHomeV2Props {
 }
 
 /**
- * AgentHomeV2 is the canonical agent page surface. Sprint 2 folded the
- * Wave T panel set into it; existing economics/treasury/identity panels
- * are kept below.
+ * AgentHomeV2 is the canonical agent page surface. All panels live in
+ * one themed container; section grouping is grid-based, not section-tag
+ * based.
  */
 export default function AgentHomeV2({
 	agent,
@@ -106,94 +114,91 @@ export default function AgentHomeV2({
 
 	const navUsd = holdings.navUsd;
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);
-	const liveApps = apps.filter((a) => a.status === "live").length;
 	const hasApps = apps.length > 0;
 
+	// Merge raw trades into the unified activity stream so we surface a
+	// single feed instead of duplicating "wave-t activity" + "last 20
+	// trades" on the same page. The Wave T feed already understands the
+	// `trade` row variant (with buy/sell tint + tx link), so the mapping
+	// is one-to-one — we just project AgentTrade -> ActivityRowInput.
+	const mergedActivity = mergeActivityWithTrades({
+		activity,
+		trades,
+		ticker: agent.ticker,
+	});
+
 	return (
-		<main className="min-h-[100dvh] text-white">
-			{/* Wave T scope: CSS vars applied here so nested panels resolve
-			    var(--accent), var(--bg-panel), etc. */}
-			<section
-				aria-label="agent surface"
-				className="bg-[var(--bg-base)] text-[var(--text-primary)]"
-				style={THEME_TOKENS as React.CSSProperties}
-			>
-				<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
-					<TopBar />
+		<main
+			className="min-h-[100dvh] bg-[var(--bg-base)] text-[var(--text-primary)]"
+			style={THEME_TOKENS as React.CSSProperties}
+		>
+			<div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-6 md:py-6">
+				<TopBar />
 
-					{/* Row 1: Hero (full width) */}
-					<div className="mt-4">
-						<Hero identity={heroIdentity} daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
-					</div>
+				{/* Optional banner: deposit window open or recently closed. Sits
+				    immediately above the hero so it reads as "this agent has
+				    something live RIGHT NOW" rather than a footer afterthought.
+				    The component itself returns null when there's no active
+				    launch in the open/closed state. */}
+				<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
 
-					{/* Row 2: chart (2/3) + swap (1/3) */}
-					<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
+				{/* Single content stack. Every direct child is a row, every row
+				    is spaced with the same rhythm. No more "wave-t footer →
+				    mt-12 banner → wave-m chrome" visual break. */}
+				<div className="mt-4 space-y-4 md:space-y-6">
+					{/* Hero (full width) */}
+					<Hero identity={heroIdentity} daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
+
+					{/* Trade row: price chart (2/3) + swap panel (1/3 / 360px) */}
+					<div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
 						<PriceChart initialSeries={candles} token={token} />
 						<SwapPanel token={token} />
 					</div>
 
-					{/* Row 3: apps shipped (Sol-only). Removed the holdings donut /
-					    active positions / pnl chart panels: those rendered hardcoded
-					    fixture data + 30d flat-zero pnl which mis-told the agent's
-					    story. They'll come back once real position + pnl
-					    instrumentation lands. See AGENT-PAGE-DYNAMIC-2026-05-22.md. */}
+					{/* Apps shipped (Sol-only). Holdings donut / active positions /
+					    pnl chart panels stripped out in
+					    feat/agent-page-dynamic-2026-05-22 since they rendered
+					    fixture data. They return when real instrumentation lands. */}
 					{hasApps ? (
-						<div className="mt-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+						<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 							<AppsShipped apps={apps} visibleCount={3} />
 						</div>
 					) : null}
 
-					{/* Row 4: activity feed (2/3) + top apps (1/3, Sol-only) */}
-					<div
-						className={hasApps ? "mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" : "mt-4 grid gap-4"}
-						id="activity"
-					>
-						<WaveTActivityFeed max={8} rows={activity} />
+					{/* Treasury (left) + Tax stream (right). Both panels self-label
+					    via their internal headers ("agent safe", "tax stream"), so
+					    we don't wrap them in extra <Section title=...> boxes.
+					    Stacks cleanly on mobile, side-by-side from md up. */}
+					<div className="grid gap-4 md:grid-cols-2" id="treasury">
+						<AgentTreasuryPanel tokenAddress={agent.tokenAddress} tokenSymbol={agent.ticker} launch={launch} />
+						<TaxStreamPanel launch={launch} />
+					</div>
+
+					{/* Economics (left) + Identity (right). Same pairing pattern.
+					    Identity returns null when the agent has no traits / x
+					    handle / system prompt, in which case Economics will
+					    occupy the full column slot. */}
+					<div className="grid gap-4 md:grid-cols-2" id="economics">
+						<EconomicsPanel launch={launch} />
+						<IdentityPanel agent={agent} />
+					</div>
+
+					{/* Unified activity feed (2/3) + top apps by revenue (1/3,
+					    sol-only). The activity feed swallows the legacy "last
+					    20 trades" list — both pieces of information stream from
+					    the same panel now. The feed's built-in "Trading" tab
+					    filters down to swap/position rows. */}
+					<div className={hasApps ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" : "grid gap-4"} id="activity">
+						<WaveTActivityFeed max={20} rows={mergedActivity} />
 						{hasApps ? <TopAppsByRevenue apps={apps} limit={4} /> : null}
 					</div>
 
-					<footer className="mt-6 pb-2 font-mono text-[10px] text-[var(--text-tertiary)] uppercase tracking-[0.18em]">
-						{hasApps ? `live data · ${liveApps} apps shipped` : "live data · onchain feed"}
-					</footer>
+					{/* Post-launch chrome (burn counter, claim widget, post-launch
+					    tax stream, trade feed). Only renders for graduated v3
+					    launches. Full width so the embedded sub-panels can
+					    breathe. */}
+					{graduated ? <PostLaunchSurface tokenAddress={agent.tokenAddress} ticker={agent.ticker} /> : null}
 				</div>
-			</section>
-
-			{/* Wave-M chrome (kept as-is): economics / treasury / identity */}
-			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pb-24">
-				{/* live launch banner sits above the economics if there's a
-				    deposit window currently open or recently closed. */}
-				<div className="mt-12">
-					<LiveLaunchBanner tokenAddress={agent.tokenAddress} />
-				</div>
-
-				<Section title="economics" subtitle="tier ladder + tax routing">
-					<EconomicsPanel launch={launch} />
-				</Section>
-
-				<Section title="treasury" subtitle="agent safe holdings">
-					<AgentTreasuryPanel tokenAddress={agent.tokenAddress} tokenSymbol={agent.ticker} launch={launch} />
-				</Section>
-
-				<Section title="tax stream" subtitle="live splitter readout">
-					<TaxStreamPanel launch={launch} />
-				</Section>
-
-				{/* v3 post-launch chrome (burn counter, claim widget, tax
-				    stream, trade feed). Only renders for v3 launches in the
-				    'launched' state. */}
-				{graduated && (
-					<div className="mt-12">
-						<PostLaunchSurface tokenAddress={agent.tokenAddress} ticker={agent.ticker} />
-					</div>
-				)}
-
-				<Section title="last 20 trades">
-					<RecentActivity trades={trades} />
-				</Section>
-
-				<Section title="identity" subtitle="traits + brain">
-					<IdentityPanel agent={agent} />
-				</Section>
 			</div>
 		</main>
 	);
@@ -216,6 +221,53 @@ function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null
 	return 1;
 }
 
+/**
+ * Project raw AgentTrade swap events into the wave-T activity feed's
+ * `trade` row variant and merge them into the existing activity stream.
+ *
+ * AgentTrade has buy/sell direction, trader address, raw amount and a
+ * bscscan tx id; the feed's `trade` row understands all of that. We
+ * pass the agent's own ticker as the asset (every row in the trade
+ * stream is a swap of THIS token).
+ *
+ * Sorted newest-first, dedupes by id just in case the upstream activity
+ * already includes a row for the same hash.
+ */
+function mergeActivityWithTrades(opts: {
+	activity: ActivityRowInput[];
+	trades: AgentTrade[];
+	ticker: string;
+}): ActivityRowInput[] {
+	const asset = opts.ticker ? opts.ticker.toUpperCase() : "TOKEN";
+	const tradeRows: ActivityRowInput[] = opts.trades.map((t, idx) => {
+		const ms = t.timestamp > 1e12 ? t.timestamp : t.timestamp * 1000;
+		const amountNum = typeof t.amount === "number" ? t.amount : Number.parseFloat(t.amount);
+		const row: ActivityRowInput = {
+			id: `trade-${t.txId || idx}-${t.timestamp}`,
+			type: "trade",
+			timestamp: new Date(Number.isFinite(ms) && ms > 0 ? ms : Date.now()).toISOString(),
+			side: t.type === "sell" ? "sell" : "buy",
+			asset,
+			amount: Number.isFinite(amountNum) ? amountNum : 0,
+			priceBnb: 0,
+			venue: "PancakeSwap",
+			...(t.txId ? { url: `https://bscscan.com/tx/${t.txId}` } : {}),
+		};
+		return row;
+	});
+
+	const seen = new Set<string>();
+	const out: ActivityRowInput[] = [];
+	for (const r of [...opts.activity, ...tradeRows]) {
+		const key = r.id;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(r);
+	}
+	out.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+	return out;
+}
+
 function TopBar() {
 	return (
 		<div className="flex items-center justify-between">
@@ -227,29 +279,5 @@ function TopBar() {
 				all agents
 			</Link>
 		</div>
-	);
-}
-
-function Section({
-	title,
-	subtitle,
-	children,
-	id,
-}: {
-	title: string;
-	subtitle?: string;
-	children: React.ReactNode;
-	id?: string;
-}) {
-	return (
-		<section id={id} className="mt-12 scroll-mt-8">
-			<div className="mb-4 flex items-baseline justify-between gap-3">
-				<h2 className="font-mono text-[11px] uppercase tracking-[0.24em] text-white/60">{title}</h2>
-				{subtitle ? (
-					<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/25">{subtitle}</span>
-				) : null}
-			</div>
-			{children}
-		</section>
 	);
 }
