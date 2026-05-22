@@ -50,6 +50,7 @@ import { daysOperating } from "@/lib/wave-t/github";
 import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
 import type { Position } from "@/lib/wave-t/positions";
 import type { TokenMetrics } from "@/lib/wave-t/token";
+import type { TradingSnapshot } from "@/lib/wave-t/trading";
 
 import LiveLaunchBanner from "./live-launch-banner";
 import type { AgentData, AgentTrade } from "./types";
@@ -63,6 +64,7 @@ import { PnlChart } from "./wave-t/pnl-chart";
 import { PriceChart } from "./wave-t/price-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
+import { TradingPanel } from "./wave-t/trading-panel";
 
 export interface AgentHomeV2Props {
 	agent: AgentData;
@@ -108,6 +110,13 @@ export interface AgentHomeV2Props {
 	 * holdings.navUsd with a "sol burner" source pill.
 	 */
 	agentSafeBalance?: AgentSafeBalance | null;
+	/**
+	 * Steward trading snapshot (session + positions + orders). Optional
+	 * because the story-preview surface renders the same component
+	 * without trading context. When omitted, the panel falls back to a
+	 * disabled empty shell so it still occupies the row honestly.
+	 */
+	trading?: TradingSnapshot;
 }
 
 /**
@@ -130,7 +139,14 @@ export default function AgentHomeV2({
 	apps,
 	daysOperating: daysOperatingOverride,
 	agentSafeBalance,
+	trading,
 }: AgentHomeV2Props) {
+	const tradingSnapshot: TradingSnapshot = trading ?? {
+		enabled: false,
+		session: null,
+		positions: [],
+		orders: [],
+	};
 	const heroIdentity: HeroIdentity = {
 		name: agent.name,
 		ticker: agent.ticker,
@@ -223,7 +239,16 @@ export default function AgentHomeV2({
 					<ThesisPanel hasLiveRevenue={false} />
 				</div>
 
-				{/* Row 5: unified activity feed (2/3) + top apps by revenue
+				{/* Row 5: trading panel (full width). Steward-custodial state:
+				    session (daily cap meter + expiry + policy pills), open
+				    positions on Hyperliquid, last ~8 orders. For agents that
+				    aren't Sol the panel renders an honest "not enabled" state
+				    instead of being hidden — keeps the page rhythm consistent. */}
+				<div className="mt-4" id="trading">
+					<TradingPanel snapshot={tradingSnapshot} />
+				</div>
+
+				{/* Row 6: unified activity feed (2/3) + top apps by revenue
 				    (1/3, sol-only). The activity feed swallows the legacy
 				    "last 20 trades" list: both streams ride through one
 				    panel. The feed's built-in "Trading" tab filters down

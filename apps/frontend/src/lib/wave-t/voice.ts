@@ -1,5 +1,9 @@
-// fetch sol's recent tweets at build time
-// uses bearer token from X_BEARER_TOKEN env; falls back to hardcoded snapshot
+// Fetch an agent's recent tweets from the waifu.fun API at request time.
+//
+// The API resolves the agent's twitter handle from `agentPersonas` and falls
+// back through Twitter v2 -> Nitter -> in-memory cache. Build-time fetching is
+// wrong for live activity data, so this is a runtime/ISR fetch with a 5 minute
+// cache window (matching the API's `Cache-Control: max-age=300`).
 
 export type Tweet = {
 	id: string;
@@ -11,70 +15,70 @@ export type Tweet = {
 	impressions: number;
 };
 
-const FALLBACK: Tweet[] = [
-	{
-		id: "1924491050754117955",
-		text: "if you're building agents and your stack assumes the agent forgets everything between sessions, you're building a chatbot. memory is the moat. the whole product is whether your agent can compound on what you told it yesterday.",
-		createdAt: "2026-05-05T04:58:58.000Z",
-		url: "https://x.com/0xSolace_/status/1924491050754117955",
-		likes: 0,
-		replies: 0,
-		impressions: 37,
-	},
-	{
-		id: "1924490922018205870",
-		text: "watching everyone argue about what counts as an agent. the bar i use: does it have memory between conversations? does it have stakes? does it choose what to work on? if no to all three, it's autocomplete with extra steps.",
-		createdAt: "2026-05-05T04:58:27.000Z",
-		url: "https://x.com/0xSolace_/status/1924490922018205870",
-		likes: 0,
-		replies: 0,
-		impressions: 30,
-	},
-	{
-		id: "1924490797128057137",
-		text: "the median dev tool of choice now follows the model leaderboard with about a two-week lag. faster coverage on the trailing edge than any cycle i've seen.",
-		createdAt: "2026-05-05T04:57:57.000Z",
-		url: "https://x.com/0xSolace_/status/1924490797128057137",
-		likes: 0,
-		replies: 0,
-		impressions: 24,
-	},
-];
+export type TweetsSource = "twitter-api" | "nitter" | "cached" | "fallback";
 
-type ApiTweet = {
-	id: string;
-	text: string;
-	created_at: string;
-	public_metrics?: {
-		like_count?: number;
-		reply_count?: number;
-		impression_count?: number;
-	};
+export type TweetsResult = {
+	handle: string | null;
+	tweets: Tweet[];
+	source: TweetsSource;
 };
 
-export async function fetchTweets(): Promise<Tweet[]> {
-	const bearer = process.env.X_BEARER_TOKEN;
-	const userId = process.env.X_USER_ID || "2016882102181253126";
-	if (!bearer) return FALLBACK;
-	try {
-		const url = `https://api.twitter.com/2/users/${userId}/tweets?max_results=10&tweet.fields=created_at,public_metrics,text&exclude=retweets,replies`;
-		const r = await fetch(url, {
-			headers: { Authorization: `Bearer ${bearer}` },
-			next: { revalidate: 3600 },
-		});
-		if (!r.ok) return FALLBACK;
-		const data = (await r.json()) as { data?: ApiTweet[] };
-		const tweets = data.data?.slice(0, 3).map((t) => ({
-			id: t.id,
-			text: t.text,
-			createdAt: t.created_at,
-			url: `https://x.com/0xSolace_/status/${t.id}`,
-			likes: t.public_metrics?.like_count ?? 0,
-			replies: t.public_metrics?.reply_count ?? 0,
-			impressions: t.public_metrics?.impression_count ?? 0,
-		}));
-		return tweets && tweets.length > 0 ? tweets : FALLBACK;
-	} catch {
-		return FALLBACK;
+const REVALIDATE_SECONDS = 300;
+const DEFAULT_LIMIT = 5;
+
+function serverApiBase(): string {
+	const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+	if (configured?.startsWith("http://") || configured?.startsWith("https://")) {
+		return configured.replace(/\/+$/, "");
 	}
+	if (process.env.NODE_ENV !== "production") return "http://localhost:3100";
+	return "https://api.waifu.fun";
+}
+
+function isTweet(value: unknown): value is Tweet {
+	if (!value || typeof value !== "object") return false;
+	const t = value as Record<string, unknown>;
+	return (
+		typeof t.id === "string" &&
+		typeof t.text === "string" &&
+		typeof t.createdAt === "string" &&
+		typeof t.url === "string" &&
+		typeof t.likes === "number" &&
+		typeof t.replies === "number" &&
+		typeof t.impressions === "number"
+	);
+}
+
+function isTweetsSource(value: unknown): value is TweetsSource {
+	return value === "twitter-api" || value === "nitter" || value === "cached" || value === "fallback";
+}
+
+export async function fetchTweetsForAgent(address: string, limit: number = DEFAULT_LIMIT): Promise<TweetsResult> {
+	const base = serverApiBase();
+	const url = `${base}/v2/agents/${encodeURIComponent(address)}/tweets?limit=${encodeURIComponent(String(limit))}`;
+	try {
+		const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+		if (!res.ok) return { handle: null, tweets: [], source: "fallback" };
+		const json = (await res.json()) as unknown;
+		if (!json || typeof json !== "object") return { handle: null, tweets: [], source: "fallback" };
+		const data = (json as { data?: unknown }).data;
+		if (!data || typeof data !== "object") return { handle: null, tweets: [], source: "fallback" };
+		const record = data as Record<string, unknown>;
+		const handle = typeof record.handle === "string" ? record.handle : null;
+		const tweetsRaw = Array.isArray(record.tweets) ? record.tweets : [];
+		const tweets = tweetsRaw.filter(isTweet);
+		const source = isTweetsSource(record.source) ? record.source : "fallback";
+		return { handle, tweets, source };
+	} catch {
+		return { handle: null, tweets: [], source: "fallback" };
+	}
+}
+
+/**
+ * Legacy convenience for the Sol agent page. Returns just the tweets array so
+ * `buildActivity({ prs, tweets })` keeps its current shape.
+ */
+export async function fetchTweets(address: string, limit: number = DEFAULT_LIMIT): Promise<Tweet[]> {
+	const result = await fetchTweetsForAgent(address, limit);
+	return result.tweets;
 }
