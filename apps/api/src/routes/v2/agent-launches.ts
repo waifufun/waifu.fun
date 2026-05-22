@@ -230,6 +230,32 @@ export function serializeAgentLaunch(
 	row: typeof launchRepo.listLaunches extends never ? never : Awaited<ReturnType<typeof launchRepo.getLaunchById>>,
 ) {
 	if (!row) return null;
+	const meta = (row.metadata as Record<string, unknown> | null) ?? {};
+	const metaImage = typeof meta.image === "string" ? meta.image : null;
+	const metaName = typeof meta.name === "string" ? meta.name : null;
+	const metaSymbol = typeof meta.symbol === "string" ? meta.symbol : null;
+	const metaDescription = typeof meta.description === "string" ? meta.description : null;
+	const tierLabel = (() => {
+		switch (row.tier) {
+			case 0:
+				return "TIER_80";
+			case 1:
+				return "TIER_90";
+			case 2:
+				return "TIER_95";
+			case 3:
+				return "TIER_98";
+			case 4:
+				return "TIER_TEST";
+			default:
+				return null;
+		}
+	})();
+	const imageUrl = metaImage
+		? metaImage.startsWith("http") || metaImage.startsWith("ipfs://")
+			? metaImage
+			: `https://ipfs.io/ipfs/${metaImage}`
+		: null;
 	return {
 		id: row.id,
 		token: row.tokenAddress,
@@ -241,7 +267,12 @@ export function serializeAgentLaunch(
 		agentSafeConfig: buildAgentSafeConfig(row.agentSafeOwners, row.agentSafeThreshold),
 		treasuryLp: row.treasuryLpAddress,
 		creator: row.creator,
-		tier: row.tier,
+		// `tier` was originally `row.tier` (numeric). Frontend's launch-page-v2
+		// uses `tierFromString(meta.data?.tier)` which expects "TIER_95" etc.
+		// Emit the string label here; legacy consumers can still derive the
+		// numeric tier from `tierNumber` below.
+		tier: tierLabel ?? String(row.tier),
+		tierNumber: row.tier,
 		state: row.state,
 		totalDeposited: row.totalDeposited,
 		bonusPool: row.bonusPool,
@@ -267,6 +298,28 @@ export function serializeAgentLaunch(
 		createTxHash: row.createTxHash,
 		createdAt: row.createdAt.toISOString(),
 		updatedAt: row.updatedAt.toISOString(),
+		// PublicLaunchExtended-shape aliases for the launch-page FE (W49).
+		// The launch page client reads these fields from the API response.
+		launchId: row.id,
+		agentId: null,
+		status: row.state,
+		creatorAddress: row.creator,
+		tokenAddress: row.tokenAddress,
+		taxRecipient: row.taxSplitterAddress ?? null,
+		firstBuyWei: "0",
+		launchAuthorizedAt: null,
+		launchAuthorizedBy: null,
+		errorMessage: null,
+		vaultAddress: row.vaultAddress,
+		presaleCapWei: row.presaleCap,
+		closeAt: row.closeTimestamp ? new Date(Number(row.closeTimestamp) * 1000).toISOString() : null,
+		tokenName: metaName,
+		tokenTicker: metaSymbol,
+		tokenImageUrl: imageUrl,
+		tokenDescription: metaDescription,
+		tierLabel,
+		metaCid: row.flapMetaCid,
+		bundleTipBnb_alias: row.bundleTipBnb,
 	};
 }
 
