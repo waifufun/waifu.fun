@@ -4,11 +4,11 @@ import { createDatabase } from "../client.js";
 import type { Database } from "../client.js";
 import { agentLaunches } from "../schema/agent-launches.js";
 import {
-	agentWalletRegistry,
 	type AgentWalletChain,
 	type AgentWalletOwnerType,
 	type AgentWalletRole,
 	type NewAgentWalletRegistryRow,
+	agentWalletRegistry,
 } from "../schema/agent-wallet-registry.js";
 
 const SOL_HOT_BSC_ADDRESS = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
@@ -50,7 +50,11 @@ function tickerForLabel(metadata: unknown, tokenAddress: string): string {
 }
 
 function isWaifuLaunch(metadata: unknown): boolean {
-	const candidates = [metadataString(metadata, "ticker"), metadataString(metadata, "symbol"), metadataString(metadata, "name")]
+	const candidates = [
+		metadataString(metadata, "ticker"),
+		metadataString(metadata, "symbol"),
+		metadataString(metadata, "name"),
+	]
 		.filter((value): value is string => Boolean(value))
 		.map((value) => value.toLowerCase());
 	return candidates.some((value) => value === "waifu" || value === "$waifu" || value.includes("waifu"));
