@@ -48,6 +48,26 @@ export const vTokenAbi = [
 		inputs: [{ name: "repayAmount", type: "uint256" }],
 		outputs: [{ name: "", type: "uint256" }],
 	},
+	{
+		type: "function",
+		name: "underlying",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ name: "", type: "address" }],
+	},
+] as const;
+
+export const erc20Abi = [
+	{
+		type: "function",
+		name: "approve",
+		stateMutability: "nonpayable",
+		inputs: [
+			{ name: "spender", type: "address" },
+			{ name: "amount", type: "uint256" },
+		],
+		outputs: [{ name: "", type: "bool" }],
+	},
 ] as const;
 
 export const venusComptrollerAbi = [
@@ -119,5 +139,11 @@ export const encodeEnterMarkets = (vTokens: Address[]): VenusTxRequest => ({
 		functionName: "enterMarkets",
 		args: [vTokens],
 	}),
+	value: 0n,
+});
+
+export const encodeErc20Approve = (token: Address, spender: Address, amount: bigint): VenusTxRequest => ({
+	to: token,
+	data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [spender, amount] }),
 	value: 0n,
 });

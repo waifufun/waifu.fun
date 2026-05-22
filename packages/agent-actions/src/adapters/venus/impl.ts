@@ -5,9 +5,12 @@ import type { AdapterImpl } from "../../types.js";
 import {
 	encodeBorrow,
 	encodeEnterMarkets,
+	encodeErc20Approve,
 	encodeRedeemUnderlying,
 	encodeRepayBorrow,
 	encodeSupply,
+	isVenusNativeMarket,
+	vTokenAbi,
 	venusComptrollerAbi,
 } from "./abis.js";
 import {
@@ -23,13 +26,23 @@ import {
 	venusSpec,
 } from "./spec.js";
 
+type GetAccountLiquidityRead = {
+	address: Address;
+	abi: typeof venusComptrollerAbi;
+	functionName: "getAccountLiquidity";
+	args: [Address];
+};
+
+type UnderlyingRead = {
+	address: Address;
+	abi: typeof vTokenAbi;
+	functionName: "underlying";
+	args?: readonly [];
+};
+
 export interface VenusPublicClient {
-	readContract: (parameters: {
-		address: Address;
-		abi: typeof venusComptrollerAbi;
-		functionName: "getAccountLiquidity";
-		args: [Address];
-	}) => Promise<readonly [bigint, bigint, bigint]>;
+	readContract: ((parameters: GetAccountLiquidityRead) => Promise<readonly [bigint, bigint, bigint]>) &
+		((parameters: UnderlyingRead) => Promise<Address>);
 }
 
 export const venusAdapter: AdapterImpl<typeof venusSpec> = {
@@ -37,7 +50,23 @@ export const venusAdapter: AdapterImpl<typeof venusSpec> = {
 	calls: {
 		supply: async (ctx, input: unknown): Promise<VenusHashOutput> => {
 			const supply = input as VenusSupplyInput;
-			// TODO: wrap ERC20 approval flow before calling mint(amount) for non-native vTokens.
+
+			if (!isVenusNativeMarket(supply.vToken)) {
+				const publicClient = ctx.publicClient as VenusPublicClient | undefined;
+				if (!publicClient?.readContract) {
+					throw new TypeError("Venus supply on non-native vTokens requires ctx.publicClient.readContract");
+				}
+				const underlying = await publicClient.readContract({
+					address: supply.vToken,
+					abi: vTokenAbi,
+					functionName: "underlying",
+				});
+				// Assumes standard BEP20 approve semantics. The four whitelisted underlyings
+				// (BUSD/USDT/USDC/ETH on BSC) qualify. Revisit if a future vToken backs an
+				// underlying with non-standard approve (e.g. Ethereum-USDT approve-from-nonzero).
+				await ctx.signAndSend(encodeErc20Approve(underlying, supply.vToken, supply.amount));
+			}
+
 			const { hash } = await ctx.signAndSend(encodeSupply(supply.vToken, supply.amount));
 
 			return { hash };
