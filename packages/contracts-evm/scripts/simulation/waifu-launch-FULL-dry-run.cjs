@@ -77,8 +77,11 @@ const { computeTreasuryTicksFromMc, WAGMI_MC_TARGETS_USD } = require("../lib/mc-
 // off-chain helper. Computed once at module load; the values flow into
 // the createLaunch config below. estimatedLaunchTick = 0 because we feed
 // the helper a launch FDV directly (no need for a separate tick anchor).
-const { lowers: WAIFU_TREASURY_TICK_LOWERS, uppers: WAIFU_TREASURY_TICK_UPPERS } =
-	computeTreasuryTicksFromMc(0, WAIFU.estimatedLaunchFdvUsd, WAIFU.mcCheckpoints || WAGMI_MC_TARGETS_USD);
+const { lowers: WAIFU_TREASURY_TICK_LOWERS, uppers: WAIFU_TREASURY_TICK_UPPERS } = computeTreasuryTicksFromMc(
+	0,
+	WAIFU.estimatedLaunchFdvUsd,
+	WAIFU.mcCheckpoints || WAGMI_MC_TARGETS_USD,
+);
 
 // =====================================================================
 // Logging + reporting
@@ -847,10 +850,7 @@ async function main() {
 		if (pos0.liquidity === 0n) throw new Error("tier 0 NPM position has zero liquidity");
 
 		endBanner();
-		pass(
-			9,
-			`launchTick=${launchTick}, v3Pool=${v3Pool}, all 4 tiers minted (tier0 positionId=${tier0PositionId})`,
-		);
+		pass(9, `launchTick=${launchTick}, v3Pool=${v3Pool}, all 4 tiers minted (tier0 positionId=${tier0PositionId})`);
 	} catch (e) {
 		endBanner();
 		fail(9, `LP5 post-finalize verification failed: ${e.shortMessage || e.message}`);
@@ -1204,7 +1204,7 @@ async function main() {
 		if (tot !== expected) throw new Error(`expected ${bnb(expected)}, got ${bnb(tot)}`);
 		if (netGain < ethers.parseEther("0.999")) throw new Error(`dA recovery off: ${bnb(netGain)}`);
 		endBanner();
-		pass(14, `withdraw + withdrawAll OK; partial+full both work, BNB returned correctly`);
+		pass(14, "withdraw + withdrawAll OK; partial+full both work, BNB returned correctly");
 	} catch (e) {
 		endBanner();
 		fail(14, `withdraw test failed: ${e.shortMessage || e.message}`);
@@ -1262,7 +1262,7 @@ async function main() {
 			if (net < dep - ethers.parseEther("0.001")) throw new Error(`refund short for ${w.address}`);
 		}
 		endBanner();
-		pass(15, `under-subscribed refund OK; 3 depositors recovered exact deposits`);
+		pass(15, "under-subscribed refund OK; 3 depositors recovered exact deposits");
 	} catch (e) {
 		endBanner();
 		fail(15, `under-subscribed refund failed: ${e.shortMessage || e.message}`);
@@ -1336,7 +1336,7 @@ async function main() {
 		if (totalRefunded < ethers.parseEther("63.99"))
 			throw new Error(`expected ~64 BNB recovered, got ${bnb(totalRefunded)}`);
 		endBanner();
-		pass(16, `bundle-failed refund OK; 64 BNB across 8 wallets recovered via 24h grace`);
+		pass(16, "bundle-failed refund OK; 64 BNB across 8 wallets recovered via 24h grace");
 	} catch (e) {
 		endBanner();
 		fail(16, `bundle-failed refund failed: ${e.shortMessage || e.message}`);
@@ -1415,7 +1415,7 @@ async function main() {
 		kv("per-wallet revert reason", perWalletReason.slice(0, 70));
 
 		endBanner();
-		pass(17, `cap protection OK: surplus refunded + per-wallet cap enforced (38.4 BNB max)`);
+		pass(17, "cap protection OK: surplus refunded + per-wallet cap enforced (38.4 BNB max)");
 	} catch (e) {
 		endBanner();
 		fail(17, `cap test failed: ${e.shortMessage || e.message}`);

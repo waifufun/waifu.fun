@@ -76,8 +76,11 @@ const { computeTreasuryTicksFromMc, WAGMI_MC_TARGETS_USD } = require("../lib/mc-
 // Derive treasury ticks from the WAGMI MC ladder using the canonical
 // off-chain helper. Computed once at module load; the values flow into
 // the createLaunch config below.
-const { lowers: SUKI_TREASURY_TICK_LOWERS, uppers: SUKI_TREASURY_TICK_UPPERS } =
-	computeTreasuryTicksFromMc(0, SUKI.estimatedLaunchFdvUsd, SUKI.mcCheckpoints || WAGMI_MC_TARGETS_USD);
+const { lowers: SUKI_TREASURY_TICK_LOWERS, uppers: SUKI_TREASURY_TICK_UPPERS } = computeTreasuryTicksFromMc(
+	0,
+	SUKI.estimatedLaunchFdvUsd,
+	SUKI.mcCheckpoints || WAGMI_MC_TARGETS_USD,
+);
 
 // =====================================================================
 // Logging + reporting
@@ -847,10 +850,7 @@ async function main() {
 		if (pos0.liquidity === 0n) throw new Error("tier 0 NPM position has zero liquidity");
 
 		endBanner();
-		pass(
-			9,
-			`launchTick=${launchTick}, v3Pool=${v3Pool}, all 4 tiers minted (tier0 positionId=${tier0PositionId})`,
-		);
+		pass(9, `launchTick=${launchTick}, v3Pool=${v3Pool}, all 4 tiers minted (tier0 positionId=${tier0PositionId})`);
 	} catch (e) {
 		endBanner();
 		fail(9, `LP5 post-finalize verification failed: ${e.shortMessage || e.message}`);
