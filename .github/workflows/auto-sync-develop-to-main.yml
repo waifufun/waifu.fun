@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
 
@@ -19,11 +19,14 @@ jobs:
   sync:
     name: Open/update develop → main sync PR
     runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, 'chore(sync): main → develop') }}
     steps:
       - name: Open/update sync PR and enable auto-merge
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          GITHUB_TOKEN: ${{ github.token }}
+          REPO_GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          ACTIONS_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           BASE_BRANCH: main
           HEAD_BRANCH: develop
@@ -34,11 +37,10 @@ jobs:
             This keeps production deploys flowing after CI is green. If this PR conflicts,
             resolve it manually, merge it, and let the normal `main` deploy workflows run.
 
-            [skip back-sync]
         shell: bash
         run: |
           set -euo pipefail
-          export GH_TOKEN="${GH_PAT:-$GITHUB_TOKEN}"
+          export GH_TOKEN="${GH_PAT:-${REPO_GH_TOKEN:-$ACTIONS_TOKEN}}"
 
           compare_json=$(gh api "repos/$REPO/compare/$BASE_BRANCH...$HEAD_BRANCH")
           ahead_by=$(jq -r '.ahead_by' <<<"$compare_json")

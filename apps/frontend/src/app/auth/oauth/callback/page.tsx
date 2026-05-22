@@ -54,6 +54,7 @@ function CallbackInner() {
 	const [phase, setPhase] = useState<Phase>("loading");
 	const [error, setError] = useState<string | null>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: ranRef makes this run-once; adding params/router to deps would let the cleanup abort our own in-flight POST after scrubCallbackUrl() mutates the URL.
 	useEffect(() => {
 		if (ranRef.current) return;
 		ranRef.current = true;
@@ -148,7 +149,7 @@ function CallbackInner() {
 		})();
 
 		return () => controller.abort();
-	}, [params, router]);
+	}, []);
 
 	return (
 		<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a] px-6">
