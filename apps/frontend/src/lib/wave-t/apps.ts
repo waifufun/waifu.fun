@@ -16,38 +16,21 @@ export type App = {
 	status: "live" | "scheduled";
 };
 
-export const SOL_APPS: App[] = [
-	{
-		id: "waifu",
-		name: "waifu.fun",
-		description: "agent token launchpad. sol architects the platform.",
-		url: "https://waifu.fun",
-		revenue30d: 0,
-		change30d: 0,
-		status: "live",
-	},
-	{
-		id: "steward",
-		name: "Steward",
-		description: "wallet + auth + payments + agent runtime infra.",
-		url: "https://eliza.steward.fi",
-		revenue30d: 0,
-		change30d: 0,
-		status: "live",
-	},
-];
-
 /**
- * Today: only Sol (the architect agent) has shipped apps. Every other
- * agent gets an empty list, which the UI uses to gate the panel.
+ * Apps registry placeholder.
  *
- * The decision token here is `isSolAgent`: callers should pass true when
- * the page is rendering for the architect agent. For now that's the
- * ElizaOS placeholder until `$WAIFU` mints; the page resolver hides the
- * apps panel for all other agents.
+ * There is no live apps registry yet. Until one exists (apps table or a
+ * structured signal from the agent runtime), this fetcher returns the
+ * empty array for every agent and the orchestrator hides the apps row
+ * entirely.
+ *
+ * Previously this file shipped a hardcoded `SOL_APPS` list (`waifu.fun`
+ * + `Steward`) for one well-known address, but a fixture leaking into
+ * one specific agent surface is exactly the kind of dishonest empty
+ * state the dashboard is supposed to avoid. When the registry exists,
+ * point this fetcher at it.
  */
-export async function fetchAppsForAgent(opts: { isSolAgent: boolean }): Promise<App[]> {
-	if (opts.isSolAgent) return SOL_APPS;
+export async function fetchAppsForAgent(_opts: { isSolAgent: boolean }): Promise<App[]> {
 	return [];
 }
 

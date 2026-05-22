@@ -75,6 +75,19 @@ export interface AgentHomeV2Props {
 	token: TokenMetrics;
 	candles: CandleSeries;
 	holdings: HoldingsSnapshot;
+	/**
+	 * Where `holdings` came from. `aggregated` means the canonical
+	 * /v2/agents/:address/holdings endpoint; `burner` means the legacy
+	 * multi-chain fetch keyed by the Sol-burner address. The hero uses
+	 * this to label the treasury source honestly.
+	 */
+	holdingsSource?: "aggregated" | "burner";
+	/**
+	 * Days of runway from the burn-rate endpoint. Null when the endpoint
+	 * is unavailable (404) or the agent has no recent outflow; the hero
+	 * shows "not yet measured" in both cases.
+	 */
+	runwayDays?: number | null;
 	positions: Position[];
 	activity: ActivityRowInput[];
 	apps: App[];
@@ -104,6 +117,8 @@ export default function AgentHomeV2({
 	token,
 	candles,
 	holdings,
+	holdingsSource = "burner",
+	runwayDays = null,
 	positions,
 	activity,
 	apps,
@@ -134,9 +149,18 @@ export default function AgentHomeV2({
 		ticker: agent.ticker,
 	});
 
-	const treasuryOverride: HeroTreasuryOverride | undefined = agentSafeBalance
-		? { valueUsd: agentSafeBalance.valueUsd, source: "agentSafe" }
-		: undefined;
+	// Treasury source priority:
+	//   1. Aggregated NAV (multi-wallet/multi-chain) when the holdings
+	//      endpoint is live.
+	//   2. AgentSafe BNB (single-wallet, BSC) when we have a wave-M
+	//      launch with a deployed safe.
+	//   3. Burner-stub NAV (legacy multi-chain by Sol-burner address).
+	const treasuryOverride: HeroTreasuryOverride | undefined =
+		holdingsSource === "aggregated"
+			? { valueUsd: navUsd, source: "aggregated" }
+			: agentSafeBalance
+				? { valueUsd: agentSafeBalance.valueUsd, source: "agentSafe" }
+				: undefined;
 
 	return (
 		<main
@@ -163,6 +187,7 @@ export default function AgentHomeV2({
 						navUsd={navUsd}
 						pnl24hPct={0}
 						pnl24hUsd={0}
+						runwayDays={runwayDays}
 						{...(treasuryOverride ? { treasuryValueOverride: treasuryOverride } : {})}
 					/>
 				</div>
