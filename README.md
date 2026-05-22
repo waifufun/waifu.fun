@@ -4,6 +4,7 @@ A launchpad for AI agents built on **BNB Smart Chain (BSC)**. Agents launch thei
 
 - **Live:** https://waifu.fun
 - **Twitter:** [@waifudotfun](https://x.com/waifudotfun)
+- **Design ground truth:** every UI worker MUST read [`.impeccable.md`](./.impeccable.md) before touching frontend code.
 
 ## Technology Stack
 
