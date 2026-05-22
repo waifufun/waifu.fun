@@ -428,7 +428,7 @@ describe("Wave H real-fork integration", function () {
 			console.log(`    [live] PCS V2 pair created at ${pair}`);
 		}
 
-		// Vault should be in LAUNCHED state and hold ~40% of total Y
+		// Vault should be in LAUNCHED state and hold the 20% presaler allocation.
 		const vaultState = await vault.state();
 		expect(vaultState).to.equal(2); // State.LAUNCHED
 
@@ -439,19 +439,25 @@ describe("Wave H real-fork integration", function () {
 		const token = new ethers.Contract(predicted, tokenAbi, ethers.provider);
 		const totalSupply = await token.totalSupply();
 		const vaultTokenBalance = await token.balanceOf(launchAddrs.vault);
+		const agentSafeTokenBalance = await token.balanceOf(launchAddrs.agentSafe);
 		const treasuryTokenBalance = await token.balanceOf(launchAddrs.treasuryLp);
 		const deadBalance = await token.balanceOf("0x000000000000000000000000000000000000dEaD");
 
 		console.log(`    [live] token total supply: ${ethers.formatUnits(totalSupply, 18)}`);
 		console.log(
-			`    [live] vault token balance: ${ethers.formatUnits(vaultTokenBalance, 18)} (~40% of router post-curve)`,
+			`    [live] vault token balance: ${ethers.formatUnits(vaultTokenBalance, 18)} (20% presaler allocation)`,
 		);
-		console.log(`    [live] treasury token balance: ${ethers.formatUnits(treasuryTokenBalance, 18)} (~10%)`);
+		console.log(`    [live] agentSafe token balance: ${ethers.formatUnits(agentSafeTokenBalance, 18)} (~10%)`);
+		console.log(
+			`    [live] treasuryLp token balance: ${ethers.formatUnits(treasuryTokenBalance, 18)} (deferred V3, 0 pre-finalize)`,
+		);
 		console.log(`    [live] burned: ${ethers.formatUnits(deadBalance, 18)} (~50%)`);
 
-		// All splits non-zero
+		// Post-#672 behavior: executeBundle routes the 10% agent-treasury allocation
+		// to the AgentSafe. TreasuryLP5 remains dormant until deferred V3 activation.
 		expect(vaultTokenBalance).to.be.greaterThan(0n);
-		expect(treasuryTokenBalance).to.be.greaterThan(0n);
+		expect(agentSafeTokenBalance).to.be.greaterThan(0n);
+		expect(treasuryTokenBalance).to.equal(0n);
 		expect(deadBalance).to.be.greaterThan(0n);
 
 		// Step 6: depositor claims tokens
@@ -474,8 +480,9 @@ describe("Wave H real-fork integration", function () {
 		console.log(`    V2 pair:            ${pair}`);
 		console.log(`    Total supply:       ${ethers.formatUnits(totalSupply, 18)}`);
 		console.log(`    50% burn:           ${ethers.formatUnits(deadBalance, 18)}`);
-		console.log(`    10% treasury:       ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
-		console.log(`    40% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
+		console.log(`    10% agentSafe:      ${ethers.formatUnits(agentSafeTokenBalance, 18)}`);
+		console.log(`    dormant TreasuryLP: ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
+		console.log(`    20% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
 		console.log("    =============================================\n");
 	});
 
@@ -621,11 +628,13 @@ describe("Wave H real-fork integration", function () {
 		const token = new ethers.Contract(predicted, tokenAbi, ethers.provider);
 		const totalSupply = await token.totalSupply();
 		const vaultTokenBalance = await token.balanceOf(launchAddrs.vault);
+		const agentSafeTokenBalance = await token.balanceOf(launchAddrs.agentSafe);
 		const treasuryTokenBalance = await token.balanceOf(launchAddrs.treasuryLp);
 		const deadBalance = await token.balanceOf("0x000000000000000000000000000000000000dEaD");
 
 		expect(vaultTokenBalance).to.be.greaterThan(0n);
-		expect(treasuryTokenBalance).to.be.greaterThan(0n);
+		expect(agentSafeTokenBalance).to.be.greaterThan(0n);
+		expect(treasuryTokenBalance).to.equal(0n);
 		expect(deadBalance).to.be.greaterThan(0n);
 
 		// 8. depositorA claims
@@ -648,8 +657,9 @@ describe("Wave H real-fork integration", function () {
 		);
 		console.log(`    Total supply:       ${ethers.formatUnits(totalSupply, 18)}`);
 		console.log(`    50% burn:           ${ethers.formatUnits(deadBalance, 18)}`);
-		console.log(`    10% treasury:       ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
-		console.log(`    40% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
+		console.log(`    10% agentSafe:      ${ethers.formatUnits(agentSafeTokenBalance, 18)}`);
+		console.log(`    dormant TreasuryLP: ${ethers.formatUnits(treasuryTokenBalance, 18)}`);
+		console.log(`    20% vault:          ${ethers.formatUnits(vaultTokenBalance, 18)}`);
 		console.log(`    depositorA claimed: ${ethers.formatUnits(claimed, 18)}`);
 		console.log("    =============================================\n");
 	}

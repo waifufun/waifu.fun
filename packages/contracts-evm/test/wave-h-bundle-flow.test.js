@@ -10,8 +10,8 @@ const { ethers } = require("hardhat");
 //     -> portal.newTokenV6{value: quoteAmt}     (CREATE2 deploys token)
 //     -> pcsRouter.swapExactETHForTokens (if v2BuyBnb > 0)
 //     -> token.transfer(DEAD, 50%)
-//     -> token.transfer(treasuryLp, 10%)
-//     -> token.transfer(vault, ~40%)
+//     -> token.transfer(agentSafe, 10%)
+//     -> token.transfer(vault, 20%)
 //     -> vault.distribute(token, vaultAmt)
 //     -> explicit zero-tip check (builder tips are outside vault funding in this version)
 //   depositors --claim--> tokens
@@ -301,8 +301,6 @@ describe("Wave H bundle flow e2e", () => {
 			const { config, rawSalt, predicted, addrs } = await createLaunch(ctx, tier);
 			const vault = await ethers.getContractAt("LaunchVault", addrs.vault);
 			const router = await ethers.getContractAt("BundleRouter", addrs.router);
-			const treasuryLp = await ethers.getContractAt("TreasuryLP", addrs.treasuryLp);
-
 			// Two depositors split presale 60/40.
 			const { cap, aliceShare, bobShare } = await depositFullCap(vault, tier, alice, bob);
 
@@ -325,10 +323,14 @@ describe("Wave H bundle flow e2e", () => {
 			expect(await vault.distributed()).to.equal(true);
 			expect(await vault.token()).to.equal(predicted);
 
-			// Treasury holds tokens.
+			// AgentSafe holds the 10% agent-treasury allocation. TreasuryLP5 is
+			// deployed for deferred V3 activation, but no longer receives tokens
+			// during executeBundle (post-#672 contract behavior).
 			const token = await ethers.getContractAt("BundleFlowToken", predicted);
-			const treasuryBal = await token.balanceOf(addrs.treasuryLp);
-			expect(treasuryBal).to.be.gt(0n);
+			const agentSafeBal = await token.balanceOf(addrs.agentSafe);
+			const treasuryLpBal = await token.balanceOf(addrs.treasuryLp);
+			expect(agentSafeBal).to.be.gt(0n);
+			expect(treasuryLpBal).to.equal(0n);
 
 			// DEAD has 50% of token Y.
 			const deadBal = await token.balanceOf(DEAD);
@@ -349,16 +351,16 @@ describe("Wave H bundle flow e2e", () => {
 			const ainFee = v2In * 9975n;
 			const expectedV2Tokens = v2In === 0n ? 0n : (ainFee * lpTokenReserve) / (lpBnbReserve * 10000n + ainFee);
 			const expectedY = ethers.parseEther("800000000") + expectedV2Tokens;
-			// Flat allocation: vault = 20% of total supply (200M), treasury = 10% (100M).
+			// Flat allocation: vault = 20% of total supply (200M), agentSafe = 10% (100M).
 			// Burn absorbs everything else (~50% of supply for tier 80, plus the V2 follow-up
 			// buy tokens for graduating tiers). Remaining 20% of supply is locked in the
 			// flap-created PCS V2 LP at migration.
 			const TOTAL_SUPPLY = ethers.parseEther("1000000000");
 			const expectedVault = TOTAL_SUPPLY / 5n;
-			const expectedTreasury = TOTAL_SUPPLY / 10n;
+			const expectedAgentSafe = TOTAL_SUPPLY / 10n;
 			expect(vaultBal).to.equal(expectedVault);
-			expect(treasuryBal).to.equal(expectedTreasury);
-			expect(deadBal).to.equal(expectedY - expectedVault - expectedTreasury);
+			expect(agentSafeBal).to.equal(expectedAgentSafe);
+			expect(deadBal).to.equal(expectedY - expectedVault - expectedAgentSafe);
 
 			// Depositors claim.
 			const aliceTokensBefore = await token.balanceOf(alice.address);
@@ -886,7 +888,7 @@ describe("Wave H bundle flow e2e", () => {
 		params.vanitySalt = rawSalt;
 		await router.connect(bundleBot).executeBundle(params);
 
-		// Flat splits: vault = 200M (20% of supply), treasury = 100M (10% of supply).
+		// Flat splits: vault = 200M (20% of supply), agentSafe = 100M (10% of supply).
 		// burn absorbs the rest. With a 10% transfer tax the receiving side gets 90%
 		// of each chunk: vault receives 180M, treasury receives 90M.
 		// Alice (sole depositor, tier 80 = 100% TGE) claims all 180M, receives 162M post-tax.
