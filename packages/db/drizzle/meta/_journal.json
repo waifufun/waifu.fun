@@ -211,6 +211,20 @@
       "when": 1778900400000,
       "tag": "0029_agent_launch_tax_bps",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1779424800000,
+      "tag": "0030_wave_m_launch_addresses",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1779432000000,
+      "tag": "0031_agent_wallet_registry",
+      "breakpoints": true
     }
   ]
 }
