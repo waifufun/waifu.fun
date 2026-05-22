@@ -391,7 +391,7 @@ export default async function AgentPage({
 	const burnRateP = fetchAgentBurnRateSnapshot(address).catch(() => null);
 	const twitterStatsP = fetchAgentTwitterStats(address).catch(() => null);
 	const positionsP = fetchPositions().catch(() => []);
-	const appsP = fetchAppsForAgent({ isSolAgent }).catch(() => []);
+	const appsP = fetchAppsForAgent(address).catch(() => []);
 	const activityP = buildAgentActivity({ isSolAgent, tokenAddress: address }).catch(() => [] as ActivityRowInput[]);
 
 	const [

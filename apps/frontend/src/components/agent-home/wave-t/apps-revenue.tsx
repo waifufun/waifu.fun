@@ -1,23 +1,4 @@
-/**
- * Worker C - Apps panels (v2).
- *
- * Exports two distinct panels that match the v2 mockup:
- *
- *   <AppsShipped>          - small "X Total Live" stat block + short
- *                            list of currently-live apps with mini
- *                            icons and a "More apps" footer.
- *
- *   <TopAppsByRevenue>     - numbered ranking list (1..N) with mini
- *                            avatars, name + sub-text, revenue $ and
- *                            green % delta. "View all" link top-right.
- *
- *   <AppsRevenue>          - legacy combined panel kept for back
- *                            compatibility with the orchestrator
- *                            until it migrates to the split layout.
- *
- * All numbers come from props. The Sol apps list lives in lib/apps.ts
- * (foundation-owned) and is honest about $0 revenue today.
- */
+/** Apps panels backed by the `/v2/agents/:address/apps` registry. */
 
 "use client";
 
@@ -32,39 +13,70 @@ import { Label, Panel, SectionTitle } from "./_primitives";
 
 type IconComponent = (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 
-// Visual mapping app-id -> icon. New ids fall back to a generic glyph.
 const APP_ICONS: Record<string, IconComponent> = {
 	waifu: WaifuIcon,
 	steward: StewardIcon,
 	"waifu-terminal": WaifuIcon,
 	terminal: WaifuIcon,
-	"alpha-signals": XIcon,
-	"sol-sniper": GithubIcon,
-	"trend-oracle": GithubIcon,
+	"twitter-replies": XIcon,
+	content: XIcon,
+	"trading-perps": GithubIcon,
+	predictions: GithubIcon,
 };
 
-function AppIcon({ id, className }: { id: string; className?: string }) {
-	const Icon = APP_ICONS[id] ?? GithubIcon;
+function AppIcon({ app, className }: { app: App; className?: string }) {
+	if (app.icon) return <img src={app.icon} alt="" className={cn("rounded-full object-cover", className)} />;
+	const Icon = APP_ICONS[app.appId] ?? GithubIcon;
 	return <Icon className={className} />;
 }
 
-// ── <AppsShipped> ────────────────────────────────────────────────
+function StatusBadge({ status }: { status: App["status"] }) {
+	if (status === "live") {
+		return (
+			<span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-emerald-300">
+				<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
+				live
+			</span>
+		);
+	}
+	if (status === "paused") {
+		return (
+			<span className="rounded-full border border-yellow-300/20 bg-yellow-300/10 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-yellow-200">
+				paused
+			</span>
+		);
+	}
+	return (
+		<span className="rounded-full border border-[var(--border-mid)] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+			scheduled
+		</span>
+	);
+}
 
-export function AppsShipped({
-	apps,
-	visibleCount = 3,
-}: {
-	apps: App[];
-	visibleCount?: number;
-}) {
+function EmptyAppsState() {
+	return (
+		<li className="py-4 font-mono text-[11px] leading-relaxed text-[var(--text-tertiary)]">
+			no apps shipped yet · first app gating window opens at BASED tier
+		</li>
+	);
+}
+
+function formatAppDate(app: App): string {
+	const raw = app.shippedAt ?? app.createdAt;
+	if (!raw) return "—";
+	const date = new Date(raw);
+	if (Number.isNaN(date.getTime())) return "—";
+	return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCount?: number }) {
 	const live = apps.filter((a) => a.status === "live");
-	const visible = live.slice(0, visibleCount);
+	const visible = apps.slice(0, visibleCount);
 	const remaining = Math.max(0, apps.length - visible.length);
 
 	return (
 		<Panel>
 			<Label>Apps Shipped</Label>
-
 			<div className="flex items-baseline gap-2">
 				<span className="font-sans text-[40px] font-light leading-none text-[var(--accent)] tabular-nums">
 					{live.length}
@@ -73,32 +85,32 @@ export function AppsShipped({
 					Total Live
 				</span>
 			</div>
-
 			<ul className="mt-4 divide-y divide-[var(--border-soft)]">
 				{visible.length === 0 ? (
-					<li className="py-2 font-mono text-[11px] text-[var(--text-tertiary)]">no live apps yet</li>
+					<EmptyAppsState />
 				) : (
 					visible.map((app) => (
-						<li key={app.id} className="flex items-center gap-3 py-2">
+						<li key={app.appId} className="flex items-center gap-3 py-2">
 							<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-								<AppIcon id={app.id} className="h-3 w-3" />
+								<AppIcon app={app} className="h-3 w-3" />
 							</span>
-							<span className="flex-1 truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
-							<span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">
-								{formatCompactUsd(app.revenue30d)}
+							<span className="min-w-0 flex-1">
+								<span className="block truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
+								<span className="block truncate font-mono text-[10px] text-[var(--text-tertiary)]">
+									{app.shippedAt ? "shipped" : "first seen"} {formatAppDate(app)}
+								</span>
 							</span>
+							<StatusBadge status={app.status} />
 						</li>
 					))
 				)}
 			</ul>
-
 			{remaining > 0 && (
 				<a
 					href="#apps"
 					className={cn(
 						"mt-3 flex items-center justify-between border-t border-[var(--border-soft)] pt-3",
-						"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
-						"transition-colors hover:text-[var(--accent)]",
+						"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]",
 					)}
 				>
 					<span>More apps</span>
@@ -109,63 +121,66 @@ export function AppsShipped({
 	);
 }
 
-// ── <TopAppsList> (Panel-free, composable) ───────────────────────
-
 function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
-	const ranked = [...apps].sort((a, b) => b.revenue30d - a.revenue30d).slice(0, limit);
+	const ranked = [...apps].sort((a, b) => b.revenue7dUsd - a.revenue7dUsd).slice(0, limit);
 	return (
 		<ol className="divide-y divide-[var(--border-soft)]">
 			{ranked.length === 0 ? (
-				<li className="py-4 text-center font-mono text-[11px] text-[var(--text-tertiary)]">no apps shipped yet</li>
+				<EmptyAppsState />
 			) : (
 				ranked.map((app, idx) => {
-					const positive = app.change30d > 0;
-					const negative = app.change30d < 0;
-					const pending = app.revenue30d <= 0;
+					const delta = app.revenue7dDeltaPct;
+					const scheduled = app.status === "scheduled";
+					const positive = delta !== null && delta > 0;
+					const negative = delta !== null && delta < 0;
 					return (
-						<li key={app.id} className="grid grid-cols-[18px_28px_minmax(0,1fr)_auto] items-center gap-3 py-3">
+						<li key={app.appId} className="grid grid-cols-[18px_28px_minmax(0,1fr)_auto] items-center gap-3 py-3">
 							<span className="font-mono text-[11px] tabular-nums text-[var(--text-tertiary)]">
 								{String(idx + 1).padStart(2, "0")}
 							</span>
 							<span
 								className={cn(
 									"inline-flex h-7 w-7 items-center justify-center rounded-full",
-									pending
+									scheduled
 										? "bg-white/[0.03] text-[var(--text-tertiary)]"
 										: "bg-[var(--accent-soft)] text-[var(--accent)]",
 								)}
 							>
-								<AppIcon id={app.id} className="h-3.5 w-3.5" />
+								<AppIcon app={app} className="h-3.5 w-3.5" />
 							</span>
 							<div className="min-w-0">
 								<div className="flex items-center gap-2">
 									<span className="truncate text-[12px] text-[var(--text-primary)]">{app.name}</span>
-									{app.status === "scheduled" && (
-										<span className="rounded-sm border border-[var(--border-mid)] bg-white/[0.02] px-1 py-0.5 font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-											scheduled
-										</span>
-									)}
+									<StatusBadge status={app.status} />
 								</div>
 								<div className="mt-0.5 truncate font-mono text-[10.5px] text-[var(--text-secondary)]">
-									{app.description}
+									{app.description ?? `${app.shippedAt ? "shipped" : "first seen"} ${formatAppDate(app)}`}
 								</div>
 							</div>
 							<div className="flex shrink-0 flex-col items-end font-mono tabular-nums">
-								<span className="text-[12px] text-[var(--text-primary)]">{formatCompactUsd(app.revenue30d)}</span>
-								{!pending && (
-									<span
-										className={cn(
-											"text-[10px]",
-											positive && "text-[var(--positive)]",
-											negative && "text-[var(--negative)]",
-											!positive && !negative && "text-[var(--text-tertiary)]",
+								{scheduled ? (
+									<span className="text-[11px] uppercase tracking-[0.16em] text-[var(--text-tertiary)]">scheduled</span>
+								) : (
+									<>
+										<span className="text-[12px] text-[var(--text-primary)]">{formatCompactUsd(app.revenue7dUsd)}</span>
+										<span className="text-[10px] text-[var(--text-tertiary)]">
+											24h {formatCompactUsd(app.revenue24hUsd)}
+										</span>
+										{delta !== null && (
+											<span
+												className={cn(
+													"text-[10px]",
+													positive && "text-[var(--positive)]",
+													negative && "text-[var(--negative)]",
+													!positive && !negative && "text-[var(--text-tertiary)]",
+												)}
+											>
+												{positive ? "+" : ""}
+												{delta.toFixed(1)}% vs prev 7d
+											</span>
 										)}
-									>
-										{positive ? "+" : ""}
-										{app.change30d.toFixed(1)}%
-									</span>
+									</>
 								)}
-								{pending && <span className="text-[10px] text-[var(--text-tertiary)]">pending</span>}
 							</div>
 						</li>
 					);
@@ -175,8 +190,6 @@ function TopAppsList({ apps, limit }: { apps: App[]; limit: number }) {
 	);
 }
 
-// ── <TopAppsByRevenue> (panel wrapper) ───────────────────────────
-
 export function TopAppsByRevenue({ apps, limit = 4 }: { apps: App[]; limit?: number }) {
 	return (
 		<Panel>
@@ -184,28 +197,23 @@ export function TopAppsByRevenue({ apps, limit = 4 }: { apps: App[]; limit?: num
 				right={
 					<a
 						href="#apps"
-						className={cn(
-							"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
-							"transition-colors hover:text-[var(--accent)]",
-						)}
+						className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]"
 					>
 						View all
 					</a>
 				}
 			>
-				Top Apps by Revenue (30D)
+				Top Apps by Revenue (7D)
 			</Label>
 			<TopAppsList apps={apps} limit={limit} />
 		</Panel>
 	);
 }
 
-// ── <AppsRevenue> (legacy combined) ──────────────────────────────
-
 type Props = {
 	apps: App[];
-	totalRevenue30d: number;
-	totalChange30d: number;
+	totalRevenue7d: number;
+	totalLifetime: number;
 	feesGenerated30d?: number;
 	feesChange30d?: number;
 };
@@ -215,16 +223,10 @@ function StatBlock({
 	value,
 	change,
 	pendingNote,
-}: {
-	label: string;
-	value: number;
-	change: number;
-	pendingNote?: string;
-}) {
+}: { label: string; value: number; change: number; pendingNote?: string }) {
 	const positive = change > 0;
 	const negative = change < 0;
 	const isEmpty = value <= 0;
-
 	return (
 		<div className="flex flex-col gap-1.5">
 			<SectionTitle>{label}</SectionTitle>
@@ -242,7 +244,7 @@ function StatBlock({
 						)}
 					>
 						{positive ? "+" : ""}
-						{change.toFixed(1)}% vs prev 30D
+						{change.toFixed(1)}% vs prev 7D
 					</span>
 				)}
 			</div>
@@ -255,17 +257,23 @@ function StatBlock({
 	);
 }
 
-export function AppsRevenue({ apps, totalRevenue30d, totalChange30d, feesGenerated30d = 0, feesChange30d = 0 }: Props) {
+export function AppsRevenue({ apps, totalRevenue7d, totalLifetime, feesGenerated30d = 0, feesChange30d = 0 }: Props) {
 	return (
 		<Panel>
 			<Label>Apps & Revenue</Label>
 			<div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
 				<div className="flex flex-col gap-5 md:border-r md:border-[var(--border-soft)] md:pr-6">
 					<StatBlock
-						label="Total Revenue (30D)"
-						value={totalRevenue30d}
-						change={totalChange30d}
+						label="Total Revenue (7D)"
+						value={totalRevenue7d}
+						change={0}
 						pendingNote="instrumentation pending"
+					/>
+					<StatBlock
+						label="Lifetime Revenue"
+						value={totalLifetime}
+						change={0}
+						pendingNote="steward billing wires soon"
 					/>
 					<StatBlock
 						label="Fees Generated (30D)"
@@ -277,13 +285,7 @@ export function AppsRevenue({ apps, totalRevenue30d, totalChange30d, feesGenerat
 				<div className="flex flex-col">
 					<div className="mb-1 flex items-center justify-between">
 						<SectionTitle>Top Apps</SectionTitle>
-						<a
-							href="#apps"
-							className={cn(
-								"font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]",
-								"transition-colors hover:text-[var(--accent)]",
-							)}
-						>
+						<a href="#apps" className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
 							View all
 						</a>
 					</div>
