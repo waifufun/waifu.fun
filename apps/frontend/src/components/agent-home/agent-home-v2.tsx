@@ -151,14 +151,31 @@ export default function AgentHomeV2({
 				    is spaced with the same rhythm. No more "wave-t footer →
 				    mt-12 banner → wave-m chrome" visual break. */}
 				<div className="mt-4 space-y-4 md:space-y-6">
-					{/* Hero (full width) */}
+					{/* Hero (full width).
+					    FOLLOW-UP SLOT (builder-7): swap <Hero> for <HeroLiveTreasury>
+					    once apps/frontend/src/components/agent-home/hero-live-treasury.tsx
+					    lands. That wrapper reads the AgentSafe BNB + agent-token balance
+					    live via wagmi and overrides the burner-wallet navUsd so the
+					    headline 'Treasury Value' is accurate for wave-M agents. Same
+					    prop shape, just pass `fallbackNavUsd={navUsd}` and
+					    `agentSafe={launch?.agentSafe ?? null}` instead of `navUsd`. */}
 					<Hero identity={heroIdentity} daysOperating={days} navUsd={navUsd} pnl24hPct={0} pnl24hUsd={0} />
 
-					{/* Trade row: price chart (2/3) + swap panel (1/3 / 360px) */}
+					{/* Trade row: price chart (2/3) + swap panel (1/3 / 360px).
+					    FOLLOW-UP SLOT (builder-7): a <MarketPanel> with MC / FDV /
+					    price / 24h volume goes BELOW this row as its own full-width
+					    band (between the trade row and the treasury/taxstream row).
+					    That keeps the trade row visually focused on 'chart + swap'
+					    and gives the market-stats panel space for a horizontal
+					    KPI strip. */}
 					<div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="trade">
 						<PriceChart initialSeries={candles} token={token} />
 						<SwapPanel token={token} />
 					</div>
+
+					{/* FOLLOW-UP SLOT (builder-7): <MarketPanel /> goes here as a
+					    full-width band. Carries MC / FDV / price / 24h volume KPIs.
+					    Import from ./market-panel, pass `tokenAddress` and `launch`. */}
 
 					{/* Apps shipped (Sol-only). Holdings donut / active positions /
 					    pnl chart panels stripped out in
@@ -182,7 +199,14 @@ export default function AgentHomeV2({
 					{/* Economics (left) + Identity (right). Same pairing pattern.
 					    Identity returns null when the agent has no traits / x
 					    handle / system prompt, in which case Economics will
-					    occupy the full column slot. */}
+					    occupy the full column slot.
+					    FOLLOW-UP SLOT (builder-7): a <SupplyDistributionPanel> goes
+					    in this row — it surfaces the token's supply breakdown
+					    (treasury / circulating / burned / locked). One option: pair
+					    it with EconomicsPanel as left|right and push Identity to
+					    its own row below. Another: make this row 3-col
+					    (economics|supply|identity) on lg+. Pick whichever reads
+					    cleanest with the real data. */}
 					<div className={hasIdentity ? "grid gap-4 md:grid-cols-2" : "grid gap-4"} id="economics">
 						<EconomicsPanel launch={launch} />
 						{hasIdentity ? <IdentityPanel agent={agent} /> : null}
