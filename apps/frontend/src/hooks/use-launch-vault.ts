@@ -69,7 +69,7 @@ export function useVaultSnapshot(vault: Address | undefined) {
 					presaleTokensRow,
 				] = rows as ReadonlyArray<{ status: "success"; result: unknown } | { status: "failure"; error: Error }>;
 
-				const pick = <T,>(row: typeof stateRow, fallback: T | null = null): T | null => {
+				const pick = <T>(row: typeof stateRow, fallback: T | null = null): T | null => {
 					if (row && row.status === "success") return row.result as T;
 					return fallback;
 				};
