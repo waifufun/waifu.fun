@@ -69,9 +69,12 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 	const [mode, setMode] = useState<Mode>("swap");
 	const [amount, setAmount] = useState<string>("");
 	const [slippage, setSlippage] = useState<number>(0.5);
+	const [reversed, setReversed] = useState<boolean>(false);
 
-	const fromSymbol = "BNB";
-	const toSymbol = token.symbol || "–";
+	const baseSymbol = "BNB";
+	const quoteSymbol = token.symbol || "–";
+	const fromSymbol = reversed ? quoteSymbol : baseSymbol;
+	const toSymbol = reversed ? baseSymbol : quoteSymbol;
 	const fromBalance = 0;
 	const toBalance = 0;
 
@@ -174,7 +177,10 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 			<div className="-my-1.5 z-10 flex justify-center">
 				<button
 					aria-label="reverse swap direction"
-					className="rounded-full border border-[var(--border-mid)] bg-[var(--bg-panel)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--accent)]"
+					aria-pressed={reversed}
+					className="rounded-full border border-[var(--border-mid)] bg-[var(--bg-panel)] p-1.5 text-[var(--text-secondary)] transition-transform duration-200 hover:text-[var(--accent)]"
+					onClick={() => setReversed((v) => !v)}
+					style={{ transform: reversed ? "rotate(180deg)" : undefined }}
 					type="button"
 				>
 					<ArrowDownIcon className="h-3.5 w-3.5" />
