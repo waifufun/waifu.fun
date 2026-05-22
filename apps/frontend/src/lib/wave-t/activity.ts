@@ -5,7 +5,6 @@
  */
 
 import type { ShipItem } from "./github";
-import type { MarketsSnapshot } from "./markets";
 import type { Tweet } from "./voice";
 
 export type ActivityPR = {
@@ -49,11 +48,9 @@ export type ActivityItem = ActivityPR | ActivityTweet | ActivityTx | ActivityRev
 export function buildActivity({
 	prs,
 	tweets,
-	markets,
 }: {
 	prs: ShipItem[];
 	tweets: Tweet[];
-	markets: MarketsSnapshot;
 }): ActivityItem[] {
 	const items: ActivityItem[] = [];
 
@@ -80,20 +77,9 @@ export function buildActivity({
 		});
 	}
 
-	for (const tx of markets.bsc.recent) {
-		items.push({
-			id: `tx-${tx.hash}`,
-			type: "tx",
-			timestamp: new Date(tx.timestamp * 1000).toISOString(),
-			method: tx.method,
-			valueBnb: tx.valueBnb,
-			url: tx.url,
-		});
-	}
-
-	// future: revenue events when steward billing wires up
-	// for now, no revenue items in the stream
-
+	// On-chain tx rows are merged in by the page-level resolver from
+	// fetchOnchainHistory(); no need for a duplicate "markets" placeholder
+	// data path here.
 	items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 	return items;
 }

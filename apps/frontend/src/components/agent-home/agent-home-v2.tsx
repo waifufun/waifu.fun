@@ -1,28 +1,25 @@
 /**
- * AgentHomeV2: sprint 2 consolidation.
+ * AgentHomeV2: canonical agent surface.
  *
- * The canonical agent surface at `/agent/[address]`. Sprint 2 folded the
- * Wave T panel set into this page so there is exactly one place that
- * renders an agent:
+ * Renders `/agent/[address]` as a single composed page:
  *
  *   row 1 (Wave T)   Hero strip: portrait, treasury value, 24h pnl, status
  *   row 2 (Wave T)   PriceChart (2/3)        | SwapPanel (1/3)
- *   row 3 (Wave T)   HoldingsAllocation | ActivePositions | PnlChart | (AppsShipped if Sol)
+ *   row 3            AppsShipped (Sol-only)  — used to also show
+ *                    HoldingsAllocation / ActivePositions / PnlChart but
+ *                    those rendered hardcoded fixture data so they were
+ *                    removed in feat/agent-page-dynamic-2026-05-22; they
+ *                    return once real instrumentation lands.
  *   row 4 (Wave T)   ActivityFeed (2/3)      | TopAppsByRevenue (1/3, Sol-only)
  *
- *   then the wave-M chrome (kept as-is):
- *     LiveLaunchBanner, EconomicsPanel, TreasuryPanelV2,
- *     PostLaunchSurface (when graduated), RecentActivity (legacy trades),
- *     IdentityPanel.
+ *   then the wave-M chrome:
+ *     LiveLaunchBanner, EconomicsPanel, AgentTreasuryPanel,
+ *     TaxStreamPanel, PostLaunchSurface (when graduated), RecentActivity
+ *     (legacy trades), IdentityPanel.
  *
  * Wave T panels are themed with their own CSS-vars scope (THEME_TOKENS)
  * applied at the wave-t container; everything below it falls back to the
- * existing AgentHomeV2 chrome. This keeps wave-M panels visually intact.
- *
- * Non-Sol agents still render the apps-revenue panels but in collapsed /
- * empty mode (TopAppsByRevenue + AppsShipped show the empty state). The
- * AppsShipped slot is hidden when the apps list is empty so the row 3
- * grid stays balanced (3-up instead of 4-up).
+ * existing AgentHomeV2 chrome.
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -37,19 +34,17 @@ import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
 import type { Position } from "@/lib/wave-t/positions";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
+import AgentTreasuryPanel from "./agent-treasury-panel";
 import EconomicsPanel from "./economics-panel";
 import IdentityPanel from "./identity-panel";
 import LiveLaunchBanner from "./live-launch-banner";
 import RecentActivity from "./recent-activity";
-import TreasuryPanelV2 from "./treasury-panel-v2";
+import TaxStreamPanel from "./tax-stream-panel";
 import type { AgentData, AgentTrade } from "./types";
 import { THEME_TOKENS } from "./wave-t/_primitives";
-import { ActivePositions } from "./wave-t/active-positions";
 import { type ActivityRowInput, ActivityFeed as WaveTActivityFeed } from "./wave-t/activity-feed";
 import { AppsShipped, TopAppsByRevenue } from "./wave-t/apps-revenue";
 import { Hero, type HeroIdentity } from "./wave-t/hero";
-import { HoldingsAllocation } from "./wave-t/holdings-allocation";
-import { PnlChart } from "./wave-t/pnl-chart";
 import { PriceChart } from "./wave-t/price-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 
@@ -66,6 +61,12 @@ export interface AgentHomeV2Props {
 	token: TokenMetrics;
 	candles: CandleSeries;
 	holdings: HoldingsSnapshot;
+	/**
+	 * Reserved: positions data was rendered by an ActivePositions panel
+	 * that we removed (it shipped hardcoded fixture rows). The prop stays
+	 * so the page-level fetch contract is unchanged; we'll consume it
+	 * again once the position indexer surfaces real rows.
+	 */
 	positions: Position[];
 	activity: ActivityRowInput[];
 	apps: App[];
@@ -88,7 +89,7 @@ export default function AgentHomeV2({
 	token,
 	candles,
 	holdings,
-	positions,
+	positions: _positions, // currently unused; see prop docblock
 	activity,
 	apps,
 	daysOperating: daysOperatingOverride,
@@ -131,19 +132,16 @@ export default function AgentHomeV2({
 						<SwapPanel token={token} />
 					</div>
 
-					{/* Row 3: holdings / positions / pnl (+ apps-shipped if Sol) */}
-					<div
-						className={
-							hasApps
-								? "mt-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
-								: "mt-4 grid gap-4 grid-cols-1 md:grid-cols-3"
-						}
-					>
-						<HoldingsAllocation snapshot={holdings} />
-						<ActivePositions positions={positions} />
-						<PnlChart />
-						{hasApps ? <AppsShipped apps={apps} visibleCount={3} /> : null}
-					</div>
+					{/* Row 3: apps shipped (Sol-only). Removed the holdings donut /
+					    active positions / pnl chart panels: those rendered hardcoded
+					    fixture data + 30d flat-zero pnl which mis-told the agent's
+					    story. They'll come back once real position + pnl
+					    instrumentation lands. See AGENT-PAGE-DYNAMIC-2026-05-22.md. */}
+					{hasApps ? (
+						<div className="mt-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+							<AppsShipped apps={apps} visibleCount={3} />
+						</div>
+					) : null}
 
 					{/* Row 4: activity feed (2/3) + top apps (1/3, Sol-only) */}
 					<div
@@ -172,12 +170,12 @@ export default function AgentHomeV2({
 					<EconomicsPanel launch={launch} />
 				</Section>
 
-				<Section title="treasury" subtitle="onchain handles + balances">
-					<TreasuryPanelV2
-						treasuryLp={launch?.treasuryLp ?? null}
-						agentSafe={launch?.agentSafe ?? null}
-						taxSplitter={launch?.taxSplitter ?? null}
-					/>
+				<Section title="treasury" subtitle="agent safe holdings">
+					<AgentTreasuryPanel tokenAddress={agent.tokenAddress} tokenSymbol={agent.ticker} launch={launch} />
+				</Section>
+
+				<Section title="tax stream" subtitle="live splitter readout">
+					<TaxStreamPanel launch={launch} />
 				</Section>
 
 				{/* v3 post-launch chrome (burn counter, claim widget, tax
