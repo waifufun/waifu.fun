@@ -22,7 +22,8 @@ jobs:
     steps:
       - name: Open/update sync PR and enable auto-merge
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           BASE_BRANCH: main
           HEAD_BRANCH: develop
@@ -37,6 +38,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export GH_TOKEN="${GH_PAT:-$GITHUB_TOKEN}"
 
           compare_json=$(gh api "repos/$REPO/compare/$BASE_BRANCH...$HEAD_BRANCH")
           ahead_by=$(jq -r '.ahead_by' <<<"$compare_json")
