@@ -73,15 +73,20 @@ function toStatus(raw?: string): LeaderboardStatus {
 	return "dormant";
 }
 
+/**
+ * Compute days since launch / creation. We keep the precision (decimal days)
+ * so the formatter can render sub-day ages as "today" / "Nh" instead of "0"
+ * — every fresh launch hits this case and "0" looks like a bug.
+ */
 function computeDaysAlive(raw: RawAgent): number {
-	if (typeof raw.daysAlive === "number") return Math.max(0, Math.floor(raw.daysAlive));
-	if (typeof raw.days_alive === "number") return Math.max(0, Math.floor(raw.days_alive));
+	if (typeof raw.daysAlive === "number") return Math.max(0, raw.daysAlive);
+	if (typeof raw.days_alive === "number") return Math.max(0, raw.days_alive);
 	const iso = raw.launchedAt ?? raw.launched_at ?? raw.createdAt;
 	if (!iso) return 0;
 	const t = new Date(iso).getTime();
 	if (Number.isNaN(t)) return 0;
 	const diff = Date.now() - t;
-	return Math.max(0, Math.floor(diff / (24 * 60 * 60 * 1000)));
+	return Math.max(0, diff / (24 * 60 * 60 * 1000));
 }
 
 function computeRunway(treasuryUsd: number, dailyBurnUsd: number, given?: number): number {
@@ -129,6 +134,30 @@ function sortEntries(entries: LeaderboardEntry[], sort: LeaderboardSort): Leader
 }
 
 /**
+ * Per-agent holdings snapshot from the NAV aggregator. Only the rolled-up
+ * `navUsd` is needed for the leaderboard treasury column; the rest of the
+ * payload is ignored here.
+ *
+ * Endpoint: `GET /v2/agents/:tokenAddress/holdings` (introduced in #712).
+ * Returns 404 for agents without an aggregated holdings record — the
+ * leaderboard treats that as null and the table renders `–`.
+ */
+type HoldingsSnapshotResponse = { ok: true; data: { navUsd: number } } | { navUsd: number };
+
+async function fetchAgentNavUsd(tokenAddress: string): Promise<number | null> {
+	try {
+		const raw = await apiFetch<HoldingsSnapshotResponse>(
+			`/v2/agents/${encodeURIComponent(tokenAddress)}/holdings`,
+		);
+		const inner = raw && typeof raw === "object" && "ok" in raw && "data" in raw ? raw.data : raw;
+		const navUsd = typeof inner?.navUsd === "number" ? inner.navUsd : null;
+		return Number.isFinite(navUsd) ? navUsd : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Hook for the public leaderboard.
  *
  * The dedicated `/v2/agents/leaderboard` endpoint is not yet implemented on
@@ -136,6 +165,13 @@ function sortEntries(entries: LeaderboardEntry[], sort: LeaderboardSort): Leader
  * which 400s with `invalid token address`, polluting the browser console on
  * every home/leaderboard render. Skip the call entirely until the route ships
  * and just compute the ranking client-side from `/v2/agents`.
+ *
+ * For treasury we hit `/v2/agents/:address/holdings` per-agent in parallel.
+ * That's the same NAV aggregator the agent-detail page renders against, so
+ * the dollar figure on the leaderboard always matches the agent page
+ * exactly. N+1 by row, but parallelized and react-query cached — for the
+ * current ~handful of agents that's fine. If the list grows past ~50 the
+ * right move is a batch endpoint server-side, tracked in waifufun#744.
  */
 export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 	return useQuery<LeaderboardEntry[]>({
@@ -144,7 +180,16 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 			try {
 				const data = await apiFetch<unknown>(`/v2/agents?limit=${limit}`);
 				const entries = pickArray(data).map(normalizeEntry);
-				return sortEntries(entries, sort);
+				const enriched = await Promise.all(
+					entries.map(async (entry) => {
+						if (entry.treasuryUsd > 0 || !entry.id) return entry;
+						const navUsd = await fetchAgentNavUsd(entry.id);
+						if (navUsd === null) return entry;
+						const runwayDays = computeRunway(navUsd, entry.dailyBurnUsd, undefined);
+						return { ...entry, treasuryUsd: navUsd, runwayDays };
+					}),
+				);
+				return sortEntries(enriched, sort);
 			} catch {
 				return [];
 			}
@@ -152,6 +197,23 @@ export function useLeaderboard(sort: LeaderboardSort = "runway", limit = 50) {
 		refetchInterval: 60_000,
 		retry: 1,
 	});
+}
+
+/**
+ * Days-alive cell formatter. Renders sub-day ages as "just now" / "Nh"
+ * because the leaderboard otherwise shows a giant "0d" for every fresh
+ * launch — every agent hits this on launch day and the 0 reads as
+ * "this is broken" rather than "this is brand new".
+ */
+export function formatDaysAlive(days: number): string {
+	if (!Number.isFinite(days) || days < 0) return "–";
+	if (days < 1 / 24) return "just now";
+	if (days < 1) {
+		const hours = Math.max(1, Math.floor(days * 24));
+		return `${hours}h`;
+	}
+	const rounded = Math.floor(days);
+	return `${rounded}d`;
 }
 
 export function formatRunway(days: number): string {
