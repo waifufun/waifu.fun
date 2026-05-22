@@ -109,12 +109,35 @@ afterEach(() => {
 });
 
 describe("bundle-bot submitter safety", () => {
-	it("claims a launch atomically before dry-run submission so duplicate workers cannot submit it twice", async () => {
+	it("dry-run is a true no-op by default and does not claim or mark launches submitted", async () => {
 		const { db, updates } = makeDb();
 		const launch = launchFixture();
 
-		const first = await submitLaunchBundle(db, launch, { dryRun: true, useWalletPool: false });
-		const second = await submitLaunchBundle(db, launch, { dryRun: true, useWalletPool: false });
+		const result = await submitLaunchBundle(db, launch, { dryRun: true, useWalletPool: false });
+
+		assert.equal(result.status, "pending");
+		assert.equal(result.reason, "dry_run_noop");
+		assert.equal(result.dryRun, true);
+		assert.equal(result.routerAddress, launch.routerAddress);
+		assert.equal(result.tipBnb, "0.03");
+		assert.match(result.callData ?? "", /^0x/u);
+		assert.equal(updates.length, 0);
+	});
+
+	it("can opt dry-run into legacy status writes for integration tests only", async () => {
+		const { db, updates } = makeDb();
+		const launch = launchFixture();
+
+		const first = await submitLaunchBundle(db, launch, {
+			dryRun: true,
+			dryRunWriteStatus: true,
+			useWalletPool: false,
+		});
+		const second = await submitLaunchBundle(db, launch, {
+			dryRun: true,
+			dryRunWriteStatus: true,
+			useWalletPool: false,
+		});
 
 		assert.equal(first.status, "submitted");
 		assert.equal(second.status, "pending");
