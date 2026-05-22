@@ -327,7 +327,7 @@ async function buildAgentActivity(opts: {
 }): Promise<ActivityRowInput[]> {
 	const [ship, tweets, onchain] = await Promise.all([
 		opts.isSolAgent ? fetchShipLog() : Promise.resolve({ items: [], totalMerged: 0, first: "", mergedTimestamps: [] }),
-		opts.isSolAgent ? fetchTweets() : Promise.resolve([]),
+		opts.isSolAgent ? fetchTweets(opts.tokenAddress) : Promise.resolve([]),
 		opts.isSolAgent
 			? Promise.resolve({ txs: [] })
 			: fetchOnchainHistory({ chain: "bsc", address: opts.tokenAddress, limit: 12 }),
