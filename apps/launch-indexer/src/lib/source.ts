@@ -5,15 +5,29 @@
  */
 
 import type { Logger } from "@waifufun/logger";
-import { http, type Address, type Chain, type Hex, type PublicClient, type Transport, createPublicClient } from "viem";
+import {
+	http,
+	type Address,
+	type Chain,
+	type Hex,
+	type PublicClient,
+	type Transport,
+	createPublicClient,
+	hexToBigInt,
+	hexToNumber,
+	numberToHex,
+	toEventSelector,
+} from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 
+import { allLaunchEventAbis } from "./abis.js";
 import { decodeLaunchLog } from "./decode.js";
 import type { LaunchEvent } from "./events.js";
 
 const MAX_BLOCKS_PER_RPC = 500n;
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 1_000;
+const LAUNCH_EVENT_TOPICS = allLaunchEventAbis.map((event) => toEventSelector(event));
 
 async function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -94,24 +108,32 @@ class ViemLaunchEventSource implements LaunchEventSource {
 			if (chunkTo > input.toBlock) chunkTo = input.toBlock;
 
 			const logs = await withRetry(() =>
-				this.client.getLogs({
-					address: addresses,
-					fromBlock: chunkFrom,
-					toBlock: chunkTo,
+				this.client.request({
+					method: "eth_getLogs",
+					params: [
+						{
+							address: addresses,
+							fromBlock: numberToHex(chunkFrom),
+							toBlock: numberToHex(chunkTo),
+							topics: [LAUNCH_EVENT_TOPICS],
+						},
+					],
 				}),
 			);
 
 			for (const log of logs) {
 				if (log.blockNumber == null || log.transactionHash == null) continue;
-				const blockTimestamp = await this.getBlockTimestamp(log.blockNumber, blockTimestamps);
+				const blockNumber = typeof log.blockNumber === "bigint" ? log.blockNumber : hexToBigInt(log.blockNumber);
+				const logIndex = typeof log.logIndex === "number" ? log.logIndex : log.logIndex ? hexToNumber(log.logIndex) : 0;
+				const blockTimestamp = await this.getBlockTimestamp(blockNumber, blockTimestamps);
 				const decoded = decodeLaunchLog({
 					log: {
 						address: log.address,
 						data: log.data as Hex,
 						topics: log.topics as [Hex, ...Hex[]] | [],
-						blockNumber: log.blockNumber,
+						blockNumber,
 						transactionHash: log.transactionHash,
-						logIndex: log.logIndex ?? 0,
+						logIndex,
 					},
 					chainId: this.config.chainId,
 					blockTimestamp,
