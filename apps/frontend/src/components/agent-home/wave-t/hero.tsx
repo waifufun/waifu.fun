@@ -11,7 +11,10 @@
  * border-bottom and an internal grid.
  *
  * Honesty rules:
- *   - Treasury Value reads from real holdings.navUsd
+ *   - Treasury Value reads from real holdings.navUsd by default. The
+ *     caller can pass `treasuryValueOverride` to swap that for a more
+ *     authoritative reading (e.g. AgentSafe BNB balance for v3
+ *     launches) and the source pill is updated accordingly.
  *   - 24H PnL stubs at +$0 / +0.00% (we don't track this yet)
  *   - Sparkline is a synthetic 12d ramp tied to current nav so the
  *     curve is plausible but not invented data
@@ -38,6 +41,18 @@ export type HeroIdentity = {
 	verified?: boolean;
 };
 
+/**
+ * Optional override for the hero treasury readout. When set, the hero
+ * shows `valueUsd` instead of the default `navUsd` derived from
+ * `lib/holdings.ts` (which today is the Sol-burner aggregate). `source`
+ * controls the source pill copy so we never mislead about where the
+ * number came from.
+ */
+export type HeroTreasuryOverride = {
+	valueUsd: number;
+	source: "agentSafe" | "burner";
+};
+
 export type HeroProps = {
 	identity: HeroIdentity;
 	navUsd: number;
@@ -47,6 +62,7 @@ export type HeroProps = {
 	version?: string;
 	status?: "online" | "offline";
 	className?: string;
+	treasuryValueOverride?: HeroTreasuryOverride;
 };
 
 const FALLBACK_PORTRAIT = "/brand/agents/waifu/portrait-amber.webp";
@@ -60,7 +76,10 @@ export function Hero({
 	version = "v0.1.0",
 	status = "online",
 	className,
+	treasuryValueOverride,
 }: HeroProps) {
+	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
+	const treasurySource = treasuryValueOverride?.source ?? "burner";
 	return (
 		<section
 			aria-label="Agent summary"
@@ -73,7 +92,7 @@ export function Hero({
 		>
 			<IdentityBlock identity={identity} version={version} />
 			<HeroCell>
-				<TreasuryBlock navUsd={navUsd} />
+				<TreasuryBlock navUsd={treasuryValue} source={treasurySource} />
 			</HeroCell>
 			<HeroCell>
 				<PnlBlock pct={pnl24hPct} usd={pnl24hUsd} />
@@ -160,11 +179,21 @@ function IdentityBlock({ identity, version }: { identity: HeroIdentity; version:
 
 // ── Treasury ────────────────────────────────────────────────────
 
-function TreasuryBlock({ navUsd }: { navUsd: number }) {
+function TreasuryBlock({ navUsd, source }: { navUsd: number; source: "agentSafe" | "burner" }) {
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
+	const sourceLabel = source === "agentSafe" ? "agent safe" : "sol burner";
 	return (
 		<div className="flex flex-col gap-2">
-			<Label className="mb-0">Treasury Value</Label>
+			<Label
+				className="mb-0"
+				right={
+					<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+						{sourceLabel}
+					</span>
+				}
+			>
+				Treasury Value
+			</Label>
 			<div className="font-mono text-[26px] text-[var(--text-primary)] tabular-nums leading-none tracking-tight md:text-[28px]">
 				<NumberFlow
 					format={{

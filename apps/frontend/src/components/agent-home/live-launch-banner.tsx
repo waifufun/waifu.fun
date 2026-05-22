@@ -28,30 +28,30 @@ export function LiveLaunchBanner({ tokenAddress }: Props) {
 	return (
 		<Link
 			href={`/launch/${encodeURIComponent(data.id)}`}
-			className="group mt-6 flex items-center justify-between gap-4 border border-[#00ff87]/30 bg-[#00ff87]/[0.04] hover:bg-[#00ff87]/[0.07] hover:border-[#00ff87]/50 transition-colors px-5 py-4 rounded-sm"
+			className="group mt-4 flex items-center justify-between gap-4 rounded-md border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-5 py-4 transition-all duration-200 hover:-translate-y-[1px] hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/[0.07]"
 		>
-			<div className="flex items-center gap-3 min-w-0">
-				<span className="inline-flex items-center justify-center w-8 h-8 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10">
-					<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
+			<div className="flex min-w-0 items-center gap-3">
+				<span className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--accent)]/40 bg-[var(--accent)]/10">
+					<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
 				</span>
 				<div className="min-w-0">
-					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+					<div className="font-mono text-[10px] uppercase tracking-[0.24em] text-[var(--accent)]">
 						{isOpen ? "round live" : "awaiting bundle"}
 					</div>
-					<div className="mt-0.5 text-sm text-white/85 truncate">
+					<div className="mt-0.5 truncate text-sm text-[var(--text-primary)]/85">
 						{isOpen ? "deposit bnb before the window closes." : "v2 graduation in progress."}
 					</div>
 				</div>
 			</div>
-			<div className="flex items-center gap-3 shrink-0">
+			<div className="flex shrink-0 items-center gap-3">
 				{isOpen && closeTs ? (
 					<LaunchCountdown
 						closeTimestampSec={closeTs}
 						compact
-						className="font-mono text-sm tabular-nums text-[#00ff87]"
+						className="font-mono text-sm tabular-nums text-[var(--accent)]"
 					/>
 				) : null}
-				<ArrowRight className="w-4 h-4 text-[#00ff87] transition-transform group-hover:translate-x-0.5" />
+				<ArrowRight className="h-4 w-4 text-[var(--accent)] transition-transform group-hover:translate-x-0.5" />
 			</div>
 		</Link>
 	);

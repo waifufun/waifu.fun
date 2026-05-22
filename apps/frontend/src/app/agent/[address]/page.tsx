@@ -4,6 +4,7 @@ import type { ActivityRowInput } from "@/components/agent-home/wave-t/activity-f
 import { fetchOnchainHistory } from "@/lib/onchain-history";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 import { buildActivity } from "@/lib/wave-t/activity";
+import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import { fetchAppsForAgent } from "@/lib/wave-t/apps";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
@@ -382,6 +383,11 @@ export default async function AgentPage({
 		activityP,
 	]);
 
+	// AgentSafe BNB balance fetched after the launch row resolves (it
+	// supplies the safe address). Null on legacy launches or RPC blips;
+	// the Hero falls back to holdings.navUsd in that case.
+	const agentSafeBalance = await fetchAgentSafeBalance(launch?.agentSafe ?? null);
+
 	let renderAgent = agent;
 	let renderTrades = trades;
 	let renderLaunch = launch;
@@ -410,6 +416,7 @@ export default async function AgentPage({
 			positions={positions}
 			activity={activity}
 			apps={apps}
+			agentSafeBalance={agentSafeBalance}
 		/>
 	);
 }
