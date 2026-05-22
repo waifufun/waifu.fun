@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EMPTY_ACTIVITY_COPY, mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
-import { fetchSolTrades } from "@/lib/wave-t/agent-trades";
+import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 
 const ADDRESS = "0xABCDEFabcdefABCDEFabcdefABCDEFabcdefABCD";
 
@@ -17,8 +17,8 @@ function mockFetch(status: number, body: unknown) {
 	} as Response);
 }
 
-describe("fetchSolTrades", () => {
-	it("maps three Sol-initiated trades across multiple tokens", async () => {
+describe("fetchAgentOwnTrades", () => {
+	it("maps three agent-initiated trades across multiple tokens", async () => {
 		mockFetch(200, [
 			{
 				txHash: "0x1",
@@ -56,7 +56,7 @@ describe("fetchSolTrades", () => {
 			},
 		]);
 
-		const trades = await fetchSolTrades(ADDRESS);
+		const trades = await fetchAgentOwnTrades(ADDRESS);
 		expect(trades).toHaveLength(3);
 		expect(trades.map((trade) => trade.tokenSymbol)).toEqual(["WAIFU", "ETH", "WAIFU"]);
 
@@ -68,7 +68,7 @@ describe("fetchSolTrades", () => {
 	it("returns an honest empty list for an empty endpoint response", async () => {
 		mockFetch(200, []);
 
-		const trades = await fetchSolTrades(ADDRESS);
+		const trades = await fetchAgentOwnTrades(ADDRESS);
 		expect(trades).toEqual([]);
 
 		const rows = mergeActivityWithTrades({ activity: [], trades, ticker: "WAIFU" });
@@ -78,6 +78,6 @@ describe("fetchSolTrades", () => {
 
 	it("falls back to empty when the backend 404s", async () => {
 		mockFetch(404, { ok: false, error: "AGENT_NOT_FOUND" });
-		await expect(fetchSolTrades(ADDRESS)).resolves.toEqual([]);
+		await expect(fetchAgentOwnTrades(ADDRESS)).resolves.toEqual([]);
 	});
 });

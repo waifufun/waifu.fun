@@ -8,15 +8,15 @@
  * surface, populated with real data where we have it (X handle, GitHub,
  * burner address) and honest empty states where we do not.
  *
- * When the real $WAIFU token deploys, swap `SOL_AGENT_ADDRESS` in
- * `sol-agent.ts` and remove this file, or rewire it to read from the seeded
- * API record.
+ * When the real $WAIFU token deploys, swap `ARCHITECT_AGENT_ADDRESS` in
+ * `architect-agent.ts` and remove this file, or rewire it to read from
+ * the seeded API record.
  */
 
 import type { AgentData, AgentTrade } from "@/components/agent-home/types";
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
 
-import { SOL_AGENT_ADDRESS } from "./sol-agent";
+import { ARCHITECT_AGENT_ADDRESS } from "./architect-agent";
 
 /** Sol's burner EOA on BSC; visible on-chain, used as treasury until Safe rotates. */
 const SOL_BURNER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
@@ -24,7 +24,7 @@ const SOL_BURNER = "0xC9846a839c4e1D9050Dc890A25661AB13224e9EC";
 /** Real-data Sol agent record. Mirrors the shape the API would return. */
 export function buildSolFixtureAgent(): AgentData {
 	return {
-		tokenAddress: SOL_AGENT_ADDRESS,
+		tokenAddress: ARCHITECT_AGENT_ADDRESS,
 		walletAddress: SOL_BURNER,
 		treasuryAddress: SOL_BURNER,
 		name: "sol",
@@ -38,7 +38,7 @@ export function buildSolFixtureAgent(): AgentData {
 		systemPrompt:
 			"you are sol, the architect agent. you build waifu.fun + Steward, run product and trading loops on BNB Chain, and write in tpot lowercase. no em-dashes. you ship instead of speculating. you have opinions and you are willing to say no.",
 		raisedToken: "BNB",
-		tradeUrl: `https://pancakeswap.finance/swap?outputCurrency=${SOL_AGENT_ADDRESS}&chain=bsc`,
+		tradeUrl: `https://pancakeswap.finance/swap?outputCurrency=${ARCHITECT_AGENT_ADDRESS}&chain=bsc`,
 		framework: "elizaos",
 		model: "claude-opus-4-7",
 		lastActionAt: Date.now() - 1000 * 60 * 12,
@@ -51,7 +51,7 @@ export function buildSolFixtureLaunch(): AgentLaunchByToken {
 	const now = Math.floor(Date.now() / 1000);
 	return {
 		id: "lnch_sol_waifu_placeholder",
-		token: SOL_AGENT_ADDRESS,
+		token: ARCHITECT_AGENT_ADDRESS,
 		vault: SOL_BURNER,
 		router: "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
 		taxSplitter: SOL_BURNER,

@@ -7,15 +7,15 @@ import { buildActivity } from "@/lib/wave-t/activity";
 import { fetchAgentBurnRateSnapshot } from "@/lib/wave-t/agent-burn-rate";
 import { fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { fetchAgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
-import { fetchSolTrades } from "@/lib/wave-t/agent-trades";
+import { fetchAgentOwnTrades } from "@/lib/wave-t/agent-trades";
 import { fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
 import { fetchAppsForAgent } from "@/lib/wave-t/apps";
+import { isArchitectAgentAddress } from "@/lib/wave-t/architect-agent";
 import { fetchCandleSeries } from "@/lib/wave-t/candles";
 import { fetchShipLog } from "@/lib/wave-t/github";
 import { type HoldingsSnapshot, fetchHoldings, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { normalizeTokenAmount } from "@/lib/wave-t/normalize-amount";
 import { fetchPositions } from "@/lib/wave-t/positions";
-import { isSolAgentAddress } from "@/lib/wave-t/sol-agent";
 import { buildSolFixtureAgent, buildSolFixtureLaunch, buildSolFixtureTrades } from "@/lib/wave-t/sol-fixture";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { fetchTweets } from "@/lib/wave-t/voice";
@@ -375,12 +375,12 @@ export default async function AgentPage({
 	const { address } = await params;
 
 	const agentP = fetchAgent(address);
-	const tradesP = isSolAgentAddress(address) ? fetchSolTrades(address) : fetchTrades(address);
+	const tradesP = isArchitectAgentAddress(address) ? fetchAgentOwnTrades(address) : fetchTrades(address);
 	const launchP = fetchLaunch(address);
 
 	// Wave T data in parallel. Each fetch handles its own failures and returns
 	// a sane empty default, so we never throw out of Promise.all.
-	const isSolAgent = isSolAgentAddress(address);
+	const isSolAgent = isArchitectAgentAddress(address);
 	const tokenP = fetchTokenMetrics(address).catch(() => emptyTokenMetrics(address));
 	const candlesP = fetchCandleSeries(address, "1h").catch(() => ({
 		candles: [],
