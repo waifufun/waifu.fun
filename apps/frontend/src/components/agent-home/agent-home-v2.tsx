@@ -41,6 +41,7 @@ import Link from "next/link";
 import type * as React from "react";
 
 import type { AgentLaunchByToken } from "@/lib/post-launch/api";
+import { mergeActivityWithTrades } from "@/lib/wave-t/activity-trades";
 import type { AgentSafeBalance } from "@/lib/wave-t/agent-safe-balance";
 import type { App } from "@/lib/wave-t/apps";
 import type { CandleSeries } from "@/lib/wave-t/candles";
@@ -266,74 +267,6 @@ function deriveDaysOperating(agent: AgentData, launch: AgentLaunchByToken | null
 		return Math.max(1, daysOperating(new Date(last).toISOString()));
 	}
 	return 1;
-}
-
-/**
- * Project raw AgentTrade swap events into the wave-T activity feed's
- * `trade` row variant and merge them into the existing activity stream.
- *
- * AgentTrade has buy/sell direction, trader address, raw amount and a
- * bscscan tx id; the feed's `trade` row understands all of that. We
- * pass the agent's own ticker as the asset (every row in the trade
- * stream is a swap of THIS token).
- *
- * Sorted newest-first. Dedupes by underlying tx hash so an onchain
- * `tx` row (id `onchain-${hash}`) and a `trade` row (id
- * `trade-${hash}-…`) for the same swap collapse to a single entry; the
- * richer `trade` row wins because it carries buy/sell direction and
- * amount.
- */
-function mergeActivityWithTrades(opts: {
-	activity: ActivityRowInput[];
-	trades: AgentTrade[];
-	ticker: string;
-}): ActivityRowInput[] {
-	const asset = opts.ticker ? opts.ticker.toUpperCase() : "TOKEN";
-	const tradeRows: ActivityRowInput[] = opts.trades.map((t, idx) => {
-		const ms = t.timestamp > 1e12 ? t.timestamp : t.timestamp * 1000;
-		const amountNum = typeof t.amount === "number" ? t.amount : Number.parseFloat(t.amount);
-		const row: ActivityRowInput = {
-			id: `trade-${t.txId || idx}-${t.timestamp}`,
-			type: "trade",
-			timestamp: new Date(Number.isFinite(ms) && ms > 0 ? ms : Date.now()).toISOString(),
-			side: t.type === "sell" ? "sell" : "buy",
-			asset,
-			amount: Number.isFinite(amountNum) ? amountNum : 0,
-			priceBnb: 0,
-			venue: "PancakeSwap",
-			...(t.txId ? { url: `https://bscscan.com/tx/${t.txId}` } : {}),
-		};
-		return row;
-	});
-
-	// Trade rows take priority over generic onchain `tx` rows for the
-	// same hash. Build a hash key from either the bscscan url or the
-	// explicit onchain id; trade rows are concatenated FIRST so their
-	// hash claims the slot.
-	const seen = new Set<string>();
-	const out: ActivityRowInput[] = [];
-	for (const r of [...tradeRows, ...opts.activity]) {
-		const key = rowDedupeKey(r);
-		if (seen.has(key)) continue;
-		seen.add(key);
-		out.push(r);
-	}
-	out.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-	return out;
-}
-
-/**
- * Best-effort tx-hash extractor. Pulls the hash off the bscscan url if
- * the row has one (works for `trade`, `tx`, `treasury`, etc), otherwise
- * falls back to the row id. Lowercased so 0xABC and 0xabc collapse.
- */
-function rowDedupeKey(row: ActivityRowInput): string {
-	const url = (row as { url?: string }).url;
-	if (typeof url === "string") {
-		const m = url.match(/0x[a-fA-F0-9]{40,}/);
-		if (m) return `tx:${m[0].toLowerCase()}`;
-	}
-	return `id:${row.id}`;
 }
 
 function TopBar() {
