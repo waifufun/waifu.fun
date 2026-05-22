@@ -9,6 +9,7 @@
  * Backend handler: apps/api/src/routes/v2/agent-launches.ts (line 233+).
  */
 import { useQuery } from "@tanstack/react-query";
+import { resolveImageUrl } from "../image-url";
 import { apiFetch, isApiError } from "./_fetcher";
 
 export type LaunchListState = "open" | "closed" | "launched" | "failed";
@@ -117,7 +118,7 @@ export function getLaunchSymbol(item: LaunchListItem): string {
 
 export function getLaunchImage(item: LaunchListItem): string | null {
 	const fromMeta = typeof item.metadata?.image === "string" ? item.metadata.image : null;
-	return fromMeta;
+	return resolveImageUrl(fromMeta);
 }
 
 export function getLaunchTierNumber(item: LaunchListItem): LaunchListTier | null {
@@ -136,7 +137,7 @@ export function safeBigInt(value: string | undefined | null): bigint {
 }
 
 export function progressPct(deposited: bigint, capacity: bigint): number {
-	if (capacity === 0n) return 0;
+	if (capacity <= 0n) return 0;
 	const bps = Number((deposited * 10_000n) / capacity);
 	return Math.min(100, Math.max(0, bps / 100));
 }

@@ -31,6 +31,7 @@ import Link from "next/link";
 import { formatEther } from "viem";
 
 import { Pulse, StatPill } from "@/components/agent-home/wave-t/_primitives";
+import { resolveImageUrl } from "@/lib/image-url";
 import type { PublicLaunchExtended } from "@/lib/launch-vault/api";
 import {
 	deriveLaunchDisplayState,
@@ -80,7 +81,7 @@ const STATE_TONE_TO_PILL: Record<
 export function LaunchHeroV2({ meta, tier, totalDeposited, depositorCount, closeTimestamp, state, bonusPool }: Props) {
 	const name = meta?.tokenName ?? "agent launch";
 	const symbol = meta?.tokenTicker ?? "—";
-	const image = meta?.tokenImageUrl ?? null;
+	const image = resolveImageUrl(meta?.tokenImageUrl ?? null);
 
 	const displayState = deriveLaunchDisplayState({
 		vaultState: state,
