@@ -9,7 +9,7 @@
 //      and the full flow executes against the real Portal at that budget.
 //   2. With noBurn=true the would-burn portion lands at `creator` instead of
 //      the DEAD address. DEAD balance for this token MUST be zero.
-//   3. Token splits remain correct (vault = 20% of supply, treasury = 10%).
+//   3. Token splits remain correct (vault = 20% of supply, agentSafe = 10%).
 //   4. The 16.84 BNB quoteAmt clears Portal v5.14.3's graduation threshold so
 //      a PCS V2 pair gets created and seeded with non-zero reserves.
 //   5. Resell path via PCS V2 works (creator can swap claimed tokens to BNB).
@@ -271,9 +271,12 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		const vaultTokenBalance = await token.balanceOf(launchAddrs.vault);
 		expect(vaultTokenBalance).to.equal(ethers.parseUnits("200000000", 18));
 
-		// (d) Treasury holds 10% of supply (100M).
+		// (d) AgentSafe holds 10% of supply (100M). TreasuryLP5 is dormant
+		//     before deferred V3 activation (post-#672 behavior).
+		const agentSafeTokenBalance = await token.balanceOf(launchAddrs.agentSafe);
 		const treasuryTokenBalance = await token.balanceOf(launchAddrs.treasuryLp);
-		expect(treasuryTokenBalance).to.equal(ethers.parseUnits("100000000", 18));
+		expect(agentSafeTokenBalance).to.equal(ethers.parseUnits("100000000", 18));
+		expect(treasuryTokenBalance).to.equal(0n);
 
 		// (e) DEAD balance is zero. THIS IS THE NOBURN PROOF.
 		const deadBalance = await token.balanceOf(DEAD);
@@ -319,19 +322,20 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		expect(await vault.state()).to.equal(2);
 
 		// (i) Sum of accounted balances == totalSupply (within tax tolerance).
-		//     vault(200M) + treasury(100M) + creator + pair + tax_splitter = totalSupply.
+		//     vault(200M) + agentSafe(100M) + creator + pair + tax_splitter = totalSupply.
 		//     The 3% buyTax on the 0.5 BNB V2 follow-up buy routes a small slice
 		//     of tokens to the TaxSplitter / marketing receiver, which is NOT one
 		//     of the addresses we hold a handle to here. So we assert the four
 		//     known buckets cover >=99.5% of supply, then log the unaccounted
 		//     tax-splitter delta separately.
 		const pairTokenBal = await token.balanceOf(pair);
-		const accounted = vaultTokenBalance + treasuryTokenBalance + creatorTokenBalance + pairTokenBal;
+		const accounted =
+			vaultTokenBalance + agentSafeTokenBalance + treasuryTokenBalance + creatorTokenBalance + pairTokenBal;
 		const unaccounted = totalSupply - accounted;
 		expect(accounted).to.be.lte(totalSupply);
 		expect((accounted * 10_000n) / totalSupply).to.be.gte(9_950n); // >= 99.5% of supply accounted
 		console.log(
-			`    [tier-test] supply split: vault=${ethers.formatUnits(vaultTokenBalance, 18)} treasury=${ethers.formatUnits(treasuryTokenBalance, 18)} creator=${ethers.formatUnits(creatorTokenBalance, 18)} pair=${ethers.formatUnits(pairTokenBal, 18)} tax_splitter=${ethers.formatUnits(unaccounted, 18)}`,
+			`    [tier-test] supply split: vault=${ethers.formatUnits(vaultTokenBalance, 18)} agentSafe=${ethers.formatUnits(agentSafeTokenBalance, 18)} treasuryLp=${ethers.formatUnits(treasuryTokenBalance, 18)} creator=${ethers.formatUnits(creatorTokenBalance, 18)} pair=${ethers.formatUnits(pairTokenBal, 18)} tax_splitter=${ethers.formatUnits(unaccounted, 18)}`,
 		);
 
 		// (j) Salt is now used (factory dedupe state).
@@ -384,7 +388,10 @@ describe("Wave H TIER_TEST + noBurn real-fork integration", function () {
 		console.log("    DEAD balance:       0 (noBurn confirmed)");
 		console.log(`    creator balance:    ${ethers.formatUnits(creatorTokenBalance, 18)} (would-burn destination)`);
 		console.log(`    vault balance:      ${ethers.formatUnits(vaultTokenBalance, 18)} (20%)`);
-		console.log(`    treasury balance:   ${ethers.formatUnits(treasuryTokenBalance, 18)} (10%)`);
+		console.log(`    agentSafe balance:  ${ethers.formatUnits(agentSafeTokenBalance, 18)} (10%)`);
+		console.log(
+			`    treasuryLp balance: ${ethers.formatUnits(treasuryTokenBalance, 18)} (deferred V3, 0 pre-finalize)`,
+		);
 		console.log(`    pair token reserve: ${ethers.formatUnits(pairTokenReserve, 18)}`);
 		console.log(`    tax-splitter unacct:${ethers.formatUnits(unaccounted, 18)} (~3% of v2-buy slice)`);
 		console.log(`    recoup proof:       1M tokens -> ${ethers.formatEther(bnbReceived)} BNB`);
