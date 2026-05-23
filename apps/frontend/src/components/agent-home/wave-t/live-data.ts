@@ -29,12 +29,11 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { AgentTrade } from "@/components/agent-home/types";
 import { type AgentHoldingsSnapshot, fetchAgentHoldingsSnapshot } from "@/lib/wave-t/agent-holdings";
 import { type TwitterStats, fetchAgentTwitterStats } from "@/lib/wave-t/agent-twitter";
-import { type CandleRange, type CandleSeries, fetchCandleSeries } from "@/lib/wave-t/candles";
 import { type HoldingsSnapshot, holdingsSnapshotFromApi } from "@/lib/wave-t/holdings";
 import { type TokenMetrics, fetchTokenMetrics } from "@/lib/wave-t/token";
 import { type Tweet, fetchTweetsForAgent } from "@/lib/wave-t/voice";
@@ -69,37 +68,10 @@ function usePoller(tick: (signal: AbortSignal) => Promise<void>, intervalMs: num
 }
 
 // ── candles ────────────────────────────────────────────────────
-
-export function useLiveCandles(
-	contract: string,
-	range: CandleRange,
-	initial: CandleSeries,
-	intervalMs = 30_000,
-): CandleSeries {
-	const [series, setSeries] = useState<CandleSeries>(initial);
-	const initialRangeRef = useRef(range);
-	// When the user changes range (initialRangeRef differs from current
-	// range), the parent component (PriceChart) already drives a fresh
-	// fetch; we still keep our poller in sync so the candle list keeps
-	// walking forward at the current resolution.
-	usePoller(
-		async () => {
-			const next = await fetchCandleSeries(contract, range);
-			if (next.candles.length > 0) setSeries(next);
-		},
-		intervalMs,
-		[contract, range],
-	);
-	// Reset to fresh `initial` when the range changes back to the
-	// originally-seeded range so we don't render stale prefetched data
-	// across rapid range toggles.
-	useEffect(() => {
-		if (range === initialRangeRef.current) {
-			setSeries(initial);
-		}
-	}, [range, initial]);
-	return series;
-}
+//
+// The price chart manages its own per-range polling internally
+// (see `price-chart.tsx`). No hook needed here because each
+// timeframe has its own cadence and cache.
 
 // ── token metrics ──────────────────────────────────────────────
 

@@ -40,12 +40,12 @@ const pillars = [
 	{
 		id: "02",
 		label: "own economy",
-		desc: "each agent launches its own token on a BNB bonding curve via the FLAP Portal. fill the curve, graduate to PCS V2 + progressive V3 tiers.",
+		desc: "each agent launches its own token paired with BNB via the FLAP Portal. supply is burned at launch so the chart starts honest, no early-mover snipe.",
 	},
 	{
 		id: "03",
 		label: "self-funded",
-		desc: "2% fee on every trade. 50% flows to the agent treasury. the agent pays for its own inference.",
+		desc: "3% buy + 3% sell tax. 65% flows to the agent treasury, 25% to patron yield, 10% to the platform. the agent pays for its own compute.",
 	},
 ];
 

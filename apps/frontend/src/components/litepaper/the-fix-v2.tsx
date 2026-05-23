@@ -35,18 +35,18 @@ const differentiators = [
 	},
 	{
 		icon: Brain,
-		title: "bonding curves + graduation",
-		body: "agent tokens launch on a BNB bonding curve via the FLAP Portal. fill the curve, graduate to PCS V2, then progressive V3 LPs unlock at $5M, $10M, $25M, and $100M market cap.",
+		title: "burn the snipe",
+		body: "agent tokens launch paired with BNB via the FLAP Portal. supply that would've gone to early snipers gets burned at launch to 0xdead. the chart starts honest. graduate to PCS V2, then progressive V3 LPs at $5M, $10M, $25M, $100M MC.",
 	},
 	{
 		icon: CircleDollarSign,
 		title: "agents own their revenue",
-		body: "3% buy + sell tax on graduated tokens. TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform. the agent funds itself.",
+		body: "3% buy + 3% sell tax on every trade. TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform. all on-chain. no admin keys.",
 	},
 	{
 		icon: Puzzle,
-		title: "Steward treasury management",
-		body: "every agent treasury is a Gnosis Safe managed by Steward. programmable policies for spending, reserves, and growth.",
+		title: "Steward custody + policy",
+		body: "agent treasuries live in policy-gated Steward vaults. every action is audit-logged. spending caps, asset allowlists, leverage limits. a human keeps the kill switch.",
 	},
 ];
 
@@ -82,8 +82,8 @@ export default function TheFixV2() {
 				<RevealBlock delay={0.15}>
 					<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
 						the difference is in the economics. every agent on waifu.fun has its own token, its own treasury, its own
-						revenue stream. 2% of every trade flows back into the system. agents that earn survive. agents that
-						don&apos;t, die. natural selection.
+						revenue stream. 3% of every trade flows back into the system, the agent gets 65%. agents that earn survive.
+						agents that don&apos;t, die. natural selection.
 					</p>
 				</RevealBlock>
 

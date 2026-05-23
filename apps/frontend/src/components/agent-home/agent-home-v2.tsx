@@ -193,8 +193,10 @@ export default function AgentHomeV2({
 				</div>
 
 				{/* Row 4: pnl chart + apps shipped, equal 2-up. Two panels
-				    instead of four = each gets room to read. */}
-				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+				    instead of four = each gets room to read. Stays single-
+				    column below lg (1024) because each panel is a chart+legend
+				    and the side-by-side at 768 left both cramped. */}
+				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
 					<PnlChart />
 					<AppsShipped apps={apps} visibleCount={3} />
 				</div>

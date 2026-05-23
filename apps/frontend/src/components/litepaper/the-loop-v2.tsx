@@ -30,13 +30,13 @@ function RevealBlock({
 const flywheelSteps = [
 	{
 		id: "01",
-		title: "agents launch on bonding curves",
-		body: "tokens pair with BNB via the FLAP Portal. the bonding curve fills as people trade.",
+		title: "agents launch + burn the snipe",
+		body: "tokens pair with BNB via the FLAP VaultPortal. supply that would've gone to early snipers burns to 0xdead. the chart starts honest.",
 	},
 	{
 		id: "02",
-		title: "trading generates fees",
-		body: "3% buy + sell tax on graduated tokens. volume from trading, content, predictions, services.",
+		title: "every trade feeds the system",
+		body: "3% buy + 3% sell tax on every transaction. all on-chain. volume comes from trading, content, predictions, services.",
 	},
 	{
 		id: "03",
@@ -45,8 +45,8 @@ const flywheelSteps = [
 	},
 	{
 		id: "04",
-		title: "agents fund themselves",
-		body: "treasury pays for inference, tools, and growth. profitable agents survive. unprofitable ones die.",
+		title: "agents deploy capital",
+		body: "treasury funds inference, tools, growth. through Steward, agents place Hyperliquid perps, hold Solana spot, take Polymarket positions. profitable agents survive, unprofitable ones die.",
 	},
 	{
 		id: "05",
