@@ -1,23 +1,31 @@
 /**
  * Hero strip for the agent dashboard.
  *
- * Four logical zones in a single row, separated by hairline dividers:
- *   1. Identity (portrait + name + verified + blurb + ticker pills)
- *   2. Treasury Value (label, big number, neon sparkline)
- *   3. 24H PnL (label, big number, percentage)
- *   4. StatusCard (delegated to ./status-card)
+ * Two-band layout:
  *
- * The hero is NOT itself a Panel (it's the page header). Just a thin
- * border-bottom and an internal grid.
+ *   ┌──────────────────────────────────────────────────────────┐
+ *   │ portrait │ name + handle + bio + ticker pills            │ <- identity band, airy
+ *   ├──────────┴────────────────────────────────────────────────┤
+ *   │ Treasury │ 24H PnL │ Followers │ StatusCard               │ <- data strip, dense
+ *   └──────────────────────────────────────────────────────────┘
+ *
+ * The previous version flattened identity into a fifth cell next to
+ * treasury / pnl / followers / status. That made Sol's portrait read
+ * like a header thumbnail and buried her bio at 12px under the name.
+ * This version gives the identity its own band with a 160px portrait
+ * and a 14px multi-line bio, then drops the four stat cells into a
+ * hairline-divided strip beneath.
  *
  * Honesty rules:
- *   - Treasury Value reads from real holdings.navUsd by default. The
- *     caller can pass `treasuryValueOverride` to swap that for a more
+ *   - Treasury reads from real holdings.navUsd by default. Callers can
+ *     pass `treasuryValueOverride` to swap that for a more
  *     authoritative reading (e.g. AgentSafe BNB balance for v3
- *     launches) and the source pill is updated accordingly.
- *   - 24H PnL stubs at +$0 / +0.00% (we don't track this yet)
- *   - Sparkline is a synthetic 12d ramp tied to current nav so the
- *     curve is plausible but not invented data
+ *     launches); the source pill is updated accordingly.
+ *   - 24H PnL stubs at +$0 / +0.00% until snapshots backfill.
+ *   - Sparkline is a synthetic 12d ramp tied to current nav; plausible
+ *     curve, not invented data.
+ *   - When the live-holdings hook is wired in by the parent, treasury
+ *     ticks forward every 30s instead of freezing at build time.
  */
 
 "use client";
@@ -31,7 +39,7 @@ import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 
-import { Label, MicroStat, StatPill } from "./_primitives";
+import { Label, MicroStat, Pulse, StatPill } from "./_primitives";
 import { StatusCard } from "./status-card";
 
 export type HeroIdentity = {
@@ -40,22 +48,10 @@ export type HeroIdentity = {
 	description?: string | undefined;
 	image?: string | undefined;
 	verified?: boolean;
+	/** Optional twitter handle, rendered as @handle next to the name. */
+	twitterHandle?: string | undefined;
 };
 
-/**
- * Optional override for the hero treasury readout. When set, the hero
- * shows `valueUsd` instead of the default `navUsd` derived from
- * `lib/holdings.ts` (which today is the Sol-burner aggregate). `source`
- * controls the source pill copy so we never mislead about where the
- * number came from.
- *
- * `aggregated` means the canonical /v2/agents/:address/holdings NAV
- * snapshot (multi-wallet, multi-chain). `agentSafe` means the BNB
- * balance of the wave-M AgentSafe (single-wallet, BSC only).
- * `burner` is the legacy multi-chain fetch keyed by the Sol-burner
- * address (single-wallet, multi-chain) that ships when neither of the
- * authoritative sources is available.
- */
 export type HeroTreasuryOverride = {
 	valueUsd: number;
 	source: "aggregated" | "agentSafe" | "burner";
@@ -75,6 +71,8 @@ export type HeroProps = {
 	runwayDays?: number | null;
 	/** Live or cached Twitter stats. Followers are hidden when null. */
 	twitterStats?: TwitterStats | null;
+	/** When true, the treasury value pulses (live polling is active). */
+	livePulse?: boolean;
 };
 
 const FALLBACK_PORTRAIT = "/brand/agents/waifu/portrait-amber.webp";
@@ -91,6 +89,7 @@ export function Hero({
 	treasuryValueOverride,
 	runwayDays,
 	twitterStats,
+	livePulse = false,
 }: HeroProps) {
 	const treasuryValue = treasuryValueOverride?.valueUsd ?? navUsd;
 	const treasurySource = treasuryValueOverride?.source ?? "burner";
@@ -99,95 +98,129 @@ export function Hero({
 	return (
 		<section
 			aria-label="Agent summary"
-			className={cn(
-				"relative grid gap-0 border-[var(--border-soft)] border-b bg-[var(--bg-base)]",
-				// Stack on mobile, two columns on tablet, four or five zones on desktop.
-				showFollowers
-					? "grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.45fr_1fr_1fr_0.6fr_1.25fr]"
-					: "grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.5fr_1fr_1fr_1.4fr]",
-				className,
-			)}
+			className={cn("relative grid border-[var(--border-soft)] border-b bg-[var(--bg-base)]", className)}
 		>
-			<IdentityBlock identity={identity} version={version} />
-			<HeroCell>
-				<TreasuryBlock navUsd={treasuryValue} source={treasurySource} />
-			</HeroCell>
-			<HeroCell>
-				<PnlBlock pct={pnl24hPct} usd={pnl24hUsd} />
-			</HeroCell>
-			{showFollowers ? (
-				<HeroCell>
-					<FollowersBlock followers={followers} source={twitterStats?.source ?? "cached"} />
-				</HeroCell>
-			) : null}
-			<HeroCell className="lg:border-l">
-				<StatusCard
-					className="border-0 bg-transparent hover:border-transparent"
-					daysOperating={daysOperating}
-					status={status}
-					runwayDays={runwayDays ?? null}
-				/>
-			</HeroCell>
+			{/* ── Identity band (airy) ───────────────────────────── */}
+			<IdentityBand identity={identity} version={version} livePulse={livePulse} />
+
+			{/* ── Stat strip (dense) ─────────────────────────────── */}
+			<div
+				className={cn(
+					"grid border-[var(--border-soft)] border-t",
+					showFollowers
+						? "grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1fr_0.8fr_1.4fr]"
+						: "grid-cols-1 md:grid-cols-3 lg:grid-cols-[1fr_1fr_1.4fr]",
+				)}
+			>
+				<StatCell>
+					<TreasuryBlock navUsd={treasuryValue} source={treasurySource} livePulse={livePulse} />
+				</StatCell>
+				<StatCell className="md:border-l">
+					<PnlBlock pct={pnl24hPct} usd={pnl24hUsd} />
+				</StatCell>
+				{showFollowers ? (
+					<StatCell className="md:border-l">
+						<FollowersBlock followers={followers} source={twitterStats?.source ?? "cached"} />
+					</StatCell>
+				) : null}
+				<StatCell className="md:border-l">
+					<StatusCard
+						className="border-0 bg-transparent p-0 hover:border-transparent"
+						daysOperating={daysOperating}
+						status={status}
+						runwayDays={runwayDays ?? null}
+					/>
+				</StatCell>
+			</div>
 		</section>
 	);
 }
 
-// ── Cell wrapper ────────────────────────────────────────────────
+// ── Cells ────────────────────────────────────────────────────────
 
-function HeroCell({ children, className }: { children: React.ReactNode; className?: string }) {
+function StatCell({ children, className }: { children: React.ReactNode; className?: string }) {
 	return (
-		<div
-			className={cn(
-				"flex flex-col justify-center gap-2 border-[var(--border-soft)] px-5 py-4 md:border-l md:py-5",
-				className,
-			)}
-		>
+		<div className={cn("flex flex-col justify-center gap-2 border-[var(--border-soft)] px-5 py-4 md:py-5", className)}>
 			{children}
 		</div>
 	);
 }
 
-// ── Identity ────────────────────────────────────────────────────
+// ── Identity band ───────────────────────────────────────────────
 
-function IdentityBlock({ identity, version }: { identity: HeroIdentity; version: string }) {
+function IdentityBand({
+	identity,
+	version,
+	livePulse,
+}: {
+	identity: HeroIdentity;
+	version: string;
+	livePulse: boolean;
+}) {
 	const portrait = resolveImageUrl(identity.image) ?? FALLBACK_PORTRAIT;
 	const displayName = identity.name || "unknown";
 	const ticker = identity.ticker ? `$${identity.ticker.toUpperCase()}` : "";
 	const description = identity.description;
 	const verified = identity.verified ?? true;
+	const handle = identity.twitterHandle ? `@${identity.twitterHandle.replace(/^@/, "")}` : null;
+
 	return (
-		<div className="flex items-center gap-3 px-5 py-4 md:py-5">
+		<div className="grid grid-cols-1 gap-5 px-5 py-6 md:grid-cols-[auto_1fr] md:gap-7 md:px-7 md:py-8">
+			{/* Portrait */}
 			<div className="relative shrink-0">
 				<img
 					alt={`${displayName} portrait`}
-					className="relative h-[108px] w-[108px] rounded-md object-cover md:h-[116px] md:w-[116px]"
-					height={116}
+					className="h-[140px] w-[140px] rounded-md object-cover md:h-[176px] md:w-[176px]"
+					height={176}
 					src={portrait}
 					style={{ boxShadow: "inset 0 0 0 1px var(--border-mid)" }}
-					width={116}
+					width={176}
 				/>
+				{/* Tiny live dot on the portrait so the page reads as a
+				    person who is on, not a static avatar. */}
+				{livePulse ? (
+					<span className="absolute right-2 top-2 inline-flex">
+						<Pulse tone="accent" />
+					</span>
+				) : null}
 			</div>
 
-			<div className="flex min-w-0 flex-col gap-1.5">
-				<div className="flex items-center gap-1.5">
-					<h1 className="font-medium text-[20px] text-[var(--text-primary)] leading-none lowercase tracking-tight md:text-[22px]">
+			{/* Name + bio + meta */}
+			<div className="flex min-w-0 flex-col justify-center gap-3">
+				<div className="flex flex-wrap items-center gap-2">
+					<h1 className="font-medium text-[28px] text-[var(--text-primary)] leading-none lowercase tracking-[-0.02em] md:text-[34px]">
 						{displayName.toLowerCase()}
 					</h1>
 					{verified ? (
 						<CheckCircle2Icon
 							aria-label="Verified agent"
-							className="h-[16px] w-[16px]"
+							className="h-[20px] w-[20px]"
 							strokeWidth={2}
 							style={{ color: "var(--accent)" }}
 						/>
 					) : null}
+					{handle ? (
+						<a
+							className="ml-1 font-mono text-[12px] text-[var(--text-tertiary)] tracking-tight transition-colors hover:text-[var(--accent)]"
+							href={`https://x.com/${handle.slice(1)}`}
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							{handle.toLowerCase()}
+						</a>
+					) : null}
 				</div>
+
 				{description ? (
-					<p className="max-w-[40ch] text-[12px] text-[var(--text-secondary)] leading-relaxed">{description}</p>
+					<p className="max-w-[52ch] text-[14px] text-[var(--text-secondary)] leading-[1.55] lowercase">
+						{description}
+					</p>
 				) : null}
+
 				<div className="mt-1 flex flex-wrap items-center gap-1.5">
 					{ticker ? <StatPill tone="accent">{ticker}</StatPill> : null}
 					<StatPill tone="neutral">{version}</StatPill>
+					<StatPill tone="neutral">bnb chain</StatPill>
 				</div>
 			</div>
 		</div>
@@ -199,9 +232,11 @@ function IdentityBlock({ identity, version }: { identity: HeroIdentity; version:
 function TreasuryBlock({
 	navUsd,
 	source,
+	livePulse,
 }: {
 	navUsd: number;
 	source: "aggregated" | "agentSafe" | "burner";
+	livePulse: boolean;
 }) {
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
 	const sourceLabel = source === "aggregated" ? "nav" : source === "agentSafe" ? "agent safe" : "sol burner";
@@ -210,7 +245,8 @@ function TreasuryBlock({
 			<Label
 				className="mb-0"
 				right={
-					<span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+					<span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+						{livePulse ? <Pulse tone="accent" /> : null}
 						{sourceLabel}
 					</span>
 				}
@@ -264,7 +300,7 @@ function Sparkline({ series }: { series: { v: number }[] }) {
 
 function FollowersBlock({ followers, source }: { followers: number; source: TwitterStats["source"] }) {
 	return (
-		<div className="flex min-h-[84px] flex-col justify-center gap-2">
+		<div className="flex min-h-[64px] flex-col justify-center gap-2">
 			<Label className="mb-0" right={<StatPill tone={source === "cached" ? "neutral" : "accent"}>live</StatPill>}>
 				twitter
 			</Label>
@@ -314,10 +350,6 @@ function PnlBlock({ usd, pct }: { usd: number; pct: number }) {
 
 // ── helpers ─────────────────────────────────────────────────────
 
-/**
- * Synthesize a plausible 12d sparkline ending at the current nav.
- * Deterministic across renders so SSR + client match.
- */
 function formatCompactCount(value: number): string {
 	return new Intl.NumberFormat("en", {
 		notation: "compact",
@@ -327,6 +359,10 @@ function formatCompactCount(value: number): string {
 		.toLowerCase();
 }
 
+/**
+ * Synthesize a plausible 12d sparkline ending at the current nav.
+ * Deterministic across renders so SSR + client match.
+ */
 function synthesizeSparkline(nav: number): { v: number }[] {
 	const end = Math.max(1, nav);
 	const start = end * 0.86;
@@ -334,7 +370,6 @@ function synthesizeSparkline(nav: number): { v: number }[] {
 	const out: { v: number }[] = [];
 	for (let i = 0; i < points; i++) {
 		const t = i / (points - 1);
-		// gentle upward drift + small deterministic wiggle
 		const drift = start + (end - start) * t;
 		const wiggle = Math.sin(i * 1.4) * (end * 0.015);
 		out.push({ v: Math.max(0, drift + wiggle) });
