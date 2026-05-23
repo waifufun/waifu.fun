@@ -85,6 +85,56 @@ describe("createLaunch Wave M payload assembly", () => {
 		expect(body.tier).toBe("80");
 	});
 
+	it("sends uploaded Flap metadata instead of the create-placeholder URI", async () => {
+		const fetchSpy = vi.fn().mockResolvedValue(jsonResponse({ id: "abc", token: "0xtoken" }));
+		globalThis.fetch = fetchSpy as never;
+
+		await createLaunch(
+			basePayload({
+				flap: {
+					metaCid: "bafkreigh2akiscaildc0123456789",
+					metaUri: "ipfs://bafkreigh2akiscaildc0123456789",
+				},
+			}),
+		);
+
+		const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+		const body = JSON.parse(init.body as string) as Record<string, unknown>;
+		expect(body.metadataURI).toBe("ipfs://bafkreigh2akiscaildc0123456789");
+		expect(body.flapMetaCid).toBe("bafkreigh2akiscaildc0123456789");
+	});
+
+	it("derives an IPFS metadata URI when only the Flap CID is present", async () => {
+		const fetchSpy = vi.fn().mockResolvedValue(jsonResponse({ id: "abc", token: "0xtoken" }));
+		globalThis.fetch = fetchSpy as never;
+
+		await createLaunch(
+			basePayload({
+				flap: {
+					metaCid: "bafkreigh2akiscaildc0123456789",
+					metaUri: null,
+				},
+			}),
+		);
+
+		const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+		const body = JSON.parse(init.body as string) as Record<string, unknown>;
+		expect(body.metadataURI).toBe("ipfs://bafkreigh2akiscaildc0123456789");
+		expect(body.flapMetaCid).toBe("bafkreigh2akiscaildc0123456789");
+	});
+
+	it("keeps the placeholder metadata URI when no Flap upload exists", async () => {
+		const fetchSpy = vi.fn().mockResolvedValue(jsonResponse({ id: "abc", token: "0xtoken" }));
+		globalThis.fetch = fetchSpy as never;
+
+		await createLaunch(basePayload());
+
+		const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+		const body = JSON.parse(init.body as string) as Record<string, unknown>;
+		expect(body.metadataURI).toBe("waifu://create/WF-TEST1-TEST2");
+		expect("flapMetaCid" in body).toBe(false);
+	});
+
 	it("omits agentSafeOwners when caller provides empty owner list", async () => {
 		const fetchSpy = vi.fn().mockResolvedValue(jsonResponse({ id: "abc", token: "0xtoken" }));
 		globalThis.fetch = fetchSpy as never;
