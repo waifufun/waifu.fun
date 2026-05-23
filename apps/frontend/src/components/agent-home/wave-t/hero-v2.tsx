@@ -78,6 +78,10 @@ export function HeroV2({
 		<Panel className={cn("relative", className)} noPad>
 			<div
 				className={cn(
+					// On mobile (<lg) the character block stacks above the data
+					// block. At lg+ we get the asymmetric 1.15fr/1fr split that
+					// makes the page read as a passport card on the left and a
+					// dashboard on the right.
 					"grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]",
 					"divide-y divide-[var(--border-soft)] lg:divide-y-0 lg:divide-x",
 				)}
@@ -118,41 +122,47 @@ function CharacterColumn({
 	const verified = identity.verified ?? true;
 	const handle = identity.twitterHandle ? `@${identity.twitterHandle.replace(/^@/, "").toLowerCase()}` : null;
 
-	// Portrait stays beside the name+bio at every breakpoint above sm.
-	// Previously we stacked vertically at lg, which created a void above
-	// the text block at xl widths and made the column read as half-empty.
-	// Inline pairing keeps the portrait + identity reading as one
-	// composed block, like a passport photo + name plate.
+	// Mobile-first stacking. Below md the portrait sits centered above
+	// the name/bio block (passport-photo-on-top pattern). At md+ the
+	// portrait pairs inline with the text like a sidebar identity card.
+	// We deliberately do NOT inline at sm (640): on a 640-720px viewport
+	// the 200px portrait + 4 short stat pills + bio crowd each other.
+	// Inline only kicks in at md (768) where there's room to breathe.
 	return (
-		<div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:gap-6 md:gap-7 md:p-7 lg:p-8">
+		<div className="flex flex-col gap-4 p-4 sm:gap-5 sm:p-5 md:flex-row md:items-start md:gap-6 md:p-6 lg:gap-7 lg:p-8">
 			<div className="relative shrink-0 self-start">
 				<img
 					alt={`${displayName} portrait`}
 					className={cn(
-						"h-[200px] w-[200px] rounded-md object-cover",
-						"sm:h-[240px] sm:w-[240px]",
-						"md:h-[280px] md:w-[280px]",
-						"lg:h-[320px] lg:w-[320px]",
-						"xl:h-[360px] xl:w-[360px]",
+						// mobile: comfortable readable size, not header-sized.
+						"h-[148px] w-[148px] rounded-md object-cover",
+						"sm:h-[176px] sm:w-[176px]",
+						// tablet inline: smaller than desktop so name+bio+stats fit.
+						"md:h-[208px] md:w-[208px]",
+						"lg:h-[272px] lg:w-[272px]",
+						"xl:h-[320px] xl:w-[320px]",
 					)}
-					height={360}
+					height={320}
 					src={portrait}
 					style={{ boxShadow: "inset 0 0 0 1px var(--border-mid)" }}
-					width={360}
+					width={320}
 				/>
 				{livePulse ? (
-					<span className="absolute right-3 top-3 inline-flex">
+					<span className="absolute right-2.5 top-2.5 inline-flex">
 						<Pulse tone="accent" />
 					</span>
 				) : null}
 			</div>
 
-			<div className="flex min-w-0 flex-1 flex-col justify-center gap-3 lg:gap-4">
+			<div className="flex min-w-0 flex-1 flex-col justify-center gap-2.5 md:gap-3 lg:gap-4">
 				<div className="flex flex-wrap items-center gap-2">
 					<h1
 						className={cn(
 							"font-medium leading-[0.95] tracking-[-0.025em] text-[var(--text-primary)]",
-							"text-[34px] sm:text-[40px] lg:text-[44px] xl:text-[52px]",
+							// 28 mobile → 32 sm → 36 md → 44 lg → 52 xl. Tighter
+							// scale than before so the name doesn't dominate small
+							// viewports.
+							"text-[28px] sm:text-[32px] md:text-[36px] lg:text-[44px] xl:text-[52px]",
 						)}
 					>
 						{displayName}
@@ -160,7 +170,7 @@ function CharacterColumn({
 					{verified ? (
 						<CheckCircle2Icon
 							aria-label="Verified agent"
-							className="h-[22px] w-[22px] lg:h-[26px] lg:w-[26px]"
+							className="h-[18px] w-[18px] md:h-[22px] md:w-[22px] lg:h-[26px] lg:w-[26px]"
 							strokeWidth={2}
 							style={{ color: "var(--accent)" }}
 						/>
@@ -182,7 +192,10 @@ function CharacterColumn({
 					<p
 						className={cn(
 							"max-w-[52ch] lowercase leading-[1.55] text-[var(--text-secondary)]",
-							"text-[15px] lg:text-[16px]",
+							// 15px on mobile (readable in vertical stack),
+							// 14 on tablet to leave room for the inline portrait,
+							// 15 lg, 16 xl.
+							"text-[15px] md:text-[14px] lg:text-[15px] xl:text-[16px]",
 						)}
 					>
 						{description}
@@ -252,7 +265,7 @@ function DataColumn({
 	return (
 		<div className="flex min-w-0 flex-col justify-between">
 			{/* Band 1: Treasury — the hero number. */}
-			<div className="flex flex-col gap-5 p-5 md:p-7 lg:p-8 lg:pb-6">
+			<div className="flex flex-col gap-4 p-4 sm:gap-5 sm:p-5 md:p-6 lg:p-8 lg:pb-6">
 				<div className="flex items-center justify-between gap-3">
 					<span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)]">
 						treasury value
@@ -263,11 +276,14 @@ function DataColumn({
 					</span>
 				</div>
 
-				<div className="flex items-end justify-between gap-5">
+				<div className="flex items-end justify-between gap-3 sm:gap-5">
 					<div
 						className={cn(
 							"font-mono leading-none tracking-tight tabular-nums text-[var(--text-primary)]",
-							"text-[40px] sm:text-[52px] lg:text-[56px] xl:text-[60px]",
+							// 32 mobile → 40 sm → 44 md → 52 lg → 60 xl. The
+							// previous 60px treasury number overflowed on small
+							// viewports next to the sparkline.
+							"text-[32px] sm:text-[40px] md:text-[44px] lg:text-[52px] xl:text-[60px]",
 						)}
 					>
 						<NumberFlow
@@ -301,7 +317,7 @@ function DataColumn({
 				<DataCell label="24h pnl">
 					<div className="flex items-baseline gap-2">
 						<span
-							className="font-mono text-[20px] leading-none tabular-nums tracking-tight"
+							className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight"
 							style={{ color: pnlColor }}
 						>
 							{pnlEmpty ? (
@@ -334,7 +350,7 @@ function DataColumn({
 				</DataCell>
 
 				<DataCell label="runway">
-					<div className="font-mono text-[20px] leading-none tabular-nums tracking-tight text-[var(--text-primary)]">
+					<div className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight text-[var(--text-primary)]">
 						{runwayDays == null ? (
 							<span className="text-[13px] text-[var(--text-tertiary)]">unmeasured</span>
 						) : (
@@ -350,7 +366,7 @@ function DataColumn({
 				</DataCell>
 
 				<DataCell label="followers">
-					<div className="font-mono text-[20px] leading-none tabular-nums tracking-tight text-[var(--accent)]">
+					<div className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight text-[var(--accent)]">
 						{followers == null ? (
 							<span className="text-[13px] text-[var(--text-tertiary)]">no data yet</span>
 						) : (
@@ -363,7 +379,7 @@ function DataColumn({
 				</DataCell>
 
 				<DataCell label="day">
-					<div className="font-mono text-[20px] leading-none tabular-nums tracking-tight text-[var(--text-primary)]">
+					<div className="font-mono text-[17px] sm:text-[20px] leading-none tabular-nums tracking-tight text-[var(--text-primary)]">
 						{daysOperating}
 					</div>
 					<div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]">
@@ -378,7 +394,7 @@ function DataColumn({
 
 function DataCell({ label, children }: { label: string; children: React.ReactNode }) {
 	return (
-		<div className="flex flex-col gap-2 border-[var(--border-soft)] px-5 py-4 md:px-6 md:py-5">
+		<div className="flex flex-col gap-1.5 border-[var(--border-soft)] px-4 py-3.5 sm:gap-2 sm:px-5 sm:py-4 md:px-6 md:py-5">
 			<span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">{label}</span>
 			<div className="flex flex-col gap-1">{children}</div>
 		</div>
@@ -391,7 +407,7 @@ function TreasurySparkline({ navUsd }: { navUsd: number }) {
 	const series = useMemo(() => synthesizeSparkline(navUsd), [navUsd]);
 	const id = useId();
 	return (
-		<div className="h-12 w-[140px] shrink-0 lg:w-[180px]">
+		<div className="h-10 w-[96px] shrink-0 sm:h-12 sm:w-[140px] lg:w-[180px]">
 			<ResponsiveContainer height="100%" width="100%">
 				<AreaChart data={series} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
 					<defs>
