@@ -22,6 +22,7 @@ import launchAuthorizeRoutes from "./launches-authorize.js";
 import launchRoutes from "./launches.js";
 import patronRoutes from "./patron-me.js";
 import stakingRoutes from "./staking.js";
+import topupRoutes from "./topup.js";
 import userLaunchRoutes from "./user-launches.js";
 import webhookRoutes from "./webhooks.js";
 
@@ -60,6 +61,9 @@ v2.route("/agents", agentNavHistoryRoutes);
 v2.route("/agents", agentBurnRateRoutes);
 v2.route("/agents", agentTwitterStatsRoutes);
 v2.route("/agents", agentTwitterTweetsRoutes);
+// Topup routes mount before agentRoutes so /v2/agents/:address/topup/* resolves
+// here before the catch-all /:token handler in agents.ts.
+v2.route("/agents", topupRoutes);
 v2.route("/agents", agentRoutes);
 v2.route("/launches", launchRoutes);
 v2.route("/users", userLaunchRoutes);

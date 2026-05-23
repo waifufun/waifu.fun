@@ -12,6 +12,7 @@ import { enumerateEvmNativeBalance } from "./enumerators/evm-native.js";
 import { enumerateHyperliquid } from "./enumerators/hyperliquid.js";
 import { enumeratePcsV3Lp } from "./enumerators/pancake-v3-lp.js";
 import { enumeratePolymarket } from "./enumerators/polymarket.js";
+import { enumerateSolanaSpot } from "./enumerators/solana-spot.js";
 import { fetchCoinGeckoNativePrices, fetchCoinGeckoTokenPrices } from "./pricing/coingecko.js";
 import {
 	type DexScreenerChain,
@@ -33,7 +34,7 @@ export type AgentWalletForNav = Pick<AgentWalletRegistryRow, "id" | "address" | 
 	venue?: string | null;
 };
 
-type NavEnumerator = "native" | "erc20" | "hyperliquid" | "pcs-v3-lp" | "polymarket";
+type NavEnumerator = "native" | "erc20" | "hyperliquid" | "pcs-v3-lp" | "polymarket" | "solana-spot";
 type WalletHoldingBase = Pick<Holding, "walletId" | "walletAddress" | "walletLabel" | "walletRole" | "chain">;
 
 type RawHolding = {
@@ -61,6 +62,7 @@ export type NavAggregatorDeps = {
 	enumerateHyperliquid?: (wallet: WalletHoldingBase) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
 	enumeratePcsV3Lp?: (wallet: WalletHoldingBase) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
 	enumeratePolymarket?: (wallet: AgentWalletForNav) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
+	enumerateSolana?: (wallet: AgentWalletForNav) => Promise<{ holdings: Holding[]; stale: NavStaleSource[] }>;
 	fetchTokenPrices?: (chain: EvmNavChain, contracts: string[]) => Promise<Record<string, TokenPrice>>;
 	fetchNativePrices?: (chains: EvmNavChain[]) => Promise<Record<string, TokenPrice>>;
 	fetchDexScreenerPrice?: (chain: DexScreenerChain, contract: string) => Promise<TokenPrice>;
@@ -139,6 +141,7 @@ function emptySnapshot(agentTokenAddress: string, now: number, stale: NavStaleSo
 }
 
 export function enumeratorsFor(wallet: AgentWalletForNav): NavEnumerator[] {
+	if (wallet.chain === "solana") return ["solana-spot"];
 	const enumerators: NavEnumerator[] = [];
 	if (isEvmNavChain(wallet.chain)) {
 		enumerators.push("native", "erc20");
@@ -211,6 +214,11 @@ async function enumerateWallet(
 			}
 			if (enumerator === "polymarket") {
 				const result = await (deps.enumeratePolymarket ?? enumeratePolymarket)(wallet);
+				direct.push(...result.holdings);
+				stale.push(...result.stale);
+			}
+			if (enumerator === "solana-spot") {
+				const result = await (deps.enumerateSolana ?? enumerateSolanaSpot)(wallet);
 				direct.push(...result.holdings);
 				stale.push(...result.stale);
 			}

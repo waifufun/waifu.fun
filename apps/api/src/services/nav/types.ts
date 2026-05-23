@@ -63,5 +63,5 @@ export type EnumerationResult<T> = {
 export type TokenPrice = {
 	priceUsd: number | null;
 	priced: boolean;
-	source: "coingecko" | "dexscreener" | "pcs-v3-twap" | "native" | "unpriced";
+	source: "coingecko" | "dexscreener" | "pcs-v3-twap" | "native" | "jupiter" | "unpriced";
 };
