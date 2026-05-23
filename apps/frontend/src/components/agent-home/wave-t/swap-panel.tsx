@@ -21,7 +21,7 @@
 
 "use client";
 
-import { ArrowDownIcon, CheckCircle2Icon, ChevronDownIcon, SettingsIcon } from "lucide-react";
+import { ArrowDownIcon, CheckCircle2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 
@@ -51,6 +51,9 @@ function fmtImpact(impact: number): string {
 	return `${sign}${impact.toFixed(2)}%`;
 }
 
+// Token pair is fixed (BNB ↔ this agent's token) — there is no multi-token
+// selector in v1. Render a static badge instead of a <button> with a chevron
+// so users don't click expecting a dropdown that will never exist.
 function TokenSelector({
 	symbol,
 	address,
@@ -59,14 +62,10 @@ function TokenSelector({
 	address: string;
 }) {
 	return (
-		<button
-			className="inline-flex items-center gap-2 rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] px-2.5 py-1.5 text-left hover:border-[var(--border-mid)]"
-			type="button"
-		>
+		<div className="inline-flex items-center gap-2 rounded-md border border-[var(--border-soft)] bg-[var(--bg-panel-hi)] px-2.5 py-1.5">
 			<TokenIcon address={address} chain="bsc" size={20} symbol={symbol} />
 			<span className="font-mono text-[12px] text-[var(--text-primary)]">{symbol}</span>
-			<ChevronDownIcon className="h-3 w-3 text-[var(--text-tertiary)]" />
-		</button>
+		</div>
 	);
 }
 
@@ -107,21 +106,13 @@ export function SwapPanel({ token }: { token: TokenMetrics }) {
 		setAmount(v > 0 ? v.toFixed(6) : "");
 	}
 
+	// Settings icon was dropped from the panel header because there's no
+	// slippage popover wired yet — clicking did nothing and the gear suggested
+	// otherwise. The slippage value still surfaces in the route detail row
+	// below, so users can see what's applied even without an editor.
 	return (
 		<Panel className="flex h-full flex-col">
-			<Label
-				right={
-					<button
-						aria-label="swap settings"
-						className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-						type="button"
-					>
-						<SettingsIcon className="h-3.5 w-3.5" />
-					</button>
-				}
-			>
-				swap
-			</Label>
+			<Label>swap</Label>
 
 			{/* Mode tabs */}
 			<div className="mb-3 grid grid-cols-2 rounded-md border border-[var(--border-soft)] bg-black/20 p-0.5">

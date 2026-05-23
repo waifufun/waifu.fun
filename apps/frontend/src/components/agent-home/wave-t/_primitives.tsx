@@ -42,13 +42,16 @@ export function Panel({
 	children,
 	className = "",
 	noPad = false,
+	id,
 }: {
 	children: React.ReactNode;
 	className?: string;
 	noPad?: boolean;
+	id?: string;
 }) {
 	return (
 		<section
+			id={id}
 			className={cn(
 				"relative overflow-hidden rounded-md border bg-[var(--bg-panel)]",
 				"border-[var(--border-soft)] transition-colors hover:border-[var(--border-mid)]",
