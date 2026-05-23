@@ -50,6 +50,8 @@ export type HeroIdentity = {
 	verified?: boolean;
 	/** Optional twitter handle, rendered as @handle next to the name. */
 	twitterHandle?: string | undefined;
+	/** Token contract address. Used to render a copyable CA chip + bscscan link. */
+	tokenAddress?: string | undefined;
 };
 
 export type HeroTreasuryOverride = {

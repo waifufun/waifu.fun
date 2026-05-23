@@ -37,6 +37,7 @@ import {
 } from "lightweight-charts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { ScrambleText } from "@/lib/motion-plus/scramble-text";
 import { cn } from "@/lib/utils";
 
 import type { Candle, CandleRange, CandleSeries } from "@/lib/wave-t/candles";
@@ -381,8 +382,10 @@ export function PriceChart({
 							)}
 						>
 							<Pulse tone={ticker24hUp ? "positive" : "negative"} />
-							{ticker24hUp ? "+" : ""}
-							{token.change24h.toFixed(2)}%<span className="text-[var(--text-tertiary)]">24h</span>
+							<ScrambleText duration={0.3} interval={0.04} chars="0123456789+-.">
+								{`${ticker24hUp ? "+" : ""}${token.change24h.toFixed(2)}%`}
+							</ScrambleText>
+							<span className="text-[var(--text-tertiary)]">24h</span>
 						</div>
 					</div>
 				</div>
@@ -427,10 +430,15 @@ export function PriceChart({
 				<span className="flex items-center gap-4">
 					<span>
 						<span className="text-[var(--text-tertiary)]">{range} chg</span>{" "}
-						<span className={cn("tabular-nums", rangeUp ? "text-[var(--positive)]" : "text-[var(--negative)]")}>
-							{rangeUp ? "+" : ""}
-							{rangeChange.toFixed(2)}%
-						</span>
+						<ScrambleText
+							as="span"
+							duration={0.25}
+							interval={0.04}
+							chars="0123456789+-."
+							className={cn("tabular-nums", rangeUp ? "text-[var(--positive)]" : "text-[var(--negative)]")}
+						>
+							{`${rangeUp ? "+" : ""}${rangeChange.toFixed(2)}%`}
+						</ScrambleText>
 					</span>
 					<span>
 						<span className="text-[var(--text-tertiary)]">{range} vol</span>{" "}
