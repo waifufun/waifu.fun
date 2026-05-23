@@ -75,14 +75,14 @@ export function LiveHero({
 	const holdings = useLiveHoldings(address, initialHoldings, initialHoldingsHasAggregated);
 	const twitter = useLiveTwitterStats(address, initialTwitterStats);
 
-	// If the caller passed a static override (typically agent-safe BNB),
-	// keep using it; otherwise, when the live poll lands an aggregated
-	// snapshot, surface that as the canonical NAV source.
-	const treasuryOverride: HeroTreasuryOverride | undefined = staticTreasuryOverride
-		? staticTreasuryOverride
-		: holdings.hasAggregated
-			? { valueUsd: holdings.snapshot.navUsd, source: "aggregated" }
-			: undefined;
+	// Live aggregated poll wins. The static override is a *fallback* used
+	// only when the live poll hasn't (yet) landed a real aggregated snapshot.
+	// Without this priority, the hero treasury freezes on build-time SSG
+	// values even though useLiveHoldings is refreshing every 30s in the
+	// background.
+	const treasuryOverride: HeroTreasuryOverride | undefined = holdings.hasAggregated
+		? { valueUsd: holdings.snapshot.navUsd, source: "aggregated" }
+		: staticTreasuryOverride;
 
 	return (
 		<HeroV2
