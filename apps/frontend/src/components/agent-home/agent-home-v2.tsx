@@ -125,6 +125,7 @@ export default function AgentHomeV2({
 		image: agent.image,
 		verified: true,
 		twitterHandle: agent.twitterHandle,
+		tokenAddress: launch?.tokenAddress ?? agent.tokenAddress,
 	};
 
 	const days = daysOperatingOverride ?? deriveDaysOperating(agent, launch);

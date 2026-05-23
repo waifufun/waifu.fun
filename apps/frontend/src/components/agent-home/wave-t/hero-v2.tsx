@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 
 import { Hairline, Panel, Pulse, StatPill } from "./_primitives";
+import { ContractAddressChip } from "./contract-address-chip";
 import type { HeroIdentity, HeroProps } from "./hero";
 
 const FALLBACK_PORTRAIT = "/brand/agents/waifu/portrait-amber.webp";
@@ -206,6 +207,7 @@ function CharacterColumn({
 					{ticker ? <StatPill tone="accent">{ticker}</StatPill> : null}
 					<StatPill tone="neutral">{version}</StatPill>
 					<StatPill tone="neutral">bnb chain</StatPill>
+					{identity.tokenAddress ? <ContractAddressChip address={identity.tokenAddress} /> : null}
 				</div>
 			</div>
 		</div>
