@@ -75,7 +75,7 @@ function usePoller(tick: (signal: AbortSignal) => Promise<void>, intervalMs: num
 
 // ── token metrics ──────────────────────────────────────────────
 
-export function useLiveTokenMetrics(contract: string, initial: TokenMetrics, intervalMs = 30_000): TokenMetrics {
+export function useLiveTokenMetrics(contract: string, initial: TokenMetrics, intervalMs = 10_000): TokenMetrics {
 	const [metrics, setMetrics] = useState<TokenMetrics>(initial);
 	usePoller(
 		async () => {
@@ -101,7 +101,7 @@ export function useLiveHoldings(
 	address: string,
 	initialSnapshot: HoldingsSnapshot,
 	initialHasAggregated: boolean,
-	intervalMs = 30_000,
+	intervalMs = 10_000,
 ): LiveHoldings {
 	const [state, setState] = useState<LiveHoldings>({
 		snapshot: initialSnapshot,

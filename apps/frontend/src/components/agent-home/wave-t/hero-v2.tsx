@@ -302,7 +302,7 @@ function DataColumn({
 					{livePulse ? (
 						<>
 							<Pulse tone="accent" />
-							<span>live · ticks every 30s</span>
+							<span>live · ticks every 10s</span>
 						</>
 					) : (
 						<span>build snapshot</span>
