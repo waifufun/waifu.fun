@@ -246,6 +246,13 @@
       "when": 1779461292786,
       "tag": "0034_fixed_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1779504902645,
+      "tag": "0035_lifi_topup_events",
+      "breakpoints": true
     }
   ]
 }

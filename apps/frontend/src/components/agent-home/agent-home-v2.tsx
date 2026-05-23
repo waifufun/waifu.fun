@@ -68,6 +68,7 @@ import { LiveActivityFeed, LiveHero, LiveHoldingsAllocation, LivePriceChart } fr
 import { PnlChart } from "./wave-t/pnl-chart";
 import { SwapPanel } from "./wave-t/swap-panel";
 import { ThesisPanel } from "./wave-t/thesis-panel";
+import { TopUpPanel } from "./wave-t/topup-panel";
 import { TradingPanel } from "./wave-t/trading-panel";
 
 export interface AgentHomeV2Props {
@@ -233,6 +234,14 @@ export default function AgentHomeV2({
 						max={30}
 					/>
 					<TopAppsByRevenue apps={apps} limit={4} />
+				</div>
+
+				{/* Patron top-up widget (Phase 2 Li.Fi MVP). Sits near the bottom
+				    so it does not compete with the trading panels above. Bridges any
+				    major source token into the agent safe through Li.Fi. */}
+				<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]" id="topup">
+					<div className="hidden lg:block" aria-hidden />
+					<TopUpPanel agentTicker={agent.ticker} agentTokenAddress={agent.tokenAddress} />
 				</div>
 
 				<footer className="mt-6 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">

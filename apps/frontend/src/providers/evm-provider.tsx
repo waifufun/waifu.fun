@@ -7,7 +7,7 @@ import { EvmChainIds } from "@waifufun/types";
 import type { FC, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { http, WagmiProvider } from "wagmi";
-import { bsc } from "wagmi/chains";
+import { arbitrum, base, bsc, mainnet, optimism, polygon } from "wagmi/chains";
 import "@rainbow-me/rainbowkit/styles.css";
 
 export const DEFAULT_EVM_CHAIN_ID = EvmChainIds.BscMainnet;
@@ -61,7 +61,10 @@ export const EvmProvider: FC<EvmProviderProps> = ({ children }) => {
 			getDefaultConfig({
 				appName: "waifu.fun",
 				projectId,
-				chains: [DEFAULT_EVM_CHAIN],
+				// BSC stays the primary chain; mainnet/arb/base/op/polygon are
+				// included so the Li.Fi top-up widget can prompt a switchChain
+				// when the patron picks a non-BSC source token.
+				chains: [bsc, mainnet, arbitrum, base, optimism, polygon],
 				wallets: [
 					{
 						groupName: "Recommended",
@@ -74,7 +77,12 @@ export const EvmProvider: FC<EvmProviderProps> = ({ children }) => {
 					},
 				],
 				transports: {
-					[DEFAULT_EVM_CHAIN.id]: http(DEFAULT_EVM_RPC_URL),
+					[bsc.id]: http(DEFAULT_EVM_RPC_URL),
+					[mainnet.id]: http(),
+					[arbitrum.id]: http(),
+					[base.id]: http(),
+					[optimism.id]: http(),
+					[polygon.id]: http(),
 				},
 			}),
 		[],
