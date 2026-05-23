@@ -44,6 +44,8 @@ import { useId, useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
 import { resolveImageUrl } from "@/lib/image-url";
+import { AnimateNumber } from "@/lib/motion-plus/animate-number";
+import { Typewriter } from "@/lib/motion-plus/typewriter";
 import { cn } from "@/lib/utils";
 import type { TwitterStats } from "@/lib/wave-t/agent-twitter";
 
@@ -190,7 +192,14 @@ function CharacterColumn({
 				) : null}
 
 				{description ? (
-					<p
+					<Typewriter
+						as="p"
+						speed="fast"
+						cursorBlinkRepeat={2}
+						cursorStyle={{
+							backgroundColor: "var(--accent)",
+							width: "1px",
+						}}
 						className={cn(
 							"max-w-[52ch] lowercase leading-[1.55] text-[var(--text-secondary)]",
 							// 15px on mobile (readable in vertical stack),
@@ -200,7 +209,7 @@ function CharacterColumn({
 						)}
 					>
 						{description}
-					</p>
+					</Typewriter>
 				) : null}
 
 				<div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -288,14 +297,22 @@ function DataColumn({
 							"text-[32px] sm:text-[40px] md:text-[44px] lg:text-[52px] xl:text-[60px]",
 						)}
 					>
-						<NumberFlow
+						<AnimateNumber
 							format={{
 								style: "currency",
 								currency: "USD",
 								maximumFractionDigits: 0,
 							}}
-							value={Math.max(0, Math.round(treasuryValue))}
-						/>
+							// 800ms ease-out-quint feels alive without dragging.
+							// Same shape on each axis (y/width/opacity) so multi-digit
+							// changes resolve as one motion, not a phase.
+							transition={{
+								duration: 0.8,
+								ease: [0.16, 1, 0.3, 1],
+							}}
+						>
+							{Math.max(0, Math.round(treasuryValue))}
+						</AnimateNumber>
 					</div>
 					<TreasurySparkline navUsd={treasuryValue} />
 				</div>
