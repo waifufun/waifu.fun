@@ -29,7 +29,8 @@ import type { HoldingsSnapshot } from "@/lib/wave-t/holdings";
 import type { TokenMetrics } from "@/lib/wave-t/token";
 
 import { ActivityFeed, type ActivityFeedAuthor, type ActivityRowInput } from "./activity-feed";
-import { Hero, type HeroIdentity, type HeroProps, type HeroTreasuryOverride } from "./hero";
+import type { HeroIdentity, HeroProps, HeroTreasuryOverride } from "./hero";
+import { HeroV2 } from "./hero-v2";
 import { HoldingsAllocation } from "./holdings-allocation";
 import {
 	useLiveAgentTrades,
@@ -84,7 +85,7 @@ export function LiveHero({
 			: undefined;
 
 	return (
-		<Hero
+		<HeroV2
 			{...rest}
 			navUsd={holdings.snapshot.navUsd}
 			twitterStats={twitter}
