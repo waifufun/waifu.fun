@@ -20,8 +20,8 @@ import {
 	useLayoutEffect,
 	useRef,
 } from "react";
-import { useIsInitialRender } from "./hooks/use-is-initial-render";
 import { maskHeight } from "./Mask";
+import { useIsInitialRender } from "./hooks/use-is-initial-render";
 import { getWidthInEm } from "./utils/get-width-in-ems";
 import { targetWidths } from "./utils/target-widths";
 
@@ -38,10 +38,7 @@ export const NumberDigit = forwardRef<
 		initialValue?: number;
 		trend?: number;
 	}
->(function NumberDigit(
-	{ value: _value, initialValue: _initialValue = _value, trend = 0, ...rest },
-	_ref,
-) {
+>(function NumberDigit({ value: _value, initialValue: _initialValue = _value, trend = 0, ...rest }, _ref) {
 	const { transition } = useContext(MotionConfigContext);
 	const initialValue = useRef(_initialValue).current;
 	const isInitialRender = useIsInitialRender();

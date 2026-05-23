@@ -27,8 +27,7 @@ export interface ScrambleTextControls {
 
 export type ScrambleTextTarget = Element | string | MotionValue<string>;
 
-export const DEFAULT_SCRAMBLE_CHARS =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+export const DEFAULT_SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 function getScrambleChar(chars: string | string[] | undefined): string {
 	const charSet = chars ?? DEFAULT_SCRAMBLE_CHARS;
@@ -66,10 +65,7 @@ function resolveElement(elementOrSelector: Element | string): Element | null {
 	return elementOrSelector;
 }
 
-export function scrambleText(
-	target: ScrambleTextTarget,
-	options: ScrambleTextOptions = {},
-): ScrambleTextControls {
+export function scrambleText(target: ScrambleTextTarget, options: ScrambleTextOptions = {}): ScrambleTextControls {
 	const { chars, delay: delayOption = 0, duration = 1, interval = 0.05, onComplete } = options;
 
 	const motionValueMode = isMotionValue(target);
@@ -125,9 +121,7 @@ export function scrambleText(
 	}
 
 	function checkComplete() {
-		const allRevealed = charStates.every(
-			(state, i) => state === "revealed" || originalText[i] === " ",
-		);
+		const allRevealed = charStates.every((state, i) => state === "revealed" || originalText[i] === " ");
 		if (allRevealed) {
 			stopScrambleLoop();
 			onComplete?.();
@@ -243,8 +237,7 @@ export function scrambleText(
 			}
 
 			const charDuration = resolveStagger(duration, i, charCount, 0);
-			const relativeOffset =
-				charDuration === Number.POSITIVE_INFINITY ? 0 : charDuration - minOffset;
+			const relativeOffset = charDuration === Number.POSITIVE_INFINITY ? 0 : charDuration - minOffset;
 
 			if (relativeOffset === 0) {
 				charStates[i] = "revealed";

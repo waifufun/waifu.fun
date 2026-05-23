@@ -9,16 +9,10 @@
 
 "use client";
 
+import { type AnimationPlaybackControls, animate, delay, motion, useMotionValue } from "framer-motion";
 import {
-	type AnimationPlaybackControls,
-	animate,
-	delay,
-	motion,
-	useMotionValue,
-} from "framer-motion";
-import {
-	type ComponentPropsWithoutRef,
 	type CSSProperties,
+	type ComponentPropsWithoutRef,
 	type ElementType,
 	type ForwardedRef,
 	type ReactElement,
@@ -152,9 +146,7 @@ function TypewriterImpl<T extends ElementType = "span">(
 
 			if (onChange) {
 				const isBackspace = nextText.length < previousText.length;
-				const character = isBackspace
-					? previousText.slice(nextText.length)
-					: nextText.slice(previousText.length);
+				const character = isBackspace ? previousText.slice(nextText.length) : nextText.slice(previousText.length);
 				onChange({ text: nextText, character, isBackspace });
 			}
 
@@ -178,15 +170,11 @@ function TypewriterImpl<T extends ElementType = "span">(
 		}
 
 		return clearDelay;
-		// biome-ignore lint/correctness/useExhaustiveDependencies: stable closures, deps gate restart
 	}, [play, onComplete, onChange, text, interval, variance, backspaceFactor, backspace]);
 
 	return (
 		<Component ref={ref} {...props} aria-label={ariaLabel || text}>
-			<motion.span
-				className={textClassName}
-				style={(textStyle as Record<string, unknown>) ?? {}}
-			>
+			<motion.span className={textClassName} style={(textStyle as Record<string, unknown>) ?? {}}>
 				{displayText}
 			</motion.span>
 			<motion.span
@@ -211,13 +199,8 @@ function TypewriterImpl<T extends ElementType = "span">(
 
 // Cast at the call boundary so the inner generic narrows correctly after
 // forwardRef (forwardRef's type machinery doesn't preserve generics on its own).
-export const Typewriter = (forwardRef as unknown as (
-	render: (props: TypewriterProps<ElementType>, ref: ForwardedRef<HTMLElement>) => ReactElement | null,
-) => <T extends ElementType = "span">(
-	props: TypewriterProps<T> & RefAttributes<HTMLElement>,
-) => ReactElement | null)(
-	TypewriterImpl as (
-		props: TypewriterProps<ElementType>,
-		ref: ForwardedRef<HTMLElement>,
-	) => ReactElement | null,
-);
+export const Typewriter = (
+	forwardRef as unknown as (
+		render: (props: TypewriterProps<ElementType>, ref: ForwardedRef<HTMLElement>) => ReactElement | null,
+	) => <T extends ElementType = "span">(props: TypewriterProps<T> & RefAttributes<HTMLElement>) => ReactElement | null
+)(TypewriterImpl as (props: TypewriterProps<ElementType>, ref: ForwardedRef<HTMLElement>) => ReactElement | null);

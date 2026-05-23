@@ -61,21 +61,18 @@ export const AnimateNumber = forwardRef<HTMLDivElement, AnimateNumberProps>(func
 	{ children: value, locales, format, transition, style, suffix, prefix, trend, ...rest },
 	ref,
 ) {
-	const parts = useMemo(
-		() => {
-			const opts: { locales?: Intl.LocalesArgument; format?: Intl.NumberFormatOptions } = {};
-			if (locales !== undefined) opts.locales = locales;
-			if (format !== undefined) opts.format = format as Intl.NumberFormatOptions;
-			return formatToParts(value, opts, prefix, suffix);
-		},
-		[value, locales, format, prefix, suffix],
-	);
+	const parts = useMemo(() => {
+		const opts: { locales?: Intl.LocalesArgument; format?: Intl.NumberFormatOptions } = {};
+		if (locales !== undefined) opts.locales = locales;
+		if (format !== undefined) opts.format = format as Intl.NumberFormatOptions;
+		return formatToParts(value, opts, prefix, suffix);
+	}, [value, locales, format, prefix, suffix]);
 	const { pre, integer, fraction, post, formatted } = parts;
 
 	const contextTransition = useContext(MotionConfigContext).transition;
 	const resolvedTransition = transition ?? contextTransition ?? DEFAULT_TRANSITION;
 
-	const numericValue = typeof value === "string" ? parseFloat(value) : Number(value);
+	const numericValue = typeof value === "string" ? Number.parseFloat(value) : Number(value);
 	const prevValueRef = useRef(numericValue);
 	const prevValue = prevValueRef.current;
 	prevValueRef.current = numericValue;

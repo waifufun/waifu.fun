@@ -13,12 +13,7 @@ import { motion, useIsomorphicLayoutEffect, useMotionValue } from "framer-motion
 import { type ElementType, type ForwardedRef, forwardRef, useRef } from "react";
 import { type ScrambleTextControls, type StaggerFunction, scrambleText } from "./scramble-text";
 
-import type {
-	ComponentPropsWithoutRef,
-	CSSProperties,
-	ReactElement,
-	RefAttributes,
-} from "react";
+import type { CSSProperties, ComponentPropsWithoutRef, ReactElement, RefAttributes } from "react";
 
 type ScrambleTextOwnProps<T extends ElementType> = {
 	/** The text content to scramble. */
@@ -113,13 +108,8 @@ function ScrambleTextImpl<T extends ElementType = "span">(
 
 // Cast at the call boundary so the inner generic narrows correctly after
 // forwardRef (forwardRef's type machinery doesn't preserve generics on its own).
-export const ScrambleText = (forwardRef as unknown as (
-	render: (props: ScrambleTextProps<ElementType>, ref: ForwardedRef<HTMLElement>) => ReactElement | null,
-) => <T extends ElementType = "span">(
-	props: ScrambleTextProps<T> & RefAttributes<HTMLElement>,
-) => ReactElement | null)(
-	ScrambleTextImpl as (
-		props: ScrambleTextProps<ElementType>,
-		ref: ForwardedRef<HTMLElement>,
-	) => ReactElement | null,
-);
+export const ScrambleText = (
+	forwardRef as unknown as (
+		render: (props: ScrambleTextProps<ElementType>, ref: ForwardedRef<HTMLElement>) => ReactElement | null,
+	) => <T extends ElementType = "span">(props: ScrambleTextProps<T> & RefAttributes<HTMLElement>) => ReactElement | null
+)(ScrambleTextImpl as (props: ScrambleTextProps<ElementType>, ref: ForwardedRef<HTMLElement>) => ReactElement | null);

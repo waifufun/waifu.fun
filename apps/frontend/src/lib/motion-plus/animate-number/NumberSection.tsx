@@ -4,12 +4,7 @@
 
 "use client";
 
-import {
-	AnimatePresence,
-	type AnimatePresenceProps,
-	MotionConfigContext,
-	animate,
-} from "framer-motion";
+import { AnimatePresence, type AnimatePresenceProps, MotionConfigContext, animate } from "framer-motion";
 import {
 	type CSSProperties,
 	type HTMLAttributes,
@@ -52,6 +47,7 @@ export const NumberSection = forwardRef<
 
 	// Lock the section to a known width before AnimatePresence reshuffles
 	// children, so new digits enter at the right edge without a width pop.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: digits string is the cache key
 	useEffect(() => {
 		if (!measuredRef.current || !ref.current) return;
 		if (isInitialRender) {
@@ -88,7 +84,6 @@ export const NumberSection = forwardRef<
 			if (undo) undo();
 		}
 		animate(ref.current, { width: newWidth }, transition as AnimationOptions);
-		// biome-ignore lint/correctness/useExhaustiveDependencies: digits as a string is the cache key
 	}, [parts.map((p) => p.value).join("")]);
 
 	return (

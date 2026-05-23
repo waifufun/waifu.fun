@@ -6,10 +6,7 @@ import type { Data, KeyedNumberPart, NumberPart, NumberPartType } from "../types
 
 export const formatToParts = (
 	value: number | bigint | string,
-	{
-		locales,
-		format,
-	}: { locales?: Intl.LocalesArgument; format?: Intl.NumberFormatOptions },
+	{ locales, format }: { locales?: Intl.LocalesArgument; format?: Intl.NumberFormatOptions },
 	prefix?: string,
 	suffix?: string,
 ): Data => {
@@ -28,8 +25,11 @@ export const formatToParts = (
 	const post: KeyedNumberPart[] = [];
 
 	const counts: Partial<Record<NumberPartType, number>> = {};
-	const generateKey = (type: NumberPartType) =>
-		`${type}:${(counts[type] = (counts[type] ?? -1) + 1)}`;
+	const generateKey = (type: NumberPartType) => {
+		const next = (counts[type] ?? -1) + 1;
+		counts[type] = next;
+		return `${type}:${next}`;
+	};
 
 	let formatted = "";
 	let seenInteger = false;
@@ -44,9 +44,7 @@ export const formatToParts = (
 		switch (type) {
 			case "integer":
 				seenInteger = true;
-				_integer.push(
-					...part.value.split("").map((d) => ({ type, value: parseInt(d, 10) })),
-				);
+				_integer.push(...part.value.split("").map((d) => ({ type, value: Number.parseInt(d, 10) })));
 				break;
 			case "group":
 				_integer.push({ type, value: part.value });
@@ -63,7 +61,7 @@ export const formatToParts = (
 				fraction.push(
 					...part.value.split("").map((d) => ({
 						type,
-						value: parseInt(d, 10),
+						value: Number.parseInt(d, 10),
 						key: generateKey(type),
 					})),
 				);
