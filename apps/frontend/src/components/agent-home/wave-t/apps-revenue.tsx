@@ -74,8 +74,11 @@ export function AppsShipped({ apps, visibleCount = 3 }: { apps: App[]; visibleCo
 	const visible = apps.slice(0, visibleCount);
 	const remaining = Math.max(0, apps.length - visible.length);
 
+	// `#apps` anchor lives on this panel; multiple "View all" / "More apps"
+	// links elsewhere on the page point here. Without the id the anchor jumps
+	// nowhere and the link looks broken.
 	return (
-		<Panel>
+		<Panel id="apps">
 			<Label>Apps Shipped</Label>
 			<div className="flex items-baseline gap-2">
 				<span className="font-sans text-[40px] font-light leading-none text-[var(--accent)] tabular-nums">
