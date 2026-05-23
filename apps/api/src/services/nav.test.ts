@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { Database } from "@waifufun/db";
 import { parseEther, parseUnits } from "viem";
@@ -7,6 +8,7 @@ import { enumerateEvmErc20Balances } from "./nav/enumerators/evm-erc20.js";
 import { enumerateEvmNativeBalance } from "./nav/enumerators/evm-native.js";
 import { enumerateHyperliquid } from "./nav/enumerators/hyperliquid.js";
 import { enumeratePcsV3Lp } from "./nav/enumerators/pancake-v3-lp.js";
+import { enumeratePolymarket } from "./nav/enumerators/polymarket.js";
 import { clearCoinGeckoPriceCacheForTest, fetchCoinGeckoTokenPrices } from "./nav/pricing/coingecko.js";
 import { clearDexScreenerPriceCacheForTest, fetchDexScreenerTokenPrice } from "./nav/pricing/dexscreener.js";
 import { fetchPcsV3TwapPriceUsd } from "./nav/pricing/pcs-v3-twap.js";
@@ -15,6 +17,20 @@ const DB = {} as Database;
 const AGENT = "0x15fc00000000000000000000000000000000abcd";
 const WALLET = "0x0000000000000000000000000000000000000001";
 const TOKEN = "0x0000000000000000000000000000000000000002";
+const POLY_WALLET = {
+	id: "poly-1",
+	address: "0x204f72f35326db932158cba6adff0b9a1da95e14",
+	chain: "polygon" as const,
+	role: "venue-bridge" as const,
+	venue: "polymarket",
+	label: "Polymarket",
+};
+
+function loadPolymarketFixture(): unknown {
+	return JSON.parse(
+		readFileSync(new URL("../../test/fixtures/polymarket-positions.sample.json", import.meta.url), "utf8"),
+	);
+}
 
 test.afterEach(() => {
 	clearCoinGeckoPriceCacheForTest();
@@ -365,3 +381,135 @@ test("pricing services cache CoinGecko and derive PCS V3 TWAP fallback", async (
 	});
 	assert.equal(pcs.priceUsd, 600);
 });
+
+test("Polymarket enumerator maps live-shaped fixture positions", async () => {
+	let requestedUrl = "";
+	const result = await enumeratePolymarket(POLY_WALLET, {
+		fetch: (async (url: URL | string) => {
+			requestedUrl = String(url);
+			return new Response(JSON.stringify(loadPolymarketFixture()));
+		}) as typeof fetch,
+		logger: { warn() {} },
+	});
+	assert.equal(result.stale.length, 0);
+	assert.equal(result.holdings.length, 3);
+	assert.match(requestedUrl, /data-api\.polymarket\.com\/positions/);
+	assert.match(requestedUrl, /sizeThreshold=0\.01/);
+	const first = result.holdings[0]!;
+	assert.equal(first.walletId, "poly-1");
+	assert.equal(first.walletAddress, POLY_WALLET.address);
+	assert.equal(first.chain, "polygon");
+	assert.equal(first.kind, "prediction");
+	assert.equal(first.venue, "polymarket");
+	assert.equal(first.asset, "nba-okc-sas-2026-05-22-thunder");
+	assert.equal(first.contract, "0xb199b50c41036d63dbf69a754810f580daf37cfdcaa0ff16c9f7d9e8c2f6eb24");
+	assert.equal(first.balance, 27156.0119);
+	assert.equal(first.valueUsd, 11812.8651);
+	assert.equal(first.priceUsd, 0.435);
+	assert.equal(first.priced, true);
+	assert.equal(first.metadata?.marketSlug, "nba-okc-sas-2026-05-22");
+	assert.equal(first.metadata?.outcomeIndex, 0);
+	assert.equal(first.metadata?.outcome, "Thunder");
+	assert.equal(first.metadata?.shares, 27156.0119);
+	assert.equal(first.metadata?.avgPrice, 0.406);
+	assert.equal(first.metadata?.pnlUsd, 784.9715);
+	assert.equal(first.metadata?.pnlPct, 7.118);
+});
+
+test("Polymarket enumerator returns empty holdings for empty response", async () => {
+	const result = await enumeratePolymarket(POLY_WALLET, {
+		fetch: (async () => new Response(JSON.stringify([]))) as typeof fetch,
+		logger: { warn() {} },
+	});
+	assert.deepEqual(result, { holdings: [], stale: [] });
+});
+
+test("Polymarket enumerator skips malformed responses and logs warning", async () => {
+	const warnings: unknown[] = [];
+	const notArray = await enumeratePolymarket(POLY_WALLET, {
+		fetch: (async () => new Response(JSON.stringify({ nope: true }))) as typeof fetch,
+		logger: { warn: (...args: unknown[]) => warnings.push(args) },
+	});
+	assert.deepEqual(notArray, { holdings: [], stale: [] });
+	assert.equal(warnings.length, 1);
+
+	const malformedRows = await enumeratePolymarket(POLY_WALLET, {
+		fetch: (async () =>
+			new Response(JSON.stringify([{ size: 0 }, { size: 1, slug: "ok", outcome: "Yes" }]))) as typeof fetch,
+		logger: { warn: (...args: unknown[]) => warnings.push(args) },
+	});
+	assert.equal(malformedRows.holdings.length, 1);
+	assert.equal(warnings.length, 2);
+});
+
+test("Polymarket pricing uses current value per share and preserves positive pnl", async () => {
+	const result = await enumeratePolymarket(POLY_WALLET, {
+		fetch: (async () =>
+			new Response(
+				JSON.stringify([
+					{
+						conditionId: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+						asset: "123",
+						slug: "edge-case-market",
+						outcome: "Yes",
+						outcomeIndex: 0,
+						size: 10,
+						avgPrice: 0.5,
+						currentValue: 6,
+						cashPnl: 1,
+						percentPnl: 20,
+					},
+				]),
+			)) as typeof fetch,
+		logger: { warn() {} },
+	});
+	assert.equal(result.holdings[0]?.priceUsd, 0.6);
+	assert.equal(result.holdings[0]?.valueUsd, 6);
+	assert.equal(result.holdings[0]?.entryPriceUsd, 0.5);
+	assert.equal(result.holdings[0]?.unrealizedPnlUsd, 1);
+	assert.equal(result.holdings[0]?.metadata?.pnlPct, 20);
+});
+
+test("NAV aggregator routes polymarket venue wallets to prediction enumerator", async () => {
+	const snapshot = await buildNavSnapshot(AGENT, {
+		db: DB,
+		now: () => 1779435600000,
+		getAgentTokenAddress: async () => AGENT,
+		listWallets: async () => [POLY_WALLET],
+		enumeratePolymarket: async (wallet) => ({
+			holdings: [
+				{
+					walletId: wallet.id,
+					walletAddress: wallet.address,
+					walletLabel: wallet.label,
+					walletRole: wallet.role,
+					chain: "polygon",
+					asset: "market-yes",
+					contract: "0xcondition",
+					balance: 10,
+					priceUsd: 0.6,
+					valueUsd: 6,
+					priced: true,
+					kind: "prediction",
+					venue: "polymarket",
+				},
+			],
+			stale: [],
+		}),
+		fetchNativePrices: async () => {
+			throw new Error("should not price polymarket as polygon spot");
+		},
+	});
+	assert.equal(snapshot.navUsd, 6);
+	assert.equal(snapshot.byChain.polygon, 6);
+	assert.equal(snapshot.holdings[0]?.kind, "prediction");
+});
+
+test(
+	"Polymarket live smoke returns public positions when explicitly enabled",
+	{ skip: !process.env.POLYMARKET_LIVE_TEST },
+	async () => {
+		const result = await enumeratePolymarket(POLY_WALLET);
+		assert.ok(result.holdings.length > 0 || result.stale.length > 0);
+	},
+);
