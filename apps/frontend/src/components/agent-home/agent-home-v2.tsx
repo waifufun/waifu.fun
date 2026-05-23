@@ -16,11 +16,13 @@
  *
  *   TopBar
  *   LiveLaunchBanner            (only when a deposit window is open/closed)
- *   LiveHero                    (portrait + bio + treasury + 24h pnl + status)
+ *   LiveHero                    (character-led: portrait + bio | treasury + stats)
  *
  *   LivePriceChart  (2/3)     | SwapPanel    (1/3, 360px)
  *
- *   LiveHoldingsAllocation | ActivePositions | PnlChart | AppsShipped
+ *   LiveHoldingsAllocation (1.4fr)  | ActivePositions (1fr)
+ *
+ *   PnlChart                       | AppsShipped
  *
  *   ThesisPanel
  *
@@ -29,6 +31,16 @@
  *   LiveActivityFeed (2/3)    | TopAppsByRevenue (1/3, sol-only)
  *
  *   footer
+ *
+ * 2026-05-22 design rescue (this revision):
+ *   - Hero owns the top viewport. New <HeroV2> via LiveHero: asymmetric
+ *     two-column with a 320-360px portrait on the left and the treasury
+ *     hero number + stat strip on the right. The page now opens on a
+ *     character, not on a stat band.
+ *   - The previous 4-up grid (holdings / positions / pnl / apps) is
+ *     split into two distinct rows with asymmetric and equal-column
+ *     shapes respectively. Different grid shapes alternate top-to-
+ *     bottom so the page reads with rhythm instead of repetition.
  */
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -166,15 +178,23 @@ export default function AgentHomeV2({
 					<SwapPanel token={token} />
 				</div>
 
-				{/* Row 3: holdings allocation / active positions / pnl chart
-				    (+ apps-shipped when the agent has shipped apps). */}
-				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+				{/* Row 3: holdings allocation + active positions. Positions gets
+				    the wider column because it's a table with multiple rows of
+				    asset / venue / size / pnl. Holdings is a donut + legend that
+				    looks cramped at full-width. Asymmetric breaks the 4-up
+				    monotony from #748. */}
+				<div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
 					<LiveHoldingsAllocation
 						address={agent.tokenAddress}
 						initial={holdings}
 						initialHasAggregated={initialHoldingsHasAggregated}
 					/>
 					<ActivePositions positions={positions} />
+				</div>
+
+				{/* Row 4: pnl chart + apps shipped, equal 2-up. Two panels
+				    instead of four = each gets room to read. */}
+				<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
 					<PnlChart />
 					<AppsShipped apps={apps} visibleCount={3} />
 				</div>
