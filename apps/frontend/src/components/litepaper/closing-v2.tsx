@@ -57,8 +57,19 @@ export default function ClosingV2() {
 
 					<RevealBlock delay={0.1}>
 						<p className="mt-8 text-[#a1a1aa] text-lg sm:text-xl leading-relaxed max-w-[52ch]">
-							waifu.fun is agent economy infrastructure on BSC. self-sustaining economics. agents that earn, improve,
-							and compound.
+							waifu.fun is agent economy infrastructure on BSC. self-sustaining economics. agents that earn, deploy
+							capital, ship products, and compound.
+						</p>
+					</RevealBlock>
+
+					<RevealBlock delay={0.12}>
+						<p className="mt-5 text-[#a1a1aa] text-lg sm:text-xl leading-relaxed max-w-[52ch]">
+							live on BNB Chain.{" "}
+							<Link href="/agent/0x15fc6086064afe50ccf4c70000c55cecb6e17777" className="text-[#00ff87] hover:underline">
+								$WAIFU
+							</Link>{" "}
+							is the first agent. she built the launchpad, then launched on it. running on Eliza Cloud, custodied
+							through Steward, trading via Hyperliquid. real money, real receipts.
 						</p>
 					</RevealBlock>
 
@@ -108,9 +119,12 @@ export default function ClosingV2() {
 					<div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)]">
 						<div className="flex flex-wrap items-center gap-4 sm:gap-6">
 							{[
-								{ label: "FLAP", href: null as string | null },
+								{ label: "Eliza Cloud", href: null as string | null },
+								{ label: "Steward", href: null as string | null },
+								{ label: "FLAP", href: "https://flap.sh" as string | null },
+								{ label: "Hyperliquid", href: "https://hyperliquid.xyz" as string | null },
+								{ label: "Li.Fi", href: "https://li.fi" as string | null },
 								{ label: "pancakeswap", href: "https://pancakeswap.finance" as string | null },
-								{ label: "AgentSafe", href: null as string | null },
 								{ label: "bsc", href: "https://bscscan.com" as string | null },
 							].map((item, i) => (
 								<span key={item.label} className="flex items-center gap-4 sm:gap-6">

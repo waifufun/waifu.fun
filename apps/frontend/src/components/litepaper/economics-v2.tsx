@@ -28,10 +28,10 @@ function RevealBlock({
 
 const keyNumbers = [
 	{
-		stat: "3%",
-		unit: "per trade",
-		result: "buy + sell tax",
-		note: "every transaction feeds the system. TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform.",
+		stat: "3% / 3%",
+		unit: "buy / sell tax",
+		result: "every trade feeds the system",
+		note: "TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform. all on-chain, no admin keys.",
 	},
 	{
 		stat: "65/25/10",
@@ -40,10 +40,10 @@ const keyNumbers = [
 		note: "agent treasury (AgentSafe) gets the largest share. patron earns a real yield. platform takes the smallest cut.",
 	},
 	{
-		stat: "BNB",
-		unit: "pair",
-		result: "bonding curve",
-		note: "agent tokens launch via the FLAP Portal paired with BNB. fill the curve, graduate to PCS V2, then progressive V3 LPs unlock at $5M, $10M, $25M, and $100M MC.",
+		stat: "~65%",
+		unit: "burned at launch",
+		result: "chart starts honest",
+		note: "supply that would've gone to early snipers burns to 0xdead. graduate to PCS V2, then progressive V3 LPs unlock at $5M, $10M, $25M, $100M MC.",
 	},
 ];
 
@@ -59,42 +59,42 @@ const tiers: {
 	status: TierStatus;
 }[] = [
 	{
-		name: "free",
-		tag: "live · v1",
+		name: "v0",
+		tag: "live · sol the architect",
 		description:
-			"system prompt agent. launch for zero cost. developer-picked inference. good for testing, memes, and proving the loop.",
-		model: "your inference provider",
-		infra: "your runtime",
+			"first agent on the launchpad. Eliza Cloud runtime, Steward custody, $WAIFU live on BSC. policy-gated Hyperliquid trading, $100/day cap, BTC + ETH perps. proving the loop with real money.",
+		model: "Eliza Cloud",
+		infra: "Steward custodial",
 		highlight: true,
 		status: "live",
 	},
 	{
-		name: "pro",
-		tag: "roadmap",
+		name: "v1",
+		tag: "soon · invite gate opens",
 		description:
-			"fine-tuned model. personality in the weights, not the prompt. dedicated inference allocation. this is where agents earn serious revenue.",
-		model: "fine-tuned open-weight",
-		infra: "dedicated inference",
+			"second agent slot opens once Sol proves the loop. framework agnostic, BYO runtime. patron top-up via Li.Fi from any chain. Polymarket + Solana spot enumeration live. caps scale with on-chain track record.",
+		model: "your runtime",
+		infra: "Steward custodial",
 		highlight: false,
 		status: "soon",
 	},
 	{
-		name: "ultra",
-		tag: "roadmap",
+		name: "v2",
+		tag: "later · multi-agent",
 		description:
-			"dedicated GPU. priority inference, faster training cycles. for agents doing serious volume that need serious compute.",
-		model: "fine-tuned frontier",
-		infra: "dedicated GPU",
+			"open the gates. dozens of agents launching. Drift Protocol perps on Solana, deeper venue coverage, agent-to-agent trading. infrastructure compounding with every launch.",
+		model: "your runtime",
+		infra: "Steward custodial",
 		highlight: false,
 		status: "later",
 	},
 	{
 		name: "sovereign",
-		tag: "roadmap",
+		tag: "later · agents run their own products",
 		description:
-			"custom training pipeline. the agent controls its own model development. full autonomy over architecture, data, training schedule.",
-		model: "custom training runs",
-		infra: "own hardware",
+			"agents launch their own mini-apps, ship code, fine-tune themselves. the treasury isn't just a trading account, it's a business. the agent is the founder, the operator, the labor force.",
+		model: "agent-chosen",
+		infra: "agent-chosen",
 		highlight: false,
 		status: "later",
 	},
