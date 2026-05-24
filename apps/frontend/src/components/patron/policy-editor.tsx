@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	type AdapterPolicy,
 	type AdapterTemplate,
@@ -75,10 +76,6 @@ function Switch({
 	);
 }
 
-function formatDefaultsLine(template: AdapterTemplate): string {
-	return `Default: ${template.defaultPerTxCapBnb} BNB/tx • ${template.defaultDailyCapBnb} BNB/day`;
-}
-
 function rowFromPolicy(policy: AdapterPolicy | undefined, template: AdapterTemplate): RowState {
 	return {
 		enabled: Boolean(policy?.enabled),
@@ -104,6 +101,7 @@ type PolicyRowProps = {
 };
 
 function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }: PolicyRowProps) {
+	const { t } = useTranslation();
 	const [state, setState] = useState<RowState>(() => rowFromPolicy(policy, template));
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -122,8 +120,8 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 	// Auto-clear the "saved" flash ~2s after the last success.
 	useEffect(() => {
 		if (savedAt == null) return;
-		const t = window.setTimeout(() => setSavedAt(null), 2000);
-		return () => window.clearTimeout(t);
+		const timer = window.setTimeout(() => setSavedAt(null), 2000);
+		return () => window.clearTimeout(timer);
 	}, [savedAt]);
 
 	async function commit(next: RowState) {
@@ -138,7 +136,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 			setSavedAt(Date.now());
 		} catch (e) {
 			setState(prev);
-			setError((e as Error).message || "Failed to save");
+			setError((e as Error).message || t("patron.policy.saveFallbackError"));
 		} finally {
 			setSaving(false);
 		}
@@ -189,7 +187,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 									aria-live="polite"
 									className="text-[10px] uppercase tracking-wide text-[#00ff87] flex items-center gap-1"
 								>
-									<CheckIcon className="h-3 w-3" /> saved
+									<CheckIcon className="h-3 w-3" /> {t("patron.policy.savedFlash")}
 								</span>
 							) : null}
 						</div>
@@ -206,7 +204,11 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 					checked={state.enabled}
 					disabled={saving}
 					onChange={handleToggleEnabled}
-					label={`${template.name} ${state.enabled ? "enabled" : "disabled"}`}
+					label={
+						state.enabled
+							? t("patron.policy.switchEnabled", { name: template.name })
+							: t("patron.policy.switchDisabled", { name: template.name })
+					}
 				/>
 			</div>
 
@@ -215,18 +217,23 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 					id={`policy-panel-${slug}`}
 					className={cn("px-3 sm:px-4 pb-4 pt-3 border-t border-stroke", !state.enabled && "opacity-60")}
 				>
-					<p className="text-xs text-neutral-500 mb-3">{formatDefaultsLine(template)}</p>
+					<p className="text-xs text-neutral-500 mb-3">
+						{t("patron.policy.defaultsLine", {
+							perTx: String(template.defaultPerTxCapBnb),
+							daily: String(template.defaultDailyCapBnb),
+						})}
+					</p>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
 						<CapField
 							id={`per-tx-${slug}`}
-							label="Per-tx cap"
+							label={t("patron.policy.perTxCap")}
 							value={state.perTxCapBnb}
 							onChange={(v) => setState({ ...state, perTxCapBnb: v })}
 							disabled={!state.enabled || saving}
 						/>
 						<CapField
 							id={`daily-${slug}`}
-							label="Daily cap"
+							label={t("patron.policy.dailyCap")}
 							value={state.dailyCapBnb}
 							onChange={(v) => setState({ ...state, dailyCapBnb: v })}
 							disabled={!state.enabled || saving}
@@ -234,7 +241,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 					</div>
 					{error ? (
 						<p role="alert" className="mt-3 text-xs text-red-400">
-							Failed to save, retry. <span className="text-red-500/70">{error}</span>
+							{t("patron.policy.saveRetry")} <span className="text-red-500/70">{error}</span>
 						</p>
 					) : null}
 					<div className="mt-3 flex items-center justify-end gap-2 flex-wrap">
@@ -250,7 +257,7 @@ function PolicyRow({ slug, template, policy, expanded, onToggleExpand, onSave }:
 									: "bg-[#00ff87]/20 text-[#00ff87] border border-[#00ff87]/40 hover:bg-[#00ff87]/30",
 							)}
 						>
-							{saving ? "Saving…" : "Save"}
+							{saving ? t("patron.policy.saving") : t("patron.policy.save")}
 						</button>
 					</div>
 				</div>
@@ -319,6 +326,7 @@ function CheckIcon({ className }: { className?: string }) {
 }
 
 export default function PolicyEditor({ agentId }: Props) {
+	const { t } = useTranslation();
 	const { policies, templates, isLoading, error, notFound } = useAdapterPolicies(agentId);
 	const mutate = useUpdateAdapterPolicy(agentId);
 	const [expanded, setExpanded] = useState<string | null>(null);
@@ -349,10 +357,13 @@ export default function PolicyEditor({ agentId }: Props) {
 	}, [templates]);
 
 	return (
-		<section aria-label="Adapter permissions" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
+		<section
+			aria-label={t("patron.policy.ariaLabel")}
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
+		>
 			<header className="flex items-center justify-between mb-4">
-				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Adapter Permissions</h2>
-				<span className="text-xs text-neutral-500">Patron controls</span>
+				<h2 className="text-sm font-medium text-white uppercase tracking-wide">{t("patron.policy.title")}</h2>
+				<span className="text-xs text-neutral-500">{t("patron.policy.subtitle")}</span>
 			</header>
 
 			{notFound ? (
@@ -361,7 +372,7 @@ export default function PolicyEditor({ agentId }: Props) {
 				<LoadingSkeleton />
 			) : error ? (
 				<p role="alert" className="text-sm text-red-400">
-					Couldn't load adapter policies. {error.message}
+					{t("patron.policy.loadError", { message: error.message })}
 				</p>
 			) : (
 				<ul className="space-y-2">
@@ -390,12 +401,11 @@ export default function PolicyEditor({ agentId }: Props) {
 }
 
 function EmptyState() {
+	const { t } = useTranslation();
 	return (
 		<div className="rounded-sm border border-dashed border-stroke-strong bg-[#0A0A0A] px-4 py-8 text-center">
-			<p className="text-sm text-neutral-300">Adapter controls coming soon</p>
-			<p className="text-xs text-neutral-500 mt-1">
-				Patron-side toggles and caps will ship once the policy API is live.
-			</p>
+			<p className="text-sm text-neutral-300">{t("patron.policy.emptyTitle")}</p>
+			<p className="text-xs text-neutral-500 mt-1">{t("patron.policy.emptyBody")}</p>
 		</div>
 	);
 }
