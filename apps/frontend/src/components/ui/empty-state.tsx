@@ -6,6 +6,9 @@
 //
 // Use this anywhere a list/section can legitimately be empty.
 
+"use client";
+
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { ArrowRight, type LucideIcon, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -22,7 +25,7 @@ type EmptyStateProps = {
 };
 
 export function EmptyState({
-	title = "nothing here yet.",
+	title,
 	body,
 	icon: Icon = Sparkles,
 	ctaHref,
@@ -31,7 +34,10 @@ export function EmptyState({
 	tone = "default",
 	className,
 }: EmptyStateProps) {
+	const { t } = useTranslation();
 	const compact = tone === "compact";
+	const resolvedTitle = title ?? t("common.emptyState.title");
+	const resolvedCtaLabel = ctaLabel ?? t("common.emptyState.ctaDefault");
 	return (
 		<div
 			className={cn(
@@ -48,14 +54,14 @@ export function EmptyState({
 			>
 				<Icon className={compact ? "w-3.5 h-3.5" : "w-4 h-4"} strokeWidth={1.5} />
 			</div>
-			<div className={cn("text-white/85", compact ? "text-sm" : "text-sm md:text-base")}>{title}</div>
+			<div className={cn("text-white/85", compact ? "text-sm" : "text-sm md:text-base")}>{resolvedTitle}</div>
 			{body ? (
 				<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/40 mt-2 max-w-sm">{body}</div>
 			) : null}
 			{ctaHref || onCta ? (
 				<EmptyStateCta
 					{...(ctaHref ? { href: ctaHref } : {})}
-					label={ctaLabel ?? "get started"}
+					label={resolvedCtaLabel}
 					{...(onCta ? { onClick: onCta } : {})}
 				/>
 			) : null}

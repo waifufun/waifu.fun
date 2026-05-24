@@ -11,7 +11,16 @@
 		"viewOnSolscan": "View on Solscan",
 		"tx": "Tx",
 		"noData": "No data",
-		"toggleMenu": "Toggle menu"
+		"toggleMenu": "Toggle menu",
+		"emptyState": {
+			"title": "nothing here yet.",
+			"ctaDefault": "get started"
+		},
+		"errorState": {
+			"title": "something broke.",
+			"tryAgain": "try again",
+			"goHome": "go home"
+		}
 	},
 	"nav": {
 		"explore": "explore",
@@ -24,11 +33,25 @@
 		"portfolio": "portfolio",
 		"leaderboard": "leaderboard",
 		"docs": "docs",
-		"launchAgent": "launch agent"
+		"launchAgent": "launch agent",
+		"search": {
+			"placeholder": "search agents by name, ticker, or contract...",
+			"triggerAria": "Search",
+			"comingSoon": "coming soon",
+			"comingSoonBody": "agent search is wiring up. for now, browse the directory.",
+			"browseAgentsCta": "browse agents"
+		}
 	},
 	"layout": {
 		"devnetBanner": "this is a development environment connected to testnet. nothing here is real.",
-		"devnet": "devnet"
+		"devnet": "devnet",
+		"grainOverlayTitle": "Decorative grain overlay",
+		"scamNotice": {
+			"title": "High-Risk Warning",
+			"bodyBefore": "This token has been flagged as potentially fraudulent or part of a scam. Trading it carries a ",
+			"bodyEmphasis": "very high risk of loss",
+			"bodyAfter": ". Proceed with extreme caution, and make sure to do your own thorough research before buying."
+		}
 	},
 	"home": {
 		"noAgentsFound": "no agents found",
@@ -209,5 +232,21 @@
 		"resumeRuntime": "resume runtime",
 		"provisioningMessage": "Provisioning is in progress. This panel will reflect live control-plane state as the backend updates it.",
 		"noRuntimeMessage": "No runtime is provisioned yet. Activating sends the existing owner runtime request with the token metadata as the initial character payload."
-	}
+	},
+	"agent": {},
+	"launch": {},
+	"post": {},
+	"discover": {},
+	"leaderboard": {},
+	"portfolio": {},
+	"patron": {},
+	"claim": {},
+	"wizard": {},
+	"auth": {},
+	"admin": {},
+	"litepaper": {},
+	"story": {},
+	"support": {},
+	"errors": {},
+	"units": {}
 }

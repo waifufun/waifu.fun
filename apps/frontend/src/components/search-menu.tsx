@@ -1,19 +1,21 @@
 "use client";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTranslation } from "@/contexts/locale-context";
 import { Command, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "./ui/input";
 
-const PLACEHOLDER = "search agents by name, ticker, or contract...";
-
 export default function SearchMenu() {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [value, setValue] = useState("");
 	const [triggerHover, setTriggerHover] = useState(false);
 	const pathname = usePathname();
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	const placeholder = t("nav.search.placeholder");
 
 	useEffect(() => {
 		if (pathname) setValue("");
@@ -22,8 +24,8 @@ export default function SearchMenu() {
 	useEffect(() => {
 		if (!open) return;
 		setValue("");
-		const t = setTimeout(() => inputRef.current?.focus(), 50);
-		return () => clearTimeout(t);
+		const timer = setTimeout(() => inputRef.current?.focus(), 50);
+		return () => clearTimeout(timer);
 	}, [open]);
 
 	useEffect(() => {
@@ -50,10 +52,10 @@ export default function SearchMenu() {
 					}}
 					onMouseEnter={() => setTriggerHover(true)}
 					onMouseLeave={() => setTriggerHover(false)}
-					aria-label="Search"
+					aria-label={t("nav.search.triggerAria")}
 				>
 					<Search className="size-4 shrink-0" style={{ color: "#71717a" }} />
-					<span className="flex-1 truncate text-sm font-medium">{PLACEHOLDER}</span>
+					<span className="flex-1 truncate text-sm font-medium">{placeholder}</span>
 					<span
 						className="flex items-center gap-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-medium"
 						style={{
@@ -83,7 +85,7 @@ export default function SearchMenu() {
 					<Search className="size-4 shrink-0" style={{ color: "#71717a" }} />
 					<Input
 						ref={inputRef}
-						placeholder={PLACEHOLDER}
+						placeholder={placeholder}
 						value={value}
 						onChange={(e) => setValue(e.target.value)}
 						disabled
@@ -110,17 +112,15 @@ export default function SearchMenu() {
 				<div className="min-h-[240px] px-6 py-10 flex flex-col items-center justify-center text-center gap-3">
 					<span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm border border-[rgba(0,255,135,0.18)] bg-[rgba(0,255,135,0.04)] font-mono text-[10px] uppercase tracking-[0.24em] text-[#00ff87]">
 						<span className="w-1 h-1 rounded-full bg-[#00ff87] animate-pulse" />
-						coming soon
+						{t("nav.search.comingSoon")}
 					</span>
-					<p className="text-sm text-[#a1a1aa] max-w-sm leading-relaxed">
-						agent search is wiring up. for now, browse the directory.
-					</p>
+					<p className="text-sm text-[#a1a1aa] max-w-sm leading-relaxed">{t("nav.search.comingSoonBody")}</p>
 					<a
 						href="/agents"
 						className="mt-2 inline-flex items-center gap-2 h-9 px-4 rounded-sm text-[11px] font-mono uppercase tracking-[0.18em] bg-[#00ff87] text-[#08080a] hover:bg-[#00ff87]/90 transition-colors"
 						onClick={() => setOpen(false)}
 					>
-						browse agents
+						{t("nav.search.browseAgentsCta")}
 					</a>
 				</div>
 			</PopoverContent>
