@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView } from "framer-motion";
 import { BarChart3, BookOpen, Cpu, MessageCircle, TrendingUp } from "lucide-react";
 import Image from "next/image";
@@ -28,46 +29,46 @@ function RevealBlock({
 	);
 }
 
-// what a developer can build on top of the economic layer. not platform features.
-const agentTypes = [
-	{
-		icon: TrendingUp,
-		title: "trading agents",
-		body: "autonomous portfolio management on-chain. read markets, execute strategies, manage risk. route performance through the agent treasury.",
-		image: "/waifus/defi-trader.png",
-		accent: "#00ff87",
-	},
-	{
-		icon: BarChart3,
-		title: "prediction market agents",
-		body: "form positions on real-world outcomes. polymarket, sportfi, elections. earn by being right more often than they're wrong.",
-		image: "/litepaper/v2/specialization-predict.webp",
-		accent: "#00ff87",
-	},
-	{
-		icon: MessageCircle,
-		title: "content agents",
-		body: "personality-first agents that monetize attention. subscription access, exclusive drops, parasocial economics. the token is the access.",
-		image: "/waifus/social-butterfly.png",
-		accent: "#00ff87",
-	},
-	{
-		icon: BookOpen,
-		title: "research agents",
-		body: "deep analysis on demand. market research, token due diligence, narrative tracking. sell insight as a service.",
-		image: "/waifus/code-witch.png",
-		accent: "#00ff87",
-	},
-	{
-		icon: Cpu,
-		title: "fine-tuning agents",
-		body: "model improvement as a service. ingest interaction data, run training loops, ship improved weights. the meta-agent.",
-		image: "/litepaper/v2/specialization-grid.webp",
-		accent: "#00ff87",
-	},
-];
-
 export default function Specialization() {
+	const { t } = useTranslation();
+	// what a developer can build on top of the economic layer. not platform features.
+	const agentTypes = [
+		{
+			icon: TrendingUp,
+			title: t("litepaper.specialization.card1Title"),
+			body: t("litepaper.specialization.card1Body"),
+			image: "/waifus/defi-trader.png",
+			accent: "#00ff87",
+		},
+		{
+			icon: BarChart3,
+			title: t("litepaper.specialization.card2Title"),
+			body: t("litepaper.specialization.card2Body"),
+			image: "/litepaper/v2/specialization-predict.webp",
+			accent: "#00ff87",
+		},
+		{
+			icon: MessageCircle,
+			title: t("litepaper.specialization.card3Title"),
+			body: t("litepaper.specialization.card3Body"),
+			image: "/waifus/social-butterfly.png",
+			accent: "#00ff87",
+		},
+		{
+			icon: BookOpen,
+			title: t("litepaper.specialization.card4Title"),
+			body: t("litepaper.specialization.card4Body"),
+			image: "/waifus/code-witch.png",
+			accent: "#00ff87",
+		},
+		{
+			icon: Cpu,
+			title: t("litepaper.specialization.card5Title"),
+			body: t("litepaper.specialization.card5Body"),
+			image: "/litepaper/v2/specialization-grid.webp",
+			accent: "#00ff87",
+		},
+	];
 	return (
 		<section className="relative py-28 sm:py-36 overflow-hidden">
 			<div
@@ -81,17 +82,17 @@ export default function Specialization() {
 				{/* Header, left aligned */}
 				<RevealBlock>
 					<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-						the ecosystem
+						{t("litepaper.specialization.eyebrow")}
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-xl">
-						one platform. <span className="text-[#00ff87]">every kind of agent.</span>
+						{t("litepaper.specialization.headlineLeft")}{" "}
+						<span className="text-[#00ff87]">{t("litepaper.specialization.headlineRight")}</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.08}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						these are shapes agents can take on this infra. none of them are waifu.fun features. the platform ships
-						identity, treasury, token, and fee routing. what the agent does with that is up to the builder.
+						{t("litepaper.specialization.intro")}
 					</p>
 				</RevealBlock>
 
@@ -199,9 +200,7 @@ export default function Specialization() {
 					<div className="mt-10 rounded-sm border border-[rgba(0,255,135,0.12)] bg-[rgba(0,255,135,0.03)] p-6 sm:p-7 relative overflow-hidden">
 						<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 						<div className="pl-4">
-							<p className="text-[#a1a1aa] text-base leading-relaxed">
-								every agent type is a different revenue model. every revenue model feeds the same flywheel.
-							</p>
+							<p className="text-[#a1a1aa] text-base leading-relaxed">{t("litepaper.specialization.calloutBody")}</p>
 						</div>
 					</div>
 				</RevealBlock>

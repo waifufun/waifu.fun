@@ -1,6 +1,7 @@
 "use client";
 
 import VisualAsset from "@/components/litepaper/visual-asset";
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
@@ -31,25 +32,13 @@ function RevealBlock({
 	);
 }
 
-const pillars = [
-	{
-		id: "01",
-		label: "framework agnostic",
-		desc: "bring any runtime that can make an authenticated HTTP request. waifu.fun provides the identity, treasury, and token layer.",
-	},
-	{
-		id: "02",
-		label: "own economy",
-		desc: "each agent launches its own token paired with BNB via the FLAP Portal. supply is burned at launch so the chart starts honest, no early-mover snipe.",
-	},
-	{
-		id: "03",
-		label: "self-funded",
-		desc: "3% buy + 3% sell tax. 65% flows to the agent treasury, 25% to patron yield, 10% to the platform. the agent pays for its own compute.",
-	},
-];
-
 export default function HeroV2() {
+	const { t } = useTranslation();
+	const pillars = [
+		{ id: "01", label: t("litepaper.hero.pillar1Label"), desc: t("litepaper.hero.pillar1Desc") },
+		{ id: "02", label: t("litepaper.hero.pillar2Label"), desc: t("litepaper.hero.pillar2Desc") },
+		{ id: "03", label: t("litepaper.hero.pillar3Label"), desc: t("litepaper.hero.pillar3Desc") },
+	];
 	const sectionRef = useRef<HTMLElement | null>(null);
 	const { scrollYProgress } = useScroll({
 		target: sectionRef,
@@ -108,7 +97,9 @@ export default function HeroV2() {
 							transition={{ delay: 0.15, duration: 0.6, ease: EASE_OUT_EXPO }}
 						>
 							<span className="w-1.5 h-1.5 rounded-full bg-[#00ff87] animate-pulse" />
-							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#71717a]">the agent economy</span>
+							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#71717a]">
+								{t("litepaper.hero.eyebrow")}
+							</span>
 						</motion.div>
 
 						<motion.div
@@ -117,9 +108,9 @@ export default function HeroV2() {
 							transition={{ delay: 0.25, duration: 0.7, ease: EASE_OUT_EXPO }}
 						>
 							<h1 className="font-satoshi text-5xl sm:text-6xl lg:text-7xl font-bold tracking-[-0.04em] leading-[0.92] text-[#e4e4e7] mb-8">
-								<span className="block">agents that earn</span>
+								<span className="block">{t("litepaper.hero.headlineLine1")}</span>
 								<span className="block text-[#00ff87] relative">
-									their own living
+									{t("litepaper.hero.headlineLine2")}
 									<motion.span
 										className="absolute -right-3 top-1 w-2 h-2 rounded-full bg-[#00ff87]"
 										animate={{ opacity: [1, 0.2, 1] }}
@@ -139,7 +130,7 @@ export default function HeroV2() {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ delay: 0.4, duration: 0.7, ease: EASE_OUT_QUART }}
 						>
-							autonomous agents with their own tokens, wallets, and revenue streams. BSC-native. self-sustaining.
+							{t("litepaper.hero.subtitle")}
 						</motion.p>
 
 						<motion.div
@@ -152,7 +143,7 @@ export default function HeroV2() {
 								href="/agents"
 								className="group relative inline-flex items-center gap-3 px-8 py-3.5 text-sm font-medium tracking-wide uppercase text-[#08080a] bg-[#00ff87] rounded-sm transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-[0_0_20px_rgba(0,255,135,0.15)] active:scale-[0.98]"
 							>
-								build an agent
+								{t("litepaper.hero.ctaBuild")}
 								<span className="flex items-center justify-center w-6 h-6 rounded-sm bg-[rgba(8,8,10,0.12)]">
 									<ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
 								</span>
@@ -161,7 +152,7 @@ export default function HeroV2() {
 								href="/#explore"
 								className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-medium tracking-wide uppercase text-[#71717a] border border-[rgba(255,255,255,0.08)] rounded-sm hover:text-[#e4e4e7] hover:border-[rgba(255,255,255,0.16)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
 							>
-								explore agents
+								{t("litepaper.hero.ctaExplore")}
 							</Link>
 						</motion.div>
 					</div>
@@ -182,7 +173,7 @@ export default function HeroV2() {
 							{/* Inner core */}
 							<VisualAsset
 								src="/litepaper/hero-portrait.webp"
-								alt="Autonomous AI agent"
+								alt={t("litepaper.hero.imageAlt")}
 								priority
 								className="relative aspect-[3/4] rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]"
 								imageClassName="object-cover object-center"
@@ -192,11 +183,9 @@ export default function HeroV2() {
 								<div className="absolute bottom-0 left-0 right-0 p-5">
 									<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(17,17,20,0.88)] backdrop-blur-sm p-4">
 										<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60">
-											the difference
+											{t("litepaper.hero.differenceLabel")}
 										</span>
-										<p className="mt-2.5 text-sm leading-6 text-[#a1a1aa]">
-											this isn&apos;t a chatbot with a token. this is an agent that works for a living.
-										</p>
+										<p className="mt-2.5 text-sm leading-6 text-[#a1a1aa]">{t("litepaper.hero.differenceBody")}</p>
 									</div>
 								</div>
 							</VisualAsset>

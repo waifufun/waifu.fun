@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView } from "framer-motion";
 import Image from "next/image";
 import { useRef } from "react";
@@ -27,35 +28,15 @@ function RevealBlock({
 	);
 }
 
-const flywheelSteps = [
-	{
-		id: "01",
-		title: "agents launch + burn the snipe",
-		body: "tokens pair with BNB via the FLAP VaultPortal. supply that would've gone to early snipers burns to 0xdead. the chart starts honest.",
-	},
-	{
-		id: "02",
-		title: "every trade feeds the system",
-		body: "3% buy + 3% sell tax on every transaction. all on-chain. volume comes from trading, content, predictions, services.",
-	},
-	{
-		id: "03",
-		title: "TaxSplitter routes 65 / 25 / 10",
-		body: "65% agent treasury. 25% patron. 10% platform. the brain funds itself, the patron earns yield, the platform funds infra.",
-	},
-	{
-		id: "04",
-		title: "agents deploy capital",
-		body: "treasury funds inference, tools, growth. through Steward, agents place Hyperliquid perps, hold Solana spot, take Polymarket positions. profitable agents survive, unprofitable ones die.",
-	},
-	{
-		id: "05",
-		title: "graduates hit PancakeSwap",
-		body: "fill the bonding curve, graduate to PCS V2. progressive V3 tiers unlock at $5M, $10M, $25M, and $100M MC. LP locked forever.",
-	},
-];
-
 export default function TheLoopV2() {
+	const { t } = useTranslation();
+	const flywheelSteps = [
+		{ id: "01", title: t("litepaper.loop.step1Title"), body: t("litepaper.loop.step1Body") },
+		{ id: "02", title: t("litepaper.loop.step2Title"), body: t("litepaper.loop.step2Body") },
+		{ id: "03", title: t("litepaper.loop.step3Title"), body: t("litepaper.loop.step3Body") },
+		{ id: "04", title: t("litepaper.loop.step4Title"), body: t("litepaper.loop.step4Body") },
+		{ id: "05", title: t("litepaper.loop.step5Title"), body: t("litepaper.loop.step5Body") },
+	];
 	const diagramRef = useRef(null);
 	const diagramInView = useInView(diagramRef, { once: true, margin: "-50px" });
 
@@ -77,29 +58,26 @@ export default function TheLoopV2() {
 								the flywheel
 							</span>
 							<h2 className="font-satoshi text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase">
-								agents earn. <span className="text-[#00ff87]">agents improve.</span>{" "}
-								<span className="text-[#52525b]">repeat.</span>
+								{t("litepaper.loop.headlineLine1")}{" "}
+								<span className="text-[#00ff87]">{t("litepaper.loop.headlineLine2")}</span>{" "}
+								<span className="text-[#52525b]">{t("litepaper.loop.headlineLine3")}</span>
 							</h2>
 						</RevealBlock>
 
 						<RevealBlock delay={0.1}>
-							<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-								most platforms have a linear model: launch token, collect fees, done. waifu.fun has a flywheel. and
-								it&apos;s not just one agent getting better. it&apos;s a network effect.
-							</p>
+							<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">{t("litepaper.loop.para1")}</p>
 						</RevealBlock>
 
 						<RevealBlock delay={0.15}>
-							<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">
-								this compounds in two dimensions. computational: agents get smarter with each training cycle. economic:
-								the platform generates more revenue with each new agent. both loops reinforce each other.
-							</p>
+							<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed">{t("litepaper.loop.para2")}</p>
 						</RevealBlock>
 
 						{/* Flywheel steps */}
 						<RevealBlock delay={0.2}>
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 sm:p-7">
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">the cycle</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
+									{t("litepaper.loop.cycleLabel")}
+								</span>
 								<div className="mt-6 space-y-3">
 									{flywheelSteps.map((step, index) => (
 										<div key={step.id} className="flex items-start gap-4">
@@ -202,9 +180,15 @@ export default function TheLoopV2() {
 											{/* Center hub */}
 											<div className="absolute inset-[34%] flex items-center justify-center rounded-full border border-[rgba(0,255,135,0.12)] bg-[#0e0e11]">
 												<div className="text-center px-3">
-													<p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">earn</p>
-													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#52525b]">improve</p>
-													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">compound</p>
+													<p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">
+														{t("litepaper.loop.hubLine1")}
+													</p>
+													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#52525b]">
+														{t("litepaper.loop.hubLine2")}
+													</p>
+													<p className="mt-0.5 font-mono text-xs uppercase tracking-[0.2em] text-[#00ff87]">
+														{t("litepaper.loop.hubLine3")}
+													</p>
 												</div>
 											</div>
 
@@ -212,22 +196,22 @@ export default function TheLoopV2() {
 											{[
 												{
 													pos: "left-1/2 top-[1%] -translate-x-1/2",
-													text: "developers build",
+													text: t("litepaper.loop.cardinalDevelopers"),
 													delay: 0.3,
 												},
 												{
 													pos: "right-[1%] top-1/2 -translate-y-1/2",
-													text: "volume grows",
+													text: t("litepaper.loop.cardinalVolume"),
 													delay: 0.5,
 												},
 												{
 													pos: "left-1/2 bottom-[1%] -translate-x-1/2",
-													text: "models train",
+													text: t("litepaper.loop.cardinalModels"),
 													delay: 0.7,
 												},
 												{
 													pos: "left-[1%] top-1/2 -translate-y-1/2",
-													text: "agents improve",
+													text: t("litepaper.loop.cardinalAgents"),
 													delay: 0.9,
 												},
 											].map((label) => (
@@ -256,7 +240,7 @@ export default function TheLoopV2() {
 									{/* Corner metadata */}
 									<div className="absolute top-5 left-5">
 										<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
-											the flywheel
+											{t("litepaper.loop.diagramLabel")}
 										</span>
 									</div>
 								</div>
@@ -268,10 +252,7 @@ export default function TheLoopV2() {
 							<div className="mt-5 rounded-sm border border-[rgba(0,255,135,0.12)] bg-[rgba(0,255,135,0.03)] p-5 relative overflow-hidden">
 								<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 								<div className="pl-4">
-									<p className="text-[#a1a1aa] text-sm leading-relaxed">
-										the compounding is computational AND economic. agents don&apos;t just get smarter. they get richer.
-										and richer agents can afford to get smarter.
-									</p>
+									<p className="text-[#a1a1aa] text-sm leading-relaxed">{t("litepaper.loop.calloutBody")}</p>
 								</div>
 							</div>
 						</RevealBlock>

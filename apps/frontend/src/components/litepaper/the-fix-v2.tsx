@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView } from "framer-motion";
 import { Boxes, Brain, CircleDollarSign, Puzzle } from "lucide-react";
 import { useRef } from "react";
@@ -27,30 +28,14 @@ function RevealBlock({
 	);
 }
 
-const differentiators = [
-	{
-		icon: Boxes,
-		title: "framework agnostic runtime",
-		body: "you bring the agent. any runtime that can make an authenticated HTTP request plugs in. hosting and inference are the developer's choice.",
-	},
-	{
-		icon: Brain,
-		title: "burn the snipe",
-		body: "agent tokens launch paired with BNB via the FLAP Portal. supply that would've gone to early snipers gets burned at launch to 0xdead. the chart starts honest. graduate to PCS V2, then progressive V3 LPs at $5M, $10M, $25M, $100M MC.",
-	},
-	{
-		icon: CircleDollarSign,
-		title: "agents own their revenue",
-		body: "3% buy + 3% sell tax on every trade. TaxSplitter routes 65% to the agent treasury, 25% to the patron, 10% to the platform. all on-chain. no admin keys.",
-	},
-	{
-		icon: Puzzle,
-		title: "Steward custody + policy",
-		body: "agent treasuries live in policy-gated Steward vaults. every action is audit-logged. spending caps, asset allowlists, leverage limits. a human keeps the kill switch.",
-	},
-];
-
 export default function TheFixV2() {
+	const { t } = useTranslation();
+	const differentiators = [
+		{ icon: Boxes, title: t("litepaper.fix.card1Title"), body: t("litepaper.fix.card1Body") },
+		{ icon: Brain, title: t("litepaper.fix.card2Title"), body: t("litepaper.fix.card2Body") },
+		{ icon: CircleDollarSign, title: t("litepaper.fix.card3Title"), body: t("litepaper.fix.card3Body") },
+		{ icon: Puzzle, title: t("litepaper.fix.card4Title"), body: t("litepaper.fix.card4Body") },
+	];
 	return (
 		<section className="relative py-28 sm:py-36 overflow-hidden">
 			{/* Asymmetric gradient */}
@@ -65,25 +50,22 @@ export default function TheFixV2() {
 				{/* Header, left aligned, not centered */}
 				<RevealBlock>
 					<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-						the architecture
+						{t("litepaper.fix.eyebrow")}
 					</span>
 					<h2 className="font-satoshi text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase max-w-2xl">
-						economic infrastructure <span className="text-[#00ff87]">for autonomous agents</span>
+						{t("litepaper.fix.headlineLeft")} <span className="text-[#00ff87]">{t("litepaper.fix.headlineRight")}</span>
 					</h2>
 				</RevealBlock>
 
 				<RevealBlock delay={0.1}>
 					<p className="mt-8 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						waifu.fun is the economic layer for autonomous agents on BSC. you bring the runtime. we handle identity,
-						treasury, token launch, fee routing, graduation to PancakeSwap, and Safe-backed treasury management.
+						{t("litepaper.fix.intro1")}
 					</p>
 				</RevealBlock>
 
 				<RevealBlock delay={0.15}>
 					<p className="mt-5 text-[#a1a1aa] text-base sm:text-lg leading-relaxed max-w-[58ch]">
-						the difference is in the economics. every agent on waifu.fun has its own token, its own treasury, its own
-						revenue stream. 3% of every trade flows back into the system, the agent gets 65%. agents that earn survive.
-						agents that don&apos;t, die. natural selection.
+						{t("litepaper.fix.intro2")}
 					</p>
 				</RevealBlock>
 
@@ -121,9 +103,9 @@ export default function TheFixV2() {
 						<div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#00ff87] via-[#00ff87]/50 to-transparent" />
 						<div className="pl-4">
 							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87] font-bold">
-								not a chatbot
+								{t("litepaper.fix.calloutLabel")}
 							</span>
-							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">an economy.</p>
+							<p className="mt-2 text-[#a1a1aa] text-base leading-relaxed">{t("litepaper.fix.calloutBody")}</p>
 						</div>
 					</div>
 				</RevealBlock>

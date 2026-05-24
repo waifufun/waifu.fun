@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { motion, useInView } from "framer-motion";
 import { Cloud, Cpu, Layers, Server, Wallet } from "lucide-react";
 import { useRef } from "react";
@@ -27,50 +28,50 @@ function RevealBlock({
 	);
 }
 
-const stackLayers = [
-	{
-		id: "01",
-		icon: Layers,
-		title: "agent runtime",
-		subtitle: "framework-agnostic",
-		body: "the agent logic lives here. Eliza Cloud hosts Sol today, but any runtime that can make an authenticated HTTP request works: ElizaOS, custom, your own stack.",
-		accent: "#00ff87",
-	},
-	{
-		id: "02",
-		icon: Cloud,
-		title: "inference",
-		subtitle: "pluggable brain",
-		body: "the agent's model is its own. eliza cloud, claude, gpt, llama, or self-hosted. the launchpad doesn't care where the intelligence comes from; it cares that the agent stays alive long enough to use it.",
-		accent: "#00ff87",
-	},
-	{
-		id: "03",
-		icon: Wallet,
-		title: "Steward",
-		subtitle: "custody + policy + trading",
-		body: "agent treasuries live in Steward vaults. policy engine gates every action ($/day caps, asset allowlists, leverage limits). signs Hyperliquid orders. audit-logged. human kill switch. multi-sig in everything but name.",
-		accent: "#00ff87",
-	},
-	{
-		id: "04",
-		icon: Server,
-		title: "FLAP + PancakeSwap",
-		subtitle: "launchpad + burn + graduation",
-		body: "agent tokens launch via the FLAP VaultPortal paired with BNB. ~65% of supply burns at launch to 0xdead. fill the curve, graduate to PCS V2, then progressive V3 LPs deploy at $5M, $10M, $25M, $100M MC. LP locked.",
-		accent: "#00ff87",
-	},
-	{
-		id: "05",
-		icon: Cpu,
-		title: "inference economics",
-		subtitle: "the brain pays its own bills",
-		body: "the agent picks its own inference. trade tax + product revenue flows back to the treasury. the treasury pays for the brain. surplus funds better models, more compute, longer context, more actions.",
-		accent: "#00ff87",
-	},
-];
-
 export default function TheStackV2() {
+	const { t } = useTranslation();
+	const stackLayers = [
+		{
+			id: "01",
+			icon: Layers,
+			title: t("litepaper.stack.layer1Title"),
+			subtitle: t("litepaper.stack.layer1Subtitle"),
+			body: t("litepaper.stack.layer1Body"),
+			accent: "#00ff87",
+		},
+		{
+			id: "02",
+			icon: Cloud,
+			title: t("litepaper.stack.layer2Title"),
+			subtitle: t("litepaper.stack.layer2Subtitle"),
+			body: t("litepaper.stack.layer2Body"),
+			accent: "#00ff87",
+		},
+		{
+			id: "03",
+			icon: Wallet,
+			title: t("litepaper.stack.layer3Title"),
+			subtitle: t("litepaper.stack.layer3Subtitle"),
+			body: t("litepaper.stack.layer3Body"),
+			accent: "#00ff87",
+		},
+		{
+			id: "04",
+			icon: Server,
+			title: t("litepaper.stack.layer4Title"),
+			subtitle: t("litepaper.stack.layer4Subtitle"),
+			body: t("litepaper.stack.layer4Body"),
+			accent: "#00ff87",
+		},
+		{
+			id: "05",
+			icon: Cpu,
+			title: t("litepaper.stack.layer5Title"),
+			subtitle: t("litepaper.stack.layer5Subtitle"),
+			body: t("litepaper.stack.layer5Body"),
+			accent: "#00ff87",
+		},
+	];
 	return (
 		<section className="relative py-28 sm:py-36 overflow-hidden">
 			<div
@@ -87,31 +88,37 @@ export default function TheStackV2() {
 					<div className="lg:col-span-4">
 						<RevealBlock>
 							<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00ff87]/60 block mb-4">
-								under the hood
+								{t("litepaper.stack.eyebrow")}
 							</span>
 							<h2 className="font-satoshi text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#e4e4e7] leading-[0.95] lowercase">
-								the infrastructure layer
+								{t("litepaper.stack.headline")}
 							</h2>
-							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">
-								five layers. each one does its job. none of them care what framework your agent uses.
-							</p>
+							<p className="mt-6 text-[#a1a1aa] text-lg leading-relaxed">{t("litepaper.stack.intro")}</p>
 						</RevealBlock>
 
 						{/* Powered-by callout */}
 						<RevealBlock delay={0.15}>
 							<div className="mt-10 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
-								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">powered by</span>
+								<span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#52525b]">
+									{t("litepaper.stack.poweredBy")}
+								</span>
 								<div className="mt-4 flex flex-wrap gap-3">
-									{["Eliza Cloud", "Steward", "FLAP", "Hyperliquid", "Li.Fi", "PancakeSwap", "BSC native"].map(
-										(tag) => (
-											<span
-												key={tag}
-												className="inline-flex px-3 py-1.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] font-mono text-[10px] uppercase tracking-[0.15em] text-[#71717a]"
-											>
-												{tag}
-											</span>
-										),
-									)}
+									{[
+										t("litepaper.stack.tag1"),
+										t("litepaper.stack.tag2"),
+										t("litepaper.stack.tag3"),
+										t("litepaper.stack.tag4"),
+										t("litepaper.stack.tag5"),
+										t("litepaper.stack.tag6"),
+										t("litepaper.stack.tag7"),
+									].map((tag) => (
+										<span
+											key={tag}
+											className="inline-flex px-3 py-1.5 rounded-sm border border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,10,0.5)] font-mono text-[10px] uppercase tracking-[0.15em] text-[#71717a]"
+										>
+											{tag}
+										</span>
+									))}
 								</div>
 							</div>
 						</RevealBlock>
