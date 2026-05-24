@@ -1,4 +1,7 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import Link from "next/link";
 
 type Props = {
@@ -8,7 +11,9 @@ type Props = {
 	ctaHref?: string | null;
 };
 
-export default function EmptyState({ title, body, ctaLabel = "create agent", ctaHref = "/create/wizard" }: Props) {
+export default function EmptyState({ title, body, ctaLabel, ctaHref = "/create/wizard" }: Props) {
+	const { t } = useTranslation();
+	const resolvedCtaLabel = ctaLabel ?? t("patron.emptyState.defaultCta");
 	return (
 		<section
 			aria-labelledby="patron-empty-title"
@@ -21,7 +26,7 @@ export default function EmptyState({ title, body, ctaLabel = "create agent", cta
 			{ctaHref ? (
 				<Link href={ctaHref}>
 					<Button variant="outline" className="h-10 px-5">
-						{ctaLabel}
+						{resolvedCtaLabel}
 					</Button>
 				</Link>
 			) : null}

@@ -14,6 +14,7 @@ import RuntimeConnectionPanel from "@/components/patron/runtime-connection-panel
 import TreasuryCard from "@/components/patron/treasury-card";
 import WhatHappensNext from "@/components/patron/what-happens-next";
 import XConnectionPanel from "@/components/patron/x-connection";
+import { useTranslation } from "@/contexts/locale-context";
 import { useAuthorizeLaunch } from "@/lib/api/launches";
 import { useAgentDetail, useAgentEvents } from "@/lib/api/patron";
 import { useRouter } from "next/navigation";
@@ -21,18 +22,18 @@ import { use, useEffect, useState } from "react";
 
 type Params = { agentId: string };
 
-function authorizeErrorMessage(err: Error & { status?: number | null }): string {
+function authorizeErrorMessage(err: Error & { status?: number | null }, t: (key: string) => string): string {
 	const status = err.status ?? null;
 	if (status === 401) {
-		return "session expired. reconnect your wallet and sign again.";
+		return t("patron.agentDetail.sessionExpired");
 	}
 	if (status === 403) {
-		return "you're not the patron of this agent.";
+		return t("patron.agentDetail.notPatron");
 	}
 	if (status && status >= 500) {
-		return "something broke on our side. try again in a moment.";
+		return t("patron.agentDetail.serverError");
 	}
-	return err.message || "couldn't authorize the launch.";
+	return err.message || t("patron.agentDetail.authorizeFallback");
 }
 
 export default function PatronAgentDetailPage({
@@ -40,6 +41,7 @@ export default function PatronAgentDetailPage({
 }: {
 	params: Promise<Params>;
 }) {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const { agentId } = use(params);
 	const { data: agent, isLoading, error } = useAgentDetail(agentId);
@@ -77,7 +79,7 @@ export default function PatronAgentDetailPage({
 
 	const triggerLaunch = async (firstBuyWei: string) => {
 		if (!launchId) {
-			setAuthorizeError("launch hasn't been provisioned yet. refresh and try again.");
+			setAuthorizeError(t("patron.agentDetail.launchNotProvisioned"));
 			setProgressOpen(true);
 			return;
 		}
@@ -88,7 +90,7 @@ export default function PatronAgentDetailPage({
 			await authorize.mutateAsync({ firstBuyWei });
 		} catch (err) {
 			const e = err as Error & { status?: number | null };
-			setAuthorizeError(authorizeErrorMessage(e));
+			setAuthorizeError(authorizeErrorMessage(e, t));
 		}
 	};
 
@@ -113,12 +115,12 @@ export default function PatronAgentDetailPage({
 	return (
 		<main className="py-6">
 			<PatronHeader
-				title={agent?.name ?? "agent"}
+				title={agent?.name ?? t("patron.agentDetail.fallbackTitle")}
 				subtitle={
 					agent
 						? isLaunchReady
-							? `pre-launch controls for ${agent.ticker}.`
-							: `manage ${agent.ticker}, review recent activity.`
+							? t("patron.agentDetail.preLaunchSubtitle", { ticker: agent.ticker })
+							: t("patron.agentDetail.manageSubtitle", { ticker: agent.ticker })
 						: undefined
 				}
 				backHref="/patron"
@@ -145,7 +147,7 @@ export default function PatronAgentDetailPage({
 
 			{error ? (
 				<div role="alert" className="p-6 rounded-md border border-red-500/30 bg-red-500/5 text-sm text-red-300">
-					Couldn't load agent. {(error as Error).message}
+					{t("patron.agentDetail.loadError", { message: (error as Error).message })}
 				</div>
 			) : isLaunchReady ? (
 				<div className="space-y-6 pb-24 md:pb-0">
@@ -198,21 +200,28 @@ type CloudProvisionNotice = {
 };
 
 function CloudProvisionBlock({ provision }: { provision: CloudProvisionNotice }) {
+	const { t } = useTranslation();
 	const links = [
-		provision.webUiUrl ? { label: "open cloud", href: provision.webUiUrl } : null,
-		provision.logsUrl ? { label: "logs", href: provision.logsUrl } : null,
+		provision.webUiUrl ? { label: t("patron.agentDetail.openCloud"), href: provision.webUiUrl } : null,
+		provision.logsUrl ? { label: t("patron.agentDetail.logs"), href: provision.logsUrl } : null,
 	].filter((link): link is { label: string; href: string } => Boolean(link));
 
 	return (
 		<section className="border border-[#00ff87]/30 bg-[#00ff87]/[0.04] p-4">
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">eliza cloud provisioning</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+				{t("patron.agentDetail.cloudProvisionEyebrow")}
+			</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed max-w-[68ch]">
-				hosted runtime request accepted
+				{t("patron.agentDetail.cloudProvisionBody")}
 				{provision.cloudStatus ? `: ${provision.cloudStatus.replace(/_/g, " ")}` : "."}
 			</p>
 			<div className="mt-3 grid gap-1 text-[11px] font-mono text-neutral-400">
-				{provision.cloudAgentId ? <p>cloud agent: {provision.cloudAgentId}</p> : null}
-				{provision.provisioningJobId ? <p>job: {provision.provisioningJobId}</p> : null}
+				{provision.cloudAgentId ? (
+					<p>{t("patron.agentDetail.cloudAgentLabel", { id: provision.cloudAgentId })}</p>
+				) : null}
+				{provision.provisioningJobId ? (
+					<p>{t("patron.agentDetail.cloudJobLabel", { id: provision.provisioningJobId })}</p>
+				) : null}
 			</div>
 			{links.length > 0 ? (
 				<div className="mt-4 flex flex-wrap gap-2">
@@ -234,12 +243,14 @@ function CloudProvisionBlock({ provision }: { provision: CloudProvisionNotice })
 }
 
 function OneTimeAgentKeyBlock({ agentApiKey }: { agentApiKey: string }) {
+	const { t } = useTranslation();
 	return (
 		<section className="border border-[#00ff87]/30 bg-[#00ff87]/[0.04] p-4">
-			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">agent api key</p>
+			<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+				{t("patron.agentDetail.agentApiKeyEyebrow")}
+			</p>
 			<p className="mt-2 text-sm text-neutral-300 leading-relaxed max-w-[68ch]">
-				copy this now. we won't show it again after this page load. use it as the agent's bearer credential for launch
-				and runtime-scoped API calls.
+				{t("patron.agentDetail.agentApiKeyBody")}
 			</p>
 			<PromptBlock prompt={agentApiKey} className="mt-4" />
 		</section>

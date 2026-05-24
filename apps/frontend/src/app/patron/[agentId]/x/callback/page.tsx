@@ -1,8 +1,9 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type Params = { agentId: string };
@@ -10,6 +11,7 @@ type Params = { agentId: string };
 const REDIRECT_MS = 2000;
 
 export default function XCallbackPage({ params }: { params: Promise<Params> }) {
+	const { t } = useTranslation();
 	const { agentId } = use(params);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -22,16 +24,30 @@ export default function XCallbackPage({ params }: { params: Promise<Params> }) {
 	}, [searchParams]);
 
 	const [countdown, setCountdown] = useState(Math.round(REDIRECT_MS / 1000));
+	const tRef = useRef(t);
+
+	useEffect(() => {
+		tRef.current = t;
+	}, [t]);
 
 	useEffect(() => {
 		const target = `/patron/${agentId}`;
+		const translate = tRef.current;
 		if (status === "connected") {
-			toast.success(handle ? `X connected as @${handle.replace(/^@/, "")}` : "X account connected");
+			toast.success(
+				handle
+					? translate("patron.xCallback.toastConnectedWithHandle", { handle: handle.replace(/^@/, "") })
+					: translate("patron.xCallback.toastConnected"),
+			);
 		} else {
-			toast.error(message ? `X connection failed: ${message}` : "X connection failed");
+			toast.error(
+				message
+					? translate("patron.xCallback.toastFailedWithMessage", { message })
+					: translate("patron.xCallback.toastFailed"),
+			);
 		}
 
-		const t = window.setTimeout(() => {
+		const redirectTimer = window.setTimeout(() => {
 			router.replace(target);
 		}, REDIRECT_MS);
 
@@ -40,7 +56,7 @@ export default function XCallbackPage({ params }: { params: Promise<Params> }) {
 		}, 1000);
 
 		return () => {
-			window.clearTimeout(t);
+			window.clearTimeout(redirectTimer);
 			window.clearInterval(tick);
 		};
 	}, [agentId, status, message, handle, router]);
@@ -54,18 +70,20 @@ export default function XCallbackPage({ params }: { params: Promise<Params> }) {
 					connected ? "border-autofun-background-action-highlight/40 bg-[#0C0C0C]" : "border-red-500/30 bg-red-500/5"
 				}`}
 			>
-				<h1 className="text-lg font-medium text-white">{connected ? "X account connected" : "X connection failed"}</h1>
+				<h1 className="text-lg font-medium text-white">
+					{connected ? t("patron.xCallback.successTitle") : t("patron.xCallback.failedTitle")}
+				</h1>
 				<p className="text-sm text-neutral-400 mt-2">
 					{connected
 						? handle
-							? `@${handle.replace(/^@/, "")} is now linked to this agent.`
-							: "Your X account is now linked to this agent."
-						: message || "Something went wrong completing the OAuth handshake."}
+							? t("patron.xCallback.successBodyWithHandle", { handle: handle.replace(/^@/, "") })
+							: t("patron.xCallback.successBody")
+						: message || t("patron.xCallback.failedBody")}
 				</p>
 				<p className="text-xs text-neutral-500 mt-4">
-					Redirecting back in {countdown}s...{" "}
+					{t("patron.xCallback.redirectingIn", { n: String(countdown) })}{" "}
 					<Link href={`/patron/${agentId}`} className="underline underline-offset-4 hover:text-white">
-						Go now
+						{t("patron.xCallback.goNow")}
 					</Link>
 				</p>
 			</output>

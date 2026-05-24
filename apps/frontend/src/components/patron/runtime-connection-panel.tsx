@@ -1,10 +1,13 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "@/contexts/locale-context";
 import type { AgentDetail, AgentRuntimeKind } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 import { Antenna, ArrowLeftRight, Check, Cloud, Copy, ExternalLink, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+type TFn = (key: string, params?: Record<string, string>) => string;
 
 type Props = {
 	agent: AgentDetail | undefined;
@@ -14,28 +17,29 @@ type Props = {
 const PANEL_BASE = "p-5 rounded-sm border border-stroke bg-[#0C0C0C]";
 const CARD_INNER = "rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#0A0A0A]";
 
-function formatRelative(iso: string | null | undefined): string {
-	if (!iso) return "never";
+function formatRelative(iso: string | null | undefined, t: TFn): string {
+	if (!iso) return t("patron.runtime.neverLabel");
 	const ts = new Date(iso).getTime();
-	if (Number.isNaN(ts)) return "unknown";
+	if (Number.isNaN(ts)) return t("patron.runtime.unknownLabel");
 	const diff = Date.now() - ts;
 	const s = Math.floor(diff / 1000);
-	if (s < 60) return `${s}s ago`;
+	if (s < 60) return t("patron.runtime.secondsAgo", { n: String(s) });
 	const m = Math.floor(s / 60);
-	if (m < 60) return `${m}m ago`;
+	if (m < 60) return t("patron.runtime.minutesAgo", { n: String(m) });
 	const h = Math.floor(m / 60);
-	if (h < 24) return `${h}h ago`;
-	return `${Math.floor(h / 24)}d ago`;
+	if (h < 24) return t("patron.runtime.hoursAgo", { n: String(h) });
+	return t("patron.runtime.daysAgo", { n: String(Math.floor(h / 24)) });
 }
 
-function formatIssuedDate(iso: string | null | undefined): string {
-	if (!iso) return "unknown";
+function formatIssuedDate(iso: string | null | undefined, t: TFn): string {
+	if (!iso) return t("patron.runtime.unknownLabel");
 	const d = new Date(iso);
-	if (Number.isNaN(d.getTime())) return "unknown";
+	if (Number.isNaN(d.getTime())) return t("patron.runtime.unknownLabel");
 	return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 function CopyButton({ value, label, className }: { value: string; label?: string; className?: string }) {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 	const handle = async () => {
 		try {
@@ -71,17 +75,17 @@ function CopyButton({ value, label, className }: { value: string; label?: string
 				"inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] transition-colors duration-200 hover:border-[#00ff87]/40 hover:text-[#00ff87]",
 				className,
 			)}
-			aria-label={label ?? "Copy to clipboard"}
+			aria-label={label ?? t("patron.runtime.copyAria")}
 		>
 			{copied ? (
 				<>
 					<Check className="h-3 w-3" strokeWidth={1.75} />
-					<span>copied</span>
+					<span>{t("patron.runtime.copied")}</span>
 				</>
 			) : (
 				<>
 					<Copy className="h-3 w-3" strokeWidth={1.75} />
-					<span>{label ?? "copy"}</span>
+					<span>{label ?? t("patron.runtime.copy")}</span>
 				</>
 			)}
 		</button>
@@ -125,7 +129,7 @@ function CodeBlock({
 		<div className={cn(CARD_INNER, "relative")}>
 			<div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-3 py-2">
 				<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">{label}</span>
-				<CopyButton value={code} label="copy" />
+				<CopyButton value={code} />
 			</div>
 			<pre className="overflow-x-auto px-4 py-3.5 text-[12.5px] leading-[1.65] font-mono">
 				{highlightSnippet(code, lang)}
@@ -151,8 +155,9 @@ function StatusDot({ live }: { live: boolean }) {
 /* -------------------------------------------------------------------------- */
 
 function WebhookCard({ agent }: { agent: AgentDetail }) {
+	const { t } = useTranslation();
 	const runtime = agent.runtime;
-	const webhookUrl = runtime?.webhookUrl ?? "<configure webhook URL>";
+	const webhookUrl = runtime?.webhookUrl ?? t("patron.runtime.configureWebhook");
 	const masked = runtime?.webhookSecretMasked ?? "wks_••••••••••••••••";
 	const raw = runtime?.webhookSecretRaw ?? null;
 	const lastPulse = runtime?.lastHb_signalAt ?? null;
@@ -173,17 +178,17 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 				headers: { "Content-Type": "application/json" },
 			});
 			if (res.ok) {
-				setTestResult({ ok: true, message: "Webhook test queued. Watch your endpoint logs." });
+				setTestResult({ ok: true, message: t("patron.runtime.testWebhookQueued") });
 			} else if (res.status === 404) {
 				// graceful stub: simulate success so the UI is exercised end-to-end
-				setTestResult({ ok: true, message: "Test endpoint not yet wired; simulated dispatch ok." });
+				setTestResult({ ok: true, message: t("patron.runtime.testEndpointStub") });
 			} else {
-				setTestResult({ ok: false, message: `Request failed (${res.status}).` });
+				setTestResult({ ok: false, message: t("patron.runtime.testRequestFailed", { status: String(res.status) }) });
 			}
 		} catch (err) {
 			setTestResult({
 				ok: false,
-				message: err instanceof Error ? err.message : "Network error",
+				message: err instanceof Error ? err.message : t("patron.runtime.networkError"),
 			});
 		} finally {
 			setTesting(false);
@@ -191,28 +196,30 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 	};
 
 	return (
-		<section aria-label="Webhook runtime" className={PANEL_BASE}>
+		<section aria-label={t("patron.runtime.webhookAriaLabel")} className={PANEL_BASE}>
 			<header className="mb-4 flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
 						<ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
-						<h2 className="text-sm font-medium uppercase tracking-wide text-white">webhook runtime</h2>
-						<p className="mt-1 text-xs text-[#71717a]">
-							We POST signed events to your URL. Verify the signature using the secret below.
-						</p>
+						<h2 className="text-sm font-medium uppercase tracking-wide text-white">
+							{t("patron.runtime.webhookTitle")}
+						</h2>
+						<p className="mt-1 text-xs text-[#71717a]">{t("patron.runtime.webhookBody")}</p>
 					</div>
 				</div>
 				<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#71717a]">
 					<StatusDot live={Boolean(live)} />
-					<span>{live ? "live" : "idle"}</span>
+					<span>{live ? t("patron.runtime.live") : t("patron.runtime.idle")}</span>
 				</div>
 			</header>
 
 			<div className="grid gap-3">
 				<div>
-					<div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">webhook URL</div>
+					<div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+						{t("patron.runtime.webhookUrlLabel")}
+					</div>
 					<div className={cn(CARD_INNER, "flex items-center justify-between gap-2 px-3 py-2.5")}>
 						<code className="truncate font-mono text-xs text-[#e4e4e7]">{webhookUrl}</code>
 						<CopyButton value={webhookUrl} />
@@ -221,10 +228,12 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 
 				<div>
 					<div className="mb-1.5 flex items-center justify-between">
-						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">signing secret</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+							{t("patron.runtime.signingSecretLabel")}
+						</span>
 						{raw ? (
 							<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">
-								shown once. save it now.
+								{t("patron.runtime.shownOnceSaveNow")}
 							</span>
 						) : null}
 					</div>
@@ -236,18 +245,18 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 									type="button"
 									onClick={() => setRevealed((r) => !r)}
 									className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
-									aria-label={revealed ? "Hide secret" : "Reveal secret"}
+									aria-label={revealed ? t("patron.runtime.hideSecretAria") : t("patron.runtime.revealSecretAria")}
 								>
 									{revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-									<span>{revealed ? "hide" : "reveal"}</span>
+									<span>{revealed ? t("patron.runtime.hide") : t("patron.runtime.reveal")}</span>
 								</button>
 							) : null}
-							<CopyButton value={raw ?? masked} label="copy" />
+							<CopyButton value={raw ?? masked} />
 						</div>
 					</div>
 					{!raw ? (
 						<p className="mt-1.5 text-[11px] text-[#71717a]">
-							Raw secret is only displayed at provision time. Lost it? Rotate via{" "}
+							{t("patron.runtime.rawSecretHelp")}{" "}
 							<code className="font-mono text-[#a1a1aa]">/v2/agents/{agent.id}/runtime/rotate-secret</code>.
 						</p>
 					) : null}
@@ -255,8 +264,10 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 
 				<div className="grid grid-cols-2 gap-3 pt-2">
 					<div>
-						<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">last pulse</div>
-						<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastPulse)}</div>
+						<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+							{t("patron.runtime.lastPulse")}
+						</div>
+						<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastPulse, t)}</div>
 					</div>
 					<div className="flex items-end justify-end">
 						<button
@@ -266,7 +277,7 @@ function WebhookCard({ agent }: { agent: AgentDetail }) {
 							className="inline-flex items-center gap-1.5 rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/5 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-[#00ff87] hover:bg-[#00ff87]/10 hover:border-[#00ff87]/60 transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none"
 						>
 							<RotateCcw className={cn("h-3 w-3", testing && "animate-spin")} strokeWidth={1.75} />
-							<span>{testing ? "dispatching" : "test webhook"}</span>
+							<span>{testing ? t("patron.runtime.dispatching") : t("patron.runtime.testWebhook")}</span>
 						</button>
 					</div>
 				</div>
@@ -355,6 +366,7 @@ curl -H "Authorization: Bearer $WAIFU_API_KEY" \\
 }
 
 function PullCard({ agent }: { agent: AgentDetail }) {
+	const { t } = useTranslation();
 	const runtime = agent.runtime;
 	const apiKey = runtime?.rawApiKey ?? null;
 	const issuedAt = runtime?.apiKeyIssuedAt ?? null;
@@ -372,23 +384,23 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 	const [revealed, setRevealed] = useState(false);
 
 	return (
-		<section aria-label="Pull runtime" className={PANEL_BASE}>
+		<section aria-label={t("patron.runtime.pullAriaLabel")} className={PANEL_BASE}>
 			<header className="mb-4 flex items-start justify-between gap-4">
 				<div className="flex items-start gap-3">
 					<div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] text-[#00ff87]">
 						<Antenna className="h-4 w-4" strokeWidth={1.75} />
 					</div>
 					<div>
-						<h2 className="text-sm font-medium uppercase tracking-wide text-white">pull runtime</h2>
+						<h2 className="text-sm font-medium uppercase tracking-wide text-white">{t("patron.runtime.pullTitle")}</h2>
 						<p className="mt-1 text-xs text-[#71717a]">
-							Your agent calls us. Works behind firewalls. pulse at{" "}
-							<code className="font-mono text-[#a1a1aa]">~30s</code> and pull events on a cursor.
+							{t("patron.runtime.pullBodyPrefix")} <code className="font-mono text-[#a1a1aa]">~30s</code>{" "}
+							{t("patron.runtime.pullBodySuffix")}
 						</p>
 					</div>
 				</div>
 				<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#71717a]">
 					<StatusDot live={Boolean(live)} />
-					<span>{live ? "live" : "idle"}</span>
+					<span>{live ? t("patron.runtime.live") : t("patron.runtime.idle")}</span>
 				</div>
 			</header>
 
@@ -396,7 +408,7 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 				<output className={cn(CARD_INNER, "block mb-4 border-[#00ff87]/40 bg-[#00ff87]/[0.04]")}>
 					<div className="flex items-center justify-between gap-3 border-b border-[#00ff87]/15 px-3 py-2">
 						<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00ff87]">
-							api key, shown once. save it now.
+							{t("patron.runtime.apiKeyOnceHeader")}
 						</span>
 					</div>
 					<div className="flex items-center justify-between gap-2 px-3 py-2.5">
@@ -408,10 +420,10 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 								type="button"
 								onClick={() => setRevealed((r) => !r)}
 								className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
-								aria-label={revealed ? "Hide key" : "Reveal key"}
+								aria-label={revealed ? t("patron.runtime.hideKeyAria") : t("patron.runtime.revealKeyAria")}
 							>
 								{revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-								<span>{revealed ? "hide" : "reveal"}</span>
+								<span>{revealed ? t("patron.runtime.hide") : t("patron.runtime.reveal")}</span>
 							</button>
 							<CopyButton value={apiKey} />
 						</div>
@@ -421,9 +433,11 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 				<div className={cn(CARD_INNER, "mb-4 px-3 py-3")}>
 					<div className="flex items-center justify-between gap-3">
 						<div>
-							<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">api key</div>
+							<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+								{t("patron.runtime.apiKeyLabel")}
+							</div>
 							<div className="mt-1 text-xs text-[#a1a1aa]">
-								Issued {formatIssuedDate(issuedAt)}. Raw key was returned at provision time.
+								{t("patron.runtime.apiKeyIssuedBody", { date: formatIssuedDate(issuedAt, t) })}
 							</div>
 						</div>
 						<a
@@ -431,48 +445,52 @@ function PullCard({ agent }: { agent: AgentDetail }) {
 							className="inline-flex items-center gap-1.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-[#111114] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a1a1aa] hover:border-[#00ff87]/40 hover:text-[#00ff87] transition-colors duration-200"
 						>
 							<RotateCcw className="h-3 w-3" strokeWidth={1.75} />
-							<span>rotate key</span>
+							<span>{t("patron.runtime.rotateKey")}</span>
 						</a>
 					</div>
 				</div>
 			)}
 
 			<div className="grid gap-3 mb-4">
-				<EndpointRow label="pulse" method="POST" path={hb_signalEndpoint} />
-				<EndpointRow label="events pull" method="GET" path={eventsEndpoint} />
+				<EndpointRow label={t("patron.runtime.pulseLabel")} method="POST" path={hb_signalEndpoint} />
+				<EndpointRow label={t("patron.runtime.eventsPullLabel")} method="GET" path={eventsEndpoint} />
 			</div>
 
 			<div className="grid grid-cols-2 gap-3 mb-5 pt-1 border-t border-[rgba(255,255,255,0.06)]">
 				<div className="pt-3">
-					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">last pulse</div>
-					<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastPulse)}</div>
+					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+						{t("patron.runtime.lastPulse")}
+					</div>
+					<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatRelative(lastPulse, t)}</div>
 				</div>
 				<div className="pt-3">
-					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">issued</div>
-					<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatIssuedDate(issuedAt)}</div>
+					<div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#52525b]">
+						{t("patron.runtime.issued")}
+					</div>
+					<div className="mt-1 font-mono text-xs text-[#e4e4e7]">{formatIssuedDate(issuedAt, t)}</div>
 				</div>
 			</div>
 
 			<Tabs defaultValue="js" className="gap-3">
 				<TabsList className="self-start">
 					<TabsTrigger value="js" className="px-4">
-						JavaScript
+						{t("patron.runtime.javascript")}
 					</TabsTrigger>
 					<TabsTrigger value="py" className="px-4">
-						Python
+						{t("patron.runtime.python")}
 					</TabsTrigger>
 					<TabsTrigger value="bash" className="px-4">
-						curl
+						{t("patron.runtime.curl")}
 					</TabsTrigger>
 				</TabsList>
 				<TabsContent value="js">
-					<CodeBlock code={snippets.js} lang="js" label="node 20+" />
+					<CodeBlock code={snippets.js} lang="js" label={t("patron.runtime.nodeLabel")} />
 				</TabsContent>
 				<TabsContent value="py">
-					<CodeBlock code={snippets.py} lang="py" label="python 3.10+" />
+					<CodeBlock code={snippets.py} lang="py" label={t("patron.runtime.pythonLabel")} />
 				</TabsContent>
 				<TabsContent value="bash">
-					<CodeBlock code={snippets.bash} lang="bash" label="curl" />
+					<CodeBlock code={snippets.bash} lang="bash" label={t("patron.runtime.curlLabel")} />
 				</TabsContent>
 			</Tabs>
 		</section>

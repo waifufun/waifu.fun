@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { AgentDetail } from "@/lib/api/patron";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -23,6 +24,7 @@ type Props = {
  *     even though its token does not.
  */
 export default function LaunchReadyHero({ agent, isLoading }: Props) {
+	const { t } = useTranslation();
 	if (isLoading || !agent) {
 		return (
 			<div className="flex items-start gap-5 animate-pulse">
@@ -40,7 +42,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 
 	return (
 		<section
-			aria-label="Agent ready to launch"
+			aria-label={t("patron.launchReadyHero.ariaLabel")}
 			className="relative overflow-hidden rounded-sm border border-stroke bg-[#0A0A0A]"
 		>
 			{/* subtle ambient glow: calm, not neon */}
@@ -60,7 +62,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 						{agent.avatar ? (
 							<Image
 								src={agent.avatar}
-								alt={`${agent.name} avatar`}
+								alt={t("patron.agentHero.avatarAlt", { name: agent.name })}
 								width={96}
 								height={96}
 								className="object-cover w-full h-full"
@@ -83,7 +85,7 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 						<p className="text-sm text-neutral-400 font-mono mt-1">${agent.ticker}</p>
 						{bio ? <p className="mt-5 max-w-[60ch] text-[15px] leading-relaxed text-neutral-300">{bio}</p> : null}
 						<p className="mt-6 max-w-[60ch] text-sm leading-relaxed text-neutral-400">
-							your agent is alive. the token isn&apos;t on the curve yet. you decide when.
+							{t("patron.launchReadyHero.bodyNote")}
 						</p>
 					</div>
 				</div>
@@ -93,12 +95,13 @@ export default function LaunchReadyHero({ agent, isLoading }: Props) {
 }
 
 function ReadyPill() {
+	const { t } = useTranslation();
 	return (
 		<span
 			className="inline-flex items-center gap-2 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] rounded-sm border bg-accent/10 text-accent border-accent/30 animate-pulse motion-reduce:animate-none"
 			// biome-ignore lint/a11y/useSemanticElements: <output> is for form-related results; this is a generic status indicator
 			role="status"
-			aria-label="Agent status: ready to launch"
+			aria-label={t("patron.launchReadyHero.readyPillAria")}
 		>
 			<span className="relative inline-flex w-1.5 h-1.5">
 				<span
@@ -107,7 +110,7 @@ function ReadyPill() {
 				/>
 				<span aria-hidden="true" className="relative w-1.5 h-1.5 rounded-full bg-accent" />
 			</span>
-			ready to launch
+			{t("patron.launchReadyHero.readyPill")}
 		</span>
 	);
 }

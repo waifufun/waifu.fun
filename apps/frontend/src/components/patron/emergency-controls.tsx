@@ -1,34 +1,20 @@
 "use client";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 
 type Control = {
 	id: string;
-	label: string;
-	description: string;
+	labelKey: string;
+	descKey: string;
 	tone: "neutral" | "warn" | "destructive";
 };
 
 const CONTROLS: Control[] = [
-	{
-		id: "pause",
-		label: "Pause brain",
-		description: "Halt new actions. Positions stay open, adapters keep data flowing.",
-		tone: "neutral",
-	},
-	{
-		id: "freeze",
-		label: "Freeze withdrawals",
-		description: "Block treasury outflows while you investigate.",
-		tone: "warn",
-	},
-	{
-		id: "kill",
-		label: "Kill agent",
-		description: "Full stop. Signals permanent shutdown. Irreversible.",
-		tone: "destructive",
-	},
+	{ id: "pause", labelKey: "patron.emergency.pauseLabel", descKey: "patron.emergency.pauseDesc", tone: "neutral" },
+	{ id: "freeze", labelKey: "patron.emergency.freezeLabel", descKey: "patron.emergency.freezeDesc", tone: "warn" },
+	{ id: "kill", labelKey: "patron.emergency.killLabel", descKey: "patron.emergency.killDesc", tone: "destructive" },
 ];
 
 const TONE: Record<Control["tone"], string> = {
@@ -37,40 +23,43 @@ const TONE: Record<Control["tone"], string> = {
 	destructive: "border-red-500/30 text-red-300",
 };
 
-const TOOLTIP_COPY = "Coming in v2. Will route through a patron-scoped endpoint instead of the admin token.";
-
 export default function EmergencyControls() {
+	const { t } = useTranslation();
 	return (
-		<section aria-label="Emergency controls" className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]">
+		<section
+			aria-label={t("patron.emergency.ariaLabel")}
+			className="p-5 rounded-sm border border-stroke-strong bg-[#0C0C0C]"
+		>
 			<header className="flex items-center justify-between mb-1">
-				<h2 className="text-sm font-medium text-white uppercase tracking-wide">Emergency</h2>
-				<span className="text-xs text-neutral-500">v2</span>
+				<h2 className="text-sm font-medium text-white uppercase tracking-wide">{t("patron.emergency.title")}</h2>
+				<span className="text-xs text-neutral-500">{t("patron.emergency.v2Badge")}</span>
 			</header>
-			<p className="text-xs text-neutral-500 mb-4">
-				Break-glass controls. Disabled in v1 until patron-scoped endpoints land.
-			</p>
+			<p className="text-xs text-neutral-500 mb-4">{t("patron.emergency.body")}</p>
 
 			<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-				{CONTROLS.map((control) => (
-					<Tooltip key={control.id}>
-						<TooltipTrigger asChild>
-							<button
-								type="button"
-								disabled
-								aria-disabled="true"
-								aria-label={`${control.label} (coming in v2)`}
-								className={cn(
-									"flex flex-col items-start gap-1 text-left p-4 rounded-sm border bg-[#0C0C0C] cursor-not-allowed opacity-70",
-									TONE[control.tone],
-								)}
-							>
-								<span className="text-sm font-medium">{control.label}</span>
-								<span className="text-xs text-neutral-400 leading-snug">{control.description}</span>
-							</button>
-						</TooltipTrigger>
-						<TooltipContent side="top">{TOOLTIP_COPY}</TooltipContent>
-					</Tooltip>
-				))}
+				{CONTROLS.map((control) => {
+					const label = t(control.labelKey);
+					return (
+						<Tooltip key={control.id}>
+							<TooltipTrigger asChild>
+								<button
+									type="button"
+									disabled
+									aria-disabled="true"
+									aria-label={t("patron.emergency.comingV2Aria", { label })}
+									className={cn(
+										"flex flex-col items-start gap-1 text-left p-4 rounded-sm border bg-[#0C0C0C] cursor-not-allowed opacity-70",
+										TONE[control.tone],
+									)}
+								>
+									<span className="text-sm font-medium">{label}</span>
+									<span className="text-xs text-neutral-400 leading-snug">{t(control.descKey)}</span>
+								</button>
+							</TooltipTrigger>
+							<TooltipContent side="top">{t("patron.emergency.tooltipCopy")}</TooltipContent>
+						</Tooltip>
+					);
+				})}
 			</div>
 		</section>
 	);

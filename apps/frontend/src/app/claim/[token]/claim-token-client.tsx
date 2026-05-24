@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import ClaimFlow from "@/components/claim/claim-flow";
 import ClaimHeader from "@/components/claim/claim-header";
 import { PageShell } from "@/components/ui/page-shell";
+import { useTranslation } from "@/contexts/locale-context";
 import { type ClaimInfo, fetchClaimInfo } from "@/lib/claim-api";
 
 type LoadState =
@@ -16,6 +17,7 @@ type LoadState =
 	| { status: "ready"; token: string; info: ClaimInfo };
 
 export default function ClaimTokenClient({ token }: { token: string }) {
+	const { t } = useTranslation();
 	const [runtimeToken] = useState(() => {
 		if (token && token !== "_") return token;
 		if (typeof window === "undefined") return token;
@@ -47,7 +49,7 @@ export default function ClaimTokenClient({ token }: { token: string }) {
 			<PageShell maxWidth="xl">
 				<ClaimHeader />
 				<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-5 md:p-6 text-center text-sm text-white/50">
-					loading…
+					{t("claim.page.loading")}
 				</div>
 			</PageShell>
 		);
@@ -65,14 +67,17 @@ export default function ClaimTokenClient({ token }: { token: string }) {
 }
 
 function Expired() {
-	return <CenteredMessage title="this claim link has expired or is invalid." sub="ask the agent for a new one." />;
+	const { t } = useTranslation();
+	return <CenteredMessage title={t("claim.page.expiredTitle")} sub={t("claim.page.expiredSub")} />;
 }
 
 function NotFound() {
-	return <CenteredMessage title="claim not found." sub="check that the link was copied correctly." />;
+	const { t } = useTranslation();
+	return <CenteredMessage title={t("claim.page.notFoundTitle")} sub={t("claim.page.notFoundSub")} />;
 }
 
 function CenteredMessage({ title, sub }: { title: string; sub: string }) {
+	const { t } = useTranslation();
 	return (
 		<PageShell maxWidth="xl">
 			<div className="mb-8">
@@ -81,7 +86,7 @@ function CenteredMessage({ title, sub }: { title: string; sub: string }) {
 					className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-white/70 transition-colors"
 				>
 					<ArrowLeft className="w-3 h-3" />
-					waifu.fun
+					{t("claim.page.back")}
 				</Link>
 			</div>
 			<div className="border border-white/10 bg-[#08080a]/70 backdrop-blur-sm rounded-sm p-5 md:p-6 text-center">
