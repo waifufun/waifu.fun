@@ -15,6 +15,7 @@ import { LaunchCard, LaunchCardSkeleton } from "@/components/launches-discover/l
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader, PageShell } from "@/components/ui/page-shell";
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	type FetchLaunchesParams,
 	type LaunchListState,
@@ -22,22 +23,6 @@ import {
 	useLaunchesList,
 } from "@/lib/api/launches-list";
 import { cn } from "@/lib/utils";
-
-const STATE_OPTIONS: Array<{ value: LaunchListState | "all"; label: string }> = [
-	{ value: "all", label: "all" },
-	{ value: "open", label: "open" },
-	{ value: "closed", label: "closed" },
-	{ value: "launched", label: "launched" },
-	{ value: "failed", label: "failed" },
-];
-
-const TIER_OPTIONS: Array<{ value: LaunchListTier | "all"; label: string }> = [
-	{ value: "all", label: "all" },
-	{ value: 80, label: "80" },
-	{ value: 90, label: "90" },
-	{ value: 95, label: "95" },
-	{ value: 98, label: "98" },
-];
 
 function parseStateFilter(v: string | null): LaunchListState | "all" {
 	if (v === "open" || v === "closed" || v === "launched" || v === "failed") return v;
@@ -51,6 +36,21 @@ function parseTierFilter(v: string | null): LaunchListTier | "all" {
 }
 
 function LaunchesInner() {
+	const { t } = useTranslation();
+	const STATE_OPTIONS: Array<{ value: LaunchListState | "all"; label: string }> = [
+		{ value: "all", label: t("discover.filters.statusAll") },
+		{ value: "open", label: t("discover.filters.stateOpen") },
+		{ value: "closed", label: t("discover.filters.stateClosed") },
+		{ value: "launched", label: t("discover.filters.stateLaunched") },
+		{ value: "failed", label: t("discover.filters.stateFailed") },
+	];
+	const TIER_OPTIONS: Array<{ value: LaunchListTier | "all"; label: string }> = [
+		{ value: "all", label: t("discover.filters.statusAll") },
+		{ value: 80, label: "80" },
+		{ value: 90, label: "90" },
+		{ value: 95, label: "95" },
+		{ value: 98, label: "98" },
+	];
 	const searchParams = useSearchParams();
 	const state = parseStateFilter(searchParams?.get("state") ?? null);
 	const tier = parseTierFilter(searchParams?.get("tier") ?? null);
@@ -71,14 +71,14 @@ function LaunchesInner() {
 	return (
 		<PageShell maxWidth="wide">
 			<PageHeader
-				eyebrow="waifu.fun / launches"
-				title="launches"
-				subtitle="open rounds take BNB for 24h, then graduate to PancakeSwap v2."
+				eyebrow={t("discover.launches.pageEyebrow")}
+				title={t("discover.launches.pageTitle")}
+				subtitle={t("discover.launches.pageSubtitle")}
 				right={
 					!showSkeleton ? (
 						<div className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/45">
 							<span className="text-white/80 tabular-nums">{total.toLocaleString()}</span>{" "}
-							<span>round{total === 1 ? "" : "s"}</span>
+							<span>{total === 1 ? t("discover.launches.roundCount") : t("discover.launches.roundCountPlural")}</span>
 						</div>
 					) : (
 						<div className="h-3 w-32 bg-white/5 rounded-sm" />
@@ -86,13 +86,13 @@ function LaunchesInner() {
 				}
 			/>
 
-			<FilterBar state={state} tier={tier} />
+			<FilterBar state={state} tier={tier} stateOptions={STATE_OPTIONS} tierOptions={TIER_OPTIONS} />
 
 			<div className="mt-8">
 				{error ? (
 					<ErrorState
-						title="couldn't load launches."
-						message={error instanceof Error ? error.message : "unknown error"}
+						title={t("discover.launches.errorTitle")}
+						message={error instanceof Error ? error.message : t("discover.launches.errorUnknown")}
 						onRetry={() => void refetch()}
 					/>
 				) : showSkeleton ? (
@@ -106,16 +106,14 @@ function LaunchesInner() {
 					<EmptyState
 						title={
 							state === "all"
-								? "no launches yet."
+								? t("discover.launches.emptyTitle")
 								: state === "open"
-									? "nothing live right now."
-									: `no ${state} rounds.`
+									? t("discover.launches.emptyTitleOpen")
+									: t("discover.launches.emptyTitleStatus", { state })
 						}
-						body={
-							state === "open" ? "be the first, or check back soon." : "try a different filter, or launch your own."
-						}
+						body={state === "open" ? t("discover.launches.emptyBodyOpen") : t("discover.launches.emptyBodyDefault")}
 						ctaHref="/create/wizard"
-						ctaLabel="launch yours"
+						ctaLabel={t("discover.agents.launchYoursCta")}
 					/>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -132,10 +130,15 @@ function LaunchesInner() {
 function FilterBar({
 	state,
 	tier,
+	stateOptions,
+	tierOptions,
 }: {
 	state: LaunchListState | "all";
 	tier: LaunchListTier | "all";
+	stateOptions: Array<{ value: LaunchListState | "all"; label: string }>;
+	tierOptions: Array<{ value: LaunchListTier | "all"; label: string }>;
 }) {
+	const { t } = useTranslation();
 	const baseHref = (next: { state?: string; tier?: string }) => {
 		const sp = new URLSearchParams();
 		const s = next.state ?? (state === "all" ? "" : state);
@@ -148,8 +151,8 @@ function FilterBar({
 
 	return (
 		<div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-white/10 py-3 text-[11px] font-mono uppercase tracking-[0.18em]">
-			<FilterGroup label="state">
-				{STATE_OPTIONS.map((opt) => {
+			<FilterGroup label={t("discover.filters.stateLabel")}>
+				{stateOptions.map((opt) => {
 					const active = state === opt.value;
 					return (
 						<Link
@@ -165,8 +168,8 @@ function FilterBar({
 					);
 				})}
 			</FilterGroup>
-			<FilterGroup label="tier">
-				{TIER_OPTIONS.map((opt) => {
+			<FilterGroup label={t("discover.filters.tierLabel")}>
+				{tierOptions.map((opt) => {
 					const active = tier === opt.value;
 					return (
 						<Link
@@ -196,12 +199,13 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 }
 
 function LaunchesFallback() {
+	const { t } = useTranslation();
 	return (
 		<PageShell maxWidth="wide">
 			<PageHeader
-				eyebrow="waifu.fun / launches"
-				title="launches"
-				subtitle="open rounds take BNB for 24h, then graduate to PancakeSwap v2."
+				eyebrow={t("discover.launches.pageEyebrow")}
+				title={t("discover.launches.pageTitle")}
+				subtitle={t("discover.launches.pageSubtitle")}
 			/>
 			<div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 				{Array.from({ length: 6 }).map((_, i) => (

@@ -5,6 +5,7 @@ import Hero from "@/components/landing/hero";
 import LiveLaunchesRail from "@/components/launches-discover/live-launches-rail";
 import { fetchAgents } from "@/lib/agents-api";
 import type { Metadata } from "next";
+import LandingAgentsSection from "./landing-agents-section";
 
 const SOCIAL_PREVIEW = "/brand/previews/waifu-fun-og.png";
 const SITE_TITLE = "waifu.fun · back agents that earn for you";
@@ -55,25 +56,9 @@ export default async function Home() {
 
 			<ActivityStrip />
 
-			{/* agents grid */}
-			<section id="explore" className="relative z-20 w-full max-w-6xl mx-auto px-5 md:px-8 pt-12 pb-20 scroll-mt-20">
-				<div className="mb-8 flex items-end justify-between">
-					<div>
-						<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-2">
-							waifu.fun / agents
-						</div>
-						<h2 className="text-2xl md:text-3xl leading-tight tracking-tight text-white">live agents</h2>
-					</div>
-					<a
-						href="/agents"
-						className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/50 hover:text-white/90 transition-colors duration-150"
-					>
-						browse all
-					</a>
-				</div>
-
+			<LandingAgentsSection>
 				{agents.length === 0 ? <EmptyState /> : <AgentGrid agents={agents} />}
-			</section>
+			</LandingAgentsSection>
 		</div>
 	);
 }

@@ -23,6 +23,7 @@ import { useWriteContract } from "wagmi";
 import { bsc } from "wagmi/chains";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import type { UserLaunchEntry } from "@/lib/api/portfolio";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 
@@ -39,6 +40,7 @@ type ClaimStatus =
 	| { kind: "error"; message: string };
 
 export default function ClaimAllButton({ entries, onClaimed, onAllDone }: Props) {
+	const { t } = useTranslation();
 	const { writeContractAsync } = useWriteContract();
 	const [status, setStatus] = useState<ClaimStatus>({ kind: "idle" });
 
@@ -83,24 +85,31 @@ export default function ClaimAllButton({ entries, onClaimed, onAllDone }: Props)
 				// short-circuit so we don't keep nagging the user.
 				const message = err instanceof Error ? err.message : "claim failed";
 				if (/reject|denied|user/i.test(message) && failed === eligible.length) {
-					setStatus({ kind: "error", message: "user rejected" });
+					setStatus({ kind: "error", message: t("portfolio.claimAll.userRejected") });
 					return;
 				}
 			}
 		}
 		setStatus({ kind: "done", succeeded, failed });
 		onAllDone?.();
-	}, [writeContractAsync, eligible, onClaimed, onAllDone]);
+	}, [writeContractAsync, eligible, onClaimed, onAllDone, t]);
 
 	const isRunning = status.kind === "running";
 
 	const summary = (() => {
 		if (status.kind === "running") {
-			return `claiming ${status.index} of ${status.total}…`;
+			return t("portfolio.claimAll.summaryRunning", { index: String(status.index), total: String(status.total) });
 		}
 		if (status.kind === "done") {
-			if (status.failed === 0) return `claimed ${status.succeeded} position${status.succeeded === 1 ? "" : "s"}`;
-			return `claimed ${status.succeeded}, ${status.failed} failed`;
+			if (status.failed === 0) {
+				return status.succeeded === 1
+					? t("portfolio.claimAll.summaryDoneSingular", { count: String(status.succeeded) })
+					: t("portfolio.claimAll.summaryDonePlural", { count: String(status.succeeded) });
+			}
+			return t("portfolio.claimAll.summaryPartial", {
+				succeeded: String(status.succeeded),
+				failed: String(status.failed),
+			});
 		}
 		if (status.kind === "error") return status.message;
 		return null;
@@ -118,10 +127,10 @@ export default function ClaimAllButton({ entries, onClaimed, onAllDone }: Props)
 			>
 				{isRunning ? (
 					<>
-						<Loader2 className="size-4 animate-spin" /> claiming
+						<Loader2 className="size-4 animate-spin" /> {t("portfolio.claimAll.claiming")}
 					</>
 				) : (
-					`claim all (${eligible.length})`
+					t("portfolio.claimAll.claimAllLabel", { count: String(eligible.length) })
 				)}
 			</Button>
 			{summary ? (

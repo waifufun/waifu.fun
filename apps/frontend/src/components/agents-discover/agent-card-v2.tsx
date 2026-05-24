@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import { useLaunchByToken } from "@/hooks/use-post-launch";
 import { resolveImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export interface AgentCardV2Props {
 }
 
 export default function AgentCardV2({ agent }: AgentCardV2Props) {
+	const { t } = useTranslation();
 	const graduated = agent.status === "graduated";
 	const pending = agent.status === "pending";
 
@@ -63,7 +65,7 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img
 						src={resolveImageUrl(agent.image) ?? "/brand/icon/icon_on_black_512.png"}
-						alt={`${agent.name} portrait`}
+						alt={t("discover.agentCard.avatarAlt", { name: agent.name })}
 						loading="lazy"
 						className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
 						style={{ transitionTimingFunction: EASE }}
@@ -115,6 +117,7 @@ export default function AgentCardV2({ agent }: AgentCardV2Props) {
 }
 
 function StatRow({ agent }: { agent: AgentListItem }) {
+	const { t } = useTranslation();
 	const mc = agent.marketCap;
 	const vol = agent.volume24h;
 	// holders + treasury not yet on the AgentSummary; surface dash. Wired
@@ -124,13 +127,24 @@ function StatRow({ agent }: { agent: AgentListItem }) {
 
 	return (
 		<div className="grid grid-cols-4 divide-x divide-white/[0.06]">
-			<StatCell label="mc" value={mc !== undefined ? formatUsdShort(mc) : "–"} align="start" />
-			<StatCell label="24h" value={vol !== undefined ? formatUsdShort(vol) : "–"} />
-			<StatCell label="holders" value={holders !== null ? formatNumberShort(holders) : "–"} />
+			<StatCell
+				label={t("discover.agentCard.statMc")}
+				value={mc !== undefined ? formatUsdShort(mc) : "–"}
+				align="start"
+			/>
+			<StatCell label={t("discover.agentCard.stat24h")} value={vol !== undefined ? formatUsdShort(vol) : "–"} />
+			<StatCell
+				label={t("discover.agentCard.statHolders")}
+				value={holders !== null ? formatNumberShort(holders) : "–"}
+			/>
 			{treasury !== null ? (
-				<StatCell label="treasury" value={`${(treasury as number).toFixed(2)}`} suffix="bnb" />
+				<StatCell
+					label={t("discover.agentCard.statTreasury")}
+					value={`${(treasury as number).toFixed(2)}`}
+					suffix={t("discover.agentCard.statBnb")}
+				/>
 			) : (
-				<StatCell label="treasury" value="–" />
+				<StatCell label={t("discover.agentCard.statTreasury")} value="–" />
 			)}
 		</div>
 	);
@@ -161,7 +175,12 @@ function StatCell({
 }
 
 function StateDot({ graduated, pending }: { graduated: boolean; pending: boolean }) {
-	const label = pending ? "pending" : graduated ? "live on dex" : "on curve";
+	const { t } = useTranslation();
+	const label = pending
+		? t("discover.agentCard.pending")
+		: graduated
+			? t("discover.agentCard.liveOnDex")
+			: t("discover.agentCard.onCurve");
 	const dot = pending ? "bg-white/25" : graduated ? "bg-white/45" : "bg-[#00ff87] animate-pulse";
 	return (
 		<span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
@@ -172,6 +191,7 @@ function StateDot({ graduated, pending }: { graduated: boolean; pending: boolean
 }
 
 function TokenAddressRow({ address }: { address: string }) {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 
 	const copy = useCallback(
@@ -200,7 +220,7 @@ function TokenAddressRow({ address }: { address: string }) {
 			<button
 				type="button"
 				onClick={copy}
-				aria-label={copied ? "copied" : "copy token address"}
+				aria-label={copied ? t("discover.agentCard.copied") : t("discover.agentCard.copy")}
 				className={cn(
 					"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border transition-colors duration-200",
 					copied
@@ -215,11 +235,12 @@ function TokenAddressRow({ address }: { address: string }) {
 }
 
 function StatusBadge({ status }: { status: AgentListItem["status"] }) {
+	const { t } = useTranslation();
 	if (status === "graduated") {
 		return (
 			<span className="inline-flex h-5 items-center gap-1.5 rounded-sm border border-white/20 bg-black/70 px-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/70 backdrop-blur-sm">
 				<span className="h-1 w-1 rounded-full bg-white/50" />
-				graduated
+				{t("discover.agentCard.graduated")}
 			</span>
 		);
 	}
@@ -227,14 +248,14 @@ function StatusBadge({ status }: { status: AgentListItem["status"] }) {
 		return (
 			<span className="inline-flex h-5 items-center gap-1.5 rounded-sm border border-white/15 bg-black/70 px-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-white/40 backdrop-blur-sm">
 				<span className="h-1 w-1 rounded-full bg-white/30" />
-				pending
+				{t("discover.agentCard.pending")}
 			</span>
 		);
 	}
 	return (
 		<span className="inline-flex h-5 items-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-black/70 px-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#00ff87] backdrop-blur-sm">
 			<span className="h-1 w-1 animate-pulse rounded-full bg-[#00ff87]" />
-			active
+			{t("discover.agentCard.active")}
 		</span>
 	);
 }

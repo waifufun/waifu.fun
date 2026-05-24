@@ -1,18 +1,11 @@
 import AgentCardV2Skeleton from "@/components/agents-discover/agent-card-v2-skeleton";
+import LoadingShell from "./loading-shell";
 
 export default function Loading() {
 	return (
 		<div className="min-h-screen text-white">
 			<div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-10 pb-24">
-				<div className="mb-8">
-					<div className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-3">
-						waifu.fun / agents
-					</div>
-					<div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-						<h1 className="text-3xl md:text-4xl leading-tight tracking-tight">agents</h1>
-						<div className="h-3 w-48 bg-white/5 rounded-sm" />
-					</div>
-				</div>
+				<LoadingShell />
 				<div className="h-12 border-y border-white/10" />
 				<div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					{Array.from({ length: 9 }).map((_, i) => (

@@ -6,11 +6,14 @@
  *  - `default`: full card with image, name, ticker, tier, progress, deposits.
  *  - `compact`: rail-friendly, hides description and trims padding.
  */
+"use client";
+
 import { Users } from "lucide-react";
 import Link from "next/link";
 
 import { LaunchCountdown } from "@/components/launch-page/launch-countdown";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	type LaunchListItem,
 	getLaunchImage,
@@ -55,11 +58,12 @@ const STATE_DOT: Record<string, string> = {
 };
 
 export function LaunchCard({ launch, variant = "default" }: Props) {
+	const { t } = useTranslation();
 	const compact = variant === "compact";
 	const name = getLaunchName(launch);
 	const symbol = getLaunchSymbol(launch);
 	const image = getLaunchImage(launch);
-	const altText = `${name} logo`;
+	const altText = t("discover.launchCard.logoAlt", { name });
 
 	const deposited = safeBigInt(launch.totalDeposited);
 	const cap = safeBigInt(launch.capacity);
@@ -113,7 +117,7 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 				{launch.state === "open" && cap > 0n ? (
 					<div className={cn("mt-auto px-4 pb-3 pt-1", compact && "px-3 pb-2.5")}>
 						<div className="flex items-baseline justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-white/45 mb-1.5">
-							<span className="tabular-nums">{pct.toFixed(1)}% raised</span>
+							<span className="tabular-nums">{t("discover.launchCard.pctRaised", { pct: pct.toFixed(1) })}</span>
 							<LaunchCountdown
 								closeTimestampSec={launch.closeTimestamp ?? null}
 								compact
@@ -128,12 +132,12 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 					<div className={cn("mt-auto px-4 pb-3", compact && "px-3 pb-2.5")}>
 						<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
 							{launch.state === "launched"
-								? "live on dex"
+								? t("discover.launchCard.liveOnDex")
 								: launch.state === "closed"
-									? "awaiting bundle"
+									? t("discover.launchCard.awaitingBundle")
 									: launch.state === "failed"
-										? "refundable"
-										: "view details"}
+										? t("discover.launchCard.refundable")
+										: t("discover.launchCard.viewDetails")}
 						</div>
 					</div>
 				)}
@@ -143,6 +147,7 @@ export function LaunchCard({ launch, variant = "default" }: Props) {
 }
 
 function LaunchAvatar({ image, alt, compact }: { image: string | null; alt: string; compact: boolean }) {
+	const { t } = useTranslation();
 	const size = compact ? "w-10 h-10" : "w-12 h-12";
 	if (image) {
 		return (
@@ -161,7 +166,7 @@ function LaunchAvatar({ image, alt, compact }: { image: string | null; alt: stri
 				"shrink-0 rounded-sm border border-white/10 bg-[#0a0a0c] flex items-center justify-center text-[9px] font-mono text-white/30 uppercase tracking-[0.18em]",
 			)}
 		>
-			no logo
+			{t("discover.launchCard.noLogo")}
 		</div>
 	);
 }

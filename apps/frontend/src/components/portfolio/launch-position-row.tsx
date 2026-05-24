@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { UserLaunchEntry } from "@/lib/api/portfolio";
 import { formatBnb, formatTokens } from "@/lib/portfolio/format";
 
@@ -26,13 +27,14 @@ const STATE_BADGE_STYLES: Record<string, string> = {
 };
 
 export default function LaunchPositionRow({ entry }: Props) {
+	const { t } = useTranslation();
 	const { launch, position } = entry;
 	const symbol =
 		(typeof launch.metadata?.symbol === "string" ? (launch.metadata.symbol as string) : null) ??
 		launch.token.slice(0, 6);
 	const name =
 		(typeof launch.metadata?.name === "string" ? (launch.metadata.name as string) : null) ??
-		`launch ${launch.id.slice(0, 8)}`;
+		t("portfolio.row.launchFallbackName", { idShort: launch.id.slice(0, 8) });
 
 	// Backend is the authoritative source for claimable; the parent page
 	// also runs a wagmi multicall fallback when needed and refreshes after
@@ -66,17 +68,21 @@ export default function LaunchPositionRow({ entry }: Props) {
 							{launch.state}
 						</span>
 						<span className="text-[10px] font-mono text-neutral-500 uppercase tracking-[0.18em]">
-							tier {launch.tier}
+							{t("portfolio.row.tierLabel", { tier: String(launch.tier) })}
 						</span>
 					</div>
 				</div>
 				<div className="grid grid-cols-2 gap-3">
 					<div>
-						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
+						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+							{t("portfolio.row.deposited")}
+						</div>
 						<div className="text-white tabular-nums">{formatBnb(position.deposited)} BNB</div>
 					</div>
 					<div className="text-right">
-						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">claimable</div>
+						<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+							{t("portfolio.row.claimable")}
+						</div>
 						<div className={`tabular-nums ${claimableWei > 0n ? "text-[#00ff87]" : "text-neutral-400"}`}>
 							{formatTokens(claimableWei)}
 						</div>
@@ -85,10 +91,13 @@ export default function LaunchPositionRow({ entry }: Props) {
 				{launch.state === "launched" && position.totalAllocation ? (
 					<div>
 						<div className="flex items-baseline justify-between text-[10px] font-mono text-neutral-500 uppercase tracking-[0.18em]">
-							<span>vesting</span>
+							<span>{t("portfolio.row.vesting")}</span>
 							<span className="tabular-nums text-neutral-300">{vestingPct}%</span>
 						</div>
-						<div className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm" aria-label="vesting progress">
+						<div
+							className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm"
+							aria-label={t("portfolio.row.vestingAria")}
+						>
 							<div
 								className="h-full bg-[#00ff87]/70 transition-[width] duration-500"
 								style={{ width: `${vestingPct}%` }}
@@ -100,7 +109,7 @@ export default function LaunchPositionRow({ entry }: Props) {
 					href={`/launch/${encodeURIComponent(launch.id)}`}
 					className="self-end text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-400 hover:text-[#00ff87] transition-colors"
 				>
-					view &rarr;
+					{t("portfolio.row.view")} &rarr;
 				</Link>
 			</div>
 
@@ -120,22 +129,29 @@ export default function LaunchPositionRow({ entry }: Props) {
 						{launch.state}
 					</span>
 					<div className="text-[10px] font-mono text-neutral-500 mt-1 uppercase tracking-[0.18em]">
-						tier {launch.tier}
+						{t("portfolio.row.tierLabel", { tier: String(launch.tier) })}
 					</div>
 				</div>
 
 				<div className="col-span-2">
-					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">deposited</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+						{t("portfolio.row.deposited")}
+					</div>
 					<div className="text-white tabular-nums">{formatBnb(position.deposited)} BNB</div>
 				</div>
 
 				<div className="col-span-2">
-					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">allocation</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+						{t("portfolio.row.allocation")}
+					</div>
 					<div className="text-white tabular-nums">
 						{position.totalAllocation ? `${formatTokens(position.totalAllocation)}` : "–"}
 					</div>
 					{launch.state === "launched" ? (
-						<div className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm" aria-label="vesting progress">
+						<div
+							className="mt-1 h-1 w-full overflow-hidden bg-[#141414] rounded-sm"
+							aria-label={t("portfolio.row.vestingAria")}
+						>
 							<div
 								className="h-full bg-[#00ff87]/70 transition-[width] duration-500"
 								style={{ width: `${vestingPct}%` }}
@@ -145,7 +161,9 @@ export default function LaunchPositionRow({ entry }: Props) {
 				</div>
 
 				<div className="col-span-2 text-right">
-					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">claimable</div>
+					<div className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+						{t("portfolio.row.claimable")}
+					</div>
 					<div className={`tabular-nums ${claimableWei > 0n ? "text-[#00ff87]" : "text-neutral-400"}`}>
 						{formatTokens(claimableWei)}
 					</div>
@@ -156,7 +174,7 @@ export default function LaunchPositionRow({ entry }: Props) {
 						href={`/launch/${encodeURIComponent(launch.id)}`}
 						className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-400 hover:text-[#00ff87] transition-colors"
 					>
-						view &rarr;
+						{t("portfolio.row.view")} &rarr;
 					</Link>
 				</div>
 			</div>

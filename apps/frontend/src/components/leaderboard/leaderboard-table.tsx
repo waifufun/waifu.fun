@@ -1,6 +1,7 @@
 "use client";
 
 import { Hairline, StatPill } from "@/components/agent-home/wave-t/_primitives";
+import { useTranslation } from "@/contexts/locale-context";
 import {
 	type LeaderboardEntry,
 	type LeaderboardStatus,
@@ -25,12 +26,13 @@ function hrefFor(entry: LeaderboardEntry): string {
 // Wave T avatar: 24px rounded square, soft border, mono fallback letter.
 // Matches the avatar grammar used by other agent rows in the app.
 function AgentAvatar({ entry }: { entry: LeaderboardEntry }) {
+	const { t } = useTranslation();
 	const avatarUrl = resolveImageUrl(entry.avatar);
 	return (
 		<span className="block h-6 w-6 shrink-0 overflow-hidden rounded-sm border border-[var(--border-soft)] bg-[var(--bg-panel-hi)]">
 			{avatarUrl ? (
 				<Image
-					alt={`${entry.ticker || "agent"} avatar`}
+					alt={t("leaderboard.avatarAlt", { ticker: entry.ticker || "agent" })}
 					className="h-full w-full object-cover"
 					height={24}
 					src={avatarUrl}
@@ -54,7 +56,8 @@ const STATUS_TONE: Record<LeaderboardStatus, "accent" | "neutral" | "negative" |
 };
 
 function StatusTag({ status }: { status: LeaderboardStatus }) {
-	return <StatPill tone={STATUS_TONE[status]}>{status}</StatPill>;
+	const { t } = useTranslation();
+	return <StatPill tone={STATUS_TONE[status]}>{t(`leaderboard.status.${status}`)}</StatPill>;
 }
 
 // Runway colorway: accent green when burn is healthy, neutral when no burn
@@ -118,6 +121,7 @@ function Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
 }
 
 function MobileRow({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
+	const { t } = useTranslation();
 	return (
 		<Link
 			className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--bg-panel-hi)]"
@@ -136,7 +140,9 @@ function MobileRow({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
 				<span className="truncate text-[11px] text-[var(--text-secondary)]">{entry.name}</span>
 			</span>
 			<span className="flex flex-col items-end gap-0.5">
-				<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">runway</span>
+				<span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+					{t("leaderboard.runwayMobileLabel")}
+				</span>
 				<span className={cn("font-mono text-[12px] tabular-nums", runwayClass(entry))}>
 					{formatRunway(entry.runwayDays)}
 				</span>
@@ -146,34 +152,35 @@ function MobileRow({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
 }
 
 export default function LeaderboardTable({ entries }: Props) {
+	const { t } = useTranslation();
 	return (
 		<>
 			{/* desktop / tablet: dense table, hairlines instead of stripes */}
 			<div className="hidden md:block">
 				<table className="w-full border-separate border-spacing-0">
-					<caption className="sr-only">agents ranked by runway, treasury, and daily burn.</caption>
+					<caption className="sr-only">{t("leaderboard.tableCaption")}</caption>
 					<thead>
 						<tr className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
 							<th className="w-10 py-2.5 pl-4 pr-2 text-left font-normal" scope="col">
 								#
 							</th>
 							<th className="py-2.5 pr-2 text-left font-normal" scope="col">
-								agent
+								{t("leaderboard.headers.agent")}
 							</th>
 							<th className="py-2.5 pr-2 text-right font-normal" scope="col">
-								treasury
+								{t("leaderboard.headers.treasury")}
 							</th>
 							<th className="hidden py-2.5 pr-2 text-right font-normal lg:table-cell" scope="col">
-								burn
+								{t("leaderboard.headers.burn")}
 							</th>
 							<th className="py-2.5 pr-2 text-right font-normal" scope="col">
-								runway
+								{t("leaderboard.headers.runway")}
 							</th>
 							<th className="hidden py-2.5 pr-2 text-left font-normal md:table-cell" scope="col">
-								status
+								{t("leaderboard.headers.status")}
 							</th>
 							<th className="hidden py-2.5 pr-4 text-right font-normal xl:table-cell" scope="col">
-								alive
+								{t("leaderboard.headers.alive")}
 							</th>
 						</tr>
 						<tr aria-hidden>

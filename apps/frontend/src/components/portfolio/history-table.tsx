@@ -7,9 +7,12 @@
  * "–". Failed launches show the deposit as a loss (the vault refunds
  * net of penalty when in OPEN; failures past CLOSED return nothing).
  */
+"use client";
+
 import Link from "next/link";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { useTranslation } from "@/contexts/locale-context";
 import type { UserLaunchEntry } from "@/lib/api/portfolio";
 import { formatBnb, formatBnbDelta, impliedBnbValue } from "@/lib/portfolio/format";
 
@@ -62,13 +65,14 @@ function deriveRealized(entry: UserLaunchEntry): {
 }
 
 export default function HistoryTable({ entries }: Props) {
+	const { t } = useTranslation();
 	if (entries.length === 0) {
 		return (
 			<EmptyState
-				title="no history yet."
-				body="back a round and your positions show up here."
+				title={t("portfolio.history.emptyTitle")}
+				body={t("portfolio.history.emptyBody")}
 				ctaHref="/launches"
-				ctaLabel="browse launches"
+				ctaLabel={t("portfolio.history.browseLaunches")}
 				tone="compact"
 			/>
 		);
@@ -77,11 +81,11 @@ export default function HistoryTable({ entries }: Props) {
 	return (
 		<div className="border border-stroke-strong rounded-sm overflow-hidden">
 			<div className="grid grid-cols-12 gap-3 bg-[#080808] px-4 py-2 text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500">
-				<div className="col-span-4">launch</div>
-				<div className="col-span-2">state</div>
-				<div className="col-span-2 text-right md:text-left">invested</div>
-				<div className="col-span-2 hidden md:block">realized</div>
-				<div className="col-span-2 text-right">p&l</div>
+				<div className="col-span-4">{t("portfolio.history.colLaunch")}</div>
+				<div className="col-span-2">{t("portfolio.history.colState")}</div>
+				<div className="col-span-2 text-right md:text-left">{t("portfolio.history.colInvested")}</div>
+				<div className="col-span-2 hidden md:block">{t("portfolio.history.colRealized")}</div>
+				<div className="col-span-2 text-right">{t("portfolio.history.colPnl")}</div>
 			</div>
 			{entries.map((entry) => {
 				const { launch } = entry;
@@ -90,7 +94,7 @@ export default function HistoryTable({ entries }: Props) {
 					launch.token.slice(0, 6);
 				const name =
 					(typeof launch.metadata?.name === "string" ? (launch.metadata.name as string) : null) ??
-					`launch ${launch.id.slice(0, 8)}`;
+					t("portfolio.history.launchFallbackName", { idShort: launch.id.slice(0, 8) });
 				const { investedWei, realizedWei, pnlWei } = deriveRealized(entry);
 
 				const pnlTone = pnlWei === null ? "neutral" : pnlWei >= 0n ? "positive" : "negative";
