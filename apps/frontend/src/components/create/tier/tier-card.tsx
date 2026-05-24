@@ -1,6 +1,7 @@
 "use client";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useId } from "react";
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function TierCard({ tier, selected, onSelect }: Props) {
+	const { t } = useTranslation();
 	const headingId = useId();
 	const recommended = tier.id === 90;
 	const aggressive = tier.id === 98;
@@ -44,12 +46,12 @@ export function TierCard({ tier, selected, onSelect }: Props) {
 				<div className="flex items-center gap-1.5 flex-wrap justify-end">
 					{recommended ? (
 						<span className="text-[9px] font-mono uppercase tracking-[0.24em] text-accent border border-accent/40 px-1.5 py-0.5">
-							recommended
+							{t("wizard.tier.recommended")}
 						</span>
 					) : null}
 					{aggressive ? (
 						<span className="text-[9px] font-mono uppercase tracking-[0.24em] text-neutral-300 border border-white/20 px-1.5 py-0.5">
-							degen
+							{t("wizard.tier.degen")}
 						</span>
 					) : null}
 					{selected ? <CheckIcon className="h-3.5 w-3.5 text-accent" /> : null}

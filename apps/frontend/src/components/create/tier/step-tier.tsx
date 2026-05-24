@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { useWizard } from "../wizard-state";
 import { EconomicsPreview } from "./economics-preview";
 import { TierCard } from "./tier-card";
@@ -14,6 +15,7 @@ import { TIERS, type TierId, getTier } from "./tier-data";
  * wizard state under `launch.tierId`.
  */
 export default function StepTier() {
+	const { t } = useTranslation();
 	const { state, patchLaunch } = useWizard();
 	const selectedId = state.launch.tierId;
 	const selected = getTier(selectedId);
@@ -22,11 +24,11 @@ export default function StepTier() {
 		<div className="flex flex-col gap-6">
 			<div>
 				<div className="flex items-baseline justify-between mb-3">
-					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">tiers</p>
-					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">BASED recommended</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-neutral-500">{t("wizard.tier.tiers")}</p>
+					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">{t("wizard.tier.basedRecommended")}</p>
 				</div>
 				<p className="text-[12px] text-neutral-400 mb-4 leading-relaxed max-w-2xl">
-					tiers set the math. higher tier, bigger v2 buy, bigger burn, higher projected mc. start with BASED if you're
+					{t("wizard.tier.tiers")} set the math. higher tier, bigger v2 buy, bigger burn, higher projected mc. start with BASED if you're
 					not sure.
 				</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
