@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { ApiError, getAgentByToken, restartAgent, stopAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,21 +11,45 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 
 /* ── status config ── */
-const STATUS_CFG: Record<string, { label: string; dot: string; tone: string }> = {
-	queued: { label: "queued", dot: "bg-sky-400", tone: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
+const STATUS_CFG: Record<string, { labelKey: string; dot: string; tone: string }> = {
+	queued: {
+		labelKey: "token.agentPanel.status.queued",
+		dot: "bg-sky-400",
+		tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",
+	},
 	provisioning: {
-		label: "provisioning",
+		labelKey: "token.agentPanel.status.provisioning",
 		dot: "bg-sky-400 animate-pulse",
 		tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",
 	},
-	running: { label: "running", dot: "bg-[#00ff87]", tone: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]" },
-	stopped: { label: "stopped", dot: "bg-amber-400", tone: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
-	failed: { label: "failed", dot: "bg-red-400", tone: "border-red-500/30 bg-red-500/10 text-red-300" },
-	deleted: { label: "deleted", dot: "bg-zinc-400", tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
-	unknown: { label: "unknown", dot: "bg-zinc-400", tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
+	running: {
+		labelKey: "token.agentPanel.status.running",
+		dot: "bg-[#00ff87]",
+		tone: "border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]",
+	},
+	stopped: {
+		labelKey: "token.agentPanel.status.stopped",
+		dot: "bg-amber-400",
+		tone: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+	},
+	failed: {
+		labelKey: "token.agentPanel.status.failed",
+		dot: "bg-red-400",
+		tone: "border-red-500/30 bg-red-500/10 text-red-300",
+	},
+	deleted: {
+		labelKey: "token.agentPanel.status.deleted",
+		dot: "bg-zinc-400",
+		tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
+	},
+	unknown: {
+		labelKey: "token.agentPanel.status.unknown",
+		dot: "bg-zinc-400",
+		tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
+	},
 };
-const DEFAULT_CFG: { label: string; dot: string; tone: string } = {
-	label: "unknown",
+const DEFAULT_CFG: { labelKey: string; dot: string; tone: string } = {
+	labelKey: "token.agentPanel.status.unknown",
 	dot: "bg-zinc-400",
 	tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
 };
@@ -106,6 +131,7 @@ function getPublicAgentSnapshot(token: IToken): PublicAgentSnapshot {
 }
 
 function StatusBadge({ status }: { status: string }) {
+	const { t } = useTranslation();
 	const cfg = STATUS_CFG[status] ?? DEFAULT_CFG;
 	return (
 		<span
@@ -115,7 +141,7 @@ function StatusBadge({ status }: { status: string }) {
 			)}
 		>
 			<span className={cn("size-1.5 rounded-full", cfg.dot)} />
-			{cfg.label}
+			{t(cfg.labelKey)}
 		</span>
 	);
 }
@@ -150,6 +176,7 @@ function ReadOnlyAgentPanel({
 	snapshot: PublicAgentSnapshot;
 	requiresCreatorAuth?: boolean;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
 			<div className="flex items-center gap-2 flex-wrap">
@@ -159,28 +186,31 @@ function ReadOnlyAgentPanel({
 				) : (
 					<span className="inline-flex items-center gap-1.5 rounded-sm border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] text-[#a1a1aa]">
 						<Lock className="size-3" />
-						creator-only
+						{t("token.agentPanel.creatorOnly")}
 					</span>
 				)}
 				{snapshot.lifecycle && (
 					<span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">
-						lifecycle: {snapshot.lifecycle}
+						{t("token.agentPanel.lifecyclePrefix", { state: snapshot.lifecycle })}
 					</span>
 				)}
-				<span className="ml-auto text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">public view</span>
+				<span className="ml-auto text-[10px] font-mono uppercase tracking-[0.18em] text-[#52525b]">
+					{t("token.agentPanel.publicView")}
+				</span>
 			</div>
 			<p className="mt-2 text-xs text-[#71717a]">
 				{requiresCreatorAuth
-					? "Finish creator auth to load restart and stop controls."
+					? t("token.agentPanel.finishCreatorAuth")
 					: snapshot.hasAgent
-						? "This token has a creator-managed runtime. Public viewers can see the status here, but controls stay private."
-						: "Runtime controls live here for the creator after an agent is deployed."}
+						? t("token.agentPanel.privateRuntime")
+						: t("token.agentPanel.runtimeLivesHere")}
 			</p>
 		</div>
 	);
 }
 
 export default function AgentPanel({ token, isCreator = false }: { token: IToken; isCreator?: boolean }) {
+	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const publicAgent = useMemo(() => getPublicAgentSnapshot(token), [token]);
 
@@ -208,10 +238,10 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 			return restartAgent(agent.agentId);
 		},
 		onSuccess: () => {
-			toast.success("restart requested");
+			toast.success(t("token.agentPanel.toast.restartRequested"));
 			refresh();
 		},
-		onError: (e: Error) => toast.error(e.message || "restart failed"),
+		onError: (e: Error) => toast.error(e.message || t("token.agentPanel.toast.restartFailed")),
 	});
 
 	const stopMut = useMutation({
@@ -220,10 +250,10 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 			return stopAgent(agent.agentId);
 		},
 		onSuccess: () => {
-			toast.success("agent stopped");
+			toast.success(t("token.agentPanel.toast.stopped"));
 			refresh();
 		},
-		onError: (e: Error) => toast.error(e.message || "stop failed"),
+		onError: (e: Error) => toast.error(e.message || t("token.agentPanel.toast.stopFailed")),
 	});
 
 	const busy = restartMut.isPending || stopMut.isPending;
@@ -239,7 +269,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
 				<div className="flex items-center gap-2 text-xs text-[#71717a]">
 					<Loader2 className="size-3.5 animate-spin text-[#00ff87]" />
-					<span className="font-mono uppercase tracking-wider">checking agent…</span>
+					<span className="font-mono uppercase tracking-wider">{t("token.agentPanel.checkingAgent")}</span>
 				</div>
 			</div>
 		);
@@ -251,13 +281,13 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3">
 				<div className="flex items-center gap-2 text-xs text-[#71717a]">
 					<AlertCircle className="size-3.5 text-red-400" />
-					<span>could not check agent status.</span>
+					<span>{t("token.agentPanel.couldNotCheck")}</span>
 					<button
 						type="button"
 						onClick={refresh}
 						className="text-[#00ff87] hover:underline font-mono uppercase text-[10px]"
 					>
-						retry
+						{t("token.agentPanel.retry")}
 					</button>
 				</div>
 			</div>
@@ -269,7 +299,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 		return (
 			<div className="rounded-sm border border-[rgba(255,255,255,0.06)] bg-[#111114] p-3 flex items-center gap-3">
 				<Bot className="size-4 text-[#00ff87] shrink-0" />
-				<span className="text-xs text-[#71717a]">no agent running. agents launch themselves via the api.</span>
+				<span className="text-xs text-[#71717a]">{t("token.agentPanel.noAgentRunning")}</span>
 			</div>
 		);
 	}
@@ -298,7 +328,7 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 								className="h-7 px-2 text-[10px] font-mono uppercase text-[#a1a1aa] hover:text-[#00ff87]"
 							>
 								{restartMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
-								restart
+								{t("token.agentPanel.restart")}
 							</Button>
 						)}
 						{canStop && (
@@ -310,13 +340,13 @@ export default function AgentPanel({ token, isCreator = false }: { token: IToken
 								className="h-7 px-2 text-[10px] font-mono uppercase text-amber-300 hover:text-amber-200 border-amber-500/20"
 							>
 								{stopMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <Square className="size-3" />}
-								stop
+								{t("token.agentPanel.stop")}
 							</Button>
 						)}
 						{isProvisioning && (
 							<span className="flex items-center gap-1.5 text-[10px] font-mono text-sky-300">
 								<Loader2 className="size-3 animate-spin" />
-								provisioning…
+								{t("token.agentPanel.provisioningSuffix")}
 							</span>
 						)}
 					</div>

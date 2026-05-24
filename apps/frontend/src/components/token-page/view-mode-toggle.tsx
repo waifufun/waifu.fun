@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { Bot, ChartCandlestick } from "lucide-react";
 
@@ -7,17 +8,17 @@ export type TokenDetailViewMode = "agent" | "market";
 
 const MODES: Array<{
 	value: TokenDetailViewMode;
-	label: string;
+	labelKey: string;
 	icon: typeof Bot;
 }> = [
 	{
 		value: "agent",
-		label: "agent",
+		labelKey: "token.viewMode.agent",
 		icon: Bot,
 	},
 	{
 		value: "market",
-		label: "market",
+		labelKey: "token.viewMode.market",
 		icon: ChartCandlestick,
 	},
 ];
@@ -29,6 +30,7 @@ export default function ViewModeToggle({
 	value: TokenDetailViewMode;
 	onChange: (value: TokenDetailViewMode) => void;
 }) {
+	const { t } = useTranslation();
 	return (
 		<div className="inline-flex items-center rounded-sm border border-white/[0.06] bg-[#08080a] p-0.5">
 			{MODES.map((mode) => {
@@ -48,7 +50,7 @@ export default function ViewModeToggle({
 						aria-pressed={active}
 					>
 						<Icon className="size-3" />
-						{mode.label}
+						{t(mode.labelKey)}
 					</button>
 				);
 			})}

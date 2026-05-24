@@ -1,6 +1,7 @@
 "use client";
 
 import type { AgentLifecycleStatus } from "@/components/token-page/agent-profile";
+import { useTranslation } from "@/contexts/locale-context";
 import { cn, fromNow } from "@/lib/utils";
 import type { IToken } from "@waifufun/types";
 import { motion } from "framer-motion";
@@ -13,36 +14,36 @@ type RuntimeToken = IToken & {
 
 const presenceConfig = {
 	bonding: {
-		label: "emerging",
-		description: "still on the bonding curve",
+		labelKey: "token.presence.bonding.label",
+		descKey: "token.presence.bonding.description",
 		className: "border-amber-500/20 bg-amber-500/[0.04]",
 		iconClassName: "text-amber-400",
 		accentColor: "amber",
 	},
 	active: {
-		label: "online",
-		description: "active and responsive",
+		labelKey: "token.presence.active.label",
+		descKey: "token.presence.active.description",
 		className: "border-[#00ff87]/20 bg-[#00ff87]/[0.04]",
 		iconClassName: "text-[#00ff87]",
 		accentColor: "green",
 	},
 	dormant: {
-		label: "idle",
-		description: "graduated but quiet",
+		labelKey: "token.presence.dormant.label",
+		descKey: "token.presence.dormant.description",
 		className: "border-zinc-500/20 bg-zinc-500/[0.04]",
 		iconClassName: "text-zinc-400",
 		accentColor: "zinc",
 	},
 	imported: {
-		label: "tracked",
-		description: "external market listing",
+		labelKey: "token.presence.imported.label",
+		descKey: "token.presence.imported.description",
 		className: "border-sky-500/20 bg-sky-500/[0.04]",
 		iconClassName: "text-sky-400",
 		accentColor: "sky",
 	},
 	migrated: {
-		label: "graduated",
-		description: "trading on external pool",
+		labelKey: "token.presence.migrated.label",
+		descKey: "token.presence.migrated.description",
 		className: "border-emerald-500/20 bg-emerald-500/[0.04]",
 		iconClassName: "text-emerald-400",
 		accentColor: "green",
@@ -104,6 +105,7 @@ export default function AgentStatusVisual({
 	token: IToken;
 	marketDataSource?: "dexscreener" | null;
 }) {
+	const { t } = useTranslation();
 	const config = presenceConfig[status.state];
 	const runtimeToken = token as RuntimeToken;
 	const isLive = status.state === "active" || (status.isExternalMarket && status.hasRecentActivity);
@@ -116,16 +118,16 @@ export default function AgentStatusVisual({
 	// Market context
 	const marketFeed = status.isExternalMarket
 		? marketDataSource === "dexscreener"
-			? "live external"
-			: "indexed"
-		: "bonding curve";
+			? t("token.statusVisual.feedLiveExternal")
+			: t("token.statusVisual.feedIndexed")
+		: t("token.statusVisual.feedBondingCurve");
 
 	// Curve status for bonding state
 	const curveStatus =
 		status.state === "bonding"
-			? `${Math.round(curveProgress)}% complete`
+			? t("token.statusVisual.curvePercent", { pct: String(Math.round(curveProgress)) })
 			: status.hasCompletedBondingCurve
-				? "graduated"
+				? t("token.statusVisual.curveGraduated")
 				: null;
 
 	return (
@@ -143,9 +145,9 @@ export default function AgentStatusVisual({
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">
 								<span className={cn("text-sm font-semibold lowercase tracking-wide", config.iconClassName)}>
-									{config.label}
+									{t(config.labelKey)}
 								</span>
-								<span className="text-xs text-current/70">{config.description}</span>
+								<span className="text-xs text-current/70">{t(config.descKey)}</span>
 							</div>
 						</div>
 					</div>
@@ -159,33 +161,45 @@ export default function AgentStatusVisual({
 				{/* Activity signals - horizontal layout for compactness */}
 				<div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
 					<ActivityIndicator
-						label="status"
-						value={status.hasRecentActivity ? "recent activity" : "quiet"}
+						label={t("token.statusVisual.statusLabel")}
+						value={
+							status.hasRecentActivity ? t("token.statusVisual.recentActivity") : t("token.statusVisual.quiet")
+						}
 						icon={Activity}
 					/>
 
 					{lastHeartbeat ? (
-						<ActivityIndicator label="heartbeat" value={lastHeartbeat} icon={Radio} />
+						<ActivityIndicator label={t("token.statusVisual.heartbeatLabel")} value={lastHeartbeat} icon={Radio} />
 					) : (
-						<ActivityIndicator label="heartbeat" value="not exposed" icon={Radio} muted />
+						<ActivityIndicator
+							label={t("token.statusVisual.heartbeatLabel")}
+							value={t("token.statusVisual.notExposed")}
+							icon={Radio}
+							muted
+						/>
 					)}
 
 					{lastActivity ? (
-						<ActivityIndicator label="last seen" value={lastActivity} icon={Clock} />
+						<ActivityIndicator label={t("token.statusVisual.lastSeenLabel")} value={lastActivity} icon={Clock} />
 					) : curveStatus ? (
-						<ActivityIndicator label="curve" value={curveStatus} icon={Zap} />
+						<ActivityIndicator label={t("token.statusVisual.curveLabel")} value={curveStatus} icon={Zap} />
 					) : (
-						<ActivityIndicator label="last seen" value="unknown" icon={Clock} muted />
+						<ActivityIndicator
+							label={t("token.statusVisual.lastSeenLabel")}
+							value={t("token.statusVisual.unknown")}
+							icon={Clock}
+							muted
+						/>
 					)}
 
 					<ActivityIndicator
-						label="data"
+						label={t("token.statusVisual.dataLabel")}
 						value={
 							status.isExternalMarket
 								? marketDataSource === "dexscreener"
-									? "live feed"
-									: "waiting for feed"
-								: "platform data"
+									? t("token.statusVisual.liveFeed")
+									: t("token.statusVisual.waitingForFeed")
+								: t("token.statusVisual.platformData")
 						}
 						icon={Radio}
 						muted={status.isExternalMarket && marketDataSource !== "dexscreener"}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import useAddress from "@/hooks/use-address";
 import {
 	type OwnerTokenRuntime,
@@ -47,26 +48,6 @@ function StatusPill({ label, tone }: { label: string; tone?: string | undefined 
 	);
 }
 
-function fmtErr(error?: Error) {
-	const m = error?.message?.trim();
-	if (!m) return "Owner control-plane unavailable.";
-	if (/404|405|not found/i.test(m)) return "Owner routes not available on this backend branch.";
-	return m;
-}
-
-function formatFundingSourceLabel(value?: string | null) {
-	switch (value) {
-		case "owner_credits":
-			return "creator credits";
-		case "waifu_treasury_subsidy":
-			return "platform subsidy";
-		case "hybrid":
-			return "shared funding";
-		default:
-			return value ? value.replace(/_/g, " ") : null;
-	}
-}
-
 function formatRunway(days: number) {
 	if (!Number.isFinite(days) || days <= 0) return null;
 	if (days < 1) return `${Math.max(1, Math.round(days * 24))}h`;
@@ -76,9 +57,64 @@ function formatRunway(days: number) {
 }
 
 export default function OwnerRuntimePanel({ token }: { token: IToken }) {
+	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const connectedWallet = useAddress();
 	const [billingMode] = useState<NonNullable<OwnerTokenRuntime["billingMode"]>>(token.billingMode ?? "owner_credits");
+
+	const fmtErr = (error?: Error) => {
+		const m = error?.message?.trim();
+		if (!m) return t("token.ownerPanel.controlPlaneUnavailable");
+		if (/404|405|not found/i.test(m)) return t("token.ownerPanel.routesNotAvailable");
+		return m;
+	};
+
+	const formatFundingSourceLabel = (value?: string | null) => {
+		switch (value) {
+			case "owner_credits":
+				return t("token.ownerPanel.fundingSource.creatorCredits");
+			case "waifu_treasury_subsidy":
+				return t("token.ownerPanel.fundingSource.platformSubsidy");
+			case "hybrid":
+				return t("token.ownerPanel.fundingSource.sharedFunding");
+			default:
+				return value ? value.replace(/_/g, " ") : null;
+		}
+	};
+
+	const claimStatusLabel = (state: ClaimState): string => {
+		switch (state) {
+			case "claimed":
+				return t("token.ownerPanel.claimState.claimed");
+			case "verified":
+				return t("token.ownerPanel.claimState.verified");
+			case "disputed":
+				return t("token.ownerPanel.claimState.disputed");
+			case "unclaimed":
+				return t("token.ownerPanel.claimState.unclaimed");
+			default:
+				return state;
+		}
+	};
+
+	const runtimeStatusLabel = (status: string): string => {
+		switch (status) {
+			case "running":
+				return t("token.ownerPanel.runtimeStatus.running");
+			case "suspended":
+				return t("token.ownerPanel.runtimeStatus.suspended");
+			case "provisioning":
+				return t("token.ownerPanel.runtimeStatus.provisioning");
+			case "failed":
+				return t("token.ownerPanel.runtimeStatus.failed");
+			case "deleted":
+				return t("token.ownerPanel.runtimeStatus.deleted");
+			case "none":
+				return t("token.ownerPanel.runtimeStatus.none");
+			default:
+				return status.replace(/_/g, " ");
+		}
+	};
 
 	const authQK = ["auth-status"] as const;
 	const tokenQK = ["token", token.chain, token.chainId, token.contractAddress] as const;
@@ -137,7 +173,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		mutationFn: () =>
 			claimTokenOwnership({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
 		onSuccess: async () => {
-			toast.success("owner access claimed");
+			toast.success(t("token.ownerPanel.toast.ownerAccessClaimed"));
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -157,7 +193,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 				},
 			}),
 		onSuccess: async () => {
-			toast.success("activation requested");
+			toast.success(t("token.ownerPanel.toast.activationRequested"));
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -167,7 +203,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		mutationFn: () =>
 			suspendOwnerTokenRuntime({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
 		onSuccess: async () => {
-			toast.success("runtime suspended");
+			toast.success(t("token.ownerPanel.toast.runtimeSuspended"));
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -177,7 +213,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 		mutationFn: () =>
 			resumeOwnerTokenRuntime({ chain: token.chain, chainId: token.chainId, contractAddress: token.contractAddress }),
 		onSuccess: async () => {
-			toast.success("runtime resumed");
+			toast.success(t("token.ownerPanel.toast.runtimeResumed"));
 			await refreshAll();
 		},
 		onError: (e: Error) => toast.error(fmtErr(e)),
@@ -211,12 +247,14 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 			? formatRunway(reserveUsd / estimatedDailyBurnUsd)
 			: null;
 	const economicsRows = [
-		shouldShowBurn ? { key: "daily burn", value: formatNumber(estimatedDailyBurnUsd, true) } : null,
-		typeof currentPeriodCostUsd === "number" && Number.isFinite(currentPeriodCostUsd)
-			? { key: "current spend", value: formatNumber(currentPeriodCostUsd, true) }
+		shouldShowBurn
+			? { key: t("token.ownerPanel.economics.dailyBurn"), value: formatNumber(estimatedDailyBurnUsd, true) }
 			: null,
-		fundingSourceLabel ? { key: "funding source", value: fundingSourceLabel } : null,
-		runwayEstimate ? { key: "runway", value: runwayEstimate } : null,
+		typeof currentPeriodCostUsd === "number" && Number.isFinite(currentPeriodCostUsd)
+			? { key: t("token.ownerPanel.economics.currentSpend"), value: formatNumber(currentPeriodCostUsd, true) }
+			: null,
+		fundingSourceLabel ? { key: t("token.ownerPanel.economics.fundingSource"), value: fundingSourceLabel } : null,
+		runwayEstimate ? { key: t("token.ownerPanel.economics.runway"), value: runwayEstimate } : null,
 	].filter((row): row is { key: string; value: string } => Boolean(row));
 
 	return (
@@ -226,7 +264,9 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
 						<ShieldCheck className="size-3.5 text-[#00ff87]/70" />
-						<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b]">operator</span>
+						<span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#52525b]">
+							{t("token.ownerPanel.operator")}
+						</span>
 					</div>
 					<Button
 						variant="ghost"
@@ -242,7 +282,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 				{/* Unclaimed state */}
 				{!isClaimed && (
 					<div className="flex items-center gap-2 flex-wrap">
-						<StatusPill label={claimState} tone={toneMap[claimState]} />
+						<StatusPill label={claimStatusLabel(claimState)} tone={toneMap[claimState]} />
 						{creatorAddress && (
 							<span className="text-[10px] font-mono text-[#3f3f46]">{shortenAddress(creatorAddress)}</span>
 						)}
@@ -257,15 +297,15 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 								) : (
 									<CheckCircle2 className="size-3" />
 								)}
-								claim
+								{t("token.ownerPanel.claim")}
 							</Button>
 						) : (
 							<span className="ml-auto text-[10px] text-[#3f3f46] font-mono">
 								{authQuery.isLoading
-									? "checking..."
+									? t("token.ownerPanel.checking")
 									: isConnectedCreator
-										? "finish auth to claim"
-										: "connect creator wallet"}
+										? t("token.ownerPanel.finishAuth")
+										: t("token.ownerPanel.connectCreator")}
 							</span>
 						)}
 					</div>
@@ -275,7 +315,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 				{isClaimed && (
 					<>
 						<div className="flex items-center gap-2 flex-wrap">
-							<StatusPill label={runtimeStatus.replace(/_/g, " ")} tone={toneMap[runtimeStatus]} />
+							<StatusPill label={runtimeStatusLabel(runtimeStatus)} tone={toneMap[runtimeStatus]} />
 							{typeof reserveUsd === "number" && !Number.isNaN(reserveUsd) && (
 								<span className="text-[10px] font-mono text-[#52525b]">{formatNumber(reserveUsd, true)}</span>
 							)}
@@ -284,7 +324,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 						{rtQuery.isLoading && (
 							<div className="flex items-center gap-2 text-[10px] text-[#52525b]">
 								<LoaderCircle className="size-3 animate-spin text-[#00ff87]/60" />
-								<span className="font-mono uppercase">loading...</span>
+								<span className="font-mono uppercase">{t("token.ownerPanel.loading")}</span>
 							</div>
 						)}
 
@@ -309,7 +349,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 											) : (
 												<PlayCircle className="size-3" />
 											)}
-											activate
+											{t("token.ownerPanel.activate")}
 										</Button>
 									)}
 									{runtimeStatus === "running" && (
@@ -324,7 +364,7 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 											) : (
 												<PauseCircle className="size-3" />
 											)}
-											pause
+											{t("token.ownerPanel.pause")}
 										</Button>
 									)}
 									{runtimeStatus === "suspended" && (
@@ -338,13 +378,13 @@ export default function OwnerRuntimePanel({ token }: { token: IToken }) {
 											) : (
 												<RefreshCw className="size-3" />
 											)}
-											resume
+											{t("token.ownerPanel.resume")}
 										</Button>
 									)}
 									{runtimeStatus === "provisioning" && (
 										<span className="flex items-center gap-1 text-[10px] font-mono text-sky-300/80">
 											<LoaderCircle className="size-3 animate-spin" />
-											provisioning
+											{t("token.ownerPanel.provisioning")}
 										</span>
 									)}
 								</div>
