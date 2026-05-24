@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion } from "framer-motion";
@@ -8,16 +9,6 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 /**
  * Steward OAuth callback (W9.5).
- *
- * Steward 302s the user back here after the provider OAuth dance with the
- * issued JWT + the state we bound at /auth/oauth/start. We forward both to
- * our backend's POST /auth/oauth/finalize, which re-verifies the JWT,
- * upserts the patron row, and binds the long-lived wf_session cookie under
- * api.waifu.fun.
- *
- * Two callers are supported:
- *   - direct redirect: navigate the current tab to `data.return_to` on success
- *   - popup flow: postMessage the opener and self-close
  */
 
 type Phase = "loading" | "error";
@@ -47,6 +38,7 @@ function scrubCallbackUrl() {
 }
 
 function CallbackInner() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const params = useSearchParams();
 	const ranRef = useRef(false);
@@ -64,13 +56,11 @@ function CallbackInner() {
 				? new URLSearchParams(window.location.hash.slice(1))
 				: new URLSearchParams();
 		const token = params?.get("token") ?? hashParams.get("token");
-		// Steward emits `?token=&refreshToken=`: it does NOT echo our state.
 		const refreshToken = params?.get("refreshToken") ?? hashParams.get("refreshToken");
 		const errorParam = params?.get("error") ?? hashParams.get("error");
 		const errorDescription = params?.get("error_description") ?? hashParams.get("error_description");
 		scrubCallbackUrl();
 
-		// Steward (or the provider) returned an error before we even got the JWT.
 		if (errorParam) {
 			setPhase("error");
 			setError(errorDescription ? `${errorParam}: ${errorDescription}` : errorParam);
@@ -79,16 +69,13 @@ function CallbackInner() {
 
 		if (!token) {
 			setPhase("error");
-			setError("missing token in callback URL");
+			setError(t("auth.oauthCallback.missingToken"));
 			return;
 		}
 
 		const controller = new AbortController();
 		(async () => {
 			try {
-				// POST to SAME-ORIGIN /api/auth/finalize Next.js route which
-				// proxies to api.waifu.fun and mirrors Set-Cookie back as a
-				// first-party cookie. Avoids cross-origin storage failures.
 				const res = await fetch("/api/auth/finalize", {
 					method: "POST",
 					credentials: "include",
@@ -112,7 +99,6 @@ function CallbackInner() {
 				};
 				const returnTo = sanitizeRedirectPath(json?.data?.return_to);
 
-				// Popup-flow: notify the opener and self-close. Otherwise redirect.
 				if (typeof window !== "undefined" && window.opener && !window.opener.closed) {
 					try {
 						window.opener.postMessage(
@@ -123,8 +109,6 @@ function CallbackInner() {
 						// postMessage can fail across origin boundaries; fall back to redirect.
 					}
 					window.close();
-					// If close() is blocked (some browsers refuse to close non-script-opened
-					// windows), still navigate so the user is not stranded.
 					if (typeof window !== "undefined") {
 						window.location.assign(returnTo);
 					} else {
@@ -133,9 +117,6 @@ function CallbackInner() {
 					return;
 				}
 
-				// Full page navigation, not client-side. Guarantees browser sends
-				// the freshly-set wf_session cookie on the next request so the
-				// middleware on /patron etc. sees it.
 				if (typeof window !== "undefined") {
 					window.location.assign(returnTo);
 				} else {
@@ -144,7 +125,7 @@ function CallbackInner() {
 			} catch (err) {
 				if ((err as { name?: string })?.name === "AbortError") return;
 				setPhase("error");
-				setError(err instanceof Error ? err.message : "sign-in failed");
+				setError(err instanceof Error ? err.message : t("auth.oauthCallback.signInFailedFallback"));
 			}
 		})();
 
@@ -159,11 +140,17 @@ function CallbackInner() {
 				transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
 				className="w-full max-w-md space-y-6"
 			>
-				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">waifu.fun / auth / callback</p>
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#71717a]">
+					{t("auth.oauthCallback.eyebrow")}
+				</p>
 				{phase === "loading" ? (
 					<>
-						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">signing you in</h1>
-						<p className="text-sm text-[#a1a1aa] leading-relaxed">verifying with steward.</p>
+						<h1 className="text-2xl font-medium text-[#e4e4e7] tracking-tight">
+							{t("auth.oauthCallback.signingIn")}
+						</h1>
+						<p className="text-sm text-[#a1a1aa] leading-relaxed">
+							{t("auth.oauthCallback.verifyingWithSteward")}
+						</p>
 						<div
 							className="h-px bg-gradient-to-r from-[#00ff87]/40 via-[#00ff87]/10 to-transparent"
 							aria-hidden="true"
@@ -171,14 +158,18 @@ function CallbackInner() {
 					</>
 				) : (
 					<>
-						<h1 className="text-2xl font-medium text-[#f87171] tracking-tight">sign-in failed</h1>
-						<p className="text-sm text-[#a1a1aa] leading-relaxed font-mono">{error ?? "unknown error"}</p>
+						<h1 className="text-2xl font-medium text-[#f87171] tracking-tight">
+							{t("auth.oauthCallback.signInFailed")}
+						</h1>
+						<p className="text-sm text-[#a1a1aa] leading-relaxed font-mono">
+							{error ?? t("auth.oauthCallback.unknownError")}
+						</p>
 						<button
 							type="button"
 							onClick={() => router.replace("/auth/connect")}
 							className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#00ff87] border border-[#00ff87]/30 px-4 py-2 rounded-sm hover:bg-[#00ff87]/10 transition-colors duration-200"
 						>
-							try again
+							{t("auth.oauthCallback.tryAgain")}
 						</button>
 					</>
 				)}
@@ -187,15 +178,18 @@ function CallbackInner() {
 	);
 }
 
+function CallbackFallback() {
+	const { t } = useTranslation();
+	return (
+		<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a] text-[#71717a] text-sm">
+			{t("auth.oauthCallback.loading")}
+		</div>
+	);
+}
+
 export default function OAuthCallbackPage() {
 	return (
-		<Suspense
-			fallback={
-				<div className="min-h-[100dvh] flex items-center justify-center bg-[#08080a] text-[#71717a] text-sm">
-					loading
-				</div>
-			}
-		>
+		<Suspense fallback={<CallbackFallback />}>
 			<CallbackInner />
 		</Suspense>
 	);

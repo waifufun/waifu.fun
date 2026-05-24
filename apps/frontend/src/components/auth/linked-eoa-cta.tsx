@@ -2,6 +2,7 @@
 
 import { ConnectModal } from "@/components/auth/connect-modal";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { useLinkedEoa } from "@/hooks/use-linked-eoa";
 import { useWaifuAuth } from "@/hooks/use-waifu-auth";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ type LinkedEoaCTAProps = {
 };
 
 export function LinkedEoaCTA({ className, children, onLinked }: LinkedEoaCTAProps) {
+	const { t } = useTranslation();
 	const auth = useWaifuAuth();
 	const linked = useLinkedEoa();
 	const [authOpen, setAuthOpen] = useState(false);
@@ -54,7 +56,9 @@ export function LinkedEoaCTA({ className, children, onLinked }: LinkedEoaCTAProp
 	return (
 		<>
 			<Button type="button" onClick={handleClick} disabled={linking} className={className}>
-				{linking ? "linking..." : (children ?? (auth.isAuthenticated ? "Link external wallet" : "Sign in"))}
+				{linking
+					? t("auth.linkedEoa.linking")
+					: (children ?? (auth.isAuthenticated ? t("auth.linkedEoa.linkExternal") : t("auth.linkedEoa.signIn")))}
 			</Button>
 			<ConnectModal
 				open={authOpen}

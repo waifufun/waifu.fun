@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { STEWARD_LOCAL_TOKEN_KEY, STEWARD_LOCAL_USER_KEY, useStewardStatus } from "@/lib/api/steward";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -9,6 +10,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 type Phase = "idle" | "linking" | "success" | "error";
 
 function StewardCallbackInner() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const params = useSearchParams();
 	const { link } = useStewardStatus();
@@ -36,7 +38,7 @@ function StewardCallbackInner() {
 
 		if (!token) {
 			setPhase("error");
-			setErrorMessage("steward redirect did not include a token. try again.");
+			setErrorMessage(t("auth.stewardCallback.noToken"));
 			return;
 		}
 
@@ -46,8 +48,6 @@ function StewardCallbackInner() {
 		void link
 			.mutateAsync({ stewardToken: token, stewardUserId: stewardUserId ?? undefined })
 			.then((result) => {
-				// Mutation already wrote localStorage on 404, but if we got a real
-				// 200 the cache is updated and we don't need fallback storage.
 				const fellBack =
 					typeof window !== "undefined" && window.localStorage.getItem(STEWARD_LOCAL_TOKEN_KEY) === token;
 				setUsedFallback(fellBack);
@@ -65,15 +65,12 @@ function StewardCallbackInner() {
 					} catch {
 						// ignore - opener may be cross-origin in odd configs
 					}
-					// Give the parent a beat to react before tearing down.
 					window.setTimeout(() => window.close(), 250);
 				} else {
 					window.setTimeout(() => router.replace("/patron?steward=connected"), 600);
 				}
 			})
 			.catch((err: unknown) => {
-				// On link failure, fall back to localStorage so the patron isn't
-				// stranded; the badge will treat them as connected via fallback.
 				if (typeof window !== "undefined") {
 					try {
 						window.localStorage.setItem(STEWARD_LOCAL_TOKEN_KEY, token);
@@ -85,16 +82,15 @@ function StewardCallbackInner() {
 					}
 				}
 				setUsedFallback(true);
-				setErrorMessage(err instanceof Error ? err.message : "could not contact waifu.fun backend.");
+				setErrorMessage(err instanceof Error ? err.message : t("auth.stewardCallback.backendUnreachable"));
 				setPhase("error");
 			});
-	}, [errorDescription, errorParam, link, router, stewardUserId, token]);
+	}, [errorDescription, errorParam, link, router, stewardUserId, token, t]);
 
 	const retry = () => {
 		setPhase("idle");
 		setErrorMessage(null);
 		ranRef.current = false;
-		// Force the effect to re-run on the next paint.
 		window.setTimeout(() => {
 			ranRef.current = false;
 			setPhase("linking");
@@ -119,13 +115,13 @@ function StewardCallbackInner() {
 						className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.2em] text-neutral-500 hover:text-neutral-300 transition-colors"
 					>
 						<ArrowLeft className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
-						back to patron
+						{t("auth.stewardCallback.backToPatron")}
 					</Link>
 				</div>
 
 				<div className="rounded-sm border border-white/10 bg-[#0a0a0c] p-7 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.7)]">
 					<div className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87] mb-4">
-						waifu.fun / steward / callback
+						{t("auth.stewardCallback.eyebrow")}
 					</div>
 
 					{phase === "linking" || phase === "idle" ? (
@@ -133,8 +129,12 @@ function StewardCallbackInner() {
 							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#00ff87]">
 								<Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">linking your steward account</h1>
-							<p className="text-sm text-neutral-400 leading-relaxed">verifying the token. usually quick</p>
+							<h1 className="text-xl font-medium text-white tracking-tight">
+								{t("auth.stewardCallback.linkingTitle")}
+							</h1>
+							<p className="text-sm text-neutral-400 leading-relaxed">
+								{t("auth.stewardCallback.linkingBody")}
+							</p>
 						</div>
 					) : null}
 
@@ -143,14 +143,16 @@ function StewardCallbackInner() {
 							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-[#00ff87]/30 bg-[#00ff87]/10 text-[#00ff87]">
 								<CheckCircle2 className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">steward connected</h1>
+							<h1 className="text-xl font-medium text-white tracking-tight">
+								{t("auth.stewardCallback.connectedTitle")}
+							</h1>
 							<p className="text-sm text-neutral-400 leading-relaxed">
 								{usedFallback
-									? "stored locally. we'll sync to the backend once it's wired up"
-									: "your wallet is linked to your steward account"}
+									? t("auth.stewardCallback.storedLocally")
+									: t("auth.stewardCallback.walletLinked")}
 							</p>
 							<p className="text-xs text-neutral-500 mt-2">
-								closing this window automatically. if it doesn't,{" "}
+								{t("auth.stewardCallback.closingNote")}{" "}
 								<button
 									type="button"
 									onClick={() => {
@@ -159,7 +161,7 @@ function StewardCallbackInner() {
 									}}
 									className="underline underline-offset-4 hover:text-neutral-300"
 								>
-									click here
+									{t("auth.stewardCallback.clickHere")}
 								</button>
 							</p>
 						</div>
@@ -170,9 +172,11 @@ function StewardCallbackInner() {
 							<div className="flex h-10 w-10 items-center justify-center rounded-sm border border-rose-400/30 bg-rose-400/10 text-rose-300">
 								<AlertTriangle className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
 							</div>
-							<h1 className="text-xl font-medium text-white tracking-tight">steward connect failed</h1>
+							<h1 className="text-xl font-medium text-white tracking-tight">
+								{t("auth.stewardCallback.failedTitle")}
+							</h1>
 							<p className="text-sm text-neutral-300 leading-relaxed font-mono break-words">
-								{errorMessage ?? "unknown error"}
+								{errorMessage ?? t("auth.stewardCallback.unknownError")}
 							</p>
 							<div className="mt-3 flex flex-col sm:flex-row gap-2 w-full">
 								<button
@@ -181,13 +185,13 @@ function StewardCallbackInner() {
 									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-[#00ff87]/40 bg-[#00ff87]/10 px-4 py-2 text-xs font-medium text-[#bff7d6] hover:bg-[#00ff87]/15 transition-colors"
 								>
 									<RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-									try again
+									{t("auth.stewardCallback.tryAgain")}
 								</button>
 								<Link
 									href="/patron"
 									className="inline-flex items-center justify-center gap-1.5 rounded-sm border border-white/10 bg-black/30 px-4 py-2 text-xs font-medium text-neutral-200 hover:bg-white/5 transition-colors"
 								>
-									back to patron
+									{t("auth.stewardCallback.backToPatron")}
 								</Link>
 							</div>
 						</div>
@@ -195,7 +199,7 @@ function StewardCallbackInner() {
 				</div>
 
 				<p className="mt-5 text-center text-[11px] text-neutral-600 leading-relaxed">
-					source: <span className="font-mono text-neutral-500">eliza.steward.dev</span>
+					{t("auth.stewardCallback.sourcePrefix")} <span className="font-mono text-neutral-500">eliza.steward.dev</span>
 				</p>
 			</div>
 		</main>
