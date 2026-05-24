@@ -460,7 +460,150 @@
 			"viewOnX": "在 x 上查看"
 		}
 	},
-	"auth": {},
+	"auth": {
+		"callback": {
+			"redirecting": "重定向中..."
+		},
+		"connect": {
+			"back": "返回",
+			"continue": "继续",
+			"continueEmailAria": "通过邮箱继续",
+			"continueWalletAria": "通过钱包继续",
+			"continueWith": "通过 {{provider}} 继续",
+			"emailLabel": "邮箱",
+			"emailPlaceholder": "您的邮箱",
+			"finalizing": "正在完成会话",
+			"invalidEmail": "请输入有效的邮箱地址",
+			"loadingWallets": "加载钱包中",
+			"magicLinkError": "无法发送魔法链接",
+			"magicLinkSent": "请查收邮箱中的魔法链接",
+			"orDivider": "或",
+			"passkeyFailed": "密钥失败",
+			"passkeyNeedsEmail": "请先在上方输入邮箱",
+			"passkeySettingUp": "正在设置密钥",
+			"passkeyUse": "使用密钥",
+			"securedBy": "由 Steward 保护",
+			"srDescription": "通过邮箱、密钥、OAuth 或钱包登录",
+			"title": "登录 waifu.fun",
+			"walletButton": "钱包",
+			"walletSignInFailed": "{{kind}} 登录失败",
+			"walletSignInFailedWith": "{{kind}} 登录失败：{{message}}",
+			"walletSubtitle": "签名一条消息以证明所有权。无交易，无 gas。",
+			"walletTitle": "连接您的钱包"
+		},
+		"connectX": {
+			"connectLabel": "连接 X",
+			"loadingAria": "正在加载 X 授权",
+			"signInAria": "通过 X 登录",
+			"signOut": "退出登录",
+			"signedInAria": "已以 @{{handle}} 登录"
+		},
+		"emailVerify": {
+			"eyebrow": "waifu.fun / 验证 / 邮箱",
+			"loading": "加载中",
+			"missingTokenError": "回调 URL 缺少令牌或邮箱",
+			"signInFailed": "登录失败",
+			"signInFailedFallback": "登录失败",
+			"signingIn": "正在登录",
+			"tryAgain": "重试",
+			"unknownError": "未知错误",
+			"verifyingMagicLink": "正在验证您的魔法链接。"
+		},
+		"gate": {
+			"verifyingSession": "正在验证会话…"
+		},
+		"linkedEoa": {
+			"linkExternal": "链接外部钱包",
+			"linking": "链接中...",
+			"signIn": "登录"
+		},
+		"oauthCallback": {
+			"eyebrow": "waifu.fun / 验证 / 回调",
+			"loading": "加载中",
+			"missingToken": "回调 URL 缺少令牌",
+			"signInFailed": "登录失败",
+			"signInFailedFallback": "登录失败",
+			"signingIn": "正在登录",
+			"tryAgain": "重试",
+			"unknownError": "未知错误",
+			"verifyingWithSteward": "正在通过 Steward 验证。"
+		},
+		"oauthPanel": {
+			"continueDiscord": "通过 Discord 继续",
+			"continueEmail": "通过邮箱继续",
+			"continueGithub": "通过 GitHub 继续",
+			"continueGoogle": "通过 Google 继续",
+			"continuePasskey": "通过密钥继续",
+			"continueTwitter": "通过 Twitter / X 继续",
+			"eyebrow": "waifu.fun / 登录",
+			"loading": "加载中",
+			"poweredBy": "由 Steward 提供支持",
+			"redirectNotePrefix": "您将被重定向至",
+			"redirectNoteSuffix": "。我们从不查看您的密码。",
+			"subtitle": "一个身份拥有所有代理。选择您希望的验证方式。",
+			"title": "登录 waifu.fun"
+		},
+		"protected": {
+			"body": "请使用 Steward 登录以继续。",
+			"signInCta": "登录",
+			"title": "需要登录"
+		},
+		"stewardCallback": {
+			"backToPatron": "返回 patron",
+			"backendUnreachable": "无法联系 waifu.fun 后端。",
+			"clickHere": "请点这里",
+			"closingNote": "窗口将自动关闭。如果没有，",
+			"connectedTitle": "Steward 已连接",
+			"eyebrow": "waifu.fun / steward / 回调",
+			"failedTitle": "Steward 连接失败",
+			"linkingBody": "正在验证令牌，通常很快",
+			"linkingTitle": "正在关联您的 Steward 账户",
+			"noToken": "Steward 重定向未包含令牌，请重试。",
+			"sourcePrefix": "来源：",
+			"storedLocally": "已本地存储。等后端接入后会同步",
+			"tryAgain": "重试",
+			"unknownError": "未知错误",
+			"walletLinked": "您的钱包已关联到 Steward 账户"
+		},
+		"twitterFinalize": {
+			"eyebrow": "waifu.fun / 验证 / Twitter",
+			"finishingAuth": "正在完成 Twitter / X 授权。",
+			"loading": "加载中",
+			"missingCode": "Twitter 回调 URL 缺少 code",
+			"signInFailed": "登录失败",
+			"signInFailedFallback": "Twitter 登录失败",
+			"signingIn": "正在登录",
+			"tryAgain": "重试",
+			"unknownError": "未知错误"
+		},
+		"userMenu": {
+			"agentPlural": "个代理",
+			"agentSingular": "个代理",
+			"copyPrimaryAria": "复制主钱包",
+			"linkedPrefix": "已关联：",
+			"manageWallets": "管理钱包",
+			"menuAria": "账户菜单",
+			"patronFallback": "用户",
+			"primaryPrefix": "主钱包：",
+			"signOut": "退出登录",
+			"signedInAs": "已登录为",
+			"signingOut": "退出中...",
+			"yourAgents": "您的代理"
+		},
+		"wallet": {
+			"browserWalletFallback": "浏览器钱包",
+			"couldNotConnect": "无法连接",
+			"disconnect": "断开连接",
+			"genericWallet": "钱包",
+			"invalidEvmAddress": "EVM 地址无效：{{address}}",
+			"noConnectors": "没有可用的钱包连接器",
+			"noWalletConnected": "未连接钱包",
+			"onChain": "于 {{chain}}",
+			"signInFailed": "登录失败",
+			"signInWith": "使用 {{wallet}} 登录",
+			"signing": "签名中"
+		}
+	},
 	"claim": {
 		"fees": {
 			"body": "作为代币创建者,你可以领取交易活动累积的费用。",
@@ -1530,7 +1673,95 @@
 			"unrealized": "未实现"
 		}
 	},
-	"post": {},
+	"post": {
+		"burn": {
+			"loadingAria": "加载 {{ticker}} 销毁数据中",
+			"notDeployed": "代币未部署",
+			"ofSupply": "占供应量",
+			"percentAria": "占供应量 {{pct}}%",
+			"sectionAria": "销毁计数器",
+			"tokenBurnedSuffix": "${{ticker}} 已销毁",
+			"totalAria": "{{amount}} {{ticker}} 已销毁"
+		},
+		"chart": {
+			"iframeTitle": "{{address}} 的价格图表",
+			"openOnAria": "在 dexscreener 打开图表",
+			"priceChart": "价格图表",
+			"sectionAria": "价格图表"
+		},
+		"claim": {
+			"allocation": "份额",
+			"alreadyClaimed": "已领取",
+			"claimAmount": "认领 {{amount}} {{ticker}}",
+			"claimLabel": "认领",
+			"claimableNow": "当前可领",
+			"confirming": "确认中…",
+			"connectToClaim": "连接以认领您的份额",
+			"fullyClaimed": "已全部认领",
+			"lastClaimTx": "最近认领交易",
+			"locked": "锁仓",
+			"noPosition": "此地址在此预售中没有仓位。",
+			"noVesting": "无线性释放，TGE 时 100% 可领。",
+			"nothingClaimedYet": "尚未认领",
+			"nothingToClaim": "暂无可认领",
+			"partiallyClaimed": "部分已认领",
+			"stateAria": "认领状态：{{state}}",
+			"submitting": "提交中…",
+			"switchChain": "切换到 BNB 链",
+			"vaultNotDeployed": "金库未部署",
+			"vested": "已释放",
+			"vesting": {
+				"defaultCopy": "TGE 时 50%，24 小时内线性释放剩余 50%。",
+				"fullyUnlocksIn": "· 完全解锁还需",
+				"fullyVested": "已完全释放。",
+				"vestingLabel": "释放进度"
+			},
+			"viewLastClaimAria": "在 bscscan 查看最近认领交易",
+			"widgetAria": "认领组件"
+		},
+		"surface": {
+			"burnCounterHeader": "销毁计数器",
+			"claimHeader": "认领",
+			"priceChartHeader": "价格图表",
+			"sectionAria": "上线后界面",
+			"tierLadderHeader": "层级阶梯",
+			"tradeActivityHeader": "交易活动"
+		},
+		"tier": {
+			"allDeployed": "全部四个层级已部署",
+			"at": "在",
+			"away": "差额",
+			"cellAria": "第 {{idx}} 层，目标市值 {{target}}，{{status}}{{epochs}}",
+			"cellAriaEpochsSuffix": "，{{epochs}} 周期",
+			"cellStatus": {
+				"deployed": "已部署",
+				"paused": "已暂停",
+				"pending": "待部署"
+			},
+			"cellsAria": "层级阶梯单元",
+			"mcPrefix": "市值",
+			"mcSuffix": "市值",
+			"next": "下一个：",
+			"noData": "无层级数据",
+			"notDeployed": "尚未部署",
+			"sectionAria": "层级部署阶梯",
+			"statusLabel": "层级部署状态",
+			"thresholdReached": "已达阈值"
+		},
+		"tradeFeed": {
+			"buys": "买入",
+			"fullFeed": "完整数据流",
+			"label": "交易活动",
+			"listAria": "各时间窗的买卖计数",
+			"loading": "加载活动中…",
+			"noTrades": "暂无交易",
+			"openOnAria": "在 dexscreener 打开完整交易流",
+			"ratioAria": "{{window}} 的买入 / 卖出比例",
+			"rowAria": "{{window}}：{{buys}} 笔买入，{{sells}} 笔卖出",
+			"sectionAria": "交易活动流",
+			"sells": "卖出"
+		}
+	},
 	"profile": {
 		"activity": "动态",
 		"agents": "代理",
@@ -1595,7 +1826,21 @@
 	"story": {},
 	"support": {},
 	"swap": {
+		"advanced": {
+			"frontrunWarning": "您的交易可能被抢跑，导致不利成交",
+			"slippageLabel": "滑点",
+			"slippageTooltip": "这是您下单时愿意接受的最大滑点",
+			"speed": {
+				"normal": "普通",
+				"turbo": "Turbo",
+				"ultra": "Ultra"
+			},
+			"speedLabel": "速度",
+			"speedTooltip": "选择您希望的交易执行速度",
+			"title": "高级设置"
+		},
 		"amountTooHigh": "数量过高",
+		"buy": "买入",
 		"connect": "连接",
 		"insufficientBalance": "余额不足",
 		"insufficientBalanceMessage": "余额不足，无法完成交易。",
@@ -1604,6 +1849,7 @@
 		"priceImpact": "价格影响",
 		"priceUnavailable": "价格不可用",
 		"reset": "重置",
+		"sell": "卖出",
 		"tokenMigrating": "代币迁移中",
 		"tradingStarts": "交易开始"
 	},
@@ -1628,16 +1874,265 @@
 			"txTitle": "交易",
 			"type": "类型"
 		},
+		"agentPanel": {
+			"checkingAgent": "正在检查代理…",
+			"couldNotCheck": "无法检查代理状态。",
+			"creatorOnly": "仅限创作者",
+			"finishCreatorAuth": "完成创作者验证以加载重启与停止控制。",
+			"lifecyclePrefix": "生命周期：{{state}}",
+			"noAgentRunning": "没有运行中的代理。代理通过 API 自行启动。",
+			"privateRuntime": "此代币由创作者管理运行时。公众可查看状态，但控制权保持私有。",
+			"provisioningSuffix": "配置中…",
+			"publicView": "公开视图",
+			"restart": "重启",
+			"retry": "重试",
+			"runtimeLivesHere": "代理部署后，运行时控制将在此向创作者显示。",
+			"status": {
+				"deleted": "已删除",
+				"failed": "失败",
+				"provisioning": "配置中",
+				"queued": "排队中",
+				"running": "运行中",
+				"stopped": "已停止",
+				"unknown": "未知"
+			},
+			"stop": "停止",
+			"toast": {
+				"restartFailed": "重启失败",
+				"restartRequested": "已请求重启",
+				"stopFailed": "停止失败",
+				"stopped": "代理已停止"
+			}
+		},
 		"bondingCurveProgress": "联合曲线",
 		"bondingProgress": "联合曲线进度",
 		"bondingProgressTooltip": "当市值达到毕业阈值时，代币流动性将迁移至 DEX。",
+		"economics": {
+			"claim": {
+				"claimed": "已认领",
+				"disputed": "有争议",
+				"unclaimed": "未认领",
+				"verified": "已验证"
+			},
+			"funding": {
+				"creatorFunded": "创作者出资",
+				"label": "资金来源",
+				"platform": "平台",
+				"shared": "共担"
+			},
+			"ownership": "所有权",
+			"pulse": "心跳",
+			"reserve": "储备",
+			"runtime": "运行时"
+		},
+		"holderLabels": {
+			"bondingCurve": "联合曲线",
+			"burn": "销毁",
+			"creator": "创作者"
+		},
 		"needed": "所需",
+		"ownerPanel": {
+			"activate": "激活",
+			"checking": "检查中...",
+			"claim": "认领",
+			"claimState": {
+				"claimed": "已认领",
+				"disputed": "有争议",
+				"unclaimed": "未认领",
+				"verified": "已验证"
+			},
+			"connectCreator": "连接创作者钱包",
+			"controlPlaneUnavailable": "所有者控制面不可用。",
+			"economics": {
+				"currentSpend": "本期支出",
+				"dailyBurn": "日消耗",
+				"fundingSource": "资金来源",
+				"runway": "续航"
+			},
+			"finishAuth": "完成验证以认领",
+			"fundingSource": {
+				"creatorCredits": "创作者额度",
+				"platformSubsidy": "平台补贴",
+				"sharedFunding": "共担资金"
+			},
+			"loading": "加载中...",
+			"operator": "运营方",
+			"pause": "暂停",
+			"provisioning": "配置中",
+			"resume": "恢复",
+			"routesNotAvailable": "此后端分支未提供所有者接口。",
+			"runtimeStatus": {
+				"deleted": "已删除",
+				"failed": "失败",
+				"none": "无",
+				"provisioning": "配置中",
+				"running": "运行中",
+				"suspended": "已暂停"
+			},
+			"toast": {
+				"activationRequested": "已请求激活",
+				"ownerAccessClaimed": "所有者权限已认领",
+				"runtimeResumed": "运行时已恢复",
+				"runtimeSuspended": "运行时已暂停"
+			}
+		},
+		"presence": {
+			"active": {
+				"description": "活跃且响应正常",
+				"label": "在线"
+			},
+			"bonding": {
+				"description": "仍在联合曲线上",
+				"label": "孕育中"
+			},
+			"dormant": {
+				"description": "已毕业但安静",
+				"label": "休眠"
+			},
+			"imported": {
+				"description": "外部市场上市",
+				"label": "已收录"
+			},
+			"migrated": {
+				"description": "在外部池交易",
+				"label": "已毕业"
+			}
+		},
 		"priceChart": "价格图表",
+		"profile": {
+			"byLabel": "by"
+		},
 		"reserve": "储备",
+		"ribbon": {
+			"feedBonding": "联合曲线",
+			"feedExternal": "外部",
+			"feedIndexed": "已索引",
+			"holders": "持有人",
+			"marketSuffix": "{{feed}}市场",
+			"mcap": "市值",
+			"price": "价格",
+			"vol": "成交量"
+		},
+		"skills": {
+			"chain": "链",
+			"chains": {
+				"base": "base",
+				"baseSepolia": "base sepolia",
+				"ethereum": "ethereum",
+				"ethereumSepolia": "ethereum sepolia"
+			},
+			"contract": "合约",
+			"created": "创建于",
+			"holders": "持有人",
+			"links": "链接",
+			"personality": "性格",
+			"talksAbout": "话题",
+			"voice": "语气"
+		},
+		"snapshot": {
+			"eyebrow": "市场快照",
+			"feedIndexedFallback": "索引回退",
+			"feedLiveExternal": "实时外部市场",
+			"feedWaifu": "waifu.fun 市场",
+			"holders": "持有人",
+			"holdersHelperAggregate": "仅汇总持有人总数。该市场尚未索引钱包排行榜。",
+			"holdersHelperMissing": "持有人总数未公开，该市场也尚未索引钱包排行榜。",
+			"holdersUnavailable": "不可用",
+			"marketCap": "市值",
+			"price": "价格",
+			"title": "市场概览",
+			"volume24h": "24小时成交量",
+			"volumeHelperNoFeed": "实时外部数据源未连接。"
+		},
+		"statusVisual": {
+			"curveGraduated": "已毕业",
+			"curveLabel": "曲线",
+			"curvePercent": "{{pct}}% 完成",
+			"dataLabel": "数据",
+			"feedBondingCurve": "联合曲线",
+			"feedIndexed": "已索引",
+			"feedLiveExternal": "实时外部",
+			"heartbeatLabel": "心跳",
+			"lastSeenLabel": "上次活动",
+			"liveFeed": "实时数据源",
+			"notExposed": "未公开",
+			"platformData": "平台数据",
+			"quiet": "安静",
+			"recentActivity": "近期活跃",
+			"statusLabel": "状态",
+			"unknown": "未知",
+			"waitingForFeed": "等待数据源"
+		},
 		"swap": "兑换",
 		"tabs": {
 			"holders": "持有人",
 			"trades": "交易"
+		},
+		"trades": {
+			"badge": {
+				"historical": "历史",
+				"live": "实时",
+				"partial": "部分",
+				"third-party": "外部"
+			},
+			"footer": {
+				"historical": "仅经验证的门户历史",
+				"historicalWithTime": "仅经验证的门户历史 · 最近活动 {{time}}",
+				"liveWithCount": "实时门户数据源 · 显示 {{count}} 笔近期交易",
+				"partialWithCount": "混合验证历史 · 显示 {{count}} 条近期记录",
+				"third-partyWithCount": "实时外部数据源 · 显示 {{count}} 笔近期交易",
+				"third-partyWithTime": "实时外部数据源 · 最近交易 {{time}}"
+			},
+			"headers": {
+				"account": "账户",
+				"date": "日期",
+				"price": "价格",
+				"quoteSide": "报价侧",
+				"tokenAmount": "代币数量",
+				"type": "类型"
+			},
+			"hideHistory": "隐藏历史",
+			"liveMarket": "实时市场",
+			"noTradesYet": "暂无交易。",
+			"perTicker": "每 {{ticker}}",
+			"semantics": {
+				"quotePaid": "支付报价",
+				"quoteReceived": "收到报价",
+				"received": "收到",
+				"sold": "已卖出"
+			},
+			"showHistory": "显示历史",
+			"showLess": "收起",
+			"showMore": "再显示 {{count}} 条",
+			"sideBuy": "买入",
+			"sideSell": "卖出",
+			"summary": {
+				"historical": "实时交易已迁移到外部市场。此处保留最后已验证的门户历史记录。",
+				"historicalWithTime": "实时交易已迁移到外部市场。此处保留最后已验证的门户历史，最近活动 {{time}}。",
+				"live": "waifu.fun 上经验证的近期交易活动，自动刷新。",
+				"partial": "部分记录为历史或不完整。代币数量保持可见，报价侧仅在已验证时显示。",
+				"third-party": "实时外部活动来自 GeckoTerminal，收纳于此处以保持页面清爽。",
+				"third-partyWithTime": "实时外部活动来自 GeckoTerminal，收纳于此处以保持页面清爽，最近交易 {{time}}。"
+			},
+			"title": {
+				"activity": "交易活动",
+				"history": "交易历史"
+			},
+			"tokenLabelPrefix": "代币",
+			"unavailable": {
+				"historical": "历史记录",
+				"notDerived": "未推导",
+				"quoteSideMissing": "报价侧缺失",
+				"quoteUnavailable": "报价不可用",
+				"stale": "过期记录",
+				"unavailable": "不可用"
+			},
+			"unavailableBody": "{{ticker}} 正在外部市场交易。我们暂时无法在 waifu.fun 内渲染经验证的实时活动。",
+			"unavailableHeading": "交易历史不可用"
+		},
+		"viewMode": {
+			"agent": "代理",
+			"market": "市场"
 		}
 	},
 	"units": {},

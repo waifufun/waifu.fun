@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
@@ -11,6 +12,7 @@ import { useEffect } from "react";
  * callback path in Steward tenant config). Forward any stragglers.
  */
 export default function LegacyEmailCallback() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const params = useSearchParams();
 
@@ -20,5 +22,9 @@ export default function LegacyEmailCallback() {
 		router.replace(target);
 	}, [params, router]);
 
-	return <div className="min-h-[60vh] flex items-center justify-center text-sm text-[#71717a]">redirecting...</div>;
+	return (
+		<div className="min-h-[60vh] flex items-center justify-center text-sm text-[#71717a]">
+			{t("auth.callback.redirecting")}
+		</div>
+	);
 }

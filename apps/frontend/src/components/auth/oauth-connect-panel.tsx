@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { EASE_OUT_EXPO } from "@/lib/motion";
 import { sanitizeRedirectPath } from "@/lib/url-safety";
 import { motion, useReducedMotion } from "framer-motion";
@@ -18,30 +19,33 @@ import { Suspense, useCallback, useMemo } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.waifu.fun";
 
+type ProviderId = "google" | "github" | "discord" | "twitter" | "email" | "passkey";
+
 type Provider = {
-	id: "google" | "github" | "discord" | "twitter" | "email" | "passkey";
-	label: string;
+	id: ProviderId;
+	labelKey: string;
 	icon: React.ReactNode;
 };
 
 const PROVIDERS: Provider[] = [
-	{ id: "google", label: "continue with google", icon: <GoogleMark /> },
-	{ id: "github", label: "continue with github", icon: <GithubMark /> },
-	{ id: "discord", label: "continue with discord", icon: <DiscordMark /> },
-	{ id: "twitter", label: "continue with twitter / x", icon: <XMark /> },
+	{ id: "google", labelKey: "auth.oauthPanel.continueGoogle", icon: <GoogleMark /> },
+	{ id: "github", labelKey: "auth.oauthPanel.continueGithub", icon: <GithubMark /> },
+	{ id: "discord", labelKey: "auth.oauthPanel.continueDiscord", icon: <DiscordMark /> },
+	{ id: "twitter", labelKey: "auth.oauthPanel.continueTwitter", icon: <XMark /> },
 	{
 		id: "email",
-		label: "continue with email",
+		labelKey: "auth.oauthPanel.continueEmail",
 		icon: <Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />,
 	},
 	{
 		id: "passkey",
-		label: "continue with passkey",
+		labelKey: "auth.oauthPanel.continuePasskey",
 		icon: <Fingerprint className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />,
 	},
 ];
 
 function ConnectInner() {
+	const { t } = useTranslation();
 	const params = useSearchParams();
 	const reduceMotion = useReducedMotion();
 
@@ -52,7 +56,7 @@ function ConnectInner() {
 	}, [params]);
 
 	const startUrlFor = useCallback(
-		(provider: Provider["id"]) => {
+		(provider: ProviderId) => {
 			const u = new URL(`${API_URL}/auth/oauth/start`);
 			u.searchParams.set("provider", provider);
 			u.searchParams.set("return_to", returnTo);
@@ -62,7 +66,7 @@ function ConnectInner() {
 	);
 
 	const onClick = useCallback(
-		(provider: Provider["id"]) => () => {
+		(provider: ProviderId) => () => {
 			if (typeof window === "undefined") return;
 			window.location.href = startUrlFor(provider);
 		},
@@ -79,50 +83,58 @@ function ConnectInner() {
 			className="w-full max-w-md space-y-8"
 		>
 			<header className="space-y-3">
-				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">waifu.fun / sign in</p>
-				<h1 className="text-3xl font-medium text-[#e4e4e7] tracking-tight leading-tight">sign in to waifu.fun</h1>
-				<p className="text-sm text-[#a1a1aa] leading-relaxed">
-					one identity owns all your agents. choose how you want to verify.
+				<p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#00ff87]">
+					{t("auth.oauthPanel.eyebrow")}
 				</p>
+				<h1 className="text-3xl font-medium text-[#e4e4e7] tracking-tight leading-tight">
+					{t("auth.oauthPanel.title")}
+				</h1>
+				<p className="text-sm text-[#a1a1aa] leading-relaxed">{t("auth.oauthPanel.subtitle")}</p>
 			</header>
 
 			<ul className="flex flex-col gap-2.5">
-				{PROVIDERS.map((p, i) => (
-					<motion.li
-						key={p.id}
-						initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={
-							reduceMotion ? { duration: 0 } : { duration: 0.45, ease: EASE_OUT_EXPO, delay: 0.05 + i * 0.04 }
-						}
-					>
-						<a
-							href={startUrlFor(p.id)}
-							onClick={(e) => {
-								// Force window.location.href so the cookie domain matches the
-								// redirect chain. (Next.js Link would do client-side routing
-								// for relative URLs; this is cross-origin anyway.)
-								e.preventDefault();
-								onClick(p.id)();
-							}}
-							aria-label={p.label}
-							className="group flex items-center gap-3 rounded-sm border border-white/10 bg-[#0b0b0d] px-4 py-3 text-left transition-all duration-200 hover:border-white/25 hover:bg-[#0e0e10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 active:translate-y-[1px]"
+				{PROVIDERS.map((p, i) => {
+					const label = t(p.labelKey);
+					return (
+						<motion.li
+							key={p.id}
+							initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={
+								reduceMotion ? { duration: 0 } : { duration: 0.45, ease: EASE_OUT_EXPO, delay: 0.05 + i * 0.04 }
+							}
 						>
-							<span className="flex h-8 w-8 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#e4e4e7] transition-colors group-hover:border-white/20">
-								{p.icon}
-							</span>
-							<span className="text-sm font-medium text-[#e4e4e7]">{p.label}</span>
-						</a>
-					</motion.li>
-				))}
+							<a
+								href={startUrlFor(p.id)}
+								onClick={(e) => {
+									// Force window.location.href so the cookie domain matches the
+									// redirect chain. (Next.js Link would do client-side routing
+									// for relative URLs; this is cross-origin anyway.)
+									e.preventDefault();
+									onClick(p.id)();
+								}}
+								aria-label={label}
+								className="group flex items-center gap-3 rounded-sm border border-white/10 bg-[#0b0b0d] px-4 py-3 text-left transition-all duration-200 hover:border-white/25 hover:bg-[#0e0e10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff87]/40 active:translate-y-[1px]"
+							>
+								<span className="flex h-8 w-8 items-center justify-center rounded-sm border border-white/10 bg-black/40 text-[#e4e4e7] transition-colors group-hover:border-white/20">
+									{p.icon}
+								</span>
+								<span className="text-sm font-medium text-[#e4e4e7]">{label}</span>
+							</a>
+						</motion.li>
+					);
+				})}
 			</ul>
 
 			<footer className="space-y-2 pt-2">
 				<div className="h-px bg-white/5" aria-hidden="true" />
-				<p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#71717a]">powered by steward</p>
+				<p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#71717a]">
+					{t("auth.oauthPanel.poweredBy")}
+				</p>
 				<p className="text-[11px] text-[#71717a] leading-relaxed">
-					you'll be redirected to <span className="font-mono text-[#a1a1aa]">eliza.steward.fi</span>. we never see your
-					password.
+					{t("auth.oauthPanel.redirectNotePrefix")}{" "}
+					<span className="font-mono text-[#a1a1aa]">eliza.steward.fi</span>
+					{t("auth.oauthPanel.redirectNoteSuffix")}
 				</p>
 			</footer>
 		</motion.div>
@@ -131,11 +143,18 @@ function ConnectInner() {
 
 export default function OAuthConnectPanel() {
 	return (
-		<Suspense
-			fallback={<div className="min-h-[60vh] flex items-center justify-center text-[#71717a] text-sm">loading</div>}
-		>
+		<Suspense fallback={<OAuthFallback />}>
 			<ConnectInner />
 		</Suspense>
+	);
+}
+
+function OAuthFallback() {
+	const { t } = useTranslation();
+	return (
+		<div className="min-h-[60vh] flex items-center justify-center text-[#71717a] text-sm">
+			{t("auth.oauthPanel.loading")}
+		</div>
 	);
 }
 

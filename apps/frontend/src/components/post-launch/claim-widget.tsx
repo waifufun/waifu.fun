@@ -8,6 +8,7 @@ import { bsc } from "wagmi/chains";
 
 import { LinkedEoaCTA } from "@/components/auth/linked-eoa-cta";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/contexts/locale-context";
 import { useClaimState } from "@/hooks/use-post-launch";
 import { launchVaultAbi } from "@/lib/launch-vault/abi";
 
@@ -36,6 +37,7 @@ const VESTING_WINDOW_SECS = 24 * 60 * 60; // 24h linear
  * to render the timeline copy.
  */
 export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, onClaimed }: Props) {
+	const { t } = useTranslation();
 	const { address, isConnected } = useAccount();
 	const chainId = useChainId();
 	const { switchChain } = useSwitchChain();
@@ -54,14 +56,16 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 	}, [receipt.isSuccess, claim, onClaimed, reset]);
 
 	if (!vault) {
-		return <Card>vault not deployed</Card>;
+		return <Card>{t("post.claim.vaultNotDeployed")}</Card>;
 	}
 
 	if (!isConnected) {
 		return (
 			<Card>
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 mb-3">claim</div>
-				<LinkedEoaCTA>connect to claim your allocation</LinkedEoaCTA>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 mb-3">
+					{t("post.claim.claimLabel")}
+				</div>
+				<LinkedEoaCTA>{t("post.claim.connectToClaim")}</LinkedEoaCTA>
 			</Card>
 		);
 	}
@@ -84,11 +88,11 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 	const partiallyClaimed = !noPosition && claimed > 0n && !fullyClaimed;
 	const nothingClaimedYet = !noPosition && claimed === 0n;
 	const stateCaption = fullyClaimed
-		? "fully claimed"
+		? t("post.claim.fullyClaimed")
 		: partiallyClaimed
-			? "partially claimed"
+			? t("post.claim.partiallyClaimed")
 			: nothingClaimedYet
-				? "nothing claimed yet"
+				? t("post.claim.nothingClaimedYet")
 				: null;
 
 	function onClaim() {
@@ -104,13 +108,15 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 	return (
 		<Card>
 			<div className="flex items-baseline justify-between mb-4">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">claim</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+					{t("post.claim.claimLabel")}
+				</div>
 				{stateCaption ? (
 					<div
 						className={`text-[10px] font-mono uppercase tracking-[0.18em] ${
 							fullyClaimed ? "text-[#00ff87]" : partiallyClaimed ? "text-amber-300" : "text-white/40"
 						}`}
-						aria-label={`claim state: ${stateCaption}`}
+						aria-label={t("post.claim.stateAria", { state: stateCaption })}
 					>
 						{stateCaption}
 					</div>
@@ -118,22 +124,26 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 			</div>
 
 			{noPosition ? (
-				<div className="text-[12px] font-mono text-white/55">no presale position for this address.</div>
+				<div className="text-[12px] font-mono text-white/55">{t("post.claim.noPosition")}</div>
 			) : (
 				<>
 					<dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-						<Stat label="allocation" value={`${formatTokens(allocation)} ${ticker}`} />
-						<Stat label="claimable now" value={`${formatTokens(claimable)} ${ticker}`} accent={canClaim} />
-						<Stat label="vested" value={`${formatTokens(vested)} ${ticker}`} />
-						<Stat label="locked" value={`${formatTokens(locked)} ${ticker}`} />
-						<Stat label="already claimed" value={`${formatTokens(claimed)} ${ticker}`} fullWidth />
+						<Stat label={t("post.claim.allocation")} value={`${formatTokens(allocation)} ${ticker}`} />
+						<Stat
+							label={t("post.claim.claimableNow")}
+							value={`${formatTokens(claimable)} ${ticker}`}
+							accent={canClaim}
+						/>
+						<Stat label={t("post.claim.vested")} value={`${formatTokens(vested)} ${ticker}`} />
+						<Stat label={t("post.claim.locked")} value={`${formatTokens(locked)} ${ticker}`} />
+						<Stat label={t("post.claim.alreadyClaimed")} value={`${formatTokens(claimed)} ${ticker}`} fullWidth />
 					</dl>
 
 					<div className="mt-5 text-[11px] font-mono text-white/45">
 						{vestingEnabled ? (
 							<VestingCopy launchTimestamp={launchTimestamp} />
 						) : (
-							<span>no vesting. 100% claimable at tge.</span>
+							<span>{t("post.claim.noVesting")}</span>
 						)}
 					</div>
 
@@ -144,9 +154,9 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1 text-white/55 hover:text-[#00ff87] transition-colors"
-								aria-label="view last claim transaction on bscscan"
+								aria-label={t("post.claim.viewLastClaimAria")}
 							>
-								last claim tx <ExternalLink className="w-3 h-3" aria-hidden="true" />
+								{t("post.claim.lastClaimTx")} <ExternalLink className="w-3 h-3" aria-hidden="true" />
 							</a>
 						</div>
 					) : null}
@@ -157,7 +167,7 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 								onClick={() => switchChain({ chainId: bsc.id })}
 								className="w-full bg-amber-400 text-black hover:bg-amber-300"
 							>
-								switch to bnb chain
+								{t("post.claim.switchChain")}
 							</Button>
 						) : (
 							<Button
@@ -168,12 +178,12 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 								{isLocked ? (
 									<span className="inline-flex items-center gap-2">
 										<Loader2 className="w-4 h-4 animate-spin" />
-										{receipt.isLoading ? "confirming\u2026" : "submitting\u2026"}
+										{receipt.isLoading ? t("post.claim.confirming") : t("post.claim.submitting")}
 									</span>
 								) : claimable > 0n ? (
-									`claim ${formatTokens(claimable)} ${ticker}`
+									t("post.claim.claimAmount", { amount: formatTokens(claimable), ticker })
 								) : (
-									"nothing to claim"
+									t("post.claim.nothingToClaim")
 								)}
 							</Button>
 						)}
@@ -185,8 +195,9 @@ export function ClaimWidget({ vault, ticker, vestingEnabled, launchTimestamp, on
 }
 
 function Card({ children }: { children: React.ReactNode }) {
+	const { t } = useTranslation();
 	return (
-		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label="claim widget">
+		<section className="border border-white/10 bg-[#08080a] rounded-sm p-5" aria-label={t("post.claim.widgetAria")}>
 			{children}
 		</section>
 	);
@@ -212,16 +223,19 @@ function Stat({
 }
 
 function VestingCopy({ launchTimestamp }: { launchTimestamp: number | null }) {
-	if (!launchTimestamp) return <span>50% at tge, 50% linear over 24h.</span>;
+	const { t } = useTranslation();
+	if (!launchTimestamp) return <span>{t("post.claim.vesting.defaultCopy")}</span>;
 
 	const { pct, remainingSecs } = vestingProgress(launchTimestamp, Math.floor(Date.now() / 1000));
-	if (remainingSecs <= 0) return <span>fully vested.</span>;
+	if (remainingSecs <= 0) return <span>{t("post.claim.vesting.fullyVested")}</span>;
 
 	const hrs = Math.floor(remainingSecs / 3600);
 	const mins = Math.floor((remainingSecs % 3600) / 60);
 	return (
 		<span>
-			vesting <span className="tabular-nums text-white/75">{pct.toFixed(1)}%</span> · fully unlocks in{" "}
+			{t("post.claim.vesting.vestingLabel")}{" "}
+			<span className="tabular-nums text-white/75">{pct.toFixed(1)}%</span>{" "}
+			{t("post.claim.vesting.fullyUnlocksIn")}{" "}
 			<span className="tabular-nums text-white/75">
 				{hrs}h {mins}m
 			</span>

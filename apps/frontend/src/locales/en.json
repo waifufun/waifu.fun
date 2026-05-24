@@ -460,7 +460,150 @@
 			"viewOnX": "view on x"
 		}
 	},
-	"auth": {},
+	"auth": {
+		"callback": {
+			"redirecting": "redirecting..."
+		},
+		"connect": {
+			"back": "back",
+			"continue": "continue",
+			"continueEmailAria": "continue with email",
+			"continueWalletAria": "continue with a wallet",
+			"continueWith": "continue with {{provider}}",
+			"emailLabel": "email",
+			"emailPlaceholder": "your email",
+			"finalizing": "finalizing session",
+			"invalidEmail": "enter a valid email address",
+			"loadingWallets": "loading wallets",
+			"magicLinkError": "could not send magic link",
+			"magicLinkSent": "check your inbox for a magic link",
+			"orDivider": "or",
+			"passkeyFailed": "passkey failed",
+			"passkeyNeedsEmail": "enter your email above first",
+			"passkeySettingUp": "setting up passkey",
+			"passkeyUse": "use a passkey",
+			"securedBy": "secured by steward",
+			"srDescription": "sign in with email, passkey, oauth, or wallet",
+			"title": "sign in to waifu.fun",
+			"walletButton": "wallet",
+			"walletSignInFailed": "{{kind}} sign-in failed",
+			"walletSignInFailedWith": "{{kind}} sign-in failed: {{message}}",
+			"walletSubtitle": "sign a message to prove ownership. no transaction, no gas.",
+			"walletTitle": "connect your wallet"
+		},
+		"connectX": {
+			"connectLabel": "connect x",
+			"loadingAria": "Loading X auth",
+			"signInAria": "Sign in with X",
+			"signOut": "Sign out",
+			"signedInAria": "Signed in as @{{handle}}"
+		},
+		"emailVerify": {
+			"eyebrow": "waifu.fun / auth / email",
+			"loading": "loading",
+			"missingTokenError": "missing token or email in callback URL",
+			"signInFailed": "sign-in failed",
+			"signInFailedFallback": "sign-in failed",
+			"signingIn": "signing you in",
+			"tryAgain": "try again",
+			"unknownError": "unknown error",
+			"verifyingMagicLink": "verifying your magic link."
+		},
+		"gate": {
+			"verifyingSession": "verifying session…"
+		},
+		"linkedEoa": {
+			"linkExternal": "Link third-party wallet",
+			"linking": "linking...",
+			"signIn": "Sign in"
+		},
+		"oauthCallback": {
+			"eyebrow": "waifu.fun / auth / callback",
+			"loading": "loading",
+			"missingToken": "missing token in callback URL",
+			"signInFailed": "sign-in failed",
+			"signInFailedFallback": "sign-in failed",
+			"signingIn": "signing you in",
+			"tryAgain": "try again",
+			"unknownError": "unknown error",
+			"verifyingWithSteward": "verifying with steward."
+		},
+		"oauthPanel": {
+			"continueDiscord": "continue with discord",
+			"continueEmail": "continue with email",
+			"continueGithub": "continue with github",
+			"continueGoogle": "continue with google",
+			"continuePasskey": "continue with passkey",
+			"continueTwitter": "continue with twitter / x",
+			"eyebrow": "waifu.fun / sign in",
+			"loading": "loading",
+			"poweredBy": "powered by steward",
+			"redirectNotePrefix": "you'll be redirected to",
+			"redirectNoteSuffix": ". we never see your password.",
+			"subtitle": "one identity owns all your agents. choose how you want to verify.",
+			"title": "sign in to waifu.fun"
+		},
+		"protected": {
+			"body": "Sign in with Steward to continue.",
+			"signInCta": "Sign in",
+			"title": "Sign in required"
+		},
+		"stewardCallback": {
+			"backToPatron": "back to patron",
+			"backendUnreachable": "could not contact waifu.fun backend.",
+			"clickHere": "click here",
+			"closingNote": "closing this window automatically. if it doesn't,",
+			"connectedTitle": "steward connected",
+			"eyebrow": "waifu.fun / steward / callback",
+			"failedTitle": "steward connect failed",
+			"linkingBody": "verifying the token. usually quick",
+			"linkingTitle": "linking your steward account",
+			"noToken": "steward redirect did not include a token. try again.",
+			"sourcePrefix": "source:",
+			"storedLocally": "stored locally. we'll sync to the backend once it's wired up",
+			"tryAgain": "try again",
+			"unknownError": "unknown error",
+			"walletLinked": "your wallet is linked to your steward account"
+		},
+		"twitterFinalize": {
+			"eyebrow": "waifu.fun / auth / twitter",
+			"finishingAuth": "finishing twitter / x auth.",
+			"loading": "loading",
+			"missingCode": "missing code in twitter callback URL",
+			"signInFailed": "sign-in failed",
+			"signInFailedFallback": "twitter sign-in failed",
+			"signingIn": "signing you in",
+			"tryAgain": "try again",
+			"unknownError": "unknown error"
+		},
+		"userMenu": {
+			"agentPlural": "agents",
+			"agentSingular": "agent",
+			"copyPrimaryAria": "copy primary wallet",
+			"linkedPrefix": "linked:",
+			"manageWallets": "Manage wallets",
+			"menuAria": "account menu",
+			"patronFallback": "patron",
+			"primaryPrefix": "primary:",
+			"signOut": "sign out",
+			"signedInAs": "signed in as",
+			"signingOut": "signing out...",
+			"yourAgents": "your agents"
+		},
+		"wallet": {
+			"browserWalletFallback": "Browser Wallet",
+			"couldNotConnect": "could not connect",
+			"disconnect": "disconnect",
+			"genericWallet": "wallet",
+			"invalidEvmAddress": "invalid EVM address: {{address}}",
+			"noConnectors": "no wallet connectors available",
+			"noWalletConnected": "no wallet connected",
+			"onChain": "on {{chain}}",
+			"signInFailed": "sign-in failed",
+			"signInWith": "sign in with {{wallet}}",
+			"signing": "signing"
+		}
+	},
 	"claim": {
 		"fees": {
 			"body": "As the token creator, you can claim accumulated fees from trading activity.",
@@ -1531,7 +1674,95 @@
 			"unrealized": "unrealized"
 		}
 	},
-	"post": {},
+	"post": {
+		"burn": {
+			"loadingAria": "loading {{ticker}} burn stats",
+			"notDeployed": "token not deployed",
+			"ofSupply": "of supply",
+			"percentAria": "{{pct}} percent of supply",
+			"sectionAria": "burn counter",
+			"tokenBurnedSuffix": "${{ticker}} burned",
+			"totalAria": "{{amount}} {{ticker}} burned"
+		},
+		"chart": {
+			"iframeTitle": "price chart for {{address}}",
+			"openOnAria": "open chart on dexscreener",
+			"priceChart": "price chart",
+			"sectionAria": "price chart"
+		},
+		"claim": {
+			"allocation": "allocation",
+			"alreadyClaimed": "already claimed",
+			"claimAmount": "claim {{amount}} {{ticker}}",
+			"claimLabel": "claim",
+			"claimableNow": "claimable now",
+			"confirming": "confirming…",
+			"connectToClaim": "connect to claim your allocation",
+			"fullyClaimed": "fully claimed",
+			"lastClaimTx": "last claim tx",
+			"locked": "locked",
+			"noPosition": "no presale position for this address.",
+			"noVesting": "no vesting. 100% claimable at tge.",
+			"nothingClaimedYet": "nothing claimed yet",
+			"nothingToClaim": "nothing to claim",
+			"partiallyClaimed": "partially claimed",
+			"stateAria": "claim state: {{state}}",
+			"submitting": "submitting…",
+			"switchChain": "switch to bnb chain",
+			"vaultNotDeployed": "vault not deployed",
+			"vested": "vested",
+			"vesting": {
+				"defaultCopy": "50% at tge, 50% linear over 24h.",
+				"fullyUnlocksIn": "· fully unlocks in",
+				"fullyVested": "fully vested.",
+				"vestingLabel": "vesting"
+			},
+			"viewLastClaimAria": "view last claim transaction on bscscan",
+			"widgetAria": "claim widget"
+		},
+		"surface": {
+			"burnCounterHeader": "burn counter",
+			"claimHeader": "claim",
+			"priceChartHeader": "price chart",
+			"sectionAria": "post-launch surface",
+			"tierLadderHeader": "tier ladder",
+			"tradeActivityHeader": "trade activity"
+		},
+		"tier": {
+			"allDeployed": "all four tiers deployed",
+			"at": "at",
+			"away": "away",
+			"cellAria": "tier {{idx}}, {{target}} mc target, {{status}}{{epochs}}",
+			"cellAriaEpochsSuffix": ", {{epochs}} epochs",
+			"cellStatus": {
+				"deployed": "deployed",
+				"paused": "paused",
+				"pending": "pending"
+			},
+			"cellsAria": "tier ladder cells",
+			"mcPrefix": "mc",
+			"mcSuffix": "mc",
+			"next": "next:",
+			"noData": "no tier data",
+			"notDeployed": "not yet deployed",
+			"sectionAria": "tier deploy ladder",
+			"statusLabel": "tier deploy status",
+			"thresholdReached": "threshold reached"
+		},
+		"tradeFeed": {
+			"buys": "buys",
+			"fullFeed": "full feed",
+			"label": "trade activity",
+			"listAria": "buy and sell counts per window",
+			"loading": "loading activity…",
+			"noTrades": "no trades yet",
+			"openOnAria": "open full trade feed on dexscreener",
+			"ratioAria": "buy / sell ratio for {{window}}",
+			"rowAria": "{{window}}: {{buys}} buys, {{sells}} sells",
+			"sectionAria": "trade activity feed",
+			"sells": "sells"
+		}
+	},
 	"profile": {
 		"activity": "Activity",
 		"agents": "Agents",
@@ -1596,7 +1827,21 @@
 	"story": {},
 	"support": {},
 	"swap": {
+		"advanced": {
+			"frontrunWarning": "Your transaction may be frontrun and result in an unfavorable trade",
+			"slippageLabel": "Slippage",
+			"slippageTooltip": "This is the maximum amount of slippage you are willing to accept when placing the trade",
+			"speed": {
+				"normal": "Normal",
+				"turbo": "Turbo",
+				"ultra": "Ultra"
+			},
+			"speedLabel": "Speed",
+			"speedTooltip": "Choose how fast your transaction executes",
+			"title": "Advanced Settings"
+		},
 		"amountTooHigh": "Amount too high",
+		"buy": "Buy",
 		"connect": "Connect",
 		"insufficientBalance": "Insufficient balance",
 		"insufficientBalanceMessage": "Insufficient balance to perform trade.",
@@ -1605,6 +1850,7 @@
 		"priceImpact": "Price Impact",
 		"priceUnavailable": "Price unavailable",
 		"reset": "Reset",
+		"sell": "Sell",
 		"tokenMigrating": "Token migrating",
 		"tradingStarts": "Trading starts"
 	},
@@ -1629,16 +1875,265 @@
 			"txTitle": "Transaction",
 			"type": "Type"
 		},
+		"agentPanel": {
+			"checkingAgent": "checking agent…",
+			"couldNotCheck": "could not check agent status.",
+			"creatorOnly": "creator-only",
+			"finishCreatorAuth": "Finish creator auth to load restart and stop controls.",
+			"lifecyclePrefix": "lifecycle: {{state}}",
+			"noAgentRunning": "no agent running. agents launch themselves via the api.",
+			"privateRuntime": "This token has a creator-managed runtime. Public viewers can see the status here, but controls stay private.",
+			"provisioningSuffix": "provisioning…",
+			"publicView": "public view",
+			"restart": "restart",
+			"retry": "retry",
+			"runtimeLivesHere": "Runtime controls live here for the creator after an agent is deployed.",
+			"status": {
+				"deleted": "deleted",
+				"failed": "failed",
+				"provisioning": "provisioning",
+				"queued": "queued",
+				"running": "running",
+				"stopped": "stopped",
+				"unknown": "unknown"
+			},
+			"stop": "stop",
+			"toast": {
+				"restartFailed": "restart failed",
+				"restartRequested": "restart requested",
+				"stopFailed": "stop failed",
+				"stopped": "agent stopped"
+			}
+		},
 		"bondingCurveProgress": "Bonding curve",
 		"bondingProgress": "bonding progress",
 		"bondingProgressTooltip": "when the market cap reaches the graduation threshold, the coin's liquidity will migrate to a DEX.",
+		"economics": {
+			"claim": {
+				"claimed": "claimed",
+				"disputed": "disputed",
+				"unclaimed": "unclaimed",
+				"verified": "verified"
+			},
+			"funding": {
+				"creatorFunded": "creator-funded",
+				"label": "funding",
+				"platform": "platform",
+				"shared": "shared"
+			},
+			"ownership": "ownership",
+			"pulse": "heartbeat",
+			"reserve": "reserve",
+			"runtime": "runtime"
+		},
+		"holderLabels": {
+			"bondingCurve": "Bonding Curve",
+			"burn": "Burn",
+			"creator": "Creator"
+		},
 		"needed": "needed",
+		"ownerPanel": {
+			"activate": "activate",
+			"checking": "checking...",
+			"claim": "claim",
+			"claimState": {
+				"claimed": "claimed",
+				"disputed": "disputed",
+				"unclaimed": "unclaimed",
+				"verified": "verified"
+			},
+			"connectCreator": "connect creator wallet",
+			"controlPlaneUnavailable": "Owner control-plane unavailable.",
+			"economics": {
+				"currentSpend": "current spend",
+				"dailyBurn": "daily burn",
+				"fundingSource": "funding source",
+				"runway": "runway"
+			},
+			"finishAuth": "finish auth to claim",
+			"fundingSource": {
+				"creatorCredits": "creator credits",
+				"platformSubsidy": "platform subsidy",
+				"sharedFunding": "shared funding"
+			},
+			"loading": "loading...",
+			"operator": "operator",
+			"pause": "pause",
+			"provisioning": "provisioning",
+			"resume": "resume",
+			"routesNotAvailable": "Owner routes not available on this backend branch.",
+			"runtimeStatus": {
+				"deleted": "deleted",
+				"failed": "failed",
+				"none": "none",
+				"provisioning": "provisioning",
+				"running": "running",
+				"suspended": "suspended"
+			},
+			"toast": {
+				"activationRequested": "activation requested",
+				"ownerAccessClaimed": "owner access claimed",
+				"runtimeResumed": "runtime resumed",
+				"runtimeSuspended": "runtime suspended"
+			}
+		},
+		"presence": {
+			"active": {
+				"description": "active and responsive",
+				"label": "online"
+			},
+			"bonding": {
+				"description": "still on the bonding curve",
+				"label": "emerging"
+			},
+			"dormant": {
+				"description": "graduated but quiet",
+				"label": "idle"
+			},
+			"imported": {
+				"description": "third-party market listing",
+				"label": "tracked"
+			},
+			"migrated": {
+				"description": "trading on third-party pool",
+				"label": "graduated"
+			}
+		},
 		"priceChart": "price chart",
+		"profile": {
+			"byLabel": "by"
+		},
 		"reserve": "reserve",
+		"ribbon": {
+			"feedBonding": "bonding",
+			"feedExternal": "third-party",
+			"feedIndexed": "indexed",
+			"holders": "holders",
+			"marketSuffix": "{{feed}} market",
+			"mcap": "mcap",
+			"price": "price",
+			"vol": "vol"
+		},
+		"skills": {
+			"chain": "chain",
+			"chains": {
+				"base": "base",
+				"baseSepolia": "base sepolia",
+				"ethereum": "ethereum",
+				"ethereumSepolia": "ethereum sepolia"
+			},
+			"contract": "contract",
+			"created": "created",
+			"holders": "holders",
+			"links": "links",
+			"personality": "personality",
+			"talksAbout": "talks about",
+			"voice": "voice"
+		},
+		"snapshot": {
+			"eyebrow": "market snapshot",
+			"feedIndexedFallback": "indexed fallback",
+			"feedLiveExternal": "live third-party market",
+			"feedWaifu": "waifu.fun market",
+			"holders": "holders",
+			"holdersHelperAggregate": "Aggregate holder total only. Wallet leaderboard is not indexed for this market yet.",
+			"holdersHelperMissing": "Holder totals are not exposed, and the wallet leaderboard is not indexed for this market yet.",
+			"holdersUnavailable": "unavailable",
+			"marketCap": "market cap",
+			"price": "price",
+			"title": "market overview",
+			"volume24h": "24h volume",
+			"volumeHelperNoFeed": "Live third-party feed not connected."
+		},
+		"statusVisual": {
+			"curveGraduated": "graduated",
+			"curveLabel": "curve",
+			"curvePercent": "{{pct}}% complete",
+			"dataLabel": "data",
+			"feedBondingCurve": "bonding curve",
+			"feedIndexed": "indexed",
+			"feedLiveExternal": "live external",
+			"heartbeatLabel": "heartbeat",
+			"lastSeenLabel": "last seen",
+			"liveFeed": "live feed",
+			"notExposed": "not exposed",
+			"platformData": "platform data",
+			"quiet": "quiet",
+			"recentActivity": "recent activity",
+			"statusLabel": "status",
+			"unknown": "unknown",
+			"waitingForFeed": "waiting for feed"
+		},
 		"swap": "Swap",
 		"tabs": {
 			"holders": "holders",
 			"trades": "trades"
+		},
+		"trades": {
+			"badge": {
+				"historical": "historical",
+				"live": "live",
+				"partial": "partial",
+				"third-party": "third-party"
+			},
+			"footer": {
+				"historical": "Verified portal history only",
+				"historicalWithTime": "Verified portal history only · latest activity {{time}}",
+				"liveWithCount": "Live portal feed · showing {{count}} recent trades",
+				"partialWithCount": "Mixed verified history · showing {{count}} recent rows",
+				"third-partyWithCount": "Live third-party feed · showing {{count}} recent trades",
+				"third-partyWithTime": "Live third-party feed · latest trade {{time}}"
+			},
+			"headers": {
+				"account": "account",
+				"date": "date",
+				"price": "price",
+				"quoteSide": "quote side",
+				"tokenAmount": "token amount",
+				"type": "type"
+			},
+			"hideHistory": "hide history",
+			"liveMarket": "live market",
+			"noTradesYet": "no trades yet.",
+			"perTicker": "per {{ticker}}",
+			"semantics": {
+				"quotePaid": "quote paid",
+				"quoteReceived": "quote received",
+				"received": "received",
+				"sold": "sold"
+			},
+			"showHistory": "show history",
+			"showLess": "show less",
+			"showMore": "show {{count}} more",
+			"sideBuy": "buy",
+			"sideSell": "sell",
+			"summary": {
+				"historical": "Live trading has moved to an third-party market. This section keeps the last verified portal history.",
+				"historicalWithTime": "Live trading has moved to an third-party market. This section keeps the last verified portal history, latest activity {{time}}.",
+				"live": "Recent verified trading activity on waifu.fun. Refreshes automatically.",
+				"partial": "Some rows are historical or incomplete. Token amounts stay visible, while quote-side values only appear when the quote side is verified.",
+				"third-party": "Live third-party activity is flowing in from GeckoTerminal. It stays tucked away here so the page remains focused.",
+				"third-partyWithTime": "Live third-party activity is flowing in from GeckoTerminal. It stays tucked away here so the page remains focused, latest trade {{time}}."
+			},
+			"title": {
+				"activity": "trade activity",
+				"history": "trade history"
+			},
+			"tokenLabelPrefix": "token",
+			"unavailable": {
+				"historical": "historical row",
+				"notDerived": "not derived",
+				"quoteSideMissing": "quote side missing",
+				"quoteUnavailable": "quote unavailable",
+				"stale": "stale row",
+				"unavailable": "unavailable"
+			},
+			"unavailableBody": "{{ticker}} is trading on an third-party market. We do not have verified live activity to render inside waifu.fun yet.",
+			"unavailableHeading": "trade history unavailable"
+		},
+		"viewMode": {
+			"agent": "agent",
+			"market": "market"
 		}
 	},
 	"units": {},

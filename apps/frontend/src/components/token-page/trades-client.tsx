@@ -1,6 +1,7 @@
 "use client";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTranslation } from "@/contexts/locale-context";
 import { getTrades } from "@/lib/api";
 import { cn, fromNow, getCoinGeckoChainName, shortenAddress } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -33,7 +34,7 @@ interface ApiTrade {
 }
 
 interface TradeSourceMetadata {
-	kind?: "indexed" | "external" | string | null;
+	kind?: "indexed" | "third-party" | string | null;
 	provider?: "waifu-indexer" | "geckoterminal" | string | null;
 	network?: string | null;
 	poolAddress?: string | null;
@@ -43,6 +44,7 @@ interface TradeSourceMetadata {
 type TradeSource = string | TradeSourceMetadata | null;
 
 const headerClass = "text-[10px] font-mono uppercase tracking-wider text-[#71717a]";
+// DO NOT i18n: internal token status names matched against API responses (see audit 5d)
 const migratedStatuses = new Set(["completed", "dex", "migrated", "locked", "finalized"]);
 const staleFeedMs = 1000 * 60 * 60 * 12;
 const DEFAULT_VISIBLE_ROWS = 6;
@@ -113,8 +115,9 @@ const getTradeSourceKind = (source?: TradeSource) => {
 	if (kind) return kind;
 
 	const sourceText = getTradeSourceText(source);
-	if (sourceText === "dex" || sourceText === "external" || sourceText === "geckoterminal") {
-		return "external";
+	// DO NOT i18n: matched against internal source strings
+	if (sourceText === "dex" || sourceText === "third-party" || sourceText === "geckoterminal") {
+		return "third-party";
 	}
 	if (sourceText) return "indexed";
 
@@ -127,22 +130,23 @@ const getTradeSourceProvider = (source?: TradeSource) => {
 	if (provider) return provider;
 
 	const sourceText = getTradeSourceText(source);
-	if (sourceText === "dex") return "external-market";
+	if (sourceText === "dex") return "third-party-market";
 
 	return sourceText;
 };
 
-const getTradeSourceLabel = (source?: TradeSource) => {
+// NOTE: returns a key suffix; caller translates via `t("token.trades.sourceLabel.<suffix>")` or echoes raw text.
+const getTradeSourceLabelKey = (source?: TradeSource): { key?: string; raw?: string } => {
 	const kind = getTradeSourceKind(source);
 	const provider = getTradeSourceProvider(source);
 	const sourceText = getTradeSourceText(source);
 
-	if (provider === "geckoterminal") return "geckoterminal";
-	if (kind === "external") return "external market";
-	if (sourceText === "portal") return "portal";
-	if (sourceText) return sourceText.replace(/[-_]+/g, " ");
+	if (provider === "geckoterminal") return { key: "geckoterminal" };
+	if (kind === "third-party") return { key: "third-partyMarket" };
+	if (sourceText === "portal") return { key: "portal" };
+	if (sourceText) return { raw: sourceText.replace(/[-_]+/g, " ") };
 
-	return null;
+	return {};
 };
 
 const isExternalTrade = (trade: ApiTrade) => {
@@ -150,7 +154,8 @@ const isExternalTrade = (trade: ApiTrade) => {
 	const provider = getTradeSourceProvider(trade.source);
 	const note = normalizeText(trade.note).toLowerCase();
 
-	return kind === "external" || provider === "geckoterminal" || note.includes("geckoterminal");
+	// DO NOT i18n: matched against API note field (see audit 5d)
+	return kind === "third-party" || provider === "geckoterminal" || note.includes("geckoterminal");
 };
 
 const isBackfillTrade = (trade: ApiTrade) => {
@@ -158,6 +163,7 @@ const isBackfillTrade = (trade: ApiTrade) => {
 	const normalizedSource = getTradeSourceText(trade.source);
 	const sourceKind = getTradeSourceKind(trade.source);
 
+	// DO NOT i18n: matched against API note + source fields (see audit 5d)
 	return (
 		sourceKind === "indexed" &&
 		(normalizedSource === "backfill" ||
@@ -177,8 +183,8 @@ const hasHistoricalContext = (trade: ApiTrade) => {
 		return true;
 	}
 
-	const sourceLabel = getTradeSourceLabel(trade.source);
-	return Boolean(sourceLabel && sourceLabel !== "portal");
+	const sourceLabelInfo = getTradeSourceLabelKey(trade.source);
+	return Boolean((sourceLabelInfo.key && sourceLabelInfo.key !== "portal") || sourceLabelInfo.raw);
 };
 
 const hasVerifiedQuoteAmount = (trade: ApiTrade, token: IToken) => {
@@ -243,25 +249,25 @@ const getQuoteTokenSymbol = (trade: ApiTrade, token: IToken) => {
 	return tokenLevelSymbol;
 };
 
-const getTradeSemantics = (trade: ApiTrade) => {
+const getTradeSemanticKeys = (trade: ApiTrade) => {
 	if (trade.side === "buy") {
 		return {
-			tokenLabel: "received",
-			quoteLabel: "quote paid",
+			tokenLabelKey: "token.trades.semantics.received",
+			quoteLabelKey: "token.trades.semantics.quotePaid",
 		};
 	}
 
 	return {
-		tokenLabel: "sold",
-		quoteLabel: "quote received",
+		tokenLabelKey: "token.trades.semantics.sold",
+		quoteLabelKey: "token.trades.semantics.quoteReceived",
 	};
 };
 
-const getUnavailableQuoteLabel = (trade: ApiTrade) => {
-	if (trade.stale) return "stale row";
-	if (isBackfillTrade(trade)) return "historical row";
-	if (isExternalTrade(trade)) return "quote side missing";
-	return "quote unavailable";
+const getUnavailableQuoteLabelKey = (trade: ApiTrade) => {
+	if (trade.stale) return "token.trades.unavailable.stale";
+	if (isBackfillTrade(trade)) return "token.trades.unavailable.historical";
+	if (isExternalTrade(trade)) return "token.trades.unavailable.quoteSideMissing";
+	return "token.trades.unavailable.quoteUnavailable";
 };
 
 const getDerivedPrice = (trade: ApiTrade, token: IToken) => {
@@ -295,6 +301,7 @@ const getExternalMarketUrl = (token: IToken) => {
 	return `https://www.geckoterminal.com/${geckoChainName}/pools/${tokenWithPool.pool}`;
 };
 export default function TradesClient({ token, initialData }: { token: IToken; initialData: any }) {
+	const { t } = useTranslation();
 	const nonAnimatedTrades = Array.from(new Set<string>((initialData ?? []).map((trade: ApiTrade) => trade.txHash)));
 	const query = useQuery({
 		queryKey: ["trades", token.chain, token.chainId, token.contractAddress],
@@ -318,7 +325,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 
 	const tokenWithPool = token as IToken & { pool?: string };
 	const isMigratedToken = migratedStatuses.has(token.status);
-	const externalMarketUrl = getExternalMarketUrl(token);
+	const third-partyMarketUrl = getExternalMarketUrl(token);
 	const hasExternalMarket = Boolean(token.imported || tokenWithPool.pool || (token.curveCompleted && isMigratedToken));
 	const latestTradeDate = parseTradeDate(data[0]?.timestamp);
 	const hasHistoricalRows = data.some((trade) => hasHistoricalContext(trade));
@@ -339,42 +346,41 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 	const hiddenTradeCount = Math.max(data.length - DEFAULT_VISIBLE_ROWS, 0);
 	const summary = isStaleExternalFeed
 		? {
-				badge: "historical",
-				title: "trade history",
+				badge: t("token.trades.badge.historical"),
+				title: t("token.trades.title.history"),
 				description: latestTradeDate
-					? `Live trading has moved to an external market. This section keeps the last verified portal history, latest activity ${fromNow(latestTradeDate)}.`
-					: "Live trading has moved to an external market. This section keeps the last verified portal history.",
+					? t("token.trades.summary.historicalWithTime", { time: fromNow(latestTradeDate) })
+					: t("token.trades.summary.historical"),
 				footer: latestTradeDate
-					? `Verified portal history only · latest activity ${fromNow(latestTradeDate)}`
-					: "Verified portal history only",
+					? t("token.trades.footer.historicalWithTime", { time: fromNow(latestTradeDate) })
+					: t("token.trades.footer.historical"),
 				icon: History,
 			}
 		: hasExternalRows
 			? {
-					badge: "external",
-					title: "trade activity",
+					badge: t("token.trades.badge.third-party"),
+					title: t("token.trades.title.activity"),
 					description: latestTradeDate
-						? `Live external activity is flowing in from GeckoTerminal. It stays tucked away here so the page remains focused, latest trade ${fromNow(latestTradeDate)}.`
-						: "Live external activity is flowing in from GeckoTerminal. It stays tucked away here so the page remains focused.",
+						? t("token.trades.summary.third-partyWithTime", { time: fromNow(latestTradeDate) })
+						: t("token.trades.summary.third-party"),
 					footer: latestTradeDate
-						? `Live external feed · latest trade ${fromNow(latestTradeDate)}`
-						: `Live external feed · showing ${data.length} recent trades`,
+						? t("token.trades.footer.third-partyWithTime", { time: fromNow(latestTradeDate) })
+						: t("token.trades.footer.third-partyWithCount", { count: String(data.length) }),
 					icon: Radio,
 				}
 			: hasHistoricalRows
 				? {
-						badge: "partial",
-						title: "trade history",
-						description:
-							"Some rows are historical or incomplete. Token amounts stay visible, while quote-side values only appear when the quote side is verified.",
-						footer: `Mixed verified history · showing ${data.length} recent rows`,
+						badge: t("token.trades.badge.partial"),
+						title: t("token.trades.title.history"),
+						description: t("token.trades.summary.partial"),
+						footer: t("token.trades.footer.partialWithCount", { count: String(data.length) }),
 						icon: History,
 					}
 				: {
-						badge: "live",
-						title: "trade history",
-						description: "Recent verified trading activity on waifu.fun. Refreshes automatically.",
-						footer: `Live portal feed · showing ${data.length} recent trades`,
+						badge: t("token.trades.badge.live"),
+						title: t("token.trades.title.history"),
+						description: t("token.trades.summary.live"),
+						footer: t("token.trades.footer.liveWithCount", { count: String(data.length) }),
 						icon: Radio,
 					};
 
@@ -387,21 +393,20 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 							<div className="flex items-center gap-2">
 								<History className="size-4 text-[#71717a]" />
 								<div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a1a1aa]">
-									trade history unavailable
+									{t("token.trades.unavailableHeading")}
 								</div>
 							</div>
 							<p className="max-w-2xl text-sm leading-relaxed text-[#71717a]">
-								{token.ticker} is trading on an external market. We do not have verified live activity to render inside
-								waifu.fun yet.
+								{t("token.trades.unavailableBody", { ticker: token.ticker })}
 							</p>
 						</div>
-						{externalMarketUrl ? (
+						{third-partyMarketUrl ? (
 							<Link
-								href={externalMarketUrl}
+								href={third-partyMarketUrl}
 								target="_blank"
 								className="inline-flex items-center gap-1 self-start rounded-sm border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[#a1a1aa] transition-colors hover:border-[#00ff87]/25 hover:text-[#00ff87]"
 							>
-								live market
+								{t("token.trades.liveMarket")}
 								<ExternalLink className="size-3" />
 							</Link>
 						) : null}
@@ -410,7 +415,9 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 			);
 		}
 
-		return <div className="w-full p-4 py-8 text-center text-sm text-[#a1a1aa]">no trades yet.</div>;
+		return (
+			<div className="w-full p-4 py-8 text-center text-sm text-[#a1a1aa]">{t("token.trades.noTradesYet")}</div>
+		);
 	}
 
 	const SummaryIcon = summary.icon;
@@ -426,7 +433,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 							<span
 								className={cn(
 									"rounded-sm border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em]",
-									summary.badge === "live"
+									summary.badge === t("token.trades.badge.live")
 										? "border-[#00ff87]/20 bg-[#00ff87]/8 text-[#00ff87]"
 										: "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-[#71717a]",
 								)}
@@ -438,13 +445,13 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					</div>
 
 					<div className="flex shrink-0 items-center gap-2 self-start">
-						{externalMarketUrl ? (
+						{third-partyMarketUrl ? (
 							<Link
 								href={externalMarketUrl}
 								target="_blank"
 								className="inline-flex items-center gap-1 rounded-sm border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[#a1a1aa] transition-colors hover:border-[#00ff87]/25 hover:text-[#00ff87]"
 							>
-								live market
+								{t("token.trades.liveMarket")}
 								<ExternalLink className="size-3" />
 							</Link>
 						) : null}
@@ -453,7 +460,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 							onClick={() => setIsExpanded((current) => !current)}
 							className="inline-flex items-center gap-1 rounded-sm border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[#a1a1aa] transition-colors hover:border-[rgba(255,255,255,0.14)] hover:text-[#e4e4e7]"
 						>
-							{isExpanded ? "hide" : "show"} history
+							{isExpanded ? t("token.trades.hideHistory") : t("token.trades.showHistory")}
 							{isExpanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
 						</button>
 					</div>
@@ -465,12 +472,14 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 					<Table id="trades">
 						<TableHeader>
 							<TableRow>
-								<TableHead className={cn(headerClass, "w-[100px]")}>account</TableHead>
-								<TableHead className={cn(headerClass, "text-center")}>type</TableHead>
-								<TableHead className={headerClass}>token amount</TableHead>
-								<TableHead className={headerClass}>quote side</TableHead>
-								<TableHead className={headerClass}>price</TableHead>
-								<TableHead className={cn(headerClass, "w-12 text-right")}>date</TableHead>
+								<TableHead className={cn(headerClass, "w-[100px]")}>{t("token.trades.headers.account")}</TableHead>
+								<TableHead className={cn(headerClass, "text-center")}>{t("token.trades.headers.type")}</TableHead>
+								<TableHead className={headerClass}>{t("token.trades.headers.tokenAmount")}</TableHead>
+								<TableHead className={headerClass}>{t("token.trades.headers.quoteSide")}</TableHead>
+								<TableHead className={headerClass}>{t("token.trades.headers.price")}</TableHead>
+								<TableHead className={cn(headerClass, "w-12 text-right")}>
+									{t("token.trades.headers.date")}
+								</TableHead>
 								<TableHead className="w-5 text-right" />
 							</TableRow>
 						</TableHeader>
@@ -483,8 +492,9 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								const usdValue = normalizeText(trade.usdValue);
 								const showQuoteAmount = hasVerifiedQuoteAmount(trade, token);
 								const derivedPrice = getDerivedPrice(trade, token);
-								const semantics = getTradeSemantics(trade);
-								const unavailableQuoteLabel = getUnavailableQuoteLabel(trade);
+								const semantics = getTradeSemanticKeys(trade);
+								const unavailableQuoteLabel = t(getUnavailableQuoteLabelKey(trade));
+								const sideLabel = isBuy ? t("token.trades.sideBuy") : t("token.trades.sideSell");
 
 								return (
 									<TableRow
@@ -504,7 +514,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 										<TableCell>
 											<div className="flex items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em]">
 												<Triangle direction={isBuy ? "up" : "down"} />
-												<span className={isBuy ? "text-[#00ff87]" : "text-red-400"}>{trade.side}</span>
+												<span className={isBuy ? "text-[#00ff87]" : "text-red-400"}>{sideLabel}</span>
 											</div>
 										</TableCell>
 										<TableCell>
@@ -517,7 +527,7 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 													<span className="font-mono text-sm text-[#71717a]">-</span>
 												)}
 												<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
-													token {semantics.tokenLabel}
+													{t("token.trades.tokenLabelPrefix")} {t(semantics.tokenLabelKey)}
 												</span>
 											</div>
 										</TableCell>
@@ -535,12 +545,14 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 															</span>
 														) : null}
 														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
-															{semantics.quoteLabel}
+															{t(semantics.quoteLabelKey)}
 														</span>
 													</>
 												) : (
 													<>
-														<span className="font-mono text-sm text-[#71717a]">unavailable</span>
+														<span className="font-mono text-sm text-[#71717a]">
+															{t("token.trades.unavailable.unavailable")}
+														</span>
 														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
 															{unavailableQuoteLabel}
 														</span>
@@ -556,14 +568,16 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 															{formatAmount(derivedPrice, derivedPrice >= 1 ? 6 : 8)} {quoteTokenSymbol}
 														</span>
 														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
-															per {token.ticker}
+															{t("token.trades.perTicker", { ticker: token.ticker })}
 														</span>
 													</>
 												) : (
 													<>
-														<span className="font-mono text-sm text-[#71717a]">unavailable</span>
+														<span className="font-mono text-sm text-[#71717a]">
+															{t("token.trades.unavailable.unavailable")}
+														</span>
 														<span className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[#71717a]">
-															not derived
+															{t("token.trades.unavailable.notDerived")}
 														</span>
 													</>
 												)}
@@ -594,7 +608,9 @@ export default function TradesClient({ token, initialData }: { token: IToken; in
 								onClick={() => setShowAllRows((current) => !current)}
 								className="inline-flex items-center gap-1 self-start font-mono text-[10px] uppercase tracking-[0.16em] text-[#a1a1aa] transition-colors hover:text-[#e4e4e7]"
 							>
-								{showAllRows ? "show less" : `show ${hiddenTradeCount} more`}
+								{showAllRows
+									? t("token.trades.showLess")
+									: t("token.trades.showMore", { count: String(hiddenTradeCount) })}
 								{showAllRows ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
 							</button>
 						) : null}

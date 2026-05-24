@@ -2,6 +2,7 @@
 
 import { ArrowDownLeft, ArrowUpRight, ExternalLink } from "lucide-react";
 
+import { useTranslation } from "@/contexts/locale-context";
 import type { PostLaunchMarket } from "@/hooks/use-post-launch-market";
 
 import { formatVolumeUsd } from "./__lib/format";
@@ -34,31 +35,37 @@ const WINDOWS: Array<{
 ];
 
 export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
+	const { t } = useTranslation();
 	const link = market?.pairUrl ?? `https://dexscreener.com/bsc/${tokenAddress.toLowerCase()}`;
 
 	return (
 		/* TODO: needs indexer endpoint for individual buy / sell rows on the
 		   PCS V2 pair. Until then we surface the DEXScreener aggregate windows;
 		   the "full feed" link routes to DEXScreener for the granular tape. */
-		<section className="border border-white/10 bg-[#08080a] rounded-sm" aria-label="trade activity feed">
+		<section
+			className="border border-white/10 bg-[#08080a] rounded-sm"
+			aria-label={t("post.tradeFeed.sectionAria")}
+		>
 			<div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">trade activity</div>
+				<div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">
+					{t("post.tradeFeed.label")}
+				</div>
 				<a
 					href={link}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 hover:text-[#00ff87] transition-colors"
-					aria-label="open full trade feed on dexscreener"
+					aria-label={t("post.tradeFeed.openOnAria")}
 				>
-					full feed <ExternalLink className="w-3 h-3" aria-hidden="true" />
+					{t("post.tradeFeed.fullFeed")} <ExternalLink className="w-3 h-3" aria-hidden="true" />
 				</a>
 			</div>
 			{isLoading && !market ? (
-				<EmptyRow text="loading activity\u2026" />
+				<EmptyRow text={t("post.tradeFeed.loading")} />
 			) : !market ? (
-				<EmptyRow text="no trades yet" />
+				<EmptyRow text={t("post.tradeFeed.noTrades")} />
 			) : (
-				<ul className="divide-y divide-white/5" aria-label="buy and sell counts per window">
+				<ul className="divide-y divide-white/5" aria-label={t("post.tradeFeed.listAria")}>
 					{WINDOWS.map((w) => {
 						const txns = market.txns?.[w.key] ?? {};
 						const buys = Number(txns.buys ?? 0);
@@ -66,7 +73,11 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 						const total = buys + sells;
 						const buyShare = total > 0 ? (buys / total) * 100 : 50;
 						const volume = num(market.volume?.[w.volumeKey]);
-						const rowLabel = `${w.label}: ${buys} buys, ${sells} sells`;
+						const rowLabel = t("post.tradeFeed.rowAria", {
+							window: w.label,
+							buys: String(buys),
+							sells: String(sells),
+						});
 						return (
 							<li
 								key={w.key}
@@ -77,10 +88,12 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 								<div className="flex flex-col gap-2">
 									<div className="flex items-center justify-between text-xs">
 										<span className="inline-flex items-center gap-1 text-[#00ff87]">
-											<ArrowDownLeft className="w-3 h-3" aria-hidden="true" /> {buys.toLocaleString()} buys
+											<ArrowDownLeft className="w-3 h-3" aria-hidden="true" /> {buys.toLocaleString()}{" "}
+											{t("post.tradeFeed.buys")}
 										</span>
 										<span className="inline-flex items-center gap-1 text-orange-300/85">
-											<ArrowUpRight className="w-3 h-3" aria-hidden="true" /> {sells.toLocaleString()} sells
+											<ArrowUpRight className="w-3 h-3" aria-hidden="true" /> {sells.toLocaleString()}{" "}
+											{t("post.tradeFeed.sells")}
 										</span>
 									</div>
 									<div
@@ -89,7 +102,7 @@ export function TradeActivityFeed({ market, tokenAddress, isLoading }: Props) {
 										aria-valuemin={0}
 										aria-valuemax={100}
 										aria-valuenow={Math.round(buyShare)}
-										aria-label={`buy / sell ratio for ${w.label}`}
+										aria-label={t("post.tradeFeed.ratioAria", { window: w.label })}
 										tabIndex={-1}
 									>
 										<div className="h-full bg-[#00ff87]/70" style={{ width: `${buyShare}%` }} />

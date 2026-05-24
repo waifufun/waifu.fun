@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { cn } from "@/lib/utils";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAuth as useStewardAuth } from "@stwd/react";
@@ -18,7 +19,7 @@ interface WalletPanelProps {
 // Friendly display names for known connector ids. RainbowKit-wrapped
 // wallets already report nice names via `connector.name`, but we
 // canonicalize the brand strings here so capitalization stays exact
-// regardless of upstream changes.
+// regardless of upstream changes. (Brand names; never translated.)
 const FRIENDLY_NAME: Record<string, string> = {
 	metaMask: "MetaMask",
 	metaMaskSDK: "MetaMask",
@@ -28,14 +29,14 @@ const FRIENDLY_NAME: Record<string, string> = {
 	walletConnect: "WalletConnect",
 };
 
-function displayName(connector: Connector): string {
+function displayName(connector: Connector, fallbackBrowserWallet: string): string {
 	const friendly = FRIENDLY_NAME[connector.id];
 	if (friendly) return friendly;
 	// For the generic injected connector, RainbowKit names it after the
 	// detected wallet ("Rabby", "Brave Wallet", "Frame", etc). Pass it
 	// through. If it has no name, label it generically.
 	if (connector.id === "injected") {
-		return connector.name && connector.name.length > 0 ? connector.name : "Browser Wallet";
+		return connector.name && connector.name.length > 0 ? connector.name : fallbackBrowserWallet;
 	}
 	return connector.name;
 }
@@ -115,6 +116,7 @@ function dedupeConnectors(connectors: readonly Connector[]): Connector[] {
 	const filtered = connectors.filter((c) => {
 		if (c.id !== "injected") return true;
 		const name = (c.name ?? "").toLowerCase();
+		// DO NOT i18n: matched against internal wallet provider names (audit 5d)
 		const isMetaMaskInjected = name.includes("metamask");
 		const isCoinbaseInjected = name.includes("coinbase");
 		if (hasMetaMaskRow && isMetaMaskInjected) return false;
@@ -132,6 +134,7 @@ function dedupeConnectors(connectors: readonly Connector[]): Connector[] {
 }
 
 export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
+	const { t } = useTranslation();
 	const auth = useStewardAuth();
 	const { address, isConnected, chain, connector: activeConnector } = useAccount();
 	const { connectors, connectAsync, isPending: connectPending, variables: connectVariables } = useConnect();
@@ -144,6 +147,7 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 	const [error, setError] = useState<string | null>(null);
 
 	const visibleConnectors = useMemo(() => dedupeConnectors(connectors), [connectors]);
+	const browserWalletFallback = t("auth.wallet.browserWalletFallback");
 
 	const handleConnect = useCallback(
 		async (connector: Connector) => {
@@ -158,18 +162,18 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 			try {
 				await connectAsync({ connector });
 			} catch (err) {
-				const message = err instanceof Error ? err.message : "could not connect";
+				const message = err instanceof Error ? err.message : t("auth.wallet.couldNotConnect");
 				setError(message);
 				if (err instanceof Error) onError?.(err, "evm");
 			}
 		},
-		[connectAsync, onError, openConnectModal],
+		[connectAsync, onError, openConnectModal, t],
 	);
 
 	const handleSign = useCallback(async () => {
 		setError(null);
 		if (!address) {
-			const err = new Error("no wallet connected");
+			const err = new Error(t("auth.wallet.noWalletConnected"));
 			setError(err.message);
 			onError?.(err, "evm");
 			return;
@@ -182,7 +186,7 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 		try {
 			checksummed = getAddress(address);
 		} catch {
-			const err = new Error(`invalid EVM address: ${address}`);
+			const err = new Error(t("auth.wallet.invalidEvmAddress", { address }));
 			setError(err.message);
 			onError?.(err, "evm");
 			return;
@@ -195,15 +199,17 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 			onSuccess?.(result, "evm");
 		} catch (e) {
 			const err = e instanceof Error ? e : new Error(String(e));
-			setError(err.message || "sign-in failed");
+			setError(err.message || t("auth.wallet.signInFailed"));
 			onError?.(err, "evm");
 		} finally {
 			setSigning(false);
 		}
-	}, [address, auth, onError, onSuccess, signMessageAsync]);
+	}, [address, auth, onError, onSuccess, signMessageAsync, t]);
 
 	if (isConnected && address) {
-		const walletName = activeConnector ? displayName(activeConnector) : "wallet";
+		const walletName = activeConnector
+			? displayName(activeConnector, browserWalletFallback)
+			: t("auth.wallet.genericWallet");
 		return (
 			<div className="flex flex-col gap-3">
 				<div
@@ -215,7 +221,9 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 				>
 					<span className="font-mono">{truncateAddress(address)}</span>
 					{chain?.name ? (
-						<span className="text-[11px] font-mono uppercase tracking-[0.18em] text-[#71717a]">on {chain.name}</span>
+						<span className="text-[11px] font-mono uppercase tracking-[0.18em] text-[#71717a]">
+							{t("auth.wallet.onChain", { chain: chain.name })}
+						</span>
 					) : null}
 				</div>
 
@@ -232,10 +240,10 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 					{signing ? (
 						<>
 							<Loader2 className="size-4 animate-spin" aria-hidden="true" />
-							<span>signing</span>
+							<span>{t("auth.wallet.signing")}</span>
 						</>
 					) : (
-						<span>sign in with {walletName}</span>
+						<span>{t("auth.wallet.signInWith", { wallet: walletName })}</span>
 					)}
 				</button>
 
@@ -251,7 +259,7 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 						"transition-colors hover:text-[#e4e4e7] disabled:opacity-50",
 					)}
 				>
-					disconnect
+					{t("auth.wallet.disconnect")}
 				</button>
 
 				{error ? <p className="text-center text-[11px] text-[#f87171]">{error}</p> : null}
@@ -262,7 +270,7 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 	if (visibleConnectors.length === 0) {
 		return (
 			<div className="border border-white/10 bg-[#0b0b0d] px-3.5 py-4 text-center text-[12px] text-[#71717a]">
-				no wallet connectors available
+				{t("auth.wallet.noConnectors")}
 			</div>
 		);
 	}
@@ -287,7 +295,7 @@ export function WalletPanel({ onSuccess, onError }: WalletPanelProps) {
 						data-testid={`wallet-panel-connector-${connector.id}`}
 					>
 						<ConnectorIcon connector={connector} />
-						<span className="flex-1 text-left">{displayName(connector)}</span>
+						<span className="flex-1 text-left">{displayName(connector, browserWalletFallback)}</span>
 						{pendingThis ? <Loader2 className="size-4 animate-spin text-[#a1a1aa]" aria-hidden="true" /> : null}
 					</button>
 				);
