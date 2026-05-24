@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { MAX_PLATFORM_CUT_BPS, MIN_PLATFORM_CUT_BPS } from "@/lib/launchpad/types";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function PlatformCutBreakdown({ taxBps, platformCutBps, platformCutVolumeBps }: Props) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -24,7 +26,7 @@ export function PlatformCutBreakdown({ taxBps, platformCutBps, platformCutVolume
 			>
 				<div className="flex items-center gap-2">
 					<InfoIcon className="h-3.5 w-3.5 text-neutral-500" />
-					<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-300">how the math works</span>
+					<span className="text-[11px] font-mono uppercase tracking-[0.2em] text-neutral-300">{t("wizard.launchpad.tax.breakdownTitle")}</span>
 				</div>
 				<ChevronDownIcon
 					className={cn("h-3.5 w-3.5 text-neutral-500 transition-transform duration-200", open && "rotate-180")}

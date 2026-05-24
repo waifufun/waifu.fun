@@ -581,7 +581,15 @@
 				"eachTrade": "every trade pays {{tax}}% tax.",
 				"waifuTakes": "waifu takes {{cut}}% of that tax off the top: {{volume}}% of total trade volume.",
 				"youAllocate": "you allocate the remaining {{remaining}}% across treasury / dividends / burn / lp.",
-				"bounds": "prod bounds: platform cut between {{min}}% and {{max}}%. production tax launches keep the fee path enabled and cannot silently flip to zero-fee mode."
+				"bounds": "prod bounds: platform cut between {{min}}% and {{max}}%. production tax launches keep the fee path enabled and cannot silently flip to zero-fee mode.",
+				"founderBpsLabel": "agent treasury",
+				"founderBpsDesc": "operations, inference, patron rewards.",
+				"holderBpsLabel": "holder dividends",
+				"holderBpsDesc": "auto-distributed pro-rata to holders above the min balance.",
+				"burnBpsLabel": "burn",
+				"burnBpsDesc": "burned every trade. supply deflates over time.",
+				"liquidityBpsLabel": "auto-LP",
+				"liquidityBpsDesc": "added back to LP. depth compounds."
 			}
 		},
 		"provisioning": {

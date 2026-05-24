@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/contexts/locale-context";
 import { useLaunchpads } from "@/hooks/use-launchpads";
 import type { LaunchpadDescriptor, LaunchpadId } from "@/lib/launchpad/types";
 import { useCallback, useState } from "react";
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
+	const { t } = useTranslation();
 	const { launchpads, isLoading, error, source } = useLaunchpads();
 	const [waitlistFor, setWaitlistFor] = useState<LaunchpadDescriptor | null>(null);
 
@@ -34,13 +36,13 @@ export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
 		<div className="flex flex-col gap-6">
 			{error ? (
 				<p className="text-[11px] font-mono text-neutral-500">
-					running on local mock launchpad list (api unreachable).
+					{t("wizard.launchpad.localMock")}
 				</p>
 			) : null}
 
 			<div
 				role="radiogroup"
-				aria-label="select launchpad"
+				aria-label={t("wizard.launchpad.selectLaunchpad")}
 				className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
 			>
 				{launchpads.map((d) => (
@@ -55,11 +57,11 @@ export default function LaunchpadPicker({ selectedId, onSelect }: Props) {
 				>
 					<span className="text-neutral-300">bsc</span>
 					<span className="text-neutral-600"> / </span>
-					more chains coming soon
+					{t("wizard.launchpad.moreChains")}
 				</p>
 				{source === "mock" ? (
 					<p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
-						note: api unavailable, using local list.
+						{t("wizard.launchpad.apiUnavailable")}
 					</p>
 				) : null}
 			</div>
